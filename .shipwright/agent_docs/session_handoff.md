@@ -1,8 +1,8 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-10-triage-cli-json-utf8"
+run_id: "iterate-2026-06-10-event-self-id"
 phase: "iterate"
-reason: "merge origin/main reconciliation"
+reason: "integrate main (#182) into S1 branch"
 timestamp: "2026-06-10T08:00:55.145129+00:00"
 ---
 
@@ -12,9 +12,9 @@ timestamp: "2026-06-10T08:00:55.145129+00:00"
 
 ## Session Info
 
-- **Session ID**: 55205f02-66aa-43eb-93b1-2cf9cb776ce8
+- **Session ID**: 327c54fd-4d0a-46b8-8ad7-c14a9f52725f
 - **Timestamp**: 2026-06-10 08:00:55 UTC
-- **Reason**: merge origin/main reconciliation
+- **Reason**: integrate main (#182) into S1 branch
 
 ## Last Iterate
 
@@ -28,7 +28,7 @@ timestamp: "2026-06-10T08:00:55.145129+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/triage-cli-json-utf8
+- **Branch**: iterate/2026-06-10-event-self-id
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -47,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/triage-cli-json-utf8
-- **Last Commit**: 9d89609e Merge remote-tracking branch 'origin/main' into iterate/triage-cli-json-utf8
+- **Branch**: iterate/2026-06-10-event-self-id
+- **Last Commit**: 17e68669 Merge remote-tracking branch 'origin/main' into iterate/2026-06-10-event-self-id
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -73,7 +73,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 137
+- **Total work events**: 133
 - **Last iterate**: change — Exempt session_handoff.md + build_dashboard.md (with triage_inbox.md) from artifact-path-canon in all migrations; drift test; dismiss trg-6ed063ae. (2026-06-10)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

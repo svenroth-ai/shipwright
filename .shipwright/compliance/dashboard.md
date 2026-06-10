@@ -9,10 +9,10 @@ Scope: library
 | Metric | Value | Status | Why warn? |
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
-| Work events (iterate) | 137 changes | INFO |  |
+| Work events (iterate) | 133 changes | INFO |  |
 | All unit tests passing | 0/0 | WARN | no test events recorded yet |
 | Architecture decisions | 141 ADRs | INFO |  |
-| Iterate tests passing | 79/137 iterations tested | WARN | 58 iterate(s) without tests — see test-evidence.md |
+| Iterate tests passing | 78/133 iterations tested | WARN | 55 iterate(s) without tests — see test-evidence.md |
 | Dependencies | 8 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
 | Triage open | 10 open | WARN | 10 actionable item(s) — see ../agent_docs/triage_inbox.md |
@@ -22,7 +22,7 @@ Scope: library
 
 ## Project Velocity
 
-- Iterate: 137 changes (2026-05-02 → 2026-06-10)
+- Iterate: 133 changes (2026-05-02 → 2026-06-10)
 - Last activity: 2026-06-10
 
 ## External LLM Review Evidence
