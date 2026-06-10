@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-10-event-self-id"
+run_id: "iterate-2026-06-10-status-projection"
 phase: "iterate"
-reason: "integrate main (#182) into S1 branch"
-timestamp: "2026-06-10T08:00:55.145129+00:00"
+reason: "iterate: campaign status projection (S2)"
+timestamp: "2026-06-10T20:21:00.450352+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-10 08:00:55 UTC
+> Auto-generated 2026-06-10 20:21:00 UTC
 
 ## Session Info
 
-- **Session ID**: 327c54fd-4d0a-46b8-8ad7-c14a9f52725f
-- **Timestamp**: 2026-06-10 08:00:55 UTC
-- **Reason**: integrate main (#182) into S1 branch
+- **Session ID**: 88b11785-06c5-4d46-b7a2-7fd1b6b60402
+- **Timestamp**: 2026-06-10 20:21:00 UTC
+- **Reason**: iterate: campaign status projection (S2)
 
 ## Last Iterate
 
@@ -28,8 +28,11 @@ timestamp: "2026-06-10T08:00:55.145129+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/2026-06-10-event-self-id
-- **External Review Marker**: missing
+- **Branch**: iterate/2026-06-10-status-projection
+- **Run ID**: iterate-2026-06-10-status-projection
+- **Spec**: .shipwright/planning/iterate/2026-06-10-status-projection.md
+- **Complexity**: medium (escalated from small; self-declared `touches_io_boundary`)
+- **External Review Marker**: stale (predates spec (2026-06-10T19:38:50))
 
 ### Mandatory replay on Resume
 
@@ -47,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/2026-06-10-event-self-id
-- **Last Commit**: 17e68669 Merge remote-tracking branch 'origin/main' into iterate/2026-06-10-event-self-id
+- **Branch**: iterate/2026-06-10-status-projection
+- **Last Commit**: 9adeaf8e chore(triage): sweep 5 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +67,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-e6943f4c | work_completed | iterate (Campaign status projection: pure regenerate_campaign_status producer + campaign_progress regenerate CLI project per-sub-iterate status.json from the campaign.md skeleton and self-identifying work_completed events, with a never-downgrade guard (campaign 2026-06-07-tracked-campaign-status S2).) | 2026-06-10 |
 | evt-374ac212 | work_completed | iterate (Exempt session_handoff.md + build_dashboard.md (with triage_inbox.md) from artifact-path-canon in all migrations; drift test; dismiss trg-6ed063ae.) | 2026-06-10 |
 | evt-a858c858 | work_completed | iterate (triage_cli list pins stdout to UTF-8: fixes UnicodeEncodeError on Windows consoles for non-cp1252 item titles (found by the webui pending-delivery-badge boundary probe).) | 2026-06-10 |
 | evt-b2f6aa17 | work_completed | iterate (History-calibrated complexity prior + cross-domain scope vocabulary for the iterate Stage-1 classifier) | 2026-06-10 |
 | evt-7359794f | work_completed | iterate (Gate D2V evidence markdown write behind SHIPWRIGHT_D2V_WRITE_EVIDENCE; default runs assert without writing the tracked artifact.) | 2026-06-10 |
-| evt-e54d689f | work_completed | iterate (Add triage_cli.py list --json (unioned open items + pendingDelivery) as a WebUI contract.) | 2026-06-10 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 133
-- **Last iterate**: change — Exempt session_handoff.md + build_dashboard.md (with triage_inbox.md) from artifact-path-canon in all migrations; drift test; dismiss trg-6ed063ae. (2026-06-10)
+- **Total work events**: 134
+- **Last iterate**: feature — Campaign status projection: pure regenerate_campaign_status producer + campaign_progress regenerate CLI project per-sub-iterate status.json from the campaign.md skeleton and self-identifying work_completed events, with a never-downgrade guard (campaign 2026-06-07-tracked-campaign-status S2). (2026-06-10)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

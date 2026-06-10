@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-10 08:00 UTC | Session: 327c54fd-4d0a-46b8-8ad7-c14a9f52725f | Run: iterate-2026-06-10-event-self-id
+> Updated: 2026-06-10 20:21 UTC | Session: 88b11785-06c5-4d46-b7a2-7fd1b6b60402 | Run: iterate-2026-06-10-status-projection
 
-## Recent Changes (133 iterations)
+## Recent Changes (134 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | Campaign status projection: pure regenerate_campaign_status producer + campaign_progress regenerate CLI project per-sub-iterate status.json from the campaign.md skeleton and self-identifying work_completed events, with a never-downgrade guard (campaign 2026-06-07-tracked-campaign-status S2). | 3426/3445 |  | tooling | 2026-06-10 |
 | change | Exempt session_handoff.md + build_dashboard.md (with triage_inbox.md) from artifact-path-canon in all migrations; drift test; dismiss trg-6ed063ae. | 0/0 |  | infra | 2026-06-10 |
 | bug | triage_cli list pins stdout to UTF-8: fixes UnicodeEncodeError on Windows consoles for non-cp1252 item titles (found by the webui pending-delivery-badge boundary probe). | 0/0 |  | tooling | 2026-06-10 |
 | change | History-calibrated complexity prior + cross-domain scope vocabulary for the iterate Stage-1 classifier | 0/0 |  | infra | 2026-06-10 |
@@ -140,7 +141,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-10 | Unit: 3457/3458 | Integration: 141/141 | E2E: 4/4 | Smoke: skipped | (iterate)
+Last run: 2026-06-10 | Unit: 3426/3445 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

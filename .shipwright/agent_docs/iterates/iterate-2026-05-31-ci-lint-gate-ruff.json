@@ -1,9 +1,0 @@
-{
-  "run_id": "iterate-2026-05-31-ci-lint-gate-ruff",
-  "date": "2026-05-31T11:50:32.785845Z",
-  "type": "change",
-  "complexity": "small",
-  "branch": "iterate/ci-lint-gate-ruff",
-  "tests_passed": true,
-  "adr": "iterate-2026-05-31-ci-lint-gate-ruff"
-}
