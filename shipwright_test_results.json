@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-10-triage-dedup-keep-last-append",
+    "run_id": "iterate-2026-06-10-triage-list-json",
     "date": "2026-06-10",
     "unit": {
       "status": "passed",
-      "passed": 3029,
-      "total": 3029
+      "passed": 3015,
+      "total": 3015
     },
     "integration": {
-      "status": "passed",
-      "passed": 1,
-      "total": 1
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -31,67 +31,62 @@
     "degraded": [],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --extra dev pytest shared/tests/ -m 'not cross_plugin'  +  D2V empirical gate (-o addopts='')  +  real-sweep integration regression",
+      "runner": "uv run --extra dev pytest shared/tests/test_triage_cli_json.py shared/tests/test_triage_cli.py -q  +  real-data list --json probe",
       "exit_code": 0,
-      "tests_run": 3029,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\2026-06-10-triage-dedup-keep-last-append\\.shipwright\\runs\\iterate-2026-06-10-triage-dedup-keep-last-append\\surface_verification.log",
-      "timestamp": "2026-06-09T22:26:18.000Z",
+      "tests_run": 3015,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\2026-06-10-triage-list-json\\.shipwright\\runs\\iterate-2026-06-10-triage-list-json\\surface_verification.log",
+      "timestamp": "2026-06-10T06:08:57.000Z",
       "attempts": 1,
-      "note": "No web/UI surface (shared churn-merge lib). Verified via CLI: unit + real-git integration + D2V empirical gate (6 methods). Full shared/tests 3029 passed."
+      "note": "No web/UI surface in the monorepo (new CLI output contract consumed by the separate WebUI repo). Verified via CLI subprocess tests + real-data probe."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "same-id non-byte-identical appends collapse to keep-LAST",
+          "behavior": "list --json emits a JSON array of open (status==triage) unioned items",
           "disposition": "tested",
-          "evidence": "test_churn_merge.py::test_triage_dedup_collapses_same_id_appends_keep_last PASSED"
+          "evidence": "test_triage_cli_json.py::test_list_json_emits_array_of_open_items PASSED"
         },
         {
-          "behavior": "collapsed result satisfies validate_triage_text (one-append-per-id)",
+          "behavior": "empty project -> [] (not the human 'No open triage items' text)",
           "disposition": "tested",
-          "evidence": "test_triage_dedup_same_id_appends_unblocks_validator PASSED"
+          "evidence": "test_list_json_empty_is_empty_array PASSED"
         },
         {
-          "behavior": "append+status same id: status preserved, order preserved, append v1 dropped",
+          "behavior": "dismissed items excluded from the JSON",
           "disposition": "tested",
-          "evidence": "test_triage_dedup_keep_last_preserves_status_and_order PASSED"
+          "evidence": "test_list_json_excludes_dismissed PASSED"
         },
         {
-          "behavior": "different-id appends untouched",
+          "behavior": "outbox-only item -> pendingDelivery=true (WebUI badge signal)",
           "disposition": "tested",
-          "evidence": "test_triage_dedup_different_id_appends_untouched PASSED"
+          "evidence": "test_list_json_marks_outbox_only_pending_delivery PASSED + real-data probe (trg-6ed063ae/e2a0ebb3)"
         },
         {
-          "behavior": "non-append / unparseable lines pass through (not swallowed)",
+          "behavior": "id present in BOTH files -> pendingDelivery=false (TRACKED-PREFERRED)",
           "disposition": "tested",
-          "evidence": "test_triage_dedup_keep_last_passes_through_unparseable PASSED"
+          "evidence": "test_list_json_tracked_preferred_when_in_both PASSED"
         },
         {
-          "behavior": "byte-identical same-id appends still collapse to one (regression)",
+          "behavior": "default output (no --json) unchanged, not JSON-parseable (regression)",
           "disposition": "tested",
-          "evidence": "test_triage_dedup_byte_identical_appends_still_single PASSED"
+          "evidence": "test_list_default_output_is_not_json PASSED"
         },
         {
-          "behavior": "REAL sweep returns committed (not invalid) for double-append, folds LAST",
+          "behavior": "JSON carries the full reduced item fields (id/title/severity/kind/source/launchPayload/...)",
           "disposition": "tested",
-          "evidence": "test_sweep_outbox.py::test_sweep_collapses_producer_double_append_keep_last PASSED (real git+worktree)"
-        },
-        {
-          "behavior": "concurrency / exactly-once-after-merge / abandoned-branch unaffected",
-          "disposition": "tested",
-          "evidence": "test_d2v_empirical_gate.py 6 methods PASSED over real git"
+          "evidence": "real-data probe: 12+ keys incl. launchPayload, dedupKey, frId + unit asserts"
         }
       ],
       "counts": {
-        "testable": 8,
-        "tested": 8,
+        "testable": 7,
+        "tested": 7,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 8,
-        "covered_acs": 8
+        "acs": 7,
+        "covered_acs": 7
       }
     }
   }

@@ -8,7 +8,9 @@ library helpers (``triage_promote.promote`` / ``triage_promote.dismiss``).
 
 Subcommands (positional ``<id>`` for promote/dismiss):
 
-  list                                  list open triage items
+  list [--json]                         list open triage items (--json = a
+                                        machine-readable contract for the WebUI;
+                                        adds pendingDelivery for outbox-only items)
   promote <id> --task-ref EXT:<ref>     promote → backlog task
   dismiss <id> --reason <reason>        dismiss (false-positive / won't-fix)
 
@@ -24,6 +26,7 @@ Fix-now flow:
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -31,7 +34,12 @@ _SCRIPTS_DIR = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
-from triage import read_all_items  # noqa: E402
+from triage import (  # noqa: E402
+    _append_ids_at,
+    _outbox_path,
+    _triage_path,
+    read_all_items,
+)
 from tools.triage_promote import dismiss, promote  # noqa: E402
 
 _BY_LABEL = "cli"
@@ -97,6 +105,21 @@ def _format_item(item: dict) -> str:
 def _cmd_list(args: argparse.Namespace) -> int:
     project_root = Path(args.project_root)
     items = [it for it in read_all_items(project_root) if it.get("status") == "triage"]
+    if getattr(args, "json", False):
+        # Machine-readable contract for the WebUI live-view (trg-e2a0ebb3): the
+        # SAME unioned open items, plus `pendingDelivery` = the item lives ONLY
+        # in the gitignored outbox buffer (not yet swept into the tracked log),
+        # so the UI can badge it. TRACKED-PREFERRED: an id in BOTH files is NOT
+        # pending (parallels triage.mark_status residence). Empty → `[]`.
+        outbox_ids = _append_ids_at(_outbox_path(project_root))
+        tracked_ids = _append_ids_at(_triage_path(project_root))
+        enriched = [
+            {**it, "pendingDelivery": (it.get("id") in outbox_ids
+                                       and it.get("id") not in tracked_ids)}
+            for it in items
+        ]
+        sys.stdout.write(json.dumps(enriched, indent=2, ensure_ascii=False) + "\n")
+        return 0
     if not items:
         sys.stdout.write("No open triage items.\n")
         return 0
@@ -176,6 +199,11 @@ def _build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_list = sub.add_parser("list", help="list open triage items")
+    p_list.add_argument(
+        "--json", action="store_true",
+        help="emit open items as a JSON array (machine-readable contract for the "
+             "WebUI; each item gains a pendingDelivery bool for outbox-only items)",
+    )
     p_list.set_defaults(func=_cmd_list)
 
     p_promote = sub.add_parser(

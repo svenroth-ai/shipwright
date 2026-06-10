@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-09 22:26 UTC | Session: d23ad659-b692-4618-ab0b-2021e37ec619 | Run: iterate-2026-06-10-triage-dedup-keep-last-append
+> Updated: 2026-06-10 06:09 UTC | Session: d23ad659-b692-4618-ab0b-2021e37ec619 | Run: iterate-2026-06-10-triage-list-json
 
-## Recent Changes (132 iterations)
+## Recent Changes (133 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | Add triage_cli.py list --json (unioned open items + pendingDelivery) as a WebUI contract. | 0/0 |  | infra | 2026-06-10 |
 | change | Triage dedup collapses same-id appends keep-last (reader parity); unblocks outbox sweep on producer update re-append. | 0/0 |  | infra | 2026-06-09 |
 | change | Iterate-scoped external-review markers gitignored (not blanket); 6 tracked copies untracked. | 0/0 |  | infra | 2026-06-09 |
 | change | Relocate detective-audit JSON from repo root to .shipwright/compliance/audit-report.json; canon re-excludes audit-report.{md,json} (propagates to adopted repos); drop obsolete framework root ignore. | 0/0 |  | infra | 2026-06-09 |
@@ -139,7 +140,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-10 | Unit: 3029/3029 | Integration: 1/1 | Smoke: not_run | (iterate)
+Last run: 2026-06-10 | Unit: 3015/3015 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
