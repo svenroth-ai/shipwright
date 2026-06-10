@@ -1,8 +1,8 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-10-canon-exempt-agent-doc-caches"
+run_id: "iterate-2026-06-10-event-self-id"
 phase: "iterate"
-reason: "exempt full generated agent-doc trio from canon lint; finalize trg-6ed063ae"
+reason: "integrate main (#181) into S1 branch"
 timestamp: "2026-06-10T07:53:28.614369+00:00"
 ---
 
@@ -12,23 +12,23 @@ timestamp: "2026-06-10T07:53:28.614369+00:00"
 
 ## Session Info
 
-- **Session ID**: d23ad659-b692-4618-ab0b-2021e37ec619
+- **Session ID**: 327c54fd-4d0a-46b8-8ad7-c14a9f52725f
 - **Timestamp**: 2026-06-10 07:53:28 UTC
-- **Reason**: exempt full generated agent-doc trio from canon lint; finalize trg-6ed063ae
+- **Reason**: integrate main (#181) into S1 branch
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-10-complexity-classifier-prior
-- **Date**: 2026-06-10T07:22:28.352640Z
+- **Run ID**: iterate-2026-06-10-canon-exempt-agent-doc-caches
+- **Date**: 2026-06-10T07:53:29.174200Z
 - **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/complexity-classifier-prior
-- **ADR**: iterate-2026-06-10-complexity-classifier-prior
+- **Complexity**: small
+- **Branch**: iterate/2026-06-10-canon-exempt-agent-doc-caches
+- **ADR**: iterate-2026-06-10-canon-exempt-agent-doc-caches
 - **Tests passed**: True
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/2026-06-10-canon-exempt-agent-doc-caches
+- **Branch**: iterate/2026-06-10-event-self-id
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -47,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/2026-06-10-canon-exempt-agent-doc-caches
-- **Last Commit**: efdb0cfc chore(triage): sweep 2 outbox append(s) into branch
+- **Branch**: iterate/2026-06-10-event-self-id
+- **Last Commit**: ed96bd80 Merge remote-tracking branch 'origin/main' into iterate/2026-06-10-event-self-id
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,12 +68,12 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 | evt-b2f6aa17 | work_completed | iterate (History-calibrated complexity prior + cross-domain scope vocabulary for the iterate Stage-1 classifier) | 2026-06-10 |
 | evt-7359794f | work_completed | iterate (Gate D2V evidence markdown write behind SHIPWRIGHT_D2V_WRITE_EVIDENCE; default runs assert without writing the tracked artifact.) | 2026-06-10 |
 | evt-e54d689f | work_completed | iterate (Add triage_cli.py list --json (unioned open items + pendingDelivery) as a WebUI contract.) | 2026-06-10 |
-| evt-b83d455a | work_completed | iterate (Triage dedup collapses same-id appends keep-last (reader parity); unblocks outbox sweep on producer update re-append.) | 2026-06-09 |
+| evt-c064117a | work_completed | iterate (Campaign sub-iterates self-identify: runner Step 4 + manual --campaign/--sub-iterate-id stamp campaign/sub_iterate_id into the work_completed event via F5b --event-extras-json) | 2026-06-10 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 136
+- **Total work events**: 132
 - **Last iterate**: change — Exempt session_handoff.md + build_dashboard.md (with triage_inbox.md) from artifact-path-canon in all migrations; drift test; dismiss trg-6ed063ae. (2026-06-10)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

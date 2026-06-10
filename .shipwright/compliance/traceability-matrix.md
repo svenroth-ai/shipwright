@@ -124,11 +124,6 @@ Generated: 2026-06-10T07:53:28.614369+00:00
 | Set security.yml.template checkout to fetch-depth: 1 (working-tree only) and correct the misleading diff-aware-secret-scans comment; no scanner reads git history. | iterate | change |  | — | — | 2026-06-05 |
 | Enforce the FR-gate on the finalize write-path + accept same-event D3 delivery | iterate | change |  | 64/64 | — | 2026-06-05 |
 | Add A5.8: execute the deployed critical-gate shell against dual-artifact fixtures (flavor-agnostic across SARIF/findings.json; skip-safe; env kill-switch). | iterate | change |  | — | — | 2026-06-05 |
-| Fix the adopt security-gate so it resolves SARIF severity at rule level, blocks on any secret, and fails closed — previously a structural false green in every adopted repo. | iterate | bug |  | — | — | 2026-06-04 |
-| Scope the bloat recorder to the project root so cross-repo edits do not leak into this project marker and block its Stop gate. | iterate | bug |  | — | — | 2026-06-04 |
-| C1/C2 detective-realign doc + ledger closeout | iterate | change |  | 41/41 | — | 2026-06-05 |
-| Set security.yml.template checkout to fetch-depth: 1 (working-tree only) and correct the misleading diff-aware-secret-scans comment; no scanner reads git history. | iterate | change |  | — | — | 2026-06-05 |
-| Enforce the FR-gate on the finalize write-path + accept same-event D3 delivery | iterate | change |  | 64/64 | — | 2026-06-05 |
 | gitleaks --report-path - wrote a stray file named - instead of stdout, so the secrets leg silently returned 0 findings everywhere; report now written to a temp file and read back; smoke positive-control converted to ADR-044 CI-gated fail | iterate | bug |  | 320/320 | — | 2026-06-05 |
 | Make the bloat marker recorder + Stop gate worktree-aware: strip the .worktrees/<slug>/ prefix for the baseline lookup so a worktree iterate growing an already-baselined file (ADR+bump) is not mis-classified crossing and does not false-block Stop (trg-305e2aab) | iterate | change |  | 9/9 | — | 2026-06-05 |
 | B7 Rule E: exclude non-functional Conventional-Commit types (build/chore/ci/docs/style/test) from B7 by default (configurable); functional types still flagged. Supersedes the narrow Rule D + kills the ci/docs/chore backfill treadmill. | iterate | change |  | 44/44 | — | 2026-06-05 |
@@ -157,6 +152,7 @@ Generated: 2026-06-10T07:53:28.614369+00:00
 | Relocate detective-audit JSON from repo root to .shipwright/compliance/audit-report.json; canon re-excludes audit-report.{md,json} (propagates to adopted repos); drop obsolete framework root ignore. | iterate | change |  | — | — | 2026-06-09 |
 | Iterate-scoped external-review markers gitignored (not blanket); 6 tracked copies untracked. | iterate | change |  | — | — | 2026-06-09 |
 | Triage dedup collapses same-id appends keep-last (reader parity); unblocks outbox sweep on producer update re-append. | iterate | change |  | — | — | 2026-06-09 |
+| Campaign sub-iterates self-identify: runner Step 4 + manual --campaign/--sub-iterate-id stamp campaign/sub_iterate_id into the work_completed event via F5b --event-extras-json | iterate | feature |  | 3457/3458 | — | 2026-06-10 |
 | Add triage_cli.py list --json (unioned open items + pendingDelivery) as a WebUI contract. | iterate | feature |  | — | — | 2026-06-10 |
 | Gate D2V evidence markdown write behind SHIPWRIGHT_D2V_WRITE_EVIDENCE; default runs assert without writing the tracked artifact. | iterate | change |  | — | — | 2026-06-10 |
 | History-calibrated complexity prior + cross-domain scope vocabulary for the iterate Stage-1 classifier | iterate | change |  | — | — | 2026-06-10 |
@@ -168,7 +164,7 @@ Generated: 2026-06-10T07:53:28.614369+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 136 |
+| Iterate changes | 132 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
