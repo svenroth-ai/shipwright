@@ -1,14 +1,14 @@
 # Project Activity Dashboard
-> Updated: 2026-06-10 07:31 UTC | Session: 327c54fd-4d0a-46b8-8ad7-c14a9f52725f | Run: iterate-2026-06-10-event-self-id
+> Updated: 2026-06-10 07:53 UTC | Session: d23ad659-b692-4618-ab0b-2021e37ec619 | Run: iterate-2026-06-10-canon-exempt-agent-doc-caches
 
-## Recent Changes (131 iterations)
+## Recent Changes (136 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Exempt session_handoff.md + build_dashboard.md (with triage_inbox.md) from artifact-path-canon in all migrations; drift test; dismiss trg-6ed063ae. | 0/0 |  | infra | 2026-06-10 |
 | change | History-calibrated complexity prior + cross-domain scope vocabulary for the iterate Stage-1 classifier | 0/0 |  | infra | 2026-06-10 |
 | change | Gate D2V evidence markdown write behind SHIPWRIGHT_D2V_WRITE_EVIDENCE; default runs assert without writing the tracked artifact. | 0/0 |  | infra | 2026-06-10 |
 | feature | Add triage_cli.py list --json (unioned open items + pendingDelivery) as a WebUI contract. | 0/0 |  | infra | 2026-06-10 |
-| feature | Campaign sub-iterates self-identify: runner Step 4 + manual --campaign/--sub-iterate-id stamp campaign/sub_iterate_id into the work_completed event via F5b --event-extras-json | 3457/3458 |  | tooling | 2026-06-10 |
 | change | Triage dedup collapses same-id appends keep-last (reader parity); unblocks outbox sweep on producer update re-append. | 0/0 |  | infra | 2026-06-09 |
 | change | Iterate-scoped external-review markers gitignored (not blanket); 6 tracked copies untracked. | 0/0 |  | infra | 2026-06-09 |
 | change | Relocate detective-audit JSON from repo root to .shipwright/compliance/audit-report.json; canon re-excludes audit-report.{md,json} (propagates to adopted repos); drop obsolete framework root ignore. | 0/0 |  | infra | 2026-06-09 |
@@ -37,6 +37,11 @@
 | change | B7 Rule E: exclude non-functional Conventional-Commit types (build/chore/ci/docs/style/test) from B7 by default (configurable); functional types still flagged. Supersedes the narrow Rule D + kills the ci/docs/chore backfill treadmill. | 44/44 |  | compliance | 2026-06-05 |
 | change | Make the bloat marker recorder + Stop gate worktree-aware: strip the .worktrees/<slug>/ prefix for the baseline lookup so a worktree iterate growing an already-baselined file (ADR+bump) is not mis-classified crossing and does not false-block Stop (trg-305e2aab) | 9/9 |  | tooling | 2026-06-05 |
 | bug | gitleaks --report-path - wrote a stray file named - instead of stdout, so the secrets leg silently returned 0 findings everywhere; report now written to a temp file and read back; smoke positive-control converted to ADR-044 CI-gated fail | 320/320 |  | tooling | 2026-06-05 |
+| change | Enforce the FR-gate on the finalize write-path + accept same-event D3 delivery | 64/64 |  | tooling | 2026-06-05 |
+| change | Set security.yml.template checkout to fetch-depth: 1 (working-tree only) and correct the misleading diff-aware-secret-scans comment; no scanner reads git history. | 0/0 |  | infra | 2026-06-05 |
+| change | C1/C2 detective-realign doc + ledger closeout | 41/41 |  | docs | 2026-06-05 |
+| bug | Scope the bloat recorder to the project root so cross-repo edits do not leak into this project marker and block its Stop gate. | 0/0 |  | fix | 2026-06-04 |
+| bug | Fix the adopt security-gate so it resolves SARIF severity at rule level, blocks on any secret, and fails closed — previously a structural false green in every adopted repo. | 0/0 |  | fix | 2026-06-04 |
 | change | Add A5.8: execute the deployed critical-gate shell against dual-artifact fixtures (flavor-agnostic across SARIF/findings.json; skip-safe; env kill-switch). | 0/0 |  | tooling | 2026-06-05 |
 | change | Enforce the FR-gate on the finalize write-path + accept same-event D3 delivery | 64/64 |  | tooling | 2026-06-05 |
 | change | Set security.yml.template checkout to fetch-depth: 1 (working-tree only) and correct the misleading diff-aware-secret-scans comment; no scanner reads git history. | 0/0 |  | infra | 2026-06-05 |
@@ -138,7 +143,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-10 | Unit: 3457/3458 | Integration: 141/141 | E2E: 4/4 | Smoke: skipped | (iterate)
+Last run: 2026-06-10 | Unit: 3027/3028 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

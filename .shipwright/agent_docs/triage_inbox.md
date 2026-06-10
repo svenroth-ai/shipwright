@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-10T07:31:00.326550Z. Items waiting for triage decision.
+> Auto-generated 2026-06-10T07:53:28.614369Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 150
-- Triage: 11 | Promoted: 1 | Dismissed: 138 | Snoozed: 0
+- Total: 152
+- Triage: 9 | Promoted: 1 | Dismissed: 142 | Snoozed: 0
 
-## Top 11 items (severity-sorted)
+## Top 9 items (severity-sorted)
 
 ### Source: architecture (2 items)
 
@@ -22,21 +22,6 @@
   - WebUI reads per-sub campaign status from status.json, which is authoritative per the campaign-store.ts contract + PR #1…
   - Evidence: `.shipwright/planning/iterate/proposed-tracked-campaign-status.md`
   - Promote: `triage_promote.py --id trg-fda5f7a3 --task-ref EXT:<ref>`
-
-### Source: compliance (1 item)
-
-<a id="trg-f413bf3e"></a>
-- **Compliance: 1 open finding(s)** `id=trg-f413bf3e | severity=medium | kind=compliance → P2/compliance`
-  - 1 open compliance finding(s): F/F5  - F/F5: Architecture marker vs arch-impact drops — 1 arch-impact drop(s) not docume…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-compliance
-    
-    Context: 1 open compliance finding(s): F/F5.
-    Dashboard: .shipwright/compliance/dashboard.md
-    Each finding + hint is listed in this item's detail.
-    ```
-  - Promote: `triage_promote.py --id trg-f413bf3e --task-ref EXT:<ref>`
 
 ### Source: external-frameworks (6 items)
 
@@ -70,15 +55,10 @@
   - \## Intent  Bundle P8.1 from Spec/external-frameworks-integration.md (MU5 + MU7 + MU-PL1). Single research iterate prod…
   - Promote: `triage_promote.py --id trg-aecf9cde --task-ref EXT:<ref>`
 
-### Source: manual (2 items)
+### Source: manual (1 item)
 
 <a id="trg-e2a0ebb3"></a>
 - **Triage live-view: union the gitignored outbox so new items are visible/startable before sweep** `id=trg-e2a0ebb3 | severity=medium | kind=improvement → P2/engineering`
   - UX gap: a freshly-created triage item (manual triage_add or an idle-main background producer) routes to the gitignored…
   - Promote: `triage_promote.py --id trg-e2a0ebb3 --task-ref EXT:<ref>`
-
-<a id="trg-6ed063ae"></a>
-- **artifact-path-canon: exempt generated triage_inbox.md cache from legacy-path lint** `id=trg-6ed063ae | severity=low | kind=improvement → P3/engineering`
-  - The artifact-path-canon Layer-1 lint (test_no_legacy_artifact_paths) scans tracked .md/.py for bare legacy artifact-dir…
-  - Promote: `triage_promote.py --id trg-6ed063ae --task-ref EXT:<ref>`
 
