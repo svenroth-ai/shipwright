@@ -1,6 +1,6 @@
 {
   "campaign": "2026-06-07-tracked-campaign-status",
-  "status": "active",
+  "status": "complete",
   "branch_strategy": "stacked",
   "created_at": "2026-06-07T20:29:15.989312+00:00",
   "expands_triage": "trg-fda5f7a3",
@@ -39,11 +39,11 @@
       "id": "S4",
       "slug": "backfill-docs",
       "spec_path": "C:\\01_Development\\shipwright\\.shipwright\\planning\\iterate\\campaigns\\2026-06-07-tracked-campaign-status\\sub-iterates\\S4-backfill-docs.md",
-      "status": "pending",
+      "status": "complete",
       "commit": null,
       "branch": null,
-      "tests_passed": null,
-      "tests_total": null
+      "tests_passed": 3451,
+      "tests_total": 3471
     }
   ]
 }

@@ -164,6 +164,25 @@ directions). Two load-bearing rules:
   uses `git log --diff-filter=AM` which skips merge commits, so the snapshot the
   Group-E audit compares against must be on a regular commit.
 
+**`.shipwright/planning/iterate/campaigns/*/status.json` is a churn artifact
+matched by GLOB, not by `CHURN_ALLOWLIST`** (campaign
+`2026-06-07-tracked-campaign-status`, S3/S4). The per-tree campaign board is
+producer-owned and **projected from the tracked event log**: F5b Step 6
+(`campaign_status_io.finalize_campaign_status` → `write_campaign_status`)
+regenerates a sub-iterate's `status.json` from its `campaign.md` skeleton +
+`shipwright_events.jsonl` (top-level `campaign`/`sub_iterate_id`, never-downgrade)
+and F6 ships it in the PR. Because the path is variable, the resolver admits it
+via `churn_merge.is_campaign_status` (single-segment `fnmatchcase` on
+`campaigns/*/status.json`) — deliberately OUTSIDE the 1:1 table above, so
+`test_churn_merge_doc_sync` stays exact. On merge it is in the **regenerate**
+bucket but **scoped to the conflicted campaigns only**
+(`regenerate_tracked_snapshots(campaign_status_rels=…)`): the projection does not
+round-trip a *legacy* `campaign.md` (ids predating the skeleton), so re-projecting
+an *untouched* campaign could drop a completed sub — an untouched campaign
+self-heals on its own next sub-iterate (never-downgrade). The skeleton parser
+strips wrapping markdown emphasis (`**C1**` → `C1`) so a legacy table still
+matches the plain committed ids (S4).
+
 **Rollout note:** a long-lived branch created BEFORE the `.gitattributes` commit
 must merge that commit (so the attribute is present in its tree) before `union`
 applies to its `events.jsonl`. The resolver validates the merged log regardless.

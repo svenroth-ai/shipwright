@@ -1,27 +1,26 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-10T22:01:50.975662Z. Items waiting for triage decision.
+> Auto-generated 2026-06-10T22:55:27.413208Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 160
-- Triage: 12 | Promoted: 1 | Dismissed: 147 | Snoozed: 0
+- Total: 163
+- Triage: 13 | Promoted: 1 | Dismissed: 149 | Snoozed: 0
 
-## Top 12 items (severity-sorted)
+## Top 13 items (severity-sorted)
 
 ### Source: architecture (2 items)
+
+<a id="trg-28e83840"></a>
+- **Bloat Stop-gate reads MAIN baseline while re-measuring the WORKTREE file — false-block on a worktree iterate that bumps…** `id=trg-28e83840 | severity=medium | kind=bug → P2/engineering`
+  - Reproduced 2026-06-10 in PR #184. trg-305e2aab was dismissed as FIXED in #150, but #150 fixed only the PATH-prefix half…
+  - Promote: `triage_promote.py --id trg-28e83840 --task-ref EXT:<ref>`
 
 <a id="trg-721b1765"></a>
 - **Hook fan-out across plugins — collapse to phase-aware dispatchers (Start+Stop+Prompt+PostTool; PreToolUse separate) [ca…** `id=trg-721b1765 | severity=medium | kind=improvement → P2/engineering`
   - [SCOPE EXPANDED 2026-06-02 -> campaign .shipwright/planning/iterate/campaigns/2026-06-02-hook-consolidation/; this item…
   - Promote: `triage_promote.py --id trg-721b1765 --task-ref EXT:<ref>`
-
-<a id="trg-fda5f7a3"></a>
-- **Durable producer-maintained campaign status (tracked SSoT)** `id=trg-fda5f7a3 | severity=low | kind=improvement → P3/engineering`
-  - WebUI reads per-sub campaign status from status.json, which is authoritative per the campaign-store.ts contract + PR #1…
-  - Evidence: `.shipwright/planning/iterate/proposed-tracked-campaign-status.md`
-  - Promote: `triage_promote.py --id trg-fda5f7a3 --task-ref EXT:<ref>`
 
 ### Source: deep-audit (3 items)
 
@@ -74,6 +73,13 @@
 - **[P8.1] Architecture Research Sprint: internal-packages + daemon + skills-lock** `id=trg-aecf9cde | severity=low | kind=maintenance → P3/engineering`
   - \## Intent  Bundle P8.1 from Spec/external-frameworks-integration.md (MU5 + MU7 + MU-PL1). Single research iterate prod…
   - Promote: `triage_promote.py --id trg-aecf9cde --task-ref EXT:<ref>`
+
+### Source: iterate (1 item)
+
+<a id="trg-196f4aa6"></a>
+- **Campaign status projection writes machine-absolute spec_path (non-portable)** `id=trg-196f4aa6 | severity=medium | kind=improvement → P2/engineering`
+  - campaign_status projection + campaign_init fill a sub-iterate spec_path as an ABSOLUTE campaign_dir path, so a regenera…
+  - Promote: `triage_promote.py --id trg-196f4aa6 --task-ref EXT:<ref>`
 
 ### Source: manual (1 item)
 
