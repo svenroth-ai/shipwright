@@ -1,79 +1,99 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-10-triage-cli-json-utf8",
+    "run_id": "iterate-2026-06-10-event-self-id",
     "date": "2026-06-10",
-    "intent": "bug",
-    "complexity": "small",
     "unit": {
       "status": "passed",
-      "passed": 3030,
-      "total": 3031,
-      "note": "shared/tests full suite: 3030 passed, 23 skipped (pre-existing skip set), 1 PRE-EXISTING env-local failure (test_architecture_md_reflects_arch_impact — flags gitignored main-tree decision-drops of two OTHER in-flight iterates, event-self-id + canon-exempt-agent-doc-caches; reproduced identically on the clean main tree, absent in CI checkouts). Touched-scope tests 22/22 green; ruff (pinned 0.15.15) clean."
+      "passed": 3457,
+      "total": 3458
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 141,
+      "total": 141
     },
     "pgtap": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "e2e": {
       "status": "passed",
-      "passed": 8,
-      "total": 8,
-      "note": "Real-subprocess CLI tests (test_triage_cli_json.py) incl. the two new legacy-console-encoding regressions (PYTHONIOENCODING=cp1252 forces the crash deterministically on every platform)."
+      "passed": 4,
+      "total": 4
     },
     "design_fidelity": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "smoke": {
-      "status": "not_run"
+      "status": "skipped"
     },
-    "surface_verification": {
-      "surface": "cli",
-      "exit_code": 0,
-      "tests_run": 8,
-      "runner": "uv run --extra dev pytest shared/tests/test_triage_cli_json.py -q",
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\triage-cli-json-utf8\\.shipwright\\runs\\iterate-2026-06-10-triage-cli-json-utf8\\surface_verification.log",
-      "timestamp": "2026-06-10T07:58:33.865Z"
-    },
+    "degraded": [
+      "shared/tests/test_architecture_md_reflects_arch_impact.py: 1 failure is a cross-session race artifact — a concurrently-running iterate (iterate-2026-06-10-complexity-classifier-prior) dropped an arch-impact decision-drop into the shared main-tree drops dir; its architecture.md bullet ships in ITS PR (backfilling here would double-add). CI unaffected (drops absent on clean checkout -> test skips)."
+    ],
     "test_completeness": {
-      "counts": {
-        "total_behaviors": 4,
-        "tested": 4,
-        "untestable": 0,
-        "untested_testable": 0
-      },
-      "enumeration_basis": "Behaviors changed by _ensure_utf8_stdout in triage_cli.py (root-cause fix for the cp1252 UnicodeEncodeError found by the webui pending-delivery-badge boundary probe).",
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "list --json emits UTF-8 bytes under a legacy console codepage (machine contract)",
+          "behavior": "AC-1: work_completed event carries top-level campaign + sub_iterate_id from --event-extras-json",
           "disposition": "tested",
-          "evidence": "test_list_json_is_utf8_under_legacy_console_encoding (RED pre-fix: UnicodeEncodeError ✨)"
+          "evidence": "shared/tests/test_finalize_event_self_id.py::test_event_carries_campaign_and_sub_iterate_id PASSED"
         },
         {
-          "behavior": "human list renders non-ASCII titles instead of crashing",
+          "behavior": "AC-2: finalize re-run with same run_id returns same event id, exactly one stamped work_completed line",
           "disposition": "tested",
-          "evidence": "test_list_human_output_survives_legacy_console_encoding"
+          "evidence": "shared/tests/test_finalize_event_self_id.py::test_stamp_is_idempotent_per_run_id PASSED"
         },
         {
-          "behavior": "streams without reconfigure() are tolerated (guarded getattr)",
+          "behavior": "AC-3: manual --campaign/--sub-iterate-id path (finalize CLI --event-extras-json) stamps the event, rc=0",
           "disposition": "tested",
-          "evidence": "in-process invocations in test_triage_cli.py (14/14, pytest-captured stdout) stay green"
+          "evidence": "shared/tests/test_finalize_event_self_id.py::test_cli_manual_flag_path_stamps_event PASSED + 2 real-subprocess round-trip probes (PowerShell quoting boundary)"
         },
         {
-          "behavior": "pre-existing list/--json semantics unchanged (union, pendingDelivery, open-filter)",
+          "behavior": "Stamp keys are additive metadata: unclassified event still rejected by FR-gate",
           "disposition": "tested",
-          "evidence": "test_triage_cli_json.py 6 prior tests + test_triage_cli.py 14 green"
+          "evidence": "shared/tests/test_finalize_event_self_id.py::test_stamp_does_not_bypass_fr_gate PASSED"
+        },
+        {
+          "behavior": "Runner contract Step 4 pins: finalize_iterate.py + --event-extras-json + campaign/sub_iterate_id keys + legacy F7 bullet removed",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_event_self_id_contract.py 5 Step-4-scoped drift tests PASSED"
+        },
+        {
+          "behavior": "SKILL.md documents manual --campaign / --sub-iterate-id flags routed to F5b extras",
+          "disposition": "tested",
+          "evidence": "test_event_self_id_contract.py::test_skill_documents_manual_campaign_flag / _sub_iterate_id_flag / _route_to_f5b_extras PASSED"
+        },
+        {
+          "behavior": "F5b.md + campaign-mode.md document the stamp at producer + orchestrator briefing",
+          "disposition": "tested",
+          "evidence": "test_event_self_id_contract.py::test_f5b_reference_documents_stamp_keys + test_campaign_mode_briefing_mentions_stamp PASSED"
+        },
+        {
+          "behavior": "A live runner/agent actually emits the stamp at runtime (LLM-interpreted prompt contract)",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "Runner execution is LLM-agent behavior; mechanically pinned via contract drift tests + the real-producer CLI path, and verified live by this run's own F5b dogfood stamp."
         }
-      ]
+      ],
+      "counts": {
+        "testable": 7,
+        "tested": 7,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "tests_run": 4,
+      "exit_code": 0,
+      "evidence": ".shipwright/runs/iterate-2026-06-10-event-self-id/surface_verification.json"
     }
-  },
-  "last_updated": "2026-06-10T08:45:00Z"
+  }
 }

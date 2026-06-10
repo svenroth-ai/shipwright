@@ -40,15 +40,8 @@ uv run "{plugin_root}/scripts/lib/classify_complexity.py" \
   --project-root "{project_root}" --message "$(cat {sub_iterate_spec})"
 ```
 
-**If complexity == "large":** STOP immediately. Return escalation result:
-```json
-{
-  "sub_iterate_id": "{sub_iterate_id}",
-  "status": "escalated",
-  "reason": "Complexity classified as large — requires manual intervention or split",
-  "detected_complexity": "large"
-}
-```
+**If complexity == "large":** STOP immediately. Return the escalation
+result-JSON (exact shape: Output → Escalation below).
 
 ### Step 3: Build
 
@@ -260,7 +253,7 @@ The `reviews.confidence_calibration` field in the result-JSON contract
 records what fired, the number of probes, and whether the asymptote
 was reached.
 
-### Step 4: Finalization (F0–F7)
+### Step 4: Finalization (F0–F6)
 
 Run the standard iterate finalization steps:
 - **F0:** Fresh verification gate (run full test suite)
@@ -299,9 +292,16 @@ Run the standard iterate finalization steps:
      from inside the sub-iterate-runner.
 - **F3:** Decision log (`write_decision_log.py`)
 - **F4:** Changelog bullet (append to `[Unreleased]` in CHANGELOG.md)
-- **F5:** Compliance update
+- **F5b:** Finalize — one `finalize_iterate.py` call records the
+  `work_completed` event (idempotent per run_id) + regenerates compliance
+  MDs / dashboard / handoff: `uv run
+  "{shared_root}/scripts/tools/finalize_iterate.py" --project-root
+  "{project_root}" --run-id "{run_id}" --event-extras-json "$extras"`.
+  `$extras` = the classification fields from `references/F5b.md` **plus
+  the campaign identity stamp** `"campaign": "{basename of campaign_path}"`
+  + `"sub_iterate_id": "{sub_iterate_id}"` (both in this brief; `run_id` =
+  `iterate-{YYYY-MM-DD}-{slug}` — stamped events make per-sub status projectable).
 - **F6:** Commit (Conventional Commits format)
-- **F7:** Record event (`record_event.py`)
 
 **Skip F12 (Release Prompt)** — the campaign loop handles this once at the end.
 

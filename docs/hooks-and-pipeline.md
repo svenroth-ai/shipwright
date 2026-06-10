@@ -1334,7 +1334,7 @@ Each plugin reads project context at startup to ensure consistency. This table s
 | `architecture.md` | project | write_decision_log.py (architecture impact) |
 | `build_dashboard.md` | update_build_dashboard.py | build, test, changelog, deploy, iterate, **Stop hook** (all plugins) |
 | `session_handoff.md` | generate_handoff_on_stop.py | all plugins (Stop hook), **finalize_iterate.py** (iterate) |
-| `events.jsonl` | record_event.py | build, iterate, test, deploy, changelog, orchestrator (append-only) |
+| `events.jsonl` | record_event.py | build, iterate, test, deploy, changelog, orchestrator (append-only). Campaign sub-iterates (autonomous runner Step 4 + manual `--campaign`/`--sub-iterate-id`) stamp `campaign` + `sub_iterate_id` into the `work_completed` event via F5b `--event-extras-json` (S1, 2026-06-10) |
 | `test_results.json` | test, iterate | test, iterate |
 | `.shipwright/compliance/*` | compliance plugin | update_compliance.py (all phases trigger), **Stop hook** (all plugins, best-effort), **finalize_iterate.py** (iterate) |
 | `sync_config.json` | project | iterate (FR mappings) |

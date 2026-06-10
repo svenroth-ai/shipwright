@@ -51,6 +51,16 @@ uv run "{shared_root}/scripts/tools/finalize_iterate.py" \
   --event-extras-json "$extras"
 ```
 
+**Campaign identity stamp (campaign 2026-06-07-tracked-campaign-status, S1):**
+when the iterate is a campaign sub-iterate — spawned by the autonomous loop OR
+hand-run via `--campaign <slug> --sub-iterate-id <id>` — add two extra keys to
+the same `--event-extras-json` object: `"campaign": "<campaign-slug>"` and
+`"sub_iterate_id": "<id>"`. They are additive metadata (merged verbatim,
+idempotent per run_id like the rest of the event) and do NOT replace the
+FR-gate classification above. The stamp makes `shipwright_events.jsonl`
+self-sufficient for per-sub-iterate status projection — no slug-join
+heuristics against branch names.
+
 Reads back: `result["steps"]["event"]["id"]` — capture it so F6 can confirm
 the event is present before staging `shipwright_events.jsonl` (and for the
 legacy F6.5 SHA patch, used only by non-worktree callers).
