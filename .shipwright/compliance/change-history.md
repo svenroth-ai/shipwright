@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-06-10T06:36:37.802318+00:00
-Total commits: 914
+Generated: 2026-06-10T07:21:44.385582+00:00
+Total commits: 915
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 259
-    "fix" : 256
+    "fix" : 257
     "chore" : 193
     "docs" : 119
     "refactor" : 50
@@ -284,10 +284,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 256 commits
+### Fixes (fix) — 257 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-10 | tests | gate D2V evidence write behind an opt-in env var | ef70f5cce30c |
 | 2026-06-10 | triage | dedup_triage_lines collapses same-id appends keep-last | 6f8d0fc70482 |
 | 2026-06-09 | gitignore | re-exclude transient external-review markers under planning/iterate/ | 1d0d67e70e9e |
 | 2026-06-09 | compliance | relocate detective-audit JSON under .shipwright/compliance/ so the gitignore canon covers it | 79fcde8c865f |
@@ -983,7 +984,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 914 |
+| Total commits | 915 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 914 |
+| Human-authored commits | 915 |
 

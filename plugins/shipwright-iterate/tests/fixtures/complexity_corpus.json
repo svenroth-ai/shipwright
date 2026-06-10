@@ -1,0 +1,247 @@
+{
+  "_meta": {
+    "description": "Real classify_complexity --message args harvested from Claude Code session transcripts of the shipwright monorepo (2026-05-10..2026-06-10), joined by hand to the runs' final complexity (iterate spec / F5c entry). Built by iterate-2026-06-10-complexity-classifier-prior; see the iterate spec for the harvest procedure. final_complexity is null where the join could not be verified — such rows pin expected_vocab_estimate only and are excluded from the under-classification metric.",
+    "fields": {
+      "message": "verbatim --message arg from the transcript",
+      "date": "transcript date (provenance)",
+      "old_estimate": "Stage-1 estimate the old classifier actually returned (recorded in the transcript)",
+      "final_complexity": "complexity the run finalized at (spec/F5c), or null if unverified",
+      "expected_vocab_estimate": "estimate the NEW classifier must return WITHOUT history (vocabulary + risk floors only)",
+      "note": "join evidence / which keyword is expected to fire"
+    }
+  },
+  "rows": [
+    {
+      "message": "Cross-Platform CI matrix für Adopt-generierte Workflows + neues Path-Portability-Helper-Template. Berührt: shared/templates/github-actions/ci-nextjs.yml.template, neues shared/templates/path-helpers.ts.template, Adopt-Tests in plugins/shipwright-adopt/tests/, Doku-Updates in docs/",
+      "date": "2026-05-10",
+      "old_estimate": "medium",
+      "final_complexity": "large",
+      "expected_vocab_estimate": "medium",
+      "note": "spec 2026-05-10-adopt-ci-scaffolders.md = large; 'Workflows' (plural) must keep firing 'workflow' via the optional-plural matcher"
+    },
+    {
+      "message": "Fix two bugs in shipwright-compliance data_collector.py: (A) the FR-table regex never parses 6-column adopt-spec tables; (B) worktree finalization reads shipwright_events.jsonl from project_root but it is gitignored so worktrees see an empty event log, producing a false 0% RTM coverage that the check_rtm_coverage hook blocks on. Add tests.",
+      "date": "2026-05-15",
+      "old_estimate": "trivial",
+      "final_complexity": null,
+      "expected_vocab_estimate": "trivial",
+      "note": "no scope keyword, no risk flag — the history prior is what should carry rows like this"
+    },
+    {
+      "message": "Fix Stop-hook JSON output schema violations. Stop hooks emit hookSpecificOutput.additionalContext which is invalid for Stop events per Claude Code docs. Affects 4 scripts in shared/scripts/hooks and plugins/shipwright-build/scripts/hooks and plugins/shipwright-plan/scripts/hooks. Wired into all 12 plugins. Producer-consumer: hook scripts emit JSON, Claude Code parses it.",
+      "date": "2026-05-10",
+      "old_estimate": "small",
+      "final_complexity": "medium",
+      "expected_vocab_estimate": "medium",
+      "note": "spec 2026-05-10-stop-hook-schema-fix.md = medium; new 'producer-consumer' keyword fires"
+    },
+    {
+      "message": "make record_event.py and the finalization verifier check_events_has_commit resolve shipwright_events.jsonl via git rev-parse git-common-dir worktree-aware; fix dashboard run_id WARN timing",
+      "date": "2026-05-16",
+      "old_estimate": "medium",
+      "final_complexity": "medium",
+      "expected_vocab_estimate": "medium",
+      "note": "spec 2026-05-16-fix-events-worktree-aware.md = medium; 'dashboard' keeps firing"
+    },
+    {
+      "message": "Bugfix in plugins/shipwright-adopt config_writer.py: write_iterate_config seeds feedback_iterations 0 should be 1; write_plan_config writes dead key external_review_feedback_iterations, remove it",
+      "date": "2026-05-16",
+      "old_estimate": "trivial",
+      "final_complexity": null,
+      "expected_vocab_estimate": "trivial",
+      "note": "fall-through row; prior carries"
+    },
+    {
+      "message": "Add an artifact-based GitHub security producer that parses the shipwright-security workflow's findings.json artifact and emits it as the gh-security action-unit, with full unit and integration tests, full docs update (rewrite security-ci-setup.md, update guide.md section 4.11.1, delete docs/triage-inbox.md), and verify webui still renders the items.",
+      "date": "2026-05-20",
+      "old_estimate": "large",
+      "final_complexity": null,
+      "expected_vocab_estimate": "large",
+      "note": "'rewrite' (existing large keyword) keeps firing; unverified final — expected-pin only"
+    },
+    {
+      "message": "Bug fix: shared/scripts/tools/update_build_dashboard.py and 3 compliance lib files render event-derived strings (intent, description) into markdown tables without escaping. A literal | in description breaks the table layout. Add a shared escape_cell helper in shared/scripts/markdown_table.py, apply to all renderer cells, add regression test.",
+      "date": "2026-05-20",
+      "old_estimate": "medium",
+      "final_complexity": "medium",
+      "expected_vocab_estimate": "medium",
+      "note": "spec 2026-05-20-escape-md-cells.md = medium; 'dashboard' inside update_build_dashboard.py must keep matching — underscore must NOT be treated as a word char by the matcher"
+    },
+    {
+      "message": "Replace wall-clock datetime.now() in 8 Shipwright renderer files with deterministic max(event.ts) helper to eliminate chronic dirty-tree drift. Touch shared/scripts/lib/events_log.py (new helper), shared/scripts/tools/{update_build_dashboard,aggregate_triage,generate_session_handoff}.py, plugins/shipwright-compliance/scripts/lib/data_collector.py. New shared/tests/test_render_determinism.py parametrized across all 8 sites.",
+      "date": "2026-05-21",
+      "old_estimate": "medium",
+      "final_complexity": "medium",
+      "expected_vocab_estimate": "medium",
+      "note": "spec 2026-05-22-deterministic-render-timestamps.md = medium; 'dashboard' in filename"
+    },
+    {
+      "message": "Two SBOM bugs (ADR-056): non-determinism (license count varies between runs) and broken launch payload (uv sync doesnt help). Fix the license resolver to read PKG-INFO/METADATA from per-manifest .venv directly instead of importlib.metadata with ambient sys.path. Touches plugins/shipwright-compliance/scripts/lib/data_collector.py, adds tests.",
+      "date": "2026-05-23",
+      "old_estimate": "trivial",
+      "final_complexity": "medium",
+      "expected_vocab_estimate": "trivial",
+      "note": "spec 2026-05-23-sbom-resolver-pin-lockfile.md = medium; bare 'resolver' deliberately NOT a keyword (review: noun-collision risk) — prior carries"
+    },
+    {
+      "message": "Extract 4 snapshot helpers (_atomic_replace, _refuse_symlink, _unlink_runtime_artifacts, _snapshot_triage_runtime) from shared/scripts/tools/finalize_iterate.py into new shared/scripts/lib/iterate_snapshot.py. Public API: snapshot_triage_runtime, unlink_runtime_artifacts. Atomic-replace and symlink-refuse stay module-private. Update finalize_iterate.py to import from the new module. Add focused unit tests for the snapshot module in isolation. Amend ADR-090 to mark primary as executed and remove secondary.",
+      "date": "2026-05-27",
+      "old_estimate": "large",
+      "final_complexity": "medium",
+      "expected_vocab_estimate": "medium",
+      "note": "finalized medium (2026-05-27 tracked-artifacts/finalize iterate); 'new module' moved large→medium fixes the over-classification"
+    },
+    {
+      "message": "P4.1 Skill Bootstrap Pack: two new shared prompts using-shipwright.md and writing-plugin.md, a SessionStart hook session_start_using_shipwright, register across 12 plugins hooks.json, PostToolUse+Stop wave for plugin-cache-drift reminder, new test test_using_shipwright_hook.py",
+      "date": "2026-05-29",
+      "old_estimate": "small",
+      "final_complexity": "medium",
+      "expected_vocab_estimate": "small",
+      "note": "spec 2026-05-29-skill-bootstrap-pack.md = medium; risk floor small ('session', 'hooks.json'); vocabulary gap documented — prior narrows it"
+    },
+    {
+      "message": "Bug: worktree iterate work_completed event from finalize_iterate.py F5b lands only as uncommitted line in main tree shipwright_events.jsonl, never enters the iterate PR, requires manual chore(events) backfill. Fix events-log path resolution / staging.",
+      "date": "2026-05-29",
+      "old_estimate": "trivial",
+      "final_complexity": "medium",
+      "expected_vocab_estimate": "trivial",
+      "note": "spec 2026-05-29-events-jsonl-worktree-commit.md = medium; fall-through — prior carries"
+    },
+    {
+      "message": "Systemic fix: framework .gitignore rules for .shipwright artifacts must propagate to consuming projects. Flesh out shared/templates/shipwright-gitignore.template into the full canonical block, make adopt and project idempotently merge it, add a drift-test between template and framework gitignore, optional self-heal.",
+      "date": "2026-05-30",
+      "old_estimate": "trivial",
+      "final_complexity": "medium",
+      "expected_vocab_estimate": "medium",
+      "note": "spec 2026-05-30-gitignore-canon-propagation.md = medium; new 'systemic' keyword fires"
+    },
+    {
+      "message": "Add two new reviewer subagents spec-reviewer and doubt-reviewer alongside code-reviewer; orchestrate in build SKILL.md; new test file",
+      "date": "2026-05-30",
+      "old_estimate": "trivial",
+      "final_complexity": "medium",
+      "expected_vocab_estimate": "trivial",
+      "note": "spec 2026-05-30-reviewer-stack.md = medium; 'new reviewer subagents' has no anchored phrase — known gap, prior carries"
+    },
+    {
+      "message": "Replace the Confidence Calibration escape-hatch with a hard Test Completeness Ledger gate: enumerate every testable behavior in the diff, each TESTED or UNTESTABLE-with-structural-reason, zero testable-but-untested, enforced by a new verifier check at F0.5 and post-commit audit; graduated by complexity",
+      "date": "2026-05-30",
+      "old_estimate": "trivial",
+      "final_complexity": "medium",
+      "expected_vocab_estimate": "trivial",
+      "note": "spec 2026-05-30-test-completeness-gate.md = medium; fall-through — prior carries"
+    },
+    {
+      "message": "ci.yml lint job neuters lint twice (|| true + continue-on-error). Add bug-focused ruff config in pyproject.toml, fix the findings, remove the neutering so lint gates, rename job to drop 'type'.",
+      "date": "2026-05-31",
+      "old_estimate": "small",
+      "final_complexity": "medium",
+      "expected_vocab_estimate": "small",
+      "note": "spec 2026-05-31-ci-gate-guard.md = medium; 'rename' (small) fires — keyword ceiling stays small, documented precedence"
+    },
+    {
+      "message": "Fix phase-quality triage producer: phase-applicability gate (do not emit FAIL items for phases never entered), run_id=unknown spec-check skip, and collapse 1-FAIL-1-item emit into a single rolling phaseQuality:backlog action-unit read from the aggregate with auto-dismiss. Touches shared/scripts/hooks/audit_phase_quality_on_stop.py and shared/scripts/lib/phase_quality/. Add tests.",
+      "date": "2026-05-31",
+      "old_estimate": "trivial",
+      "final_complexity": "medium",
+      "expected_vocab_estimate": "trivial",
+      "note": "spec 2026-05-31-phasequality-triage-bundle.md = medium; fall-through — prior carries"
+    },
+    {
+      "message": "Two verified-safe CI/test fixes: remove '|| true' from the integration-tests step in .github/workflows/ci.yml so integration failures gate CI; add 'from pathlib import Path' to shared/tests/test_events_log.py to clear 14 ruff F821 undefined-name errors.",
+      "date": "2026-05-31",
+      "old_estimate": "medium",
+      "final_complexity": "medium",
+      "expected_vocab_estimate": "medium",
+      "note": "spec 2026-05-31-ci-shared-tests.md = medium; 'integration' keeps firing (hyphen boundary)"
+    },
+    {
+      "message": "Add a once-per-SessionStart-event dedup guard to shared/scripts/hooks/capture_session_id.py so the Phase-Quality block is emitted once, not 11-12x. TTL lock file, fail-open, atomic O_CREAT|O_EXCL. Tests in shared/tests.",
+      "date": "2026-06-02",
+      "old_estimate": "small",
+      "final_complexity": "small",
+      "expected_vocab_estimate": "small",
+      "note": "SessionStart-dedup interim iterate = small; floor via 'session' (known lexical accident, direction correct here)"
+    },
+    {
+      "message": "fix gitleaks _run_gitleaks: --report-path - creates a stray file named dash instead of writing JSON to stdout, so the secret scanner always returns 0 findings; write the report to a real temp file and read it back; update unit tests that mock stdout json; convert the smoke positive-control silent skip to an ADR-044 CI-gated fail",
+      "date": "2026-06-05",
+      "old_estimate": "trivial",
+      "final_complexity": "small",
+      "expected_vocab_estimate": "trivial",
+      "note": "F5c iterate-2026-06-05-gitleaks-report-path = small; fall-through — prior closes it exactly"
+    },
+    {
+      "message": "Harden compliance Group A5 audit: add a behavioral sub-check that executes the deployed .github/workflows/security.yml critical-gate shell against fixture SARIF and findings.json (critical->blocks, empty/invalid->fail-closed, clean->passes) so a structurally-broken deployed gate is caught, not just a present-but-nonfunctional step id",
+      "date": "2026-06-05",
+      "old_estimate": "medium",
+      "final_complexity": "medium",
+      "expected_vocab_estimate": "medium",
+      "note": "F5c = medium; 'workflow' fires inside .github/workflows/ path (possessive/path boundary)"
+    },
+    {
+      "message": "Propagate a scanner-error marker from _run_tool through scan() so the threshold/report layer flags a degraded scan. A gitleaks fatal or truncated report currently degrades to a green secrets leg. Applies to semgrep/trivy empty-stdout too.",
+      "date": "2026-06-05",
+      "old_estimate": "trivial",
+      "final_complexity": "medium",
+      "expected_vocab_estimate": "trivial",
+      "note": "F5c iterate-2026-06-05-scanner-degraded-marker = medium; fall-through — prior narrows"
+    },
+    {
+      "message": "Stabilize SBOM cluster identity: decouple cluster dedup-key identity (signature-only stable hash) from membership content (re-rendered in body) so membership drift across 8/9/10 workspaces updates the item body not its id. Touches plugins/shipwright-compliance/scripts/lib/sbom_generator.py and tests.",
+      "date": "2026-06-05",
+      "old_estimate": "trivial",
+      "final_complexity": "small",
+      "expected_vocab_estimate": "trivial",
+      "note": "F5c = small; prior closes it exactly"
+    },
+    {
+      "message": "Fix the architecture-drift detector F5 in plugins/shipwright-compliance/scripts/audit/group_f.py which uses git log over gitignored decision-drops so it never detects drift, and upgrade the toothless mtime-based check_architecture_reviewed verifier in shared/scripts/tools/verifiers/iterate_checks.py to a content check. Add unit tests.",
+      "date": "2026-06-06",
+      "old_estimate": "trivial",
+      "final_complexity": "medium",
+      "expected_vocab_estimate": "trivial",
+      "note": "F5c iterate-2026-06-06-arch-drift-detector = medium; bare 'detector' deliberately not a keyword — prior narrows"
+    },
+    {
+      "message": "add complianceRefreshed to triage_gc MACHINE_REASONS so machine-churn compliance backlog dismissals are garbage-collected; extend GC test",
+      "date": "2026-06-07",
+      "old_estimate": "trivial",
+      "final_complexity": "small",
+      "expected_vocab_estimate": "trivial",
+      "note": "F5c = small; prior closes it exactly"
+    },
+    {
+      "message": "Add campaign_init --expands-triage so a triage item can be promoted to a campaign anchor and the WebUI then shows Start Campaign on it. Also optional --from-triage to seed intent. Writes expands_triage into status.json and campaign.md frontmatter, validates trg-id shape, idempotent, with unit tests.",
+      "date": "2026-06-07",
+      "old_estimate": "trivial",
+      "final_complexity": "small",
+      "expected_vocab_estimate": "trivial",
+      "note": "F5c iterate-2026-06-07-campaign-expands-triage = small; prior closes it"
+    },
+    {
+      "message": "Adopt copies security.yml.template but never scaffolds .gitleaks.toml, so every adopted repo first Security Scan goes RED on the gitleaks sidekiq-secret FP cafebabe:deadbeef. Add shared/templates/github-actions/gitleaks.toml.template, wire generate_adoption_artifacts.py to copy it to root .gitleaks.toml plus test, fold gitleaks SHA-verify and peter-evans SHA-pin into security.yml.template, update docs.",
+      "date": "2026-06-07",
+      "old_estimate": "trivial",
+      "final_complexity": "medium",
+      "expected_vocab_estimate": "small",
+      "note": "F5c iterate-2026-06-07-adopt-gitleaks-allowlist = medium; 'SHA-pin' accidentally fires the new 'pin' keyword (hyphen boundary) — benign, direction correct, documented"
+    },
+    {
+      "message": "Add gitignore canon re-exclude rules for transient external_review_state.json and external_code_review_state.json under .shipwright/planning/iterate/, and git rm --cached the 6 accidentally tracked copies. Plan-split markers stay tracked as RTM evidence.",
+      "date": "2026-06-09",
+      "old_estimate": "small",
+      "final_complexity": "small",
+      "expected_vocab_estimate": "small",
+      "note": "F5c = small; legitimate touches_io_boundary floor via '_state.json' — must keep firing"
+    },
+    {
+      "message": "Make dedup_triage_lines collapse duplicate same-id append events keeping last, so the triage outbox sweep validator (one-append-per-id) stays consistent with the append-log reader (last-append-wins); a producer re-appending an updated version of an existing finding must no longer block outbox delivery via validate_triage_text.",
+      "date": "2026-06-09",
+      "old_estimate": "trivial",
+      "final_complexity": "small",
+      "expected_vocab_estimate": "trivial",
+      "note": "F5c iterate-2026-06-10-triage-dedup-keep-last-append = small; prior closes it"
+    }
+  ]
+}

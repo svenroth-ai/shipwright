@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-10 06:36 UTC | Session: d23ad659-b692-4618-ab0b-2021e37ec619 | Run: iterate-2026-06-10-d2v-evidence-write-optin
+> Updated: 2026-06-10 07:21 UTC | Session: 2e830dd7-d5db-466a-b904-03a7e7baa98f | Run: iterate-2026-06-10-complexity-classifier-prior
 
-## Recent Changes (134 iterations)
+## Recent Changes (135 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | History-calibrated complexity prior + cross-domain scope vocabulary for the iterate Stage-1 classifier | 0/0 |  | infra | 2026-06-10 |
 | change | Gate D2V evidence markdown write behind SHIPWRIGHT_D2V_WRITE_EVIDENCE; default runs assert without writing the tracked artifact. | 0/0 |  | infra | 2026-06-10 |
 | feature | Add triage_cli.py list --json (unioned open items + pendingDelivery) as a WebUI contract. | 0/0 |  | infra | 2026-06-10 |
 | change | Triage dedup collapses same-id appends keep-last (reader parity); unblocks outbox sweep on producer update re-append. | 0/0 |  | infra | 2026-06-09 |
@@ -141,7 +142,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-10 | Unit: 3047/3047 | Smoke: not_run | (iterate)
+Last run: 2026-06-10 | Unit: 3370/3370 | Integration: 141/141 | E2E: 28/28 | Smoke: skipped | (iterate)
 
 ## Pipeline
 
