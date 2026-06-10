@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-10T07:53:28.614369+00:00
+Generated: 2026-06-10T08:00:55.145129+00:00
 
 ## Requirements Coverage
 
@@ -160,6 +160,7 @@ Generated: 2026-06-10T07:53:28.614369+00:00
 | Add triage_cli.py list --json (unioned open items + pendingDelivery) as a WebUI contract. | iterate | feature |  | — | — | 2026-06-10 |
 | Gate D2V evidence markdown write behind SHIPWRIGHT_D2V_WRITE_EVIDENCE; default runs assert without writing the tracked artifact. | iterate | change |  | — | — | 2026-06-10 |
 | History-calibrated complexity prior + cross-domain scope vocabulary for the iterate Stage-1 classifier | iterate | change |  | — | — | 2026-06-10 |
+| triage_cli list pins stdout to UTF-8: fixes UnicodeEncodeError on Windows consoles for non-cp1252 item titles (found by the webui pending-delivery-badge boundary probe). | iterate | bug |  | — | — | 2026-06-10 |
 | Exempt session_handoff.md + build_dashboard.md (with triage_inbox.md) from artifact-path-canon in all migrations; drift test; dismiss trg-6ed063ae. | iterate | change |  | — | — | 2026-06-10 |
 
 ## Coverage Summary
@@ -168,7 +169,7 @@ Generated: 2026-06-10T07:53:28.614369+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 136 |
+| Iterate changes | 137 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

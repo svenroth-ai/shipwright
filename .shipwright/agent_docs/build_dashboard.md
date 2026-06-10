@@ -1,11 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-06-10 07:53 UTC | Session: d23ad659-b692-4618-ab0b-2021e37ec619 | Run: iterate-2026-06-10-canon-exempt-agent-doc-caches
+> Updated: 2026-06-10 08:00 UTC | Session: 55205f02-66aa-43eb-93b1-2cf9cb776ce8 | Run: iterate-2026-06-10-triage-cli-json-utf8
 
-## Recent Changes (136 iterations)
+## Recent Changes (137 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
 | change | Exempt session_handoff.md + build_dashboard.md (with triage_inbox.md) from artifact-path-canon in all migrations; drift test; dismiss trg-6ed063ae. | 0/0 |  | infra | 2026-06-10 |
+| bug | triage_cli list pins stdout to UTF-8: fixes UnicodeEncodeError on Windows consoles for non-cp1252 item titles (found by the webui pending-delivery-badge boundary probe). | 0/0 |  | tooling | 2026-06-10 |
 | change | History-calibrated complexity prior + cross-domain scope vocabulary for the iterate Stage-1 classifier | 0/0 |  | infra | 2026-06-10 |
 | change | Gate D2V evidence markdown write behind SHIPWRIGHT_D2V_WRITE_EVIDENCE; default runs assert without writing the tracked artifact. | 0/0 |  | infra | 2026-06-10 |
 | feature | Add triage_cli.py list --json (unioned open items + pendingDelivery) as a WebUI contract. | 0/0 |  | infra | 2026-06-10 |
@@ -143,7 +144,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-10 | Unit: 3027/3028 | Smoke: not_run | (iterate)
+Last run: 2026-06-10 | Unit: 3030/3031 | E2E: 8/8 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

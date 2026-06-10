@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-06-10T07:53:28.614369+00:00
-Total commits: 917
+Generated: 2026-06-10T08:00:55.145129+00:00
+Total commits: 920
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 260
-    "fix" : 257
-    "chore" : 194
+    "fix" : 259
+    "chore" : 195
     "docs" : 119
     "refactor" : 50
     "test" : 22
@@ -285,10 +285,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 257 commits
+### Fixes (fix) — 259 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-10 | triage | pin triage_cli list stdout to UTF-8 — cp1252 console crash on non-ASCII items | 2d53d3960957 |
+| 2026-06-10 | tests | exempt full generated agent-doc cache trio from canon lint | 3544da31e17d |
 | 2026-06-10 | tests | gate D2V evidence write behind an opt-in env var | ef70f5cce30c |
 | 2026-06-10 | triage | dedup_triage_lines collapses same-id appends keep-last | 6f8d0fc70482 |
 | 2026-06-09 | gitignore | re-exclude transient external-review markers under planning/iterate/ | 1d0d67e70e9e |
@@ -547,10 +549,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 194 commits
+### Chores (chore) — 195 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-10 | triage | sweep 3 outbox append(s) into branch | 41826b299ccd |
 | 2026-06-10 | triage | sweep 2 outbox append(s) into branch | efdb0cfc1555 |
 | 2026-06-10 | triage | sweep 3 outbox append(s) into branch | 5898f86ce135 |
 | 2026-06-10 | triage | sweep 5 outbox append(s) into branch | 09994d984fb8 |
@@ -986,7 +989,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 917 |
+| Total commits | 920 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 917 |
+| Human-authored commits | 920 |
 
