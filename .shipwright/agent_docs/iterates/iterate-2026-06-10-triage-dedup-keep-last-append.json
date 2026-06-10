@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-10-triage-dedup-keep-last-append",
+  "date": "2026-06-09T22:26:37.674867Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/2026-06-10-triage-dedup-keep-last-append",
+  "tests_passed": true,
+  "change_type": "infra",
+  "adr": "iterate-2026-06-10-triage-dedup-keep-last-append"
+}

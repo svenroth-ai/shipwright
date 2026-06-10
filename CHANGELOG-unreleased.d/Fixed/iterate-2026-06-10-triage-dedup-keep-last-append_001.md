@@ -1,0 +1,1 @@
+Triage outbox sweep no longer wedges when a background producer re-appends an updated (non-byte-identical) version of an existing finding: dedup_triage_lines now collapses same-id append events keeping the last, mirroring the append-log reader, so the one-append-per-id validator stays satisfied and delivery proceeds.
