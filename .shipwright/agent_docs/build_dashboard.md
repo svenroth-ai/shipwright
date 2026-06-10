@@ -1,11 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-06-10 22:55 UTC | Session: 88b11785-06c5-4d46-b7a2-7fd1b6b60402 | Run: iterate-2026-06-11-backfill-docs
+> Updated: 2026-06-10 23:05 UTC | Session: 01b76389-5200-4e4e-96b6-e7983947e53b | Run: iterate-2026-06-11-bloat-gate-worktree-baseline
 
-## Recent Changes (136 iterations)
+## Recent Changes (137 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
 | change | Campaign status backfill + docs (S4): parse_campaign_skeleton strips markdown emphasis from id/slug cells so a legacy campaign.md (bold **C1**) matches the plain committed status.json ids (else re-projection drops completed subs); a read-only drift-guard test verifies every tracked campaign regenerates without downgrade; docs landed (hooks-and-pipeline glob-churn note, glossary Campaign-Status + token-vocab SSoT, ADR). Closes campaign 2026-06-07-tracked-campaign-status. | 3451/3471 |  | tooling | 2026-06-10 |
+| bug | Bloat Stop-gate resolves a file's ceiling from the worktree baseline it measures, not main (trg-28e83840) | 3088/3088 |  | tooling | 2026-06-10 |
 | change | Per-tree campaign status.json: F5b finalize wiring + scoped churn resolver (campaign S3) | 3442/3462 |  | tooling | 2026-06-10 |
 | feature | Campaign status projection: pure regenerate_campaign_status producer + campaign_progress regenerate CLI project per-sub-iterate status.json from the campaign.md skeleton and self-identifying work_completed events, with a never-downgrade guard (campaign 2026-06-07-tracked-campaign-status S2). | 3426/3445 |  | tooling | 2026-06-10 |
 | change | Exempt session_handoff.md + build_dashboard.md (with triage_inbox.md) from artifact-path-canon in all migrations; drift test; dismiss trg-6ed063ae. | 0/0 |  | infra | 2026-06-10 |
@@ -143,7 +144,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-11 | Unit: 3451/3471 | Smoke: not_run | (iterate)
+Last run: 2026-06-11 | Unit: 3088/3088 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

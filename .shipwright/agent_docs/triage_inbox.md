@@ -1,16 +1,16 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-10T22:55:27.413208Z. Items waiting for triage decision.
+> Auto-generated 2026-06-10T23:05:41.755327Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 163
-- Triage: 13 | Promoted: 1 | Dismissed: 149 | Snoozed: 0
+- Total: 164
+- Triage: 14 | Promoted: 1 | Dismissed: 149 | Snoozed: 0
 
-## Top 13 items (severity-sorted)
+## Top 14 items (severity-sorted)
 
-### Source: architecture (2 items)
+### Source: architecture (3 items)
 
 <a id="trg-28e83840"></a>
 - **Bloat Stop-gate reads MAIN baseline while re-measuring the WORKTREE file — false-block on a worktree iterate that bumps…** `id=trg-28e83840 | severity=medium | kind=bug → P2/engineering`
@@ -21,6 +21,11 @@
 - **Hook fan-out across plugins — collapse to phase-aware dispatchers (Start+Stop+Prompt+PostTool; PreToolUse separate) [ca…** `id=trg-721b1765 | severity=medium | kind=improvement → P2/engineering`
   - [SCOPE EXPANDED 2026-06-02 -> campaign .shipwright/planning/iterate/campaigns/2026-06-02-hook-consolidation/; this item…
   - Promote: `triage_promote.py --id trg-721b1765 --task-ref EXT:<ref>`
+
+<a id="trg-537334f1"></a>
+- **Align bloat marker WRITER (check_file_size) to worktree baseline — delta label still main-keyed (harmless after the trg…** `id=trg-537334f1 | severity=low | kind=improvement → P3/engineering`
+  - Follow-up to trg-28e83840 (Stop-gate reader fix). The recorder check_file_size.py computes the marker delta (anti-ratch…
+  - Promote: `triage_promote.py --id trg-537334f1 --task-ref EXT:<ref>`
 
 ### Source: deep-audit (3 items)
 
