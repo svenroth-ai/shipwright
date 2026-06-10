@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-10-triage-list-json",
+    "run_id": "iterate-2026-06-10-d2v-evidence-write-optin",
     "date": "2026-06-10",
     "unit": {
       "status": "passed",
-      "passed": 3015,
-      "total": 3015
+      "passed": 3047,
+      "total": 3047
     },
     "integration": {
       "status": "not_run",
@@ -31,62 +31,57 @@
     "degraded": [],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --extra dev pytest shared/tests/test_triage_cli_json.py shared/tests/test_triage_cli.py -q  +  real-data list --json probe",
+      "runner": "uv run --extra dev pytest shared/tests/ -m 'not cross_plugin'  +  full D2V gate sans opt-in tree-cleanliness probe",
       "exit_code": 0,
-      "tests_run": 3015,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\2026-06-10-triage-list-json\\.shipwright\\runs\\iterate-2026-06-10-triage-list-json\\surface_verification.log",
-      "timestamp": "2026-06-10T06:08:57.000Z",
+      "tests_run": 3047,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\2026-06-10-d2v-evidence-write-optin\\.shipwright\\runs\\iterate-2026-06-10-d2v-evidence-write-optin\\surface_verification.log",
+      "timestamp": "2026-06-10T06:36:22.000Z",
       "attempts": 1,
-      "note": "No web/UI surface in the monorepo (new CLI output contract consumed by the separate WebUI repo). Verified via CLI subprocess tests + real-data probe."
+      "note": "Test-infra change (no product surface). Verified the full gate runs + asserts without writing the tracked artifact; full suite leaves the tree clean."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "list --json emits a JSON array of open (status==triage) unioned items",
+          "behavior": "evidence_write_enabled() parses truthy/falsy env values",
           "disposition": "tested",
-          "evidence": "test_triage_cli_json.py::test_list_json_emits_array_of_open_items PASSED"
+          "evidence": "test_evidence_write_enabled_parses_env (9 params) PASSED"
         },
         {
-          "behavior": "empty project -> [] (not the human 'No open triage items' text)",
+          "behavior": "evidence_write_enabled() False when env unset",
           "disposition": "tested",
-          "evidence": "test_list_json_empty_is_empty_array PASSED"
+          "evidence": "test_evidence_write_enabled_false_when_unset PASSED"
         },
         {
-          "behavior": "dismissed items excluded from the JSON",
+          "behavior": "flush() skips the write without opt-in (the leak fix)",
           "disposition": "tested",
-          "evidence": "test_list_json_excludes_dismissed PASSED"
+          "evidence": "test_flush_skips_write_without_optin PASSED + behavioral: full gate sans opt-in leaves artifact untouched"
         },
         {
-          "behavior": "outbox-only item -> pendingDelivery=true (WebUI badge signal)",
+          "behavior": "flush() writes the artifact with opt-in (regen still works)",
           "disposition": "tested",
-          "evidence": "test_list_json_marks_outbox_only_pending_delivery PASSED + real-data probe (trg-6ed063ae/e2a0ebb3)"
+          "evidence": "test_flush_writes_with_optin PASSED"
         },
         {
-          "behavior": "id present in BOTH files -> pendingDelivery=false (TRACKED-PREFERRED)",
+          "behavior": "gate assertions still run/pass without opt-in (CI coverage preserved)",
           "disposition": "tested",
-          "evidence": "test_list_json_tracked_preferred_when_in_both PASSED"
+          "evidence": "full D2V gate sans opt-in -> 6 methods passed"
         },
         {
-          "behavior": "default output (no --json) unchanged, not JSON-parseable (regression)",
+          "behavior": "full default shared/tests suite no longer dirties the tracked D2V artifact",
           "disposition": "tested",
-          "evidence": "test_list_default_output_is_not_json PASSED"
-        },
-        {
-          "behavior": "JSON carries the full reduced item fields (id/title/severity/kind/source/launchPayload/...)",
-          "disposition": "tested",
-          "evidence": "real-data probe: 12+ keys incl. launchPayload, dedupKey, frId + unit asserts"
+          "evidence": "F0: 3047 passed, git status clean of D2V-empirical-results.md"
         }
       ],
       "counts": {
-        "testable": 7,
-        "tested": 7,
+        "testable": 6,
+        "tested": 6,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 7,
-        "covered_acs": 7
+        "acs": 6,
+        "covered_acs": 6
       }
     }
   }

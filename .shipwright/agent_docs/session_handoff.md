@@ -1,34 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-10-triage-list-json"
+run_id: "iterate-2026-06-10-d2v-evidence-write-optin"
 phase: "iterate"
-reason: "triage_cli.py list --json contract for WebUI live-view"
-timestamp: "2026-06-10T06:09:07.980286+00:00"
+reason: "gate D2V evidence write behind SHIPWRIGHT_D2V_WRITE_EVIDENCE opt-in (test-isolation leak fix)"
+timestamp: "2026-06-10T06:36:37.802318+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-10 06:09:07 UTC
+> Auto-generated 2026-06-10 06:36:37 UTC
 
 ## Session Info
 
 - **Session ID**: d23ad659-b692-4618-ab0b-2021e37ec619
-- **Timestamp**: 2026-06-10 06:09:07 UTC
-- **Reason**: triage_cli.py list --json contract for WebUI live-view
+- **Timestamp**: 2026-06-10 06:36:37 UTC
+- **Reason**: gate D2V evidence write behind SHIPWRIGHT_D2V_WRITE_EVIDENCE opt-in (test-isolation leak fix)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-10-triage-dedup-keep-last-append
-- **Date**: 2026-06-09T22:26:37.674867Z
-- **Type**: change
+- **Run ID**: iterate-2026-06-10-triage-list-json
+- **Date**: 2026-06-10T06:09:09.543912Z
+- **Type**: feature
 - **Complexity**: small
-- **Branch**: iterate/2026-06-10-triage-dedup-keep-last-append
-- **ADR**: iterate-2026-06-10-triage-dedup-keep-last-append
+- **Branch**: iterate/2026-06-10-triage-list-json
+- **ADR**: iterate-2026-06-10-triage-list-json
 - **Tests passed**: True
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/2026-06-10-triage-list-json
+- **Branch**: iterate/2026-06-10-d2v-evidence-write-optin
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -47,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/2026-06-10-triage-list-json
-- **Last Commit**: 09994d98 chore(triage): sweep 5 outbox append(s) into branch
+- **Branch**: iterate/2026-06-10-d2v-evidence-write-optin
+- **Last Commit**: 5898f86c chore(triage): sweep 3 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-7359794f | work_completed | iterate (Gate D2V evidence markdown write behind SHIPWRIGHT_D2V_WRITE_EVIDENCE; default runs assert without writing the tracked artifact.) | 2026-06-10 |
 | evt-e54d689f | work_completed | iterate (Add triage_cli.py list --json (unioned open items + pendingDelivery) as a WebUI contract.) | 2026-06-10 |
 | evt-b83d455a | work_completed | iterate (Triage dedup collapses same-id appends keep-last (reader parity); unblocks outbox sweep on producer update re-append.) | 2026-06-09 |
 | evt-3beaef96 | work_completed | iterate (Iterate-scoped external-review markers gitignored (not blanket); 6 tracked copies untracked.) | 2026-06-09 |
 | evt-1326569b | work_completed | iterate (Relocate detective-audit JSON from repo root to .shipwright/compliance/audit-report.json; canon re-excludes audit-report.{md,json} (propagates to adopted repos); drop obsolete framework root ignore.) | 2026-06-09 |
-| evt-cefcd03e | work_completed | iterate (Relocate phase-quality skill-compliance roll-ups under the gitignored FINDING_DIR; resolve main_repo_root (not cwd) in the bloat marker writer+reader via a shared fail-soft resolver; defensive nested-locks gitignore canon.) | 2026-06-08 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 133
-- **Last iterate**: feature — Add triage_cli.py list --json (unioned open items + pendingDelivery) as a WebUI contract. (2026-06-10)
+- **Total work events**: 134
+- **Last iterate**: change — Gate D2V evidence markdown write behind SHIPWRIGHT_D2V_WRITE_EVIDENCE; default runs assert without writing the tracked artifact. (2026-06-10)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

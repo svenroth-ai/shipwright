@@ -17,7 +17,10 @@ not just counts.
 
 The heavy >=200-trial run is ``@pytest.mark.slow`` so the default fast suite
 (``-m 'not slow'``) stays tractable; run the gate via ``pytest -m slow
-shared/tests/test_d2v_empirical_gate.py``. A FAST 12-trial smoke
+shared/tests/test_d2v_empirical_gate.py``. To (re)write the tracked
+``D2V-empirical-results.md`` artifact, opt in with
+``SHIPWRIGHT_D2V_WRITE_EVIDENCE=1`` (default runs record + assert but leave the
+tracked file untouched — see ``_d2v_helpers.evidence_write_enabled``). A FAST 12-trial smoke
 (``test_concurrency_smoke``) runs in the default suite so a regression in the
 harness itself is caught without the multi-minute load — but the smoke does NOT
 satisfy the gate (the artifact records the heavy count).

@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-06-10T06:09:07.980286+00:00
-Total commits: 912
+Generated: 2026-06-10T06:36:37.802318+00:00
+Total commits: 914
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 258
+    "feat" : 259
     "fix" : 256
-    "chore" : 192
+    "chore" : 193
     "docs" : 119
     "refactor" : 50
     "test" : 22
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 258 commits
+### Features (feat) — 259 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-10 | triage | add `triage_cli.py list --json` contract for the WebUI live-view | 2198a496c4f4 |
 | 2026-06-08 | triage | propagate outbox gitignore to adopted repos (adopt + iterate self-heal) + docs | 8a0df7927e6d |
 | 2026-06-08 | triage | sweep outbox into PR branch + abandoned-branch-safe GC; drop integrate_main reconcile | a728156f713c |
 | 2026-06-08 | triage | gitignored per-tree outbox + reroute background producers + union reader | a7a0209395b6 |
@@ -544,10 +545,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 192 commits
+### Chores (chore) — 193 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-10 | triage | sweep 3 outbox append(s) into branch | 5898f86ce135 |
 | 2026-06-10 | triage | sweep 5 outbox append(s) into branch | 09994d984fb8 |
 | 2026-06-10 | triage | dismiss trg-60ef91fb (resolved by #175) | 7c9a08828bed |
 | 2026-06-10 | triage | sweep 3 outbox append(s) into branch | b142fe6c7184 |
@@ -981,7 +983,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 912 |
+| Total commits | 914 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 912 |
+| Human-authored commits | 914 |
 
