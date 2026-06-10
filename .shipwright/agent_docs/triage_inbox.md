@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-09T22:26:30.246852Z. Items waiting for triage decision.
+> Auto-generated 2026-06-10T06:09:07.980286Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 146
-- Triage: 8 | Promoted: 1 | Dismissed: 137 | Snoozed: 0
+- Total: 149
+- Triage: 10 | Promoted: 1 | Dismissed: 138 | Snoozed: 0
 
-## Top 8 items (severity-sorted)
+## Top 10 items (severity-sorted)
 
 ### Source: architecture (2 items)
 
@@ -54,4 +54,16 @@
 - **[P8.1] Architecture Research Sprint: internal-packages + daemon + skills-lock** `id=trg-aecf9cde | severity=low | kind=maintenance → P3/engineering`
   - \## Intent  Bundle P8.1 from Spec/external-frameworks-integration.md (MU5 + MU7 + MU-PL1). Single research iterate prod…
   - Promote: `triage_promote.py --id trg-aecf9cde --task-ref EXT:<ref>`
+
+### Source: manual (2 items)
+
+<a id="trg-e2a0ebb3"></a>
+- **Triage live-view: union the gitignored outbox so new items are visible/startable before sweep** `id=trg-e2a0ebb3 | severity=medium | kind=improvement → P2/engineering`
+  - UX gap: a freshly-created triage item (manual triage_add or an idle-main background producer) routes to the gitignored…
+  - Promote: `triage_promote.py --id trg-e2a0ebb3 --task-ref EXT:<ref>`
+
+<a id="trg-6ed063ae"></a>
+- **artifact-path-canon: exempt generated triage_inbox.md cache from legacy-path lint** `id=trg-6ed063ae | severity=low | kind=improvement → P3/engineering`
+  - The artifact-path-canon Layer-1 lint (test_no_legacy_artifact_paths) scans tracked .md/.py for bare legacy artifact-dir…
+  - Promote: `triage_promote.py --id trg-6ed063ae --task-ref EXT:<ref>`
 

@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-09T22:26:30.246852+00:00
+Generated: 2026-06-10T06:09:07.980286+00:00
 
 ## Requirements Coverage
 
@@ -157,6 +157,7 @@ Generated: 2026-06-09T22:26:30.246852+00:00
 | Relocate detective-audit JSON from repo root to .shipwright/compliance/audit-report.json; canon re-excludes audit-report.{md,json} (propagates to adopted repos); drop obsolete framework root ignore. | iterate | change |  | — | — | 2026-06-09 |
 | Iterate-scoped external-review markers gitignored (not blanket); 6 tracked copies untracked. | iterate | change |  | — | — | 2026-06-09 |
 | Triage dedup collapses same-id appends keep-last (reader parity); unblocks outbox sweep on producer update re-append. | iterate | change |  | — | — | 2026-06-09 |
+| Add triage_cli.py list --json (unioned open items + pendingDelivery) as a WebUI contract. | iterate | feature |  | — | — | 2026-06-10 |
 
 ## Coverage Summary
 
@@ -164,7 +165,7 @@ Generated: 2026-06-09T22:26:30.246852+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 132 |
+| Iterate changes | 133 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
