@@ -4,7 +4,7 @@ When invoked with `--campaign <slug>` and `--autonomous`, run multiple
 sub-iterates sequentially without manual gates. This formalizes the
 ad-hoc orchestration pattern.
 
-**Flags:** `/shipwright-iterate --campaign <slug> [--autonomous]`
+**Flags:** `/shipwright-iterate --campaign <slug> [--autonomous] [--sub-iterate-id <id>]` (the last for a single hand-run sub-iterate — stamps the event per SKILL.md §5b)
 
 > **Review steps in autonomous-loop briefing (ADR-029).** When briefing
 > a sub-iterate-runner under `--autonomous`, include a reminder that the
@@ -98,6 +98,10 @@ If campaign directory doesn't exist yet:
    3c. Spawn sub-iterate-runner subagent:
        result = Task(subagent_type="shipwright-iterate:sub-iterate-runner",
                      prompt=<brief with sub_iterate_id, spec, base_branch, etc.>)
+       Brief carries campaign slug (via campaign_path) + sub_iterate_id; the
+       runner contract Step 4 STAMPS both into the work_completed event extras
+       ("campaign" / "sub_iterate_id" — S1) so per-sub status is projectable
+       from events.jsonl alone.
 
    3d. Wait for terminal marker (.shipwright/runs/{loop_id}/{id}/DONE, timeout 30s)
 

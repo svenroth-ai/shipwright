@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-06-09T22:26:30.246852+00:00
-Total commits: 909
+Generated: 2026-06-10T07:31:00.326550+00:00
+Total commits: 913
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 258
-    "fix" : 255
-    "chore" : 190
+    "fix" : 256
+    "chore" : 193
     "docs" : 119
     "refactor" : 50
     "test" : 22
@@ -283,10 +283,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 255 commits
+### Fixes (fix) — 256 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-10 | triage | dedup_triage_lines collapses same-id appends keep-last | 6f8d0fc70482 |
 | 2026-06-09 | gitignore | re-exclude transient external-review markers under planning/iterate/ | 1d0d67e70e9e |
 | 2026-06-09 | compliance | relocate detective-audit JSON under .shipwright/compliance/ so the gitignore canon covers it | 79fcde8c865f |
 | 2026-06-09 | infra | idle-main artifact hygiene — complete ADR-089 for two stragglers | 1f7f0ceff292 |
@@ -543,10 +544,13 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 190 commits
+### Chores (chore) — 193 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-10 | docs | backfill architecture bullets for merged PRs #177/#178 | de8de4b5e611 |
+| 2026-06-10 | triage | sweep 5 outbox append(s) into branch | 865d37577cf7 |
+| 2026-06-10 | triage | dismiss trg-60ef91fb (resolved by #175) | 7c9a08828bed |
 | 2026-06-10 | triage | sweep 3 outbox append(s) into branch | b142fe6c7184 |
 | 2026-06-09 | triage | sweep 2 outbox append(s) into branch | 0a1b4c334d29 |
 | 2026-06-09 | planning | idle-main housekeeping — gitignore audit report, commit campaign docs, drop consumed scratch | ca0df889a915 |
@@ -978,7 +982,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 909 |
+| Total commits | 913 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 909 |
+| Human-authored commits | 913 |
 

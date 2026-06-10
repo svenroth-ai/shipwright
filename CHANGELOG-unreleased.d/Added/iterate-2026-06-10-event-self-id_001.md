@@ -1,0 +1,1 @@
+Campaign sub-iterates stamp campaign + sub_iterate_id into their work_completed event (runner contract Step 4 + manual /shipwright-iterate --campaign/--sub-iterate-id path), making events.jsonl self-sufficient for per-sub status projection (campaign 2026-06-07-tracked-campaign-status S1)

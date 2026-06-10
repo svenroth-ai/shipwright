@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-10-event-self-id",
+  "date": "2026-06-10T07:31:29.098672Z",
+  "type": "feature",
+  "complexity": "small",
+  "branch": "iterate/2026-06-10-event-self-id",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/campaigns/2026-06-07-tracked-campaign-status/sub-iterates/S1-event-self-id.md",
+  "adr": "iterate-2026-06-10-event-self-id"
+}

@@ -197,7 +197,7 @@ BUG intent (intent-classification `kind: bug-fix`) routes through **[F-debug](re
 
 ## 5b. Campaign Mode (Autonomous Multi-Iterate)
 
-See `references/campaign-mode.md` for the full protocol: campaign setup, autonomous loop (init/next/record/finalize), sub-iterate-runner contract, F12 release prompt. **Review steps in autonomous-loop briefing (ADR-029):** the sub-iterate-runner contract mandates **Step 3.5 (External Plan Review)** and **Step 3.7 (Code Review Cascade)** between Build and Finalization for medium+ iterates. The runner has no `Agent` tool, so the internal code-reviewer is delegated back to the orchestrator. Skipping these review steps silently is a contract violation under ADR-029.
+See `references/campaign-mode.md` for the full protocol: campaign setup, autonomous loop (init/next/record/finalize), sub-iterate-runner contract, F12 release prompt. **Review steps in autonomous-loop briefing (ADR-029):** the sub-iterate-runner contract mandates **Step 3.5 (External Plan Review)** and **Step 3.7 (Code Review Cascade)** between Build and Finalization for medium+ iterates. The runner has no `Agent` tool, so the internal code-reviewer is delegated back to the orchestrator. Skipping these review steps silently is a contract violation under ADR-029. **Manual sub-iterate stamp (campaign S1):** a hand-run sub-iterate — `/shipwright-iterate --campaign <slug> --sub-iterate-id <id> "<sub-iterate spec path>"` (or any direct invocation on a campaign sub-iterate spec) — MUST stamp its `work_completed` event exactly like the runner does: include `"campaign": "<slug>"` and `"sub_iterate_id": "<id>"` in the F5b `--event-extras-json` (see `references/F5b.md`); additive metadata, does not replace the FR-gate classification fields.
 
 ---
 

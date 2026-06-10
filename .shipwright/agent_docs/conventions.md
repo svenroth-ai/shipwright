@@ -594,3 +594,5 @@ Thanks for contributing! If anything in this guide is unclear, please open an is
 - **ADR-134** (2026-06-05): git-track triage.jsonl via gitignore negation + scaffolder self-heal
 
 - **ADR-136** (2026-06-06): Architecture-drift detection is content reconciliation, enforced by a canon F11 gate
+
+- **iterate-2026-06-10-event-self-id** (2026-06-10): pytest `-m` on the CLI REPLACES the `addopts` marker filter — `-m "not cross_plugin"` silently re-enabled the `slow` suite (D2V concurrency-stress spawners). Always compose: `-m "not slow and not cross_plugin"`.

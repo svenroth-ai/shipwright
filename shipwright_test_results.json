@@ -1,98 +1,99 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-10-triage-dedup-keep-last-append",
+    "run_id": "iterate-2026-06-10-event-self-id",
     "date": "2026-06-10",
     "unit": {
       "status": "passed",
-      "passed": 3029,
-      "total": 3029
+      "passed": 3457,
+      "total": 3458
     },
     "integration": {
       "status": "passed",
-      "passed": 1,
-      "total": 1
+      "passed": 141,
+      "total": 141
     },
     "pgtap": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
+      "status": "passed",
+      "passed": 4,
+      "total": 4
+    },
+    "design_fidelity": {
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
-    "design_fidelity": {
-      "status": "not_run"
-    },
     "smoke": {
-      "status": "not_run"
+      "status": "skipped"
     },
-    "degraded": [],
-    "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --extra dev pytest shared/tests/ -m 'not cross_plugin'  +  D2V empirical gate (-o addopts='')  +  real-sweep integration regression",
-      "exit_code": 0,
-      "tests_run": 3029,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\2026-06-10-triage-dedup-keep-last-append\\.shipwright\\runs\\iterate-2026-06-10-triage-dedup-keep-last-append\\surface_verification.log",
-      "timestamp": "2026-06-09T22:26:18.000Z",
-      "attempts": 1,
-      "note": "No web/UI surface (shared churn-merge lib). Verified via CLI: unit + real-git integration + D2V empirical gate (6 methods). Full shared/tests 3029 passed."
-    },
+    "degraded": [
+      "shared/tests/test_architecture_md_reflects_arch_impact.py: 1 failure is a cross-session race artifact — a concurrently-running iterate (iterate-2026-06-10-complexity-classifier-prior) dropped an arch-impact decision-drop into the shared main-tree drops dir; its architecture.md bullet ships in ITS PR (backfilling here would double-add). CI unaffected (drops absent on clean checkout -> test skips)."
+    ],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "same-id non-byte-identical appends collapse to keep-LAST",
+          "behavior": "AC-1: work_completed event carries top-level campaign + sub_iterate_id from --event-extras-json",
           "disposition": "tested",
-          "evidence": "test_churn_merge.py::test_triage_dedup_collapses_same_id_appends_keep_last PASSED"
+          "evidence": "shared/tests/test_finalize_event_self_id.py::test_event_carries_campaign_and_sub_iterate_id PASSED"
         },
         {
-          "behavior": "collapsed result satisfies validate_triage_text (one-append-per-id)",
+          "behavior": "AC-2: finalize re-run with same run_id returns same event id, exactly one stamped work_completed line",
           "disposition": "tested",
-          "evidence": "test_triage_dedup_same_id_appends_unblocks_validator PASSED"
+          "evidence": "shared/tests/test_finalize_event_self_id.py::test_stamp_is_idempotent_per_run_id PASSED"
         },
         {
-          "behavior": "append+status same id: status preserved, order preserved, append v1 dropped",
+          "behavior": "AC-3: manual --campaign/--sub-iterate-id path (finalize CLI --event-extras-json) stamps the event, rc=0",
           "disposition": "tested",
-          "evidence": "test_triage_dedup_keep_last_preserves_status_and_order PASSED"
+          "evidence": "shared/tests/test_finalize_event_self_id.py::test_cli_manual_flag_path_stamps_event PASSED + 2 real-subprocess round-trip probes (PowerShell quoting boundary)"
         },
         {
-          "behavior": "different-id appends untouched",
+          "behavior": "Stamp keys are additive metadata: unclassified event still rejected by FR-gate",
           "disposition": "tested",
-          "evidence": "test_triage_dedup_different_id_appends_untouched PASSED"
+          "evidence": "shared/tests/test_finalize_event_self_id.py::test_stamp_does_not_bypass_fr_gate PASSED"
         },
         {
-          "behavior": "non-append / unparseable lines pass through (not swallowed)",
+          "behavior": "Runner contract Step 4 pins: finalize_iterate.py + --event-extras-json + campaign/sub_iterate_id keys + legacy F7 bullet removed",
           "disposition": "tested",
-          "evidence": "test_triage_dedup_keep_last_passes_through_unparseable PASSED"
+          "evidence": "plugins/shipwright-iterate/tests/test_event_self_id_contract.py 5 Step-4-scoped drift tests PASSED"
         },
         {
-          "behavior": "byte-identical same-id appends still collapse to one (regression)",
+          "behavior": "SKILL.md documents manual --campaign / --sub-iterate-id flags routed to F5b extras",
           "disposition": "tested",
-          "evidence": "test_triage_dedup_byte_identical_appends_still_single PASSED"
+          "evidence": "test_event_self_id_contract.py::test_skill_documents_manual_campaign_flag / _sub_iterate_id_flag / _route_to_f5b_extras PASSED"
         },
         {
-          "behavior": "REAL sweep returns committed (not invalid) for double-append, folds LAST",
+          "behavior": "F5b.md + campaign-mode.md document the stamp at producer + orchestrator briefing",
           "disposition": "tested",
-          "evidence": "test_sweep_outbox.py::test_sweep_collapses_producer_double_append_keep_last PASSED (real git+worktree)"
+          "evidence": "test_event_self_id_contract.py::test_f5b_reference_documents_stamp_keys + test_campaign_mode_briefing_mentions_stamp PASSED"
         },
         {
-          "behavior": "concurrency / exactly-once-after-merge / abandoned-branch unaffected",
-          "disposition": "tested",
-          "evidence": "test_d2v_empirical_gate.py 6 methods PASSED over real git"
+          "behavior": "A live runner/agent actually emits the stamp at runtime (LLM-interpreted prompt contract)",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "Runner execution is LLM-agent behavior; mechanically pinned via contract drift tests + the real-producer CLI path, and verified live by this run's own F5b dogfood stamp."
         }
       ],
       "counts": {
-        "testable": 8,
-        "tested": 8,
-        "untestable": 0,
+        "testable": 7,
+        "tested": 7,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 8,
-        "covered_acs": 8
+        "acs": 3,
+        "covered_acs": 3
       }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "tests_run": 4,
+      "exit_code": 0,
+      "evidence": ".shipwright/runs/iterate-2026-06-10-event-self-id/surface_verification.json"
     }
   }
 }
