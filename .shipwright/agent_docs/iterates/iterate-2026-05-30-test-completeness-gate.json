@@ -1,9 +1,0 @@
-{
-  "run_id": "iterate-2026-05-30-test-completeness-gate",
-  "date": "2026-05-30T22:24:52.586049Z",
-  "type": "change",
-  "complexity": "medium",
-  "adr": "iterate-2026-05-30-test-completeness-gate",
-  "branch": "iterate/test-completeness-gate",
-  "tests_passed": true
-}

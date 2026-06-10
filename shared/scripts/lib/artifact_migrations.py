@@ -139,11 +139,15 @@ ALLOWLIST: dict[str, list[str]] = {
         # / decision_log.md. Added in iterate-2026-05-21-post-43-hygiene.
         "shipwright_test_results.json",
         ".shipwright/compliance/change-history.md",
-        # Generated cache of arbitrary triage finding text (detail / launchPayload)
-        # that may quote ANY legacy path; regenerated each iterate so a legacy ref
-        # cannot be fixed in place. Same exempt class as change-history.md /
-        # shipwright_test_results.json prose. (trg-6ed063ae, iterate-2026-06-10.)
+        # Generated agent-doc caches (single-producer trio, ADR-089) render
+        # arbitrary text — triage finding detail/launchPayload, iterate/build
+        # context — that may quote ANY legacy path; regenerated each iterate so a
+        # legacy ref cannot be fixed in place. Same exempt class as
+        # change-history.md / shipwright_test_results.json prose.
+        # (trg-6ed063ae, iterate-2026-06-10.)
         ".shipwright/agent_docs/triage_inbox.md",
+        ".shipwright/agent_docs/session_handoff.md",
+        ".shipwright/agent_docs/build_dashboard.md",
         ".shipwright/planning/iterate/**.md",
         # External-review JSON captures (e.g. iterate-2026-05-11-triage-
         # inbox-1a-{external,code}-review.json). These files store LLM
@@ -225,11 +229,15 @@ ALLOWLIST: dict[str, list[str]] = {
         # See "planning" entry for shipwright_test_results.json rationale.
         "shipwright_test_results.json",
         ".shipwright/compliance/change-history.md",
-        # Generated cache of arbitrary triage finding text (detail / launchPayload)
-        # that may quote ANY legacy path; regenerated each iterate so a legacy ref
-        # cannot be fixed in place. Same exempt class as change-history.md /
-        # shipwright_test_results.json prose. (trg-6ed063ae, iterate-2026-06-10.)
+        # Generated agent-doc caches (single-producer trio, ADR-089) render
+        # arbitrary text — triage finding detail/launchPayload, iterate/build
+        # context — that may quote ANY legacy path; regenerated each iterate so a
+        # legacy ref cannot be fixed in place. Same exempt class as
+        # change-history.md / shipwright_test_results.json prose.
+        # (trg-6ed063ae, iterate-2026-06-10.)
         ".shipwright/agent_docs/triage_inbox.md",
+        ".shipwright/agent_docs/session_handoff.md",
+        ".shipwright/agent_docs/build_dashboard.md",
         ".shipwright/planning/iterate/**.md",
         # External-review JSON captures (e.g. iterate-2026-05-11-triage-
         # inbox-1a-{external,code}-review.json). These files store LLM
@@ -300,11 +308,15 @@ ALLOWLIST: dict[str, list[str]] = {
         # See "planning" entry for shipwright_test_results.json rationale.
         "shipwright_test_results.json",
         ".shipwright/compliance/change-history.md",
-        # Generated cache of arbitrary triage finding text (detail / launchPayload)
-        # that may quote ANY legacy path; regenerated each iterate so a legacy ref
-        # cannot be fixed in place. Same exempt class as change-history.md /
-        # shipwright_test_results.json prose. (trg-6ed063ae, iterate-2026-06-10.)
+        # Generated agent-doc caches (single-producer trio, ADR-089) render
+        # arbitrary text — triage finding detail/launchPayload, iterate/build
+        # context — that may quote ANY legacy path; regenerated each iterate so a
+        # legacy ref cannot be fixed in place. Same exempt class as
+        # change-history.md / shipwright_test_results.json prose.
+        # (trg-6ed063ae, iterate-2026-06-10.)
         ".shipwright/agent_docs/triage_inbox.md",
+        ".shipwright/agent_docs/session_handoff.md",
+        ".shipwright/agent_docs/build_dashboard.md",
         ".shipwright/planning/iterate/**.md",
         # External-review JSON captures (e.g. iterate-2026-05-11-triage-
         # inbox-1a-{external,code}-review.json). These files store LLM
@@ -441,11 +453,15 @@ ALLOWLIST: dict[str, list[str]] = {
         # See "planning" entry for shipwright_test_results.json rationale.
         "shipwright_test_results.json",
         ".shipwright/compliance/change-history.md",
-        # Generated cache of arbitrary triage finding text (detail / launchPayload)
-        # that may quote ANY legacy path; regenerated each iterate so a legacy ref
-        # cannot be fixed in place. Same exempt class as change-history.md /
-        # shipwright_test_results.json prose. (trg-6ed063ae, iterate-2026-06-10.)
+        # Generated agent-doc caches (single-producer trio, ADR-089) render
+        # arbitrary text — triage finding detail/launchPayload, iterate/build
+        # context — that may quote ANY legacy path; regenerated each iterate so a
+        # legacy ref cannot be fixed in place. Same exempt class as
+        # change-history.md / shipwright_test_results.json prose.
+        # (trg-6ed063ae, iterate-2026-06-10.)
         ".shipwright/agent_docs/triage_inbox.md",
+        ".shipwright/agent_docs/session_handoff.md",
+        ".shipwright/agent_docs/build_dashboard.md",
         ".shipwright/planning/iterate/**.md",
         # External-review JSON captures (e.g. iterate-2026-05-11-triage-
         # inbox-1a-{external,code}-review.json). These files store LLM
