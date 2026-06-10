@@ -50,6 +50,18 @@ class TestParseSkeleton:
         with pytest.raises(ValueError):
             parse_campaign_skeleton(md)
 
+    def test_strips_markdown_emphasis_from_id_and_slug(self):
+        # S4/AC1: a legacy campaign.md with bold ids (**C1**) must parse to the
+        # plain id (C1) so it matches the committed status.json — else a
+        # re-projection drops the completed sub (the S3 downgrade lesson).
+        md = CAMPAIGN_MD.replace(
+            "| S1 | alpha | First | pending |",
+            "| **C1** | `audit` | **First** | pending |",
+        )
+        sk = parse_campaign_skeleton(md)
+        assert sk[0]["id"] == "C1"
+        assert sk[0]["slug"] == "audit"
+
 
 class TestMergeStatus:
     def test_never_downgrade_complete_over_pending(self):

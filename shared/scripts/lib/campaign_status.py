@@ -68,11 +68,25 @@ def merge_status(committed: str | None, projected: str | None) -> str:
     return committed if STATUS_LADDER.get(committed, 0) >= STATUS_LADDER.get(projected, 0) else projected
 
 
+#: Wrapping markdown-emphasis chars stripped from id/slug cells so a legacy
+#: ``campaign.md`` (``**C1**``, `` `slug` ``) still matches the plain committed
+#: ids — else a re-projection drops the completed sub (S3 downgrade lesson, S4).
+_MD_EMPHASIS = "*_`"
+
+
+def _strip_md(cell: str) -> str:
+    """Strip wrapping markdown emphasis (``**bold**``/``*i*``/``_x_``/`` `c` ``)
+    and surrounding whitespace. Sub-iterate ids/slugs never contain these chars,
+    so this only undoes emphasis a human added to the table."""
+    return cell.strip().strip(_MD_EMPHASIS).strip()
+
+
 def parse_campaign_skeleton(campaign_md_text: str) -> list[dict]:
     """Parse the ``## Sub-Iterates`` markdown table into ``[{id, slug, title}]``.
 
     Row order is preserved (authoritative for the board). The ``Status`` column
     is intentionally ignored — status comes from projection, not the skeleton.
+    Markdown emphasis on the id/slug cells is stripped (``**C1**`` -> ``C1``).
     Raises ``ValueError`` on a missing/empty table, an empty id, or duplicate ids.
     """
     rows: list[dict] = []
@@ -92,7 +106,7 @@ def parse_campaign_skeleton(campaign_md_text: str) -> list[dict]:
             continue
         if cells[0].lower() == "id":
             continue
-        rows.append({"id": cells[0], "slug": cells[1],
+        rows.append({"id": _strip_md(cells[0]), "slug": _strip_md(cells[1]),
                      "title": cells[2] if len(cells) > 2 else ""})
 
     if not rows:

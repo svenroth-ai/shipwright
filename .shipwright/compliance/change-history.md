@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-06-10T22:01:50.975662+00:00
-Total commits: 933
+Generated: 2026-06-10T22:55:27.413208+00:00
+Total commits: 935
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 262
+    "feat" : 263
     "fix" : 259
-    "chore" : 206
+    "chore" : 207
     "docs" : 119
     "refactor" : 50
     "test" : 22
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 262 commits
+### Features (feat) — 263 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-11 | iterate | per-tree campaign status.json — F5b finalize wiring + scoped churn resolver | 57025c9b5d2a |
 | 2026-06-10 | iterate | project campaign status from the event log (campaign S2) | 7d3b48d73ed1 |
 | 2026-06-10 | iterate | campaign sub-iterates self-identify via event extras stamp | efa1dcfc3a5e |
 | 2026-06-10 | iterate | history-calibrated complexity prior + cross-domain scope vocabulary | 9309f0b03c98 |
@@ -551,10 +552,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 206 commits
+### Chores (chore) — 207 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-11 | triage | sweep 3 outbox append(s) into branch | 93a82fa02ece |
 | 2026-06-10 | triage | sweep 2 outbox append(s) into branch | 4da151cd30f7 |
 | 2026-06-10 | triage | sweep 5 outbox append(s) into branch | 9adeaf8ee20c |
 | 2026-06-10 | churn | regenerate derived snapshots after main merge | 95ad625f5096 |
@@ -1002,7 +1004,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 933 |
+| Total commits | 935 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 933 |
+| Human-authored commits | 935 |
 
