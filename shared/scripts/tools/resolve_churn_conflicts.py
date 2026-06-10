@@ -204,8 +204,9 @@ def complete_merge(project_root: Path, *, run_id: str | None = None) -> ResolveR
         elif rel in (EVENTS_LOG, TEST_RESULTS):
             _take_side(project_root, rel, "--ours")
             resolved.append(rel)
-        elif rel in DERIVED_MDS:
-            _take_side(project_root, rel, "--theirs")  # placeholder — regenerated later
+        else:  # DERIVED_MDS or campaign status.json (S3): placeholder, regenerated later
+            # resolvable ⊆ allowlist ∪ campaign-status, so this catch-all never drops a path
+            _take_side(project_root, rel, "--theirs")
             resolved.append(rel)
 
     invalid, errors, warnings = _reconcile_logs(project_root, run_id, resolved)
@@ -221,11 +222,14 @@ def regenerate_tracked_snapshots(
     session_id: str | None = None,
     reason: str = "merge origin/main reconciliation",
     only: set[str] | None = None,
+    campaign_status_rels: list[str] | None = None,
 ) -> dict[str, str]:
     """Regenerate derived MDs from the merged tree via the canonical
     single-producer generators (the SAME ones ``finalize_iterate`` uses) and
-    stage them. Returns ``{relpath: outcome}``. ``only`` restricts the set
-    (defaults to the full derived-MD set)."""
+    stage them. Returns ``{relpath: outcome}``. ``only`` restricts the derived-MD
+    set (defaults to the full set). ``campaign_status_rels`` (campaign S3) names
+    the campaign ``status.json`` files this merge TOUCHED — re-projected scoped
+    (NEVER glob-all: re-deriving an untouched campaign would be destructive)."""
     from tools import finalize_iterate  # canonical producers; zero-drift reuse
 
     session_id = session_id or os.environ.get("SHIPWRIGHT_SESSION_ID", "")
@@ -250,6 +254,10 @@ def regenerate_tracked_snapshots(
         paths = finalize_iterate._update_compliance(project_root)
         for rel in sorted(COMPLIANCE_MDS):
             out[rel] = "regenerated" if paths else "error"
+
+    if campaign_status_rels:  # re-project ONLY the campaigns this merge touched (S3)
+        from lib.campaign_status_io import regenerate_campaign_statuses
+        out.update(regenerate_campaign_statuses(project_root, project_root / EVENTS_LOG, campaign_status_rels))
 
     staged = [
         rel for rel, outcome in out.items()

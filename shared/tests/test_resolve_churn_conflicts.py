@@ -21,6 +21,8 @@ from lib.churn_merge import TRIAGE_LOG  # noqa: E402
 from tools import resolve_churn_conflicts as rcc  # noqa: E402
 
 # Pure allowlist/classify/dedup/validate unit tests live in test_churn_merge.py.
+# Campaign status.json conflict + regenerate (S3) live in
+# test_resolve_churn_campaign_status.py (reuses _make_conflict_repo / _git here).
 
 _TRIAGE_HEADER = '{"v":1,"schema":"triage","created":"2026-06-05T00:00:00Z"}'
 

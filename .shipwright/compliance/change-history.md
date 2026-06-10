@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-06-10T08:00:55.145129+00:00
-Total commits: 929
+Generated: 2026-06-10T22:01:50.975662+00:00
+Total commits: 933
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 261
+    "feat" : 262
     "fix" : 259
-    "chore" : 203
+    "chore" : 206
     "docs" : 119
     "refactor" : 50
     "test" : 22
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 261 commits
+### Features (feat) — 262 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-10 | iterate | project campaign status from the event log (campaign S2) | 7d3b48d73ed1 |
 | 2026-06-10 | iterate | campaign sub-iterates self-identify via event extras stamp | efa1dcfc3a5e |
 | 2026-06-10 | iterate | history-calibrated complexity prior + cross-domain scope vocabulary | 9309f0b03c98 |
 | 2026-06-10 | triage | add `triage_cli.py list --json` contract for the WebUI live-view | 2198a496c4f4 |
@@ -550,10 +551,13 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 203 commits
+### Chores (chore) — 206 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-10 | triage | sweep 2 outbox append(s) into branch | 4da151cd30f7 |
+| 2026-06-10 | triage | sweep 5 outbox append(s) into branch | 9adeaf8ee20c |
+| 2026-06-10 | churn | regenerate derived snapshots after main merge | 95ad625f5096 |
 | 2026-06-10 | triage | commit session producer append(s) | 8d24820ed7da |
 | 2026-06-10 | churn | regenerate derived snapshots after main merge | 739b2e26a9df |
 | 2026-06-10 | churn | regenerate derived snapshots after main merge | 7e150f8c895d |
@@ -998,7 +1002,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 929 |
+| Total commits | 933 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 929 |
+| Human-authored commits | 933 |
 

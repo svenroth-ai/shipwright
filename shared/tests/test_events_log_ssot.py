@@ -37,6 +37,9 @@ _WORKTREE_REACHABLE = {
     "tools/record_event.py",
     "tools/verifiers/iterate_checks.py",
     "lib/config.py",
+    # F5b Step 6 (campaign S3): re-projects this worktree's campaign status.json
+    # from the per-tree event log — must locate it via the one resolver.
+    "lib/campaign_status_io.py",
 }
 
 # The resolver itself — its fallback legitimately constructs the raw path.
