@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-11-automerge-pr-review",
+  "date": "2026-06-11T20:05:59.309425Z",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/automerge-pr-review",
+  "spec": ".shipwright/planning/iterate/2026-06-11-automerge-pr-review.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-11-automerge-pr-review"
+}

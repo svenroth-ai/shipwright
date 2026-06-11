@@ -1,0 +1,1 @@
+shipwright-security `pr_review.py` reviewer tool + `pr_reviewer` prompt directory: OpenRouter-backed review with a strict-JSON decision mapped to a merge-gate exit code, 200k-char diff truncation that never auto-blocks a partial review, API-key log redaction, and untrusted-diff prompt-injection inoculation.

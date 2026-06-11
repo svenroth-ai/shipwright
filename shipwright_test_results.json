@@ -1,141 +1,65 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-11-automerge-gh-pr-ci-producer",
+    "run_id": "iterate-2026-06-11-automerge-pr-review",
     "date": "2026-06-11",
-    "unit": {
-      "status": "passed",
-      "passed": 3127,
-      "total": 3148
-    },
-    "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "smoke": {
-      "status": "not_run"
-    },
+    "unit": { "status": "passed", "passed": 414, "total": 417 },
+    "integration": { "status": "not_run", "passed": 0, "total": 0 },
+    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
+    "e2e": { "status": "skipped", "passed": 0, "total": 0 },
+    "design_fidelity": { "status": "skipped", "passed": 0, "total": 0 },
+    "smoke": { "status": "not_run" },
+    "degraded": [],
     "surface_verification": {
       "surface": "none",
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": "",
-      "timestamp": "2026-06-11T11:15:48.830Z",
-      "attempts": 0,
-      "justification": "Backend triage producer (SessionStart-hook library); no web/CLI/API user surface. Reuses the existing action-unit triage schema (no message-contract or WebUI change), so no new frontend behavior to verify. The end-to-end path gh-JSON -> pr_ci_action_unit -> triage.jsonl is asserted by test_github_triage_pr_ci.py (26 tests incl. an explicit write->read round-trip), run within the 3127-test shared suite at F0."
+      "evidence_path": ".shipwright/runs/iterate-2026-06-11-automerge-pr-review/surface_verification.json",
+      "timestamp": "2026-06-11T20:00:39.497Z",
+      "justification": "B4.5 Tier-3 PR reviewer = CI tooling (a GitHub Actions workflow + an OpenRouter-backed CLI). No web/UI/app surface (project scope=library). The CLI's true end-to-end needs prod credentials (OPENROUTER_API_KEY) + a live external PR + gh auth = the Phase-2 manual smoke-tests (steps 5-6), out of scope for this iterate. Review logic is fully covered by 65 offline unit tests (F0) + a 5-probe OpenRouter JSON round-trip; the workflow tier contract is pinned by a 16-assertion snapshot test."
     },
-    "degraded": [],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        {
-          "behavior": "AC-1: emit one gh-pr-ci:{n} action-unit (severity high) for an open PR with >=1 failing check; payload starts /shipwright-iterate --type bug + PR URL + check names",
-          "disposition": "tested",
-          "evidence": "test_github_triage_pr_ci.py::test_import_emits_pr_ci_action_unit + ::test_pr_ci_action_unit_shape PASSED"
-        },
-        {
-          "behavior": "AC-2: failing set = completed AND conclusion in {failure,timed_out,startup_failure,cancelled,action_required}; success/neutral/skipped/in-progress/queued excluded",
-          "disposition": "tested",
-          "evidence": "::test_failing_set_includes_all_non_passing_terminal_conclusions + ::test_failing_set_excludes_success_neutral_skipped_and_inprogress PASSED"
-        },
-        {
-          "behavior": "AC-2: check names sorted, de-duplicated, control-chars sanitised (deterministic payload)",
-          "disposition": "tested",
-          "evidence": "::test_failing_set_is_sorted_deduped_and_sanitised PASSED"
-        },
-        {
-          "behavior": "AC-3: symmetry - prs=None OR any per-PR check-runs fetch None poisons the whole sweep (no emit, no resolve; by_source None)",
-          "disposition": "tested",
-          "evidence": "::test_reduce_none_input_returns_none + ::test_reduce_symmetry_any_none_fetch_returns_none + ::test_import_pr_ci_symmetry_none_fetch_marks_by_source_none + ::test_partial_fetch_does_not_resolve_existing_pr_ci_item PASSED"
-        },
-        {
-          "behavior": "AC-4: differentiated auto-resolve - prChecksResolved (open+green), prMerged, prClosed",
-          "disposition": "tested",
-          "evidence": "::test_resolve_pr_checks_went_green + ::test_resolve_pr_merged_and_closed PASSED"
-        },
-        {
-          "behavior": "AC-4: gone-from-open PR with unfetchable state is kept open (no false prClosed guess)",
-          "disposition": "tested",
-          "evidence": "::test_resolve_keeps_item_open_when_state_unfetchable PASSED"
-        },
-        {
-          "behavior": "AC-5: idempotent emit + frozen launchPayload across re-import",
-          "disposition": "tested",
-          "evidence": "::test_import_pr_ci_idempotent + ::test_pr_ci_action_unit_payload_deterministic PASSED"
-        },
-        {
-          "behavior": "AC-6: emitted action-unit survives write->read round-trip through triage.jsonl (dedupKey/severity/kind/launchPayload intact)",
-          "disposition": "tested",
-          "evidence": "::test_import_pr_ci_roundtrips_through_triage_jsonl PASSED"
-        },
-        {
-          "behavior": "AC-7: by_source['gh-pr-ci:'] telemetry carries emit count, or None on fetch failure",
-          "disposition": "tested",
-          "evidence": "::test_import_emits_pr_ci_action_unit (==1) + ::test_import_pr_ci_symmetry_none_fetch_marks_by_source_none (is None) PASSED"
-        },
-        {
-          "behavior": "Refinement: draft PRs excluded from emission",
-          "disposition": "tested",
-          "evidence": "::test_reduce_excludes_draft_prs PASSED"
-        },
-        {
-          "behavior": "Refinement: check-runs truncation guard - len(check_runs) < total_count returns None (>100-check false-green prevented)",
-          "disposition": "tested",
-          "evidence": "::test_fetch_pr_check_runs_truncation_guard_returns_none PASSED"
-        },
-        {
-          "behavior": "Refinement: queries scoped - check-runs filter=latest (no stale rerun), pulls state=open",
-          "disposition": "tested",
-          "evidence": "::test_fetch_queries_use_safe_filters PASSED"
-        },
-        {
-          "behavior": "Refinement: import_findings provably calls github_pr_api.fetch_open_prs (hermetic stub can't hide a broken wire)",
-          "disposition": "tested",
-          "evidence": "::test_import_findings_actually_calls_pr_api PASSED"
-        },
-        {
-          "behavior": "Resolver split: generic resolve_stale never touches gh-pr-ci items (only resolve_pr_ci does)",
-          "disposition": "tested",
-          "evidence": "::test_generic_resolve_stale_skips_pr_ci PASSED"
-        },
-        {
-          "behavior": "Fetch helpers (fetch_open_prs/fetch_pr_check_runs/fetch_pr_state) real impls: list/object extraction + None-on-failure",
-          "disposition": "tested",
-          "evidence": "::test_fetch_open_prs_returns_list_or_none + ::test_fetch_pr_check_runs_extracts_check_runs + ::test_fetch_pr_check_runs_none_on_bad_shape + ::test_fetch_pr_state_extracts_state_and_merged PASSED"
-        },
-        {
-          "behavior": "Live `gh` subprocess invocation inside github_api._gh_api (network round-trip)",
-          "disposition": "untestable",
+        { "behavior": "AC5 redaction never logs the OpenRouter key", "disposition": "tested",
+          "evidence": "test_pr_review_lib.py::TestRedaction (3) + test_pr_review_script.py::TestMainOrchestration::test_api_key_never_logged PASSED" },
+        { "behavior": "AC2 decision->exit-code mapping (approve/comment=0, block=1, else=2; non-string->2)", "disposition": "tested",
+          "evidence": "test_pr_review_lib.py::TestDecisionToExit (6) + 4 TestMainOrchestration exit tests PASSED" },
+        { "behavior": "AC3 strict-JSON parse + parse-failure dumps redacted raw response, exit 2", "disposition": "tested",
+          "evidence": "test_pr_review_lib.py::TestParseResponse (4) + test_pr_review_script.py::test_json_parse_fail_exits_2_and_dumps_raw PASSED" },
+        { "behavior": "AC4 diff>200k truncates and a partial review never auto-blocks (exit 0 + warning)", "disposition": "tested",
+          "evidence": "test_pr_review_lib.py::TestTruncation (3) + test_pr_review_script.py::test_truncation_forces_exit_0_even_on_block PASSED" },
+        { "behavior": "comment rendering (decision/summary/blocking/comments/truncation-warning/non-string)", "disposition": "tested",
+          "evidence": "test_pr_review_lib.py::TestRenderComment (5) PASSED" },
+        { "behavior": "AC1 prompt load (system+user) + message-template fill ({PR_META}/{DIFF})", "disposition": "tested",
+          "evidence": "test_pr_review_lib.py::TestPromptLoadingAndMessages (3) PASSED" },
+        { "behavior": "AC1 OpenRouter request build (URL/Bearer-auth/response_format json_object)", "disposition": "tested",
+          "evidence": "test_pr_review_script.py::TestPostOpenRouter::test_builds_authorized_json_request PASSED" },
+        { "behavior": "OpenRouter content extraction + HTTP/URL error wrapping to RuntimeError", "disposition": "tested",
+          "evidence": "test_pr_review_script.py::TestCallOpenRouter (4) PASSED" },
+        { "behavior": "gh diff/comment/review subprocess wrappers + exit handling (arg-list, no shell=True)", "disposition": "tested",
+          "evidence": "test_pr_review_script.py::TestGhWrappers (5) PASSED" },
+        { "behavior": "main() orchestration across all exit paths (AC1/2/3/4/5)", "disposition": "tested",
+          "evidence": "test_pr_review_script.py::TestMainOrchestration (8) PASSED" },
+        { "behavior": "AC6/AC7 workflow tier contract + fork-guard + SHA-pin + run-shell-injection guard", "disposition": "tested",
+          "evidence": "test_pr_review_workflow_shape.py (16) PASSED" },
+        { "behavior": "prompt-injection inoculation present in reviewer system prompt (drift guard)", "disposition": "tested",
+          "evidence": "test_pr_review_lib.py::TestPromptContent (3) PASSED" },
+        { "behavior": "live OpenRouter API review of a real diff (real network, nondeterministic model)", "disposition": "untestable",
           "reason_code": "requires-external-nondeterministic-service",
-          "reason": "the live gh/GitHub REST call is mocked at the _gh_api seam (reused, already covered by test_github_api.py); the real subprocess is non-deterministic and absent in CI"
-        }
+          "reason": "needs a live OpenRouter key + the nondeterministic model response; the Phase-2 manual smoke-test (step 6)" },
+        { "behavior": "live gh post of comment/review state to a real PR", "disposition": "untestable",
+          "reason_code": "requires-prod-credential",
+          "reason": "needs an authenticated GH_TOKEN against a real open PR, absent from local/CI; Phase-2 smoke-test (step 6)" },
+        { "behavior": "decide-job bash tier classification executing on a real GitHub runner", "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "runs only inside GitHub Actions on a real PR event; structurally covered by the snapshot test, exercised by Phase-2 smoke-tests 5-6" },
+        { "behavior": "skipped review-job still passes the required PR-Review check green", "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "GitHub-runtime branch-protection behavior; the spec's open question, verified by Phase-2 smoke-test 5" }
       ],
-      "counts": {
-        "testable": 15,
-        "tested": 15,
-        "untestable": 1,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 7,
-        "covered_acs": 7
-      }
+      "counts": { "testable": 12, "tested": 12, "untestable": 4, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 7, "covered_acs": 7 }
     }
   }
 }

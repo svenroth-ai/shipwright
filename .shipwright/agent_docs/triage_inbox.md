@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-11T11:21:32.265008Z. Items waiting for triage decision.
+> Auto-generated 2026-06-11T20:05:10.999236Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 173
-- Triage: 16 | Promoted: 1 | Dismissed: 156 | Snoozed: 0
+- Total: 175
+- Triage: 15 | Promoted: 1 | Dismissed: 159 | Snoozed: 0
 
-## Top 16 items (severity-sorted)
+## Top 15 items (severity-sorted)
 
 ### Source: architecture (2 items)
 
@@ -22,7 +22,7 @@
   - Follow-up to trg-28e83840 (Stop-gate reader fix). The recorder check_file_size.py computes the marker delta (anti-ratch…
   - Promote: `triage_promote.py --id trg-537334f1 --task-ref EXT:<ref>`
 
-### Source: automerge-b45 (5 items)
+### Source: automerge-b45 (4 items)
 
 <a id="trg-bdc160e2"></a>
 - **B4.5 Phase 3 — F11 Patch (gh pr merge --auto)** `id=trg-bdc160e2 | severity=high | kind=feature → P1/engineering`
@@ -78,33 +78,6 @@
     Complexity hint: small-medium
     ```
   - Promote: `triage_promote.py --id trg-52cd3143 --task-ref EXT:<ref>`
-
-<a id="trg-52f1fecb"></a>
-- **B4.5 Phase 1 — gh-pr-ci Producer (Loop-Closing für Automerge)** `id=trg-52f1fecb | severity=high | kind=feature → P1/engineering`
-  - Loop-Closing für Automerge: failed Hard-Gates auf OFFENEN PRs landen ins Triage. Heute fängt der github_triage-Producer…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-iterate
-    
-    Brief: Add gh-pr-ci action-unit producer to capture failed Hard-Gates on open PRs (Automerge loop-closing). Spec: Spec/early-access-readiness-plan.md → B4.5 → Loop-Closing.
-    
-    Files to touch (github_triage is now a 7-file package since PR #98):
-    - shared/scripts/github_api.py: add fetch_open_prs() and fetch_pr_check_runs(head_sha), both returning list[dict] | None (None on any failure, same semantics as existing fetches)
-    - shared/scripts/github_triage/producer.py: add PREFIX_PR_CI = 'gh-pr-ci:' and append it to _OWNED_PREFIXES (currently 4 entries: SECURITY, SECRETS, CI, PROMPT — PR-CI becomes 5th)
-    - shared/scripts/github_triage/mappers.py: add pr_ci_action_unit(pr_info, *, owner_repo) (analog zu ci_action_unit) + open_prs_with_failed_checks(prs) reducer
-    - shared/scripts/github_triage/consumer.py: wire new fetch + emit + auto-resolve into import_findings()
-    - docs/triage-inbox.md: 5. action-unit row in der Tabelle
-    - shared/tests/test_github_triage_*.py: tests analog zu existierenden
-    
-    Constraints (kritisch):
-    - Dedup key gh-pr-ci:{pr_number} (KEIN head_sha, KEIN workflow_id — Operator-Action ist 'fix PR #N')
-    - launchPayload startet mit '/shipwright-iterate --type bug' + PR-URL
-    - Emit/resolve symmetry (Code-Review-MED-#1 aus iterate-2026-05-20): wenn IRGENDEIN per-PR-checkrun-Fetch None war, sperre den ganzen resolve-sweep für gh-pr-ci dieser Session
-    - Auto-resolve reasons: prClosed, prMerged, prChecksResolved
-    
-    Complexity hint: medium (touches shared infra)
-    ```
-  - Promote: `triage_promote.py --id trg-52f1fecb --task-ref EXT:<ref>`
 
 <a id="trg-c2a700a7"></a>
 - **B4.5-W WebUI — Align PR Review Architecture (OpenRouter + tiered, drop develop)** `id=trg-c2a700a7 | severity=medium | kind=feature → P2/engineering`
