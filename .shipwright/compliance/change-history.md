@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-06-11T20:05:10.999236+00:00
-Total commits: 952
+Generated: 2026-06-11T21:24:03.294145+00:00
+Total commits: 954
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 264
+    "feat" : 265
     "fix" : 263
     "chore" : 215
-    "docs" : 122
+    "docs" : 123
     "refactor" : 50
     "test" : 23
     "ci" : 7
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 264 commits
+### Features (feat) — 265 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-11 | security | Tier-3 PR review via OpenRouter (B4.5 Phase 2) (#193) | b61e4011bcad |
 | 2026-06-11 | triage | gh-pr-ci producer — failed hard-gates on open PRs → triage (B4.5 loop-closing) (#191) | f9cf3624c49a |
 | 2026-06-11 | iterate | per-tree campaign status.json — F5b finalize wiring + scoped churn resolver | 57025c9b5d2a |
 | 2026-06-10 | iterate | project campaign status from the event log (campaign S2) | 7d3b48d73ed1 |
@@ -561,7 +562,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-11 | triage | sweep 2 outbox append(s) into branch | 39f3ece14986 |
+| 2026-06-11 | triage | sweep 2 outbox append(s) into branch | bc3b74f92100 |
 | 2026-06-11 | triage | drop three stale internal anchor items | 9d74de9db766 |
 | 2026-06-11 | gitignore | keep campaign planning dirs local-only | dd4806d2ba91 |
 | 2026-06-11 | triage | sweep 3 outbox append(s) into branch | 26ea4a5f0586 |
@@ -777,10 +778,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 122 commits
+### Documentation (docs) — 123 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-11 | — | drop GPG/SSH commit-signing guidance (keyless workflow) (#192) | 489c615c385c |
 | 2026-06-11 | triage | surface the git-tracked sensitivity rule at the add-triage CLI | 7b7b49c6d45e |
 | 2026-06-11 | constitution | never put sensitive detail in git-tracked triage/campaign artifacts | bc7cd4f026ce |
 | 2026-06-11 | triage | note force to_outbox=True for one-shot planning helpers | c3634c841fbe |
@@ -1021,7 +1023,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 952 |
+| Total commits | 954 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 952 |
+| Human-authored commits | 954 |
 

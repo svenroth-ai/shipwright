@@ -1,0 +1,1 @@
+shipwright-iterate F11 now arms GitHub-native auto-merge (`gh pr merge --auto --squash --delete-branch`) on `iterate/*` PRs so they squash-merge once Required Checks pass — branch-scoped (manual PRs never self-arm) and fail-soft (a repo with auto-merge/branch-protection disabled leaves the PR open instead of failing finalize). B4.5 Phase 3.

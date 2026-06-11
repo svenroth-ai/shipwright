@@ -288,7 +288,7 @@ Four fail-closed conditions enforced by `surface_verification.py` (orchestrator)
 | F6.5 | [F6.5](references/F6.5.md) | **SKIP in worktree flow** — event ships with `commit=""`. Legacy/non-worktree only: `finalize_iterate.py attach-commit …` |
 | F7 | [F7](references/F7.md) | Legacy/out-of-band `record_event.py`. Skip unless replaying / non-worktree. ADR-059 FR-gate applies to ALL iterates incl. BUG |
 | F7b | [F7b](references/F7b.md) | `commit_event_followup.py` — seals an **out-of-band F7** main-tree append only (not the worktree flow; idempotent noop otherwise) |
-| F11 | [F11](references/F11.md) | Leak-guard (`--stage f11`), push + `gh pr create` against `origin/<default>`, update handoff, run `verify_iterate_finalization.py` |
+| F11 | [F11](references/F11.md) | Leak-guard (`--stage f11`), push + `gh pr create` against `origin/<default>`, arm fail-soft `gh pr merge --auto --squash` (iterate/* only), update handoff, run `verify_iterate_finalization.py` |
 | F12 | [F12](references/F12.md) | Count pending drops; prompt for `/shipwright-changelog` once PR merges; print summary banner |
 
 ---

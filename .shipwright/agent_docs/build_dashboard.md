@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-11 20:05 UTC | Session: df2e18a0-94f6-417e-b330-9924de26b8e2 | Run: iterate-2026-06-11-automerge-pr-review
+> Updated: 2026-06-11 21:24 UTC | Session: db865a7c-937f-4000-b738-24d63ad23244 | Run: iterate-2026-06-11-automerge-f11-arm
 
-## Recent Changes (141 iterations)
+## Recent Changes (142 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | F11 arms GitHub-native auto-merge for iterate/* PRs (gh pr merge --auto --squash --delete-branch), branch-scoped + fail-soft (B4.5 Phase 3) | 363/363 |  | tooling | 2026-06-11 |
 | feature | Tier-3 PR review via OpenRouter custom-script (B4.5 Phase 2): pr-review.yml workflow + pr_review.py reviewer + pr_reviewer prompts + 4 snapshot/unit test files | 414/417 |  | tooling | 2026-06-11 |
 | feature | Add gh-pr-ci:{pr_number} action-unit: failed hard-gates on open PRs land in triage (B4.5 automerge loop-closing). Differentiated auto-resolve; session-wide symmetry; draft exclusion; truncation + filter=latest guards. | 0/0 |  | tooling | 2026-06-11 |
 | bug | Fix the check_security_scan PreToolUse deploy-gate: it substring-matched the whole command, so a trigger keyword (deploy/jelastic/vercel/...) inside a quoted argument VALUE — an iterate-finalization --justification, a commit message, or an echo string — false-blocked unrelated commands. New _is_deploy_command strips quoted spans ("..." / '...') before matching; main() uses it. Real deploy commands/scripts/paths stay visible and still gate. | 669/679 |  | tooling | 2026-06-11 |
@@ -148,7 +149,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-11 | Unit: 414/417 | Smoke: not_run | (iterate)
+Last run: 2026-06-11 | Unit: 363/363 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
