@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-11T05:22:31.903130Z. Items waiting for triage decision.
+> Auto-generated 2026-06-11T06:41:02.051630Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 165
-- Triage: 15 | Promoted: 1 | Dismissed: 149 | Snoozed: 0
+- Total: 166
+- Triage: 13 | Promoted: 1 | Dismissed: 152 | Snoozed: 0
 
-## Top 15 items (severity-sorted)
+## Top 13 items (severity-sorted)
 
 ### Source: architecture (3 items)
 
@@ -79,24 +79,10 @@
   - \## Intent  Bundle P8.1 from Spec/external-frameworks-integration.md (MU5 + MU7 + MU-PL1). Single research iterate prod…
   - Promote: `triage_promote.py --id trg-aecf9cde --task-ref EXT:<ref>`
 
-### Source: iterate (1 item)
-
-<a id="trg-196f4aa6"></a>
-- **Campaign status projection writes machine-absolute spec_path (non-portable)** `id=trg-196f4aa6 | severity=medium | kind=improvement → P2/engineering`
-  - campaign_status projection + campaign_init fill a sub-iterate spec_path as an ABSOLUTE campaign_dir path, so a regenera…
-  - Promote: `triage_promote.py --id trg-196f4aa6 --task-ref EXT:<ref>`
-
 ### Source: manual (1 item)
 
 <a id="trg-e2a0ebb3"></a>
 - **Triage live-view: union the gitignored outbox so new items are visible/startable before sweep** `id=trg-e2a0ebb3 | severity=medium | kind=improvement → P2/engineering`
   - UX gap: a freshly-created triage item (manual triage_add or an idle-main background producer) routes to the gitignored…
   - Promote: `triage_promote.py --id trg-e2a0ebb3 --task-ref EXT:<ref>`
-
-### Source: plugin-sync (1 item)
-
-<a id="trg-9f3afc54"></a>
-- **Plugin cache may be out of sync after plugin-side edits** `id=trg-9f3afc54 | severity=low | kind=maintenance → P3/engineering`
-  - Plugin-side files were edited but the runtime plugin cache may not be re-synced. Run `bash scripts/update-marketplace.s…
-  - Promote: `triage_promote.py --id trg-9f3afc54 --task-ref EXT:<ref>`
 

@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-11-secscan-gate-substring",
+  "date": "2026-06-11T06:41:31.284114Z",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/2026-06-11-secscan-gate-substring",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-06-11-secscan-gate-substring"
+}
