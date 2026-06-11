@@ -151,6 +151,18 @@ follows its append's file); the D2 sweep folds the outbox into the iterate PR
 branch + GCs it. `triage_gc` and `_reconcile_triage` operate on the tracked log
 ONLY.
 
+**Writing one-shot helpers — DO NOT call `should_route_to_outbox()` blindly.**
+That function answers "am I on idle default branch?" — it returns `False` on any
+non-default branch (`iterate/*`, `chore/*`, `feat/*`, WIP), under the assumption
+that the JSONL changes will ship in that branch's PR. A planning-side helper
+(e.g. a one-shot script that adds 3 cards from a chore-branch checkout) does
+NOT have that intent; using the function would silently commit the JSONL drift
+to whatever branch is checked out, where it strands and never reaches `origin/main`.
+**Force `to_outbox=True` explicitly** in such helpers — the WebUI reads the
+union and the next iterate's D2 sweep folds them in. The `triage_add` CLI is
+exempt from this because it IS designed to ship in the calling branch's PR;
+direct-`append_triage_item()` callers are not.
+
 This table is the SSoT for `resolve_churn_conflicts.CHURN_ALLOWLIST`
 (`shared/tests/test_churn_merge_doc_sync.py` fails on any drift, both
 directions). Two load-bearing rules:
