@@ -113,3 +113,7 @@ jobs:
             --pr-number "$PR_NUMBER" \
             --repo "$REPO" \
             --prompt-dir shared/prompts/pr_reviewer
+
+# B4.5 Tier-3 smoke test — this comment touches a sensitive path
+# (.github/workflows/) so the decide job routes the PR to Tier 3. Revert by
+# closing the smoke-test PR without merging.
