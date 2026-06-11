@@ -6,7 +6,7 @@
     {
       "id": "B1.iterate",
       "slug": "iterate-skill",
-      "spec_path": ".shipwright\\planning\\iterate\\campaigns\\2026-05-25-bloat-cleanup-B-shipwright\\sub-iterates\\B1.iterate-iterate-skill.md",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-05-25-bloat-cleanup-B-shipwright/sub-iterates/B1.iterate-iterate-skill.md",
       "status": "complete",
       "commit": "7c96e09",
       "branch": "iterate/bloat-B-iterate-skill",
@@ -16,7 +16,7 @@
     {
       "id": "B1.build",
       "slug": "build-skill",
-      "spec_path": ".shipwright\\planning\\iterate\\campaigns\\2026-05-25-bloat-cleanup-B-shipwright\\sub-iterates\\B1.build-build-skill.md",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-05-25-bloat-cleanup-B-shipwright/sub-iterates/B1.build-build-skill.md",
       "status": "complete",
       "commit": "2149663",
       "branch": "iterate/bloat-B-build-skill",
@@ -26,7 +26,7 @@
     {
       "id": "B1.test",
       "slug": "test-skill",
-      "spec_path": ".shipwright\\planning\\iterate\\campaigns\\2026-05-25-bloat-cleanup-B-shipwright\\sub-iterates\\B1.test-test-skill.md",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-05-25-bloat-cleanup-B-shipwright/sub-iterates/B1.test-test-skill.md",
       "status": "complete",
       "commit": "af84f57",
       "branch": "iterate/bloat-B-test-skill",
@@ -36,7 +36,7 @@
     {
       "id": "B1.adopt",
       "slug": "adopt-skill",
-      "spec_path": ".shipwright\\planning\\iterate\\campaigns\\2026-05-25-bloat-cleanup-B-shipwright\\sub-iterates\\B1.adopt-adopt-skill.md",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-05-25-bloat-cleanup-B-shipwright/sub-iterates/B1.adopt-adopt-skill.md",
       "status": "complete",
       "commit": "a49774e",
       "branch": "iterate/bloat-B-adopt-skill",
@@ -46,7 +46,7 @@
     {
       "id": "B1.design",
       "slug": "design-skill",
-      "spec_path": ".shipwright\\planning\\iterate\\campaigns\\2026-05-25-bloat-cleanup-B-shipwright\\sub-iterates\\B1.design-design-skill.md",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-05-25-bloat-cleanup-B-shipwright/sub-iterates/B1.design-design-skill.md",
       "status": "complete",
       "commit": "8726484",
       "branch": "iterate/bloat-B-design-skill",
@@ -56,7 +56,7 @@
     {
       "id": "B1.project",
       "slug": "project-skill",
-      "spec_path": ".shipwright\\planning\\iterate\\campaigns\\2026-05-25-bloat-cleanup-B-shipwright\\sub-iterates\\B1.project-project-skill.md",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-05-25-bloat-cleanup-B-shipwright/sub-iterates/B1.project-project-skill.md",
       "status": "complete",
       "commit": "5404a57",
       "branch": "iterate/bloat-B-project-skill",
@@ -66,7 +66,7 @@
     {
       "id": "B1.plan",
       "slug": "plan-skill",
-      "spec_path": ".shipwright\\planning\\iterate\\campaigns\\2026-05-25-bloat-cleanup-B-shipwright\\sub-iterates\\B1.plan-plan-skill.md",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-05-25-bloat-cleanup-B-shipwright/sub-iterates/B1.plan-plan-skill.md",
       "status": "complete",
       "commit": "54f6267",
       "branch": "iterate/bloat-B-plan-skill",
@@ -76,7 +76,7 @@
     {
       "id": "B8",
       "slug": "contracts",
-      "spec_path": ".shipwright\\planning\\iterate\\campaigns\\2026-05-25-bloat-cleanup-B-shipwright\\sub-iterates\\B8-contracts.md",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-05-25-bloat-cleanup-B-shipwright/sub-iterates/B8-contracts.md",
       "status": "complete",
       "commit": "347821e",
       "branch": "iterate/bloat-B-contracts",
@@ -86,7 +86,7 @@
     {
       "id": "B2",
       "slug": "data-collector",
-      "spec_path": ".shipwright\\planning\\iterate\\campaigns\\2026-05-25-bloat-cleanup-B-shipwright\\sub-iterates\\B2-data-collector.md",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-05-25-bloat-cleanup-B-shipwright/sub-iterates/B2-data-collector.md",
       "status": "complete",
       "commit": "238966c",
       "branch": "iterate/bloat-B-data-collector-split",
@@ -96,7 +96,7 @@
     {
       "id": "B6",
       "slug": "github-triage",
-      "spec_path": ".shipwright\\planning\\iterate\\campaigns\\2026-05-25-bloat-cleanup-B-shipwright\\sub-iterates\\B6-github-triage.md",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-05-25-bloat-cleanup-B-shipwright/sub-iterates/B6-github-triage.md",
       "status": "complete",
       "commit": "74d4cf0",
       "branch": "iterate/bloat-B-github-triage-split",
@@ -106,7 +106,7 @@
     {
       "id": "B3",
       "slug": "phase-quality",
-      "spec_path": ".shipwright\\planning\\iterate\\campaigns\\2026-05-25-bloat-cleanup-B-shipwright\\sub-iterates\\B3-phase-quality.md",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-05-25-bloat-cleanup-B-shipwright/sub-iterates/B3-phase-quality.md",
       "status": "complete",
       "commit": "14b24e9",
       "branch": "iterate/bloat-B-phase-quality-split",
@@ -116,7 +116,7 @@
     {
       "id": "B4",
       "slug": "dev-server",
-      "spec_path": ".shipwright\\planning\\iterate\\campaigns\\2026-05-25-bloat-cleanup-B-shipwright\\sub-iterates\\B4-dev-server.md",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-05-25-bloat-cleanup-B-shipwright/sub-iterates/B4-dev-server.md",
       "status": "complete",
       "commit": "fd6c558",
       "branch": "iterate/bloat-B-dev-server-split",
@@ -126,7 +126,7 @@
     {
       "id": "B5",
       "slug": "orchestrator",
-      "spec_path": ".shipwright\\planning\\iterate\\campaigns\\2026-05-25-bloat-cleanup-B-shipwright\\sub-iterates\\B5-orchestrator.md",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-05-25-bloat-cleanup-B-shipwright/sub-iterates/B5-orchestrator.md",
       "status": "complete",
       "commit": "46031f3",
       "branch": "iterate/bloat-B-orchestrator-split",

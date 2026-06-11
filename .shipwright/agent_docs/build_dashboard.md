@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-10 23:05 UTC | Session: 01b76389-5200-4e4e-96b6-e7983947e53b | Run: iterate-2026-06-11-bloat-gate-worktree-baseline
+> Updated: 2026-06-11 05:22 UTC | Session: 88b11785-06c5-4d46-b7a2-7fd1b6b60402 | Run: iterate-2026-06-11-spec-path-relative
 
-## Recent Changes (137 iterations)
+## Recent Changes (138 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Make campaign sub-iterate spec_path repo-relative POSIX instead of machine-absolute (N1, trg-196f4aa6, follow-up of campaign 2026-06-07-tracked-campaign-status): new pure campaign_paths.py (relativize_spec_path / campaign_spec_path); campaign_init writes relative; the projection self-heals on regenerate (carry + fill); one-off idempotent migration rewrote the 7 tracked campaigns (44 sub-paths). | 3468/3488 |  | tooling | 2026-06-11 |
 | change | Campaign status backfill + docs (S4): parse_campaign_skeleton strips markdown emphasis from id/slug cells so a legacy campaign.md (bold **C1**) matches the plain committed status.json ids (else re-projection drops completed subs); a read-only drift-guard test verifies every tracked campaign regenerates without downgrade; docs landed (hooks-and-pipeline glob-churn note, glossary Campaign-Status + token-vocab SSoT, ADR). Closes campaign 2026-06-07-tracked-campaign-status. | 3451/3471 |  | tooling | 2026-06-10 |
 | bug | Bloat Stop-gate resolves a file's ceiling from the worktree baseline it measures, not main (trg-28e83840) | 3088/3088 |  | tooling | 2026-06-10 |
 | change | Per-tree campaign status.json: F5b finalize wiring + scoped churn resolver (campaign S3) | 3442/3462 |  | tooling | 2026-06-10 |
@@ -144,7 +145,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-11 | Unit: 3088/3088 | Smoke: not_run | (iterate)
+Last run: 2026-06-11 | Unit: 3468/3488 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

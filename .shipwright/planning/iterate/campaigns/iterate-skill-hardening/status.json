@@ -6,7 +6,7 @@
     {
       "id": "A",
       "slug": "boundary-tests-foundation",
-      "spec_path": ".shipwright\\planning\\iterate\\campaigns\\iterate-skill-hardening\\sub-iterates\\A-boundary-tests-foundation.md",
+      "spec_path": ".shipwright/planning/iterate/campaigns/iterate-skill-hardening/sub-iterates/A-boundary-tests-foundation.md",
       "status": "complete",
       "commit": "ba98745067005713fd4e500941428dbd3b0434d6",
       "branch": "iterate/skill-hardening-A-boundary-tests-foundation",
@@ -16,7 +16,7 @@
     {
       "id": "B",
       "slug": "confidence-calibration-phase",
-      "spec_path": ".shipwright\\planning\\iterate\\campaigns\\iterate-skill-hardening\\sub-iterates\\B-confidence-calibration-phase.md",
+      "spec_path": ".shipwright/planning/iterate/campaigns/iterate-skill-hardening/sub-iterates/B-confidence-calibration-phase.md",
       "status": "complete",
       "commit": "f27376626fda424c31e1e3a171c0157672537afe",
       "branch": "iterate/skill-hardening-B-confidence-calibration",
@@ -26,7 +26,7 @@
     {
       "id": "C",
       "slug": "multi-session-discipline",
-      "spec_path": ".shipwright\\planning\\iterate\\campaigns\\iterate-skill-hardening\\sub-iterates\\C-multi-session-discipline.md",
+      "spec_path": ".shipwright/planning/iterate/campaigns/iterate-skill-hardening/sub-iterates/C-multi-session-discipline.md",
       "status": "complete",
       "commit": "41cef18d617105bc5839e968e1dd49812d8b7441",
       "branch": "iterate/skill-hardening-C-multi-session-discipline",
@@ -36,7 +36,7 @@
     {
       "id": "D",
       "slug": "boundary-coverage-report",
-      "spec_path": ".shipwright\\planning\\iterate\\campaigns\\iterate-skill-hardening\\sub-iterates\\D-boundary-coverage-report.md",
+      "spec_path": ".shipwright/planning/iterate/campaigns/iterate-skill-hardening/sub-iterates/D-boundary-coverage-report.md",
       "status": "complete",
       "commit": "216f8b3f5f2bab0af6e84b1b1efb1f9b64aa004a",
       "branch": "iterate/skill-hardening-D-boundary-coverage-report",
@@ -46,7 +46,7 @@
     {
       "id": "E",
       "slug": "review-driven-hardening",
-      "spec_path": ".shipwright\\planning\\iterate\\campaigns\\iterate-skill-hardening\\sub-iterates\\E-review-driven-hardening.md",
+      "spec_path": ".shipwright/planning/iterate/campaigns/iterate-skill-hardening/sub-iterates/E-review-driven-hardening.md",
       "status": "complete",
       "commit": "5415ed68584d615fc74877507d15865df078be90",
       "branch": "iterate/skill-hardening-E-review-driven-hardening",
@@ -56,7 +56,7 @@
     {
       "id": "F",
       "slug": "runner-contract-mandates-reviews",
-      "spec_path": ".shipwright\\planning\\iterate\\campaigns\\iterate-skill-hardening\\sub-iterates\\F-runner-contract-mandates-reviews.md",
+      "spec_path": ".shipwright/planning/iterate/campaigns/iterate-skill-hardening/sub-iterates/F-runner-contract-mandates-reviews.md",
       "status": "complete",
       "commit": "f6a14fc7fcc7460c3738f241b3ec2333cb568516",
       "branch": "iterate/skill-hardening-F-runner-contract-mandates-reviews",
