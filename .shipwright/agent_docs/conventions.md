@@ -350,10 +350,6 @@ git commit -s -m "feat(scope): your message"
 
 This adds a `Signed-off-by:` line confirming you have the right to contribute the code.
 
-### Signed Commits (GPG/SSH)
-
-Signing commits with GPG or SSH keys is **strongly encouraged**. For the main branch, signed commits will eventually become required.
-
 ## Graduated Trust Model
 
 Shipwright uses a graduated trust model to balance openness with security. Different levels of access unlock different types of contributions:
