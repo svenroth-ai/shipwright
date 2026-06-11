@@ -85,6 +85,7 @@
 - Add features beyond what the spec requires (YAGNI)
 - Hardcode secrets, API keys, or tokens in source code
 - Commit `.env` files
+- Write sensitive detail — security/vulnerability descriptions, file:line, exploit steps, internal audit roadmaps, secrets — into **git-tracked** artifacts (`.shipwright/triage.jsonl`, which the outbox sweeps into the PR → tracked → public; `campaign.md` / `status.json`; specs; commit messages). Keep such detail in a gitignored store (the `Spec/` report, the gitignored campaign dir); the triage item / campaign card is a NEUTRAL, descriptive launch-pointer that references it — a title like "Audit bug-fixes — auto batch" is fine, "subsystem X is exploitable via …" or file:line is not
 - Retry blindly without root-cause analysis
 - Amend a commit that was blocked by a pre-commit hook
 - Loop more than 3 debugging attempts without escalating
