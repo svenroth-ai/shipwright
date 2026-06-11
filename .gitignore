@@ -176,6 +176,12 @@ Spec/
 # RTM evidence on fresh clones). iterate-2026-06-09-external-review-marker-gitignore.
 /.shipwright/planning/iterate/**/external_review_state.json
 /.shipwright/planning/iterate/**/external_code_review_state.json
+# Campaign planning dirs (campaign.md + status.json + sub-iterates/) are local-only
+# operational planning, not durable product artifacts. Keep them out of git so a
+# new campaign is never auto-committed; progress is projectable from the tracked
+# events.jsonl (campaign + sub_iterate_id event extras). Already-tracked campaigns
+# stay tracked (gitignore affects only untracked paths).
+/.shipwright/planning/iterate/campaigns/
 # Defensive (non-anchored): a stray nested `.shipwright/locks/` (e.g. a bloat
 # marker written by a hook whose cwd != repo-root) must never leak. The
 # root-anchored `/.shipwright/*` above misses nested copies. The real fix is the

@@ -1,11 +1,20 @@
-"""AC1 drift-protection: every tracked campaign's status.json must regenerate
-WITHOUT downgrade (campaign 2026-06-07-tracked-campaign-status S4).
+"""AC1 drift-protection (best-effort, LOCAL): every campaign's status.json that
+is present ON DISK must regenerate WITHOUT downgrade (campaign
+2026-06-07-tracked-campaign-status S4).
 
-Reads the REAL tracked campaigns + event log in this repo (read-only) and runs
-the pure projection over each, asserting no committed sub regresses down the
-status ladder or vanishes. Guards the S3 lesson: a legacy ``campaign.md`` whose
-sub-iterate ids carry markdown emphasis (``**C1**``) must still match the plain
-committed ids (``C1``) so a re-projection can't drop a completed sub.
+Campaign planning dirs are gitignored / local-only (chore: keep campaign planning
+dirs local-only), so a clean CI checkout carries ZERO campaigns and this
+parametrized check is vacuous there — that is expected, not a regression. The
+authoritative, always-on no-downgrade coverage of the pure projection lives in
+``test_campaign_status_project.py`` (15 synthetic-fixture tests). This module is
+the bonus check against REAL on-disk campaigns when a working tree happens to
+carry them.
+
+Reads whatever campaign dirs are on disk (read-only) and runs the pure projection
+over each, asserting no committed sub regresses down the status ladder or vanishes.
+Guards the S3 lesson: a legacy ``campaign.md`` whose sub-iterate ids carry markdown
+emphasis (``**C1**``) must still match the plain committed ids (``C1``) so a
+re-projection can't drop a completed sub.
 """
 
 from __future__ import annotations
@@ -65,9 +74,9 @@ def test_existing_campaign_regenerates_without_downgrade(campaign_dir):
             assert _LADDER.get(ps["status"], 0) >= _LADDER.get(cstat, 0), (
                 f"{campaign_dir.name}: {cid} downgraded {cstat} -> {ps['status']}"
             )
-
-
-def test_at_least_one_campaign_present():
-    # The repo tracks campaigns; a zero-find means the glob/path broke, which
-    # would make the parametrized guard vacuously pass.
-    assert _campaign_dirs(), "no tracked campaigns found — backfill guard is vacuous"
+# NOTE: the former `test_at_least_one_campaign_present` guard was removed when
+# campaign planning dirs became gitignored / local-only. Its premise ("the repo
+# tracks campaigns, so a zero-find means the glob broke") is now intentionally
+# false: a clean checkout has zero campaigns by design. A vacuous parametrization
+# here is correct; the always-on synthetic coverage lives in
+# test_campaign_status_project.py.
