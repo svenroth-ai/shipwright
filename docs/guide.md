@@ -1118,6 +1118,7 @@ A triage item represents **one handling**, not one finding. GitHub already has a
 | code-scanning + Dependabot (combined) | `gh-security:{owner}/{repo}`      | `/shipwright-security`                                        |
 | secret-scanning                       | `gh-secrets:{owner}/{repo}`       | Manual rotation (no slash command — secret rotation is manual)|
 | failed default-branch CI per workflow | `gh-ci:{workflow_id}`             | `/shipwright-iterate --type bug`                              |
+| failed hard-gates on an open PR       | `gh-pr-ci:{pr_number}`            | `/shipwright-iterate --type bug` (B4.5 automerge loop-closing)|
 
 **Two ingestion paths for the `gh-security` action-unit** (Iterate C — security-artifact-producer):
 
@@ -1125,6 +1126,8 @@ A triage item represents **one handling**, not one finding. GitHub already has a
 - **shipwright-security artifact path** (fallback, fires when `cs_alerts is None`) — the importer downloads the latest successful run's `security-scan-results` artifact via `gh run download` and parses `findings.json`. Gated by a freshness window (`SHIPWRIGHT_GITHUB_ARTIFACT_MAX_AGE_DAYS`, default 14d) and only attempted on the default branch. This makes Shipwright work on private repos without paying for GHAS.
 
 Both paths produce the SAME dedup key and `launchPayload` contract — `by_source["gh-security:artifact"]` distinguishes the ingestion path for telemetry. See **[docs/security-ci-setup.md](security-ci-setup.md)** for the choice between paths and the activation procedure.
+
+**Loop-closing for auto-merge (`gh-pr-ci:{pr_number}`).** The `gh-ci` source only watches the **default branch**. Once GitHub-native auto-merge is armed (B4.5), a hard-gate that goes red on the **open PR** would leave it "armed but waiting" with no visibility. The `gh-pr-ci` source closes that loop: for each non-draft open PR carrying ≥1 failing check (`failure`/`timed_out`/`startup_failure`/`cancelled`/`action_required`), the importer emits one action-unit whose `launchPayload` starts `/shipwright-iterate --type bug`. Draft PRs are excluded (a draft can't be auto-merge-armed). Auto-resolve is **differentiated** — `prChecksResolved` (PR still open, checks went green), `prMerged`, or `prClosed` — and is gated by the same symmetry rule as the other sources: if the open-PR list **or any** per-PR check-runs fetch fails, the whole PR-CI source is skipped this run (no emit, no resolve) so a transient network failure never mass-resolves open items.
 
 Each action-unit carries a `launchPayload` — a ready-to-paste block containing the slash command + context + the relevant GitHub URL. The payload is **frozen at first append** (subsequent imports with the same key are deduplicated and the persisted payload is unchanged); live counts in `detail` are best-effort, so operators click through the GitHub URL for current state.
 

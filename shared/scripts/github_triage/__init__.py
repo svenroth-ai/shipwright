@@ -53,9 +53,15 @@ from __future__ import annotations
 # was reachable as ``github_triage.<name>`` before the split and remains so.
 
 from .consumer import import_findings
-from .mappers import ci_action_unit, latest_failed_ci_runs, secrets_action_unit
+from .mappers import (
+    ci_action_unit,
+    latest_failed_ci_runs,
+    pr_ci_action_unit,
+    secrets_action_unit,
+)
 from .producer import (
     PREFIX_CI,
+    PREFIX_PR_CI,
     PREFIX_PROMPT,
     PREFIX_SECRETS,
     PREFIX_SECURITY,
@@ -76,6 +82,7 @@ from .state import (
 __all__ = [
     "DEFAULT_THROTTLE_HOURS",
     "PREFIX_CI",
+    "PREFIX_PR_CI",
     "PREFIX_PROMPT",
     "PREFIX_SECRETS",
     "PREFIX_SECURITY",
@@ -84,6 +91,7 @@ __all__ = [
     "import_findings",
     "is_due",
     "latest_failed_ci_runs",
+    "pr_ci_action_unit",
     "prompt_injection_action_unit_from_artifact",
     "read_last_import",
     "secrets_action_unit",
