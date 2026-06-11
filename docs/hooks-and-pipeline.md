@@ -146,10 +146,11 @@ plugin-sync Stop hook, the compliance audit, drift, phase-quality, and
 `triage_add` route there (not the tracked log) only when HEAD is on the default
 branch **with an `origin` remote**, so idle main accrues NO tracked-log drift.
 `triage.read_all_items` returns the tracked ∪ outbox union so consumers see
-background findings immediately; status flips are **residence-derived** (a flip
-follows its append's file); the D2 sweep folds the outbox into the iterate PR
-branch + GCs it. `triage_gc` and `_reconcile_triage` operate on the tracked log
-ONLY.
+background findings immediately; **status flips route the same way** — to the
+outbox on idle main (`should_route_to_outbox`), else residence-derived (a flip
+follows its append's file), so an idle-main dismiss is never undelivered tracked
+drift (2026-06-12); the D2 sweep folds the outbox into the iterate PR branch +
+GCs it. `triage_gc` and `_reconcile_triage` operate on the tracked log ONLY.
 
 **Writing one-shot helpers — DO NOT call `should_route_to_outbox()` blindly.**
 That function answers "am I on idle default branch?" — it returns `False` on any

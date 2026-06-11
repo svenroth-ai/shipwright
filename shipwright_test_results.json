@@ -1,8 +1,8 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-11-automerge-f11-arm",
-    "date": "2026-06-11",
-    "unit": { "status": "passed", "passed": 363, "total": 363 },
+    "run_id": "iterate-2026-06-12-triage-status-idle-main-outbox",
+    "date": "2026-06-12",
+    "unit": { "status": "passed", "passed": 3131, "total": 3131 },
     "integration": { "status": "not_run", "passed": 0, "total": 0 },
     "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
     "e2e": { "status": "skipped", "passed": 0, "total": 0 },
@@ -14,28 +14,23 @@
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-11-automerge-f11-arm/surface_verification.json",
-      "timestamp": "2026-06-11T00:00:00.000Z",
-      "justification": "Runtime-prompt edit (iterate F11.md auto-merge arm) + Kern SKILL.md index line + docs/guide.md + a pytest drift-test. No startable application surface (monorepo scope=framework plugins). Behavior is pinned by plugins/shipwright-iterate/tests/test_f11_automerge_arm.py (unit). The live `gh pr merge --auto` arming a real PR is requires-prod-credential, verified manually at B4.5 Phase-3 activation."
+      "evidence_path": ".shipwright/runs/iterate-2026-06-12-triage-status-idle-main-outbox/surface_verification.json",
+      "timestamp": "2026-06-12T00:00:00.000Z",
+      "justification": "Shared-infra logic change (triage.mark_status idle-main routing) — no startable app surface. The touches_io_boundary write-routing is empirically pinned by shared/tests/test_triage_outbox.py with a real git-repo+origin fixture; full triage+sweep suite + CI=true rerun green."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "AC1 F11 arms `gh pr merge \"$pr_url\" --auto --squash --delete-branch` after `gh pr create`", "disposition": "tested",
-          "evidence": "test_f11_automerge_arm.py::test_arm_call_present_with_exact_flags PASSED" },
-        { "behavior": "AC2 the arm runs ONLY for iterate/* branches (case-glob guard); a manual human PR never self-arms", "disposition": "tested",
-          "evidence": "test_f11_automerge_arm.py::test_arm_is_guarded_to_iterate_branches PASSED" },
-        { "behavior": "AC3 the arm is fail-soft — `||` fallback that WARNs, never `|| exit`, so a repo with auto-merge/branch-protection off does not break F11", "disposition": "tested",
-          "evidence": "test_f11_automerge_arm.py::test_arm_is_fail_soft_not_hard_exit PASSED" },
-        { "behavior": "AC4 existing F11 gates (leak-guard + finalization verifier) preserved AND Kern SKILL.md F11 index row advertises the --auto arm + iterate/ scope", "disposition": "tested",
-          "evidence": "test_f11_automerge_arm.py::test_existing_gates_preserved + ::test_skill_index_line_advertises_arm PASSED" },
-        { "behavior": "the regenerated F11 prose still parses / the full iterate skill drift-suite stays green (no LOC-budget or references-link regression)", "disposition": "tested",
-          "evidence": "plugins/shipwright-iterate `pytest tests/` 363 passed (incl. test_skill_references_link LOC budgets, SKILL.md held at 300 LOC) + shared test_artifact_path_canon 4 passed" },
-        { "behavior": "live `gh pr merge --auto` actually arming auto-merge on a real GitHub PR once repo 'Allow auto-merge' + branch protection are enabled", "disposition": "untestable",
-          "reason_code": "requires-prod-credential",
-          "reason": "needs an authenticated gh against a real open PR in a repo with the auto-merge setting + branch protection on; absent from local/CI. This is the manual B4.5 Phase-3 activation precondition (out of this iterate's scope)." }
+        { "behavior": "AC1 idle main (origin + default branch): a status flip on a TRACKED-resident item routes to the OUTBOX, tracked log byte-unchanged, union resolves dismissed", "disposition": "tested",
+          "evidence": "test_triage_outbox.py::test_mark_status_idle_main_tracked_item_routes_to_outbox PASSED (git_repo+origin fixture; asserts should_route_to_outbox True precondition)" },
+        { "behavior": "AC2 iterate/* branch (worktree, not idle main): a tracked-item status flip stays in TRACKED (ships in PR) — idle-main routing does not leak into the worktree path", "disposition": "tested",
+          "evidence": "test_triage_outbox.py::test_mark_status_iterate_branch_tracked_item_stays_tracked PASSED (asserts should_route_to_outbox False on iterate/* branch)" },
+        { "behavior": "AC3 residence preserved off the idle-main path: outbox-only id -> outbox (no orphan/resurrect); tracked+outbox overlap -> tracked; no-origin/non-git -> tracked; mark_status takes no to_outbox param", "disposition": "tested",
+          "evidence": "test_triage_outbox.py residence suite green: test_mark_status_residence_outbox_no_tracked_orphan, _residence_tracked_preferred_on_overlap, _has_no_to_outbox_param, test_should_route_* (no-origin/iterate/non-git False) — all PASSED, unchanged by the fix" },
+        { "behavior": "AC4 no regression across every mark_status consumer (producers compliance/drift/phase-quality/f0.5, sweep, gc, cli, storage, schema, promote)", "disposition": "tested",
+          "evidence": "full shared/tests suite 3131 passed (not slow/cross_plugin) + CI=true rerun of triage/sweep/producer subset 126 passed + targeted mark_status-consumer set 251 passed" }
       ],
-      "counts": { "testable": 5, "tested": 5, "untestable": 1, "untested_testable": 0 },
+      "counts": { "testable": 4, "tested": 4, "untestable": 0, "untested_testable": 0 },
       "enumeration_basis": { "acs": 4, "covered_acs": 4 }
     }
   }

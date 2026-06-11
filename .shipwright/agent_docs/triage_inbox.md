@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-11T21:24:03.294145Z. Items waiting for triage decision.
+> Auto-generated 2026-06-11T22:33:12.418915Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 176
-- Triage: 15 | Promoted: 1 | Dismissed: 160 | Snoozed: 0
+- Total: 177
+- Triage: 13 | Promoted: 1 | Dismissed: 163 | Snoozed: 0
 
-## Top 15 items (severity-sorted)
+## Top 13 items (severity-sorted)
 
 ### Source: architecture (2 items)
 
@@ -22,62 +22,7 @@
   - Follow-up to trg-28e83840 (Stop-gate reader fix). The recorder check_file_size.py computes the marker delta (anti-ratch…
   - Promote: `triage_promote.py --id trg-537334f1 --task-ref EXT:<ref>`
 
-### Source: automerge-b45 (4 items)
-
-<a id="trg-bdc160e2"></a>
-- **B4.5 Phase 3 — F11 Patch (gh pr merge --auto)** `id=trg-bdc160e2 | severity=high | kind=feature → P1/engineering`
-  - Iterate-Plugin F11 patcht so dass nach `gh pr create` automatisch `gh pr merge --auto --squash --delete-branch` aufgeru…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-iterate
-    
-    Brief: Patch iterate F11 to arm auto-merge on Iterate-PRs. Spec: Spec/early-access-readiness-plan.md → B4.5 → Implementation Order → Phase 3.
-    
-    Files to touch:
-    - plugins/shipwright-iterate/skills/iterate/references/F11.md: nach `gh pr create ...` zusätzlich `gh pr merge "$PR_URL" --auto --squash --delete-branch` aufrufen
-    - plugins/shipwright-iterate/skills/iterate/SKILL.md: F11-Phase-Index-Zeile erweitern (Z. 290 in der aktuellen Datei)
-    - ggf. Tests in plugins/shipwright-iterate/tests/
-    
-    Constraint (defensiv):
-    - `gh pr merge --auto` NUR aufrufen wenn Branch-Name mit `iterate/` startet — manuelle Sven-PRs sollen sich NICHT selbst arm-mergen (Opt-in pro PR via manuellem `gh pr merge --auto` oder Label `automerge`)
-    - Precedent: plugins/shipwright-changelog/skills/release/SKILL.md macht `gh pr merge --merge --delete-branch` in autonomous mode (andere Semantik — `--merge` statt `--squash`, kein `--auto`, aber ähnlicher Pattern)
-    
-    Complexity hint: trivial-small
-    ```
-  - Promote: `triage_promote.py --id trg-bdc160e2 --task-ref EXT:<ref>`
-
-<a id="trg-52cd3143"></a>
-- **B4.5 Phase 2 — pr_review.py Custom-Script + Workflow (OpenRouter)** `id=trg-52cd3143 | severity=high | kind=feature → P1/engineering`
-  - Tier-3-PR-Review via OpenRouter + Custom-Script. Iterate-PRs (Tier 1) und Sven's manuelle PRs (Tier 2) bekommen KEINE A…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-iterate
-    
-    Brief: Implement tiered PR-Review via OpenRouter + Custom-Script. Spec: Spec/early-access-readiness-plan.md → B4.5 → Components.
-    
-    Files to create:
-    - shared/prompts/pr_reviewer/system/ + user/ (Verzeichnis-Form analog zu code_reviewer/, iterate_reviewer/ — etabliert seit PR #119)
-    - plugins/shipwright-security/scripts/tools/pr_review.py (~120-150 LOC):
-      * fetch PR diff via `gh pr diff`
-      * POST to https://openrouter.ai/api/v1/chat/completions mit model $SHIPWRIGHT_PR_REVIEW_MODEL (default anthropic/claude-sonnet-4.6)
-      * strict JSON response: {decision: approve|comment|block, summary, blocking[], comments[]}
-      * post via `gh pr comment` + optional `gh pr review --request-changes|--comment`
-      * exit 0 für approve/comment, 1 für block, 2 für errors
-      * Diff > 200k chars: defensiv truncaten + im Body vermerken
-    - .github/workflows/pr-review.yml: zwei Jobs (decide + review) mit Tier-Filtern
-      * decide: external author? sensitive path? labels (skip-pr-review/needs-review)?
-      * review: needs: decide, if needs.decide.outputs.needs_review == 'true'
-      * Job-Name `PR Review` (Branch-Protection-Required-Check)
-      * Fork-PR-Guard: head.repo.full_name == github.repository
-    - plugins/shipwright-security/tests/test_pr_review_workflow_shape.py + test_pr_review_script.py
-    
-    Smoke-Tests vor merge (Spec → Phase 2 Steps 5-6):
-    1. Test-PR aus svroch Account (Tier 2) → review-Job skipped, Required-Check trotzdem grün
-    2. Test-PR mit Änderung in plugins/*/hooks/ → Tier 3, Script reviewt, postet Comment, Exit-Code matched Decision
-    
-    Complexity hint: small-medium
-    ```
-  - Promote: `triage_promote.py --id trg-52cd3143 --task-ref EXT:<ref>`
+### Source: automerge-b45 (2 items)
 
 <a id="trg-c2a700a7"></a>
 - **B4.5-W WebUI — Align PR Review Architecture (OpenRouter + tiered, drop develop)** `id=trg-c2a700a7 | severity=medium | kind=feature → P2/engineering`
