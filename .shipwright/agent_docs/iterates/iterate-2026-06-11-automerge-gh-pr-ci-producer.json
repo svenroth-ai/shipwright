@@ -1,10 +1,10 @@
 {
   "run_id": "iterate-2026-06-11-automerge-gh-pr-ci-producer",
-  "date": "2026-06-11T11:21:55.766824Z",
+  "date": "2026-06-11T11:31:01.323964Z",
   "type": "feature",
   "complexity": "medium",
   "branch": "iterate/automerge-gh-pr-ci-producer",
   "tests_passed": true,
   "spec": ".shipwright/planning/iterate/2026-06-11-automerge-gh-pr-ci-producer.md",
-  "adr": "iterate-2026-06-11-automerge-gh-pr-ci-producer_001"
+  "adr": "iterate-2026-06-11-automerge-gh-pr-ci-producer"
 }
