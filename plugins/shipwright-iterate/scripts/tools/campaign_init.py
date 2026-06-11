@@ -157,7 +157,9 @@ created: {datetime.now(timezone.utc).isoformat()}
             {
                 "id": si["id"],
                 "slug": si["slug"],
-                "spec_path": str(sub_dir / f"{si['id']}-{si['slug']}.md"),
+                # Repo-relative POSIX (portable across machines/OS; N1, trg-196f4aa6).
+                "spec_path": f".shipwright/planning/iterate/campaigns/{campaign_slug}"
+                             f"/sub-iterates/{si['id']}-{si['slug']}.md",
                 "status": "pending",
                 "commit": None,
                 "branch": None,

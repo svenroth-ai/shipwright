@@ -31,6 +31,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterable
 
+from lib.campaign_paths import campaign_spec_path, relativize_spec_path  # repo-relative spec_path (N1)
+
 #: The monotonic status ladder. ``failed`` / ``escalated`` are deliberately
 #: off-ladder (explicit terminal states handled separately in :func:`merge_status`).
 STATUS_LADDER: dict[str, int] = {"pending": 0, "in_progress": 1, "complete": 2}
@@ -68,11 +70,25 @@ def merge_status(committed: str | None, projected: str | None) -> str:
     return committed if STATUS_LADDER.get(committed, 0) >= STATUS_LADDER.get(projected, 0) else projected
 
 
+#: Wrapping markdown-emphasis chars stripped from id/slug cells so a legacy
+#: ``campaign.md`` (``**C1**``, `` `slug` ``) still matches the plain committed
+#: ids — else a re-projection drops the completed sub (S3 downgrade lesson, S4).
+_MD_EMPHASIS = "*_`"
+
+
+def _strip_md(cell: str) -> str:
+    """Strip wrapping markdown emphasis (``**bold**``/``*i*``/``_x_``/`` `c` ``)
+    and surrounding whitespace. Sub-iterate ids/slugs never contain these chars,
+    so this only undoes emphasis a human added to the table."""
+    return cell.strip().strip(_MD_EMPHASIS).strip()
+
+
 def parse_campaign_skeleton(campaign_md_text: str) -> list[dict]:
     """Parse the ``## Sub-Iterates`` markdown table into ``[{id, slug, title}]``.
 
     Row order is preserved (authoritative for the board). The ``Status`` column
     is intentionally ignored — status comes from projection, not the skeleton.
+    Markdown emphasis on the id/slug cells is stripped (``**C1**`` -> ``C1``).
     Raises ``ValueError`` on a missing/empty table, an empty id, or duplicate ids.
     """
     rows: list[dict] = []
@@ -92,7 +108,7 @@ def parse_campaign_skeleton(campaign_md_text: str) -> list[dict]:
             continue
         if cells[0].lower() == "id":
             continue
-        rows.append({"id": cells[0], "slug": cells[1],
+        rows.append({"id": _strip_md(cells[0]), "slug": _strip_md(cells[1]),
                      "title": cells[2] if len(cells) > 2 else ""})
 
     if not rows:
@@ -201,7 +217,7 @@ def project_campaign_status(
         new_subs.append({
             "id": sid,
             "slug": sk["slug"],
-            "spec_path": base.get("spec_path"),
+            "spec_path": relativize_spec_path(base.get("spec_path")),  # self-heal to repo-relative (N1)
             "status": final_status,
             "commit": commit,
             "branch": base.get("branch"),  # events carry no branch
@@ -279,5 +295,5 @@ def regenerate_campaign_status(campaign_dir, events_log) -> tuple[dict, dict]:
 
     for sub in status["sub_iterates"]:
         if not sub.get("spec_path"):
-            sub["spec_path"] = str(campaign_dir / "sub-iterates" / f"{sub['id']}-{sub['slug']}.md")
+            sub["spec_path"] = campaign_spec_path(campaign_dir, sub["id"], sub["slug"])
     return status, summary

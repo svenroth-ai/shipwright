@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-10T22:01:50.975662+00:00
+Generated: 2026-06-11T05:22:31.903130+00:00
 
 ## Requirements Coverage
 
@@ -160,6 +160,9 @@ Generated: 2026-06-10T22:01:50.975662+00:00
 | Exempt session_handoff.md + build_dashboard.md (with triage_inbox.md) from artifact-path-canon in all migrations; drift test; dismiss trg-6ed063ae. | iterate | change |  | — | — | 2026-06-10 |
 | Campaign status projection: pure regenerate_campaign_status producer + campaign_progress regenerate CLI project per-sub-iterate status.json from the campaign.md skeleton and self-identifying work_completed events, with a never-downgrade guard (campaign 2026-06-07-tracked-campaign-status S2). | iterate | feature |  | 3426/3445 | — | 2026-06-10 |
 | Per-tree campaign status.json: F5b finalize wiring + scoped churn resolver (campaign S3) | iterate | change |  | 3442/3462 | — | 2026-06-10 |
+| Bloat Stop-gate resolves a file's ceiling from the worktree baseline it measures, not main (trg-28e83840) | iterate | bug |  | 3088/3088 | — | 2026-06-10 |
+| Campaign status backfill + docs (S4): parse_campaign_skeleton strips markdown emphasis from id/slug cells so a legacy campaign.md (bold **C1**) matches the plain committed status.json ids (else re-projection drops completed subs); a read-only drift-guard test verifies every tracked campaign regenerates without downgrade; docs landed (hooks-and-pipeline glob-churn note, glossary Campaign-Status + token-vocab SSoT, ADR). Closes campaign 2026-06-07-tracked-campaign-status. | iterate | change |  | 3451/3471 | — | 2026-06-10 |
+| Make campaign sub-iterate spec_path repo-relative POSIX instead of machine-absolute (N1, trg-196f4aa6, follow-up of campaign 2026-06-07-tracked-campaign-status): new pure campaign_paths.py (relativize_spec_path / campaign_spec_path); campaign_init writes relative; the projection self-heals on regenerate (carry + fill); one-off idempotent migration rewrote the 7 tracked campaigns (44 sub-paths). | iterate | change |  | 3468/3488 | — | 2026-06-11 |
 
 ## Coverage Summary
 
@@ -167,7 +170,7 @@ Generated: 2026-06-10T22:01:50.975662+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 135 |
+| Iterate changes | 138 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

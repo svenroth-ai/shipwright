@@ -52,6 +52,12 @@ class TestCampaignInit:
         assert status["sub_iterates"][0]["id"] == "15.0"
         assert status["sub_iterates"][0]["status"] == "pending"
 
+    def test_spec_path_is_repo_relative(self, project):
+        # N1 (trg-196f4aa6): repo-relative POSIX, not a machine-absolute path.
+        result = init_campaign(project, "rel-camp", "Test", [{"id": "S1", "slug": "alpha"}])
+        sp = json.loads(Path(result["status_path"]).read_text(encoding="utf-8"))["sub_iterates"][0]["spec_path"]
+        assert sp == ".shipwright/planning/iterate/campaigns/rel-camp/sub-iterates/S1-alpha.md"
+
     def test_campaign_md_contains_intent(self, project):
         subs = [{"id": "1.0", "slug": "x"}]
         result = init_campaign(project, "slug", "My big intent", subs)

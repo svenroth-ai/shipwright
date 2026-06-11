@@ -1,6 +1,6 @@
 {
   "campaign": "2026-06-07-tracked-campaign-status",
-  "status": "active",
+  "status": "complete",
   "branch_strategy": "stacked",
   "created_at": "2026-06-07T20:29:15.989312+00:00",
   "expands_triage": "trg-fda5f7a3",
@@ -8,7 +8,7 @@
     {
       "id": "S1",
       "slug": "event-self-id",
-      "spec_path": "C:\\01_Development\\shipwright\\.shipwright\\planning\\iterate\\campaigns\\2026-06-07-tracked-campaign-status\\sub-iterates\\S1-event-self-id.md",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-06-07-tracked-campaign-status/sub-iterates/S1-event-self-id.md",
       "status": "complete",
       "commit": "efa1dcfc3a5ea0b2ae89bac3a367109511093591",
       "branch": "iterate/2026-06-10-event-self-id",
@@ -18,7 +18,7 @@
     {
       "id": "S2",
       "slug": "status-projection",
-      "spec_path": "C:\\01_Development\\shipwright\\.shipwright\\planning\\iterate\\campaigns\\2026-06-07-tracked-campaign-status\\sub-iterates\\S2-status-projection.md",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-06-07-tracked-campaign-status/sub-iterates/S2-status-projection.md",
       "status": "complete",
       "commit": null,
       "branch": null,
@@ -28,7 +28,7 @@
     {
       "id": "S3",
       "slug": "finalize-resolver",
-      "spec_path": "C:\\01_Development\\shipwright\\.shipwright\\planning\\iterate\\campaigns\\2026-06-07-tracked-campaign-status\\sub-iterates\\S3-finalize-resolver.md",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-06-07-tracked-campaign-status/sub-iterates/S3-finalize-resolver.md",
       "status": "complete",
       "commit": null,
       "branch": null,
@@ -38,12 +38,12 @@
     {
       "id": "S4",
       "slug": "backfill-docs",
-      "spec_path": "C:\\01_Development\\shipwright\\.shipwright\\planning\\iterate\\campaigns\\2026-06-07-tracked-campaign-status\\sub-iterates\\S4-backfill-docs.md",
-      "status": "pending",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-06-07-tracked-campaign-status/sub-iterates/S4-backfill-docs.md",
+      "status": "complete",
       "commit": null,
       "branch": null,
-      "tests_passed": null,
-      "tests_total": null
+      "tests_passed": 3451,
+      "tests_total": 3471
     }
   ]
 }
