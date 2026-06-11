@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-11-bloat-gate-worktree-baseline",
+    "run_id": "iterate-2026-06-11-spec-path-relative",
     "date": "2026-06-11",
     "unit": {
       "status": "passed",
-      "passed": 3088,
-      "total": 3088
+      "passed": 3468,
+      "total": 3488
     },
     "integration": {
       "status": "not_run",
@@ -35,50 +35,65 @@
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-11-bloat-gate-worktree-baseline/surface_verification.json",
-      "timestamp": "2026-06-11T00:00:00.000Z",
+      "evidence_path": "",
+      "timestamp": "2026-06-11T05:20:49.513Z",
       "attempts": 0,
-      "justification": "Pure-Python Stop-hook decision logic (bloat_gate_on_stop baseline-source resolution); no startable app/UI/CLI surface. Empirical verification = the regression suite reproducing the production false-block (Red before fix, Green after) + the safety counter-case (over-ceiling still blocks) + the #150 fallback-to-main case; 28 bloat tests + adversarial review. (A transient F0 arch-impact false-positive from a parallel S4 decision-drop was resolved by integrating origin/main, which carries S4's architecture.md entry.)"
+      "justification": "N1 (trg-196f4aa6) path-portability fix: sub-iterate spec_path is now repo-relative POSIX in the producers (campaign_init + projection carry/fill self-heal) plus a one-off migration of the 7 tracked campaigns (44 paths). Pure lib + data rewrite, no startable web/api/cli-app surface. Verified by 13 helper/migration/round-trip tests + a real migration probe (0 non-portable paths remain), shared 3111 + iterate 357 green."
     },
     "degraded": [],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "worktree iterate that bumped a baseline (file == worktree ceiling) does NOT false-block at Stop",
+          "behavior": "relativize_spec_path: absolute (win/posix) -> anchored repo-relative; already-relative/None passthrough; idempotent",
           "disposition": "tested",
-          "evidence": "test_bloat_gate_worktree_baseline::test_worktree_baseline_bump_not_false_blocked (Red pre-fix, Green post-fix) PASSED"
+          "evidence": "test_campaign_paths::TestRelativizeSpecPath (6) PASSED"
         },
         {
-          "behavior": "real ratchet still blocks: file over even the WORKTREE's bumped ceiling blocks",
+          "behavior": "campaign_spec_path: under .shipwright -> repo-relative; fixture dir -> dir-relative",
           "disposition": "tested",
-          "evidence": "test_bloat_gate_worktree_baseline::test_worktree_file_over_worktree_ceiling_still_blocks PASSED"
+          "evidence": "test_campaign_paths::TestCampaignSpecPath (2) PASSED"
         },
         {
-          "behavior": "file baselined ONLY in the worktree (absent from main) not treated as a new crossing",
+          "behavior": "projection self-heals a carried machine-absolute spec_path -> relative (no downgrade)",
           "disposition": "tested",
-          "evidence": "test_bloat_gate_worktree_baseline::test_worktree_newly_baselined_file_not_treated_as_crossing PASSED"
+          "evidence": "test_campaign_paths::TestProjectionSelfHeals::test_carry_relativizes_absolute PASSED"
         },
         {
-          "behavior": "fallback to MAIN baseline when the worktree has none (#150 scenario preserved)",
+          "behavior": "projection missing-fill writes repo-relative",
           "disposition": "tested",
-          "evidence": "test_bloat_marker_worktree_aware::test_worktree_prefixed_{baselined_crossing,anti_ratchet_within_ceiling}_does_not_block PASSED"
+          "evidence": "test_campaign_paths::test_fill_is_relative PASSED"
         },
         {
-          "behavior": "main-tree-path entries unchanged (_worktree_root None -> main baseline)",
+          "behavior": "migration rewrites absolute -> relative across tracked campaigns",
           "disposition": "tested",
-          "evidence": "test_bloat_gate_on_stop (16 existing invariants: anti-ratchet/new-crossing block, session-scope, TTL, fail-open) PASSED"
+          "evidence": "test_campaign_paths::TestMigration::test_rewrites_absolute_to_relative PASSED + real probe (44 paths, 0 non-portable)"
+        },
+        {
+          "behavior": "migration idempotent (2nd run no-op)",
+          "disposition": "tested",
+          "evidence": "test_campaign_paths::test_idempotent_second_run_noop PASSED"
+        },
+        {
+          "behavior": "regenerate after migration keeps relative + no downgrade",
+          "disposition": "tested",
+          "evidence": "test_campaign_paths::test_regenerate_after_migration_keeps_relative_no_downgrade PASSED"
+        },
+        {
+          "behavior": "campaign_init writes repo-relative spec_path at creation",
+          "disposition": "tested",
+          "evidence": "test_campaign::TestCampaignInit::test_spec_path_is_repo_relative PASSED"
         }
       ],
       "counts": {
-        "testable": 5,
-        "tested": 5,
+        "testable": 8,
+        "tested": 8,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 3,
-        "covered_acs": 3
+        "acs": 1,
+        "covered_acs": 1
       }
     }
   }

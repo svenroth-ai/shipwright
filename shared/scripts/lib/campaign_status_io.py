@@ -106,3 +106,37 @@ def finalize_campaign_status(project_root, event_extras) -> dict:
     except Exception as exc:  # noqa: BLE001 best-effort — board write never blocks finalize
         print(f"[campaign_status_io] finalize regen failed: {exc}", file=sys.stderr)
         return {"error": str(exc)}
+
+
+def relativize_tracked_spec_paths(project_root) -> dict[str, int]:
+    """One-off, idempotent migration: rewrite every tracked campaign
+    ``status.json`` sub-iterate ``spec_path`` to the repo-relative POSIX form
+    (N1, ``trg-196f4aa6`` — the producers used to write a machine-absolute path).
+
+    Returns ``{slug: n_rewritten}``. Only files that actually change are written,
+    with the canonical serialization (no spurious churn); a second run is a no-op.
+    """
+    from lib.campaign_paths import relativize_spec_path
+
+    base = Path(project_root) / _CAMPAIGNS_REL
+    out: dict[str, int] = {}
+    if not base.is_dir():
+        return out
+    for status_path in sorted(base.glob("*/status.json")):
+        if status_path.is_symlink():
+            continue
+        try:
+            data = json.loads(status_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        n = 0
+        for sub in data.get("sub_iterates", []):
+            old = sub.get("spec_path")
+            new = relativize_spec_path(old)
+            if new != old:
+                sub["spec_path"] = new
+                n += 1
+        if n:
+            status_path.write_text(_serialize(data), encoding="utf-8")
+        out[status_path.parent.name] = n
+    return out

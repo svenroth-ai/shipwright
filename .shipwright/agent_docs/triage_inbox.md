@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-10T23:05:41.755327Z. Items waiting for triage decision.
+> Auto-generated 2026-06-11T05:22:31.903130Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 164
-- Triage: 14 | Promoted: 1 | Dismissed: 149 | Snoozed: 0
+- Total: 165
+- Triage: 15 | Promoted: 1 | Dismissed: 149 | Snoozed: 0
 
-## Top 14 items (severity-sorted)
+## Top 15 items (severity-sorted)
 
 ### Source: architecture (3 items)
 
@@ -92,4 +92,11 @@
 - **Triage live-view: union the gitignored outbox so new items are visible/startable before sweep** `id=trg-e2a0ebb3 | severity=medium | kind=improvement → P2/engineering`
   - UX gap: a freshly-created triage item (manual triage_add or an idle-main background producer) routes to the gitignored…
   - Promote: `triage_promote.py --id trg-e2a0ebb3 --task-ref EXT:<ref>`
+
+### Source: plugin-sync (1 item)
+
+<a id="trg-9f3afc54"></a>
+- **Plugin cache may be out of sync after plugin-side edits** `id=trg-9f3afc54 | severity=low | kind=maintenance → P3/engineering`
+  - Plugin-side files were edited but the runtime plugin cache may not be re-synced. Run `bash scripts/update-marketplace.s…
+  - Promote: `triage_promote.py --id trg-9f3afc54 --task-ref EXT:<ref>`
 
