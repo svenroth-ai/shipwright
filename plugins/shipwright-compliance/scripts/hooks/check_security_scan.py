@@ -82,16 +82,41 @@ def get_threshold(project_root: str) -> int:
         return 0
 
 
+# Command families this gate soft-blocks (the actual deploy CLIs / scripts).
+_DEPLOY_PATTERNS = ("deploy", "jelastic", "vercel", "fly deploy", "railway up")
+# Quoted argument spans — where justifications, commit messages, and `echo`
+# prose live. Stripped BEFORE matching so a deploy-family word inside an
+# argument *value* never false-triggers the gate.
+_QUOTED_SPAN_RE = re.compile(r'"[^"]*"|\'[^\']*\'')
+
+
+def _is_deploy_command(command: str) -> bool:
+    """True iff the command *structure* (not a quoted argument value) names a
+    deploy.
+
+    The gate used to substring-match the raw command, so any unrelated command
+    that merely *mentioned* a deploy word in a quoted value — e.g.
+    ``surface_verification.py --justification "...no status.json in any
+    deployed flow..."`` or ``echo "no deploy-family words"`` — was wrongly
+    soft-blocked during iterate finalization. Quoted spans are data, not the
+    command, so they are removed first; the real deploy CLI / script / path
+    (``vercel``, ``jelastic ...``, ``bash deploy.sh``, ``railway up``) stays
+    visible and still triggers the gate.
+    """
+    unquoted = _QUOTED_SPAN_RE.sub(" ", command).lower()
+    return any(p in unquoted for p in _DEPLOY_PATTERNS)
+
+
 def main() -> int:
     try:
         payload = json.load(sys.stdin)
     except (json.JSONDecodeError, Exception):
         return 0
 
-    # Only check Bash tool calls with deploy-like commands
+    # Only check Bash tool calls that actually invoke a deploy (quoted argument
+    # values are ignored — see _is_deploy_command).
     command = payload.get("tool_input", {}).get("command", "")
-    deploy_patterns = ["deploy", "jelastic", "vercel", "fly deploy", "railway up"]
-    if not any(p in command.lower() for p in deploy_patterns):
+    if not _is_deploy_command(command):
         return 0
 
     project_root = os.getcwd()
