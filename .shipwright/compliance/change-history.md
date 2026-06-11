@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-06-10T22:55:27.413208+00:00
-Total commits: 935
+Generated: 2026-06-10T23:05:41.755327+00:00
+Total commits: 938
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 263
-    "fix" : 259
-    "chore" : 207
+    "fix" : 261
+    "chore" : 208
     "docs" : 119
     "refactor" : 50
     "test" : 22
@@ -288,10 +288,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 259 commits
+### Fixes (fix) — 261 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-11 | iterate | bloat Stop-gate reads a file's ceiling from the worktree baseline it measures, not main | e1e555dc72cb |
+| 2026-06-11 | iterate | tolerate markdown emphasis in campaign skeleton; backfill verify (campaign S4) | 20feee5b2c09 |
 | 2026-06-10 | triage | pin triage_cli list stdout to UTF-8 — cp1252 console crash on non-ASCII items | 2d53d3960957 |
 | 2026-06-10 | tests | exempt full generated agent-doc cache trio from canon lint | 3544da31e17d |
 | 2026-06-10 | tests | gate D2V evidence write behind an opt-in env var | ef70f5cce30c |
@@ -552,11 +554,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 207 commits
+### Chores (chore) — 208 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
 | 2026-06-11 | triage | sweep 3 outbox append(s) into branch | 93a82fa02ece |
+| 2026-06-11 | triage | sweep 3 outbox append(s) into branch | 3e66a0cccec9 |
 | 2026-06-10 | triage | sweep 2 outbox append(s) into branch | 4da151cd30f7 |
 | 2026-06-10 | triage | sweep 5 outbox append(s) into branch | 9adeaf8ee20c |
 | 2026-06-10 | churn | regenerate derived snapshots after main merge | 95ad625f5096 |
@@ -1004,7 +1007,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 935 |
+| Total commits | 938 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 935 |
+| Human-authored commits | 938 |
 

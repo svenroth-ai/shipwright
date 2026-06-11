@@ -213,6 +213,17 @@ def _emit_pass() -> None:
     return
 
 
+def _worktree_root(main_root: Path, marker_path: str) -> Path | None:
+    """Worktree root owning ``marker_path``'s ceiling (trg-28e83840), or ``None``
+    for a main-tree path (reconstructed from the ``.worktrees/<slug>/`` prefix)."""
+    norm = _bb.normalize_path(marker_path)
+    stripped = _bb.strip_worktree_prefix(norm)
+    if stripped == norm:
+        return None
+    prefix = norm[: len(norm) - len(stripped)]  # ".worktrees/<slug>/"
+    return main_root / prefix.rstrip("/")
+
+
 def main() -> int:
     # Canonical MAIN repo root (fail-soft), never Path.cwd() — must match the
     # writer (check_file_size) so marker/baseline/re-measure key off ONE root.
@@ -224,11 +235,24 @@ def main() -> int:
         _emit_pass()
         return 0
     now = datetime.datetime.now(datetime.timezone.utc)
-    baseline = _baseline_map(root)
-    if baseline is None:
+    main_baseline = _baseline_map(root)
+    if main_baseline is None:
         # AC-7: no/malformed baseline → pass silently (fresh / pre-adopt / corrupted).
         _emit_pass()
         return 0
+    # trg-28e83840: resolve each entry's ceiling from the tree it's MEASURED in — a
+    # worktree iterate's ADR baseline bump lives in the worktree baseline, not main.
+    baseline_by_root: dict[Path, dict[str, object]] = {root: main_baseline}
+
+    def _baseline_for(marker_path: str) -> dict[str, object]:
+        wt = _worktree_root(root, marker_path)
+        if wt is None:
+            return main_baseline
+        if wt not in baseline_by_root:
+            # worktree baseline if present, else MAIN (never empty → false crossing).
+            baseline_by_root[wt] = _baseline_map(wt) or main_baseline
+        return baseline_by_root[wt]
+
     offenders: list[dict] = []
     for entry in entries:
         if not isinstance(entry, dict):
@@ -244,6 +268,7 @@ def main() -> int:
         # key so an already-baselined file finds its ceiling / isn't treated as a
         # new crossing. `path` itself stays prefixed (re-measured above as-is).
         baseline_key = _bb.strip_worktree_prefix(path)
+        baseline = _baseline_for(path)  # worktree baseline for a worktree-path entry
         in_baseline = baseline_key in baseline
         delta = entry.get("delta")
         # Anti-ratchet blocks only when the file grew PAST its baseline ceiling.

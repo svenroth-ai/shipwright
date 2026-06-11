@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-11-backfill-docs",
+    "run_id": "iterate-2026-06-11-bloat-gate-worktree-baseline",
     "date": "2026-06-11",
     "unit": {
       "status": "passed",
-      "passed": 3451,
-      "total": 3471
+      "passed": 3088,
+      "total": 3088
     },
     "integration": {
       "status": "not_run",
@@ -35,39 +35,39 @@
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": "",
-      "timestamp": "2026-06-10T22:52:34.843Z",
+      "evidence_path": ".shipwright/runs/iterate-2026-06-11-bloat-gate-worktree-baseline/surface_verification.json",
+      "timestamp": "2026-06-11T00:00:00.000Z",
       "attempts": 0,
-      "justification": "S4 is a markdown-parse robustness fix (skeleton emphasis-strip so legacy bold ids round-trip) plus a read-only drift-protection test over the real tracked campaigns plus docs/glossary/triage; no startable web/api/cli-app surface. Empirical verification: the backfill test regenerates every tracked campaign and asserts no sub-iterate downgrades (the legacy **C1** campaign now matches its committed C1), shared 3095 + iterate 356 green."
+      "justification": "Pure-Python Stop-hook decision logic (bloat_gate_on_stop baseline-source resolution); no startable app/UI/CLI surface. Empirical verification = the regression suite reproducing the production false-block (Red before fix, Green after) + the safety counter-case (over-ceiling still blocks) + the #150 fallback-to-main case; 28 bloat tests + adversarial review. (A transient F0 arch-impact false-positive from a parallel S4 decision-drop was resolved by integrating origin/main, which carries S4's architecture.md entry.)"
     },
     "degraded": [],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 emphasis-strip: bold **C1**/`slug` parse to plain id/slug",
+          "behavior": "worktree iterate that bumped a baseline (file == worktree ceiling) does NOT false-block at Stop",
           "disposition": "tested",
-          "evidence": "test_campaign_status::TestParseSkeleton::test_strips_markdown_emphasis_from_id_and_slug PASSED"
+          "evidence": "test_bloat_gate_worktree_baseline::test_worktree_baseline_bump_not_false_blocked (Red pre-fix, Green post-fix) PASSED"
         },
         {
-          "behavior": "AC1 every tracked campaign regenerates without downgrade (7 campaigns)",
+          "behavior": "real ratchet still blocks: file over even the WORKTREE's bumped ceiling blocks",
           "disposition": "tested",
-          "evidence": "test_campaign_status_backfill::test_existing_campaign_regenerates_without_downgrade[*] PASSED (7 params incl. the legacy compliance-detective-realign)"
+          "evidence": "test_bloat_gate_worktree_baseline::test_worktree_file_over_worktree_ceiling_still_blocks PASSED"
         },
         {
-          "behavior": "AC1 degenerate strip (** -> empty id) still raises",
+          "behavior": "file baselined ONLY in the worktree (absent from main) not treated as a new crossing",
           "disposition": "tested",
-          "evidence": "test_campaign_status::TestParseSkeleton::test_empty_id_raises + probe PASSED"
+          "evidence": "test_bloat_gate_worktree_baseline::test_worktree_newly_baselined_file_not_treated_as_crossing PASSED"
         },
         {
-          "behavior": "backfill drift-guard is non-vacuous (>=1 campaign found)",
+          "behavior": "fallback to MAIN baseline when the worktree has none (#150 scenario preserved)",
           "disposition": "tested",
-          "evidence": "test_campaign_status_backfill::test_at_least_one_campaign_present PASSED"
+          "evidence": "test_bloat_marker_worktree_aware::test_worktree_prefixed_{baselined_crossing,anti_ratchet_within_ceiling}_does_not_block PASSED"
         },
         {
-          "behavior": "AC2 hooks-and-pipeline glob-churn note keeps the table 1:1 with CHURN_ALLOWLIST",
+          "behavior": "main-tree-path entries unchanged (_worktree_root None -> main baseline)",
           "disposition": "tested",
-          "evidence": "test_churn_merge_doc_sync (4) PASSED"
+          "evidence": "test_bloat_gate_on_stop (16 existing invariants: anti-ratchet/new-crossing block, session-scope, TTL, fail-open) PASSED"
         }
       ],
       "counts": {
@@ -77,8 +77,8 @@
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 4,
-        "covered_acs": 4
+        "acs": 3,
+        "covered_acs": 3
       }
     }
   }

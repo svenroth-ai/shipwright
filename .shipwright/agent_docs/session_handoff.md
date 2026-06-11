@@ -1,35 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-11-backfill-docs"
+run_id: "iterate-2026-06-11-bloat-gate-worktree-baseline"
 phase: "iterate"
-reason: "iterate: campaign status backfill + docs (S4)"
-timestamp: "2026-06-10T22:55:27.413208+00:00"
+reason: "merge origin/main reconciliation"
+timestamp: "2026-06-10T23:05:41.755327+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-10 22:55:27 UTC
+> Auto-generated 2026-06-10 23:05:41 UTC
 
 ## Session Info
 
-- **Session ID**: 88b11785-06c5-4d46-b7a2-7fd1b6b60402
-- **Timestamp**: 2026-06-10 22:55:27 UTC
-- **Reason**: iterate: campaign status backfill + docs (S4)
+- **Session ID**: 01b76389-5200-4e4e-96b6-e7983947e53b
+- **Timestamp**: 2026-06-10 23:05:41 UTC
+- **Reason**: merge origin/main reconciliation
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-10-finalize-resolver
-- **Date**: 2026-06-10T22:05:28.401156Z
-- **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/2026-06-10-finalize-resolver
-- **ADR**: iterate-2026-06-10-finalize-resolver
+- **Run ID**: iterate-2026-06-11-bloat-gate-worktree-baseline
+- **Date**: 2026-06-10T23:05:53.172681Z
+- **Type**: bug
+- **Complexity**: small
+- **Branch**: iterate/2026-06-11-bloat-gate-worktree-baseline
+- **ADR**: iterate-2026-06-11-bloat-gate-worktree-baseline
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-10-finalize-resolver.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/2026-06-11-backfill-docs
+- **Branch**: iterate/2026-06-11-bloat-gate-worktree-baseline
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/2026-06-11-backfill-docs
-- **Last Commit**: 93a82fa0 chore(triage): sweep 3 outbox append(s) into branch
+- **Branch**: iterate/2026-06-11-bloat-gate-worktree-baseline
+- **Last Commit**: 435c3785 Merge remote-tracking branch 'origin/main' into iterate/2026-06-11-bloat-gate-worktree-baseline
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -66,15 +65,15 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 | Event | Type | Source | Date |
 |-------|------|--------|------|
 | evt-c0cafd86 | work_completed | iterate (Campaign status backfill + docs (S4): parse_campaign_skeleton strips markdown emphasis from id/slug cells so a legacy campaign.md (bold **C1**) matches the plain committed status.json ids (else re-projection drops completed subs); a read-only drift-guard test verifies every tracked campaign regenerates without downgrade; docs landed (hooks-and-pipeline glob-churn note, glossary Campaign-Status + token-vocab SSoT, ADR). Closes campaign 2026-06-07-tracked-campaign-status.) | 2026-06-10 |
+| evt-35d0f03b | work_completed | iterate (Bloat Stop-gate resolves a file's ceiling from the worktree baseline it measures, not main (trg-28e83840)) | 2026-06-10 |
 | evt-dee0c8a6 | work_completed | iterate (Per-tree campaign status.json: F5b finalize wiring + scoped churn resolver (campaign S3)) | 2026-06-10 |
 | evt-e6943f4c | work_completed | iterate (Campaign status projection: pure regenerate_campaign_status producer + campaign_progress regenerate CLI project per-sub-iterate status.json from the campaign.md skeleton and self-identifying work_completed events, with a never-downgrade guard (campaign 2026-06-07-tracked-campaign-status S2).) | 2026-06-10 |
 | evt-374ac212 | work_completed | iterate (Exempt session_handoff.md + build_dashboard.md (with triage_inbox.md) from artifact-path-canon in all migrations; drift test; dismiss trg-6ed063ae.) | 2026-06-10 |
-| evt-a858c858 | work_completed | iterate (triage_cli list pins stdout to UTF-8: fixes UnicodeEncodeError on Windows consoles for non-cp1252 item titles (found by the webui pending-delivery-badge boundary probe).) | 2026-06-10 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 136
+- **Total work events**: 137
 - **Last iterate**: change — Campaign status backfill + docs (S4): parse_campaign_skeleton strips markdown emphasis from id/slug cells so a legacy campaign.md (bold **C1**) matches the plain committed status.json ids (else re-projection drops completed subs); a read-only drift-guard test verifies every tracked campaign regenerates without downgrade; docs landed (hooks-and-pipeline glob-churn note, glossary Campaign-Status + token-vocab SSoT, ADR). Closes campaign 2026-06-07-tracked-campaign-status. (2026-06-10)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
