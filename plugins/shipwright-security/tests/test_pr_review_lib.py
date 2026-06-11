@@ -73,6 +73,23 @@ class TestParseResponse:
         assert review["decision"] == "block"
         assert review["blocking"] == ["x"]
 
+    def test_json_object_in_markdown_fence(self):
+        # OpenRouter -> Anthropic ignores response_format and fences the JSON.
+        # Verified live on a B4.5 Tier-3 smoke test (exit 2 instead of the real decision).
+        obj = {"decision": "block", "summary": "s", "blocking": ["b"], "comments": []}
+        raw = "```json\n" + json.dumps(obj, indent=2) + "\n```"
+        review = L.parse_review_response(raw)
+        assert review["decision"] == "block"
+        assert review["blocking"] == ["b"]
+
+    def test_json_object_in_bare_fence(self):
+        raw = "```\n" + json.dumps({"decision": "approve", "summary": "ok"}) + "\n```"
+        assert L.parse_review_response(raw)["decision"] == "approve"
+
+    def test_json_object_with_surrounding_prose(self):
+        raw = 'Here is my review:\n{"decision": "comment", "summary": "nit"}\nThanks!'
+        assert L.parse_review_response(raw)["decision"] == "comment"
+
     def test_invalid_json_raises(self):
         with pytest.raises(ValueError):
             L.parse_review_response("this is not json")
