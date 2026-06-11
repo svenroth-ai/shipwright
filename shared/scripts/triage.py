@@ -587,14 +587,14 @@ def mark_status(
 ) -> None:
     """Append a status event for an existing item (never mutates prior lines).
 
-    **Status follows its append (residence-derived, D1 review cascade).** The
-    write target is DERIVED (not a caller flag) from where the item's `append`
-    lives (tracked ∪ outbox, both probed under the lock): outbox-only id →
-    outbox (so a tree without that outbox can't drop the flip / resurrect a
-    dismissed item, and no orphan status lands in the tracked log on idle main
-    where reconcile rejects it); tracked id — incl. the post-sweep/pre-GC
-    overlap in BOTH — → tracked (TRACKED-PREFERRED: ships in the PR, GC drops
-    the outbox copy). Every producer's status writes thus auto-route by residence.
+    **Write target is DERIVED (never a caller flag), under the lock:** idle main
+    with a delivery path (`should_route_to_outbox` — origin + HEAD==default) →
+    outbox, symmetric with `append_triage_item` (2026-06-12). Else a tracked-item
+    flip on idle main is undelivered drift (sweep delivers only the outbox;
+    `reconcile_main_triage` is manual-CLI-only post-D2) → blocks a hand pull,
+    never reaches origin; loss-proof via union-read + sweep + GC. Otherwise
+    residence-derived: outbox-only → outbox (no orphan/resurrect); tracked/both →
+    tracked (TRACKED-PREFERRED: a worktree flip ships in the PR).
 
     Raises:
         FileNotFoundError: if NEITHER the tracked store NOR the outbox exists.
@@ -619,8 +619,8 @@ def mark_status(
         outbox_ids = _append_ids_at(_outbox_path(project_root))
         if item_id not in tracked_ids and item_id not in outbox_ids:
             raise KeyError(item_id)
-        # TRACKED-PREFERRED: outbox-only → outbox; in tracked (or both) → tracked.
-        to_outbox = item_id in outbox_ids and item_id not in tracked_ids
+        # Idle main → outbox (like append); else residence-derived. See docstring.
+        to_outbox = should_route_to_outbox(project_root) or (item_id in outbox_ids and item_id not in tracked_ids)
 
         event = {
             "event": "status",

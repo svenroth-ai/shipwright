@@ -593,3 +593,68 @@ def test_mark_status_has_no_to_outbox_param() -> None:
             mark_status(  # type: ignore[call-arg]
                 root, item_id, new_status="dismissed", by="t", to_outbox=True,
             )
+
+
+# --- Idle-main status symmetry (2026-06-12) -----------------------------
+# `append_triage_item` routes idle-main writes to the outbox (via
+# `should_route_to_outbox`), but `mark_status` historically used pure
+# residence (TRACKED-PREFERRED) — so a status flip on a TRACKED-resident item
+# on idle main landed in the tracked log = undelivered drift: it blocks a hand
+# `git pull --ff-only` and never reaches origin (the iterate sweep delivers
+# ONLY the outbox; reconcile_main_triage is manual-CLI-only post-D2). This
+# completes D1's "tracked clean on idle main" intent for the STATUS side.
+
+
+def test_mark_status_idle_main_tracked_item_routes_to_outbox(
+    git_repo: Path, tmp_path: Path,
+) -> None:
+    """On idle main (origin + default branch) a status flip on a TRACKED item
+    routes to the OUTBOX (delivered by the sweep), NOT the tracked log — so it
+    never becomes undelivered drift. The tracked log stays byte-unchanged; the
+    union still resolves the item as dismissed immediately."""
+    _git(["branch", "-M", "main"], git_repo)
+    _git(["remote", "add", "origin", str(tmp_path / "origin-throwaway")], git_repo)
+    assert should_route_to_outbox(git_repo) is True  # precondition: idle main
+
+    # A TRACKED-resident append (the common case — a committed finding on origin).
+    item_id = append_triage_item(
+        git_repo, source="iterate", severity="low", kind="bug",
+        title="t", detail="d", to_outbox=False,
+    )
+    tracked_before = _tracked_path(git_repo).read_text(encoding="utf-8")
+    assert '"event":"status"' not in tracked_before  # sanity
+
+    mark_status(git_repo, item_id, new_status="dismissed", by="webui", reason="done")
+
+    # (a) status landed in the OUTBOX, keyed by the item id.
+    assert _outbox_path(git_repo).exists(), "status flip created no outbox"
+    outbox_raw = _outbox_path(git_repo).read_text(encoding="utf-8")
+    assert '"event":"status"' in outbox_raw and f'"id":"{item_id}"' in outbox_raw
+    # (b) tracked log is byte-unchanged — no idle-main drift, no pull-block.
+    assert _tracked_path(git_repo).read_text(encoding="utf-8") == tracked_before
+    # (c) loss-proof: the union resolves the dismiss immediately.
+    [resolved] = read_all_items(git_repo)
+    assert resolved["id"] == item_id and resolved["status"] == "dismissed"
+
+
+def test_mark_status_iterate_branch_tracked_item_stays_tracked(
+    git_repo: Path, tmp_path: Path,
+) -> None:
+    """Regression guard: NOT idle main (an iterate/* branch — a worktree) keeps
+    residence (TRACKED-PREFERRED), because there a tracked write ships in the
+    PR. The idle-main routing must not leak into the worktree path."""
+    _git(["branch", "-M", "main"], git_repo)
+    _git(["remote", "add", "origin", str(tmp_path / "origin-throwaway")], git_repo)
+    item_id = append_triage_item(
+        git_repo, source="iterate", severity="low", kind="bug",
+        title="t", detail="d", to_outbox=False,
+    )
+    _git(["checkout", "-b", "iterate/some-work"], git_repo)
+    assert should_route_to_outbox(git_repo) is False  # precondition: not idle main
+
+    mark_status(git_repo, item_id, new_status="dismissed", by="op", reason="r")
+
+    tracked_raw = _tracked_path(git_repo).read_text(encoding="utf-8")
+    assert '"event":"status"' in tracked_raw, "worktree status must ship in tracked/PR"
+    if _outbox_path(git_repo).exists():
+        assert '"event":"status"' not in _outbox_path(git_repo).read_text(encoding="utf-8")

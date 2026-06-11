@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-06-11T21:24:03.294145+00:00
-Total commits: 954
+Generated: 2026-06-11T22:33:12.418915+00:00
+Total commits: 956
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 265
-    "fix" : 263
+    "feat" : 266
+    "fix" : 264
     "chore" : 215
     "docs" : 123
     "refactor" : 50
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 265 commits
+### Features (feat) — 266 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-11 | iterate | arm GitHub-native auto-merge in F11 for iterate/* PRs (B4.5 Phase 3) (#197) | 5beaa92f4b37 |
 | 2026-06-11 | security | Tier-3 PR review via OpenRouter (B4.5 Phase 2) (#193) | b61e4011bcad |
 | 2026-06-11 | triage | gh-pr-ci producer — failed hard-gates on open PRs → triage (B4.5 loop-closing) (#191) | f9cf3624c49a |
 | 2026-06-11 | iterate | per-tree campaign status.json — F5b finalize wiring + scoped churn resolver | 57025c9b5d2a |
@@ -290,10 +291,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 263 commits
+### Fixes (fix) — 264 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-11 | security | tolerate markdown-fenced JSON in pr_review parser (#196) | e3b965569017 |
 | 2026-06-11 | compliance | security-scan gate ignores trigger keywords in quoted args | 42c32a3159bf |
 | 2026-06-11 | iterate | repo-relative campaign spec_path (N1, trg-196f4aa6) | 8f551bc25db8 |
 | 2026-06-11 | iterate | bloat Stop-gate reads a file's ceiling from the worktree baseline it measures, not main | e1e555dc72cb |
@@ -562,7 +564,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-11 | triage | sweep 2 outbox append(s) into branch | bc3b74f92100 |
+| 2026-06-12 | triage | sweep 4 outbox append(s) into branch | 1d06dd2ea691 |
 | 2026-06-11 | triage | drop three stale internal anchor items | 9d74de9db766 |
 | 2026-06-11 | gitignore | keep campaign planning dirs local-only | dd4806d2ba91 |
 | 2026-06-11 | triage | sweep 3 outbox append(s) into branch | 26ea4a5f0586 |
@@ -1023,7 +1025,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 954 |
+| Total commits | 956 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 954 |
+| Human-authored commits | 956 |
 
