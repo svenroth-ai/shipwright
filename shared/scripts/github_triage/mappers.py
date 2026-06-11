@@ -6,17 +6,21 @@ Pure functions — no I/O, no state, no triage-inbox dispatch.
 
 Public surface re-exported from ``github_triage``:
 
-- ``secrets_action_unit``, ``ci_action_unit``, ``latest_failed_ci_runs``
+- ``secrets_action_unit``, ``ci_action_unit``, ``latest_failed_ci_runs``,
+  ``pr_ci_action_unit``
 """
 
 from __future__ import annotations
 
-from .producer import PREFIX_CI, PREFIX_SECRETS
+from .producer import PREFIX_CI, PREFIX_PR_CI, PREFIX_SECRETS
 from .severity import (
     kind_for,
     secret_scanning_url,
     workflow_page_url,
 )
+
+# Length cap for the gh-pr-ci detail line (mirror of producer's artifact cap).
+_PR_CI_DETAIL_MAX_LEN = 1024
 
 # Workflow-run conclusions that count as a failure worth triaging.
 _FAILED_CONCLUSIONS = frozenset({"failure", "startup_failure", "timed_out"})
@@ -147,3 +151,59 @@ def latest_failed_ci_runs(runs: list[dict]) -> list[dict]:
         if str(conclusion).lower() in _FAILED_CONCLUSIONS:
             failed.append(run)
     return failed
+
+
+def pr_ci_action_unit(pr_info: dict, *, owner_repo: str | None) -> dict | None:
+    """One action-unit per OPEN PR with ≥1 failing hard-gate (B4.5 loop-closing).
+
+    ``pr_info`` is the enriched dict from
+    ``github_pr_api.open_prs_with_failed_checks`` —
+    ``{number, html_url, title, head_branch, failing_checks}`` (names already
+    sanitised + sorted, so the payload is deterministic).
+
+    Dedup key ``gh-pr-ci:{number}`` carries NO head_sha / workflow id: the
+    operator action is "fix PR #N", not "fix workflow X on sha Y". Like the
+    other action-units the ``launch_payload`` is FROZEN at first append — it is a
+    snapshot of the failing checks at first emit; auto-resolve keys off LIVE PR
+    state (``resolve.resolve_pr_ci``), never the payload text. ``owner_repo`` is
+    optional (the key is PR-number-based); it only backs a fallback PR URL.
+
+    Returns ``None`` when no PR ``number`` is present (can't form a stable key).
+    """
+    number = pr_info.get("number")
+    if number is None:
+        return None
+    # Sort + dedup defensively here (not just in the producer) so the frozen
+    # payload is byte-stable for ANY caller of this public mapper, not only the
+    # one that hands pre-sorted names (code-review LOW-1).
+    failing = sorted(set(pr_info.get("failing_checks") or []))
+    checks_str = ", ".join(failing)
+    branch = pr_info.get("head_branch") or "?"
+    title = (pr_info.get("title") or "").strip()
+    url = pr_info.get("html_url") or (
+        f"https://github.com/{owner_repo}/pull/{number}" if owner_repo else ""
+    )
+    count = len(failing)
+    heading = f"[pr-ci] PR #{number} has {count} failing check(s) on {branch}"
+    detail = (
+        f"PR #{number} \"{title}\" on {branch} | failing checks: "
+        f"{checks_str} | {url}"
+    )
+    if len(detail) > _PR_CI_DETAIL_MAX_LEN:
+        detail = detail[: _PR_CI_DETAIL_MAX_LEN - 1] + "…"
+    payload = (
+        f"/shipwright-iterate --type bug\n"
+        f"\n"
+        f"Context: open PR #{number} ({url}) has {count} failing required "
+        f"check(s) on branch '{branch}': {checks_str}.\n"
+        f"This blocks auto-merge — the PR sits armed-but-waiting until fixed.\n"
+        f"Source: triage item {PREFIX_PR_CI}{number}"
+    )
+    return {
+        "severity": "high",
+        "kind": kind_for("high"),
+        "title": heading[:160],
+        "detail": detail,
+        "dedup_key": f"{PREFIX_PR_CI}{number}",
+        "launch_payload": payload,
+    }

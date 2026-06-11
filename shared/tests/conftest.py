@@ -72,6 +72,31 @@ def _isolate_scanner_environment(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _isolate_github_pr_api(monkeypatch):
+    """Neutralise the live PR-CI fetchers by default
+    (iterate-2026-06-11-automerge-gh-pr-ci-producer).
+
+    ``github_triage.import_findings`` now fetches open PRs + per-PR check-runs.
+    ``gh api`` substitutes ``{owner}/{repo}`` from the cwd's git remote — so an
+    un-stubbed fetch in a test running inside the shipwright worktree would hit
+    the REAL repo (non-deterministic, network-bound). Default everything to "no
+    open PRs / fetch unavailable" so existing consumer tests stay hermetic; the
+    dedicated ``test_github_triage_pr_ci`` suite re-stubs these explicitly.
+    """
+    try:
+        import github_pr_api  # noqa: PLC0415
+    except ImportError:
+        return
+    monkeypatch.setattr(github_pr_api, "fetch_open_prs", lambda: None, raising=False)
+    monkeypatch.setattr(
+        github_pr_api, "fetch_pr_check_runs", lambda head_sha: None, raising=False
+    )
+    monkeypatch.setattr(
+        github_pr_api, "fetch_pr_state", lambda pr_number: None, raising=False
+    )
+
+
+@pytest.fixture(autouse=True)
 def _sweep_tests_unset_ci(request, monkeypatch):
     # Sweep/D2V suites run the REAL outbox sweep, which no-ops under `$CI`
     # (`ci_without_optin` safety); they assert it COMMITS, so must run as a local

@@ -40,7 +40,14 @@ PREFIX_SECURITY = "gh-security:"
 PREFIX_SECRETS = "gh-secrets:"
 PREFIX_CI = "gh-ci:"
 PREFIX_PROMPT = "gh-prompt:"
-_OWNED_PREFIXES = (PREFIX_SECURITY, PREFIX_SECRETS, PREFIX_CI, PREFIX_PROMPT)
+# Loop-closing for B4.5 automerge: failed hard-gates on an OPEN PR. Resolution
+# for THIS prefix is differentiated (prMerged / prClosed / prChecksResolved) and
+# lives in resolve.resolve_pr_ci — NOT the generic resolve_stale sweep — so the
+# consumer deliberately keeps PREFIX_PR_CI out of resolve_stale's resolvable set.
+PREFIX_PR_CI = "gh-pr-ci:"
+_OWNED_PREFIXES = (
+    PREFIX_SECURITY, PREFIX_SECRETS, PREFIX_CI, PREFIX_PROMPT, PREFIX_PR_CI,
+)
 
 # Length cap for the artifact-source detail line — protects against
 # pathological finding-array sizes (review finding openai-11).

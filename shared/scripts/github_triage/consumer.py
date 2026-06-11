@@ -22,8 +22,10 @@ import github_api
 from triage import append_triage_item_idempotent
 
 from .mappers import ci_action_unit, latest_failed_ci_runs, secrets_action_unit
+from .pr_ci import import_pr_ci_findings
 from .producer import (
     PREFIX_CI,
+    PREFIX_PR_CI,
     PREFIX_PROMPT,
     PREFIX_SECRETS,
     PREFIX_SECURITY,
@@ -265,6 +267,14 @@ def import_findings(project_root) -> dict:
     else:
         by_source[PREFIX_CI] = None
 
+    # PR-CI (loop-closing for B4.5 automerge): failed hard-gates on OPEN PRs.
+    # Differentiated auto-resolve lives inside import_pr_ci_findings
+    # (resolve_pr_ci), so PREFIX_PR_CI is deliberately NOT added to
+    # resolvable_prefixes — the generic resolve_stale sweep must skip it.
+    pr_ci = import_pr_ci_findings(project_root, owner_repo, append_fn=_maybe_append)
+    appended += pr_ci["appended"]
+    by_source[PREFIX_PR_CI] = pr_ci["emitted"]
+
     try:
         resolved = resolve_stale(project_root, resolvable_prefixes, current_keys)
     except Exception as exc:  # noqa: BLE001
@@ -273,6 +283,7 @@ def import_findings(project_root) -> dict:
             f"{type(exc).__name__}: {exc}\n"
         )
         resolved = 0
+    resolved += pr_ci["resolved"]
 
     return {
         "gh_available": True,

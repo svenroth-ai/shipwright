@@ -1057,6 +1057,20 @@
       "current": 326,
       "state": "exception",
       "adr": "ADR-099"
+    },
+    {
+      "path": "shared/tests/conftest.py",
+      "limit": 300,
+      "current": 320,
+      "state": "exception",
+      "adr": "ADR-101"
+    },
+    {
+      "path": "shared/tests/test_github_triage_pr_ci.py",
+      "limit": 300,
+      "current": 420,
+      "state": "exception",
+      "adr": "ADR-101"
     }
   ]
 }
