@@ -1,0 +1,115 @@
+name: PR Review
+
+# B4.5 Tier-3 PR review. Only EXTERNAL contributors, SENSITIVE paths
+# (plugin hooks/skills/agents, .github/workflows/), or the `needs-review` label
+# reach the OpenRouter custom script. Tier 1/2 PRs (iterate branches + the
+# maintainer's manual PRs) skip the review job — `/shipwright-iterate` Step 8
+# already reviews them locally. See Spec/early-access-readiness-plan.md § B4.5.
+#
+# Required status check: the `PR Review` job. For Tier 1/2 the `review` job is
+# skipped (needs.decide.outputs.needs_review == 'false'); GitHub treats a
+# `needs:`-skipped job as success, so the required check still passes.
+#
+# Fork limitation: fork PRs have a read-only token and no secret access, so the
+# fork-guarded `decide` job does not run and `review` is skipped. External fork
+# PRs are handled manually during Early Access.
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, labeled]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: pr-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  decide:
+    name: Decide if review is needed
+    runs-on: ubuntu-latest
+    # Fork-PR guard: forks cannot access OPENROUTER_API_KEY.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    outputs:
+      needs_review: ${{ steps.tier.outputs.needs_review }}
+      reason: ${{ steps.tier.outputs.reason }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: tier
+        # All github context is hoisted into env vars; the run body below never
+        # interpolates ${{ github.* }} directly (run-shell-injection guard,
+        # semgrep yaml.github-actions.security.run-shell-injection).
+        env:
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # Manual skip override (emergency bypass). Safe to evaluate first
+          # because GitHub only lets users with triage/write+ permission apply
+          # labels — an external contributor cannot self-apply `skip-pr-review`
+          # to bypass their own Tier-3 review.
+          if echo "$LABELS" | jq -e 'index("skip-pr-review")' >/dev/null; then
+            echo "needs_review=false" >> "$GITHUB_OUTPUT"
+            echo "reason=skip-pr-review label set" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # Manual force override
+          if echo "$LABELS" | jq -e 'index("needs-review")' >/dev/null; then
+            echo "needs_review=true" >> "$GITHUB_OUTPUT"
+            echo "reason=needs-review label set" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # Tier 3a: sensitive paths (plugin hooks/skills/agents, CI workflows)
+          changed=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+          if echo "$changed" | grep -qE '^(plugins/.+/(hooks|skills|agents)/|\.github/workflows/)'; then
+            echo "needs_review=true" >> "$GITHUB_OUTPUT"
+            echo "reason=sensitive path touched" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # Tier 3b: external contributor (anyone except the maintainer + dependabot)
+          if [ "$PR_AUTHOR" != "svroch" ] && [ "$PR_AUTHOR" != "dependabot[bot]" ]; then
+            echo "needs_review=true" >> "$GITHUB_OUTPUT"
+            echo "reason=external contributor" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # Otherwise Tier 1/2 — Step 8 already reviewed it; skip.
+          echo "needs_review=false" >> "$GITHUB_OUTPUT"
+          echo "reason=internal PR — Step 8 already reviewed" >> "$GITHUB_OUTPUT"
+
+  review:
+    name: PR Review
+    needs: decide
+    if: needs.decide.outputs.needs_review == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      # Default (shallow) checkout is enough: pr_review.py fetches the diff via
+      # `gh pr diff` (GitHub API) and only needs the prompt + script files on disk.
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        # Third-party action pinned to a full commit SHA (supply-chain
+        # hardening); trailing comment records the human-readable tag.
+        uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39  # v3
+        with:
+          enable-cache: true
+
+      - name: Install Python
+        run: uv python install 3.11
+
+      - name: Run Tier-3 PR review
+        # github context hoisted into env (run-shell-injection guard); the run
+        # body uses $PR_NUMBER / $REPO, never ${{ github.* }}.
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHIPWRIGHT_PR_REVIEW_MODEL: anthropic/claude-sonnet-4.6
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          uv run plugins/shipwright-security/scripts/tools/pr_review.py \
+            --pr-number "$PR_NUMBER" \
+            --repo "$REPO" \
+            --prompt-dir shared/prompts/pr_reviewer

@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-06-11T11:21:32.265008+00:00
-Total commits: 951
+Generated: 2026-06-11T20:05:10.999236+00:00
+Total commits: 952
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
+    "feat" : 264
     "fix" : 263
-    "feat" : 263
     "chore" : 215
     "docs" : 122
     "refactor" : 50
@@ -19,6 +19,275 @@ pie title Commit Types
 ```
 
 ## Changes by Type
+
+### Features (feat) — 264 commits
+
+| Date | Scope | Description | Commit |
+|------|-------|-------------|--------|
+| 2026-06-11 | triage | gh-pr-ci producer — failed hard-gates on open PRs → triage (B4.5 loop-closing) (#191) | f9cf3624c49a |
+| 2026-06-11 | iterate | per-tree campaign status.json — F5b finalize wiring + scoped churn resolver | 57025c9b5d2a |
+| 2026-06-10 | iterate | project campaign status from the event log (campaign S2) | 7d3b48d73ed1 |
+| 2026-06-10 | iterate | campaign sub-iterates self-identify via event extras stamp | efa1dcfc3a5e |
+| 2026-06-10 | iterate | history-calibrated complexity prior + cross-domain scope vocabulary | 9309f0b03c98 |
+| 2026-06-10 | triage | add `triage_cli.py list --json` contract for the WebUI live-view | 2198a496c4f4 |
+| 2026-06-08 | triage | propagate outbox gitignore to adopted repos (adopt + iterate self-heal) + docs | 8a0df7927e6d |
+| 2026-06-08 | triage | sweep outbox into PR branch + abandoned-branch-safe GC; drop integrate_main reconcile | a728156f713c |
+| 2026-06-08 | triage | gitignored per-tree outbox + reroute background producers + union reader | a7a0209395b6 |
+| 2026-06-08 | churn | scaffold append-log union merge driver into managed repos | 368a2d7e34c9 |
+| 2026-06-07 | compliance | A5.6 a5_phase_b_activated opt-in for deliberate Phase B | b382234c277f |
+| 2026-06-07 | iterate | campaign_init --expands-triage / --from-triage (promote a triage item to a campaign anchor) (#162) | 0e924eddcc44 |
+| 2026-06-05 | triage | merge-safety + leak-guard exemption for tracked triage.jsonl (C2) | d864828427a6 |
+| 2026-06-05 | triage | git-track .shipwright/triage.jsonl — gitignore negation + scaffolder self-heal (C1) | 17af03c0e70b |
+| 2026-06-05 | triage | machine-churn-only GC tool for the dismissed pile | bad895af4403 |
+| 2026-06-05 | compliance | A5.8 behaviorally probes the deployed critical-gate | 387e1da8bae3 |
+| 2026-06-03 | iterate | producer-owned campaign lifecycle status (draft->active->complete) | 3afe1fba71b1 |
+| 2026-06-01 | triage | ingest prompt_risks.json as a gh-prompt producer source | fef7f67451ff |
+| 2026-05-31 | iterate | add fail-closed Test Completeness Ledger gate | bde2812d0525 |
+| 2026-05-30 | build,iterate | spec-reviewer + doubt-reviewer cascade in build Step 6 (trg-7c6137ed) | f93c273cc7ee |
+| 2026-05-30 | compliance | auto emit/dismiss compliance triage on Stop with full-coverage gate | 9b31ce2956c2 |
+| 2026-05-29 | iterate,project | reintegrate SP3 + OS2 after Campaign B | a4cb2a306fab |
+| 2026-05-29 | hooks | add using-shipwright SessionStart bootstrap + plugin-cache Stop wave (P4.1) | e7888704a598 |
+| 2026-05-25 | bloat | Campaign A.defense — pre-commit + CI + ADR template + glossary | ac02d7b24cf5 |
+| 2026-05-25 | compliance | Campaign A.review — bloat reviewer prompts + Group H audit | 723c8afffa27 |
+| 2026-05-25 | bloat | Loop-Gate (Campaign A.foundation — A1+A2+A3) | bfd4e63e4440 |
+| 2026-05-24 | compliance | collapse SBOM triage items by common undeclared-signature | 6be7aaebaa60 |
+| 2026-05-23 | compliance | extend snapshot producers to adopt + security | 96bbcfef1b77 |
+| 2026-05-21 | compliance | empirical-verification follow-ups (B.4 producer + B.3 synthesis + path-canon) (#65) | 46d674542dc4 |
+| 2026-05-21 | scripts | plugin-cache vs repo drift check (C.3) (#62) | 02eb08a6fdbb |
+| 2026-05-21 | compliance | doc-hygiene audit detectors F4-F7 (C.2) (#61) | 9008cf4b6d0b |
+| 2026-05-21 | record_event | hard-enforce FR-or-change-type gate at finalize (C.1) (#60) | 388fa55051b4 |
+| 2026-05-21 | compliance | RTM ↔ Triage deep-link + Coverage Summary rewrite (B.4) (#59) | 48024b1684fa |
+| 2026-05-21 | compliance | test-evidence Layer column + per-layer FAIL triage (B.3) (#58) | ccb2b987e77b |
+| 2026-05-21 | compliance | SBOM undeclared-license triage producer (B.2) (#57) | 47ab03d033de |
+| 2026-05-21 | compliance | mode-aware dashboard + Why-warn column + Triage open (B.1) (#53) | c24dd6eeb482 |
+| 2026-05-21 | triage | producer contract schema + RTM-link fields + inbox polish (Iterate B0) (#52) | f2aaf89cfea2 |
+| 2026-05-21 | handoff | 4-stage session-id fallback chain (Iterate A.4) (#50) | 822f5fae9f45 |
+| 2026-05-21 | adr | hard-reject ADR field overflow + spec_ref + INDEX.md (A.3) (#49) | 9addb9a3b404 |
+| 2026-05-21 | adopt | Mermaid architecture diagram + drift-sync marker (Iterate A.1) (#48) | 32448078c4cd |
+| 2026-05-21 | compliance | SBOM lockfile + importlib.metadata + workspace-aware (Phase 0f) (#47) | 932e0d221ea1 |
+| 2026-05-21 | triage | ingest shipwright-security artifact as gh-security action-unit (Iterate C) | 6f5dd5f23a1d |
+| 2026-05-20 | triage | redesign Triage Inbox as launch-surface (action-units + launchPayload + CLI) | 7b67acf60d70 |
+| 2026-05-19 | triage | import GitHub findings into the triage inbox | ff51a8cc80f1 |
+| 2026-05-16 | spec | backfill FR-01.14 (Triage Inbox) + link 7 historical feature events | 805d268a9dc3 |
+| 2026-05-16 | iterate | enforce spec-impact classification on every feature/change iterate | 5544ea3b6e38 |
+| 2026-05-16 | iterate | unconditional worktree isolation for /shipwright-iterate | 42e65d7e0032 |
+| 2026-05-14 | triage | producers iterate 2 — security + performance + F0.5 + drift wiring | aab9bd7dafb7 |
+| 2026-05-11 | triage | promote CLI for non-webui repos (AC-7) | 7f131f9d940d |
+| 2026-05-11 | triage | adopt-time scaffolder + Step E.16 in adopt skill (AC-6) | 719790d3e777 |
+| 2026-05-11 | triage | emit Compliance audit findings to triage + auto-dismiss (AC-5) | d5b26710dfd9 |
+| 2026-05-11 | triage | emit Phase-Quality Tier-1 FAILs to triage inbox (AC-4) | e78bb6b1179b |
+| 2026-05-11 | triage | wire aggregate_triage Stop-hook (AC-3) | ca3b2b27849c |
+| 2026-05-11 | triage | add aggregator + markdown renderer (AC-2) | d4c155162611 |
+| 2026-05-11 | triage | add storage API + mapping helpers + drift tests (AC-1, AC-8) | 3a3b9a9edca8 |
+| 2026-05-11 | adopt | scaffold profile-aware CI + Claude-Review workflows with cross-platform matrix default | 17feb1c05af4 |
+| 2026-05-06 | iterate | add F0.5 surface_verification audit to iterate_checks | 17c8f9f945db |
+| 2026-05-06 | iterate | add surface_verification.py F0.5 orchestrator | fb70a460e262 |
+| 2026-05-04 | iterate | runner contract mandates reviews (ADR-029) | f6a14fc7fcc7 |
+| 2026-05-03 | test | boundary coverage report (ADR-027) | 216f8b3f5f2b |
+| 2026-05-03 | iterate | multi-session discipline (ADR-026) | 41cef18d6171 |
+| 2026-05-03 | iterate | confidence calibration phase (ADR-025) | f27376626fda |
+| 2026-05-03 | iterate | boundary tests foundation (ADR-024) | ba9874506700 |
+| 2026-05-03 | adopt | scaffold .env.local with profile + framework keys (ADR-021) | 995300862e93 |
+| 2026-05-02 | adopt | expand CLAUDE.md "Ongoing Changes" with iterate-workflow bullets | 8da26f338b05 |
+| 2026-05-01 | compliance | add Group A5 — CI security workflow integrity audit | 66fc9ac1ed9d |
+| 2026-05-01 | compliance | wire Group E + G + tuning (plan v7 Steps 7+8+13) | 423f7021bb4c |
+| 2026-05-01 | compliance | wire Group B (config + event-log coherence) (plan v7 Step 5) | 0eb62a062f87 |
+| 2026-05-01 | adopt | scaffold dormant security workflow into adopted repos | 3eff53b82dcc |
+| 2026-05-01 | shared | add dormant security-workflow template + drift test | d7a413cc4f9c |
+| 2026-05-01 | shared | add security-workflow convention lock module + pyyaml deps | d7958b43e264 |
+| 2026-05-01 | compliance | wire Group A + Group D detective audits (plan v7 Step 4) | 40c1807218e0 |
+| 2026-05-01 | test | add performance budgets (lighthouse + bundle-size) | 05dc2c09e72b |
+| 2026-04-30 | adopt | visual-guidelines schema alignment + harvest existing knowledge | e273104f6c2b |
+| 2026-04-26 | shared | artifact-relocation drift safety net (Sub-Iterate A of 7) | ad62e15c507f |
+| 2026-04-26 | deploy | post-apply migration verification + two-phase pattern | e9433e5c0980 |
+| 2026-04-26 | adopt | visual frontend documentation (Tier 5, new scope) | 76b669457993 |
+| 2026-04-26 | templates,build,adopt | Vite DX templates for generated apps | 02e2d111cb0d |
+| 2026-04-26 | security,ci | SARIF translator + dormant CI hardening (Iterate 2 of 2) | 4e679247707e |
+| 2026-04-25 | security,run | persist reports + iterate handoff + decouple orchestrator | 8b06dc2a312f |
+| 2026-04-25 | shared,build,iterate | add --mode code to external_review.py (Iterate B of A→B) | b386bbea203e |
+| 2026-04-25 | run | F6 — integration tests, ADR-001, and docs for multi-session pipeline | 1bdf76c13661 |
+| 2026-04-25 | run | F5 — Step 0 phase-session context recovery preamble in 8 phase skills | 5f9988abbb59 |
+| 2026-04-25 | run | F4 — master skill rewrite to spec-and-stop coordinator | e0dad2694fe5 |
+| 2026-04-25 | run | F3b — wire phase-session hooks live in all 9 plugins | 812e625230dd |
+| 2026-04-25 | run | F3a — phase-session hook infrastructure (gated, not yet wired) | e63f435fc952 |
+| 2026-04-25 | run | F2 — phase-task lifecycle subcommands with CAS + ownership | 2a89d1490209 |
+| 2026-04-25 | run | F1 — v2 schema + phase state machine for multi-session pipeline | b58069a8fe55 |
+| 2026-04-25 | adopt | multi-service dev-server support — v0.5.0 | aa228db59595 |
+| 2026-04-24 | shared | list_iterate_branches — git-based classifier for iterate/* branches | 8e4f612d4839 |
+| 2026-04-24 | webui,project | cross-repo contract versioning for run-config + actions + profiles | 879777263e6c |
+| 2026-04-23 | iterate+changelog | iterate_history file-per-iterate + CHANGELOG-unreleased.d drop pattern | 1ff0bdf32046 |
+| 2026-04-23 | webui | task-list-unified — VS Code-style task list for TodoWrite + TaskCreate + TaskUpdate | f057d459a81a |
+| 2026-04-23 | webui | port-env-support — PORT/VITE_PORT for parallel dev-server stacks | 76f38a60b831 |
+| 2026-04-23 | plugins | parallel-worktree-conventions — embed in iterate/build/changelog SKILLs + docs | 9bb88a2e6b84 |
+| 2026-04-23 | webui | chat-rendering-polish — align BubbleTranscript with bubble-states.html mockup (6 ACs) | dceb98c8c874 |
+| 2026-04-23 | webui | adopt-phase — expose /shipwright-adopt via New Task dropdown | 36b0cef9399a |
+| 2026-04-22 | webui | iterate 3 — design overhaul, project-task wiring, configurable actions, 3-pane TaskDetail | 3306c37c65c9 |
+| 2026-04-21 | build,iterate | make Browser Verify mandatory on frontend diff | e1b4f5093779 |
+| 2026-04-20 | phase-quality | monorepo auto-descent guard for audit + injection | ddf75526d587 |
+| 2026-04-20 | webui | iterate 2.3 — TaskBoard + Inbox UX + coverage gaps | 202aeceac8ba |
+| 2026-04-20 | shared | Phase-Quality integration for adopt + Playwright route crawler | e5e92af3043d |
+| 2026-04-20 | adopt | scaffold shipwright-adopt plugin for brownfield onboarding | acb793e2cf18 |
+| 2026-04-19 | webui | iterate 2.2b — bubble layout + virtualization + auto-scroll | d4dc787c7095 |
+| 2026-04-19 | webui | iterate 2.2a — markdown rendering + parser hardening | ef4c87e43b54 |
+| 2026-04-19 | webui | iterate 2.1 — launch-command --name flag + title rename | 6741cb03c893 |
+| 2026-04-19 | compliance | Steps 9 + 10 — audit report rendering + SKILL.md content swap | b60b90b8e533 |
+| 2026-04-19 | compliance | Step 6 Groups C + F (preventive re-runs) + path-collision fix | ed4a2639594b |
+| 2026-04-19 | compliance | Step 3 detective-audit skeleton + version gate | c4532b8e771b |
+| 2026-04-19 | compliance | Step 2 staleness infrastructure (audit_staleness + --check) | d86bd0cf8308 |
+| 2026-04-19 | webui | external-launch pivot (Plan D'' variant a, Sub-iterates 0-2) | 043d6415f78e |
+| 2026-04-19 | phase-quality | flip SessionStart-Injection default ON, cap 3→5 | 3689d0b379f1 |
+| 2026-04-18 | phase-quality | Spec-checks S1-S10 + SessionStart-Inject + Orchestrator-Gate (PR 4/4) | acec516c30be |
+| 2026-04-18 | phase-quality | Infrastructure/Traceability/Quality validators I1-I4/T1-T2/Q1-Q2 (PR 3/4) | 6a5caf5d0670 |
+| 2026-04-18 | phase-quality | Workflow-category validators W1-W7/Sec1-Sec2/Cmp1-Cmp2/D1-D2 (PR 2/4) | af103d33687e |
+| 2026-04-18 | phase-quality | Stop-hook audit infrastructure + Canon C1-C5 (PR 1/4) | c9516f8fd327 |
+| 2026-04-18 | webui/chat | sub-iterate B — AUQ as first-class tool UI + stall instrumentation | e6435af8ba61 |
+| 2026-04-18 | webui/chat-rendering | sub-iterate 0 — contract foundation | 3bfdc14b12b7 |
+| 2026-04-17 | iterate14.12 | mid-task model switching + settings.defaultMode wins over localStorage | 3fdecb329618 |
+| 2026-04-16 | iterate14.11 | task detail header pause indicator + resume button | fbcb224ae97a |
+| 2026-04-16 | iterate14.9 | bug fixes + opus 7 + auto mode | cfea7550b2fc |
+| 2026-04-16 | autonomous-loops | phase 2 complete — iterate campaign mode | bff4c1907e44 |
+| 2026-04-16 | autonomous-loops | phase 1 complete — build section loop | ee710ce09aa8 |
+| 2026-04-16 | iterate14.8,shared | auto-finalization + subdirectory root fix + canon C2 | 3f4f25c3cb0e |
+| 2026-04-16 | iterate14.8.3 | chat composer stop + modelselector redesign + rest hydration | c974bdeed7fb |
+| 2026-04-16 | iterate14.8.2 | settings defaults + project color + deep-link | e444aa560bc7 |
+| 2026-04-15 | iterate14.7.2 | multi-project kanban with colored strips + filter chip | c551c157bc75 |
+| 2026-04-15 | iterate14.7.1 | P1 UX polish bundle — model selector sync + paste buttons + inbox nav + mode badge + constitution rule | eba231434236 |
+| 2026-04-15 | iterate14.6 | playwright e2e suite + dynamic model label | 36d8cbbe0bdf |
+| 2026-04-15 | iterate14.5 | red flag banner for non-blocked AskUserQuestion | b3c97f980c42 |
+| 2026-04-15 | iterate14.4 | create menu + pipeline modal + linear-style shortcuts | 7663a0e04a9a |
+| 2026-04-15 | iterate14.3 | constitution AskUserQuestion stop rule + project intro gate | 7dc5ecab67e5 |
+| 2026-04-15 | iterate14.2 | multi-question inbox with parts[] schema | 4a8e7b254833 |
+| 2026-04-15 | iterate14.1 | preview button + profile-loader + run plugin profile field | 5b6d05d2b144 |
+| 2026-04-15 | iterate14.0 | phase dropdown cleanup + iterate auto-detection | 4727c631a935 |
+| 2026-04-14 | test,changelog,deploy,shared | iterate 12.4 — release-axis canon + changelog Sonder-Checks | f04dccf0d4ae |
+| 2026-04-14 | build,shared | iterate 12.3 — build canon hybrid + check-plan B3/B6 imports | 2dcc118e2049 |
+| 2026-04-14 | design,plan,shared | iterate 12.2 — design + plan canon + preventive FR/section checks | 2bac75b8203d |
+| 2026-04-14 | project,shared | iterate 12.1 — project plugin canon + stop-hook run-aware skip | d06a0694b3d7 |
+| 2026-04-14 | shared,run | iterate 12.0 — modular verifier package + Canon foundation | a90ca90c6db2 |
+| 2026-04-14 | webui,iterate13 | flip to unified render, delete band-aids, remove env flag | 09c68c4011ac |
+| 2026-04-14 | webui,iterate13 | expand useSSE with chat:message ChatMessage handler | 97558f3ed96a |
+| 2026-04-14 | webui,iterate13 | add Zustand turnStatusStore + useTurnStatus selector | d6eb4646f992 |
+| 2026-04-14 | webui,iterate13 | add mergeCommitted pure helper with id dedupe and timestamp sort | d340c36618ba |
+| 2026-04-14 | webui,iterate13 | Phase 0 — broadcast extracted ChatMessages over SSE | 891c946c07ef |
+| 2026-04-14 | plan,iterate,compliance | mandatory external LLM review with interactive opt-out | 4191309a65ec |
+| 2026-04-13 | webui | probe claude CLI and show missing-CLI banner | efc339ef8b8c |
+| 2026-04-13 | hooks | content-aware CLAUDE.md drift detection | 6ce3be9f1f05 |
+| 2026-04-13 | webui | mid-task permission mode switching + autonomy sync to run_config | b79d7f171774 |
+| 2026-04-13 | webui | phase detection for task creation | 5edc10a76870 |
+| 2026-04-12 | security | add scan CLI, prompt injection scanner, and PR-mode report | af58b4887126 |
+| 2026-04-12 | webui | port companion markdown + left-align user msg + image upload | 569b7fab0807 |
+| 2026-04-12 | webui | chat rendering — persist all NDJSON types, real-time streaming, tool/thinking components | 07a196a0295b |
+| 2026-04-12 | webui | edit task modal, show description popover, guide install docs | 14c7718cca9a |
+| 2026-04-11 | — | add auto-triggering, standalone mode, and phase router for all skills | 8940370d84ba |
+| 2026-04-11 | pipeline | add self-healing for missing prerequisite artifacts | 4d82e01be879 |
+| 2026-04-11 | client | add intent detection hint in chat input | a5b14ef1245b |
+| 2026-04-11 | client | implement Projects, Inbox, and Settings pages | ae548aaa3bc4 |
+| 2026-04-11 | client | add card enrichment with classify and start task actions | 20f261e8f895 |
+| 2026-04-11 | client | implement 4-step project wizard with stack profiles | 19d0cd8c5b45 |
+| 2026-04-11 | client | implement file explorer with directory tree and git status | 28876a3ec419 |
+| 2026-04-11 | client | implement all viewer renderers — code, HTML, JSON, overlays | 9cbac581fa1c |
+| 2026-04-11 | client | implement Smart Viewer with tab management and Markdown renderer | 10606046bdb3 |
+| 2026-04-11 | client | implement phase-to-status mapping with per-project overrides | 917f66f8d495 |
+| 2026-04-11 | client | implement chat engine with messages, tools, and input toolbar | 87408fd20794 |
+| 2026-04-11 | client | implement Task Detail page with resizable two-panel layout | 47e5d7239b6a |
+| 2026-04-11 | client | add filter bar, view toggle, and sortable list view | ed065ba2e0ef |
+| 2026-04-11 | client | add New Issue modal with background auto-classification | f5ff0366242a |
+| 2026-04-11 | client | implement Kanban board with columns, cards, and project tabs | bb048341077d |
+| 2026-04-11 | client | add TanStack Query hooks, SSE integration, and API layer | c7e4a28cc647 |
+| 2026-04-11 | client | add app shell with sidebar navigation and routing | 8b1538c08e69 |
+| 2026-04-11 | api | implement all REST API routes and wire up server entry point | b10c5aa610a1 |
+| 2026-04-11 | sse | implement SSE manager with broadcast and route handler | 01b4440d9b37 |
+| 2026-04-11 | inbox | implement inbox manager and chat store | 4286127b4317 |
+| 2026-04-11 | registry | implement project manager, config reader, and file watcher | 926dfb6dd169 |
+| 2026-04-11 | governor | implement process governor with concurrency semaphore and heartbeat | d266940c02f5 |
+| 2026-04-11 | adapter | implement Claude CLI adapter with NDJSON stream parser | acd8a80c3c1c |
+| 2026-04-11 | tasks | implement task manager with Kanban status derivation | 21363f5516a9 |
+| 2026-04-11 | events | implement event reader, writer, and in-memory event store | 59b20df33fe5 |
+| 2026-04-11 | types | add shared TypeScript type definitions | a1ef8b2890ca |
+| 2026-04-10 | server | scaffold Hono server with health endpoint, CORS, and error handling | 6904060d81fd |
+| 2026-04-09 | iterate | add F12 release prompt after finalization | fdad687ddbad |
+| 2026-04-09 | events | add event emission to test, deploy, and changelog plugins | f1791a2a60f6 |
+| 2026-04-09 | testing | add cross-page UI consistency check to test and iterate plugins | c94ddbdf8317 |
+| 2026-04-09 | reflection | add learnings capture protocol to build, test, deploy, iterate | f8f9d3e22601 |
+| 2026-04-09 | templates | add 7 production-tested patterns from AI Portal fixes | 9b811f70d034 |
+| 2026-04-09 | testing | add integration test layer + aggressive E2E across all plugins | 62c29ac72445 |
+| 2026-04-08 | iterate | add structured debugging protocol and fresh verification gate | 7bdc20aa32e9 |
+| 2026-04-08 | migrations | close push gap — Build/Iterate apply migrations before tests | ee5d7b0dbf60 |
+| 2026-04-08 | iterate | add feedback parsing protocol and harden TDD instructions | 5118cb53f104 |
+| 2026-04-06 | iterate | add session resume detection and Stop hook | 132417d30cae |
+| 2026-04-06 | — | add mandatory context loading to all pipeline plugins | d36a9bead808 |
+| 2026-04-06 | iterate | add events.jsonl to Layer 1 context loading | f404cdeb0fda |
+| 2026-04-06 | security | add pluggable scanner backend with OSS support | 1449d32d6aba |
+| 2026-04-06 | iterate | add mandatory context loading step B2 + expand Layer 1 | 12840114ae67 |
+| 2026-04-06 | iterate | add interview phase, approval gate, and inline spec template | 6611ae7d9a07 |
+| 2026-04-05 | build,test | refactor visual comparison — root-cause grouping in build, regressions-only in test | c379816c3add |
+| 2026-04-05 | iterate | upgrade to v0.3.0 — complexity-adaptive pipeline phases | e239f981fd11 |
+| 2026-04-05 | build,iterate | add design fidelity bridge for mockup-to-code accuracy | b135cf9716cf |
+| 2026-04-04 | — | add 5-axis review framework, anti-rationalization tables, and reference docs | 42cd1e9d43cf |
+| 2026-04-04 | — | add unified event log (shipwright_events.jsonl) for all reporting | 0b95c2ae1990 |
+| 2026-04-04 | — | add marketplace update mechanism + bump all plugins to v0.2.0 | 533900c4dda7 |
+| 2026-04-04 | — | improve /shipwright-iterate auto-recognition + expand CLAUDE.md template | 6a13c511d016 |
+| 2026-04-03 | — | add /shipwright-iterate plugin for lightweight continuous SDLC | 7293a5f33074 |
+| 2026-04-03 | design | add chrome definition for cross-screen UI consistency | 423364691da3 |
+| 2026-04-03 | test | add auth support to visual_compare.py | 8cad194cdc34 |
+| 2026-04-03 | test | add visual fix loop with root-cause grouping | fce435bd87bd |
+| 2026-04-03 | test | add visual comparison layer — mockup vs live screenshots | 9017f3062ef3 |
+| 2026-04-03 | preview | add /shipwright-preview plugin for local browser preview | 896686adca1c |
+| 2026-04-02 | test | grouped E2E retry strategy — per root-cause group instead of global limit | fd9351331cb1 |
+| 2026-04-02 | test | add E2E results verification step and Playwright report links | 11d72c4b49ff |
+| 2026-04-02 | — | integrate visual guidelines into build and test pipeline | 585cb0ca68dd |
+| 2026-04-02 | — | improve test pipeline — outcome validation, E2E coverage, dashboard overhaul | fd6c7948fa75 |
+| 2026-04-02 | project | enable auto-delete branch on GitHub repos during scaffolding | be57c28c564e |
+| 2026-04-02 | test | auto-generate E2E specs from plan before Playwright execution | 428e548d6ddb |
+| 2026-04-02 | docs | constitution, prompt caching, code examples, and context guidance | 97edadbc5ded |
+| 2026-04-02 | pipeline | phase validation gates, dashboard fixes, and hooks documentation | e83a7aeab96e |
+| 2026-04-01 | pipeline | multi-split loop with test results archiving | 78705a630504 |
+| 2026-04-01 | compliance | end-to-end requirement traceability with linked reports | 678ed22c6d26 |
+| 2026-03-31 | build,run | automated split archiving to prevent RTM data loss | aba8b1586077 |
+| 2026-03-31 | run,build,test | autonomous context management via subagent delegation | a26ce95539ff |
+| 2026-03-30 | run,build | multi-split awareness for dashboard and orchestrator | 21614d0d7dea |
+| 2026-03-30 | build | derive branch prefix from project name in run config | 31e97f543890 |
+| 2026-03-30 | run,compliance | pipeline dashboard, phase-complete triggers, compliance fixes | 97b4f16123e1 |
+| 2026-03-30 | build,compliance | compact ADR format and sprint updates | 62aa60208a4a |
+| 2026-03-30 | changelog | auto-merge PR in autonomous mode | 6c29a683c737 |
+| 2026-03-30 | changelog | autonomous mode skips version and changelog confirmation | 96b94e1f7ffc |
+| 2026-03-30 | build,run,test | autonomous build with dashboard, context pressure, and auto-fix | 888aeb105798 |
+| 2026-03-30 | build | auto-generate .env.local template via --init flag | 2ae53b4b6f67 |
+| 2026-03-30 | build,test | add structured debugging, verification gates, and self-review | f3ef017440b3 |
+| 2026-03-28 | design | add snippet assembly system and review viewer with feedback loop | 7b0b717cd88f |
+| 2026-03-28 | — | add shared Stop hook for automatic session handoff generation | 91d2d6be1948 |
+| 2026-03-28 | design | add 3-stage brand discovery with website extraction and preview validation | 7805156c5c94 |
+| 2026-03-28 | — | add design system flavors, decision logging, and deploy flavors | 5012323805e0 |
+| 2026-03-28 | — | add env var validation before build and deploy | cf7bb01ad11c |
+| 2026-03-28 | — | auto-trigger compliance update on every phase completion | cecd0072e8fe |
+| 2026-03-28 | — | add conditional security scan to pipeline | 8550e8605fb1 |
+| 2026-03-28 | — | update direct API model defaults to gemini-3.1-pro and gpt-5.4 | b3bcb2f6ec31 |
+| 2026-03-27 | — | add .env support for API keys and update default OpenRouter models | 847a8814fefc |
+| 2026-03-26 | — | add shipwright-security plugin with Aikido API integration | 8dca5db164aa |
+| 2026-03-26 | — | add secret scanning, file size guard, and drift detection hooks | bf40a0f68f60 |
+| 2026-03-23 | — | integrate Claude Architect Certification best practices | 8aac61df8c01 |
+| 2026-03-21 | — | add sync_check.py and fix 6 out-of-sync plugin references | c6236fa28aeb |
+| 2026-03-21 | — | add visual guidelines generation to shipwright-design | 4346f5710179 |
+| 2026-03-21 | — | integrate compliance into orchestrator + design visual guidelines | fad9b836bbb5 |
+| 2026-03-21 | — | Playwright browser testing + browser-fixer agent + compliance plugin | 23d00d75bae8 |
+| 2026-03-21 | — | shipwright-design plugin — UI mockups from IREB specs | 18da15a255b9 |
+| 2026-03-21 | — | add marketplace.json for Claude Code plugin discovery | d537a32321af |
+| 2026-03-21 | — | Setup Guide, install scripts, and OpenRouter support | 5c3645a07a34 |
+| 2026-03-21 | — | Task 17 — Orchestrator E2E integration tests | 2fdd8a372aed |
+| 2026-03-21 | — | Task 14+15+16 — shipwright-run orchestrator | bde02874cfe2 |
+| 2026-03-21 | — | Task 13 — DevOps integration tests | 80f2089dd6f1 |
+| 2026-03-21 | — | Task 12 — shipwright-deploy with Jelastic (Infomaniak) + rollback | 432661af93c6 |
+| 2026-03-21 | — | Task 11 — shipwright-test plugin + shared smoke test | 4f3d61d9bc69 |
+| 2026-03-21 | — | Task 10 — shipwright-changelog plugin | be75de7958a9 |
+| 2026-03-21 | — | Task 09 — Core Trilogy integration tests | f186c5627a5e |
+| 2026-03-21 | — | IREB-aligned spec.md template for shipwright-project | 8bb40cdf2f80 |
+| 2026-03-21 | — | Task 07+08 — shipwright-build fork with enhancements | 79f1fc99f190 |
+| 2026-03-21 | — | shipwright-project supports chat and inline input modes | 1bae73e94f67 |
+| 2026-03-21 | — | Task 06 — shipwright-plan fork with E2E test plan and sprint tracking | 0fa020872bda |
+| 2026-03-21 | — | Task 04+05 — shipwright-project fork with profile integration | db16a76a3e51 |
+| 2026-03-20 | — | Task 03 — shared utilities (config, state, handoff, hooks) | abe67928deed |
+| 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
+| 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
 ### Fixes (fix) — 263 commits
 
@@ -288,279 +557,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 263 commits
-
-| Date | Scope | Description | Commit |
-|------|-------|-------------|--------|
-| 2026-06-11 | iterate | per-tree campaign status.json — F5b finalize wiring + scoped churn resolver | 57025c9b5d2a |
-| 2026-06-10 | iterate | project campaign status from the event log (campaign S2) | 7d3b48d73ed1 |
-| 2026-06-10 | iterate | campaign sub-iterates self-identify via event extras stamp | efa1dcfc3a5e |
-| 2026-06-10 | iterate | history-calibrated complexity prior + cross-domain scope vocabulary | 9309f0b03c98 |
-| 2026-06-10 | triage | add `triage_cli.py list --json` contract for the WebUI live-view | 2198a496c4f4 |
-| 2026-06-08 | triage | propagate outbox gitignore to adopted repos (adopt + iterate self-heal) + docs | 8a0df7927e6d |
-| 2026-06-08 | triage | sweep outbox into PR branch + abandoned-branch-safe GC; drop integrate_main reconcile | a728156f713c |
-| 2026-06-08 | triage | gitignored per-tree outbox + reroute background producers + union reader | a7a0209395b6 |
-| 2026-06-08 | churn | scaffold append-log union merge driver into managed repos | 368a2d7e34c9 |
-| 2026-06-07 | compliance | A5.6 a5_phase_b_activated opt-in for deliberate Phase B | b382234c277f |
-| 2026-06-07 | iterate | campaign_init --expands-triage / --from-triage (promote a triage item to a campaign anchor) (#162) | 0e924eddcc44 |
-| 2026-06-05 | triage | merge-safety + leak-guard exemption for tracked triage.jsonl (C2) | d864828427a6 |
-| 2026-06-05 | triage | git-track .shipwright/triage.jsonl — gitignore negation + scaffolder self-heal (C1) | 17af03c0e70b |
-| 2026-06-05 | triage | machine-churn-only GC tool for the dismissed pile | bad895af4403 |
-| 2026-06-05 | compliance | A5.8 behaviorally probes the deployed critical-gate | 387e1da8bae3 |
-| 2026-06-03 | iterate | producer-owned campaign lifecycle status (draft->active->complete) | 3afe1fba71b1 |
-| 2026-06-01 | triage | ingest prompt_risks.json as a gh-prompt producer source | fef7f67451ff |
-| 2026-05-31 | iterate | add fail-closed Test Completeness Ledger gate | bde2812d0525 |
-| 2026-05-30 | build,iterate | spec-reviewer + doubt-reviewer cascade in build Step 6 (trg-7c6137ed) | f93c273cc7ee |
-| 2026-05-30 | compliance | auto emit/dismiss compliance triage on Stop with full-coverage gate | 9b31ce2956c2 |
-| 2026-05-29 | iterate,project | reintegrate SP3 + OS2 after Campaign B | a4cb2a306fab |
-| 2026-05-29 | hooks | add using-shipwright SessionStart bootstrap + plugin-cache Stop wave (P4.1) | e7888704a598 |
-| 2026-05-25 | bloat | Campaign A.defense — pre-commit + CI + ADR template + glossary | ac02d7b24cf5 |
-| 2026-05-25 | compliance | Campaign A.review — bloat reviewer prompts + Group H audit | 723c8afffa27 |
-| 2026-05-25 | bloat | Loop-Gate (Campaign A.foundation — A1+A2+A3) | bfd4e63e4440 |
-| 2026-05-24 | compliance | collapse SBOM triage items by common undeclared-signature | 6be7aaebaa60 |
-| 2026-05-23 | compliance | extend snapshot producers to adopt + security | 96bbcfef1b77 |
-| 2026-05-21 | compliance | empirical-verification follow-ups (B.4 producer + B.3 synthesis + path-canon) (#65) | 46d674542dc4 |
-| 2026-05-21 | scripts | plugin-cache vs repo drift check (C.3) (#62) | 02eb08a6fdbb |
-| 2026-05-21 | compliance | doc-hygiene audit detectors F4-F7 (C.2) (#61) | 9008cf4b6d0b |
-| 2026-05-21 | record_event | hard-enforce FR-or-change-type gate at finalize (C.1) (#60) | 388fa55051b4 |
-| 2026-05-21 | compliance | RTM ↔ Triage deep-link + Coverage Summary rewrite (B.4) (#59) | 48024b1684fa |
-| 2026-05-21 | compliance | test-evidence Layer column + per-layer FAIL triage (B.3) (#58) | ccb2b987e77b |
-| 2026-05-21 | compliance | SBOM undeclared-license triage producer (B.2) (#57) | 47ab03d033de |
-| 2026-05-21 | compliance | mode-aware dashboard + Why-warn column + Triage open (B.1) (#53) | c24dd6eeb482 |
-| 2026-05-21 | triage | producer contract schema + RTM-link fields + inbox polish (Iterate B0) (#52) | f2aaf89cfea2 |
-| 2026-05-21 | handoff | 4-stage session-id fallback chain (Iterate A.4) (#50) | 822f5fae9f45 |
-| 2026-05-21 | adr | hard-reject ADR field overflow + spec_ref + INDEX.md (A.3) (#49) | 9addb9a3b404 |
-| 2026-05-21 | adopt | Mermaid architecture diagram + drift-sync marker (Iterate A.1) (#48) | 32448078c4cd |
-| 2026-05-21 | compliance | SBOM lockfile + importlib.metadata + workspace-aware (Phase 0f) (#47) | 932e0d221ea1 |
-| 2026-05-21 | triage | ingest shipwright-security artifact as gh-security action-unit (Iterate C) | 6f5dd5f23a1d |
-| 2026-05-20 | triage | redesign Triage Inbox as launch-surface (action-units + launchPayload + CLI) | 7b67acf60d70 |
-| 2026-05-19 | triage | import GitHub findings into the triage inbox | ff51a8cc80f1 |
-| 2026-05-16 | spec | backfill FR-01.14 (Triage Inbox) + link 7 historical feature events | 805d268a9dc3 |
-| 2026-05-16 | iterate | enforce spec-impact classification on every feature/change iterate | 5544ea3b6e38 |
-| 2026-05-16 | iterate | unconditional worktree isolation for /shipwright-iterate | 42e65d7e0032 |
-| 2026-05-14 | triage | producers iterate 2 — security + performance + F0.5 + drift wiring | aab9bd7dafb7 |
-| 2026-05-11 | triage | promote CLI for non-webui repos (AC-7) | 7f131f9d940d |
-| 2026-05-11 | triage | adopt-time scaffolder + Step E.16 in adopt skill (AC-6) | 719790d3e777 |
-| 2026-05-11 | triage | emit Compliance audit findings to triage + auto-dismiss (AC-5) | d5b26710dfd9 |
-| 2026-05-11 | triage | emit Phase-Quality Tier-1 FAILs to triage inbox (AC-4) | e78bb6b1179b |
-| 2026-05-11 | triage | wire aggregate_triage Stop-hook (AC-3) | ca3b2b27849c |
-| 2026-05-11 | triage | add aggregator + markdown renderer (AC-2) | d4c155162611 |
-| 2026-05-11 | triage | add storage API + mapping helpers + drift tests (AC-1, AC-8) | 3a3b9a9edca8 |
-| 2026-05-11 | adopt | scaffold profile-aware CI + Claude-Review workflows with cross-platform matrix default | 17feb1c05af4 |
-| 2026-05-06 | iterate | add F0.5 surface_verification audit to iterate_checks | 17c8f9f945db |
-| 2026-05-06 | iterate | add surface_verification.py F0.5 orchestrator | fb70a460e262 |
-| 2026-05-04 | iterate | runner contract mandates reviews (ADR-029) | f6a14fc7fcc7 |
-| 2026-05-03 | test | boundary coverage report (ADR-027) | 216f8b3f5f2b |
-| 2026-05-03 | iterate | multi-session discipline (ADR-026) | 41cef18d6171 |
-| 2026-05-03 | iterate | confidence calibration phase (ADR-025) | f27376626fda |
-| 2026-05-03 | iterate | boundary tests foundation (ADR-024) | ba9874506700 |
-| 2026-05-03 | adopt | scaffold .env.local with profile + framework keys (ADR-021) | 995300862e93 |
-| 2026-05-02 | adopt | expand CLAUDE.md "Ongoing Changes" with iterate-workflow bullets | 8da26f338b05 |
-| 2026-05-01 | compliance | add Group A5 — CI security workflow integrity audit | 66fc9ac1ed9d |
-| 2026-05-01 | compliance | wire Group E + G + tuning (plan v7 Steps 7+8+13) | 423f7021bb4c |
-| 2026-05-01 | compliance | wire Group B (config + event-log coherence) (plan v7 Step 5) | 0eb62a062f87 |
-| 2026-05-01 | adopt | scaffold dormant security workflow into adopted repos | 3eff53b82dcc |
-| 2026-05-01 | shared | add dormant security-workflow template + drift test | d7a413cc4f9c |
-| 2026-05-01 | shared | add security-workflow convention lock module + pyyaml deps | d7958b43e264 |
-| 2026-05-01 | compliance | wire Group A + Group D detective audits (plan v7 Step 4) | 40c1807218e0 |
-| 2026-05-01 | test | add performance budgets (lighthouse + bundle-size) | 05dc2c09e72b |
-| 2026-04-30 | adopt | visual-guidelines schema alignment + harvest existing knowledge | e273104f6c2b |
-| 2026-04-26 | shared | artifact-relocation drift safety net (Sub-Iterate A of 7) | ad62e15c507f |
-| 2026-04-26 | deploy | post-apply migration verification + two-phase pattern | e9433e5c0980 |
-| 2026-04-26 | adopt | visual frontend documentation (Tier 5, new scope) | 76b669457993 |
-| 2026-04-26 | templates,build,adopt | Vite DX templates for generated apps | 02e2d111cb0d |
-| 2026-04-26 | security,ci | SARIF translator + dormant CI hardening (Iterate 2 of 2) | 4e679247707e |
-| 2026-04-25 | security,run | persist reports + iterate handoff + decouple orchestrator | 8b06dc2a312f |
-| 2026-04-25 | shared,build,iterate | add --mode code to external_review.py (Iterate B of A→B) | b386bbea203e |
-| 2026-04-25 | run | F6 — integration tests, ADR-001, and docs for multi-session pipeline | 1bdf76c13661 |
-| 2026-04-25 | run | F5 — Step 0 phase-session context recovery preamble in 8 phase skills | 5f9988abbb59 |
-| 2026-04-25 | run | F4 — master skill rewrite to spec-and-stop coordinator | e0dad2694fe5 |
-| 2026-04-25 | run | F3b — wire phase-session hooks live in all 9 plugins | 812e625230dd |
-| 2026-04-25 | run | F3a — phase-session hook infrastructure (gated, not yet wired) | e63f435fc952 |
-| 2026-04-25 | run | F2 — phase-task lifecycle subcommands with CAS + ownership | 2a89d1490209 |
-| 2026-04-25 | run | F1 — v2 schema + phase state machine for multi-session pipeline | b58069a8fe55 |
-| 2026-04-25 | adopt | multi-service dev-server support — v0.5.0 | aa228db59595 |
-| 2026-04-24 | shared | list_iterate_branches — git-based classifier for iterate/* branches | 8e4f612d4839 |
-| 2026-04-24 | webui,project | cross-repo contract versioning for run-config + actions + profiles | 879777263e6c |
-| 2026-04-23 | iterate+changelog | iterate_history file-per-iterate + CHANGELOG-unreleased.d drop pattern | 1ff0bdf32046 |
-| 2026-04-23 | webui | task-list-unified — VS Code-style task list for TodoWrite + TaskCreate + TaskUpdate | f057d459a81a |
-| 2026-04-23 | webui | port-env-support — PORT/VITE_PORT for parallel dev-server stacks | 76f38a60b831 |
-| 2026-04-23 | plugins | parallel-worktree-conventions — embed in iterate/build/changelog SKILLs + docs | 9bb88a2e6b84 |
-| 2026-04-23 | webui | chat-rendering-polish — align BubbleTranscript with bubble-states.html mockup (6 ACs) | dceb98c8c874 |
-| 2026-04-23 | webui | adopt-phase — expose /shipwright-adopt via New Task dropdown | 36b0cef9399a |
-| 2026-04-22 | webui | iterate 3 — design overhaul, project-task wiring, configurable actions, 3-pane TaskDetail | 3306c37c65c9 |
-| 2026-04-21 | build,iterate | make Browser Verify mandatory on frontend diff | e1b4f5093779 |
-| 2026-04-20 | phase-quality | monorepo auto-descent guard for audit + injection | ddf75526d587 |
-| 2026-04-20 | webui | iterate 2.3 — TaskBoard + Inbox UX + coverage gaps | 202aeceac8ba |
-| 2026-04-20 | shared | Phase-Quality integration for adopt + Playwright route crawler | e5e92af3043d |
-| 2026-04-20 | adopt | scaffold shipwright-adopt plugin for brownfield onboarding | acb793e2cf18 |
-| 2026-04-19 | webui | iterate 2.2b — bubble layout + virtualization + auto-scroll | d4dc787c7095 |
-| 2026-04-19 | webui | iterate 2.2a — markdown rendering + parser hardening | ef4c87e43b54 |
-| 2026-04-19 | webui | iterate 2.1 — launch-command --name flag + title rename | 6741cb03c893 |
-| 2026-04-19 | compliance | Steps 9 + 10 — audit report rendering + SKILL.md content swap | b60b90b8e533 |
-| 2026-04-19 | compliance | Step 6 Groups C + F (preventive re-runs) + path-collision fix | ed4a2639594b |
-| 2026-04-19 | compliance | Step 3 detective-audit skeleton + version gate | c4532b8e771b |
-| 2026-04-19 | compliance | Step 2 staleness infrastructure (audit_staleness + --check) | d86bd0cf8308 |
-| 2026-04-19 | webui | external-launch pivot (Plan D'' variant a, Sub-iterates 0-2) | 043d6415f78e |
-| 2026-04-19 | phase-quality | flip SessionStart-Injection default ON, cap 3→5 | 3689d0b379f1 |
-| 2026-04-18 | phase-quality | Spec-checks S1-S10 + SessionStart-Inject + Orchestrator-Gate (PR 4/4) | acec516c30be |
-| 2026-04-18 | phase-quality | Infrastructure/Traceability/Quality validators I1-I4/T1-T2/Q1-Q2 (PR 3/4) | 6a5caf5d0670 |
-| 2026-04-18 | phase-quality | Workflow-category validators W1-W7/Sec1-Sec2/Cmp1-Cmp2/D1-D2 (PR 2/4) | af103d33687e |
-| 2026-04-18 | phase-quality | Stop-hook audit infrastructure + Canon C1-C5 (PR 1/4) | c9516f8fd327 |
-| 2026-04-18 | webui/chat | sub-iterate B — AUQ as first-class tool UI + stall instrumentation | e6435af8ba61 |
-| 2026-04-18 | webui/chat-rendering | sub-iterate 0 — contract foundation | 3bfdc14b12b7 |
-| 2026-04-17 | iterate14.12 | mid-task model switching + settings.defaultMode wins over localStorage | 3fdecb329618 |
-| 2026-04-16 | iterate14.11 | task detail header pause indicator + resume button | fbcb224ae97a |
-| 2026-04-16 | iterate14.9 | bug fixes + opus 7 + auto mode | cfea7550b2fc |
-| 2026-04-16 | autonomous-loops | phase 2 complete — iterate campaign mode | bff4c1907e44 |
-| 2026-04-16 | autonomous-loops | phase 1 complete — build section loop | ee710ce09aa8 |
-| 2026-04-16 | iterate14.8,shared | auto-finalization + subdirectory root fix + canon C2 | 3f4f25c3cb0e |
-| 2026-04-16 | iterate14.8.3 | chat composer stop + modelselector redesign + rest hydration | c974bdeed7fb |
-| 2026-04-16 | iterate14.8.2 | settings defaults + project color + deep-link | e444aa560bc7 |
-| 2026-04-15 | iterate14.7.2 | multi-project kanban with colored strips + filter chip | c551c157bc75 |
-| 2026-04-15 | iterate14.7.1 | P1 UX polish bundle — model selector sync + paste buttons + inbox nav + mode badge + constitution rule | eba231434236 |
-| 2026-04-15 | iterate14.6 | playwright e2e suite + dynamic model label | 36d8cbbe0bdf |
-| 2026-04-15 | iterate14.5 | red flag banner for non-blocked AskUserQuestion | b3c97f980c42 |
-| 2026-04-15 | iterate14.4 | create menu + pipeline modal + linear-style shortcuts | 7663a0e04a9a |
-| 2026-04-15 | iterate14.3 | constitution AskUserQuestion stop rule + project intro gate | 7dc5ecab67e5 |
-| 2026-04-15 | iterate14.2 | multi-question inbox with parts[] schema | 4a8e7b254833 |
-| 2026-04-15 | iterate14.1 | preview button + profile-loader + run plugin profile field | 5b6d05d2b144 |
-| 2026-04-15 | iterate14.0 | phase dropdown cleanup + iterate auto-detection | 4727c631a935 |
-| 2026-04-14 | test,changelog,deploy,shared | iterate 12.4 — release-axis canon + changelog Sonder-Checks | f04dccf0d4ae |
-| 2026-04-14 | build,shared | iterate 12.3 — build canon hybrid + check-plan B3/B6 imports | 2dcc118e2049 |
-| 2026-04-14 | design,plan,shared | iterate 12.2 — design + plan canon + preventive FR/section checks | 2bac75b8203d |
-| 2026-04-14 | project,shared | iterate 12.1 — project plugin canon + stop-hook run-aware skip | d06a0694b3d7 |
-| 2026-04-14 | shared,run | iterate 12.0 — modular verifier package + Canon foundation | a90ca90c6db2 |
-| 2026-04-14 | webui,iterate13 | flip to unified render, delete band-aids, remove env flag | 09c68c4011ac |
-| 2026-04-14 | webui,iterate13 | expand useSSE with chat:message ChatMessage handler | 97558f3ed96a |
-| 2026-04-14 | webui,iterate13 | add Zustand turnStatusStore + useTurnStatus selector | d6eb4646f992 |
-| 2026-04-14 | webui,iterate13 | add mergeCommitted pure helper with id dedupe and timestamp sort | d340c36618ba |
-| 2026-04-14 | webui,iterate13 | Phase 0 — broadcast extracted ChatMessages over SSE | 891c946c07ef |
-| 2026-04-14 | plan,iterate,compliance | mandatory external LLM review with interactive opt-out | 4191309a65ec |
-| 2026-04-13 | webui | probe claude CLI and show missing-CLI banner | efc339ef8b8c |
-| 2026-04-13 | hooks | content-aware CLAUDE.md drift detection | 6ce3be9f1f05 |
-| 2026-04-13 | webui | mid-task permission mode switching + autonomy sync to run_config | b79d7f171774 |
-| 2026-04-13 | webui | phase detection for task creation | 5edc10a76870 |
-| 2026-04-12 | security | add scan CLI, prompt injection scanner, and PR-mode report | af58b4887126 |
-| 2026-04-12 | webui | port companion markdown + left-align user msg + image upload | 569b7fab0807 |
-| 2026-04-12 | webui | chat rendering — persist all NDJSON types, real-time streaming, tool/thinking components | 07a196a0295b |
-| 2026-04-12 | webui | edit task modal, show description popover, guide install docs | 14c7718cca9a |
-| 2026-04-11 | — | add auto-triggering, standalone mode, and phase router for all skills | 8940370d84ba |
-| 2026-04-11 | pipeline | add self-healing for missing prerequisite artifacts | 4d82e01be879 |
-| 2026-04-11 | client | add intent detection hint in chat input | a5b14ef1245b |
-| 2026-04-11 | client | implement Projects, Inbox, and Settings pages | ae548aaa3bc4 |
-| 2026-04-11 | client | add card enrichment with classify and start task actions | 20f261e8f895 |
-| 2026-04-11 | client | implement 4-step project wizard with stack profiles | 19d0cd8c5b45 |
-| 2026-04-11 | client | implement file explorer with directory tree and git status | 28876a3ec419 |
-| 2026-04-11 | client | implement all viewer renderers — code, HTML, JSON, overlays | 9cbac581fa1c |
-| 2026-04-11 | client | implement Smart Viewer with tab management and Markdown renderer | 10606046bdb3 |
-| 2026-04-11 | client | implement phase-to-status mapping with per-project overrides | 917f66f8d495 |
-| 2026-04-11 | client | implement chat engine with messages, tools, and input toolbar | 87408fd20794 |
-| 2026-04-11 | client | implement Task Detail page with resizable two-panel layout | 47e5d7239b6a |
-| 2026-04-11 | client | add filter bar, view toggle, and sortable list view | ed065ba2e0ef |
-| 2026-04-11 | client | add New Issue modal with background auto-classification | f5ff0366242a |
-| 2026-04-11 | client | implement Kanban board with columns, cards, and project tabs | bb048341077d |
-| 2026-04-11 | client | add TanStack Query hooks, SSE integration, and API layer | c7e4a28cc647 |
-| 2026-04-11 | client | add app shell with sidebar navigation and routing | 8b1538c08e69 |
-| 2026-04-11 | api | implement all REST API routes and wire up server entry point | b10c5aa610a1 |
-| 2026-04-11 | sse | implement SSE manager with broadcast and route handler | 01b4440d9b37 |
-| 2026-04-11 | inbox | implement inbox manager and chat store | 4286127b4317 |
-| 2026-04-11 | registry | implement project manager, config reader, and file watcher | 926dfb6dd169 |
-| 2026-04-11 | governor | implement process governor with concurrency semaphore and heartbeat | d266940c02f5 |
-| 2026-04-11 | adapter | implement Claude CLI adapter with NDJSON stream parser | acd8a80c3c1c |
-| 2026-04-11 | tasks | implement task manager with Kanban status derivation | 21363f5516a9 |
-| 2026-04-11 | events | implement event reader, writer, and in-memory event store | 59b20df33fe5 |
-| 2026-04-11 | types | add shared TypeScript type definitions | a1ef8b2890ca |
-| 2026-04-10 | server | scaffold Hono server with health endpoint, CORS, and error handling | 6904060d81fd |
-| 2026-04-09 | iterate | add F12 release prompt after finalization | fdad687ddbad |
-| 2026-04-09 | events | add event emission to test, deploy, and changelog plugins | f1791a2a60f6 |
-| 2026-04-09 | testing | add cross-page UI consistency check to test and iterate plugins | c94ddbdf8317 |
-| 2026-04-09 | reflection | add learnings capture protocol to build, test, deploy, iterate | f8f9d3e22601 |
-| 2026-04-09 | templates | add 7 production-tested patterns from AI Portal fixes | 9b811f70d034 |
-| 2026-04-09 | testing | add integration test layer + aggressive E2E across all plugins | 62c29ac72445 |
-| 2026-04-08 | iterate | add structured debugging protocol and fresh verification gate | 7bdc20aa32e9 |
-| 2026-04-08 | migrations | close push gap — Build/Iterate apply migrations before tests | ee5d7b0dbf60 |
-| 2026-04-08 | iterate | add feedback parsing protocol and harden TDD instructions | 5118cb53f104 |
-| 2026-04-06 | iterate | add session resume detection and Stop hook | 132417d30cae |
-| 2026-04-06 | — | add mandatory context loading to all pipeline plugins | d36a9bead808 |
-| 2026-04-06 | iterate | add events.jsonl to Layer 1 context loading | f404cdeb0fda |
-| 2026-04-06 | security | add pluggable scanner backend with OSS support | 1449d32d6aba |
-| 2026-04-06 | iterate | add mandatory context loading step B2 + expand Layer 1 | 12840114ae67 |
-| 2026-04-06 | iterate | add interview phase, approval gate, and inline spec template | 6611ae7d9a07 |
-| 2026-04-05 | build,test | refactor visual comparison — root-cause grouping in build, regressions-only in test | c379816c3add |
-| 2026-04-05 | iterate | upgrade to v0.3.0 — complexity-adaptive pipeline phases | e239f981fd11 |
-| 2026-04-05 | build,iterate | add design fidelity bridge for mockup-to-code accuracy | b135cf9716cf |
-| 2026-04-04 | — | add 5-axis review framework, anti-rationalization tables, and reference docs | 42cd1e9d43cf |
-| 2026-04-04 | — | add unified event log (shipwright_events.jsonl) for all reporting | 0b95c2ae1990 |
-| 2026-04-04 | — | add marketplace update mechanism + bump all plugins to v0.2.0 | 533900c4dda7 |
-| 2026-04-04 | — | improve /shipwright-iterate auto-recognition + expand CLAUDE.md template | 6a13c511d016 |
-| 2026-04-03 | — | add /shipwright-iterate plugin for lightweight continuous SDLC | 7293a5f33074 |
-| 2026-04-03 | design | add chrome definition for cross-screen UI consistency | 423364691da3 |
-| 2026-04-03 | test | add auth support to visual_compare.py | 8cad194cdc34 |
-| 2026-04-03 | test | add visual fix loop with root-cause grouping | fce435bd87bd |
-| 2026-04-03 | test | add visual comparison layer — mockup vs live screenshots | 9017f3062ef3 |
-| 2026-04-03 | preview | add /shipwright-preview plugin for local browser preview | 896686adca1c |
-| 2026-04-02 | test | grouped E2E retry strategy — per root-cause group instead of global limit | fd9351331cb1 |
-| 2026-04-02 | test | add E2E results verification step and Playwright report links | 11d72c4b49ff |
-| 2026-04-02 | — | integrate visual guidelines into build and test pipeline | 585cb0ca68dd |
-| 2026-04-02 | — | improve test pipeline — outcome validation, E2E coverage, dashboard overhaul | fd6c7948fa75 |
-| 2026-04-02 | project | enable auto-delete branch on GitHub repos during scaffolding | be57c28c564e |
-| 2026-04-02 | test | auto-generate E2E specs from plan before Playwright execution | 428e548d6ddb |
-| 2026-04-02 | docs | constitution, prompt caching, code examples, and context guidance | 97edadbc5ded |
-| 2026-04-02 | pipeline | phase validation gates, dashboard fixes, and hooks documentation | e83a7aeab96e |
-| 2026-04-01 | pipeline | multi-split loop with test results archiving | 78705a630504 |
-| 2026-04-01 | compliance | end-to-end requirement traceability with linked reports | 678ed22c6d26 |
-| 2026-03-31 | build,run | automated split archiving to prevent RTM data loss | aba8b1586077 |
-| 2026-03-31 | run,build,test | autonomous context management via subagent delegation | a26ce95539ff |
-| 2026-03-30 | run,build | multi-split awareness for dashboard and orchestrator | 21614d0d7dea |
-| 2026-03-30 | build | derive branch prefix from project name in run config | 31e97f543890 |
-| 2026-03-30 | run,compliance | pipeline dashboard, phase-complete triggers, compliance fixes | 97b4f16123e1 |
-| 2026-03-30 | build,compliance | compact ADR format and sprint updates | 62aa60208a4a |
-| 2026-03-30 | changelog | auto-merge PR in autonomous mode | 6c29a683c737 |
-| 2026-03-30 | changelog | autonomous mode skips version and changelog confirmation | 96b94e1f7ffc |
-| 2026-03-30 | build,run,test | autonomous build with dashboard, context pressure, and auto-fix | 888aeb105798 |
-| 2026-03-30 | build | auto-generate .env.local template via --init flag | 2ae53b4b6f67 |
-| 2026-03-30 | build,test | add structured debugging, verification gates, and self-review | f3ef017440b3 |
-| 2026-03-28 | design | add snippet assembly system and review viewer with feedback loop | 7b0b717cd88f |
-| 2026-03-28 | — | add shared Stop hook for automatic session handoff generation | 91d2d6be1948 |
-| 2026-03-28 | design | add 3-stage brand discovery with website extraction and preview validation | 7805156c5c94 |
-| 2026-03-28 | — | add design system flavors, decision logging, and deploy flavors | 5012323805e0 |
-| 2026-03-28 | — | add env var validation before build and deploy | cf7bb01ad11c |
-| 2026-03-28 | — | auto-trigger compliance update on every phase completion | cecd0072e8fe |
-| 2026-03-28 | — | add conditional security scan to pipeline | 8550e8605fb1 |
-| 2026-03-28 | — | update direct API model defaults to gemini-3.1-pro and gpt-5.4 | b3bcb2f6ec31 |
-| 2026-03-27 | — | add .env support for API keys and update default OpenRouter models | 847a8814fefc |
-| 2026-03-26 | — | add shipwright-security plugin with Aikido API integration | 8dca5db164aa |
-| 2026-03-26 | — | add secret scanning, file size guard, and drift detection hooks | bf40a0f68f60 |
-| 2026-03-23 | — | integrate Claude Architect Certification best practices | 8aac61df8c01 |
-| 2026-03-21 | — | add sync_check.py and fix 6 out-of-sync plugin references | c6236fa28aeb |
-| 2026-03-21 | — | add visual guidelines generation to shipwright-design | 4346f5710179 |
-| 2026-03-21 | — | integrate compliance into orchestrator + design visual guidelines | fad9b836bbb5 |
-| 2026-03-21 | — | Playwright browser testing + browser-fixer agent + compliance plugin | 23d00d75bae8 |
-| 2026-03-21 | — | shipwright-design plugin — UI mockups from IREB specs | 18da15a255b9 |
-| 2026-03-21 | — | add marketplace.json for Claude Code plugin discovery | d537a32321af |
-| 2026-03-21 | — | Setup Guide, install scripts, and OpenRouter support | 5c3645a07a34 |
-| 2026-03-21 | — | Task 17 — Orchestrator E2E integration tests | 2fdd8a372aed |
-| 2026-03-21 | — | Task 14+15+16 — shipwright-run orchestrator | bde02874cfe2 |
-| 2026-03-21 | — | Task 13 — DevOps integration tests | 80f2089dd6f1 |
-| 2026-03-21 | — | Task 12 — shipwright-deploy with Jelastic (Infomaniak) + rollback | 432661af93c6 |
-| 2026-03-21 | — | Task 11 — shipwright-test plugin + shared smoke test | 4f3d61d9bc69 |
-| 2026-03-21 | — | Task 10 — shipwright-changelog plugin | be75de7958a9 |
-| 2026-03-21 | — | Task 09 — Core Trilogy integration tests | f186c5627a5e |
-| 2026-03-21 | — | IREB-aligned spec.md template for shipwright-project | 8bb40cdf2f80 |
-| 2026-03-21 | — | Task 07+08 — shipwright-build fork with enhancements | 79f1fc99f190 |
-| 2026-03-21 | — | shipwright-project supports chat and inline input modes | 1bae73e94f67 |
-| 2026-03-21 | — | Task 06 — shipwright-plan fork with E2E test plan and sprint tracking | 0fa020872bda |
-| 2026-03-21 | — | Task 04+05 — shipwright-project fork with profile integration | db16a76a3e51 |
-| 2026-03-20 | — | Task 03 — shared utilities (config, state, handoff, hooks) | abe67928deed |
-| 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
-| 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
-
 ### Chores (chore) — 215 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-11 | triage | sweep 12 outbox append(s) into branch | ab404fbfcc90 |
+| 2026-06-11 | triage | sweep 2 outbox append(s) into branch | 39f3ece14986 |
 | 2026-06-11 | triage | drop three stale internal anchor items | 9d74de9db766 |
 | 2026-06-11 | gitignore | keep campaign planning dirs local-only | dd4806d2ba91 |
 | 2026-06-11 | triage | sweep 3 outbox append(s) into branch | 26ea4a5f0586 |
@@ -1020,7 +1021,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 951 |
+| Total commits | 952 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 951 |
+| Human-authored commits | 952 |
 
