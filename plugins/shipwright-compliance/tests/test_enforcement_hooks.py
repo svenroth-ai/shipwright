@@ -270,3 +270,16 @@ class TestCheckSecurityScan:
             tmp_path,
         )
         assert rc == 0  # 2 <= 3 allowed
+
+    def test_deploy_word_in_quoted_arg_not_blocked(self, tmp_path: Path):
+        # Regression: findings present, but the deploy word lives ONLY inside a
+        # quoted argument value (an iterate-finalization justification). The gate
+        # must NOT fire — this is the false-block it caused before the fix.
+        _make_rtm(tmp_path, 80, unresolved=5)
+        rc, _ = _run_hook(
+            "check_security_scan.py",
+            {"tool_input": {"command":
+                'uv run surface_verification.py --justification "no status.json in any deployed flow"'}},
+            tmp_path,
+        )
+        assert rc == 0

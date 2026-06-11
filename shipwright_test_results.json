@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-11-spec-path-relative",
+    "run_id": "iterate-2026-06-11-secscan-gate-substring",
     "date": "2026-06-11",
     "unit": {
       "status": "passed",
-      "passed": 3468,
-      "total": 3488
+      "passed": 669,
+      "total": 679
     },
     "integration": {
       "status": "not_run",
@@ -36,58 +36,38 @@
       "exit_code": 0,
       "tests_run": 0,
       "evidence_path": "",
-      "timestamp": "2026-06-11T05:20:49.513Z",
+      "timestamp": "2026-06-11T06:37:56.944Z",
       "attempts": 0,
-      "justification": "N1 (trg-196f4aa6) path-portability fix: sub-iterate spec_path is now repo-relative POSIX in the producers (campaign_init + projection carry/fill self-heal) plus a one-off migration of the 7 tracked campaigns (44 paths). Pure lib + data rewrite, no startable web/api/cli-app surface. Verified by 13 helper/migration/round-trip tests + a real migration probe (0 non-portable paths remain), shared 3111 + iterate 357 green."
+      "justification": "Fix to the security-scan PreToolUse gate command matcher: it now strips quoted argument spans before substring-matching, so a release-family keyword appearing only inside a justification / commit-message / echo VALUE no longer false-blocks an unrelated finalization command. Hook-logic change + unit/e2e tests; no startable web/api/cli-app surface. Verified by 14 matcher unit tests (quoted-prose vs real command) + an end-to-end no-block regression + the full compliance suite (669 green)."
     },
     "degraded": [],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "relativize_spec_path: absolute (win/posix) -> anchored repo-relative; already-relative/None passthrough; idempotent",
+          "behavior": "matcher ignores a trigger keyword that appears only inside a quoted argument value (justification/commit-msg/echo) and on unrelated commands",
           "disposition": "tested",
-          "evidence": "test_campaign_paths::TestRelativizeSpecPath (6) PASSED"
+          "evidence": "test_security_scan_matcher::test_quoted_prose_or_unrelated_does_not_trigger (6 params) PASSED"
         },
         {
-          "behavior": "campaign_spec_path: under .shipwright -> repo-relative; fixture dir -> dir-relative",
+          "behavior": "matcher still triggers on real release commands/scripts/paths (vercel, jelastic, fly, railway, npm run, bash *.sh, plugin path)",
           "disposition": "tested",
-          "evidence": "test_campaign_paths::TestCampaignSpecPath (2) PASSED"
+          "evidence": "test_security_scan_matcher::test_real_deploy_commands_still_trigger (8 params) PASSED"
         },
         {
-          "behavior": "projection self-heals a carried machine-absolute spec_path -> relative (no downgrade)",
+          "behavior": "end-to-end: findings present + keyword only in a quoted arg -> NOT blocked (rc 0)",
           "disposition": "tested",
-          "evidence": "test_campaign_paths::TestProjectionSelfHeals::test_carry_relativizes_absolute PASSED"
+          "evidence": "test_enforcement_hooks::TestCheckSecurityScan::test_deploy_word_in_quoted_arg_not_blocked PASSED"
         },
         {
-          "behavior": "projection missing-fill writes repo-relative",
+          "behavior": "end-to-end regression-guard: a real release command + findings -> still blocked (rc 2)",
           "disposition": "tested",
-          "evidence": "test_campaign_paths::test_fill_is_relative PASSED"
-        },
-        {
-          "behavior": "migration rewrites absolute -> relative across tracked campaigns",
-          "disposition": "tested",
-          "evidence": "test_campaign_paths::TestMigration::test_rewrites_absolute_to_relative PASSED + real probe (44 paths, 0 non-portable)"
-        },
-        {
-          "behavior": "migration idempotent (2nd run no-op)",
-          "disposition": "tested",
-          "evidence": "test_campaign_paths::test_idempotent_second_run_noop PASSED"
-        },
-        {
-          "behavior": "regenerate after migration keeps relative + no downgrade",
-          "disposition": "tested",
-          "evidence": "test_campaign_paths::test_regenerate_after_migration_keeps_relative_no_downgrade PASSED"
-        },
-        {
-          "behavior": "campaign_init writes repo-relative spec_path at creation",
-          "disposition": "tested",
-          "evidence": "test_campaign::TestCampaignInit::test_spec_path_is_repo_relative PASSED"
+          "evidence": "test_enforcement_hooks::TestCheckSecurityScan::test_blocks_deploy_with_findings PASSED"
         }
       ],
       "counts": {
-        "testable": 8,
-        "tested": 8,
+        "testable": 4,
+        "tested": 4,
         "untestable": 0,
         "untested_testable": 0
       },
