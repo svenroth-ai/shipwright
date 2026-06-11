@@ -106,7 +106,10 @@ def _post_openrouter(api_key: str, model: str, messages: list[dict], timeout: in
         },
         method="POST",
     )
-    with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 — fixed https URL
+    # OPENROUTER_URL is a fixed `https://` module constant; no user/dynamic input reaches
+    # the request URL, so the dynamic-scheme (`file://`) / SSRF concern this Semgrep rule
+    # guards against cannot occur here — confirmed false positive, suppressed on the match line.
+    with urllib.request.urlopen(req, timeout=timeout) as resp:  # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
         body = resp.read().decode("utf-8")
     return json.loads(body)
 
