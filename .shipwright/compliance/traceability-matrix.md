@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-11T20:05:10.999236+00:00
+Generated: 2026-06-11T21:24:03.294145+00:00
 
 ## Requirements Coverage
 
@@ -166,6 +166,7 @@ Generated: 2026-06-11T20:05:10.999236+00:00
 | Fix the check_security_scan PreToolUse deploy-gate: it substring-matched the whole command, so a trigger keyword (deploy/jelastic/vercel/...) inside a quoted argument VALUE — an iterate-finalization --justification, a commit message, or an echo string — false-blocked unrelated commands. New _is_deploy_command strips quoted spans ("..." / '...') before matching; main() uses it. Real deploy commands/scripts/paths stay visible and still gate. | iterate | bug |  | 669/679 | — | 2026-06-11 |
 | Add gh-pr-ci:{pr_number} action-unit: failed hard-gates on open PRs land in triage (B4.5 automerge loop-closing). Differentiated auto-resolve; session-wide symmetry; draft exclusion; truncation + filter=latest guards. | iterate | feature |  | — | — | 2026-06-11 |
 | Tier-3 PR review via OpenRouter custom-script (B4.5 Phase 2): pr-review.yml workflow + pr_review.py reviewer + pr_reviewer prompts + 4 snapshot/unit test files | iterate | feature |  | 414/417 | — | 2026-06-11 |
+| F11 arms GitHub-native auto-merge for iterate/* PRs (gh pr merge --auto --squash --delete-branch), branch-scoped + fail-soft (B4.5 Phase 3) | iterate | change |  | 363/363 | — | 2026-06-11 |
 
 ## Coverage Summary
 
@@ -173,7 +174,7 @@ Generated: 2026-06-11T20:05:10.999236+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 141 |
+| Iterate changes | 142 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
