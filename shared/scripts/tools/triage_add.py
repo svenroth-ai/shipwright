@@ -66,7 +66,12 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                         "escapes). Optional — defaults to empty string. "
                         "AC-1 lists --title / --severity / --kind / --source "
                         "/ --fr-id as the canonical surface; --detail rounds "
-                        "out the card when context is available.")
+                        "out the card when context is available. SENSITIVITY: "
+                        "triage is git-tracked (the outbox sweeps into the PR "
+                        "-> tracked -> public) - keep --title/--detail NEUTRAL: no "
+                        "security/vuln detail, file:line, exploit steps, or "
+                        "secrets (put those in a gitignored artifact). See "
+                        "shared/constitution.md (NEVER).")
     p.add_argument("--severity", required=True,
                    help="Severity: critical | high | medium | low | info "
                         "(validated by triage.append_triage_item).")
@@ -168,6 +173,16 @@ def main(argv: list[str] | None = None) -> int:
             "If the FR doesn't exist in spec.md, the RTM render will silently "
             "omit the deep-link until spec is updated."
         )
+    # Constant touchpoint reminder (stderr — keeps the stdout JSON contract clean).
+    # "is this content sensitive" is a semantic call code can't make, so the
+    # mechanism just surfaces the git-tracked nature on every add.
+    print(
+        "note: triage is git-tracked (the outbox sweeps into the iterate PR -> "
+        "tracked -> public). Keep items NEUTRAL - no security/vuln detail, "
+        "file:line, exploit steps, or secrets; put that in a gitignored artifact "
+        "(Spec/ report or the gitignored campaign dir). See shared/constitution.md (NEVER).",
+        file=sys.stderr,
+    )
     print(json.dumps(result, indent=2))
     return 0
 
