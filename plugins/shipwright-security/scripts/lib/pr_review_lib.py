@@ -63,14 +63,52 @@ def build_messages(system_prompt: str, user_prompt: str, diff: str, pr_meta: str
     ]
 
 
+def _strip_code_fence(raw: str) -> str:
+    """Drop a leading ```json / ``` fence line and the trailing ``` if present.
+
+    Even with `response_format: json_object`, OpenRouter -> Anthropic does not
+    strictly enforce raw-JSON output, so the model frequently wraps the object
+    in a markdown code fence. Verified live on a B4.5 Tier-3 smoke-test PR.
+    """
+    text = (raw or "").strip()
+    if not text.startswith("```"):
+        return text
+    nl = text.find("\n")
+    if nl != -1:
+        text = text[nl + 1:]  # drop the opening ``` / ```json line
+    fence = text.rfind("```")
+    if fence != -1:
+        text = text[:fence]   # drop the closing ``` fence
+    return text.strip()
+
+
 def parse_review_response(raw: str) -> dict:
-    """Parse the strict-JSON review object. Raises ValueError on any deviation."""
-    try:
-        data = json.loads(raw)
-    except (json.JSONDecodeError, TypeError) as e:
-        raise ValueError(f"response is not valid JSON: {e}") from e
-    if not isinstance(data, dict):
-        raise ValueError("response JSON is not an object")
+    """Parse the strict-JSON review object, tolerating a ```json fence or
+    surrounding prose around the object. Raises ValueError on any deviation.
+
+    Tries, in order: the raw text, the fence-stripped text, and the outermost
+    ``{ ... }`` slice (handles leading/trailing prose).
+    """
+    stripped = _strip_code_fence(raw)
+    candidates = [raw or "", stripped]
+    start, end = stripped.find("{"), stripped.rfind("}")
+    if start != -1 and end > start:
+        candidates.append(stripped[start:end + 1])
+
+    data = None
+    last_err: Exception = ValueError("empty response")
+    for cand in candidates:
+        try:
+            parsed = json.loads(cand)
+        except (json.JSONDecodeError, TypeError) as e:
+            last_err = e
+            continue
+        if isinstance(parsed, dict):
+            data = parsed
+            break
+        last_err = ValueError("response JSON is not an object")
+    if data is None:
+        raise ValueError(f"response is not valid JSON: {last_err}")
     if "decision" not in data:
         raise ValueError("response JSON missing required 'decision' field")
     return data
