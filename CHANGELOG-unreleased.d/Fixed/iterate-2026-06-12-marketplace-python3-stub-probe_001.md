@@ -1,0 +1,1 @@
+update-marketplace.sh / verify-setup.sh: probe Python interpreters by test-running `--version` instead of `command -v` alone, so the Windows Microsoft Store `python3` App-Execution-Alias stub (found on PATH but exits 49 on invocation) no longer aborts the plugin-cache sync under `set -euo pipefail` (Windows regression of the F37 POSIX fix).

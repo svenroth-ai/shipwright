@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-12T17:56:46.654583+00:00
-Total commits: 972
+Generated: 2026-06-12T18:28:59.332974+00:00
+Total commits: 973
 
 ## Commit Distribution
 
@@ -12,7 +12,7 @@ pie title Commit Types
     "chore" : 214
     "docs" : 123
     "refactor" : 52
-    "test" : 23
+    "test" : 24
     "ci" : 7
     "other" : 7
     "build" : 1
@@ -979,10 +979,11 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 23 commits
+### Tests (test) — 24 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-12 | merge | end-to-end parallel-merge cascade integration test (#215) | 5321dfaf2b46 |
 | 2026-06-11 | campaign | drop tracked-campaign guard now that campaigns are local-only | a8abe956570e |
 | 2026-06-08 | triage | empirical verification gate for outbox sweep/GC (>=200 real concurrency trials) | 41127433617a |
 | 2026-06-01 | — | assert upload-sarif on the real uses: line, not a stale comment | 2219ccea8729 |
@@ -1041,7 +1042,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 972 |
+| Total commits | 973 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 972 |
+| Human-authored commits | 973 |
 
