@@ -44,7 +44,12 @@ def read_config(skill: str, project_root: str | Path) -> dict[str, Any]:
     path = get_config_path(skill, project_root)
     if not path.exists():
         return {}
-    return json.loads(path.read_text(encoding="utf-8"))
+    # ``utf-8-sig`` strips a leading UTF-8 BOM (a hand-edited config saved by
+    # Windows Notepad as "UTF-8 with BOM" round-trips ``﻿`` that plain
+    # ``utf-8`` decodes-but-keeps → ``json.loads`` JSONDecodeErrors on char 0).
+    # Consistent with the four sibling config readers BOM-hardened in WP8/F24
+    # (artifact_sync, suggest_iterate, classify_complexity, classify_intent).
+    return json.loads(path.read_text(encoding="utf-8-sig"))
 
 
 def write_config(skill: str, project_root: str | Path, data: dict[str, Any]) -> Path:

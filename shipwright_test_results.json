@@ -1,16 +1,17 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-12-agent-doc-entry-rules",
+    "run_id": "iterate-2026-06-12-config-bom-integrate-tests",
     "date": "2026-06-12",
     "unit": {
       "status": "passed",
-      "passed": 4229,
-      "total": 4229
+      "passed": 19,
+      "total": 19,
+      "scope": "affected modules (config readers + integrate_main families); full shared/tests run = 3223 passed / 12 skipped / 1 pre-existing unrelated failure — see degraded"
     },
     "integration": {
-      "status": "passed",
-      "passed": 141,
-      "total": 141
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -18,68 +19,62 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "design_fidelity": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [],
+    "degraded": [
+      {
+        "condition": "full-suite-preexisting-failure",
+        "detail": "shared/tests test_architecture_md_reflects_arch_impact::test_every_arch_impact_drop_has_architecture_md_entry fails LOCALLY on 3 sibling-iterate gitignored decision drops (arch-drift-test-scope, canonical-project-predicate, triage-gc-union-residence) absent from architecture.md/conventions.md. Resolved from the MAIN repo root; the dir is fully gitignored so a clean CI checkout sees none -> CI-invisible. Unrelated to this diff (config.py + 4 test files)."
+      }
+    ],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 IMPACT_TARGETS SSoT + impact-aware missing_entries routes convention->conventions.md, component/data-flow->architecture.md",
+          "behavior": "read_config tolerates a UTF-8-BOM config (utf-8-sig strips the leading U+FEFF)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_architecture_doc.py::test_impact_targets_*, ::test_missing_entries_convention_routes_to_conventions_doc, ::test_missing_entries_component_in_conventions_doc_is_missing PASSED"
+          "evidence": "test_utf8_config_readers.py::test_config_read_config_tolerates_utf8_bom PASSED; falsification probe: plain utf-8 raises 'Unexpected UTF-8 BOM'"
         },
         {
-          "behavior": "AC2 F11 gate + Group-F detective verify each impact against its target doc (+ legacy fallback)",
+          "behavior": "read_config still parses non-BOM / CJK configs (no regression)",
           "disposition": "tested",
-          "evidence": "test_verify_iterate_finalization.py::test_architecture_documented_convention_in_conventions_doc_passes/_component_not_satisfied_by_conventions_doc; test_audit_groups_c_f.py::test_convention_documented_in_conventions_doc_passes/_convention_legacy_in_architecture_passes PASSED"
+          "evidence": "test_utf8_config_readers.py::test_config_read_config_parses_cjk + test_readers_pass_explicit_encoding_to_read_text PASSED"
         },
         {
-          "behavior": "AC3 write_decision_log consumes IMPACT_TARGETS; routing pinned to SSoT",
+          "behavior": "integrate() -> followup_commit_failed: merge intact, snapshot left staged, no abort",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-iterate/tests/test_agent_doc_entry_rules.py::test_writer_routes_per_impact_targets[component|data-flow|convention], ::test_f2_documents_canonical_routing PASSED"
+          "evidence": "test_integrate_main_commit_failures.py::test_integrate_returns_followup_commit_failed_when_followup_blocked PASSED"
         },
         {
-          "behavior": "AC4 forward-only entry-budget gate flags new over-budget, grandfathers old/undated, passes real files",
+          "behavior": "CLI maps followup_commit_failed -> exit 8 (distinct from merge-commit exit 7)",
           "disposition": "tested",
-          "evidence": "test_agent_doc_entry_rules.py::test_over_budget_dated_entry_is_flagged, ::test_grandfathered_entries_exempt, ::test_new_entries_within_budget PASSED"
+          "evidence": "test_integrate_main_commit_failures.py::test_main_cli_reports_followup_commit_failed_exit_8 PASSED"
         },
         {
-          "behavior": "AC5 conventions.md no longer embeds verbatim CONTRIBUTING copy (links instead); no consumer asserted it",
+          "behavior": "integrate() -> merge_commit_failed_abort_incomplete when merge --abort double-faults (still mid-merge)",
           "disposition": "tested",
-          "evidence": "grep: no test asserts the embedded copy; full suites green post-removal (shared 3173 / iterate 374 / compliance 682 / integration 141); file 606->308 LOC"
-        },
-        {
-          "behavior": "AC6 F2.md documents compact routing (machine-checkable)",
-          "disposition": "tested",
-          "evidence": "test_agent_doc_entry_rules.py::test_f2_documents_canonical_routing PASSED"
-        },
-        {
-          "behavior": "AC6 F3a/reflection compact-format prose guidance (editorial wording)",
-          "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "doc prose; the machine-checkable routing claim is covered by test_f2_documents_canonical_routing"
+          "evidence": "test_integrate_main_commit_failures.py::test_integrate_returns_abort_incomplete_when_merge_abort_double_faults PASSED"
         }
       ],
       "counts": {
-        "testable": 6,
-        "tested": 6,
-        "untestable": 1,
+        "testable": 5,
+        "tested": 5,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 6,
-        "covered_acs": 6
+        "acs": 5,
+        "covered_acs": 5
       }
     },
     "surface_verification": {
@@ -87,10 +82,9 @@
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": "",
-      "timestamp": "2026-06-12T09:52:25.426Z",
-      "attempts": 0,
-      "justification": "Framework-internal change (compliance routing oracle, F11 gate + Group-F detective, write_decision_log producer, iterate skill instructions F2/F3a/reflection, and a new pytest entry-budget gate). No web/CLI/API application surface exists. Behavior verified by unit + integration suites: producer-to-file routing round-trip, oracle impact routing, F11 gate + F5 detective routing, and the real-file drift test (RED then GREEN); full suites shared 3173 / iterate 374 / compliance 682 passed."
+      "evidence_path": ".shipwright/runs/iterate-2026-06-12-config-bom-integrate-tests/surface_verification.json",
+      "timestamp": "2026-06-12T11:49:07.676Z",
+      "justification": "No startable web/CLI/API surface: a shared-library config-reader encoding alignment (read_config -> utf-8-sig) + integrate_main failure-branch unit tests + a test-module split. The touched config-JSON IO boundary is exercised empirically by the new BOM round-trip regression test (test_config_read_config_tolerates_utf8_bom), falsification-probed (plain utf-8 raises 'Unexpected UTF-8 BOM')."
     }
   }
 }

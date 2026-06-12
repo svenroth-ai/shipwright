@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-12T09:54:31.026688+00:00
+Generated: 2026-06-12T11:50:27.025653+00:00
 
 ## Requirements Coverage
 
@@ -168,9 +168,14 @@ Generated: 2026-06-12T09:54:31.026688+00:00
 | Tier-3 PR review via OpenRouter custom-script (B4.5 Phase 2): pr-review.yml workflow + pr_review.py reviewer + pr_reviewer prompts + 4 snapshot/unit test files | iterate | feature |  | 414/417 | — | 2026-06-11 |
 | F11 arms GitHub-native auto-merge for iterate/* PRs (gh pr merge --auto --squash --delete-branch), branch-scoped + fail-soft (B4.5 Phase 3) | iterate | change |  | 363/363 | — | 2026-06-11 |
 | triage.mark_status routes idle-main status flips to the outbox (symmetric with append_triage_item), completing campaign D1 for the status side; fixes undelivered tracked drift from WebUI/Stop-hook dismisses | iterate | change |  | 3131/3131 | — | 2026-06-11 |
+| WP5 hook project-root/worktree resolvers + project guard (F5/F6/F7/F8/F10) | iterate | bug |  | 23/23 | — | 2026-06-12 |
+| UTF-8 (utf-8-sig) in config readers + errors=replace on the F0.5 runner decode (deep-audit WP8/F24+F25) | iterate | bug |  | 3515/3516 | — | 2026-06-12 |
+| WP6 deep-audit fix: strict UTF-8 in resolve_churn/integrate_main git-I/O + structured commit-failure handling (F22 HIGH, F17 MED) | iterate | bug |  | 3147/3147 | — | 2026-06-12 |
 | Fix two structurally-inert compliance gates (deep-audit WP3): Group H now in run_all default + on-stop coverage gate widened to A-H (F20); S4 FR-preservation join no longer raises TypeError (F21) | iterate | bug |  | 3146/3146 | — | 2026-06-12 |
+| Installer/shell POSIX fixes (deep-audit WP10 F33-F38): set -e prereq counter, uv ~/.local/bin PATH, 13-plugin space-safe alias refresh, python3 resolver, dotenv-parse verify-setup | iterate | bug |  | 3157/3157 | — | 2026-06-12 |
 | WP9 triage tooling hardening: F30 phaseQualityRefreshed GC token + drift meta-test, F19 GC TOCTOU recompute-under-lock, F31 control-char sanitizer on title/detail/evidence (C0+C1) in both render surfaces, F29 promote/dismiss accept outbox-only items | iterate | bug |  | 3163/3164 | — | 2026-06-12 |
 | Compact agent-doc entries + impact-aware routing SSoT (IMPACT_TARGETS) + forward-only 600-char entry-budget gate; conventions.md CONTRIBUTING de-dup | iterate | change |  | — | — | 2026-06-12 |
+| config-reader BOM tolerance (read_config utf-8-sig) + integrate_main commit-failure branch tests; split two at-limit test modules under 300 LOC | iterate | change |  | 19/19 | — | 2026-06-12 |
 
 ## Coverage Summary
 
@@ -178,7 +183,7 @@ Generated: 2026-06-12T09:54:31.026688+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 146 |
+| Iterate changes | 151 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
