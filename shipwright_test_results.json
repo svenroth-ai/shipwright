@@ -1,6 +1,6 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-12-marketplace-python3-stub-probe",
+    "run_id": "iterate-2026-06-12-bloat-h1-h2-cleanup",
     "date": "2026-06-12",
     "unit": {
       "status": "passed",
@@ -31,51 +31,46 @@
       "status": "not_run"
     },
     "degraded": [
-      "F0 scoped to shared/tests with -m 'not slow and not cross_plugin' (3284 passed, 12 skipped, 0 failed). The change is confined to two standalone installer shell scripts + their test file (test_installer_shell_scripts.py, 16/16) with no import coupling to other modules, so the shared suite is a superset of the affected surface.",
-      "test_installer_shell_scripts.py grew to 367 LOC (>300 LOC guideline). It is NOT in shipwright_bloat_baseline.json, so the anti-ratchet pre-commit gate does not block; it is a single coherent installer-shell regression suite (F33-F39). The Group H detective audit surfaces the crossing post-merge."
+      "Data-only change: shipwright_bloat_baseline.json (51 entries tightened + 8 grandfathered) + .shipwright/triage.jsonl (2 follow-up items). No Python/source changed, so F0 was scoped to the shared suite (3284 passed, 12 skipped) + Group H audit (14) + bloat/anti-ratchet (115); integration/plugin suites cannot be affected by a baseline-data edit.",
+      "triage.jsonl carries in-session background-producer appends (phaseQuality dismissals + a now-stale compliance H1 backlog item trg-b7fe7c90); the F5b compliance regen auto-dismisses it once H1=0. Carried per the per-tree, PR-committed model."
     ],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "update-marketplace.sh python resolver: a python3 found by `command -v` but failing `--version` (Microsoft Store stub, exit 49) is skipped, and the next working candidate (python) is selected without aborting under set -euo pipefail",
+          "behavior": "H2 cleared: every baseline entry's current equals its on-disk LOC (no recorded>actual ratchet-suggestion)",
           "disposition": "tested",
-          "evidence": "test_f39_update_marketplace_probe_skips_failing_python3_stub PASSED"
+          "evidence": "live Group-H scan H2=0; test_bloat_baseline + test_anti_ratchet_check[_staged] (115 passed)"
         },
         {
-          "behavior": "verify-setup.sh python resolver: same stub-skip behavior via the consolidated single SW_PYTHON resolver (reused by both the prerequisite check and the .env.local parser)",
+          "behavior": "H1 cleared: every oversize tracked file is listed in the baseline (no drift)",
           "disposition": "tested",
-          "evidence": "test_f39_verify_setup_probe_skips_failing_python3_stub PASSED"
+          "evidence": "live Group-H scan H1=0; test_audit_group_h (14 passed)"
         },
         {
-          "behavior": "POSIX no-regression: a host with only a working python3 (no `python`) still resolves python3 — the added `--version` guard does not break the F37 case",
+          "behavior": "No anti-ratchet introduced: no baseline entry's current is below its file's actual LOC",
           "disposition": "tested",
-          "evidence": "test_f37_python_resolver_picks_python3_when_python_absent PASSED (still green)"
+          "evidence": "anti_ratchet_check.py --worktree status=ok (ratchets=[], new_crossings=[])"
         },
         {
-          "behavior": "End-to-end: the full marketplace cache sync completes on this Windows box instead of aborting at exit 49 right after 'Full sync:'",
+          "behavior": "No stale baseline entries: every entry resolves to a file on disk",
           "disposition": "tested",
-          "evidence": "manual e2e: `bash scripts/update-marketplace.sh` -> '=== Done. 13 synced, 0 skipped, 0 errors ===', exit 0; plus F0.5 CLI surface_verification tests_run=16 exit_code=0"
+          "evidence": "live Group-H scan H6=0"
         }
       ],
       "counts": {
-        "testable": 4,
+        "total": 4,
         "tested": 4,
         "untestable": 0,
         "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 4,
-        "covered_acs": 4
       }
     },
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --no-sync pytest shared/tests/test_installer_shell_scripts.py -q",
+      "surface": "none",
+      "justification": "Data/config-only change: shipwright_bloat_baseline.json (compliance Group H bookkeeping) + triage.jsonl follow-up items. No runtime surface (no CLI/API/web code path), no UI, no backend-affects-frontend. Verified by the Group-H scan (H1=H2=H6=0) + anti-ratchet gate (status ok) + shared suite (3284 passed).",
+      "tests_run": 0,
       "exit_code": 0,
-      "tests_run": 16,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-12-marketplace-python3-stub-probe/surface_verification.log",
-      "timestamp": "2026-06-12T18:24:12.776Z"
+      "timestamp": "2026-06-12T19:35:00Z"
     }
   }
 }

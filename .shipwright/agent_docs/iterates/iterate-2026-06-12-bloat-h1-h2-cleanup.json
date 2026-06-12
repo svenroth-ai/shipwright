@@ -1,0 +1,9 @@
+{
+  "run_id": "iterate-2026-06-12-bloat-h1-h2-cleanup",
+  "date": "2026-06-12T19:46:37.776673Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/bloat-h1-h2-cleanup",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-12-bloat-h1-h2-cleanup"
+}

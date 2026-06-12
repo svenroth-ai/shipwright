@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-12 18:28 UTC | Session: 102bfc28-6965-4798-b0da-a8c453eee3f1 | Run: iterate-2026-06-12-marketplace-python3-stub-probe
+> Updated: 2026-06-12 19:44 UTC | Session: 5e2a3abc-c193-4b16-a38b-aea30ca9caae | Run: iterate-2026-06-12-bloat-h1-h2-cleanup
 
-## Recent Changes (161 iterations)
+## Recent Changes (162 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Clear bloat Group H1/H2: tighten 51 stale baseline entries to actual LOC + grandfather 8 oversize files (reducibility-catalog dogfood); follow-ups trg-af476d87 + trg-b9acb195. | 0/0 |  | tooling | 2026-06-12 |
 | bug | Windows: test-run the python3 probe so the Microsoft Store stub does not abort the marketplace cache sync | 3284/3284 |  | tooling | 2026-06-12 |
 | change | End-to-end parallel-merge cascade integration test (3 concurrent iterates + a 3-sub campaign): proves curated-union + churn-regenerate + JSONL-union resolve together with no cascade. | 0/0 |  | tooling | 2026-06-12 |
 | change | Delivery-Watch: F11 confirms the PR actually merges green before done (no shoot-and-forget); watch_pr_delivery.py + F2 budget-lint-before-push rule. | 0/0 |  | tooling | 2026-06-12 |
