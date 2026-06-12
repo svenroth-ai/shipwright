@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-06-12T19:25:19.401409+00:00
+Generated: 2026-06-12T19:44:08.072141+00:00
 Total commits: 976
 
 ## Commit Distribution
@@ -8,8 +8,8 @@ Total commits: 976
 ```mermaid
 pie title Commit Types
     "fix" : 279
-    "feat" : 269
-    "chore" : 214
+    "feat" : 268
+    "chore" : 215
     "docs" : 123
     "refactor" : 52
     "test" : 24
@@ -304,11 +304,10 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 269 commits
+### Features (feat) — 268 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-12 | iterate | add cross_component risk flag + non-dodgeable integration-coverage gate | d50d60d4a311 |
 | 2026-06-12 | iterate | F11 Delivery-Watch — delivered = merged + green (no shoot-and-forget) (#214) | aeb8932746e2 |
 | 2026-06-12 | iterate | compact agent-doc entries + impact-aware routing SSoT (#206) | 7643bad51c5f |
 | 2026-06-11 | iterate | arm GitHub-native auto-merge in F11 for iterate/* PRs (B4.5 Phase 3) (#197) | 5beaa92f4b37 |
@@ -578,10 +577,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 214 commits
+### Chores (chore) — 215 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-12 | bloat | clear Group H1/H2 - tighten 51 baseline entries + grandfather 8 | 56f237aee2a3 |
 | 2026-06-11 | triage | drop three stale internal anchor items | 9d74de9db766 |
 | 2026-06-11 | gitignore | keep campaign planning dirs local-only | dd4806d2ba91 |
 | 2026-06-11 | triage | sweep 3 outbox append(s) into branch | 26ea4a5f0586 |

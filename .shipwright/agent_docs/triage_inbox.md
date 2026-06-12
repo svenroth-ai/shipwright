@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-12T19:16:17.145881Z. Items waiting for triage decision.
+> Auto-generated 2026-06-12T19:25:19.401409Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 187
-- Triage: 16 | Promoted: 1 | Dismissed: 170 | Snoozed: 0
+- Total: 184
+- Triage: 17 | Promoted: 1 | Dismissed: 166 | Snoozed: 0
 
-## Top 16 items (severity-sorted)
+## Top 17 items (severity-sorted)
 
 ### Source: architecture (2 items)
 
@@ -105,27 +105,46 @@
     ```
   - Promote: `triage_promote.py --id trg-a678bd00 --task-ref EXT:<ref>`
 
-### Source: compliance (1 item)
+### Source: compliance (3 items)
 
-<a id="trg-670a9480"></a>
-- **Compliance: 2 open finding(s)** `id=trg-670a9480 | severity=high | kind=compliance → P1/compliance`
-  - 2 open compliance finding(s): H/H1, H/H2  - H/H1: Bloat drift (oversize file not in baseline) — plugins/shipwright-comp…
+<a id="trg-be2094ab"></a>
+- **Compliance: 3 open finding(s)** `id=trg-be2094ab | severity=high | kind=compliance → P1/compliance`
+  - 3 open compliance finding(s): F/F5, H/H1, H/H2  - F/F5: Architecture marker vs arch-impact drops — 2 arch-impact drop(s…
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-compliance
     
-    Context: 2 open compliance finding(s): H/H1, H/H2.
+    Context: 3 open compliance finding(s): F/F5, H/H1, H/H2.
     Dashboard: .shipwright/compliance/dashboard.md
     Each finding + hint is listed in this item's detail.
     ```
-  - Promote: `triage_promote.py --id trg-670a9480 --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-be2094ab --task-ref EXT:<ref>`
 
-### Source: drift (1 item)
+<a id="trg-7030a6bc"></a>
+- **Compliance: 3 open finding(s)** `id=trg-7030a6bc | severity=high | kind=compliance → P1/compliance`
+  - 3 open compliance finding(s): F/F5, H/H1, H/H2  - F/F5: Architecture marker vs arch-impact drops — 2 arch-impact drop(s…
+  - Launch payload (copy into a new Claude session):
+    ```text
+    /shipwright-compliance
+    
+    Context: 3 open compliance finding(s): F/F5, H/H1, H/H2.
+    Dashboard: .shipwright/compliance/dashboard.md
+    Each finding + hint is listed in this item's detail.
+    ```
+  - Promote: `triage_promote.py --id trg-7030a6bc --task-ref EXT:<ref>`
 
-<a id="trg-782bccb2"></a>
-- **Drift: pyproject.toml mtime newer than CLAUDE.md** `id=trg-782bccb2 | severity=medium | kind=maintenance → P2/engineering`
-  - Timestamp drift: pyproject.toml was modified more recently than CLAUDE.md. Re-read CLAUDE.md or refresh it before makin…
-  - Promote: `triage_promote.py --id trg-782bccb2 --task-ref EXT:<ref>`
+<a id="trg-1b9792dc"></a>
+- **Compliance: 3 open finding(s)** `id=trg-1b9792dc | severity=high | kind=compliance → P1/compliance`
+  - 3 open compliance finding(s): F/F5, H/H1, H/H2  - F/F5: Architecture marker vs arch-impact drops — 1 arch-impact drop(s…
+  - Launch payload (copy into a new Claude session):
+    ```text
+    /shipwright-compliance
+    
+    Context: 3 open compliance finding(s): F/F5, H/H1, H/H2.
+    Dashboard: .shipwright/compliance/dashboard.md
+    Each finding + hint is listed in this item's detail.
+    ```
+  - Promote: `triage_promote.py --id trg-1b9792dc --task-ref EXT:<ref>`
 
 ### Source: external-frameworks (6 items)
 
@@ -178,8 +197,8 @@
 
 ### Source: phaseQuality (1 item)
 
-<a id="trg-cb0337f4"></a>
-- **Phase-quality: 1 open Tier-1 FAIL(s) across 1 phase(s)** `id=trg-cb0337f4 | severity=high | kind=bug → P1/engineering`
+<a id="trg-9909ef53"></a>
+- **Phase-quality: 1 open Tier-1 FAIL(s) across 1 phase(s)** `id=trg-9909ef53 | severity=high | kind=bug → P1/engineering`
   - 1 open phase-quality Tier-1 FAIL(s) across 1 phase(s): iterate.  - iterate:W2 (W2 F11 external-review marker) — Run ext…
   - Launch payload (copy into a new Claude session):
     ```text
@@ -189,5 +208,5 @@
     Dashboard: .shipwright/compliance/skill-compliance/_dashboard.md
     Each FAIL + remediation is listed in this item's detail.
     ```
-  - Promote: `triage_promote.py --id trg-cb0337f4 --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-9909ef53 --task-ref EXT:<ref>`
 

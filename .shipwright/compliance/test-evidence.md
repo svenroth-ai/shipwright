@@ -1,6 +1,6 @@
 # Test Evidence Report
 
-Generated: 2026-06-12T19:25:19.401409+00:00
+Generated: 2026-06-12T19:44:08.072141+00:00
 
 ## Summary
 
@@ -15,7 +15,7 @@ Generated: 2026-06-12T19:25:19.401409+00:00
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
 | 1 | W2 phase-quality check SKIPs on an unresolvable run_id (mirror S2/S3); fixes the audit-context false-FAIL/false-PASS when no iterate run resolves; also fixes a latent empty-run_id crash | iterate | unit | +0 | 3289/3289 | PASS | 2026-06-12 |
-| 2 | cross_component risk flag forces an integration-coverage test at medium+, enforced non-dodgeably by the F11 verifier recomputing the flag from the diff. Closes the composition axis of the empirical machinery. | iterate | — | +0 | — | — | 2026-06-12 |
+| 2 | Clear bloat Group H1/H2: tighten 51 stale baseline entries to actual LOC + grandfather 8 oversize files (reducibility-catalog dogfood); follow-ups trg-af476d87 + trg-b9acb195. | iterate | — | +0 | — | — | 2026-06-12 |
 | 3 | Windows: test-run the python3 probe so the Microsoft Store stub does not abort the marketplace cache sync | iterate | mixed | +0 | 3284/3284 | PASS | 2026-06-12 |
 | 4 | End-to-end parallel-merge cascade integration test (3 concurrent iterates + a 3-sub campaign): proves curated-union + churn-regenerate + JSONL-union resolve together with no cascade. | iterate | — | +0 | — | — | 2026-06-12 |
 | 5 | Delivery-Watch: F11 confirms the PR actually merges green before done (no shoot-and-forget); watch_pr_delivery.py + F2 budget-lint-before-push rule. | iterate | — | +0 | — | — | 2026-06-12 |

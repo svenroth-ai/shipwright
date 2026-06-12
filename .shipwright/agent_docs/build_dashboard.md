@@ -1,11 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-06-12 19:25 UTC | Session: e40d1082-2df5-473b-853e-641d52bef467 | Run: iterate-2026-06-12-cross-component-gate
+> Updated: 2026-06-12 19:44 UTC | Session: e40d1082-2df5-473b-853e-641d52bef467 | Run: iterate-2026-06-12-cross-component-gate
 
-## Recent Changes (163 iterations)
+## Recent Changes (164 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
 | change | W2 phase-quality check SKIPs on an unresolvable run_id (mirror S2/S3); fixes the audit-context false-FAIL/false-PASS when no iterate run resolves; also fixes a latent empty-run_id crash | 3289/3289 |  | compliance | 2026-06-12 |
+| change | Clear bloat Group H1/H2: tighten 51 stale baseline entries to actual LOC + grandfather 8 oversize files (reducibility-catalog dogfood); follow-ups trg-af476d87 + trg-b9acb195. | 0/0 |  | tooling | 2026-06-12 |
 | change | cross_component risk flag forces an integration-coverage test at medium+, enforced non-dodgeably by the F11 verifier recomputing the flag from the diff. Closes the composition axis of the empirical machinery. | 0/0 |  | tooling | 2026-06-12 |
 | bug | Windows: test-run the python3 probe so the Microsoft Store stub does not abort the marketplace cache sync | 3284/3284 |  | tooling | 2026-06-12 |
 | change | End-to-end parallel-merge cascade integration test (3 concurrent iterates + a 3-sub campaign): proves curated-union + churn-regenerate + JSONL-union resolve together with no cascade. | 0/0 |  | tooling | 2026-06-12 |
