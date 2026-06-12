@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-12-w2-unresolvable-runid-skip",
+    "run_id": "iterate-2026-06-12-bloat-h1-h2-cleanup",
     "date": "2026-06-12",
     "unit": {
       "status": "passed",
-      "passed": 3289,
-      "total": 3289
+      "passed": 3284,
+      "total": 3284
     },
     "integration": {
       "status": "not_run",
@@ -31,53 +31,46 @@
       "status": "not_run"
     },
     "degraded": [
-      "F0 scoped to shared/tests with -m 'not slow and not cross_plugin' (3289 passed, 12 skipped, 0 failed). The change is confined to one phase-quality verifier (shared/scripts/tools/verifiers/iterate_compliance.py) plus its dedicated meta-test (test_workflow_w2_run_id_guard.py); the shared suite is a superset of the affected surface."
+      "Data-only change: shipwright_bloat_baseline.json (51 entries tightened + 8 grandfathered) + .shipwright/triage.jsonl (2 follow-up items). No Python/source changed, so F0 was scoped to the shared suite (3284 passed, 12 skipped) + Group H audit (14) + bloat/anti-ratchet (115); integration/plugin suites cannot be affected by a baseline-data edit.",
+      "triage.jsonl carries in-session background-producer appends (phaseQuality dismissals + a now-stale compliance H1 backlog item trg-b7fe7c90); the F5b compliance regen auto-dismisses it once H1=0. Carried per the per-tree, PR-committed model."
     ],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "W2: a sentinel run_id (`unknown`) with the iterate dir present but no per-run marker SKIPs ('not a resolvable iterate run') instead of the previous false-FAIL via tail-fallback complexity",
+          "behavior": "H2 cleared: every baseline entry's current equals its on-disk LOC (no recorded>actual ratchet-suggestion)",
           "disposition": "tested",
-          "evidence": "test_workflow_w2_run_id_guard.py::test_w2_skips_on_unknown_run_id_no_marker PASSED"
+          "evidence": "live Group-H scan H2=0; test_bloat_baseline + test_anti_ratchet_check[_staged] (115 passed)"
         },
         {
-          "behavior": "W2: a sentinel run_id with a status=completed external_review_state.json (run-agnostic) SKIPs rather than false-PASSing on the shared state file (the main-tree case)",
+          "behavior": "H1 cleared: every oversize tracked file is listed in the baseline (no drift)",
           "disposition": "tested",
-          "evidence": "test_workflow_w2_run_id_guard.py::test_w2_skips_on_unknown_run_id_even_with_completed_state PASSED"
+          "evidence": "live Group-H scan H1=0; test_audit_group_h (14 passed)"
         },
         {
-          "behavior": "W2: an empty run_id SKIPs via the guard before reaching the spec-glob, which also avoids the latent pathlib crash on the '**.md' pattern",
+          "behavior": "No anti-ratchet introduced: no baseline entry's current is below its file's actual LOC",
           "disposition": "tested",
-          "evidence": "test_workflow_w2_run_id_guard.py::test_w2_skips_on_empty_run_id PASSED (was ValueError pre-fix)"
+          "evidence": "anti_ratchet_check.py --worktree status=ok (ratchets=[], new_crossings=[])"
         },
         {
-          "behavior": "W2: a per-run marker on disk bypasses the guard even without an exact iterate_history entry, so normal marker logic PASSes (AC-6 parity with S2)",
+          "behavior": "No stale baseline entries: every entry resolves to a file on disk",
           "disposition": "tested",
-          "evidence": "test_workflow_w2_run_id_guard.py::test_w2_per_run_marker_overrides_guard_without_exact_entry PASSED"
-        },
-        {
-          "behavior": "W2 regression: a real run with an exact iterate_history entry but no marker still FAILs (the guard must not mask a genuine missing external review)",
-          "disposition": "tested",
-          "evidence": "test_workflow_w2_run_id_guard.py::test_w2_guard_does_not_fire_for_real_run_with_exact_entry PASSED"
+          "evidence": "live Group-H scan H6=0"
         }
       ],
       "counts": {
-        "testable": 5,
-        "tested": 5,
+        "total": 4,
+        "tested": 4,
         "untestable": 0,
         "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 5,
-        "covered_acs": 5
       }
     },
     "surface_verification": {
       "surface": "none",
-      "justification": "Pure phase-quality verifier logic (check_w2_external_review_marker); no web/CLI/API app surface is reachable or affected. Behavior is fully exercised by the dedicated meta-test and the full shared/tests unit suite.",
+      "justification": "Data/config-only change: shipwright_bloat_baseline.json (compliance Group H bookkeeping) + triage.jsonl follow-up items. No runtime surface (no CLI/API/web code path), no UI, no backend-affects-frontend. Verified by the Group-H scan (H1=H2=H6=0) + anti-ratchet gate (status ok) + shared suite (3284 passed).",
+      "tests_run": 0,
       "exit_code": 0,
-      "tests_run": 0
+      "timestamp": "2026-06-12T19:35:00Z"
     }
   }
 }

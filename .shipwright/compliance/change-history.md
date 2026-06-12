@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-06-12T19:25:19.401409+00:00
-Total commits: 974
+Generated: 2026-06-12T19:44:08.072141+00:00
+Total commits: 976
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 278
+    "fix" : 279
     "feat" : 268
-    "chore" : 214
+    "chore" : 215
     "docs" : 123
     "refactor" : 52
     "test" : 24
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 278 commits
+### Fixes (fix) — 279 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-12 | compliance | W2 SKIPs on unresolvable run_id, mirroring the S2/S3 guard (#217) | 768c2a9c625a |
 | 2026-06-12 | install | test-run python3 probe so Windows MS Store stub doesn't abort marketplace sync (#216) | 2da047b7c24a |
 | 2026-06-12 | merge | merge=union for curated agent-docs (close the structural gap) (#213) | 9d2239c6b033 |
 | 2026-06-12 | triage | union-residence GC recompute + source-derived drift meta-test (a1-6/F19 follow-up) (#208) | 6a3b4b0ea343 |
@@ -576,10 +577,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 214 commits
+### Chores (chore) — 215 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-12 | bloat | clear Group H1/H2 - tighten 51 baseline entries + grandfather 8 | 56f237aee2a3 |
 | 2026-06-11 | triage | drop three stale internal anchor items | 9d74de9db766 |
 | 2026-06-11 | gitignore | keep campaign planning dirs local-only | dd4806d2ba91 |
 | 2026-06-11 | triage | sweep 3 outbox append(s) into branch | 26ea4a5f0586 |
@@ -1043,7 +1045,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 974 |
+| Total commits | 976 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 974 |
+| Human-authored commits | 976 |
 
