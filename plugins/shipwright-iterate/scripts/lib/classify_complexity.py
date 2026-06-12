@@ -246,8 +246,9 @@ def detect_cross_split(
     if not sync_config_path:
         return None
     try:
-        config = json.loads(Path(sync_config_path).read_text())
-    except (FileNotFoundError, json.JSONDecodeError):
+        # WP8/F24: utf-8-sig (BOM-tolerant) — non-ASCII FR titles otherwise crash on cp1252.
+        config = json.loads(Path(sync_config_path).read_text(encoding="utf-8-sig"))
+    except (FileNotFoundError, json.JSONDecodeError, UnicodeDecodeError):
         return None
 
     msg_lower = message.lower()
