@@ -81,14 +81,10 @@ STATUS_FAIL = "FAIL"
 STATUS_WARN = "WARN"
 STATUS_SKIP = "SKIP"
 
-# Markers used by the audit hook to identify a Shipwright project layout.
-CONFIG_MARKERS: tuple[str, ...] = (
-    "shipwright_run_config.json",
-    "shipwright_project_config.json",
-    "shipwright_plan_config.json",
-    "shipwright_build_config.json",
-    "shipwright_events.jsonl",
-)
+# NOTE: the Shipwright-project marker set + the greenfield/foreign predicate
+# live in ``lib.project_root`` (CONFIG_MARKERS / is_shipwright_project) — the
+# single source of truth every hook delegates to
+# (iterate-2026-06-12-canonical-project-predicate).
 
 
 __all__ = [
@@ -97,7 +93,6 @@ __all__ = [
     "C5_PHASES",
     "CATEGORIES",
     "COMPLIANCE_DIR",
-    "CONFIG_MARKERS",
     "DASHBOARD_PATH",
     "FINDING_DIR",
     "GC_AGE_DAYS",

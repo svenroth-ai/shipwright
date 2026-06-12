@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-06-12T11:50:27.025653+00:00
-Total commits: 963
+Generated: 2026-06-12T12:06:22.426150+00:00
+Total commits: 964
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 271
+    "fix" : 272
     "feat" : 267
     "chore" : 214
     "docs" : 123
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 271 commits
+### Fixes (fix) — 272 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-12 | utf8 | pin UTF-8 on git-reading subprocess decodes (deep-audit WP7) (#202) | 9e39bfb2b89d |
 | 2026-06-12 | hooks | canonical project-root/worktree resolvers + drift project guard (deep-audit WP5) (#200) | 99fd75ef3bc8 |
 | 2026-06-12 | iterate | UTF-8 config readers + errors=replace on F0.5 runner decode (deep-audit WP8) (#203) | d74530ffa79e |
 | 2026-06-12 | churn | UTF-8-strict git I/O + structured commit-failure handling (deep-audit WP6) (#201) | 1752b9f985ea |
@@ -1032,7 +1033,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 963 |
+| Total commits | 964 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 963 |
+| Human-authored commits | 964 |
 
