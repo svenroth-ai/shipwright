@@ -20,17 +20,18 @@ This resolver used to redirect to the **main** repo via ``git rev-parse
 never entered the iterate PR, and required a manual ``chore(events)`` backfill.
 The redirect is gone; the event now rides the PR.
 
-``resolve_main_repo_root`` stays
---------------------------------
-The git-common-dir primitive ``resolve_main_repo_root`` is **retained,
-unchanged** — but it is no longer used to locate the event log. Its remaining
-consumers are the **decision-drop** directory resolver
-(``tools/write_decision_drop.py``, ``tools/aggregate_decisions.py``) and the
-F11 verifier's decision-drop lookup. Decision-drops are *gitignored* staging
-that ``/shipwright-changelog`` consumes on ``main``, so they genuinely must
-resolve to the main repo (an iterate worktree's copy IS discarded before
-aggregation). The event log no longer shares that constraint because it is
-committed into the branch.
+``resolve_main_repo_root`` relocated
+------------------------------------
+The git-common-dir primitive ``resolve_main_repo_root`` no longer lives here. It
+was a repo-root helper squatting in the event-log module — retained here in
+2026-05-29 only because the events-path redirect removal happened in this file.
+As of ``iterate-2026-06-12-repo-root-resolver-relocate`` the implementation lives
+in its thematic home ``lib/repo_root.py`` (beside ``main_repo_root_or``); this
+module re-exports it via a thin **lazy** shim so existing
+``from lib.events_log import resolve_main_repo_root`` imports keep working. The
+lazy (call-time) import avoids the
+``events_log → repo_root → worktree_isolation → events_log`` cycle a module-level
+re-export would introduce. New code should import it from ``lib.repo_root``.
 
 Relationship to ``shipwright-compliance``'s
 ``collectors.change_history._resolve_events_path``
@@ -45,136 +46,36 @@ pins the two to the same answer; both resolve to the per-tree
 from __future__ import annotations
 
 import json
-import os
-import subprocess
-import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 
 EVENT_FILE = "shipwright_events.jsonl"
 
-# git path-resolution is a single fast call; cap it so a hung git cannot
-# wedge an append.
-_GIT_TIMEOUT_SECONDS = 15.0
-
-# Environment variables that override git's repo discovery. If any of these
-# leak in from the caller's environment, `git rev-parse` would resolve a
-# DIFFERENT repo than ``cwd=project_root`` — silently writing the event log
-# into the wrong repo. Strip them so resolution is pinned to project_root.
-_GIT_DISCOVERY_OVERRIDES = ("GIT_DIR", "GIT_COMMON_DIR", "GIT_WORK_TREE")
-
-
-def _git_env() -> dict[str, str]:
-    """Process environment with git repo-discovery overrides removed."""
-    env = dict(os.environ)
-    for var in _GIT_DISCOVERY_OVERRIDES:
-        env.pop(var, None)
-    return env
-
 
 def resolve_main_repo_root(project_root: Path | str) -> Path | None:
-    """Return the MAIN repo's working-tree root, git-worktree-aware.
+    """Back-compat re-export — the implementation lives in ``lib.repo_root``.
 
-    From inside a linked git worktree this resolves to the **main** repo
-    root (the worktree's ``--git-common-dir`` parent); in a plain checkout
-    it is the repo's own top level. Returns ``None`` when ``project_root``
-    is not a git repository, or when git is unavailable / returns an
-    unexpected layout — callers then fall back to ``project_root`` itself.
+    Relocated in ``iterate-2026-06-12-repo-root-resolver-relocate`` (it was a
+    repo-root primitive squatting in the event-log module). This thin delegating
+    shim keeps existing ``from lib.events_log import resolve_main_repo_root``
+    imports working. The two remaining in-repo consumers stay on this re-export on
+    purpose — both are already-oversized grandfathered files where adding a
+    ``lib.repo_root`` import line would ratchet bloat for a cosmetic change: the
+    F11 verifier ``tools/verifiers/iterate_checks.py``, and the compliance Group-F
+    detective ``group_f.py`` (which also reaches it through
+    ``audit_adapters.load_shared_lib("events_log")``). New code should import it
+    from ``lib.repo_root``.
 
-    A ``warnings.warn`` diagnostic is emitted only when git is *broken*
-    (binary missing, timeout, empty / unexpected output). A plain "not a
-    git repository" answer returns ``None`` *silently*: that is a
-    definitive, no-data-loss result — a non-git project's artifacts
-    genuinely live next to ``project_root``.
-
-    Shared primitive behind :func:`resolve_events_path` and the
-    worktree-aware decision-drop directory resolver in
-    ``tools/write_decision_drop.py`` / ``tools/aggregate_decisions.py``.
+    The import is **lazy** (call-time) on purpose: a module-level
+    ``from lib.repo_root import resolve_main_repo_root`` would close the cycle
+    ``events_log → repo_root → worktree_isolation → events_log``
+    (``worktree_isolation`` imports ``events_log.EVENT_FILE``), raising
+    ``ImportError`` under any import order where ``repo_root`` /
+    ``worktree_isolation`` loads first.
     """
-    project_root = Path(project_root)
+    from lib.repo_root import resolve_main_repo_root as _impl  # noqa: PLC0415
 
-    try:
-        proc = subprocess.run(
-            ["git", "rev-parse", "--git-common-dir"],
-            cwd=str(project_root),
-            capture_output=True,
-            text=True,
-            # WP7/F27: git emits the common-dir path as UTF-8 bytes. Without
-            # an explicit encoding the platform default (cp1252 on Windows)
-            # mojibakes a non-ASCII project path, so the resolved main root
-            # points at a directory that does not exist — and worktree
-            # decision-drops are silently written there and lost. Pin UTF-8;
-            # the exists() guard below fail-softs if anything still slips.
-            encoding="utf-8",
-            errors="replace",
-            check=False,
-            shell=False,
-            timeout=_GIT_TIMEOUT_SECONDS,
-            env=_git_env(),
-        )
-    except (OSError, ValueError, subprocess.TimeoutExpired) as exc:
-        # git binary missing / un-spawnable / hung — we cannot tell whether
-        # this is a worktree, so a fallback here MAY be silent data loss.
-        warnings.warn(
-            f"resolve_main_repo_root: git unavailable for {project_root} "
-            f"({exc!r}) — the caller falls back to {project_root} itself. "
-            "An iterate worktree run may write a throwaway, soon-discarded "
-            "artifact.",
-            stacklevel=2,
-        )
-        return None
-
-    if proc.returncode != 0:
-        # Definitive "not a git repository" — the fallback is correct, not
-        # a failure. Silent by design (non-git projects + test tmp dirs).
-        return None
-
-    common_dir = proc.stdout.strip()
-    if not common_dir:
-        warnings.warn(
-            f"resolve_main_repo_root: `git rev-parse --git-common-dir` "
-            f"returned empty output in {project_root} — the caller falls "
-            f"back to {project_root} itself.",
-            stacklevel=2,
-        )
-        return None
-
-    common_path = Path(common_dir)
-    if not common_path.is_absolute():
-        # Without --path-format=absolute, `--git-common-dir` yields a path
-        # relative to the git command's cwd, which we pinned to project_root.
-        common_path = (project_root / common_path).resolve()
-
-    # `--git-common-dir` returns the MAIN repo's .git directory; its parent
-    # is the canonical project root. A linked worktree's *git-dir* is
-    # `.git/worktrees/<name>`, but its *common* dir is the top-level `.git`
-    # — so this is worktree-correct. Defensive: only trust a path that
-    # actually ends in ".git".
-    if common_path.name == ".git":
-        resolved_root = common_path.parent
-        # WP7/F27: a mojibaked (or otherwise corrupt) path can name a
-        # directory that does not exist on disk. Returning it would send
-        # worktree decision-drops into a phantom dir where they are lost.
-        # Fail-soft to None so the caller falls back to project_root, which
-        # is guaranteed real.
-        if not resolved_root.exists():
-            warnings.warn(
-                f"resolve_main_repo_root: resolved main root "
-                f"{str(resolved_root)!r} does not exist (corrupt/mojibaked "
-                f"git output?) for {project_root} — the caller falls back to "
-                f"{project_root} itself.",
-                stacklevel=2,
-            )
-            return None
-        return resolved_root
-
-    warnings.warn(
-        f"resolve_main_repo_root: unexpected git-common-dir "
-        f"{str(common_path)!r} (not a `.git` directory) for {project_root} "
-        f"— the caller falls back to {project_root} itself.",
-        stacklevel=2,
-    )
-    return None
+    return _impl(project_root)
 
 
 def resolve_events_path(project_root: Path | str) -> Path:

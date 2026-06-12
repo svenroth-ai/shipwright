@@ -1,59 +1,92 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-12-workevent-null-frs-coerce",
+    "run_id": "iterate-2026-06-12-repo-root-resolver-relocate",
     "date": "2026-06-12",
-    "unit": { "status": "passed", "passed": 697, "total": 697 },
-    "integration": { "status": "passed", "passed": 21, "total": 21 },
-    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
-    "e2e": { "status": "not_run", "passed": 0, "total": 0 },
-    "design_fidelity": { "status": "not_run", "passed": 0, "total": 0 },
-    "smoke": { "status": "not_run" },
+    "unit": {
+      "status": "passed",
+      "passed": 3290,
+      "total": 3302
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 46,
+      "total": 46
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
     "degraded": [
-      "setup_iterate_worktree reported a pre-existing 'sweep-outbox invalid' warning for trg-671bb0a2 (a status append dropped by an earlier merge) — background triage-outbox housekeeping, unrelated to this change."
+      "Worktree setup emitted a pre-existing 'sweep-outbox invalid' warning (triage id trg-671bb0a2 status-append dropped) — unrelated to this iterate's diff; triage-data condition only."
     ],
+    "surface_verification": {
+      "surface": "none",
+      "justification": "Pure internal Python shared-lib relocation: resolve_main_repo_root moved from lib/events_log.py to its thematic home lib/repo_root.py plus a lazy back-compat re-export; net-zero consumer imports updated. No web/CLI/API/store/message-contract surface and no UI-consumed code (the WebUI is a separate repo and consumes none of these CLI/hook-side Python functions). Verified by the full shared unit/integration suite (3290 passed) + the cross-plugin compliance suite (46 passed, exercising the load_shared_lib re-export path) + import-cycle (all 4 first-import orders) and back-compat equivalence probes."
+    },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "WorkEvent.from_dict coerces an explicit-null affected_frs to []",
+          "behavior": "resolve_main_repo_root() in lib.repo_root: plain repo -> repo root; linked worktree -> MAIN root; str arg accepted",
           "disposition": "tested",
-          "evidence": "tests/test_workevent_null_coercion.py::TestWorkEventNullCoercion::test_explicit_null_affected_frs_coerces_to_empty_list PASSED"
+          "evidence": "test_repo_root.py::test_main_repo_root_plain_repo / _from_worktree / _str_project_root_accepted PASSED"
         },
         {
-          "behavior": "WorkEvent.from_dict coerces an explicit-null new_frs to []",
+          "behavior": "resolve_main_repo_root() fail-soft contract: non-git -> None silently (0 warnings); broken git -> warn+None (exactly 1); GIT_DIR/GIT_COMMON_DIR/GIT_WORK_TREE stripped",
           "disposition": "tested",
-          "evidence": "tests/test_workevent_null_coercion.py::TestWorkEventNullCoercion::test_explicit_null_new_frs_coerces_to_empty_list PASSED"
+          "evidence": "test_repo_root.py::test_main_repo_root_non_git_returns_none_silently / _git_unavailable_warns_then_none / _git_discovery_env_overrides_are_stripped PASSED"
         },
         {
-          "behavior": "WorkEvent.from_dict tolerates explicit-null nested tests/review dicts (zero-valued, no AttributeError)",
+          "behavior": "UTF-8/F27 mojibake guard preserved after the move (accented main+worktree paths resolve to an existing root; phantom common-dir -> None+warn)",
           "disposition": "tested",
-          "evidence": "tests/test_workevent_null_coercion.py::TestWorkEventNullCoercion::test_explicit_null_nested_dicts_do_not_crash PASSED"
+          "evidence": "test_git_tools_utf8.py::test_resolve_main_root_from_accented_main / _from_accented_worktree / _failsoft_on_nonexistent_common_dir PASSED (import now from lib.repo_root)"
         },
         {
-          "behavior": "Missing affected_frs/new_frs keys still default to [] (normal omit path unaffected)",
+          "behavior": "Back-compat: `from lib.events_log import resolve_main_repo_root` still imports and returns the same answer as lib.repo_root (lazy shim, no import cycle in any order)",
           "disposition": "tested",
-          "evidence": "tests/test_workevent_null_coercion.py::TestWorkEventNullCoercion::test_missing_keys_still_default_to_empty_list PASSED"
+          "evidence": "test_events_log.py::test_resolve_main_repo_root_reexported_from_events_log PASSED"
         },
         {
-          "behavior": "Populated affected_frs/new_frs/tests round-trip unchanged",
+          "behavior": "Decision-drop SSoT: worktree-reachable consumers still resolve the drop dir via resolve_main_repo_root; the literal-string grep + raw-join coverage still hold after the migrated/reverted imports",
           "disposition": "tested",
-          "evidence": "tests/test_workevent_null_coercion.py::TestWorkEventNullCoercion::test_populated_values_round_trip_unchanged PASSED"
+          "evidence": "test_decision_drop_ssot.py (3 tests: worktree_reachable_use_resolver / no_unaccounted_raw_joins / allowlist_not_stale) PASSED"
         },
         {
-          "behavior": "A null-affected_frs event no longer bricks map_requirements_to_events / compliance MD regen (the reported crash)",
+          "behavior": "plugin-sync Stop hook routes the durable triage append to the MAIN repo via the migrated lib.repo_root import (worktree -> main outbox; non-git -> fallback)",
           "disposition": "tested",
-          "evidence": "tests/test_workevent_null_coercion.py::TestWorkEventNullCoercion::test_null_affected_frs_does_not_brick_rtm_mapping PASSED; full compliance suite 697 passed"
+          "evidence": "test_plugin_sync_reminder_on_stop.py::test_triage_item_written_to_main_repo_from_worktree + _emitted_non_git_fallback PASSED"
+        },
+        {
+          "behavior": "INTEGRATION: compliance Group-F detective resolves the main-repo decision-drops dir through the events_log re-export under the load_shared_lib cross-plugin bootstrap (shim composes with the bootstrap chain)",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "plugins/shipwright-compliance/tests/test_audit_groups_c_f.py (group_f reconcile_architecture) PASSED within the 46-test compliance run"
         }
       ],
-      "counts": { "testable": 6, "tested": 6, "untestable": 0, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 3, "covered_acs": 3 }
-    },
-    "surface_verification": {
-      "surface": "none",
-      "justification": "Pure Python deserialization-hardening in compliance collectors (WorkEvent.from_dict). No UI, no API route, no store mutation, no SSE/WS or message contract touched; the affected compliance outputs are static markdown, not a live web surface. Verified by reproduce-then-fix probe + full compliance suite (697 passed) + shared-contracts integration (21 passed). small complexity, no touches_io_boundary risk flag -> F0.5 advisory.",
-      "tests_run": 0,
-      "exit_code": 0,
-      "timestamp": "2026-06-12T22:20:00Z"
+      "counts": {
+        "testable": 7,
+        "tested": 7,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 7,
+        "covered_acs": 7
+      }
     }
   }
 }

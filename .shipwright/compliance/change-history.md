@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-12T20:22:50.182497+00:00
-Total commits: 978
+Generated: 2026-06-12T20:49:23.721279+00:00
+Total commits: 979
 
 ## Commit Distribution
 
@@ -11,7 +11,7 @@ pie title Commit Types
     "feat" : 269
     "chore" : 215
     "docs" : 123
-    "refactor" : 52
+    "refactor" : 53
     "test" : 24
     "ci" : 7
     "other" : 7
@@ -24,7 +24,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-12 | compliance | coerce explicit-null affected_frs/new_frs in WorkEvent.from_dict | c58d2d68a374 |
+| 2026-06-12 | compliance | coerce explicit-null affected_frs/new_frs in WorkEvent.from_dict (#220) | 332b64728fa1 |
 | 2026-06-12 | compliance | W2 SKIPs on unresolvable run_id, mirroring the S2/S3 guard (#217) | 768c2a9c625a |
 | 2026-06-12 | install | test-run python3 probe so Windows MS Store stub doesn't abort marketplace sync (#216) | 2da047b7c24a |
 | 2026-06-12 | merge | merge=union for curated agent-docs (close the structural gap) (#213) | 9d2239c6b033 |
@@ -927,10 +927,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 52 commits
+### Refactoring (refactor) — 53 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-12 | lib | relocate resolve_main_repo_root to lib/repo_root.py with back-compat re-export | 1aa59898e499 |
 | 2026-06-12 | agent-docs | compact backlog to one-line pointers + retire convention-routing fallback (#211) | 16138390ad5f |
 | 2026-06-12 | hooks | consolidate project detection onto one canonical predicate (#209) | 62eb99264b7f |
 | 2026-05-26 | run | split orchestrator.py (983 LOC) into orchestrator_pkg/ (Campaign B5) (#102) | 46031f3a9ab9 |
@@ -1047,7 +1048,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 978 |
+| Total commits | 979 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 978 |
+| Human-authored commits | 979 |
 
