@@ -64,6 +64,7 @@ MACHINE_REASONS = frozenset({
     "complianceResolved",
     "complianceRefreshed",  # stale-signature backlog rollup superseded (triage_bundle ~L165)
     "phaseQualityResolved",
+    "phaseQualityRefreshed",  # F30: stale-signature phase-quality rollup superseded (phase_quality/_triage_bundle ~L268)
     "testEvidenceResolved",
 })
 
@@ -158,8 +159,18 @@ def _validate_after(project_root: Path | str, drop_ids: set[str]) -> None:
 
 
 def apply_gc(project_root: Path | str, drop_ids: set[str], backup: bool = True) -> Path:
-    """Rewrite the log without the ``drop_ids`` lines. Returns the backup path
+    """Rewrite the log dropping the machine-churn lines. Returns the backup path
     (or the live path when ``backup`` is False). Holds the store's file lock.
+
+    F19 (TOCTOU): the ``drop_ids`` argument is the plan the CALLER computed
+    outside the lock (the dry-run report / ``main()`` short-circuit). The drop
+    decision is **recomputed under the lock** here, intersected with the caller's
+    plan, so a status flip appended BETWEEN plan and apply (e.g. the WebUI / a
+    producer re-opens a planned item) is honored: a re-opened item is no longer
+    machine-churn under the fresh plan and is NOT dropped. Intersecting with the
+    caller's set keeps the operator-facing report (printed from the stale plan)
+    an upper bound on what actually changed — apply never drops MORE than the
+    report announced, only the same-or-fewer ids.
 
     Refuses to rewrite if any non-blank line is malformed JSON — the tolerant
     reader would otherwise silently compact a corrupt line away (data loss). The
@@ -178,11 +189,17 @@ def apply_gc(project_root: Path | str, drop_ids: set[str], backup: bool = True) 
                         f"triage_gc: refusing to rewrite — malformed JSON at line "
                         f"{n} ({exc.msg}); fix or remove it first"
                     )
+        # F19: recompute the droppable set UNDER the lock and intersect with the
+        # caller's planned ids. A concurrent re-open (status flip appended between
+        # the caller's plan and now) makes an item no-longer-machine-churn, so it
+        # drops out of ``fresh_drop_ids`` and survives the rewrite.
+        fresh_drop_ids = plan_gc(project_root)["drop_ids"]
+        effective_drop_ids = fresh_drop_ids & set(drop_ids)
         # Tracked store only — never read/rewrite the gitignored outbox (D1).
         raw = triage._iter_raw_lines_at(triage._triage_path(project_root))
         kept = [
             r for r in raw
-            if r.get("event") not in ("append", "status") or r.get("id") not in drop_ids
+            if r.get("event") not in ("append", "status") or r.get("id") not in effective_drop_ids
         ]
         backup_path = path.with_suffix(path.suffix + ".bak")
         if backup and path.exists():
@@ -196,7 +213,11 @@ def apply_gc(project_root: Path | str, drop_ids: set[str], backup: bool = True) 
             fp.flush()
             os.fsync(fp.fileno())
         os.replace(tmp, path)
-    _validate_after(project_root, drop_ids)
+        # Validate against the SET WE ACTUALLY DROPPED (F19): an id present in the
+        # caller's stale plan but re-opened (so excluded from effective_drop_ids)
+        # is legitimately still present — validating against the stale plan would
+        # false-fail. Run under the lock so no concurrent writer interleaves.
+        _validate_after(project_root, effective_drop_ids)
     return backup_path if backup else path
 
 
