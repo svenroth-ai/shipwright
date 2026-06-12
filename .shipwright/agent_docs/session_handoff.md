@@ -1,36 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-12-installer-shell-fixes"
+run_id: "iterate-2026-06-12-compliance-gate-coverage"
 phase: "iterate"
-reason: "x"
-timestamp: "2026-06-12T08:48:05.654486+00:00"
+reason: "iterate: compliance gate coverage (Group H + S4 join)"
+timestamp: "2026-06-12T05:31:37.722790+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-12 08:48:05 UTC
+> Auto-generated 2026-06-12 05:31:37 UTC
 
 ## Session Info
 
 - **Session ID**: f1dfbc99-c830-4ef1-9897-9a176d13cf6d
-- **Timestamp**: 2026-06-12 08:48:05 UTC
-- **Reason**: x
+- **Timestamp**: 2026-06-12 05:31:37 UTC
+- **Reason**: iterate: compliance gate coverage (Group H + S4 join)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-12-compliance-gate-coverage
-- **Date**: 2026-06-12T05:32:37.279680Z
-- **Type**: bug
+- **Run ID**: iterate-2026-06-12-triage-status-idle-main-outbox
+- **Date**: 2026-06-11T22:33:22.081188Z
+- **Type**: change
 - **Complexity**: small
-- **Branch**: iterate/audit1-compliance-gate-coverage
-- **ADR**: iterate-2026-06-12-compliance-gate-coverage
+- **Branch**: iterate/triage-status-idle-main-outbox
+- **ADR**: iterate-2026-06-12-triage-status-idle-main-outbox
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/campaigns/2026-06-10-audit-1-auto/sub-iterates/a1-1-compliance-gate-coverage.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/audit1-installer-shell-fixes
-- **External Review Marker**: completed (external_review_state.json @ 2026-06-12T08:40:35)
+- **Branch**: iterate/audit1-compliance-gate-coverage
+- **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
@@ -48,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/audit1-installer-shell-fixes
-- **Last Commit**: 6b16e8f4 fix(compliance): make Group H + S4 FR-preservation gates fire (deep-audit WP3) (#199)
+- **Branch**: iterate/audit1-compliance-gate-coverage
+- **Last Commit**: 57ee522e fix(triage): route idle-main status flips to the outbox in mark_status (#198)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,22 +64,23 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-3064a751 | work_completed | iterate (Installer/shell POSIX fixes (deep-audit WP10 F33-F38): set -e prereq counter, uv ~/.local/bin PATH, 13-plugin space-safe alias refresh, python3 resolver, dotenv-parse verify-setup) | 2026-06-12 |
 | evt-94515cf2 | work_completed | iterate (Fix two structurally-inert compliance gates (deep-audit WP3): Group H now in run_all default + on-stop coverage gate widened to A-H (F20); S4 FR-preservation join no longer raises TypeError (F21)) | 2026-06-12 |
 | evt-0cd9ae46 | work_completed | iterate (triage.mark_status routes idle-main status flips to the outbox (symmetric with append_triage_item), completing campaign D1 for the status side; fixes undelivered tracked drift from WebUI/Stop-hook dismisses) | 2026-06-11 |
 | evt-860e1092 | work_completed | iterate (F11 arms GitHub-native auto-merge for iterate/* PRs (gh pr merge --auto --squash --delete-branch), branch-scoped + fail-soft (B4.5 Phase 3)) | 2026-06-11 |
 | evt-86a0a95c | work_completed | iterate (Tier-3 PR review via OpenRouter custom-script (B4.5 Phase 2): pr-review.yml workflow + pr_review.py reviewer + pr_reviewer prompts + 4 snapshot/unit test files) | 2026-06-11 |
+| evt-bb5fc0f9 | work_completed | iterate (Add gh-pr-ci:{pr_number} action-unit: failed hard-gates on open PRs land in triage (B4.5 automerge loop-closing). Differentiated auto-resolve; session-wide symmetry; draft exclusion; truncation + filter=latest guards.) | 2026-06-11 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 145
-- **Last iterate**: bug — Installer/shell POSIX fixes (deep-audit WP10 F33-F38): set -e prereq counter, uv ~/.local/bin PATH, 13-plugin space-safe alias refresh, python3 resolver, dotenv-parse verify-setup (2026-06-12)
+- **Total work events**: 144
+- **Last iterate**: bug — Fix two structurally-inert compliance gates (deep-audit WP3): Group H now in run_all default + on-stop coverage gate widened to A-H (F20); S4 FR-preservation join no longer raises TypeError (F21) (2026-06-12)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
 
-### ADR-142: Installer/shell POSIX fixes (deep-audit WP10 F33-F38)
-- **Date:** 2026-06-12
-- **Section:** iterate-2026-06-12-installer-shell-fixes
-- **Context:** The recommended POSIX install path was broken six ways (deep-audit WP10): F33 ((missing++)) aborts install.sh under set -e; F34 uv PATH ~/.cargo/bin vs astral ~/.local/bin; F35 alias omits adopt + stale-alias skip guard; F36 unquoted $REPO_ROOT splits on spaces; F37 bare python aborts where only python3 exists; F38 verify-setup sources .env.loca
+### ADR-141: Empirical verification gate for the D2 outbox sweep/GC
+- **Date:** 2026-06-08
+- **Section:** Iterate D2V — outbox-delivery campaign
+- **Context:** D3 stacked on D2 (outbox->sweep->GC); a silent triage-line loss in D2 would propagate to every adopted repo via D3. The campaign needs a HARD, non-mocked empirical gate before D3 proceeds.
+- **Decision:** Built a real empirical harness (shared/tests/test_d2v_empirical_gate*.py) over the REAL D2 code + real git: 200 thread + 40 cross-process trial

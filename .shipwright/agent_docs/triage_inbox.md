@@ -1,12 +1,12 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-12T08:48:05.654486Z. Items waiting for triage decision.
+> Auto-generated 2026-06-11T21:24:03.294145Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 179
-- Triage: 14 | Promoted: 1 | Dismissed: 164 | Snoozed: 0
+- Total: 177
+- Triage: 14 | Promoted: 1 | Dismissed: 162 | Snoozed: 0
 
 ## Top 14 items (severity-sorted)
 
@@ -22,7 +22,58 @@
   - Follow-up to trg-28e83840 (Stop-gate reader fix). The recorder check_file_size.py computes the marker delta (anti-ratch…
   - Promote: `triage_promote.py --id trg-537334f1 --task-ref EXT:<ref>`
 
-### Source: automerge-b45 (1 item)
+### Source: automerge-b45 (2 items)
+
+<a id="trg-c2a700a7"></a>
+- **B4.5-W WebUI — Align PR Review Architecture (OpenRouter + tiered, drop develop)** `id=trg-c2a700a7 | severity=medium | kind=feature → P2/engineering`
+  - Aktuell hat shipwright-webui ein claude-review.yml das (a) anthropics direct via @anthropic-ai/claude-code npm package…
+  - Launch payload (copy into a new Claude session):
+    ```text
+    /shipwright-iterate
+    
+    Brief: Align shipwright-webui PR-Review architecture with monorepo B4.5 Phase 2 — replace claude-review.yml (anthropics-direct, always-on) with pr-review.yml (OpenRouter, tiered).
+    
+    RUN THIS AGAINST shipwright-webui repo, NOT shipwright monorepo.
+    
+    Files to touch in WebUI repo:
+    - .github/workflows/claude-review.yml: DELETE (replaced by pr-review.yml)
+    - .github/workflows/pr-review.yml: NEW, ported from monorepo B4.5 Phase 2 pattern:
+      * Job-Name 'PR Review' (Branch-Protection-Required-Check match)
+      * Two-Job-Struktur: decide (Tier-Filter) + review (gated)
+      * Fork-PR-Guard: head.repo.full_name == github.repository
+      * Tier 3 trigger: external author (NOT 'svroch' / 'dependabot[bot]') OR sensitive paths (client/**, server/**, .github/workflows/**) OR label 'needs-review'
+      * Skip override: label 'skip-pr-review'
+      * Trigger: branches: [main] only (NOT [main, develop] — develop existiert nicht)
+    - scripts/pr_review.py: NEW, WebUI-side adaption (~120-150 LOC):
+      * Same JSON contract, same exit-code semantics als monorepo
+      * OpenRouter call via $OPENROUTER_API_KEY
+      * Default model 'anthropic/claude-sonnet-4.6' via $SHIPWRIGHT_PR_REVIEW_MODEL
+      * tsx + node available on ubuntu-latest runner — script kann pure-Python sein
+    - prompts/pr_reviewer/system/ + user/: NEW, WebUI-spezifische Heuristiken (Vite + Hono Stack, React-Components, Server-Routes, RLS, etc.) — analog zur monorepo system/user Verzeichnis-Form (PR #119 Pattern)
+    - Tests in tests/: pr_review_workflow_shape.test.ts + pr_review_script.test.ts (vitest)
+    
+    Smoke-Tests vor merge:
+    1. Test-PR aus svroch Account (Tier 2) → review-Job skipped, Required-Check trotzdem grün
+    2. Test-PR mit Änderung in client/components/ → Tier 3 (sensitive path), Script reviewt
+    
+    Nach merge (manuelle Sven-Aktion):
+    - OPENROUTER_API_KEY als Repo-Secret in shipwright-webui (separate Spend-Limit!)
+    - Branch Protection neu setzen mit 6 Required Checks:
+        * Client (type + lint + test)
+        * Server (type + lint + test)
+        * Shipwright Security Scan
+        * Analyze (javascript-typescript)
+        * Anti-ratchet + allowlist diff
+        * PR Review (NEW, ersetzt 'Claude Code Review')
+    - KEIN develop Branch in Protection target (existiert nicht, war dead config)
+    - Allow auto-merge wie monorepo
+    
+    Constraint (defensiv):
+    - ANTHROPIC_API_KEY Secret im WebUI nach Migration NICHT löschen sofort — falls rollback gewünscht, ist es eine 1-Zeilen-Git-Revert. Erst nach 1-2 erfolgreichen Tier-3-Reviews löschen.
+    
+    Complexity hint: small-medium (Port + Adapt, kein neues Architektur-Design)
+    ```
+  - Promote: `triage_promote.py --id trg-c2a700a7 --task-ref EXT:<ref>`
 
 <a id="trg-a678bd00"></a>
 - **B4.6 Adopt — Automerge-Readiness Pack** `id=trg-a678bd00 | severity=medium | kind=feature → P2/engineering`
@@ -56,18 +107,18 @@
 
 ### Source: compliance (1 item)
 
-<a id="trg-671bb0a2"></a>
-- **Compliance: 9 open finding(s)** `id=trg-671bb0a2 | severity=medium | kind=compliance → P2/compliance`
-  - 9 open compliance finding(s): E/E1, E/E2, E/E3, E/E4, E/E5, E/E?, E/E?, E/E?, F/F5  - E/E1: RTM stale (regen vs snapsho…
+<a id="trg-f1c0a3ae"></a>
+- **Compliance: 1 open finding(s)** `id=trg-f1c0a3ae | severity=medium | kind=compliance → P2/compliance`
+  - 1 open compliance finding(s): F/F5  - F/F5: Architecture marker vs arch-impact drops — 1 arch-impact drop(s) not docume…
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-compliance
     
-    Context: 9 open compliance finding(s): E/E1, E/E2, E/E3, E/E4, E/E5, E/E?, E/E?, E/E?, F/F5.
+    Context: 1 open compliance finding(s): F/F5.
     Dashboard: .shipwright/compliance/dashboard.md
     Each finding + hint is listed in this item's detail.
     ```
-  - Promote: `triage_promote.py --id trg-671bb0a2 --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-f1c0a3ae --task-ref EXT:<ref>`
 
 ### Source: external-frameworks (6 items)
 
@@ -101,7 +152,7 @@
   - \## Intent  Bundle P8.1 from Spec/external-frameworks-integration.md (MU5 + MU7 + MU-PL1). Single research iterate prod…
   - Promote: `triage_promote.py --id trg-aecf9cde --task-ref EXT:<ref>`
 
-### Source: manual (4 items)
+### Source: manual (3 items)
 
 <a id="trg-9b9a2b9d"></a>
 - **Audit bug-fixes - final batch, run last (docs/SSoT + low-risk hardening)** `id=trg-9b9a2b9d | severity=medium | kind=improvement → P2/engineering`
@@ -117,9 +168,4 @@
 - **Audit bug-fixes - auto batch (encoding/Windows, compliance gates, triage tooling, installer)** `id=trg-d7661cfb | severity=medium | kind=improvement → P2/engineering`
   - Launch surface only. The work plan + details live in the LOCAL, gitignored campaign dir (not in git). Start via the Sta…
   - Promote: `triage_promote.py --id trg-d7661cfb --task-ref EXT:<ref>`
-
-<a id="trg-7580f4fe"></a>
-- **Emit a tracked terminal campaign-completion event so consumers can auto-hide finished campaigns** `id=trg-7580f4fe | severity=low | kind=improvement → P3/engineering`
-  - The tracked shipwright_events.jsonl carries only per-sub-iterate 'work_completed' events (top-level campaign + sub_iter…
-  - Promote: `triage_promote.py --id trg-7580f4fe --task-ref EXT:<ref>`
 
