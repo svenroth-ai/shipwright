@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-12-repo-root-resolver-relocate",
+  "date": "2026-06-12T20:50:20.243017Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/2026-06-12-repo-root-resolver-relocate",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/2026-06-12-repo-root-resolver-relocate.md",
+  "adr": "iterate-2026-06-12-repo-root-resolver-relocate"
+}

@@ -10,9 +10,11 @@ Single source of truth shared by:
 
 The module is deliberately **pure**: it takes a ``decision-drops`` directory and
 the architecture.md *text*, and never shells out to git or resolves worktree
-roots. Each caller does its own main-repo / worktree path resolution (the
-detective via ``events_log.resolve_main_repo_root``, the finalizer the same) and
-hands the resolved inputs in. That keeps the matching rule + impact vocabulary
+roots. Each caller does its own main-repo / worktree path resolution via
+``resolve_main_repo_root`` (homed in ``lib.repo_root``; the finalizer imports it
+from there, the compliance detective reaches it through the ``events_log``
+back-compat re-export) and hands the resolved inputs in. That keeps the matching
+rule + impact vocabulary
 in one place — the detective and the finalizer cannot drift apart — while
 remaining trivially testable with ``tmp_path`` fixtures.
 
