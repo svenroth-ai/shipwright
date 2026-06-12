@@ -1,17 +1,17 @@
 # Commit Change Log
 
-Generated: 2026-06-12T21:06:53.297329+00:00
-Total commits: 976
+Generated: 2026-06-12T20:49:23.721279+00:00
+Total commits: 979
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 279
-    "feat" : 268
+    "fix" : 280
+    "feat" : 269
     "chore" : 215
     "docs" : 123
-    "refactor" : 52
+    "refactor" : 53
     "test" : 24
     "ci" : 7
     "other" : 7
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 279 commits
+### Fixes (fix) — 280 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-12 | compliance | coerce explicit-null affected_frs/new_frs in WorkEvent.from_dict (#220) | 332b64728fa1 |
 | 2026-06-12 | compliance | W2 SKIPs on unresolvable run_id, mirroring the S2/S3 guard (#217) | 768c2a9c625a |
 | 2026-06-12 | install | test-run python3 probe so Windows MS Store stub doesn't abort marketplace sync (#216) | 2da047b7c24a |
 | 2026-06-12 | merge | merge=union for curated agent-docs (close the structural gap) (#213) | 9d2239c6b033 |
@@ -304,10 +305,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 268 commits
+### Features (feat) — 269 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-12 | iterate | cross_component risk flag + non-dodgeable integration-coverage gate (#218) | bf8cd8dd171f |
 | 2026-06-12 | iterate | F11 Delivery-Watch — delivered = merged + green (no shoot-and-forget) (#214) | aeb8932746e2 |
 | 2026-06-12 | iterate | compact agent-doc entries + impact-aware routing SSoT (#206) | 7643bad51c5f |
 | 2026-06-11 | iterate | arm GitHub-native auto-merge in F11 for iterate/* PRs (B4.5 Phase 3) (#197) | 5beaa92f4b37 |
@@ -925,10 +927,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 52 commits
+### Refactoring (refactor) — 53 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-12 | lib | relocate resolve_main_repo_root to lib/repo_root.py with back-compat re-export | 1aa59898e499 |
 | 2026-06-12 | agent-docs | compact backlog to one-line pointers + retire convention-routing fallback (#211) | 16138390ad5f |
 | 2026-06-12 | hooks | consolidate project detection onto one canonical predicate (#209) | 62eb99264b7f |
 | 2026-05-26 | run | split orchestrator.py (983 LOC) into orchestrator_pkg/ (Campaign B5) (#102) | 46031f3a9ab9 |
@@ -1045,7 +1048,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 976 |
+| Total commits | 979 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 976 |
+| Human-authored commits | 979 |
 

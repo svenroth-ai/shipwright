@@ -211,6 +211,42 @@ they are the escape hatch the gate exists to kill.
 
 ---
 
+## Composition — the Integration Stopping Rule
+
+The asymptote rule governs **depth** (one dimension to exhaustion); the Coverage
+Stopping Rule governs **breadth** (every *enumerated* behavior tested). Both still
+miss a third failure mode: **composition** — each component is unit-tested to green,
+but the behavior only EMERGES when the pieces interact, and "the pieces compose"
+is not a behavior that shows up in a per-diff enumeration unless you think to add
+it. The motivating class is the auto-merge churn cascade: `merge=union` (curated
+docs), `integrate_main` (churn regenerate), and the JSONL union were each
+unit-tested, yet the cascade — three classes conflicting across N serially-drained
+branches — was never proven until a real-scenario integration test forced it.
+
+The **Integration Stopping Rule** closes that:
+
+> A change to FRAMEWORK cross-component machinery (merge/churn/event-log resolver,
+> Claude-Code hooks + hook fan-out, pipeline phase validators, campaign drain) is
+> **not done** until a real-scenario integration test proves the components
+> **compose** — recorded as a `category: "integration"` behavior in the Test
+> Completeness Ledger.
+
+This is the **`cross_component` risk flag** (SKILL.md Risk Taxonomy). It is the
+composition analogue of `touches_io_boundary`'s round-trip: io_boundary forces a
+producer→file→consumer probe; cross_component forces a components-compose probe.
+Enforced NON-dodgeably — the F11 verifier `check_integration_coverage`
+(`shared/scripts/tools/verifiers/iterate_checks.py`) RECOMPUTES the flag from the
+actual diff (merge-base..HEAD), not from an agent-reported value, and STOPs a
+medium+ cross-component iterate that has no `category:"integration"` behavior.
+Reference pattern: `shared/tests/test_parallel_merge_cascade_integration.py`.
+
+The empirical machinery now covers all three axes: **depth** (asymptote),
+**breadth** (coverage ledger), **composition** (integration coverage). The first
+two are boundary/behavior-centric; the third is why a framework cross-component
+change can no longer ship unit-tested-but-composition-unproven.
+
+---
+
 ## Cross-References
 
 The Confidence Calibration phase consumes outputs from these docs:

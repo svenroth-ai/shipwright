@@ -10,7 +10,7 @@ update architecture.md AND flag the drop — and the drop alone with no
 markdown trace is silent drift.
 
 Worktree-aware: decision-drops live in the main repo (gitignored), so the
-test resolves the main-repo root via ``events_log.resolve_main_repo_root``
+test resolves the main-repo root via ``repo_root.resolve_main_repo_root``
 to enumerate the drops, then reads ``architecture.md`` from the test's
 own project root (which is the same in both worktree and main-repo runs
 because architecture.md is tracked).
@@ -39,7 +39,8 @@ from lib.architecture_doc import (  # noqa: E402
     records_in_run_set,
     scan_drops,
 )
-from lib.events_log import finalized_run_ids, resolve_main_repo_root  # noqa: E402
+from lib.events_log import finalized_run_ids  # noqa: E402
+from lib.repo_root import resolve_main_repo_root  # noqa: E402
 
 
 def _project_root() -> Path:

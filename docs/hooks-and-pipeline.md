@@ -261,6 +261,21 @@ iterate-plugin suite, OUTSIDE the `shared/tests` F0 run, so F2 mandates running 
 locally after writing the `## Architecture Updates` / `## Learnings` entry, before
 push — otherwise an over-budget entry surfaces only as a red PR check.
 
+**Cross-component changes are forced to prove composition
+(iterate-2026-06-12-cross-component-gate).** The empirical machinery is otherwise
+boundary-centric (`touches_io_boundary` → round-trip) and app-surface-centric
+(F0.5 E2E), so it forces NOTHING for a FRAMEWORK *composition* change — each piece
+unit-tested, the interaction unproven (the auto-merge churn cascade is the
+motivating class). The new `cross_component` risk flag
+(`classify_complexity.CROSS_COMPONENT_FILE_PATTERNS`: merge/churn/event-log
+resolver, Claude-Code hooks + hook fan-out, pipeline phase validators, campaign
+drain) requires, at medium+, a `category:"integration"` behavior in the Test
+Completeness Ledger — a real-scenario integration test proving the pieces compose
+(reference `shared/tests/test_parallel_merge_cascade_integration.py`). NON-dodgeable:
+the F11 verifier `check_integration_coverage` RECOMPUTES the flag from the diff
+(merge-base..HEAD), not an agent-reported value, and STOPs without the behavior.
+The verifier keeps a drift-pinned local pattern copy so it never cross-plugin-imports.
+
 **Curated agent-docs use `merge=union`, not regeneration
 (iterate-2026-06-12-union-curated-agent-docs).** The serial-integrate fix above
 auto-resolves the *regenerated* churn snapshots, but `.shipwright/agent_docs/architecture.md`
@@ -1491,7 +1506,7 @@ The unified event log (`shipwright_events.jsonl`) is written to by these compone
 All events share common fields: `v` (schema version), `id` (UUID-based), `ts` (ISO timestamp), `type`, and optional `session`.
 
 **Where the log is written (per-tree, PR-committed — iterate-2026-05-29-events-jsonl-worktree-commit).**
-`shipwright_events.jsonl` is a per-tree, version-controlled artifact. `lib/events_log.py::resolve_events_path` (and the parity-pinned compliance copy `collectors/change_history.py::_resolve_events_path`) return `project_root / shipwright_events.jsonl` **literally** — no `git --git-common-dir` redirect. Under a `/shipwright-iterate` worktree run the event is therefore written to the **worktree's own** copy, and **F6 stages it** so it ships in the iterate PR and merges to `main` (the main tree is never written; AC2). The F11 verifier `check_events_has_commit` fails closed if a *tracked* log's `work_completed` event is not in the commit (AC4). `resolve_main_repo_root` (git-common-dir) is retained but now serves **only** the decision-drop resolvers (`write_decision_drop.py`, `aggregate_decisions.py`) — gitignored staging that `/shipwright-changelog` consumes on `main`. The legacy out-of-band F7 (`record_event.py`) + F7b seal (`commit_event_followup.py`) still target the main tree and are used only for replay / non-worktree phases.
+`shipwright_events.jsonl` is a per-tree, version-controlled artifact. `lib/events_log.py::resolve_events_path` (and the parity-pinned compliance copy `collectors/change_history.py::_resolve_events_path`) return `project_root / shipwright_events.jsonl` **literally** — no `git --git-common-dir` redirect. Under a `/shipwright-iterate` worktree run the event is therefore written to the **worktree's own** copy, and **F6 stages it** so it ships in the iterate PR and merges to `main` (the main tree is never written; AC2). The F11 verifier `check_events_has_commit` fails closed if a *tracked* log's `work_completed` event is not in the commit (AC4). `resolve_main_repo_root` (git-common-dir) no longer locates the event log; as of `iterate-2026-06-12-repo-root-resolver-relocate` its implementation lives in its thematic home `lib/repo_root.py` (beside `main_repo_root_or`) and `lib/events_log.py` re-exports it via a lazy back-compat shim. It serves the decision-drop resolvers (`write_decision_drop.py`, `aggregate_decisions.py` — gitignored staging that `/shipwright-changelog` consumes on `main`), the F11 verifier, the plugin-sync Stop hook, and the compliance Group-F detective. The legacy out-of-band F7 (`record_event.py`) + F7b seal (`commit_event_followup.py`) still target the main tree and are used only for replay / non-worktree phases.
 
 *Operational notes for the per-tree model:* (1) Because the log is an append-only file committed per-branch, two concurrent iterate PRs can conflict at EOF on `shipwright_events.jsonl`; resolve the conflict like any other (keep both event lines). The event readers are corrupt-line-tolerant, so a mishandled merge drops events rather than crashing parsers — recover/validate with `uv run shared/scripts/tools/validate_event_log.py --project-root .`. (2) An **abandoned** iterate's events live only in its (discarded) worktree and never reach `main` — acceptable because `work_completed` denotes completed work.
 

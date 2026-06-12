@@ -7,7 +7,7 @@ decoded with the platform default (cp1252):
 * F26 — ``generate_session_handoff.get_git_info`` reads ``git log -1
   --oneline``; a non-ASCII commit subject is mojibaked into the TRACKED
   ``session_handoff.md`` (or crashes on an undecodable byte).
-* F27 — ``events_log.resolve_main_repo_root`` reads ``git rev-parse
+* F27 — ``repo_root.resolve_main_repo_root`` reads ``git rev-parse
   --git-common-dir``; a non-ASCII project path is mojibaked, so the
   resolved main root does not exist and worktree decision-drops are
   silently lost.
@@ -24,7 +24,7 @@ from pathlib import Path
 
 import pytest
 
-from lib.events_log import resolve_main_repo_root
+from lib.repo_root import resolve_main_repo_root
 from tools.generate_session_handoff import get_git_info
 
 

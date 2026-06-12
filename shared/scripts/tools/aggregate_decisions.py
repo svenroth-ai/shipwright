@@ -35,8 +35,8 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-from lib.events_log import resolve_main_repo_root  # noqa: E402
 from lib.file_lock import LockTimeout, file_lock  # noqa: E402
+from lib.repo_root import resolve_main_repo_root  # noqa: E402
 from tools.write_decision_log import (  # noqa: E402
     ADR_SPEC_FOLDER,
     DECISION_LOG_HEADER,

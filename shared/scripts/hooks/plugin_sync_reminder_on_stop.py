@@ -135,7 +135,7 @@ def _emit_triage(project_root: Path, rel_paths: list[str]) -> None:
         if scripts_dir not in sys.path:
             sys.path.insert(0, scripts_dir)
         from triage import append_triage_item_idempotent  # noqa: PLC0415
-        from lib.events_log import resolve_main_repo_root  # noqa: PLC0415
+        from lib.repo_root import resolve_main_repo_root  # noqa: PLC0415
 
         triage_root = resolve_main_repo_root(project_root) or project_root
 

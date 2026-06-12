@@ -6,7 +6,7 @@ Iterate F3 writes one ADR JSON drop per run under
 (``aggregate_decisions.py``). The drop dir is **repo-scoped**: an iterate run
 executes inside an ephemeral worktree whose copy ``git worktree remove``
 discards. Any code that may run from inside a worktree MUST resolve the drop
-dir against the MAIN repo via ``lib.events_log.resolve_main_repo_root`` — a
+dir against the MAIN repo via ``lib.repo_root.resolve_main_repo_root`` — a
 raw ``project_root / ... / "decision-drops"`` join from inside a worktree
 reads/writes a throwaway copy.
 
@@ -105,7 +105,7 @@ def test_worktree_reachable_drop_files_use_the_resolver():
         assert "resolve_main_repo_root" in src, (
             f"{rel} builds a decision-drop path and is reached from inside an "
             "iterate worktree, but does not resolve it via "
-            "events_log.resolve_main_repo_root — it would read/write a "
+            "repo_root.resolve_main_repo_root — it would read/write a "
             "throwaway worktree copy that `git worktree remove` discards."
         )
 
@@ -125,7 +125,7 @@ def test_no_unaccounted_raw_decision_drop_joins():
     assert not violations, (
         "Raw `project_root / ... / decision-drops` join(s) in files that are "
         f"neither worktree-aware nor allowlisted main-repo-only: {violations}. "
-        "Resolve the dir via events_log.resolve_main_repo_root, or — if the "
+        "Resolve the dir via repo_root.resolve_main_repo_root, or — if the "
         "file only ever runs in a main-repo phase — add it to _MAIN_REPO_ONLY "
         "with a reason."
     )

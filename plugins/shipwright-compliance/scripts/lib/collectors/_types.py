@@ -152,8 +152,12 @@ class WorkEvent:
 
     @classmethod
     def from_dict(cls, d: dict) -> WorkEvent:
-        tests = d.get("tests", {})
-        review = d.get("review", {})
+        # `or {}` / `or []` (not a `.get` default) so an EXPLICIT `null` in the
+        # event coerces like a missing key — an `affected_frs: null` producer
+        # would otherwise crash `map_requirements_to_events`. Mirrors
+        # `TestRunEvent.from_dict`'s `layers = d.get("layers") or {}` guard.
+        tests = d.get("tests") or {}
+        review = d.get("review") or {}
         return cls(
             id=d.get("id", ""),
             timestamp=d.get("ts", ""),
@@ -161,7 +165,7 @@ class WorkEvent:
             commit=d.get("commit", ""),
             tests_passed=tests.get("passed", 0),
             tests_total=tests.get("total", 0),
-            affected_frs=d.get("affected_frs", []),
+            affected_frs=d.get("affected_frs") or [],
             split=d.get("split", ""),
             section=d.get("section", ""),
             review_type=review.get("type", ""),
@@ -169,7 +173,7 @@ class WorkEvent:
             review_fixed=review.get("fixed", 0),
             intent=d.get("intent", ""),
             description=d.get("description", ""),
-            new_frs=d.get("new_frs", []),
+            new_frs=d.get("new_frs") or [],
             tests_new=tests.get("new", 0),
             tests_modified=tests.get("modified", 0),
             e2e_run=tests.get("e2e_run", False),
