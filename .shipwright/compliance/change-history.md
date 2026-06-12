@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-06-11T22:33:12.418915+00:00
+Generated: 2026-06-12T07:12:54.746171+00:00
 Total commits: 956
 
 ## Commit Distribution
@@ -8,8 +8,8 @@ Total commits: 956
 ```mermaid
 pie title Commit Types
     "feat" : 266
-    "fix" : 264
-    "chore" : 215
+    "fix" : 265
+    "chore" : 214
     "docs" : 123
     "refactor" : 50
     "test" : 23
@@ -291,10 +291,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 264 commits
+### Fixes (fix) — 265 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-12 | triage | route idle-main status flips to the outbox in mark_status (#198) | 57ee522ea55c |
 | 2026-06-11 | security | tolerate markdown-fenced JSON in pr_review parser (#196) | e3b965569017 |
 | 2026-06-11 | compliance | security-scan gate ignores trigger keywords in quoted args | 42c32a3159bf |
 | 2026-06-11 | iterate | repo-relative campaign spec_path (N1, trg-196f4aa6) | 8f551bc25db8 |
@@ -560,11 +561,10 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 215 commits
+### Chores (chore) — 214 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-12 | triage | sweep 4 outbox append(s) into branch | 1d06dd2ea691 |
 | 2026-06-11 | triage | drop three stale internal anchor items | 9d74de9db766 |
 | 2026-06-11 | gitignore | keep campaign planning dirs local-only | dd4806d2ba91 |
 | 2026-06-11 | triage | sweep 3 outbox append(s) into branch | 26ea4a5f0586 |

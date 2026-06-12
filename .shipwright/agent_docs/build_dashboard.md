@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-11 22:33 UTC | Session: db865a7c-937f-4000-b738-24d63ad23244 | Run: iterate-2026-06-12-triage-status-idle-main-outbox
+> Updated: 2026-06-12 07:12 UTC | Session: f1dfbc99-c830-4ef1-9897-9a176d13cf6d | Run: iterate-2026-06-12-utf8-git-tools
 
-## Recent Changes (143 iterations)
+## Recent Changes (144 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | Pin UTF-8 on git-reading subprocess decodes (deep-audit WP7 F23/F26/F27) | 8/8 |  | tooling | 2026-06-12 |
 | change | triage.mark_status routes idle-main status flips to the outbox (symmetric with append_triage_item), completing campaign D1 for the status side; fixes undelivered tracked drift from WebUI/Stop-hook dismisses | 3131/3131 |  | infra | 2026-06-11 |
 | change | F11 arms GitHub-native auto-merge for iterate/* PRs (gh pr merge --auto --squash --delete-branch), branch-scoped + fail-soft (B4.5 Phase 3) | 363/363 |  | tooling | 2026-06-11 |
 | feature | Tier-3 PR review via OpenRouter custom-script (B4.5 Phase 2): pr-review.yml workflow + pr_review.py reviewer + pr_reviewer prompts + 4 snapshot/unit test files | 414/417 |  | tooling | 2026-06-11 |
