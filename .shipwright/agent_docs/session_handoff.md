@@ -1,44 +1,43 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-12-agent-doc-entry-rules"
+run_id: "iterate-2026-06-12-automerge-serial-integrate"
 phase: "iterate"
-reason: "agent-doc entry rules + routing SSoT"
-timestamp: "2026-06-12T09:54:31.026688+00:00"
+reason: "iterate completion: iterate-2026-06-12-automerge-serial-integrate"
+timestamp: "2026-06-12T12:06:22.426150+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-12 09:54:31 UTC
+> Auto-generated 2026-06-12 12:06:22 UTC
 
 ## Session Info
 
-- **Session ID**: 90b40100-155d-4086-8d8c-5aea50931e15
-- **Timestamp**: 2026-06-12 09:54:31 UTC
-- **Reason**: agent-doc entry rules + routing SSoT
+- **Session ID**: e40d1082-2df5-473b-853e-641d52bef467
+- **Timestamp**: 2026-06-12 12:06:22 UTC
+- **Reason**: iterate completion: iterate-2026-06-12-automerge-serial-integrate
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-12-triage-tooling-hardening
-- **Date**: 2026-06-12T08:15:56.671730Z
-- **Type**: bug
+- **Run ID**: iterate-2026-06-12-agent-doc-entry-rules
+- **Date**: 2026-06-12T09:54:47.377520Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/audit1-triage-tooling-hardening
-- **ADR**: iterate-2026-06-12-triage-tooling-hardening
+- **Branch**: iterate/agent-doc-entry-rules
+- **ADR**: iterate-2026-06-12-agent-doc-entry-rules
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/campaigns/2026-06-10-audit-1-auto/sub-iterates/a1-6-triage-tooling-hardening.md
+- **Spec**: .shipwright/planning/iterate/2026-06-12-agent-doc-entry-rules.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/agent-doc-entry-rules
-- **Run ID**: iterate-2026-06-12-agent-doc-entry-rules
-- **Spec**: .shipwright/planning/iterate/2026-06-12-agent-doc-entry-rules.md
-- **Complexity**: medium
+- **Branch**: iterate/automerge-serial-integrate
+- **Run ID**: iterate-2026-06-12-automerge-serial-integrate
+- **Spec**: .shipwright/planning/iterate/2026-06-12-automerge-serial-integrate.md
+- **Complexity**: medium (plan-locked; classifier estimated `small`/history)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/agent-doc-entry-rules
-- **Last Commit**: 312e2429 fix(triage): harden GC tokens/TOCTOU, control-char sanitizer, outbox CLI (deep-audit WP9) (#204)
+- **Branch**: iterate/automerge-serial-integrate
+- **Last Commit**: 9e39bfb2 fix(utf8): pin UTF-8 on git-reading subprocess decodes (deep-audit WP7) (#202)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,23 +68,23 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-ef0a3a15 | work_completed | iterate (Serial integrate_main merge for campaign/parallel iterates: ensure_current.py refresh-if-behind guard at F11 + SHIPWRIGHT_ITERATE_AUTOMERGE defer with serial drain (auto-merge churn fix, Option A).) | 2026-06-12 |
 | evt-1c00ed61 | work_completed | iterate (Compact agent-doc entries + impact-aware routing SSoT (IMPACT_TARGETS) + forward-only 600-char entry-budget gate; conventions.md CONTRIBUTING de-dup) | 2026-06-12 |
 | evt-e2baab58 | work_completed | iterate (WP9 triage tooling hardening: F30 phaseQualityRefreshed GC token + drift meta-test, F19 GC TOCTOU recompute-under-lock, F31 control-char sanitizer on title/detail/evidence (C0+C1) in both render surfaces, F29 promote/dismiss accept outbox-only items) | 2026-06-12 |
+| evt-3064a751 | work_completed | iterate (Installer/shell POSIX fixes (deep-audit WP10 F33-F38): set -e prereq counter, uv ~/.local/bin PATH, 13-plugin space-safe alias refresh, python3 resolver, dotenv-parse verify-setup) | 2026-06-12 |
 | evt-94515cf2 | work_completed | iterate (Fix two structurally-inert compliance gates (deep-audit WP3): Group H now in run_all default + on-stop coverage gate widened to A-H (F20); S4 FR-preservation join no longer raises TypeError (F21)) | 2026-06-12 |
-| evt-0cd9ae46 | work_completed | iterate (triage.mark_status routes idle-main status flips to the outbox (symmetric with append_triage_item), completing campaign D1 for the status side; fixes undelivered tracked drift from WebUI/Stop-hook dismisses) | 2026-06-11 |
-| evt-860e1092 | work_completed | iterate (F11 arms GitHub-native auto-merge for iterate/* PRs (gh pr merge --auto --squash --delete-branch), branch-scoped + fail-soft (B4.5 Phase 3)) | 2026-06-11 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 146
-- **Last iterate**: change — Compact agent-doc entries + impact-aware routing SSoT (IMPACT_TARGETS) + forward-only 600-char entry-budget gate; conventions.md CONTRIBUTING de-dup (2026-06-12)
+- **Total work events**: 152
+- **Last iterate**: change — Serial integrate_main merge for campaign/parallel iterates: ensure_current.py refresh-if-behind guard at F11 + SHIPWRIGHT_ITERATE_AUTOMERGE defer with serial drain (auto-merge churn fix, Option A). (2026-06-12)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
 
-### ADR-141: Empirical verification gate for the D2 outbox sweep/GC
-- **Date:** 2026-06-08
-- **Section:** Iterate D2V — outbox-delivery campaign
-- **Context:** D3 stacked on D2 (outbox->sweep->GC); a silent triage-line loss in D2 would propagate to every adopted repo via D3. The campaign needs a HARD, non-mocked empirical gate before D3 proceeds.
-- **Decision:** Built a real empirical harness (shared/tests/test_d2v_empirical_gate*.py) over the REAL D2 code + real git: 200 thread + 40 cross-process trial
+### ADR-142: Extract drift_anchor.py; resolve_project_root() in 5 hooks
+- **Date:** 2026-06-12
+- **Section:** Iterate a1-2 (WP5) - hook resolver canon
+- **Context:** WP5 deep-audit: 5 hooks resolve project root wrongly or skip the Shipwright-project guard (F5 os.getcwd fail-open, F6 worktree-prefix, F7 no project guard, F8 abs-path dedup key, F10 counter reader divergence).
+- **Decision:** Swap os.getcwd()->resolve_project_root() in the 2 compliance gates + 2 counter readers; strip .worktrees/<slug>/ in
