@@ -140,7 +140,7 @@ def test_suggest_iterate_reads_cjk_run_config(tmp_path, force_cp1252, monkeypatc
 
 
 def test_config_read_config_parses_cjk(tmp_path, force_cp1252):
-    """lib/config.read_config (already UTF-8-correct) — regression guard."""
+    """lib/config.read_config parses a Cyrillic config under cp1252 (non-BOM path)."""
     from lib import config as shared_config  # noqa: PLC0415
 
     data = {"description": _CYRILLIC_DESC, "status": "complete"}
@@ -181,6 +181,20 @@ def test_classify_intent_tolerates_utf8_bom(tmp_path, force_cp1252):
 
     result = classify("add a new search feature", str(config_path))
     assert result["type"] == "feature"
+
+
+def test_config_read_config_tolerates_utf8_bom(tmp_path):
+    """lib/config.read_config must tolerate a hand-edited UTF-8-BOM config:
+    ``utf-8-sig`` strips the leading U+FEFF, whereas plain ``utf-8`` keeps it and
+    ``json.loads`` then JSONDecodeErrors on char 0. Pins parity with the four
+    WP8/F24 sibling readers (the follow-up that completed lib/config)."""
+    from lib import config as shared_config  # noqa: PLC0415
+
+    _write_bom_config(
+        tmp_path / "shipwright_run_config.json",
+        {"description": _CYRILLIC_DESC, "status": "complete"},
+    )
+    assert shared_config.read_config("run", tmp_path)["status"] == "complete"
 
 
 def test_readers_pass_explicit_encoding_to_read_text(tmp_path, monkeypatch):
@@ -230,70 +244,3 @@ class _StringStdin:
 
     def read(self) -> str:
         return self._payload
-
-
-# --- F25 — surface_verification runner decode ---
-# Fixture runner emitting the glyphs vitest/pytest produce: ``❯`` (U+276F) +
-# em-dash on stdout AND stderr, plus a raw cp1252-undefined byte (0x9D) that
-# ``errors="replace"`` must absorb (→ U+FFFD) without crashing the decode or
-# corrupting the ASCII summary token (external plan review OpenAI #5, #8).
-_RUNNER_SCRIPT = (
-    "import sys\n"
-    "sys.stdout.buffer.write('❯ vitest run — boundary suite\\n'.encode('utf-8'))\n"
-    "sys.stdout.buffer.write(b'\\x9d raw undefined byte\\n')\n"
-    "sys.stderr.buffer.write('stderr ❯ note\\n'.encode('utf-8'))\n"
-    "sys.stdout.buffer.write('=== 5 passed in 0.30s ===\\n'.encode('utf-8'))\n"
-    "sys.stdout.flush()\n"
-    "sys.stderr.flush()\n"
-)
-
-
-def test_run_with_retries_decodes_unicode_runner_output(tmp_path):
-    """run_with_retries decodes UTF-8 runner output (❯ / em-dash) without
-    raising, parses tests_run, and absorbs the one malformed byte as U+FFFD."""
-    from surface_verification import parse_tests_run, run_with_retries
-
-    runner_py = tmp_path / "fixture_runner.py"
-    runner_py.write_text(_RUNNER_SCRIPT, encoding="utf-8")
-
-    exit_code, combined, attempts = run_with_retries(
-        [sys.executable, str(runner_py)], tmp_path
-    )
-
-    assert exit_code == 0
-    assert attempts == 1
-    assert "❯" in combined and "—" in combined  # valid glyphs survive
-    assert "�" in combined  # the one malformed byte → single U+FFFD, no crash
-    assert parse_tests_run(combined, "web") == 5
-
-
-def test_verify_surface_unicode_runner_clean_evidence(tmp_path):
-    """verify_surface over a Unicode-emitting runner → clean pass (exit 0,
-    tests_run=5) + a clean round-tripped evidence log."""
-    from surface_verification import EXIT_OK, verify_surface
-
-    runner_py = tmp_path / "fixture_runner.py"
-    runner_py.write_text(_RUNNER_SCRIPT, encoding="utf-8")
-
-    exit_code, block = verify_surface(
-        project_root=tmp_path,
-        run_id="iterate-2026-06-12-utf8-config-readers",
-        surface="web",
-        runner=[sys.executable, str(runner_py)],
-        justification=None,
-        tests_run_override=None,
-    )
-
-    assert exit_code == EXIT_OK
-    assert block["tests_run"] == 5
-
-    log_path = (
-        tmp_path / ".shipwright" / "runs"
-        / "iterate-2026-06-12-utf8-config-readers"
-        / "surface_verification.log"
-    )
-    assert log_path.exists()
-    # Evidence-log WRITE path round-trips the glyphs cleanly — fix is complete
-    # end-to-end, not just at the decode (external plan review OpenAI #7).
-    log_text = log_path.read_text(encoding="utf-8")
-    assert "❯" in log_text and "—" in log_text

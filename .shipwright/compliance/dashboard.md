@@ -9,20 +9,20 @@ Scope: library
 | Metric | Value | Status | Why warn? |
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
-| Work events (iterate) | 152 changes | INFO |  |
+| Work events (iterate) | 154 changes | INFO |  |
 | All unit tests passing | 0/0 | WARN | no test events recorded yet |
 | Architecture decisions | 142 ADRs | INFO |  |
-| Iterate tests passing | 94/152 iterations tested | WARN | 58 iterate(s) without tests — see test-evidence.md |
+| Iterate tests passing | 96/154 iterations tested | WARN | 58 iterate(s) without tests — see test-evidence.md |
 | Dependencies | 8 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 13 open | WARN | 13 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Triage open | 15 open | WARN | 15 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit | 123 | WARN | 123 file(s) past limit AND not ADR-justified — see shipwright_bloat_baseline.json |
 | Bloat in allowlist | 153 entries | INFO |  |
 | Bloat ratchet delta | -176 lines | PASS |  |
 
 ## Project Velocity
 
-- Iterate: 152 changes (2026-05-02 → 2026-06-12)
+- Iterate: 154 changes (2026-05-02 → 2026-06-12)
 - Last activity: 2026-06-12
 
 ## External LLM Review Evidence

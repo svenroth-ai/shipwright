@@ -321,16 +321,16 @@ class TestF5ArchDrift:
         f5 = next(f for f in findings if f.check_id == "F5")
         assert f5.status == "pass"
 
-    def test_convention_legacy_in_architecture_passes(self, tmp_path: Path):
-        # Transitional fallback: a convention run_id still in architecture.md
-        # (pre-migration backlog) passes until the compression iterate moves it.
+    def test_convention_only_in_architecture_fails_post_retirement(self, tmp_path: Path):
+        # Fallback retired (iterate-2026-06-12-compress-agent-doc-backlog): a convention
+        # run_id only in architecture.md no longer satisfies F5 (must be conventions.md).
         _seed_arch_drop(tmp_path, "iter-conv_001.json", impact="convention")
         self._seed_arch_md(
             tmp_path, "## Architecture Updates\n- iter-conv_001 (convention): legacy\n"
         )
         findings = group_f.run(tmp_path, None, None)
         f5 = next(f for f in findings if f.check_id == "F5")
-        assert f5.status == "pass"
+        assert f5.status == "fail"
 
     def test_data_flow_impact_caught(self, tmp_path: Path):
         _seed_arch_drop(tmp_path, "iter-df_001.json", impact="data-flow")
