@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-12 17:34 UTC | Session: e40d1082-2df5-473b-853e-641d52bef467 | Run: iterate-2026-06-12-delivery-watch
+> Updated: 2026-06-12 17:56 UTC | Session: e40d1082-2df5-473b-853e-641d52bef467 | Run: iterate-2026-06-12-cascade-integration-test
 
-## Recent Changes (159 iterations)
+## Recent Changes (160 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | End-to-end parallel-merge cascade integration test (3 concurrent iterates + a 3-sub campaign): proves curated-union + churn-regenerate + JSONL-union resolve together with no cascade. | 0/0 |  | tooling | 2026-06-12 |
 | change | Delivery-Watch: F11 confirms the PR actually merges green before done (no shoot-and-forget); watch_pr_delivery.py + F2 budget-lint-before-push rule. | 0/0 |  | tooling | 2026-06-12 |
 | change | merge=union for curated agent-docs (architecture.md + conventions.md) via a distinct CURATED_DOC_UNION_PATHS category; closes the parallel-iterate bullet-prepend cascade server-side (follow-up to automerge-serial-integrate). | 0/0 |  | tooling | 2026-06-12 |
 | change | Serial integrate_main merge for campaign/parallel iterates: ensure_current.py refresh-if-behind guard at F11 + SHIPWRIGHT_ITERATE_AUTOMERGE defer with serial drain (auto-merge churn fix, Option A). | 0/0 |  | tooling | 2026-06-12 |
@@ -166,7 +167,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-12 | Unit: 3278/3278 | Smoke: not_run | (iterate)
+Last run: 2026-06-12 | Unit: 3282/3282 | Integration: 2/2 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
