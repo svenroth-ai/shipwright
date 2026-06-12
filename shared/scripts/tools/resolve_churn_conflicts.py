@@ -104,16 +104,16 @@ def _union_conflict(project_root: Path, rel: str) -> None:
     dedup; the reconcile also validates the union.
 
     ``_git`` decodes STRICT UTF-8 (WP6/F22) for a byte-identical round-trip. A
-    non-UTF-8 byte surfaces two ways — ``UnicodeDecodeError`` (POSIX) or ``stdout
-    is None`` (Windows reader-thread) — both normalised here to a typed error so
-    this stays self-contained (correct if called directly), not a bare traceback.
+    non-UTF-8 byte raises ``UnicodeDecodeError`` synchronously (strict decode runs
+    in the calling thread on every platform), normalised here to a typed error —
+    not a bare traceback. ``stdout is None`` is a defensive guard folded into it.
     """
     def _show(stage: str) -> str:
         try:
             out = _git(project_root, "show", f"{stage}:{rel}", check=False).stdout
-        except UnicodeDecodeError as exc:  # POSIX strict-decode shape
+        except UnicodeDecodeError as exc:  # strict-decode shape (all platforms)
             raise _TriageNotUtf8Error(f"{rel} ({stage}) non-UTF-8 byte: {exc}") from exc
-        if out is None:  # Windows reader-thread shape (decode raised off-thread)
+        if out is None:  # defensive: unexpected None stdout (output not piped)
             raise _TriageNotUtf8Error(f"{rel} ({stage}) contains a non-UTF-8 byte")
         return out
 
