@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-06-12T17:34:43.310298+00:00
-Total commits: 971
+Generated: 2026-06-12T17:56:46.654583+00:00
+Total commits: 972
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 277
-    "feat" : 267
+    "feat" : 268
     "chore" : 214
     "docs" : 123
     "refactor" : 52
@@ -302,10 +302,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 267 commits
+### Features (feat) — 268 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-12 | iterate | F11 Delivery-Watch — delivered = merged + green (no shoot-and-forget) (#214) | aeb8932746e2 |
 | 2026-06-12 | iterate | compact agent-doc entries + impact-aware routing SSoT (#206) | 7643bad51c5f |
 | 2026-06-11 | iterate | arm GitHub-native auto-merge in F11 for iterate/* PRs (B4.5 Phase 3) (#197) | 5beaa92f4b37 |
 | 2026-06-11 | security | Tier-3 PR review via OpenRouter (B4.5 Phase 2) (#193) | b61e4011bcad |
@@ -1040,7 +1041,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 971 |
+| Total commits | 972 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 971 |
+| Human-authored commits | 972 |
 

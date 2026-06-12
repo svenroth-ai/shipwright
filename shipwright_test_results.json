@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-12-delivery-watch",
+    "run_id": "iterate-2026-06-12-cascade-integration-test",
     "date": "2026-06-12",
     "unit": {
       "status": "passed",
-      "passed": 3278,
-      "total": 3278
+      "passed": 3282,
+      "total": 3282
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 2,
+      "total": 2
     },
     "pgtap": {
       "status": "not_run",
@@ -35,86 +35,30 @@
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "classify_delivery -> merged on state=MERGED",
+          "behavior": "3 concurrent parallel iterates drain serially: curated-union + churn-regenerate + JSONL-union all resolve, no markers, run's event survives",
           "disposition": "tested",
-          "evidence": "test_merged_is_delivered"
+          "evidence": "test_three_concurrent_iterates_drain_without_cascade"
         },
         {
-          "behavior": "classify_delivery -> closed on state=CLOSED",
+          "behavior": "campaign of 3 sub-iterates drains serially: status.json projects all-complete from union'd events + curated-union, no cascade",
           "disposition": "tested",
-          "evidence": "test_closed_is_not_delivered"
+          "evidence": "test_campaign_three_subiterates_drain_without_cascade"
         },
         {
-          "behavior": "classify_delivery -> checks_failed (+lists the failing CheckRun)",
+          "behavior": "final origin/main carries all N curated bullets + regenerated churn + union'd JSONL with no conflict markers",
           "disposition": "tested",
-          "evidence": "test_failed_checkrun_is_checks_failed_and_listed"
-        },
-        {
-          "behavior": "classify_delivery -> pending on OPEN with running/clean checks",
-          "disposition": "tested",
-          "evidence": "test_open_with_running_checks_is_pending"
-        },
-        {
-          "behavior": "StatusContext FAILURE/ERROR counts as failing",
-          "disposition": "tested",
-          "evidence": "test_failed_statuscontext_counts_as_failing"
-        },
-        {
-          "behavior": "ACTION_REQUIRED CheckRun counts as failing",
-          "disposition": "tested",
-          "evidence": "test_action_required_checkrun_is_failing"
-        },
-        {
-          "behavior": "SKIPPED/NEUTRAL are a pass, not a failure",
-          "disposition": "tested",
-          "evidence": "test_skipped_and_neutral_do_not_count_as_failure"
-        },
-        {
-          "behavior": "missing statusCheckRollup key is pending, not a crash",
-          "disposition": "tested",
-          "evidence": "test_missing_rollup_key_is_pending_not_crash"
-        },
-        {
-          "behavior": "watch() loop polls pending until terminal (injected fetch/sleep)",
-          "disposition": "tested",
-          "evidence": "test_watch_loop_polls_pending_until_terminal"
-        },
-        {
-          "behavior": "watch() pending-timeout fails closed (timed_out)",
-          "disposition": "tested",
-          "evidence": "test_watch_loop_times_out_pending_fails_closed"
-        },
-        {
-          "behavior": "F11 runs the delivery-watch AFTER the arm + fails closed on every non-merged outcome",
-          "disposition": "tested",
-          "evidence": "test_f11_runs_delivery_watch_after_the_arm + test_f11_defines_delivered_as_merged_and_kills_shoot_and_forget"
-        },
-        {
-          "behavior": "F2 mandates running the iterate-plugin agent-doc budget lint before push",
-          "disposition": "tested",
-          "evidence": "test_f2_requires_running_the_agent_doc_budget_lint_before_push"
-        },
-        {
-          "behavior": "SKILL F11 index advertises the delivery watch",
-          "disposition": "tested",
-          "evidence": "test_skill_f11_index_advertises_delivery_watch"
-        },
-        {
-          "behavior": "live gh poll against real GitHub PR state",
-          "disposition": "untestable",
-          "reason_code": "requires-external-nondeterministic-service",
-          "reason": "the watch() loop logic is tested with injected fetch/sleep; the real gh+GitHub round-trip is non-deterministic and absent in CI"
+          "evidence": "both tests assert origin/main blobs"
         }
       ],
       "counts": {
-        "testable": 13,
-        "tested": 13,
-        "untestable": 1,
+        "testable": 3,
+        "tested": 3,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 5,
-        "covered_acs": 5
+        "acs": 2,
+        "covered_acs": 2
       }
     },
     "surface_verification": {
@@ -123,9 +67,9 @@
       "exit_code": 0,
       "tests_run": 0,
       "evidence_path": "",
-      "timestamp": "2026-06-12T17:34:27.000Z",
+      "timestamp": "2026-06-12T17:56:33.000Z",
       "attempts": 0,
-      "justification": "Framework-internal F11 finalization gate: a new shared CLI tool (watch_pr_delivery.py) plus runtime-prompt prose (F11.md, F2.md, SKILL.md) and docs. No web/UI/API application surface. The pure classifier + poll-loop are verified by 10 unit tests with injected fetch/sleep (no gh, no real time); the F11/F2 prose contracts are drift-pinned. The only untestable leg is the live gh+GitHub round-trip (requires-external-nondeterministic-service)."
+      "justification": "Test-only addition (a new shared/tests integration test) — no application surface, no production-code change. The behavior it proves IS the verification: real-git serial-drain of N parallel/campaign branches, asserting the three cascade artifact-classes resolve together. Runs in the shared/tests F0 suite + CI (not slow)."
     }
   }
 }
