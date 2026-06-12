@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-12-agent-doc-entry-rules",
+    "run_id": "iterate-2026-06-12-automerge-serial-integrate",
     "date": "2026-06-12",
     "unit": {
       "status": "passed",
-      "passed": 4229,
-      "total": 4229
+      "passed": 383,
+      "total": 383
     },
     "integration": {
-      "status": "passed",
-      "passed": 141,
-      "total": 141
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -30,50 +30,78 @@
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [],
+    "degraded": [
+      "shared/tests/test_architecture_md_reflects_arch_impact.py fails LOCALLY on 4 unrelated in-flight iterates' main-root gitignored decision-drops (arch-drift-test-scope, canonical-project-predicate, triage-gc-union-residence, compress-agent-doc-backlog) whose architecture.md entries are not in origin/main yet. NOT this iterate's drop (which passes). Cannot reach CI: a PR checkout has no gitignored drops, so scan_drops finds nothing. Pre-existing local-env drift.",
+      "external review: Gemini leg returned a garbled/non-actionable response (OpenRouter); OpenAI leg succeeded (ship-with-fixes) and all 4 findings were addressed."
+    ],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 IMPACT_TARGETS SSoT + impact-aware missing_entries routes convention->conventions.md, component/data-flow->architecture.md",
+          "behavior": "ensure_current no-ops when branch current (no integrate, no commit, action=already-current, integrated=false)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_architecture_doc.py::test_impact_targets_*, ::test_missing_entries_convention_routes_to_conventions_doc, ::test_missing_entries_component_in_conventions_doc_is_missing PASSED"
+          "evidence": "shared/tests/test_ensure_current.py::test_ensure_current_noop_when_current PASSED"
         },
         {
-          "behavior": "AC2 F11 gate + Group-F detective verify each impact against its target doc (+ legacy fallback)",
+          "behavior": "ensure_current integrates + regenerates snapshots when behind (merge + regenerated-followup, branch advances, action=integrated)",
           "disposition": "tested",
-          "evidence": "test_verify_iterate_finalization.py::test_architecture_documented_convention_in_conventions_doc_passes/_component_not_satisfied_by_conventions_doc; test_audit_groups_c_f.py::test_convention_documented_in_conventions_doc_passes/_convention_legacy_in_architecture_passes PASSED"
+          "evidence": "test_ensure_current_integrates_when_behind PASSED"
         },
         {
-          "behavior": "AC3 write_decision_log consumes IMPACT_TARGETS; routing pinned to SSoT",
+          "behavior": "ensure_current blocks on non-churn/source conflict (status=blocked, integrated=false, regen not run, tree restored)",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-iterate/tests/test_agent_doc_entry_rules.py::test_writer_routes_per_impact_targets[component|data-flow|convention], ::test_f2_documents_canonical_routing PASSED"
+          "evidence": "test_ensure_current_blocks_on_source_conflict PASSED"
         },
         {
-          "behavior": "AC4 forward-only entry-budget gate flags new over-budget, grandfathers old/undated, passes real files",
+          "behavior": "ensure_current CLI prints the already-current JSON contract and exits 0",
           "disposition": "tested",
-          "evidence": "test_agent_doc_entry_rules.py::test_over_budget_dated_entry_is_flagged, ::test_grandfathered_entries_exempt, ::test_new_entries_within_budget PASSED"
+          "evidence": "test_ensure_current_cli PASSED"
         },
         {
-          "behavior": "AC5 conventions.md no longer embeds verbatim CONTRIBUTING copy (links instead); no consumer asserted it",
+          "behavior": "integrated derived from HEAD before/after compare (not step-name strings) — review fix",
           "disposition": "tested",
-          "evidence": "grep: no test asserts the embedded copy; full suites green post-removal (shared 3173 / iterate 374 / compliance 682 / integration 141); file 606->308 LOC"
+          "evidence": "covered by noop(false)/behind(true)/blocked(false) assertions above"
         },
         {
-          "behavior": "AC6 F2.md documents compact routing (machine-checkable)",
+          "behavior": "F11 runs ensure_current.py before push, PR-create AND arm; fail-closed (exit 1) on source conflict",
           "disposition": "tested",
-          "evidence": "test_agent_doc_entry_rules.py::test_f2_documents_canonical_routing PASSED"
+          "evidence": "plugins/shipwright-iterate/tests/test_f11_automerge_arm.py::test_f11_has_refresh_if_behind_guard PASSED"
         },
         {
-          "behavior": "AC6 F3a/reflection compact-format prose guidance (editorial wording)",
+          "behavior": "F11 arm gated on `[ \"${SHIPWRIGHT_ITERATE_AUTOMERGE:-1}\" = \"0\" ]` wrapping the arm (campaign-defer)",
+          "disposition": "tested",
+          "evidence": "test_f11_arm_respects_campaign_defer PASSED"
+        },
+        {
+          "behavior": "F11 existing arm line/flags/iterate-guard/fail-soft preserved (regression)",
+          "disposition": "tested",
+          "evidence": "test_arm_call_present_with_exact_flags / test_arm_is_guarded_to_iterate_branches / test_arm_is_fail_soft_not_hard_exit PASSED"
+        },
+        {
+          "behavior": "campaign-mode defers arm via SHIPWRIGHT_ITERATE_AUTOMERGE=0",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_campaign_serial_drain.py::test_campaign_defers_arm_via_env PASSED"
+        },
+        {
+          "behavior": "campaign-mode documents serial drain via ensure_current.py with per-PR refresh→push→merge→wait",
+          "disposition": "tested",
+          "evidence": "test_campaign_drains_serially_via_ensure_current PASSED"
+        },
+        {
+          "behavior": "SKILL F11 index row advertises the arm + scope (no drift)",
+          "disposition": "tested",
+          "evidence": "test_skill_index_line_advertises_arm PASSED"
+        },
+        {
+          "behavior": "agent-driven serial-drain orchestration loop end-to-end (no Task tool in tests)",
           "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "doc prose; the machine-checkable routing claim is covered by test_f2_documents_canonical_routing"
+          "reason_code": "covered-by-existing-test",
+          "reason": "prose orchestration; its executable substance (ensure_current per branch) is functionally tested and the contract is drift-pinned by test_campaign_serial_drain"
         }
       ],
       "counts": {
-        "testable": 6,
-        "tested": 6,
+        "testable": 11,
+        "tested": 11,
         "untestable": 1,
         "untested_testable": 0
       },
@@ -88,9 +116,9 @@
       "exit_code": 0,
       "tests_run": 0,
       "evidence_path": "",
-      "timestamp": "2026-06-12T09:52:25.426Z",
+      "timestamp": "2026-06-12T12:04:50.000Z",
       "attempts": 0,
-      "justification": "Framework-internal change (compliance routing oracle, F11 gate + Group-F detective, write_decision_log producer, iterate skill instructions F2/F3a/reflection, and a new pytest entry-budget gate). No web/CLI/API application surface exists. Behavior verified by unit + integration suites: producer-to-file routing round-trip, oracle impact routing, F11 gate + F5 detective routing, and the real-file drift test (RED then GREEN); full suites shared 3173 / iterate 374 / compliance 682 passed."
+      "justification": "Framework-internal change: a new shared CLI tool (ensure_current.py) wrapping integrate_main, plus runtime-prompt prose (F11.md, campaign-mode.md, SKILL.md) and docs. No web/UI/API application surface and no backend-affects-frontend path. Behavior verified end-to-end by the unit/functional suite: ensure_current is driven through the REAL integrate_main against a real bare-origin + linked worktree for all three outcomes (no-op / integrate+regenerate / blocked) and its CLI is exercised (test_ensure_current.py), and the F11/campaign prose contracts are drift-pinned (test_f11_automerge_arm.py, test_campaign_serial_drain.py)."
     }
   }
 }

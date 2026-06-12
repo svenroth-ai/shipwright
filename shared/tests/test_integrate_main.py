@@ -279,3 +279,5 @@ def test_main_cli_reports_merge_commit_failed_status(
 
 # Campaign status.json concurrent-sibling regenerate (S3) lives in
 # test_integrate_campaign_status.py (reuses _set_repo_identity / _write / _git here).
+# ensure_current (the F11 / campaign refresh-if-behind guard) lives in
+# test_ensure_current.py (also reuses _set_repo_identity / _write / _git here).
