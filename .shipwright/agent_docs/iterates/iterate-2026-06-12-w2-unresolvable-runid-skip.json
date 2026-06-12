@@ -1,0 +1,9 @@
+{
+  "run_id": "iterate-2026-06-12-w2-unresolvable-runid-skip",
+  "date": "2026-06-12T19:25:50.243489Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/w2-unresolvable-runid-skip",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-12-w2-unresolvable-runid-skip"
+}
