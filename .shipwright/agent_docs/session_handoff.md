@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-12-compress-agent-doc-backlog"
+run_id: "iterate-2026-06-12-automerge-serial-integrate"
 phase: "iterate"
-reason: "iterate: compress agent-doc backlog"
-timestamp: "2026-06-12T12:04:20.121097+00:00"
+reason: "iterate completion: iterate-2026-06-12-automerge-serial-integrate"
+timestamp: "2026-06-12T12:06:22.426150+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-12 12:04:20 UTC
+> Auto-generated 2026-06-12 12:06:22 UTC
 
 ## Session Info
 
-- **Session ID**: e88a1e20-c89d-49c6-9fed-2f7d56e14e24
-- **Timestamp**: 2026-06-12 12:04:20 UTC
-- **Reason**: iterate: compress agent-doc backlog
+- **Session ID**: e40d1082-2df5-473b-853e-641d52bef467
+- **Timestamp**: 2026-06-12 12:06:22 UTC
+- **Reason**: iterate completion: iterate-2026-06-12-automerge-serial-integrate
 
 ## Last Iterate
 
@@ -29,7 +29,10 @@ timestamp: "2026-06-12T12:04:20.121097+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/compress-agent-doc-backlog
+- **Branch**: iterate/automerge-serial-integrate
+- **Run ID**: iterate-2026-06-12-automerge-serial-integrate
+- **Spec**: .shipwright/planning/iterate/2026-06-12-automerge-serial-integrate.md
+- **Complexity**: medium (plan-locked; classifier estimated `small`/history)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/compress-agent-doc-backlog
-- **Last Commit**: 99fd75ef fix(hooks): canonical project-root/worktree resolvers + drift project guard (deep-audit WP5) (#200)
+- **Branch**: iterate/automerge-serial-integrate
+- **Last Commit**: 9e39bfb2 fix(utf8): pin UTF-8 on git-reading subprocess decodes (deep-audit WP7) (#202)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,7 +68,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-16059cc5 | work_completed | iterate (compress agent-doc backlog to one-line pointers + retire convention-routing fallback + lower entry-budget cutoff) | 2026-06-12 |
+| evt-ef0a3a15 | work_completed | iterate (Serial integrate_main merge for campaign/parallel iterates: ensure_current.py refresh-if-behind guard at F11 + SHIPWRIGHT_ITERATE_AUTOMERGE defer with serial drain (auto-merge churn fix, Option A).) | 2026-06-12 |
 | evt-1c00ed61 | work_completed | iterate (Compact agent-doc entries + impact-aware routing SSoT (IMPACT_TARGETS) + forward-only 600-char entry-budget gate; conventions.md CONTRIBUTING de-dup) | 2026-06-12 |
 | evt-e2baab58 | work_completed | iterate (WP9 triage tooling hardening: F30 phaseQualityRefreshed GC token + drift meta-test, F19 GC TOCTOU recompute-under-lock, F31 control-char sanitizer on title/detail/evidence (C0+C1) in both render surfaces, F29 promote/dismiss accept outbox-only items) | 2026-06-12 |
 | evt-3064a751 | work_completed | iterate (Installer/shell POSIX fixes (deep-audit WP10 F33-F38): set -e prereq counter, uv ~/.local/bin PATH, 13-plugin space-safe alias refresh, python3 resolver, dotenv-parse verify-setup) | 2026-06-12 |
@@ -74,8 +77,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 151
-- **Last iterate**: change — compress agent-doc backlog to one-line pointers + retire convention-routing fallback + lower entry-budget cutoff (2026-06-12)
+- **Total work events**: 152
+- **Last iterate**: change — Serial integrate_main merge for campaign/parallel iterates: ensure_current.py refresh-if-behind guard at F11 + SHIPWRIGHT_ITERATE_AUTOMERGE defer with serial drain (auto-merge churn fix, Option A). (2026-06-12)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
