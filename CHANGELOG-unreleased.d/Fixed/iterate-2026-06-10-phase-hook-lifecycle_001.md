@@ -1,0 +1,1 @@
+Multi-session pipeline: phase-session hooks now resolve project root + session id from the Claude Code hook stdin payload (with a resolve_project_root fallback) instead of process env vars no launcher sets, so the v2 claim/validate/complete lifecycle engages instead of silently no-op'ing (deep-audit F1)

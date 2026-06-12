@@ -1,9 +1,0 @@
-{
-  "run_id": "iterate-2026-06-07-triage-gc-compliance-refreshed",
-  "date": "2026-06-07T15:05:39.591171Z",
-  "type": "change",
-  "complexity": "small",
-  "branch": "iterate/triage-gc-compliance-refreshed",
-  "tests_passed": true,
-  "adr": "iterate-2026-06-07-triage-gc-compliance-refreshed"
-}

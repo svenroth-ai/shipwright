@@ -1,9 +1,0 @@
-{
-  "run_id": "iterate-2026-06-07-campaign-expands-triage",
-  "date": "2026-06-07T15:51:48.780185Z",
-  "type": "feature",
-  "complexity": "small",
-  "branch": "iterate/campaign-expands-triage",
-  "tests_passed": true,
-  "adr": "iterate-2026-06-07-campaign-expands-triage"
-}

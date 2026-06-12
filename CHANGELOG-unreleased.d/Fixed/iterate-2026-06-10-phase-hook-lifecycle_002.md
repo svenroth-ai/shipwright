@@ -1,0 +1,1 @@
+record_event now performs the phase_completed / by-commit dedup scan inside the same file lock as the append, preventing duplicate phase_completed events under concurrent Stop-hook firings (deep-audit F14)

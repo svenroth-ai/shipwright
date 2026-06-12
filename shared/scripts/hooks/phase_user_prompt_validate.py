@@ -26,20 +26,29 @@ Subsequent prompts will see no marker -> pass through.
 from __future__ import annotations
 
 import json
-import os
 import sys
 from pathlib import Path
 from typing import Optional
 
 
 _THIS = Path(__file__).resolve()
+_SHARED_SCRIPTS = _THIS.parent.parent  # shared/scripts (for lib.hook_session)
 _RUN_LIB = _THIS.parent.parent.parent.parent / "plugins" / "shipwright-run" / "scripts" / "lib"
 sys.path.insert(0, str(_RUN_LIB))
+if str(_SHARED_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SHARED_SCRIPTS))
 
 try:
     from phase_task_lifecycle import find_phase_task_by_session_uuid  # type: ignore[import]
 except ImportError:  # pragma: no cover
     find_phase_task_by_session_uuid = None
+
+# Hook stdin-payload resolution (deep-audit F1). Guarded so a broken install
+# degrades to pass-through rather than crashing UserPromptSubmit.
+try:
+    from lib.hook_session import resolve_hook_context  # type: ignore[import]
+except ImportError:  # pragma: no cover - import-path safety
+    resolve_hook_context = None
 
 
 CONFIG_NAME = "shipwright_run_config.json"
@@ -114,9 +123,9 @@ def run(project_root: Optional[Path], session_uuid: Optional[str]) -> int:
 
 
 def main() -> int:
-    project_root_env = os.environ.get("SHIPWRIGHT_PROJECT_ROOT")
-    session_uuid = os.environ.get("SHIPWRIGHT_SESSION_ID")
-    project_root = Path(project_root_env).resolve() if project_root_env else None
+    if resolve_hook_context is None:
+        return 0  # helper unavailable — pass through, never crash
+    project_root, session_uuid = resolve_hook_context()
     return run(project_root, session_uuid)
 
 
