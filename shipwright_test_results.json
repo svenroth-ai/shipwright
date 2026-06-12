@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-12-cascade-integration-test",
+    "run_id": "iterate-2026-06-12-marketplace-python3-stub-probe",
     "date": "2026-06-12",
     "unit": {
       "status": "passed",
-      "passed": 3282,
-      "total": 3282
+      "passed": 3284,
+      "total": 3284
     },
     "integration": {
-      "status": "passed",
-      "passed": 2,
-      "total": 2
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -30,46 +30,52 @@
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [],
+    "degraded": [
+      "F0 scoped to shared/tests with -m 'not slow and not cross_plugin' (3284 passed, 12 skipped, 0 failed). The change is confined to two standalone installer shell scripts + their test file (test_installer_shell_scripts.py, 16/16) with no import coupling to other modules, so the shared suite is a superset of the affected surface.",
+      "test_installer_shell_scripts.py grew to 367 LOC (>300 LOC guideline). It is NOT in shipwright_bloat_baseline.json, so the anti-ratchet pre-commit gate does not block; it is a single coherent installer-shell regression suite (F33-F39). The Group H detective audit surfaces the crossing post-merge."
+    ],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "3 concurrent parallel iterates drain serially: curated-union + churn-regenerate + JSONL-union all resolve, no markers, run's event survives",
+          "behavior": "update-marketplace.sh python resolver: a python3 found by `command -v` but failing `--version` (Microsoft Store stub, exit 49) is skipped, and the next working candidate (python) is selected without aborting under set -euo pipefail",
           "disposition": "tested",
-          "evidence": "test_three_concurrent_iterates_drain_without_cascade"
+          "evidence": "test_f39_update_marketplace_probe_skips_failing_python3_stub PASSED"
         },
         {
-          "behavior": "campaign of 3 sub-iterates drains serially: status.json projects all-complete from union'd events + curated-union, no cascade",
+          "behavior": "verify-setup.sh python resolver: same stub-skip behavior via the consolidated single SW_PYTHON resolver (reused by both the prerequisite check and the .env.local parser)",
           "disposition": "tested",
-          "evidence": "test_campaign_three_subiterates_drain_without_cascade"
+          "evidence": "test_f39_verify_setup_probe_skips_failing_python3_stub PASSED"
         },
         {
-          "behavior": "final origin/main carries all N curated bullets + regenerated churn + union'd JSONL with no conflict markers",
+          "behavior": "POSIX no-regression: a host with only a working python3 (no `python`) still resolves python3 — the added `--version` guard does not break the F37 case",
           "disposition": "tested",
-          "evidence": "both tests assert origin/main blobs"
+          "evidence": "test_f37_python_resolver_picks_python3_when_python_absent PASSED (still green)"
+        },
+        {
+          "behavior": "End-to-end: the full marketplace cache sync completes on this Windows box instead of aborting at exit 49 right after 'Full sync:'",
+          "disposition": "tested",
+          "evidence": "manual e2e: `bash scripts/update-marketplace.sh` -> '=== Done. 13 synced, 0 skipped, 0 errors ===', exit 0; plus F0.5 CLI surface_verification tests_run=16 exit_code=0"
         }
       ],
       "counts": {
-        "testable": 3,
-        "tested": 3,
+        "testable": 4,
+        "tested": 4,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 2,
-        "covered_acs": 2
+        "acs": 4,
+        "covered_acs": 4
       }
     },
     "surface_verification": {
-      "surface": "none",
-      "runner": "",
+      "surface": "cli",
+      "runner": "uv run --no-sync pytest shared/tests/test_installer_shell_scripts.py -q",
       "exit_code": 0,
-      "tests_run": 0,
-      "evidence_path": "",
-      "timestamp": "2026-06-12T17:56:33.000Z",
-      "attempts": 0,
-      "justification": "Test-only addition (a new shared/tests integration test) — no application surface, no production-code change. The behavior it proves IS the verification: real-git serial-drain of N parallel/campaign branches, asserting the three cascade artifact-classes resolve together. Runs in the shared/tests F0 suite + CI (not slow)."
+      "tests_run": 16,
+      "evidence_path": ".shipwright/runs/iterate-2026-06-12-marketplace-python3-stub-probe/surface_verification.log",
+      "timestamp": "2026-06-12T18:24:12.776Z"
     }
   }
 }

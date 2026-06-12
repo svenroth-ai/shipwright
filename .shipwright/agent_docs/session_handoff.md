@@ -1,35 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-12-cascade-integration-test"
+run_id: "iterate-2026-06-12-marketplace-python3-stub-probe"
 phase: "iterate"
-reason: "iterate completion"
-timestamp: "2026-06-12T17:56:46.654583+00:00"
+reason: "iterate: marketplace-sync python3 stub probe (Windows F37 regression fix)"
+timestamp: "2026-06-12T18:28:59.332974+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-12 17:56:46 UTC
+> Auto-generated 2026-06-12 18:28:59 UTC
 
 ## Session Info
 
-- **Session ID**: e40d1082-2df5-473b-853e-641d52bef467
-- **Timestamp**: 2026-06-12 17:56:46 UTC
-- **Reason**: iterate completion
+- **Session ID**: 102bfc28-6965-4798-b0da-a8c453eee3f1
+- **Timestamp**: 2026-06-12 18:28:59 UTC
+- **Reason**: iterate: marketplace-sync python3 stub probe (Windows F37 regression fix)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-12-delivery-watch
-- **Date**: 2026-06-12T17:34:43.755499Z
+- **Run ID**: iterate-2026-06-12-cascade-integration-test
+- **Date**: 2026-06-12T17:56:47.240864Z
 - **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/delivery-watch
-- **ADR**: iterate-2026-06-12-delivery-watch
+- **Complexity**: small
+- **Branch**: iterate/cascade-integration-test
+- **ADR**: iterate-2026-06-12-cascade-integration-test
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-12-delivery-watch.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/cascade-integration-test
+- **Branch**: iterate/marketplace-python3-stub-probe
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/cascade-integration-test
-- **Last Commit**: aeb89327 feat(iterate): F11 Delivery-Watch — delivered = merged + green (no shoot-and-forget) (#214)
+- **Branch**: iterate/marketplace-python3-stub-probe
+- **Last Commit**: 5321dfaf test(merge): end-to-end parallel-merge cascade integration test (#215)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-fe304590 | work_completed | iterate (Windows: test-run the python3 probe so the Microsoft Store stub does not abort the marketplace cache sync) | 2026-06-12 |
 | evt-bb3b97ba | work_completed | iterate (End-to-end parallel-merge cascade integration test (3 concurrent iterates + a 3-sub campaign): proves curated-union + churn-regenerate + JSONL-union resolve together with no cascade.) | 2026-06-12 |
 | evt-2d77f6f6 | work_completed | iterate (Delivery-Watch: F11 confirms the PR actually merges green before done (no shoot-and-forget); watch_pr_delivery.py + F2 budget-lint-before-push rule.) | 2026-06-12 |
 | evt-3b9f4640 | work_completed | iterate (merge=union for curated agent-docs (architecture.md + conventions.md) via a distinct CURATED_DOC_UNION_PATHS category; closes the parallel-iterate bullet-prepend cascade server-side (follow-up to automerge-serial-integrate).) | 2026-06-12 |
 | evt-ef0a3a15 | work_completed | iterate (Serial integrate_main merge for campaign/parallel iterates: ensure_current.py refresh-if-behind guard at F11 + SHIPWRIGHT_ITERATE_AUTOMERGE defer with serial drain (auto-merge churn fix, Option A).) | 2026-06-12 |
-| evt-34fd26e4 | work_completed | iterate (Consolidate the project-detection predicate across all hooks onto one canonical lib.project_root.is_shipwright_project) | 2026-06-12 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 160
-- **Last iterate**: change — End-to-end parallel-merge cascade integration test (3 concurrent iterates + a 3-sub campaign): proves curated-union + churn-regenerate + JSONL-union resolve together with no cascade. (2026-06-12)
+- **Total work events**: 161
+- **Last iterate**: bug — Windows: test-run the python3 probe so the Microsoft Store stub does not abort the marketplace cache sync (2026-06-12)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

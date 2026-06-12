@@ -242,6 +242,76 @@ def test_f37_python_resolver_picks_python3_when_python_absent(tmp_path):
 
 
 # --------------------------------------------------------------------------- #
+# F39 — the python resolver must TEST-RUN each candidate, not just `command -v`
+#        (Windows regression of F37: python3 is the Microsoft Store stub that
+#        `command -v` finds but that exits 49 on invocation, aborting the sync
+#        under set -euo pipefail at the first `$(python3 -c …)`).
+# --------------------------------------------------------------------------- #
+def _drive_python_resolver(block: str, varname: str, tmp_path) -> str:
+    """Run a resolver ``block`` (which sets ``varname``) under a PATH where
+    ``python3`` is a Microsoft-Store-style stub — present on PATH, found by
+    ``command -v``, but exits 49 on ``--version`` with no real output — and
+    ``python`` is a working interpreter. Returns the resolved interpreter name.
+    A ``command -v``-only probe returns ``python3`` (the stub); a test-run probe
+    must fall through to ``python``."""
+    _require_bash()
+    shim_dir = tmp_path / "bin"
+    shim_dir.mkdir()
+    stub = shim_dir / "python3"
+    stub.write_text(
+        "#!/usr/bin/env bash\n"
+        'echo "Python was not found; install from the Microsoft Store" >&2\n'
+        "exit 49\n",
+        encoding="utf-8",
+    )
+    stub.chmod(0o755)
+    real = shim_dir / "python"
+    real.write_text('#!/usr/bin/env bash\necho "Python 3.11.9"\n', encoding="utf-8")
+    real.chmod(0o755)
+    probe = "set -euo pipefail\n" + block + f'\necho "RESOLVED=${varname}"\n'
+    res = subprocess.run(
+        ["bash", "-c", probe],
+        capture_output=True, text=True,
+        # Prepend the shims so python3=stub is found first; keep the host PATH so
+        # the `#!/usr/bin/env bash` shebang still resolves a real bash.
+        env={**os.environ, "PATH": f"{shim_dir.as_posix()}:{os.environ.get('PATH', '')}"},
+    )
+    assert res.returncode == 0, (
+        f"resolver aborted on a stub python3: rc={res.returncode} stderr={res.stderr!r}"
+    )
+    assert "RESOLVED=" in res.stdout, f"resolver did not set {varname}: {res.stdout!r} / {res.stderr!r}"
+    return res.stdout.split("RESOLVED=", 1)[1].strip().splitlines()[0]
+
+
+def test_f39_update_marketplace_probe_skips_failing_python3_stub(tmp_path):
+    """update-marketplace.sh: a ``command -v``-only probe picks the Microsoft
+    Store python3 stub, then the first ``$(python3 -c …)`` aborts the whole
+    sync under ``set -euo pipefail``. The probe must test-run each candidate and
+    fall through to the real ``python``."""
+    src = _read(UPDATE_SH)
+    m = re.search(r"(PYTHON_BIN=\"\".*?\ndone)", src, flags=re.DOTALL)
+    assert m, "could not find a PYTHON_BIN resolver loop in update-marketplace.sh"
+    resolved = _drive_python_resolver(m.group(1), "PYTHON_BIN", tmp_path)
+    assert resolved == "python", (
+        f"probe picked the failing python3 stub instead of the working interpreter: {resolved!r}"
+    )
+
+
+def test_f39_verify_setup_probe_skips_failing_python3_stub(tmp_path):
+    """verify-setup.sh shares the python-resolution pattern and is a documented
+    standalone command — it must apply the same test-run probe so a Microsoft
+    Store python3 stub is skipped in favour of the real interpreter."""
+    src = _read(VERIFY_SH)
+    m = re.search(r"((?:SW_PYTHON|ENV_PYTHON)=\"\".*?\ndone)", src, flags=re.DOTALL)
+    assert m, "could not find a python resolver loop in verify-setup.sh"
+    varname = m.group(1).split("=", 1)[0]
+    resolved = _drive_python_resolver(m.group(1), varname, tmp_path)
+    assert resolved == "python", (
+        f"verify-setup.sh probe picked the failing python3 stub: {resolved!r}"
+    )
+
+
+# --------------------------------------------------------------------------- #
 # F38 — verify-setup.sh must parse .env.local as dotenv, not `source` it
 # --------------------------------------------------------------------------- #
 def test_f38_verify_setup_does_not_source_env_local():

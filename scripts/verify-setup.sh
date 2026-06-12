@@ -17,6 +17,20 @@ echo " Shipwright Setup Verification"
 echo "========================================"
 echo ""
 
+# Resolve ONE working Python interpreter for the whole script (the prerequisite
+# check below and the .env.local parser further down both need it). Probe by
+# TEST-RUNNING ``--version``, not just ``command -v``: on Windows ``python3`` is
+# usually the Microsoft Store App-Execution-Alias stub that ``command -v`` finds
+# but that exits 49 on invocation (deep-audit F37 follow-up). Requiring a
+# successful ``--version`` makes the stub fall through to the real interpreter.
+SW_PYTHON=""
+for _candidate in python3 python py; do
+    if command -v "$_candidate" &>/dev/null && "$_candidate" --version >/dev/null 2>&1; then
+        SW_PYTHON="$_candidate"
+        break
+    fi
+done
+
 # ── Prerequisites ──
 
 echo "Prerequisites:"
@@ -30,19 +44,20 @@ else
     errors=$((errors+1))
 fi
 
-# Python
-if command -v python3 &>/dev/null; then
-    py_version=$(python3 --version 2>&1 | awk '{print $2}')
+# Python (uses the test-run-resolved SW_PYTHON; a Microsoft Store python3 stub
+# is found by `command -v` but reports no usable version — SW_PYTHON skipped it).
+if [ -n "$SW_PYTHON" ]; then
+    py_version=$("$SW_PYTHON" --version 2>&1 | awk '{print $2}')
     py_major=$(echo "$py_version" | cut -d. -f1)
     py_minor=$(echo "$py_version" | cut -d. -f2)
     if [ "$py_major" -ge 3 ] && [ "$py_minor" -ge 11 ]; then
-        echo "  $PASS Python: $py_version"
+        echo "  $PASS Python: $py_version ($SW_PYTHON)"
     else
         echo "  $FAIL Python: $py_version (need 3.11+)"
         errors=$((errors+1))
     fi
 else
-    echo "  $FAIL Python: not found"
+    echo "  $FAIL Python: not found (tried python3, python, py)"
     errors=$((errors+1))
 fi
 
@@ -128,21 +143,16 @@ echo "Environment Variables:"
 # environment also counts as set.
 PROJECT_ROOT="$(pwd)"
 
-# Resolve a Python interpreter (python3 → python → py); the parser is Python.
-ENV_PYTHON=""
-for _candidate in python3 python py; do
-    if command -v "$_candidate" &>/dev/null; then
-        ENV_PYTHON="$_candidate"
-        break
-    fi
-done
+# Reuse the single test-run-resolved interpreter from the top of the script
+# (python3 → python → py, with the Microsoft Store stub skipped); the canonical
+# .env.local parser is Python.
 
 # Newline-separated list of dotenv keys with a non-empty value (may be empty).
 DOTENV_KEYS=""
 if [ -f "$PROJECT_ROOT/.env.local" ]; then
     echo "  $PASS .env.local: found at $PROJECT_ROOT/.env.local"
-    if [ -n "$ENV_PYTHON" ]; then
-        DOTENV_KEYS="$("$ENV_PYTHON" - "$REPO_ROOT" "$PROJECT_ROOT/.env.local" <<'PYEOF' 2>/dev/null || true
+    if [ -n "$SW_PYTHON" ]; then
+        DOTENV_KEYS="$("$SW_PYTHON" - "$REPO_ROOT" "$PROJECT_ROOT/.env.local" <<'PYEOF' 2>/dev/null || true
 import re
 import sys
 from pathlib import Path

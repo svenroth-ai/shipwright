@@ -36,9 +36,17 @@ fi
 # Ubuntu/Debian/macOS (only ``python3``); under ``set -e`` the command
 # substitutions below would then resolve to nothing and abort the entire
 # sync silently (deep-audit F37). Probe python3 → python → py, in order.
+#
+# Probe by TEST-RUNNING ``--version``, not just ``command -v``: on Windows
+# ``python3`` is usually the Microsoft Store App-Execution-Alias *stub* —
+# ``command -v`` finds it, but invoking it prints "Python was not found" and
+# exits 49, so a ``command -v``-only probe selects a non-working interpreter
+# and the first ``$(python3 -c …)`` below then aborts the whole sync under
+# ``set -euo pipefail`` (F37 fixed POSIX but regressed Windows). Requiring a
+# successful ``--version`` makes the stub fall through to the real interpreter.
 PYTHON_BIN=""
 for _candidate in python3 python py; do
-    if command -v "$_candidate" &>/dev/null; then
+    if command -v "$_candidate" &>/dev/null && "$_candidate" --version >/dev/null 2>&1; then
         PYTHON_BIN="$_candidate"
         break
     fi
