@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-12 05:31 UTC | Session: f1dfbc99-c830-4ef1-9897-9a176d13cf6d | Run: iterate-2026-06-12-compliance-gate-coverage
+> Updated: 2026-06-12 08:15 UTC | Session: f1dfbc99-c830-4ef1-9897-9a176d13cf6d | Run: iterate-2026-06-12-triage-tooling-hardening
 
-## Recent Changes (144 iterations)
+## Recent Changes (145 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | WP9 triage tooling hardening: F30 phaseQualityRefreshed GC token + drift meta-test, F19 GC TOCTOU recompute-under-lock, F31 control-char sanitizer on title/detail/evidence (C0+C1) in both render surfaces, F29 promote/dismiss accept outbox-only items | 3163/3164 |  | tooling | 2026-06-12 |
 | bug | Fix two structurally-inert compliance gates (deep-audit WP3): Group H now in run_all default + on-stop coverage gate widened to A-H (F20); S4 FR-preservation join no longer raises TypeError (F21) | 3146/3146 |  | compliance | 2026-06-12 |
 | change | triage.mark_status routes idle-main status flips to the outbox (symmetric with append_triage_item), completing campaign D1 for the status side; fixes undelivered tracked drift from WebUI/Stop-hook dismisses | 3131/3131 |  | infra | 2026-06-11 |
 | change | F11 arms GitHub-native auto-merge for iterate/* PRs (gh pr merge --auto --squash --delete-branch), branch-scoped + fail-soft (B4.5 Phase 3) | 363/363 |  | tooling | 2026-06-11 |
@@ -151,7 +152,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-12 | Unit: 3131/3131 | Smoke: not_run | (iterate)
+Last run: 2026-06-12 | Unit: 3163/3164 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
