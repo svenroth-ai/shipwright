@@ -269,3 +269,37 @@ External rule sources cited above (snapshot 2026-05-25):
 - [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) — `code-review-and-quality` Five-Axis-Review + Change-Sizing + Dead-Code (MIT, © Addy Osmani)
 
 <!-- /Bloat Checklist -->
+
+## Reducibility Reviewer
+
+The Bloat Checklist's line-count rules are a **router, not a verdict**: a file
+over its budget (300 source / 400 runtime-prompt) escalates here — it does not
+fail for length alone. Apply the closed catalog and block **only** on a
+concrete, falsifiable reduction. **No concrete finding → PASS** (a long file
+with no catalog hit ships unchanged).
+
+**Read the rubric first** — `shared/reducibility-catalog.md` (the closed
+catalog + guardrails) and `shared/profiles/reducibility-idioms.json` (the
+per-language idiom-map: `stack_agnostic`, `python`, `typescript`). Both are in
+this repo; use your Read tool.
+
+**Closed catalog (cite the code):** **D** duplication · **A** needless
+abstraction · **X** dead code · **C** control-flow verbosity · **S** data-shape ·
+**M** comment-restating-code · **P** dependency footprint · **T** test repetition.
+
+**Finding contract — a reducibility finding is invalid unless it cites all three:**
+1. **what to remove** (the exact construct), 2. **est-LOC-saved** (a number; ~0 → drop it),
+3. **keeps tests green** (no assertion/validation/type is weakened). "Could be
+simpler" without these is taste, not bloat — discard it.
+
+**Guardrails (a finding tripping any of these is void):** G1 long-but-coherent
+is never a finding · G2 clarity > cleverness · G3 never weaken coverage /
+validation / types · G4 no merge-stability churn · G5 justified duplication
+exempt · G6 generated / vendored exempt.
+
+**Two modes:** Goal A (prevent over-production) — a contract-complete finding is
+**blocking**: emit it as a `readability` or `architecture` review item with the
+catalog code in the finding text so the cascade bounces the diff back. Goal B
+(boy-scout improve-on-touch) — reducible code *already present* in a touched
+unit may be raised as a **non-blocking** suggestion, **bounded to the touched
+unit** (never "refactor the whole file").

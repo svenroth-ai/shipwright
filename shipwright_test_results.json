@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-12-bloat-h1-h2-cleanup",
+    "run_id": "iterate-2026-06-12-reducibility-gate",
     "date": "2026-06-12",
     "unit": {
       "status": "passed",
-      "passed": 3284,
-      "total": 3284
+      "passed": 3319,
+      "total": 3319
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 84,
+      "total": 84
     },
     "pgtap": {
       "status": "not_run",
@@ -31,46 +31,75 @@
       "status": "not_run"
     },
     "degraded": [
-      "Data-only change: shipwright_bloat_baseline.json (51 entries tightened + 8 grandfathered) + .shipwright/triage.jsonl (2 follow-up items). No Python/source changed, so F0 was scoped to the shared suite (3284 passed, 12 skipped) + Group H audit (14) + bloat/anti-ratchet (115); integration/plugin suites cannot be affected by a baseline-data edit.",
-      "triage.jsonl carries in-session background-producer appends (phaseQuality dismissals + a now-stale compliance H1 backlog item trg-b7fe7c90); the F5b compliance regen auto-dismisses it once H1=0. Carried per the per-tree, PR-committed model."
+      "F0.5 surface=none (justified): deliverables are reviewer-prompt + reference/idiom-map content with no runnable UI/server/CLI surface; the idiom-map JSON is reviewer context validated by the drift test, not runtime-parsed by product code.",
+      "Pre-existing background noise unrelated to this iterate: sweep-outbox warning (trg-671bb0a2 status has no append) at worktree setup, and a corrupt triage.jsonl line warning in the shared suite (test_triage_storage) \u2014 both fail-soft, not introduced here."
     ],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "H2 cleared: every baseline entry's current equals its on-disk LOC (no recorded>actual ratchet-suggestion)",
+          "behavior": "AC1 SSoT catalog defines router/8-codes/contract/G1-G6/two-goals",
           "disposition": "tested",
-          "evidence": "live Group-H scan H2=0; test_bloat_baseline + test_anti_ratchet_check[_staged] (115 passed)"
+          "evidence": "shared/tests/test_reducibility_gate.py::test_catalog_* (incl. test_catalog_encodes_behavioral_rules) PASSED"
         },
         {
-          "behavior": "H1 cleared: every oversize tracked file is listed in the baseline (no drift)",
+          "behavior": "AC2 idiom-map valid, 3 langs x 8 codes, idioms+exemption per cell",
           "disposition": "tested",
-          "evidence": "live Group-H scan H1=0; test_audit_group_h (14 passed)"
+          "evidence": "test_idiom_map_is_valid_json + _has_all_languages + _covers_all_codes_per_language PASSED"
         },
         {
-          "behavior": "No anti-ratchet introduced: no baseline entry's current is below its file's actual LOC",
+          "behavior": "AC3 code-reviewer reducibility section is separate from the parity-locked Bloat Checklist (no ratchet)",
           "disposition": "tested",
-          "evidence": "anti_ratchet_check.py --worktree status=ok (ratchets=[], new_crossings=[])"
+          "evidence": "test_code_reviewer_has_reducibility_section + _is_separate_from_bloat_checklist PASSED; anti_ratchet_check exit 0"
         },
         {
-          "behavior": "No stale baseline entries: every entry resolves to a file on disk",
+          "behavior": "AC4 pr_reviewer (B4.5 CI) self-contained rule: 8 codes inlined by keyword, G1, est-LOC contract, numeric block threshold",
           "disposition": "tested",
-          "evidence": "live Group-H scan H6=0"
+          "evidence": "test_pr_reviewer_has_self_contained_reducibility_rule PASSED (code+keyword adjacency + numeric threshold)"
+        },
+        {
+          "behavior": "AC5 iterate_reviewer advisory reducibility/over-production focus",
+          "disposition": "tested",
+          "evidence": "test_iterate_reviewer_has_reducibility_focus PASSED"
+        },
+        {
+          "behavior": "AC6 glossary defines Reducibility-Catalog + LOC-as-Router, stays <=300 LOC",
+          "disposition": "tested",
+          "evidence": "test_glossary_defines_reducibility_terms + test_glossary_under_loc_limit PASSED"
+        },
+        {
+          "behavior": "AC6 guide narrative note (reducibility = qualitative complement)",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "reason": "docs/guide.md structural doc-tests already run in the full shared suite; the added prose is narrative, asserting its exact wording would be a brittle snapshot."
+        },
+        {
+          "behavior": "AC7 reviewer-parity + glossary-defense regressions stay green after edits",
+          "disposition": "tested",
+          "evidence": "test_reviewer_bloat_checklist_parity (6) + test_bloat_defense_artifacts (24) PASSED in the 3319-green suite"
+        },
+        {
+          "behavior": "AC8 dogfood: catalog applied to this diff yields 0 forced churn",
+          "disposition": "tested",
+          "evidence": "live Step-8 code-reviewer (opus) verdict: long-but-coherent (G1) + justified-duplication (G5); 3 LOW findings fixed, 0 churn"
         }
       ],
       "counts": {
-        "total": 4,
-        "tested": 4,
-        "untestable": 0,
+        "testable": 8,
+        "tested": 8,
+        "untestable": 1,
         "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 8,
+        "covered_acs": 8
       }
     },
     "surface_verification": {
       "surface": "none",
-      "justification": "Data/config-only change: shipwright_bloat_baseline.json (compliance Group H bookkeeping) + triage.jsonl follow-up items. No runtime surface (no CLI/API/web code path), no UI, no backend-affects-frontend. Verified by the Group-H scan (H1=H2=H6=0) + anti-ratchet gate (status ok) + shared suite (3284 passed).",
       "tests_run": 0,
       "exit_code": 0,
-      "timestamp": "2026-06-12T19:35:00Z"
+      "justification": "No runnable UI/server/CLI surface: deliverables are reviewer-prompt + reference/idiom-map content. The idiom-map JSON is reviewer context validated by the drift test (shared/tests/test_reducibility_gate.py), not runtime-parsed by product code. Backend-affects-frontend rule N/A (no API routes / store mutations / SSE / message contracts touched)."
     }
   }
 }

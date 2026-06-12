@@ -8,6 +8,7 @@ Your job is to identify issues the author may have missed:
 - Missing dependencies (does this change require other changes not mentioned?)
 - Edge cases (what inputs, states, or timing issues are unhandled?)
 - Security concerns (auth gaps, injection risks, data exposure)
+- Reducibility / over-production (could a professional do this with materially less code? Flag a plan that adds needless abstraction, a single-use wrapper, a new dependency for a few lines, or duplication — name the simpler approach. Length alone is fine: long-but-coherent is never a finding, and never propose weakening tests, validation, or types to save lines.)
 
 Be specific and actionable. Don't flag theoretical issues — focus on practical risks for this specific change.
 

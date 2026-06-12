@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-12T19:25:19.401409Z. Items waiting for triage decision.
+> Auto-generated 2026-06-12T21:06:53.297329Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 184
-- Triage: 17 | Promoted: 1 | Dismissed: 166 | Snoozed: 0
+- Total: 188
+- Triage: 16 | Promoted: 1 | Dismissed: 171 | Snoozed: 0
 
-## Top 17 items (severity-sorted)
+## Top 16 items (severity-sorted)
 
 ### Source: architecture (2 items)
 
@@ -105,47 +105,6 @@
     ```
   - Promote: `triage_promote.py --id trg-a678bd00 --task-ref EXT:<ref>`
 
-### Source: compliance (3 items)
-
-<a id="trg-be2094ab"></a>
-- **Compliance: 3 open finding(s)** `id=trg-be2094ab | severity=high | kind=compliance → P1/compliance`
-  - 3 open compliance finding(s): F/F5, H/H1, H/H2  - F/F5: Architecture marker vs arch-impact drops — 2 arch-impact drop(s…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-compliance
-    
-    Context: 3 open compliance finding(s): F/F5, H/H1, H/H2.
-    Dashboard: .shipwright/compliance/dashboard.md
-    Each finding + hint is listed in this item's detail.
-    ```
-  - Promote: `triage_promote.py --id trg-be2094ab --task-ref EXT:<ref>`
-
-<a id="trg-7030a6bc"></a>
-- **Compliance: 3 open finding(s)** `id=trg-7030a6bc | severity=high | kind=compliance → P1/compliance`
-  - 3 open compliance finding(s): F/F5, H/H1, H/H2  - F/F5: Architecture marker vs arch-impact drops — 2 arch-impact drop(s…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-compliance
-    
-    Context: 3 open compliance finding(s): F/F5, H/H1, H/H2.
-    Dashboard: .shipwright/compliance/dashboard.md
-    Each finding + hint is listed in this item's detail.
-    ```
-  - Promote: `triage_promote.py --id trg-7030a6bc --task-ref EXT:<ref>`
-
-<a id="trg-1b9792dc"></a>
-- **Compliance: 3 open finding(s)** `id=trg-1b9792dc | severity=high | kind=compliance → P1/compliance`
-  - 3 open compliance finding(s): F/F5, H/H1, H/H2  - F/F5: Architecture marker vs arch-impact drops — 1 arch-impact drop(s…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-compliance
-    
-    Context: 3 open compliance finding(s): F/F5, H/H1, H/H2.
-    Dashboard: .shipwright/compliance/dashboard.md
-    Each finding + hint is listed in this item's detail.
-    ```
-  - Promote: `triage_promote.py --id trg-1b9792dc --task-ref EXT:<ref>`
-
 ### Source: external-frameworks (6 items)
 
 <a id="trg-db3e0a9c"></a>
@@ -178,6 +137,23 @@
   - \## Intent  Bundle P8.1 from Spec/external-frameworks-integration.md (MU5 + MU7 + MU-PL1). Single research iterate prod…
   - Promote: `triage_promote.py --id trg-aecf9cde --task-ref EXT:<ref>`
 
+### Source: iterate (3 items)
+
+<a id="trg-af476d87"></a>
+- **Intelligent bloat gate: falsifiable reducibility reviewer (LOC becomes a router, not the verdict)** `id=trg-af476d87 | severity=medium | kind=improvement → P2/engineering`
+  - Replace the raw >300-LOC verdict with an LLM reducibility reviewer. Cheap LOC signal becomes the ROUTER that escalates…
+  - Promote: `triage_promote.py --id trg-af476d87 --task-ref EXT:<ref>`
+
+<a id="trg-c9800826"></a>
+- **RTM collector crashes on explicit-null affected_frs (no None guard)** `id=trg-c9800826 | severity=low | kind=bug → P3/engineering`
+  - plugins/shipwright-compliance/scripts/lib/collectors/_types.py builds WorkEvent.affected_frs via d.get('affected_frs',…
+  - Promote: `triage_promote.py --id trg-c9800826 --task-ref EXT:<ref>`
+
+<a id="trg-b9acb195"></a>
+- **Consolidate 3 repo-root resolvers into lib/repo_root.py (events_log.resolve_main_repo_root is in the wrong module)** `id=trg-b9acb195 | severity=low | kind=improvement → P3/engineering`
+  - Three functions resolve the MAIN repo root via git rev-parse --git-common-dir: lib/worktree_isolation.main_repo_root (r…
+  - Promote: `triage_promote.py --id trg-b9acb195 --task-ref EXT:<ref>`
+
 ### Source: manual (3 items)
 
 <a id="trg-9b9a2b9d"></a>
@@ -194,19 +170,4 @@
 - **Audit bug-fixes - auto batch (encoding/Windows, compliance gates, triage tooling, installer)** `id=trg-d7661cfb | severity=medium | kind=improvement → P2/engineering`
   - Launch surface only. The work plan + details live in the LOCAL, gitignored campaign dir (not in git). Start via the Sta…
   - Promote: `triage_promote.py --id trg-d7661cfb --task-ref EXT:<ref>`
-
-### Source: phaseQuality (1 item)
-
-<a id="trg-9909ef53"></a>
-- **Phase-quality: 1 open Tier-1 FAIL(s) across 1 phase(s)** `id=trg-9909ef53 | severity=high | kind=bug → P1/engineering`
-  - 1 open phase-quality Tier-1 FAIL(s) across 1 phase(s): iterate.  - iterate:W2 (W2 F11 external-review marker) — Run ext…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-compliance
-    
-    Context: 1 open phase-quality Tier-1 FAIL(s): iterate:W2.
-    Dashboard: .shipwright/compliance/skill-compliance/_dashboard.md
-    Each FAIL + remediation is listed in this item's detail.
-    ```
-  - Promote: `triage_promote.py --id trg-9909ef53 --task-ref EXT:<ref>`
 

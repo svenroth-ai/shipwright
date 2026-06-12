@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-12-reducibility-gate",
+  "date": "2026-06-12T21:07:05.540726Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/reducibility-gate",
+  "spec": ".shipwright/planning/iterate/20260612-reducibility-gate.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-12-reducibility-gate"
+}
