@@ -1945,3 +1945,14 @@ shipwright/
 - **Consequences:** Gate PASSES (all 5 methods, exit 0) -> D3 may proceed. Heavy runs slow-marked.
 - **Rejected:** count-only assertions; mocking the lock/git; a new pytest marker.
 - **Details:** [D2V-iterate-adr.md](../planning/iterate/campaigns/2026-06-08-triage-outbox-delivery/sub-iterates/D2V-iterate-adr.md)
+
+---
+
+### ADR-142: Extract drift_anchor.py; resolve_project_root() in 5 hooks
+- **Date:** 2026-06-12
+- **Section:** Iterate a1-2 (WP5) - hook resolver canon
+- **Context:** WP5 deep-audit: 5 hooks resolve project root wrongly or skip the Shipwright-project guard (F5 os.getcwd fail-open, F6 worktree-prefix, F7 no project guard, F8 abs-path dedup key, F10 counter reader divergence).
+- **Decision:** Swap os.getcwd()->resolve_project_root() in the 2 compliance gates + 2 counter readers; strip .worktrees/<slug>/ in is_plugin_side; add an _is_shipwright_project guard to check_drift; make the content dedup key repo-relative. Extract the F7/F8 helpers (is_shipwright_project, canonical_anchor, content_anchor, strip-worktree) into shared/scripts/lib/drift_anchor.py rather than inflating the already-grandfathered check_drift.py past its bloat baseline.
+- **Commit:** pending
+- **Consequences:** All 5 hooks resolve correctly in subdir/worktree/foreign-repo layouts; check_drift no-ops in non-Shipwright dirs; counter producer+readers agree under auto-descent; check_drift.py drops to 534 LOC (under baseline 554, no anti-ratchet bump); new drift_anchor.py is 92 LOC (no new crossing).
+- **Rejected:** Bumping check_drift.py's bloat baseline current upward (forbidden by anti-ratchet); per-hook duplicated project-guard constants (replaced by the shared predicate); centralizing the parents[N]/sys.path bootstrap across all hooks (out of WP5 scope).

@@ -28,6 +28,28 @@ MODE_THRESHOLDS = {
 }
 
 
+def _resolve_project_root() -> Path:
+    """Resolve the project root the SAME way the producer (track_tool_calls)
+    does — via ``resolve_project_root()``, which auto-descends into a managed
+    subdirectory.
+
+    F10: the readers previously used ``os.environ/Path.cwd()`` only, so in an
+    auto-descent layout the producer incremented ``<subdir>/.shipwright/…`` while
+    the reader looked at ``<workspace>/.shipwright/…`` (never created) → count 0
+    → context-pressure checkpointing silently dead.
+    """
+    try:
+        shared_scripts = str(Path(__file__).resolve().parent.parent)
+        if shared_scripts not in sys.path:
+            sys.path.insert(0, shared_scripts)
+        from lib.project_root import resolve_project_root  # noqa: PLC0415
+
+        return resolve_project_root()
+    except (ImportError, ValueError):
+        env_root = os.environ.get("SHIPWRIGHT_PROJECT_ROOT")
+        return Path(env_root) if env_root else Path.cwd()
+
+
 def estimate_pressure(counter_file: Path, threshold: int, mode: str = "builder") -> dict:
     """Read counter file and compute pressure recommendation."""
     tool_calls = 0
@@ -70,8 +92,7 @@ def main() -> int:
 
     counter_file = Path(args.counter_file)
     if not counter_file.is_absolute():
-        project_root = Path(os.environ.get("SHIPWRIGHT_PROJECT_ROOT", Path.cwd()))
-        counter_file = project_root / counter_file
+        counter_file = _resolve_project_root() / counter_file
 
     result = estimate_pressure(counter_file, threshold, args.mode)
     print(json.dumps(result))
