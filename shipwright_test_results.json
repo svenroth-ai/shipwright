@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-12-marketplace-python3-stub-probe",
+    "run_id": "iterate-2026-06-12-cross-component-gate",
     "date": "2026-06-12",
     "unit": {
       "status": "passed",
-      "passed": 3284,
-      "total": 3284
+      "passed": 3290,
+      "total": 3290
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 6,
+      "total": 6
     },
     "pgtap": {
       "status": "not_run",
@@ -31,51 +31,94 @@
       "status": "not_run"
     },
     "degraded": [
-      "F0 scoped to shared/tests with -m 'not slow and not cross_plugin' (3284 passed, 12 skipped, 0 failed). The change is confined to two standalone installer shell scripts + their test file (test_installer_shell_scripts.py, 16/16) with no import coupling to other modules, so the shared suite is a superset of the affected surface.",
-      "test_installer_shell_scripts.py grew to 367 LOC (>300 LOC guideline). It is NOT in shipwright_bloat_baseline.json, so the anti-ratchet pre-commit gate does not block; it is a single coherent installer-shell regression suite (F33-F39). The Group H detective audit surfaces the crossing post-merge."
+      "worktree vanished mid-iterate (during the F0 shared run, likely a parallel git worktree-remove); recovered from the saved external-review diff + re-applied the 7 review fixes; recovered state byte-verified against the pre-loss green run (3290 shared + 396 iterate). CI re-runs the full suite authoritatively."
     ],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "update-marketplace.sh python resolver: a python3 found by `command -v` but failing `--version` (Microsoft Store stub, exit 49) is skipped, and the next working candidate (python) is selected without aborting under set -euo pipefail",
+          "behavior": "is_cross_component_change True on merge/churn/gitattributes/resolver + hooks.json + (nested) hook scripts + verify_phase + campaign_*",
           "disposition": "tested",
-          "evidence": "test_f39_update_marketplace_probe_skips_failing_python3_stub PASSED"
+          "evidence": "test_cross_component_detector.py (positive cases incl. nested hook)"
         },
         {
-          "behavior": "verify-setup.sh python resolver: same stub-skip behavior via the consolidated single SW_PYTHON resolver (reused by both the prerequisite check and the .env.local parser)",
+          "behavior": "is_cross_component_change False on routes/docs/ordinary producers",
           "disposition": "tested",
-          "evidence": "test_f39_verify_setup_probe_skips_failing_python3_stub PASSED"
+          "evidence": "test_negative_ordinary_changes"
         },
         {
-          "behavior": "POSIX no-regression: a host with only a working python3 (no `python`) still resolves python3 — the added `--version` guard does not break the F37 case",
+          "behavior": "RISK_TAXONOMY[cross_component] present, min=medium, enforces integration_coverage",
           "disposition": "tested",
-          "evidence": "test_f37_python_resolver_picks_python3_when_python_absent PASSED (still green)"
+          "evidence": "test_taxonomy_entry_present_and_medium_gated"
         },
         {
-          "behavior": "End-to-end: the full marketplace cache sync completes on this Windows box instead of aborting at exit 49 right after 'Full sync:'",
+          "behavior": "verifier FAILs: medium+ cross-component diff with NO category:integration behavior",
           "disposition": "tested",
-          "evidence": "manual e2e: `bash scripts/update-marketplace.sh` -> '=== Done. 13 synced, 0 skipped, 0 errors ===', exit 0; plus F0.5 CLI surface_verification tests_run=16 exit_code=0"
+          "evidence": "test_fails_when_cross_component_touched_without_integration_behavior",
+          "category": "integration"
+        },
+        {
+          "behavior": "verifier OK when a category:integration behavior is present",
+          "disposition": "tested",
+          "evidence": "test_ok_when_integration_behavior_present"
+        },
+        {
+          "behavior": "verifier OK when the diff is not cross-component",
+          "disposition": "tested",
+          "evidence": "test_ok_when_change_is_not_cross_component"
+        },
+        {
+          "behavior": "verifier SKIPs at small complexity",
+          "disposition": "tested",
+          "evidence": "test_skipped_at_small_complexity"
+        },
+        {
+          "behavior": "verifier RECOMPUTES from the diff, not an agent-reported flag (anti-dodge)",
+          "disposition": "tested",
+          "evidence": "test_recomputes_from_diff_not_self_report (real-git)",
+          "category": "integration"
+        },
+        {
+          "behavior": "verifier returns a DISTINCT failure on a corrupt results.json (not 'missing coverage')",
+          "disposition": "tested",
+          "evidence": "test_corrupt_results_json_is_distinct_failure"
+        },
+        {
+          "behavior": "verifier pattern copy == classify_complexity SSoT (forward+reverse)",
+          "disposition": "tested",
+          "evidence": "test_cross_component_patterns_sync"
+        },
+        {
+          "behavior": "SKILL risk-taxonomy + phase-matrix + Step-7.5 + F5 + confidence-anti-patterns advertise the flag",
+          "disposition": "tested",
+          "evidence": "test_cross_component_prose.py (4 assertions)"
+        },
+        {
+          "behavior": "Kern SKILL.md stays <=300 LOC after the additions",
+          "disposition": "tested",
+          "evidence": "test_kern_skill_md_under_300_loc"
         }
       ],
       "counts": {
-        "testable": 4,
-        "tested": 4,
+        "testable": 12,
+        "tested": 12,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 4,
-        "covered_acs": 4
+        "acs": 5,
+        "covered_acs": 5
       }
     },
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --no-sync pytest shared/tests/test_installer_shell_scripts.py -q",
+      "surface": "none",
+      "runner": "",
       "exit_code": 0,
-      "tests_run": 16,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-12-marketplace-python3-stub-probe/surface_verification.log",
-      "timestamp": "2026-06-12T18:24:12.776Z"
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-06-12T19:16:04.000Z",
+      "attempts": 0,
+      "justification": "Framework-internal risk-gate meta-tooling: a new diff-driven risk flag (classify_complexity) + a non-dodgeable F11 verifier check (iterate_checks) + runtime-prompt prose. No application surface. The detector is unit-tested; the verifier gate is driven through REAL git diffs (merge-base..HEAD) against bare-origin worktrees incl. the anti-dodge recompute path; the SSoT drift + prose contracts are pinned. The gate's own meta-tooling is deliberately excluded from the patterns (no circular self-gating)."
     }
   }
 }

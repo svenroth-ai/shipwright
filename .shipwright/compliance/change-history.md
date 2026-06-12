@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-06-12T18:28:59.332974+00:00
-Total commits: 973
+Generated: 2026-06-12T19:16:17.145881+00:00
+Total commits: 974
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 277
+    "fix" : 278
     "feat" : 268
     "chore" : 214
     "docs" : 123
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 277 commits
+### Fixes (fix) — 278 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-12 | install | test-run python3 probe so Windows MS Store stub doesn't abort marketplace sync (#216) | 2da047b7c24a |
 | 2026-06-12 | merge | merge=union for curated agent-docs (close the structural gap) (#213) | 9d2239c6b033 |
 | 2026-06-12 | triage | union-residence GC recompute + source-derived drift meta-test (a1-6/F19 follow-up) (#208) | 6a3b4b0ea343 |
 | 2026-06-12 | compliance | scope arch-drift checkers to event-owned drops (#207) | 2d983794d565 |
@@ -1042,7 +1043,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 973 |
+| Total commits | 974 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 973 |
+| Human-authored commits | 974 |
 

@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-12T18:28:59.332974+00:00
+Generated: 2026-06-12T19:16:17.145881+00:00
 
 ## Requirements Coverage
 
@@ -186,6 +186,7 @@ Generated: 2026-06-12T18:28:59.332974+00:00
 | Delivery-Watch: F11 confirms the PR actually merges green before done (no shoot-and-forget); watch_pr_delivery.py + F2 budget-lint-before-push rule. | iterate | change |  | — | — | 2026-06-12 |
 | End-to-end parallel-merge cascade integration test (3 concurrent iterates + a 3-sub campaign): proves curated-union + churn-regenerate + JSONL-union resolve together with no cascade. | iterate | change |  | — | — | 2026-06-12 |
 | Windows: test-run the python3 probe so the Microsoft Store stub does not abort the marketplace cache sync | iterate | bug |  | 3284/3284 | — | 2026-06-12 |
+| cross_component risk flag forces an integration-coverage test at medium+, enforced non-dodgeably by the F11 verifier recomputing the flag from the diff. Closes the composition axis of the empirical machinery. | iterate | change |  | — | — | 2026-06-12 |
 
 ## Coverage Summary
 
@@ -193,7 +194,7 @@ Generated: 2026-06-12T18:28:59.332974+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 161 |
+| Iterate changes | 162 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

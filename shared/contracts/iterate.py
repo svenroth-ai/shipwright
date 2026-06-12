@@ -95,18 +95,22 @@ if _iterate_lib_str not in sys.path:
 # ---------------------------------------------------------------------------
 
 from classify_complexity import (  # type: ignore[import-not-found]  # noqa: E402, F401
+    CROSS_COMPONENT_FILE_PATTERNS,
     IO_BOUNDARY_FILE_PATTERNS,
     RISK_TAXONOMY,
     TOUCHES_BUILD_FILE_PATTERNS,
+    is_cross_component_change,
     is_io_boundary_change,
     touches_build_files,
 )
 
 
 __all__ = [
+    "CROSS_COMPONENT_FILE_PATTERNS",
     "IO_BOUNDARY_FILE_PATTERNS",
     "RISK_TAXONOMY",
     "TOUCHES_BUILD_FILE_PATTERNS",
+    "is_cross_component_change",
     "is_io_boundary_change",
     "touches_build_files",
 ]

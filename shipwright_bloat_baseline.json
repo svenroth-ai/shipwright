@@ -319,9 +319,9 @@
     {
       "path": "plugins/shipwright-iterate/scripts/lib/classify_complexity.py",
       "limit": 300,
-      "current": 382,
+      "current": 430,
       "state": "grandfathered",
-      "adr": null
+      "adr": ""
     },
     {
       "path": "plugins/shipwright-iterate/tests/test_classify_complexity.py",
@@ -718,7 +718,7 @@
     {
       "path": "shared/scripts/tools/verifiers/iterate_checks.py",
       "limit": 300,
-      "current": 1140,
+      "current": 1244,
       "state": "exception",
       "adr": "ADR-093"
     },

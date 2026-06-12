@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-12 18:28 UTC | Session: 102bfc28-6965-4798-b0da-a8c453eee3f1 | Run: iterate-2026-06-12-marketplace-python3-stub-probe
+> Updated: 2026-06-12 19:16 UTC | Session: e40d1082-2df5-473b-853e-641d52bef467 | Run: iterate-2026-06-12-cross-component-gate
 
-## Recent Changes (161 iterations)
+## Recent Changes (162 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | cross_component risk flag forces an integration-coverage test at medium+, enforced non-dodgeably by the F11 verifier recomputing the flag from the diff. Closes the composition axis of the empirical machinery. | 0/0 |  | tooling | 2026-06-12 |
 | bug | Windows: test-run the python3 probe so the Microsoft Store stub does not abort the marketplace cache sync | 3284/3284 |  | tooling | 2026-06-12 |
 | change | End-to-end parallel-merge cascade integration test (3 concurrent iterates + a 3-sub campaign): proves curated-union + churn-regenerate + JSONL-union resolve together with no cascade. | 0/0 |  | tooling | 2026-06-12 |
 | change | Delivery-Watch: F11 confirms the PR actually merges green before done (no shoot-and-forget); watch_pr_delivery.py + F2 budget-lint-before-push rule. | 0/0 |  | tooling | 2026-06-12 |
@@ -168,7 +169,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-12 | Unit: 3284/3284 | Smoke: not_run | (iterate)
+Last run: 2026-06-12 | Unit: 3290/3290 | Integration: 6/6 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
