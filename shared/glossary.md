@@ -19,6 +19,20 @@
   pre-commit hook (this iterate, A.defense), the Stop hook
   (A.foundation), and the Group H detective audit (A.review) all
   enforce it at different gates.
+- **LOC-as-Router** — The principle that a line-count crossing
+  ROUTES (escalates) a file to the reducibility reviewer instead of
+  ruling it bloated. LOC is the cheap trigger; the reviewer is the
+  verdict. No concrete reducibility finding → PASS. See
+  `shared/reducibility-catalog.md`.
+- **Reducibility-Catalog** — The closed, falsifiable catalog the
+  reviewer blocks on: **D** duplication · **A** needless-abstraction ·
+  **X** dead-code · **C** control-flow · **S** data-shape ·
+  **M** comment-restating-code · **P** dependency-footprint ·
+  **T** test-repetition. Each finding cites what-to-remove +
+  est-LOC-saved + keeps-tests-green; guardrails G1–G6 void any finding
+  on long-but-coherent / coverage-weakening / generated code. SSoT:
+  `shared/reducibility-catalog.md`; idiom-map:
+  `shared/profiles/reducibility-idioms.json`.
 - **Baseline** — Synonym for **Allowlist**. The file is named
   `…_baseline.json` for historical reasons (adoption-time
   "this-is-where-we-started" frozen state).

@@ -1,12 +1,13 @@
 # Project Activity Dashboard
-> Updated: 2026-06-12 20:49 UTC | Session: bcb718a2-6a5f-41b1-ba60-3122da90f99b | Run: iterate-2026-06-12-repo-root-resolver-relocate
+> Updated: 2026-06-12 21:06 UTC | Session: e1fc62f9-1857-4893-ab3d-eda5f6ffcb8f | Run: iterate-2026-06-12-reducibility-gate
 
-## Recent Changes (166 iterations)
+## Recent Changes (167 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
 | bug | Coerce explicit-null affected_frs/new_frs (and tests/review) in WorkEvent.from_dict | 697/697 |  | compliance | 2026-06-12 |
 | change | Relocate resolve_main_repo_root from lib/events_log.py to lib/repo_root.py with a lazy back-compat re-export; migrate net-zero consumers; keep the two grandfathered consumers (iterate_checks, group_f) on the re-export to avoid ratcheting bloat. | 0/0 |  | tooling | 2026-06-12 |
+| change | Intelligent bloat gate: LOC-as-router -> falsifiable reducibility reviewer (closed catalog D/A/X/C/S/M/P/T + guardrails G1-G6); shared SSoT catalog + per-language idiom-map + reviewer dimensions across 3 surfaces + drift-protection test. | 0/0 |  | tooling | 2026-06-12 |
 | change | W2 phase-quality check SKIPs on an unresolvable run_id (mirror S2/S3); fixes the audit-context false-FAIL/false-PASS when no iterate run resolves; also fixes a latent empty-run_id crash | 3289/3289 |  | compliance | 2026-06-12 |
 | change | Clear bloat Group H1/H2: tighten 51 stale baseline entries to actual LOC + grandfather 8 oversize files (reducibility-catalog dogfood); follow-ups trg-af476d87 + trg-b9acb195. | 0/0 |  | tooling | 2026-06-12 |
 | change | cross_component risk flag forces an integration-coverage test at medium+, enforced non-dodgeably by the F11 verifier recomputing the flag from the diff. Closes the composition axis of the empirical machinery. | 0/0 |  | tooling | 2026-06-12 |
@@ -173,7 +174,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-12 | Unit: 3290/3302 | Integration: 46/46 | Smoke: not_run | (iterate)
+Last run: 2026-06-12 | Unit: 3319/3319 | Integration: 84/84 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

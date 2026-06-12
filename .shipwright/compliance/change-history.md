@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-06-12T20:49:23.721279+00:00
-Total commits: 979
+Generated: 2026-06-12T21:06:53.297329+00:00
+Total commits: 980
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 280
-    "feat" : 269
+    "feat" : 270
     "chore" : 215
     "docs" : 123
     "refactor" : 53
@@ -305,10 +305,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 269 commits
+### Features (feat) — 270 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-12 | bloat | reducibility reviewer — LOC becomes a router, not the verdict | f9d32fbdb21c |
 | 2026-06-12 | iterate | cross_component risk flag + non-dodgeable integration-coverage gate (#218) | bf8cd8dd171f |
 | 2026-06-12 | iterate | F11 Delivery-Watch — delivered = merged + green (no shoot-and-forget) (#214) | aeb8932746e2 |
 | 2026-06-12 | iterate | compact agent-doc entries + impact-aware routing SSoT (#206) | 7643bad51c5f |
@@ -931,7 +932,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-12 | lib | relocate resolve_main_repo_root to lib/repo_root.py with back-compat re-export | 1aa59898e499 |
+| 2026-06-12 | lib | relocate resolve_main_repo_root to lib/repo_root.py with back-compat re-export (#221) | 23dbc8403825 |
 | 2026-06-12 | agent-docs | compact backlog to one-line pointers + retire convention-routing fallback (#211) | 16138390ad5f |
 | 2026-06-12 | hooks | consolidate project detection onto one canonical predicate (#209) | 62eb99264b7f |
 | 2026-05-26 | run | split orchestrator.py (983 LOC) into orchestrator_pkg/ (Campaign B5) (#102) | 46031f3a9ab9 |
@@ -1048,7 +1049,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 979 |
+| Total commits | 980 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 979 |
+| Human-authored commits | 980 |
 

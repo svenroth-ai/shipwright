@@ -53,6 +53,18 @@ fences. The object MUST have exactly these keys:
    tests → `block` and ask the author to split into smaller, tested PRs.
 6. Test quality matters: if tests would pass even against a broken implementation, call it
    out — `comment` if minor, `block` if the change is risky and effectively untested.
+7. Reducibility (the intelligent bloat gate — LOC is a router, not a verdict). Length alone
+   is NEVER a finding. Flag code only on a concrete, falsifiable reduction from this closed
+   catalog, citing the code: D duplication · A needless-abstraction · X dead-code ·
+   C control-flow verbosity · S data-shape (dict-shuffling vs a type) · M comment-restating-
+   code · P dependency-footprint · T test-repetition. Every reducibility item MUST cite all
+   three: what to remove, est-LOC-saved (a number — if ~0, drop it), and that tests stay
+   green. Guardrails (a finding tripping any is void): long-but-coherent code is fine (G1);
+   clarity over cleverness (G2); never propose weakening coverage/validation/types (G3); no
+   merge-stability churn (G4); justified duplication is exempt (G5); generated/vendored is
+   exempt (G6). A contract-complete reducibility finding is `block` only when est-LOC-saved
+   is material (≈15+ LOC or a whole needless abstraction); otherwise `comment`. No concrete
+   finding → this dimension PASSES — say nothing.
 
 When unsure between `comment` and `block`, prefer `block` for security/sensitive-path/
 correctness concerns and `comment` for everything else. Be specific and concise; never

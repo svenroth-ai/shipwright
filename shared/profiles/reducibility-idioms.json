@@ -1,0 +1,191 @@
+{
+  "name": "reducibility-idioms",
+  "description": "Per-language idiom-map for the reducibility reviewer. Maps each closed-catalog code (D/A/X/C/S/M/P/T) to recognizable idioms the reviewer should propose, plus a long-but-coherent exemption note (G1) per code/language. Reviewer context only — not runtime-parsed by product code. SSoT prose lives in shared/reducibility-catalog.md.",
+  "version": "0.1.0",
+  "catalog_codes": {
+    "D": "duplication",
+    "A": "needless-abstraction",
+    "X": "dead-code",
+    "C": "control-flow",
+    "S": "data-shape",
+    "M": "comment-restating-code",
+    "P": "dependency-footprint",
+    "T": "test-repetition"
+  },
+  "languages": {
+    "stack_agnostic": {
+      "D": {
+        "idioms": [
+          "3+ near-identical blocks → one named helper",
+          "copy-pasted error-handling → a shared wrapper/guard"
+        ],
+        "long_but_coherent": "Two copies, or copies in two genuinely-decoupled domains, are not a D-finding (G5)."
+      },
+      "A": {
+        "idioms": [
+          "single-caller wrapper / factory / indirection → inline it",
+          "options-flag with one variant → drop the flag"
+        ],
+        "long_but_coherent": "An abstraction with 2+ real callers or a documented extension point is justified, not needless."
+      },
+      "X": {
+        "idioms": [
+          "unreachable branch / unused symbol → delete",
+          "commented-out code block → delete (history is in git)"
+        ],
+        "long_but_coherent": "A deliberately-unused public API hook with a why-comment is not dead code."
+      },
+      "C": {
+        "idioms": [
+          "deep nesting → guard clause + early return",
+          "long if/elif ladder dispatching on a key → table/map dispatch"
+        ],
+        "long_but_coherent": "Sequential straight-line steps that each read clearly are coherent, not verbose (G2)."
+      },
+      "S": {
+        "idioms": [
+          "same positional-arg bag threaded through many calls → one record/type",
+          "parallel arrays kept in sync by hand → one array of records"
+        ],
+        "long_but_coherent": "A one-off two-field tuple at a single call site does not need a named type."
+      },
+      "M": {
+        "idioms": [
+          "comment paraphrasing the next line → delete",
+          "redundant section banners around self-evident code → delete"
+        ],
+        "long_but_coherent": "Why-comments (rationale, gotchas, links to issues/ADRs) are load-bearing — never an M-finding."
+      },
+      "P": {
+        "idioms": [
+          "new dependency for a few lines the stdlib already covers → drop it",
+          "heavyweight lib used for one trivial helper → inline the helper"
+        ],
+        "long_but_coherent": "A dependency that replaces a large, error-prone hand-roll is a net win, not footprint."
+      },
+      "T": {
+        "idioms": [
+          "copy-pasted test bodies differing only in data → parametrize / table-driven",
+          "repeated setup across tests → a fixture"
+        ],
+        "long_but_coherent": "Parametrizing must keep every asserted case; never collapse cases to shrink the file (G3)."
+      }
+    },
+    "python": {
+      "D": {
+        "idioms": [
+          "repeated try/except subprocess blocks → one helper (see group_g._git_* pattern)",
+          "duplicated dict/JSON parsing → a shared loader returning a typed value"
+        ],
+        "long_but_coherent": "Per-check duplicated git plumbing kept for crash-isolation is justified (G5)."
+      },
+      "A": {
+        "idioms": [
+          "class with one method + __init__ → a module-level function",
+          "single-subclass ABC / Protocol → drop the base"
+        ],
+        "long_but_coherent": "Dataclasses, Protocols with multiple implementers, and ABCs with real subclasses are justified."
+      },
+      "X": {
+        "idioms": [
+          "unused import / param flagged by ruff F401/F841 → delete",
+          "`if False:` / unreachable after return → delete"
+        ],
+        "long_but_coherent": "`from __future__ import annotations` and re-exports in __init__ are not dead."
+      },
+      "C": {
+        "idioms": [
+          "for-append loop → list/dict/set comprehension when it stays readable",
+          "nested if → early `return`/`continue`; `x if c else y` for trivial branches"
+        ],
+        "long_but_coherent": "A comprehension with multiple clauses that needs re-reading should stay a loop (G2)."
+      },
+      "S": {
+        "idioms": [
+          "functions passing the same 4+ kwargs around → a @dataclass(frozen=True)",
+          "dict-with-fixed-keys threaded through code → a dataclass or NamedTuple"
+        ],
+        "long_but_coherent": "A short-lived internal dict at one boundary does not need a class."
+      },
+      "M": {
+        "idioms": [
+          "`# returns the result` over `return result` → delete",
+          "docstring restating the signature with no semantics → trim"
+        ],
+        "long_but_coherent": "Module/function docstrings explaining intent and edge cases stay."
+      },
+      "P": {
+        "idioms": [
+          "`requests` for a single GET where `urllib`/an existing client works → drop",
+          "a date lib for one strftime → use `datetime`"
+        ],
+        "long_but_coherent": "PyYAML/`tomllib` for real config parsing is justified; don't hand-roll a parser."
+      },
+      "T": {
+        "idioms": [
+          "N near-identical test funcs → `@pytest.mark.parametrize`",
+          "repeated arrange blocks → a `@pytest.fixture`"
+        ],
+        "long_but_coherent": "Distinct behaviors deserve distinct named tests even if setup looks similar."
+      }
+    },
+    "typescript": {
+      "D": {
+        "idioms": [
+          "repeated fetch/error-mapping → a shared client helper",
+          "duplicated zod/validation shapes → one exported schema"
+        ],
+        "long_but_coherent": "Server vs client copies that must not couple are justified duplication (G5)."
+      },
+      "A": {
+        "idioms": [
+          "single-use HOC / wrapper component → inline the markup",
+          "factory returning one concrete type → a plain function/const"
+        ],
+        "long_but_coherent": "A shared UI primitive with several consumers is justified, not needless."
+      },
+      "X": {
+        "idioms": [
+          "unused export / import / prop flagged by tsc/oxlint → delete",
+          "dead feature-flag branch after rollout → delete"
+        ],
+        "long_but_coherent": "Barrel re-exports and public package entry points are not dead code."
+      },
+      "C": {
+        "idioms": [
+          "nested ternaries / if-chains → early return or a lookup object",
+          "imperative map+push loop → `.map`/`.filter`/`.reduce` when readable"
+        ],
+        "long_but_coherent": "A `.reduce` that obscures intent should stay an explicit loop (G2)."
+      },
+      "S": {
+        "idioms": [
+          "many positional args → a single typed options object",
+          "stringly-typed unions repeated everywhere → one `type`/`enum`"
+        ],
+        "long_but_coherent": "A two-prop inline object literal at one call site needs no named interface."
+      },
+      "M": {
+        "idioms": [
+          "`// set loading true` over `setLoading(true)` → delete",
+          "JSDoc duplicating the TS types with no extra info → trim"
+        ],
+        "long_but_coherent": "JSDoc adding `@deprecated`, examples, or rationale is load-bearing."
+      },
+      "P": {
+        "idioms": [
+          "lodash for `Array.prototype` methods that exist natively → drop",
+          "a date lib for one format → `Intl.DateTimeFormat`"
+        ],
+        "long_but_coherent": "A focused, tree-shakeable dep replacing fragile hand-rolled logic is justified."
+      },
+      "T": {
+        "idioms": [
+          "copy-pasted `it()` blocks differing only in input → `it.each`/`test.each`",
+          "repeated render setup → a test helper / `beforeEach`"
+        ],
+        "long_but_coherent": "Keep every asserted case when converting to `.each`; don't drop cases (G3)."
+      }
+    }
+  }
+}

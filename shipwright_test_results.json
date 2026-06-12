@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-12-repo-root-resolver-relocate",
+    "run_id": "iterate-2026-06-12-reducibility-gate",
     "date": "2026-06-12",
     "unit": {
       "status": "passed",
-      "passed": 3290,
-      "total": 3302
+      "passed": 3319,
+      "total": 3319
     },
     "integration": {
       "status": "passed",
-      "passed": 46,
-      "total": 46
+      "passed": 84,
+      "total": 84
     },
     "pgtap": {
       "status": "not_run",
@@ -18,12 +18,12 @@
       "total": 0
     },
     "e2e": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "design_fidelity": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
@@ -31,62 +31,75 @@
       "status": "not_run"
     },
     "degraded": [
-      "Worktree setup emitted a pre-existing 'sweep-outbox invalid' warning (triage id trg-671bb0a2 status-append dropped) — unrelated to this iterate's diff; triage-data condition only."
+      "F0.5 surface=none (justified): deliverables are reviewer-prompt + reference/idiom-map content with no runnable UI/server/CLI surface; the idiom-map JSON is reviewer context validated by the drift test, not runtime-parsed by product code.",
+      "Pre-existing background noise unrelated to this iterate: sweep-outbox warning (trg-671bb0a2 status has no append) at worktree setup, and a corrupt triage.jsonl line warning in the shared suite (test_triage_storage) \u2014 both fail-soft, not introduced here."
     ],
-    "surface_verification": {
-      "surface": "none",
-      "justification": "Pure internal Python shared-lib relocation: resolve_main_repo_root moved from lib/events_log.py to its thematic home lib/repo_root.py plus a lazy back-compat re-export; net-zero consumer imports updated. No web/CLI/API/store/message-contract surface and no UI-consumed code (the WebUI is a separate repo and consumes none of these CLI/hook-side Python functions). Verified by the full shared unit/integration suite (3290 passed) + the cross-plugin compliance suite (46 passed, exercising the load_shared_lib re-export path) + import-cycle (all 4 first-import orders) and back-compat equivalence probes."
-    },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "resolve_main_repo_root() in lib.repo_root: plain repo -> repo root; linked worktree -> MAIN root; str arg accepted",
+          "behavior": "AC1 SSoT catalog defines router/8-codes/contract/G1-G6/two-goals",
           "disposition": "tested",
-          "evidence": "test_repo_root.py::test_main_repo_root_plain_repo / _from_worktree / _str_project_root_accepted PASSED"
+          "evidence": "shared/tests/test_reducibility_gate.py::test_catalog_* (incl. test_catalog_encodes_behavioral_rules) PASSED"
         },
         {
-          "behavior": "resolve_main_repo_root() fail-soft contract: non-git -> None silently (0 warnings); broken git -> warn+None (exactly 1); GIT_DIR/GIT_COMMON_DIR/GIT_WORK_TREE stripped",
+          "behavior": "AC2 idiom-map valid, 3 langs x 8 codes, idioms+exemption per cell",
           "disposition": "tested",
-          "evidence": "test_repo_root.py::test_main_repo_root_non_git_returns_none_silently / _git_unavailable_warns_then_none / _git_discovery_env_overrides_are_stripped PASSED"
+          "evidence": "test_idiom_map_is_valid_json + _has_all_languages + _covers_all_codes_per_language PASSED"
         },
         {
-          "behavior": "UTF-8/F27 mojibake guard preserved after the move (accented main+worktree paths resolve to an existing root; phantom common-dir -> None+warn)",
+          "behavior": "AC3 code-reviewer reducibility section is separate from the parity-locked Bloat Checklist (no ratchet)",
           "disposition": "tested",
-          "evidence": "test_git_tools_utf8.py::test_resolve_main_root_from_accented_main / _from_accented_worktree / _failsoft_on_nonexistent_common_dir PASSED (import now from lib.repo_root)"
+          "evidence": "test_code_reviewer_has_reducibility_section + _is_separate_from_bloat_checklist PASSED; anti_ratchet_check exit 0"
         },
         {
-          "behavior": "Back-compat: `from lib.events_log import resolve_main_repo_root` still imports and returns the same answer as lib.repo_root (lazy shim, no import cycle in any order)",
+          "behavior": "AC4 pr_reviewer (B4.5 CI) self-contained rule: 8 codes inlined by keyword, G1, est-LOC contract, numeric block threshold",
           "disposition": "tested",
-          "evidence": "test_events_log.py::test_resolve_main_repo_root_reexported_from_events_log PASSED"
+          "evidence": "test_pr_reviewer_has_self_contained_reducibility_rule PASSED (code+keyword adjacency + numeric threshold)"
         },
         {
-          "behavior": "Decision-drop SSoT: worktree-reachable consumers still resolve the drop dir via resolve_main_repo_root; the literal-string grep + raw-join coverage still hold after the migrated/reverted imports",
+          "behavior": "AC5 iterate_reviewer advisory reducibility/over-production focus",
           "disposition": "tested",
-          "evidence": "test_decision_drop_ssot.py (3 tests: worktree_reachable_use_resolver / no_unaccounted_raw_joins / allowlist_not_stale) PASSED"
+          "evidence": "test_iterate_reviewer_has_reducibility_focus PASSED"
         },
         {
-          "behavior": "plugin-sync Stop hook routes the durable triage append to the MAIN repo via the migrated lib.repo_root import (worktree -> main outbox; non-git -> fallback)",
+          "behavior": "AC6 glossary defines Reducibility-Catalog + LOC-as-Router, stays <=300 LOC",
           "disposition": "tested",
-          "evidence": "test_plugin_sync_reminder_on_stop.py::test_triage_item_written_to_main_repo_from_worktree + _emitted_non_git_fallback PASSED"
+          "evidence": "test_glossary_defines_reducibility_terms + test_glossary_under_loc_limit PASSED"
         },
         {
-          "behavior": "INTEGRATION: compliance Group-F detective resolves the main-repo decision-drops dir through the events_log re-export under the load_shared_lib cross-plugin bootstrap (shim composes with the bootstrap chain)",
+          "behavior": "AC6 guide narrative note (reducibility = qualitative complement)",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "reason": "docs/guide.md structural doc-tests already run in the full shared suite; the added prose is narrative, asserting its exact wording would be a brittle snapshot."
+        },
+        {
+          "behavior": "AC7 reviewer-parity + glossary-defense regressions stay green after edits",
           "disposition": "tested",
-          "category": "integration",
-          "evidence": "plugins/shipwright-compliance/tests/test_audit_groups_c_f.py (group_f reconcile_architecture) PASSED within the 46-test compliance run"
+          "evidence": "test_reviewer_bloat_checklist_parity (6) + test_bloat_defense_artifacts (24) PASSED in the 3319-green suite"
+        },
+        {
+          "behavior": "AC8 dogfood: catalog applied to this diff yields 0 forced churn",
+          "disposition": "tested",
+          "evidence": "live Step-8 code-reviewer (opus) verdict: long-but-coherent (G1) + justified-duplication (G5); 3 LOW findings fixed, 0 churn"
         }
       ],
       "counts": {
-        "testable": 7,
-        "tested": 7,
-        "untestable": 0,
+        "testable": 8,
+        "tested": 8,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 7,
-        "covered_acs": 7
+        "acs": 8,
+        "covered_acs": 8
       }
+    },
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "No runnable UI/server/CLI surface: deliverables are reviewer-prompt + reference/idiom-map content. The idiom-map JSON is reviewer context validated by the drift test (shared/tests/test_reducibility_gate.py), not runtime-parsed by product code. Backend-affects-frontend rule N/A (no API routes / store mutations / SSE / message contracts touched)."
     }
   }
 }
