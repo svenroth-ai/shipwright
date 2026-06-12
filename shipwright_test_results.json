@@ -1,90 +1,56 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-12-config-bom-integrate-tests",
+    "run_id": "iterate-2026-06-12-compress-agent-doc-backlog",
     "date": "2026-06-12",
-    "unit": {
-      "status": "passed",
-      "passed": 19,
-      "total": 19,
-      "scope": "affected modules (config readers + integrate_main families); full shared/tests run = 3223 passed / 12 skipped / 1 pre-existing unrelated failure — see degraded"
-    },
-    "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "e2e": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "design_fidelity": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "smoke": {
-      "status": "not_run"
-    },
+    "unit": { "status": "passed", "passed": 4279, "total": 4279 },
+    "integration": { "status": "not_run", "passed": 0, "total": 0 },
+    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
+    "e2e": { "status": "not_run", "passed": 0, "total": 0 },
+    "design_fidelity": { "status": "not_run", "passed": 0, "total": 0 },
+    "smoke": { "status": "not_run" },
     "degraded": [
-      {
-        "condition": "full-suite-preexisting-failure",
-        "detail": "shared/tests test_architecture_md_reflects_arch_impact::test_every_arch_impact_drop_has_architecture_md_entry fails LOCALLY on 3 sibling-iterate gitignored decision drops (arch-drift-test-scope, canonical-project-predicate, triage-gc-union-residence) absent from architecture.md/conventions.md. Resolved from the MAIN repo root; the dir is fully gitignored so a clean CI checkout sees none -> CI-invisible. Unrelated to this diff (config.py + 4 test files)."
-      }
+      "test_architecture_md_reflects_arch_impact.py::test_every_arch_impact_drop_has_architecture_md_entry fails locally on 3 decision-drops written by CONCURRENT sibling worktrees (iterate-2026-06-12-arch-drift-test-scope / -canonical-project-predicate / -triage-gc-union-residence) into the shared main-repo decision-drops dir. Pre-existing cross-worktree contamination: fails identically against origin/main HEAD docs and skips in CI (gitignored drops absent). NOT caused by this change — this iterate's own run_id-scoped F11 gate passes and all 25 pre-existing real-impact drops resolve correctly with the fallback retired."
     ],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "read_config tolerates a UTF-8-BOM config (utf-8-sig strips the leading U+FEFF)",
+          "behavior": "After retiring _LEGACY_CONVENTION_DOC, a convention run_id documented ONLY in architecture.md is no longer counted as documented (oracle + F11 gate + Group-F detective)",
           "disposition": "tested",
-          "evidence": "test_utf8_config_readers.py::test_config_read_config_tolerates_utf8_bom PASSED; falsification probe: plain utf-8 raises 'Unexpected UTF-8 BOM'"
+          "evidence": "test_architecture_doc.py::test_impact_documented_convention_only_in_architecture_is_not_documented + ::test_missing_entries_convention_only_in_arch_doc_is_missing + test_verify_iterate_finalization.py::test_architecture_documented_convention_only_in_arch_fails_post_retirement + test_audit_groups_c_f.py::test_convention_only_in_architecture_fails_post_retirement PASSED"
         },
         {
-          "behavior": "read_config still parses non-BOM / CJK configs (no regression)",
+          "behavior": "Canonical route preserved: a convention run_id in conventions.md ## Convention Updates still satisfies the gate; component/data-flow still route to architecture.md",
           "disposition": "tested",
-          "evidence": "test_utf8_config_readers.py::test_config_read_config_parses_cjk + test_readers_pass_explicit_encoding_to_read_text PASSED"
+          "evidence": "test_architecture_doc.py::test_impact_documented_convention_in_conventions_doc + ::test_impact_documented_component_not_satisfied_by_conventions_doc; missing_entries over the real main-repo drops resolves all 25 pre-existing real-impact run_ids to their target docs PASSED"
         },
         {
-          "behavior": "integrate() -> followup_commit_failed: merge intact, snapshot left staged, no abort",
+          "behavior": "Entry-budget gate at the lowered cutoff (2026-05-01) flags post-cutoff over-budget dated entries, exempts pre-cutoff/undated, and all 3 compacted sections are within budget",
           "disposition": "tested",
-          "evidence": "test_integrate_main_commit_failures.py::test_integrate_returns_followup_commit_failed_when_followup_blocked PASSED"
+          "evidence": "test_agent_doc_entry_rules.py (real-file budget across all 3 sections + cutoff-relative hermetic test_over_budget_dated_entry_is_flagged / test_grandfathered_entries_exempt) 11 passed"
         },
         {
-          "behavior": "CLI maps followup_commit_failed -> exit 8 (distinct from merge-commit exit 7)",
+          "behavior": "Load-bearing E2E learning retains both pinned phrases in conventions.md after compaction",
           "disposition": "tested",
-          "evidence": "test_integrate_main_commit_failures.py::test_main_cli_reports_followup_commit_failed_exit_8 PASSED"
+          "evidence": "plugins/shipwright-iterate/tests/test_skill_e2e_gate_consistency.py::test_conventions_md_carries_e2e_learning PASSED (asserts 'spec-only authorship counts as no test' AND 'Backend-affects-Frontend')"
         },
         {
-          "behavior": "integrate() -> merge_commit_failed_abort_incomplete when merge --abort double-faults (still mid-merge)",
+          "behavior": "Compacted docs + new verbatim archive do not trip the artifact-path-canon Layer-1 lint",
           "disposition": "tested",
-          "evidence": "test_integrate_main_commit_failures.py::test_integrate_returns_abort_incomplete_when_merge_abort_double_faults PASSED"
+          "evidence": "shared/tests/test_artifact_path_canon.py 4 passed (re-run after the archive + conventions.md/architecture.md edits)"
         }
       ],
-      "counts": {
-        "testable": 5,
-        "tested": 5,
-        "untestable": 0,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 5,
-        "covered_acs": 5
-      }
+      "counts": { "testable": 5, "tested": 5, "untestable": 0, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 0, "covered_acs": 0 }
     },
     "surface_verification": {
       "surface": "none",
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-12-config-bom-integrate-tests/surface_verification.json",
-      "timestamp": "2026-06-12T11:49:07.676Z",
-      "justification": "No startable web/CLI/API surface: a shared-library config-reader encoding alignment (read_config -> utf-8-sig) + integrate_main failure-branch unit tests + a test-module split. The touched config-JSON IO boundary is exercised empirically by the new BOM round-trip regression test (test_config_read_config_tolerates_utf8_bom), falsification-probed (plain utf-8 raises 'Unexpected UTF-8 BOM')."
+      "evidence_path": ".shipwright/runs/iterate-2026-06-12-compress-agent-doc-backlog/surface_verification.json",
+      "timestamp": "2026-06-12T12:01:27.713Z",
+      "justification": "Docs/tooling only: compacts the always-loaded agent-doc backlog to one-line pointers, retires a dead transitional fallback branch in architecture_doc.py, and lowers a test-gate date constant. No runtime/UI/API/CLI surface; verified by unit tests (architecture_doc, verifier, budget gate, F5 detective) — all green."
     }
   }
 }

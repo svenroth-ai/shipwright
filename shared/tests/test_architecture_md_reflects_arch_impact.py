@@ -128,11 +128,12 @@ def test_every_arch_impact_drop_has_architecture_md_entry():
     must appear in its TARGET doc — routed via the shared oracle
     (``lib.architecture_doc.IMPACT_TARGETS``): ``convention`` →
     ``conventions.md ## Convention Updates``; ``component`` / ``data-flow`` →
-    ``architecture.md ## Architecture Updates`` (convention keeps a transitional
-    fallback to architecture.md for the un-migrated backlog). Without this, an
-    iterate can pass the F3 architecture-impact flag without documenting the
-    state change — silent drift. Delegating to the oracle keeps this test, the
-    F11 gate, and the Group-F detective from diverging."""
+    ``architecture.md ## Architecture Updates`` (the transitional
+    convention→architecture.md fallback was retired in
+    iterate-2026-06-12-compress-agent-doc-backlog once the backlog was migrated).
+    Without this, an iterate can pass the F3 architecture-impact flag without
+    documenting the state change — silent drift. Delegating to the oracle keeps
+    this test, the F11 gate, and the Group-F detective from diverging."""
     if not _arch_impact_drops():
         pytest.skip("no architecture-impact decision-drops to verify")
 
