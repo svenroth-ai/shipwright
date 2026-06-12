@@ -1,14 +1,14 @@
 # Commit Change Log
 
 Generated: 2026-06-12T20:22:50.182497+00:00
-Total commits: 976
+Total commits: 978
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 279
-    "feat" : 268
+    "fix" : 280
+    "feat" : 269
     "chore" : 215
     "docs" : 123
     "refactor" : 52
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 279 commits
+### Fixes (fix) — 280 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-12 | compliance | coerce explicit-null affected_frs/new_frs in WorkEvent.from_dict | c58d2d68a374 |
 | 2026-06-12 | compliance | W2 SKIPs on unresolvable run_id, mirroring the S2/S3 guard (#217) | 768c2a9c625a |
 | 2026-06-12 | install | test-run python3 probe so Windows MS Store stub doesn't abort marketplace sync (#216) | 2da047b7c24a |
 | 2026-06-12 | merge | merge=union for curated agent-docs (close the structural gap) (#213) | 9d2239c6b033 |
@@ -304,10 +305,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 268 commits
+### Features (feat) — 269 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-12 | iterate | cross_component risk flag + non-dodgeable integration-coverage gate (#218) | bf8cd8dd171f |
 | 2026-06-12 | iterate | F11 Delivery-Watch — delivered = merged + green (no shoot-and-forget) (#214) | aeb8932746e2 |
 | 2026-06-12 | iterate | compact agent-doc entries + impact-aware routing SSoT (#206) | 7643bad51c5f |
 | 2026-06-11 | iterate | arm GitHub-native auto-merge in F11 for iterate/* PRs (B4.5 Phase 3) (#197) | 5beaa92f4b37 |
@@ -1045,7 +1047,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 976 |
+| Total commits | 978 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 976 |
+| Human-authored commits | 978 |
 
