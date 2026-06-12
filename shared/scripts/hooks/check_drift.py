@@ -311,42 +311,14 @@ def _find_claude_md_files(root: str) -> list[str]:
 # AC-5 of iterate-2026-05-14-triage-producers-2: triage emission
 # ---------------------------------------------------------------------------
 
-
-def _canonical_anchor(anchor: str) -> str:
-    """Canonicalize a filesystem path for use as part of a triage dedup key.
-
-    Content-drift findings carry absolute paths, and ``os.path.abspath``
-    does NOT canonicalize the Windows drive-letter case — the same file
-    resolves as ``c:\\…`` on one run and ``C:\\…`` on another. A raw path
-    therefore yields two distinct dedup keys, the idempotent append misses,
-    and a SECOND triage item is created for one logical drift.
-
-    ``os.path.realpath`` resolves symlinks + ``..`` and ``os.path.normcase``
-    canonicalizes case + separators on Windows (a no-op on POSIX). Together
-    they give exactly one stable key per logical file. Only the dedup key
-    is canonicalized — the human-readable title/detail keep the
-    original-case path.
-
-    ``realpath`` rarely raises — plain non-existent paths resolve fine;
-    the ``except`` guards exotic inputs (embedded NULs, invalid Windows
-    path characters) so emission stays best-effort.
-    """
-    try:
-        return os.path.normcase(os.path.realpath(anchor))
-    except (OSError, ValueError):  # defensive only
-        return os.path.normcase(anchor)
-
-
-def _content_anchor(finding: str) -> str:
-    """Extract + canonicalize the stable path anchor of a content finding.
-
-    Every content finding is shaped ``<path>: <human description>`` per
-    :func:`check_structure_drift` / :func:`check_command_drift`; the path
-    before the first ``': '`` is the anchor. Canonicalizing it here means
-    the append loop and the resolve pass agree on the exact dedup key.
-    """
-    raw = finding.split(": ", 1)[0].strip() or "CLAUDE.md"
-    return _canonical_anchor(raw)
+# F7 (project guard) + F8 (repo-relative dedup anchor) live in lib.drift_anchor
+# so they can be unit-tested and reused independently. Re-exported under their
+# historical ``_``-private names here.
+from lib.drift_anchor import (  # noqa: E402, F401  (re-exported under historical names)
+    canonical_anchor as _canonical_anchor,
+    content_anchor as _content_anchor,
+    is_shipwright_project as _is_shipwright_project,
+)
 
 
 def _emit_drift_to_triage(
@@ -360,9 +332,14 @@ def _emit_drift_to_triage(
     ``kind="maintenance"``, dedup key ``f"drift:{file}:{kind}"`` with
     ``kind ∈ {"timestamp", "content"}``. ``match_commit=False`` +
     ``window_seconds=None`` → a drift finding stays as ONE item until it
-    resolves / is dismissed. The ``content`` path is canonicalized via
-    :func:`_canonical_anchor` so drive-letter casing can't split one drift
-    (Bug 1).
+    resolves / is dismissed. The ``content`` path is canonicalized **repo-relative**
+    via :func:`_canonical_anchor` so neither drive-letter casing (Bug 1) nor an
+    absolute tree prefix (F8) can split one logical drift.
+
+    **F7 project guard:** no-ops (returns 0, writes nothing) unless
+    ``project_root`` is a Shipwright-managed project — without it, opening a
+    foreign repo with a stale ``CLAUDE.md`` wrote ``.shipwright/triage.jsonl``
+    into a tree the framework isn't installed in.
 
     **Resolve pass (Bug 2):** after appending, every still-open
     (``status == "triage"``) ``source="drift"`` item THIS detector owns (key
@@ -372,6 +349,9 @@ def _emit_drift_to_triage(
     Best-effort: per-item errors logged + swallowed (the SessionStart hook MUST
     exit 0). Returns the count of NEW items appended.
     """
+    if not _is_shipwright_project(project_root):
+        # F7: never write triage state into a non-Shipwright tree.
+        return 0
     try:
         scripts_dir = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), os.pardir,
@@ -401,7 +381,7 @@ def _emit_drift_to_triage(
         f"drift:{fname}:timestamp" for fname in timestamp_drifted
     }
     current_keys |= {
-        f"drift:{_content_anchor(f)}:content" for f in content_findings
+        f"drift:{_content_anchor(f, project_root)}:content" for f in content_findings
     }
 
     appended = 0
@@ -446,7 +426,7 @@ def _emit_drift_to_triage(
                 kind="maintenance",
                 title=title,
                 detail=finding,
-                dedup_key=f"drift:{_content_anchor(finding)}:content",
+                dedup_key=f"drift:{_content_anchor(finding, project_root)}:content",
                 match_commit=False,
                 window_seconds=None,
                 to_outbox=to_outbox,

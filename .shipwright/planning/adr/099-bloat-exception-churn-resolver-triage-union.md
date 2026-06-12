@@ -55,3 +55,21 @@ Add `shared/scripts/tools/resolve_churn_conflicts.py` to
 `churn_merge.py` (190) and `integrate_main.py` (188) stay unbaselined under 300.
 Retire when the reconcile-IO helpers are split into their own module
 (tracked at the Re-Review-Date).
+
+## Amendment 2026-06-12 (WP6 / `iterate-2026-06-12-utf8-churn-merge`)
+
+The 2026-06-10 deep audit (F22, HIGH) found `_git` ran with no `encoding=`, so on
+the cp1252 dev locale `_union_conflict` round-tripped UTF-8 → cp1252 → UTF-8 and
+wrote mojibake (or crashed on a cp1252-undefined byte) back into the tracked
+`triage.jsonl` — the *exact* cross-project safety net this exception exists for.
+The fix adds strict `encoding="utf-8"` to `_git` plus a typed
+`_TriageNotUtf8Error` path (`_show` helper + `triage_invalid` translation) so a
+genuinely-corrupt legacy byte fails loudly instead of corrupting the log.
+
+**YAGNI/Chesterton re-affirmed:** every added line is needed today — it is the
+HIGH-severity correctness fix for the file's central invariant (byte-identical
+union). No speculative scope. `current` is bumped **326 → 357** deliberately in
+the same commit per the anti-ratchet block-body remediation #3. The
+Re-Review-Date plan (split the `_reconcile_*`/`_union_conflict` git-I/O helpers
+into `churn_resolve_io.py`, retiring this exception) stands and now has stronger
+motivation.

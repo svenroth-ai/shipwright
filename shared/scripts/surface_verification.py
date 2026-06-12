@@ -188,12 +188,11 @@ def run_with_retries(
     for attempt in range(1, retry_cap + 1):
         chunks.append(f"=== attempt {attempt}/{retry_cap}: {display} ===")
         try:
+            # WP8/F25: pin UTF-8 (errors="replace") on the runner decode — text=True
+            # alone raises in the reader thread on vitest ❯ / em-dash → F0.5 false-fail.
             result = subprocess.run(
-                cmd_list,
-                cwd=str(cwd),
-                capture_output=True,
-                text=True,
-                check=False,
+                cmd_list, cwd=str(cwd), capture_output=True,
+                text=True, encoding="utf-8", errors="replace", check=False,
             )
         except FileNotFoundError as exc:
             chunks.append(f"[orchestrator] command not found: {exc}")

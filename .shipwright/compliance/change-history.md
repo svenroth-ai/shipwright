@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-06-12T11:36:51.833620+00:00
-Total commits: 960
+Generated: 2026-06-12T12:06:22.426150+00:00
+Total commits: 964
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 268
+    "fix" : 272
     "feat" : 267
     "chore" : 214
     "docs" : 123
@@ -20,10 +20,14 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 268 commits
+### Fixes (fix) — 272 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-12 | utf8 | pin UTF-8 on git-reading subprocess decodes (deep-audit WP7) (#202) | 9e39bfb2b89d |
+| 2026-06-12 | hooks | canonical project-root/worktree resolvers + drift project guard (deep-audit WP5) (#200) | 99fd75ef3bc8 |
+| 2026-06-12 | iterate | UTF-8 config readers + errors=replace on F0.5 runner decode (deep-audit WP8) (#203) | d74530ffa79e |
+| 2026-06-12 | churn | UTF-8-strict git I/O + structured commit-failure handling (deep-audit WP6) (#201) | 1752b9f985ea |
 | 2026-06-12 | installer | POSIX shell-script fixes — set -e counters, uv PATH, alias, python resolver, dotenv parse (deep-audit WP10) (#205) | 1fd0c2e759f9 |
 | 2026-06-12 | triage | harden GC tokens/TOCTOU, control-char sanitizer, outbox CLI (deep-audit WP9) (#204) | 312e2429176f |
 | 2026-06-12 | compliance | make Group H + S4 FR-preservation gates fire (deep-audit WP3) (#199) | 6b16e8f42715 |
@@ -1029,7 +1033,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 960 |
+| Total commits | 964 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 960 |
+| Human-authored commits | 964 |
 

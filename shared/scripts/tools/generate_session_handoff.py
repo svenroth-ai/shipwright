@@ -208,21 +208,20 @@ def resolve_session_id(
 
 
 def get_git_info(project_root: Path) -> dict[str, str]:
-    """Get current git state."""
+    """Get current git state. WP7/F26: `encoding="utf-8",
+    errors="replace"` pins the decode so a non-ASCII commit subject is not
+    mojibaked into the tracked session_handoff.md under the cp1252 default.
+    """
     info = {}
+    enc = {"capture_output": True, "text": True, "encoding": "utf-8",
+           "errors": "replace", "cwd": project_root}
     try:
         info["branch"] = subprocess.run(
-            ["git", "branch", "--show-current"],
-            capture_output=True, text=True, cwd=project_root,
-        ).stdout.strip()
+            ["git", "branch", "--show-current"], **enc).stdout.strip()
         info["last_commit"] = subprocess.run(
-            ["git", "log", "-1", "--oneline"],
-            capture_output=True, text=True, cwd=project_root,
-        ).stdout.strip()
+            ["git", "log", "-1", "--oneline"], **enc).stdout.strip()
         info["uncommitted_changes"] = subprocess.run(
-            ["git", "status", "--porcelain"],
-            capture_output=True, text=True, cwd=project_root,
-        ).stdout.strip()
+            ["git", "status", "--porcelain"], **enc).stdout.strip()
     except FileNotFoundError:
         info["error"] = "git not found"
     return info

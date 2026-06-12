@@ -19,13 +19,16 @@ from pathlib import Path
 import pytest
 
 from hooks import aggregate_triage_on_stop, generate_handoff_on_stop, track_tool_calls
+from lib import drift_anchor
 from lib import phase_quality as pq
 from lib.project_root import _is_shipwright_project, is_shipwright_project, resolve_project_root
 
 
 # Every predicate that gates a hook on "is this a Shipwright project?".
 # Signature: ``(Path) -> bool``. They must all be the canonical predicate
-# (directly or via a thin delegating wrapper).
+# (directly or via a thin delegating wrapper). ``drift_anchor`` is the F7 drift
+# guard (PR #200): it delegates to ``project_root._is_shipwright_project`` (the
+# alias), so on the normal path it agrees with the canonical boundary too.
 PREDICATES = {
     "project_root": is_shipwright_project,
     "project_root._is_shipwright_project (alias)": _is_shipwright_project,
@@ -33,6 +36,7 @@ PREDICATES = {
     "track_tool_calls": track_tool_calls._is_shipwright_project,
     "aggregate_triage_on_stop": aggregate_triage_on_stop.is_shipwright_project,
     "generate_handoff_on_stop": generate_handoff_on_stop.is_shipwright_project,
+    "drift_anchor": drift_anchor.is_shipwright_project,
 }
 
 

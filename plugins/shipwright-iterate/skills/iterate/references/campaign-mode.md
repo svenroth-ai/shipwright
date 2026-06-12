@@ -61,6 +61,14 @@ If campaign directory doesn't exist yet:
    ```bash
    export SHIPWRIGHT_ROOT_SESSION_ID="${SHIPWRIGHT_SESSION_ID}"
    export SHIPWRIGHT_LOOP_ID=""  # set after init
+   # Defer the F11 auto-merge arm for EVERY sub-iterate. Parallel sub-iterate PRs
+   # that each commit regenerated derived snapshots cannot all auto-merge at once:
+   # GitHub's server-side merge can't run the regenerate-at-merge resolver, so as
+   # PRs merge serially the still-open ones cascade DIRTY (snapshot conflict) or
+   # merge stale (Group-E staleness). The runners inherit this env; their F11
+   # brings the branch current + pushes but does NOT arm. The Serial Merge Drain
+   # (step 4) owns the merge instead.
+   export SHIPWRIGHT_ITERATE_AUTOMERGE=0
    ```
 
 2. **Generate units file and initialize loop:**
@@ -90,7 +98,7 @@ If campaign directory doesn't exist yet:
 
    ```
    3a. uv run ... next --state .shipwright/loop_state.json
-       → exit 2 = all done → go to step 4
+       → exit 2 = all PRs built → go to step 4 (Serial Merge Drain)
        → Parse JSON: id, spec_path, base_branch, attempt
 
    3b. export SHIPWRIGHT_LOOP_UNIT_ID="{id}"
@@ -108,7 +116,8 @@ If campaign directory doesn't exist yet:
    3e. Parse result JSON defensively (fallback to runs/{loop_id}/{id}/result.json)
 
    3f. uv run ... record --state .shipwright/loop_state.json --unit {id} --result '{json}'
-       → exit 3 = failure/escalation → go to step 4 (strict-stop)
+       → exit 3 = failure/escalation → go to step 5 (Finalize), SKIP the drain
+         (strict-stop, campaign incomplete — do not merge a partial campaign)
 
    3g. Update the MAIN-tree campaign status.json (LOCAL-BOARD CONVENIENCE only,
        campaign S3): keeps the orchestrator's own board current BETWEEN
@@ -124,7 +133,36 @@ If campaign directory doesn't exist yet:
    3h. Continue loop
    ```
 
-4. **Finalize:**
+4. **Serial Merge Drain (autonomous campaigns).** The build loop left every
+   sub-iterate PR open with auto-merge DEFERRED (`SHIPWRIGHT_ITERATE_AUTOMERGE=0`,
+   step 1). Now **drain them serially** — merge ONE PR at a time, in dependency
+   order (stacked: base-chain order; independent: any order) — so each merges from
+   a tree that already regenerated its derived snapshots against the *just-merged*
+   `origin/main`, instead of relying on GitHub's server-side merge that cannot run
+   the regenerate-at-merge resolver. For each completed sub-iterate PR, in turn:
+
+   ```bash
+   # (a) Bring THIS branch current with the now-advanced origin/main and
+   #     regenerate its derived snapshots (clean no-op if already current). Runs
+   #     in the sub-iterate's own worktree; reuses integrate_main via the guard.
+   uv run "{shared_root}/scripts/tools/ensure_current.py" \
+     --project-root "{sub_iterate_worktree}" --run-id "{sub_iterate_run_id}" \
+     --reason "campaign serial drain: {slug}/{sub_iterate_id}"
+   #     Non-zero exit = a non-churn/source conflict → STOP the drain, leave the
+   #     remaining PRs for a manual integrate; the already-merged ones are durable.
+   # (b) Push any integrate commits, then merge THIS PR and WAIT for it to land
+   #     before the next (so the next branch integrates an origin/main that already
+   #     contains this one):
+   git -C "{sub_iterate_worktree}" push
+   gh pr merge "{pr_url}" --auto --squash --delete-branch   # arm on the now-current branch
+   #     then poll `gh pr view "{pr_url}" --json state -q .state` until MERGED
+   #     (or, if Required Checks are already green, `gh pr merge --squash` directly).
+   ```
+   Proceed to the next PR only after the prior PR has merged. This reuses the
+   existing resolver — it is a merge-step addition, not new machinery — and is
+   host-agnostic for the regeneration (only the final PR-merge *trigger* is `gh`).
+
+5. **Finalize:**
    ```bash
    uv run ... finalize --state .shipwright/loop_state.json
    ```
@@ -136,10 +174,10 @@ If campaign directory doesn't exist yet:
    orchestrator view. A `complete` campaign is hidden from the board. If the loop
    strict-stopped on a failure / escalation (3f), some sub-iterates are not
    `complete`, so the status stays `active` and the campaign remains visible
-   (matching step 5's "campaign incomplete" branch). No explicit set-complete
+   (matching step 6's "campaign incomplete" branch). No explicit set-complete
    call is needed.
 
-5. **Release prompt (F12, once):** Only if ALL sub-iterates are
+6. **Release prompt (F12, once):** Only if ALL sub-iterates are
    `complete` AND worktree is clean: count unreleased entries in
    `CHANGELOG.md`. If > 0: *"Run /shipwright-changelog to tag a release?"*
    If any sub-iterate failed or escalated: *"Campaign incomplete; no
