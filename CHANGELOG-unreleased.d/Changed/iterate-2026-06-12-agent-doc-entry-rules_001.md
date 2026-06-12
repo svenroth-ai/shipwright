@@ -1,1 +1,0 @@
-Iterate finalization (F2/F3a/reflection) now mandates compact one-line agent-doc entries that point to the ADR for detail (progressive disclosure), enforced by a forward-only 600-char entry-budget gate so `architecture.md` / `conventions.md` stay lean.

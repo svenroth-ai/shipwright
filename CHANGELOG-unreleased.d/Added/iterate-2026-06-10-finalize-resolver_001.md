@@ -1,1 +1,0 @@
-Campaign `status.json` is now a durable, tracked, per-tree artifact: a campaign sub-iterate's F5b finalize re-projects it from the event log and ships it in the PR (the Command Center board is correct on a fresh clone, not write-once `pending`). Concurrent-sibling merge conflicts on a campaign board auto-reconcile via the churn resolver (scoped regenerate-from-events).

@@ -1,1 +1,0 @@
-Tier-3 PR review (B4.5): a GitHub Actions workflow reviews external-contributor, sensitive-path (plugin hooks/skills/agents, .github/workflows/), and `needs-review`-labelled PRs via an OpenRouter custom script before auto-merge; iterate-branch and maintainer PRs are skipped (already reviewed locally at /shipwright-iterate Step 8).

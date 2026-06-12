@@ -1,1 +1,0 @@
-Bloat baseline: cleared Group H1/H2 drift — tightened 51 stale entries to actual LOC and grandfathered 8 long-but-coherent oversize files after a reducibility-catalog dogfood (7/8 correctly not reducible; 1 real structural follow-up filed).

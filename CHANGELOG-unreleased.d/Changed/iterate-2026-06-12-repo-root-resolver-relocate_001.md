@@ -1,1 +1,0 @@
-Internal: moved the `resolve_main_repo_root` MAIN-repo-root resolver from `lib/events_log.py` to its thematic home `lib/repo_root.py` (beside `main_repo_root_or`); `events_log` keeps a lazy back-compat re-export so existing imports are unchanged.

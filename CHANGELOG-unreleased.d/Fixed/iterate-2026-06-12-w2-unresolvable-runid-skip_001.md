@@ -1,1 +1,0 @@
-Phase-quality W2 (iterate external-review marker) now SKIPs on an unresolvable run_id (`unknown`/empty), mirroring the S2/S3 guard — eliminating the recurring audit-context Tier-1 false-positive (and a false-PASS on the run-agnostic state file); also fixes a latent crash on empty run_id.

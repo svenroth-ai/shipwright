@@ -1,1 +1,0 @@
-The security-scan PreToolUse gate (check_security_scan) now strips quoted argument spans before matching, so a trigger keyword that appears only inside a quoted value (a justification, commit message, or echo string) no longer false-blocks an unrelated command. Real release commands, scripts, and paths are still gated.

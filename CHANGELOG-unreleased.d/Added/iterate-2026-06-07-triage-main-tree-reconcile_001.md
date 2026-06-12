@@ -1,1 +1,0 @@
-`reconcile_main_triage` shared library + CLI (`shared/scripts/tools/reconcile_main_triage.py`), wired into `integrate_main.py` (pre-merge) and `setup_iterate_worktree.py` (pre-snapshot); safe-by-default with full git-state guards and dedup/validation reuse.

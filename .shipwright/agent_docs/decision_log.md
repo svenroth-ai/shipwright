@@ -1956,3 +1956,706 @@ shipwright/
 - **Commit:** pending
 - **Consequences:** All 5 hooks resolve correctly in subdir/worktree/foreign-repo layouts; check_drift no-ops in non-Shipwright dirs; counter producer+readers agree under auto-descent; check_drift.py drops to 534 LOC (under baseline 554, no anti-ratchet bump); new drift_anchor.py is 92 LOC (no new crossing).
 - **Rejected:** Bumping check_drift.py's bloat baseline current upward (forbidden by anti-ratchet); per-hook duplicated project-guard constants (replaced by the shared predicate); centralizing the parents[N]/sys.path bootstrap across all hooks (out of WP5 scope).
+
+---
+
+### ADR-143: Adopt scaffolds .gitleaks.toml + hardens security.yml.template
+- **Date:** 2026-06-07
+- **Section:** shipwright-adopt / security scaffold
+- **Run-ID:** iterate-2026-06-07-adopt-gitleaks-allowlist
+- **Context:** security.yml runs 'gitleaks detect --no-git' with no --config, auto-loading a root .gitleaks.toml when present; the critical-gate blocks on ANY gitleaks result, but adopt never scaffolded that file, so every adopted repo's first scan false-reds on the sidekiq-secret rule matching cafebabe:deadbeef (proven on leadwright 2026-06-07, red->green after adding the file).
+- **Decision:** Add a dedicated gitleaks_config_scaffolder (mirroring security_workflow_scaffolder) wired into generate_adoption_artifacts.py at Step E.13b, copying a new gitleaks.toml.template to <root>/.gitleaks.toml with a never-overwrite guard. Paths are GITLEAKS_CONFIG_* SSoT constants in the security_workflow.py convention lock. Also fold the monorepo's gitleaks SHA256-verify + peter-evans commit-SHA pin into security.yml.template.
+- **Commit:** (assigned post-merge)
+- **Consequences:** Adopted repos get a green first scan; the gate stays meaningful (useDefault=true keeps every real rule; only cafebabe:deadbeef is allowlisted). Two grandfathered files grew (baseline bumped). Follow-up: template duplicates the monorepo's pinned gitleaks version (no single source); monorepo oss_backend gitleaks config still lacks the cafebabe stopword (GAP-3, out of scope).
+- **Rejected:** vendored --config (root auto-load simpler, == webui); .gitleaksignore fingerprint (brittle, transient); inline copy with hardcoded paths (breaks scaffolder-per-artifact + convention-lock no-hardcode rule).
+- **Details:** [2026-06-07-adopt-gitleaks-allowlist.md](../planning/iterate/2026-06-07-adopt-gitleaks-allowlist.md)
+
+---
+
+### ADR-144: campaign_init --expands-triage promotes a triage item to a campaign anchor
+- **Date:** 2026-06-07
+- **Section:** shipwright-iterate / campaign_init.py
+- **Run-ID:** iterate-2026-06-07-campaign-expands-triage
+- **Context:** The Command Center shows a 'Start Campaign' CTA on a triage card only when a same-project draft campaign anchors it via the campaign.md frontmatter key expands_triage (server join: fm.expandsTriage || fm.expands_triage == item.id). campaign_init.py created campaigns but had no flag to set that anchor, so promoting a campaign-scale triage item required hand-editing status.json + campaign.md frontmatter.
+- **Decision:** Add --expands-triage <trg-id> (validated trg-<8hex>) that stamps expands_triage into BOTH status.json AND the campaign.md frontmatter; add convenience --from-triage <id> that seeds --intent from the triage item via the shared triage SSoT reader and implies the anchor. Key is omitted entirely when un-anchored (legacy-shaped). Conflicting/unknown ids error; a non-open --from-triage item warns but proceeds.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Producer side of an existing shipwright-webui consumer contract — the snake_case frontmatter key is load-bearing. Boundary verified empirically (end-to-end probe through the real walk-up shared-scripts resolver) plus 15 unit tests incl. a status.json round-trip.
+- **Consequences:** A campaign-scale triage item is promotable in one CLI call and the WebUI CTA then surfaces. The anchor survives the draft->active->complete lifecycle because campaign_progress only re-dumps status.json and never rewrites the frontmatter. Strictly per-project; cross-repo campaigns remain out of scope.
+- **Rejected:** Hard-blocking non-open --from-triage items (re-promoting a dismissed item is a valid operator choice -> warn instead). Writing expands_triage:null on every campaign (noise; omit-when-unset matches the hand-authored anchor convention).
+
+---
+
+### ADR-145: Harden iterate finalization/verification tooling — 3 fixes from the prior run
+- **Date:** 2026-06-07
+- **Section:** shared finalization tooling (F11 verifier + F0.5 orchestrator + arch drift test)
+- **Run-ID:** iterate-2026-06-07-finalization-tooling-hardening
+- **Context:** The prior run's finalization surfaced three robustness gaps: (1) test_arch_impact_drops_found_at_all false-FAILs on a post-release tree (decision-drops/ present but holding only non-arch drops); (2) the F11 spec-impact verifier reads spec_impact_justification while finalize_iterate documents only none_reason; (3) F0.5 surface_verification execs the runner with no shell, so a 'cd && cmd' runner dies with a cryptic WinError 2.
+- **Decision:** (1) Classify discovery via a hermetic _discovery_sanity helper: skip when dir absent or present-but-empty, pass when any drop file is found; assert the arch-impact SUBSET invariant, not its non-emptiness. (2) check_spec_impact_recorded accepts none_reason as a fallback justification for spec_impact=none. (3) _tokenize rejects bare shell operators / leading builtins; run_with_retries fails fast (0 attempts) with an actionable 'no shell' message.
+- **Commit:** (assigned post-merge)
+- **Rationale:** All three surfaced empirically during the prior run's finalization; each fix is unit-pinned (born-red -> green) and fix #1 is confirmed end-to-end by the full-suite green.
+- **Consequences:** Full shared/tests/ back to 0 failures (was 1 recurring). A none-impact iterate now passes F11 with only none_reason (dogfooded this run). F0.5 gives an actionable error on a compound runner. No gate weakened: none_reason is already FR-gate-required for spec_impact=none, and the subset invariant still exercises the arch-impact parser.
+- **Rejected:** (2) Mirroring none_reason -> spec_impact_justification at write time (consumer-lenient verifier is simpler and fixes already-written events). (3) shell=True (security + cross-platform risk).
+
+---
+
+### ADR-146: Allowlist cafebabe:deadbeef in the generated gitleaks config (GAP-3)
+- **Date:** 2026-06-07
+- **Section:** shipwright-security / oss_backend gitleaks allowlist
+- **Run-ID:** iterate-2026-06-07-oss-backend-cafebabe-stopword
+- **Context:** The monorepo scans itself via oss_backend._write_gitleaks_allowlist which passes gitleaks --config explicitly (paths-only allowlist) — a DIFFERENT contract from adopted repos (gitleaks --no-git, root .gitleaks.toml auto-load). The adopt-side fix (PR #163) does not cover this path. The cafebabe:deadbeef magic-hex placeholder false-matches the built-in sidekiq-secret rule.
+- **Decision:** Add regexTarget=match + regexes=['cafebabe:deadbeef'] + stopwords=[cafebabe,deadbeef] to the generated [allowlist], mirroring shared/templates/github-actions/gitleaks.toml.template. useDefault stays true so all real rules apply. Verified the generated TOML still parses (tomllib) and carries paths+regexes+stopwords.
+- **Commit:** (assigned post-merge)
+- **Consequences:** Defense-in-depth: the monorepo's own gitleaks scan can no longer false-red on the placeholder even if a transient merge-ref surfaces it. No real secret is suppressed (narrow regex + famous magic-hex stopwords). Closes GAP-3 from PR #163.
+- **Rejected:** Leave as-is (monorepo CI currently green, but a transient merge-ref could surface the FP as it did on leadwright); single-source the allowlist between adopt template and oss_backend (different formats/contracts, not worth the coupling).
+
+---
+
+### ADR-147: SBOM splits 'not installed' from 'no declared license'
+- **Date:** 2026-06-07
+- **Section:** shipwright-compliance / SBOM
+- **Run-ID:** iterate-2026-06-07-sbom-not-installed-vs-undeclared
+- **Context:** The license resolver returned 'unknown' for BOTH a not-installed package (no .venv dist-info / no lockfile+node_modules) AND a resolved package declaring no license. The triage producer flagged both, so every worktree/CI run without a synced venv emitted recurring SBOM noise for well-known permissive deps (pytest, pyyaml, requests). User report: '4 new SBOM entries' churn.
+- **Decision:** Two distinct sentinels (NOT_INSTALLED vs UNKNOWN_LICENSE). Only resolved-but-no-license (Fall 2) triages and shows as an SBOM concern. not-installed is silent: no triage, rendered '-' in the inventory, excluded from the license count/pie/verdict. The doc gains a clear reader verdict plus a 'Dependencies Without a Declared License' section; the old 'Unknown Licenses / install & regenerate' section is removed. Producer-side fix so it generalizes to every adopted repo.
+- **Commit:** (assigned post-merge)
+- **Rationale:** not-installed is a property of the scan environment, not the repo; asserting 'no license' about a package never looked at is dishonest noise. A static known-license map was rejected: cannot generalize to an adopted repo's package set.
+- **Consequences:** Reverses ADR-056's 'no-venv -> undeclared -> triage' for the not-installed case. Dedup-key shapes unchanged -> no WebUI/audit_detector migration. The repo's 4 open SBOM items auto-dismiss on next compliance regen (keys leave current_keys). SBOM doc is ASCII-only for cp1252 tooling.
+- **Rejected:** Static known-license map (no generalization); filtering dev-deps (loses client-repo signal); disabling the SBOM producer (throws away real signal).
+- **Details:** [2026-06-07-sbom-not-installed-vs-undeclared.md](../planning/iterate/2026-06-07-sbom-not-installed-vs-undeclared.md)
+
+---
+
+### ADR-148: Scaffold append-log union merge driver into managed repos
+- **Date:** 2026-06-08
+- **Section:** Iterate — change: scaffold churn merge machinery
+- **Run-ID:** iterate-2026-06-07-scaffold-churn-merge-machinery
+- **Context:** The merge=union .gitattributes for shipwright_events.jsonl + .shipwright/triage.jsonl was monorepo-local; adopt scaffolded no .gitattributes, so managed repos (WebUI proven, #96-#100) fell back to git default conflict behavior on concurrent appends. See iterate spec 2026-06-07-scaffold-churn-merge-machinery.md.
+- **Decision:** Scaffold the union fragment into every managed repo: a shared SSoT template + gitattributes_union.py (idempotent never-clobber merge_into + guarded self_heal), adopt Step E.13c, and an iterate self-heal in setup_iterate_worktree that backfills already-adopted repos.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Fix the mechanism so it reaches all managed repos, not a dev-repo band-aid. The union driver alone is the sufficient first-line defense; the resolver stays the monorepo-authored second line.
+- **Consequences:** Concurrent triage/events appends auto-line-union in managed repos (honored by GitHub server-side merge). No resolver bundling needed (AC-5: already reachable via {shared_root} in the marketplace shared/). New write surface = target repo root .gitattributes.
+- **Rejected:** Manual two-line WebUI patch (doesn't reach leadwright/aiportal/end-users); bundle all of shared/ into every plugin (over-broad); main-tree drift / git-pull block (separate defect, PR #169).
+
+---
+
+### ADR-149: Stopgap: commit completed-campaign status.json; defer durable producer fix
+- **Date:** 2026-06-07
+- **Section:** iterate
+- **Run-ID:** iterate-2026-06-07-track-campaign-status-backfill
+- **Context:** status.json is the WebUI-authoritative per-sub SSoT (campaign-store.ts / PR #143) but the producer never commits it, so the board is wrong on a fresh clone / deployed WebUI. Two completed campaigns (detective-realign, track-triage-jsonl) had untracked status.json.
+- **Decision:** Commit the two completed campaigns' status.json as a stopgap. Defer the durable producer-side fix (Hybrid B/A: work_completed event self-ID stamp + regenerate-from-events + churn resolver) to the public-launch milestone when a deployed/shared board becomes a live consumer.
+- **Commit:** (assigned post-merge)
+- **Rationale:** P3/low; campaigns are a minority of work and the pain only manifests on cross-machine reads; a one-line manual git-add is a working stopgap; building infra ahead of its live consumer is premature.
+- **Consequences:** Fresh-clone/deployed board now correct for these two campaigns. Future campaigns still need a manual git-add stopgap until the durable fix ships; anchor trg-fda5f7a3 stays open with that trigger.
+- **Rejected:** Build the full Hybrid B/A campaign now (no live deployed consumer yet); promote campaign.md to status SSoT (contradicts the status.json-authoritative contract).
+
+---
+
+### ADR-150: GC compliance backlog complianceRefreshed machine-churn
+- **Date:** 2026-06-07
+- **Section:** shared/scripts/tools/triage_gc.py (MACHINE_REASONS)
+- **Run-ID:** iterate-2026-06-07-triage-gc-compliance-refreshed
+- **Context:** triage_bundle.emit_compliance_backlog dismisses stale-signature compliance:backlog rollups with reason=complianceRefreshed (by=complianceBacklog) every run whose finding-signature shifts: pure machine churn. triage_gc.MACHINE_REASONS had complianceResolved but NOT complianceRefreshed, so is_machine_churn() never matched them and they accumulated as kept noise (4 already un-GC-able in this repo triage.jsonl; webui trg-68bc2f62).
+- **Decision:** Add complianceRefreshed to triage_gc.MACHINE_REASONS so complianceBacklog refresh dismissals are recognised as machine-churn and compacted by the dismissed-pile GC. Extend the GC test with a complianceRefreshed drop assertion plus a human-reuse-kept assertion.
+- **Commit:** (assigned post-merge)
+- **Rationale:** complianceRefreshed is regenerated every compliance run as the signature shifts: the same recurring-churn class as the already-GC-ed complianceResolved/phaseQualityResolved tokens.
+- **Consequences:** The dismissed-pile GC now compacts complianceRefreshed rollups; human dismissals reusing the token still survive because the dismisser gate (MACHINE_DISMISSERS) is unchanged. No change to the producer or to triage serialization.
+- **Rejected:** Also adding supersededByBacklog (one-shot legacy retirement, non-recurring: YAGNI). A registry SSoT meta-test coupling producer reasons to MACHINE_REASONS (deferred follow-up; this is the minimal fix).
+
+---
+
+### ADR-151: Reconcile-and-commit main-tree triage.jsonl drift in tooling
+- **Date:** 2026-06-07
+- **Section:** Iterate — change: triage main-tree drift reconcile
+- **Run-ID:** iterate-2026-06-07-triage-main-tree-reconcile
+- **Context:** Tracked, main-root-durable .shipwright/triage.jsonl is appended by per-session background producers, leaving uncommitted main-tree drift that blocks git pull/--ff-only (hit 2026-06-07). C2's leak-guard exemption silences the guard but is not a commit path.
+- **Decision:** Add reconcile_main_triage(project_root): resolves the MAIN root, validates+dedups, and folds drift into one B7-exempt chore(triage) commit before any FF/pull. Wired into integrate_main.py (pre-merge) and setup_iterate_worktree.py (pre-snapshot); thin CLI is the post-merge sync entrypoint.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Commit-in-tooling (integrate_main already commits) avoids hook-time commits, history noise, and cross-session races. Reuses C2's validate/dedup primitives + the union driver for the subsequent merge.
+- **Consequences:** Main tree stays git-pullable; background appends become durable (not orphaned). Commit lives in tooling, never a hook. Safe-by-default: structured no-op under all git-state guards; serialized on the canonical triage lock.
+- **Rejected:** Revive systemic per-tree producer reroute (over-engineering C2 scoped out); commit-on-every-append in hooks (history noise + races); leave uncommitted (the status quo that caused the block).
+
+---
+
+### ADR-152: Explicit outbox gitignore propagation + iterate self-heal
+- **Date:** 2026-06-08
+- **Section:** D3
+- **Run-ID:** iterate-2026-06-08-outbox-delivery-d3
+- **Context:** The per-tree triage.outbox.jsonl buffer is already ignored by the canon /.shipwright/* whitelist wildcard (no current gap), but coverage was IMPLICIT: a future negation could un-ignore it, and stale-cache adopted repos may lack the canon block entirely.
+- **Decision:** Add an explicit /.shipwright/triage.outbox.jsonl ignore line to the SSoT template (redundant with the wildcard, pins intent) + a no-negation guard test; add lib/gitignore_selfheal.self_heal_gitignore (sibling of self_heal_gitattributes, merge single-sourced in gitignore_canon.plan_merge) wired into setup_iterate_worktree step 4.6.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Mirrors the proven D2 gitattributes self-heal pattern; explicit-line + congruence test make the coverage machine-checkable; extracting the commit-path into its own module keeps all touched files <300 LOC (no bloat-baseline crossing).
+- **Consequences:** Adopt + every iterate setup now re-materialize the canon block (covering the outbox) as a guarded chore commit shipping in the PR. A future template edit that re-includes the outbox fails the guard test. setup gains one more no-op-when-clean self-heal step.
+- **Rejected:** Comment-only note (not machine-checkable). Inlining the self-heal into gitignore_canon.py (would cross 300 LOC -> bloat baseline). Assuming shared/ change == deployed for adopted repos (Codex Q6: false for stale caches).
+
+---
+
+### ADR-153: Relocate detective-audit JSON under .shipwright/compliance/ so the gitignore canon covers it
+- **Date:** 2026-06-09
+- **Section:** Audit-report hygiene (ADR-089 leak class, next producer)
+- **Run-ID:** iterate-2026-06-09-audit-report-hygiene
+- **Context:** run_audit.py/write wrote shipwright_audit_report.json to the repo ROOT and audit-report.md under compliance/ — both transient detective artifacts (regenerated each run, not in DOC_REGISTRY) that leak as untracked in every adopted repo. The .shipwright/-scoped gitignore canon could not cover the root json. Follow-up to PR #173 (which only gitignored the root json framework-locally).
+- **Decision:** Relocate the JSON write from repo root to .shipwright/compliance/audit-report.json (beside the .md), and re-exclude BOTH audit-report.md and audit-report.json in the gitignore canon (template + framework, congruent). The stdout JSON payload stays the stable contract; no machine-consumer read the root file.
+- **Commit:** (assigned post-merge)
+- **Rationale:** ADR-089 principle transient-⇒-gitignored-path; relocation is the only way the .shipwright/-scoped canon can propagate the ignore (a root pattern would need a canon-scope change). Verified no root-file consumer (stdout is the contract) before moving.
+- **Consequences:** Both reports gitignored + propagate to adopted repos via adopt + gitignore_selfheal. Idle main stays clean everywhere. The .md path is unchanged (group_*.py consumers unaffected); only the json file location moved.
+- **Rejected:** Gitignore the root json framework-locally only (does not reach adopted repos); extend the canon to manage root patterns (scope creep, root files are project-owned in adopted repos).
+
+---
+
+### ADR-154: Iterate-scoped external-review markers are gitignored (not blanket)
+- **Date:** 2026-06-09
+- **Section:** iterate/gitignore-canon
+- **Run-ID:** iterate-2026-06-09-external-review-marker-gitignore
+- **Context:** mark-review-state.py writes external_review_state.json + external_code_review_state.json (Branch A/B/C) into the run planning dir. Under .shipwright/planning/iterate/ these are TRANSIENT run-scoped state: rtm.collect_external_review_states explicitly SKIPS planning/iterate/ and treats only planning/<plan-split>/ markers as durable RTM evidence. 6 copies (2 top-level + 4 campaign sub-iterate) were accidentally git-tracked.
+- **Decision:** Add iterate-scoped re-excludes to the gitignore canon (template + framework .gitignore, congruent): /.shipwright/planning/iterate/**/external_review_state.json and /.shipwright/planning/iterate/**/external_code_review_state.json; the **/ matches both the top-level and deeper campaign/sub-iterate copies. git rm --cached the 6 tracked copies.
+- **Commit:** (assigned post-merge)
+- **Consequences:** Transient iterate markers no longer tracked; plan-split markers stay tracked as RTM evidence; propagates to adopted repos via the canon template + self-heal back-fill.
+- **Rejected:** A blanket **/external_*review_state.json ignore — a near-miss that would also erase the durable plan-split RTM evidence on fresh clones.
+
+---
+
+### ADR-155: Idle-main producers resolve main_repo_root + write transient state only to gitignored paths
+- **Date:** 2026-06-09
+- **Section:** Idle-main artifact hygiene (ADR-089 completion)
+- **Run-ID:** iterate-2026-06-09-idle-main-artifact-hygiene
+- **Context:** After PR #172, idle main was still dirtied by two producers: the phase-quality skill-compliance roll-ups were Stop-written to tracked-eligible homes, and the bloat marker writer (check_file_size) + reader (bloat_gate_on_stop) keyed off Path.cwd(), leaking shared/.shipwright/locks/ when cwd was not the repo root. Both are incomplete spots of ADR-089.
+- **Decision:** Relocate the 3 transient roll-ups under the already-gitignored skill-compliance dir (no DOC_REGISTRY/finalize arm). Resolve the canonical main repo root (fail-soft) in BOTH the bloat marker writer and reader via one shared worktree_isolation.main_repo_root_or. Add a defensive non-anchored locks ignore to the gitignore canon.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Transient-vs-durable decided on evidence (never-tracked + not-in-DOC_REGISTRY + Stop-regenerated + live-consumer), not a guess. The cwd-at-Stop antipattern is the same one ADR-089 hard-gated for finalize.
+- **Consequences:** Idle main stays clean, propagated to adopted repos via the canon template. Writer and reader can never disagree on marker location. The plan named only the reader; the fix extends to the writer, the true leak author.
+- **Rejected:** Scattering compliance roll-ups into the agent-doc-trio runtime dir (different artifact family, needs a new canon entry); reader-only fix (leaves the writer leaking).
+
+---
+
+### ADR-156: Generated agent-doc cache trio fully exempt from artifact-path-canon (finalize trg-6ed063ae)
+- **Date:** 2026-06-10
+- **Section:** tests/canon-allowlist
+- **Run-ID:** iterate-2026-06-10-canon-exempt-agent-doc-caches
+- **Context:** PR #178 exempted only triage_inbox.md. trg-6ed063ae also flagged the sibling generated agent-doc caches session_handoff.md + build_dashboard.md (ADR-089 single-producer trio): they too render free-form text (iterate/build context) that can quote a bare legacy path and are regenerated each iterate, so a legacy ref cannot be fixed in place.
+- **Decision:** Add .shipwright/agent_docs/session_handoff.md + build_dashboard.md to all 4 ALLOWLIST migrations alongside triage_inbox.md, with a drift-protection test (test_generated_cache_canon_exempt) locking the whole trio's exemption per migration. Bump artifact_migrations.py bloat-exception baseline 612 -> 628 (ADR-091). Dismiss trg-6ed063ae (now fully resolved).
+- **Commit:** (assigned post-merge)
+- **Consequences:** No generated agent-doc cache can false-fail the artifact-path-canon lint regardless of which finding/handoff text it renders. trg-6ed063ae closed.
+- **Rejected:** Leaving session_handoff/build_dashboard out (YAGNI) — they are the same regenerated-cache class and a future handoff quoting a legacy path would reopen the recurring CI block.
+
+---
+
+### ADR-157: History-calibrated complexity prior + cross-domain scope vocabulary
+- **Date:** 2026-06-10
+- **Section:** shipwright-iterate Step E (complexity classification)
+- **Run-ID:** iterate-2026-06-10-complexity-classifier-prior
+- **Context:** Stage-1 complexity estimates carried near-zero signal: 64% of real prompts classified trivial while only 14% of runs finalized trivial, because the scope vocabulary was web-app-only and the fall-through default was hard-coded trivial.
+- **Decision:** classify() resolves scope as keyword > history > default: with no keyword match, the median final complexity of the last 20 F5c entries (clamp medium, min 3) replaces the trivial fall-through. Keyword sets moved to complexity_vocabulary.py (alnum-boundary + optional-plural matching, broadened cross-domain phrases). The plugin reads the F5c store without importing shared/; a round-trip test against the real writer pins the contract.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Empirical calibration over more config: the data already exists on disk, zero new artifacts to maintain, self-correcting per project.
+- **Consequences:** Stage-1 estimates adapt per project (this repo: fall-through now small, n=20). signals.prior_source (keyword|history|default) is visible in the Run Summary. Under-classification on the 26-row real-prompt corpus drops 18 to 11; over-classification 1 to 0. F5c entries double as calibration data - retention (50) bounds the read. Cold start keeps old behavior.
+- **Rejected:** Per-project vocabulary config (new maintained artifact, cold-start bias unfixed); always-thorough repo scout (taxes trivial fixes); keyword-only broadening (default bias remains)
+
+---
+
+### ADR-158: D2V evidence artifact write is opt-in (SHIPWRIGHT_D2V_WRITE_EVIDENCE)
+- **Date:** 2026-06-10
+- **Section:** tests/d2v-evidence
+- **Run-ID:** iterate-2026-06-10-d2v-evidence-write-optin
+- **Context:** The session-scoped _d2v_evidence fixture flushes the TRACKED .shipwright/.../D2V-empirical-results.md at teardown whenever any D2V method recorded. Methods 2-4 (e2e proofs) are NOT slow-marked, so a normal pytest shared/tests run regenerated the tracked file (fresh timestamp/python version) on every run -> a dirty working tree that forced a manual revert in 3 consecutive iterates.
+- **Decision:** Gate the markdown WRITE behind opt-in env var SHIPWRIGHT_D2V_WRITE_EVIDENCE: _d2v_helpers.Evidence.flush() early-returns without writing unless evidence_write_enabled() is true. The test ASSERTIONS still run on every suite (CI coverage of all 6 gate methods preserved); only the auditable-artifact side-effect is opt-in. Intentional regen sets the env var.
+- **Commit:** (assigned post-merge)
+- **Consequences:** Default and CI runs leave the tracked D2V artifact untouched (no more spurious diffs / reverts). Regenerating the artifact is an explicit opt-in. Gate coverage is unchanged.
+- **Rejected:** Marking the e2e methods slow (would drop them from CI's default not-slow run, reducing coverage); redirecting EVIDENCE_PATH to a tmp dir (loses the auditable tracked artifact entirely).
+
+---
+
+### ADR-159: Campaign sub-iterates self-identify via event extras stamp
+- **Date:** 2026-06-10
+- **Section:** campaign/2026-06-07-tracked-campaign-status/S1
+- **Run-ID:** iterate-2026-06-10-event-self-id
+- **Context:** Per-sub campaign status could only be projected from events.jsonl via a branch-slug join heuristic that failed for ~50% of historical sub-iterates. The F5b --event-extras-json hook already merges arbitrary top-level keys idempotently per run_id.
+- **Decision:** Stamp campaign + sub_iterate_id into the work_completed event at F5b: the sub-iterate-runner contract (Step 4) mandates it and the manual /shipwright-iterate --campaign <slug> --sub-iterate-id <id> path mirrors it. No finalize_iterate.py code change; contract markdown + drift-pin tests + real-producer tests only.
+- **Commit:** (assigned post-merge)
+- **Consequences:** events.jsonl is self-sufficient for S2's regenerate-from-events projection; stamp keys are additive top-level metadata and do not bypass the FR-gate. Legacy unstamped events stay covered by S2's never-downgrade guard.
+- **Rejected:** Dedicated --campaign CLI flags on finalize_iterate.py (duplicate gate path next to the generic extras hook); nested extras container on the event (breaks the flat event schema consumers).
+
+---
+
+### ADR-160: Per-tree campaign status.json: finalize wiring + scoped churn resolver
+- **Date:** 2026-06-10
+- **Section:** campaign 2026-06-07-tracked-campaign-status / S3
+- **Run-ID:** iterate-2026-06-10-finalize-resolver
+- **Context:** S1 made work_completed events self-identifying; S2 added the pure projection lib but it was unwired, so a campaign status.json stayed write-once 'pending' on a fresh clone / the live WebUI board.
+- **Decision:** F5b Step 6 (new lib campaign_status_io.finalize_campaign_status) re-projects a campaign sub-iterate status.json from this worktree event log so F6 stages a per-tree, PR-committed board. The churn resolver glob-admits campaigns/*/status.json (is_campaign_status, separate from CHURN_ALLOWLIST) and regenerates ONLY the campaign(s) that conflicted in a merge; integrate_main passes the conflicted rels + extends rollback. Campaign-mode 3g main-tree update-status is demoted to a local convenience.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Mirrors the events.jsonl/triage.jsonl per-tree precedent so zero WebUI change (status.json already authoritative). Scoping the resolver regen to conflicted campaigns (NOT glob-all) is the load-bearing safety: re-deriving an untouched/legacy campaign would drop committed completion data; an unconflicted board self-heals on its own next sub-iterate (never-downgrade).
+- **Consequences:** New write-surface = per-tree campaign status.json; read-surface = events.jsonl. Substance in the new sub-300 module; two ceilinged host files take only the irreducible call-site (documented bloat bump finalize 532->536 ADR-096, resolve 318->326 ADR-099). Skill refs F5b/F6/campaign-mode updated; hooks matrix + glossary + ADR left to S4.
+- **Rejected:** Glob-regenerate ALL campaigns on every integrate (mirroring DERIVED_MDs) REJECTED: destructive on legacy/untouched campaigns (drops complete subs), found by review B1. Promoting campaign.md markdown table to status SSoT REJECTED (inverts the status.json-authoritative WebUI contract; markdown-as-SSoT is the retired anti-pattern).
+
+---
+
+### ADR-161: Project campaign status from the event log (never-downgrade)
+- **Date:** 2026-06-10
+- **Section:** Iterate — feature: campaign status projection (S2)
+- **Run-ID:** iterate-2026-06-10-status-projection
+- **Context:** A campaign status.json is write-once 'pending' on a fresh clone, so the WebUI board is wrong there. S1 made work_completed events self-identifying (top-level campaign/sub_iterate_id); S2 projects per-sub status from those tracked events so the board is rebuildable.
+- **Decision:** New pure shared/scripts/lib/campaign_status.py: project_campaign_status reads the campaign.md skeleton (authoritative order) and projects matching work_completed events to complete, never-downgrading over the committed status.json (commit='' no-clobber). all_subs_complete moved here as canonical SSoT; thin campaign_progress.py regenerate CLI.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A pure-core/file-wrapper split lets S3's shared churn-resolver feed git-staged blobs. Placing the logic in shared/scripts/lib keeps the dependency arrow plugin->shared, since the shared resolver cannot cleanly import a plugin tool.
+- **Consequences:** The board is rebuildable from tracked artifacts. S2 ships a library + CLI only (not wired into finalize/churn — S3), so no runtime status.json regen and the WebUI contract is unchanged. campaign_progress._all_subs_complete is now an alias to the shared canonical.
+- **Rejected:** Keep the function in the plugin's campaign_progress.py (rejected: S3's shared resolver would then need a fragile shared->plugin import). Promote the campaign.md table to status SSoT (rejected upstream: retired markdown-as-SSoT anti-pattern).
+
+---
+
+### ADR-162: triage_cli list pins stdout to UTF-8 (machine contract over console codepage)
+- **Date:** 2026-06-10
+- **Section:** triage-cli
+- **Run-ID:** iterate-2026-06-10-triage-cli-json-utf8
+- **Context:** list --json wrote ensure_ascii=False JSON to sys.stdout, which defaults to the legacy codepage (cp1252) on Windows; any emoji/CJK/umlaut item title crashed the CLI with UnicodeEncodeError, breaking the WebUI live-view contract. Found by the webui pending-delivery-badge boundary probe.
+- **Decision:** _cmd_list reconfigures sys.stdout to UTF-8 (guarded getattr; ValueError/OSError pass). Applies to both the JSON contract and the human list (which keeps >=0x80 chars by design).
+- **Commit:** (assigned post-merge)
+- **Rationale:** UTF-8 encodes all of Unicode so the strict handler cannot raise; a machine-readable contract must not depend on the operator console codepage.
+- **Consequences:** list --json bytes are UTF-8 on every platform; legacy cp850 consoles show mojibake instead of a traceback; consumers decode with encoding=utf-8 (the webui regen already does, plus PYTHONUTF8=1 belt-and-braces).
+- **Rejected:** PYTHONUTF8=1 in every consumer (does not fix the tty human path and burdens all future consumers); ensure_ascii=True (bloats payload, changes contract bytes).
+
+---
+
+### ADR-163: Triage dedup collapses same-id appends keep-last (reader parity)
+- **Date:** 2026-06-10
+- **Section:** triage/churn-merge
+- **Run-ID:** iterate-2026-06-10-triage-dedup-keep-last-append
+- **Context:** The D2 outbox sweep merges tracked+outbox, dedups, then validates one-append-per-id. dedup_triage_lines only collapsed BYTE-IDENTICAL lines, so a producer re-appending an UPDATED (non-byte-identical) version of an existing finding left two appends for one id -> validate_triage_text flagged 'duplicate append' -> the WHOLE sweep returned invalid and stalled outbox delivery (trg-60ef91fb wedged the 2026-06-08 outbox).
+- **Decision:** Extend dedup_triage_lines to collapse same-id 'append' events keeping the LAST one, mirroring the append-log reader (triage.read_all_items pass 1, last-append-wins). status events + non-append/unparseable lines pass through untouched; the reader overlays status in a separate ts-sorted pass 2, so dropping an earlier append never un-flips a status regardless of order.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The validator's one-append invariant was inconsistent with the append-log model the reader implements; keep-last reconciles them at the dedup layer (one surgical change benefits both consumers).
+- **Consequences:** The sweep + reconcile (which share the helper) no longer false-block on a legitimate producer update; one-append-per-id holds after the merge. Byte-identical dedup + append/status sharing an id are preserved.
+- **Rejected:** Per-producer idempotency-against-outbox (narrower, misses other producers); loosening the validator (would mask real union double-counts).
+
+---
+
+### ADR-164: triage_cli.py list --json: machine-readable contract for the WebUI live-view
+- **Date:** 2026-06-10
+- **Section:** triage/cli-contract
+- **Run-ID:** iterate-2026-06-10-triage-list-json
+- **Context:** The WebUI Triage tab reads only the tracked triage.jsonl, so outbox-buffered items are invisible until a sweep (trg-e2a0ebb3). The monorepo reader read_all_items already unions tracked + outbox, but there was no clean machine-readable surface for the WebUI to consume that union without re-parsing JSONL + re-implementing the two-pass reduction.
+- **Decision:** Add a --json flag to triage_cli.py list that emits the SAME unioned open (status==triage) items as a JSON array, each enriched with pendingDelivery: true iff the item lives only in the gitignored outbox (id in outbox-append-ids and not in tracked-append-ids) — TRACKED-PREFERRED, parallel to triage.mark_status residence. Empty -> []. The human-readable default is unchanged.
+- **Commit:** (assigned post-merge)
+- **Consequences:** The WebUI consumes one contract (single source of truth for union + reduction + residence) instead of re-parsing JSONL; pendingDelivery gives it the Pending-delivery badge signal directly. No change to the default output.
+- **Rejected:** Re-implementing the union + two-pass reduction in the WebUI TS layer (drift risk); exposing residence by changing read_all_items return shape (broader blast radius).
+
+---
+
+### ADR-165: F11 arms GitHub-native auto-merge for iterate/* PRs
+- **Date:** 2026-06-11
+- **Section:** Iterate — change: F11 auto-merge arm (B4.5 Phase 3)
+- **Run-ID:** iterate-2026-06-11-automerge-f11-arm
+- **Context:** B4.5 Phase 1+2 (gh-pr-ci producer #191, Tier-3 PR review #193) are merged; auto-merge is the remaining arm. F11 previously stopped at gh pr create, leaving every iterate PR for a manual human merge (trg-bdc160e2).
+- **Decision:** After gh pr create, F11 runs gh pr merge "$pr_url" --auto --squash --delete-branch, guarded to iterate/* branches and fail-soft (|| WARN, never || exit) so a repo with auto-merge/branch-protection OFF leaves the PR open instead of breaking finalize.
+- **Commit:** (assigned post-merge)
+- **Rationale:** An unguarded arm would fail F11 for every future iterate until a human enables the setting; the branch guard + fail-soft make the dependency on out-of-band repo config safe. Self-modifying: cache-unsynced, so this run's own PR stays human-merged.
+- **Consequences:** Iterate PRs squash-merge themselves once Required Checks pass; manual human PRs never self-arm; a missing repo setting is a WARN, not a STOP. Hard rollback = toggle the repo setting (no code change).
+- **Rejected:** Bare 'gh pr merge --auto' per the literal spec snippet (hard-fails when setting off); arming all branches (would self-merge manual PRs).
+
+---
+
+### ADR-166: gh-pr-ci producer: failed hard-gates on open PRs -> triage
+- **Date:** 2026-06-11
+- **Section:** B4.5 Loop-Closing (Phase 1)
+- **Run-ID:** iterate-2026-06-11-automerge-gh-pr-ci-producer
+- **Context:** github_triage only watched failed CI on the default branch (gh-ci). Once auto-merge is armed (B4.5), a hard-gate going red on an open PR leaves it armed-but-waiting with no triage visibility. Loop-closing producer required BEFORE gh pr merge --auto is enabled.
+- **Decision:** Add a gh-pr-ci:{pr_number} action-unit. New module shared/scripts/github_pr_api.py (PR-scoped gh fetches, reuses github_api._gh_api) instead of growing the LOC-capped github_api.py. Differentiated auto-resolve (prChecksResolved/prMerged/prClosed) in resolve_pr_ci, kept out of the generic resolve_stale sweep. Non-draft PRs only. Session-wide symmetry: any failed open-PR or per-PR check-runs fetch -> no emit, no resolve.
+- **Commit:** (assigned post-merge)
+- **Rationale:** github_api.py is grandfathered at 392 LOC; adding there trips the anti-ratchet hard gate. A focused new module avoids the ratchet and stays cohesive. Differentiated reasons give real loop telemetry (fixed-and-merged vs abandoned). Symmetry rule (MED-#1) prevents a network blip from mass-resolving open items. filter=latest + truncation guard (len<total_count -> None) prevent stale-rerun and >100-check false-greens.
+- **Consequences:** Producer ships before automerge activation. New read surface: GitHub PRs + check-runs via gh (existing 6h throttle). No write-surface or message-contract change (reuses action-unit schema; WebUI renders unchanged). One extra gh call per resolved-away PR for the merged/closed distinction.
+- **Rejected:** (1) Add fetches to github_api.py + bloat-exception ADR -- worsens an over-budget file. (2) Generic single-reason resolve -- loses merged/closed/fixed telemetry. (3) PR-scoped (not session-wide) symmetry -- a 502 on one PR could false-resolve; spec mandates session-wide for resolve safety. (4) Include draft PRs -- noisy; a draft can't be auto-merge-armed.
+- **Details:** [early-access-readiness-plan.md](Spec/early-access-readiness-plan.md)
+
+---
+
+### ADR-167: Tier-3 PR review via OpenRouter custom-script
+- **Date:** 2026-06-11
+- **Section:** Iterate — feature: Tier-3 PR review (B4.5)
+- **Run-ID:** iterate-2026-06-11-automerge-pr-review
+- **Context:** B4.5 activates auto-merge with proportional-to-risk review. Iterate (Tier 1) + maintainer (Tier 2) PRs skip API review because /shipwright-iterate Step 8 already reviews them; a second API review would double-pay the same judgment.
+- **Decision:** Add a Tier-3-only PR review: a GitHub Actions workflow (pr-review.yml: decide+review jobs) gates external/sensitive-path/needs-review PRs through an OpenRouter custom script (pr_review.py) whose strict-JSON decision maps to an exit-code merge gate.
+- **Commit:** (assigned post-merge)
+- **Rationale:** OpenRouter (not anthropics/claude-code-action) keeps one billing/spend-limit/audit source, avoids a marketplace action in sensitive .github/workflows/, and allows a model switch via SHIPWRIGHT_PR_REVIEW_MODEL. Stdlib urllib keeps the script dependency-free.
+- **Consequences:** External/sensitive PRs get LLM review before auto-merge; Tier 1/2 cost $0. Fork PRs can't run review (no secret) — manual in Early Access. F0.5 surface=none: CI tooling has no app surface; true E2E needs prod creds (Phase-2 smoke-tests). Secret + branch-protection + F11 --auto are separate follow-ups.
+- **Rejected:** Claude-review-for-all-PRs (redundant with Step 8, ~$27/mo); GitHub Copilot (subscription); no-LLM-review (scanners miss code bugs); anthropics/claude-code-action (2nd provider + marketplace action in a sensitive path).
+
+---
+
+### ADR-168: Campaign skeleton tolerates markdown emphasis; backfill drift-guard
+- **Date:** 2026-06-11
+- **Section:** Iterate — change: campaign skeleton emphasis-strip + backfill verify (S4)
+- **Run-ID:** iterate-2026-06-11-backfill-docs
+- **Context:** A hand-edited campaign.md with bold ids (**C1**) did not match the plain committed status.json ids, so re-projecting that campaign dropped 4 completed subs (2026-06-02-compliance-detective-realign). Closes campaign 2026-06-07-tracked-campaign-status.
+- **Decision:** parse_campaign_skeleton strips wrapping markdown emphasis (asterisk/underscore/backtick) from id/slug cells. A read-only parametrized test regenerates every tracked campaign and asserts no committed sub downgrades.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Skeleton ids are matched by string; emphasis is human formatting, not identity. A real-data drift-guard catches legacy-format mismatches a synthetic fixture would miss.
+- **Consequences:** All 7 tracked campaigns now round-trip without downgrade. Docs landed (hooks-and-pipeline glob-churn note, glossary Campaign-Status + token-vocab SSoT). Anchor trg-fda5f7a3 dismissed; spec_path portability filed as trg-196f4aa6.
+- **Rejected:** Hand-rewrite the legacy campaign.md (per-campaign fix does not generalize; parser is the right layer). Regenerate-all-on-merge (already rejected in S3: destructive for legacy campaigns).
+
+---
+
+### ADR-169: Bloat Stop-gate resolves a file's ceiling from the worktree baseline it measures, not main
+- **Date:** 2026-06-11
+- **Section:** trg-28e83840 (gap left by #150/trg-305e2aab)
+- **Run-ID:** iterate-2026-06-11-bloat-gate-worktree-baseline
+- **Context:** bloat_gate_on_stop re-measured the WORKTREE file (main_root/.worktrees/<slug>/...) but read the ceiling from MAIN's shipwright_bloat_baseline.json — so an ADR-documented baseline bump committed in the worktree (not yet on main) false-blocked Stop, despite pre-commit + CI anti-ratchet passing. #150 fixed the path-prefix key; the baseline SOURCE half remained.
+- **Decision:** New _worktree_root(main_root, marker_path) + a per-entry _baseline_for() that loads the ceiling from the worktree's OWN baseline when the marker path is .worktrees/<slug>/-prefixed, falling back to MAIN (never empty) when the worktree has no baseline. Main-tree paths still use main. Recorder (check_file_size) left unchanged: its delta label is advisory once the reader re-derives the decision (follow-up trg-537334f1).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Makes the Stop gate equal-strength to the CI + pre-commit anti-ratchet, which already read the worktree baseline — Stop was over-strict (false-block), never under-strict, and ADR-justification stays independently enforced by the Group H detective (H4). Adversarial review confirmed no real ratchet can now slip.
+- **Consequences:** 3 regression tests (bump-not-blocked / over-ceiling-still-blocks / worktree-only-baselined-not-crossing) + the 2 #150 fallback tests stay green. Gate kept at 300 LOC. F0 env false-positive: a parallel S4 (backfill-docs) arch-impact drop in the shared local decision-drop staging (gitignored, absent from origin + CI) — not this diff.
+- **Rejected:** Add worktree_root_from_marker to bloat_baseline.py (pushed it past 300) — moved to the gate as the sole consumer. Fix the writer too — unnecessary; the reader is authoritative, writer delta is advisory (trg-537334f1).
+
+---
+
+### ADR-170: Security-scan gate matcher strips quoted spans (no false-block on prose)
+- **Date:** 2026-06-11
+- **Section:** Iterate — bug: security-scan gate matcher ignores quoted args
+- **Run-ID:** iterate-2026-06-11-secscan-gate-substring
+- **Context:** The check_security_scan PreToolUse gate substring-matched the whole command, so a trigger keyword inside a quoted justification / commit message / echo VALUE false-blocked unrelated iterate-finalization commands (hit 3x this session).
+- **Decision:** The detection moved into a matcher helper that strips quoted argument spans before substring-matching. Quoted values (data) are ignored; the real command / script / path stays visible and still gates.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The false-positives are all keywords inside quoted argument VALUES; stripping quoted spans separates command structure from data with no regression for real release CLIs / scripts / paths.
+- **Consequences:** False-blocks on prose eliminated; real release commands still gated (a keyword only inside quotes is data, never the command). 14 matcher unit tests + an end-to-end no-block regression; full compliance suite green (669).
+- **Rejected:** Tokenize + exact-token match (misses unquoted script paths). Whole-word regex (still matches a standalone keyword in prose).
+
+---
+
+### ADR-171: Campaign sub-iterate spec_path is repo-relative POSIX
+- **Date:** 2026-06-11
+- **Section:** Iterate — change: repo-relative campaign spec_path (N1)
+- **Run-ID:** iterate-2026-06-11-spec-path-relative
+- **Context:** Campaign status.json wrote a machine-ABSOLUTE sub-iterate spec_path (C: drive path), useless on a fresh clone or a Linux WebUI server. Follow-up N1 (trg-196f4aa6) of campaign 2026-06-07-tracked-campaign-status.
+- **Decision:** spec_path is now repo-relative POSIX. New pure module campaign_paths.py (relativize_spec_path / campaign_spec_path); campaign_init writes relative, the projection self-heals on regenerate, and a one-off idempotent migration rewrote the 7 tracked campaigns.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Fixing at the projection (carry+fill) self-heals a legacy absolute path on the next regenerate; campaign_init covers the creation-time case; the migration gives immediate consistency. A dedicated module keeps campaign_status.py under its bloat ceiling.
+- **Consequences:** All 44 tracked sub-paths are repo-relative, portable on any machine/OS. Migration is idempotent (no churn); regenerate keeps relative + no downgrade. trg-196f4aa6 resolved.
+- **Rejected:** Leave spec_path absolute (breaks fresh-clone / a Linux WebUI server). Migrate only, without fixing the producers (new campaigns would regress).
+
+---
+
+### ADR-172: Compact agent-doc entries + impact-aware routing SSoT
+- **Date:** 2026-06-12
+- **Section:** Iterate — change: agent-doc entry rules + impact routing
+- **Run-ID:** iterate-2026-06-12-agent-doc-entry-rules
+- **Context:** architecture.md ## Architecture Updates + conventions.md ## Learnings bloated into paragraphs (no budget, unlike decision_log F3). convention impact was hand-routed to architecture.md while write_decision_log routed it to conventions.md and the oracle required it in architecture.md — a three-way divergence.
+- **Decision:** Add IMPACT_TARGETS routing SSoT in architecture_doc; make missing_entries + the F11 gate + Group-F detective impact-aware (convention -> conventions.md ## Convention Updates; component/data-flow -> architecture.md) with a transitional convention->architecture.md fallback; writer consumes the SSoT; new forward-only 600-char entry-budget gate; F2/F3a/reflection mandate one-line ADR-pointer entries; replace the verbatim CONTRIBUTING copy in conventions.md with a link.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Progressive disclosure: always-loaded Layer-1 docs carry a one-line 'what + ADR pointer'; detail lives in the on-demand ADR / spec folder.
+- **Consequences:** Each impact has one canonical home; producer + verifier + instruction pinned to one SSoT (routing drift test). conventions.md 606->308 LOC. Forward-only budget caps NEW entries; the backlog is grandfathered for the compression iterate.
+- **Rejected:** Strict flip with no fallback (breaks ~16 un-migrated convention drops + the detective). Collapsing convention into ## Architecture Updates (drops the dedicated section). Bulk-compressing the backlog now (deferred to Iterate 2 per the split).
+
+---
+
+### ADR-173: Event-ownership scoping for whole-set arch-drift checkers
+- **Date:** 2026-06-12
+- **Section:** Test/audit infra — arch-drift checkers
+- **Run-ID:** iterate-2026-06-12-arch-drift-test-scope
+- **Context:** In autonomous campaigns, gitignored decision-drops accumulate in the shared main-rooted decision-drops dir across sibling branches, while each branch commits its doc entry per-branch (unmerged). The two whole-set checkers (drift test + Group-F F5 detective) enumerated every drop and required each run_id in the current tree's docs, so a later sibling false-failed on an earlier sibling's drop. CI immune (drops gitignored). Reproduced live in local main (3 sibling drops).
+- **Decision:** Scope both whole-set checkers to drops OWNED by this tree's lineage: run_id in this tree's committed shipwright_events.jsonl. New events_log.finalized_run_ids (adr_id+run_id set; None when log absent/unreadable) + pure architecture_doc.records_in_run_set filter. Wired fail-open: scope only when an event log exists, else whole-set (keeps CI + hermetic behavior). F11 gate already scoped to one run_id (records_for_run) - left unchanged.
+- **Commit:** (assigned post-merge)
+- **Rationale:** events.jsonl is the per-tree committed ledger of runs finalized on this lineage; absence of a run_id there is exactly 'not my branch's responsibility'. Fail-open avoids breaking the ~35 hermetic detective tests (no events.jsonl) and CI. Validated live local-main: missing 3 -> 0.
+- **Consequences:** New read-surface: F5 detective + the drift test consume shipwright_events.jsonl as an ownership ledger. Bled sibling drops no longer false-fail; drift protection preserved for runs finalized on this tree (and merged ones). Matching oracle (missing_entries) unchanged - 'cannot diverge' contract intact. Fail-open degrades to prior whole-set behavior on an unreadable log (never weaker, never crash).
+- **Rejected:** (1) Isolated worktrees for sub-iterates - drops resolve to MAIN by design (durable, changelog-consumed), so isolation does NOT stop the bleed. (2) Scope to a single ambient run_id - no run_id context in a plain pytest; neuters the cross-cutting net + skips at F0. (3) Fail-closed on unreadable log - silently disables the checker.
+- **Details:** [2026-06-12-arch-drift-test-scope.md](../planning/iterate/2026-06-12-arch-drift-test-scope.md)
+
+---
+
+### ADR-174: Serial integrate_main merge for campaign/parallel iterates (auto-merge churn fix, Option A)
+- **Date:** 2026-06-12
+- **Section:** F11 / campaign-mode merge orchestration — shared/scripts/tools/ensure_current.py
+- **Run-ID:** iterate-2026-06-12-automerge-serial-integrate
+- **Context:** GitHub auto-merge (F11 since PR #197) does a server-side 3-way merge and never runs integrate_main/resolve_churn_conflicts. Fine for a single current iterate; but parallel branches (an --autonomous campaign) each commit their own regenerated derived snapshots (compliance/agent_docs MDs + shipwright_test_results.json). Merging serially, every still-open branch goes DIRTY (snapshot conflict) or stale (Group-E), since regenerate-at-merge never runs server-side.
+- **Decision:** Option A: merge through integrate_main, serialized, wherever branches can be stale. New tool ensure_current.py (wraps integrate_main.integrate) brings a branch current + regenerates snapshots before its PR merges; no-op when current; integrated via HEAD before/after compare. F11 runs it before arming auto-merge (fail-closed on source conflict). Campaign exports SHIPWRIGHT_ITERATE_AUTOMERGE=0 to defer the arm; orchestrator drains PRs serially (campaign-mode.md step 4).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reuses integrate_main + churn resolver — what we did before auto-merge, applied deliberately. integrate() already no-ops when up-to-date. Separate ensure_current.py module (not an integrate_main flag) keeps integrate_main.py byte-identical so neither file crosses the 300-LOC bloat guideline (plan AC: no new bloat crossing).
+- **Consequences:** Parallel/campaign PRs no longer cascade DIRTY/stale; no manual drain. Single-iterate auto-merge path unchanged (guard no-ops when current). integrate_main.py byte-identical. New env var SHIPWRIGHT_ITERATE_AUTOMERGE (default 1). Host-agnostic; softens no gate. New tests: test_ensure_current.py (4) + strengthened F11/campaign drift tests.
+- **Rejected:** GitHub Action post-merge regen (host-specific). Untracking the snapshots (breaks audit_staleness). Option C derived-cache restructure (disproportionate). Option B gh-pr-ci watcher deferred (makes A convenient, does not replace it).
+
+---
+
+### ADR-175: Clear H1/H2 via reducibility-catalog dogfood: tighten 51, grandfather 8
+- **Date:** 2026-06-12
+- **Section:** Bloat compliance (Group H)
+- **Run-ID:** iterate-2026-06-12-bloat-h1-h2-cleanup
+- **Context:** Group H reported H1 (8 oversize files not in baseline) + H2 (51 entries current>actual). Why they passed through: hard gates (pre-commit + CI bloat-check) are anti-ratchet-ONLY by design (block growth of baselined files, never NEW crossings); the only new-crossing gate is the local, marker+TTL, fail-open Stop hook (never in CI). H2 were not increases (38 stale -1 remnants + 13 real trims) — just a loose baseline.
+- **Decision:** H2: tightened all 51 current-values to actual LOC (preserve path/limit/state/adr; lower-only). H1: dogfooded the reducibility catalog on all 8 files — 7/8 long-but-coherent (catalog fires NO blocking finding; forced churn = the anti-pattern), 1/8 (events_log.py) a real D2 needing cross-module consolidation (out of scope). Grandfathered all 8 (state=grandfathered).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Honest catalog application beats blanket 'source must split': dogfood proved an LOC-as-router + falsifiable-catalog gate would not churn 7 coherent files and points at the 1 real smell.
+- **Consequences:** H1=0, H2=0, H6=0; anti-ratchet ok; shared suite 3284 passed. Follow-ups: trg-af476d87 (build intelligent bloat gate) + trg-b9acb195 (consolidate 3 repo-root resolvers).
+- **Rejected:** Splitting events_log.py/_triage_bundle.py now (cosmetic cuts violate G2; relocation reverses a documented 2026-05-29 decision, ~10 files). Bare bb.scan() regen (wipes ~25 ADR/exception annotations).
+
+---
+
+### ADR-176: Single canonical Shipwright-project predicate
+- **Date:** 2026-06-12
+- **Section:** shared/scripts/lib/project_root.py — project-detection predicate
+- **Run-ID:** iterate-2026-06-12-canonical-project-predicate
+- **Context:** Five hook sites each carried their own marker set (project_root: 5-config; phase_quality: 5-config + agent_docs; track_tool_calls: run+build; aggregate_triage: run-only; generate_handoff: inline broad), so a tree with one marker was classified differently across hooks.
+- **Decision:** Make lib.project_root.is_shipwright_project the single canonical predicate (any config marker OR .shipwright/agent_docs/, fail-closed) and have all five hooks delegate to it. phase_quality re-exports it (its duplicate _constants.CONFIG_MARKERS removed); the historical _is_shipwright_project stays a back-compat alias; resolve_project_root prefers a config-bearing subdir over an agent_docs-only one.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Unify UP (broad superset), not down: the agent_docs arm is the deliberate fresh-project window; narrowing would regress phase-quality/handoff auditing. The reviewers' 'widening crashes narrow consumers' HIGH finding was empirically refuted (aggregate_triage reads no config).
+- **Consequences:** All hooks now agree on the greenfield/foreign boundary. track_tool_calls + aggregate_triage fire on more (legitimately-Shipwright) trees — empirically verified harmless. Each hook's degraded-import fallback preserves its own prior markers. New consensus drift-guard test_canonical_project_predicate.py.
+- **Rejected:** Keep per-site predicates + a meta-test asserting equal marker sets — leaves N marker copies (SSoT becomes a test, not the code) and the agent_docs vs config-only arms are genuinely different code, not just different constants.
+
+---
+
+### ADR-177: End-to-end parallel-merge cascade integration test
+- **Date:** 2026-06-12
+- **Section:** shared/tests/test_parallel_merge_cascade_integration.py
+- **Run-ID:** iterate-2026-06-12-cascade-integration-test
+- **Context:** The auto-merge churn cascade (PRs #199-#211) had three artifact classes that conflict when parallel iterate branches merge serially — curated agent-docs (architecture.md bullets), regenerated churn snapshots (compliance MDs), and append-log JSONL — each fixed by a different mechanism (merge=union / integrate_main regenerate / merge=union) and proven INDIVIDUALLY by unit tests. The COMBINED end-to-end behavior across N serially-drained branches was never proven together.
+- **Decision:** Add shared/tests/test_parallel_merge_cascade_integration.py: real-git, NOT slow (so it gates in CI). Case A = three concurrent non-campaign iterates drained one-by-one via integrate_main; Case B = a campaign of three sub-iterates drained serially (adds the per-tree status.json projection from the union'd event log). Both assert all three artifact classes resolve together — no conflict markers, no stale, the run's own work_completed event survives.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Integration-level test of a cross-component contract; placed in shared/tests (fixtures + machinery live there), unmarked so CI's shared/tests step runs it. Regenerate is mocked (producers have their own tests) — this proves the merge orchestration, not producer internals.
+- **Consequences:** Empirical proof that the union (#213) + serial-integrate (#212) fixes COMPOSE for parallel + campaign. Reuses the git_origin_repo/make_worktree fixtures + integrate_main (the engine behind the F11 ensure_current guard AND the campaign drain). 189 LOC, ~3.6s.
+- **Rejected:** Mark it slow (CI excludes slow -> it would never gate). A real --autonomous campaign as the test (no Task tool / agent in pytest; the serial-drain ENGINE integrate_main IS the testable core). Follow-up: a cross_component risk-flag that requires integration coverage for such changes.
+
+---
+
+### ADR-178: Two structurally-inert compliance gates fixed: Group H default + S4 join
+- **Date:** 2026-06-12
+- **Section:** WP3 / F20+F21
+- **Run-ID:** iterate-2026-06-12-compliance-gate-coverage
+- **Context:** Deep-audit 2026-06-10 WP3: (F20) audit_detector.run_all default wanted set was {A..G}, excluding the registered Group H (bloat-policy detective audit) that all three preventive bloat gates hand off to. (F21) check_s4_fr_preservation built window via join over lines[i:i+6] slices (lists), raising TypeError on the first matching line and aborting the whole spec category.
+- **Decision:** Add 'H' to run_all's default wanted set and widen audit_compliance_on_stop's full-coverage gate _EXPECTED_GROUPS from A-G to A-H. Fix the S4 generator by flattening the 6-line slices into individual lines before join.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Both are one-line correctness defects restoring intended behavior; no convention or component contract changes. Smallest correct fixes; no abstraction added.
+- **Consequences:** Group H now executes on every full audit and on-stop dismiss path (verified end-to-end). The S4 spec category no longer aborts when a removed FR id is still referenced on an unchanged context line. Coverage tests updated to expect A-H; new TDD regression tests guard both findings.
+- **Rejected:** Catching the TypeError in run() (masks the bug); leaving H opt-in via --only (defeats the automatic post-merge net).
+
+---
+
+### ADR-179: Compact agent-doc backlog + retire convention-routing fallback
+- **Date:** 2026-06-12
+- **Section:** Iterate — change: compress agent-doc backlog
+- **Run-ID:** iterate-2026-06-12-compress-agent-doc-backlog
+- **Context:** architecture.md '## Architecture Updates' + conventions.md '## Learnings' had bloated to multi-hundred-char paragraphs in always-loaded Layer-1 context. Iterate 1 (PR #206) fixed the entry rules; this is the 'compress the backlog' half.
+- **Decision:** Compact every backlog entry to a one-line pointer (run_id/rule + gist + arrow archive), migrate convention-impact entries to conventions.md '## Convention Updates', archive verbatim detail under .shipwright/planning/adr/_archive-agent-doc-updates.md, retire the _LEGACY_CONVENTION_DOC fallback in architecture_doc.py, and lower the entry-budget cutoff to 2026-05-01.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Single atomic PR: lowering the cutoff retroactively enforces all three sections in one gate run, so it is only valid when both docs are compacted in the same tree.
+- **Consequences:** Always-loaded docs shrink sharply with zero detail loss (archive). convention run_ids now route ONLY to conventions.md; the budget gate enforces the whole compacted corpus retroactively.
+- **Rejected:** 2-PR split (architecture, then conventions+cutoff): the conventions PR would red-gate on a still-verbose architecture.md unless the first merged first — fragile in an autonomous run where repo auto-merge may be off.
+
+---
+
+### ADR-180: Complete config-reader BOM tolerance; cover integrate_main commit-failure branches
+- **Date:** 2026-06-12
+- **Section:** Iterate — change: config-reader BOM tolerance + integrate_main failure tests
+- **Run-ID:** iterate-2026-06-12-config-bom-integrate-tests
+- **Context:** WP8/#203 BOM-hardened four config readers but left lib/config.read_config on plain utf-8 (JSONDecodeError on a hand-edited BOM config); WP6/#201 added integrate_main's followup_commit_failed (exit 8) and merge_commit_failed_abort_incomplete branches with only the merge-commit AC covered.
+- **Decision:** Align read_config to encoding=utf-8-sig and pin it with a BOM round-trip test; add direct tests for the two uncovered integrate_main failure branches; split the two at-limit test modules along their F24/F25 and core/commit-failure boundaries.
+- **Commit:** (assigned post-merge)
+- **Rationale:** utf-8-sig is a non-breaking superset of utf-8 for non-BOM content; the falsification probe confirms plain utf-8 raises 'Unexpected UTF-8 BOM'. Co-locating each failure family keeps modules coherent and edit-cheap.
+- **Consequences:** All five config readers are uniformly BOM-tolerant; both integrate_main commit-failure exits (7/8) plus the abort double-fault are covered; four test modules each sit well under the 300-LOC ceiling.
+- **Rejected:** An ADR bloat-exception for the two test files (they split cleanly along existing concern boundaries); deferring a1-3 until the sibling PRs merged (moot — #201/#203 auto-merged mid-run).
+
+---
+
+### ADR-181: cross_component risk flag forces integration coverage (non-dodgeable)
+- **Date:** 2026-06-12
+- **Section:** classify_complexity + iterate_checks — cross_component integration-coverage gate
+- **Run-ID:** iterate-2026-06-12-cross-component-gate
+- **Context:** After the merge-cascade work, the gap analysis found the empirical machinery (Confidence Calibration + Test Completeness Ledger) is boundary-centric (touches_io_boundary -> round-trip) and E2E/F0.5 is app-surface-centric. NEITHER forces an integration/composition test for a FRAMEWORK cross-component change (merge machinery, hooks, pipeline, campaign). So the cascade fixes were each unit-tested but the composition was never forced — I had to be TOLD to write the integration test.
+- **Decision:** New cross_component risk flag (classify_complexity.CROSS_COMPONENT_FILE_PATTERNS + is_cross_component_change; re-exported via shared/contracts/iterate.py): merge/churn/event-log resolver, hooks + hook fan-out, pipeline validators, campaign drain. At medium+ it requires a category:'integration' behavior in the Ledger. NON-dodgeable: the F11 verifier check_integration_coverage RECOMPUTES the flag from the diff (merge-base..HEAD), not an agent-report, and STOPs without it.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Mirrors touches_io_boundary's round-trip (the composition analogue). Recompute-from-diff (not self-report) makes it trustworthy for auto-merge — fires even if the agent omits the flag. The gate's own meta-tooling (classify_complexity/iterate_checks) is deliberately excluded (circular).
+- **Consequences:** A framework cross-component change can no longer merge unit-tested-but-composition-unproven. The empirical machinery now covers all three axes: depth (asymptote), breadth (coverage ledger), composition (integration coverage). Verifier keeps a drift-pinned local pattern copy (no cross-plugin import in the hot path); a drift test pins it == the SSoT. 17 new tests.
+- **Rejected:** Agent-self-reported flag (dodgeable by omission). Importing the detector into the load-bearing verifier (cross-plugin fragility ADR-044) — used a drift-pinned local copy. A separate touches_hooks flag — folded hooks into cross_component (one requirement regardless of class).
+
+---
+
+### ADR-182: Delivery-Watch: delivered = merged + green (no shoot-and-forget)
+- **Date:** 2026-06-12
+- **Section:** shared/scripts/tools/watch_pr_delivery.py — F11 delivery gate
+- **Run-ID:** iterate-2026-06-12-delivery-watch
+- **Context:** 2026-06-12 PR #213 was reported 'done' the moment auto-merge was armed, while a Required Check was RED (an over-budget architecture.md entry failed the iterate-plugin agent-doc 600-char budget gate, which is NOT in the shared/tests F0 run). The PR sat BLOCKED; the user caught it. 'Shoot and forget' = arming/pushing and walking away without confirming the PR actually merges green.
+- **Decision:** Encode 'delivered = MERGED + all Required Checks green'. New shared/scripts/tools/watch_pr_delivery.py: pure classify_delivery (merged/closed/checks_failed/pending) + a thin gh poll loop. F11 runs it as the final gate and fails CLOSED on anything but merged (exit 1 on checks_failed/closed/timeout/gh-error; only exit 0 proceeds). F2 mandates running the iterate-plugin agent-doc budget lint locally (outside the shared/tests F0) before push.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The watch is inherently host-specific (PR delivery is a GitHub fact); the iterate's host-agnostic correctness is unaffected. Pure classifier is the tested core; the gh poll loop is the thin untestable shell. Fail-closed default (only exit 0 proceeds) per external review.
+- **Consequences:** F11 no longer ends at 'PR armed'; it watches to delivery, so a red post-arm check STOPS the run instead of slipping through. The F0 content-lint blind spot (iterate-plugin budget gate) is closed by a before-push re-run rule. New helper + 8 classifier tests + 4 F11/F2 drift tests. Memory feedback_no_shoot_and_forget.
+- **Rejected:** A background gh-pr-ci producer as the ONLY mechanism (the synchronous F11 watch is the immediate guarantee; the producer/Option B automates campaign drains later, does not replace it). Treating a pending-timeout or gh-error as 'done' (external review: must fail closed).
+
+---
+
+### ADR-183: Canonical project-root/worktree resolvers in 5 hooks + drift project guard
+- **Date:** 2026-06-12
+- **Section:** a1-2 (WP5)
+- **Run-ID:** iterate-2026-06-12-hook-resolver-canon
+- **Context:** WP5 of the 2026-06-10 deep audit: five hooks resolved the project root via os.getcwd() or unguarded paths, so the compliance gates fail open in subdirectory-project layouts (F5), the plugin-cache-sync reminder never fires for the worktree edit path (F6), check_drift writes triage into foreign repos (F7), the drift dedup key embeds an absolute tree path causing false auto-dismiss across main<->worktree (F8), and the toolcall-counter readers diverge from the producer (F10).
+- **Decision:** Swap os.getcwd()->resolve_project_root() in check_rtm_coverage, check_security_scan, estimate_context_pressure, reset_tool_counter; strip the .worktrees/<slug>/ prefix in mark_plugin_edit.is_plugin_side (reusing bloat_baseline.strip_worktree_prefix); add an is_shipwright_project guard plus a repo-relative canonical dedup key to check_drift, extracting both helpers into a new shared/scripts/lib/drift_anchor.py.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Centralizing the project guard and canonical-anchor logic in drift_anchor.py gives one choke point for the guard and keeps check_drift.py under its baseline (no anti-ratchet bump).
+- **Consequences:** Hooks resolve correctly in subdirectory, worktree, and foreign-repo layouts; check_drift no-ops in non-Shipwright dirs; drift dedup keys are stable across main<->worktree so still-present drift is no longer machine-dismissed. check_drift.py shrinks 554->534 LOC, staying under its grandfathered bloat baseline.
+- **Rejected:** Inlining the F7/F8 helpers into check_drift.py (would ratchet its bloat baseline upward).
+- **Details:** [2026-06-12-hook-resolver-canon.md](../planning/iterate/2026-06-12-hook-resolver-canon.md)
+
+---
+
+### ADR-184: Installer/shell POSIX fixes (deep-audit WP10 F33-F38)
+- **Date:** 2026-06-12
+- **Section:** iterate-2026-06-12-installer-shell-fixes
+- **Run-ID:** iterate-2026-06-12-installer-shell-fixes
+- **Context:** The recommended POSIX install path was broken six ways (deep-audit WP10 F33-F38): set -e prereq counter abort; uv PATH ~/.cargo/bin vs astral ~/.local/bin; alias omits adopt + stale-alias skip guard; unquoted $REPO_ROOT splits on spaces; bare python aborts where only python3 exists; verify-setup sources .env.local, executing dotenv values.
+- **Decision:** Fixed all six in scripts/{install,update-marketplace,verify-setup}.sh: missing=$((missing+1)); PATH ~/.local/bin:~/.cargo/bin; add adopt + awk strip-rewrite refresh (backup + non-empty guard); quote --plugin-dir; resolve python3/python/py into $PYTHON_BIN; parse .env.local via canonical env.py:parse_env_file (no source/eval; bash indirect expansion; identifier-validated keys).
+- **Commit:** (assigned post-merge)
+- **Consequences:** Install path works on Debian/Ubuntu/macOS + space-containing clones; verify-setup no longer executes dotenv values. 13 bash-subprocess tests added. scripts/install.sh allowlisted in compliance path-canon (quoted -compliance plugin dir trips the hyphen-segment regex). Detailed ADR at .shipwright/planning/iterate/2026-06-12-installer-shell-fixes.md.
+- **Rejected:** F38: rejected emitting export K=V for shell eval (re-adds the injection surface F38 removes). F36: rejected printf %q (unreadable rc alias); quoting covers the real space case.
+
+---
+
+### ADR-185: Probe Python interpreters by test-running --version, not command -v
+- **Date:** 2026-06-12
+- **Section:** Iterate — bug: marketplace-sync python3 stub probe
+- **Run-ID:** iterate-2026-06-12-marketplace-python3-stub-probe
+- **Context:** F37 (#205) switched update-marketplace.sh + verify-setup.sh to probe python3->python->py via 'command -v' only. On Windows python3 is the Microsoft Store App-Execution-Alias stub: 'command -v' finds it but invoking it exits 49, so under set -euo pipefail the first $(python3 -c ...) aborted the whole plugin-cache sync right after 'Full sync:'.
+- **Decision:** Probe by TEST-RUNNING each candidate ('command -v "$c" && "$c" --version >/dev/null 2>&1'), not just 'command -v'. The stub fails --version and the loop falls through to the real python.
+- **Commit:** (assigned post-merge)
+- **Rationale:** 'command -v' proves a name resolves on PATH, not that it runs; an App-Execution-Alias stub is exactly that false positive. A successful --version is the cheap liveness check.
+- **Consequences:** update-marketplace.sh sync completes on Windows (13 synced, 0 errors). verify-setup.sh consolidated to one SW_PYTHON resolver reused by the prereq check + .env.local parser. F37 POSIX-only-python3 case preserved.
+- **Rejected:** Hardcoding 'python' (re-breaks Debian/macOS — the F37 regression inverted); sniffing the WindowsApps stub path (brittle, location varies).
+
+---
+
+### ADR-186: LOC becomes a router, not the bloat verdict
+- **Date:** 2026-06-12
+- **Section:** Iterate — change: reducibility reviewer gate
+- **Run-ID:** iterate-2026-06-12-reducibility-gate
+- **Context:** The bloat gate's only verdict was a raw LOC count, which cannot tell long-but-coherent code from genuinely reducible code — yielding false positives (churning coherent code under a number) and false negatives (short, dense files passing).
+- **Decision:** Make LOC a ROUTER: a budget crossing escalates to a reducibility reviewer that blocks only on a concrete, falsifiable reduction from a closed catalog (D/A/X/C/S/M/P/T) citing what-to-remove + est-LOC-saved + keeps-tests-green; no concrete finding -> PASS.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A cheap quantitative signal should route, not rule; the verdict belongs to a reviewer applying a falsifiable rubric. Validated by the PR #219 dogfood: 7/8 H1 files coherent, 1/8 a real D-finding.
+- **Consequences:** Coherent long code is no longer churned (guardrails G1-G6). Runs at three reviewer surfaces: local code-reviewer bounce-back, B4.5 CI Tier-3 Required Check, advisory plan reviewer. The CI rule is conservative (block only on material est-LOC-saved).
+- **Rejected:** Embedding it in the byte-locked Bloat Checklist section (would ratchet the grandfathered sub-iterate-runner.md baseline); a brand-new CI job (B4.5 pr_reviewer already exists — extended its prompt); YAML/MD idiom-map (JSON matches the shared/profiles convention).
+
+---
+
+### ADR-187: Relocate resolve_main_repo_root to lib/repo_root.py (reverses 2026-05-29 keep-in-place)
+- **Date:** 2026-06-12
+- **Section:** lib/repo_root.py + lib/events_log.py
+- **Run-ID:** iterate-2026-06-12-repo-root-resolver-relocate
+- **Context:** events_log.resolve_main_repo_root was a repo-root primitive squatting in the event-log module (its own docstring conceded it no longer locates the event log). Surfaced by the H1 bloat dogfood on events_log.py (323 LOC; trg-b9acb195).
+- **Decision:** Moved the implementation to its thematic home lib/repo_root.py (beside main_repo_root_or); events_log re-exports it via a lazy back-compat shim. Migrated the net-zero consumers (write_decision_drop, aggregate_decisions, plugin_sync_reminder). Reverses the 2026-05-29 'resolve_main_repo_root stays in events_log' decision.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Thematic home + free bloat reduction. A lazy (call-time) re-export avoids the events_log->repo_root->worktree_isolation->events_log import cycle a module-level re-export would create.
+- **Consequences:** events_log.py 323->220 LOC; full suite green + 0 anti-ratchets. The two grandfathered consumers (iterate_checks 1140, group_f 395) stay on the re-export to avoid ratcheting their bloat. Baseline-tightening of the now-loose events_log/test_events_log entries (H2 trg-a906e79b) deferred to the bloat cleanup campaign, which owns baseline edits.
+- **Rejected:** Module-level re-export (import cycle); unifying all 3 resolvers (distinct failure contracts, out of scope); migrating the grandfathered consumers (ratchets their bloat past baseline).
+
+---
+
+### ADR-188: triage_gc under-lock recompute is union-residence aware
+- **Date:** 2026-06-12
+- **Section:** Path B (CHANGE) — triage GC hardening / a1-6 follow-up
+- **Run-ID:** iterate-2026-06-12-triage-gc-union-residence
+- **Context:** a1-6/F19 closed the tracked-route TOCTOU but the under-lock recompute read the tracked store only; an idle-main-with-origin re-open routed to the gitignored outbox stayed invisible, so the item was still dropped and its outbox status orphaned.
+- **Decision:** apply_gc recomputes the droppable set under the lock over union residence (read_all_items, tracked union outbox), intersected with the caller's tracked-only plan; only the tracked file is rewritten. The drift meta-test is source-derived; prChecksResolved added to MACHINE_REASONS; auditResolved kept via a documented LEGACY_RETAINED_TOKENS allowlist; _strip_control_chars extracted to shared/scripts/lib/tty_sanitize.py.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reuses the canonical union resolver rather than a new resolution path; the report stays tracked-only to preserve D1 (the CLI never claims authority over the gitignored outbox).
+- **Consequences:** An outbox-routed re-open survives GC; the report stays a tracked-only upper bound (apply drops same-or-fewer); the drift guards now do real work (surfaced the prChecksResolved gap + auditResolved orphan). New shared component tty_sanitize.py.
+- **Rejected:** Making plan_gc/the report union-aware (blurs the D1 ownership line); dropping auditResolved from MACHINE_REASONS (would silently narrow GC for outbox-buffered legacy dismissals).
+
+---
+
+### ADR-189: mark_status routes idle-main status flips to the outbox (completes D1)
+- **Date:** 2026-06-12
+- **Section:** Iterate — change: triage mark_status idle-main outbox routing
+- **Run-ID:** iterate-2026-06-12-triage-status-idle-main-outbox
+- **Context:** Campaign D1 (2026-06-08) routed idle-main triage APPENDS to the outbox, but mark_status stayed residence-derived. A status flip on a tracked-resident item on idle main (WebUI dismiss; compliance/drift/phase-quality Stop-hook auto-dismiss) wrote the tracked log = undelivered drift: blocked a hand git pull AND never reached origin. Surfaced live by a WebUI dismiss blocking the post-#197 pull.
+- **Decision:** mark_status now routes to the outbox when should_route_to_outbox (origin + HEAD==default) is true, symmetric with append_triage_item; else residence-derived (outbox-only -> outbox, tracked/both -> tracked, ships in PR from a worktree).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Completes D1's tracked-clean-on-idle-main intent for the status verb. A routing rule keyed off a predicate must cover every write verb or the uncovered one re-introduces the drift. Net-zero LOC keeps the ADR-100 exception file at 719.
+- **Consequences:** Idle-main status flips no longer drift the tracked log or block pulls; delivered to origin by the iterate sweep. Loss-proof via union-read + sweep + GC. All idle-main producers benefit, not just the WebUI.
+- **Rejected:** Leave residence-only + rely on reconcile_main_triage (manual-CLI-only post-D2, orphans on local main); webui-only fix (CLI dismiss on main would still drift — root cause is shared mark_status).
+
+---
+
+### ADR-190: Triage tooling hardening: GC token SSoT, GC TOCTOU, control-char sanitizer, outbox CLI
+- **Date:** 2026-06-12
+- **Section:** WP9 / a1-6
+- **Run-ID:** iterate-2026-06-12-triage-tooling-hardening
+- **Context:** 2026-06-10 deep audit WP9: four triage-tooling defects. F30 phaseQualityRefreshed missing from triage_gc.MACHINE_REASONS. F19 GC plan computed outside the lock drops a status flip appended between plan and apply (TOCTOU). F31 (security) _strip_control_chars wired only to launchPayload, so a workflow name injects terminal escapes into title/detail. F29 promote/dismiss pre-check only the tracked file, so D1 outbox-only items can't be promoted/dismissed. See spec-ref.
+- **Decision:** F30: add phaseQualityRefreshed + a registry-driven drift meta-test. F19: recompute the droppable set under the lock, intersected with the caller plan; validate the effective set. F31: wire _strip_control_chars into title/detail/evidence (md) and title (CLI), and strip C1 (0x80-0x9F) too per external review (Gemini HIGH). F29: relax the existence pre-check to tracked-OR-outbox, mirroring mark_status. See spec-ref for review-findings tables.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Each fix mirrors an already-reviewed pattern (complianceRefreshed; mark_status tracked-OR-outbox; the launchPayload sanitizer; triage.py lock-then-scan). Intersect-not-union keeps the dry-run consent surface authoritative.
+- **Consequences:** Phase-quality dismissal churn is GC-able; a concurrent re-open survives apply_gc; terminal-escape injection into both rendered surfaces is closed (C0+C1+DEL); outbox-only items are promotable/dismissable. The two _strip_control_chars copies must stay in sync. apply_gc's printed report is an upper bound under concurrency.
+- **Rejected:** Centralizing the two sanitizers (cross-producer refactor beyond scope); a producer-token registry (none exists; enumeration guards both drift directions); tail-only-parse for the lock (premature).
+- **Details:** [2026-06-12-triage-tooling-hardening.md](../planning/iterate/2026-06-12-triage-tooling-hardening.md)
+
+---
+
+### ADR-191: merge=union for curated agent-docs (close the structural gap)
+- **Date:** 2026-06-12
+- **Section:** shared/scripts/lib/gitattributes_union.py — curated-doc merge=union category
+- **Run-ID:** iterate-2026-06-12-union-curated-agent-docs
+- **Context:** Follow-up to iterate-2026-06-12-automerge-serial-integrate: that fix auto-resolves the regenerated churn snapshots at merge, but .shipwright/agent_docs/architecture.md + conventions.md are curated prose (NOT in CHURN_ALLOWLIST, never regenerated). Parallel iterates each prepend a bullet to their ## Updates / ## Learnings sections, which collide at the same anchor — the last unsolved piece of the cascade. PRs #207/#208/#210/#211 each conflicted on exactly these two files.
+- **Decision:** Add the two curated agent-docs to merge=union as a DISTINCT CURATED_DOC_UNION_PATHS category; the rendered fragment is ALL_UNION_PATHS = UNION_PATHS + CURATED_DOC_UNION_PATHS. UNION_PATHS stays the two JSONL logs (drift-pinned to the churn allowlist + managed-repo signal). Two bullet-prepends at a section top -> union keeps both; GitHub honors merge=union server-side, so even auto-merge resolves it and integrate_main no longer blocks on a curated-doc-only conflict.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reuses the proven events.jsonl/triage.jsonl union mechanism; works server-side (no ensure_current needed for these files). Separate category keeps the JSONL UNION_PATHS<->churn pin exact. Cheaper + more complete than per-run drop-files (Option B) for the dominant prepend pattern.
+- **Consequences:** architecture.md/conventions.md stop cascading DIRTY/stale for parallel iterates, server-side too. Composes with the serial-integrate fix to fully auto-resolve the cascade. Scaffolds into managed repos via the existing template/self-heal/adopt scaffolder. Curated docs stay OUT of CHURN_ALLOWLIST (union-merged, not regenerated). New parameterized real-git repro + negative control over both docs (31 union tests).
+- **Rejected:** Per-run drop-files for the ## Updates sections (Option B — bigger: producers, oracle, aggregation; reconsider if union garble bites). merge=union on the WHOLE curated file without a separate category (would break the UNION_PATHS<->churn drift pin).
+
+---
+
+### ADR-192: UTF-8-strict churn _git + structured commit-failure handling
+- **Date:** 2026-06-12
+- **Section:** WP6
+- **Run-ID:** iterate-2026-06-12-utf8-churn-merge
+- **Context:** Deep audit F22 (HIGH): resolve_churn_conflicts._git ran git text=True with no encoding=, so on cp1252 _union_conflict round-tripped UTF-8 triage.jsonl into mojibake (or crashed on a cp1252-undefined byte) back into the tracked log. F17 (MED): integrate_main's git commit used check=True with no handler, raising CalledProcessError (no JSON) and wedging the repo in MERGE_HEAD.
+- **Decision:** Strict encoding='utf-8' in resolve_churn._git (byte-identical round-trip, no errors=replace); errors='replace' in integrate_main._git (decode-only). Wrap both integrate_main commits: merge->merge_commit_failed+verified abort; follow-up->followup_commit_failed (no abort). _union_conflict normalizes a non-UTF-8 stage to _TriageNotUtf8Error -> triage_invalid+abort. See ADR-099 amendment for the bloat bump.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Strict UTF-8 is the only byte-identity guarantee; errors=replace would silently corrupt the sole cross-project triage safety net. Inline (no shared helper) keeps WP6 independent of parallel WP7/WP8.
+- **Consequences:** triage.jsonl unions byte-identical on Windows; a corrupt legacy byte fails loudly (triage_invalid) not silent corruption; a blocked merge commit returns structured JSON, no MERGE_HEAD. CLI exits 7/8 (callers branch on JSON status). resolve_churn_conflicts.py 326->357 (ADR-099 amended, deliberate same-commit bump).
+- **Rejected:** Shared proc_text helper (WP0 not landed). errors=replace in union path (corrupts byte-identity). merge --abort on follow-up failure (merge already landed).
+- **Details:** [099-bloat-exception-churn-resolver-triage-union.md](../planning/adr/099-bloat-exception-churn-resolver-triage-union.md)
+
+---
+
+### ADR-193: UTF-8 in config + F0.5 runner readers (utf-8-sig + errors=replace)
+- **Date:** 2026-06-12
+- **Section:** WP8 / F24+F25
+- **Run-ID:** iterate-2026-06-12-utf8-config-readers
+- **Context:** On the cp1252 Windows dev platform, config readers (artifact_sync, suggest_iterate, classify_complexity, classify_intent) did json.loads(read_text()) with no encoding=, crashing on non-ASCII FR titles/descriptions written ensure_ascii=False (F24); surface_verification ran the F0.5 runner text=True with no encoding=, crashing the reader-thread decode on vitest U+276F / em-dash output and false-failing F0.5 (F25).
+- **Decision:** Inline fix (no shared helper, for sibling-merge isolation): four config readers now read_text(encoding='utf-8-sig') — utf-8-sig also tolerates a hand-edited BOM — with UnicodeDecodeError added to the fail-soft except tuples where the reader is advisory; the F0.5 runner subprocess gets encoding='utf-8', errors='replace' (no-shell contract unchanged). lib/config.py was already UTF-8-correct and is pinned by a regression test.
+- **Commit:** (assigned post-merge)
+- **Rationale:** errors='replace' is the audit-prescribed fix that keeps a single malformed byte from re-crashing F0.5 while preserving valid UTF-8 glyphs; utf-8-sig is a strict superset of utf-8 that additionally absorbs a Notepad BOM (external-review finding).
+- **Consequences:** Non-English (CJK/Cyrillic) projects no longer crash iterate F1 / the suggest_iterate prompt hook on Windows; vitest/em-dash test output no longer false-fails F0.5; a malformed byte degrades to U+FFFD instead of crashing. 10 new tests; no bloat-baseline change.
+- **Rejected:** Shared shared/scripts/lib/proc_text.py helper (WP0) — would couple this branch to siblings a1-3/a1-4 and create a merge hot-file; audit marks WP0 optional. errors='strict' on the runner — a single bad byte would re-crash F0.5.
+- **Details:** [2026-06-12-utf8-config-readers.md](../planning/iterate/2026-06-12-utf8-config-readers.md)
+
+---
+
+### ADR-194: Pin UTF-8 on git-reading subprocess decodes (F23/F26/F27)
+- **Date:** 2026-06-12
+- **Section:** a1-4 / WP7
+- **Run-ID:** iterate-2026-06-12-utf8-git-tools
+- **Context:** Three git-reading tools (adopt git_analyzer._run_git, generate_session_handoff.get_git_info, events_log.resolve_main_repo_root) used text=True with no encoding=, so on Windows git's UTF-8 byte stream was decoded as cp1252. Non-ASCII git data (Cyrillic/CJK/raw 0x9D byte) mojibaked or raised UnicodeDecodeError in the reader thread: crashing /shipwright-adopt, corrupting the tracked session_handoff.md, and resolving a phantom main root that silently lost worktree decision-drops.
+- **Decision:** Add encoding="utf-8", errors="replace" inline to each git text=True call (no shared helper, keeping this branch mergeable independently of sibling UTF-8 sub-iterates). In resolve_main_repo_root, also assert the resolved root .exists() before returning; fail-soft to None (callers translate to literal project_root via 'or project_root') with a loud warnings.warn diagnostic.
+- **Commit:** (assigned post-merge)
+- **Rationale:** errors=replace guarantees the tools never abort on bad bytes; the exists() guard plus the documented None-on-failure caller contract make the resolver fail-soft to a real directory.
+- **Consequences:** git output decodes correctly on Windows; undecodable bytes become U+FFFD instead of crashing; a corrupt/mojibaked main root no longer silently swallows decision-drops. No behavior change on native-UTF-8 platforms (no-op).
+- **Rejected:** Shared proc_text helper (audit WP0): kept out of this sub-iterate to keep the branch disjoint from parallel siblings. Returning Path(project_root) directly from resolve_main_repo_root: rejected for breaking the uniform None-on-failure contract both callers already handle via 'or project_root'.
+- **Details:** [2026-06-12-utf8-git-tools.md](../planning/iterate/2026-06-12-utf8-git-tools.md)
+
+---
+
+### ADR-195: W2 SKIPs on unresolvable run_id, mirroring the S2/S3 guard
+- **Date:** 2026-06-12
+- **Section:** W2 run_id-resolution guard (phase-quality)
+- **Run-ID:** iterate-2026-06-12-w2-unresolvable-runid-skip
+- **Context:** The phase-quality Stop audit runs verifiers with run_id=unknown when no iterate run resolves. check_w2_external_review_marker lacked the unresolvable-run guard S2/S3 already share: with run_id=unknown it tail-fell-back to the latest entry's complexity, then either false-FAILed (no per-run marker in a fresh worktree) or false-PASSed on the run-agnostic external_review_state.json — a recurring Tier-1 false-positive (trg-9909ef53/c80254c1).
+- **Decision:** W2 now calls the same unresolvable_run_id_skip helper, with the per-run marker as the only run-specific candidate. A sentinel run_id (unknown/empty) with no per-run marker SKIPs; a real run (exact iterate_history entry) or a per-run marker on disk bypasses the guard and runs the normal marker logic unchanged. The guard runs before the spec-glob, also fixing a latent crash on empty run_id (pathlib rejects the '**.md' pattern).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reuse the existing shared guard; symmetry with S2/S3 keeps one contract.
+- **Consequences:** Background audits with run_id=unknown no longer emit a spurious W2 Tier-1 FAIL (or false PASS); real finalizations are unaffected; the state file is no longer consulted for unresolvable runs. W2/S2/S3 share one resolvability contract, pinned by a dedicated meta-test mirroring test_spec_checks_run_id_guard.py.
+- **Rejected:** Faking a marker for unresolvable runs (symptom-only); worktree cleanup alone (re-fires on the next unresolvable audit).
+
+---
+
+### ADR-196: Coerce explicit-null list/dict fields in WorkEvent.from_dict
+- **Date:** 2026-06-12
+- **Section:** Iterate — bug: WorkEvent null-frs coercion
+- **Run-ID:** iterate-2026-06-12-workevent-null-frs-coerce
+- **Context:** A work_completed event carrying an explicit affected_frs:null (vs the normal key-omit) made WorkEvent.from_dict return None: d.get(key, default) only falls back when the key is ABSENT. map_requirements_to_events then iterated None and crashed the whole compliance markdown regen (dashboard/RTM/sbom/test-evidence/change-history).
+- **Decision:** Read the list/dict fields with 'or []' / 'or {}' instead of a .get default so explicit-null and missing collapse alike. Mirrors the existing TestRunEvent.from_dict 'layers = d.get("layers") or {}' guard.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Fix at the source (from_dict), not per consumer: the same null bricks every compliance MD, and keying off the mechanism (explicit-null vs absent default) generalizes to any future null-emitting producer.
+- **Consequences:** No producer emitting null affected_frs/new_frs/tests/review can brick compliance; the fix sits at the deserialization source so all four RTM consumers are covered by one change. A regression test feeds an explicit-null event end-to-end.
+- **Rejected:** Guarding each of the 4 consumer call-sites ('for fr_id in we.affected_frs') — symptom-patching that misses future consumers; or forcing non-null affected_frs in every upstream producer.

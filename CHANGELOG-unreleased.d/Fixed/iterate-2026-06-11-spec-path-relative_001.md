@@ -1,1 +1,0 @@
-Campaign sub-iterate `spec_path` in a campaign's status.json is now repo-relative POSIX instead of a machine-absolute path, so the Command Center and a fresh clone resolve it portably across machines/OSes. Existing tracked campaigns were migrated; the projection self-heals any remaining absolute path on the next regenerate.

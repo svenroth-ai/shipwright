@@ -1,1 +1,0 @@
-Arch-drift checkers (the `test_architecture_md_reflects_arch_impact` test and the compliance Group-F F5 detective) now scope to decision-drops owned by the current tree's event log, so cross-branch campaign sibling drops in the shared decision-drops dir no longer false-fail a later branch (fail-open when no event log exists).

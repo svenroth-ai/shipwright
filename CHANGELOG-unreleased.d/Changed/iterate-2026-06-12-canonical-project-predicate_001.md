@@ -1,1 +1,0 @@
-Consolidated the Shipwright-project detection used by all hooks onto one canonical predicate (`lib.project_root.is_shipwright_project`), so the phase-quality, compliance, triage, handoff, and tool-call hooks now agree on the greenfield/foreign boundary instead of using four slightly different marker sets.
