@@ -247,6 +247,20 @@ a GitHub Action post-merge regen (host-specific); untracking the snapshots (brea
 `audit_staleness`). A later host-agnostic watcher/producer (Option B, B4.5
 `gh-pr-ci` roadmap) can automate the serial drain but does not replace it.
 
+**Delivery is the MERGED PR, not the armed PR
+(iterate-2026-06-12-delivery-watch).** Arming `gh pr merge --auto` and walking
+away is "shoot and forget": a Required Check can fail afterward and the PR sits
+BLOCKED, un-merged, red. F11's final step runs
+`shared/scripts/tools/watch_pr_delivery.py`, which polls
+`gh pr view --json state,mergeStateStatus,statusCheckRollup` until the PR is
+`merged` (delivered), a Required Check fails (STOP — diagnose/fix/re-push/re-watch),
+the PR is closed, or the poll times out while pending (keep watching, not "done").
+A `needs:`-skipped Tier-1/2 `PR Review` counts as a pass. Companion F2 rule: the
+agent-doc 600-char budget gate (`test_agent_doc_entry_rules`) lives in the
+iterate-plugin suite, OUTSIDE the `shared/tests` F0 run, so F2 mandates running it
+locally after writing the `## Architecture Updates` / `## Learnings` entry, before
+push — otherwise an over-budget entry surfaces only as a red PR check.
+
 **Curated agent-docs use `merge=union`, not regeneration
 (iterate-2026-06-12-union-curated-agent-docs).** The serial-integrate fix above
 auto-resolves the *regenerated* churn snapshots, but `.shipwright/agent_docs/architecture.md`

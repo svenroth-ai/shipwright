@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-12-union-curated-agent-docs",
+    "run_id": "iterate-2026-06-12-delivery-watch",
     "date": "2026-06-12",
     "unit": {
       "status": "passed",
-      "passed": 3270,
-      "total": 3270
+      "passed": 3278,
+      "total": 3278
     },
     "integration": {
       "status": "not_run",
@@ -35,55 +35,81 @@
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "concurrent architecture.md bullet-prepends union without markers, bullets ordered after heading before base",
+          "behavior": "classify_delivery -> merged on state=MERGED",
           "disposition": "tested",
-          "evidence": "test_union_merges_concurrent_curated_bullets_without_markers[architecture.md] PASSED"
+          "evidence": "test_merged_is_delivered"
         },
         {
-          "behavior": "concurrent conventions.md (## Learnings) bullet-prepends union without markers",
+          "behavior": "classify_delivery -> closed on state=CLOSED",
           "disposition": "tested",
-          "evidence": "test_union_merges_concurrent_curated_bullets_without_markers[conventions.md] PASSED"
+          "evidence": "test_closed_is_not_delivered"
         },
         {
-          "behavior": "negative control: same prepends conflict WITHOUT union (both docs)",
+          "behavior": "classify_delivery -> checks_failed (+lists the failing CheckRun)",
           "disposition": "tested",
-          "evidence": "test_negative_control_curated_bullets_conflict_without_union[both] PASSED"
+          "evidence": "test_failed_checkrun_is_checks_failed_and_listed"
         },
         {
-          "behavior": "ALL_UNION_PATHS = UNION_PATHS + CURATED_DOC_UNION_PATHS (disjoint); template declares all 4",
+          "behavior": "classify_delivery -> pending on OPEN with running/clean checks",
           "disposition": "tested",
-          "evidence": "test_curated_doc_union_paths_are_the_two_agent_docs + test_template_exists_and_declares_every_union_line PASSED"
+          "evidence": "test_open_with_running_checks_is_pending"
         },
         {
-          "behavior": "UNION_PATHS unchanged == {EVENTS_LOG, TRIAGE_LOG} (JSONL pin)",
+          "behavior": "StatusContext FAILURE/ERROR counts as failing",
           "disposition": "tested",
-          "evidence": "test_union_paths_match_churn_allowlist_append_logs PASSED"
+          "evidence": "test_failed_statuscontext_counts_as_failing"
         },
         {
-          "behavior": "CURATED_DOC_UNION_PATHS == the two agent-docs",
+          "behavior": "ACTION_REQUIRED CheckRun counts as failing",
           "disposition": "tested",
-          "evidence": "test_curated_doc_union_paths_are_the_two_agent_docs PASSED"
+          "evidence": "test_action_required_checkrun_is_failing"
         },
         {
-          "behavior": "merge_into idempotent/never-clobber/partial/CRLF over all 4 paths",
+          "behavior": "SKIPPED/NEUTRAL are a pass, not a failure",
           "disposition": "tested",
-          "evidence": "existing merge_into tests (now over ALL_UNION_PATHS) PASSED"
+          "evidence": "test_skipped_and_neutral_do_not_count_as_failure"
         },
         {
-          "behavior": "self_heal backfills the full fragment (added == ALL_UNION_PATHS)",
+          "behavior": "missing statusCheckRollup key is pending, not a crash",
           "disposition": "tested",
-          "evidence": "test_self_heal_commits_when_union_missing PASSED"
+          "evidence": "test_missing_rollup_key_is_pending_not_crash"
         },
         {
-          "behavior": "adopt scaffolder 'already_present' now requires all 4 lines",
+          "behavior": "watch() loop polls pending until terminal (injected fetch/sleep)",
           "disposition": "tested",
-          "evidence": "test_already_present_is_noop (adopt) PASSED"
+          "evidence": "test_watch_loop_polls_pending_until_terminal"
+        },
+        {
+          "behavior": "watch() pending-timeout fails closed (timed_out)",
+          "disposition": "tested",
+          "evidence": "test_watch_loop_times_out_pending_fails_closed"
+        },
+        {
+          "behavior": "F11 runs the delivery-watch AFTER the arm + fails closed on every non-merged outcome",
+          "disposition": "tested",
+          "evidence": "test_f11_runs_delivery_watch_after_the_arm + test_f11_defines_delivered_as_merged_and_kills_shoot_and_forget"
+        },
+        {
+          "behavior": "F2 mandates running the iterate-plugin agent-doc budget lint before push",
+          "disposition": "tested",
+          "evidence": "test_f2_requires_running_the_agent_doc_budget_lint_before_push"
+        },
+        {
+          "behavior": "SKILL F11 index advertises the delivery watch",
+          "disposition": "tested",
+          "evidence": "test_skill_f11_index_advertises_delivery_watch"
+        },
+        {
+          "behavior": "live gh poll against real GitHub PR state",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "the watch() loop logic is tested with injected fetch/sleep; the real gh+GitHub round-trip is non-deterministic and absent in CI"
         }
       ],
       "counts": {
-        "testable": 9,
-        "tested": 9,
-        "untestable": 0,
+        "testable": 13,
+        "tested": 13,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
@@ -97,9 +123,9 @@
       "exit_code": 0,
       "tests_run": 0,
       "evidence_path": "",
-      "timestamp": "2026-06-12T13:48:39.000Z",
+      "timestamp": "2026-06-12T17:34:27.000Z",
       "attempts": 0,
-      "justification": "Framework-internal merge-driver config: extends the gitattributes merge=union SSoT (gitattributes_union.py) + template + root .gitattributes to two curated agent-docs, plus tests + docs. No web/UI/API application surface and no backend-affects-frontend path. Behavior verified end-to-end by REAL git merges: a parameterized real-git repro over BOTH curated docs proves two concurrent bullet-prepends union without conflict markers (ordered), with a negative control proving the union driver is the mechanism; the full F0 shared suite (3270) + adopt (304) stay green."
+      "justification": "Framework-internal F11 finalization gate: a new shared CLI tool (watch_pr_delivery.py) plus runtime-prompt prose (F11.md, F2.md, SKILL.md) and docs. No web/UI/API application surface. The pure classifier + poll-loop are verified by 10 unit tests with injected fetch/sleep (no gh, no real time); the F11/F2 prose contracts are drift-pinned. The only untestable leg is the live gh+GitHub round-trip (requires-external-nondeterministic-service)."
     }
   }
 }

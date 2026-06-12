@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-12T13:48:53.414596+00:00
+Generated: 2026-06-12T17:34:43.310298+00:00
 
 ## Requirements Coverage
 
@@ -183,6 +183,7 @@ Generated: 2026-06-12T13:48:53.414596+00:00
 | Consolidate the project-detection predicate across all hooks onto one canonical lib.project_root.is_shipwright_project | iterate | change |  | 3203/3203 | — | 2026-06-12 |
 | Serial integrate_main merge for campaign/parallel iterates: ensure_current.py refresh-if-behind guard at F11 + SHIPWRIGHT_ITERATE_AUTOMERGE defer with serial drain (auto-merge churn fix, Option A). | iterate | change |  | — | — | 2026-06-12 |
 | merge=union for curated agent-docs (architecture.md + conventions.md) via a distinct CURATED_DOC_UNION_PATHS category; closes the parallel-iterate bullet-prepend cascade server-side (follow-up to automerge-serial-integrate). | iterate | change |  | — | — | 2026-06-12 |
+| Delivery-Watch: F11 confirms the PR actually merges green before done (no shoot-and-forget); watch_pr_delivery.py + F2 budget-lint-before-push rule. | iterate | change |  | — | — | 2026-06-12 |
 
 ## Coverage Summary
 
@@ -190,7 +191,7 @@ Generated: 2026-06-12T13:48:53.414596+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 158 |
+| Iterate changes | 159 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

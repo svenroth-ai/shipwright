@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-06-12T13:48:53.414596+00:00
-Total commits: 970
+Generated: 2026-06-12T17:34:43.310298+00:00
+Total commits: 971
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 276
+    "fix" : 277
     "feat" : 267
     "chore" : 214
     "docs" : 123
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 276 commits
+### Fixes (fix) — 277 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-12 | merge | merge=union for curated agent-docs (close the structural gap) (#213) | 9d2239c6b033 |
 | 2026-06-12 | triage | union-residence GC recompute + source-derived drift meta-test (a1-6/F19 follow-up) (#208) | 6a3b4b0ea343 |
 | 2026-06-12 | compliance | scope arch-drift checkers to event-owned drops (#207) | 2d983794d565 |
 | 2026-06-12 | config | BOM-tolerant read_config + integrate_main commit-failure tests (#210) | 1cbc1ff0163e |
@@ -1039,7 +1040,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 970 |
+| Total commits | 971 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 970 |
+| Human-authored commits | 971 |
 
