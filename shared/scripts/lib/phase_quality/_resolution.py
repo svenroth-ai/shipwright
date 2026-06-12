@@ -19,21 +19,16 @@ import os
 import sys
 from pathlib import Path
 
-from ._constants import CONFIG_MARKERS, PLUGIN_TO_PHASE
+_SCRIPTS_ROOT = Path(__file__).resolve().parents[2]
+if str(_SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-
-def is_shipwright_project(project_root: Path) -> bool:
-    """Return True when ``project_root`` looks like a Shipwright project.
-
-    Matches the contract used by ``generate_handoff_on_stop.py`` and
-    ``check_rtm_coverage.py`` so all Stop hooks agree on what counts as
-    greenfield. We require at least one marker OR ``.shipwright/agent_docs/`` so
-    fresh projects between ``/shipwright-project`` init and the first
-    config write aren't skipped.
-    """
-    if any((project_root / m).exists() for m in CONFIG_MARKERS):
-        return True
-    return (project_root / ".shipwright" / "agent_docs").is_dir()
+from ._constants import PLUGIN_TO_PHASE  # noqa: E402
+# Canonical greenfield/foreign predicate — the single source of truth for every
+# hook (iterate-2026-06-12-canonical-project-predicate). Re-exported here so
+# existing ``phase_quality.is_shipwright_project`` callers stay unchanged while
+# the marker set lives in exactly one place.
+from lib.project_root import is_shipwright_project  # noqa: E402
 
 
 def phase_from_plugin_root(plugin_root: str | os.PathLike[str] | None) -> str | None:

@@ -31,13 +31,10 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.artifact_paths import runtime_dir  # noqa: E402
-from lib.project_root import resolve_project_root  # noqa: E402
+from lib.project_root import is_shipwright_project, resolve_project_root  # noqa: E402
 
 # aggregate_triage lives at shared/scripts/tools/aggregate_triage.py
 from tools import aggregate_triage  # noqa: E402
-
-
-SHIPWRIGHT_MARKER = "shipwright_run_config.json"
 
 
 def _resolve_project_root() -> Path:
@@ -45,10 +42,6 @@ def _resolve_project_root() -> Path:
         return resolve_project_root()
     except Exception:  # noqa: BLE001
         return Path.cwd()
-
-
-def _is_shipwright_project(project_root: Path) -> bool:
-    return (project_root / SHIPWRIGHT_MARKER).exists()
 
 
 def _consume_stdin() -> None:
@@ -63,8 +56,8 @@ def main() -> int:
     _consume_stdin()
 
     project_root = _resolve_project_root()
-    if not _is_shipwright_project(project_root):
-        # Greenfield-safe — silent no-op.
+    if not is_shipwright_project(project_root):
+        # Greenfield-safe — silent no-op (canonical predicate, lib.project_root).
         return 0
 
     try:
