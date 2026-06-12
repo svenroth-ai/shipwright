@@ -185,9 +185,14 @@ def main():
         sys.exit(0)
 
     # Guard 2: Read config
+    # WP8/F24: explicit UTF-8 (utf-8-sig tolerates an optional BOM from a
+    # hand-edited config) — a CJK / Cyrillic project description (written
+    # ensure_ascii=False) otherwise crashes this hook on the cp1252 Windows
+    # dev platform for every prompt. A truly malformed config fails soft
+    # (the hook is advisory; sys.exit(0) lets the prompt through).
     try:
-        run_config = json.loads(run_config_path.read_text())
-    except (json.JSONDecodeError, FileNotFoundError):
+        run_config = json.loads(run_config_path.read_text(encoding="utf-8-sig"))
+    except (json.JSONDecodeError, FileNotFoundError, UnicodeDecodeError):
         sys.exit(0)
 
     # Guard 3: Skip slash commands (user already chose a skill)
