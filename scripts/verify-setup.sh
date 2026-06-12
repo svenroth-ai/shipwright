@@ -27,7 +27,7 @@ if command -v claude &>/dev/null; then
     echo "  $PASS Claude Code: $version"
 else
     echo "  $FAIL Claude Code: not found (install from docs.anthropic.com)"
-    ((errors++))
+    errors=$((errors+1))
 fi
 
 # Python
@@ -39,11 +39,11 @@ if command -v python3 &>/dev/null; then
         echo "  $PASS Python: $py_version"
     else
         echo "  $FAIL Python: $py_version (need 3.11+)"
-        ((errors++))
+        errors=$((errors+1))
     fi
 else
     echo "  $FAIL Python: not found"
-    ((errors++))
+    errors=$((errors+1))
 fi
 
 # uv
@@ -52,7 +52,7 @@ if command -v uv &>/dev/null; then
     echo "  $PASS uv: $uv_version"
 else
     echo "  $FAIL uv: not found (curl -LsSf https://astral.sh/uv/install.sh | sh)"
-    ((errors++))
+    errors=$((errors+1))
 fi
 
 # Git
@@ -61,7 +61,7 @@ if command -v git &>/dev/null; then
     echo "  $PASS Git: $git_version"
 else
     echo "  $FAIL Git: not found"
-    ((errors++))
+    errors=$((errors+1))
 fi
 
 # gh (optional)
@@ -70,7 +70,7 @@ if command -v gh &>/dev/null; then
     echo "  $PASS GitHub CLI: $gh_version"
 else
     echo "  $WARN GitHub CLI: not found (optional, needed for PRs)"
-    ((warnings++))
+    warnings=$((warnings+1))
 fi
 
 # Node (optional)
@@ -104,12 +104,12 @@ if [ -f "$REPO_ROOT/plugins/shipwright-run/.claude-plugin/plugin.json" ]; then
             echo "    $PASS $name"
         else
             echo "    $FAIL $name (missing plugin.json)"
-            ((errors++))
+            errors=$((errors+1))
         fi
     done
 else
     echo "  $FAIL Repo not found at $REPO_ROOT"
-    ((errors++))
+    errors=$((errors+1))
 fi
 
 echo ""

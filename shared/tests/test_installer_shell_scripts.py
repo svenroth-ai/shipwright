@@ -91,6 +91,31 @@ def test_f33_missing_counter_does_not_abort_under_set_e():
     )
 
 
+def test_f33_verify_setup_counters_do_not_abort_under_set_e():
+    """verify-setup.sh shares the F33 pattern in its errors/warnings counters
+    and is a documented standalone command — they must survive ``set -e`` from 0."""
+    _require_bash()
+    src = _read(VERIFY_SH)
+    inc_lines = [
+        ln.strip()
+        for ln in src.splitlines()
+        if not ln.lstrip().startswith("#")
+        and re.search(r"\b(errors|warnings)\b", ln)
+        and ("++" in ln or "errors+1" in ln or "warnings+1" in ln)
+    ]
+    assert inc_lines, "verify-setup.sh has no errors/warnings increment lines to probe"
+    body = (
+        "set -euo pipefail\nerrors=0\nwarnings=0\n"
+        + "\n".join(inc_lines)
+        + "\necho REACHED_SUMMARY\n"
+    )
+    res = _bash(body)
+    assert res.returncode == 0 and "REACHED_SUMMARY" in res.stdout, (
+        f"verify-setup.sh counter increment aborted under set -e: rc={res.returncode}\n"
+        f"stderr={res.stderr!r}\nbody={body!r}"
+    )
+
+
 # --------------------------------------------------------------------------- #
 # F34 — uv install must export the astral install dir (~/.local/bin)
 # --------------------------------------------------------------------------- #
