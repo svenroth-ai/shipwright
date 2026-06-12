@@ -33,8 +33,13 @@ import pytest
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_REPO_ROOT / "shared" / "scripts"))
 
-from lib.architecture_doc import missing_entries, scan_drops  # noqa: E402
-from lib.events_log import resolve_main_repo_root  # noqa: E402
+from lib.architecture_doc import (  # noqa: E402
+    arch_impact_records,
+    missing_entries,
+    records_in_run_set,
+    scan_drops,
+)
+from lib.events_log import finalized_run_ids, resolve_main_repo_root  # noqa: E402
 
 
 def _project_root() -> Path:
@@ -133,12 +138,25 @@ def test_every_arch_impact_drop_has_architecture_md_entry():
     iterate-2026-06-12-compress-agent-doc-backlog once the backlog was migrated).
     Without this, an iterate can pass the F3 architecture-impact flag without
     documenting the state change — silent drift. Delegating to the oracle keeps
-    this test, the F11 gate, and the Group-F detective from diverging."""
-    if not _arch_impact_drops():
-        pytest.skip("no architecture-impact decision-drops to verify")
+    this test, the F11 gate, and the Group-F detective from diverging.
 
+    Event-ownership scoped: only drops whose ``run_id`` is in this tree's
+    committed ``shipwright_events.jsonl`` are checked (``finalized_run_ids``).
+    A cross-branch campaign sibling's drop accumulates in the shared main-rooted
+    ``decision-drops`` dir, but its target-doc entry lives only on the sibling's
+    own unmerged branch — without scoping it reads as drift on every other
+    branch. Fail-open: with no event log (ownership unknowable, e.g. a CI runner)
+    the whole set is checked, never weaker than before."""
     drops_dir = _main_repo_root() / ".shipwright" / "agent_docs" / "decision-drops"
     records, _corrupt = scan_drops(drops_dir)
+
+    owned = finalized_run_ids(_project_root())
+    if owned is not None:
+        records = records_in_run_set(records, owned)
+
+    if not arch_impact_records(records):
+        pytest.skip("no owned architecture-impact decision-drops to verify")
+
     texts = {"architecture.md": _arch_md_text(), "conventions.md": _conv_md_text()}
     missing = missing_entries(records, texts)
     if missing:
