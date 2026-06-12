@@ -18,6 +18,7 @@ grandfathered suite.
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -61,36 +62,80 @@ def test_phasequality_refreshed_machine_churn_dropped(tmp_path: Path):
 
 
 # --------------------------------------------------------------------------
-# F30 forward+reverse-drift meta-test — registry-driven SSoT
+# Forward+reverse-drift meta-test — SOURCE-DERIVED SSoT (no hand-copied list)
 # --------------------------------------------------------------------------
+#
+# The producer recurring auto-resolve vocabulary is the ``*Resolved``/
+# ``*Refreshed`` dismissal-reason literals each background producer emits. We
+# DERIVE it from producer source instead of hand-copying: a hand-copied list
+# silently drifts — the previous one had become a tautology equal to
+# MACHINE_REASONS, hiding BOTH a missing token (``prChecksResolved``, emitted by
+# github_triage's PR-CI resolver but absent from MACHINE_REASONS) AND an orphan
+# token (``auditResolved``, in MACHINE_REASONS with no live emitter).
+#
+# Scope: only the RECURRING ``*Resolved``/``*Refreshed`` family is the GC
+# vocabulary. Terminal/one-shot lifecycle markers deliberately NOT named
+# ``*Resolved`` — github_triage's ``prMerged``/``prClosed`` (once per PR) and
+# ``schemaMigration`` (one-shot legacy migration), compliance's
+# ``supersededByBacklog`` — are real audit history, not churn, and are correctly
+# outside this set (the scan never sees them; MACHINE_REASONS never carries them).
 
-# The canonical set of RECURRING machine auto-resolve tokens each background
-# producer emits. This is the SSoT MACHINE_REASONS must stay aligned with: a
-# producer that gains a new recurring auto-resolve token must add it here AND to
-# triage_gc.MACHINE_REASONS, or the meta-test fails — closing the decoupled-SSoT
-# gap that left phaseQualityRefreshed (F30) and complianceRefreshed uncollected.
-# One-shot retirement tokens (e.g. compliance's supersededByBacklog, AC-4 of the
-# 2026-05-31 bundle) are deliberately EXCLUDED: they fire once per legacy item,
-# not every run, so they are real audit history, not churn.
-PRODUCER_RECURRING_DISMISS_TOKENS = frozenset({
-    "sbomResolved",          # sbom_generator
-    "auditResolved",         # audit_detector
-    "driftResolved",         # drift detector
-    "f05Resolved",           # f0.5 surface verification
-    "githubResolved",        # github importer
-    "complianceResolved",    # compliance backlog (triage_bundle)
-    "complianceRefreshed",   # compliance backlog (stale-signature rollup)
-    "phaseQualityResolved",  # phase-quality backlog (_triage_bundle)
-    "phaseQualityRefreshed",  # phase-quality backlog (stale-signature rollup)
-    "testEvidenceResolved",  # test-evidence
+_REPO_ROOT = Path(__file__).resolve().parents[2]  # shared/tests/<f>.py → repo root
+_TOKEN_RE = re.compile(r"""['"]([a-z][A-Za-z0-9]*(?:Resolved|Refreshed))['"]""")
+
+# Tokens deliberately retained in MACHINE_REASONS though NO producer emits them
+# today — GC must still collapse any historical/buffered dismissal carrying them
+# (removing one would silently NARROW GC). Each entry is an EXPLICIT, documented
+# legacy retention.
+LEGACY_RETAINED_TOKENS = frozenset({
+    "auditResolved",  # audit now routes through complianceBacklog; pre-bundle / outbox-buffered dismissals stay GC-able
 })
 
 
+def _emitted_recurring_dismiss_tokens() -> set[str]:
+    """Source-derived producer recurring auto-resolve tokens.
+
+    Scans every producer ``*.py`` under ``shared/`` and ``plugins/`` for
+    ``*Resolved``/``*Refreshed`` STRING-LITERAL reasons, excluding the test trees
+    (any ``tests/`` directory) and ``triage_gc.py`` itself (the consumer that
+    defines MACHINE_REASONS). Adding a token in a producer auto-updates this
+    expectation — no hand edit.
+
+    Exclusion is DIRECTORY-based (``tests`` path component), NOT filename-prefix:
+    several producer modules are legitimately named ``test_*`` (e.g. the
+    compliance ``test_evidence.py`` producer that emits ``testEvidenceResolved``,
+    ``test_runner.py``, ``test_hygiene.py``) and must be scanned. Real pytest
+    files all live under a ``tests/`` directory in this repo.
+    """
+    tokens: set[str] = set()
+    for root_name in ("shared", "plugins"):
+        root = _REPO_ROOT / root_name
+        if not root.is_dir():
+            continue
+        for py in root.rglob("*.py"):
+            if "tests" in py.parts or py.name == "triage_gc.py":
+                continue
+            tokens.update(_TOKEN_RE.findall(py.read_text(encoding="utf-8", errors="replace")))
+    return tokens
+
+
+def test_source_derivation_finds_known_anchor_tokens():
+    """Vacuous-green guard: if the scan resolves the wrong root or reads nothing,
+    the drift guards below would pass trivially on an empty set. Pin a few
+    always-present producer tokens so a broken scan fails LOUDLY here instead."""
+    emitted = _emitted_recurring_dismiss_tokens()
+    for anchor in ("sbomResolved", "driftResolved", "complianceResolved", "prChecksResolved"):
+        assert anchor in emitted, (
+            f"source scan did not find {anchor!r} — derivation broken "
+            f"(found {len(emitted)} tokens); the drift guards below would be vacuous"
+        )
+
+
 def test_machine_reasons_covers_every_producer_recurring_token():
-    """Forward-drift guard: every recurring producer auto-resolve token MUST be
-    in MACHINE_REASONS, else that producer's per-run churn is never GC'd (the
-    F30 / complianceRefreshed failure mode)."""
-    missing = PRODUCER_RECURRING_DISMISS_TOKENS - triage_gc.MACHINE_REASONS
+    """Forward-drift guard: every recurring producer auto-resolve token IN SOURCE
+    MUST be in MACHINE_REASONS, else that producer's per-run churn is never GC'd
+    (the F30 / complianceRefreshed / prChecksResolved failure mode)."""
+    missing = _emitted_recurring_dismiss_tokens() - triage_gc.MACHINE_REASONS
     assert not missing, (
         f"producer recurring dismiss tokens not in MACHINE_REASONS: {sorted(missing)} "
         "— add them or the per-run churn accumulates unbounded in tracked history"
@@ -98,19 +143,49 @@ def test_machine_reasons_covers_every_producer_recurring_token():
 
 
 def test_machine_reasons_has_no_unknown_tokens():
-    """Reverse-drift guard: MACHINE_REASONS must not carry a token no producer
-    emits (a stale token GC's nothing and hides drift in the other direction)."""
-    unknown = triage_gc.MACHINE_REASONS - PRODUCER_RECURRING_DISMISS_TOKENS
+    """Reverse-drift guard (source-derived): MACHINE_REASONS must not carry a
+    token no producer emits AND not on the explicit legacy allowlist (a stale
+    token GC's nothing and hides drift in the other direction)."""
+    unknown = (
+        triage_gc.MACHINE_REASONS
+        - _emitted_recurring_dismiss_tokens()
+        - LEGACY_RETAINED_TOKENS
+    )
     assert not unknown, (
         f"MACHINE_REASONS carries tokens no producer emits: {sorted(unknown)} "
-        "— remove them or register the producer token above"
+        "— remove them, fix the emitter, or add a documented LEGACY_RETAINED_TOKENS entry"
     )
 
 
-def test_machine_reasons_phasequality_refreshed_present():
-    """Pin the specific F30 token so a future MACHINE_REASONS edit can't silently
-    drop it without a red test."""
+def test_legacy_retained_tokens_have_no_live_emitter():
+    """A legacy-allowlist entry must be a genuine orphan: if it gains a live
+    emitter it belongs to the derived set and the allowlist entry is stale noise
+    that would mask future reverse-drift."""
+    live = LEGACY_RETAINED_TOKENS & _emitted_recurring_dismiss_tokens()
+    assert not live, (
+        f"LEGACY_RETAINED_TOKENS entries that DO have a live emitter: {sorted(live)} "
+        "— drop them from the allowlist; the source scan already covers them"
+    )
+
+
+def test_machine_reasons_pins_refresh_and_prchecks_tokens():
+    """Pin the specific tokens a careless MACHINE_REASONS edit could silently
+    drop: phaseQualityRefreshed (F30) and prChecksResolved (a1-6 follow-up)."""
     assert "phaseQualityRefreshed" in triage_gc.MACHINE_REASONS
+    assert "prChecksResolved" in triage_gc.MACHINE_REASONS
+
+
+def test_prchecks_resolved_github_dismissal_is_machine_churn(tmp_path: Path):
+    """Behavioral: a github_triage PR-CI auto-dismiss (by=githubImporter,
+    reason=prChecksResolved — a tracked PR's failing checks went green) is
+    recurring machine-churn and must be GC-able. It was missing from
+    MACHINE_REASONS; the hand-copied meta-test hid the gap. A human reusing the
+    token is still kept (predicate needs BOTH a machine dismisser AND token)."""
+    pr = _add(tmp_path, title="gh-pr-ci:42 checks failing", dedup="gh-pr-ci:42")
+    _dismiss(tmp_path, pr, by="githubImporter", reason="prChecksResolved")
+    human = _add(tmp_path, title="h", dedup="kh")
+    _dismiss(tmp_path, human, by="user", reason="prChecksResolved")  # human → kept
+    assert triage_gc.plan_gc(tmp_path)["drop_ids"] == {pr}
 
 
 # --------------------------------------------------------------------------
@@ -161,3 +236,53 @@ def test_apply_does_not_drop_item_churned_after_the_consented_plan(tmp_path: Pat
     survivors = {i["id"] for i in triage.read_all_items(tmp_path)}
     assert m in survivors
     assert triage_gc.plan_gc(tmp_path)["drop_ids"] == {m}
+
+
+# --------------------------------------------------------------------------
+# F19 follow-up — the under-lock recompute is UNION-residence aware: a re-open
+# routed to the gitignored OUTBOX (idle-main-with-origin) must also survive.
+# --------------------------------------------------------------------------
+
+def test_apply_honors_outbox_routed_reopen(tmp_path: Path, monkeypatch):
+    """A concurrent re-open ROUTED TO THE OUTBOX must survive ``apply_gc``.
+
+    a1-6/F19 recomputed the droppable set under the lock but read the TRACKED
+    store only. On idle-main-with-origin a re-open routes (``mark_status`` →
+    ``should_route_to_outbox``) to the gitignored outbox, invisible to a
+    tracked-only recompute — so the item was still dropped and its outbox status
+    orphaned (its tracked ``append`` gone → ``read_all_items`` skips the status
+    as an unknown id). The recompute is now union-residence aware (tracked ∪
+    outbox, last-status-wins), so the outbox re-open flips the item out of the
+    effective drop set even though the tracked-only REPORT still lists it as
+    droppable (the report stays an upper bound; the tracked file is still the
+    only file rewritten).
+    """
+    m = _add(tmp_path, title="m", dedup="k1")
+    _dismiss(tmp_path, m, by="auditDetector", reason="auditResolved")
+
+    # Tracked-only report (what the operator consents to) still sees m droppable.
+    stale_plan = triage_gc.plan_gc(tmp_path)
+    assert stale_plan["drop_ids"] == {m}
+
+    # CONCURRENT re-open ROUTED TO THE OUTBOX: force the derived write target so
+    # mark_status appends the status to the gitignored outbox, exactly as it
+    # would on idle main with a delivery path.
+    monkeypatch.setattr(triage, "should_route_to_outbox", lambda *_a, **_k: True)
+    triage.mark_status(tmp_path, m, new_status="triage", by="user",
+                       reason="re-opened via webui on idle main")
+    monkeypatch.undo()
+
+    # Precondition: the re-open really landed in the outbox, not the tracked log.
+    assert "re-opened via webui" in triage._outbox_path(tmp_path).read_text(encoding="utf-8")
+    assert "re-opened via webui" not in triage._triage_path(tmp_path).read_text(encoding="utf-8")
+
+    triage_gc.apply_gc(tmp_path, stale_plan["drop_ids"])
+
+    # Union view shows m re-opened → NOT dropped; its tracked append remains
+    # (no orphaned outbox status).
+    survivors = {i["id"]: i for i in triage.read_all_items(tmp_path)}
+    assert m in survivors, \
+        "outbox-routed re-open was dropped by apply_gc (union-residence regression)"
+    assert survivors[m]["status"] == "triage"
+    assert m in triage._triage_path(tmp_path).read_text(encoding="utf-8"), \
+        "tracked append for m was wrongly dropped"

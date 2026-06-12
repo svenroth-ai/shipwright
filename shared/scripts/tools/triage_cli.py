@@ -40,6 +40,7 @@ from triage import (  # noqa: E402
     _triage_path,
     read_all_items,
 )
+from lib.tty_sanitize import strip_control_chars as _strip_control_chars  # noqa: E402
 from tools.triage_promote import dismiss, promote  # noqa: E402
 
 _BY_LABEL = "cli"
@@ -48,26 +49,6 @@ _BY_LABEL = "cli"
 # ---------------------------------------------------------------------------
 # Rendering
 # ---------------------------------------------------------------------------
-
-def _strip_control_chars(text: str) -> str:
-    """Strip terminal control sequences while preserving newlines and tabs.
-
-    Mirrors the helper in ``aggregate_triage.py`` — keep both in sync. A
-    malformed/attacker-influenced producer could embed ESC / BEL etc. into
-    ``launchPayload`` or ``title``; the CLI prints to a tty so stripping is the
-    minimal defense (review finding #10; title coverage added per F31).
-
-    Strips BOTH C0 (``0x00``-``0x1F``, ``0x7F``) AND C1 (``0x80``-``0x9F``) — the
-    latter per the F31 external plan review (Gemini HIGH, 2026-06-12): C1 holds
-    single-byte terminal control sequences (e.g. ``0x9B`` CSI) a TTY executes,
-    so "preserve >= 0x80" left the escape-injection hole open. Non-control
-    Unicode (``>= 0xA0``) survives, preserving umlauts / CJK / em-dashes.
-    """
-    return "".join(
-        ch for ch in text
-        if ch in ("\n", "\t") or (0x20 <= ord(ch) < 0x7F) or ord(ch) >= 0xA0
-    )
-
 
 def _fence_opener(payload: str) -> str:
     """Pick a fence opener long enough to contain ``payload``."""
@@ -118,7 +99,7 @@ def _ensure_utf8_stdout() -> None:
 
     On Windows ``sys.stdout`` defaults to the legacy codepage (cp1252), so
     writing ``ensure_ascii=False`` JSON — or a stripped-but-non-ASCII human
-    line (`_strip_control_chars` deliberately keeps >= 0x80) — crashed with
+    line (`_strip_control_chars` deliberately keeps >= 0xA0) — crashed with
     ``UnicodeEncodeError`` for any item title/detail carrying emoji/CJK/umlauts
     (iterate-2026-06-10-triage-cli-json-utf8; found by the webui
     pending-delivery-badge boundary probe). ``list --json`` is a machine

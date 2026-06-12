@@ -239,3 +239,59 @@ def test_compliance_refreshed_machine_churn_dropped(tmp_path: Path):
     human = _add(tmp_path, title="h", dedup="khc")
     _dismiss(tmp_path, human, by="user", reason="complianceRefreshed")  # human → kept
     assert triage_gc.plan_gc(tmp_path)["drop_ids"] == {resolved, refreshed}
+
+
+# --------------------------------------------------------------------------
+# Dry-run report render surface (_print_report)
+# --------------------------------------------------------------------------
+
+def test_print_report_dry_run_renders_full_surface(capsys):
+    """Cover the dry-run report render: header, counts, the by-reason breakdown,
+    the id list, and the ``>40`` truncation footer (the populated branches)."""
+    dropped = [
+        {"id": f"trg-{n:04d}", "statusBy": "sbomGenerator",
+         "statusReason": "sbomResolved" if n % 2 else "driftResolved",
+         "title": f"finding {n}"}
+        for n in range(45)
+    ]
+    plan = {"dropped": dropped, "drop_ids": {d["id"] for d in dropped},
+            "kept_count": 3, "total": 48}
+    triage_gc._print_report(plan, applied=False)
+    out = capsys.readouterr().out
+    assert "triage_gc [DRY-RUN (no changes written)]" in out
+    assert "total items:   48" in out
+    assert "droppable:     45 (machine-churn dismissals)" in out
+    assert "kept:          3" in out
+    assert "by reason:" in out
+    assert "sbomResolved" in out and "driftResolved" in out
+    assert "ids (first 40):" in out
+    assert "trg-0000" in out           # first id rendered
+    assert "... +5 more" in out        # 45 - 40 capped
+    assert "trg-0044" not in out       # 45th id is beyond the 40-id cap
+
+
+def test_print_report_empty_omits_breakdown(capsys):
+    """Nothing droppable → header + counts only, no by-reason/ids sections."""
+    triage_gc._print_report(
+        {"dropped": [], "drop_ids": set(), "kept_count": 5, "total": 5},
+        applied=False,
+    )
+    out = capsys.readouterr().out
+    assert "droppable:     0 (machine-churn dismissals)" in out
+    assert "by reason:" not in out
+    assert "ids (first 40):" not in out
+
+
+def test_print_report_applied_header_branch(capsys):
+    """Cover the ``applied=True`` header branch (the post-rewrite report) — the
+    other half of the shared render surface (external review, OpenAI medium)."""
+    plan = {
+        "dropped": [{"id": "trg-0001", "statusBy": "sbomGenerator",
+                     "statusReason": "sbomResolved", "title": "t"}],
+        "drop_ids": {"trg-0001"}, "kept_count": 0, "total": 1,
+    }
+    triage_gc._print_report(plan, applied=True)
+    out = capsys.readouterr().out
+    assert "triage_gc [APPLIED]" in out
+    assert "DRY-RUN" not in out
+    assert "droppable:     1 (machine-churn dismissals)" in out

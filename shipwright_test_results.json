@@ -1,135 +1,125 @@
 {
- "iterate_latest": {
-  "run_id": "iterate-2026-06-12-arch-drift-test-scope",
-  "date": "2026-06-12",
-  "unit": {
-   "status": "passed",
-   "passed": 3195,
-   "total": 3195
-  },
-  "integration": {
-   "status": "passed",
-   "passed": 141,
-   "total": 141
-  },
-  "pgtap": {
-   "status": "not_run",
-   "passed": 0,
-   "total": 0
-  },
-  "e2e": {
-   "status": "not_run",
-   "passed": 0,
-   "total": 0
-  },
-  "design_fidelity": {
-   "status": "not_run",
-   "passed": 0,
-   "total": 0
-  },
-  "smoke": {
-   "status": "not_run"
-  },
-  "degraded": [],
-  "test_completeness": {
-   "status": "complete",
-   "behaviors": [
-    {
-     "behavior": "finalized_run_ids: absent log -> None",
-     "disposition": "tested",
-     "evidence": "test_arch_drift_event_scope.py::test_finalized_run_ids_absent_log_returns_none PASSED"
+  "iterate_latest": {
+    "run_id": "iterate-2026-06-12-triage-gc-union-residence",
+    "date": "2026-06-12",
+    "unit": {
+      "status": "passed",
+      "passed": 3193,
+      "total": 3193
     },
-    {
-     "behavior": "finalized_run_ids: empty log -> set()",
-     "disposition": "tested",
-     "evidence": "test_arch_drift_event_scope.py::test_finalized_run_ids_empty_log_returns_empty_set PASSED"
+    "integration": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
     },
-    {
-     "behavior": "finalized_run_ids: collects adr_id+run_id (round-trip / io-boundary probe)",
-     "disposition": "tested",
-     "evidence": "test_arch_drift_event_scope.py::test_finalized_run_ids_collects_adr_id_and_run_id PASSED"
+    "pgtap": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
     },
-    {
-     "behavior": "finalized_run_ids: skips corrupt/blank lines",
-     "disposition": "tested",
-     "evidence": "test_arch_drift_event_scope.py::test_finalized_run_ids_skips_corrupt_lines PASSED"
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
     },
-    {
-     "behavior": "records_in_run_set: keeps only allowed run_ids",
-     "disposition": "tested",
-     "evidence": "test_arch_drift_event_scope.py::test_records_in_run_set_keeps_only_allowed PASSED"
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
     },
-    {
-     "behavior": "records_in_run_set: empty allowed -> []",
-     "disposition": "tested",
-     "evidence": "test_arch_drift_event_scope.py::test_records_in_run_set_empty_allowed_keeps_nothing PASSED"
+    "smoke": {
+      "status": "not_run"
     },
-    {
-     "behavior": "drift test: unowned undocumented drop excluded (AC3)",
-     "disposition": "tested",
-     "evidence": "test_arch_drift_event_scope.py::test_unowned_undocumented_drop_is_excluded PASSED + live local-main probe missing 3->0"
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "outbox-routed re-open survives apply_gc (AC1)",
+          "disposition": "tested",
+          "evidence": "test_triage_wp9_gc.py::test_apply_honors_outbox_routed_reopen (red→green)"
+        },
+        {
+          "behavior": "tracked-route re-open still survives, no regression (AC2)",
+          "disposition": "tested",
+          "evidence": "test_triage_wp9_gc.py::test_apply_recomputes_plan_under_lock_preserving_concurrent_reopen"
+        },
+        {
+          "behavior": "outbox NOT folded into tracked file, D1 (AC2)",
+          "disposition": "tested",
+          "evidence": "test_triage_gc.py::test_apply_does_not_fold_outbox_into_tracked"
+        },
+        {
+          "behavior": "report stays tracked-only upper bound (AC2)",
+          "disposition": "tested",
+          "evidence": "test_triage_gc.py::test_apply_does_not_drop_item_churned_after_the_consented_plan"
+        },
+        {
+          "behavior": "forward-drift source-derived (AC4)",
+          "disposition": "tested",
+          "evidence": "test_triage_wp9_gc.py::test_machine_reasons_covers_every_producer_recurring_token"
+        },
+        {
+          "behavior": "reverse-drift source-derived + legacy allowlist (AC4)",
+          "disposition": "tested",
+          "evidence": "test_triage_wp9_gc.py::test_machine_reasons_has_no_unknown_tokens"
+        },
+        {
+          "behavior": "vacuous-green guard on scan (AC4)",
+          "disposition": "tested",
+          "evidence": "test_triage_wp9_gc.py::test_source_derivation_finds_known_anchor_tokens"
+        },
+        {
+          "behavior": "legacy allowlist token has no live emitter (AC4)",
+          "disposition": "tested",
+          "evidence": "test_triage_wp9_gc.py::test_legacy_retained_tokens_have_no_live_emitter"
+        },
+        {
+          "behavior": "prChecksResolved actually GC'd (AC4)",
+          "disposition": "tested",
+          "evidence": "test_triage_wp9_gc.py::test_prchecks_resolved_github_dismissal_is_machine_churn"
+        },
+        {
+          "behavior": "refresh/prChecks tokens pinned (AC4)",
+          "disposition": "tested",
+          "evidence": "test_triage_wp9_gc.py::test_machine_reasons_pins_refresh_and_prchecks_tokens"
+        },
+        {
+          "behavior": "single-source sanitizer, byte-identical behavior (AC5)",
+          "disposition": "tested",
+          "evidence": "test_triage_wp9_sanitize_outbox.py (14 behavioral, subprocess render)"
+        },
+        {
+          "behavior": "dry-run + applied + empty report render (AC6)",
+          "disposition": "tested",
+          "evidence": "test_triage_gc.py::test_print_report_dry_run_renders_full_surface / _applied_header_branch / _empty_omits_breakdown"
+        },
+        {
+          "behavior": "operator-constraint note removed/replaced (AC3)",
+          "disposition": "tested",
+          "evidence": "F0 grep gate (no 'LIMITATION (follow-up)'/'do not run --apply' in triage_gc.py) + external+internal code review"
+        }
+      ],
+      "counts": {
+        "testable": 13,
+        "tested": 13,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 7,
+        "covered_acs": 7
+      }
     },
-    {
-     "behavior": "drift test: owned undocumented drop caught (AC4)",
-     "disposition": "tested",
-     "evidence": "test_arch_drift_event_scope.py::test_owned_undocumented_drop_is_caught PASSED"
-    },
-    {
-     "behavior": "drift test green on live repo",
-     "disposition": "tested",
-     "evidence": "test_architecture_md_reflects_arch_impact.py::test_every_arch_impact_drop_has_architecture_md_entry PASSED"
-    },
-    {
-     "behavior": "F5 detective: owned undocumented -> fail",
-     "disposition": "tested",
-     "evidence": "test_f5_event_scope.py::test_owned_undocumented_drop_fails PASSED"
-    },
-    {
-     "behavior": "F5 detective: unowned undocumented -> excluded/pass (AC3)",
-     "disposition": "tested",
-     "evidence": "test_f5_event_scope.py::test_unowned_undocumented_drop_excluded_passes PASSED"
-    },
-    {
-     "behavior": "F5 detective: owned documented -> pass",
-     "disposition": "tested",
-     "evidence": "test_f5_event_scope.py::test_owned_documented_drop_passes PASSED"
-    },
-    {
-     "behavior": "F5 detective: no event log -> fail-open fail (AC5)",
-     "disposition": "tested",
-     "evidence": "test_f5_event_scope.py::test_no_event_log_fails_open PASSED"
-    },
-    {
-     "behavior": "F5 detective: present-empty log -> exclude all",
-     "disposition": "tested",
-     "evidence": "test_f5_event_scope.py::test_present_empty_event_log_excludes_all PASSED"
-    },
-    {
-     "behavior": "F5 detective: pre-existing behaviors (corrupt/component/convention/data-flow/unknown/none) unchanged",
-     "disposition": "tested",
-     "evidence": "test_audit_groups_c_f.py 35 tests PASSED (fail-open, no regression)"
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-06-12T00:00:00.000Z",
+      "attempts": 0,
+      "justification": "Framework-internal change to operator-invoked triage tooling: triage_gc concurrency hardening (union-residence under-lock recompute), a source-derived drift meta-test, and a behaviour-preserving extraction of the TTY control-char sanitizer to shared/scripts/lib/tty_sanitize.py. No web/API/store-read-contract surface consumed by a UI changes: triage_gc is a manual CLI maintenance tool, the union read contract (triage.read_all_items) is unchanged, the GC change only narrows which items are dropped (data the WebUI reads is a strict, more-correct subset), and the sanitizer extraction is byte-identical. Verified by TDD red→green unit tests, the full shared/tests suite (3193 passed / 12 skipped), and empirical round-trip + boundary probes (zero tracked orphan-status, header intact, outbox re-open survives)."
     }
-   ],
-   "counts": {
-    "testable": 15,
-    "tested": 15,
-    "untestable": 0,
-    "untested_testable": 0
-   },
-   "enumeration_basis": {
-    "acs": 5,
-    "covered_acs": 5
-   }
-  },
-  "surface_verification": {
-   "surface": "none",
-   "runner": "",
-   "exit_code": 0,
-   "tests_run": 0,
-   "evidence_path": "",
-   "timestamp": "2026-06-12T11:35:00.000Z",
-   "attempts": 0,
-   "justification": "Framework-internal test/audit-infra change: event-ownership scoping for the two whole-set arch-drift checkers (shared events_log + architecture_doc helpers, Group-F F5 detective, the drift test). No web/CLI/API application surface exists. Behavior verified by unit suites (new helper + scoping tests, detective owned/unowned/fail-open tests, the real-file drift test RED->GREEN) and a live local-main probe (missing 3->0); full suites shared 3195 / compliance 687 / integration 141 passed."
   }
- }
 }
