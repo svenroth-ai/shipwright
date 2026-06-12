@@ -235,7 +235,7 @@
     {
       "path": "plugins/shipwright-compliance/tests/test_audit_groups_c_f.py",
       "limit": 300,
-      "current": 516,
+      "current": 545,
       "state": "grandfathered",
       "adr": null
     },
@@ -1033,7 +1033,7 @@
     {
       "path": "shared/tests/test_verify_iterate_finalization.py",
       "limit": 300,
-      "current": 1515,
+      "current": 1550,
       "state": "exception",
       "adr": "ADR-093"
     },

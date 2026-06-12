@@ -33,6 +33,7 @@ import pytest
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_REPO_ROOT / "shared" / "scripts"))
 
+from lib.architecture_doc import missing_entries, scan_drops  # noqa: E402
 from lib.events_log import resolve_main_repo_root  # noqa: E402
 
 
@@ -54,6 +55,12 @@ def _main_repo_root() -> Path:
 
 def _arch_md_text() -> str:
     return (_project_root() / ".shipwright" / "agent_docs" / "architecture.md").read_text(
+        encoding="utf-8", errors="ignore"
+    )
+
+
+def _conv_md_text() -> str:
+    return (_project_root() / ".shipwright" / "agent_docs" / "conventions.md").read_text(
         encoding="utf-8", errors="ignore"
     )
 
@@ -117,32 +124,31 @@ def _discovery_sanity(drops_dir: Path) -> tuple[str, str]:
 
 
 def test_every_arch_impact_drop_has_architecture_md_entry():
-    """For every decision-drop that flagged an architecture-impact, the
-    run_id must appear in architecture.md. Without this, an iterate can
-    pass the F3 architecture-impact flag without actually documenting the
-    state change — silent drift."""
-    drops = _arch_impact_drops()
-    if not drops:
+    """For every decision-drop that flagged an architecture-impact, the run_id
+    must appear in its TARGET doc — routed via the shared oracle
+    (``lib.architecture_doc.IMPACT_TARGETS``): ``convention`` →
+    ``conventions.md ## Convention Updates``; ``component`` / ``data-flow`` →
+    ``architecture.md ## Architecture Updates`` (convention keeps a transitional
+    fallback to architecture.md for the un-migrated backlog). Without this, an
+    iterate can pass the F3 architecture-impact flag without documenting the
+    state change — silent drift. Delegating to the oracle keeps this test, the
+    F11 gate, and the Group-F detective from diverging."""
+    if not _arch_impact_drops():
         pytest.skip("no architecture-impact decision-drops to verify")
 
-    arch = _arch_md_text()
-    missing: list[dict] = []
-    for d in drops:
-        run_id = d["run_id"]
-        if not run_id:
-            continue
-        if run_id in arch:
-            continue
-        missing.append(d)
-
+    drops_dir = _main_repo_root() / ".shipwright" / "agent_docs" / "decision-drops"
+    records, _corrupt = scan_drops(drops_dir)
+    texts = {"architecture.md": _arch_md_text(), "conventions.md": _conv_md_text()}
+    missing = missing_entries(records, texts)
     if missing:
-        lines = ["architecture.md does not mention the following arch-impact drops:"]
-        for m in missing:
-            lines.append(f"  - {m['drop_file']} run_id={m['run_id']} impact={m['impact']}")
+        lines = ["target doc does not mention the following arch-impact drops:"]
+        for r in missing:
+            lines.append(f"  - {r.drop_file} run_id={r.run_id} impact={r.impact}")
         lines.append(
-            "Add a bullet under '## Architecture Updates' in "
-            ".shipwright/agent_docs/architecture.md naming the run_id and the "
-            "convention/component/data-flow that changed."
+            "Add a one-line bullet naming the run_id under the impact's target "
+            "section (convention → conventions.md '## Convention Updates'; "
+            "component/data-flow → architecture.md '## Architecture Updates'). "
+            "Routing SSoT: lib.architecture_doc.IMPACT_TARGETS."
         )
         pytest.fail("\n".join(lines))
 

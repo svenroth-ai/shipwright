@@ -262,6 +262,12 @@ class TestF5ArchDrift:
         doc.mkdir(parents=True, exist_ok=True)
         (doc / "architecture.md").write_text(text, encoding="utf-8")
 
+    @staticmethod
+    def _seed_conv_md(root: Path, text: str) -> None:
+        doc = root / ".shipwright" / "agent_docs"
+        doc.mkdir(parents=True, exist_ok=True)
+        (doc / "conventions.md").write_text(text, encoding="utf-8")
+
     def test_absent_drops_dir_skips(self, tmp_path: Path):
         # No decision-drops dir at all (clean checkout / CI) → skip, not fail.
         findings = group_f.run(tmp_path, None, None)
@@ -302,6 +308,30 @@ class TestF5ArchDrift:
         assert f5.status == "fail"
         assert "iter-conv_001" in str(f5.evidence)
 
+    def test_convention_documented_in_conventions_doc_passes(self, tmp_path: Path):
+        # Canonical route: a convention run_id in conventions.md ## Convention
+        # Updates satisfies F5 even with an empty architecture.md.
+        _seed_arch_drop(tmp_path, "iter-conv_001.json", impact="convention")
+        self._seed_arch_md(tmp_path, "## Architecture Updates\n")
+        self._seed_conv_md(
+            tmp_path,
+            "## Convention Updates\n- **ADR-001** (2026-06-12): iter-conv_001 — x\n",
+        )
+        findings = group_f.run(tmp_path, None, None)
+        f5 = next(f for f in findings if f.check_id == "F5")
+        assert f5.status == "pass"
+
+    def test_convention_legacy_in_architecture_passes(self, tmp_path: Path):
+        # Transitional fallback: a convention run_id still in architecture.md
+        # (pre-migration backlog) passes until the compression iterate moves it.
+        _seed_arch_drop(tmp_path, "iter-conv_001.json", impact="convention")
+        self._seed_arch_md(
+            tmp_path, "## Architecture Updates\n- iter-conv_001 (convention): legacy\n"
+        )
+        findings = group_f.run(tmp_path, None, None)
+        f5 = next(f for f in findings if f.check_id == "F5")
+        assert f5.status == "pass"
+
     def test_data_flow_impact_caught(self, tmp_path: Path):
         _seed_arch_drop(tmp_path, "iter-df_001.json", impact="data-flow")
         self._seed_arch_md(tmp_path, "## Architecture Updates\n")
@@ -317,12 +347,14 @@ class TestF5ArchDrift:
         assert f5.status == "pass"
 
     def test_arch_md_missing_with_arch_drops_fails(self, tmp_path: Path):
-        # arch-impact drop exists but architecture.md is absent → cannot reconcile.
+        # component drop exists but its target doc (architecture.md) is absent →
+        # the run_id reads as undocumented and F5 fails (no silent pass).
         _seed_arch_drop(tmp_path, "iter-001_001.json", impact="component")
         findings = group_f.run(tmp_path, None, None)
         f5 = next(f for f in findings if f.check_id == "F5")
         assert f5.status == "fail"
-        assert "missing/unreadable" in f5.detail
+        assert "not documented" in f5.detail
+        assert "iter-001_001" in str(f5.evidence)
 
     def test_unknown_impact_surfaced(self, tmp_path: Path):
         _seed_arch_drop(tmp_path, "iter-weird_001.json", impact="frobnicate")

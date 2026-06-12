@@ -1,40 +1,44 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-12-triage-tooling-hardening"
+run_id: "iterate-2026-06-12-agent-doc-entry-rules"
 phase: "iterate"
-reason: "iterate: WP9 triage tooling hardening (F30/F19/F31/F29)"
-timestamp: "2026-06-12T08:15:24.686566+00:00"
+reason: "agent-doc entry rules + routing SSoT"
+timestamp: "2026-06-12T09:54:31.026688+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-12 08:15:24 UTC
+> Auto-generated 2026-06-12 09:54:31 UTC
 
 ## Session Info
 
-- **Session ID**: f1dfbc99-c830-4ef1-9897-9a176d13cf6d
-- **Timestamp**: 2026-06-12 08:15:24 UTC
-- **Reason**: iterate: WP9 triage tooling hardening (F30/F19/F31/F29)
+- **Session ID**: 90b40100-155d-4086-8d8c-5aea50931e15
+- **Timestamp**: 2026-06-12 09:54:31 UTC
+- **Reason**: agent-doc entry rules + routing SSoT
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-12-compliance-gate-coverage
-- **Date**: 2026-06-12T05:32:37.279680Z
+- **Run ID**: iterate-2026-06-12-triage-tooling-hardening
+- **Date**: 2026-06-12T08:15:56.671730Z
 - **Type**: bug
-- **Complexity**: small
-- **Branch**: iterate/audit1-compliance-gate-coverage
-- **ADR**: iterate-2026-06-12-compliance-gate-coverage
+- **Complexity**: medium
+- **Branch**: iterate/audit1-triage-tooling-hardening
+- **ADR**: iterate-2026-06-12-triage-tooling-hardening
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/campaigns/2026-06-10-audit-1-auto/sub-iterates/a1-1-compliance-gate-coverage.md
+- **Spec**: .shipwright/planning/iterate/campaigns/2026-06-10-audit-1-auto/sub-iterates/a1-6-triage-tooling-hardening.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/audit1-triage-tooling-hardening
-- **External Review Marker**: completed (external_review_state.json @ 2026-06-12T08:04:12)
+- **Branch**: iterate/agent-doc-entry-rules
+- **Run ID**: iterate-2026-06-12-agent-doc-entry-rules
+- **Spec**: .shipwright/planning/iterate/2026-06-12-agent-doc-entry-rules.md
+- **Complexity**: medium
+- **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -48,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/audit1-triage-tooling-hardening
-- **Last Commit**: 6b16e8f4 fix(compliance): make Group H + S4 FR-preservation gates fire (deep-audit WP3) (#199)
+- **Branch**: iterate/agent-doc-entry-rules
+- **Last Commit**: 312e2429 fix(triage): harden GC tokens/TOCTOU, control-char sanitizer, outbox CLI (deep-audit WP9) (#204)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +69,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-1c00ed61 | work_completed | iterate (Compact agent-doc entries + impact-aware routing SSoT (IMPACT_TARGETS) + forward-only 600-char entry-budget gate; conventions.md CONTRIBUTING de-dup) | 2026-06-12 |
 | evt-e2baab58 | work_completed | iterate (WP9 triage tooling hardening: F30 phaseQualityRefreshed GC token + drift meta-test, F19 GC TOCTOU recompute-under-lock, F31 control-char sanitizer on title/detail/evidence (C0+C1) in both render surfaces, F29 promote/dismiss accept outbox-only items) | 2026-06-12 |
 | evt-94515cf2 | work_completed | iterate (Fix two structurally-inert compliance gates (deep-audit WP3): Group H now in run_all default + on-stop coverage gate widened to A-H (F20); S4 FR-preservation join no longer raises TypeError (F21)) | 2026-06-12 |
 | evt-0cd9ae46 | work_completed | iterate (triage.mark_status routes idle-main status flips to the outbox (symmetric with append_triage_item), completing campaign D1 for the status side; fixes undelivered tracked drift from WebUI/Stop-hook dismisses) | 2026-06-11 |
 | evt-860e1092 | work_completed | iterate (F11 arms GitHub-native auto-merge for iterate/* PRs (gh pr merge --auto --squash --delete-branch), branch-scoped + fail-soft (B4.5 Phase 3)) | 2026-06-11 |
-| evt-86a0a95c | work_completed | iterate (Tier-3 PR review via OpenRouter custom-script (B4.5 Phase 2): pr-review.yml workflow + pr_review.py reviewer + pr_reviewer prompts + 4 snapshot/unit test files) | 2026-06-11 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 145
-- **Last iterate**: bug — WP9 triage tooling hardening: F30 phaseQualityRefreshed GC token + drift meta-test, F19 GC TOCTOU recompute-under-lock, F31 control-char sanitizer on title/detail/evidence (C0+C1) in both render surfaces, F29 promote/dismiss accept outbox-only items (2026-06-12)
+- **Total work events**: 146
+- **Last iterate**: change — Compact agent-doc entries + impact-aware routing SSoT (IMPACT_TARGETS) + forward-only 600-char entry-budget gate; conventions.md CONTRIBUTING de-dup (2026-06-12)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
