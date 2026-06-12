@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-06-12T08:15:24.686566+00:00
-Total commits: 957
+Generated: 2026-06-12T09:54:31.026688+00:00
+Total commits: 958
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 266
+    "fix" : 267
     "feat" : 266
     "chore" : 214
     "docs" : 123
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 266 commits
+### Fixes (fix) — 267 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-12 | triage | harden GC tokens/TOCTOU, control-char sanitizer, outbox CLI (deep-audit WP9) (#204) | 312e2429176f |
 | 2026-06-12 | compliance | make Group H + S4 FR-preservation gates fire (deep-audit WP3) (#199) | 6b16e8f42715 |
 | 2026-06-12 | triage | route idle-main status flips to the outbox in mark_status (#198) | 57ee522ea55c |
 | 2026-06-11 | security | tolerate markdown-fenced JSON in pr_review parser (#196) | e3b965569017 |
@@ -1026,7 +1027,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 957 |
+| Total commits | 958 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 957 |
+| Human-authored commits | 958 |
 

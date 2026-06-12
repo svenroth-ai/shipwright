@@ -30,11 +30,13 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.architecture_doc import (  # noqa: E402
+    IMPACT_TARGETS,
     NULL_IMPACTS,
     REAL_IMPACTS,
     corrupt_for_run,
+    missing_entries,
+    read_target_texts,
     records_for_run,
-    run_id_documented,
     scan_drops,
 )
 from lib.events_log import resolve_events_path, resolve_main_repo_root  # noqa: E402
@@ -1059,26 +1061,24 @@ def check_architecture_documented(project_root: Path, run_id: str) -> CheckResul
             severity=Severity.SKIPPED.value,
         )
 
-    arch_md = Path(project_root) / ".shipwright" / "agent_docs" / "architecture.md"
-    try:
-        arch_text = arch_md.read_text(encoding="utf-8", errors="ignore")
-    except OSError:
+    # Route each impact to its target doc via IMPACT_TARGETS (convention →
+    # conventions.md; component/data-flow → architecture.md), checking both docs.
+    texts = read_target_texts(Path(project_root) / ".shipwright" / "agent_docs")
+    missing = missing_entries(run_records, texts)
+    if not missing:
         return CheckResult(
-            name, False,
-            f"architecture.md missing/unreadable but {run_id} declares "
-            f"architecture_impact={real} — add an entry under "
-            "'## Architecture Updates'",
+            name, True, f"{run_id} documented (impact={real})"
         )
 
-    if run_id_documented(arch_text, run_id):
-        return CheckResult(name, True, f"architecture.md documents {run_id} (impact={real})")
-
+    where = "; ".join(
+        f"{r.impact} → '{IMPACT_TARGETS[r.impact][1]}' in {IMPACT_TARGETS[r.impact][0]}"
+        for r in missing
+    )
     return CheckResult(
         name, False,
         f"{run_id} declares architecture_impact={real} but is NOT documented in "
-        "architecture.md — add a bullet under '## Architecture Updates' naming "
-        f"{run_id} and what changed (or set architecture_impact=none if it was "
-        "over-flagged)",
+        f"its target doc(s) ({where}) — add a one-line bullet naming {run_id} + "
+        "what changed (or set architecture_impact=none if it was over-flagged)",
     )
 
 
