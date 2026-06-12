@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-11T22:33:12.418915Z. Items waiting for triage decision.
+> Auto-generated 2026-06-12T05:31:37.722790Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 177
-- Triage: 13 | Promoted: 1 | Dismissed: 163 | Snoozed: 0
+- Total: 178
+- Triage: 14 | Promoted: 1 | Dismissed: 163 | Snoozed: 0
 
-## Top 13 items (severity-sorted)
+## Top 14 items (severity-sorted)
 
 ### Source: architecture (2 items)
 
@@ -137,7 +137,7 @@
   - \## Intent  Bundle P8.1 from Spec/external-frameworks-integration.md (MU5 + MU7 + MU-PL1). Single research iterate prod…
   - Promote: `triage_promote.py --id trg-aecf9cde --task-ref EXT:<ref>`
 
-### Source: manual (3 items)
+### Source: manual (4 items)
 
 <a id="trg-9b9a2b9d"></a>
 - **Audit bug-fixes - final batch, run last (docs/SSoT + low-risk hardening)** `id=trg-9b9a2b9d | severity=medium | kind=improvement → P2/engineering`
@@ -153,4 +153,9 @@
 - **Audit bug-fixes - auto batch (encoding/Windows, compliance gates, triage tooling, installer)** `id=trg-d7661cfb | severity=medium | kind=improvement → P2/engineering`
   - Launch surface only. The work plan + details live in the LOCAL, gitignored campaign dir (not in git). Start via the Sta…
   - Promote: `triage_promote.py --id trg-d7661cfb --task-ref EXT:<ref>`
+
+<a id="trg-7580f4fe"></a>
+- **Emit a tracked terminal campaign-completion event so consumers can auto-hide finished campaigns** `id=trg-7580f4fe | severity=low | kind=improvement → P3/engineering`
+  - The tracked shipwright_events.jsonl carries only per-sub-iterate 'work_completed' events (top-level campaign + sub_iter…
+  - Promote: `triage_promote.py --id trg-7580f4fe --task-ref EXT:<ref>`
 

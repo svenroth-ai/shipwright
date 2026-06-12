@@ -18,6 +18,22 @@ import sys
 from pathlib import Path
 
 
+def _resolve_project_root() -> Path:
+    """Resolve the project root the SAME way the producer (track_tool_calls)
+    does — via ``resolve_project_root()`` auto-descent (F10). Falls back to
+    ``SHIPWRIGHT_PROJECT_ROOT`` / cwd when the shared resolver is unavailable."""
+    try:
+        shared_scripts = str(Path(__file__).resolve().parent.parent)
+        if shared_scripts not in sys.path:
+            sys.path.insert(0, shared_scripts)
+        from lib.project_root import resolve_project_root  # noqa: PLC0415
+
+        return resolve_project_root()
+    except (ImportError, ValueError):
+        env_root = os.environ.get("SHIPWRIGHT_PROJECT_ROOT")
+        return Path(env_root) if env_root else Path.cwd()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Reset tool call counter")
     parser.add_argument(
@@ -29,8 +45,7 @@ def main() -> int:
 
     counter_file = Path(args.counter_file)
     if not counter_file.is_absolute():
-        project_root = Path(os.environ.get("SHIPWRIGHT_PROJECT_ROOT", Path.cwd()))
-        counter_file = project_root / counter_file
+        counter_file = _resolve_project_root() / counter_file
 
     counter_file.parent.mkdir(parents=True, exist_ok=True)
     counter_file.write_text("0", encoding="utf-8")
