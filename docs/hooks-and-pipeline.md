@@ -261,6 +261,21 @@ iterate-plugin suite, OUTSIDE the `shared/tests` F0 run, so F2 mandates running 
 locally after writing the `## Architecture Updates` / `## Learnings` entry, before
 push — otherwise an over-budget entry surfaces only as a red PR check.
 
+**Cross-component changes are forced to prove composition
+(iterate-2026-06-12-cross-component-gate).** The empirical machinery is otherwise
+boundary-centric (`touches_io_boundary` → round-trip) and app-surface-centric
+(F0.5 E2E), so it forces NOTHING for a FRAMEWORK *composition* change — each piece
+unit-tested, the interaction unproven (the auto-merge churn cascade is the
+motivating class). The new `cross_component` risk flag
+(`classify_complexity.CROSS_COMPONENT_FILE_PATTERNS`: merge/churn/event-log
+resolver, Claude-Code hooks + hook fan-out, pipeline phase validators, campaign
+drain) requires, at medium+, a `category:"integration"` behavior in the Test
+Completeness Ledger — a real-scenario integration test proving the pieces compose
+(reference `shared/tests/test_parallel_merge_cascade_integration.py`). NON-dodgeable:
+the F11 verifier `check_integration_coverage` RECOMPUTES the flag from the diff
+(merge-base..HEAD), not an agent-reported value, and STOPs without the behavior.
+The verifier keeps a drift-pinned local pattern copy so it never cross-plugin-imports.
+
 **Curated agent-docs use `merge=union`, not regeneration
 (iterate-2026-06-12-union-curated-agent-docs).** The serial-integrate fix above
 auto-resolves the *regenerated* churn snapshots, but `.shipwright/agent_docs/architecture.md`

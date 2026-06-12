@@ -119,6 +119,7 @@ Print `Run ID / Intent / Complexity (+ reasoning) / Prior source (keyword | hist
 | `touches_public_api` | API route handlers, exported types | small | mandatory review |
 | `touches_build` | `package.json`, `*-lock.*`, `next.config.*`, `vite.config.*`, `tailwind.config.*`, `webpack.config.*`, `rollup.config.*`, `tsconfig.json` | small | performance test layer (Lighthouse + bundle gate via /shipwright-test Step 3.8) |
 | `touches_io_boundary` | `.env*`, `hooks.json`, `settings.json`, `*_config.json`, `*_state.json`; or anchored producer/consumer keywords (`parse_env`, `json.dump(s)?`, `json.load(s)?`, `yaml.dump`, `yaml.safe_load`) | small | round-trip test (Boundary Probe sub-step in Build TDD — see `references/boundary-probes.md` + `references/round-trip-tests.md`) |
+| `cross_component` | FRAMEWORK cross-component machinery (diff-driven, `classify_complexity.CROSS_COMPONENT_FILE_PATTERNS`): merge/churn/event-log resolver (`integrate_main`, `ensure_current`, `churn_merge`, `gitattributes_*`, `resolve_churn_conflicts`, `events_log`), Claude-Code hooks + hook fan-out (`hooks.json`, `**/hooks/*.py`), pipeline phase validators (`verify_phase`, `get_phase_context`), campaign drain (`autonomous_loop`, `campaign_*`, `campaign-mode.md`) | medium | **integration coverage** — a real-scenario integration test proving the components compose (reference: `shared/tests/test_parallel_merge_cascade_integration.py`), recorded as a `category:"integration"` behavior in the Test Completeness Ledger. NON-dodgeable: the F11 verifier `check_integration_coverage` RECOMPUTES the flag from the diff and STOPs without it. + full test suite |
 
 "touches_db" (ordinary query/model edits without schema changes) is NOT a risk flag. `touches_build` triggers `/shipwright-test`'s Step 3.8 (skip-rules apply: no `dev_url` → skip Lighthouse, no build artifacts → skip bundle).
 
@@ -132,8 +133,6 @@ Print `Run ID / Intent / Complexity (+ reasoning) / Prior source (keyword | hist
 | **Safety-enforced** | Full review (when risk flags), full test suite (when shared infra), down.sql (when migrations), Boundary Probe (when `touches_io_boundary`), Confidence Calibration (small with `touches_io_boundary`), Test Completeness Ledger (small) | Only with explicit risk acknowledgment |
 | **Advisory** | Design check, mini-plan, design fidelity, E2E update, external LLM review, release prompt, Confidence Calibration (trivial / small without `touches_io_boundary`), Test Completeness Ledger (trivial → auto `n/a`) | Freely skippable |
 | **Complexity-gated** | Iterate spec, context scan depth | Adjustable via "make it medium/small" |
-
----
 
 ## Path A: FEATURE (new functionality)
 
@@ -166,7 +165,7 @@ See `references/iteration-reviews.md` for the 7-point checklist (item 7: Affecte
 
 ### Step 7.5: Confidence Calibration (mandatory at medium+, also when `touches_io_boundary`)
 
-"Are you confident?" is unfalsifiable — replace with empirical probes per `references/confidence-anti-patterns.md`. Before F0, populate the spec's Confidence Calibration section with: (1) boundaries touched, (2) empirical probes run + finding, (3) the **Test Completeness Ledger**, (4) confidence-pattern check (asymptote depth + coverage breadth). **Override Classes:** Mandatory at medium+, Safety-enforced at small with `touches_io_boundary`, Advisory otherwise.
+"Are you confident?" is unfalsifiable — replace with empirical probes per `references/confidence-anti-patterns.md`. Before F0, populate the spec's Confidence Calibration section with: (1) boundaries touched, (2) empirical probes run + finding, (3) the **Test Completeness Ledger**, (4) confidence-pattern check (asymptote depth + coverage breadth + **integration composition** — when `cross_component` machinery is touched, add a `category:"integration"` behavior proving the pieces compose; the F11 verifier `check_integration_coverage` recomputes the flag from the diff and STOPs without it). **Override Classes:** Mandatory at medium+, Safety-enforced at small with `touches_io_boundary`, Advisory otherwise.
 
 **Test Completeness Ledger (the empirical-completeness gate).** Principle: **testable ⇒ tested.** Enumerate every behavior this diff introduces/changes; classify each as exactly one of `tested` (cite the test + result) or `untestable` (cite a `reason_code` from the closed vocabulary in `references/confidence-anti-patterns.md` — `requires-prod-credential`, `requires-external-nondeterministic-service`, `requires-physical-device`, `requires-manual-visual-judgment`, `requires-interactive-tty`, `covered-by-existing-test`). The disposition "could-test-but-didn't" is **abolished** — "I should still test X" is a blocking work item, not a spec note. At F5, record the machine-readable block `iterate_latest.test_completeness` in `shipwright_test_results.json` (shape in `references/F5.md`); the F11 verifier `check_test_completeness_ledger` STOPs the run if any behavior is testable-but-untested, or an `untestable` row lacks a valid `reason_code`, or the enumeration is short of the AC count. **Graduated:** enforced at small/medium/large; auto `n/a` (with a one-line justification) at trivial.
 
@@ -221,6 +220,7 @@ See `references/campaign-mode.md` for the full protocol: campaign setup, autonom
 | Self-Review | always | always | always | — |
 | Confidence Calibration | skip | if `touches_io_boundary` | always | always |
 | Test Completeness Ledger | n/a (auto) | always | always | always |
+| Integration Coverage (cross-component) | skip | skip | if `cross_component` | if `cross_component` |
 | Full Code Review | only if risk flags | only if risk flags | always | — |
 | Browser Verify | if UI | if UI | if UI | — |
 | Smoke Test | if server up | if server up | if server up | — |
