@@ -1,8 +1,8 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-12-triage-status-idle-main-outbox",
+    "run_id": "iterate-2026-06-12-utf8-churn-merge",
     "date": "2026-06-12",
-    "unit": { "status": "passed", "passed": 3131, "total": 3131 },
+    "unit": { "status": "passed", "passed": 3147, "total": 3147 },
     "integration": { "status": "not_run", "passed": 0, "total": 0 },
     "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
     "e2e": { "status": "skipped", "passed": 0, "total": 0 },
@@ -14,24 +14,24 @@
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-12-triage-status-idle-main-outbox/surface_verification.json",
+      "evidence_path": ".shipwright/runs/iterate-2026-06-12-utf8-churn-merge/surface_verification.json",
       "timestamp": "2026-06-12T00:00:00.000Z",
-      "justification": "Shared-infra logic change (triage.mark_status idle-main routing) — no startable app surface. The touches_io_boundary write-routing is empirically pinned by shared/tests/test_triage_outbox.py with a real git-repo+origin fixture; full triage+sweep suite + CI=true rerun green."
+      "justification": "Shared-infra logic change (resolve_churn_conflicts + integrate_main git-I/O encoding + commit-failure handling) — no startable app surface. The touches_io_boundary triage.jsonl encoding round-trip is empirically pinned by a byte-level round-trip probe (Step 3.8, two probes across CJK/em-dash/smart-quote/accented/Cyrillic/emoji-ZWJ/astral-4byte/BOM, zero findings) AND a non-UTF-8 loud-fail regression test; full shared suite 3147 passed."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "AC1 idle main (origin + default branch): a status flip on a TRACKED-resident item routes to the OUTBOX, tracked log byte-unchanged, union resolves dismissed", "disposition": "tested",
-          "evidence": "test_triage_outbox.py::test_mark_status_idle_main_tracked_item_routes_to_outbox PASSED (git_repo+origin fixture; asserts should_route_to_outbox True precondition)" },
-        { "behavior": "AC2 iterate/* branch (worktree, not idle main): a tracked-item status flip stays in TRACKED (ships in PR) — idle-main routing does not leak into the worktree path", "disposition": "tested",
-          "evidence": "test_triage_outbox.py::test_mark_status_iterate_branch_tracked_item_stays_tracked PASSED (asserts should_route_to_outbox False on iterate/* branch)" },
-        { "behavior": "AC3 residence preserved off the idle-main path: outbox-only id -> outbox (no orphan/resurrect); tracked+outbox overlap -> tracked; no-origin/non-git -> tracked; mark_status takes no to_outbox param", "disposition": "tested",
-          "evidence": "test_triage_outbox.py residence suite green: test_mark_status_residence_outbox_no_tracked_orphan, _residence_tracked_preferred_on_overlap, _has_no_to_outbox_param, test_should_route_* (no-origin/iterate/non-git False) — all PASSED, unchanged by the fix" },
-        { "behavior": "AC4 no regression across every mark_status consumer (producers compliance/drift/phase-quality/f0.5, sweep, gc, cli, storage, schema, promote)", "disposition": "tested",
-          "evidence": "full shared/tests suite 3131 passed (not slow/cross_plugin) + CI=true rerun of triage/sweep/producer subset 126 passed + targeted mark_status-consumer set 251 passed" }
+        { "behavior": "AC1 (F22): a non-ASCII triage.jsonl conflict unions BYTE-IDENTICAL through _union_conflict — strict UTF-8 decode (no cp1252 mojibake/crash), both sides preserved verbatim", "disposition": "tested",
+          "evidence": "test_resolve_churn_conflicts.py::test_triage_conflict_unions_non_ascii_byte_identical PASSED (RED before fix: cp1252 reader-thread UnicodeDecodeError 0x81 -> None.splitlines AttributeError; asserts exact line-by-line UTF-8 bytes + raw payload bytes on disk) + empirical Step-3.8 probe (7 edge cases, byte-identical)" },
+        { "behavior": "AC1b (F22 hardening): a genuinely-corrupt non-UTF-8 byte in a legacy triage.jsonl fails LOUDLY with a structured triage_invalid status + merge abort, never a bare traceback, never silent mojibake", "disposition": "tested",
+          "evidence": "test_resolve_churn_conflicts.py::test_triage_conflict_non_utf8_byte_returns_triage_invalid_not_traceback PASSED (raw 0x81 byte stage -> _TriageNotUtf8Error -> triage_invalid, exit 4, merge aborted) + Step-3.8 probe 2b (0x9D)" },
+        { "behavior": "AC2 (F17): a blocked merge commit (pre-commit hook rejection -> CalledProcessError) returns a STRUCTURED JSON status (merge_commit_failed) and leaves NO MERGE_HEAD (git merge --abort), with abort-double-fault distinguished as merge_commit_failed_abort_incomplete", "disposition": "tested",
+          "evidence": "test_integrate_main.py::test_integrate_returns_json_and_aborts_when_merge_commit_blocked + ::test_main_cli_reports_merge_commit_failed_status PASSED (RED before fix: CalledProcessError escaped integrate(); CLI test asserts no Traceback in stderr + MERGE_HEAD gone + exit 7)" },
+        { "behavior": "AC3 no regression across the churn/integrate path (events/triage reconcile, allowlist gate, --ours/--theirs, campaign-status S3, follow-up Run-ID commit)", "disposition": "tested",
+          "evidence": "full shared/tests suite 3147 passed (not slow/cross_plugin); churn+integrate+campaign-status+churn_merge subset 52 passed; ruff@0.15.15 clean; anti-ratchet exit 0" }
       ],
       "counts": { "testable": 4, "tested": 4, "untestable": 0, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 4, "covered_acs": 4 }
+      "enumeration_basis": { "acs": 3, "covered_acs": 3 }
     }
   }
 }
