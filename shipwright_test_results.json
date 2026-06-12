@@ -1,76 +1,59 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-12-bloat-h1-h2-cleanup",
+    "run_id": "iterate-2026-06-12-workevent-null-frs-coerce",
     "date": "2026-06-12",
-    "unit": {
-      "status": "passed",
-      "passed": 3284,
-      "total": 3284
-    },
-    "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "smoke": {
-      "status": "not_run"
-    },
+    "unit": { "status": "passed", "passed": 697, "total": 697 },
+    "integration": { "status": "passed", "passed": 21, "total": 21 },
+    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
+    "e2e": { "status": "not_run", "passed": 0, "total": 0 },
+    "design_fidelity": { "status": "not_run", "passed": 0, "total": 0 },
+    "smoke": { "status": "not_run" },
     "degraded": [
-      "Data-only change: shipwright_bloat_baseline.json (51 entries tightened + 8 grandfathered) + .shipwright/triage.jsonl (2 follow-up items). No Python/source changed, so F0 was scoped to the shared suite (3284 passed, 12 skipped) + Group H audit (14) + bloat/anti-ratchet (115); integration/plugin suites cannot be affected by a baseline-data edit.",
-      "triage.jsonl carries in-session background-producer appends (phaseQuality dismissals + a now-stale compliance H1 backlog item trg-b7fe7c90); the F5b compliance regen auto-dismisses it once H1=0. Carried per the per-tree, PR-committed model."
+      "setup_iterate_worktree reported a pre-existing 'sweep-outbox invalid' warning for trg-671bb0a2 (a status append dropped by an earlier merge) — background triage-outbox housekeeping, unrelated to this change."
     ],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "H2 cleared: every baseline entry's current equals its on-disk LOC (no recorded>actual ratchet-suggestion)",
+          "behavior": "WorkEvent.from_dict coerces an explicit-null affected_frs to []",
           "disposition": "tested",
-          "evidence": "live Group-H scan H2=0; test_bloat_baseline + test_anti_ratchet_check[_staged] (115 passed)"
+          "evidence": "tests/test_workevent_null_coercion.py::TestWorkEventNullCoercion::test_explicit_null_affected_frs_coerces_to_empty_list PASSED"
         },
         {
-          "behavior": "H1 cleared: every oversize tracked file is listed in the baseline (no drift)",
+          "behavior": "WorkEvent.from_dict coerces an explicit-null new_frs to []",
           "disposition": "tested",
-          "evidence": "live Group-H scan H1=0; test_audit_group_h (14 passed)"
+          "evidence": "tests/test_workevent_null_coercion.py::TestWorkEventNullCoercion::test_explicit_null_new_frs_coerces_to_empty_list PASSED"
         },
         {
-          "behavior": "No anti-ratchet introduced: no baseline entry's current is below its file's actual LOC",
+          "behavior": "WorkEvent.from_dict tolerates explicit-null nested tests/review dicts (zero-valued, no AttributeError)",
           "disposition": "tested",
-          "evidence": "anti_ratchet_check.py --worktree status=ok (ratchets=[], new_crossings=[])"
+          "evidence": "tests/test_workevent_null_coercion.py::TestWorkEventNullCoercion::test_explicit_null_nested_dicts_do_not_crash PASSED"
         },
         {
-          "behavior": "No stale baseline entries: every entry resolves to a file on disk",
+          "behavior": "Missing affected_frs/new_frs keys still default to [] (normal omit path unaffected)",
           "disposition": "tested",
-          "evidence": "live Group-H scan H6=0"
+          "evidence": "tests/test_workevent_null_coercion.py::TestWorkEventNullCoercion::test_missing_keys_still_default_to_empty_list PASSED"
+        },
+        {
+          "behavior": "Populated affected_frs/new_frs/tests round-trip unchanged",
+          "disposition": "tested",
+          "evidence": "tests/test_workevent_null_coercion.py::TestWorkEventNullCoercion::test_populated_values_round_trip_unchanged PASSED"
+        },
+        {
+          "behavior": "A null-affected_frs event no longer bricks map_requirements_to_events / compliance MD regen (the reported crash)",
+          "disposition": "tested",
+          "evidence": "tests/test_workevent_null_coercion.py::TestWorkEventNullCoercion::test_null_affected_frs_does_not_brick_rtm_mapping PASSED; full compliance suite 697 passed"
         }
       ],
-      "counts": {
-        "total": 4,
-        "tested": 4,
-        "untestable": 0,
-        "untested_testable": 0
-      }
+      "counts": { "testable": 6, "tested": 6, "untestable": 0, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 3, "covered_acs": 3 }
     },
     "surface_verification": {
       "surface": "none",
-      "justification": "Data/config-only change: shipwright_bloat_baseline.json (compliance Group H bookkeeping) + triage.jsonl follow-up items. No runtime surface (no CLI/API/web code path), no UI, no backend-affects-frontend. Verified by the Group-H scan (H1=H2=H6=0) + anti-ratchet gate (status ok) + shared suite (3284 passed).",
+      "justification": "Pure Python deserialization-hardening in compliance collectors (WorkEvent.from_dict). No UI, no API route, no store mutation, no SSE/WS or message contract touched; the affected compliance outputs are static markdown, not a live web surface. Verified by reproduce-then-fix probe + full compliance suite (697 passed) + shared-contracts integration (21 passed). small complexity, no touches_io_boundary risk flag -> F0.5 advisory.",
       "tests_run": 0,
       "exit_code": 0,
-      "timestamp": "2026-06-12T19:35:00Z"
+      "timestamp": "2026-06-12T22:20:00Z"
     }
   }
 }

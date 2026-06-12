@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-12 19:44 UTC | Session: 5e2a3abc-c193-4b16-a38b-aea30ca9caae | Run: iterate-2026-06-12-bloat-h1-h2-cleanup
+> Updated: 2026-06-12 20:22 UTC | Session: 5194116e-24a8-4fd8-95b9-06465ff26727 | Run: iterate-2026-06-12-workevent-null-frs-coerce
 
-## Recent Changes (163 iterations)
+## Recent Changes (164 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | Coerce explicit-null affected_frs/new_frs (and tests/review) in WorkEvent.from_dict | 697/697 |  | compliance | 2026-06-12 |
 | change | W2 phase-quality check SKIPs on an unresolvable run_id (mirror S2/S3); fixes the audit-context false-FAIL/false-PASS when no iterate run resolves; also fixes a latent empty-run_id crash | 3289/3289 |  | compliance | 2026-06-12 |
 | change | Clear bloat Group H1/H2: tighten 51 stale baseline entries to actual LOC + grandfather 8 oversize files (reducibility-catalog dogfood); follow-ups trg-af476d87 + trg-b9acb195. | 0/0 |  | tooling | 2026-06-12 |
 | bug | Windows: test-run the python3 probe so the Microsoft Store stub does not abort the marketplace cache sync | 3284/3284 |  | tooling | 2026-06-12 |
@@ -170,7 +171,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-12 | Unit: 3284/3284 | Smoke: not_run | (iterate)
+Last run: 2026-06-12 | Unit: 697/697 | Integration: 21/21 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

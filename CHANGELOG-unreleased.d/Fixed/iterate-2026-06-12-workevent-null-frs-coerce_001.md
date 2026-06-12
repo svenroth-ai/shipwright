@@ -1,0 +1,1 @@
+Compliance: WorkEvent.from_dict now coerces an explicit-null affected_frs/new_frs (and tests/review) to its empty default, so a producer emitting null no longer crashes the compliance markdown regeneration (dashboard/RTM/SBOM/test-evidence/change-history).

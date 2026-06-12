@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-12T19:44:08.072141+00:00
+Generated: 2026-06-12T20:22:50.182497+00:00
 
 ## Requirements Coverage
 
@@ -188,6 +188,7 @@ Generated: 2026-06-12T19:44:08.072141+00:00
 | Windows: test-run the python3 probe so the Microsoft Store stub does not abort the marketplace cache sync | iterate | bug |  | 3284/3284 | — | 2026-06-12 |
 | Clear bloat Group H1/H2: tighten 51 stale baseline entries to actual LOC + grandfather 8 oversize files (reducibility-catalog dogfood); follow-ups trg-af476d87 + trg-b9acb195. | iterate | change |  | — | — | 2026-06-12 |
 | W2 phase-quality check SKIPs on an unresolvable run_id (mirror S2/S3); fixes the audit-context false-FAIL/false-PASS when no iterate run resolves; also fixes a latent empty-run_id crash | iterate | change |  | 3289/3289 | — | 2026-06-12 |
+| Coerce explicit-null affected_frs/new_frs (and tests/review) in WorkEvent.from_dict | iterate | bug |  | 697/697 | — | 2026-06-12 |
 
 ## Coverage Summary
 
@@ -195,7 +196,7 @@ Generated: 2026-06-12T19:44:08.072141+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 163 |
+| Iterate changes | 164 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

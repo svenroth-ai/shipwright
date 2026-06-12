@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-06-12T19:44:08.072141+00:00
+Generated: 2026-06-12T20:22:50.182497+00:00
 Total commits: 976
 
 ## Commit Distribution
@@ -581,7 +581,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-12 | bloat | clear Group H1/H2 - tighten 51 baseline entries + grandfather 8 | 56f237aee2a3 |
+| 2026-06-12 | bloat | clear Group H1/H2 — tighten 51 baseline entries + grandfather 8 (reducibility-catalog dogfood) (#219) | 0e8932f4976f |
 | 2026-06-11 | triage | drop three stale internal anchor items | 9d74de9db766 |
 | 2026-06-11 | gitignore | keep campaign planning dirs local-only | dd4806d2ba91 |
 | 2026-06-11 | triage | sweep 3 outbox append(s) into branch | 26ea4a5f0586 |
