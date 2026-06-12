@@ -21,6 +21,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+_SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
+if str(_SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_ROOT))
+
+# Canonical greenfield/foreign predicate — single SSoT every hook shares.
+from lib.project_root import is_shipwright_project, resolve_project_root  # noqa: E402
+
 
 # Canonical home of the agent_docs artifact set, relative to project_root.
 # Mirrors agent_docs entry in shared/scripts/lib/artifact_migrations.py.
@@ -207,22 +214,14 @@ def main() -> int:
 
     # Resolve project root — handles subdirectory projects (e.g. webui/)
     try:
-        scripts_dir = Path(__file__).resolve().parent.parent
-        sys.path.insert(0, str(scripts_dir))
-        from lib.project_root import resolve_project_root
         project_root = resolve_project_root()
-    except (ImportError, ValueError):
+    except ValueError:
         project_root = Path.cwd()
 
-    # Guard: skip if not in a shipwright-managed project
-    has_run_config = (project_root / "shipwright_run_config.json").exists()
-    has_agent_docs = (project_root / _AGENT_DOCS_DIRNAME).is_dir()
-    has_any_config = any(
-        (project_root / f).exists()
-        for f in ("shipwright_project_config.json", "shipwright_plan_config.json",
-                  "shipwright_build_config.json", "shipwright_events.jsonl")
-    )
-    if not has_run_config and not has_agent_docs and not has_any_config:
+    # Guard: skip if not in a shipwright-managed project (canonical predicate —
+    # every Stop hook shares one greenfield/foreign boundary,
+    # iterate-2026-06-12-canonical-project-predicate).
+    if not is_shipwright_project(project_root):
         return 0
 
     try:
