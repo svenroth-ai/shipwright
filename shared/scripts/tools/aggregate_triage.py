@@ -27,6 +27,7 @@ if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from lib.events_log import latest_event_dt  # noqa: E402
+from lib.tty_sanitize import strip_control_chars as _strip_control_chars  # noqa: E402
 
 from triage import (  # noqa: E402
     SEVERITY_RANK,
@@ -98,20 +99,6 @@ def _fence_opener(payload: str) -> str:
         else:
             run = 0
     return "`" * max(3, longest + 1)
-
-
-def _strip_control_chars(text: str) -> str:
-    """Strip terminal control sequences (keep ``\\n``/``\\t``); mirror of the
-    ``triage_cli.py`` copy — keep both in sync.
-
-    Drops C0 (0x00-0x1F, 0x7F) AND C1 (0x80-0x9F, incl. 0x9B CSI) controls; a
-    TTY pager would otherwise execute them (F31; C1 per the Gemini-HIGH plan
-    review). Non-control Unicode (>= 0xA0) survives (umlauts / CJK / em-dash).
-    """
-    return "".join(
-        ch for ch in text
-        if ch in ("\n", "\t") or (0x20 <= ord(ch) < 0x7F) or ord(ch) >= 0xA0
-    )
 
 
 def _render_launch_payload(item: dict) -> list[str]:

@@ -1,29 +1,29 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-12-agent-doc-entry-rules",
+    "run_id": "iterate-2026-06-12-triage-gc-union-residence",
     "date": "2026-06-12",
     "unit": {
       "status": "passed",
-      "passed": 4229,
-      "total": 4229
+      "passed": 3193,
+      "total": 3193
     },
     "integration": {
-      "status": "passed",
-      "passed": 141,
-      "total": 141
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "design_fidelity": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
@@ -35,51 +35,80 @@
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 IMPACT_TARGETS SSoT + impact-aware missing_entries routes convention->conventions.md, component/data-flow->architecture.md",
+          "behavior": "outbox-routed re-open survives apply_gc (AC1)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_architecture_doc.py::test_impact_targets_*, ::test_missing_entries_convention_routes_to_conventions_doc, ::test_missing_entries_component_in_conventions_doc_is_missing PASSED"
+          "evidence": "test_triage_wp9_gc.py::test_apply_honors_outbox_routed_reopen (red→green)"
         },
         {
-          "behavior": "AC2 F11 gate + Group-F detective verify each impact against its target doc (+ legacy fallback)",
+          "behavior": "tracked-route re-open still survives, no regression (AC2)",
           "disposition": "tested",
-          "evidence": "test_verify_iterate_finalization.py::test_architecture_documented_convention_in_conventions_doc_passes/_component_not_satisfied_by_conventions_doc; test_audit_groups_c_f.py::test_convention_documented_in_conventions_doc_passes/_convention_legacy_in_architecture_passes PASSED"
+          "evidence": "test_triage_wp9_gc.py::test_apply_recomputes_plan_under_lock_preserving_concurrent_reopen"
         },
         {
-          "behavior": "AC3 write_decision_log consumes IMPACT_TARGETS; routing pinned to SSoT",
+          "behavior": "outbox NOT folded into tracked file, D1 (AC2)",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-iterate/tests/test_agent_doc_entry_rules.py::test_writer_routes_per_impact_targets[component|data-flow|convention], ::test_f2_documents_canonical_routing PASSED"
+          "evidence": "test_triage_gc.py::test_apply_does_not_fold_outbox_into_tracked"
         },
         {
-          "behavior": "AC4 forward-only entry-budget gate flags new over-budget, grandfathers old/undated, passes real files",
+          "behavior": "report stays tracked-only upper bound (AC2)",
           "disposition": "tested",
-          "evidence": "test_agent_doc_entry_rules.py::test_over_budget_dated_entry_is_flagged, ::test_grandfathered_entries_exempt, ::test_new_entries_within_budget PASSED"
+          "evidence": "test_triage_gc.py::test_apply_does_not_drop_item_churned_after_the_consented_plan"
         },
         {
-          "behavior": "AC5 conventions.md no longer embeds verbatim CONTRIBUTING copy (links instead); no consumer asserted it",
+          "behavior": "forward-drift source-derived (AC4)",
           "disposition": "tested",
-          "evidence": "grep: no test asserts the embedded copy; full suites green post-removal (shared 3173 / iterate 374 / compliance 682 / integration 141); file 606->308 LOC"
+          "evidence": "test_triage_wp9_gc.py::test_machine_reasons_covers_every_producer_recurring_token"
         },
         {
-          "behavior": "AC6 F2.md documents compact routing (machine-checkable)",
+          "behavior": "reverse-drift source-derived + legacy allowlist (AC4)",
           "disposition": "tested",
-          "evidence": "test_agent_doc_entry_rules.py::test_f2_documents_canonical_routing PASSED"
+          "evidence": "test_triage_wp9_gc.py::test_machine_reasons_has_no_unknown_tokens"
         },
         {
-          "behavior": "AC6 F3a/reflection compact-format prose guidance (editorial wording)",
-          "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "doc prose; the machine-checkable routing claim is covered by test_f2_documents_canonical_routing"
+          "behavior": "vacuous-green guard on scan (AC4)",
+          "disposition": "tested",
+          "evidence": "test_triage_wp9_gc.py::test_source_derivation_finds_known_anchor_tokens"
+        },
+        {
+          "behavior": "legacy allowlist token has no live emitter (AC4)",
+          "disposition": "tested",
+          "evidence": "test_triage_wp9_gc.py::test_legacy_retained_tokens_have_no_live_emitter"
+        },
+        {
+          "behavior": "prChecksResolved actually GC'd (AC4)",
+          "disposition": "tested",
+          "evidence": "test_triage_wp9_gc.py::test_prchecks_resolved_github_dismissal_is_machine_churn"
+        },
+        {
+          "behavior": "refresh/prChecks tokens pinned (AC4)",
+          "disposition": "tested",
+          "evidence": "test_triage_wp9_gc.py::test_machine_reasons_pins_refresh_and_prchecks_tokens"
+        },
+        {
+          "behavior": "single-source sanitizer, byte-identical behavior (AC5)",
+          "disposition": "tested",
+          "evidence": "test_triage_wp9_sanitize_outbox.py (14 behavioral, subprocess render)"
+        },
+        {
+          "behavior": "dry-run + applied + empty report render (AC6)",
+          "disposition": "tested",
+          "evidence": "test_triage_gc.py::test_print_report_dry_run_renders_full_surface / _applied_header_branch / _empty_omits_breakdown"
+        },
+        {
+          "behavior": "operator-constraint note removed/replaced (AC3)",
+          "disposition": "tested",
+          "evidence": "F0 grep gate (no 'LIMITATION (follow-up)'/'do not run --apply' in triage_gc.py) + external+internal code review"
         }
       ],
       "counts": {
-        "testable": 6,
-        "tested": 6,
-        "untestable": 1,
+        "testable": 13,
+        "tested": 13,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 6,
-        "covered_acs": 6
+        "acs": 7,
+        "covered_acs": 7
       }
     },
     "surface_verification": {
@@ -88,9 +117,9 @@
       "exit_code": 0,
       "tests_run": 0,
       "evidence_path": "",
-      "timestamp": "2026-06-12T09:52:25.426Z",
+      "timestamp": "2026-06-12T00:00:00.000Z",
       "attempts": 0,
-      "justification": "Framework-internal change (compliance routing oracle, F11 gate + Group-F detective, write_decision_log producer, iterate skill instructions F2/F3a/reflection, and a new pytest entry-budget gate). No web/CLI/API application surface exists. Behavior verified by unit + integration suites: producer-to-file routing round-trip, oracle impact routing, F11 gate + F5 detective routing, and the real-file drift test (RED then GREEN); full suites shared 3173 / iterate 374 / compliance 682 passed."
+      "justification": "Framework-internal change to operator-invoked triage tooling: triage_gc concurrency hardening (union-residence under-lock recompute), a source-derived drift meta-test, and a behaviour-preserving extraction of the TTY control-char sanitizer to shared/scripts/lib/tty_sanitize.py. No web/API/store-read-contract surface consumed by a UI changes: triage_gc is a manual CLI maintenance tool, the union read contract (triage.read_all_items) is unchanged, the GC change only narrows which items are dropped (data the WebUI reads is a strict, more-correct subset), and the sanitizer extraction is byte-identical. Verified by TDD red→green unit tests, the full shared/tests suite (3193 passed / 12 skipped), and empirical round-trip + boundary probes (zero tracked orphan-status, header intact, outbox re-open survives)."
     }
   }
 }

@@ -1,0 +1,1 @@
+triage_gc now garbage-collects github_triage PR-CI prChecksResolved machine-churn (it was missing from MACHINE_REASONS; the drift meta-test that should have caught it was a hand-copied tautology, now source-derived from producer code, which also resolved the legacy auditResolved orphan token).

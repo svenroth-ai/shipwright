@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-06-12T09:54:31.026688+00:00
-Total commits: 958
+Generated: 2026-06-12T11:39:05.501518+00:00
+Total commits: 960
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 267
-    "feat" : 266
+    "fix" : 268
+    "feat" : 267
     "chore" : 214
     "docs" : 123
     "refactor" : 50
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 267 commits
+### Fixes (fix) — 268 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-12 | installer | POSIX shell-script fixes — set -e counters, uv PATH, alias, python resolver, dotenv parse (deep-audit WP10) (#205) | 1fd0c2e759f9 |
 | 2026-06-12 | triage | harden GC tokens/TOCTOU, control-char sanitizer, outbox CLI (deep-audit WP9) (#204) | 312e2429176f |
 | 2026-06-12 | compliance | make Group H + S4 FR-preservation gates fire (deep-audit WP3) (#199) | 6b16e8f42715 |
 | 2026-06-12 | triage | route idle-main status flips to the outbox in mark_status (#198) | 57ee522ea55c |
@@ -292,10 +293,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 266 commits
+### Features (feat) — 267 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-12 | iterate | compact agent-doc entries + impact-aware routing SSoT (#206) | 7643bad51c5f |
 | 2026-06-11 | iterate | arm GitHub-native auto-merge in F11 for iterate/* PRs (B4.5 Phase 3) (#197) | 5beaa92f4b37 |
 | 2026-06-11 | security | Tier-3 PR review via OpenRouter (B4.5 Phase 2) (#193) | b61e4011bcad |
 | 2026-06-11 | triage | gh-pr-ci producer — failed hard-gates on open PRs → triage (B4.5 loop-closing) (#191) | f9cf3624c49a |
@@ -1027,7 +1029,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 958 |
+| Total commits | 960 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 958 |
+| Human-authored commits | 960 |
 

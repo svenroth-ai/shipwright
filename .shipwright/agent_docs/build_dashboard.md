@@ -1,12 +1,14 @@
 # Project Activity Dashboard
-> Updated: 2026-06-12 09:54 UTC | Session: 90b40100-155d-4086-8d8c-5aea50931e15 | Run: iterate-2026-06-12-agent-doc-entry-rules
+> Updated: 2026-06-12 11:39 UTC | Session: 2857db0d-4e2f-4526-b051-d235421800ad | Run: iterate-2026-06-12-triage-gc-union-residence
 
-## Recent Changes (146 iterations)
+## Recent Changes (148 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | triage_gc union-residence under-lock recompute (a1-6/F19 follow-up) + source-derived drift meta-test + tty_sanitize extraction | 3193/3193 |  | tooling | 2026-06-12 |
 | change | Compact agent-doc entries + impact-aware routing SSoT (IMPACT_TARGETS) + forward-only 600-char entry-budget gate; conventions.md CONTRIBUTING de-dup | 0/0 |  | tooling | 2026-06-12 |
 | bug | WP9 triage tooling hardening: F30 phaseQualityRefreshed GC token + drift meta-test, F19 GC TOCTOU recompute-under-lock, F31 control-char sanitizer on title/detail/evidence (C0+C1) in both render surfaces, F29 promote/dismiss accept outbox-only items | 3163/3164 |  | tooling | 2026-06-12 |
+| bug | Installer/shell POSIX fixes (deep-audit WP10 F33-F38): set -e prereq counter, uv ~/.local/bin PATH, 13-plugin space-safe alias refresh, python3 resolver, dotenv-parse verify-setup | 3157/3157 |  | tooling | 2026-06-12 |
 | bug | Fix two structurally-inert compliance gates (deep-audit WP3): Group H now in run_all default + on-stop coverage gate widened to A-H (F20); S4 FR-preservation join no longer raises TypeError (F21) | 3146/3146 |  | compliance | 2026-06-12 |
 | change | triage.mark_status routes idle-main status flips to the outbox (symmetric with append_triage_item), completing campaign D1 for the status side; fixes undelivered tracked drift from WebUI/Stop-hook dismisses | 3131/3131 |  | infra | 2026-06-11 |
 | change | F11 arms GitHub-native auto-merge for iterate/* PRs (gh pr merge --auto --squash --delete-branch), branch-scoped + fail-soft (B4.5 Phase 3) | 363/363 |  | tooling | 2026-06-11 |
@@ -153,7 +155,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-12 | Unit: 4229/4229 | Integration: 141/141 | Smoke: not_run | (iterate)
+Last run: 2026-06-12 | Unit: 3193/3193 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

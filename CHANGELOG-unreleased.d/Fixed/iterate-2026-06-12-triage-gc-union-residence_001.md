@@ -1,0 +1,1 @@
+triage_gc --apply no longer drops a triage item whose re-open was routed to the gitignored outbox (idle-main-with-origin): the under-lock droppable-set recompute is now union-residence aware (tracked ∪ outbox), closing the a1-6/F19 outbox-route gap; only the tracked file is still rewritten.

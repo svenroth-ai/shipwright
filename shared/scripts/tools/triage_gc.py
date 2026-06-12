@@ -66,6 +66,7 @@ MACHINE_REASONS = frozenset({
     "phaseQualityResolved",
     "phaseQualityRefreshed",  # F30: stale-signature phase-quality rollup superseded (phase_quality/_triage_bundle ~L268)
     "testEvidenceResolved",
+    "prChecksResolved",  # github_triage PR-CI: a tracked PR's failing checks went green (resolve_pr_ci, by=githubImporter). prMerged/prClosed are terminal lifecycle markers, kept as history (not *Resolved churn).
 })
 
 
@@ -131,6 +132,21 @@ def plan_gc(project_root: Path | str) -> dict:
     }
 
 
+def _union_droppable_ids(project_root: Path | str) -> set[str]:
+    """Ids that are machine-churn by UNION residence (tracked ∪ outbox,
+    last-status-wins — :func:`triage.read_all_items`).
+
+    The under-lock recompute in :func:`apply_gc` uses THIS, not the tracked-only
+    :func:`plan_gc`, so a concurrent re-open routed to the gitignored OUTBOX
+    (idle-main-with-origin) flips the item out of the set and survives. The
+    report stays tracked-only (D1); the intersection keeps it an upper bound.
+    """
+    return {
+        i["id"] for i in triage.read_all_items(project_root)
+        if is_machine_churn(i)
+    }
+
+
 def _validate_after(project_root: Path | str, drop_ids: set[str]) -> None:
     """Fail loudly if the rewrite produced an inconsistent TRACKED log.
 
@@ -164,13 +180,15 @@ def apply_gc(project_root: Path | str, drop_ids: set[str], backup: bool = True) 
 
     F19 (TOCTOU): the ``drop_ids`` argument is the plan the CALLER computed
     outside the lock (the dry-run report / ``main()`` short-circuit). The drop
-    decision is **recomputed under the lock** here, intersected with the caller's
-    plan, so a status flip appended BETWEEN plan and apply (e.g. the WebUI / a
-    producer re-opens a planned item) is honored: a re-opened item is no longer
-    machine-churn under the fresh plan and is NOT dropped. Intersecting with the
-    caller's set keeps the operator-facing report (printed from the stale plan)
-    an upper bound on what actually changed — apply never drops MORE than the
-    report announced, only the same-or-fewer ids.
+    decision is **recomputed under the lock** here over UNION residence (tracked
+    ∪ outbox, last-status-wins), intersected with the caller's plan, so a status
+    flip appended BETWEEN plan and apply is honored regardless of which file it
+    landed in — the tracked log (WebUI/producer on a branch) OR the gitignored
+    outbox (idle-main-with-origin re-open). A re-opened item is no longer
+    machine-churn under the fresh union plan and is NOT dropped. We still rewrite
+    only the tracked file (D1); intersecting with the caller's set keeps the
+    operator-facing report (printed from the stale tracked-only plan) an upper
+    bound — apply never drops MORE than the report announced, only same-or-fewer.
 
     Refuses to rewrite if any non-blank line is malformed JSON — the tolerant
     reader would otherwise silently compact a corrupt line away (data loss). The
@@ -189,16 +207,11 @@ def apply_gc(project_root: Path | str, drop_ids: set[str], backup: bool = True) 
                         f"triage_gc: refusing to rewrite — malformed JSON at line "
                         f"{n} ({exc.msg}); fix or remove it first"
                     )
-        # F19: recompute the droppable set UNDER the lock and intersect with the
-        # caller's planned ids. A concurrent re-open (status flip appended between
-        # the caller's plan and now) makes an item no-longer-machine-churn, so it
-        # drops out of ``fresh_drop_ids`` and survives the rewrite.
-        # LIMITATION (follow-up): the recompute is tracked-only, so a concurrent
-        # re-open that routes to the gitignored OUTBOX (idle-main-with-origin) is
-        # invisible here and the item is still dropped. triage_gc is an operator-
-        # invoked one-off — do not run `--apply` while idle-main outbox writes are
-        # possible until the recompute is made union-residence-aware.
-        fresh_drop_ids = plan_gc(project_root)["drop_ids"]
+        # Recompute UNDER the lock over union residence (see docstring): a
+        # concurrent re-open in the tracked log OR the gitignored outbox flips
+        # the item out of the set and survives. Closes the a1-6/F19 outbox-route
+        # gap. Intersect with the caller's plan; rewrite only the tracked file.
+        fresh_drop_ids = _union_droppable_ids(project_root)
         effective_drop_ids = fresh_drop_ids & set(drop_ids)
         # Tracked store only — never read/rewrite the gitignored outbox (D1).
         raw = triage._iter_raw_lines_at(triage._triage_path(project_root))

@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-12-triage-gc-union-residence",
+  "date": "2026-06-12T11:38:44.983334Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/triage-gc-union-residence",
+  "spec": ".shipwright/planning/iterate/2026-06-12-triage-gc-union-residence.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-12-triage-gc-union-residence"
+}
