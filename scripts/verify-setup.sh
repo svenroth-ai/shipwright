@@ -118,34 +118,83 @@ echo ""
 
 echo "Environment Variables:"
 
-# Source .env.local from CWD (project root) — same as Python plugins
+# Read .env.local from CWD (project root) using the SAME canonical dotenv
+# parser the Python plugins use (shared/scripts/lib/env.py:parse_env_file).
+# We must NOT `source` the file: dotenv is a data format, not a shell script,
+# so a spaced/quoted value (e.g. `KEY=a b $(cmd)`) would be executed as a
+# command under `source` (deep-audit F38). Instead we ask Python for the
+# newline-separated list of keys that carry a non-empty value, then test
+# membership — no eval, no injection. A key already present in the live
+# environment also counts as set.
 PROJECT_ROOT="$(pwd)"
+
+# Resolve a Python interpreter (python3 → python → py); the parser is Python.
+ENV_PYTHON=""
+for _candidate in python3 python py; do
+    if command -v "$_candidate" &>/dev/null; then
+        ENV_PYTHON="$_candidate"
+        break
+    fi
+done
+
+# Newline-separated list of dotenv keys with a non-empty value (may be empty).
+DOTENV_KEYS=""
 if [ -f "$PROJECT_ROOT/.env.local" ]; then
     echo "  $PASS .env.local: found at $PROJECT_ROOT/.env.local"
-    set -a
-    source "$PROJECT_ROOT/.env.local"
-    set +a
+    if [ -n "$ENV_PYTHON" ]; then
+        DOTENV_KEYS="$("$ENV_PYTHON" - "$REPO_ROOT" "$PROJECT_ROOT/.env.local" <<'PYEOF' 2>/dev/null || true
+import re
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(sys.argv[1]) / "shared" / "scripts" / "lib"))
+from env import parse_env_file  # canonical dotenv reader (no `source`)
+# Emit ONLY conservative identifier keys with a non-empty value. Restricting
+# to ^[A-Za-z_][A-Za-z0-9_]*$ ensures a malformed key cannot influence the
+# shell's fixed-string membership test (external-review).
+for key, value in parse_env_file(Path(sys.argv[2])).items():
+    if value and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key):
+        print(key)
+PYEOF
+)"
+    else
+        echo "  $WARN .env.local: no Python interpreter to parse it (keys read from environment only)"
+    fi
 else
     echo "  $SKIP .env.local: not found in project (run validate_env.py --init --phase all)"
 fi
 
-if [ -n "${OPENROUTER_API_KEY:-}" ]; then
+# env_has KEY → 0 if KEY is set in the live environment OR present-with-value
+# in the parsed .env.local list.
+env_has() {
+    local key="$1"
+    # Bash indirect expansion (${!key}) reads the variable named by $key WITHOUT
+    # `eval` — no shell syntax in the value is ever evaluated (code-review HIGH:
+    # `eval` reintroduces the exact dotenv/shell boundary F38 removes).
+    if [ -n "${!key:-}" ]; then
+        return 0
+    fi
+    # Fixed-string, whole-line match (-F): the parsed key list is data, never a
+    # regex/glob (external-review — exact match, not pattern match).
+    printf '%s\n' "$DOTENV_KEYS" | grep -Fxq -- "$key"
+}
+
+if env_has OPENROUTER_API_KEY; then
     echo "  $PASS OPENROUTER_API_KEY: set (external review via OpenRouter)"
-elif [ -n "${GEMINI_API_KEY:-}" ] || [ -n "${GOOGLE_API_KEY:-}" ]; then
+elif env_has GEMINI_API_KEY || env_has GOOGLE_API_KEY; then
     echo "  $PASS GEMINI_API_KEY: set (external review via Gemini)"
-elif [ -n "${OPENAI_API_KEY:-}" ]; then
+elif env_has OPENAI_API_KEY; then
     echo "  $PASS OPENAI_API_KEY: set (external review via OpenAI)"
 else
     echo "  $SKIP External review: no API keys set (optional)"
 fi
 
-if [ -n "${JELASTIC_TOKEN:-}" ]; then
+if env_has JELASTIC_TOKEN; then
     echo "  $PASS JELASTIC_TOKEN: set (deployment enabled)"
 else
     echo "  $SKIP JELASTIC_TOKEN: not set (deployment disabled)"
 fi
 
-if [ -n "${SUPABASE_ACCESS_TOKEN:-}" ]; then
+if env_has SUPABASE_ACCESS_TOKEN; then
     echo "  $PASS SUPABASE_ACCESS_TOKEN: set (migrations enabled)"
 else
     echo "  $SKIP SUPABASE_ACCESS_TOKEN: not set (migrations disabled)"

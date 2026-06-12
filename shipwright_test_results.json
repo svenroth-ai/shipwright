@@ -1,37 +1,50 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-12-triage-status-idle-main-outbox",
+    "run_id": "iterate-2026-06-12-installer-shell-fixes",
     "date": "2026-06-12",
-    "unit": { "status": "passed", "passed": 3131, "total": 3131 },
+    "unit": { "status": "passed", "passed": 3157, "total": 3157 },
     "integration": { "status": "not_run", "passed": 0, "total": 0 },
     "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
     "e2e": { "status": "skipped", "passed": 0, "total": 0 },
     "design_fidelity": { "status": "skipped", "passed": 0, "total": 0 },
     "smoke": { "status": "not_run" },
     "degraded": [],
+    "environmental_failures": [
+      {
+        "test": "shared/tests/test_architecture_md_reflects_arch_impact.py::test_every_arch_impact_drop_has_architecture_md_entry",
+        "reason": "Names ONLY sibling-campaign run_ids whose gitignored decision-drops bleed into the shared working tree: iterate-2026-06-12-triage-tooling-hardening, iterate-2026-06-12-utf8-churn-merge. Neither is iterate-2026-06-12-installer-shell-fixes. Pre-existing cross-sub-iterate drift (campaign 2026-06-10-audit-1-auto parallel waves), not caused by this iterate. Per the sub-iterate brief, treat as environmental drift.",
+        "disposition": "environmental_not_mine"
+      }
+    ],
     "surface_verification": {
       "surface": "none",
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-12-triage-status-idle-main-outbox/surface_verification.json",
+      "evidence_path": ".shipwright/runs/iterate-2026-06-12-installer-shell-fixes/surface_verification.json",
       "timestamp": "2026-06-12T00:00:00.000Z",
-      "justification": "Shared-infra logic change (triage.mark_status idle-main routing) — no startable app surface. The touches_io_boundary write-routing is empirically pinned by shared/tests/test_triage_outbox.py with a real git-repo+origin fixture; full triage+sweep suite + CI=true rerun green."
+      "justification": "POSIX shell-script bugfixes (install.sh, update-marketplace.sh, verify-setup.sh) — no startable app surface. The touches_io_boundary write (the .env.local dotenv reader in verify-setup.sh) is empirically pinned: the full verify-setup.sh was run end-to-end against a .env.local whose value contained $(touch PWNED) (no PWNED file = no injection; the old `source` would have executed it), plus the F33 prereq-loop and F35 alias-strip probes. See the iterate ADR Confidence Calibration section."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "AC1 idle main (origin + default branch): a status flip on a TRACKED-resident item routes to the OUTBOX, tracked log byte-unchanged, union resolves dismissed", "disposition": "tested",
-          "evidence": "test_triage_outbox.py::test_mark_status_idle_main_tracked_item_routes_to_outbox PASSED (git_repo+origin fixture; asserts should_route_to_outbox True precondition)" },
-        { "behavior": "AC2 iterate/* branch (worktree, not idle main): a tracked-item status flip stays in TRACKED (ships in PR) — idle-main routing does not leak into the worktree path", "disposition": "tested",
-          "evidence": "test_triage_outbox.py::test_mark_status_iterate_branch_tracked_item_stays_tracked PASSED (asserts should_route_to_outbox False on iterate/* branch)" },
-        { "behavior": "AC3 residence preserved off the idle-main path: outbox-only id -> outbox (no orphan/resurrect); tracked+outbox overlap -> tracked; no-origin/non-git -> tracked; mark_status takes no to_outbox param", "disposition": "tested",
-          "evidence": "test_triage_outbox.py residence suite green: test_mark_status_residence_outbox_no_tracked_orphan, _residence_tracked_preferred_on_overlap, _has_no_to_outbox_param, test_should_route_* (no-origin/iterate/non-git False) — all PASSED, unchanged by the fix" },
-        { "behavior": "AC4 no regression across every mark_status consumer (producers compliance/drift/phase-quality/f0.5, sweep, gc, cli, storage, schema, promote)", "disposition": "tested",
-          "evidence": "full shared/tests suite 3131 passed (not slow/cross_plugin) + CI=true rerun of triage/sweep/producer subset 126 passed + targeted mark_status-consumer set 251 passed" }
+        { "behavior": "F33: the missing-prerequisite counter in install.sh must not abort under set -e from 0 (premise: bare ((m++)) does abort)", "disposition": "tested",
+          "evidence": "test_installer_shell_scripts.py::test_f33_raw_post_increment_from_zero_aborts + ::test_f33_missing_counter_does_not_abort_under_set_e PASSED (drives the actual install.sh increment idiom; N increments from 0 reach N, exit 0)" },
+        { "behavior": "F34: install.sh exports the real astral install dir (~/.local/bin) after installing uv", "disposition": "tested",
+          "evidence": "test_f34_uv_install_exports_local_bin PASSED (asserts ~/.local/bin present; PATH prepends ~/.local/bin:~/.cargo/bin)" },
+        { "behavior": "F35: the emitted shipwright() alias lists all 13 plugins incl. shipwright-adopt; a stale alias is refreshed (not skipped) with a backup + non-empty guard", "disposition": "tested",
+          "evidence": "test_f35_alias_lists_all_thirteen_plugins + ::test_f35_alias_refresh_not_blocked_by_stale_guard + ::test_f35_alias_refresh_backs_up_and_guards_empty PASSED; empirical awk strip-and-rewrite probe in Confidence Calibration preserved user content + created backup" },
+        { "behavior": "F36: every --plugin-dir path is quoted; the emitted alias survives a space-containing REPO_ROOT (each path is a single argument)", "disposition": "tested",
+          "evidence": "test_f36_alias_quotes_plugin_dir_paths + ::test_f36_emitted_alias_survives_spaced_repo_root PASSED (evals the emitted block under REPO_ROOT='/tmp/dinovo GmbH/Sven Roth/shipwright' with a stub claude; 13 single-token plugin-dir args)" },
+        { "behavior": "F37: update-marketplace.sh resolves python3/python/py instead of a bare python; the resolver picks python3 when only python3 is on PATH", "disposition": "tested",
+          "evidence": "test_f37_update_marketplace_resolves_a_python_interpreter (no bare `python -c`) + ::test_f37_python_resolver_picks_python3_when_python_absent PASSED (PATH with only a python3 shim resolves a non-empty $PYTHON_BIN)" },
+        { "behavior": "F38: verify-setup.sh parses .env.local via the canonical dotenv reader (no source); a spaced/$()-valued line is not executed; malformed key names are rejected; membership is fixed-string", "disposition": "tested",
+          "evidence": "test_f38_verify_setup_does_not_source_env_local + ::test_f38_spaced_dotenv_value_does_not_execute_as_command + ::test_f38_verify_setup_filters_malformed_keys PASSED; full-script end-to-end injection probe (no PWNED) in Confidence Calibration" },
+        { "behavior": "Compliance path-canon: scripts/install.sh's quoted shipwright-compliance plugin-dir line (a -compliance hyphen-segment false positive) is allowlisted, not a real legacy artifact-path ref", "disposition": "tested",
+          "evidence": "test_artifact_path_canon.py::test_no_legacy_artifact_paths[compliance-migrated] PASSED after adding scripts/install.sh to ALLOWLIST['compliance']" }
       ],
-      "counts": { "testable": 4, "tested": 4, "untestable": 0, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 4, "covered_acs": 4 }
+      "counts": { "testable": 7, "tested": 7, "untestable": 0, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 6, "covered_acs": 6, "note": "6 findings (F33-F38) + 1 path-canon allowlist follow-up" }
     }
   }
 }

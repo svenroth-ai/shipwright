@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-12T05:31:37.722790+00:00
+Generated: 2026-06-12T08:48:05.654486+00:00
 
 ## Requirements Coverage
 
@@ -169,6 +169,7 @@ Generated: 2026-06-12T05:31:37.722790+00:00
 | F11 arms GitHub-native auto-merge for iterate/* PRs (gh pr merge --auto --squash --delete-branch), branch-scoped + fail-soft (B4.5 Phase 3) | iterate | change |  | 363/363 | — | 2026-06-11 |
 | triage.mark_status routes idle-main status flips to the outbox (symmetric with append_triage_item), completing campaign D1 for the status side; fixes undelivered tracked drift from WebUI/Stop-hook dismisses | iterate | change |  | 3131/3131 | — | 2026-06-11 |
 | Fix two structurally-inert compliance gates (deep-audit WP3): Group H now in run_all default + on-stop coverage gate widened to A-H (F20); S4 FR-preservation join no longer raises TypeError (F21) | iterate | bug |  | 3146/3146 | — | 2026-06-12 |
+| Installer/shell POSIX fixes (deep-audit WP10 F33-F38): set -e prereq counter, uv ~/.local/bin PATH, 13-plugin space-safe alias refresh, python3 resolver, dotenv-parse verify-setup | iterate | bug |  | 3157/3157 | — | 2026-06-12 |
 
 ## Coverage Summary
 
@@ -176,7 +177,7 @@ Generated: 2026-06-12T05:31:37.722790+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 144 |
+| Iterate changes | 145 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
