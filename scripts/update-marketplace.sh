@@ -32,6 +32,23 @@ if ! command -v claude &>/dev/null; then
     exit 1
 fi
 
+# Resolve a Python interpreter. A bare ``python`` does not exist on
+# Ubuntu/Debian/macOS (only ``python3``); under ``set -e`` the command
+# substitutions below would then resolve to nothing and abort the entire
+# sync silently (deep-audit F37). Probe python3 → python → py, in order.
+PYTHON_BIN=""
+for _candidate in python3 python py; do
+    if command -v "$_candidate" &>/dev/null; then
+        PYTHON_BIN="$_candidate"
+        break
+    fi
+done
+if [ -z "$PYTHON_BIN" ]; then
+    echo "Error: no Python interpreter found (tried python3, python, py)."
+    echo "       Install Python 3.11+ and re-run."
+    exit 1
+fi
+
 # Step 1: Update marketplace clone from GitHub
 # Try the built-in command first; fall back to manual git pull if SSH fails
 echo ""
@@ -74,7 +91,7 @@ for plugin in "${PLUGINS[@]}"; do
     fi
 
     # Get the installed cache path from installed_plugins.json
-    cache_target=$(python -c "
+    cache_target=$("$PYTHON_BIN" -c "
 import json, sys, os
 try:
     ip = os.path.expanduser('~/.claude/plugins/installed_plugins.json')
@@ -247,7 +264,7 @@ for plugin in "${PLUGINS[@]}"; do
     plugin_key="${plugin}@${MARKETPLACE_NAME}"
 
     # Get the installed cache path
-    cache_target=$(python -c "
+    cache_target=$("$PYTHON_BIN" -c "
 import json, sys, os
 try:
     ip = os.path.expanduser('~/.claude/plugins/installed_plugins.json')
@@ -311,7 +328,7 @@ for plugin in "${PLUGINS[@]}"; do
     fi
 
     # Get installed version
-    installed_version=$(python -c "
+    installed_version=$("$PYTHON_BIN" -c "
 import json, sys, os
 try:
     ip = os.path.expanduser('~/.claude/plugins/installed_plugins.json')
