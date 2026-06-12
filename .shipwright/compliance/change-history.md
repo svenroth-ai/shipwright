@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-06-11T22:33:12.418915+00:00
-Total commits: 956
+Generated: 2026-06-12T08:15:24.686566+00:00
+Total commits: 957
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
+    "fix" : 266
     "feat" : 266
-    "fix" : 264
-    "chore" : 215
+    "chore" : 214
     "docs" : 123
     "refactor" : 50
     "test" : 23
@@ -19,6 +19,277 @@ pie title Commit Types
 ```
 
 ## Changes by Type
+
+### Fixes (fix) — 266 commits
+
+| Date | Scope | Description | Commit |
+|------|-------|-------------|--------|
+| 2026-06-12 | compliance | make Group H + S4 FR-preservation gates fire (deep-audit WP3) (#199) | 6b16e8f42715 |
+| 2026-06-12 | triage | route idle-main status flips to the outbox in mark_status (#198) | 57ee522ea55c |
+| 2026-06-11 | security | tolerate markdown-fenced JSON in pr_review parser (#196) | e3b965569017 |
+| 2026-06-11 | compliance | security-scan gate ignores trigger keywords in quoted args | 42c32a3159bf |
+| 2026-06-11 | iterate | repo-relative campaign spec_path (N1, trg-196f4aa6) | 8f551bc25db8 |
+| 2026-06-11 | iterate | bloat Stop-gate reads a file's ceiling from the worktree baseline it measures, not main | e1e555dc72cb |
+| 2026-06-11 | iterate | tolerate markdown emphasis in campaign skeleton; backfill verify (campaign S4) | 20feee5b2c09 |
+| 2026-06-10 | triage | pin triage_cli list stdout to UTF-8 — cp1252 console crash on non-ASCII items | 2d53d3960957 |
+| 2026-06-10 | tests | exempt full generated agent-doc cache trio from canon lint | 3544da31e17d |
+| 2026-06-10 | tests | gate D2V evidence write behind an opt-in env var | ef70f5cce30c |
+| 2026-06-10 | triage | dedup_triage_lines collapses same-id appends keep-last | 6f8d0fc70482 |
+| 2026-06-09 | gitignore | re-exclude transient external-review markers under planning/iterate/ | 1d0d67e70e9e |
+| 2026-06-09 | compliance | relocate detective-audit JSON under .shipwright/compliance/ so the gitignore canon covers it | 79fcde8c865f |
+| 2026-06-09 | infra | idle-main artifact hygiene — complete ADR-089 for two stragglers | 1f7f0ceff292 |
+| 2026-06-08 | test | unset $CI for sweep/D2V suites so the real sweep runs in CI | 40cdf6f0e828 |
+| 2026-06-08 | triage | D3 review cascade — seam test, fail-soft decode, sweep-skip observability | 45ce44900ed9 |
+| 2026-06-08 | triage | harden D2 sweep/GC (LF outbox, GC-by-id, exactly-once proof, staged-diff gate) | b8fcf8ae0342 |
+| 2026-06-08 | triage | residence-derived mark_status + reroute idle-main appenders (D1 review cascade) | 8b36e7dcecdb |
+| 2026-06-08 | test | make the self-heal rollback hook executable for Linux CI | ec40d4adce90 |
+| 2026-06-07 | triage | reconcile-and-commit main-tree triage.jsonl drift before FF/pull | 73eed9d41449 |
+| 2026-06-07 | security | allowlist cafebabe:deadbeef in generated gitleaks config (GAP-3) | 22f78c572c80 |
+| 2026-06-07 | compliance | distinguish SBOM 'not installed' from 'no declared license' | 1e09b96e2917 |
+| 2026-06-07 | iterate | harden finalization/verification tooling (3 fixes from the prior run) (#165) | 4718f6c13921 |
+| 2026-06-07 | adopt | scaffold .gitleaks.toml allowlist + harden security.yml.template | 418a81658f31 |
+| 2026-06-07 | triage-gc | GC machine-churn complianceRefreshed backlog dismissals | 1338052864a7 |
+| 2026-06-06 | compliance | F5 architecture-drift uses content reconciliation + canon F11 gate | c58e7aa02310 |
+| 2026-06-05 | triage | C1 preservation tests assert no-reflow, not byte-level CRLF | c22ac1c3c06f |
+| 2026-06-05 | triage | scaffolder self-heal preserves content + line endings (external review, C1) | 71c5577ff383 |
+| 2026-06-05 | evidence | record A's unit suite as 617/617, not 617/627 (external review) | de77c5fc7e44 |
+| 2026-06-05 | triage | two-pass triage validator — order-independent (external review, C2) | bad7d909325f |
+| 2026-06-05 | triage | reword GC machine-set comment to satisfy artifact-path-canon (B) | 76b067bc9606 |
+| 2026-06-05 | triage | scaffolder fallback also ignores triage.jsonl.bak (C1, Codex LOW) | 39ddc7c35410 |
+| 2026-06-05 | triage | address Codex code-review findings on triage_gc (B) | 6334d902012f |
+| 2026-06-05 | triage | address Codex code-review findings on the churn resolver (C2) | b7559a2ec639 |
+| 2026-06-05 | security | fail closed on a degraded scanner leg via scan_errors marker | 4ec64a29fa47 |
+| 2026-06-05 | compliance | SBOM cluster dedup-key = signature + manifest_type only | 53ccf300c5b2 |
+| 2026-06-05 | compliance | B7 excludes non-functional commit types (Rule E) | a611fc8dd9fc |
+| 2026-06-05 | hooks | make the bloat marker + Stop gate worktree-aware (trg-305e2aab) | 9282ef267871 |
+| 2026-06-05 | security | read gitleaks report from a file, not stdout | 4a27c374ed3c |
+| 2026-06-05 | iterate | enforce FR-gate on finalize write-path + same-event D3 (C3) | 2b0fb66cf115 |
+| 2026-06-04 | hooks | scope bloat recorder to the project root (no cross-repo marker leak) | e1ce915dddf9 |
+| 2026-06-04 | adopt | security-gate counts criticals by rule-level SARIF severity + blocks secrets, fail-closed | 41372faa7c63 |
+| 2026-06-03 | compliance | B7 recognizes chore(release) as tracked-phase output (sub-iterate B) | 2fa549541b62 |
+| 2026-06-03 | compliance | realign detective audit with Run-ID/release model + A5 invocation (C1+C2) | f688c391bcdb |
+| 2026-06-02 | hooks | dedup SessionStart Phase-Quality injection to once-per-event (#140) | f75a03901ddc |
+| 2026-06-01 | compliance | detective audit honors event_amended corrections | 470404c809a4 |
+| 2026-06-01 | iterate | deterministic integrate merge + CI-robust integrate tests | 2f1687c1ec3b |
+| 2026-06-01 | canon | drop legacy-path token from resolver docstring | 0ef2b7f0a195 |
+| 2026-06-01 | iterate | auto-reconcile churn-artifact merge conflicts (events=union + resolver) | 7bbb6b57721a |
+| 2026-06-01 | compliance | D5 change_type exemption + per-project disabled_checks gate | 7522a7081c2f |
+| 2026-06-01 | security | diff-mode prompt-injection scan honors self-reference/skip excludes | 6c523b575a42 |
+| 2026-06-01 | iterate | write plugin-sync Stop-hook triage item to durable main-repo log (#130) | 0c15e9a6df64 |
+| 2026-05-31 | canon | mark triage_bundle.py compliance-word literals as non-path | 4c77369fa004 |
+| 2026-05-31 | deploy | reject Windows absolute client.entrypoint on any host OS | ea0db8d24483 |
+| 2026-05-31 | shared-tests | make shared/tests CI-green on Linux (cross_plugin marker + Windows-only skip) | 4d14ac96201d |
+| 2026-05-31 | compliance | collapse compliance triage into one rolling backlog action-unit | 448b0580cdb7 |
+| 2026-05-31 | shared-tests | unmask os.name-fake crashes on non-native CI + portable spawn flag | 2742e46a9350 |
+| 2026-05-31 | ci | make arch-impact sanity test CI-aware (skip on clean checkout) | 81d840769752 |
+| 2026-05-31 | compliance | render unengaged phases as SKIP on the phase-quality dashboard | 19cc2ca8ad1e |
+| 2026-05-31 | compliance | collapse phase-quality triage into one rolling backlog action-unit | 527fc4b718f9 |
+| 2026-05-31 | iterate | record spec_impact_justification on the work_completed event | b3ab00273b26 |
+| 2026-05-31 | canon | resolve compliance + planning artifact-path-canon failures on main | 658198fbe220 |
+| 2026-05-31 | iterate | point iterate-history adr field at the run_id so F11 resolves the decision-drop | 2ef5e0abcd6b |
+| 2026-05-30 | iterate | use run_id as decision-drop ADR identity in iterate entry | 5fc34c27b756 |
+| 2026-05-30 | compliance | resolve versioned CLAUDE_PLUGIN_ROOT so phase-keyed Stop hooks fire | b919f7db81de |
+| 2026-05-30 | adopt,project | propagate canonical .shipwright gitignore block to consuming projects | 60120fbb1f30 |
+| 2026-05-30 | compliance | RTM status from latest tested event; untested 0/0 events neutral | 76a3b12b4f9f |
+| 2026-05-29 | hooks | suggest_iterate UserPromptSubmit output must set hookEventName | 6f79d47b9e9e |
+| 2026-05-29 | hooks | clear bloat anti-ratchet at baseline current, not raw limit | 4adfd4441725 |
+| 2026-05-29 | hooks | key bloat marker off stdin-payload session_id, not env | a447fc625b71 |
+| 2026-05-29 | iterate | ship work_completed event in the PR via per-tree events.jsonl | 4eb6b1a90528 |
+| 2026-05-29 | meta | refresh artifact-path-canon ALLOWLIST for Campaign A/B aftermath | 9d9b1e57c247 |
+| 2026-05-27 | iterate | correct iterate_history adr field to run-id form | 36375a6408d3 |
+| 2026-05-27 | iterate | runtime/snapshot split for agent-doc trio + hard-gated finalize repair | 54ecb17512c2 |
+| 2026-05-25 | hooks | drop invalid hookSpecificOutput wrapper from Stop hook (#87) | f6bca09d9b57 |
+| 2026-05-25 | bloat | skip tests/fixtures/ and __fixtures__/ in scan walker | ea2f6110eb12 |
+| 2026-05-23 | compliance | pin SBOM Python-license resolver to per-manifest .venv METADATA | fc1a7a86cffb |
+| 2026-05-23 | meta | resolve architecture.md merge-conflict + allowlist security helper | 9e26a9c5e41b |
+| 2026-05-23 | architecture.md | forward-reference upcoming security-adopt follow-up | 93c0fcb75561 |
+| 2026-05-23 | compliance | snapshot audit must walk worktree branch lineage | e178b7c657c1 |
+| 2026-05-23 | verifier | F11 verifier multi-commit-aware via run_id lookup (#74) | 6fcffc01570d |
+| 2026-05-23 | iterate | F7b seals tracked event-log appends to prevent silent reset wipe (#71) | e758ea876105 |
+| 2026-05-22 | security | inline nosemgrep on shell=True line (semgrep flags kwarg, not call) | 69319684056a |
+| 2026-05-22 | security | place nosemgrep directly adjacent to flagged line | eeab07c9d2e5 |
+| 2026-05-22 | security | hoist github context to env in security workflow (semgrep run-shell-injection) | 81fdc7c0c687 |
+| 2026-05-21 | meta | deterministic render timestamps from max(event.ts) (#66) | 8382ff90bbb2 |
+| 2026-05-21 | triage | gate gh-security action-unit emit on artifact stub in test fixture (#54) | f4a1ff11636e |
+| 2026-05-21 | build | section-builder.md JSON examples conform to result schema (#51) | 823225e0942c |
+| 2026-05-21 | meta | post-#43 hygiene — promote escape-cell drift test + allowlist test_results.json (#45) | 3b34fcaeb502 |
+| 2026-05-21 | shared | escape pipe and newline in markdown table cells (#43) | 46b9ac47da28 |
+| 2026-05-19 | iterate | resolve decision-drop directory against the main repo (worktree-aware) | 0d4d3d61e3c0 |
+| 2026-05-19 | hooks | make file-size guard a non-blocking crossing-only nudge | c76c9bec8451 |
+| 2026-05-18 | verifiers | recognise drop-dir changelog, adopted spec path, iterate/adopt completion evidence | 40599dee30bf |
+| 2026-05-18 | ci | harden activated workflows — scanners, CI-aware test, CodeQL guard | d85210f9cc36 |
+| 2026-05-18 | hooks | resolve a real Python interpreter + fix 17 launch-blocker test failures | 21cef22325f6 |
+| 2026-05-16 | triage | canonical drift dedup keys + drift/F0.5 auto-resolve | 2f6794b8af53 |
+| 2026-05-16 | adopt | seed External Review on; drop dead plan-config key | 3f5777d8b94f |
+| 2026-05-16 | iterate | worktree-aware event-log resolution | 34a79879a54d |
+| 2026-05-15 | compliance | worktree-aware RTM data collection | ea24bf4284d2 |
+| 2026-05-11 | triage | path-canon allowlist + use _AGENT_DOCS_DIRNAME constant | 734bba94d211 |
+| 2026-05-11 | triage | address external code review HIGH + MED findings | 0229b4c3b9f2 |
+| 2026-05-11 | test-hygiene | lazy pytest import so CLI runs without pytest installed | 905bbde7788c |
+| 2026-05-10 | hooks | Stop and SubagentStop hooks emit schema-compliant stdout | 9c8f9aa16770 |
+| 2026-05-09 | adopt | scanner requires comment-context; remove dead save_session_config | f8d44da5da28 |
+| 2026-05-07 | plugins | convert PreToolUse/PostToolUse matcher to string form for Claude Code 2.1.132+ schema | 99fc87bdb26f |
+| 2026-05-07 | plugins | wrap hooks.json under top-level hooks key for Claude Code 2.1.132+ schema | 276e8f650a40 |
+| 2026-05-06 | test | hooks-consistency parser handles quoted-path commands | c5e6cb30c428 |
+| 2026-05-06 | canon | post-migration cleanup — 9 canon tests now green | 7383c185a35c |
+| 2026-05-06 | loader | external_review_config deep-merges per-project iterate config | 49eca252153b |
+| 2026-05-05 | verifier | accept drop-directory entries and dashboard short-SHAs | f1f04478d613 |
+| 2026-05-05 | adopt | write shipwright_iterate_config.json during onboarding | f4f7229a5d37 |
+| 2026-05-05 | compliance | FR-table parser accepts 5-col adopt format (ADR-031) | 656f96f2fe0e |
+| 2026-05-05 | iterate | suggest_iterate hook is plugin-owned, retire hook_installer (ADR-030) | a05ff22ccc6b |
+| 2026-05-04 | iterate | runner contract mandates self-review + calibration (extends ADR-029) | fb466b0aeafa |
+| 2026-05-04 | test | scan_specs comment uses canonical .shipwright/planning path | 932d7bd17ec5 |
+| 2026-05-04 | iterate | review-driven hardening (ADR-028) | 5415ed68584d |
+| 2026-05-03 | changelog | detect Git-Bash MSYS path-mangling in drop bullets (ADR-023) | a13fd64294f3 |
+| 2026-05-03 | env | strip UTF-8 BOM in parse_env_file (Windows Notepad scenario, ADR-021) | 71c47c350763 |
+| 2026-05-03 | hooks | quote ${CLAUDE_PLUGIN_ROOT} in plugins/*/hooks/hooks.json | 6ca369d948c0 |
+| 2026-05-03 | env | strip inline `# comment` from parse_env_file values (latent bug, ADR-021) | 1a9c7f48079f |
+| 2026-05-03 | adopt | quote suggest_iterate hook path + upgrade legacy entries (Shape + command) in place | b24f804b1d89 |
+| 2026-05-02 | adopt | write canonical matcher-group shape for UserPromptSubmit hook | 1ddf9ae549c2 |
+| 2026-05-02 | adopt | drift detection, test-fixture filter, compliance fallback (Iterate 2 of 2) | cffe191e793c |
+| 2026-05-02 | adopt | brownfield ADR numbering + H3 canon for parser round-trip | 63352ff7e3ff |
+| 2026-05-01 | ci | add canonical id to Critical-Findings step in security.yml | ca77b64b0736 |
+| 2026-05-01 | tests | close 3 pre-existing canon-lint + assertion gaps from e273104 | b889c380cb94 |
+| 2026-05-01 | iterate | close spec/architecture skip loophole for additive features | 5979d9d97ff4 |
+| 2026-04-30 | crawler | page-isolation + smart API mock + locator timeouts | 631592956571 |
+| 2026-04-30 | crawler | SPA-aware route discovery + screenshot stability | 2d65401b6a41 |
+| 2026-04-30 | scripts | file-copy fallback when plugin mirror is a real dir (Windows) | 2d7a4758ac74 |
+| 2026-04-30 | compliance-tests | use canonical .shipwright/compliance/ in fixture + assertion | 93fa8205df3c |
+| 2026-04-28 | integration-tests | resolve sys.modules['lib'] collision in compliance test | 7e8c387742db |
+| 2026-04-27 | plan | defensively validate planning_dir shape in generate-batch-tasks | 342143466686 |
+| 2026-04-26 | adopt,shared | route_crawler spec path must use forward slashes | f5fd75042737 |
+| 2026-04-26 | docs,templates,deploy | close 14 review findings from Replit-cascade | 48b1e56c49da |
+| 2026-04-26 | adopt,shared | external-review fixes + realistic e2e verification | eb224df1e37a |
+| 2026-04-26 | adopt | honest awareness — gitignore + additive merge + enrichment guards | fd0888553d19 |
+| 2026-04-26 | adopt | never silently destroy load-bearing user files | 95b0df6ffeba |
+| 2026-04-26 | adopt,shared | crawler robustness + failure observability | 675247ed3b82 |
+| 2026-04-26 | adopt,shared | repair Windows + multi-service crawl pipeline | 48a7ca51a15c |
+| 2026-04-26 | security,ci | grant actions:read for upload-sarif@v3 | 290a91c2d112 |
+| 2026-04-25 | adopt | broaden Step B.5 crawl gate to admit profile + multi-service signals | f4642ae88181 |
+| 2026-04-25 | run | post-merge banner + security-default polish for multi-session | a9396e113b7f |
+| 2026-04-25 | run | code-review follow-ups for F4-F6 (internal + external review) | 086cdbda3634 |
+| 2026-04-24 | webui | hono server — loud bind errors via formatBindError | d6136dc1f7e7 |
+| 2026-04-24 | webui | dev-restart — computeKillTargets helper, drop hardcoded 5177 | 817a2cb4352a |
+| 2026-04-24 | webui | tasklist-card-width — drop max-w-[90%] so it matches ToolCard | c3696e9a1d7c |
+| 2026-04-24 | webui | hide last-prompt events from chat — pure noise | 864c9e7f521c |
+| 2026-04-24 | webui | align changelog entry with v0.3.0 drop-pattern convention | efd020751a52 |
+| 2026-04-24 | webui | system-pill-filter — hide custom-title/agent-name/permission-mode by default | b2dcc3cb5b49 |
+| 2026-04-24 | webui | chat-bubble-padding — widen horizontal inset from 22px to 40px | 593cc2362bcd |
+| 2026-04-24 | webui | status-stuck-on-awaiting-launch — re-launch flips back to active | 26f999f812e4 |
+| 2026-04-23 | webui | tasklist-light-theme — switch TaskListCard from dark to light bg | 07850845b849 |
+| 2026-04-23 | webui | skillcard-and-code-bg — unwrap array content + anthracite code | 6ae940bda7d6 |
+| 2026-04-23 | webui | mermaid-render-loop-fix — stabilize ReactMarkdown config identity (real cause was poll-driven remount) | 23008e95b824 |
+| 2026-04-23 | compliance | reference audit report path in Group C iterate suggestion | 74800735b621 |
+| 2026-04-23 | webui | mermaid-flicker-fix — move content-hash memo to DOM dataset for StrictMode resilience | 478212e37eeb |
+| 2026-04-23 | webui | resume-cwd-prefix — extend cd prefix to legacy buildCopyCommands (Resume/Fork parity with Launch) | b76ab77a7938 |
+| 2026-04-23 | webui | mermaid-in-markdown — render language-mermaid fences as SVG diagrams | 8ea55e563f98 |
+| 2026-04-23 | security | force UTF-8 subprocess IO so Semgrep SAST runs on Windows | 40c7164b6338 |
+| 2026-04-23 | security | default scanner exclusions so OSS backend does not time out on node_modules/.venv (#10) | 7eeef2a234f3 |
+| 2026-04-23 | webui | launch-cwd-prefix — shell-aware cd injection so pasted commands run in project root | a524ed207a35 |
+| 2026-04-23 | webui | cli-flag-fix — command template used --project-root, not a real Claude CLI flag | 41e0d888d37a |
+| 2026-04-23 | webui | shell-line-continuations — flatten copy command for PowerShell/cmd | 00b2bb828435 |
+| 2026-04-23 | webui | launch-command-wiring — route copied stub command, phase not persisted | 1b65b2c057b8 |
+| 2026-04-20 | webui | omit --session-id on plain resume (CLI 2.1+ rejects the combo) | 1ae0aaffea63 |
+| 2026-04-18 | webui/chat | AskUserCard multi-select + notBlocked banner + switch timeout | 1058c73f1c05 |
+| 2026-04-18 | webui/chat | UAT round 2 — new-task model, ghost bubble, resume UX, 409 retry | e742e79f0239 |
+| 2026-04-18 | webui/chat | mid-task model switch UX + spawn indicator + empty-prompt guard | df364fa647a9 |
+| 2026-04-18 | webui/e2e | correct TaskDetailPage URL in sub-iterate A spec | a752083636de |
+| 2026-04-18 | webui/chat-settings | sub-iterate C — unify model state to concrete CLI ids | 9bd97d46964d |
+| 2026-04-18 | iterate | ensure external review runs on Resume for medium+ iterates | ae42d6fcb1d5 |
+| 2026-04-17 | iterate14.14 | post-14.13 bug sweep (4 bugs) | 2736734344f7 |
+| 2026-04-17 | iterate14.13 | send concrete model id + spawn/switch UX indicators | 5452fb634438 |
+| 2026-04-16 | iterate14.10 | opus 4.7 correct id + auto mode CLI mapping + askusercard pause resume | 1ff459c7d6ad |
+| 2026-04-16 | iterate14.8.1 | filterbar phase drift + priority removal + modebadge inline | 611c079396c1 |
+| 2026-04-16 | iterate14.8.0 | kanban phase mapping wire-through + sensible defaults | 901f860a59e1 |
+| 2026-04-15 | iterate14.7.0 | task persistence + all-projects view + reload state | 722f96251c4f |
+| 2026-04-14 | webui,shared | iterate 12.0b — zombie-task reconciliation | 444935ef844b |
+| 2026-04-14 | webui,plugins | revert inbox filter to latest-pending + expand phase dropdown | 10c43bb51532 |
+| 2026-04-14 | webui | drop /think slash prefixes — Claude CLI 2.1.1 removed them | 9f1080b77401 |
+| 2026-04-14 | webui,iterate13.1 | suppress markdown fallback after resolved AskUserQuestion | 2a2d4cc9a404 |
+| 2026-04-14 | webui,iterate | iterate 11.3 — first-pending inbox + replay timestamps + iterate-aware handoff | b41f68a582de |
+| 2026-04-13 | webui | inbox shows latest pending per task (revert iterate 11.1 zombie filter) | d02a8ff72c8e |
+| 2026-04-13 | webui | inbox dedupe by normalized question + zombie-task filter (ADR-024) | 527662c116f4 |
+| 2026-04-13 | webui | revert iterate-7 tool_result stdin + inbox filter + model selector + finalization verifier | d3c57aad7ba5 |
+| 2026-04-13 | webui | lock concurrent JSON writes (projects, pids, inbox, settings) | 81b5a12ad81e |
+| 2026-04-13 | hooks | filter shipwright runtime-artifact dirs from drift check | 24cf717e06f7 |
+| 2026-04-13 | webui | inbox projectId + chat-history replay + collapse AskUserQuestion noise + model/effort wire-through | 72512480cb46 |
+| 2026-04-13 | webui | persist task_cancelled/work_completed/task_updated to events.jsonl | 3bc9f85ea557 |
+| 2026-04-13 | webui | inbox answers send tool_result block + immediate Thinking + plugin scope + ADR budget | b589aaf4e7ae |
+| 2026-04-13 | webui | TaskHeader redirects to kanban board after Close/Delete | 6366e7cd8ccd |
+| 2026-04-13 | webui | fatal startup errors (EADDRINUSE) must exit for tsx watch to retry | 8f36d400bb90 |
+| 2026-04-13 | webui | reset displayContent per turn + inbox id=toolUseId + dev-restart helper | ac5784772dc1 |
+| 2026-04-13 | webui | correct AskUserQuestion schema + orange accent + thinking label + restart note | 314e8689d863 |
+| 2026-04-13 | webui | kill chat duplication at the root + AskUserCard redesign + classifier tiebreak | ceb72a0bdedb |
+| 2026-04-13 | webui | AskUserQuestion card renders schema + dedupe double-render | 5e27b1ef1cce |
+| 2026-04-13 | webui | tool call cards transition Running→Done in place | 8502a0830a4d |
+| 2026-04-13 | webui | phase dropdown now authoritative in both start paths | 37e7d1a978cb |
+| 2026-04-12 | hooks | post-test iterate fallback + broken classify import path | 8611c5ce23e0 |
+| 2026-04-12 | webui | compact task header + tighter chat top padding | 646475164d01 |
+| 2026-04-12 | webui | permission popover closes on select, user bubble darker | 004ce3527a49 |
+| 2026-04-12 | webui | white claude cards, grey user bubble, VS Code permission modes | 5a6bf4d942c7 |
+| 2026-04-12 | webui | persistent Claude process via --input-format stream-json | ff4158a9f48d |
+| 2026-04-12 | webui | flat chat, markdown tables, earlier streaming indicator | 09a5f92348cf |
+| 2026-04-12 | webui | chat rendering matches mockup 11 — avatars, tool tiles, no horizontal scroll | ad24a33e2bd5 |
+| 2026-04-12 | webui | interactive chat via re-spawn with --resume | b85830a8bc55 |
+| 2026-04-12 | webui | task lifecycle events — start transitions kanban status, exit completes task | 5e9355e1c200 |
+| 2026-04-12 | webui | kanban columns scroll vertically when tasks overflow | 032bc2e60524 |
+| 2026-04-12 | webui | add min-h-0 to enable scroll on kanban board container | 6a7226922695 |
+| 2026-04-12 | webui | enable page scrolling when tasks overflow viewport | c057ed40f142 |
+| 2026-04-12 | webui | bridge hardening — cross-platform stability | 238437cfe98a |
+| 2026-04-12 | webui | bridge working — Claude CLI spawns, responds, files created | 7eebcdde063b |
+| 2026-04-12 | webui | CLI prompt sends title+desc, server crash fix, Windows auto-start | f61972b85a8f |
+| 2026-04-12 | webui | test phase — title/desc split, autonomy refactor, model display, start button | 4c05570c3b36 |
+| 2026-04-11 | webui | PATCH URL, card menu Close+Delete, chat error handling | ed1aa43d94b6 |
+| 2026-04-11 | webui | task creation ENOENT fix + project delete button | f18d6e120a82 |
+| 2026-04-11 | webui | task creation works, project dir initialized, keyboard shortcut fixed | 82917adf40ea |
+| 2026-04-11 | webui | task creation resilience + install.sh + guide + CRUD tests | 23c78e799575 |
+| 2026-04-11 | webui | UI test findings — logo, naming, wizard, shadows, dropdown, shortcuts | 4a468d094cd7 |
+| 2026-04-11 | e2e | use precise locators and handle backend-absent state | 55f34e63a0d6 |
+| 2026-04-11 | webui | resolve visual mockup deviations and 10 dead-write persistence gaps | 00798cb9dd7d |
+| 2026-04-11 | — | visual_compare parsing, pipeline order, compliance logging, preview hints | 7d436c53fdba |
+| 2026-04-11 | build | derive branch name from session-id instead of section name | a642df423493 |
+| 2026-04-11 | iterate | add design mockup references to early pipeline steps | 3ad1881b00fc |
+| 2026-04-11 | iterate | add design mockup references to early pipeline steps | c8c792fd9d3d |
+| 2026-04-11 | server | replace __dirname with ESM-compatible import.meta.url | 7cb6436fbc81 |
+| 2026-04-11 | plan | add Design Reference blocks to section specs and batch generator | a335bc649152 |
+| 2026-04-11 | build | section-aware event dedup and dashboard config fallback | e64e1bdb8cdb |
+| 2026-04-10 | — | cross-plugin symlinks in cache + iterate compliance path | 1451bb06a389 |
+| 2026-04-10 | — | cross-plugin symlinks in cache + iterate compliance path | b49460fb64ec |
+| 2026-04-10 | — | sync shared/ directory to plugin cache in marketplace update | 495626be6af9 |
+| 2026-04-10 | pipeline | add consistency fixes for Project, Plan, Design phases | cec3137fb485 |
+| 2026-04-10 | design | make review viewer localStorage keys project-specific | d1d94c2dac95 |
+| 2026-04-09 | compliance | add baseline failure support to test evidence report | eaa466ac893b |
+| 2026-04-08 | i18n | replace German text with English in all user-facing files | 6adf34864402 |
+| 2026-04-06 | compliance,dashboard | stale test status, evidence order, baseline failures | e80214fb1319 |
+| 2026-04-05 | iterate | add CHANGELOG, build dashboard, auto-merge, and verification gate to finalization | e167d1fd0d31 |
+| 2026-04-05 | scripts | update-marketplace.sh uses full file sync instead of version check | 67f0fe4d7c34 |
+| 2026-04-04 | — | test evidence Playwright section after Full Suite Runs + config JSONL skip | 1d38cd05e414 |
+| 2026-04-04 | — | add HTTPS fallback to update-marketplace.sh for SSH failures | 1359f8e5092c |
+| 2026-04-04 | — | revert skill dir rename, keep install.sh security+preview fix | 105209a7e151 |
+| 2026-04-04 | — | rename skill dirs to full plugin name for clean slash-command display | 8d90e9aa64d9 |
+| 2026-04-03 | — | migrate all hooks.json to new Claude Code format + rename skill dirs | 1683eba7ae94 |
+| 2026-04-02 | readme | remove hallucinated URL from constitution attribution | 082a4daf5664 |
+| 2026-04-02 | shared | tag archived sections with split name for dashboard grouping | e71771442bf5 |
+| 2026-04-02 | shared | use run_config as authoritative source for phase and split state | 519107f1746a |
+| 2026-04-02 | docs | correct hook filenames, add missing security plugin and session configs | a91f437bfb4c |
+| 2026-04-02 | hooks | only track tool calls in Shipwright projects | e8788174ebc7 |
+| 2026-04-02 | supabase | fix migration push failures and add setup guardrails | 195f06a49a53 |
+| 2026-04-01 | pipeline | stale artifacts, pipeline order, and pipeline constants | ac464712c73b |
+| 2026-04-01 | plugins | add --project flag to uv run for correct dependency resolution | 025a04feb557 |
+| 2026-04-01 | hooks | set SHIPWRIGHT_PROJECT_ROOT in session hooks, add test phase detection | a592b30b8448 |
+| 2026-03-31 | pipeline | test completion gate, counter reset, and pipeline constants | e9b68e0dae23 |
+| 2026-03-31 | pipeline | stale artifacts, pipeline order, and toolcall counter path | 0322a77d866c |
+| 2026-03-30 | build,compliance | persist test results and read all splits in compliance | dca957000529 |
+| 2026-03-30 | compliance | fix dashboard links, remove traceability flow and cost summary | b37b9f59c12f |
+| 2026-03-30 | env | ensure .env.local is gitignored before creation | eb30a6554d80 |
+| 2026-03-28 | — | unignore plugins/shipwright-build/skills/build/ directory | 39899c7ada95 |
+| 2026-03-28 | compliance | read pipeline phases dynamically from run config | 45d9483ce6c6 |
+| 2026-03-28 | — | add missing design phase to orchestrator pipeline in SKILL.md | d020dfe87328 |
+| 2026-03-21 | — | use descriptive skill folder names to avoid slash command stuttering | 9a55e863cac8 |
+| 2026-03-21 | — | revert skill folders to skills/shipwright-{name}/ (matching upstream) | a01be3c8bb13 |
+| 2026-03-21 | — | use short skill names in SKILL.md frontmatter | f02346755760 |
+| 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
+| 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
 ### Features (feat) — 266 commits
 
@@ -291,280 +562,10 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 264 commits
+### Chores (chore) — 214 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-11 | security | tolerate markdown-fenced JSON in pr_review parser (#196) | e3b965569017 |
-| 2026-06-11 | compliance | security-scan gate ignores trigger keywords in quoted args | 42c32a3159bf |
-| 2026-06-11 | iterate | repo-relative campaign spec_path (N1, trg-196f4aa6) | 8f551bc25db8 |
-| 2026-06-11 | iterate | bloat Stop-gate reads a file's ceiling from the worktree baseline it measures, not main | e1e555dc72cb |
-| 2026-06-11 | iterate | tolerate markdown emphasis in campaign skeleton; backfill verify (campaign S4) | 20feee5b2c09 |
-| 2026-06-10 | triage | pin triage_cli list stdout to UTF-8 — cp1252 console crash on non-ASCII items | 2d53d3960957 |
-| 2026-06-10 | tests | exempt full generated agent-doc cache trio from canon lint | 3544da31e17d |
-| 2026-06-10 | tests | gate D2V evidence write behind an opt-in env var | ef70f5cce30c |
-| 2026-06-10 | triage | dedup_triage_lines collapses same-id appends keep-last | 6f8d0fc70482 |
-| 2026-06-09 | gitignore | re-exclude transient external-review markers under planning/iterate/ | 1d0d67e70e9e |
-| 2026-06-09 | compliance | relocate detective-audit JSON under .shipwright/compliance/ so the gitignore canon covers it | 79fcde8c865f |
-| 2026-06-09 | infra | idle-main artifact hygiene — complete ADR-089 for two stragglers | 1f7f0ceff292 |
-| 2026-06-08 | test | unset $CI for sweep/D2V suites so the real sweep runs in CI | 40cdf6f0e828 |
-| 2026-06-08 | triage | D3 review cascade — seam test, fail-soft decode, sweep-skip observability | 45ce44900ed9 |
-| 2026-06-08 | triage | harden D2 sweep/GC (LF outbox, GC-by-id, exactly-once proof, staged-diff gate) | b8fcf8ae0342 |
-| 2026-06-08 | triage | residence-derived mark_status + reroute idle-main appenders (D1 review cascade) | 8b36e7dcecdb |
-| 2026-06-08 | test | make the self-heal rollback hook executable for Linux CI | ec40d4adce90 |
-| 2026-06-07 | triage | reconcile-and-commit main-tree triage.jsonl drift before FF/pull | 73eed9d41449 |
-| 2026-06-07 | security | allowlist cafebabe:deadbeef in generated gitleaks config (GAP-3) | 22f78c572c80 |
-| 2026-06-07 | compliance | distinguish SBOM 'not installed' from 'no declared license' | 1e09b96e2917 |
-| 2026-06-07 | iterate | harden finalization/verification tooling (3 fixes from the prior run) (#165) | 4718f6c13921 |
-| 2026-06-07 | adopt | scaffold .gitleaks.toml allowlist + harden security.yml.template | 418a81658f31 |
-| 2026-06-07 | triage-gc | GC machine-churn complianceRefreshed backlog dismissals | 1338052864a7 |
-| 2026-06-06 | compliance | F5 architecture-drift uses content reconciliation + canon F11 gate | c58e7aa02310 |
-| 2026-06-05 | triage | C1 preservation tests assert no-reflow, not byte-level CRLF | c22ac1c3c06f |
-| 2026-06-05 | triage | scaffolder self-heal preserves content + line endings (external review, C1) | 71c5577ff383 |
-| 2026-06-05 | evidence | record A's unit suite as 617/617, not 617/627 (external review) | de77c5fc7e44 |
-| 2026-06-05 | triage | two-pass triage validator — order-independent (external review, C2) | bad7d909325f |
-| 2026-06-05 | triage | reword GC machine-set comment to satisfy artifact-path-canon (B) | 76b067bc9606 |
-| 2026-06-05 | triage | scaffolder fallback also ignores triage.jsonl.bak (C1, Codex LOW) | 39ddc7c35410 |
-| 2026-06-05 | triage | address Codex code-review findings on triage_gc (B) | 6334d902012f |
-| 2026-06-05 | triage | address Codex code-review findings on the churn resolver (C2) | b7559a2ec639 |
-| 2026-06-05 | security | fail closed on a degraded scanner leg via scan_errors marker | 4ec64a29fa47 |
-| 2026-06-05 | compliance | SBOM cluster dedup-key = signature + manifest_type only | 53ccf300c5b2 |
-| 2026-06-05 | compliance | B7 excludes non-functional commit types (Rule E) | a611fc8dd9fc |
-| 2026-06-05 | hooks | make the bloat marker + Stop gate worktree-aware (trg-305e2aab) | 9282ef267871 |
-| 2026-06-05 | security | read gitleaks report from a file, not stdout | 4a27c374ed3c |
-| 2026-06-05 | iterate | enforce FR-gate on finalize write-path + same-event D3 (C3) | 2b0fb66cf115 |
-| 2026-06-04 | hooks | scope bloat recorder to the project root (no cross-repo marker leak) | e1ce915dddf9 |
-| 2026-06-04 | adopt | security-gate counts criticals by rule-level SARIF severity + blocks secrets, fail-closed | 41372faa7c63 |
-| 2026-06-03 | compliance | B7 recognizes chore(release) as tracked-phase output (sub-iterate B) | 2fa549541b62 |
-| 2026-06-03 | compliance | realign detective audit with Run-ID/release model + A5 invocation (C1+C2) | f688c391bcdb |
-| 2026-06-02 | hooks | dedup SessionStart Phase-Quality injection to once-per-event (#140) | f75a03901ddc |
-| 2026-06-01 | compliance | detective audit honors event_amended corrections | 470404c809a4 |
-| 2026-06-01 | iterate | deterministic integrate merge + CI-robust integrate tests | 2f1687c1ec3b |
-| 2026-06-01 | canon | drop legacy-path token from resolver docstring | 0ef2b7f0a195 |
-| 2026-06-01 | iterate | auto-reconcile churn-artifact merge conflicts (events=union + resolver) | 7bbb6b57721a |
-| 2026-06-01 | compliance | D5 change_type exemption + per-project disabled_checks gate | 7522a7081c2f |
-| 2026-06-01 | security | diff-mode prompt-injection scan honors self-reference/skip excludes | 6c523b575a42 |
-| 2026-06-01 | iterate | write plugin-sync Stop-hook triage item to durable main-repo log (#130) | 0c15e9a6df64 |
-| 2026-05-31 | canon | mark triage_bundle.py compliance-word literals as non-path | 4c77369fa004 |
-| 2026-05-31 | deploy | reject Windows absolute client.entrypoint on any host OS | ea0db8d24483 |
-| 2026-05-31 | shared-tests | make shared/tests CI-green on Linux (cross_plugin marker + Windows-only skip) | 4d14ac96201d |
-| 2026-05-31 | compliance | collapse compliance triage into one rolling backlog action-unit | 448b0580cdb7 |
-| 2026-05-31 | shared-tests | unmask os.name-fake crashes on non-native CI + portable spawn flag | 2742e46a9350 |
-| 2026-05-31 | ci | make arch-impact sanity test CI-aware (skip on clean checkout) | 81d840769752 |
-| 2026-05-31 | compliance | render unengaged phases as SKIP on the phase-quality dashboard | 19cc2ca8ad1e |
-| 2026-05-31 | compliance | collapse phase-quality triage into one rolling backlog action-unit | 527fc4b718f9 |
-| 2026-05-31 | iterate | record spec_impact_justification on the work_completed event | b3ab00273b26 |
-| 2026-05-31 | canon | resolve compliance + planning artifact-path-canon failures on main | 658198fbe220 |
-| 2026-05-31 | iterate | point iterate-history adr field at the run_id so F11 resolves the decision-drop | 2ef5e0abcd6b |
-| 2026-05-30 | iterate | use run_id as decision-drop ADR identity in iterate entry | 5fc34c27b756 |
-| 2026-05-30 | compliance | resolve versioned CLAUDE_PLUGIN_ROOT so phase-keyed Stop hooks fire | b919f7db81de |
-| 2026-05-30 | adopt,project | propagate canonical .shipwright gitignore block to consuming projects | 60120fbb1f30 |
-| 2026-05-30 | compliance | RTM status from latest tested event; untested 0/0 events neutral | 76a3b12b4f9f |
-| 2026-05-29 | hooks | suggest_iterate UserPromptSubmit output must set hookEventName | 6f79d47b9e9e |
-| 2026-05-29 | hooks | clear bloat anti-ratchet at baseline current, not raw limit | 4adfd4441725 |
-| 2026-05-29 | hooks | key bloat marker off stdin-payload session_id, not env | a447fc625b71 |
-| 2026-05-29 | iterate | ship work_completed event in the PR via per-tree events.jsonl | 4eb6b1a90528 |
-| 2026-05-29 | meta | refresh artifact-path-canon ALLOWLIST for Campaign A/B aftermath | 9d9b1e57c247 |
-| 2026-05-27 | iterate | correct iterate_history adr field to run-id form | 36375a6408d3 |
-| 2026-05-27 | iterate | runtime/snapshot split for agent-doc trio + hard-gated finalize repair | 54ecb17512c2 |
-| 2026-05-25 | hooks | drop invalid hookSpecificOutput wrapper from Stop hook (#87) | f6bca09d9b57 |
-| 2026-05-25 | bloat | skip tests/fixtures/ and __fixtures__/ in scan walker | ea2f6110eb12 |
-| 2026-05-23 | compliance | pin SBOM Python-license resolver to per-manifest .venv METADATA | fc1a7a86cffb |
-| 2026-05-23 | meta | resolve architecture.md merge-conflict + allowlist security helper | 9e26a9c5e41b |
-| 2026-05-23 | architecture.md | forward-reference upcoming security-adopt follow-up | 93c0fcb75561 |
-| 2026-05-23 | compliance | snapshot audit must walk worktree branch lineage | e178b7c657c1 |
-| 2026-05-23 | verifier | F11 verifier multi-commit-aware via run_id lookup (#74) | 6fcffc01570d |
-| 2026-05-23 | iterate | F7b seals tracked event-log appends to prevent silent reset wipe (#71) | e758ea876105 |
-| 2026-05-22 | security | inline nosemgrep on shell=True line (semgrep flags kwarg, not call) | 69319684056a |
-| 2026-05-22 | security | place nosemgrep directly adjacent to flagged line | eeab07c9d2e5 |
-| 2026-05-22 | security | hoist github context to env in security workflow (semgrep run-shell-injection) | 81fdc7c0c687 |
-| 2026-05-21 | meta | deterministic render timestamps from max(event.ts) (#66) | 8382ff90bbb2 |
-| 2026-05-21 | triage | gate gh-security action-unit emit on artifact stub in test fixture (#54) | f4a1ff11636e |
-| 2026-05-21 | build | section-builder.md JSON examples conform to result schema (#51) | 823225e0942c |
-| 2026-05-21 | meta | post-#43 hygiene — promote escape-cell drift test + allowlist test_results.json (#45) | 3b34fcaeb502 |
-| 2026-05-21 | shared | escape pipe and newline in markdown table cells (#43) | 46b9ac47da28 |
-| 2026-05-19 | iterate | resolve decision-drop directory against the main repo (worktree-aware) | 0d4d3d61e3c0 |
-| 2026-05-19 | hooks | make file-size guard a non-blocking crossing-only nudge | c76c9bec8451 |
-| 2026-05-18 | verifiers | recognise drop-dir changelog, adopted spec path, iterate/adopt completion evidence | 40599dee30bf |
-| 2026-05-18 | ci | harden activated workflows — scanners, CI-aware test, CodeQL guard | d85210f9cc36 |
-| 2026-05-18 | hooks | resolve a real Python interpreter + fix 17 launch-blocker test failures | 21cef22325f6 |
-| 2026-05-16 | triage | canonical drift dedup keys + drift/F0.5 auto-resolve | 2f6794b8af53 |
-| 2026-05-16 | adopt | seed External Review on; drop dead plan-config key | 3f5777d8b94f |
-| 2026-05-16 | iterate | worktree-aware event-log resolution | 34a79879a54d |
-| 2026-05-15 | compliance | worktree-aware RTM data collection | ea24bf4284d2 |
-| 2026-05-11 | triage | path-canon allowlist + use _AGENT_DOCS_DIRNAME constant | 734bba94d211 |
-| 2026-05-11 | triage | address external code review HIGH + MED findings | 0229b4c3b9f2 |
-| 2026-05-11 | test-hygiene | lazy pytest import so CLI runs without pytest installed | 905bbde7788c |
-| 2026-05-10 | hooks | Stop and SubagentStop hooks emit schema-compliant stdout | 9c8f9aa16770 |
-| 2026-05-09 | adopt | scanner requires comment-context; remove dead save_session_config | f8d44da5da28 |
-| 2026-05-07 | plugins | convert PreToolUse/PostToolUse matcher to string form for Claude Code 2.1.132+ schema | 99fc87bdb26f |
-| 2026-05-07 | plugins | wrap hooks.json under top-level hooks key for Claude Code 2.1.132+ schema | 276e8f650a40 |
-| 2026-05-06 | test | hooks-consistency parser handles quoted-path commands | c5e6cb30c428 |
-| 2026-05-06 | canon | post-migration cleanup — 9 canon tests now green | 7383c185a35c |
-| 2026-05-06 | loader | external_review_config deep-merges per-project iterate config | 49eca252153b |
-| 2026-05-05 | verifier | accept drop-directory entries and dashboard short-SHAs | f1f04478d613 |
-| 2026-05-05 | adopt | write shipwright_iterate_config.json during onboarding | f4f7229a5d37 |
-| 2026-05-05 | compliance | FR-table parser accepts 5-col adopt format (ADR-031) | 656f96f2fe0e |
-| 2026-05-05 | iterate | suggest_iterate hook is plugin-owned, retire hook_installer (ADR-030) | a05ff22ccc6b |
-| 2026-05-04 | iterate | runner contract mandates self-review + calibration (extends ADR-029) | fb466b0aeafa |
-| 2026-05-04 | test | scan_specs comment uses canonical .shipwright/planning path | 932d7bd17ec5 |
-| 2026-05-04 | iterate | review-driven hardening (ADR-028) | 5415ed68584d |
-| 2026-05-03 | changelog | detect Git-Bash MSYS path-mangling in drop bullets (ADR-023) | a13fd64294f3 |
-| 2026-05-03 | env | strip UTF-8 BOM in parse_env_file (Windows Notepad scenario, ADR-021) | 71c47c350763 |
-| 2026-05-03 | hooks | quote ${CLAUDE_PLUGIN_ROOT} in plugins/*/hooks/hooks.json | 6ca369d948c0 |
-| 2026-05-03 | env | strip inline `# comment` from parse_env_file values (latent bug, ADR-021) | 1a9c7f48079f |
-| 2026-05-03 | adopt | quote suggest_iterate hook path + upgrade legacy entries (Shape + command) in place | b24f804b1d89 |
-| 2026-05-02 | adopt | write canonical matcher-group shape for UserPromptSubmit hook | 1ddf9ae549c2 |
-| 2026-05-02 | adopt | drift detection, test-fixture filter, compliance fallback (Iterate 2 of 2) | cffe191e793c |
-| 2026-05-02 | adopt | brownfield ADR numbering + H3 canon for parser round-trip | 63352ff7e3ff |
-| 2026-05-01 | ci | add canonical id to Critical-Findings step in security.yml | ca77b64b0736 |
-| 2026-05-01 | tests | close 3 pre-existing canon-lint + assertion gaps from e273104 | b889c380cb94 |
-| 2026-05-01 | iterate | close spec/architecture skip loophole for additive features | 5979d9d97ff4 |
-| 2026-04-30 | crawler | page-isolation + smart API mock + locator timeouts | 631592956571 |
-| 2026-04-30 | crawler | SPA-aware route discovery + screenshot stability | 2d65401b6a41 |
-| 2026-04-30 | scripts | file-copy fallback when plugin mirror is a real dir (Windows) | 2d7a4758ac74 |
-| 2026-04-30 | compliance-tests | use canonical .shipwright/compliance/ in fixture + assertion | 93fa8205df3c |
-| 2026-04-28 | integration-tests | resolve sys.modules['lib'] collision in compliance test | 7e8c387742db |
-| 2026-04-27 | plan | defensively validate planning_dir shape in generate-batch-tasks | 342143466686 |
-| 2026-04-26 | adopt,shared | route_crawler spec path must use forward slashes | f5fd75042737 |
-| 2026-04-26 | docs,templates,deploy | close 14 review findings from Replit-cascade | 48b1e56c49da |
-| 2026-04-26 | adopt,shared | external-review fixes + realistic e2e verification | eb224df1e37a |
-| 2026-04-26 | adopt | honest awareness — gitignore + additive merge + enrichment guards | fd0888553d19 |
-| 2026-04-26 | adopt | never silently destroy load-bearing user files | 95b0df6ffeba |
-| 2026-04-26 | adopt,shared | crawler robustness + failure observability | 675247ed3b82 |
-| 2026-04-26 | adopt,shared | repair Windows + multi-service crawl pipeline | 48a7ca51a15c |
-| 2026-04-26 | security,ci | grant actions:read for upload-sarif@v3 | 290a91c2d112 |
-| 2026-04-25 | adopt | broaden Step B.5 crawl gate to admit profile + multi-service signals | f4642ae88181 |
-| 2026-04-25 | run | post-merge banner + security-default polish for multi-session | a9396e113b7f |
-| 2026-04-25 | run | code-review follow-ups for F4-F6 (internal + external review) | 086cdbda3634 |
-| 2026-04-24 | webui | hono server — loud bind errors via formatBindError | d6136dc1f7e7 |
-| 2026-04-24 | webui | dev-restart — computeKillTargets helper, drop hardcoded 5177 | 817a2cb4352a |
-| 2026-04-24 | webui | tasklist-card-width — drop max-w-[90%] so it matches ToolCard | c3696e9a1d7c |
-| 2026-04-24 | webui | hide last-prompt events from chat — pure noise | 864c9e7f521c |
-| 2026-04-24 | webui | align changelog entry with v0.3.0 drop-pattern convention | efd020751a52 |
-| 2026-04-24 | webui | system-pill-filter — hide custom-title/agent-name/permission-mode by default | b2dcc3cb5b49 |
-| 2026-04-24 | webui | chat-bubble-padding — widen horizontal inset from 22px to 40px | 593cc2362bcd |
-| 2026-04-24 | webui | status-stuck-on-awaiting-launch — re-launch flips back to active | 26f999f812e4 |
-| 2026-04-23 | webui | tasklist-light-theme — switch TaskListCard from dark to light bg | 07850845b849 |
-| 2026-04-23 | webui | skillcard-and-code-bg — unwrap array content + anthracite code | 6ae940bda7d6 |
-| 2026-04-23 | webui | mermaid-render-loop-fix — stabilize ReactMarkdown config identity (real cause was poll-driven remount) | 23008e95b824 |
-| 2026-04-23 | compliance | reference audit report path in Group C iterate suggestion | 74800735b621 |
-| 2026-04-23 | webui | mermaid-flicker-fix — move content-hash memo to DOM dataset for StrictMode resilience | 478212e37eeb |
-| 2026-04-23 | webui | resume-cwd-prefix — extend cd prefix to legacy buildCopyCommands (Resume/Fork parity with Launch) | b76ab77a7938 |
-| 2026-04-23 | webui | mermaid-in-markdown — render language-mermaid fences as SVG diagrams | 8ea55e563f98 |
-| 2026-04-23 | security | force UTF-8 subprocess IO so Semgrep SAST runs on Windows | 40c7164b6338 |
-| 2026-04-23 | security | default scanner exclusions so OSS backend does not time out on node_modules/.venv (#10) | 7eeef2a234f3 |
-| 2026-04-23 | webui | launch-cwd-prefix — shell-aware cd injection so pasted commands run in project root | a524ed207a35 |
-| 2026-04-23 | webui | cli-flag-fix — command template used --project-root, not a real Claude CLI flag | 41e0d888d37a |
-| 2026-04-23 | webui | shell-line-continuations — flatten copy command for PowerShell/cmd | 00b2bb828435 |
-| 2026-04-23 | webui | launch-command-wiring — route copied stub command, phase not persisted | 1b65b2c057b8 |
-| 2026-04-20 | webui | omit --session-id on plain resume (CLI 2.1+ rejects the combo) | 1ae0aaffea63 |
-| 2026-04-18 | webui/chat | AskUserCard multi-select + notBlocked banner + switch timeout | 1058c73f1c05 |
-| 2026-04-18 | webui/chat | UAT round 2 — new-task model, ghost bubble, resume UX, 409 retry | e742e79f0239 |
-| 2026-04-18 | webui/chat | mid-task model switch UX + spawn indicator + empty-prompt guard | df364fa647a9 |
-| 2026-04-18 | webui/e2e | correct TaskDetailPage URL in sub-iterate A spec | a752083636de |
-| 2026-04-18 | webui/chat-settings | sub-iterate C — unify model state to concrete CLI ids | 9bd97d46964d |
-| 2026-04-18 | iterate | ensure external review runs on Resume for medium+ iterates | ae42d6fcb1d5 |
-| 2026-04-17 | iterate14.14 | post-14.13 bug sweep (4 bugs) | 2736734344f7 |
-| 2026-04-17 | iterate14.13 | send concrete model id + spawn/switch UX indicators | 5452fb634438 |
-| 2026-04-16 | iterate14.10 | opus 4.7 correct id + auto mode CLI mapping + askusercard pause resume | 1ff459c7d6ad |
-| 2026-04-16 | iterate14.8.1 | filterbar phase drift + priority removal + modebadge inline | 611c079396c1 |
-| 2026-04-16 | iterate14.8.0 | kanban phase mapping wire-through + sensible defaults | 901f860a59e1 |
-| 2026-04-15 | iterate14.7.0 | task persistence + all-projects view + reload state | 722f96251c4f |
-| 2026-04-14 | webui,shared | iterate 12.0b — zombie-task reconciliation | 444935ef844b |
-| 2026-04-14 | webui,plugins | revert inbox filter to latest-pending + expand phase dropdown | 10c43bb51532 |
-| 2026-04-14 | webui | drop /think slash prefixes — Claude CLI 2.1.1 removed them | 9f1080b77401 |
-| 2026-04-14 | webui,iterate13.1 | suppress markdown fallback after resolved AskUserQuestion | 2a2d4cc9a404 |
-| 2026-04-14 | webui,iterate | iterate 11.3 — first-pending inbox + replay timestamps + iterate-aware handoff | b41f68a582de |
-| 2026-04-13 | webui | inbox shows latest pending per task (revert iterate 11.1 zombie filter) | d02a8ff72c8e |
-| 2026-04-13 | webui | inbox dedupe by normalized question + zombie-task filter (ADR-024) | 527662c116f4 |
-| 2026-04-13 | webui | revert iterate-7 tool_result stdin + inbox filter + model selector + finalization verifier | d3c57aad7ba5 |
-| 2026-04-13 | webui | lock concurrent JSON writes (projects, pids, inbox, settings) | 81b5a12ad81e |
-| 2026-04-13 | hooks | filter shipwright runtime-artifact dirs from drift check | 24cf717e06f7 |
-| 2026-04-13 | webui | inbox projectId + chat-history replay + collapse AskUserQuestion noise + model/effort wire-through | 72512480cb46 |
-| 2026-04-13 | webui | persist task_cancelled/work_completed/task_updated to events.jsonl | 3bc9f85ea557 |
-| 2026-04-13 | webui | inbox answers send tool_result block + immediate Thinking + plugin scope + ADR budget | b589aaf4e7ae |
-| 2026-04-13 | webui | TaskHeader redirects to kanban board after Close/Delete | 6366e7cd8ccd |
-| 2026-04-13 | webui | fatal startup errors (EADDRINUSE) must exit for tsx watch to retry | 8f36d400bb90 |
-| 2026-04-13 | webui | reset displayContent per turn + inbox id=toolUseId + dev-restart helper | ac5784772dc1 |
-| 2026-04-13 | webui | correct AskUserQuestion schema + orange accent + thinking label + restart note | 314e8689d863 |
-| 2026-04-13 | webui | kill chat duplication at the root + AskUserCard redesign + classifier tiebreak | ceb72a0bdedb |
-| 2026-04-13 | webui | AskUserQuestion card renders schema + dedupe double-render | 5e27b1ef1cce |
-| 2026-04-13 | webui | tool call cards transition Running→Done in place | 8502a0830a4d |
-| 2026-04-13 | webui | phase dropdown now authoritative in both start paths | 37e7d1a978cb |
-| 2026-04-12 | hooks | post-test iterate fallback + broken classify import path | 8611c5ce23e0 |
-| 2026-04-12 | webui | compact task header + tighter chat top padding | 646475164d01 |
-| 2026-04-12 | webui | permission popover closes on select, user bubble darker | 004ce3527a49 |
-| 2026-04-12 | webui | white claude cards, grey user bubble, VS Code permission modes | 5a6bf4d942c7 |
-| 2026-04-12 | webui | persistent Claude process via --input-format stream-json | ff4158a9f48d |
-| 2026-04-12 | webui | flat chat, markdown tables, earlier streaming indicator | 09a5f92348cf |
-| 2026-04-12 | webui | chat rendering matches mockup 11 — avatars, tool tiles, no horizontal scroll | ad24a33e2bd5 |
-| 2026-04-12 | webui | interactive chat via re-spawn with --resume | b85830a8bc55 |
-| 2026-04-12 | webui | task lifecycle events — start transitions kanban status, exit completes task | 5e9355e1c200 |
-| 2026-04-12 | webui | kanban columns scroll vertically when tasks overflow | 032bc2e60524 |
-| 2026-04-12 | webui | add min-h-0 to enable scroll on kanban board container | 6a7226922695 |
-| 2026-04-12 | webui | enable page scrolling when tasks overflow viewport | c057ed40f142 |
-| 2026-04-12 | webui | bridge hardening — cross-platform stability | 238437cfe98a |
-| 2026-04-12 | webui | bridge working — Claude CLI spawns, responds, files created | 7eebcdde063b |
-| 2026-04-12 | webui | CLI prompt sends title+desc, server crash fix, Windows auto-start | f61972b85a8f |
-| 2026-04-12 | webui | test phase — title/desc split, autonomy refactor, model display, start button | 4c05570c3b36 |
-| 2026-04-11 | webui | PATCH URL, card menu Close+Delete, chat error handling | ed1aa43d94b6 |
-| 2026-04-11 | webui | task creation ENOENT fix + project delete button | f18d6e120a82 |
-| 2026-04-11 | webui | task creation works, project dir initialized, keyboard shortcut fixed | 82917adf40ea |
-| 2026-04-11 | webui | task creation resilience + install.sh + guide + CRUD tests | 23c78e799575 |
-| 2026-04-11 | webui | UI test findings — logo, naming, wizard, shadows, dropdown, shortcuts | 4a468d094cd7 |
-| 2026-04-11 | e2e | use precise locators and handle backend-absent state | 55f34e63a0d6 |
-| 2026-04-11 | webui | resolve visual mockup deviations and 10 dead-write persistence gaps | 00798cb9dd7d |
-| 2026-04-11 | — | visual_compare parsing, pipeline order, compliance logging, preview hints | 7d436c53fdba |
-| 2026-04-11 | build | derive branch name from session-id instead of section name | a642df423493 |
-| 2026-04-11 | iterate | add design mockup references to early pipeline steps | 3ad1881b00fc |
-| 2026-04-11 | iterate | add design mockup references to early pipeline steps | c8c792fd9d3d |
-| 2026-04-11 | server | replace __dirname with ESM-compatible import.meta.url | 7cb6436fbc81 |
-| 2026-04-11 | plan | add Design Reference blocks to section specs and batch generator | a335bc649152 |
-| 2026-04-11 | build | section-aware event dedup and dashboard config fallback | e64e1bdb8cdb |
-| 2026-04-10 | — | cross-plugin symlinks in cache + iterate compliance path | 1451bb06a389 |
-| 2026-04-10 | — | cross-plugin symlinks in cache + iterate compliance path | b49460fb64ec |
-| 2026-04-10 | — | sync shared/ directory to plugin cache in marketplace update | 495626be6af9 |
-| 2026-04-10 | pipeline | add consistency fixes for Project, Plan, Design phases | cec3137fb485 |
-| 2026-04-10 | design | make review viewer localStorage keys project-specific | d1d94c2dac95 |
-| 2026-04-09 | compliance | add baseline failure support to test evidence report | eaa466ac893b |
-| 2026-04-08 | i18n | replace German text with English in all user-facing files | 6adf34864402 |
-| 2026-04-06 | compliance,dashboard | stale test status, evidence order, baseline failures | e80214fb1319 |
-| 2026-04-05 | iterate | add CHANGELOG, build dashboard, auto-merge, and verification gate to finalization | e167d1fd0d31 |
-| 2026-04-05 | scripts | update-marketplace.sh uses full file sync instead of version check | 67f0fe4d7c34 |
-| 2026-04-04 | — | test evidence Playwright section after Full Suite Runs + config JSONL skip | 1d38cd05e414 |
-| 2026-04-04 | — | add HTTPS fallback to update-marketplace.sh for SSH failures | 1359f8e5092c |
-| 2026-04-04 | — | revert skill dir rename, keep install.sh security+preview fix | 105209a7e151 |
-| 2026-04-04 | — | rename skill dirs to full plugin name for clean slash-command display | 8d90e9aa64d9 |
-| 2026-04-03 | — | migrate all hooks.json to new Claude Code format + rename skill dirs | 1683eba7ae94 |
-| 2026-04-02 | readme | remove hallucinated URL from constitution attribution | 082a4daf5664 |
-| 2026-04-02 | shared | tag archived sections with split name for dashboard grouping | e71771442bf5 |
-| 2026-04-02 | shared | use run_config as authoritative source for phase and split state | 519107f1746a |
-| 2026-04-02 | docs | correct hook filenames, add missing security plugin and session configs | a91f437bfb4c |
-| 2026-04-02 | hooks | only track tool calls in Shipwright projects | e8788174ebc7 |
-| 2026-04-02 | supabase | fix migration push failures and add setup guardrails | 195f06a49a53 |
-| 2026-04-01 | pipeline | stale artifacts, pipeline order, and pipeline constants | ac464712c73b |
-| 2026-04-01 | plugins | add --project flag to uv run for correct dependency resolution | 025a04feb557 |
-| 2026-04-01 | hooks | set SHIPWRIGHT_PROJECT_ROOT in session hooks, add test phase detection | a592b30b8448 |
-| 2026-03-31 | pipeline | test completion gate, counter reset, and pipeline constants | e9b68e0dae23 |
-| 2026-03-31 | pipeline | stale artifacts, pipeline order, and toolcall counter path | 0322a77d866c |
-| 2026-03-30 | build,compliance | persist test results and read all splits in compliance | dca957000529 |
-| 2026-03-30 | compliance | fix dashboard links, remove traceability flow and cost summary | b37b9f59c12f |
-| 2026-03-30 | env | ensure .env.local is gitignored before creation | eb30a6554d80 |
-| 2026-03-28 | — | unignore plugins/shipwright-build/skills/build/ directory | 39899c7ada95 |
-| 2026-03-28 | compliance | read pipeline phases dynamically from run config | 45d9483ce6c6 |
-| 2026-03-28 | — | add missing design phase to orchestrator pipeline in SKILL.md | d020dfe87328 |
-| 2026-03-21 | — | use descriptive skill folder names to avoid slash command stuttering | 9a55e863cac8 |
-| 2026-03-21 | — | revert skill folders to skills/shipwright-{name}/ (matching upstream) | a01be3c8bb13 |
-| 2026-03-21 | — | use short skill names in SKILL.md frontmatter | f02346755760 |
-| 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
-| 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
-
-### Chores (chore) — 215 commits
-
-| Date | Scope | Description | Commit |
-|------|-------|-------------|--------|
-| 2026-06-12 | triage | sweep 4 outbox append(s) into branch | 1d06dd2ea691 |
 | 2026-06-11 | triage | drop three stale internal anchor items | 9d74de9db766 |
 | 2026-06-11 | gitignore | keep campaign planning dirs local-only | dd4806d2ba91 |
 | 2026-06-11 | triage | sweep 3 outbox append(s) into branch | 26ea4a5f0586 |
@@ -1025,7 +1026,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 956 |
+| Total commits | 957 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 956 |
+| Human-authored commits | 957 |
 
