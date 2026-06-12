@@ -1,35 +1,36 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-12-triage-status-idle-main-outbox"
+run_id: "iterate-2026-06-12-triage-tooling-hardening"
 phase: "iterate"
-reason: "iterate: mark_status idle-main outbox routing"
-timestamp: "2026-06-11T22:33:12.418915+00:00"
+reason: "iterate: WP9 triage tooling hardening (F30/F19/F31/F29)"
+timestamp: "2026-06-12T08:15:24.686566+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-11 22:33:12 UTC
+> Auto-generated 2026-06-12 08:15:24 UTC
 
 ## Session Info
 
-- **Session ID**: db865a7c-937f-4000-b738-24d63ad23244
-- **Timestamp**: 2026-06-11 22:33:12 UTC
-- **Reason**: iterate: mark_status idle-main outbox routing
+- **Session ID**: f1dfbc99-c830-4ef1-9897-9a176d13cf6d
+- **Timestamp**: 2026-06-12 08:15:24 UTC
+- **Reason**: iterate: WP9 triage tooling hardening (F30/F19/F31/F29)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-11-automerge-f11-arm
-- **Date**: 2026-06-11T21:24:23.956134Z
-- **Type**: change
+- **Run ID**: iterate-2026-06-12-compliance-gate-coverage
+- **Date**: 2026-06-12T05:32:37.279680Z
+- **Type**: bug
 - **Complexity**: small
-- **Branch**: iterate/automerge-f11-arm
-- **ADR**: iterate-2026-06-11-automerge-f11-arm
+- **Branch**: iterate/audit1-compliance-gate-coverage
+- **ADR**: iterate-2026-06-12-compliance-gate-coverage
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/campaigns/2026-06-10-audit-1-auto/sub-iterates/a1-1-compliance-gate-coverage.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/triage-status-idle-main-outbox
-- **External Review Marker**: missing
+- **Branch**: iterate/audit1-triage-tooling-hardening
+- **External Review Marker**: completed (external_review_state.json @ 2026-06-12T08:04:12)
 
 ### Mandatory replay on Resume
 
@@ -47,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/triage-status-idle-main-outbox
-- **Last Commit**: 1d06dd2e chore(triage): sweep 4 outbox append(s) into branch
+- **Branch**: iterate/audit1-triage-tooling-hardening
+- **Last Commit**: 6b16e8f4 fix(compliance): make Group H + S4 FR-preservation gates fire (deep-audit WP3) (#199)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-e2baab58 | work_completed | iterate (WP9 triage tooling hardening: F30 phaseQualityRefreshed GC token + drift meta-test, F19 GC TOCTOU recompute-under-lock, F31 control-char sanitizer on title/detail/evidence (C0+C1) in both render surfaces, F29 promote/dismiss accept outbox-only items) | 2026-06-12 |
+| evt-94515cf2 | work_completed | iterate (Fix two structurally-inert compliance gates (deep-audit WP3): Group H now in run_all default + on-stop coverage gate widened to A-H (F20); S4 FR-preservation join no longer raises TypeError (F21)) | 2026-06-12 |
 | evt-0cd9ae46 | work_completed | iterate (triage.mark_status routes idle-main status flips to the outbox (symmetric with append_triage_item), completing campaign D1 for the status side; fixes undelivered tracked drift from WebUI/Stop-hook dismisses) | 2026-06-11 |
 | evt-860e1092 | work_completed | iterate (F11 arms GitHub-native auto-merge for iterate/* PRs (gh pr merge --auto --squash --delete-branch), branch-scoped + fail-soft (B4.5 Phase 3)) | 2026-06-11 |
 | evt-86a0a95c | work_completed | iterate (Tier-3 PR review via OpenRouter custom-script (B4.5 Phase 2): pr-review.yml workflow + pr_review.py reviewer + pr_reviewer prompts + 4 snapshot/unit test files) | 2026-06-11 |
-| evt-bb5fc0f9 | work_completed | iterate (Add gh-pr-ci:{pr_number} action-unit: failed hard-gates on open PRs land in triage (B4.5 automerge loop-closing). Differentiated auto-resolve; session-wide symmetry; draft exclusion; truncation + filter=latest guards.) | 2026-06-11 |
-| evt-9033c08d | work_completed | iterate (Fix the check_security_scan PreToolUse deploy-gate: it substring-matched the whole command, so a trigger keyword (deploy/jelastic/vercel/...) inside a quoted argument VALUE — an iterate-finalization --justification, a commit message, or an echo string — false-blocked unrelated commands. New _is_deploy_command strips quoted spans ("..." / '...') before matching; main() uses it. Real deploy commands/scripts/paths stay visible and still gate.) | 2026-06-11 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 143
-- **Last iterate**: change — triage.mark_status routes idle-main status flips to the outbox (symmetric with append_triage_item), completing campaign D1 for the status side; fixes undelivered tracked drift from WebUI/Stop-hook dismisses (2026-06-11)
+- **Total work events**: 145
+- **Last iterate**: bug — WP9 triage tooling hardening: F30 phaseQualityRefreshed GC token + drift meta-test, F19 GC TOCTOU recompute-under-lock, F31 control-char sanitizer on title/detail/evidence (C0+C1) in both render surfaces, F29 promote/dismiss accept outbox-only items (2026-06-12)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
