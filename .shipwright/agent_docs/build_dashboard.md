@@ -1,11 +1,13 @@
 # Project Activity Dashboard
-> Updated: 2026-06-12 12:06 UTC | Session: e40d1082-2df5-473b-853e-641d52bef467 | Run: iterate-2026-06-12-automerge-serial-integrate
+> Updated: 2026-06-12 12:06 UTC | Session: 44fa4331-4609-4594-899c-41a4627d2657 | Run: iterate-2026-06-12-config-bom-integrate-tests
 
-## Recent Changes (152 iterations)
+## Recent Changes (154 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
 | change | Serial integrate_main merge for campaign/parallel iterates: ensure_current.py refresh-if-behind guard at F11 + SHIPWRIGHT_ITERATE_AUTOMERGE defer with serial drain (auto-merge churn fix, Option A). | 0/0 |  | tooling | 2026-06-12 |
+| change | Consolidate the project-detection predicate across all hooks onto one canonical lib.project_root.is_shipwright_project | 3203/3203 |  | infra | 2026-06-12 |
+| change | config-reader BOM tolerance (read_config utf-8-sig) + integrate_main commit-failure branch tests; split two at-limit test modules under 300 LOC | 19/19 |  | tooling | 2026-06-12 |
 | change | Compact agent-doc entries + impact-aware routing SSoT (IMPACT_TARGETS) + forward-only 600-char entry-budget gate; conventions.md CONTRIBUTING de-dup | 0/0 |  | tooling | 2026-06-12 |
 | bug | WP9 triage tooling hardening: F30 phaseQualityRefreshed GC token + drift meta-test, F19 GC TOCTOU recompute-under-lock, F31 control-char sanitizer on title/detail/evidence (C0+C1) in both render surfaces, F29 promote/dismiss accept outbox-only items | 3163/3164 |  | tooling | 2026-06-12 |
 | bug | Installer/shell POSIX fixes (deep-audit WP10 F33-F38): set -e prereq counter, uv ~/.local/bin PATH, 13-plugin space-safe alias refresh, python3 resolver, dotenv-parse verify-setup | 3157/3157 |  | tooling | 2026-06-12 |
@@ -159,7 +161,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-12 | Unit: 383/383 | Smoke: not_run | (iterate)
+Last run: 2026-06-12 | Unit: 19/19 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
