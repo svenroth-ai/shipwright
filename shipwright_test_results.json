@@ -1,41 +1,37 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-12-utf8-config-readers",
+    "run_id": "iterate-2026-06-12-triage-status-idle-main-outbox",
     "date": "2026-06-12",
-    "unit": { "status": "passed", "passed": 3515, "total": 3516 },
+    "unit": { "status": "passed", "passed": 3131, "total": 3131 },
     "integration": { "status": "not_run", "passed": 0, "total": 0 },
     "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
     "e2e": { "status": "skipped", "passed": 0, "total": 0 },
     "design_fidelity": { "status": "skipped", "passed": 0, "total": 0 },
     "smoke": { "status": "not_run" },
-    "degraded": [
-      "test_architecture_md_reflects_arch_impact::test_every_arch_impact_drop_has_architecture_md_entry FAILED — environmental drift, NOT this iterate: the only failing arch-impact drop is iterate-2026-06-12-utf8-churn-merge_001.json (sibling sub-iterate WP6, parallel branch), whose gitignored decision-drop bleeds into the shared main-repo working tree. No file changed by THIS iterate is implicated; this iterate's own drop is architecture-impact=none. Per campaign brief, treated as environmental drift and proceeded. Shared suite otherwise 3152 passed; iterate plugin 363 passed."
-    ],
+    "degraded": [],
     "surface_verification": {
       "surface": "none",
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-12-utf8-config-readers/surface_verification.json",
+      "evidence_path": ".shipwright/runs/iterate-2026-06-12-triage-status-idle-main-outbox/surface_verification.json",
       "timestamp": "2026-06-12T00:00:00.000Z",
-      "justification": "Pure encoding-handling change to Python config readers + the F0.5 runner decode — no startable app surface (library monorepo). The touches_io_boundary behavior is empirically pinned by shared/tests/test_utf8_config_readers.py: producer->file->consumer round-trips for all four config readers under a forced-cp1252 locale, plus a real fixture-subprocess driven through run_with_retries/verify_surface emitting U+276F/em-dash + a raw cp1252-undefined byte."
+      "justification": "Shared-infra logic change (triage.mark_status idle-main routing) — no startable app surface. The touches_io_boundary write-routing is empirically pinned by shared/tests/test_triage_outbox.py with a real git-repo+origin fixture; full triage+sweep suite + CI=true rerun green."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "AC1/F24: a CJK-FR sync config parses through artifact_sync.detect_drift, classify_complexity.detect_cross_split, classify_intent._find_affected_frs, and suggest_iterate.main under a forced-cp1252 default locale without crashing", "disposition": "tested",
-          "evidence": "test_utf8_config_readers.py::test_artifact_sync_detect_drift_parses_cjk_config, ::test_classify_complexity_cross_split_parses_cjk_config, ::test_classify_intent_find_frs_parses_cjk_config, ::test_suggest_iterate_reads_cjk_run_config PASSED (each with a non-vacuous _assert_cp1252_would_crash guard on the fixture bytes)" },
-        { "behavior": "F24 edge: a hand-edited (Notepad) UTF-8-BOM config still parses (utf-8-sig strips the BOM; plain utf-8 would raise JSONDecodeError)", "disposition": "tested",
-          "evidence": "test_utf8_config_readers.py::test_artifact_sync_tolerates_utf8_bom, ::test_classify_intent_tolerates_utf8_bom PASSED" },
-        { "behavior": "F24 regression-detection (platform-independent): every config reader passes an explicit encoding= to read_text — a revert to bare read_text() fails on any host", "disposition": "tested",
-          "evidence": "test_utf8_config_readers.py::test_readers_pass_explicit_encoding_to_read_text PASSED (patches Path.read_text to raise without encoding= kwarg)" },
-        { "behavior": "F24 regression guard: lib/config.read_config (already UTF-8-correct) parses a Cyrillic description under forced cp1252", "disposition": "tested",
-          "evidence": "test_utf8_config_readers.py::test_config_read_config_parses_cjk PASSED" },
-        { "behavior": "AC2/F25: the F0.5 runner emitting U+276F/em-dash (+ a raw cp1252-undefined 0x9D byte on stdout AND stderr) yields exit 0, correct tests_run parse, valid glyphs survive, the malformed byte degrades to a single U+FFFD, and the evidence log round-trips clean", "disposition": "tested",
-          "evidence": "test_utf8_config_readers.py::test_run_with_retries_decodes_unicode_runner_output, ::test_verify_surface_unicode_runner_clean_evidence PASSED" }
+        { "behavior": "AC1 idle main (origin + default branch): a status flip on a TRACKED-resident item routes to the OUTBOX, tracked log byte-unchanged, union resolves dismissed", "disposition": "tested",
+          "evidence": "test_triage_outbox.py::test_mark_status_idle_main_tracked_item_routes_to_outbox PASSED (git_repo+origin fixture; asserts should_route_to_outbox True precondition)" },
+        { "behavior": "AC2 iterate/* branch (worktree, not idle main): a tracked-item status flip stays in TRACKED (ships in PR) — idle-main routing does not leak into the worktree path", "disposition": "tested",
+          "evidence": "test_triage_outbox.py::test_mark_status_iterate_branch_tracked_item_stays_tracked PASSED (asserts should_route_to_outbox False on iterate/* branch)" },
+        { "behavior": "AC3 residence preserved off the idle-main path: outbox-only id -> outbox (no orphan/resurrect); tracked+outbox overlap -> tracked; no-origin/non-git -> tracked; mark_status takes no to_outbox param", "disposition": "tested",
+          "evidence": "test_triage_outbox.py residence suite green: test_mark_status_residence_outbox_no_tracked_orphan, _residence_tracked_preferred_on_overlap, _has_no_to_outbox_param, test_should_route_* (no-origin/iterate/non-git False) — all PASSED, unchanged by the fix" },
+        { "behavior": "AC4 no regression across every mark_status consumer (producers compliance/drift/phase-quality/f0.5, sweep, gc, cli, storage, schema, promote)", "disposition": "tested",
+          "evidence": "full shared/tests suite 3131 passed (not slow/cross_plugin) + CI=true rerun of triage/sweep/producer subset 126 passed + targeted mark_status-consumer set 251 passed" }
       ],
-      "counts": { "testable": 5, "tested": 5, "untestable": 0, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 2, "covered_acs": 2 }
+      "counts": { "testable": 4, "tested": 4, "untestable": 0, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 4, "covered_acs": 4 }
     }
   }
 }
