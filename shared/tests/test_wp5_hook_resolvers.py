@@ -154,7 +154,7 @@ class TestContentAnchorRepoRelative:
         # .worktrees/<slug>/ prefix).
         assert anchor_main == anchor_wt
         assert "worktrees" not in anchor_main
-        assert ":" not in anchor_main or anchor_main.count(":") == 0  # no drive letter
+        assert ":" not in anchor_main  # no drive letter
 
     def test_dedup_key_stable_across_trees(self, tmp_path: Path):
         # Same drift, two roots (main + worktree): one shared dedup key →
