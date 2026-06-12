@@ -1,12 +1,13 @@
 # Project Activity Dashboard
-> Updated: 2026-06-12 19:44 UTC | Session: 5e2a3abc-c193-4b16-a38b-aea30ca9caae | Run: iterate-2026-06-12-bloat-h1-h2-cleanup
+> Updated: 2026-06-12 19:44 UTC | Session: e40d1082-2df5-473b-853e-641d52bef467 | Run: iterate-2026-06-12-cross-component-gate
 
-## Recent Changes (163 iterations)
+## Recent Changes (164 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
 | change | W2 phase-quality check SKIPs on an unresolvable run_id (mirror S2/S3); fixes the audit-context false-FAIL/false-PASS when no iterate run resolves; also fixes a latent empty-run_id crash | 3289/3289 |  | compliance | 2026-06-12 |
 | change | Clear bloat Group H1/H2: tighten 51 stale baseline entries to actual LOC + grandfather 8 oversize files (reducibility-catalog dogfood); follow-ups trg-af476d87 + trg-b9acb195. | 0/0 |  | tooling | 2026-06-12 |
+| change | cross_component risk flag forces an integration-coverage test at medium+, enforced non-dodgeably by the F11 verifier recomputing the flag from the diff. Closes the composition axis of the empirical machinery. | 0/0 |  | tooling | 2026-06-12 |
 | bug | Windows: test-run the python3 probe so the Microsoft Store stub does not abort the marketplace cache sync | 3284/3284 |  | tooling | 2026-06-12 |
 | change | End-to-end parallel-merge cascade integration test (3 concurrent iterates + a 3-sub campaign): proves curated-union + churn-regenerate + JSONL-union resolve together with no cascade. | 0/0 |  | tooling | 2026-06-12 |
 | change | Delivery-Watch: F11 confirms the PR actually merges green before done (no shoot-and-forget); watch_pr_delivery.py + F2 budget-lint-before-push rule. | 0/0 |  | tooling | 2026-06-12 |
@@ -170,7 +171,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-12 | Unit: 3284/3284 | Smoke: not_run | (iterate)
+Last run: 2026-06-12 | Unit: 3290/3290 | Integration: 6/6 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

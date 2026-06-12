@@ -1,8 +1,8 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-12-w2-unresolvable-runid-skip"
+run_id: "iterate-2026-06-12-cross-component-gate"
 phase: "iterate"
-reason: "iterate: W2 SKIPs on unresolvable run_id (mirror S2/S3)"
+reason: "reconcile origin/main #217 churn conflict before auto-merge"
 timestamp: "2026-06-12T19:25:19.401409+00:00"
 ---
 
@@ -12,23 +12,26 @@ timestamp: "2026-06-12T19:25:19.401409+00:00"
 
 ## Session Info
 
-- **Session ID**: d3be4cae-7d31-4e9f-8c44-75ef83e4e832
+- **Session ID**: e40d1082-2df5-473b-853e-641d52bef467
 - **Timestamp**: 2026-06-12 19:25:19 UTC
-- **Reason**: iterate: W2 SKIPs on unresolvable run_id (mirror S2/S3)
+- **Reason**: reconcile origin/main #217 churn conflict before auto-merge
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-12-marketplace-python3-stub-probe
-- **Date**: 2026-06-12T18:29:14.851731Z
-- **Type**: bug
+- **Run ID**: iterate-2026-06-12-w2-unresolvable-runid-skip
+- **Date**: 2026-06-12T19:25:50.243489Z
+- **Type**: change
 - **Complexity**: small
-- **Branch**: iterate/marketplace-python3-stub-probe
-- **ADR**: iterate-2026-06-12-marketplace-python3-stub-probe
+- **Branch**: iterate/w2-unresolvable-runid-skip
+- **ADR**: iterate-2026-06-12-w2-unresolvable-runid-skip
 - **Tests passed**: True
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/w2-unresolvable-runid-skip
+- **Branch**: iterate/cross-component-gate
+- **Run ID**: iterate-2026-06-12-cross-component-gate
+- **Spec**: .shipwright/planning/iterate/2026-06-12-cross-component-gate.md
+- **Complexity**: medium (new risk flag + non-dodgeable f11 verifier gate + prose + tests)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -47,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/w2-unresolvable-runid-skip
-- **Last Commit**: 2da047b7 fix(install): test-run python3 probe so Windows MS Store stub doesn't abort marketplace sync (#216)
+- **Branch**: iterate/cross-component-gate
+- **Last Commit**: 9ca3de77 Merge remote-tracking branch 'origin/main' into iterate/cross-component-gate
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,15 +68,15 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 | Event | Type | Source | Date |
 |-------|------|--------|------|
 | evt-29b841b9 | work_completed | iterate (W2 phase-quality check SKIPs on an unresolvable run_id (mirror S2/S3); fixes the audit-context false-FAIL/false-PASS when no iterate run resolves; also fixes a latent empty-run_id crash) | 2026-06-12 |
+| evt-837df41d | work_completed | iterate (cross_component risk flag forces an integration-coverage test at medium+, enforced non-dodgeably by the F11 verifier recomputing the flag from the diff. Closes the composition axis of the empirical machinery.) | 2026-06-12 |
 | evt-fe304590 | work_completed | iterate (Windows: test-run the python3 probe so the Microsoft Store stub does not abort the marketplace cache sync) | 2026-06-12 |
 | evt-bb3b97ba | work_completed | iterate (End-to-end parallel-merge cascade integration test (3 concurrent iterates + a 3-sub campaign): proves curated-union + churn-regenerate + JSONL-union resolve together with no cascade.) | 2026-06-12 |
 | evt-2d77f6f6 | work_completed | iterate (Delivery-Watch: F11 confirms the PR actually merges green before done (no shoot-and-forget); watch_pr_delivery.py + F2 budget-lint-before-push rule.) | 2026-06-12 |
-| evt-3b9f4640 | work_completed | iterate (merge=union for curated agent-docs (architecture.md + conventions.md) via a distinct CURATED_DOC_UNION_PATHS category; closes the parallel-iterate bullet-prepend cascade server-side (follow-up to automerge-serial-integrate).) | 2026-06-12 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 162
+- **Total work events**: 163
 - **Last iterate**: change — W2 phase-quality check SKIPs on an unresolvable run_id (mirror S2/S3); fixes the audit-context false-FAIL/false-PASS when no iterate run resolves; also fixes a latent empty-run_id crash (2026-06-12)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

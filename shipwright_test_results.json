@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-12-bloat-h1-h2-cleanup",
+    "run_id": "iterate-2026-06-12-cross-component-gate",
     "date": "2026-06-12",
     "unit": {
       "status": "passed",
-      "passed": 3284,
-      "total": 3284
+      "passed": 3290,
+      "total": 3290
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 6,
+      "total": 6
     },
     "pgtap": {
       "status": "not_run",
@@ -31,46 +31,94 @@
       "status": "not_run"
     },
     "degraded": [
-      "Data-only change: shipwright_bloat_baseline.json (51 entries tightened + 8 grandfathered) + .shipwright/triage.jsonl (2 follow-up items). No Python/source changed, so F0 was scoped to the shared suite (3284 passed, 12 skipped) + Group H audit (14) + bloat/anti-ratchet (115); integration/plugin suites cannot be affected by a baseline-data edit.",
-      "triage.jsonl carries in-session background-producer appends (phaseQuality dismissals + a now-stale compliance H1 backlog item trg-b7fe7c90); the F5b compliance regen auto-dismisses it once H1=0. Carried per the per-tree, PR-committed model."
+      "worktree vanished mid-iterate (during the F0 shared run, likely a parallel git worktree-remove); recovered from the saved external-review diff + re-applied the 7 review fixes; recovered state byte-verified against the pre-loss green run (3290 shared + 396 iterate). CI re-runs the full suite authoritatively."
     ],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "H2 cleared: every baseline entry's current equals its on-disk LOC (no recorded>actual ratchet-suggestion)",
+          "behavior": "is_cross_component_change True on merge/churn/gitattributes/resolver + hooks.json + (nested) hook scripts + verify_phase + campaign_*",
           "disposition": "tested",
-          "evidence": "live Group-H scan H2=0; test_bloat_baseline + test_anti_ratchet_check[_staged] (115 passed)"
+          "evidence": "test_cross_component_detector.py (positive cases incl. nested hook)"
         },
         {
-          "behavior": "H1 cleared: every oversize tracked file is listed in the baseline (no drift)",
+          "behavior": "is_cross_component_change False on routes/docs/ordinary producers",
           "disposition": "tested",
-          "evidence": "live Group-H scan H1=0; test_audit_group_h (14 passed)"
+          "evidence": "test_negative_ordinary_changes"
         },
         {
-          "behavior": "No anti-ratchet introduced: no baseline entry's current is below its file's actual LOC",
+          "behavior": "RISK_TAXONOMY[cross_component] present, min=medium, enforces integration_coverage",
           "disposition": "tested",
-          "evidence": "anti_ratchet_check.py --worktree status=ok (ratchets=[], new_crossings=[])"
+          "evidence": "test_taxonomy_entry_present_and_medium_gated"
         },
         {
-          "behavior": "No stale baseline entries: every entry resolves to a file on disk",
+          "behavior": "verifier FAILs: medium+ cross-component diff with NO category:integration behavior",
           "disposition": "tested",
-          "evidence": "live Group-H scan H6=0"
+          "evidence": "test_fails_when_cross_component_touched_without_integration_behavior",
+          "category": "integration"
+        },
+        {
+          "behavior": "verifier OK when a category:integration behavior is present",
+          "disposition": "tested",
+          "evidence": "test_ok_when_integration_behavior_present"
+        },
+        {
+          "behavior": "verifier OK when the diff is not cross-component",
+          "disposition": "tested",
+          "evidence": "test_ok_when_change_is_not_cross_component"
+        },
+        {
+          "behavior": "verifier SKIPs at small complexity",
+          "disposition": "tested",
+          "evidence": "test_skipped_at_small_complexity"
+        },
+        {
+          "behavior": "verifier RECOMPUTES from the diff, not an agent-reported flag (anti-dodge)",
+          "disposition": "tested",
+          "evidence": "test_recomputes_from_diff_not_self_report (real-git)",
+          "category": "integration"
+        },
+        {
+          "behavior": "verifier returns a DISTINCT failure on a corrupt results.json (not 'missing coverage')",
+          "disposition": "tested",
+          "evidence": "test_corrupt_results_json_is_distinct_failure"
+        },
+        {
+          "behavior": "verifier pattern copy == classify_complexity SSoT (forward+reverse)",
+          "disposition": "tested",
+          "evidence": "test_cross_component_patterns_sync"
+        },
+        {
+          "behavior": "SKILL risk-taxonomy + phase-matrix + Step-7.5 + F5 + confidence-anti-patterns advertise the flag",
+          "disposition": "tested",
+          "evidence": "test_cross_component_prose.py (4 assertions)"
+        },
+        {
+          "behavior": "Kern SKILL.md stays <=300 LOC after the additions",
+          "disposition": "tested",
+          "evidence": "test_kern_skill_md_under_300_loc"
         }
       ],
       "counts": {
-        "total": 4,
-        "tested": 4,
+        "testable": 12,
+        "tested": 12,
         "untestable": 0,
         "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
       }
     },
     "surface_verification": {
       "surface": "none",
-      "justification": "Data/config-only change: shipwright_bloat_baseline.json (compliance Group H bookkeeping) + triage.jsonl follow-up items. No runtime surface (no CLI/API/web code path), no UI, no backend-affects-frontend. Verified by the Group-H scan (H1=H2=H6=0) + anti-ratchet gate (status ok) + shared suite (3284 passed).",
-      "tests_run": 0,
+      "runner": "",
       "exit_code": 0,
-      "timestamp": "2026-06-12T19:35:00Z"
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-06-12T19:16:04.000Z",
+      "attempts": 0,
+      "justification": "Framework-internal risk-gate meta-tooling: a new diff-driven risk flag (classify_complexity) + a non-dodgeable F11 verifier check (iterate_checks) + runtime-prompt prose. No application surface. The detector is unit-tested; the verifier gate is driven through REAL git diffs (merge-base..HEAD) against bare-origin worktrees incl. the anti-dodge recompute path; the SSoT drift + prose contracts are pinned. The gate's own meta-tooling is deliberately excluded from the patterns (no circular self-gating)."
     }
   }
 }

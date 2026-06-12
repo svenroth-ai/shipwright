@@ -137,6 +137,24 @@ RISK_TAXONOMY = {
         "min_complexity": "small",
         "enforces": ["round_trip_test"],
     },
+    "cross_component": {
+        # Forces INTEGRATION coverage (Ledger `category:"integration"`), enforced
+        # non-dodgeably by the F11 verifier `check_integration_coverage` which
+        # RECOMPUTES the flag from the diff via CROSS_COMPONENT_FILE_PATTERNS. The
+        # composition axis the boundary/app-surface machinery missed. These message
+        # patterns are anchored Run-Summary hints; the diff path is primary.
+        "patterns": [
+            r"\bcross.?component\b",
+            r"\bmerge machinery\b",
+            r"\bchurn (resolver|merge)\b",
+            r"\bintegrate_main\b",
+            r"\bhook fan.?out\b",
+            r"\bcampaign (drain|serial)\b",
+            r"\bpipeline phase\b",
+        ],
+        "min_complexity": "medium",
+        "enforces": ["integration_coverage", "full_test_suite"],
+    },
 }
 
 # File-glob patterns for diff-driven touches_build detection (basename match).
@@ -211,6 +229,39 @@ def is_io_boundary_change(changed_files: list[str] | None) -> bool:
     for path in changed_files:
         normalized = path.replace("\\", "/")
         for pattern in IO_BOUNDARY_FILE_PATTERNS:
+            if re.search(pattern, normalized):
+                return True
+    return False
+
+
+# Diff-driven cross_component detection (on normalized paths): the FRAMEWORK
+# cross-component contracts whose behavior only emerges when the pieces interact
+# (merge/churn/event-log resolver, hooks + hook fan-out, pipeline validators,
+# campaign drain). SSoT; the F11 verifier keeps a drift-pinned copy (no
+# cross-plugin import). Deliberately EXCLUDES the gate's own meta-tooling
+# (classify_complexity / iterate_checks) — gating itself would be circular.
+CROSS_COMPONENT_FILE_PATTERNS = (
+    r"(^|/)(integrate_main|ensure_current|resolve_churn_conflicts)\.py$",
+    r"(^|/)(churn_merge|gitattributes_union|gitattributes_selfheal)\.py$",
+    r"(^|/)(autonomous_loop|events_log)\.py$",
+    r"(^|/)campaign_[^/]*\.py$",
+    r"(^|/)campaign-mode\.md$",
+    r"(^|/)hooks\.json$",
+    r"(^|/)hooks/.+\.py$",  # any hook script under a hooks/ dir (incl. scripts/hooks/ + nested)
+    r"(^|/)(verify_phase|get_phase_context)\.py$",
+)
+
+
+def is_cross_component_change(changed_files: list[str] | None) -> bool:
+    """Return True if any changed file is FRAMEWORK cross-component machinery
+    (merge/churn/event-log resolver, hooks + hook fan-out, pipeline validators,
+    campaign drain). Diff-driven — caller passes `git diff --name-only` output;
+    path normalization handles Windows backslashes. Mirrors is_io_boundary_change."""
+    if not changed_files:
+        return False
+    for path in changed_files:
+        normalized = path.replace("\\", "/")
+        for pattern in CROSS_COMPONENT_FILE_PATTERNS:
             if re.search(pattern, normalized):
                 return True
     return False

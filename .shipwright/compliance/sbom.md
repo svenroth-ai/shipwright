@@ -16,7 +16,7 @@ Generated: 2026-06-12T19:44:08.072141+00:00
 
 ```mermaid
 pie title License Distribution
-    "MIT" : 2
+    "MIT" : 4
     "Apache-2.0" : 1
 ```
 
@@ -35,8 +35,8 @@ pie title License Distribution
 
 | Package | Version | License |
 |---------|---------|---------|
-| pytest | 8.0.0 | - |
-| pytest-mock | 3.12.0 | - |
+| pytest | 8.0.0 | MIT |
+| pytest-mock | 3.12.0 | MIT |
 
 ## License Compliance
 
