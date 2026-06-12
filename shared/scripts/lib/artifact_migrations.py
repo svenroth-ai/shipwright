@@ -458,8 +458,7 @@ ALLOWLIST: dict[str, list[str]] = {
         # context — that may quote ANY legacy path; regenerated each iterate so a
         # legacy ref cannot be fixed in place. Same exempt class as
         # change-history.md / shipwright_test_results.json prose.
-        # (trg-6ed063ae, iterate-2026-06-10.)
-        ".shipwright/agent_docs/triage_inbox.md",
+        # (trg-6ed063ae, iterate-2026-06-10.) triage_inbox.md already listed above.
         ".shipwright/agent_docs/session_handoff.md",
         ".shipwright/agent_docs/build_dashboard.md",
         ".shipwright/planning/iterate/**.md",
@@ -606,6 +605,7 @@ ALLOWLIST: dict[str, list[str]] = {
         "shared/contracts/**",
         "shared/glossary.md",
         "shipwright_bloat_baseline.json",
+        "scripts/install.sh",  # quoted shipwright-compliance alias line — -compliance\ hyphen-seg FP (2026-06-12 WP10)
     ],
 }
 
