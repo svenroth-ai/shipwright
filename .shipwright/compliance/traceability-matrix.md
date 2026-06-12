@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-12T08:15:24.686566+00:00
+Generated: 2026-06-12T09:54:31.026688+00:00
 
 ## Requirements Coverage
 
@@ -170,6 +170,7 @@ Generated: 2026-06-12T08:15:24.686566+00:00
 | triage.mark_status routes idle-main status flips to the outbox (symmetric with append_triage_item), completing campaign D1 for the status side; fixes undelivered tracked drift from WebUI/Stop-hook dismisses | iterate | change |  | 3131/3131 | — | 2026-06-11 |
 | Fix two structurally-inert compliance gates (deep-audit WP3): Group H now in run_all default + on-stop coverage gate widened to A-H (F20); S4 FR-preservation join no longer raises TypeError (F21) | iterate | bug |  | 3146/3146 | — | 2026-06-12 |
 | WP9 triage tooling hardening: F30 phaseQualityRefreshed GC token + drift meta-test, F19 GC TOCTOU recompute-under-lock, F31 control-char sanitizer on title/detail/evidence (C0+C1) in both render surfaces, F29 promote/dismiss accept outbox-only items | iterate | bug |  | 3163/3164 | — | 2026-06-12 |
+| Compact agent-doc entries + impact-aware routing SSoT (IMPACT_TARGETS) + forward-only 600-char entry-budget gate; conventions.md CONTRIBUTING de-dup | iterate | change |  | — | — | 2026-06-12 |
 
 ## Coverage Summary
 
@@ -177,7 +178,7 @@ Generated: 2026-06-12T08:15:24.686566+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 145 |
+| Iterate changes | 146 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

@@ -693,6 +693,8 @@ def test_architecture_documented_fails_when_undocumented(tmp_path):
 
 
 def test_architecture_documented_passes_when_documented(tmp_path):
+    # Legacy fallback: a convention run_id still in architecture.md (pre-
+    # migration backlog) is accepted until the compression iterate moves it.
     proj = tmp_path / "webui"
     proj.mkdir()
     _seed_arch_drop_for(proj, "iter-r1", "convention")
@@ -703,13 +705,46 @@ def test_architecture_documented_passes_when_documented(tmp_path):
     assert result.ok is True
 
 
+def test_architecture_documented_convention_in_conventions_doc_passes(tmp_path):
+    # Canonical route: convention → conventions.md ## Convention Updates.
+    proj = tmp_path / "webui"
+    proj.mkdir()
+    _seed_arch_drop_for(proj, "iter-r1", "convention")
+    _seed_arch_md_for(proj, "## Architecture Updates\n")  # empty
+    doc = proj / ".shipwright" / "agent_docs"
+    (doc / "conventions.md").write_text(
+        "## Convention Updates\n- **ADR-001** (2026-06-12): iter-r1 — x\n",
+        encoding="utf-8",
+    )
+    result = check_architecture_documented(proj, "iter-r1")
+    assert result.ok is True
+
+
+def test_architecture_documented_component_not_satisfied_by_conventions_doc(tmp_path):
+    # component routes to architecture.md only — documenting it in conventions.md
+    # ## Convention Updates does NOT satisfy the gate.
+    proj = tmp_path / "webui"
+    proj.mkdir()
+    _seed_arch_drop_for(proj, "iter-r1", "component")
+    _seed_arch_md_for(proj, "## Architecture Updates\n")  # empty
+    doc = proj / ".shipwright" / "agent_docs"
+    (doc / "conventions.md").write_text(
+        "## Convention Updates\n- **ADR-001** (2026-06-12): iter-r1 — x\n",
+        encoding="utf-8",
+    )
+    result = check_architecture_documented(proj, "iter-r1")
+    assert result.ok is False
+
+
 def test_architecture_documented_fails_when_arch_md_missing(tmp_path):
+    # data-flow target doc (architecture.md) absent → run_id reads undocumented.
     proj = tmp_path / "webui"
     proj.mkdir()
     _seed_arch_drop_for(proj, "iter-r1", "data-flow")  # no architecture.md
     result = check_architecture_documented(proj, "iter-r1")
     assert result.ok is False
-    assert "missing/unreadable" in result.detail
+    assert "NOT documented" in result.detail
+    assert "iter-r1" in result.detail
 
 
 def test_architecture_documented_fails_corrupt_drop(tmp_path):

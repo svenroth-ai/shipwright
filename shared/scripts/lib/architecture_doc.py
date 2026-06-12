@@ -33,6 +33,38 @@ REAL_IMPACTS = frozenset({"component", "data-flow", "convention"})
 # The no-op default written when no ``--architecture-impact`` flag is passed.
 NULL_IMPACTS = frozenset({"none", ""})
 
+# Canonical routing SSoT: ``architecture_impact`` → (doc filename under
+# ``.shipwright/agent_docs/``, section header). ONE home per impact. Consumed by
+# this oracle (F11 gate + Group-F detective), by ``write_decision_log.py`` (the
+# direct-append producer), and pinned to ``F2.md`` by a routing drift test, so
+# the producer, the verifier, and the skill instruction cannot diverge again.
+IMPACT_TARGETS: dict[str, tuple[str, str]] = {
+    "component": ("architecture.md", "## Architecture Updates"),
+    "data-flow": ("architecture.md", "## Architecture Updates"),
+    "convention": ("conventions.md", "## Convention Updates"),
+}
+# Invariant: every real impact routes somewhere (pinned by test_impact_targets).
+assert set(IMPACT_TARGETS) == REAL_IMPACTS
+
+# Transitional back-compat: before this routing was fixed (the agent-doc-entry-
+# rules split, 2026-06-12), iterate ``convention`` entries were hand-written to
+# ``architecture.md ## Architecture Updates`` to satisfy the old architecture.md-
+# only gate. Until the follow-up compression iterate migrates those legacy
+# entries to ``## Convention Updates``, a ``convention`` run_id documented in
+# architecture.md is still accepted. NEW entries route via ``IMPACT_TARGETS``
+# (producer + F2.md + the entry-budget gate); this fallback never relaxes the
+# canonical routing, only tolerates the un-migrated backlog.
+_LEGACY_CONVENTION_DOC = "architecture.md"
+
+
+def target_for_impact(impact: object) -> tuple[str, str] | None:
+    """Return ``(filename, section_header)`` for ``impact``, or ``None``.
+
+    Normalizes case/whitespace first, so ``"Convention"`` resolves like
+    ``"convention"``. ``None`` for null/unknown impacts.
+    """
+    return IMPACT_TARGETS.get(normalize_impact(impact))
+
 
 @dataclass(frozen=True)
 class DropRecord:
@@ -113,11 +145,74 @@ def unknown_impact_records(records: list[DropRecord]) -> list[DropRecord]:
     ]
 
 
-def missing_entries(records: list[DropRecord], arch_text: str) -> list[DropRecord]:
-    """Arch-impact records whose ``run_id`` is absent from ``arch_text``."""
+def _coerce_texts(texts: dict[str, str] | str) -> dict[str, str]:
+    """Accept either a ``{filename: text}`` mapping or a legacy single string.
+
+    A bare string is interpreted as ``architecture.md`` text (the pre-routing
+    signature) so any un-updated caller degrades to the old architecture.md-only
+    behavior via the convention fallback rather than crashing.
+    """
+    if isinstance(texts, str):
+        return {"architecture.md": texts}
+    return texts
+
+
+def impact_documented(impact: str, run_id: str, texts: dict[str, str] | str) -> bool:
+    """True iff ``run_id`` is documented in the doc that ``impact`` routes to.
+
+    ``texts`` maps the target filename (``architecture.md`` / ``conventions.md``)
+    to that doc's content. ``component`` / ``data-flow`` resolve to
+    ``architecture.md``; ``convention`` resolves to ``conventions.md`` — with a
+    transitional fallback to ``architecture.md`` for the un-migrated legacy
+    backlog (see ``_LEGACY_CONVENTION_DOC``).
+    """
+    doc = _coerce_texts(texts)
+    target = IMPACT_TARGETS.get(normalize_impact(impact))
+    if target is None:
+        return False
+    if run_id_documented(doc.get(target[0], ""), run_id):
+        return True
+    if normalize_impact(impact) == "convention":
+        return run_id_documented(doc.get(_LEGACY_CONVENTION_DOC, ""), run_id)
+    return False
+
+
+def read_target_texts(agent_docs_dir: Path) -> dict[str, str]:
+    """Read every doc some impact routes to, keyed by filename.
+
+    Reads BOTH canonical agent docs (the distinct target filenames in
+    ``IMPACT_TARGETS``) so callers feed a complete ``texts`` map to
+    ``missing_entries`` / ``impact_documented`` — including the
+    convention→architecture.md legacy fallback. An unreadable doc → ``""`` (the
+    run_id then reads as undocumented there, surfaced rather than masked).
+    """
+    agent_docs_dir = Path(agent_docs_dir)
+    out: dict[str, str] = {}
+    for filename in {target[0] for target in IMPACT_TARGETS.values()}:
+        try:
+            out[filename] = (agent_docs_dir / filename).read_text(
+                encoding="utf-8", errors="ignore"
+            )
+        except OSError:
+            out[filename] = ""
+    return out
+
+
+def missing_entries(
+    records: list[DropRecord], texts: dict[str, str] | str
+) -> list[DropRecord]:
+    """Arch-impact records whose ``run_id`` is absent from their TARGET doc.
+
+    Routing is per ``IMPACT_TARGETS`` (``convention`` → ``conventions.md``;
+    ``component`` / ``data-flow`` → ``architecture.md``). ``texts`` is a
+    ``{filename: text}`` mapping (a bare string is treated as architecture.md
+    for back-compat). A record whose target doc is absent from ``texts`` counts
+    as undocumented.
+    """
+    doc = _coerce_texts(texts)
     return [
         r for r in arch_impact_records(records)
-        if r.run_id and not run_id_documented(arch_text, r.run_id)
+        if r.run_id and not impact_documented(r.impact, r.run_id, doc)
     ]
 
 
