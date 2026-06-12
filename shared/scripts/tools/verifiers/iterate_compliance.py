@@ -32,6 +32,9 @@ from lib.phase_quality import (  # noqa: E402
     make_finding,
 )
 from tools.verifiers.common import read_events_jsonl  # noqa: E402
+from tools.verifiers._iterate_run_id import (  # noqa: E402
+    unresolvable_run_id_skip,
+)
 
 
 W2_NAME = "W2 F11 external-review marker"
@@ -81,10 +84,32 @@ def check_w2_external_review_marker(
 ) -> dict[str, Any]:
     """W2 — external-review marker exists and is newer than the spec.
 
-    SKIP for small iterates (by plan + SKILL.md). If no iterate entry
-    exists yet (first run, config not written), SKIP to avoid FP during
-    mid-flow audits.
+    SKIP for small iterates (by plan + SKILL.md). When ``run_id`` is a
+    sentinel (``""`` / ``"unknown"`` — emitted by the phase-quality Stop
+    audit when no iterate run resolves) AND no per-run marker is on disk,
+    SKIP via the shared ``unresolvable_run_id_skip`` guard — the same guard
+    S2/S3 use — instead of false-FAILing on a marker that cannot exist, or
+    false-PASSing on the run-agnostic state file. A real run (exact
+    iterate_history entry) or a per-run marker on disk bypasses the guard
+    and runs the normal marker logic below.
     """
+    planning_dir = project_root / PLANNING_DIRNAME / "iterate"
+    per_run = planning_dir / f"{run_id}-external-review.json"
+    state_file = planning_dir / "external_review_state.json"
+
+    # The per-run marker is the only run-specific candidate; the shared
+    # external_review_state.json is run-agnostic and must NOT keep an
+    # unresolvable audit "live" (mirrors check_s2_iterate_spec, AC-1/AC-6).
+    # Runs before the spec-glob below, which would also crash on an empty
+    # run_id (``**.md`` is an invalid pathlib pattern).
+    guard = unresolvable_run_id_skip(
+        project_root, run_id,
+        [per_run] if per_run.exists() else [],
+        "W2", W2_NAME, provenance="unverified_marker",
+    )
+    if guard is not None:
+        return guard
+
     entry = _latest_iterate_entry(project_root, run_id)
     if entry is not None:
         complexity = str(entry.get("complexity", "")).lower()
@@ -95,7 +120,6 @@ def check_w2_external_review_marker(
                 name=W2_NAME,
             )
 
-    planning_dir = project_root / PLANNING_DIRNAME / "iterate"
     if not planning_dir.is_dir():
         return make_finding(
             "W2", STATUS_SKIP,
@@ -103,9 +127,6 @@ def check_w2_external_review_marker(
             name=W2_NAME,
             provenance="unverified_marker",
         )
-
-    per_run = planning_dir / f"{run_id}-external-review.json"
-    state_file = planning_dir / "external_review_state.json"
 
     spec_files = [
         p for p in planning_dir.glob(f"*{run_id}*.md")
