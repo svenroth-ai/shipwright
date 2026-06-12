@@ -1438,7 +1438,21 @@ When writing decision log entries, the `--architecture-impact` flag on `write_de
 | `convention` | `.shipwright/agent_docs/conventions.md` | `## Convention Updates` |
 | `none` | — | No update |
 
-Format: `- **ADR-NNN** (YYYY-MM-DD): Short description`
+Routing is the single SSoT `lib.architecture_doc.IMPACT_TARGETS`, consumed by the
+producer (`write_decision_log.py`), the iterate skill (`references/F2.md`), AND
+the verifier — the F11 gate `check_architecture_documented` + the compliance
+Group-F **F5** detective check each arch-impact drop's `run_id` against the doc
+its impact routes to (so a `convention` run_id is verified in
+`conventions.md ## Convention Updates`, not architecture.md). A transitional
+fallback still accepts a `convention` run_id in `## Architecture Updates` for the
+pre-routing-fix backlog (iterate-2026-06-12-agent-doc-entry-rules).
+
+Format: `- **ADR-NNN** (YYYY-MM-DD): Short description` — a one-line "what +
+pointer to the ADR". These docs are always-loaded Layer-1 context, so each entry
+is forward-budget-capped at 600 chars by
+`plugins/shipwright-iterate/tests/test_agent_doc_entry_rules.py` (mirrors the
+`decision_log.md` per-field budget); the detail lives in the ADR /
+`.shipwright/planning/adr/` spec folder, not the bullet.
 
 ### Reflection Protocol
 
@@ -1538,12 +1552,16 @@ Origin: iterate-2026-05-16-spec-impact-gate.
 `check_architecture_documented` in `iterate_checks.py` FAILS the F11 verifier
 (ERROR/blocking) when this run's decision-drop declares
 `architecture_impact ∈ {component, data-flow, convention}` but its `run_id`
-is absent from `.shipwright/agent_docs/architecture.md` (the F2 contract). It
-SKIPs when the run has no drop yet or `architecture_impact=none`, and FAILs on
-a corrupt/unrecognized-impact drop or a missing `architecture.md`. It shares
-the reconciliation oracle (`shared/scripts/lib/architecture_doc.py`) with the
-compliance Group F **F5** detective, so the live gate (prevents new drift) and
-the detective (surfaces existing drift) cannot diverge. Decision-drops are
+is absent from the doc its impact routes to (the F2 contract / `IMPACT_TARGETS`:
+`convention` → `conventions.md ## Convention Updates`; `component` / `data-flow`
+→ `architecture.md ## Architecture Updates`; convention keeps a transitional
+fallback to architecture.md for the pre-routing-fix backlog). It SKIPs when the
+run has no drop yet or `architecture_impact=none`, and FAILs on a
+corrupt/unrecognized-impact drop or an undocumented run_id. It shares the
+impact-aware reconciliation oracle (`shared/scripts/lib/architecture_doc.py`,
+`IMPACT_TARGETS` + `missing_entries`) with the compliance Group F **F5**
+detective, so the live gate (prevents new drift) and the detective (surfaces
+existing drift) cannot diverge. Decision-drops are
 gitignored staging, so F5 `skip`s in a clean CI checkout — the F11 gate is the
 authoritative prevention layer. Replaced the dead, mtime-only
 `check_architecture_reviewed` + the unreachable `run_cross_artifact_checks`
