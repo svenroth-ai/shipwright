@@ -1,11 +1,12 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-12-canonical-project-predicate",
+    "run_id": "iterate-2026-06-12-config-bom-integrate-tests",
     "date": "2026-06-12",
     "unit": {
       "status": "passed",
-      "passed": 3203,
-      "total": 3203
+      "passed": 19,
+      "total": 19,
+      "scope": "affected modules (config readers + integrate_main families); full shared/tests run = 3223 passed / 12 skipped / 1 pre-existing unrelated failure — see degraded"
     },
     "integration": {
       "status": "not_run",
@@ -18,97 +19,62 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "design_fidelity": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [],
+    "degraded": [
+      {
+        "condition": "full-suite-preexisting-failure",
+        "detail": "shared/tests test_architecture_md_reflects_arch_impact::test_every_arch_impact_drop_has_architecture_md_entry fails LOCALLY on 3 sibling-iterate gitignored decision drops (arch-drift-test-scope, canonical-project-predicate, triage-gc-union-residence) absent from architecture.md/conventions.md. Resolved from the MAIN repo root; the dir is fully gitignored so a clean CI checkout sees none -> CI-invisible. Unrelated to this diff (config.py + 4 test files)."
+      }
+    ],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "Canonical detects each of the 5 config markers",
+          "behavior": "read_config tolerates a UTF-8-BOM config (utf-8-sig strips the leading U+FEFF)",
           "disposition": "tested",
-          "evidence": "test_all_predicates_agree[run_config|project_config|plan_config|build_config|events_jsonl] PASSED"
+          "evidence": "test_utf8_config_readers.py::test_config_read_config_tolerates_utf8_bom PASSED; falsification probe: plain utf-8 raises 'Unexpected UTF-8 BOM'"
         },
         {
-          "behavior": "Canonical detects a .shipwright/agent_docs/ directory",
+          "behavior": "read_config still parses non-BOM / CJK configs (no regression)",
           "disposition": "tested",
-          "evidence": "test_all_predicates_agree[agent_docs_dir] + test_canonical_detects_agent_docs_dir PASSED"
+          "evidence": "test_utf8_config_readers.py::test_config_read_config_parses_cjk + test_readers_pass_explicit_encoding_to_read_text PASSED"
         },
         {
-          "behavior": "Canonical returns False on empty / foreign-only tree",
+          "behavior": "integrate() -> followup_commit_failed: merge intact, snapshot left staged, no abort",
           "disposition": "tested",
-          "evidence": "test_all_predicates_agree[empty|foreign_only] PASSED"
+          "evidence": "test_integrate_main_commit_failures.py::test_integrate_returns_followup_commit_failed_when_followup_blocked PASSED"
         },
         {
-          "behavior": "Fail-closed: .shipwright/agent_docs as a FILE -> False",
+          "behavior": "CLI maps followup_commit_failed -> exit 8 (distinct from merge-commit exit 7)",
           "disposition": "tested",
-          "evidence": "test_canonical_fail_closed_agent_docs_is_a_file PASSED"
+          "evidence": "test_integrate_main_commit_failures.py::test_main_cli_reports_followup_commit_failed_exit_8 PASSED"
         },
         {
-          "behavior": "Fail-closed: non-existent path -> False",
+          "behavior": "integrate() -> merge_commit_failed_abort_incomplete when merge --abort double-faults (still mid-merge)",
           "disposition": "tested",
-          "evidence": "test_canonical_fail_closed_missing_path PASSED"
-        },
-        {
-          "behavior": "Predicate returns a genuine bool",
-          "disposition": "tested",
-          "evidence": "test_canonical_returns_real_bool PASSED"
-        },
-        {
-          "behavior": "All 5 hook sites + the alias return the identical verdict (consensus)",
-          "disposition": "tested",
-          "evidence": "test_all_predicates_agree (16 params x 6 predicates) PASSED"
-        },
-        {
-          "behavior": "_is_shipwright_project alias IS the canonical function",
-          "disposition": "tested",
-          "evidence": "test_private_alias_is_the_canonical_predicate PASSED"
-        },
-        {
-          "behavior": "resolve_project_root detects an agent_docs-only subdir",
-          "disposition": "tested",
-          "evidence": "test_resolver_detects_agent_docs_only_subdir PASSED"
-        },
-        {
-          "behavior": "resolve_project_root prefers a config sibling over agent_docs-only (no false ValueError)",
-          "disposition": "tested",
-          "evidence": "test_resolver_prefers_config_sibling_over_agent_docs_only PASSED"
-        },
-        {
-          "behavior": "resolve_project_root still raises on 2 config subdirs",
-          "disposition": "tested",
-          "evidence": "test_resolver_multiple_config_subdirs_still_raises PASSED"
-        },
-        {
-          "behavior": "track_tool_calls degraded-import fallback = run+build (no regression)",
-          "disposition": "tested",
-          "evidence": "test_track_tool_calls_fallback_preserves_run_plus_build PASSED"
-        },
-        {
-          "behavior": "generate_handoff degraded-import fallback = prior broad gate",
-          "disposition": "tested",
-          "evidence": "test_generate_handoff_fallback_mirrors_prior_broad_gate PASSED"
+          "evidence": "test_integrate_main_commit_failures.py::test_integrate_returns_abort_incomplete_when_merge_abort_double_faults PASSED"
         }
       ],
       "counts": {
-        "testable": 13,
-        "tested": 13,
+        "testable": 5,
+        "tested": 5,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 13,
-        "covered_acs": 13
+        "acs": 5,
+        "covered_acs": 5
       }
     },
     "surface_verification": {
@@ -116,10 +82,9 @@
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": "",
-      "timestamp": "2026-06-12T11:29:07.589Z",
-      "attempts": 0,
-      "justification": "Pure backend refactor: consolidates the project-detection predicate across 5 Python Stop/PostTool hooks onto one canonical lib.project_root.is_shipwright_project. No web/CLI/API surface in the shipwright monorepo (framework, not an app); diff touches no API routes, store mutations, SSE/WS, message contracts, or UI-consumed code. Verified by the consensus matrix + full shared suite (3203 passed) + degraded-import fallback tests."
+      "evidence_path": ".shipwright/runs/iterate-2026-06-12-config-bom-integrate-tests/surface_verification.json",
+      "timestamp": "2026-06-12T11:49:07.676Z",
+      "justification": "No startable web/CLI/API surface: a shared-library config-reader encoding alignment (read_config -> utf-8-sig) + integrate_main failure-branch unit tests + a test-module split. The touched config-JSON IO boundary is exercised empirically by the new BOM round-trip regression test (test_config_read_config_tolerates_utf8_bom), falsification-probed (plain utf-8 raises 'Unexpected UTF-8 BOM')."
     }
   }
 }

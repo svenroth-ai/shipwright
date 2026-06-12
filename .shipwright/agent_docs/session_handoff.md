@@ -1,8 +1,8 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-12-automerge-serial-integrate"
+run_id: "iterate-2026-06-12-config-bom-integrate-tests"
 phase: "iterate"
-reason: "iterate completion: iterate-2026-06-12-automerge-serial-integrate"
+reason: "merge origin/main reconciliation"
 timestamp: "2026-06-12T12:06:22.426150+00:00"
 ---
 
@@ -12,27 +12,24 @@ timestamp: "2026-06-12T12:06:22.426150+00:00"
 
 ## Session Info
 
-- **Session ID**: e40d1082-2df5-473b-853e-641d52bef467
+- **Session ID**: 44fa4331-4609-4594-899c-41a4627d2657
 - **Timestamp**: 2026-06-12 12:06:22 UTC
-- **Reason**: iterate completion: iterate-2026-06-12-automerge-serial-integrate
+- **Reason**: merge origin/main reconciliation
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-12-agent-doc-entry-rules
-- **Date**: 2026-06-12T09:54:47.377520Z
+- **Run ID**: iterate-2026-06-12-automerge-serial-integrate
+- **Date**: 2026-06-12T12:06:56.133851Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/agent-doc-entry-rules
-- **ADR**: iterate-2026-06-12-agent-doc-entry-rules
+- **Branch**: iterate/automerge-serial-integrate
+- **ADR**: iterate-2026-06-12-automerge-serial-integrate
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-12-agent-doc-entry-rules.md
+- **Spec**: .shipwright/planning/iterate/2026-06-12-automerge-serial-integrate.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/automerge-serial-integrate
-- **Run ID**: iterate-2026-06-12-automerge-serial-integrate
-- **Spec**: .shipwright/planning/iterate/2026-06-12-automerge-serial-integrate.md
-- **Complexity**: medium (plan-locked; classifier estimated `small`/history)
+- **Branch**: iterate/config-bom-integrate-tests
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -51,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/automerge-serial-integrate
-- **Last Commit**: 9e39bfb2 fix(utf8): pin UTF-8 on git-reading subprocess decodes (deep-audit WP7) (#202)
+- **Branch**: iterate/config-bom-integrate-tests
+- **Last Commit**: a7015fef Merge remote-tracking branch 'origin/main' into iterate/config-bom-integrate-tests
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,15 +66,15 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 | Event | Type | Source | Date |
 |-------|------|--------|------|
 | evt-ef0a3a15 | work_completed | iterate (Serial integrate_main merge for campaign/parallel iterates: ensure_current.py refresh-if-behind guard at F11 + SHIPWRIGHT_ITERATE_AUTOMERGE defer with serial drain (auto-merge churn fix, Option A).) | 2026-06-12 |
+| evt-34fd26e4 | work_completed | iterate (Consolidate the project-detection predicate across all hooks onto one canonical lib.project_root.is_shipwright_project) | 2026-06-12 |
+| evt-d67b8b50 | work_completed | iterate (config-reader BOM tolerance (read_config utf-8-sig) + integrate_main commit-failure branch tests; split two at-limit test modules under 300 LOC) | 2026-06-12 |
 | evt-1c00ed61 | work_completed | iterate (Compact agent-doc entries + impact-aware routing SSoT (IMPACT_TARGETS) + forward-only 600-char entry-budget gate; conventions.md CONTRIBUTING de-dup) | 2026-06-12 |
 | evt-e2baab58 | work_completed | iterate (WP9 triage tooling hardening: F30 phaseQualityRefreshed GC token + drift meta-test, F19 GC TOCTOU recompute-under-lock, F31 control-char sanitizer on title/detail/evidence (C0+C1) in both render surfaces, F29 promote/dismiss accept outbox-only items) | 2026-06-12 |
-| evt-3064a751 | work_completed | iterate (Installer/shell POSIX fixes (deep-audit WP10 F33-F38): set -e prereq counter, uv ~/.local/bin PATH, 13-plugin space-safe alias refresh, python3 resolver, dotenv-parse verify-setup) | 2026-06-12 |
-| evt-94515cf2 | work_completed | iterate (Fix two structurally-inert compliance gates (deep-audit WP3): Group H now in run_all default + on-stop coverage gate widened to A-H (F20); S4 FR-preservation join no longer raises TypeError (F21)) | 2026-06-12 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 152
+- **Total work events**: 154
 - **Last iterate**: change — Serial integrate_main merge for campaign/parallel iterates: ensure_current.py refresh-if-behind guard at F11 + SHIPWRIGHT_ITERATE_AUTOMERGE defer with serial drain (auto-merge churn fix, Option A). (2026-06-12)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
