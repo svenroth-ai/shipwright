@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-12-utf8-config-readers",
+  "date": "2026-06-12T07:42:23.343452Z",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/audit1-utf8-config-readers",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/2026-06-12-utf8-config-readers.md",
+  "adr": "iterate-2026-06-12-utf8-config-readers"
+}
