@@ -17,14 +17,17 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_REPO_ROOT / "shared" / "scripts"))
 
 from lib.architecture_doc import (  # noqa: E402
+    IMPACT_TARGETS,
     NULL_IMPACTS,
     REAL_IMPACTS,
     corrupt_for_run,
+    impact_documented,
     missing_entries,
     normalize_impact,
     records_for_run,
     run_id_documented,
     scan_drops,
+    target_for_impact,
     unknown_impact_records,
 )
 
@@ -50,6 +53,80 @@ def test_normalize_impact_case_and_type():
     assert normalize_impact("DATA-FLOW") == "data-flow"
     assert normalize_impact(None) == ""
     assert normalize_impact(123) == ""
+
+
+# --- IMPACT_TARGETS routing SSoT --------------------------------------------
+
+
+def test_impact_targets_cover_real_impacts():
+    assert set(IMPACT_TARGETS) == REAL_IMPACTS
+
+
+def test_impact_targets_route_convention_to_conventions_doc():
+    assert IMPACT_TARGETS["convention"] == ("conventions.md", "## Convention Updates")
+    assert IMPACT_TARGETS["component"] == ("architecture.md", "## Architecture Updates")
+    assert IMPACT_TARGETS["data-flow"] == ("architecture.md", "## Architecture Updates")
+
+
+def test_target_for_impact_normalizes_and_rejects():
+    assert target_for_impact("  Convention ") == ("conventions.md", "## Convention Updates")
+    assert target_for_impact("none") is None
+    assert target_for_impact("frobnicate") is None
+    assert target_for_impact(None) is None
+
+
+# --- impact_documented: routing per IMPACT_TARGETS --------------------------
+
+
+def test_impact_documented_convention_in_conventions_doc():
+    texts = {"conventions.md": "- iter-conv (convention): x", "architecture.md": ""}
+    assert impact_documented("convention", "iter-conv", texts)
+
+
+def test_impact_documented_convention_legacy_fallback_to_architecture():
+    # Transitional: a convention run_id still in architecture.md (pre-migration)
+    # is accepted until the compression iterate moves it to ## Convention Updates.
+    texts = {"conventions.md": "", "architecture.md": "- iter-conv (convention): x"}
+    assert impact_documented("convention", "iter-conv", texts)
+
+
+def test_impact_documented_component_not_satisfied_by_conventions_doc():
+    # component/data-flow have NO conventions.md fallback — only architecture.md.
+    texts = {"conventions.md": "- iter-comp (component): x", "architecture.md": ""}
+    assert not impact_documented("component", "iter-comp", texts)
+
+
+# --- missing_entries: impact-aware routing ----------------------------------
+
+
+def test_missing_entries_convention_routes_to_conventions_doc(tmp_path: Path):
+    drops = tmp_path / "decision-drops"
+    _write_drop(drops, "iter-conv", "convention")
+    _write_drop(drops, "iter-comp", "component")
+    records, _ = scan_drops(drops)
+    # convention documented in conventions.md; component in architecture.md.
+    texts = {
+        "conventions.md": "- iter-conv (convention): documented",
+        "architecture.md": "- iter-comp (component): documented",
+    }
+    assert missing_entries(records, texts) == []
+
+
+def test_missing_entries_convention_only_in_arch_doc_passes_legacy(tmp_path: Path):
+    drops = tmp_path / "decision-drops"
+    _write_drop(drops, "iter-conv", "convention")
+    records, _ = scan_drops(drops)
+    texts = {"conventions.md": "", "architecture.md": "- iter-conv (convention): legacy"}
+    assert missing_entries(records, texts) == []  # legacy fallback
+
+
+def test_missing_entries_component_in_conventions_doc_is_missing(tmp_path: Path):
+    drops = tmp_path / "decision-drops"
+    _write_drop(drops, "iter-comp", "component")
+    records, _ = scan_drops(drops)
+    # component documented in the WRONG doc (conventions.md) → still missing.
+    texts = {"conventions.md": "- iter-comp (component): wrong-doc", "architecture.md": ""}
+    assert {r.run_id for r in missing_entries(records, texts)} == {"iter-comp"}
 
 
 # --- run_id_documented: word-boundary match ---------------------------------

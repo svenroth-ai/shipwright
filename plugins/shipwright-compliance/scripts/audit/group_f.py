@@ -212,23 +212,15 @@ def _check_f5(project_root: Path) -> tuple[str, str, str, list[str]]:
     if not arch_drops and not unknown:
         return "pass", "MEDIUM", "no architecture-impact drops to reconcile", []
 
-    arch_md = project_root / ".shipwright" / "agent_docs" / "architecture.md"
-    try:
-        arch_text = arch_md.read_text(encoding="utf-8", errors="ignore")
-    except OSError:
-        head = ", ".join(r.drop_file for r in arch_drops[:3])
-        return (
-            "fail",
-            "MEDIUM",
-            f"architecture.md is missing/unreadable but {len(arch_drops)} "
-            f"arch-impact drop(s) exist — cannot reconcile. Drops: {head}.",
-            [f"{r.drop_file} (impact={r.impact})" for r in arch_drops],
-        )
-
-    missing = archdoc.missing_entries(records, arch_text)
+    # Route each impact to its target doc via IMPACT_TARGETS (convention →
+    # conventions.md; component/data-flow → architecture.md), checking both docs.
+    texts = archdoc.read_target_texts(project_root / ".shipwright" / "agent_docs")
+    missing = archdoc.missing_entries(records, texts)
     if missing or unknown:
         evidence = [
-            f"{r.drop_file} run_id={r.run_id} impact={r.impact}" for r in missing
+            f"{r.drop_file} run_id={r.run_id} impact={r.impact} "
+            f"target={archdoc.IMPACT_TARGETS[r.impact][0]}"
+            for r in missing
         ]
         evidence += [f"{r.drop_file} unknown-impact={r.impact!r}" for r in unknown]
         parts: list[str] = []
@@ -237,9 +229,10 @@ def _check_f5(project_root: Path) -> tuple[str, str, str, list[str]]:
             if len(missing) > 3:
                 head += f", … (+{len(missing) - 3})"
             parts.append(
-                f"{len(missing)} arch-impact drop(s) not documented in "
-                f"architecture.md — add a bullet under '## Architecture Updates' "
-                f"naming each run_id + what changed: {head}"
+                f"{len(missing)} arch-impact drop(s) not documented in their "
+                "target doc — add a one-line bullet (convention → conventions.md "
+                "'## Convention Updates'; component/data-flow → architecture.md "
+                f"'## Architecture Updates') naming each run_id + what changed: {head}"
             )
         if unknown:
             uhead = ", ".join(f"{r.run_id}={r.impact!r}" for r in unknown[:3])
@@ -252,7 +245,7 @@ def _check_f5(project_root: Path) -> tuple[str, str, str, list[str]]:
     return (
         "pass",
         "MEDIUM",
-        f"all {len(arch_drops)} arch-impact drop(s) documented in architecture.md",
+        f"all {len(arch_drops)} arch-impact drop(s) documented in their target doc",
         [],
     )
 
