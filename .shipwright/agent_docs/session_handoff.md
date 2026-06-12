@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-12-cross-component-gate"
+run_id: "iterate-2026-06-12-w2-unresolvable-runid-skip"
 phase: "iterate"
-reason: "iterate completion"
-timestamp: "2026-06-12T19:16:17.145881+00:00"
+reason: "iterate: W2 SKIPs on unresolvable run_id (mirror S2/S3)"
+timestamp: "2026-06-12T19:25:19.401409+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-12 19:16:17 UTC
+> Auto-generated 2026-06-12 19:25:19 UTC
 
 ## Session Info
 
-- **Session ID**: e40d1082-2df5-473b-853e-641d52bef467
-- **Timestamp**: 2026-06-12 19:16:17 UTC
-- **Reason**: iterate completion
+- **Session ID**: d3be4cae-7d31-4e9f-8c44-75ef83e4e832
+- **Timestamp**: 2026-06-12 19:25:19 UTC
+- **Reason**: iterate: W2 SKIPs on unresolvable run_id (mirror S2/S3)
 
 ## Last Iterate
 
@@ -28,10 +28,7 @@ timestamp: "2026-06-12T19:16:17.145881+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/cross-component-gate
-- **Run ID**: iterate-2026-06-12-cross-component-gate
-- **Spec**: .shipwright/planning/iterate/2026-06-12-cross-component-gate.md
-- **Complexity**: medium (new risk flag + non-dodgeable f11 verifier gate + prose + tests)
+- **Branch**: iterate/w2-unresolvable-runid-skip
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -50,7 +47,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/cross-component-gate
+- **Branch**: iterate/w2-unresolvable-runid-skip
 - **Last Commit**: 2da047b7 fix(install): test-run python3 probe so Windows MS Store stub doesn't abort marketplace sync (#216)
 - **Uncommitted Changes**: Yes
 
@@ -67,7 +64,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-837df41d | work_completed | iterate (cross_component risk flag forces an integration-coverage test at medium+, enforced non-dodgeably by the F11 verifier recomputing the flag from the diff. Closes the composition axis of the empirical machinery.) | 2026-06-12 |
+| evt-29b841b9 | work_completed | iterate (W2 phase-quality check SKIPs on an unresolvable run_id (mirror S2/S3); fixes the audit-context false-FAIL/false-PASS when no iterate run resolves; also fixes a latent empty-run_id crash) | 2026-06-12 |
 | evt-fe304590 | work_completed | iterate (Windows: test-run the python3 probe so the Microsoft Store stub does not abort the marketplace cache sync) | 2026-06-12 |
 | evt-bb3b97ba | work_completed | iterate (End-to-end parallel-merge cascade integration test (3 concurrent iterates + a 3-sub campaign): proves curated-union + churn-regenerate + JSONL-union resolve together with no cascade.) | 2026-06-12 |
 | evt-2d77f6f6 | work_completed | iterate (Delivery-Watch: F11 confirms the PR actually merges green before done (no shoot-and-forget); watch_pr_delivery.py + F2 budget-lint-before-push rule.) | 2026-06-12 |
@@ -77,7 +74,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 162
-- **Last iterate**: change — cross_component risk flag forces an integration-coverage test at medium+, enforced non-dodgeably by the F11 verifier recomputing the flag from the diff. Closes the composition axis of the empirical machinery. (2026-06-12)
+- **Last iterate**: change — W2 phase-quality check SKIPs on an unresolvable run_id (mirror S2/S3); fixes the audit-context false-FAIL/false-PASS when no iterate run resolves; also fixes a latent empty-run_id crash (2026-06-12)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

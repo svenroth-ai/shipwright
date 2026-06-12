@@ -1,20 +1,20 @@
 # Test Evidence Report
 
-Generated: 2026-06-12T19:16:17.145881+00:00
+Generated: 2026-06-12T19:25:19.401409+00:00
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 162 |
-| Total unit tests (latest) | 0/0 |
+| Total unit tests (latest) | 3289/3289 |
 | New tests from iterations | +166 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | cross_component risk flag forces an integration-coverage test at medium+, enforced non-dodgeably by the F11 verifier recomputing the flag from the diff. Closes the composition axis of the empirical machinery. | iterate | — | +0 | — | — | 2026-06-12 |
+| 1 | W2 phase-quality check SKIPs on an unresolvable run_id (mirror S2/S3); fixes the audit-context false-FAIL/false-PASS when no iterate run resolves; also fixes a latent empty-run_id crash | iterate | unit | +0 | 3289/3289 | PASS | 2026-06-12 |
 | 2 | Windows: test-run the python3 probe so the Microsoft Store stub does not abort the marketplace cache sync | iterate | mixed | +0 | 3284/3284 | PASS | 2026-06-12 |
 | 3 | End-to-end parallel-merge cascade integration test (3 concurrent iterates + a 3-sub campaign): proves curated-union + churn-regenerate + JSONL-union resolve together with no cascade. | iterate | — | +0 | — | — | 2026-06-12 |
 | 4 | Delivery-Watch: F11 confirms the PR actually merges green before done (no shoot-and-forget); watch_pr_delivery.py + F2 budget-lint-before-push rule. | iterate | — | +0 | — | — | 2026-06-12 |
@@ -181,36 +181,36 @@ Generated: 2026-06-12T19:16:17.145881+00:00
 
 | Run | Trigger | Unit | Integration | pgTAP | E2E | Smoke | Date |
 |-----|---------|------|-------------|-------|-----|-------|------|
-| 1 | iterate | 24/24 | — | — | — | — | 2026-06-07 |
-| 2 | iterate | 312/312 | — | — | — | — | 2026-06-07 |
-| 3 | iterate | 56/56 | — | — | — | — | 2026-06-07 |
-| 4 | iterate | 2861/2861 | — | — | — | — | 2026-06-07 |
-| 5 | iterate | 2884/2884 | — | — | — | — | 2026-06-07 |
-| 6 | iterate | 2913/2913 | — | — | — | — | 2026-06-08 |
-| 7 | iterate | 2954/2954 | — | — | — | — | 2026-06-08 |
-| 8 | iterate | 6/6 | — | — | — | — | 2026-06-08 |
-| 9 | iterate | 3457/3458 | — | — | — | — | 2026-06-10 |
-| 10 | iterate | 3426/3445 | — | — | — | — | 2026-06-10 |
-| 11 | iterate | 3442/3462 | — | — | — | — | 2026-06-10 |
-| 12 | iterate | 3088/3088 | — | — | — | — | 2026-06-10 |
-| 13 | iterate | 3451/3471 | — | — | — | — | 2026-06-10 |
-| 14 | iterate | 3468/3488 | — | — | — | — | 2026-06-11 |
-| 15 | iterate | 669/679 | — | — | — | — | 2026-06-11 |
-| 16 | iterate | 414/417 | — | — | — | — | 2026-06-11 |
-| 17 | iterate | 363/363 | — | — | — | — | 2026-06-11 |
-| 18 | iterate | 3131/3131 | — | — | — | — | 2026-06-11 |
-| 19 | iterate | 8/8 | — | — | — | — | 2026-06-12 |
-| 20 | iterate | 23/23 | — | — | — | — | 2026-06-12 |
-| 21 | iterate | 3515/3516 | — | — | — | — | 2026-06-12 |
-| 22 | iterate | 3147/3147 | — | — | — | — | 2026-06-12 |
-| 23 | iterate | 3146/3146 | — | — | — | — | 2026-06-12 |
-| 24 | iterate | 3157/3157 | — | — | — | — | 2026-06-12 |
-| 25 | iterate | 3163/3164 | — | — | — | — | 2026-06-12 |
-| 26 | iterate | 3193/3193 | — | — | — | — | 2026-06-12 |
-| 27 | iterate | 4279/4279 | — | — | — | — | 2026-06-12 |
-| 28 | iterate | 19/19 | — | — | — | — | 2026-06-12 |
-| 29 | iterate | 3203/3203 | — | — | — | — | 2026-06-12 |
-| 30 | iterate | 3284/3284 | — | — | — | — | 2026-06-12 |
+| 1 | iterate | 312/312 | — | — | — | — | 2026-06-07 |
+| 2 | iterate | 56/56 | — | — | — | — | 2026-06-07 |
+| 3 | iterate | 2861/2861 | — | — | — | — | 2026-06-07 |
+| 4 | iterate | 2884/2884 | — | — | — | — | 2026-06-07 |
+| 5 | iterate | 2913/2913 | — | — | — | — | 2026-06-08 |
+| 6 | iterate | 2954/2954 | — | — | — | — | 2026-06-08 |
+| 7 | iterate | 6/6 | — | — | — | — | 2026-06-08 |
+| 8 | iterate | 3457/3458 | — | — | — | — | 2026-06-10 |
+| 9 | iterate | 3426/3445 | — | — | — | — | 2026-06-10 |
+| 10 | iterate | 3442/3462 | — | — | — | — | 2026-06-10 |
+| 11 | iterate | 3088/3088 | — | — | — | — | 2026-06-10 |
+| 12 | iterate | 3451/3471 | — | — | — | — | 2026-06-10 |
+| 13 | iterate | 3468/3488 | — | — | — | — | 2026-06-11 |
+| 14 | iterate | 669/679 | — | — | — | — | 2026-06-11 |
+| 15 | iterate | 414/417 | — | — | — | — | 2026-06-11 |
+| 16 | iterate | 363/363 | — | — | — | — | 2026-06-11 |
+| 17 | iterate | 3131/3131 | — | — | — | — | 2026-06-11 |
+| 18 | iterate | 8/8 | — | — | — | — | 2026-06-12 |
+| 19 | iterate | 23/23 | — | — | — | — | 2026-06-12 |
+| 20 | iterate | 3515/3516 | — | — | — | — | 2026-06-12 |
+| 21 | iterate | 3147/3147 | — | — | — | — | 2026-06-12 |
+| 22 | iterate | 3146/3146 | — | — | — | — | 2026-06-12 |
+| 23 | iterate | 3157/3157 | — | — | — | — | 2026-06-12 |
+| 24 | iterate | 3163/3164 | — | — | — | — | 2026-06-12 |
+| 25 | iterate | 3193/3193 | — | — | — | — | 2026-06-12 |
+| 26 | iterate | 4279/4279 | — | — | — | — | 2026-06-12 |
+| 27 | iterate | 19/19 | — | — | — | — | 2026-06-12 |
+| 28 | iterate | 3203/3203 | — | — | — | — | 2026-06-12 |
+| 29 | iterate | 3284/3284 | — | — | — | — | 2026-06-12 |
+| 30 | iterate | 3289/3289 | — | — | — | — | 2026-06-12 |
 
 ## Code Review Evidence
 
