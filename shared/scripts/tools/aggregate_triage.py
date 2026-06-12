@@ -101,17 +101,16 @@ def _fence_opener(payload: str) -> str:
 
 
 def _strip_control_chars(text: str) -> str:
-    """Strip terminal control sequences (preserving newlines and tabs).
+    """Strip terminal control sequences (keep ``\\n``/``\\t``); mirror of the
+    ``triage_cli.py`` copy — keep both in sync.
 
-    Mirrors the helper in ``triage_cli.py``. Centralized here per code-
-    review LOW #6 of iterate-2026-05-20-triage-launch-surface — operators
-    who ``cat .shipwright/agent_docs/triage_inbox.md`` in a TTY pager
-    (``less``, ``cat``) would otherwise interpret embedded ESC / BEL /
-    DEL even though markdown viewers ignore them.
+    Drops C0 (0x00-0x1F, 0x7F) AND C1 (0x80-0x9F, incl. 0x9B CSI) controls; a
+    TTY pager would otherwise execute them (F31; C1 per the Gemini-HIGH plan
+    review). Non-control Unicode (>= 0xA0) survives (umlauts / CJK / em-dash).
     """
     return "".join(
         ch for ch in text
-        if ch in ("\n", "\t") or (0x20 <= ord(ch) < 0x7F) or ord(ch) >= 0x80
+        if ch in ("\n", "\t") or (0x20 <= ord(ch) < 0x7F) or ord(ch) >= 0xA0
     )
 
 
@@ -160,13 +159,15 @@ def _render_item(item: dict) -> list[str]:
     item_id = item.get("id", "")
     severity = item.get("severity", "")
     kind = item.get("kind", "")
-    title = _truncate(_escape_md(item.get("title", "")))
-    detail = _truncate(_escape_md(item.get("detail", "")))
+    # F31 (SECURITY): strip control chars from title/detail/evidence before
+    # _escape_md (which only neutralizes pipe/newline/hash, not TTY escapes).
+    title = _truncate(_escape_md(_strip_control_chars(str(item.get("title", "")))))
+    detail = _truncate(_escape_md(_strip_control_chars(str(item.get("detail", "")))))
     priority = item.get("suggestedPriority") or suggest_priority_from_severity(severity)
     domain = item.get("suggestedDomain") or suggest_domain_from_source(
         item.get("source", "")
     )
-    evidence = _truncate(_escape_md(item.get("evidencePath") or ""))
+    evidence = _truncate(_escape_md(_strip_control_chars(str(item.get("evidencePath") or ""))))
 
     lines = [
         f'<a id="{item_id}"></a>' if item_id else "",
