@@ -64,10 +64,15 @@ __all__ = [
 # --- git plumbing -----------------------------------------------------------
 
 def _git(project_root: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
+    # encoding="utf-8" STRICT (no errors="replace"): default text=True decodes via
+    # the Windows cp1252 locale, mojibaking/crashing on UTF-8 git output (WP6/F22).
+    # _union_conflict re-serialises this stdout verbatim into the tracked log, so
+    # the round-trip must be byte-identical (errors="replace" would corrupt it).
     return subprocess.run(
         ["git", "-C", str(project_root), *args],
         capture_output=True,
         text=True,
+        encoding="utf-8",
         check=check,
     )
 
@@ -86,17 +91,33 @@ def _take_side(project_root: Path, rel: str, side: str) -> None:
     _git(project_root, "add", "--", rel)
 
 
+class _TriageNotUtf8Error(Exception):
+    """A triage.jsonl stage was not valid UTF-8, so the byte-identical union cannot
+    run safely. Translated by ``complete_merge`` into a ``triage_invalid`` status."""
+
+
 def _union_conflict(project_root: Path, rel: str) -> None:
     """Union both sides of an append-only-log conflict (ours stage :2: + theirs
     stage :3:) and stage it. ``--ours`` would DROP theirs' items; target projects
     lack the ``merge=union`` driver so this is the sole safety net there. The
     duplicate header + shared lines collapse in the subsequent ``_reconcile_*``
     dedup; the reconcile also validates the union.
+
+    ``_git`` decodes STRICT UTF-8 (WP6/F22) for a byte-identical round-trip. A
+    non-UTF-8 byte raises ``UnicodeDecodeError`` synchronously (strict decode runs
+    in the calling thread on every platform), normalised here to a typed error —
+    not a bare traceback. ``stdout is None`` is a defensive guard folded into it.
     """
-    both = (
-        _git(project_root, "show", f":2:{rel}", check=False).stdout.splitlines()
-        + _git(project_root, "show", f":3:{rel}", check=False).stdout.splitlines()
-    )
+    def _show(stage: str) -> str:
+        try:
+            out = _git(project_root, "show", f"{stage}:{rel}", check=False).stdout
+        except UnicodeDecodeError as exc:  # strict-decode shape (all platforms)
+            raise _TriageNotUtf8Error(f"{rel} ({stage}) non-UTF-8 byte: {exc}") from exc
+        if out is None:  # defensive: unexpected None stdout (output not piped)
+            raise _TriageNotUtf8Error(f"{rel} ({stage}) contains a non-UTF-8 byte")
+        return out
+
+    both = _show(":2").splitlines() + _show(":3").splitlines()
     (project_root / rel).write_text("\n".join(both) + "\n" if both else "", encoding="utf-8")
     _git(project_root, "add", "--", rel)
 
@@ -199,7 +220,17 @@ def complete_merge(project_root: Path, *, run_id: str | None = None) -> ResolveR
     resolved = []
     for rel in resolvable:
         if rel == TRIAGE_LOG:
-            _union_conflict(project_root, rel)  # append-only backlog — keep BOTH sides
+            # A non-UTF-8 byte in a legacy triage.jsonl would crash the strict
+            # decode (WP6/F22); translate to a structured triage_invalid instead.
+            try:
+                _union_conflict(project_root, rel)  # append-only backlog — keep BOTH sides
+            except (_TriageNotUtf8Error, UnicodeDecodeError) as exc:
+                _git(project_root, "merge", "--abort", check=False)
+                return ResolveResult(
+                    status="triage_invalid",
+                    errors=[f"{TRIAGE_LOG} is not valid UTF-8 ({exc}); "
+                            "cannot union safely — resolve by hand"],
+                )
             resolved.append(rel)
         elif rel in (EVENTS_LOG, TEST_RESULTS):
             _take_side(project_root, rel, "--ours")
