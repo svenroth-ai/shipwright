@@ -288,3 +288,36 @@ def latest_event_dt(project_root: Path | str) -> datetime | None:
         return None
 
     return latest
+
+
+def finalized_run_ids(project_root: Path | str) -> set[str] | None:
+    """Run_ids in this tree's event log (``adr_id`` + ``run_id`` fields; an
+    iterate's run_id is its ``work_completed`` ``adr_id``, ADR-059), or ``None``
+    when the log is absent **or unreadable**. The ownership ledger that scopes
+    the whole-set arch-drift checkers (the Group-F ``F5`` detective + the drift
+    test) to this tree's lineage, excluding cross-branch campaign sibling drops
+    in the shared main-rooted ``decision-drops`` dir (documented only on the
+    sibling's unmerged branch). ``None`` (ownership undeterminable) → callers
+    fail open to whole-set checking (conservative for a drift gate: never weaker,
+    never crash-on-read). Existing-but-empty → empty set; corrupt/blank skipped.
+    """
+    path = resolve_events_path(project_root)
+    if not path.exists():
+        return None
+    run_ids: set[str] = set()
+    try:
+        with path.open("r", encoding="utf-8") as fh:
+            for line in fh:
+                try:
+                    event = json.loads(line)
+                except json.JSONDecodeError:
+                    continue  # corrupt or blank line
+                if not isinstance(event, dict):
+                    continue
+                for key in ("adr_id", "run_id"):
+                    val = event.get(key)
+                    if isinstance(val, str) and val:
+                        run_ids.add(val)
+    except OSError:
+        return None  # unreadable → undeterminable, same as absent → fail open
+    return run_ids

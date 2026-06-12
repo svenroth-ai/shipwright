@@ -25,6 +25,7 @@ Python 3.11+ with uv as package manager. All scripts are invoked via uv run. Hoo
 
 > Each learning is compacted to its one-line rule; the full rationale, worked example, and origin for every entry is preserved verbatim in [`../planning/adr/_archive-agent-doc-updates.md`](../planning/adr/_archive-agent-doc-updates.md). (Compacted by iterate-2026-06-12-compress-agent-doc-backlog.)
 
+- **A whole-set checker over shared, gitignored, cross-branch-accumulating state must scope to per-tree ownership (run_id in the committed `shipwright_events.jsonl`), and "fail-open when the ownership ledger is absent" is what keeps it from breaking hermetic tests + CI; reproduction needs a tree whose *tracked* state trails the *accumulated* gitignored state, not a clean fork.** (iterate-2026-06-12-arch-drift-test-scope)
 - **A projection over a human-authored markdown skeleton must tolerate inline emphasis, and "verify X regenerates without downgrade" is not a no-op AC.** → archive
 - **The `check_security_scan` PreToolUse:Bash deploy-gate substring-matches its trigger words inside *argument prose*, not just argv[0].** (iterate-2026-06-10-status-projection) → archive
 - **Tune heuristic classifiers against a harvested real-input corpus, not synthetic guards.** (iterate-2026-06-10-complexity-classifier-prior) → archive
