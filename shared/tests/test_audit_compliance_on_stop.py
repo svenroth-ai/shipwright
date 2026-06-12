@@ -44,7 +44,8 @@ class _FakeReport:
 
 
 def _full_report():
-    return _FakeReport(["A", "B", "C", "D", "E", "F", "G"])
+    # F20: full coverage is A-H (run_all runs H by default; gate expects it).
+    return _FakeReport(["A", "B", "C", "D", "E", "F", "G", "H"])
 
 
 @pytest.fixture
@@ -55,16 +56,17 @@ def project(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def test_coverage_ok_full_AG():
-    ok, reason = hook.coverage_ok(_full_report())
+def test_coverage_ok_full_set():
+    ok, reason = hook.coverage_ok(_full_report())  # canonical A-H set
     assert ok is True
     assert "full coverage" in reason.lower()
 
 
 def test_coverage_blocked_on_missing_group():
-    ok, reason = hook.coverage_ok(_FakeReport(["A", "B", "C", "D", "E", "F"]))  # no G
+    # No G (and no H) — both surface as missing; the gate blocks.
+    ok, reason = hook.coverage_ok(_FakeReport(["A", "B", "C", "D", "E", "F"]))
     assert ok is False
-    assert "missing=['G']" in reason
+    assert "missing=['G', 'H']" in reason
 
 
 def test_coverage_blocked_on_import_gate_error():
@@ -74,11 +76,10 @@ def test_coverage_blocked_on_import_gate_error():
 
 
 def test_coverage_blocked_when_only_group_F():
-    # The exact hazard from the GAP: running only group F would dismiss
-    # B7/B2/etc. The gate must refuse to mirror.
+    # GAP hazard: only-F would dismiss B7/B2/etc. F20: H is now expected too.
     ok, reason = hook.coverage_ok(_FakeReport(["F"]))
     assert ok is False
-    assert set("ABCDEG").issubset(set(reason.replace("'", "")))
+    assert set("ABCDEGH").issubset(set(reason.replace("'", "")))
 
 
 def test_emit_mirrors_only_on_full_coverage(project: Path):

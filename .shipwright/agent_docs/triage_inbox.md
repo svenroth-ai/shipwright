@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-11T22:33:12.418915Z. Items waiting for triage decision.
+> Auto-generated 2026-06-11T21:24:03.294145Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
 - Total: 177
-- Triage: 13 | Promoted: 1 | Dismissed: 163 | Snoozed: 0
+- Triage: 14 | Promoted: 1 | Dismissed: 162 | Snoozed: 0
 
-## Top 13 items (severity-sorted)
+## Top 14 items (severity-sorted)
 
 ### Source: architecture (2 items)
 
@@ -104,6 +104,21 @@
     Complexity hint: medium (touches adopt + 3 new templates + test surface)
     ```
   - Promote: `triage_promote.py --id trg-a678bd00 --task-ref EXT:<ref>`
+
+### Source: compliance (1 item)
+
+<a id="trg-f1c0a3ae"></a>
+- **Compliance: 1 open finding(s)** `id=trg-f1c0a3ae | severity=medium | kind=compliance → P2/compliance`
+  - 1 open compliance finding(s): F/F5  - F/F5: Architecture marker vs arch-impact drops — 1 arch-impact drop(s) not docume…
+  - Launch payload (copy into a new Claude session):
+    ```text
+    /shipwright-compliance
+    
+    Context: 1 open compliance finding(s): F/F5.
+    Dashboard: .shipwright/compliance/dashboard.md
+    Each finding + hint is listed in this item's detail.
+    ```
+  - Promote: `triage_promote.py --id trg-f1c0a3ae --task-ref EXT:<ref>`
 
 ### Source: external-frameworks (6 items)
 
