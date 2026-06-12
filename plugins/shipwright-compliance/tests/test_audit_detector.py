@@ -63,10 +63,29 @@ def test_run_all_skips_unregistered_groups(tmp_path):
     )
     report = run_all(tmp_path, run_gate=False)
     assert report.findings == []
-    assert len(report.groups_skipped) == 7
+    # F20: the default group set is {A..H} — Group H (bloat-policy
+    # detective audit) MUST be in the default ``wanted`` set, else the
+    # post-merge bloat net runs zero checks.
+    assert len(report.groups_skipped) == 8
     assert {g for g, _r in report.groups_skipped} == {
-        "A", "B", "C", "D", "E", "F", "G"
+        "A", "B", "C", "D", "E", "F", "G", "H"
     }
+
+
+def test_run_all_default_set_includes_group_h(tmp_path):
+    """F20 — with H registered and no ``only`` filter, H must run.
+
+    Regression for the deep-audit F20: ``run_all``'s default ``wanted``
+    set omitted "H", so a registered Group H never executed and the
+    bloat detective audit was structurally inert.
+    """
+    (tmp_path / "shipwright_run_config.json").write_text("{}\n", encoding="utf-8")
+    for letter in ("A", "B", "C", "D", "E", "F", "G", "H"):
+        register_group(letter, lambda *a, _g=letter: [_make_finding(group=_g)])
+
+    report = run_all(tmp_path, run_gate=False, emit_to_triage=False)
+    assert "H" in report.groups_run
+    assert set(report.groups_run) == {"A", "B", "C", "D", "E", "F", "G", "H"}
 
 
 def test_run_all_executes_registered_group(tmp_path):

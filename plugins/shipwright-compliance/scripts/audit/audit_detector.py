@@ -275,7 +275,14 @@ def run_all(
     cfg["fix"] = fix
     cfg["fixes_applied"] = report.fixes_applied
 
-    wanted = {g.upper() for g in only} if only else {"A", "B", "C", "D", "E", "F", "G"}
+    # F20 (deep-audit 2026-06-10): Group H (bloat-policy detective audit)
+    # is the net all three preventive bloat gates hand off to. It MUST be
+    # in the default set or the post-merge bloat audit runs zero checks.
+    wanted = (
+        {g.upper() for g in only}
+        if only
+        else {"A", "B", "C", "D", "E", "F", "G", "H"}
+    )
 
     for letter in sorted(wanted):
         fn = _GROUPS.get(letter)
