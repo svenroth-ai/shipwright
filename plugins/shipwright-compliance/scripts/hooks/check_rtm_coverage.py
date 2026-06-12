@@ -22,6 +22,28 @@ from pathlib import Path
 from typing import Any
 
 
+def _resolve_project_root() -> str:
+    """Resolve the managed project root.
+
+    Hooks fire with cwd = workspace root, which in a subdirectory-project
+    layout (e.g. ``webui/`` inside a monorepo) is one level ABOVE the managed
+    project. ``os.getcwd()`` therefore found no ``traceability-matrix.md`` and
+    the gate silently failed open (F5). ``resolve_project_root`` auto-descends
+    into the single managed subdir (and honors ``SHIPWRIGHT_PROJECT_ROOT``),
+    falling back to cwd for a standalone / not-yet-initialized project.
+    """
+    try:
+        shared_scripts = Path(__file__).resolve().parents[4] / "shared" / "scripts"
+        if str(shared_scripts) not in sys.path:
+            sys.path.insert(0, str(shared_scripts))
+        from lib.project_root import resolve_project_root  # noqa: PLC0415
+
+        return str(resolve_project_root())
+    except (ImportError, ValueError):
+        env_root = os.environ.get("SHIPWRIGHT_PROJECT_ROOT")
+        return env_root if env_root else os.getcwd()
+
+
 def _hook_block(reason: str, details: dict[str, Any]) -> dict[str, Any]:
     """Build soft-block hook output with override support."""
     return {
@@ -88,8 +110,8 @@ def main() -> int:
     if "git commit" not in command and "git -c" not in command:
         return 0
 
-    # Determine project root from cwd
-    project_root = os.getcwd()
+    # Resolve the managed project root (auto-descends in subdir layouts).
+    project_root = _resolve_project_root()
 
     # If no compliance data yet (early pipeline), allow
     coverage = get_coverage_from_rtm(project_root)
