@@ -57,7 +57,7 @@ MACHINE_DISMISSERS = frozenset({
 # starts with one of these) will not match — exact equality only.
 MACHINE_REASONS = frozenset({
     "sbomResolved",
-    "auditResolved",
+    "auditResolved",  # legacy: pre-bundle audit dismissals; no current emitter (audit now → complianceBacklog)
     "driftResolved",
     "f05Resolved",
     "githubResolved",
@@ -193,6 +193,11 @@ def apply_gc(project_root: Path | str, drop_ids: set[str], backup: bool = True) 
         # caller's planned ids. A concurrent re-open (status flip appended between
         # the caller's plan and now) makes an item no-longer-machine-churn, so it
         # drops out of ``fresh_drop_ids`` and survives the rewrite.
+        # LIMITATION (follow-up): the recompute is tracked-only, so a concurrent
+        # re-open that routes to the gitignored OUTBOX (idle-main-with-origin) is
+        # invisible here and the item is still dropped. triage_gc is an operator-
+        # invoked one-off — do not run `--apply` while idle-main outbox writes are
+        # possible until the recompute is made union-residence-aware.
         fresh_drop_ids = plan_gc(project_root)["drop_ids"]
         effective_drop_ids = fresh_drop_ids & set(drop_ids)
         # Tracked store only — never read/rewrite the gitignored outbox (D1).
