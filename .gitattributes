@@ -22,3 +22,15 @@ shipwright_events.jsonl merge=union
 # dedup, so the resolver (resolve_churn_conflicts.py) remains the second-line
 # authority that dedups + validates the union'd log post-merge.
 .shipwright/triage.jsonl merge=union
+
+# architecture.md + conventions.md are CURATED agent-docs (NOT regenerated churn,
+# NOT in CHURN_ALLOWLIST). Parallel iterates each PREPEND a bullet to their
+# `## …Updates` / `## Learnings` sections, which collide at the same anchor — the
+# last piece of the auto-merge cascade the regenerate-at-merge resolver left
+# unsolved (iterate-2026-06-12-union-curated-agent-docs; PRs #207/#208/#210/#211).
+# `merge=union` keeps both prepended bullets (server-side too). Caveat: union is
+# line-based + silent — two iterates editing the SAME non-append line would merge
+# both silently; in practice ~all parallel edits are append-section prepends.
+# Escalate to per-run drop-files if that ever bites. See docs/hooks-and-pipeline.md.
+.shipwright/agent_docs/architecture.md merge=union
+.shipwright/agent_docs/conventions.md merge=union

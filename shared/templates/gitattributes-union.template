@@ -8,3 +8,13 @@
 # validates the union'd log. SSoT: shared/scripts/lib/gitattributes_union.py.
 shipwright_events.jsonl merge=union
 .shipwright/triage.jsonl merge=union
+# architecture.md + conventions.md are CURATED agent-docs (NOT regenerated churn):
+# parallel iterates each PREPEND a bullet to their `## …Updates` / `## Learnings`
+# sections, which collide at the same anchor. `merge=union` keeps both prepended
+# bullets (server-side too), so these curated docs stop cascading DIRTY / merging
+# stale. Caveat: union is line-based + silent — two iterates editing the SAME
+# non-append line would merge both silently instead of conflicting; in practice
+# ~all parallel edits are append-section prepends. Escalate to per-run drop-files
+# if that ever bites. See docs/hooks-and-pipeline.md.
+.shipwright/agent_docs/architecture.md merge=union
+.shipwright/agent_docs/conventions.md merge=union

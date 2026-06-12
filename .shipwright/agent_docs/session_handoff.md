@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-12-config-bom-integrate-tests"
+run_id: "iterate-2026-06-12-union-curated-agent-docs"
 phase: "iterate"
-reason: "merge origin/main reconciliation"
-timestamp: "2026-06-12T12:06:22.426150+00:00"
+reason: "iterate completion: iterate-2026-06-12-union-curated-agent-docs"
+timestamp: "2026-06-12T13:48:53.414596+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-12 12:06:22 UTC
+> Auto-generated 2026-06-12 13:48:53 UTC
 
 ## Session Info
 
-- **Session ID**: 44fa4331-4609-4594-899c-41a4627d2657
-- **Timestamp**: 2026-06-12 12:06:22 UTC
-- **Reason**: merge origin/main reconciliation
+- **Session ID**: e40d1082-2df5-473b-853e-641d52bef467
+- **Timestamp**: 2026-06-12 13:48:53 UTC
+- **Reason**: iterate completion: iterate-2026-06-12-union-curated-agent-docs
 
 ## Last Iterate
 
@@ -29,7 +29,10 @@ timestamp: "2026-06-12T12:06:22.426150+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/config-bom-integrate-tests
+- **Branch**: iterate/union-curated-agent-docs
+- **Run ID**: iterate-2026-06-12-union-curated-agent-docs
+- **Spec**: .shipwright/planning/iterate/2026-06-12-union-curated-agent-docs.md
+- **Complexity**: medium (modifies a load-bearing merge abstraction + scaffolds into all managed repos)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/config-bom-integrate-tests
-- **Last Commit**: a7015fef Merge remote-tracking branch 'origin/main' into iterate/config-bom-integrate-tests
+- **Branch**: iterate/union-curated-agent-docs
+- **Last Commit**: 6a3b4b0e fix(triage): union-residence GC recompute + source-derived drift meta-test (a1-6/F19 follow-up) (#208)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-3b9f4640 | work_completed | iterate (merge=union for curated agent-docs (architecture.md + conventions.md) via a distinct CURATED_DOC_UNION_PATHS category; closes the parallel-iterate bullet-prepend cascade server-side (follow-up to automerge-serial-integrate).) | 2026-06-12 |
 | evt-ef0a3a15 | work_completed | iterate (Serial integrate_main merge for campaign/parallel iterates: ensure_current.py refresh-if-behind guard at F11 + SHIPWRIGHT_ITERATE_AUTOMERGE defer with serial drain (auto-merge churn fix, Option A).) | 2026-06-12 |
 | evt-34fd26e4 | work_completed | iterate (Consolidate the project-detection predicate across all hooks onto one canonical lib.project_root.is_shipwright_project) | 2026-06-12 |
 | evt-d67b8b50 | work_completed | iterate (config-reader BOM tolerance (read_config utf-8-sig) + integrate_main commit-failure branch tests; split two at-limit test modules under 300 LOC) | 2026-06-12 |
-| evt-1c00ed61 | work_completed | iterate (Compact agent-doc entries + impact-aware routing SSoT (IMPACT_TARGETS) + forward-only 600-char entry-budget gate; conventions.md CONTRIBUTING de-dup) | 2026-06-12 |
-| evt-e2baab58 | work_completed | iterate (WP9 triage tooling hardening: F30 phaseQualityRefreshed GC token + drift meta-test, F19 GC TOCTOU recompute-under-lock, F31 control-char sanitizer on title/detail/evidence (C0+C1) in both render surfaces, F29 promote/dismiss accept outbox-only items) | 2026-06-12 |
+| evt-16059cc5 | work_completed | iterate (compress agent-doc backlog to one-line pointers + retire convention-routing fallback + lower entry-budget cutoff) | 2026-06-12 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 154
-- **Last iterate**: change — Serial integrate_main merge for campaign/parallel iterates: ensure_current.py refresh-if-behind guard at F11 + SHIPWRIGHT_ITERATE_AUTOMERGE defer with serial drain (auto-merge churn fix, Option A). (2026-06-12)
+- **Total work events**: 158
+- **Last iterate**: change — merge=union for curated agent-docs (architecture.md + conventions.md) via a distinct CURATED_DOC_UNION_PATHS category; closes the parallel-iterate bullet-prepend cascade server-side (follow-up to automerge-serial-integrate). (2026-06-12)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

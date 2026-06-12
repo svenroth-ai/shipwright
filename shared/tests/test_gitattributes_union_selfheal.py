@@ -50,7 +50,8 @@ def test_self_heal_commits_when_union_missing(git_origin_repo):
     res = gu.self_heal_gitattributes(work, allow_ci=True)
 
     assert res.status == "committed", res
-    assert set(res.added) == set(gu.UNION_PATHS)
+    # self-heal backfills the FULL fragment coverage (JSONL logs + curated docs).
+    assert set(res.added) == set(gu.ALL_UNION_PATHS)
     assert h.head_count(work) == before + 1
     assert h.git(work, "log", "-1", "--format=%s").stdout.strip() == _CHORE_SUBJECT
     ga = (work / ".gitattributes").read_text(encoding="utf-8")

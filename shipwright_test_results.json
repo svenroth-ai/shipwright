@@ -1,29 +1,29 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-12-triage-gc-union-residence",
+    "run_id": "iterate-2026-06-12-union-curated-agent-docs",
     "date": "2026-06-12",
     "unit": {
       "status": "passed",
-      "passed": 3193,
-      "total": 3193
+      "passed": 3270,
+      "total": 3270
     },
     "integration": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "pgtap": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "e2e": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "design_fidelity": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
@@ -35,80 +35,60 @@
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "outbox-routed re-open survives apply_gc (AC1)",
+          "behavior": "concurrent architecture.md bullet-prepends union without markers, bullets ordered after heading before base",
           "disposition": "tested",
-          "evidence": "test_triage_wp9_gc.py::test_apply_honors_outbox_routed_reopen (red→green)"
+          "evidence": "test_union_merges_concurrent_curated_bullets_without_markers[architecture.md] PASSED"
         },
         {
-          "behavior": "tracked-route re-open still survives, no regression (AC2)",
+          "behavior": "concurrent conventions.md (## Learnings) bullet-prepends union without markers",
           "disposition": "tested",
-          "evidence": "test_triage_wp9_gc.py::test_apply_recomputes_plan_under_lock_preserving_concurrent_reopen"
+          "evidence": "test_union_merges_concurrent_curated_bullets_without_markers[conventions.md] PASSED"
         },
         {
-          "behavior": "outbox NOT folded into tracked file, D1 (AC2)",
+          "behavior": "negative control: same prepends conflict WITHOUT union (both docs)",
           "disposition": "tested",
-          "evidence": "test_triage_gc.py::test_apply_does_not_fold_outbox_into_tracked"
+          "evidence": "test_negative_control_curated_bullets_conflict_without_union[both] PASSED"
         },
         {
-          "behavior": "report stays tracked-only upper bound (AC2)",
+          "behavior": "ALL_UNION_PATHS = UNION_PATHS + CURATED_DOC_UNION_PATHS (disjoint); template declares all 4",
           "disposition": "tested",
-          "evidence": "test_triage_gc.py::test_apply_does_not_drop_item_churned_after_the_consented_plan"
+          "evidence": "test_curated_doc_union_paths_are_the_two_agent_docs + test_template_exists_and_declares_every_union_line PASSED"
         },
         {
-          "behavior": "forward-drift source-derived (AC4)",
+          "behavior": "UNION_PATHS unchanged == {EVENTS_LOG, TRIAGE_LOG} (JSONL pin)",
           "disposition": "tested",
-          "evidence": "test_triage_wp9_gc.py::test_machine_reasons_covers_every_producer_recurring_token"
+          "evidence": "test_union_paths_match_churn_allowlist_append_logs PASSED"
         },
         {
-          "behavior": "reverse-drift source-derived + legacy allowlist (AC4)",
+          "behavior": "CURATED_DOC_UNION_PATHS == the two agent-docs",
           "disposition": "tested",
-          "evidence": "test_triage_wp9_gc.py::test_machine_reasons_has_no_unknown_tokens"
+          "evidence": "test_curated_doc_union_paths_are_the_two_agent_docs PASSED"
         },
         {
-          "behavior": "vacuous-green guard on scan (AC4)",
+          "behavior": "merge_into idempotent/never-clobber/partial/CRLF over all 4 paths",
           "disposition": "tested",
-          "evidence": "test_triage_wp9_gc.py::test_source_derivation_finds_known_anchor_tokens"
+          "evidence": "existing merge_into tests (now over ALL_UNION_PATHS) PASSED"
         },
         {
-          "behavior": "legacy allowlist token has no live emitter (AC4)",
+          "behavior": "self_heal backfills the full fragment (added == ALL_UNION_PATHS)",
           "disposition": "tested",
-          "evidence": "test_triage_wp9_gc.py::test_legacy_retained_tokens_have_no_live_emitter"
+          "evidence": "test_self_heal_commits_when_union_missing PASSED"
         },
         {
-          "behavior": "prChecksResolved actually GC'd (AC4)",
+          "behavior": "adopt scaffolder 'already_present' now requires all 4 lines",
           "disposition": "tested",
-          "evidence": "test_triage_wp9_gc.py::test_prchecks_resolved_github_dismissal_is_machine_churn"
-        },
-        {
-          "behavior": "refresh/prChecks tokens pinned (AC4)",
-          "disposition": "tested",
-          "evidence": "test_triage_wp9_gc.py::test_machine_reasons_pins_refresh_and_prchecks_tokens"
-        },
-        {
-          "behavior": "single-source sanitizer, byte-identical behavior (AC5)",
-          "disposition": "tested",
-          "evidence": "test_triage_wp9_sanitize_outbox.py (14 behavioral, subprocess render)"
-        },
-        {
-          "behavior": "dry-run + applied + empty report render (AC6)",
-          "disposition": "tested",
-          "evidence": "test_triage_gc.py::test_print_report_dry_run_renders_full_surface / _applied_header_branch / _empty_omits_breakdown"
-        },
-        {
-          "behavior": "operator-constraint note removed/replaced (AC3)",
-          "disposition": "tested",
-          "evidence": "F0 grep gate (no 'LIMITATION (follow-up)'/'do not run --apply' in triage_gc.py) + external+internal code review"
+          "evidence": "test_already_present_is_noop (adopt) PASSED"
         }
       ],
       "counts": {
-        "testable": 13,
-        "tested": 13,
+        "testable": 9,
+        "tested": 9,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 7,
-        "covered_acs": 7
+        "acs": 5,
+        "covered_acs": 5
       }
     },
     "surface_verification": {
@@ -117,9 +97,9 @@
       "exit_code": 0,
       "tests_run": 0,
       "evidence_path": "",
-      "timestamp": "2026-06-12T00:00:00.000Z",
+      "timestamp": "2026-06-12T13:48:39.000Z",
       "attempts": 0,
-      "justification": "Framework-internal change to operator-invoked triage tooling: triage_gc concurrency hardening (union-residence under-lock recompute), a source-derived drift meta-test, and a behaviour-preserving extraction of the TTY control-char sanitizer to shared/scripts/lib/tty_sanitize.py. No web/API/store-read-contract surface consumed by a UI changes: triage_gc is a manual CLI maintenance tool, the union read contract (triage.read_all_items) is unchanged, the GC change only narrows which items are dropped (data the WebUI reads is a strict, more-correct subset), and the sanitizer extraction is byte-identical. Verified by TDD red→green unit tests, the full shared/tests suite (3193 passed / 12 skipped), and empirical round-trip + boundary probes (zero tracked orphan-status, header intact, outbox re-open survives)."
+      "justification": "Framework-internal merge-driver config: extends the gitattributes merge=union SSoT (gitattributes_union.py) + template + root .gitattributes to two curated agent-docs, plus tests + docs. No web/UI/API application surface and no backend-affects-frontend path. Behavior verified end-to-end by REAL git merges: a parameterized real-git repro over BOTH curated docs proves two concurrent bullet-prepends union without conflict markers (ordered), with a negative control proving the union driver is the mechanism; the full F0 shared suite (3270) + adopt (304) stay green."
     }
   }
 }
