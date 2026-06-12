@@ -221,6 +221,26 @@ def records_for_run(records: list[DropRecord], run_id: str) -> list[DropRecord]:
     return [r for r in records if r.run_id == run_id]
 
 
+def records_in_run_set(
+    records: list[DropRecord], allowed: set[str]
+) -> list[DropRecord]:
+    """Records whose ``run_id`` is in ``allowed`` (exact set membership).
+
+    The set-valued analogue of :func:`records_for_run`. Scopes the *whole-set*
+    arch-drift checkers — the Group-F ``F5`` detective and
+    ``test_architecture_md_reflects_arch_impact`` — to drops OWNED by the current
+    tree's lineage, where ``allowed`` is the run_id set from this tree's committed
+    ``shipwright_events.jsonl`` (``events_log.finalized_run_ids``). This excludes
+    cross-branch campaign sibling drops that bleed through the shared main-rooted
+    ``decision-drops`` dir: the sibling's doc entry lives only on its own unmerged
+    branch, so without scoping the drop reads as undocumented drift on every other
+    branch. The F11 finalize gate scopes to ONE run_id via ``records_for_run``;
+    this is its whole-set counterpart. Matching stays in ``missing_entries`` — the
+    "cannot diverge" contract is on matching, not on which drops are in scope.
+    """
+    return [r for r in records if r.run_id in allowed]
+
+
 def corrupt_for_run(corrupt_filenames: list[str], run_id: str) -> list[str]:
     """Corrupt drop filenames belonging to ``run_id`` (matched by filename).
 

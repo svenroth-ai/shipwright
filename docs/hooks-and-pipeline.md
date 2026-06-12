@@ -1447,6 +1447,17 @@ its impact routes to (so a `convention` run_id is verified in
 fallback still accepts a `convention` run_id in `## Architecture Updates` for the
 pre-routing-fix backlog (iterate-2026-06-12-agent-doc-entry-rules).
 
+The F11 gate scopes to the iterate's own `run_id` (`records_for_run`); the two
+*whole-set* checkers — the Group-F **F5** detective and
+`shared/tests/test_architecture_md_reflects_arch_impact.py` — instead scope to
+drops **owned by this tree's lineage**, i.e. whose `run_id` appears in this
+tree's committed `shipwright_events.jsonl` (`events_log.finalized_run_ids`, a new
+read for F5). This stops cross-branch campaign sibling drops — which accumulate
+in the shared main-rooted `decision-drops` dir but whose target-doc entry lives
+only on the sibling's own unmerged branch — from false-flagging drift on a later
+branch. Fail-open when no event log exists, so a clean CI checkout (drops dir
+absent anyway) keeps whole-set behavior (iterate-2026-06-12-arch-drift-test-scope).
+
 Format: `- **ADR-NNN** (YYYY-MM-DD): Short description` — a one-line "what +
 pointer to the ADR". These docs are always-loaded Layer-1 context, so each entry
 is forward-budget-capped at 600 chars by

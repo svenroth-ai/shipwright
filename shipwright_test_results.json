@@ -1,96 +1,135 @@
 {
-  "iterate_latest": {
-    "run_id": "iterate-2026-06-12-agent-doc-entry-rules",
-    "date": "2026-06-12",
-    "unit": {
-      "status": "passed",
-      "passed": 4229,
-      "total": 4229
+ "iterate_latest": {
+  "run_id": "iterate-2026-06-12-arch-drift-test-scope",
+  "date": "2026-06-12",
+  "unit": {
+   "status": "passed",
+   "passed": 3195,
+   "total": 3195
+  },
+  "integration": {
+   "status": "passed",
+   "passed": 141,
+   "total": 141
+  },
+  "pgtap": {
+   "status": "not_run",
+   "passed": 0,
+   "total": 0
+  },
+  "e2e": {
+   "status": "not_run",
+   "passed": 0,
+   "total": 0
+  },
+  "design_fidelity": {
+   "status": "not_run",
+   "passed": 0,
+   "total": 0
+  },
+  "smoke": {
+   "status": "not_run"
+  },
+  "degraded": [],
+  "test_completeness": {
+   "status": "complete",
+   "behaviors": [
+    {
+     "behavior": "finalized_run_ids: absent log -> None",
+     "disposition": "tested",
+     "evidence": "test_arch_drift_event_scope.py::test_finalized_run_ids_absent_log_returns_none PASSED"
     },
-    "integration": {
-      "status": "passed",
-      "passed": 141,
-      "total": 141
+    {
+     "behavior": "finalized_run_ids: empty log -> set()",
+     "disposition": "tested",
+     "evidence": "test_arch_drift_event_scope.py::test_finalized_run_ids_empty_log_returns_empty_set PASSED"
     },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+    {
+     "behavior": "finalized_run_ids: collects adr_id+run_id (round-trip / io-boundary probe)",
+     "disposition": "tested",
+     "evidence": "test_arch_drift_event_scope.py::test_finalized_run_ids_collects_adr_id_and_run_id PASSED"
     },
-    "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+    {
+     "behavior": "finalized_run_ids: skips corrupt/blank lines",
+     "disposition": "tested",
+     "evidence": "test_arch_drift_event_scope.py::test_finalized_run_ids_skips_corrupt_lines PASSED"
     },
-    "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+    {
+     "behavior": "records_in_run_set: keeps only allowed run_ids",
+     "disposition": "tested",
+     "evidence": "test_arch_drift_event_scope.py::test_records_in_run_set_keeps_only_allowed PASSED"
     },
-    "smoke": {
-      "status": "not_run"
+    {
+     "behavior": "records_in_run_set: empty allowed -> []",
+     "disposition": "tested",
+     "evidence": "test_arch_drift_event_scope.py::test_records_in_run_set_empty_allowed_keeps_nothing PASSED"
     },
-    "degraded": [],
-    "test_completeness": {
-      "status": "complete",
-      "behaviors": [
-        {
-          "behavior": "AC1 IMPACT_TARGETS SSoT + impact-aware missing_entries routes convention->conventions.md, component/data-flow->architecture.md",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_architecture_doc.py::test_impact_targets_*, ::test_missing_entries_convention_routes_to_conventions_doc, ::test_missing_entries_component_in_conventions_doc_is_missing PASSED"
-        },
-        {
-          "behavior": "AC2 F11 gate + Group-F detective verify each impact against its target doc (+ legacy fallback)",
-          "disposition": "tested",
-          "evidence": "test_verify_iterate_finalization.py::test_architecture_documented_convention_in_conventions_doc_passes/_component_not_satisfied_by_conventions_doc; test_audit_groups_c_f.py::test_convention_documented_in_conventions_doc_passes/_convention_legacy_in_architecture_passes PASSED"
-        },
-        {
-          "behavior": "AC3 write_decision_log consumes IMPACT_TARGETS; routing pinned to SSoT",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-iterate/tests/test_agent_doc_entry_rules.py::test_writer_routes_per_impact_targets[component|data-flow|convention], ::test_f2_documents_canonical_routing PASSED"
-        },
-        {
-          "behavior": "AC4 forward-only entry-budget gate flags new over-budget, grandfathers old/undated, passes real files",
-          "disposition": "tested",
-          "evidence": "test_agent_doc_entry_rules.py::test_over_budget_dated_entry_is_flagged, ::test_grandfathered_entries_exempt, ::test_new_entries_within_budget PASSED"
-        },
-        {
-          "behavior": "AC5 conventions.md no longer embeds verbatim CONTRIBUTING copy (links instead); no consumer asserted it",
-          "disposition": "tested",
-          "evidence": "grep: no test asserts the embedded copy; full suites green post-removal (shared 3173 / iterate 374 / compliance 682 / integration 141); file 606->308 LOC"
-        },
-        {
-          "behavior": "AC6 F2.md documents compact routing (machine-checkable)",
-          "disposition": "tested",
-          "evidence": "test_agent_doc_entry_rules.py::test_f2_documents_canonical_routing PASSED"
-        },
-        {
-          "behavior": "AC6 F3a/reflection compact-format prose guidance (editorial wording)",
-          "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "doc prose; the machine-checkable routing claim is covered by test_f2_documents_canonical_routing"
-        }
-      ],
-      "counts": {
-        "testable": 6,
-        "tested": 6,
-        "untestable": 1,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 6,
-        "covered_acs": 6
-      }
+    {
+     "behavior": "drift test: unowned undocumented drop excluded (AC3)",
+     "disposition": "tested",
+     "evidence": "test_arch_drift_event_scope.py::test_unowned_undocumented_drop_is_excluded PASSED + live local-main probe missing 3->0"
     },
-    "surface_verification": {
-      "surface": "none",
-      "runner": "",
-      "exit_code": 0,
-      "tests_run": 0,
-      "evidence_path": "",
-      "timestamp": "2026-06-12T09:52:25.426Z",
-      "attempts": 0,
-      "justification": "Framework-internal change (compliance routing oracle, F11 gate + Group-F detective, write_decision_log producer, iterate skill instructions F2/F3a/reflection, and a new pytest entry-budget gate). No web/CLI/API application surface exists. Behavior verified by unit + integration suites: producer-to-file routing round-trip, oracle impact routing, F11 gate + F5 detective routing, and the real-file drift test (RED then GREEN); full suites shared 3173 / iterate 374 / compliance 682 passed."
+    {
+     "behavior": "drift test: owned undocumented drop caught (AC4)",
+     "disposition": "tested",
+     "evidence": "test_arch_drift_event_scope.py::test_owned_undocumented_drop_is_caught PASSED"
+    },
+    {
+     "behavior": "drift test green on live repo",
+     "disposition": "tested",
+     "evidence": "test_architecture_md_reflects_arch_impact.py::test_every_arch_impact_drop_has_architecture_md_entry PASSED"
+    },
+    {
+     "behavior": "F5 detective: owned undocumented -> fail",
+     "disposition": "tested",
+     "evidence": "test_f5_event_scope.py::test_owned_undocumented_drop_fails PASSED"
+    },
+    {
+     "behavior": "F5 detective: unowned undocumented -> excluded/pass (AC3)",
+     "disposition": "tested",
+     "evidence": "test_f5_event_scope.py::test_unowned_undocumented_drop_excluded_passes PASSED"
+    },
+    {
+     "behavior": "F5 detective: owned documented -> pass",
+     "disposition": "tested",
+     "evidence": "test_f5_event_scope.py::test_owned_documented_drop_passes PASSED"
+    },
+    {
+     "behavior": "F5 detective: no event log -> fail-open fail (AC5)",
+     "disposition": "tested",
+     "evidence": "test_f5_event_scope.py::test_no_event_log_fails_open PASSED"
+    },
+    {
+     "behavior": "F5 detective: present-empty log -> exclude all",
+     "disposition": "tested",
+     "evidence": "test_f5_event_scope.py::test_present_empty_event_log_excludes_all PASSED"
+    },
+    {
+     "behavior": "F5 detective: pre-existing behaviors (corrupt/component/convention/data-flow/unknown/none) unchanged",
+     "disposition": "tested",
+     "evidence": "test_audit_groups_c_f.py 35 tests PASSED (fail-open, no regression)"
     }
+   ],
+   "counts": {
+    "testable": 15,
+    "tested": 15,
+    "untestable": 0,
+    "untested_testable": 0
+   },
+   "enumeration_basis": {
+    "acs": 5,
+    "covered_acs": 5
+   }
+  },
+  "surface_verification": {
+   "surface": "none",
+   "runner": "",
+   "exit_code": 0,
+   "tests_run": 0,
+   "evidence_path": "",
+   "timestamp": "2026-06-12T11:35:00.000Z",
+   "attempts": 0,
+   "justification": "Framework-internal test/audit-infra change: event-ownership scoping for the two whole-set arch-drift checkers (shared events_log + architecture_doc helpers, Group-F F5 detective, the drift test). No web/CLI/API application surface exists. Behavior verified by unit suites (new helper + scoping tests, detective owned/unowned/fail-open tests, the real-file drift test RED->GREEN) and a live local-main probe (missing 3->0); full suites shared 3195 / compliance 687 / integration 141 passed."
   }
+ }
 }

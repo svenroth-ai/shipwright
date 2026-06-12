@@ -172,8 +172,17 @@ def _check_f5(project_root: Path) -> tuple[str, str, str, list[str]]:
     local/worktree detective; the authoritative prevention is the F11
     ``check_architecture_documented`` gate (decision-drops never reach CI).
 
+    Event-ownership scoped: only drops whose ``run_id`` is in this tree's
+    committed ``shipwright_events.jsonl`` (``events_log.finalized_run_ids``) are
+    reconciled. A cross-branch campaign sibling's drop bleeds into the shared
+    main-rooted drops dir but its target-doc entry lands only on the sibling's
+    own unmerged branch — without scoping it false-flags drift on every other
+    branch. Fail-open when no event log exists (ownership unknowable).
+
     Drift states:
     - drops dir absent → skip
+    - drop not owned by this tree (run_id absent from a present events.jsonl) →
+      excluded from reconciliation
     - corrupt drop JSON → fail (a malformed drop must not hide drift)
     - no arch-impact (and no unknown-impact) drops → pass
     - architecture.md missing/unreadable while arch-impact drops exist → fail
@@ -206,6 +215,16 @@ def _check_f5(project_root: Path) -> tuple[str, str, str, list[str]]:
             f"assess architecture drift. Fix or remove: {head}.",
             corrupt,
         )
+
+    # Scope to drops OWNED by this tree's lineage (run_id in this tree's committed
+    # events.jsonl) so cross-branch campaign sibling drops — which bleed through
+    # the shared main-rooted decision-drops dir but whose target-doc entry lives
+    # only on the sibling's own unmerged branch — aren't flagged as drift here.
+    # Fail-open when no event log exists (ownership unknowable): keeps the
+    # clean-checkout / hermetic behavior, and is never weaker than whole-set.
+    owned = events_log.finalized_run_ids(project_root)
+    if owned is not None:
+        records = archdoc.records_in_run_set(records, owned)
 
     arch_drops = archdoc.arch_impact_records(records)
     unknown = archdoc.unknown_impact_records(records)
