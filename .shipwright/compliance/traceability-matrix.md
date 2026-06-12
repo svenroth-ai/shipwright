@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-12T06:13:00.365682+00:00
+Generated: 2026-06-11T22:33:12.418915+00:00
 
 ## Requirements Coverage
 
@@ -168,7 +168,6 @@ Generated: 2026-06-12T06:13:00.365682+00:00
 | Tier-3 PR review via OpenRouter custom-script (B4.5 Phase 2): pr-review.yml workflow + pr_review.py reviewer + pr_reviewer prompts + 4 snapshot/unit test files | iterate | feature |  | 414/417 | — | 2026-06-11 |
 | F11 arms GitHub-native auto-merge for iterate/* PRs (gh pr merge --auto --squash --delete-branch), branch-scoped + fail-soft (B4.5 Phase 3) | iterate | change |  | 363/363 | — | 2026-06-11 |
 | triage.mark_status routes idle-main status flips to the outbox (symmetric with append_triage_item), completing campaign D1 for the status side; fixes undelivered tracked drift from WebUI/Stop-hook dismisses | iterate | change |  | 3131/3131 | — | 2026-06-11 |
-| WP5 hook project-root/worktree resolvers + project guard (F5/F6/F7/F8/F10) | iterate | bug |  | 23/23 | — | 2026-06-12 |
 
 ## Coverage Summary
 
@@ -176,7 +175,7 @@ Generated: 2026-06-12T06:13:00.365682+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 144 |
+| Iterate changes | 143 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
