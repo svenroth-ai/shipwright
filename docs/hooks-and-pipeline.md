@@ -247,6 +247,30 @@ a GitHub Action post-merge regen (host-specific); untracking the snapshots (brea
 `audit_staleness`). A later host-agnostic watcher/producer (Option B, B4.5
 `gh-pr-ci` roadmap) can automate the serial drain but does not replace it.
 
+**Curated agent-docs use `merge=union`, not regeneration
+(iterate-2026-06-12-union-curated-agent-docs).** The serial-integrate fix above
+auto-resolves the *regenerated* churn snapshots, but `.shipwright/agent_docs/architecture.md`
+and `conventions.md` are **curated prose** (deliberately NOT in `CHURN_ALLOWLIST`,
+never regenerated). Parallel iterates each **prepend** a bullet to their
+`## …Updates` / `## Learnings` sections (F2 / F3a), so the lines collide at the
+same anchor — the last piece of the cascade the resolver left unsolved (PRs
+#207/#208/#210/#211 each conflicted on exactly these two files). The fix adds them
+to the `merge=union` driver as a **second category** alongside the JSONL logs:
+`gitattributes_union.CURATED_DOC_UNION_PATHS` (the union'd fragment is
+`ALL_UNION_PATHS = UNION_PATHS + CURATED_DOC_UNION_PATHS`; `UNION_PATHS` stays the
+two JSONL logs, still drift-pinned to the churn allowlist + the managed-repo
+signal). For the dominant pattern — two bullet-prepends at the same section top —
+union keeps **both** bullets, and **GitHub honors `merge=union` server-side**, so
+even pure auto-merge resolves it (no `ensure_current` needed for these files; and
+`integrate_main` no longer BLOCKS on an architecture.md/conventions.md-only
+conflict). **Caveat:** union is line-based + silent — two iterates editing the
+*same non-append line* would merge both silently instead of conflicting; in
+practice ~all parallel edits are append-section prepends. If that ever bites,
+escalate these sections to per-run drop-files (the CHANGELOG-unreleased.d /
+decision-drops pattern). The curated docs stay **out** of `CHURN_ALLOWLIST` — they
+are union-merged, not regenerated, so the "architecture.md is deliberately NOT a
+churn artifact" rule above still holds.
+
 ### Main-tree triage drift reconcile (iterate-2026-06-07-triage-main-tree-reconcile)
 
 The churn resolver above covers **committed-vs-committed** merges. It does NOT

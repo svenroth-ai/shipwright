@@ -60,7 +60,14 @@ def test_merges_into_existing_preserving_user_entries(tmp_project: Path) -> None
 
 def test_already_present_is_noop(tmp_project: Path) -> None:
     ga = tmp_project / ".gitattributes"
-    pre = f"*.png binary\n{UNION_EVENTS}\n{UNION_TRIAGE}\n"
+    # "already present" means EVERY fragment line — the JSONL logs AND the curated
+    # agent-docs (iterate-2026-06-12-union-curated-agent-docs); a file with only
+    # the JSONL pair is now incomplete and would be merged, not a no-op.
+    pre = (
+        f"*.png binary\n{UNION_EVENTS}\n{UNION_TRIAGE}\n"
+        ".shipwright/agent_docs/architecture.md merge=union\n"
+        ".shipwright/agent_docs/conventions.md merge=union\n"
+    )
     ga.write_text(pre, encoding="utf-8")
 
     result = scaffold_gitattributes(tmp_project)

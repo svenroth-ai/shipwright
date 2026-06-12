@@ -20,7 +20,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # shared/tests (helper
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))  # shared/scripts — wins
 
 import _reconcile_helpers as h  # noqa: E402  (git() + set_identity)
-from lib import gitattributes_union as gu  # noqa: E402
+from lib import gitattributes_selfheal as gsh  # noqa: E402  (the commit-path under test)
+from lib import gitattributes_union as gu  # noqa: E402  (ALL_UNION_PATHS / missing_union_paths)
 from lib.churn_merge import EVENTS_LOG  # noqa: E402
 
 _SETUP_SCRIPT = REPO_ROOT / "shared" / "scripts" / "tools" / "setup_iterate_worktree.py"
@@ -47,10 +48,11 @@ def test_self_heal_commits_when_union_missing(git_origin_repo):
     _seed_managed_repo(work)
     before = h.head_count(work)
 
-    res = gu.self_heal_gitattributes(work, allow_ci=True)
+    res = gsh.self_heal_gitattributes(work, allow_ci=True)
 
     assert res.status == "committed", res
-    assert set(res.added) == set(gu.UNION_PATHS)
+    # self-heal backfills the FULL fragment coverage (JSONL logs + curated docs).
+    assert set(res.added) == set(gu.ALL_UNION_PATHS)
     assert h.head_count(work) == before + 1
     assert h.git(work, "log", "-1", "--format=%s").stdout.strip() == _CHORE_SUBJECT
     ga = (work / ".gitattributes").read_text(encoding="utf-8")
@@ -62,10 +64,10 @@ def test_self_heal_commits_when_union_missing(git_origin_repo):
 def test_self_heal_is_idempotent(git_origin_repo):
     work, _ = git_origin_repo
     _seed_managed_repo(work)
-    gu.self_heal_gitattributes(work, allow_ci=True)
+    gsh.self_heal_gitattributes(work, allow_ci=True)
     before = h.head_count(work)
 
-    res = gu.self_heal_gitattributes(work, allow_ci=True)
+    res = gsh.self_heal_gitattributes(work, allow_ci=True)
 
     assert res.status == "no_change", res
     assert h.head_count(work) == before
@@ -75,7 +77,7 @@ def test_self_heal_preserves_existing_user_gitattributes(git_origin_repo):
     work, _ = git_origin_repo
     _seed_managed_repo(work, gitattributes="*.png binary\n")
 
-    res = gu.self_heal_gitattributes(work, allow_ci=True)
+    res = gsh.self_heal_gitattributes(work, allow_ci=True)
 
     assert res.status == "committed", res
     ga = (work / ".gitattributes").read_text(encoding="utf-8")
@@ -91,7 +93,7 @@ def test_self_heal_preserves_existing_user_gitattributes(git_origin_repo):
 def test_skip_repo_without_tracked_append_log(git_origin_repo):
     work, _ = git_origin_repo  # tracks only README + .shipwright/.gitkeep
     h.set_identity(work)
-    res = gu.self_heal_gitattributes(work, allow_ci=True)
+    res = gsh.self_heal_gitattributes(work, allow_ci=True)
     assert (res.status, res.reason) == ("skipped", "no_tracked_append_log")
 
 
@@ -99,7 +101,7 @@ def test_skip_in_ci_without_optin(git_origin_repo, monkeypatch):
     work, _ = git_origin_repo
     _seed_managed_repo(work)
     monkeypatch.setenv("CI", "true")
-    res = gu.self_heal_gitattributes(work)  # allow_ci defaults False
+    res = gsh.self_heal_gitattributes(work)  # allow_ci defaults False
     assert (res.status, res.reason) == ("skipped", "ci_without_optin")
 
 
@@ -107,7 +109,7 @@ def test_skip_on_detached_head(git_origin_repo):
     work, _ = git_origin_repo
     _seed_managed_repo(work)
     h.git(work, "checkout", h.git(work, "rev-parse", "HEAD").stdout.strip())
-    res = gu.self_heal_gitattributes(work, allow_ci=True)
+    res = gsh.self_heal_gitattributes(work, allow_ci=True)
     assert (res.status, res.reason) == ("skipped", "detached_head")
 
 
@@ -116,7 +118,7 @@ def test_skip_on_staged_changes(git_origin_repo):
     _seed_managed_repo(work)
     (work / "README.md").write_text("changed\n", encoding="utf-8")
     h.git(work, "add", "README.md")  # unrelated staged WIP
-    res = gu.self_heal_gitattributes(work, allow_ci=True)
+    res = gsh.self_heal_gitattributes(work, allow_ci=True)
     assert (res.status, res.reason) == ("skipped", "staged_changes")
 
 
@@ -125,12 +127,12 @@ def test_skip_on_merge_in_progress(git_origin_repo):
     _seed_managed_repo(work)
     head = h.git(work, "rev-parse", "HEAD").stdout.strip()
     (work / ".git" / "MERGE_HEAD").write_text(head + "\n", encoding="utf-8")  # merge underway
-    res = gu.self_heal_gitattributes(work, allow_ci=True)
+    res = gsh.self_heal_gitattributes(work, allow_ci=True)
     assert (res.status, res.reason) == ("skipped", "op_in_progress")
 
 
 def test_skip_when_not_a_git_repo(tmp_path):
-    res = gu.self_heal_gitattributes(tmp_path, allow_ci=True)
+    res = gsh.self_heal_gitattributes(tmp_path, allow_ci=True)
     assert (res.status, res.reason) == ("skipped", "not_a_git_repo")
 
 
@@ -142,7 +144,7 @@ def test_non_utf8_gitattributes_does_not_raise(git_origin_repo):
     (work / ".gitattributes").write_bytes(b"*.png binary\n\xff\xfe bad\n")
     _seed_managed_repo(work)  # commits the .gitattributes + the managed marker
 
-    res = gu.self_heal_gitattributes(work, allow_ci=True)  # must not raise
+    res = gsh.self_heal_gitattributes(work, allow_ci=True)  # must not raise
 
     assert res.status == "committed", res
     assert gu.missing_union_paths(
@@ -166,7 +168,7 @@ def test_rolls_back_on_commit_rejection(git_origin_repo, tmp_path):
     os.chmod(hook, 0o755)
     h.git(work, "config", "core.hooksPath", str(hookdir))
 
-    res = gu.self_heal_gitattributes(work, allow_ci=True)
+    res = gsh.self_heal_gitattributes(work, allow_ci=True)
 
     assert res.status == "error" and res.reason.startswith("commit_failed"), res
     assert not (work / ".gitattributes").exists()  # rolled back (didn't exist before)

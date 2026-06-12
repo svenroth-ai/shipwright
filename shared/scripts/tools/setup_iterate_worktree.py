@@ -45,7 +45,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-from lib.gitattributes_union import self_heal_gitattributes  # noqa: E402
+from lib.gitattributes_selfheal import self_heal_gitattributes  # noqa: E402
 from lib.gitignore_selfheal import self_heal_gitignore  # noqa: E402
 from lib.sweep_outbox import sweep_outbox_to_branch  # noqa: E402
 from lib.worktree_isolation import (  # noqa: E402

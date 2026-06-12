@@ -1,17 +1,17 @@
 # Commit Change Log
 
-Generated: 2026-06-12T12:06:22.426150+00:00
-Total commits: 967
+Generated: 2026-06-12T13:48:53.414596+00:00
+Total commits: 970
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 274
+    "fix" : 276
     "feat" : 267
     "chore" : 214
     "docs" : 123
-    "refactor" : 51
+    "refactor" : 52
     "test" : 23
     "ci" : 7
     "other" : 7
@@ -20,12 +20,14 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 274 commits
+### Fixes (fix) — 276 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-12 | triage | union-residence GC recompute + source-derived drift meta-test (a1-6/F19 follow-up) (#208) | 6a3b4b0ea343 |
+| 2026-06-12 | compliance | scope arch-drift checkers to event-owned drops (#207) | 2d983794d565 |
+| 2026-06-12 | config | BOM-tolerant read_config + integrate_main commit-failure tests (#210) | 1cbc1ff0163e |
 | 2026-06-12 | iterate | serial integrate_main merge for campaign/parallel iterates (auto-merge churn fix, Option A) (#212) | 49cef1b1bd4f |
-| 2026-06-12 | config | BOM-tolerant read_config + integrate_main commit-failure tests | dbaaa30fbf29 |
 | 2026-06-12 | utf8 | pin UTF-8 on git-reading subprocess decodes (deep-audit WP7) (#202) | 9e39bfb2b89d |
 | 2026-06-12 | hooks | canonical project-root/worktree resolvers + drift project guard (deep-audit WP5) (#200) | 99fd75ef3bc8 |
 | 2026-06-12 | iterate | UTF-8 config readers + errors=replace on F0.5 runner decode (deep-audit WP8) (#203) | d74530ffa79e |
@@ -918,10 +920,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 51 commits
+### Refactoring (refactor) — 52 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-12 | agent-docs | compact backlog to one-line pointers + retire convention-routing fallback (#211) | 16138390ad5f |
 | 2026-06-12 | hooks | consolidate project detection onto one canonical predicate (#209) | 62eb99264b7f |
 | 2026-05-26 | run | split orchestrator.py (983 LOC) into orchestrator_pkg/ (Campaign B5) (#102) | 46031f3a9ab9 |
 | 2026-05-26 | shared | split dev_server.py (997 LOC) into 10-file package (Campaign B B4) (#101) | fd6c5585e97c |
@@ -1036,7 +1039,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 967 |
+| Total commits | 970 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 967 |
+| Human-authored commits | 970 |
 
