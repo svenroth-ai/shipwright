@@ -1,1 +1,0 @@
-`/shipwright-iterate` campaign tooling: `campaign_init --expands-triage <trg-id>` stamps a triage-item anchor into both the campaign `status.json` and the `campaign.md` frontmatter so the Command Center surfaces a "Start Campaign" CTA on that triage card; `--from-triage <id>` promotes an item (seeds the intent + sets the anchor) in one call.

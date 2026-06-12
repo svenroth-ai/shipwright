@@ -1,1 +1,0 @@
-triage_cli.py list --json emits open triage items (the tracked + outbox union) as a JSON array with a pendingDelivery flag for outbox-only items — a machine-readable contract for the Command Center WebUI live-view.

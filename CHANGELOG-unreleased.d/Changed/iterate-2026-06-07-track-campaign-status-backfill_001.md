@@ -1,1 +1,0 @@
-Completed-campaign `status.json` snapshots are now git-tracked so the Command Center board shows correct per-sub status on a fresh clone / deployed instance (backfill for the detective-realign and track-triage-jsonl campaigns).

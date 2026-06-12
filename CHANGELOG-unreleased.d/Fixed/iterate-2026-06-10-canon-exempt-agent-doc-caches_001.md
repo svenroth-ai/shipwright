@@ -1,1 +1,0 @@
-The full generated agent-doc cache trio (triage_inbox.md, session_handoff.md, build_dashboard.md) is now exempt from the artifact-path-canon lint in every migration, so a finding or handoff that quotes a bare legacy path can no longer false-fail CI; drift-locked by a test. Finalizes trg-6ed063ae.

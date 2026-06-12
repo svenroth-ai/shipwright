@@ -1,1 +1,0 @@
-Hardened the adopt-scaffolded `security.yml.template` to match the monorepo's own workflow: gitleaks is now installed with a SHA256-verified download (`sha256sum -c` before extract) and `peter-evans/create-or-update-comment` is pinned to a full commit SHA instead of the mutable `@v4` tag.

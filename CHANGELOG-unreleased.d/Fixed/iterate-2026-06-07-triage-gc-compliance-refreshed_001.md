@@ -1,1 +1,0 @@
-triage_gc now garbage-collects machine-churn compliance-backlog refresh dismissals (by=complianceBacklog, reason=complianceRefreshed); the token was missing from MACHINE_REASONS so these regenerated-every-run rollups accumulated as kept noise instead of being compacted.

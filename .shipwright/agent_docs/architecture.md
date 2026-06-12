@@ -146,3 +146,25 @@ _Existing user-facing documentation discovered by /shipwright-adopt._
 - **iterate-2026-06-10-triage-dedup-keep-last-append** (2026-06-10): Data-flow — `churn_merge.dedup_triage_lines` collapses same-id `append` events keeping the LAST (mirrors the append-log reader reduction), so a re-appended updated finding no longer wedges the outbox sweep as a `duplicate append`. Campaign `2026-06-08-triage-outbox-delivery` follow-up. → archive
 - **iterate-2026-06-12-triage-status-idle-main-outbox** (2026-06-12): Data-flow — `triage.mark_status` routes an idle-main status flip (dismiss/snooze/promote) to the outbox (`should_route_to_outbox`), symmetric with `append_triage_item`; elsewhere residence-derived (TRACKED-PREFERRED). Completes campaign `2026-06-08-triage-outbox-delivery` D1. ADR-100 file. → archive
 - **iterate-2026-06-12-automerge-serial-integrate** (2026-06-12): Component — new `shared/scripts/tools/ensure_current.py` (thin wrapper over `integrate_main`) is the F11 / campaign "refresh-if-behind" guard fixing the auto-merge churn cascade (Option A): GitHub's server-side 3-way merge can't run the regenerate-at-merge resolver, so a behind branch merges stale or stalls DIRTY on regenerated snapshots. F11 brings the branch current THROUGH `integrate_main` before arming `gh pr merge --auto`; campaigns set `SHIPWRIGHT_ITERATE_AUTOMERGE=0` to drain PRs serially. → decision_log (Run-ID).
+
+- **ADR-151** (2026-06-07): Reconcile-and-commit main-tree triage.jsonl drift in tooling
+
+- **ADR-160** (2026-06-10): Per-tree campaign status.json: finalize wiring + scoped churn resolver
+
+- **ADR-161** (2026-06-10): Project campaign status from the event log (never-downgrade)
+
+- **ADR-163** (2026-06-10): Triage dedup collapses same-id appends keep-last (reader parity)
+
+- **ADR-166** (2026-06-11): gh-pr-ci producer: failed hard-gates on open PRs -> triage
+
+- **ADR-173** (2026-06-12): Event-ownership scoping for whole-set arch-drift checkers
+
+- **ADR-174** (2026-06-12): Serial integrate_main merge for campaign/parallel iterates (auto-merge churn fix, Option A)
+
+- **ADR-181** (2026-06-12): cross_component risk flag forces integration coverage (non-dodgeable)
+
+- **ADR-182** (2026-06-12): Delivery-Watch: delivered = merged + green (no shoot-and-forget)
+
+- **ADR-189** (2026-06-12): mark_status routes idle-main status flips to the outbox (completes D1)
+
+- **ADR-191** (2026-06-12): merge=union for curated agent-docs (close the structural gap)

@@ -24,4 +24,7 @@ regeneration overwrites this file on every release pass._
 - [ADR-097 — bloat exception oss backend gitleaks report path](097-bloat-exception-oss-backend-gitleaks-report-path.md)
 - [ADR-098 — bloat exception sbom cluster identity tests](098-bloat-exception-sbom-cluster-identity-tests.md)
 - [ADR-099 — bloat exception churn resolver triage union](099-bloat-exception-churn-resolver-triage-union.md)
+- [ADR-100 — triage outbox bloat exception](100-triage-outbox-bloat-exception.md)
+- [ADR-101 — bloat github triage pr ci producer tests](101-bloat-github-triage-pr-ci-producer-tests.md)
+- [_archive agent doc updates](_archive-agent-doc-updates.md)
 - [_template bloat exception](_template-bloat-exception.md)

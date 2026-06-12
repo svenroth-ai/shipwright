@@ -1,1 +1,0 @@
-Gitignore canon now re-excludes transient external-review gate markers (external_review_state.json / external_code_review_state.json) under .shipwright/planning/iterate/, and the 6 accidentally-tracked copies were untracked; durable plan-split RTM evidence under .shipwright/planning/<split>/ stays tracked. Propagates to adopted repos via the canon template.

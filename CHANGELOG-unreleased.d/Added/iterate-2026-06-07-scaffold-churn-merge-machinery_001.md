@@ -1,1 +1,0 @@
-Scaffold the append-log `merge=union` `.gitattributes` driver (for shipwright_events.jsonl + .shipwright/triage.jsonl) into every Shipwright-managed repo — via /shipwright-adopt (Step E.13c, idempotent never-clobber merge) and an iterate self-heal that backfills already-adopted repos — so concurrent iterate appends auto-line-union instead of producing git conflict markers

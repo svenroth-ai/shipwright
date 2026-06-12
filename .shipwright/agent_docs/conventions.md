@@ -302,3 +302,47 @@ Contribution rules, dev setup, the graduated trust model, and high-sensitivity a
 - **iterate-2026-06-12-canonical-project-predicate** (2026-06-12): Convention — the greenfield/foreign boundary is now a single canonical predicate `lib.project_root.is_shipwright_project` (any config marker OR `.shipwright/agent_docs/`; fail-closed) that every hook delegates to, collapsing 4 divergent marker sets so a tree is classified identically everywhere; `resolve_project_root` gains a config-subdir tie-break. Drift-guard `test_canonical_project_predicate.py`. PR #209. → decision_log (Run-ID).
 
 - **iterate-2026-06-12-w2-unresolvable-runid-skip** (2026-06-12): Convention — every run_id-keyed phase-quality verifier must share the `unresolvable_run_id_skip` guard (`tools/verifiers/_iterate_run_id.py`): a sentinel run_id (`unknown`/empty) with no run-specific marker SKIPs as not-applicable, never FAIL/PASS on the run-agnostic state file. W2 was the asymmetric outlier vs S2/S3 → recurring audit-context Tier-1 false-positive. Drift-guard `test_workflow_w2_run_id_guard.py`. → decision_log (Run-ID).
+
+- **ADR-143** (2026-06-07): Adopt scaffolds .gitleaks.toml + hardens security.yml.template
+
+- **ADR-147** (2026-06-07): SBOM splits 'not installed' from 'no declared license'
+
+- **ADR-148** (2026-06-08): Scaffold append-log union merge driver into managed repos
+
+- **ADR-152** (2026-06-08): Explicit outbox gitignore propagation + iterate self-heal
+
+- **ADR-153** (2026-06-09): Relocate detective-audit JSON under .shipwright/compliance/ so the gitignore canon covers it
+
+- **ADR-154** (2026-06-09): Iterate-scoped external-review markers are gitignored (not blanket)
+
+- **ADR-155** (2026-06-09): Idle-main producers resolve main_repo_root + write transient state only to gitignored paths
+
+- **ADR-156** (2026-06-10): Generated agent-doc cache trio fully exempt from artifact-path-canon (finalize trg-6ed063ae)
+
+- **ADR-157** (2026-06-10): History-calibrated complexity prior + cross-domain scope vocabulary
+
+- **ADR-158** (2026-06-10): D2V evidence artifact write is opt-in (SHIPWRIGHT_D2V_WRITE_EVIDENCE)
+
+- **ADR-159** (2026-06-10): Campaign sub-iterates self-identify via event extras stamp
+
+- **ADR-164** (2026-06-10): triage_cli.py list --json: machine-readable contract for the WebUI live-view
+
+- **ADR-165** (2026-06-11): F11 arms GitHub-native auto-merge for iterate/* PRs
+
+- **ADR-167** (2026-06-11): Tier-3 PR review via OpenRouter custom-script
+
+- **ADR-168** (2026-06-11): Campaign skeleton tolerates markdown emphasis; backfill drift-guard
+
+- **ADR-171** (2026-06-11): Campaign sub-iterate spec_path is repo-relative POSIX
+
+- **ADR-172** (2026-06-12): Compact agent-doc entries + impact-aware routing SSoT
+
+- **ADR-176** (2026-06-12): Single canonical Shipwright-project predicate
+
+- **ADR-179** (2026-06-12): Compact agent-doc backlog + retire convention-routing fallback
+
+- **ADR-188** (2026-06-12): triage_gc under-lock recompute is union-residence aware
+
+- **ADR-190** (2026-06-12): Triage tooling hardening: GC token SSoT, GC TOCTOU, control-char sanitizer, outbox CLI
+
+- **ADR-192** (2026-06-12): UTF-8-strict churn _git + structured commit-failure handling

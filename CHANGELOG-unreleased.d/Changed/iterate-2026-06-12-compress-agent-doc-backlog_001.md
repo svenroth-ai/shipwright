@@ -1,1 +1,0 @@
-Compacted the always-loaded agent docs (architecture.md Architecture Updates + conventions.md Convention Updates/Learnings) to one-line pointers, archiving verbatim detail under .shipwright/planning/adr/; retired the transitional convention->architecture.md routing fallback and lowered the entry-budget gate cutoff to enforce the whole compacted corpus.
