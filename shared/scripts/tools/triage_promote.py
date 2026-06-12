@@ -29,7 +29,8 @@ if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from triage import (  # noqa: E402
-    TRIAGE_FILE,
+    _outbox_path,
+    _triage_path,
     mark_status,
     read_all_items,
 )
@@ -115,11 +116,17 @@ def promote(
         reason_clean = "manualPromote"
 
     # Distinguish "store missing" from "id missing" — different exit codes
-    # at the CLI layer.
-    triage_path = Path(project_root) / ".shipwright" / TRIAGE_FILE
-    if not triage_path.exists():
+    # at the CLI layer. F29: accept the TRACKED store OR the gitignored outbox
+    # (D1 union model — mirrors triage.mark_status). An idle-main background
+    # producer can append an item to the outbox only (tracked store not yet
+    # created); read_all_items unions both, so such an item is listable and must
+    # be promotable/dismissable too.
+    tracked_path = _triage_path(project_root)
+    outbox_path = _outbox_path(project_root)
+    if not tracked_path.exists() and not outbox_path.exists():
         raise FileNotFoundError(
-            f"triage store not initialised at {triage_path}"
+            f"triage store not initialised at {tracked_path} "
+            f"(nor outbox at {outbox_path})"
         )
 
     item = _find_item(project_root, item_id)
@@ -174,10 +181,14 @@ def dismiss(
     """
     reason_clean = sanitize_reason(reason)
 
-    triage_path = Path(project_root) / ".shipwright" / TRIAGE_FILE
-    if not triage_path.exists():
+    # F29: accept the TRACKED store OR the gitignored outbox (D1 union model —
+    # mirrors triage.mark_status). See promote() for the rationale.
+    tracked_path = _triage_path(project_root)
+    outbox_path = _outbox_path(project_root)
+    if not tracked_path.exists() and not outbox_path.exists():
         raise FileNotFoundError(
-            f"triage store not initialised at {triage_path}"
+            f"triage store not initialised at {tracked_path} "
+            f"(nor outbox at {outbox_path})"
         )
 
     item = _find_item(project_root, item_id)

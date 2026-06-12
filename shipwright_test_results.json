@@ -1,37 +1,60 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-12-triage-status-idle-main-outbox",
+    "run_id": "iterate-2026-06-12-triage-tooling-hardening",
     "date": "2026-06-12",
-    "unit": { "status": "passed", "passed": 3131, "total": 3131 },
+    "campaign": "2026-06-10-audit-1-auto",
+    "sub_iterate_id": "a1-6",
+    "unit": { "status": "passed", "passed": 3163, "total": 3164 },
     "integration": { "status": "not_run", "passed": 0, "total": 0 },
     "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
     "e2e": { "status": "skipped", "passed": 0, "total": 0 },
     "design_fidelity": { "status": "skipped", "passed": 0, "total": 0 },
     "smoke": { "status": "not_run" },
     "degraded": [],
+    "environmental_failures": [
+      {
+        "test": "shared/tests/test_architecture_md_reflects_arch_impact.py::test_every_arch_impact_drop_has_architecture_md_entry",
+        "names_run_id": "iterate-2026-06-12-utf8-churn-merge",
+        "reason": "Sibling sub-iterate's gitignored decision-drop bled into the shared working tree (concurrent campaign sub-iterates share one main checkout). The failure names a run_id OTHER than this iterate's (iterate-2026-06-12-triage-tooling-hardening) and touches none of this iterate's files. This iterate's own arch-impact drop IS documented in architecture.md and the same test passes for this run_id. Treated as environmental drift per the campaign brief; not a real failure."
+      }
+    ],
     "surface_verification": {
       "surface": "none",
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-12-triage-status-idle-main-outbox/surface_verification.json",
+      "evidence_path": "",
       "timestamp": "2026-06-12T00:00:00.000Z",
-      "justification": "Shared-infra logic change (triage.mark_status idle-main routing) — no startable app surface. The touches_io_boundary write-routing is empirically pinned by shared/tests/test_triage_outbox.py with a real git-repo+origin fixture; full triage+sweep suite + CI=true rerun green."
+      "justification": "Shared-infra logic change (triage GC/sanitizer/promote tooling) — no startable app surface. No frontend changes (detect_frontend_changes: has_frontend_changes=false), so F2 Browser Verify skipped. The touches_io_boundary writes (triage.jsonl + gitignored outbox) are empirically pinned by tmp_path fixtures in test_triage_wp9_gc.py + test_triage_wp9_sanitize_outbox.py (control-char round-trip, TOCTOU re-open, outbox-only promote/dismiss) plus the full triage suite green."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "AC1 idle main (origin + default branch): a status flip on a TRACKED-resident item routes to the OUTBOX, tracked log byte-unchanged, union resolves dismissed", "disposition": "tested",
-          "evidence": "test_triage_outbox.py::test_mark_status_idle_main_tracked_item_routes_to_outbox PASSED (git_repo+origin fixture; asserts should_route_to_outbox True precondition)" },
-        { "behavior": "AC2 iterate/* branch (worktree, not idle main): a tracked-item status flip stays in TRACKED (ships in PR) — idle-main routing does not leak into the worktree path", "disposition": "tested",
-          "evidence": "test_triage_outbox.py::test_mark_status_iterate_branch_tracked_item_stays_tracked PASSED (asserts should_route_to_outbox False on iterate/* branch)" },
-        { "behavior": "AC3 residence preserved off the idle-main path: outbox-only id -> outbox (no orphan/resurrect); tracked+outbox overlap -> tracked; no-origin/non-git -> tracked; mark_status takes no to_outbox param", "disposition": "tested",
-          "evidence": "test_triage_outbox.py residence suite green: test_mark_status_residence_outbox_no_tracked_orphan, _residence_tracked_preferred_on_overlap, _has_no_to_outbox_param, test_should_route_* (no-origin/iterate/non-git False) — all PASSED, unchanged by the fix" },
-        { "behavior": "AC4 no regression across every mark_status consumer (producers compliance/drift/phase-quality/f0.5, sweep, gc, cli, storage, schema, promote)", "disposition": "tested",
-          "evidence": "full shared/tests suite 3131 passed (not slow/cross_plugin) + CI=true rerun of triage/sweep/producer subset 126 passed + targeted mark_status-consumer set 251 passed" }
+        { "behavior": "F30: phaseQualityRefreshed dismissals (by=phaseQualityBacklog) are machine-churn and GC-able; human reuse of the token is kept", "disposition": "tested",
+          "evidence": "test_triage_wp9_gc.py::test_phasequality_refreshed_machine_churn_dropped PASSED" },
+        { "behavior": "F30: MACHINE_REASONS == the canonical producer recurring-token set (forward AND reverse drift guarded); phaseQualityRefreshed pinned present", "disposition": "tested",
+          "evidence": "test_triage_wp9_gc.py::test_machine_reasons_covers_every_producer_recurring_token, test_machine_reasons_has_no_unknown_tokens, test_machine_reasons_phasequality_refreshed_present PASSED" },
+        { "behavior": "F19: a status flip (re-open) appended between plan_gc and apply_gc survives the rewrite (apply recomputes under the lock + intersects with the consented plan)", "disposition": "tested",
+          "evidence": "test_triage_wp9_gc.py::test_apply_recomputes_plan_under_lock_preserving_concurrent_reopen PASSED" },
+        { "behavior": "F19 consent-surface: an item that becomes churn AFTER the consented plan is NOT silently dropped (apply never drops more than the dry-run report announced)", "disposition": "tested",
+          "evidence": "test_triage_wp9_gc.py::test_apply_does_not_drop_item_churned_after_the_consented_plan PASSED" },
+        { "behavior": "F31 (security): C0/DEL + OSC/ANSI escapes in title/detail are stripped from triage_inbox.md; visible text preserved", "disposition": "tested",
+          "evidence": "test_triage_wp9_sanitize_outbox.py::test_aggregator_strips_control_chars_from_title_and_detail PASSED" },
+        { "behavior": "F31 (security): C1 controls (0x80-0x9F, incl. 0x9B CSI) are stripped from title/detail in triage_inbox.md and triage_cli list (Gemini-HIGH plan-review finding)", "disposition": "tested",
+          "evidence": "test_triage_wp9_sanitize_outbox.py::test_aggregator_strips_c1_control_chars, test_cli_list_strips_c1_control_chars_from_title PASSED" },
+        { "behavior": "F31: non-control Unicode (umlaut/CJK/em-dash, >= 0xA0) is preserved (no over-stripping)", "disposition": "tested",
+          "evidence": "test_triage_wp9_sanitize_outbox.py::test_aggregator_title_detail_preserve_non_ascii PASSED" },
+        { "behavior": "F31 (security): control chars in title are stripped from `triage_cli list` stdout", "disposition": "tested",
+          "evidence": "test_triage_wp9_sanitize_outbox.py::test_cli_list_strips_control_chars_from_title PASSED" },
+        { "behavior": "F29: an outbox-only item (no tracked store) can be promoted AND dismissed via the library and via the CLI", "disposition": "tested",
+          "evidence": "test_triage_wp9_sanitize_outbox.py::test_promote_outbox_only_item, test_dismiss_outbox_only_item, test_cli_promote_outbox_only_item, test_cli_dismiss_outbox_only_item PASSED" },
+        { "behavior": "F29 lookup matrix: tracked-only-with-outbox-present resolves; dual-presence resolves via mark_status precedence; unknown id with outbox -> KeyError; neither store -> FileNotFoundError (pre-check not over-widened)", "disposition": "tested",
+          "evidence": "test_triage_wp9_sanitize_outbox.py::test_promote_id_present_only_in_tracked_with_outbox_present, test_promote_dual_presence_resolves_via_mark_status, test_promote_outbox_only_unknown_id_raises_keyerror, test_promote_still_raises_filenotfound_when_neither_store_exists, test_dismiss_still_raises_filenotfound_when_neither_store_exists PASSED" },
+        { "behavior": "No regression across the existing triage suites (gc, aggregator, cli, cli_json, promote, outbox, launch_payload, storage) + producer emitters (compliance/phase-quality/security/drift/github/reconcile/add-cli)", "disposition": "tested",
+          "evidence": "full shared/tests suite: 3163 passed (only the sibling-run_id environmental failure above); targeted triage subset 171 passed; producer subset 96 passed" }
       ],
-      "counts": { "testable": 4, "tested": 4, "untestable": 0, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 4, "covered_acs": 4 }
+      "counts": { "testable": 11, "tested": 11, "untestable": 0, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 5, "covered_acs": 5, "findings": 4 }
     }
   }
 }
