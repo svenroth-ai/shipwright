@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-12 21:06 UTC | Session: e1fc62f9-1857-4893-ab3d-eda5f6ffcb8f | Run: iterate-2026-06-12-reducibility-gate
+> Updated: 2026-06-12 22:41 UTC | Session: 30d44a6a-9835-4347-a9f2-b6b6a8b528f5 | Run: iterate-2026-06-10-phase-hook-lifecycle
 
-## Recent Changes (167 iterations)
+## Recent Changes (168 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | WP1: phase-session hooks resolve identity from the stdin payload (F1); atomic event-log dedup (F14); phase_failed/stale_stop_rejected event types (F15) | 3348/3362 |  | tooling | 2026-06-12 |
 | bug | Coerce explicit-null affected_frs/new_frs (and tests/review) in WorkEvent.from_dict | 697/697 |  | compliance | 2026-06-12 |
 | change | Relocate resolve_main_repo_root from lib/events_log.py to lib/repo_root.py with a lazy back-compat re-export; migrate net-zero consumers; keep the two grandfathered consumers (iterate_checks, group_f) on the re-export to avoid ratcheting bloat. | 0/0 |  | tooling | 2026-06-12 |
 | change | Intelligent bloat gate: LOC-as-router -> falsifiable reducibility reviewer (closed catalog D/A/X/C/S/M/P/T + guardrails G1-G6); shared SSoT catalog + per-language idiom-map + reviewer dimensions across 3 surfaces + drift-protection test. | 0/0 |  | tooling | 2026-06-12 |
@@ -174,7 +175,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-12 | Unit: 3319/3319 | Integration: 84/84 | Smoke: not_run | (iterate)
+Last run: 2026-06-13 | Unit: 3348/3362 | Integration: 147/147 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

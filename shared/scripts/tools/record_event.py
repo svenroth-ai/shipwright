@@ -290,7 +290,11 @@ def build_event(args: argparse.Namespace) -> dict:
         if args.changed_files:
             event["changed_files"] = _parse_changed_files(args.changed_files)
 
-    elif args.type in ("phase_started", "phase_completed"):
+    elif args.type in ("phase_started", "phase_completed",
+                       "phase_failed", "stale_stop_rejected"):
+        # phase_failed + stale_stop_rejected (deep-audit F15): the phase Stop hook
+        # emits these for a failed phase / an owner-CAS-rejected stale stop. They
+        # carry phase + (JSON) detail like phase_completed but are NOT phase-deduped.
         event["phase"] = args.phase
         if args.detail:
             event["detail"] = args.detail
@@ -371,6 +375,11 @@ def build_event(args: argparse.Namespace) -> dict:
 def append_event(project_root: Path, event: dict) -> str:
     """Atomically append an event to the JSONL log. Returns the event ID.
 
+    Unconditional append — no dedup. Direct callers are single-writer
+    (e.g. ``finalize_iterate`` emits a run-id-idempotent ``work_completed``).
+    Concurrent dedup (``phase_completed`` / by-commit) lives in
+    ``append_event_idempotent`` (deep-audit F14); the CLI routes through it.
+
     Resolves the per-tree event log via ``resolve_events_path``. Under a
     ``/shipwright-iterate`` run this is the worktree-local copy: the append
     lands there and F6 commits it, so the event ships through the iterate PR
@@ -388,6 +397,47 @@ def append_event(project_root: Path, event: dict) -> str:
             os.fsync(fp.fileno())
 
     return event["id"]
+
+
+def append_event_idempotent(
+    project_root: Path,
+    event: dict,
+    *,
+    deduplicate_by_commit: bool = False,
+) -> tuple[str | None, dict | None]:
+    """Scan-for-duplicate then append **inside one ``_FileLock``** (deep-audit F14).
+
+    The CLI used to run the ``phase_completed`` / ``--deduplicate-by-commit`` scan
+    BEFORE ``append_event`` took the lock, so two concurrent phase-Stop firings
+    could both pass the scan before either append landed → permanent duplicate
+    events. This mirrors ``triage.append_triage_item_idempotent``: the dedup
+    decision and the write share a single critical section, so a second writer
+    that wins the lock sees the first's append and skips.
+
+    Returns ``(event_id, None)`` on append, or ``(None, skip)`` where ``skip`` is
+    a JSON-serialisable dict describing the duplicate (``reason`` + keys) so the
+    caller can render the existing ``skipped`` CLI output verbatim.
+    """
+    path = resolve_events_path(project_root)
+    lock_path = path.with_name(path.name + ".lock")
+    line = json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n"
+
+    with _FileLock(lock_path):
+        # Dedup scan UNDER the lock — readers see every prior append.
+        if deduplicate_by_commit and event.get("commit"):
+            section = event.get("section")
+            if has_commit(project_root, event["commit"], section=section):
+                return None, {"reason": "duplicate_commit",
+                              "commit": event["commit"], "section": section}
+        if event.get("type") == "phase_completed" and event.get("phase"):
+            if has_phase_event(project_root, event["phase"]):
+                return None, {"reason": "duplicate_phase", "phase": event["phase"]}
+        with open(path, "a", encoding="utf-8") as fp:
+            fp.write(line)
+            fp.flush()
+            os.fsync(fp.fileno())
+
+    return event["id"], None
 
 
 def attach_commit_to_event(
@@ -481,7 +531,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--project-root", required=True, help="Project root directory")
     p.add_argument("--type", required=True,
                    choices=["task_created", "work_completed", "phase_started",
-                            "phase_completed", "split_completed", "test_run",
+                            "phase_completed", "phase_failed", "stale_stop_rejected",
+                            "split_completed", "test_run",
                             "event_amended",
                             "compliance_update_failed", "pipeline_migration",
                             "adopted"],
@@ -749,22 +800,6 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     project_root = Path(args.project_root).resolve()
 
-    # Deduplication checks
-    if args.deduplicate_by_commit and args.commit:
-        section = getattr(args, "section", None)
-        if has_commit(project_root, args.commit, section=section):
-            result = {"success": True, "skipped": True, "reason": "duplicate_commit",
-                      "commit": args.commit, "section": section}
-            print(json.dumps(result, indent=2))
-            return 0
-
-    if args.type == "phase_completed" and args.phase:
-        if has_phase_event(project_root, args.phase):
-            result = {"success": True, "skipped": True, "reason": "duplicate_phase",
-                      "phase": args.phase}
-            print(json.dumps(result, indent=2))
-            return 0
-
     event = build_event(args)
 
     # Iterate C.1 FR-gate (ADR-059): every iterate work_completed event
@@ -786,7 +821,15 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"success": False, **gate_error}, indent=2))
         return 1
 
-    event_id = append_event(project_root, event)
+    # F14: the dedup scan (phase_completed / --deduplicate-by-commit) and the
+    # append share ONE lock so concurrent phase-Stop firings can't both append.
+    event_id, skipped = append_event_idempotent(
+        project_root, event,
+        deduplicate_by_commit=bool(args.deduplicate_by_commit and args.commit),
+    )
+    if skipped is not None:
+        print(json.dumps({"success": True, "skipped": True, **skipped}, indent=2))
+        return 0
 
     result = {"success": True, "id": event_id, "type": args.type}
     print(json.dumps(result, indent=2))

@@ -1,105 +1,64 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-12-reducibility-gate",
-    "date": "2026-06-12",
-    "unit": {
-      "status": "passed",
-      "passed": 3319,
-      "total": 3319
-    },
-    "integration": {
-      "status": "passed",
-      "passed": 84,
-      "total": 84
-    },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "smoke": {
-      "status": "not_run"
-    },
-    "degraded": [
-      "F0.5 surface=none (justified): deliverables are reviewer-prompt + reference/idiom-map content with no runnable UI/server/CLI surface; the idiom-map JSON is reviewer context validated by the drift test, not runtime-parsed by product code.",
-      "Pre-existing background noise unrelated to this iterate: sweep-outbox warning (trg-671bb0a2 status has no append) at worktree setup, and a corrupt triage.jsonl line warning in the shared suite (test_triage_storage) \u2014 both fail-soft, not introduced here."
-    ],
+    "run_id": "iterate-2026-06-10-phase-hook-lifecycle",
+    "date": "2026-06-13",
+    "unit": { "status": "passed", "passed": 3348, "total": 3362 },
+    "integration": { "status": "passed", "passed": 147, "total": 147 },
+    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
+    "e2e": { "status": "not_run", "passed": 0, "total": 0 },
+    "design_fidelity": { "status": "not_run", "passed": 0, "total": 0 },
+    "smoke": { "status": "not_run" },
+    "degraded": [],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        {
-          "behavior": "AC1 SSoT catalog defines router/8-codes/contract/G1-G6/two-goals",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_reducibility_gate.py::test_catalog_* (incl. test_catalog_encodes_behavioral_rules) PASSED"
-        },
-        {
-          "behavior": "AC2 idiom-map valid, 3 langs x 8 codes, idioms+exemption per cell",
-          "disposition": "tested",
-          "evidence": "test_idiom_map_is_valid_json + _has_all_languages + _covers_all_codes_per_language PASSED"
-        },
-        {
-          "behavior": "AC3 code-reviewer reducibility section is separate from the parity-locked Bloat Checklist (no ratchet)",
-          "disposition": "tested",
-          "evidence": "test_code_reviewer_has_reducibility_section + _is_separate_from_bloat_checklist PASSED; anti_ratchet_check exit 0"
-        },
-        {
-          "behavior": "AC4 pr_reviewer (B4.5 CI) self-contained rule: 8 codes inlined by keyword, G1, est-LOC contract, numeric block threshold",
-          "disposition": "tested",
-          "evidence": "test_pr_reviewer_has_self_contained_reducibility_rule PASSED (code+keyword adjacency + numeric threshold)"
-        },
-        {
-          "behavior": "AC5 iterate_reviewer advisory reducibility/over-production focus",
-          "disposition": "tested",
-          "evidence": "test_iterate_reviewer_has_reducibility_focus PASSED"
-        },
-        {
-          "behavior": "AC6 glossary defines Reducibility-Catalog + LOC-as-Router, stays <=300 LOC",
-          "disposition": "tested",
-          "evidence": "test_glossary_defines_reducibility_terms + test_glossary_under_loc_limit PASSED"
-        },
-        {
-          "behavior": "AC6 guide narrative note (reducibility = qualitative complement)",
-          "disposition": "untestable",
+        { "behavior": "F1: phase_session_start.main() engages the claim lifecycle from the stdin payload with NO env vars set", "disposition": "tested",
+          "evidence": "integration-tests/test_phase_hook_main_lifecycle.py::test_start_main_claims_from_payload_without_env PASSED" },
+        { "behavior": "F1: phase_user_prompt_validate.main() consumes the block sentinel + blocks from the payload alone", "disposition": "tested",
+          "evidence": "integration-tests/test_phase_hook_main_lifecycle.py::test_validate_main_blocks_wrong_skill_from_payload PASSED" },
+        { "behavior": "F1: main() degrades to standalone (exit 0, no crash) when the payload cwd is not a Shipwright project", "disposition": "tested",
+          "evidence": "integration-tests/test_phase_hook_main_lifecycle.py::test_standalone_when_payload_cwd_not_a_project PASSED" },
+        { "behavior": "F1: read_hook_payload tolerant parse (valid / empty / whitespace / malformed / non-object / read-error)", "disposition": "tested",
+          "evidence": "shared/tests/test_hook_session.py::TestReadHookPayload (6) PASSED" },
+        { "behavior": "F1: resolve_session_id (payload wins, env fallback, None, blank, non-string)", "disposition": "tested",
+          "evidence": "shared/tests/test_hook_session.py::TestResolveSessionId (6) PASSED" },
+        { "behavior": "F1: resolve_project_root_from_payload (env override, env-ignored-non-project, payload cwd, resolver fallback, ambiguous->None)", "disposition": "tested",
+          "evidence": "shared/tests/test_hook_session.py::TestResolveProjectRootFromPayload (5) PASSED" },
+        { "behavior": "F15: record_event accepts phase_failed and the event lands in the log", "disposition": "tested",
+          "evidence": "shared/tests/test_record_event_lifecycle_integrity.py::test_phase_failed_accepted_and_lands PASSED" },
+        { "behavior": "F15: record_event accepts stale_stop_rejected and the event lands in the log", "disposition": "tested",
+          "evidence": "shared/tests/test_record_event_lifecycle_integrity.py::test_stale_stop_rejected_accepted_and_lands PASSED" },
+        { "behavior": "F15: phase_failed / stale_stop_rejected are NOT phase-deduped (diagnostics may recur)", "disposition": "tested",
+          "evidence": "shared/tests/test_record_event_lifecycle_integrity.py::test_failure_types_not_phase_deduped PASSED" },
+        { "behavior": "F15 end-to-end: phase_session_stop.main() on a failed phase records phase_failed (previously dropped on argparse exit 2)", "disposition": "tested",
+          "evidence": "integration-tests/test_phase_hook_main_lifecycle.py::test_stop_main_records_phase_failed_event PASSED" },
+        { "behavior": "F14: append_event_idempotent appends a new event when no duplicate exists", "disposition": "tested",
+          "evidence": "shared/tests/test_record_event_lifecycle_integrity.py::test_appends_new_event PASSED" },
+        { "behavior": "F14: append_event_idempotent skips a duplicate phase_completed", "disposition": "tested",
+          "evidence": "shared/tests/test_record_event_lifecycle_integrity.py::test_skips_duplicate_phase PASSED" },
+        { "behavior": "F14: append_event_idempotent skips a duplicate by-commit work_completed when the flag is set", "disposition": "tested",
+          "evidence": "shared/tests/test_record_event_lifecycle_integrity.py::test_skips_duplicate_commit_when_flag_set PASSED" },
+        { "behavior": "F14: the dedup scan runs INSIDE the _FileLock (deterministic inject-on-lock-entry proof)", "disposition": "tested",
+          "evidence": "shared/tests/test_record_event_lifecycle_integrity.py::test_dedup_scan_runs_inside_the_lock PASSED" },
+        { "behavior": "F14: no duplicate phase_completed under 8-way concurrent record_event subprocesses", "disposition": "tested", "category": "integration",
+          "evidence": "integration-tests/test_phase_hook_main_lifecycle.py::test_concurrent_phase_completed_records_no_duplicate PASSED" },
+        { "behavior": "Composition: hook stdin-resolution + phase_task_lifecycle + record_event compose end-to-end (start.main()->stop.main()->phase_completed lands)", "disposition": "tested", "category": "integration",
+          "evidence": "integration-tests/test_phase_hook_main_lifecycle.py::test_full_chain_via_main_records_completion_event PASSED" },
+        { "behavior": "Downstream consumers tolerate the newly-appearing phase_failed/stale_stop_rejected event types (positive type filters; no closed type enum)", "disposition": "untestable",
           "reason_code": "covered-by-existing-test",
-          "reason": "docs/guide.md structural doc-tests already run in the full shared suite; the added prose is narrative, asserting its exact wording would be a brittle snapshot."
-        },
-        {
-          "behavior": "AC7 reviewer-parity + glossary-defense regressions stay green after edits",
-          "disposition": "tested",
-          "evidence": "test_reviewer_bloat_checklist_parity (6) + test_bloat_defense_artifacts (24) PASSED in the 3319-green suite"
-        },
-        {
-          "behavior": "AC8 dogfood: catalog applied to this diff yields 0 forced churn",
-          "disposition": "tested",
-          "evidence": "live Step-8 code-reviewer (opus) verdict: long-but-coherent (G1) + justified-duplication (G5); 3 LOW findings fixed, 0 churn"
-        }
+          "reason": "every events.jsonl consumer (generate_session_handoff, update_build_dashboard, _triage_bundle, verifiers/common, validate_event_log) filters type=='phase_completed' positively / requires only {v,id,ts,type}; pinned by the existing consumer suites which stay green (full shared suite 3348 passed)" }
       ],
-      "counts": {
-        "testable": 8,
-        "tested": 8,
-        "untestable": 1,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 8,
-        "covered_acs": 8
-      }
+      "counts": { "testable": 16, "tested": 16, "untestable": 1, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 4, "covered_acs": 4 }
     },
     "surface_verification": {
       "surface": "none",
-      "tests_run": 0,
+      "runner": "",
       "exit_code": 0,
-      "justification": "No runnable UI/server/CLI surface: deliverables are reviewer-prompt + reference/idiom-map content. The idiom-map JSON is reviewer context validated by the drift test (shared/tests/test_reducibility_gate.py), not runtime-parsed by product code. Backend-affects-frontend rule N/A (no API routes / store mutations / SSE / message contracts touched)."
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-06-12T22:36:24.957Z",
+      "justification": "No startable web/UI/API surface in the diff: Claude-Code phase-session hook plumbing (stdin-payload identity resolution, F1) + the record_event CLI event-log writer (F14 atomic dedup, F15 failure types). The user-erlebbar surface (v2 pipeline lifecycle) is driven end-to-end by integration-tests/test_phase_hook_main_lifecycle.py (each hook main() via a realistic stdin payload with env cleared, claim->validate->complete, plus failure/dedup paths through record_event incl. an 8-way concurrent subprocess dedup test). The monorepo has no dev_server; the Command Center WebUI is a separate repo and the new event types are additive (consumers use positive type filters, boundary-probed)."
     }
   }
 }

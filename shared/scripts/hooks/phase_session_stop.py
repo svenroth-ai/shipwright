@@ -5,9 +5,13 @@ Wired into all 8 phase plugins. Runs FIRST in the Stop hook chain, before
 generate_handoff_on_stop.py, so phase_tasks[] is updated by the time the
 handoff file is written.
 
+Identity (project_root + session_id) is resolved from the hook **stdin payload**
+via ``lib.hook_session`` (NOT process env vars that no launcher sets —
+ADR-092/097, deep-audit F1).
+
 Behaviour:
-    1. Discover the active phase_task via SHIPWRIGHT_SESSION_ID + sessionUuid.
-       No match -> standalone, exit 0.
+    1. Discover the active phase_task by matching the payload session_id against
+       phase_tasks[].sessionUuid. No match -> standalone, exit 0.
     2. Read the validation marker (sessionstart-validation.json) to know our
        claimed version. If valid=false (block was active), don't try to
        complete — just exit 0.
@@ -29,7 +33,6 @@ should never crash the session shutdown.
 from __future__ import annotations
 
 import json
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -37,9 +40,12 @@ from typing import Any, Optional
 
 
 _THIS = Path(__file__).resolve()
+_SHARED_SCRIPTS = _THIS.parent.parent  # shared/scripts (for lib.hook_session)
 _RUN_LIB = _THIS.parent.parent.parent.parent / "plugins" / "shipwright-run" / "scripts" / "lib"
-_SHARED_TOOLS = _THIS.parent.parent / "tools"
+_SHARED_TOOLS = _SHARED_SCRIPTS / "tools"
 sys.path.insert(0, str(_RUN_LIB))
+if str(_SHARED_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SHARED_SCRIPTS))
 
 try:
     from phase_task_lifecycle import (  # type: ignore[import]
@@ -53,6 +59,13 @@ except ImportError:  # pragma: no cover
     find_phase_task_by_session_uuid = None
     freeze_splits = None
     mark_phase_failed = None
+
+# Hook stdin-payload resolution (deep-audit F1). Guarded so a broken install
+# degrades to standalone rather than crashing the Stop hook.
+try:
+    from lib.hook_session import resolve_hook_context  # type: ignore[import]
+except ImportError:  # pragma: no cover - import-path safety
+    resolve_hook_context = None
 
 
 CONFIG_NAME = "shipwright_run_config.json"
@@ -243,9 +256,9 @@ def run(project_root: Optional[Path], session_uuid: Optional[str]) -> int:
 
 
 def main() -> int:
-    project_root_env = os.environ.get("SHIPWRIGHT_PROJECT_ROOT")
-    session_uuid = os.environ.get("SHIPWRIGHT_SESSION_ID")
-    project_root = Path(project_root_env).resolve() if project_root_env else None
+    if resolve_hook_context is None:
+        return 0  # helper unavailable — degrade to standalone, never crash
+    project_root, session_uuid = resolve_hook_context()
     return run(project_root, session_uuid)
 
 

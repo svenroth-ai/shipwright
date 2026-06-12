@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-12T21:06:53.297329+00:00
-Total commits: 980
+Generated: 2026-06-12T22:41:27.823708+00:00
+Total commits: 981
 
 ## Commit Distribution
 
@@ -9,7 +9,7 @@ Total commits: 980
 pie title Commit Types
     "fix" : 280
     "feat" : 270
-    "chore" : 215
+    "chore" : 216
     "docs" : 123
     "refactor" : 53
     "test" : 24
@@ -309,7 +309,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-12 | bloat | reducibility reviewer — LOC becomes a router, not the verdict | f9d32fbdb21c |
+| 2026-06-12 | bloat | reducibility reviewer — LOC becomes a router, not the verdict (#222) | 13aa780d02aa |
 | 2026-06-12 | iterate | cross_component risk flag + non-dodgeable integration-coverage gate (#218) | bf8cd8dd171f |
 | 2026-06-12 | iterate | F11 Delivery-Watch — delivered = merged + green (no shoot-and-forget) (#214) | aeb8932746e2 |
 | 2026-06-12 | iterate | compact agent-doc entries + impact-aware routing SSoT (#206) | 7643bad51c5f |
@@ -580,10 +580,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 215 commits
+### Chores (chore) — 216 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-12 | release | v0.25.0 (#223) | 60481718653b |
 | 2026-06-12 | bloat | clear Group H1/H2 — tighten 51 baseline entries + grandfather 8 (reducibility-catalog dogfood) (#219) | 0e8932f4976f |
 | 2026-06-11 | triage | drop three stale internal anchor items | 9d74de9db766 |
 | 2026-06-11 | gitignore | keep campaign planning dirs local-only | dd4806d2ba91 |
@@ -1049,7 +1050,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 980 |
+| Total commits | 981 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 980 |
+| Human-authored commits | 981 |
 

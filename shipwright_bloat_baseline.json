@@ -676,7 +676,7 @@
     {
       "path": "shared/scripts/tools/record_event.py",
       "limit": 300,
-      "current": 797,
+      "current": 840,
       "state": "grandfathered",
       "adr": null
     },

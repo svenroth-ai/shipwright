@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """SessionStart hook for the multi-session pipeline (F3a).
 
-Wired into all 8 phase plugins. Runs AFTER capture_session_id.py so it can
-read SHIPWRIGHT_SESSION_ID + SHIPWRIGHT_PROJECT_ROOT from the env.
+Wired into all 8 phase plugins. Resolves ``(project_root, session_id)`` from the
+hook **stdin payload** via ``lib.hook_session`` — NOT from process env vars that
+no launcher sets (ADR-092/097, deep-audit F1). The payload always carries
+``session_id`` + ``cwd``; ``resolve_project_root()`` is the fallback.
 
 Behaviour (Plan v4 + Mini-Spike findings):
 
-    1. If SHIPWRIGHT_PROJECT_ROOT is unset OR no shipwright_run_config.json
+    1. If the project root can't be resolved, OR no shipwright_run_config.json,
        OR config is not v2 -> standalone, exit 0 silently.
 
     2. Otherwise: identify our phase from CLAUDE_PLUGIN_ROOT (e.g.
@@ -44,8 +46,11 @@ from typing import Any, Optional
 
 
 _THIS = Path(__file__).resolve()
+_SHARED_SCRIPTS = _THIS.parent.parent  # shared/scripts (for lib.hook_session)
 _RUN_LIB = _THIS.parent.parent.parent.parent / "plugins" / "shipwright-run" / "scripts" / "lib"
 sys.path.insert(0, str(_RUN_LIB))
+if str(_SHARED_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SHARED_SCRIPTS))
 
 # Lazy-imported on demand; tests stub these.
 try:
@@ -60,6 +65,13 @@ except ImportError:  # pragma: no cover - import-path safety
     claim_phase_task = None
     find_phase_task_by_session_uuid = None
     validate_prerequisites = None
+
+# Hook stdin-payload resolution (deep-audit F1). Guarded so a broken install
+# degrades to standalone rather than crashing SessionStart.
+try:
+    from lib.hook_session import resolve_hook_context  # type: ignore[import]
+except ImportError:  # pragma: no cover - import-path safety
+    resolve_hook_context = None
 
 
 CONFIG_NAME = "shipwright_run_config.json"
@@ -275,12 +287,10 @@ def run(project_root: Path, session_uuid: Optional[str], plugin_root: Optional[s
 
 
 def main() -> int:
-    project_root_env = os.environ.get("SHIPWRIGHT_PROJECT_ROOT")
-    session_uuid = os.environ.get("SHIPWRIGHT_SESSION_ID")
+    if resolve_hook_context is None:
+        return 0  # helper unavailable — degrade to standalone, never crash
+    project_root, session_uuid = resolve_hook_context()
     plugin_root = os.environ.get("CLAUDE_PLUGIN_ROOT")
-    project_root = Path(project_root_env).resolve() if project_root_env else None
-    if project_root is None:
-        return 0
     return run(project_root, session_uuid, plugin_root)
 
 
