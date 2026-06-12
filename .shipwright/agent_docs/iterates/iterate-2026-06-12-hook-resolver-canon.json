@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-06-12-hook-resolver-canon",
+  "date": "2026-06-12T06:14:15.057624Z",
+  "type": "bug",
+  "complexity": "medium",
+  "branch": "iterate/audit1-hook-resolver-canon",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-12-hook-resolver-canon",
+  "campaign": "2026-06-10-audit-1-auto",
+  "sub_iterate_id": "a1-2"
+}

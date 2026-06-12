@@ -283,3 +283,78 @@ class TestCheckSecurityScan:
             tmp_path,
         )
         assert rc == 0
+
+
+# ---------------------------------------------------------------------------
+# F5 (WP5): both PreToolUse gates must resolve the project root via
+# resolve_project_root() — NOT os.getcwd() — so the subdirectory-project layout
+# (cwd = workspace root, the managed project one level down) does not fail open.
+# ---------------------------------------------------------------------------
+
+def _make_subproject(workspace: Path, subdir_name: str) -> Path:
+    """Create a workspace whose managed project lives one level down.
+
+    The subdir carries the Shipwright config marker so resolve_project_root()'s
+    single-immediate-subdir auto-descent picks it; the workspace root has none.
+    """
+    project = workspace / subdir_name
+    project.mkdir(parents=True, exist_ok=True)
+    (project / "shipwright_run_config.json").write_text("{}", encoding="utf-8")
+    return project
+
+
+class TestSubdirectoryProjectLayout:
+    def test_rtm_gate_blocks_from_workspace_root(self, tmp_path: Path):
+        # Low coverage lives in the SUBDIR project; the hook runs with cwd =
+        # workspace root. With os.getcwd() it found no RTM and failed open (rc 0);
+        # with resolve_project_root() it auto-descends and soft-blocks.
+        project = _make_subproject(tmp_path, "webui")
+        _make_rtm(project, 62)
+        rc, output = _run_hook(
+            "check_rtm_coverage.py",
+            {"tool_input": {"command": "git commit -m 'feat: add auth'"}},
+            tmp_path,  # cwd = workspace root, ABOVE the managed project
+        )
+        assert rc == 2
+        data = json.loads(output)
+        assert data["hookSpecificOutput"]["blocked"] is True
+        assert "62%" in data["hookSpecificOutput"]["reason"]
+
+    def test_rtm_gate_resolves_via_env_var(self, tmp_path: Path):
+        # SHIPWRIGHT_PROJECT_ROOT wins over cwd in resolve_project_root().
+        project = _make_subproject(tmp_path, "service")
+        _make_rtm(project, 62)
+        import os as _os
+        env = {**_os.environ, "SHIPWRIGHT_PROJECT_ROOT": str(project)}
+        result = subprocess.run(
+            [sys.executable, str(HOOKS_DIR / "check_rtm_coverage.py")],
+            input=json.dumps({"tool_input": {"command": "git commit -m x"}}),
+            capture_output=True,
+            text=True,
+            cwd=str(tmp_path),
+            env=env,
+        )
+        assert result.returncode == 2
+
+    def test_security_gate_blocks_from_workspace_root(self, tmp_path: Path):
+        project = _make_subproject(tmp_path, "webui")
+        _make_rtm(project, 80, unresolved=3)
+        rc, output = _run_hook(
+            "check_security_scan.py",
+            {"tool_input": {"command": "deploy to jelastic"}},
+            tmp_path,  # cwd = workspace root, ABOVE the managed project
+        )
+        assert rc == 2
+        data = json.loads(output)
+        assert data["hookSpecificOutput"]["blocked"] is True
+        assert "3 unresolved" in data["hookSpecificOutput"]["reason"]
+
+    def test_foreign_repo_no_marker_allows(self, tmp_path: Path):
+        # A non-Shipwright workspace (no marker anywhere): resolve_project_root()
+        # falls back to cwd, finds no RTM, and the gate allows (no false block).
+        rc, _ = _run_hook(
+            "check_rtm_coverage.py",
+            {"tool_input": {"command": "git commit -m x"}},
+            tmp_path,
+        )
+        assert rc == 0

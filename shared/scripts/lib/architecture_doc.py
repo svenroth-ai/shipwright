@@ -46,15 +46,12 @@ IMPACT_TARGETS: dict[str, tuple[str, str]] = {
 # Invariant: every real impact routes somewhere (pinned by test_impact_targets).
 assert set(IMPACT_TARGETS) == REAL_IMPACTS
 
-# Transitional back-compat: before this routing was fixed (the agent-doc-entry-
-# rules split, 2026-06-12), iterate ``convention`` entries were hand-written to
-# ``architecture.md ## Architecture Updates`` to satisfy the old architecture.md-
-# only gate. Until the follow-up compression iterate migrates those legacy
-# entries to ``## Convention Updates``, a ``convention`` run_id documented in
-# architecture.md is still accepted. NEW entries route via ``IMPACT_TARGETS``
-# (producer + F2.md + the entry-budget gate); this fallback never relaxes the
-# canonical routing, only tolerates the un-migrated backlog.
-_LEGACY_CONVENTION_DOC = "architecture.md"
+# The transitional ``convention`` → architecture.md fallback that bridged the
+# un-migrated backlog (the agent-doc-entry-rules split, 2026-06-12) was RETIRED in
+# iterate-2026-06-12-compress-agent-doc-backlog once every ``convention`` entry was
+# compacted into ``conventions.md ## Convention Updates``. ``convention`` run_ids
+# now route ONLY to conventions.md (per ``IMPACT_TARGETS``); a ``convention``
+# run_id found only in architecture.md no longer counts as documented.
 
 
 def target_for_impact(impact: object) -> tuple[str, str] | None:
@@ -149,8 +146,8 @@ def _coerce_texts(texts: dict[str, str] | str) -> dict[str, str]:
     """Accept either a ``{filename: text}`` mapping or a legacy single string.
 
     A bare string is interpreted as ``architecture.md`` text (the pre-routing
-    signature) so any un-updated caller degrades to the old architecture.md-only
-    behavior via the convention fallback rather than crashing.
+    signature) so any un-updated ``component`` / ``data-flow`` caller still
+    resolves against architecture.md rather than crashing.
     """
     if isinstance(texts, str):
         return {"architecture.md": texts}
@@ -162,19 +159,15 @@ def impact_documented(impact: str, run_id: str, texts: dict[str, str] | str) -> 
 
     ``texts`` maps the target filename (``architecture.md`` / ``conventions.md``)
     to that doc's content. ``component`` / ``data-flow`` resolve to
-    ``architecture.md``; ``convention`` resolves to ``conventions.md`` — with a
-    transitional fallback to ``architecture.md`` for the un-migrated legacy
-    backlog (see ``_LEGACY_CONVENTION_DOC``).
+    ``architecture.md``; ``convention`` resolves to ``conventions.md`` — its sole
+    home now that the un-migrated backlog has been compacted there
+    (iterate-2026-06-12-compress-agent-doc-backlog retired the legacy fallback).
     """
     doc = _coerce_texts(texts)
     target = IMPACT_TARGETS.get(normalize_impact(impact))
     if target is None:
         return False
-    if run_id_documented(doc.get(target[0], ""), run_id):
-        return True
-    if normalize_impact(impact) == "convention":
-        return run_id_documented(doc.get(_LEGACY_CONVENTION_DOC, ""), run_id)
-    return False
+    return run_id_documented(doc.get(target[0], ""), run_id)
 
 
 def read_target_texts(agent_docs_dir: Path) -> dict[str, str]:
@@ -182,8 +175,7 @@ def read_target_texts(agent_docs_dir: Path) -> dict[str, str]:
 
     Reads BOTH canonical agent docs (the distinct target filenames in
     ``IMPACT_TARGETS``) so callers feed a complete ``texts`` map to
-    ``missing_entries`` / ``impact_documented`` — including the
-    convention→architecture.md legacy fallback. An unreadable doc → ``""`` (the
+    ``missing_entries`` / ``impact_documented``. An unreadable doc → ``""`` (the
     run_id then reads as undocumented there, surfaced rather than masked).
     """
     agent_docs_dir = Path(agent_docs_dir)

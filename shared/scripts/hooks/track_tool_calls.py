@@ -32,9 +32,26 @@ def _resolve_project_root() -> Path:
 
 
 def _is_shipwright_project(root: Path) -> bool:
-    """Check if the directory is an active Shipwright project."""
-    markers = ["shipwright_run_config.json", "shipwright_build_config.json"]
-    return any((root / m).exists() for m in markers)
+    """Check if the directory is an active Shipwright project.
+
+    Delegates to the canonical predicate in ``lib.project_root`` so every hook
+    agrees on the greenfield/foreign boundary
+    (iterate-2026-06-12-canonical-project-predicate). The narrow fallback keeps
+    this counter hook import-robust in a degraded environment.
+    """
+    try:
+        scripts_dir = str(Path(__file__).resolve().parent.parent)
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+        from lib.project_root import is_shipwright_project
+        return is_shipwright_project(root)
+    except (ImportError, ValueError):
+        # Degraded import only — preserve this hook's pre-consolidation markers
+        # (run + build) rather than regressing to a narrower set.
+        return any(
+            (root / m).exists()
+            for m in ("shipwright_run_config.json", "shipwright_build_config.json")
+        )
 
 
 def main() -> int:

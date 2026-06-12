@@ -83,11 +83,12 @@ def test_impact_documented_convention_in_conventions_doc():
     assert impact_documented("convention", "iter-conv", texts)
 
 
-def test_impact_documented_convention_legacy_fallback_to_architecture():
-    # Transitional: a convention run_id still in architecture.md (pre-migration)
-    # is accepted until the compression iterate moves it to ## Convention Updates.
+def test_impact_documented_convention_only_in_architecture_is_not_documented():
+    # The legacy convention -> architecture.md fallback was RETIRED
+    # (iterate-2026-06-12-compress-agent-doc-backlog): a convention run_id found
+    # only in architecture.md no longer counts — it MUST live in conventions.md.
     texts = {"conventions.md": "", "architecture.md": "- iter-conv (convention): x"}
-    assert impact_documented("convention", "iter-conv", texts)
+    assert not impact_documented("convention", "iter-conv", texts)
 
 
 def test_impact_documented_component_not_satisfied_by_conventions_doc():
@@ -112,12 +113,14 @@ def test_missing_entries_convention_routes_to_conventions_doc(tmp_path: Path):
     assert missing_entries(records, texts) == []
 
 
-def test_missing_entries_convention_only_in_arch_doc_passes_legacy(tmp_path: Path):
+def test_missing_entries_convention_only_in_arch_doc_is_missing(tmp_path: Path):
+    # Post-retirement: a convention drop documented only in architecture.md is NOT
+    # satisfied — it must be migrated to conventions.md ## Convention Updates.
     drops = tmp_path / "decision-drops"
     _write_drop(drops, "iter-conv", "convention")
     records, _ = scan_drops(drops)
     texts = {"conventions.md": "", "architecture.md": "- iter-conv (convention): legacy"}
-    assert missing_entries(records, texts) == []  # legacy fallback
+    assert {r.run_id for r in missing_entries(records, texts)} == {"iter-conv"}
 
 
 def test_missing_entries_component_in_conventions_doc_is_missing(tmp_path: Path):

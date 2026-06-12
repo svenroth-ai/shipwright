@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import re
 import sys
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
@@ -43,12 +43,16 @@ from lib.architecture_doc import IMPACT_TARGETS, REAL_IMPACTS  # noqa: E402
 # compact entry, tight enough to forbid the multi-hundred-word paragraphs.
 _ENTRY_MAX_CHARS = 600
 
-# Forward-only boundary: entries authored on/after this date must comply; the
-# pre-existing backlog is grandfathered (mirrors write_decision_log's forward-
-# only field budget). The compression iterate lowers this once it has shrunk the
-# backlog. Set to the day AFTER this rule landed so same-day legacy entries that
-# predate the rule are not retroactively failed.
-_ENFORCED_FROM = date(2026, 6, 13)
+# Enforcement boundary: every entry authored on/after this date must comply.
+# Lowered from 2026-06-13 to 2026-05-01 by iterate-2026-06-12-compress-agent-doc-
+# backlog, which compacted the whole backlog (architecture.md `## Architecture
+# Updates` + conventions.md `## Convention Updates` / `## Learnings`) to one-line
+# pointers and archived the verbatim detail under `.shipwright/planning/adr/`. The
+# date sits just before the earliest dated backlog entry (2026-05-02), so the gate
+# now enforces the entire compacted corpus rather than only forward-dated entries.
+# (Undated entries — e.g. `(2026-06-11, iterate ...)` forms that the strict
+# `(YYYY-MM-DD)` regex does not match — remain exempt by construction.)
+_ENFORCED_FROM = date(2026, 5, 1)
 
 _AGENT_DOCS = _REPO_ROOT / ".shipwright" / "agent_docs"
 _SECTIONS: tuple[tuple[str, str], ...] = (
@@ -154,12 +158,16 @@ def test_iter_entries_splits_top_level_bullets():
 
 
 def test_over_budget_dated_entry_is_flagged():
-    big = "- **x** (2026-06-13): " + ("y" * (_ENTRY_MAX_CHARS + 50))
+    after = (_ENFORCED_FROM + timedelta(days=1)).isoformat()
+    big = f"- **x** ({after}): " + ("y" * (_ENTRY_MAX_CHARS + 50))
     assert _enforced_violations([big])
 
 
 def test_grandfathered_entries_exempt():
-    big_old = "- **x** (2026-06-12): " + ("y" * (_ENTRY_MAX_CHARS + 50))
+    # Dates computed relative to the cutoff so the hermetic cases survive a future
+    # _ENFORCED_FROM change: a pre-cutoff dated entry and an undated entry are exempt.
+    before = (_ENFORCED_FROM - timedelta(days=1)).isoformat()
+    big_old = f"- **x** ({before}): " + ("y" * (_ENTRY_MAX_CHARS + 50))
     big_undated = "- **x**: " + ("y" * (_ENTRY_MAX_CHARS + 50))
     assert _enforced_violations([big_old]) == []
     assert _enforced_violations([big_undated]) == []

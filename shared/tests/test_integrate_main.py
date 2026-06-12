@@ -183,5 +183,8 @@ def test_integrate_aborts_and_restores_on_source_conflict(git_origin_repo, make_
     assert _git(wt, "diff", "--name-only", "--diff-filter=U").stdout.strip() == ""
     assert _git(wt, "diff", "--cached", "--name-only").stdout.strip() == ""
 
+
 # Campaign status.json concurrent-sibling regenerate (S3) lives in
 # test_integrate_campaign_status.py (reuses _set_repo_identity / _write / _git here).
+# ensure_current (the F11 / campaign refresh-if-behind guard) lives in
+# test_ensure_current.py (also reuses _set_repo_identity / _write / _git here).

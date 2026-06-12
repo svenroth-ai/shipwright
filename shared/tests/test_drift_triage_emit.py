@@ -44,6 +44,7 @@ from triage import read_all_items  # noqa: E402
 
 @pytest.fixture
 def project(tmp_path: Path) -> Path:
+    (tmp_path / "shipwright_run_config.json").write_text("{}", encoding="utf-8")  # F7: marker req'd
     return tmp_path
 
 
@@ -81,11 +82,9 @@ def test_check_drift_content_findings_dedup_by_file(project: Path) -> None:
     )
     assert appended == 1
     [item] = read_all_items(project)
-    # Bug 1 fix: the content dedup key path is canonicalized (drive-letter
-    # casing must not split one logical drift across two items).
-    assert item["dedupKey"] == (
-        f"drift:{check_drift._canonical_anchor('CLAUDE.md')}:content"
-    )
+    # Bug 1: the content dedup key path is canonicalized (drive-letter casing
+    # must not split one logical drift across two items).
+    assert item["dedupKey"] == f"drift:{check_drift._canonical_anchor('CLAUDE.md', project)}:content"
 
 
 def test_check_drift_content_findings_per_distinct_file(project: Path) -> None:
@@ -100,8 +99,8 @@ def test_check_drift_content_findings_per_distinct_file(project: Path) -> None:
     assert appended == 2
     keys = {it["dedupKey"] for it in read_all_items(project)}
     assert keys == {
-        f"drift:{check_drift._canonical_anchor('CLAUDE.md')}:content",
-        f"drift:{check_drift._canonical_anchor('webui/CLAUDE.md')}:content",
+        f"drift:{check_drift._canonical_anchor('CLAUDE.md', project)}:content",
+        f"drift:{check_drift._canonical_anchor('webui/CLAUDE.md', project)}:content",
     }
 
 
@@ -165,8 +164,8 @@ def test_check_drift_drive_letter_casing_dedups_to_one_item(
     # Distinct on the wire, identical after canonicalization.
     assert variant_a != variant_b
     assert (
-        check_drift._canonical_anchor(variant_a)
-        == check_drift._canonical_anchor(variant_b)
+        check_drift._canonical_anchor(variant_a, project)
+        == check_drift._canonical_anchor(variant_b, project)
     )
     appended = check_drift._emit_drift_to_triage(
         project,
@@ -239,7 +238,7 @@ def test_check_drift_legacy_noncanonical_item_resolved_on_recanon(
     open_items = [it for it in by_id.values() if it["status"] == "triage"]
     assert len(open_items) == 1
     assert open_items[0]["dedupKey"] == (
-        f"drift:{check_drift._canonical_anchor(variant_a)}:content"
+        f"drift:{check_drift._canonical_anchor(variant_a, project)}:content"
     )
 
 

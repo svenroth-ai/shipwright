@@ -1,15 +1,21 @@
 # Project Activity Dashboard
-> Updated: 2026-06-12 11:39 UTC | Session: 2857db0d-4e2f-4526-b051-d235421800ad | Run: iterate-2026-06-12-triage-gc-union-residence
+> Updated: 2026-06-12 12:06 UTC | Session: 44fa4331-4609-4594-899c-41a4627d2657 | Run: iterate-2026-06-12-config-bom-integrate-tests
 
-## Recent Changes (148 iterations)
+## Recent Changes (154 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| change | triage_gc union-residence under-lock recompute (a1-6/F19 follow-up) + source-derived drift meta-test + tty_sanitize extraction | 3193/3193 |  | tooling | 2026-06-12 |
+| change | Serial integrate_main merge for campaign/parallel iterates: ensure_current.py refresh-if-behind guard at F11 + SHIPWRIGHT_ITERATE_AUTOMERGE defer with serial drain (auto-merge churn fix, Option A). | 0/0 |  | tooling | 2026-06-12 |
+| change | Consolidate the project-detection predicate across all hooks onto one canonical lib.project_root.is_shipwright_project | 3203/3203 |  | infra | 2026-06-12 |
+| change | config-reader BOM tolerance (read_config utf-8-sig) + integrate_main commit-failure branch tests; split two at-limit test modules under 300 LOC | 19/19 |  | tooling | 2026-06-12 |
 | change | Compact agent-doc entries + impact-aware routing SSoT (IMPACT_TARGETS) + forward-only 600-char entry-budget gate; conventions.md CONTRIBUTING de-dup | 0/0 |  | tooling | 2026-06-12 |
 | bug | WP9 triage tooling hardening: F30 phaseQualityRefreshed GC token + drift meta-test, F19 GC TOCTOU recompute-under-lock, F31 control-char sanitizer on title/detail/evidence (C0+C1) in both render surfaces, F29 promote/dismiss accept outbox-only items | 3163/3164 |  | tooling | 2026-06-12 |
 | bug | Installer/shell POSIX fixes (deep-audit WP10 F33-F38): set -e prereq counter, uv ~/.local/bin PATH, 13-plugin space-safe alias refresh, python3 resolver, dotenv-parse verify-setup | 3157/3157 |  | tooling | 2026-06-12 |
 | bug | Fix two structurally-inert compliance gates (deep-audit WP3): Group H now in run_all default + on-stop coverage gate widened to A-H (F20); S4 FR-preservation join no longer raises TypeError (F21) | 3146/3146 |  | compliance | 2026-06-12 |
+| bug | WP6 deep-audit fix: strict UTF-8 in resolve_churn/integrate_main git-I/O + structured commit-failure handling (F22 HIGH, F17 MED) | 3147/3147 |  | tooling | 2026-06-12 |
+| bug | UTF-8 (utf-8-sig) in config readers + errors=replace on the F0.5 runner decode (deep-audit WP8/F24+F25) | 3515/3516 |  | tooling | 2026-06-12 |
+| bug | WP5 hook project-root/worktree resolvers + project guard (F5/F6/F7/F8/F10) | 23/23 |  | tooling | 2026-06-12 |
+| bug | Pin UTF-8 on git-reading subprocess decodes (deep-audit WP7 F23/F26/F27) | 8/8 |  | tooling | 2026-06-12 |
 | change | triage.mark_status routes idle-main status flips to the outbox (symmetric with append_triage_item), completing campaign D1 for the status side; fixes undelivered tracked drift from WebUI/Stop-hook dismisses | 3131/3131 |  | infra | 2026-06-11 |
 | change | F11 arms GitHub-native auto-merge for iterate/* PRs (gh pr merge --auto --squash --delete-branch), branch-scoped + fail-soft (B4.5 Phase 3) | 363/363 |  | tooling | 2026-06-11 |
 | feature | Tier-3 PR review via OpenRouter custom-script (B4.5 Phase 2): pr-review.yml workflow + pr_review.py reviewer + pr_reviewer prompts + 4 snapshot/unit test files | 414/417 |  | tooling | 2026-06-11 |
@@ -155,7 +161,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-12 | Unit: 3193/3193 | Smoke: not_run | (iterate)
+Last run: 2026-06-12 | Unit: 19/19 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

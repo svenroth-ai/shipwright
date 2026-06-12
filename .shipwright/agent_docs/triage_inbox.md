@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-12T11:39:05.501518Z. Items waiting for triage decision.
+> Auto-generated 2026-06-12T11:50:27.025653Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 177
-- Triage: 13 | Promoted: 1 | Dismissed: 163 | Snoozed: 0
+- Total: 179
+- Triage: 15 | Promoted: 1 | Dismissed: 163 | Snoozed: 0
 
-## Top 13 items (severity-sorted)
+## Top 15 items (severity-sorted)
 
 ### Source: architecture (2 items)
 
@@ -105,6 +105,21 @@
     ```
   - Promote: `triage_promote.py --id trg-a678bd00 --task-ref EXT:<ref>`
 
+### Source: compliance (1 item)
+
+<a id="trg-1b9792dc"></a>
+- **Compliance: 3 open finding(s)** `id=trg-1b9792dc | severity=high | kind=compliance → P1/compliance`
+  - 3 open compliance finding(s): F/F5, H/H1, H/H2  - F/F5: Architecture marker vs arch-impact drops — 1 arch-impact drop(s…
+  - Launch payload (copy into a new Claude session):
+    ```text
+    /shipwright-compliance
+    
+    Context: 3 open compliance finding(s): F/F5, H/H1, H/H2.
+    Dashboard: .shipwright/compliance/dashboard.md
+    Each finding + hint is listed in this item's detail.
+    ```
+  - Promote: `triage_promote.py --id trg-1b9792dc --task-ref EXT:<ref>`
+
 ### Source: external-frameworks (6 items)
 
 <a id="trg-db3e0a9c"></a>
@@ -153,4 +168,19 @@
 - **Audit bug-fixes - auto batch (encoding/Windows, compliance gates, triage tooling, installer)** `id=trg-d7661cfb | severity=medium | kind=improvement → P2/engineering`
   - Launch surface only. The work plan + details live in the LOCAL, gitignored campaign dir (not in git). Start via the Sta…
   - Promote: `triage_promote.py --id trg-d7661cfb --task-ref EXT:<ref>`
+
+### Source: phaseQuality (1 item)
+
+<a id="trg-9909ef53"></a>
+- **Phase-quality: 1 open Tier-1 FAIL(s) across 1 phase(s)** `id=trg-9909ef53 | severity=high | kind=bug → P1/engineering`
+  - 1 open phase-quality Tier-1 FAIL(s) across 1 phase(s): iterate.  - iterate:W2 (W2 F11 external-review marker) — Run ext…
+  - Launch payload (copy into a new Claude session):
+    ```text
+    /shipwright-compliance
+    
+    Context: 1 open phase-quality Tier-1 FAIL(s): iterate:W2.
+    Dashboard: .shipwright/compliance/skill-compliance/_dashboard.md
+    Each FAIL + remediation is listed in this item's detail.
+    ```
+  - Promote: `triage_promote.py --id trg-9909ef53 --task-ref EXT:<ref>`
 
