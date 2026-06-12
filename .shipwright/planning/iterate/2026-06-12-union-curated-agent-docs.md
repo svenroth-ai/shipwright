@@ -94,9 +94,14 @@ MODIFY — changes the merge strategy of two existing curated artifacts. No FR d
     default-conflicts) + the SSoT pins + the scaffold/self-heal/adopt consumers.
     Not separately executed: the silent-garble caveat (same-line non-append edit) —
     deliberately accepted (documented), not a tested behavior.
-- **Bloat note:** `gitattributes_union.py` 301→319 (pre-existing >300 crossing, +18
-  for the new category — NOT a new crossing); `test_gitattributes_union.py` held at
-  exactly 300. No new bloat crossing.
+- **Bloat note:** adding the curated category pushed `gitattributes_union.py` to 319,
+  so (per the bloat Iron-Law gate — an already-oversize file got larger) the git
+  self-heal commit-path was SPLIT into `lib/gitattributes_selfheal.py`: now
+  `gitattributes_union.py` = 141 (pure merge-logic SSoT, stdlib-only top-level) and
+  `gitattributes_selfheal.py` = 191 — **both ≤300, no crossing**. The split mirrors
+  the existing test split (`test_gitattributes_union.py` vs `…_selfheal.py`); callers
+  (`setup_iterate_worktree`, the selfheal test) updated. `test_gitattributes_union.py`
+  held at exactly 300.
 
 ### Test Completeness Ledger
 | Behavior | Disposition | Evidence / reason_code |
