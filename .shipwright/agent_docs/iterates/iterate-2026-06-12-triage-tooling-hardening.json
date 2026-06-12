@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-12-triage-tooling-hardening",
+  "date": "2026-06-12T08:15:56.671730Z",
+  "type": "bug",
+  "complexity": "medium",
+  "branch": "iterate/audit1-triage-tooling-hardening",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/campaigns/2026-06-10-audit-1-auto/sub-iterates/a1-6-triage-tooling-hardening.md",
+  "adr": "iterate-2026-06-12-triage-tooling-hardening"
+}

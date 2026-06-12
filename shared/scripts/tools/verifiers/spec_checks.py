@@ -421,10 +421,14 @@ def check_s4_fr_preservation(project_root: Path) -> dict[str, Any]:
     undeprecated: list[str] = []
     lines = content.splitlines()
     for fr_id in sorted(truly_removed):
+        # F21: flatten the 6-line slices to strings before join — the old
+        # ``"\n".join(lines[i:i + 6] for ...)`` joined *lists* and raised
+        # ``TypeError``, aborting the whole spec category on the first match.
         window = "\n".join(
-            lines[i:i + 6]
+            window_line
             for i, line in enumerate(lines)
             if fr_id in line
+            for window_line in lines[i:i + 6]
         )
         if "status: deprecated" not in window.lower():
             undeprecated.append(fr_id)

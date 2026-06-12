@@ -52,13 +52,20 @@ _BY_LABEL = "cli"
 def _strip_control_chars(text: str) -> str:
     """Strip terminal control sequences while preserving newlines and tabs.
 
-    Review finding #10: a malformed producer could embed ESC / BEL etc.
-    into ``launchPayload``. The CLI prints to a tty; stripping is the
-    minimal defense.
+    Mirrors the helper in ``aggregate_triage.py`` — keep both in sync. A
+    malformed/attacker-influenced producer could embed ESC / BEL etc. into
+    ``launchPayload`` or ``title``; the CLI prints to a tty so stripping is the
+    minimal defense (review finding #10; title coverage added per F31).
+
+    Strips BOTH C0 (``0x00``-``0x1F``, ``0x7F``) AND C1 (``0x80``-``0x9F``) — the
+    latter per the F31 external plan review (Gemini HIGH, 2026-06-12): C1 holds
+    single-byte terminal control sequences (e.g. ``0x9B`` CSI) a TTY executes,
+    so "preserve >= 0x80" left the escape-injection hole open. Non-control
+    Unicode (``>= 0xA0``) survives, preserving umlauts / CJK / em-dashes.
     """
     return "".join(
         ch for ch in text
-        if ch in ("\n", "\t") or (0x20 <= ord(ch) < 0x7F) or ord(ch) >= 0x80
+        if ch in ("\n", "\t") or (0x20 <= ord(ch) < 0x7F) or ord(ch) >= 0xA0
     )
 
 
@@ -80,7 +87,11 @@ def _format_item(item: dict) -> str:
     item_id = item.get("id", "")
     severity = item.get("severity", "")
     kind = item.get("kind", "")
-    title = item.get("title", "")
+    # F31 (SECURITY): strip terminal control chars from the title — the list
+    # view prints straight to a TTY, and the title can carry an attacker-
+    # influenceable GitHub workflow name / branch with embedded ESC/BEL.
+    # launchPayload was already stripped below; the title was not.
+    title = _strip_control_chars(str(item.get("title", "")))
     source = item.get("source", "")
     dedup_key = item.get("dedupKey") or ""
     payload = item.get("launchPayload")
