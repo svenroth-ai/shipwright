@@ -2110,7 +2110,7 @@ The price is that you read 2–3 files to onboard instead of 1. The benefit is t
 | Issue | Cause | Fix |
 |-------|-------|-----|
 | "Plugin not found" when typing `/shipwright-run` | Shell alias not loaded, or plugin paths wrong | Run `type shipwright` to check alias. Verify `~/shipwright/plugins/shipwright-run/.claude-plugin/plugin.json` exists. |
-| `uv: command not found` | uv not in PATH after installation | Restart terminal, or add: `export PATH="$HOME/.cargo/bin:$PATH"` |
+| `uv: command not found` | uv not in PATH after installation | Restart terminal, or add: `export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"` (the astral installer writes uv to `~/.local/bin`) |
 | "Python version too old" | System Python is below 3.11 | Run `uv python install 3.11` -- uv manages Python versions for you. |
 | Hooks fail with "permission denied" | Python/shell scripts not executable | Run `chmod +x ~/shipwright/plugins/*/scripts/**/*.py ~/shipwright/plugins/*/scripts/**/*.sh` |
 | Context window exceeded during large project | Project too large for a single session | Type `/clear` in Claude Code. Shipwright saves state to config files and resumes from the handoff document. |
