@@ -76,8 +76,11 @@ def classify(message: str, sync_config_path: str | None = None) -> dict:
 def _find_affected_frs(message: str, config_path: str) -> list[str]:
     """Check if message mentions files/components mapped in sync config."""
     try:
-        config = json.loads(Path(config_path).read_text())
-    except (FileNotFoundError, json.JSONDecodeError):
+        # WP8/F24: explicit UTF-8 (utf-8-sig tolerates an optional BOM) —
+        # non-ASCII FR titles (ensure_ascii=False) otherwise crash this read
+        # on the cp1252 Windows dev platform.
+        config = json.loads(Path(config_path).read_text(encoding="utf-8-sig"))
+    except (FileNotFoundError, json.JSONDecodeError, UnicodeDecodeError):
         return []
 
     frs = []

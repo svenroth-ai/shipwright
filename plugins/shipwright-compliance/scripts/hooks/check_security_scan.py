@@ -19,6 +19,27 @@ from pathlib import Path
 from typing import Any
 
 
+def _resolve_project_root() -> str:
+    """Resolve the managed project root.
+
+    Hooks fire with cwd = workspace root, which in a subdirectory-project
+    layout is one level ABOVE the managed project. ``os.getcwd()`` therefore
+    found no compliance RTM and the deploy gate silently failed open (F5).
+    ``resolve_project_root`` auto-descends into the single managed subdir (and
+    honors ``SHIPWRIGHT_PROJECT_ROOT``), falling back to cwd otherwise.
+    """
+    try:
+        shared_scripts = Path(__file__).resolve().parents[4] / "shared" / "scripts"
+        if str(shared_scripts) not in sys.path:
+            sys.path.insert(0, str(shared_scripts))
+        from lib.project_root import resolve_project_root  # noqa: PLC0415
+
+        return str(resolve_project_root())
+    except (ImportError, ValueError):
+        env_root = os.environ.get("SHIPWRIGHT_PROJECT_ROOT")
+        return env_root if env_root else os.getcwd()
+
+
 def _hook_block(reason: str, details: dict[str, Any]) -> dict[str, Any]:
     """Build soft-block hook output with override support."""
     return {
@@ -119,7 +140,7 @@ def main() -> int:
     if not _is_deploy_command(command):
         return 0
 
-    project_root = os.getcwd()
+    project_root = _resolve_project_root()
 
     unresolved, failing_sections = get_unresolved_findings(project_root)
     if unresolved == 0:

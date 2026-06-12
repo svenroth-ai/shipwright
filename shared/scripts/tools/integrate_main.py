@@ -36,10 +36,20 @@ from tools import resolve_churn_conflicts as rcc  # noqa: E402
 
 
 def _git(project_root: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
+    # encoding="utf-8": the default text=True decodes via the Windows cp1252
+    # locale, mojibaking or crashing on UTF-8 git output (WP6/F22). errors="replace"
+    # is correct HERE (decode-only) — integrate_main consumes git stdout for
+    # status/reporting and NEVER re-serialises it back into a tracked file, so a
+    # legacy un-decodable byte should degrade to U+FFFD rather than crash the
+    # JSON contract (vs resolve_churn._git, which is strict to keep the union
+    # round-trip byte-identical). Inline (no shared helper) to stay independent
+    # of the parallel WP7/WP8 subs.
     return subprocess.run(
         ["git", "-C", str(project_root), *args],
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         check=check,
     )
 
@@ -124,7 +134,31 @@ def integrate(
     if result.status in ("events_invalid", "triage_invalid"):
         _git(project_root, "merge", "--abort", check=False)
         return {"status": result.status, "errors": result.errors, "steps": steps}
-    _git(project_root, "commit", "--no-edit")
+    # F17: a check=True commit that fails (e.g. the pre-commit anti-ratchet hook
+    # rejecting upstream growth of a baselined file) would otherwise raise
+    # CalledProcessError — a traceback with no JSON, leaving the repo wedged in
+    # MERGE_HEAD. Mirror every other failure path: structured status + abort.
+    try:
+        _git(project_root, "commit", "--no-edit")
+    except subprocess.CalledProcessError as exc:
+        # `git merge --abort` is itself fallible (index.lock contention, hook
+        # side effects). Run it check=False, then VERIFY MERGE_HEAD actually
+        # cleared — distinguish a clean abort from a wedged tree so the caller
+        # never gets a false "aborted" claim (external-review Gemini/OpenAI HIGH).
+        _git(project_root, "merge", "--abort", check=False)
+        still_merging = (
+            _git(project_root, "rev-parse", "--verify", "--quiet", "MERGE_HEAD", check=False).returncode == 0
+        )
+        return {
+            "status": "merge_commit_failed" if not still_merging else "merge_commit_failed_abort_incomplete",
+            "stderr": (exc.stderr or "").strip()[:500],
+            "message": (
+                "merge commit refused (e.g. pre-commit hook) — merge aborted"
+                if not still_merging
+                else "merge commit refused AND `git merge --abort` failed — repo still mid-merge, resolve by hand"
+            ),
+            "steps": steps,
+        }
     steps.append("merge-committed")
 
     if regenerate:
@@ -153,7 +187,19 @@ def integrate(
                 f"chore(churn): regenerate derived snapshots after {branch} merge\n\n"
                 f"Run-ID: {run_id}"
             )
-            _git(project_root, "commit", "-m", msg)
+            # F17: the merge commit already landed (HEAD advanced, no MERGE_HEAD),
+            # so a failed follow-up commit must NOT `git merge --abort` (nothing in
+            # progress) — surface a structured status; the regenerated snapshots
+            # remain staged for a manual retry. Never raise CalledProcessError.
+            try:
+                _git(project_root, "commit", "-m", msg)
+            except subprocess.CalledProcessError as exc:
+                return {
+                    "status": "followup_commit_failed",
+                    "stderr": (exc.stderr or "").strip()[:500],
+                    "message": "regenerate follow-up commit refused; merge commit is intact",
+                    "steps": steps,
+                }
             steps.append("regenerated-followup")
         else:
             # No diff: finalize's own Run-ID commit remains the audit anchor (M1).
@@ -199,6 +245,12 @@ def main(argv: list[str] | None = None) -> int:
     if result["status"] == "merge_failed":
         print(f"ABORT: git merge refused: {result.get('stderr')}", file=sys.stderr)
         return 6
+    if result["status"] in ("merge_commit_failed", "merge_commit_failed_abort_incomplete"):
+        print(f"ABORT: {result['status']}: {result.get('message')}: {result.get('stderr')}", file=sys.stderr)
+        return 7
+    if result["status"] == "followup_commit_failed":
+        print(f"ABORT: regenerate follow-up commit refused (merge intact): {result.get('stderr')}", file=sys.stderr)
+        return 8
     return 3
 
 

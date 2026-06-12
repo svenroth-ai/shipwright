@@ -21,6 +21,14 @@ def _run_git(args: list[str], cwd: Path) -> str:
             cwd=cwd,
             capture_output=True,
             text=True,
+            # WP7/F23: git emits UTF-8; without an explicit encoding the
+            # subprocess reader thread decodes with the platform default
+            # (cp1252 on Windows) and a Cyrillic/CJK/0x9D commit subject
+            # raises UnicodeDecodeError in that thread — which escapes the
+            # except below and crashes /shipwright-adopt. Pin UTF-8 and
+            # replace undecodable bytes so analysis never aborts.
+            encoding="utf-8",
+            errors="replace",
             timeout=30,
             check=False,
         )

@@ -113,3 +113,60 @@ def test_skill_index_line_advertises_arm() -> None:
         "Kern SKILL.md F11 index row must advertise the `--auto` arm and "
         "its `iterate/`-only scope: " + row
     )
+
+
+# --- Refresh-if-behind guard + campaign-defer (Option A, Auto-merge churn fix,
+#     iterate-2026-06-12-automerge-serial-integrate) ------------------------------
+# GitHub auto-merge does a server-side 3-way merge and NEVER runs the
+# regenerate-at-merge resolver, so a branch that fell behind origin/<default>
+# would merge stale (Group-E staleness) or stall DIRTY on the regenerated
+# snapshots. F11 must (1) bring the branch current via `integrate_main
+# --ensure-current` BEFORE arming, and (2) honor a campaign-defer env var so an
+# `--autonomous` campaign drains serially instead of arming every PR at once.
+
+
+def test_f11_has_refresh_if_behind_guard() -> None:
+    """F11 must run the `ensure_current.py` refresh BEFORE push / PR-create / arm,
+    so the PR arms from a current, already-regenerated tree (server-side merge
+    cannot regenerate the derived snapshots), AND it must be fail-closed: a
+    non-churn/source conflict STOPs the run (hard safety gate)."""
+    text = _f11_text()
+    assert "ensure_current.py" in text, (
+        "F11.md must invoke ensure_current.py to refresh a behind branch before "
+        "arming auto-merge (server-side merge cannot regenerate snapshots)."
+    )
+    guard_pos = text.index("ensure_current.py")
+    push_pos = text.index("push -u origin")
+    create_pos = text.index("gh pr create")
+    arm_pos = text.index("--auto --squash --delete-branch")
+    assert guard_pos < push_pos < create_pos < arm_pos, (
+        "the ensure_current.py refresh must run BEFORE the push, the PR create, "
+        "and the auto-merge arm (so the branch is current when it ships/arms)."
+    )
+    # Fail-closed: a non-zero exit between the guard and the push must STOP.
+    guard_block = text[guard_pos:push_pos]
+    assert "exit 1" in guard_block and "STOP" in guard_block, (
+        "the ensure_current guard must STOP (exit 1) on a non-churn/source "
+        "conflict — the same hard safety gate as the resolver."
+    )
+
+
+def test_f11_arm_respects_campaign_defer() -> None:
+    """The arm must be gated on a CONCRETE `SHIPWRIGHT_ITERATE_AUTOMERGE` shell
+    check that wraps the `gh pr merge --auto` command, so an autonomous campaign
+    can defer arming (`=0`) and drain serially. Substring presence is not enough —
+    pin the exact condition and that it precedes the arm."""
+    text = _f11_text()
+    assert '"${SHIPWRIGHT_ITERATE_AUTOMERGE:-1}" = "0"' in text, (
+        "F11.md must gate the arm on an explicit "
+        '`if [ "${SHIPWRIGHT_ITERATE_AUTOMERGE:-1}" = "0" ]` check (default ON=1 '
+        "so single iterates are unchanged)."
+    )
+    gate_pos = text.index("SHIPWRIGHT_ITERATE_AUTOMERGE:-1")
+    arm_pos = text.index("--auto --squash --delete-branch")
+    assert gate_pos < arm_pos, (
+        "the campaign-defer gate must WRAP the arm (appear before it) so =0 skips it."
+    )
+    assert "DEFERRED" in text, (
+        "the deferred (=0) branch must NOT arm — it echoes a DEFERRED notice."
+    )

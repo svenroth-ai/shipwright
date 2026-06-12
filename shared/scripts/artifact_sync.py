@@ -97,7 +97,12 @@ def detect_drift(project_root: str, ref: str = "HEAD~1..HEAD") -> dict:
             "affected": [],
         }
 
-    config = json.loads(config_path.read_text())
+    # WP8/F24: explicit UTF-8 (utf-8-sig tolerates an optional BOM from a
+    # hand-edited config) — the canonical writer (lib/config.py) emits FR
+    # titles / descriptions with ensure_ascii=False, so a missing encoding=
+    # here crashes on the cp1252 Windows dev platform for any non-ASCII
+    # (CJK / Cyrillic) FR title.
+    config = json.loads(config_path.read_text(encoding="utf-8-sig"))
     mappings = config.get("mappings", [])
 
     # Get changed files from git

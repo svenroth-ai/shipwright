@@ -29,12 +29,15 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import tempfile
 from pathlib import Path
 
 _MARKER_PREFIX = "plugin_edit_pending"
 _MONOREPO_MARKER = ("scripts", "update-marketplace.sh")
+# Fallback only — the canonical strip is bloat_baseline.strip_worktree_prefix.
+_WORKTREE_PREFIX_FALLBACK = re.compile(r"^\.worktrees/[^/]+/")
 
 
 def _resolve_project_root() -> Path:
@@ -63,15 +66,38 @@ def is_monorepo(root: Path) -> bool:
     return (root.joinpath(*_MONOREPO_MARKER)).is_file()
 
 
+def _strip_worktree_prefix(rel: str) -> str:
+    """Strip a leading ``.worktrees/<slug>/`` (reuse the shared bloat helper).
+
+    Hooks run with cwd = MAIN repo root, so ``_relativize`` yields
+    ``.worktrees/<slug>/plugins/…`` for the dominant (worktree) iterate edit
+    path. The sibling ``check_file_size.py`` got this strip (ADR-126); this hook
+    did not (F6), so ``is_plugin_side`` saw the prefix and returned False — the
+    plugin-cache-sync reminder never fired for worktree edits. Falls back to a
+    local regex if the shared helper can't be imported.
+    """
+    try:
+        scripts_dir = str(Path(__file__).resolve().parent.parent)
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+        from lib.bloat_baseline import strip_worktree_prefix  # noqa: PLC0415
+
+        return strip_worktree_prefix(rel)
+    except (ImportError, ValueError):
+        return _WORKTREE_PREFIX_FALLBACK.sub("", rel.replace("\\", "/"), count=1)
+
+
 def is_plugin_side(rel: str) -> bool:
     """``True`` if a repo-relative path is synced to the runtime cache.
 
     Under ``plugins/`` or ``shared/`` (excluding ``shared/tests/``), or any file
-    named ``SKILL.md``.
+    named ``SKILL.md``. A leading ``.worktrees/<slug>/`` is stripped first (F6),
+    so worktree-relative edits classify identically to main-tree edits.
     """
     rel = (rel or "").replace("\\", "/").lstrip("/")
     if not rel:
         return False
+    rel = _strip_worktree_prefix(rel)
     if Path(rel).name == "SKILL.md":
         return True
     if rel.startswith("plugins/"):

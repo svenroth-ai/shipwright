@@ -99,6 +99,14 @@ def resolve_main_repo_root(project_root: Path | str) -> Path | None:
             cwd=str(project_root),
             capture_output=True,
             text=True,
+            # WP7/F27: git emits the common-dir path as UTF-8 bytes. Without
+            # an explicit encoding the platform default (cp1252 on Windows)
+            # mojibakes a non-ASCII project path, so the resolved main root
+            # points at a directory that does not exist — and worktree
+            # decision-drops are silently written there and lost. Pin UTF-8;
+            # the exists() guard below fail-softs if anything still slips.
+            encoding="utf-8",
+            errors="replace",
             check=False,
             shell=False,
             timeout=_GIT_TIMEOUT_SECONDS,
@@ -143,7 +151,22 @@ def resolve_main_repo_root(project_root: Path | str) -> Path | None:
     # — so this is worktree-correct. Defensive: only trust a path that
     # actually ends in ".git".
     if common_path.name == ".git":
-        return common_path.parent
+        resolved_root = common_path.parent
+        # WP7/F27: a mojibaked (or otherwise corrupt) path can name a
+        # directory that does not exist on disk. Returning it would send
+        # worktree decision-drops into a phantom dir where they are lost.
+        # Fail-soft to None so the caller falls back to project_root, which
+        # is guaranteed real.
+        if not resolved_root.exists():
+            warnings.warn(
+                f"resolve_main_repo_root: resolved main root "
+                f"{str(resolved_root)!r} does not exist (corrupt/mojibaked "
+                f"git output?) for {project_root} — the caller falls back to "
+                f"{project_root} itself.",
+                stacklevel=2,
+            )
+            return None
+        return resolved_root
 
     warnings.warn(
         f"resolve_main_repo_root: unexpected git-common-dir "

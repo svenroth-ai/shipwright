@@ -215,6 +215,38 @@ via `{shared_root}`) remains the monorepo-authored **second-line** authority tha
 dedups + validates the union'd log; it is incidentally reachable in managed repos
 but the union driver alone is the sufficient first-line defense there.
 
+**Auto-merge is safe ONLY for a current single iterate — parallel PRs drain
+serially (iterate-2026-06-12-automerge-serial-integrate, Option A).** GitHub's
+server-side merge honors `merge=union` for the JSONL logs (above) but CANNOT run
+the **regenerate-at-merge** half of the resolver, because regenerating the derived
+snapshots (`.shipwright/compliance/*.md`, `.shipwright/agent_docs/*.md`,
+`shipwright_test_results.json`) requires executing the producers against the merged
+tree — something only a local `integrate_main` run does. So GitHub-native
+auto-merge (armed in F11 since PR #197) is correct ONLY for the common case of a
+**single iterate whose branch is current** at merge time (committed snapshots ==
+merged-tree snapshots → no conflict, no staleness). For **parallel** iterate
+branches (an `--autonomous` campaign, or concurrent iterates) each branch carries
+its OWN regenerated snapshots; as they merge serially every still-open branch
+either conflicts on those snapshots (`DIRTY` → auto-merge stalls) or merges stale
+(Group-E staleness noise), and *any* concurrent merge — not just the campaign's
+own — re-breaks the open PRs. The contract:
+
+- **F11 single iterate** runs `shared/scripts/tools/ensure_current.py` (a thin
+  refresh-if-behind guard over `integrate_main`) BEFORE arming auto-merge: if the
+  branch is behind `origin/<default>` it merges + regenerates first (clean no-op
+  if current), so the PR always arms from a current, already-regenerated tree.
+- **Campaign / concurrency** sets `SHIPWRIGHT_ITERATE_AUTOMERGE=0` so sub-iterate
+  F11 does NOT arm; the orchestrator **drains the PRs serially** (campaign-mode.md
+  step 4), running `ensure_current.py` on each branch against the just-advanced
+  `origin/main` before merging it, one at a time.
+
+This is host-agnostic (the regeneration uses `integrate_main`/git, never a
+GitHub-only API), reuses existing machinery, and softens no gate — `audit_staleness`
+stays as-is because `main` is kept fresh at each merge. Rejected alternatives:
+a GitHub Action post-merge regen (host-specific); untracking the snapshots (breaks
+`audit_staleness`). A later host-agnostic watcher/producer (Option B, B4.5
+`gh-pr-ci` roadmap) can automate the serial drain but does not replace it.
+
 ### Main-tree triage drift reconcile (iterate-2026-06-07-triage-main-tree-reconcile)
 
 The churn resolver above covers **committed-vs-committed** merges. It does NOT
