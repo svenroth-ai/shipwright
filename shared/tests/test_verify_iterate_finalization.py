@@ -692,9 +692,9 @@ def test_architecture_documented_fails_when_undocumented(tmp_path):
     assert "iter-r1" in result.detail
 
 
-def test_architecture_documented_passes_when_documented(tmp_path):
-    # Legacy fallback: a convention run_id still in architecture.md (pre-
-    # migration backlog) is accepted until the compression iterate moves it.
+def test_architecture_documented_convention_only_in_arch_fails_post_retirement(tmp_path):
+    # Fallback retired (iterate-2026-06-12-compress-agent-doc-backlog): a convention
+    # run_id only in architecture.md no longer satisfies the gate (must be conventions.md).
     proj = tmp_path / "webui"
     proj.mkdir()
     _seed_arch_drop_for(proj, "iter-r1", "convention")
@@ -702,7 +702,7 @@ def test_architecture_documented_passes_when_documented(tmp_path):
         proj, "## Architecture Updates\n- iter-r1 (convention): documented.\n"
     )
     result = check_architecture_documented(proj, "iter-r1")
-    assert result.ok is True
+    assert result.ok is False
 
 
 def test_architecture_documented_convention_in_conventions_doc_passes(tmp_path):
