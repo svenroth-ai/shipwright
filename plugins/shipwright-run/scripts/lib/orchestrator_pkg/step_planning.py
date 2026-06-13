@@ -104,6 +104,23 @@ def _load_or_bootstrap(project_root: Path, step: str) -> dict[str, Any]:
     return config if config else _bootstrap_standalone_config(step)
 
 
+def _read_standalone_flag(project_root: Path) -> bool:
+    """Return the ``standalone`` flag WITHOUT triggering the legacy-migration
+    write that a full ``load_run_config`` would perform UNLOCKED.
+
+    ``standalone`` is invariant under migration (which only rewrites
+    ``pipeline`` / ``phase_tasks``), so the raw read matches the migrated
+    value; the migration still runs later, on the in-lock ``_load_or_bootstrap``
+    reload, where its ``save_run_config`` write is serialized by
+    ``run_config_lock`` (audit WP2/F11 residual window). Mirrors
+    ``_load_or_bootstrap(...).get("standalone", False)``: an absent config
+    means a standalone bootstrap (``standalone=True``)."""
+    config = load_run_config(project_root, migrate=False)
+    if not config:
+        return True
+    return config.get("standalone", False)
+
+
 def update_step(project_root: Path, step: str, status: str, *, force: bool = False) -> dict[str, Any]:
     """Update a pipeline step's status.
 
@@ -122,7 +139,10 @@ def update_step(project_root: Path, step: str, status: str, *, force: bool = Fal
     clobbered by a stale in-memory copy, and the lock is never held across the
     ~30 s subprocess.
     """
-    is_standalone = _load_or_bootstrap(project_root, step).get("standalone", False)
+    # Read the standalone flag WITHOUT migrating (the migration write would be
+    # UNLOCKED here, before the run_config_lock below). The in-lock
+    # _load_or_bootstrap reloads still perform the migration under the lock.
+    is_standalone = _read_standalone_flag(project_root)
 
     if status == "complete":
         inform_issues: list[dict[str, Any]] = []

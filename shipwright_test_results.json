@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-13-docs-ssot-reconcile",
+    "run_id": "iterate-2026-06-13-runconfig-standalone-read",
     "date": "2026-06-13",
     "unit": {
       "status": "passed",
-      "passed": 3796,
-      "total": 3796
+      "passed": 164,
+      "total": 164
     },
     "integration": {
       "status": "not_run",
@@ -18,12 +18,12 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "design_fidelity": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
@@ -32,12 +32,8 @@
     },
     "degraded": [
       {
-        "phase": "f0",
-        "reason": "Docs-only iterate (docs/hooks-and-pipeline.md + plugins/shipwright-iterate/skills/iterate/references/F6.md). No DB/CRUD/UI changed, so integration/pgtap/e2e suites are not applicable. Unit gate = the full pytest suite that owns the doc-drift/SSoT tests: shared/tests 3400 passed + 12 skipped + 26 deselected, shipwright-iterate 396 passed; doc-drift (test_hooks_json_wrapper, test_churn_merge_doc_sync, test_branch_integration_doc, test_bloat_baseline) + path-canon all green; F0 leak-guard ALLOW."
-      },
-      {
         "phase": "review",
-        "reason": "Small-complexity, docs-only diff, no risk flags: external LLM review (Advisory) and full code-review subagent skipped per Override Classes — every edit is backed by a source file:line / ADR citation verified in this session (12 hooks.json parsed, ADR-039/040, all 12 Stop chains extracted, grep of to_outbox in the 4 emitters, .gitignore:154 + write_decision_drop drop_dir)."
+        "reason": "Small-complexity change, no diff-derived risk flags (is_io_boundary_change=False, is_cross_component_change=False): external LLM review (Advisory) and the full code-review subagent skipped per Override Classes. The classifier's 'large'/'touches_migrations' was a message-keyword false-positive (matched 'migration'/'migrate' in the prose); the diff touches no supabase/migrations and no cross-component machinery. 7-point self-review done; every change cited to file:line."
       },
       {
         "phase": "setup",
@@ -46,56 +42,51 @@
     ],
     "surface_verification": {
       "surface": "none",
-      "runner": "",
+      "runner": "shared/scripts/surface_verification.py --surface none",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-13-docs-ssot-reconcile/surface_verification.json",
-      "timestamp": "2026-06-13T10:20:25.080Z",
-      "justification": "Docs-only SSoT reconciliation: docs/hooks-and-pipeline.md (pure documentation) + F6.md skill-reference staging prose. No startable runtime surface; correctness verified by the doc-drift suite (test_hooks_json_wrapper, test_churn_merge_doc_sync, test_artifact_path_canon) + empirical probes of the 12 shipped hooks.json and the 4 triage emitters."
+      "evidence_path": ".shipwright/runs/iterate-2026-06-13-runconfig-standalone-read/surface_verification.json",
+      "timestamp": "2026-06-13T00:00:00Z",
+      "justification": "Pure orchestrator-internal Python change (run-config standalone-flag read locking); no web/cli/api surface and nothing UI-consumed. Verified by the shipwright-run unit suite (164 passed) incl. the cross-process concurrency integration test."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "F3: the hooks.json Format section documents the required Claude Code 2.1.132+ shape (top-level 'hooks' wrapper + string matchers, ADR-039/040)",
+          "behavior": "load_run_config(migrate=False) returns the raw parsed config and performs NO legacy-migration write (no updated_at stamped on disk)",
           "disposition": "tested",
-          "evidence": "test_hooks_json_wrapper.py (26 parametrized cases: wrapper + matcher-string invariants) PASSED; empirical probe parsed all 12 plugins/*/hooks/hooks.json -> every file uses the wrapper + string matchers"
+          "evidence": "test_runconfig_standalone_read.py::test_load_run_config_migrate_false_skips_legacy_migration PASSED"
         },
         {
-          "behavior": "F4: the Hooks Registry uses generate_handoff_on_stop.py (real file) with correct counts/order (phase-quality wired into 11 of 12; all 12 have a Stop hook; order list = 10 incl. adopt)",
+          "behavior": "load_run_config(migrate=True) default still drops legacy pipeline entries (existing behavior preserved)",
           "disposition": "tested",
-          "evidence": "empirical probe extracted all 12 Stop chains (11 wire audit_phase_quality_on_stop; run keeps a 4-hook Stop chain; adopt runs audit->handoff); grep confirms 0 hyphenated 'generate-handoff.py' remain; doc-drift suite (test_branch_integration_doc, test_bloat_baseline) PASSED"
+          "evidence": "test_runconfig_standalone_read.py::test_load_run_config_migrate_false_skips_legacy_migration PASSED (second assertion) + test_orchestrator.py::test_legacy_pipeline_with_security_is_migrated_out PASSED"
         },
         {
-          "behavior": "F3/F4: registry matcher cells use the string form ('Bash', 'Write|Edit'), not the object form {tools:[...]}",
+          "behavior": "update_step's legacy-migration write now occurs INSIDE run_config_lock, never on the pre-lock standalone read",
           "disposition": "tested",
-          "evidence": "test_hooks_json_wrapper.py::test_pre_post_tool_use_matchers_are_strings PASSED; grep shows the only remaining {\"tools\" occurrence is the intentional F3 'Old format (removed)' counter-example"
+          "evidence": "test_runconfig_standalone_read.py::test_update_step_legacy_migration_write_is_inside_the_lock PASSED (RED before fix, GREEN after)"
         },
         {
-          "behavior": "F9: the Artifact Write Matrix states the security/perf/F0.5/F1 emitters append to the tracked triage.jsonl (to_outbox=False), not the outbox; outbox list = true background producers + plugin_sync_reminder",
+          "behavior": "_read_standalone_flag mirrors _load_or_bootstrap(...).get('standalone', False) for absent / standalone-true / standalone-false configs",
           "disposition": "tested",
-          "evidence": "empirical probe grep 'to_outbox|should_route_to_outbox' in the 4 emitters = 0 (append_triage_item_idempotent default to_outbox=False); contrasted with the 6 modules that DO route; test_churn_merge_doc_sync.py PASSED (matrix SSoT intact)"
+          "evidence": "test_runconfig_standalone_read.py::test_read_standalone_flag_mirrors_load_or_bootstrap PASSED"
         },
         {
-          "behavior": "F28: the F6 staging reference no longer 'git add's the gitignored, main-resident decision-drops dir",
+          "behavior": "Existing multi-process run-config writers still never truncate or lose updates (regression guard for the WP2 atomic-write/lock invariant)",
           "disposition": "tested",
-          "evidence": "empirical verification: .gitignore:154 ignores /.shipwright/agent_docs/decision-drops/, write_decision_drop.drop_dir resolves resolve_main_repo_root (main-resident), 0 tracked files in the dir; test_write_decision_drop.py pins the main-resident gitignored producer behavior; F6.md edit replaces the line with an explanatory NOTE"
-        },
-        {
-          "behavior": "The doc edits introduce no bare legacy artifact paths (path canon)",
-          "disposition": "tested",
-          "evidence": "test_artifact_path_canon.py + test_path_canon_windows-adjacent run — 4 passed"
+          "evidence": "test_runconfig_concurrency.py::test_three_process_writers_no_truncation_no_lost_update PASSED"
         }
       ],
       "counts": {
-        "testable": 6,
-        "tested": 6,
+        "testable": 5,
+        "tested": 5,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 4,
-        "covered_acs": 4
+        "acs": 2,
+        "covered_acs": 2
       }
     }
   }
