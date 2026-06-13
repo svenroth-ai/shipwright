@@ -17,6 +17,10 @@ from typing import Any
 
 from .constants import CONFIG_NAME, SCHEMA_VERSION
 
+# ``run_config_store`` is a top-level module in this plugin's scripts/lib;
+# importing ``.constants`` above already put that dir on sys.path.
+from run_config_store import atomic_write_json  # noqa: E402
+
 
 def load_run_config(project_root: Path) -> dict[str, Any]:
     """Load orchestrator config (with implicit legacy migration)."""
@@ -40,10 +44,17 @@ def load_run_config(project_root: Path) -> dict[str, Any]:
 
 
 def save_run_config(project_root: Path, config: dict[str, Any]) -> None:
-    """Save orchestrator config (stamps ``updated_at``)."""
-    path = project_root / CONFIG_NAME
+    """Save orchestrator config (stamps ``updated_at``) atomically.
+
+    The write is ``tmp + os.replace`` (audit WP2/F11) so a concurrent reader
+    never observes a half-written file. This is the low-level writer: the
+    advisory run-config lock that serialises read-modify-write windows is held
+    by callers (``update_step``, ``phase_task_lifecycle``), NOT here — so the
+    legacy-migration-on-load path can call it from inside a held lock without
+    re-entering (deadlocking) it.
+    """
     config["updated_at"] = datetime.now(timezone.utc).isoformat()
-    path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
+    atomic_write_json(project_root / CONFIG_NAME, config)
 
 
 def is_v2_config(config: dict[str, Any]) -> bool:

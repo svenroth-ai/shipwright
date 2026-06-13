@@ -1,0 +1,1 @@
+The Stop-hook phase-completion fallback now allows strictly more time (60s) than the inner compliance subprocess (30s), so the orchestrator is no longer killed before it marks the phase complete (audit WP2 F13)

@@ -37,6 +37,7 @@ from phase_state_machine import (  # noqa: E402
     NextPhaseSpec,
     next_phase_task,
 )
+from run_config_store import atomic_write_json  # noqa: E402
 
 CONFIG_NAME = "shipwright_run_config.json"
 LOCK_NAME = "shipwright_run_config.json.lock"
@@ -114,9 +115,8 @@ def _read_config(project_root: Path) -> dict[str, Any]:
 
 
 def _write_config(project_root: Path, config: dict[str, Any]) -> None:
-    path = project_root / CONFIG_NAME
     config["updated_at"] = _now_iso()
-    path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
+    atomic_write_json(project_root / CONFIG_NAME, config)  # atomic; readers never see a partial write (WP2/F12)
 
 
 def _find_task(config: dict[str, Any], phase_task_id: str) -> Optional[dict[str, Any]]:

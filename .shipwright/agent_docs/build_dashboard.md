@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-12 22:41 UTC | Session: 30d44a6a-9835-4347-a9f2-b6b6a8b528f5 | Run: iterate-2026-06-10-phase-hook-lifecycle
+> Updated: 2026-06-13 05:51 UTC | Session: 2040592a-a939-4281-8a4d-a7a6c0b43bc7 | Run: iterate-2026-06-13-runconfig-atomic-writes
 
-## Recent Changes (168 iterations)
+## Recent Changes (169 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | run-config concurrency & atomicity (WP2: F11/F12/F13) | 162/162 |  | infra | 2026-06-13 |
 | change | WP1: phase-session hooks resolve identity from the stdin payload (F1); atomic event-log dedup (F14); phase_failed/stale_stop_rejected event types (F15) | 3348/3362 |  | tooling | 2026-06-12 |
 | bug | Coerce explicit-null affected_frs/new_frs (and tests/review) in WorkEvent.from_dict | 697/697 |  | compliance | 2026-06-12 |
 | change | Relocate resolve_main_repo_root from lib/events_log.py to lib/repo_root.py with a lazy back-compat re-export; migrate net-zero consumers; keep the two grandfathered consumers (iterate_checks, group_f) on the re-export to avoid ratcheting bloat. | 0/0 |  | tooling | 2026-06-12 |
@@ -175,7 +176,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-13 | Unit: 3348/3362 | Integration: 147/147 | Smoke: not_run | (iterate)
+Last run: 2026-06-13 | Unit: 162/162 | Integration: 1/1 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

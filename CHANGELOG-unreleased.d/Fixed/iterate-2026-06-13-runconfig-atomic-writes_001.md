@@ -1,0 +1,1 @@
+Writes to shipwright_run_config.json are now atomic (tmp+os.replace) and serialized by a path-coordinated advisory lock across all writer families, eliminating lost task/phase state and torn reads that could silently demote a pipeline session to standalone (audit WP2 F11/F12)

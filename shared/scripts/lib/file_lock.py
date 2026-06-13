@@ -81,8 +81,12 @@ def _acquire_windows(fh, deadline: float, poll_interval: float, path: str) -> No
 
     while True:
         try:
-            # Lock a single byte at offset 0. msvcrt only locks byte ranges,
-            # but that's enough for an advisory coordination primitive.
+            # Lock a single byte at offset 0. msvcrt locks the byte range at
+            # the CURRENT position, so seek to 0 first — otherwise an "a+"
+            # handle on a non-empty lock file would lock a different offset
+            # than peers locking byte 0 (e.g. phase_task_lifecycle._PhaseTasksLock)
+            # and the locks would fail to mutually exclude. Mirrors _release.
+            fh.seek(0)
             msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)
             return
         except OSError:

@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-06-12T22:41:27.823708+00:00
-Total commits: 981
+Generated: 2026-06-13T05:51:32.227810+00:00
+Total commits: 982
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 280
+    "fix" : 281
     "feat" : 270
     "chore" : 216
     "docs" : 123
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 280 commits
+### Fixes (fix) — 281 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-13 | pipeline | phase hooks resolve identity from stdin payload; atomic event dedup; failure event types (WP1) (#224) | a683d75bb779 |
 | 2026-06-12 | compliance | coerce explicit-null affected_frs/new_frs in WorkEvent.from_dict (#220) | 332b64728fa1 |
 | 2026-06-12 | compliance | W2 SKIPs on unresolvable run_id, mirroring the S2/S3 guard (#217) | 768c2a9c625a |
 | 2026-06-12 | install | test-run python3 probe so Windows MS Store stub doesn't abort marketplace sync (#216) | 2da047b7c24a |
@@ -1050,7 +1051,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 981 |
+| Total commits | 982 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 981 |
+| Human-authored commits | 982 |
 

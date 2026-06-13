@@ -170,7 +170,7 @@ def _run_phase_completion(project_root: Path, step: str) -> None:
             [sys.executable, str(orchestrator),
              "update-step", "--project-root", str(project_root),
              "--step", step, "--status", "complete"],
-            capture_output=True, timeout=30,
+            capture_output=True, timeout=60,  # strictly > inner compliance 30s, so update_step survives to save_run_config (WP2/F13)
         )
     except (subprocess.TimeoutExpired, OSError):
         pass

@@ -22,6 +22,13 @@ import sys
 from pathlib import Path
 from typing import Any
 
+# Inner timeout for the compliance update subprocess. The Stop-fallback that
+# spawns ``orchestrator update-step`` (generate_handoff_on_stop) MUST allow
+# STRICTLY more than this, or the orchestrator is killed mid-write before
+# ``save_run_config`` runs and the phase is never marked complete
+# (audit WP2/F13). Enforced by test_runconfig_timeout_invariant.py.
+COMPLIANCE_SUBPROCESS_TIMEOUT_SECONDS = 30
+
 
 def _shim():
     """Return the imported ``orchestrator`` shim if present, else None.
@@ -65,7 +72,8 @@ def run_compliance_update(project_root: Path, phase: str) -> dict[str, Any] | No
             [sys.executable, str(compliance_script),
              "--project-root", str(project_root),
              "--phase", phase],
-            capture_output=True, text=True, encoding="utf-8", timeout=30,
+            capture_output=True, text=True, encoding="utf-8",
+            timeout=COMPLIANCE_SUBPROCESS_TIMEOUT_SECONDS,
             cwd=str(project_root),
         )
         if result.returncode == 0 and result.stdout.strip():
