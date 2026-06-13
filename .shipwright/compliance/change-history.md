@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-13T10:07:03.548685+00:00
-Total commits: 989
+Generated: 2026-06-13T10:25:13.910813+00:00
+Total commits: 991
 
 ## Commit Distribution
 
@@ -10,7 +10,7 @@ pie title Commit Types
     "fix" : 283
     "feat" : 271
     "chore" : 216
-    "docs" : 126
+    "docs" : 128
     "refactor" : 54
     "test" : 24
     "ci" : 7
@@ -805,10 +805,12 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 126 commits
+### Documentation (docs) — 128 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-13 | hooks-and-pipeline | reconcile hooks.json format, registry, and outbox matrix to shipped reality (audit-3 WP11a) | 1d9988f923c4 |
+| 2026-06-13 | skills | sync 6 stale SKILL.md/code/config items to the corrected guide (#231) | c2b6a2aa27c8 |
 | 2026-06-13 | guide | correct 21 drifted claims via full code/ADR audit (#230) | c3ee79be6d31 |
 | 2026-06-13 | install | end-to-end Get-Started + GitHub/auto-merge guide; sync plugin catalog (#228) | c35088825704 |
 | 2026-06-13 | adopt | note CodeQL + AUTOMERGE_SETUP scaffolding in guide.md Chapter 3.5 | feebb2552c88 |
@@ -1058,7 +1060,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 989 |
+| Total commits | 991 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 989 |
+| Human-authored commits | 991 |
 

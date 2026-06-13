@@ -1,35 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-13-skill-doc-staleness-sync"
+run_id: "iterate-2026-06-13-docs-ssot-reconcile"
 phase: "iterate"
-reason: "iterate: sync stale source docs/labels to corrected guide (C1-C6)"
-timestamp: "2026-06-13T10:07:03.548685+00:00"
+reason: "F11 pre-merge refresh: iterate-2026-06-13-docs-ssot-reconcile"
+timestamp: "2026-06-13T10:25:13.910813+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-13 10:07:03 UTC
+> Auto-generated 2026-06-13 10:25:13 UTC
 
 ## Session Info
 
-- **Session ID**: 6ae258a2-262e-4e05-9677-bf0575dcdf94
-- **Timestamp**: 2026-06-13 10:07:03 UTC
-- **Reason**: iterate: sync stale source docs/labels to corrected guide (C1-C6)
+- **Session ID**: 118aad1f-bdd5-4952-8f4c-9d0a776d7981
+- **Timestamp**: 2026-06-13 10:25:13 UTC
+- **Reason**: F11 pre-merge refresh: iterate-2026-06-13-docs-ssot-reconcile
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-13-guide-correctness-audit
-- **Date**: 2026-06-13T09:21:45.786589Z
+- **Run ID**: iterate-2026-06-13-docs-ssot-reconcile
+- **Date**: 2026-06-13T10:26:31.177362Z
 - **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/guide-correctness-audit
-- **ADR**: iterate-2026-06-13-guide-correctness-audit
+- **Complexity**: small
+- **Branch**: iterate/docs-ssot-reconcile
+- **ADR**: iterate-2026-06-13-docs-ssot-reconcile
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-13-guide-correctness-audit.md
+- **Spec**: .shipwright/planning/iterate/campaigns/2026-06-10-audit-3-final/sub-iterates/a3-1-docs-ssot-reconcile.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/skill-doc-staleness-sync
+- **Branch**: iterate/docs-ssot-reconcile
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/skill-doc-staleness-sync
-- **Last Commit**: c3ee79be docs(guide): correct 21 drifted claims via full code/ADR audit (#230)
+- **Branch**: iterate/docs-ssot-reconcile
+- **Last Commit**: 90185f7f Merge remote-tracking branch 'origin/main' into iterate/docs-ssot-reconcile
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -66,15 +66,15 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 | Event | Type | Source | Date |
 |-------|------|--------|------|
 | evt-0e2c6e4d | work_completed | iterate (sync 6 stale SKILL.md/code/config items to the corrected guide (C1-C6)) | 2026-06-13 |
+| evt-b1e3660d | work_completed | iterate (audit-3 WP11a docs/SSoT reconciliation (F3 hooks.json format, F4 registry drift, F9 outbox matrix, F28 F6 decision-drops staging)) | 2026-06-13 |
 | evt-208f28f1 | work_completed | iterate (guide.md correctness audit + 21 fixes vs code/ADRs) | 2026-06-13 |
 | evt-98471b18 | work_completed | iterate (docs install/Get-Started rewrite + GitHub/auto-merge guide + marketplace metadata parity) | 2026-06-13 |
 | evt-a7561bb4 | work_completed | iterate (hook block-channel (WP4): route PostToolUse security-guard reasons to stderr; SessionStart drift gate is honest warn-only via additionalContext) | 2026-06-13 |
-| evt-efbff017 | work_completed | iterate (adopt scaffolds profile-aware CodeQL + AUTOMERGE_SETUP doc for brownfield automerge-readiness (bloat-check deferred)) | 2026-06-13 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 175
+- **Total work events**: 176
 - **Last iterate**: change — sync 6 stale SKILL.md/code/config items to the corrected guide (C1-C6) (2026-06-13)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
