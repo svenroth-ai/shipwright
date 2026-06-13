@@ -1,19 +1,19 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-13-shc-file-lock"
+run_id: "iterate-2026-06-13-shc-read-events"
 phase: "iterate"
 reason: "iterate finalization"
-timestamp: "2026-06-13T15:18:32.097681+00:00"
+timestamp: "2026-06-13T16:03:19.756877+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-13 15:18:32 UTC
+> Auto-generated 2026-06-13 16:03:19 UTC
 
 ## Session Info
 
 - **Session ID**: 1c1c6790-3768-47d0-bd4f-f7a4ed24bee9
-- **Timestamp**: 2026-06-13 15:18:32 UTC
+- **Timestamp**: 2026-06-13 16:03:19 UTC
 - **Reason**: iterate finalization
 
 ## Last Iterate
@@ -29,7 +29,7 @@ timestamp: "2026-06-13T15:18:32.097681+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/2026-06-13-shc-file-lock
+- **Branch**: iterate/2026-06-13-shc-read-events
 - **External Review Marker**: completed (external_review_state.json @ 2026-06-13T15:09:50)
 
 ### Mandatory replay on Resume
@@ -48,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/2026-06-13-shc-file-lock
-- **Last Commit**: 172e39d9 fix(audit-3): low-risk hardening — event-commit, report-escape, CI pipefail, test-discipline (WP11b) (#236)
+- **Branch**: iterate/2026-06-13-shc-read-events
+- **Last Commit**: 9bb7c1e1 refactor(events): dedup read_events into a single lib.config SSOT
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,23 +65,23 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-ac75c147 | work_completed | iterate (iterate finalization) | 2026-06-13 |
 | evt-29a5f711 | work_completed | iterate (Extract duplicated cross-platform _FileLock into shared/scripts/lib/file_lock.py; both call sites import it; unify on the parent-dir-creating superset.) | 2026-06-13 |
 | evt-0c568942 | work_completed | iterate (Align the bloat marker writer (check_file_size) to key delta/was_in_allowlist off the worktree's own baseline via a shared worktree_root_for SSoT also used by the Stop gate (trg-537334f1).) | 2026-06-13 |
 | evt-3d6824d5 | work_completed | iterate (code-simplify skill (OS1 / P3.2): SIMPLIFY sub-mode of CHANGE + behavior_snapshot snapshot/verify gate + F-simplify.md + guide docs) | 2026-06-13 |
 | evt-8726cab7 | work_completed | iterate (audit-3 WP11b low-risk hardening (F18/F32/F39/F40/F41)) | 2026-06-13 |
-| evt-35fb72c3 | work_completed | iterate (Read run-config standalone flag without triggering the unlocked legacy migration) | 2026-06-13 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 182
-- **Last iterate**: change — Extract duplicated cross-platform _FileLock into shared/scripts/lib/file_lock.py; both call sites import it; unify on the parent-dir-creating superset. (2026-06-13)
+- **Total work events**: 183
+- **Last iterate**: change — iterate finalization (2026-06-13)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
 
-### ADR-207: Extract _FileLock into shared lib/file_lock.py
+### ADR-208: Single SSOT for read_events; verifier reader kept separate (G5)
 - **Date:** 2026-06-13
-- **Section:** Iterate - 2026-06-13-shc-file-lock
-- **Context:** The cross-platform block-until-acquired _FileLock class was duplicated near-identically in tools/record_event.py and triage.py (reducibility D-finding); the triage copy had already diverged with a parent-dir mkdir superset.
-- **Decision:** Extract ONE FileLock class into the existing shared/scripts/lib/file_lock.py (alongside, not replacing, its timeout-base
+- **Section:** Iterate B - shared-helper-consolidation
+- **Context:** record_event.read_events() was a byte-identical copy of lib.config.read_events() (both resolve via resolve_events_path). verifiers/common.read_events_jsonl() is a third reader of the same artifact but reads the LITERAL project_root path, silent (errors=ignore).
+- **Decision:** Re-export read_events from lib.config in record_event (tools
