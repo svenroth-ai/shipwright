@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-06-13T10:52:08.925087+00:00
-Total commits: 991
+Generated: 2026-06-13T11:23:59.355031+00:00
+Total commits: 993
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 283
+    "fix" : 285
     "feat" : 271
     "chore" : 216
     "docs" : 128
@@ -20,10 +20,12 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 283 commits
+### Fixes (fix) — 285 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-13 | atomic-writes | fsync before os.replace in a shared durable-write primitive | f9d8e0ba8f18 |
+| 2026-06-13 | run | read run-config standalone flag without the unlocked legacy migration (#233) | ea51ffe55982 |
 | 2026-06-13 | hooks | deliver block reason on the channel the event reads (WP4) (#229) | 7940d67bfd8b |
 | 2026-06-13 | pipeline | atomic + lock-coordinated run_config writes; Stop-fallback timeout headroom (WP2) (#226) | de2df18ab60f |
 | 2026-06-13 | pipeline | phase hooks resolve identity from stdin payload; atomic event dedup; failure event types (WP1) (#224) | a683d75bb779 |
@@ -1060,7 +1062,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 991 |
+| Total commits | 993 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 991 |
+| Human-authored commits | 993 |
 
