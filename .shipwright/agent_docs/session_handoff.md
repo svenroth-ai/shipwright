@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-13-atomic-write-fsync-durability"
+run_id: "iterate-2026-06-13-bloat-marker-writer-baseline"
 phase: "iterate"
-reason: "F11 pre-merge refresh: iterate-2026-06-13-atomic-write-fsync-durability"
-timestamp: "2026-06-13T11:23:59.355031+00:00"
+reason: "iterate: align bloat marker writer to the worktree baseline (trg-537334f1)"
+timestamp: "2026-06-13T13:48:43.718381+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-13 11:23:59 UTC
+> Auto-generated 2026-06-13 13:48:43 UTC
 
 ## Session Info
 
-- **Session ID**: 96f26c03-fb2e-4966-891d-b9671b25b403
-- **Timestamp**: 2026-06-13 11:23:59 UTC
-- **Reason**: F11 pre-merge refresh: iterate-2026-06-13-atomic-write-fsync-durability
+- **Session ID**: 032d4037-611f-4834-b0b6-4dd890f95642
+- **Timestamp**: 2026-06-13 13:48:43 UTC
+- **Reason**: iterate: align bloat marker writer to the worktree baseline (trg-537334f1)
 
 ## Last Iterate
 
@@ -29,10 +29,10 @@ timestamp: "2026-06-13T11:23:59.355031+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/atomic-write-fsync-durability
-- **Run ID**: `iterate-2026-06-13-atomic-write-fsync-durability`
-- **Spec**: .shipwright/planning/iterate/2026-06-13-atomic-write-fsync-durability.md
-- **Complexity**: medium (keyword-sourced, confidence 0.7)
+- **Branch**: iterate/2026-06-13-bloat-marker-writer-baseline
+- **Run ID**: `iterate-2026-06-13-bloat-marker-writer-baseline`
+- **Spec**: .shipwright/planning/iterate/2026-06-13-bloat-marker-writer-baseline.md
+- **Complexity**: medium (locked by `cross_component` safety floor — diff edits `shared/scripts/hooks/*.py`)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -51,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/atomic-write-fsync-durability
-- **Last Commit**: a9b3cbe5 Merge remote-tracking branch 'origin/main' into iterate/atomic-write-fsync-durability
+- **Branch**: iterate/2026-06-13-bloat-marker-writer-baseline
+- **Last Commit**: 2c183c3b fix(atomic-writes): fsync before os.replace in a shared durable-write primitive (#234)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-0c568942 | work_completed | iterate (Align the bloat marker writer (check_file_size) to key delta/was_in_allowlist off the worktree's own baseline via a shared worktree_root_for SSoT also used by the Stop gate (trg-537334f1).) | 2026-06-13 |
 | evt-35fb72c3 | work_completed | iterate (Read run-config standalone flag without triggering the unlocked legacy migration) | 2026-06-13 |
 | evt-c94b50ab | work_completed | iterate (durable atomic writes (fsync) across all atomic writers) | 2026-06-13 |
 | evt-0e2c6e4d | work_completed | iterate (sync 6 stale SKILL.md/code/config items to the corrected guide (C1-C6)) | 2026-06-13 |
 | evt-b1e3660d | work_completed | iterate (audit-3 WP11a docs/SSoT reconciliation (F3 hooks.json format, F4 registry drift, F9 outbox matrix, F28 F6 decision-drops staging)) | 2026-06-13 |
-| evt-208f28f1 | work_completed | iterate (guide.md correctness audit + 21 fixes vs code/ADRs) | 2026-06-13 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 178
-- **Last iterate**: change — Read run-config standalone flag without triggering the unlocked legacy migration (2026-06-13)
+- **Total work events**: 179
+- **Last iterate**: change — Align the bloat marker writer (check_file_size) to key delta/was_in_allowlist off the worktree's own baseline via a shared worktree_root_for SSoT also used by the Stop gate (trg-537334f1). (2026-06-13)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

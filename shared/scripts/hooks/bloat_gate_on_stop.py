@@ -213,17 +213,6 @@ def _emit_pass() -> None:
     return
 
 
-def _worktree_root(main_root: Path, marker_path: str) -> Path | None:
-    """Worktree root owning ``marker_path``'s ceiling (trg-28e83840), or ``None``
-    for a main-tree path (reconstructed from the ``.worktrees/<slug>/`` prefix)."""
-    norm = _bb.normalize_path(marker_path)
-    stripped = _bb.strip_worktree_prefix(norm)
-    if stripped == norm:
-        return None
-    prefix = norm[: len(norm) - len(stripped)]  # ".worktrees/<slug>/"
-    return main_root / prefix.rstrip("/")
-
-
 def main() -> int:
     # Canonical MAIN repo root (fail-soft), never Path.cwd() — must match the
     # writer (check_file_size) so marker/baseline/re-measure key off ONE root.
@@ -245,7 +234,7 @@ def main() -> int:
     baseline_by_root: dict[Path, dict[str, object]] = {root: main_baseline}
 
     def _baseline_for(marker_path: str) -> dict[str, object]:
-        wt = _worktree_root(root, marker_path)
+        wt = _bb.worktree_root_for(root, marker_path)
         if wt is None:
             return main_baseline
         if wt not in baseline_by_root:

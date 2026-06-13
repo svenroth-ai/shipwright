@@ -1,0 +1,1 @@
+Bloat marker writer (`check_file_size`) now classifies `delta`/`was_in_allowlist` against the worktree's own baseline (via a shared `worktree_root_for` SSoT also used by the Stop gate), matching the reader fix from #186; a worktree-only-baselined file grown past its ceiling now blocks at the Stop gate, not only at CI.
