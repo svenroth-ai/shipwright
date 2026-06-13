@@ -1,17 +1,21 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-13-low-risk-hardening",
+    "run_id": "iterate-2026-06-13-unify-simplify-reducibility",
     "date": "2026-06-13",
-    "unit": { "status": "passed", "passed": 4073, "total": 4089 },
-    "integration": { "status": "passed", "passed": 147, "total": 147 },
+    "unit": { "status": "passed", "passed": 3996, "total": 3996 },
+    "integration": { "status": "passed", "passed": 7, "total": 7 },
     "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
     "e2e": { "status": "skipped", "passed": 0, "total": 0 },
     "design_fidelity": { "status": "not_run", "passed": 0, "total": 0 },
     "smoke": { "status": "not_run" },
     "degraded": [
       {
-        "phase": "setup",
-        "reason": "Pre-existing sweep-outbox warning from setup_iterate_worktree (trg-671bb0a2: a status append dropped by a prior merge) — unrelated to this change's footprint; non-fatal, the worktree was still created."
+        "phase": "f0",
+        "reason": "F0 isolation leak-guard BLOCKED on concurrent main-tree WIP from a separate 'shc-file-lock' iterate (file_lock.py, record_event.py, triage.py, test_file_lock.py + its miniplan) — verified NOT this run; my worktree is isolated and F6 git-adds only worktree paths so the concurrent WIP cannot enter this PR. Override approved by the user (gate-override = ASK-FIRST)."
+      },
+      {
+        "phase": "f0",
+        "reason": "Unit 3996 = shared/tests 3424 + iterate-plugin 427 + build-plugin 84 (edited code-reviewer.md) + shared/scripts/tools/tests 61. Integration = the 7-arm bidirectional gate (integration-tests/test_behavior_snapshot_gate.py); full integration-tests/ + other plugin suites not re-run (this diff is a relocation + docs + tests touching no contract surface) — CI re-runs everything."
       }
     ],
     "surface_verification": {
@@ -19,34 +23,29 @@
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-13-low-risk-hardening/surface_verification.json",
-      "timestamp": "2026-06-13T13:41:30.593Z",
-      "justification": "WP11b hardens framework-internal tooling (commit_event_followup, security-report markdown escaping), CI workflow shell config, and pytest CI-discipline guards. No startable web/cli/api application surface; behaviors are verified by the unit + integration suite. small complexity, no touches_io_boundary or UI."
+      "evidence_path": ".shipwright/runs/iterate-2026-06-13-unify-simplify-reducibility/surface_verification.json",
+      "timestamp": "2026-06-13T14:00:09.426Z",
+      "justification": "Framework-tooling consolidation: relocate behavior_snapshot.py to shared/scripts/tools (SSoT), cross-wire F-simplify.md <-> reducibility-catalog.md, add one bidirectional integration test. No web/CLI/API surface introduced or changed; proven by the relocated unit suite + the bidirectional integration test + cross-surface parity, all green at F0."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "F18: commit_event_followup skips (status=skipped/staged_changes) when the index has unrelated staged WIP", "disposition": "tested",
-          "evidence": "shared/tests/test_commit_event_followup.py::test_skips_when_index_has_unrelated_staged_changes PASSED (red->green)" },
-        { "behavior": "F18: follow-up commit is path-restricted to the event file; other unstaged worktree changes stay uncommitted", "disposition": "tested",
-          "evidence": "shared/tests/test_commit_event_followup.py::test_commits_only_event_file_not_other_dirty_worktree PASSED" },
-        { "behavior": "F32: PR-mode findings table cells pipe/newline-escaped -> no column shift, raw pipe never verbatim", "disposition": "tested",
-          "evidence": "plugins/shipwright-security/tests/test_report_cell_escaping.py::test_pr_report_row_not_column_shifted PASSED" },
-        { "behavior": "F32: standard report findings table cells pipe-escaped -> no column shift", "disposition": "tested",
-          "evidence": "plugins/shipwright-security/tests/test_report_cell_escaping.py::test_standard_report_row_not_column_shifted PASSED" },
-        { "behavior": "F32: benign cell values render unchanged (escaping is a no-op, no stray backslash-pipe)", "disposition": "tested",
-          "evidence": "plugins/shipwright-security/tests/test_report_cell_escaping.py::test_benign_findings_render_unchanged PASSED" },
-        { "behavior": "F39: Install Gitleaks step sets shell:bash (activates -o pipefail) in ci.yml, security.yml, template", "disposition": "tested",
-          "evidence": "shared/tests/test_gitleaks_step_pipefail.py::test_gitleaks_step_sets_shell_bash[x3] PASSED" },
-        { "behavior": "F39: the false default-pipefail comment is removed from all 3 workflow files", "disposition": "tested",
-          "evidence": "shared/tests/test_gitleaks_step_pipefail.py::test_no_false_default_pipefail_comment[x3] PASSED" },
-        { "behavior": "F40: install-hook tests gate on bash via skip_or_fail_on_missing_binary (no crash on bash-less host; CI-fail branch present)", "disposition": "tested",
-          "evidence": "shared/tests/test_silent_skip_ci_discipline.py::test_affected_file_imports_from_lib_test_hygiene[test_bloat_defense_artifacts.py] PASSED; helper behavior covered by test_test_hygiene.py::test_skip_or_fail_on_missing_binary_{local_skips,ci_fails}" },
-        { "behavior": "F41: per-hook-command FileNotFoundError handler hard-fails in CI, skips only locally (ADR-044)", "disposition": "tested",
-          "evidence": "shared/tests/test_silent_skip_ci_discipline.py::test_hook_schema_filenotfound_handler_is_ci_gated PASSED" }
+        { "behavior": "AC1 behavior_snapshot.py relocated to shared/scripts/tools (SSoT); all refs updated; module content unchanged; suites green; 0 live refs to old path", "disposition": "tested",
+          "evidence": "test_simplify_reducibility_unify.py::test_behavior_snapshot_gate_is_shared_ssot + relocated shared/scripts/tools/tests/test_behavior_snapshot.py (10) + grep old-path=0 live refs PASSED" },
+        { "behavior": "AC2 (Side 1) F-simplify.md adopts the closed catalog vocabulary D.A.X.C.S.M.P.T + G1-G6", "disposition": "tested",
+          "evidence": "test_simplify_reducibility_unify.py::test_f_simplify_adopts_the_shared_catalog PASSED" },
+        { "behavior": "AC3 (Side 2) catalog + code-reviewer.md cite behavior_snapshot.py as mechanical G3 proof on exec surfaces; no-exec CI Tier-3 reviewer explicitly exempt", "disposition": "tested",
+          "evidence": "test_simplify_reducibility_unify.py::test_catalog_cites_behavior_snapshot_as_mechanical_g3_proof / ::test_code_reviewer_cites_behavior_snapshot PASSED (asserts 'tier-3'/'self-contained' exemption)" },
+        { "behavior": "AC4 bidirectional integration: ONE shared tool proves BOTH a simplify edit AND an X dead-code reduction green->green; drift + removed-coverage rejected", "disposition": "tested",
+          "category": "integration",
+          "evidence": "integration-tests/test_behavior_snapshot_gate.py (7 arms incl. test_catalog_reduction_dead_code_stays_green + test_clean_simplify_stays_green + reject arms) PASSED" },
+        { "behavior": "AC5 cross-surface parity asserts live in a companion file (keeping test_reducibility_gate.py byte-identical, under its LOC cap)", "disposition": "tested",
+          "evidence": "test_simplify_reducibility_unify.py (5) PASSED; test_reducibility_gate.py unchanged (30) PASSED" },
+        { "behavior": "AC6 docs/guide.md documents the unification (shared tool + shared vocabulary)", "disposition": "tested",
+          "evidence": "test_simplify_reducibility_unify.py::test_guide_documents_the_unification PASSED" }
       ],
-      "counts": { "testable": 9, "tested": 9, "untestable": 0, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 4, "covered_acs": 4 }
+      "counts": { "testable": 6, "tested": 6, "untestable": 0, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 6, "covered_acs": 6 }
     }
   }
 }

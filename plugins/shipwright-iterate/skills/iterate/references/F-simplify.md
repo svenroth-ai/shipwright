@@ -33,7 +33,7 @@ The wrap produces, in order:
 You cannot prove you preserved behavior without a baseline. Record one.
 
 ```bash
-uv run "{plugin_root}/scripts/lib/behavior_snapshot.py" snapshot \
+uv run "{shared_root}/scripts/tools/behavior_snapshot.py" snapshot \
   --project-root "{project_root}" --run-id "{run_id}" \
   --test-cmd "<python> -m pytest" [--target <paths covering the code you will simplify>]
 ```
@@ -53,6 +53,19 @@ STOP — you are not in a position to simplify yet.
 ## Phase 2 — Simplify under the Five Principles
 
 > Adapted from addyosmani/agent-skills `code-simplification` (MIT, © Addy Osmani).
+
+The Five Principles below are the **dispositional** layer (*how* to approach the
+edit). The concrete **what to change** vocabulary is the shared closed catalog in
+[`shared/reducibility-catalog.md`](../../../../../shared/reducibility-catalog.md) —
+the same one the bloat/reducibility reviewer bounces diffs back with: **D**
+duplication · **A** needless abstraction · **X** dead code · **C** control-flow
+verbosity · **S** data-shape · **M** comment-restating-code · **P** dependency
+footprint · **T** test repetition, bounded by guardrails **G1–G6**. Enumerate your
+candidate reductions by catalog code, obey the guardrails (G1 long-but-coherent is
+never a finding; G3 never weaken coverage/validation/types), and treat the catalog's
+finding contract (*what to remove · est-LOC-saved · keeps-tests-green*) as the bar.
+A simplify is the **apply** path for exactly those reductions; Phase 3 is the
+mechanical proof of the "keeps-tests-green" clause.
 
 1. **Preserve Behavior.** Every observable output, side effect, error, and
    public signature stays identical. If you are tempted to "fix a little bug
@@ -93,7 +106,7 @@ do not understand is a fence you do not get to tear down yet.
 Re-run the snapshot's suite and diff against the stored green state:
 
 ```bash
-uv run "{plugin_root}/scripts/lib/behavior_snapshot.py" verify \
+uv run "{shared_root}/scripts/tools/behavior_snapshot.py" verify \
   --project-root "{project_root}" --run-id "{run_id}"
 ```
 

@@ -146,6 +146,20 @@ behaviour-preserving cleanup, downgrade it to advisory. An LLM *asserting*
 "tests stay green" is not proof — block only on reductions that are concretely
 local and test-preserving.
 
+**Mechanical proof of "keeps tests green" (G3 / finding-contract part 3).** On
+surfaces that can *execute* — the local diff reviewer during build/iterate, and the
+simplify **apply** path ([`F-simplify.md`](../plugins/shipwright-iterate/skills/iterate/references/F-simplify.md))
+— the "keeps-tests-green" clause is no longer an assertion: run
+[`shared/scripts/tools/behavior_snapshot.py`](scripts/tools/behavior_snapshot.py)
+`snapshot` before the reduction and `verify` after. A green→green verdict
+(no test flips green→red, no collected test removed) is the *mechanical* evidence
+that promotes a reduction from advisory to apply/block-eligible. A reject means the
+reduction changed behavior or dropped coverage — discard it (this is exactly the
+simplify gate, so a reducibility reduction and a simplify edit prove safety the same
+way). **Exception — the self-contained CI Tier-3 `pr_reviewer`** has no filesystem or
+exec access, so it *cannot* run the snapshot; it keeps its conservative numeric
+material-LOC heuristic and never relies on this mechanical proof.
+
 ## Enforcement surfaces
 
 | Surface | File | Mode |

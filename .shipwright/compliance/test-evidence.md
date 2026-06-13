@@ -1,22 +1,22 @@
 # Test Evidence Report
 
-Generated: 2026-06-13T16:28:23.007465+00:00
+Generated: 2026-06-13T16:29:51.426705+00:00
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 184 |
-| Total unit tests (latest) | 69/69 |
+| Total unit tests (latest) | 0/0 |
 | New tests from iterations | +166 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | Fold spec_checks _run_git/_git_available onto verifiers/git_helpers.py (optional timeout param, unified failure code) | iterate | unit | +0 | 69/69 | PASS | 2026-06-13 |
-| 2 | iterate finalization | iterate | — | +0 | — | — | 2026-06-13 |
-| 3 | Extract duplicated cross-platform _FileLock into shared/scripts/lib/file_lock.py; both call sites import it; unify on the parent-dir-creating superset. | iterate | — | +0 | — | — | 2026-06-13 |
+| 1 | iterate finalization | iterate | — | +0 | — | — | 2026-06-13 |
+| 2 | Extract duplicated cross-platform _FileLock into shared/scripts/lib/file_lock.py; both call sites import it; unify on the parent-dir-creating superset. | iterate | — | +0 | — | — | 2026-06-13 |
+| 3 | unify the code-simplify gate with the bloat/reducibility catalog: relocate behavior_snapshot.py to shared/scripts/tools (SSoT), F-simplify adopts the catalog vocabulary, catalog cites the snapshot/verify gate as the mechanical G3 proof | iterate | unit | +0 | 3996/3996 | PASS | 2026-06-13 |
 | 4 | Align the bloat marker writer (check_file_size) to key delta/was_in_allowlist off the worktree's own baseline via a shared worktree_root_for SSoT also used by the Stop gate (trg-537334f1). | iterate | unit | +0 | 3419/3419 | PASS | 2026-06-13 |
 | 5 | code-simplify skill (OS1 / P3.2): SIMPLIFY sub-mode of CHANGE + behavior_snapshot snapshot/verify gate + F-simplify.md + guide docs | iterate | unit | +0 | 4082/4082 | PASS | 2026-06-13 |
 | 6 | audit-3 WP11b low-risk hardening (F18/F32/F39/F40/F41) | iterate | unit | +0 | 4220/4236 | FAIL | 2026-06-13 |
@@ -232,7 +232,7 @@ Generated: 2026-06-13T16:28:23.007465+00:00
 | 27 | iterate | 4220/4236 | — | — | — | — | 2026-06-13 |
 | 28 | iterate | 4082/4082 | — | — | — | — | 2026-06-13 |
 | 29 | iterate | 3419/3419 | — | — | — | — | 2026-06-13 |
-| 30 | iterate | 69/69 | — | — | — | — | 2026-06-13 |
+| 30 | iterate | 3996/3996 | — | — | — | — | 2026-06-13 |
 
 ## Code Review Evidence
 
