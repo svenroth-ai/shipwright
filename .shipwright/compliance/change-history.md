@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-06-13T14:01:54.530271+00:00
-Total commits: 993
+Generated: 2026-06-13T13:48:43.718381+00:00
+Total commits: 995
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 285
+    "fix" : 286
     "feat" : 271
-    "chore" : 216
+    "chore" : 217
     "docs" : 128
     "refactor" : 54
     "test" : 24
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 285 commits
+### Fixes (fix) — 286 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-13 | bloat | marker writer keys delta off the worktree baseline, SSoT with the Stop gate (trg-537334f1) | bbc33caf64ff |
 | 2026-06-13 | atomic-writes | fsync before os.replace in a shared durable-write primitive (#234) | 2c183c3b3c90 |
 | 2026-06-13 | run | read run-config standalone flag without the unlocked legacy migration (#233) | ea51ffe55982 |
 | 2026-06-13 | hooks | deliver block reason on the channel the event reads (WP4) (#229) | 7940d67bfd8b |
@@ -586,10 +587,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 216 commits
+### Chores (chore) — 217 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-13 | release | v0.26.0 (#235) | c19153359c1d |
 | 2026-06-12 | release | v0.25.0 (#223) | 60481718653b |
 | 2026-06-12 | bloat | clear Group H1/H2 — tighten 51 baseline entries + grandfather 8 (reducibility-catalog dogfood) (#219) | 0e8932f4976f |
 | 2026-06-11 | triage | drop three stale internal anchor items | 9d74de9db766 |
@@ -1062,7 +1064,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 993 |
+| Total commits | 995 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 993 |
+| Human-authored commits | 995 |
 

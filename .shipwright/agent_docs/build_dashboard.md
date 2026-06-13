@@ -1,11 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-13 14:01 UTC | Session: 49776804-0473-4fac-9221-1d7ae56857c5 | Run: iterate-2026-06-13-code-simplify-skill
+> Updated: 2026-06-13 13:48 UTC | Session: 032d4037-611f-4834-b0b6-4dd890f95642 | Run: iterate-2026-06-13-bloat-marker-writer-baseline
 
 ## Recent Changes (179 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| feature | code-simplify skill (OS1 / P3.2): SIMPLIFY sub-mode of CHANGE + behavior_snapshot snapshot/verify gate + F-simplify.md + guide docs | 4082/4082 |  | tooling | 2026-06-13 |
+| change | Align the bloat marker writer (check_file_size) to key delta/was_in_allowlist off the worktree's own baseline via a shared worktree_root_for SSoT also used by the Stop gate (trg-537334f1). | 3419/3419 |  | tooling | 2026-06-13 |
 | change | Read run-config standalone flag without triggering the unlocked legacy migration | 164/164 |  | infra | 2026-06-13 |
 | change | durable atomic writes (fsync) across all atomic writers | 4283/4283 |  | tooling | 2026-06-13 |
 | change | sync 6 stale SKILL.md/code/config items to the corrected guide (C1-C6) | 4343/4343 |  | docs | 2026-06-13 |
@@ -186,7 +186,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-13 | Unit: 4082/4082 | Integration: 147/147 | Smoke: not_run | (iterate)
+Last run: 2026-06-13 | Unit: 3419/3419 | Integration: 147/147 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

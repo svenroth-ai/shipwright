@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.26.0] - 2026-06-13
+
+### Added
+
+- /shipwright-adopt now scaffolds a profile-aware dormant `codeql.yml` (CodeQL language matrix rendered from the detected stack: `python` and/or `javascript-typescript`), giving brownfield repos the `Analyze (<language>)` Required-Check job names that GitHub auto-merge branch protection needs. `continue-on-error` on the analyze step keeps the job green on a private repo without GitHub Advanced Security.
+- /shipwright-adopt now writes an `AUTOMERGE_SETUP.md` branch-protection / auto-merge guide at the repo root, listing the Required-Check job names DERIVED from the repo's actually-deployed workflows (matrix-expanded; `if:`-gated deploy jobs are flagged as conditional, not requireable) plus step-by-step GitHub-UI guidance, `Allow auto-merge`, and the `gh pr merge --auto --squash` pattern. (Anti-ratchet `bloat-check.yml` deferred to a follow-up.)
+
+### Changed
+
+- Docs: README install flow rewritten into a concise 5-step Get-Started (install plugins via the cross-platform marketplace CLI, update, connect GitHub, enable auto-merge) that links into the guide; added guide sections 2.9 Connect GitHub and 2.10 Enable auto-merge
+- Docs: audited docs/guide.md against the codebase and corrected 21 drifted claims — compliance check-group count (7 to 8, A-H), iterate risk taxonomy (8 to 11 flags), phase-quality tier split (24/12), the build code-review cascade and branch-naming, the F5 architecture-drift detector, the OSS/Aikido backend precedence, the external-review opt-out config file, and the gh-prompt triage action-unit + CI prompt-injection scanner
+- SessionStart artifact-drift detector is now honest warn-only: it surfaces drift to the model via additionalContext on stdout (a SessionStart hook cannot block a session) instead of an inert exit-1 hard-gate that never reached the model
+- Relocate the iterate risk detectors and the cross-component integration-coverage verifier into dedicated modules (risk_detectors.py; integration_coverage.py + git_helpers.py), re-exported from their original homes; ratchets the classify_complexity.py (430->330) and iterate_checks.py (1244->1122) bloat baselines down with no behavior change
+- Sync 6 stale source docs/labels to current behavior (found by the guide audit): compliance SKILL.md now documents Group H (A-H); run SKILL.md agent-docs list drops the non-existent 'sprint' doc; build SKILL.md + setup_implementation_session.py use the build/{slug}-{session-id} branch form; group_f.py F5 finding label reflects the architecture.md-text reconcile; vite-hono.json notes Node 22.x; glossary 'Phase' lists the 7 PIPELINE_STEPS with security/compliance marked out-of-band
+
+### Fixed
+
+- Multi-session pipeline: phase-session hooks now resolve project root + session id from the Claude Code hook stdin payload (with a resolve_project_root fallback) instead of process env vars no launcher sets, so the v2 claim/validate/complete lifecycle engages instead of silently no-op'ing (deep-audit F1)
+- record_event now performs the phase_completed / by-commit dedup scan inside the same file lock as the append, preventing duplicate phase_completed events under concurrent Stop-hook firings (deep-audit F14)
+- record_event now accepts the phase_failed and stale_stop_rejected event types, so failed-phase and stale-stop diagnostics reach the authoritative event log instead of being dropped on an argparse rejection (deep-audit F15)
+- Atomic file writes (run config, build/section state, phase history, changelog, triage/outbox + gitignore/gitattributes self-heal, scan reports, plugin-edit/compliance markers, dev-server state, bloat baseline) are now crash-durable: a new shared durable_atomic_write primitive fsyncs the temp file before os.replace (plus a best-effort parent-directory fsync on POSIX), so a crash or power-loss between write and rename can no longer drop the just-written content. ~20 atomic writers now route through this one primitive (byte-identical output; fsync is the only behavioral change).
+- Plugin marketplace catalog: synced plugin versions to match each plugin.json (sync_check parity) and corrected the shipwright-security description to the OSS-default scanner chain (Semgrep + Trivy + Gitleaks + prompt-injection)
+- Security hooks now deliver their block reason on stderr (the channel Claude Code reads on a PostToolUse exit-2 soft block) instead of stdout, which exit-2 discards — so hardcoded-secret and destructive-migration warnings actually reach the model
+- Writes to shipwright_run_config.json are now atomic (tmp+os.replace) and serialized by a path-coordinated advisory lock across all writer families, eliminating lost task/phase state and torn reads that could silently demote a pipeline session to standalone (audit WP2 F11/F12)
+- The Stop-hook phase-completion fallback now allows strictly more time (60s) than the inner compliance subprocess (30s), so the orchestrator is no longer killed before it marks the phase complete (audit WP2 F13)
+- Orchestrator no longer writes shipwright_run_config.json outside the advisory lock: update_step now reads the 'standalone' flag without triggering the implicit legacy-pipeline migration, closing a residual unlocked-write window (the migration still runs, but under run_config_lock).
+
 ## [v0.25.0] - 2026-06-12
 
 ### Added

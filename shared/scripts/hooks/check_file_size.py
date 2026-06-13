@@ -191,6 +191,15 @@ def _baseline_paths(cwd: Path) -> set[str]:
     return {e["path"] for e in doc.get("entries", []) if isinstance(e, dict)}
 
 
+def _governing_baseline_paths(main_root: Path, norm_path: str) -> set[str]:
+    """Baseline paths governing ``norm_path``: the worktree's own baseline for a
+    ``.worktrees/<slug>/`` path (MAIN fallback when absent/empty), else MAIN —
+    mirrors the Stop gate's ``_baseline_for`` (trg-537334f1)."""
+    wt = _bb.worktree_root_for(main_root, norm_path)
+    wt_paths = _baseline_paths(wt) if wt is not None else set()
+    return wt_paths or _baseline_paths(main_root)
+
+
 def _classification_label(file_path: str) -> str:
     md = _md_classification(file_path)
     return md if md == "runtime-prompt" else "source"
@@ -204,17 +213,18 @@ def _rel_path(cwd: Path, abs_path: Path) -> str:
 
 
 def _write_marker_entry(
-    cwd: Path, file_path: str, now: int, limit: int, before: int | None,
+    main_root: Path, file_path: str, now: int, limit: int, before: int | None,
     payload: dict,
 ) -> None:
-    """Upsert one entry into the per-session marker file (read-modify-write)."""
+    """Upsert one entry into the per-session marker file (read-modify-write).
+    ``main_root`` is the canonical MAIN repo root (see ``main()``), not cwd."""
     sid = _session_id(payload)
-    marker = _marker_path(cwd, sid)
-    norm_path = _rel_path(cwd, Path(file_path))
-    # trg-305e2aab: strip the worktree prefix for the baseline-membership check
-    # so an already-baselined file edited in a worktree classifies `anti-ratchet`
-    # not `crossing` (`norm_path` keeps the prefix for the Stop gate's re-measure).
-    in_allowlist = _bb.strip_worktree_prefix(norm_path) in _baseline_paths(cwd)
+    marker = _marker_path(main_root, sid)
+    norm_path = _rel_path(main_root, Path(file_path))
+    # trg-305e2aab/trg-537334f1: classify against the GOVERNING baseline (the
+    # worktree's own for a `.worktrees/<slug>/` path) so the stored delta matches
+    # the tree the Stop gate re-measures; `norm_path` keeps the prefix for that.
+    in_allowlist = _bb.strip_worktree_prefix(norm_path) in _governing_baseline_paths(main_root, norm_path)
     delta = "anti-ratchet" if in_allowlist else "crossing"
     entry = {
         "path": norm_path,

@@ -1,20 +1,20 @@
 # Test Evidence Report
 
-Generated: 2026-06-13T14:01:54.530271+00:00
+Generated: 2026-06-13T13:48:43.718381+00:00
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 179 |
-| Total unit tests (latest) | 4082/4082 |
+| Total unit tests (latest) | 3419/3419 |
 | New tests from iterations | +166 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | code-simplify skill (OS1 / P3.2): SIMPLIFY sub-mode of CHANGE + behavior_snapshot snapshot/verify gate + F-simplify.md + guide docs | iterate | unit | +0 | 4082/4082 | PASS | 2026-06-13 |
+| 1 | Align the bloat marker writer (check_file_size) to key delta/was_in_allowlist off the worktree's own baseline via a shared worktree_root_for SSoT also used by the Stop gate (trg-537334f1). | iterate | unit | +0 | 3419/3419 | PASS | 2026-06-13 |
 | 2 | Read run-config standalone flag without triggering the unlocked legacy migration | iterate | unit | +0 | 164/164 | PASS | 2026-06-13 |
 | 3 | durable atomic writes (fsync) across all atomic writers | iterate | unit | +0 | 4283/4283 | PASS | 2026-06-13 |
 | 4 | sync 6 stale SKILL.md/code/config items to the corrected guide (C1-C6) | iterate | unit | +0 | 4343/4343 | PASS | 2026-06-13 |
@@ -227,7 +227,7 @@ Generated: 2026-06-13T14:01:54.530271+00:00
 | 27 | iterate | 4343/4343 | — | — | — | — | 2026-06-13 |
 | 28 | iterate | 4283/4283 | — | — | — | — | 2026-06-13 |
 | 29 | iterate | 164/164 | — | — | — | — | 2026-06-13 |
-| 30 | iterate | 4082/4082 | — | — | — | — | 2026-06-13 |
+| 30 | iterate | 3419/3419 | — | — | — | — | 2026-06-13 |
 
 ## Code Review Evidence
 

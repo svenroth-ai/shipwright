@@ -173,3 +173,9 @@ _Existing user-facing documentation discovered by /shipwright-adopt._
 - **ADR-189** (2026-06-12): mark_status routes idle-main status flips to the outbox (completes D1)
 
 - **ADR-191** (2026-06-12): merge=union for curated agent-docs (close the structural gap)
+
+- **ADR-197** (2026-06-13): Phase hooks resolve identity from stdin payload; atomic event dedup; failure event types
+
+- **ADR-199** (2026-06-13): Shared durable_atomic_write primitive for all atomic writers
+
+- **ADR-204** (2026-06-13): Atomic + path-coordinated run_config writes
