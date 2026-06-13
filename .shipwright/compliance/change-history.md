@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-13T14:01:54.530271+00:00
-Total commits: 998
+Generated: 2026-06-13T15:18:32.097681+00:00
+Total commits: 997
 
 ## Commit Distribution
 
@@ -9,7 +9,7 @@ Total commits: 998
 pie title Commit Types
     "fix" : 287
     "feat" : 272
-    "chore" : 218
+    "chore" : 217
     "docs" : 128
     "refactor" : 54
     "test" : 24
@@ -24,8 +24,8 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-13 | audit-3 | low-risk hardening — event-commit, report-escape, CI pipefail, test-discipline (WP11b) (#236) | 172e39d9ec5b |
 | 2026-06-13 | bloat | marker writer keys delta off the worktree baseline, SSoT with the Stop gate (trg-537334f1) (#237) | 517ae21b73ab |
-| 2026-06-13 | audit-3 | low-risk hardening — event-commit, report-escape, CI pipefail, test-discipline (WP11b) | 6629b2570278 |
 | 2026-06-13 | atomic-writes | fsync before os.replace in a shared durable-write primitive (#234) | 2c183c3b3c90 |
 | 2026-06-13 | run | read run-config standalone flag without the unlocked legacy migration (#233) | ea51ffe55982 |
 | 2026-06-13 | hooks | deliver block reason on the channel the event reads (WP4) (#229) | 7940d67bfd8b |
@@ -589,11 +589,10 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 218 commits
+### Chores (chore) — 217 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-13 | churn | regenerate derived snapshots after main merge | b172d757528e |
 | 2026-06-13 | release | v0.26.0 (#235) | c19153359c1d |
 | 2026-06-12 | release | v0.25.0 (#223) | 60481718653b |
 | 2026-06-12 | bloat | clear Group H1/H2 — tighten 51 baseline entries + grandfather 8 (reducibility-catalog dogfood) (#219) | 0e8932f4976f |
@@ -1067,7 +1066,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 998 |
+| Total commits | 997 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 998 |
+| Human-authored commits | 997 |
 

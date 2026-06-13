@@ -43,55 +43,15 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.events_log import resolve_events_path  # noqa: E402
+# Cross-platform append-log mutex. Extracted to lib/file_lock.py
+# (iterate-2026-06-13-shc-file-lock); aliased to the historical private name
+# so module attribute `record_event._FileLock` stays patchable (the F14
+# lifecycle-integrity test monkeypatches it) and the `with _FileLock(...)`
+# call sites below resolve via the module global.
+from lib.file_lock import FileLock as _FileLock  # noqa: E402
 
 SCHEMA_VERSION = 1
 EVENT_FILE = "shipwright_events.jsonl"
-
-
-# ---------------------------------------------------------------------------
-# File locking (cross-platform)
-# ---------------------------------------------------------------------------
-
-class _FileLock:
-    """Cross-platform file lock using a separate .lock file.
-
-    msvcrt.locking on Windows is unreliable in append mode, so we use
-    a dedicated lock file for mutual exclusion on all platforms.
-    """
-
-    def __init__(self, lock_path: str | Path):
-        self._lock_path = Path(lock_path)
-        self._fp = None
-
-    def __enter__(self):
-        self._fp = open(self._lock_path, "w", encoding="utf-8")
-        if sys.platform == "win32":
-            import msvcrt
-            # Lock byte 0 of the lock file (not the data file)
-            while True:
-                try:
-                    msvcrt.locking(self._fp.fileno(), msvcrt.LK_NBLCK, 1)
-                    break
-                except OSError:
-                    import time
-                    time.sleep(0.001)
-        else:
-            import fcntl
-            fcntl.flock(self._fp, fcntl.LOCK_EX)
-        return self
-
-    def __exit__(self, *exc):
-        if self._fp:
-            if sys.platform == "win32":
-                import msvcrt
-                try:
-                    msvcrt.locking(self._fp.fileno(), msvcrt.LK_UNLCK, 1)
-                except OSError:
-                    pass
-            else:
-                import fcntl
-                fcntl.flock(self._fp, fcntl.LOCK_UN)
-            self._fp.close()
 
 
 # ---------------------------------------------------------------------------

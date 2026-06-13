@@ -2789,3 +2789,14 @@ shipwright/
 - **Rationale:** Closes the doc-vs-code loop from #230 on the code side; verified no test pins any changed string before editing.
 - **Consequences:** Source-of-truth docs/labels match the code and the guide. group_f.py edit is a same-line string (no LOC ratchet). No behavior change. Plugin/shared edits need update-marketplace.sh cache-sync after merge.
 - **Rejected:** Leaving the source stale (the guide would re-diverge); bundling into the #230 docs PR (mixes doc + code concerns).
+
+---
+
+### ADR-207: Extract _FileLock into shared lib/file_lock.py
+- **Date:** 2026-06-13
+- **Section:** Iterate - 2026-06-13-shc-file-lock
+- **Context:** The cross-platform block-until-acquired _FileLock class was duplicated near-identically in tools/record_event.py and triage.py (reducibility D-finding); the triage copy had already diverged with a parent-dir mkdir superset.
+- **Decision:** Extract ONE FileLock class into the existing shared/scripts/lib/file_lock.py (alongside, not replacing, its timeout-based file_lock() function); both call sites import 'FileLock as _FileLock', unifying on the triage superset (mkdir-on-enter). The private alias is re-exported so record_event._FileLock (F14 monkeypatch) and triage._FileLock (sweep/gc/reconcile + tests) keep resolving with zero consumer edits.
+- **Commit:** PENDING
+- **Consequences:** One canonical mutex; ~40 LOC duplication removed; the parent-dir-creation superset means neither call site regresses. __exit__ now resets self._fp=None (code-review hardening, no locking-behaviour change).
+- **Rejected:** Updating the 4 downstream triage._FileLock consumers to import FileLock directly (gemini-suggested) — rejected as scope creep beyond the spec's two-call-site scope (Karpathy Surgical-Changes); the alias keeps the change minimal.

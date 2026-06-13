@@ -21,8 +21,9 @@ The module lives at `shared/scripts/triage.py` (outside `lib/`) per
 ADR-045 so it can be imported from `shared/tests/` AND
 `plugins/*/tests|scripts/` without colliding on `sys.modules['lib']`.
 
-Cross-process file locking mirrors
-`shared/scripts/tools/record_event.py:_FileLock`.
+Cross-process file locking uses the shared `FileLock` class from
+`shared/scripts/lib/file_lock.py` (aliased to the historical private
+`_FileLock` name on import; iterate-2026-06-13-shc-file-lock).
 """
 
 from __future__ import annotations
@@ -34,6 +35,22 @@ import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
+
+# Wire up shared/scripts so `lib.file_lock` resolves at import time. triage.py
+# lives at shared/scripts/triage.py (parent == shared/scripts), and its
+# consumers add that dir to sys.path; do it here too so the module-level
+# import below works regardless of import path.
+_SCRIPTS_ROOT = Path(__file__).resolve().parent  # shared/scripts
+if str(_SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_ROOT))
+
+# Cross-platform append-log mutex. Extracted to lib/file_lock.py
+# (iterate-2026-06-13-shc-file-lock); aliased to the historical private name so
+# module attribute `triage._FileLock` stays importable (sweep_outbox, triage_gc,
+# reconcile_triage, and tests do `from triage import _FileLock` /
+# `triage._FileLock`) and the `with _FileLock(...)` call sites resolve via the
+# module global.
+from lib.file_lock import FileLock as _FileLock  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Constants (Single Source of Truth — tests assert against these)
@@ -178,48 +195,6 @@ def _now_z() -> str:
 def _generate_id() -> str:
     """Generate a unique triage item ID: `trg-` + 8 hex chars from UUID4."""
     return f"trg-{uuid4().hex[:8]}"
-
-
-# ---------------------------------------------------------------------------
-# File locking (cross-platform; mirrors record_event.py:_FileLock)
-# ---------------------------------------------------------------------------
-
-class _FileLock:
-    """Cross-platform mutex via a dedicated `.lock` sidecar file."""
-
-    def __init__(self, lock_path: str | Path):
-        self._lock_path = Path(lock_path)
-        self._fp = None
-
-    def __enter__(self):
-        self._lock_path.parent.mkdir(parents=True, exist_ok=True)
-        self._fp = open(self._lock_path, "w", encoding="utf-8")
-        if sys.platform == "win32":
-            import msvcrt
-            import time
-            while True:
-                try:
-                    msvcrt.locking(self._fp.fileno(), msvcrt.LK_NBLCK, 1)
-                    break
-                except OSError:
-                    time.sleep(0.001)
-        else:
-            import fcntl
-            fcntl.flock(self._fp, fcntl.LOCK_EX)
-        return self
-
-    def __exit__(self, *exc):
-        if self._fp:
-            if sys.platform == "win32":
-                import msvcrt
-                try:
-                    msvcrt.locking(self._fp.fileno(), msvcrt.LK_UNLCK, 1)
-                except OSError:
-                    pass
-            else:
-                import fcntl
-                fcntl.flock(self._fp, fcntl.LOCK_UN)
-            self._fp.close()
 
 
 # ---------------------------------------------------------------------------

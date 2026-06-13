@@ -1,6 +1,6 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-06-13T14:01:54.530271+00:00
+Generated: 2026-06-13T15:18:32.097681+00:00
 
 ## Summary
 
@@ -16,18 +16,18 @@ Generated: 2026-06-13T14:01:54.530271+00:00
 
 ```mermaid
 pie title License Distribution
+    "Apache-2.0" : 4
     "MIT" : 4
-    "Apache-2.0" : 2
 ```
 
 ## Runtime Dependencies
 
 | Package | Version | License |
 |---------|---------|---------|
-| google-genai | 1.0.0 | - |
+| google-genai | 1.0.0 | Apache-2.0 |
 | jsonschema | 4.18 | MIT |
 | openai | 2.30.0 | Apache-2.0 |
-| openai | 1.0.0 | - |
+| openai | 1.0.0 | Apache-2.0 |
 | pyyaml | 6.0 | MIT |
 | requests | 2.31.0 | Apache-2.0 |
 

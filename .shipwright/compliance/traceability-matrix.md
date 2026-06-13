@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-13T14:01:54.530271+00:00
+Generated: 2026-06-13T15:18:32.097681+00:00
 
 ## Requirements Coverage
 
@@ -206,6 +206,7 @@ Generated: 2026-06-13T14:01:54.530271+00:00
 | audit-3 WP11b low-risk hardening (F18/F32/F39/F40/F41) | iterate | change |  | 4220/4236 | — | 2026-06-13 |
 | code-simplify skill (OS1 / P3.2): SIMPLIFY sub-mode of CHANGE + behavior_snapshot snapshot/verify gate + F-simplify.md + guide docs | iterate | feature |  | 4082/4082 | — | 2026-06-13 |
 | Align the bloat marker writer (check_file_size) to key delta/was_in_allowlist off the worktree's own baseline via a shared worktree_root_for SSoT also used by the Stop gate (trg-537334f1). | iterate | change |  | 3419/3419 | — | 2026-06-13 |
+| Extract duplicated cross-platform _FileLock into shared/scripts/lib/file_lock.py; both call sites import it; unify on the parent-dir-creating superset. | iterate | change |  | — | — | 2026-06-13 |
 
 ## Coverage Summary
 
@@ -213,7 +214,7 @@ Generated: 2026-06-13T14:01:54.530271+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 181 |
+| Iterate changes | 182 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
