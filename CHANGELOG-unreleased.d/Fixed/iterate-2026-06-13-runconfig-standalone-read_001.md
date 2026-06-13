@@ -1,1 +1,0 @@
-Orchestrator no longer writes shipwright_run_config.json outside the advisory lock: update_step now reads the 'standalone' flag without triggering the implicit legacy-pipeline migration, closing a residual unlocked-write window (the migration still runs, but under run_config_lock).
