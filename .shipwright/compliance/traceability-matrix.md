@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-13T16:03:19.756877+00:00
+Generated: 2026-06-13T17:13:46.879674+00:00
 
 ## Requirements Coverage
 
@@ -208,6 +208,7 @@ Generated: 2026-06-13T16:03:19.756877+00:00
 | Align the bloat marker writer (check_file_size) to key delta/was_in_allowlist off the worktree's own baseline via a shared worktree_root_for SSoT also used by the Stop gate (trg-537334f1). | iterate | change |  | 3419/3419 | — | 2026-06-13 |
 | Extract duplicated cross-platform _FileLock into shared/scripts/lib/file_lock.py; both call sites import it; unify on the parent-dir-creating superset. | iterate | change |  | — | — | 2026-06-13 |
 | iterate finalization | iterate | change |  | — | — | 2026-06-13 |
+| Triage not for current-run work — drop plugin-sync + F0.5 triage producers | iterate | change |  | 3653/3665 | — | 2026-06-13 |
 
 ## Coverage Summary
 
@@ -215,7 +216,7 @@ Generated: 2026-06-13T16:03:19.756877+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 183 |
+| Iterate changes | 184 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

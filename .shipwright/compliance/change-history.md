@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-06-13T16:03:19.756877+00:00
+Generated: 2026-06-13T17:13:46.879674+00:00
 Total commits: 999
 
 ## Commit Distribution
@@ -948,7 +948,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-13 | events | dedup read_events into a single lib.config SSOT | 9bb7c1e1d2f0 |
+| 2026-06-13 | events | dedup read_events into a single lib.config SSOT (#240) | 2d5aad4c753e |
 | 2026-06-13 | shared | extract duplicated _FileLock into lib/file_lock.py (campaign A) (#239) | b8050b57b2c9 |
 | 2026-06-13 | bloat | extract risk detectors + integration-coverage verifier into dedicated modules (#225) | 3c18fc6d9efd |
 | 2026-06-12 | lib | relocate resolve_main_repo_root to lib/repo_root.py with back-compat re-export (#221) | 23dbc8403825 |

@@ -1,40 +1,44 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-13-shc-read-events"
+run_id: "iterate-2026-06-13-triage-not-current-work"
 phase: "iterate"
-reason: "iterate finalization"
-timestamp: "2026-06-13T16:03:19.756877+00:00"
+reason: "iterate: triage not for current-run work — drop plugin-sync + F0.5 triage producers"
+timestamp: "2026-06-13T17:13:46.879674+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-13 16:03:19 UTC
+> Auto-generated 2026-06-13 17:13:46 UTC
 
 ## Session Info
 
-- **Session ID**: 1c1c6790-3768-47d0-bd4f-f7a4ed24bee9
-- **Timestamp**: 2026-06-13 16:03:19 UTC
-- **Reason**: iterate finalization
+- **Session ID**: 6a2f378c-8669-4874-904a-87c4dc84cdf0
+- **Timestamp**: 2026-06-13 17:13:46 UTC
+- **Reason**: iterate: triage not for current-run work — drop plugin-sync + F0.5 triage producers
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-13-code-simplify-skill
-- **Date**: 2026-06-13T14:02:12.060199Z
-- **Type**: feature
+- **Run ID**: iterate-2026-06-13-triage-not-current-work
+- **Date**: 2026-06-13T17:13:20.450524Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/code-simplify-skill
-- **ADR**: iterate-2026-06-13-code-simplify-skill
+- **Branch**: iterate/triage-not-current-work
+- **ADR**: iterate-2026-06-13-triage-not-current-work
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-13-code-simplify-skill.md
+- **Spec**: .shipwright/planning/iterate/2026-06-13-triage-not-current-work.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/2026-06-13-shc-read-events
-- **External Review Marker**: completed (external_review_state.json @ 2026-06-13T15:09:50)
+- **Branch**: iterate/triage-not-current-work
+- **Run ID**: `iterate-2026-06-13-triage-not-current-work`
+- **Spec**: .shipwright/planning/iterate/2026-06-13-triage-not-current-work.md
+- **Complexity**: medium
+- **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -48,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/2026-06-13-shc-read-events
-- **Last Commit**: 9bb7c1e1 refactor(events): dedup read_events into a single lib.config SSOT
+- **Branch**: iterate/triage-not-current-work
+- **Last Commit**: 2d5aad4c refactor(events): dedup read_events into a single lib.config SSOT (#240)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +69,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-4393b0bb | work_completed | iterate (Triage not for current-run work — drop plugin-sync + F0.5 triage producers) | 2026-06-13 |
 | evt-ac75c147 | work_completed | iterate (iterate finalization) | 2026-06-13 |
 | evt-29a5f711 | work_completed | iterate (Extract duplicated cross-platform _FileLock into shared/scripts/lib/file_lock.py; both call sites import it; unify on the parent-dir-creating superset.) | 2026-06-13 |
 | evt-0c568942 | work_completed | iterate (Align the bloat marker writer (check_file_size) to key delta/was_in_allowlist off the worktree's own baseline via a shared worktree_root_for SSoT also used by the Stop gate (trg-537334f1).) | 2026-06-13 |
 | evt-3d6824d5 | work_completed | iterate (code-simplify skill (OS1 / P3.2): SIMPLIFY sub-mode of CHANGE + behavior_snapshot snapshot/verify gate + F-simplify.md + guide docs) | 2026-06-13 |
-| evt-8726cab7 | work_completed | iterate (audit-3 WP11b low-risk hardening (F18/F32/F39/F40/F41)) | 2026-06-13 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 183
-- **Last iterate**: change — iterate finalization (2026-06-13)
+- **Total work events**: 184
+- **Last iterate**: change — Triage not for current-run work — drop plugin-sync + F0.5 triage producers (2026-06-13)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

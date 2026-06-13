@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """Tests for plugin_sync_reminder_on_stop.py (SP4 Stop reminder hook).
 
-Focus: the durable ``source="plugin-sync"`` triage item is an append-only
-AUDIT trail that belongs in the **main**-tree, repo-global backlog (curated via
-the WebUI on main) — not a per-worktree pile. From inside an iterate worktree
-``project_root`` is the worktree root, so the append is *intentionally*
-redirected to the MAIN repo via ``resolve_main_repo_root``. Since campaign
-``2026-06-05-track-triage-jsonl`` (C1/C2) ``triage.jsonl`` is git-tracked, not
-gitignored; the mid-iterate main-tree write is leak-guard-exempt
-(``_MAIN_TREE_WRITE_EXEMPT``), so the redirect is a routing choice, not a
-"the worktree copy is discarded" workaround. The reminder banner +
-once-per-session sentinel still key off the worktree root.
-(iterate-2026-05-31-plugin-sync-triage-main-repo)
+Focus (iterate-2026-06-13-triage-not-current-work): re-syncing the plugin cache
+is a **routine "do it now" maintenance step**, not a deferred follow-up — so the
+hook surfaces a once-per-session Stop-block reminder (the "now" surface) and
+files **NO triage item**. Triage is for genuine "later" backlog items; the board
+/ events log tracks the current run. The previous durable
+``source="plugin-sync"`` triage append was removed because it tracked the
+current run's own work (it had accreted 19 duplicate items in the live backlog).
+
+The reminder banner + once-per-session sentinel still key off the worktree root
+(the live SDLC context). The ``test_no_triage_*`` cases are regression guards
+that the append path stays gone.
 """
 from __future__ import annotations
 
@@ -86,44 +86,29 @@ def _write_marker(project_root: Path, session_id: str, rel_paths: list[str]) -> 
     )
 
 
-def _read_triage_items(root: Path, *, filename: str) -> list[dict]:
-    """Return the ``append`` events from ``root``'s ``filename`` log (tolerant)."""
-    path = root / ".shipwright" / filename
-    if not path.exists():
-        return []
-    items: list[dict] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            rec = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if rec.get("event") == "append":
-            items.append(rec)
-    return items
+def _all_triage_appends(root: Path) -> list[dict]:
+    """Every ``append`` record across BOTH triage logs under ``root``.
 
-
-def _plugin_sync_outbox_items(root: Path) -> list[dict]:
-    """plugin-sync ``append`` items in ``root``'s GITIGNORED outbox buffer.
-
-    Since campaign 2026-06-08-triage-outbox-delivery (D1) the background
-    Stop-hook producer appends with ``to_outbox=True`` → the durable write
-    lands in ``triage.outbox.jsonl``, NOT the tracked ``triage.jsonl``.
+    Covers the tracked ``triage.jsonl`` and the gitignored
+    ``triage.outbox.jsonl`` buffer, so a regression that re-introduces an
+    append on EITHER channel is caught.
     """
-    return [
-        r for r in _read_triage_items(root, filename="triage.outbox.jsonl")
-        if r.get("source") == "plugin-sync"
-    ]
-
-
-def _plugin_sync_tracked_items(root: Path) -> list[dict]:
-    """plugin-sync ``append`` items in ``root``'s TRACKED ``triage.jsonl``."""
-    return [
-        r for r in _read_triage_items(root, filename="triage.jsonl")
-        if r.get("source") == "plugin-sync"
-    ]
+    items: list[dict] = []
+    for filename in ("triage.jsonl", "triage.outbox.jsonl"):
+        path = root / ".shipwright" / filename
+        if not path.exists():
+            continue
+        for line in path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rec = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if rec.get("event") == "append":
+                items.append(rec)
+    return items
 
 
 # ----------------------------------------------------------------------
@@ -139,6 +124,17 @@ def test_build_reminder_lists_paths():
     assert "update-marketplace.sh" in body
 
 
+def test_build_reminder_does_not_mention_triage():
+    """The reminder no longer claims a triage item was filed (none is)."""
+    body = psr.build_reminder(["a.py"]).lower()
+    assert "triage" not in body
+
+
+def test_emit_triage_helper_is_gone():
+    """The durable triage producer was removed at the source (AC1)."""
+    assert not hasattr(psr, "_emit_triage")
+
+
 def test_run_noops_outside_monorepo(tmp_path):
     """No marketplace script → not a plugin-dev monorepo → silent pass."""
     _write_marker(tmp_path, "sid", ["plugins/x/skills/x/SKILL.md"])
@@ -151,44 +147,47 @@ def test_run_noops_without_pending_edits(tmp_path):
     assert psr.run(project_root=tmp_path, session_id="sid") == ""
 
 
-def test_triage_item_emitted_non_git_fallback(tmp_path):
-    """Non-git monorepo root: resolve_main_repo_root is None → fallback writes
-    the triage item next to ``project_root`` (plain-checkout/legacy behaviour).
-
-    D1: the background producer hardcodes ``to_outbox=True``, so the durable
-    write lands in the GITIGNORED outbox buffer, never the tracked log."""
+def test_reminder_fires_but_no_triage_non_git(tmp_path):
+    """Non-git monorepo: the reminder fires; NO triage item is written (AC1)."""
     _make_monorepo(tmp_path)
     _write_marker(tmp_path, "sid", ["plugins/x/skills/x/SKILL.md"])
 
     out = psr.run(project_root=tmp_path, session_id="sid")
 
+    # The "do it now" surface still fires...
     assert "PLUGIN-CACHE REMINDER" in out
-    items = _plugin_sync_outbox_items(tmp_path)
-    assert len(items) == 1
-    assert items[0]["dedupKey"] == "plugin-sync:cache-drift"
-    # Tracked log stays clean — no main drift (AC1).
-    assert _plugin_sync_tracked_items(tmp_path) == []
+    payload = json.loads(out)
+    assert payload["decision"] == "block"
+    # ...and nothing lands in the backlog.
+    assert _all_triage_appends(tmp_path) == []
+
+
+def test_reminder_fires_once_per_session(tmp_path):
+    """Second Stop in the same session stays silent (block-once, never loops)."""
+    _make_monorepo(tmp_path)
+    _write_marker(tmp_path, "sid", ["plugins/x/skills/x/SKILL.md"])
+    first = psr.run(project_root=tmp_path, session_id="sid")
+    second = psr.run(project_root=tmp_path, session_id="sid")
+    assert "PLUGIN-CACHE REMINDER" in first
+    assert second == ""
+    assert _all_triage_appends(tmp_path) == []
 
 
 # ----------------------------------------------------------------------
-# Worktree-awareness regression — the durable triage item lands in MAIN repo
+# Integration (cross_component): real git + linked worktree, hook end-to-end
 # ----------------------------------------------------------------------
 
 
-def test_triage_item_written_to_main_repo_from_worktree(tmp_path):
-    """From inside an iterate worktree, the triage item lands in the MAIN
-    repo's OUTBOX.
+def test_integration_worktree_reminder_no_triage_anywhere(tmp_path):
+    """category:integration — the Stop hook composes with the triage store
+    WITHOUT polluting it, end-to-end against a real git monorepo + worktree.
 
-    Regression guard: ``_emit_triage`` previously appended to
-    ``project_root/.shipwright/triage.jsonl`` where ``project_root`` is the
-    worktree root — a gitignored, throwaway log discarded by
-    ``git worktree remove``. The durable audit item must instead be written to
-    the main repo via ``resolve_main_repo_root``.
-
-    D1: the producer now routes ``to_outbox=True``, so the main-repo write
-    lands in the GITIGNORED ``triage.outbox.jsonl`` buffer (visible via the
-    union reader; folded into a PR + GC'd by the D2 sweep) — NOT the tracked
-    ``triage.jsonl`` (which therefore accrues no main-tree drift).
+    Proves the hook + triage-producer machinery compose after the producer was
+    removed: from inside a real linked iterate worktree, ``run()`` (a) surfaces
+    the block-once reminder, (b) writes the once-per-session sentinel in the
+    worktree, and (c) appends NOTHING to EITHER triage log in EITHER the
+    worktree or the main repo (the durable ``resolve_main_repo_root`` redirect
+    is gone with the producer).
     """
     main_root = tmp_path / "main"
     _init_monorepo_git(main_root)
@@ -216,15 +215,10 @@ def test_triage_item_written_to_main_repo_from_worktree(tmp_path):
             / "plugin_sync_reminded.wt-sid"
         ).exists()
 
-        # Durable audit item lives in the MAIN repo's OUTBOX buffer...
-        main_items = _plugin_sync_outbox_items(main_root)
-        assert len(main_items) == 1
-        assert main_items[0]["dedupKey"] == "plugin-sync:cache-drift"
-        # ...NOT the tracked MAIN log (no main drift, AC1)...
-        assert _plugin_sync_tracked_items(main_root) == []
-        # ...and NOT in the throwaway worktree log (tracked or outbox).
-        assert _plugin_sync_outbox_items(worktree_root) == []
-        assert _plugin_sync_tracked_items(worktree_root) == []
+        # No triage append anywhere — not the main repo, not the worktree,
+        # not the tracked log, not the outbox.
+        assert _all_triage_appends(main_root) == []
+        assert _all_triage_appends(worktree_root) == []
     finally:
         try:
             _git(["worktree", "remove", "--force", str(worktree_root)], main_root)

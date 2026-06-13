@@ -89,6 +89,7 @@ _TOKEN_RE = re.compile(r"""['"]([a-z][A-Za-z0-9]*(?:Resolved|Refreshed))['"]""")
 # legacy retention.
 LEGACY_RETAINED_TOKENS = frozenset({
     "auditResolved",  # audit now routes through complianceBacklog; pre-bundle / outbox-buffered dismissals stay GC-able
+    "f05Resolved",    # F0.5 triage producer removed (iterate-2026-06-13-triage-not-current-work); historical/buffered f0.5 dismissals stay GC-able
 })
 
 

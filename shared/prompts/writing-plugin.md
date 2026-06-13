@@ -35,8 +35,9 @@ After any plugin-side change, before you call it done:
    drift check (CRLF-normalized). Exit 1 on any drift. Must be green.
 4. **Restart the Claude Code session** to load the synced plugins.
 
-The Stop reminder hook surfaces this once per session and files a
-`source="plugin-sync"` triage item so it survives if you defer.
+The Stop reminder hook surfaces this once per session. It files no triage item —
+the plugin-cache re-sync is routine current-run maintenance, not a deferred
+backlog item; act on the reminder, don't defer it.
 
 ## Conventions to honor
 

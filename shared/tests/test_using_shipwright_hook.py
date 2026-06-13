@@ -154,7 +154,7 @@ def test_relativize_rejects_traversal(tmp_path: Path):
 
 
 # --------------------------------------------------------------------------- #
-# SP4 — Stop reminder (block-once + triage)
+# SP4 — Stop reminder (block-once, NO triage)
 # --------------------------------------------------------------------------- #
 
 def test_reminder_silent_without_marker(tmp_path: Path):
@@ -169,7 +169,7 @@ def test_reminder_silent_in_end_user_project(tmp_path: Path):
     assert reminder.run(project_root=root, session_id="sid-EU") == ""
 
 
-def test_reminder_blocks_once_and_emits_triage(tmp_path: Path):
+def test_reminder_blocks_once_no_triage(tmp_path: Path):
     root = _make_project(tmp_path, shipwright=True, monorepo=True)
     mpe.add_path(root, "sid-Y", "plugins/shipwright-build/skills/build/SKILL.md")
 
@@ -180,13 +180,12 @@ def test_reminder_blocks_once_and_emits_triage(tmp_path: Path):
     assert "update-marketplace.sh" in payload["reason"]
     assert "check_plugin_cache_sync.py" in payload["reason"]
 
-    # Triage item appended (durable follow-up). Since campaign
-    # 2026-06-08-triage-outbox-delivery (D1) the background producer routes to
-    # the GITIGNORED outbox buffer (to_outbox=True), not the tracked log — so
-    # the tracked triage.jsonl stays clean (no main drift). Compact JSON, so
-    # assert on the value substring rather than a spaced key:value form.
-    outbox = (root / ".shipwright" / "triage.outbox.jsonl").read_text(encoding="utf-8")
-    assert "plugin-sync" in outbox
+    # No triage item is filed (iterate-2026-06-13-triage-not-current-work): the
+    # plugin-cache re-sync is routine current-run maintenance, not a deferred
+    # "later" follow-up, so the block-once reminder is the whole surface. Neither
+    # the tracked log nor the gitignored outbox buffer is written.
+    assert not (root / ".shipwright" / "triage.jsonl").exists()
+    assert not (root / ".shipwright" / "triage.outbox.jsonl").exists()
 
     # Block-once: a second Stop in the same session is silent (no hard loop).
     assert reminder.run(project_root=root, session_id="sid-Y") == ""

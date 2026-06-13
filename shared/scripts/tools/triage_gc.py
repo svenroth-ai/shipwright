@@ -46,7 +46,7 @@ MACHINE_DISMISSERS = frozenset({
     "sbomGenerator",
     "auditDetector",
     "driftDetector",
-    "f05Detector",
+    "f05Detector",  # legacy: F0.5 triage producer removed 2026-06-13; kept for historical dismissals
     "githubImporter",
     "complianceBacklog",
     "phaseQualityBacklog",  # phase_quality _triage_bundle producer
@@ -59,7 +59,7 @@ MACHINE_REASONS = frozenset({
     "sbomResolved",
     "auditResolved",  # legacy: pre-bundle audit dismissals; no current emitter (audit now → complianceBacklog)
     "driftResolved",
-    "f05Resolved",
+    "f05Resolved",  # legacy: F0.5 triage producer removed 2026-06-13; kept for historical churn
     "githubResolved",
     "complianceResolved",
     "complianceRefreshed",  # stale-signature backlog rollup superseded (triage_bundle ~L165)

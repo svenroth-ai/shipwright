@@ -52,12 +52,13 @@ Editing files under `plugins/*`, `shared/*`, or any `SKILL.md` changes the
 framework, not a target app. Those changes do **not** auto-reach the runtime
 plugin cache. Read `shared/prompts/writing-plugin.md` and, when done, run
 `bash scripts/update-marketplace.sh` + `uv run scripts/check_plugin_cache_sync.py
---strict`. A Stop hook will remind you; a triage item tracks it.
+--strict`. A Stop hook will remind you once per session (it files no triage item
+— the re-sync is current-run maintenance, not a deferred backlog item).
 
 ## Triage & follow-ups
 
 Background producers append findings to `.shipwright/triage.jsonl` (drift,
-compliance, security, performance, plugin-sync). Surface them with
+compliance, security, performance). Surface them with
 `/shipwright-compliance` or the Command Center WebUI. Don't silently ignore open
 high/critical items.
 
