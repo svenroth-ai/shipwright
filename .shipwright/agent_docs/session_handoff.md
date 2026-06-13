@@ -1,40 +1,45 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-13-runconfig-atomic-writes"
+run_id: "iterate-2026-06-13-adopt-automerge-readiness"
 phase: "iterate"
-reason: "F11 pre-merge refresh: iterate-2026-06-13-runconfig-atomic-writes"
-timestamp: "2026-06-13T05:51:32.227810+00:00"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-06-13T06:43:10.946192+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-13 05:51:32 UTC
+> Auto-generated 2026-06-13 06:43:10 UTC
 
 ## Session Info
 
-- **Session ID**: 2040592a-a939-4281-8a4d-a7a6c0b43bc7
-- **Timestamp**: 2026-06-13 05:51:32 UTC
-- **Reason**: F11 pre-merge refresh: iterate-2026-06-13-runconfig-atomic-writes
+- **Session ID**: 6e8148e3-66f8-45ef-b4f3-c7171fed20b6
+- **Timestamp**: 2026-06-13 06:43:10 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-13-runconfig-atomic-writes
-- **Date**: 2026-06-13T05:52:25.316072Z
-- **Type**: bug
+- **Run ID**: iterate-2026-06-13-adopt-automerge-readiness
+- **Date**: 2026-06-13T06:43:30.814666Z
+- **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/2026-06-13-runconfig-atomic-writes
-- **ADR**: iterate-2026-06-13-runconfig-atomic-writes
+- **Branch**: iterate/adopt-automerge-readiness
+- **ADR**: iterate-2026-06-13-adopt-automerge-readiness
+- **Description**: adopt scaffolds profile-aware CodeQL + AUTOMERGE_SETUP doc (bloat-check deferred -> trg-33f26f5f)
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/campaigns/2026-06-10-audit-2-manual/sub-iterates/a2-2-runconfig-atomic-writes.md
+- **Spec**: .shipwright/planning/iterate/2026-06-13-adopt-automerge-readiness.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/2026-06-13-runconfig-atomic-writes
+- **Branch**: iterate/adopt-automerge-readiness
+- **Run ID**: iterate-2026-06-13-adopt-automerge-readiness
+- **Spec**: .shipwright/planning/iterate/2026-06-13-adopt-automerge-readiness.md
+- **Complexity**: medium
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -48,8 +53,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/2026-06-13-runconfig-atomic-writes
-- **Last Commit**: c4677fb0 Merge remote-tracking branch 'origin/main' into iterate/2026-06-13-runconfig-atomic-writes
+- **Branch**: iterate/adopt-automerge-readiness
+- **Last Commit**: 9b25dd52 Merge remote-tracking branch 'origin/main' into iterate/adopt-automerge-readiness
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +70,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-efbff017 | work_completed | iterate (adopt scaffolds profile-aware CodeQL + AUTOMERGE_SETUP doc for brownfield automerge-readiness (bloat-check deferred)) | 2026-06-13 |
 | evt-e7fde4fc | work_completed | iterate (extract diff-driven risk detectors + integration-coverage verifier into dedicated modules to ratchet two bloat baselines down) | 2026-06-13 |
 | evt-b218f0d8 | work_completed | iterate (run-config concurrency & atomicity (WP2: F11/F12/F13)) | 2026-06-13 |
 | evt-8b8ef149 | work_completed | iterate (WP1: phase-session hooks resolve identity from the stdin payload (F1); atomic event-log dedup (F14); phase_failed/stale_stop_rejected event types (F15)) | 2026-06-12 |
 | evt-8c8f2132 | work_completed | iterate (Coerce explicit-null affected_frs/new_frs (and tests/review) in WorkEvent.from_dict) | 2026-06-12 |
-| evt-1c8dc50c | work_completed | iterate (Relocate resolve_main_repo_root from lib/events_log.py to lib/repo_root.py with a lazy back-compat re-export; migrate net-zero consumers; keep the two grandfathered consumers (iterate_checks, group_f) on the re-export to avoid ratcheting bloat.) | 2026-06-12 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 170
-- **Last iterate**: change — extract diff-driven risk detectors + integration-coverage verifier into dedicated modules to ratchet two bloat baselines down (2026-06-13)
+- **Total work events**: 171
+- **Last iterate**: feature — adopt scaffolds profile-aware CodeQL + AUTOMERGE_SETUP doc for brownfield automerge-readiness (bloat-check deferred) (2026-06-13)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

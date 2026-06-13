@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-13T05:51:32.227810+00:00
+Generated: 2026-06-13T06:43:10.946192+00:00
 
 ## Requirements Coverage
 
@@ -195,6 +195,7 @@ Generated: 2026-06-13T05:51:32.227810+00:00
 | WP1: phase-session hooks resolve identity from the stdin payload (F1); atomic event-log dedup (F14); phase_failed/stale_stop_rejected event types (F15) | iterate | change |  | 3348/3362 | — | 2026-06-12 |
 | run-config concurrency & atomicity (WP2: F11/F12/F13) | iterate | bug |  | 162/162 | — | 2026-06-13 |
 | extract diff-driven risk detectors + integration-coverage verifier into dedicated modules to ratchet two bloat baselines down | iterate | change |  | 3818/3830 | — | 2026-06-13 |
+| adopt scaffolds profile-aware CodeQL + AUTOMERGE_SETUP doc for brownfield automerge-readiness (bloat-check deferred) | iterate | feature |  | 3737/3737 | — | 2026-06-13 |
 
 ## Coverage Summary
 
@@ -202,7 +203,7 @@ Generated: 2026-06-13T05:51:32.227810+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 170 |
+| Iterate changes | 171 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
