@@ -30,11 +30,9 @@ bytes are byte-compatible with the union merge driver.
 
 from __future__ import annotations
 
-import contextlib
 import os
 import subprocess
 import sys
-import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -44,6 +42,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 import triage  # noqa: E402  — canonical lock + outbox path SSoT
+from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.churn_merge import TRIAGE_LOG, dedup_triage_lines, validate_triage_text  # noqa: E402
 from lib.sweep_gc import is_delivered, parse_delivered  # noqa: E402
 from lib.worktree_isolation import run_git  # noqa: E402
@@ -134,18 +133,10 @@ def _normalized_set(text: str) -> set[str]:
 
 
 def _atomic_write(path: Path, text: str) -> None:
-    """Write ``text`` verbatim (UTF-8, no newline translation) via tempfile +
-    os.replace so a concurrent reader never sees a torn file. IDENTICAL to
-    :func:`lib.reconcile_triage._atomic_write`."""
-    fd, tmp = tempfile.mkstemp(dir=str(path.parent), suffix=".tmp")
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="") as fh:
-            fh.write(text)
-        os.replace(tmp, path)
-    except Exception:
-        with contextlib.suppress(OSError):
-            os.unlink(tmp)
-        raise
+    """Write ``text`` verbatim (UTF-8, no newline translation) durably — tmp +
+    fsync + os.replace — so a reader never sees a torn file and a crash never
+    drops the content (shared :func:`durable_atomic_write`)."""
+    durable_atomic_write(path, text)
 
 
 def _delivered_membership(main_root: Path, default_branch: str) -> tuple[set[str], set[str]]:

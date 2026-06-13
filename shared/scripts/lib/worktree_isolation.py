@@ -17,10 +17,8 @@ from __future__ import annotations
 
 import contextlib
 import json
-import os
 import subprocess
 import sys
-import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -29,6 +27,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
+from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.churn_merge import TRIAGE_LOG  # noqa: E402
 from lib.events_log import EVENT_FILE  # noqa: E402
 from lib.iterate_entry import sanitize_run_id_for_filename  # noqa: E402
@@ -139,18 +138,10 @@ def _now_iso() -> str:
 
 
 def _atomic_write_json(target: Path, data: dict) -> None:
-    """Write ``data`` as pretty JSON to ``target`` via tempfile + os.replace."""
-    target.parent.mkdir(parents=True, exist_ok=True)
+    """Write ``data`` as pretty JSON to ``target`` durably (tmp + fsync +
+    os.replace) via the shared :func:`durable_atomic_write`."""
     text = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
-    fd, tmp = tempfile.mkstemp(dir=str(target.parent), suffix=".tmp")
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as fh:
-            fh.write(text)
-        os.replace(tmp, target)
-    except Exception:
-        with contextlib.suppress(OSError):
-            os.unlink(tmp)
-        raise
+    durable_atomic_write(target, text)
 
 
 # -----------------------------------------------------------------------------

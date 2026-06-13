@@ -21,7 +21,6 @@ import json
 import os
 import subprocess
 import sys
-import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -32,6 +31,7 @@ from lib.artifact_paths import (  # noqa: E402
     runtime_path,
     tracked_path,
 )
+from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.campaign_status_io import finalize_campaign_status  # noqa: E402
 
 
@@ -54,27 +54,11 @@ class FinalizeGateError(RuntimeError):
 
 
 def _atomic_replace(content_bytes: bytes, destination: Path) -> None:
-    """Atomic same-filesystem write via NamedTemporaryFile + os.replace.
-
-    Partial-failure safe: tempfile lives in destination.parent so rename
-    is atomic; on rename failure the tempfile is unlinked (would otherwise
-    leak as ".name.…tmp" cruft into tracked agent_docs). See ADR 089.
+    """Durable atomic same-filesystem write (tmp + fsync + os.replace) via the
+    shared :func:`durable_atomic_write`: all-or-nothing, no leaked ``.tmp``
+    cruft on failure, and the bytes survive a crash. See ADR 089.
     """
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(
-        mode="wb",
-        dir=destination.parent,
-        prefix=f".{destination.name}.",
-        suffix=".tmp",
-        delete=False,
-    ) as fh:
-        tmp_path = Path(fh.name)
-        fh.write(content_bytes)
-    try:
-        os.replace(tmp_path, destination)
-    except OSError:
-        tmp_path.unlink(missing_ok=True)
-        raise
+    durable_atomic_write(destination, content_bytes)
 
 
 def _refuse_symlink(path: Path) -> bool:

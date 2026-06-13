@@ -39,10 +39,8 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import sys
-import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -51,6 +49,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
+from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.file_lock import LockTimeout, file_lock  # noqa: E402
 from tools.write_changelog_drop import (  # noqa: E402
     drop_dir,
@@ -280,20 +279,9 @@ def _insert_section(changelog_text: str, new_section: str) -> str:
 
 
 def _atomic_write(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp_name = tempfile.mkstemp(
-        prefix=path.name + ".", suffix=".tmp", dir=str(path.parent)
-    )
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as fh:
-            fh.write(content)
-        os.replace(tmp_name, path)
-    except Exception:
-        try:
-            os.unlink(tmp_name)
-        except OSError:
-            pass
-        raise
+    """Durable atomic write (tmp + fsync + os.replace) via the shared
+    :func:`durable_atomic_write`."""
+    durable_atomic_write(path, content)
 
 
 def _warn_if_legacy_unreleased_has_bullets(changelog_text: str) -> int:

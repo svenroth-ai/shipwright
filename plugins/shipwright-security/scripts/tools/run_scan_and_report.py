@@ -28,7 +28,6 @@ import json
 import os
 import re
 import sys
-import tempfile
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -45,6 +44,10 @@ SHARED_ROOT = PLUGIN_ROOT.parent.parent / "shared"
 sys.path.insert(0, str(PLUGIN_ROOT / "scripts" / "lib"))
 sys.path.insert(0, str(PLUGIN_ROOT / "scripts" / "tools"))
 sys.path.insert(0, str(SHARED_ROOT / "scripts"))
+# Import the shared durable-write primitive by its UNIQUE top-level name, not via
+# ``lib.atomic_write`` — this plugin's own ``scripts/lib`` is on the path too, and
+# a sibling test importing it first poisons the ``lib`` package name (ADR-044).
+sys.path.insert(0, str(SHARED_ROOT / "scripts" / "lib"))
 
 try:
     from scanner_backend import get_backend  # type: ignore
@@ -57,6 +60,7 @@ except ImportError as exc:  # pragma: no cover - import safety
     print(f"Failed to import scanner backend: {exc}", file=sys.stderr)
     raise
 
+from atomic_write import durable_atomic_write  # noqa: E402
 from redact import redact_findings  # noqa: E402
 
 import generate_security_report as gsr  # noqa: E402
@@ -111,25 +115,10 @@ def _new_scan_id(now: datetime) -> str:
 
 
 def _atomic_write(path: Path, text: str) -> None:
-    """Write text to ``path`` atomically: tmp file in same dir + os.replace.
-
-    Same-directory tmp avoids cross-drive rename failures on Windows. The
-    tmp file is opened with delete=False so the os.replace can succeed.
-    """
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp_path = tempfile.mkstemp(
-        suffix=".tmp", prefix=path.name + ".", dir=str(path.parent),
-    )
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
-            f.write(text)
-        os.replace(tmp_path, path)
-    except Exception:
-        try:
-            os.unlink(tmp_path)
-        except OSError:
-            pass
-        raise
+    """Write ``text`` to ``path`` durably + atomically (tmp + fsync + os.replace
+    via the shared :func:`durable_atomic_write`); same-directory tmp avoids
+    cross-drive rename failures on Windows."""
+    durable_atomic_write(path, text)
 
 
 def _ensure_gitignore_entry(project_root: Path) -> str:

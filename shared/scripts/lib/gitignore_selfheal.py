@@ -23,7 +23,6 @@ import contextlib
 import os
 import subprocess
 import sys
-import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -31,6 +30,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[1]  # shared/scripts
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
+from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.gitignore_canon import plan_merge  # noqa: E402
 
 #: Where the canonical block lives in a managed repo (repo root).
@@ -76,18 +76,10 @@ def _ci_active() -> bool:
 
 
 def _atomic_write(path: Path, text: str) -> None:
-    """Write *text* verbatim (UTF-8, no newline translation) via tempfile +
-    os.replace so a concurrent reader never sees a torn file."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=str(path.parent), suffix=".tmp")
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="") as fh:
-            fh.write(text)
-        os.replace(tmp, path)
-    except Exception:
-        with contextlib.suppress(OSError):
-            os.unlink(tmp)
-        raise
+    """Write *text* verbatim (UTF-8, no newline translation) durably — tmp +
+    fsync + os.replace — so a reader never sees a torn file and a crash never
+    drops the content (shared :func:`durable_atomic_write`)."""
+    durable_atomic_write(path, text)
 
 
 def _restore(gi_path: Path, original: str | None, reset) -> None:

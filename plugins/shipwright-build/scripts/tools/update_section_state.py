@@ -13,27 +13,22 @@ Also updates design-fidelity-report.json (canonical Build→Test design fidelity
 
 import argparse
 import json
-import os
 import sys
-import tempfile
 from pathlib import Path
+
+# ``shared/scripts/lib`` is at parents[4] in BOTH the dev repo and the runtime
+# plugin cache; ``atomic_write`` is a unique top-level module name.
+_SHARED_LIB = Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"
+if str(_SHARED_LIB) not in sys.path:
+    sys.path.insert(0, str(_SHARED_LIB))
+
+from atomic_write import durable_atomic_write  # noqa: E402
 
 
 def _atomic_write_json(path: Path, data: dict) -> None:
-    """Write JSON atomically via temp file + rename."""
-    content = json.dumps(data, indent=2) + "\n"
-    fd, tmp_path = tempfile.mkstemp(dir=str(path.parent), suffix=".tmp")
-    try:
-        os.write(fd, content.encode("utf-8"))
-        os.close(fd)
-        os.replace(tmp_path, str(path))
-    except BaseException:
-        os.close(fd) if not os.get_inheritable(fd) else None
-        try:
-            os.unlink(tmp_path)
-        except OSError:
-            pass
-        raise
+    """Write JSON durably + atomically (tmp + fsync + os.replace via the shared
+    :func:`durable_atomic_write`)."""
+    durable_atomic_write(path, json.dumps(data, indent=2) + "\n")
 
 
 def _update_design_fidelity_report(

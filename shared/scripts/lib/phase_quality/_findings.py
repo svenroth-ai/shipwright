@@ -19,10 +19,8 @@ Iterate Campaign B (B3): split out of the 1108-LOC monolith.
 from __future__ import annotations
 
 import json
-import os
 import re
 import sys
-import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -31,6 +29,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[2]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
+from lib.atomic_write import durable_atomic_write  # noqa: E402
 from tools.verifiers.common import CheckResult, Severity  # noqa: E402
 
 from ._constants import (
@@ -182,17 +181,9 @@ def apply_skip_override(
 # ---------------------------------------------------------------------------
 
 def _atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(
-        "w", encoding="utf-8",
-        dir=str(path.parent), prefix=f".{path.name}.", suffix=".tmp",
-        delete=False,
-    ) as fh:
-        json.dump(payload, fh, indent=2, sort_keys=False)
-        fh.flush()
-        os.fsync(fh.fileno())
-        tmp_name = fh.name
-    os.replace(tmp_name, path)
+    """Write ``payload`` as JSON durably (tmp + fsync + os.replace via the shared
+    :func:`durable_atomic_write`)."""
+    durable_atomic_write(path, json.dumps(payload, indent=2, sort_keys=False))
 
 
 def write_finding_json(

@@ -33,11 +33,8 @@ CLI:
 from __future__ import annotations
 
 import argparse
-import contextlib
 import json
-import os
 import sys
-import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -46,6 +43,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
+from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.file_lock import LockTimeout, file_lock  # noqa: E402
 from lib.iterate_entry import (  # noqa: E402
     MIGRATION_QUARANTINE_REPORT_KEY,
@@ -77,19 +75,10 @@ class IterateAppendError(RuntimeError):
 
 
 def _atomic_write_json(target: Path, data: Any) -> None:
-    """Temp-file-plus-rename write so readers never see a half-file."""
-    target.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp_name = tempfile.mkstemp(
-        prefix=target.name + ".", suffix=".tmp", dir=str(target.parent)
-    )
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as fh:
-            fh.write(json.dumps(data, indent=2) + "\n")
-        os.replace(tmp_name, target)
-    except Exception:
-        with contextlib.suppress(OSError):
-            os.unlink(tmp_name)
-        raise
+    """Durable atomic JSON write (tmp + fsync + os.replace via the shared
+    :func:`durable_atomic_write`) so readers never see a half-file and a crash
+    never drops it."""
+    durable_atomic_write(target, json.dumps(data, indent=2) + "\n")
 
 
 def _load_config(project_root: Path) -> dict[str, Any]:

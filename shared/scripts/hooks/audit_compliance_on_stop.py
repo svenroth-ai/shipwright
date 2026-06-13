@@ -37,7 +37,6 @@ import json
 import os
 import subprocess
 import sys
-import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -49,6 +48,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 
 from lib import phase_quality as pq  # noqa: E402
 from lib.artifact_paths import runtime_dir  # noqa: E402
+from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.project_root import resolve_project_root  # noqa: E402
 
 _DISABLE_ENV = "SHIPWRIGHT_COMPLIANCE_AUDIT_ON_STOP"
@@ -90,17 +90,7 @@ def already_audited(project_root: Path, head_sha: str, session_id: str) -> bool:
 def _write_marker(project_root: Path, head_sha: str, session_id: str,
                   payload: dict[str, Any]) -> None:
     path = _marker_path(project_root, head_sha, session_id)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(
-        mode="w", encoding="utf-8", dir=path.parent,
-        prefix=f".{path.name}.", suffix=".tmp", delete=False,
-    ) as fh:
-        tmp = Path(fh.name)
-        json.dump(payload, fh, indent=2)
-    try:
-        os.replace(tmp, path)
-    except OSError:
-        tmp.unlink(missing_ok=True)
+    durable_atomic_write(path, json.dumps(payload, indent=2))
 
 
 def _git_head_sha(project_root: Path) -> str:

@@ -17,10 +17,10 @@ from __future__ import annotations
 import contextlib
 import os
 import subprocess
-import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.gitattributes_union import (  # noqa: E402  (pure merge-logic SSoT)
     GITATTRIBUTES_PATH,
     UNION_PATHS,
@@ -60,18 +60,10 @@ def _ci_active() -> bool:
 
 
 def _atomic_write(path: Path, text: str) -> None:
-    """Write ``text`` verbatim (UTF-8, no newline translation) via tempfile +
-    os.replace so a concurrent reader never sees a torn file."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=str(path.parent), suffix=".tmp")
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="") as fh:
-            fh.write(text)
-        os.replace(tmp, path)
-    except Exception:
-        with contextlib.suppress(OSError):
-            os.unlink(tmp)
-        raise
+    """Write ``text`` verbatim (UTF-8, no newline translation) durably — tmp +
+    fsync + os.replace — so a reader never sees a torn file and a crash never
+    drops the content (shared :func:`durable_atomic_write`)."""
+    durable_atomic_write(path, text)
 
 
 def _restore_gitattributes(ga_path: Path, original: str | None, unstage) -> None:
