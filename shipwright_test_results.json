@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-13-adopt-automerge-readiness",
+    "run_id": "iterate-2026-06-13-docs-install-github-automerge",
     "date": "2026-06-13",
     "unit": {
-      "status": "passed",
-      "passed": 3737,
-      "total": 3737
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "integration": {
-      "status": "passed",
-      "passed": 6,
-      "total": 6
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -18,9 +18,9 @@
       "total": 0
     },
     "e2e": {
-      "status": "passed",
-      "passed": 6,
-      "total": 6
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "design_fidelity": {
       "status": "not_run",
@@ -30,10 +30,19 @@
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [],
+    "degraded": [
+      {
+        "phase": "f0",
+        "reason": "Docs + metadata-only iterate (README.md, docs/guide.md, .claude-plugin/marketplace.json, scripts/install.sh); no Python source changed, so the unit/integration/e2e suites are not applicable. Verified instead via sync_check (6/6 OK), path-canon lints (test_artifact_path_canon.py + test_path_canon_windows.py, 14 passed / 1 skipped), and the F0 leak-guard (ALLOW, isolated)."
+      },
+      {
+        "phase": "setup",
+        "reason": "Pre-existing sweep-outbox warning from setup_iterate_worktree (trg-671bb0a2 status append dropped by a prior merge) — unrelated to this change; not introduced or resolvable here."
+      }
+    ],
     "surface_verification": {
       "surface": "none",
-      "justification": "Framework-internal /shipwright-adopt scaffolding + GitHub-Actions templates + shared convention-lock libs; no web/CLI end-user app surface. End-to-end verified by running the REAL generator as a subprocess (plugins/shipwright-adopt/tests/test_adopt_pipeline_subprocess.py::test_full_pipeline_e2e_via_subprocess), which asserts codeql.yml + AUTOMERGE_SETUP.md land with correct payloads.",
+      "justification": "Documentation (README + guide §2.9/§2.10) and plugin-catalog metadata (marketplace.json) plus an advisory Node-version threshold in install.sh. No web/CLI end-user app surface and no executable code path changed; verification is the metadata + content gates (sync_check, path-canon) rather than a runnable surface.",
       "tests_run": 0,
       "exit_code": 0
     },
@@ -41,55 +50,48 @@
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 codeql template dormant + ${SHIPWRIGHT_CODEQL_LANGUAGES} placeholder + permissions floor + continue-on-error",
+          "behavior": "marketplace.json plugin versions match each plugin.json",
           "disposition": "tested",
-          "evidence": "shared/tests/test_codeql_workflow_convention.py (23) PASSED"
+          "evidence": "shared/scripts/sync_check.py — [ OK ] Versions (was 12 mismatches)"
         },
         {
-          "behavior": "AC2 codeql scaffolder renders per-profile langs; never-overwrite; reason codes (scaffolded/already_exists/no_codeql_for_profile/profile_unresolved); rendered output valid YAML + dormant",
+          "behavior": "All 13 plugins remain referenced in README.md, CLAUDE.md, install.sh, and marketplace.json",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-adopt/tests/test_codeql_workflow_scaffold.py (17) PASSED"
+          "evidence": "shared/scripts/sync_check.py — [ OK ] Marketplace / README / CLAUDE.md / Install Script"
         },
         {
-          "behavior": "AC3 check-name matrix expansion (interpolate / no-name->job-id / no-ref->append-combo / multi-dim / include-exclude excluded) + dormant detection",
+          "behavior": "Edited docs introduce no bare legacy artifact paths (path canon)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_automerge_check_names.py (12) PASSED"
+          "evidence": "test_artifact_path_canon.py + test_path_canon_windows.py — 14 passed, 1 skipped"
         },
         {
-          "behavior": "AC3 if:-gated deploy jobs excluded from requireable + surfaced as conditional (review H1)",
+          "behavior": "marketplace.json remains valid JSON after the rewrite",
           "disposition": "tested",
-          "evidence": "test_automerge_readiness.py::test_required_checks_exclude_if_gated_deploy_jobs + ::test_render_warns_about_conditional_deploy_jobs PASSED"
+          "evidence": "sync_check.py json.loads parse succeeds ([ OK ] Marketplace)"
         },
         {
-          "behavior": "AC3 derived Required-Check names == deployed workflow names across all 3 profiles + KNOWN_WORKFLOWS drift-pin",
+          "behavior": "Run stays isolated to the worktree (no main-tree leak)",
           "disposition": "tested",
-          "evidence": "test_automerge_readiness.py::test_required_check_names_match_deployed_workflows[3] + ::test_known_workflows_match_convention_modules PASSED"
+          "evidence": "check_iterate_isolation.py --stage f0 — ALLOW (isolated)"
         },
         {
-          "behavior": "AC4 AUTOMERGE_SETUP render: profile + table substituted, dormant-trap + signing-omit prose, dormant/active flags; scaffolder never-overwrite + no-workflow degenerate",
-          "disposition": "tested",
-          "evidence": "test_automerge_readiness.py render tests + plugins/shipwright-adopt/tests/test_automerge_setup_scaffold.py (13) PASSED"
+          "behavior": "install.sh Node advisory threshold reads 20 (was 18)",
+          "disposition": "untestable",
+          "reason_code": "requires-interactive-tty",
+          "reason": "Advisory echo branch executes only during an interactive install on a host with Node < 20; no unit harness exercises it — verified by inspection of the edited branch."
         },
         {
-          "behavior": "AC5 orchestrator wiring (codeql after CI; AUTOMERGE doc LAST; reads real deployed files) via real generate_adoption_artifacts subprocess",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-adopt/tests/test_adopt_pipeline_subprocess.py::test_full_pipeline_e2e_via_subprocess PASSED (slow)"
-        },
-        {
-          "behavior": "AC5 SKILL.md + reference-doc cross-links resolve after edits",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-adopt/tests/test_cross_links.py + test_skill_references_link.py PASSED"
+          "behavior": "README → guide section links/anchors resolve on GitHub",
+          "disposition": "untestable",
+          "reason_code": "requires-manual-visual-judgment",
+          "reason": "Anchors computed via the GitHub heading-slug algorithm (§2.1/§2.4/§2.6/§2.9/§2.10/§3/§3.5/§12); the repo has no automated Markdown link checker — links degrade to file-top if imperfect."
         }
       ],
       "counts": {
-        "testable": 8,
-        "tested": 8,
-        "untestable": 0,
+        "testable": 5,
+        "tested": 5,
+        "untestable": 2,
         "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 5,
-        "covered_acs": 5
       }
     }
   }

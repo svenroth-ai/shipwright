@@ -462,6 +462,60 @@ make dev-client    # Terminal 2 — Vite :5173
 
 Autostart on Windows, port overrides for parallel worktrees, and the `SHIPWRIGHT_PROFILES_DIR` / `SHIPWRIGHT_MONOREPO_PATH` profile cascade are documented in the new repo's README + CLAUDE.md.
 
+### 2.9 Connect GitHub
+
+Shipwright works fully offline on a local repo, but several features come alive only once your project is on GitHub:
+
+- **`/shipwright-changelog`** opens a release PR (`gh pr create`).
+- **`/shipwright-iterate`** finalization pushes its branch and opens a PR per change — and can arm auto-merge (see §2.10).
+- **`/shipwright-security`** in CI mode (and the GitHub-findings → triage producer) reads results from GitHub Actions / code scanning.
+
+You need the **GitHub CLI** (`gh`), authenticated once:
+
+```bash
+gh --version          # installed in the §2.1 baseline; if missing, see §2.2
+gh auth login         # choose GitHub.com → HTTPS → log in via browser
+gh auth status        # confirm you are authenticated
+```
+
+Then create the remote and push your project (run from the project root, not the Shipwright clone):
+
+```bash
+git init -b main                       # if the repo is not under git yet
+git add -A && git commit -m "chore: initial commit"
+gh repo create <name> --private --source=. --remote=origin --push
+```
+
+For an existing remote, a plain `git push -u origin main` is enough. Once the repo is on GitHub with at least one PR, you can turn on auto-merge.
+
+### 2.10 Enable auto-merge (optional)
+
+With branch protection in place, `/shipwright-iterate` PRs can merge themselves the moment every Required Check is green — no bot, no polling loop, just GitHub-native auto-merge. `/shipwright-adopt` writes an **`AUTOMERGE_SETUP.md`** into your repo listing the exact Required-Check names *your* workflows produce; the steps below are the general flow.
+
+**1. Know your Required-Check names.** Branch protection matches on the **rendered GitHub check name** (the job name shown on a PR), **not** the workflow file name. Open a throwaway PR and copy the names from its checks list.
+
+> **The dormant trap.** Shipwright scaffolds `ci.yml` / `security.yml` / `codeql.yml` *dormant* (only `workflow_dispatch:` active) so they don't fire before you've reviewed them. A dormant workflow's check **never reports**, so requiring it would block *every* PR forever. Uncomment each workflow's `pull_request:` trigger and confirm the check goes green on a test PR **before** you require it.
+
+**2. Configure branch protection.** GitHub → **Settings → Branches → Add branch ruleset** for `main`:
+
+- ☑ **Require a pull request before merging** — Required approvals: **0** (a solo maintainer has no second approver; Shipwright's local review + the checks are the gate).
+- ☑ **Require status checks to pass before merging** → add each Required-Check name you activated in step 1 (type it exactly).
+- ☑ **Require branches to be up to date before merging**.
+
+> Do **not** enable *Require signed commits* — `/shipwright-iterate` commits headless without a signing key, so requiring signatures leaves every iterate PR permanently `BLOCKED` and silently kills auto-merge. (The squash commit GitHub writes to `main` is verified on its own.)
+
+**3. Allow auto-merge.** GitHub → **Settings → General → Pull Requests → ☑ Allow auto-merge.**
+
+**4. Arm it on a PR.**
+
+```bash
+gh pr merge --auto --squash --delete-branch <pr-number>
+```
+
+GitHub merges automatically once all Required Checks pass; if a check goes red, the PR waits until you push a fix. `/shipwright-iterate`'s finalization arms this for you on `iterate/*` branches, so day-to-day changes merge hands-free once green.
+
+See the generated `AUTOMERGE_SETUP.md` for your repo's specific check names, and §4.7 / `docs/security-ci-setup.md` for activating the security workflow.
+
 ---
 
 ## 3. Your First Project

@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-13-docs-install-github-automerge",
+  "date": "2026-06-13T07:23:03.289334Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/docs-install-github-automerge",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-06-13-docs-install-github-automerge"
+}

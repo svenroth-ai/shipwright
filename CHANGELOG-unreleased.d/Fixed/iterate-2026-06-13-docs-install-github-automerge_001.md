@@ -1,0 +1,1 @@
+Plugin marketplace catalog: synced plugin versions to match each plugin.json (sync_check parity) and corrected the shipwright-security description to the OSS-default scanner chain (Semgrep + Trivy + Gitleaks + prompt-injection)
