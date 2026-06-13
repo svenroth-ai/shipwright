@@ -283,9 +283,23 @@ and turn off Path A.
 
 1. Enable Code Scanning in repo *Settings → Code security and analysis*.
 2. Enable Dependabot alerts and Secret Scanning in the same panel.
-3. Enable CodeQL default setup (or configure a custom CodeQL workflow).
+3. Enable CodeQL. `/shipwright-adopt` already scaffolds a **dormant**
+   `.github/workflows/codeql.yml` (Step E.14b) with a profile-aware
+   `language:` matrix (`python` and/or `javascript-typescript`) — activate it
+   by uncommenting the `pull_request:` / `push:` / `schedule:` triggers, or
+   use GitHub's CodeQL default setup instead. The scaffolded workflow keeps
+   `continue-on-error` on the analyze step, so on a **private** repo without
+   GitHub Advanced Security the `Analyze (<language>)` job stays green (the QL
+   analysis runs; only the SARIF upload to the Security tab fails). On a
+   public repo CodeQL is free and results appear in the Security tab.
 4. Disable Path A — either re-comment the `pull_request` / `schedule`
    triggers in `.github/workflows/security.yml`, or delete the file.
+
+> **Automerge.** If you require a CodeQL `Analyze (<language>)` check (or any
+> dormant workflow's check) in branch protection, activate its `pull_request:`
+> trigger first — a check that never reports blocks every PR. The
+> `AUTOMERGE_SETUP.md` that adopt writes at the repo root lists the exact
+> Required-Check job names this repo produces and the branch-protection steps.
 
 ### Triage Inbox integration
 

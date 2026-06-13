@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-13T04:34:38.831317+00:00
-Total commits: 982
+Generated: 2026-06-13T06:43:10.946192+00:00
+Total commits: 983
 
 ## Commit Distribution
 
@@ -11,7 +11,7 @@ pie title Commit Types
     "feat" : 270
     "chore" : 216
     "docs" : 123
-    "refactor" : 53
+    "refactor" : 54
     "test" : 24
     "ci" : 7
     "other" : 7
@@ -930,10 +930,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 53 commits
+### Refactoring (refactor) — 54 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-13 | bloat | extract risk detectors + integration-coverage verifier into dedicated modules (#225) | 3c18fc6d9efd |
 | 2026-06-12 | lib | relocate resolve_main_repo_root to lib/repo_root.py with back-compat re-export (#221) | 23dbc8403825 |
 | 2026-06-12 | agent-docs | compact backlog to one-line pointers + retire convention-routing fallback (#211) | 16138390ad5f |
 | 2026-06-12 | hooks | consolidate project detection onto one canonical predicate (#209) | 62eb99264b7f |
@@ -1051,7 +1052,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 982 |
+| Total commits | 983 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 982 |
+| Human-authored commits | 983 |
 

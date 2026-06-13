@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-13 04:34 UTC | Session: 553f1ff3-e4ba-4ee6-9e55-19f635416972 | Run: iterate-2026-06-13-risk-detector-extract
+> Updated: 2026-06-13 06:43 UTC | Session: 6e8148e3-66f8-45ef-b4f3-c7171fed20b6 | Run: iterate-2026-06-13-adopt-automerge-readiness
 
-## Recent Changes (169 iterations)
+## Recent Changes (170 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | adopt scaffolds profile-aware CodeQL + AUTOMERGE_SETUP doc for brownfield automerge-readiness (bloat-check deferred) | 3737/3737 |  | tooling | 2026-06-13 |
 | change | extract diff-driven risk detectors + integration-coverage verifier into dedicated modules to ratchet two bloat baselines down | 3818/3830 |  | tooling | 2026-06-13 |
 | change | WP1: phase-session hooks resolve identity from the stdin payload (F1); atomic event-log dedup (F14); phase_failed/stale_stop_rejected event types (F15) | 3348/3362 |  | tooling | 2026-06-12 |
 | bug | Coerce explicit-null affected_frs/new_frs (and tests/review) in WorkEvent.from_dict | 697/697 |  | compliance | 2026-06-12 |
@@ -176,7 +177,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-13 | Unit: 3797/3809 | Integration: 21/21 | Smoke: not_run | (iterate)
+Last run: 2026-06-13 | Unit: 3737/3737 | Integration: 6/6 | E2E: 6/6 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

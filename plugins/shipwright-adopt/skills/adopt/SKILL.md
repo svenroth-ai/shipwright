@@ -149,7 +149,11 @@ Writes in order: `CLAUDE.md`, agent_docs, planning spec, six configs
 (`shipwright_run_config.json` LAST), events.jsonl, baseline E2E spec,
 visual frontend docs (Tier 5), prior-art harvest, sibling-test ACs,
 TODO/FIXME inventory, see-also cross-links, security CI scaffold,
-CI workflow scaffold (profile-aware), Claude-Review workflow scaffold.
+CI workflow scaffold (profile-aware), CodeQL workflow scaffold
+(profile-aware), Claude-Review workflow scaffold, and `AUTOMERGE_SETUP.md`
+(branch-protection / auto-merge guide — written LAST, after every workflow
+scaffold, so its Required-Check job-name list is derived from the real
+deployed workflow files).
 
 Vite DX templates are offer-only — NEVER auto-applied. Existing
 `vite.config.ts` is NEVER overwritten. Features merge unions AST +

@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-13-risk-detector-extract",
+    "run_id": "iterate-2026-06-13-adopt-automerge-readiness",
     "date": "2026-06-13",
     "unit": {
       "status": "passed",
-      "passed": 3797,
-      "total": 3809
+      "passed": 3737,
+      "total": 3737
     },
     "integration": {
       "status": "passed",
-      "passed": 21,
-      "total": 21
+      "passed": 6,
+      "total": 6
     },
     "pgtap": {
       "status": "not_run",
@@ -18,9 +18,9 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 6,
+      "total": 6
     },
     "design_fidelity": {
       "status": "not_run",
@@ -31,48 +31,54 @@
       "status": "not_run"
     },
     "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "justification": "Framework-internal /shipwright-adopt scaffolding + GitHub-Actions templates + shared convention-lock libs; no web/CLI end-user app surface. End-to-end verified by running the REAL generator as a subprocess (plugins/shipwright-adopt/tests/test_adopt_pipeline_subprocess.py::test_full_pipeline_e2e_via_subprocess), which asserts codeql.yml + AUTOMERGE_SETUP.md land with correct payloads.",
+      "tests_run": 0,
+      "exit_code": 0
+    },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "is_io_boundary_change / IO_BOUNDARY_FILE_PATTERNS resolve from classify_complexity + the iterate contract after the move",
+          "behavior": "AC1 codeql template dormant + ${SHIPWRIGHT_CODEQL_LANGUAGES} placeholder + permissions floor + continue-on-error",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-iterate/tests/test_boundary_detection.py + integration-tests/test_shared_contracts_consumers.py PASSED"
+          "evidence": "shared/tests/test_codeql_workflow_convention.py (23) PASSED"
         },
         {
-          "behavior": "is_cross_component_change / CROSS_COMPONENT_FILE_PATTERNS resolve via cc.* attribute access after the move",
+          "behavior": "AC2 codeql scaffolder renders per-profile langs; never-overwrite; reason codes (scaffolded/already_exists/no_codeql_for_profile/profile_unresolved); rendered output valid YAML + dormant",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-iterate/tests/test_cross_component_detector.py PASSED"
+          "evidence": "plugins/shipwright-adopt/tests/test_codeql_workflow_scaffold.py (17) PASSED"
         },
         {
-          "behavior": "touches_build_files / TOUCHES_BUILD_FILE_PATTERNS resolve from classify_complexity after the move",
+          "behavior": "AC3 check-name matrix expansion (interpolate / no-name->job-id / no-ref->append-combo / multi-dim / include-exclude excluded) + dormant detection",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-iterate/tests/test_classify_complexity_perf.py PASSED"
+          "evidence": "shared/tests/test_automerge_check_names.py (12) PASSED"
         },
         {
-          "behavior": "classify() output is byte-identical after extracting the detectors",
+          "behavior": "AC3 if:-gated deploy jobs excluded from requireable + surfaced as conditional (review H1)",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-iterate/tests/test_classify_complexity.py + test_complexity_corpus.py PASSED"
+          "evidence": "test_automerge_readiness.py::test_required_checks_exclude_if_gated_deploy_jobs + ::test_render_warns_about_conditional_deploy_jobs PASSED"
         },
         {
-          "behavior": "check_integration_coverage behavior is unchanged after lifting it into integration_coverage.py",
+          "behavior": "AC3 derived Required-Check names == deployed workflow names across all 3 profiles + KNOWN_WORKFLOWS drift-pin",
           "disposition": "tested",
-          "evidence": "shared/tests/test_check_integration_coverage.py PASSED"
+          "evidence": "test_automerge_readiness.py::test_required_check_names_match_deployed_workflows[3] + ::test_known_workflows_match_convention_modules PASSED"
         },
         {
-          "behavior": "iterate_checks._CROSS_COMPONENT_PATTERNS == classify_complexity.CROSS_COMPONENT_FILE_PATTERNS SSoT (both directions)",
+          "behavior": "AC4 AUTOMERGE_SETUP render: profile + table substituted, dormant-trap + signing-omit prose, dormant/active flags; scaffolder never-overwrite + no-workflow degenerate",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-iterate/tests/test_cross_component_patterns_sync.py PASSED"
+          "evidence": "test_automerge_readiness.py render tests + plugins/shipwright-adopt/tests/test_automerge_setup_scaffold.py (13) PASSED"
         },
         {
-          "behavior": "run_all_checks / verify_iterate_finalization legacy re-export surface intact",
+          "behavior": "AC5 orchestrator wiring (codeql after CI; AUTOMERGE doc LAST; reads real deployed files) via real generate_adoption_artifacts subprocess",
           "disposition": "tested",
-          "evidence": "shared/tests/test_verify_iterate_finalization.py PASSED"
+          "evidence": "plugins/shipwright-adopt/tests/test_adopt_pipeline_subprocess.py::test_full_pipeline_e2e_via_subprocess PASSED (slow)"
         },
         {
-          "behavior": "mod.is_io_boundary_change resolves when classify_complexity is loaded standalone via spec_from_file_location",
+          "behavior": "AC5 SKILL.md + reference-doc cross-links resolve after edits",
           "disposition": "tested",
-          "evidence": "shared/scripts/tools/tests/test_record_event.py::test_changed_files_round_trip_with_is_io_boundary_change PASSED"
+          "evidence": "plugins/shipwright-adopt/tests/test_cross_links.py + test_skill_references_link.py PASSED"
         }
       ],
       "counts": {
@@ -82,18 +88,9 @@
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 8,
-        "covered_acs": 8
+        "acs": 5,
+        "covered_acs": 5
       }
-    },
-    "surface_verification": {
-      "surface": "none",
-      "runner": "",
-      "exit_code": 0,
-      "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-13-risk-detector-extract/surface_verification.json",
-      "timestamp": "2026-06-13T04:30:34.276Z",
-      "justification": "Pure framework-internal Python refactor (verbatim module relocation + re-export of risk detectors and the integration-coverage verifier); no startable web/cli/api surface exists. Behavior preservation is proven by the existing detector/verifier/contract/sync unit + integration suites (iterate-plugin 396 passed, shared 3401 passed, contract 21/21 isolated), all green."
     }
   }
 }

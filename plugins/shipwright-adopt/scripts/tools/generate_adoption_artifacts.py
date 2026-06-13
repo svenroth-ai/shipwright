@@ -567,6 +567,18 @@ def generate(
     if ci_result["wrote"]:
         results["written"].append(ci_result["path"])
 
+    # Step E.14b — CodeQL workflow scaffold (profile-aware): lands a dormant
+    # codeql.yml whose `language:` matrix is rendered from the detected profile
+    # (python-plugin-monorepo -> python; vite-hono / supabase-nextjs ->
+    # javascript-typescript). Gives an adopted repo the `Analyze (<lang>)`
+    # Required-Check job names B4.5-style automerge needs. Distinct reason codes
+    # (no_codeql_for_profile / profile_unresolved) surface detection failures.
+    from codeql_workflow_scaffolder import scaffold_codeql_workflow  # type: ignore
+    codeql_result = scaffold_codeql_workflow(project_root, profile_name=profile_name)
+    results["codeql_workflow"] = codeql_result
+    if codeql_result["wrote"]:
+        results["written"].append(codeql_result["path"])
+
     # Step E.15 — Claude-Review workflow scaffold. Independent Claude Code
     # review-in-a-different-session pass on PRs — Anthropic Architect
     # Certification best practice (commit `8aac61d`). Profile-agnostic;
@@ -580,6 +592,17 @@ def generate(
     results["claude_review_workflow"] = claude_review_result
     if claude_review_result["wrote"]:
         results["written"].append(claude_review_result["path"])
+
+    # Step E.15b — Automerge-readiness doc. MUST run AFTER every workflow
+    # scaffold above: it derives the Required-Check job names by PARSING the
+    # deployed `.github/workflows/*.yml` (matrix-expanded), so a wrong name can
+    # never reach branch protection (the silent-never-matches trap). Lands
+    # AUTOMERGE_SETUP.md at the repo root; never overwrites.
+    from automerge_setup_scaffolder import scaffold_automerge_setup  # type: ignore
+    automerge_result = scaffold_automerge_setup(project_root, profile_name=profile_name)
+    results["automerge_setup"] = automerge_result
+    if automerge_result["wrote"]:
+        results["written"].append(automerge_result["path"])
 
     # Tier 5 — Visual frontend documentation. Opt-in via signal: any
     # frontend hint in the snapshot (multi-service frontend service, or
