@@ -140,31 +140,90 @@ Profiles define the entire stack: versions, folder structure, deploy target, tes
 
 ## Getting Started
 
+A five-step path from zero to a self-merging pipeline. Each step links to the full detail in **[docs/guide.md](docs/guide.md)** — start here, dive in where you need more.
+
 ### Requirements
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (Pro or Max) — VSCode Extension or CLI
 - Python 3.11+ via [uv](https://docs.astral.sh/uv/)
 - Git
-- Node.js 20+ *(optional — needed for the Command Center WebUI, which now lives at [shipwright-webui](https://github.com/svenroth-ai/shipwright-webui))*
+- [GitHub CLI](https://cli.github.com/) (`gh`) — *optional; needed for PRs (changelog / iterate) and auto-merge*
+- Node.js 20+ — *optional; for the [Command Center WebUI](https://github.com/svenroth-ai/shipwright-webui) and the `supabase-nextjs` profile's generated app*
 
-### Install (recommended)
+> First-time machine? The guide has copy-paste prerequisite blocks for **Windows / macOS / Linux** — [§2.1](docs/guide.md#21-fresh-machine-baseline).
+
+### 1. Install the plugins
+
+The recommended, cross-platform path (Windows PowerShell, macOS, Linux, VS Code Extension terminal) — register the marketplace, then install all 13 plugins.
+
+**bash / zsh / Git Bash:**
 
 ```bash
-git clone https://github.com/svenroth-ai/shipwright.git ~/shipwright
-cd ~/shipwright
-./scripts/install.sh
+claude plugin marketplace add svenroth-ai/shipwright
+for p in shipwright-run shipwright-project shipwright-design shipwright-plan \
+         shipwright-build shipwright-test shipwright-deploy shipwright-changelog \
+         shipwright-compliance shipwright-security shipwright-iterate \
+         shipwright-preview shipwright-adopt; do
+  claude plugin install "${p}@shipwright"
+done
 ```
 
-`install.sh` handles everything in one step:
+**PowerShell:**
 
-- Checks prerequisites (Claude Code, Python 3.11+, uv, git, Node.js)
-- Installs Python dependencies via `uv sync`
-- Creates a `shipwright` shell alias that loads all plugins
-- Runs `scripts/verify-setup.sh` to confirm the install
+```powershell
+claude plugin marketplace add svenroth-ai/shipwright
+foreach ($p in @('shipwright-run','shipwright-project','shipwright-design',
+                 'shipwright-plan','shipwright-build','shipwright-test',
+                 'shipwright-deploy','shipwright-changelog','shipwright-compliance',
+                 'shipwright-security','shipwright-iterate','shipwright-preview',
+                 'shipwright-adopt')) {
+  claude plugin install "$($p)@shipwright"
+}
+```
 
-Afterwards, type `shipwright` in any terminal and go.
+Verify, then **restart Claude Code** — freshly installed plugins activate only in a new session:
 
-### Start the Command Center
+```bash
+claude plugin list   # all 13 should show ✔ enabled
+```
+
+> **Alternatives:** a bash all-in-one installer (`./scripts/install.sh`, creates a `shipwright` shell alias) — [§2.4](docs/guide.md#24-plugin-install--option-b-scriptsinstallsh-macos-linux-git-bash-on-windows); or a manual `settings.json` edit — [§2.6](docs/guide.md#26-plugin-install--option-d-manual-settingsjson-edit-advanced).
+
+### 2. Run your first command
+
+```
+/shipwright-run "Build a SaaS time tracker with Supabase and Next.js"   # new project
+/shipwright-adopt                                                        # existing repo
+/shipwright-iterate "Add a dark mode toggle"                             # daily change
+```
+
+See [Chapter 3](docs/guide.md#3-your-first-project) (greenfield) and [Chapter 3.5](docs/guide.md#35-adopting-an-existing-repo) (brownfield).
+
+### 3. Keep Shipwright updated
+
+```bash
+claude plugin marketplace update shipwright
+claude plugin update shipwright-iterate@shipwright   # repeat per plugin
+```
+
+Then restart your session. (Installed from a clone instead? Run `bash scripts/update-marketplace.sh`.) Details: [§12](docs/guide.md#12-updating-shipwright).
+
+### 4. Connect GitHub
+
+Put your project on GitHub so `/shipwright-changelog` and `/shipwright-iterate` can open PRs, and CI security findings flow into triage:
+
+```bash
+gh auth login                  # one-time
+gh repo create <name> --private --source=. --remote=origin --push
+```
+
+Walkthrough: [§2.9](docs/guide.md#29-connect-github).
+
+### 5. Turn on auto-merge (optional)
+
+Once your repo has branch protection, `/shipwright-iterate` PRs merge themselves the moment every Required Check is green — no bot, no polling. `/shipwright-adopt` writes an `AUTOMERGE_SETUP.md` into your repo with the exact check names; the general flow (branch protection, the dormant-workflow trap, `gh pr merge --auto`) is in [§2.10](docs/guide.md#210-enable-auto-merge-optional).
+
+### Start the Command Center (optional)
 
 The Command Center lives in its own repository:
 **[shipwright-webui](https://github.com/svenroth-ai/shipwright-webui)**.
@@ -182,35 +241,6 @@ prefer) and watches its JSONL transcript. Full install,
 parallel-worktree tips, Windows autostart, and custom actions for your
 own slash skills are documented in the WebUI repo's
 **[docs/guide.md](https://github.com/svenroth-ai/shipwright-webui/blob/main/docs/guide.md)**.
-
-### Install via Marketplace (VSCode Extension alternative)
-
-If you prefer the Claude Code plugin marketplace instead of a shell alias, add this to `~/.claude/settings.json`:
-
-```json
-{
-  "extraKnownMarketplaces": {
-    "shipwright": { "source": { "source": "github", "repo": "svenroth-ai/shipwright" } }
-  },
-  "enabledPlugins": {
-    "shipwright-run@shipwright": true,
-    "shipwright-project@shipwright": true,
-    "shipwright-design@shipwright": true,
-    "shipwright-plan@shipwright": true,
-    "shipwright-build@shipwright": true,
-    "shipwright-test@shipwright": true,
-    "shipwright-security@shipwright": true,
-    "shipwright-deploy@shipwright": true,
-    "shipwright-changelog@shipwright": true,
-    "shipwright-compliance@shipwright": true,
-    "shipwright-iterate@shipwright": true,
-    "shipwright-preview@shipwright": true,
-    "shipwright-adopt@shipwright": true
-  }
-}
-```
-
-Then clone the repo and run `uv sync`. For the Command Center WebUI, see [shipwright-webui](https://github.com/svenroth-ai/shipwright-webui).
 
 For the full setup guide (troubleshooting, deployment targets, external LLM review, platform notes), see **[docs/guide.md](docs/guide.md)**.
 

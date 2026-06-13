@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-13T07:44:42.695706+00:00
+Generated: 2026-06-13T07:22:52.180798+00:00
 
 ## Requirements Coverage
 
@@ -196,7 +196,7 @@ Generated: 2026-06-13T07:44:42.695706+00:00
 | run-config concurrency & atomicity (WP2: F11/F12/F13) | iterate | bug |  | 162/162 | — | 2026-06-13 |
 | extract diff-driven risk detectors + integration-coverage verifier into dedicated modules to ratchet two bloat baselines down | iterate | change |  | 3818/3830 | — | 2026-06-13 |
 | adopt scaffolds profile-aware CodeQL + AUTOMERGE_SETUP doc for brownfield automerge-readiness (bloat-check deferred) | iterate | feature |  | 3737/3737 | — | 2026-06-13 |
-| hook block-channel (WP4): route PostToolUse security-guard reasons to stderr; SessionStart drift gate is honest warn-only via additionalContext | iterate | change |  | 3400/3400 | — | 2026-06-13 |
+| docs install/Get-Started rewrite + GitHub/auto-merge guide + marketplace metadata parity | iterate | change |  | — | — | 2026-06-13 |
 
 ## Coverage Summary
 

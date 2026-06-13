@@ -462,6 +462,60 @@ make dev-client    # Terminal 2 — Vite :5173
 
 Autostart on Windows, port overrides for parallel worktrees, and the `SHIPWRIGHT_PROFILES_DIR` / `SHIPWRIGHT_MONOREPO_PATH` profile cascade are documented in the new repo's README + CLAUDE.md.
 
+### 2.9 Connect GitHub
+
+Shipwright works fully offline on a local repo, but several features come alive only once your project is on GitHub:
+
+- **`/shipwright-changelog`** opens a release PR (`gh pr create`).
+- **`/shipwright-iterate`** finalization pushes its branch and opens a PR per change — and can arm auto-merge (see §2.10).
+- **`/shipwright-security`** in CI mode (and the GitHub-findings → triage producer) reads results from GitHub Actions / code scanning.
+
+You need the **GitHub CLI** (`gh`), authenticated once:
+
+```bash
+gh --version          # installed in the §2.1 baseline; if missing, see §2.2
+gh auth login         # choose GitHub.com → HTTPS → log in via browser
+gh auth status        # confirm you are authenticated
+```
+
+Then create the remote and push your project (run from the project root, not the Shipwright clone):
+
+```bash
+git init -b main                       # if the repo is not under git yet
+git add -A && git commit -m "chore: initial commit"
+gh repo create <name> --private --source=. --remote=origin --push
+```
+
+For an existing remote, a plain `git push -u origin main` is enough. Once the repo is on GitHub with at least one PR, you can turn on auto-merge.
+
+### 2.10 Enable auto-merge (optional)
+
+With branch protection in place, `/shipwright-iterate` PRs can merge themselves the moment every Required Check is green — no bot, no polling loop, just GitHub-native auto-merge. `/shipwright-adopt` writes an **`AUTOMERGE_SETUP.md`** into your repo listing the exact Required-Check names *your* workflows produce; the steps below are the general flow.
+
+**1. Know your Required-Check names.** Branch protection matches on the **rendered GitHub check name** (the job name shown on a PR), **not** the workflow file name. Open a throwaway PR and copy the names from its checks list.
+
+> **The dormant trap.** Shipwright scaffolds `ci.yml` / `security.yml` / `codeql.yml` *dormant* (only `workflow_dispatch:` active) so they don't fire before you've reviewed them. A dormant workflow's check **never reports**, so requiring it would block *every* PR forever. Uncomment each workflow's `pull_request:` trigger and confirm the check goes green on a test PR **before** you require it.
+
+**2. Configure branch protection.** GitHub → **Settings → Branches → Add branch ruleset** for `main`:
+
+- ☑ **Require a pull request before merging** — Required approvals: **0** (a solo maintainer has no second approver; Shipwright's local review + the checks are the gate).
+- ☑ **Require status checks to pass before merging** → add each Required-Check name you activated in step 1 (type it exactly).
+- ☑ **Require branches to be up to date before merging**.
+
+> Do **not** enable *Require signed commits* — `/shipwright-iterate` commits headless without a signing key, so requiring signatures leaves every iterate PR permanently `BLOCKED` and silently kills auto-merge. (The squash commit GitHub writes to `main` is verified on its own.)
+
+**3. Allow auto-merge.** GitHub → **Settings → General → Pull Requests → ☑ Allow auto-merge.**
+
+**4. Arm it on a PR.**
+
+```bash
+gh pr merge --auto --squash --delete-branch <pr-number>
+```
+
+GitHub merges automatically once all Required Checks pass; if a check goes red, the PR waits until you push a fix. `/shipwright-iterate`'s finalization arms this for you on `iterate/*` branches, so day-to-day changes merge hands-free once green.
+
+See the generated `AUTOMERGE_SETUP.md` for your repo's specific check names, and §4.7 / `docs/security-ci-setup.md` for activating the security workflow.
+
 ---
 
 ## 3. Your First Project
@@ -539,7 +593,7 @@ If those are true, `/shipwright-adopt` is the right entry point. `/shipwright-pr
 3. **Layer 2 — Claude Code semantic enrichment.** Inline with the skill, Claude reads the snapshot + sample files + screenshots and writes `enrichment.json` with a product description, FR labels, architecture prose, conventions prose, and retroactive ADR drafts.
 4. **Artifact generation.** Writes `CLAUDE.md`, `.shipwright/agent_docs/{architecture,conventions,decision_log,build_dashboard}.md`, `.shipwright/planning/01-adopted/spec.md`, the six `shipwright_*_config.json` files, `shipwright_events.jsonl`, and `e2e/flows/adopted-baseline.spec.ts` (regression guard from the crawl). It also merges a `merge=union` `.gitattributes` for the append-log artifacts (`shipwright_events.jsonl`, `.shipwright/triage.jsonl`) so concurrent iterates auto-line-union those logs instead of hitting merge conflicts — an existing `.gitattributes` is preserved, only missing lines are appended.
 5. **Compliance seeding.** Generates `.shipwright/compliance/{sbom,change-history,traceability-matrix,test-evidence,dashboard}.md` via the existing compliance infrastructure.
-6. **Workflow scaffolding (CI + Security + Claude-Review).** Lands three dormant GitHub Actions workflows in `.github/workflows/`: profile-specific `ci.yml` (with the cross-platform OS matrix `ubuntu-latest` + `windows-latest` as the default), `security.yml` (Semgrep + Trivy + Gitleaks scanner chain), and `claude-review.yml` (independent Claude Code review on PRs). All three are byte-equal idempotent — pre-existing workflow files are preserved bit-for-bit. CI + Security ship dormant (`workflow_dispatch:` only); Claude-Review fires on `pull_request` by design.
+6. **Workflow scaffolding + automerge guide (CI + Security + CodeQL + Claude-Review).** Lands dormant GitHub Actions workflows in `.github/workflows/`: profile-specific `ci.yml` (with the cross-platform OS matrix `ubuntu-latest` + `windows-latest` as the default), `security.yml` (Semgrep + Trivy + Gitleaks scanner chain), `codeql.yml` (GitHub-native SAST; the `language:` matrix is rendered per detected stack profile, and `continue-on-error` on the analyze step keeps the `Analyze (<language>)` check green on a private repo without GitHub Advanced Security), and `claude-review.yml` (independent Claude Code review on PRs). All are byte-equal idempotent — pre-existing workflow files are preserved bit-for-bit. CI + Security + CodeQL ship dormant (`workflow_dispatch:` only); Claude-Review fires on `pull_request` by design. Adopt also writes a repo-root **`AUTOMERGE_SETUP.md`** — a profile-aware branch-protection / auto-merge guide whose Required-Check job names are *derived by parsing the actually-deployed workflows* (matrix-expanded; conditional `if:`-gated deploy jobs are flagged, not listed as requireable), so a brownfield repo can be wired for GitHub auto-merge without trial-and-error. (Anti-ratchet `bloat-check.yml` is a deferred follow-up.) See [docs/security-ci-setup.md](security-ci-setup.md) for the free Path-A scanner chain vs. CodeQL/GHAS Path-B trade-off.
 7. **Layer 3 — external LLM review.** Runs `llm_review.py` over the generated artifacts to flag hallucinations or contradictions (skipped gracefully if no API key is set).
 8. **Validation + commit.** Runs `validate_adoption.py`, then a single Conventional Commit `chore(shipwright): adopt repository into Shipwright SDLC`.
 

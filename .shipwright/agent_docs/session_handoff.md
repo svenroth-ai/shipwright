@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-13-hook-block-channel"
+run_id: "iterate-2026-06-13-docs-install-github-automerge"
 phase: "iterate"
-reason: "iterate: hook block-channel (WP4) — guard reasons to stderr + drift gate warn-only"
-timestamp: "2026-06-13T07:44:42.695706+00:00"
+reason: "iterate: docs install/Get-Started + GitHub/auto-merge guide + marketplace parity"
+timestamp: "2026-06-13T07:22:52.180798+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-13 07:44:42 UTC
+> Auto-generated 2026-06-13 07:22:52 UTC
 
 ## Session Info
 
-- **Session ID**: a50898c7-7d3c-4217-a674-0c348ee85ea4
-- **Timestamp**: 2026-06-13 07:44:42 UTC
-- **Reason**: iterate: hook block-channel (WP4) — guard reasons to stderr + drift gate warn-only
+- **Session ID**: 6ae258a2-262e-4e05-9677-bf0575dcdf94
+- **Timestamp**: 2026-06-13 07:22:52 UTC
+- **Reason**: iterate: docs install/Get-Started + GitHub/auto-merge guide + marketplace parity
 
 ## Last Iterate
 
@@ -30,10 +30,7 @@ timestamp: "2026-06-13T07:44:42.695706+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/hook-block-channel
-- **Run ID**: `iterate-2026-06-13-hook-block-channel`
-- **Spec**: .shipwright/planning/iterate/2026-06-13-hook-block-channel.md
-- **Complexity**: medium — floored by `cross_component` (edits
+- **Branch**: iterate/docs-install-github-automerge
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -52,8 +49,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/hook-block-channel
-- **Last Commit**: 279d7d6d feat(adopt): scaffold profile-aware CodeQL + AUTOMERGE_SETUP for brownfield automerge-readiness (#227)
+- **Branch**: iterate/docs-install-github-automerge
+- **Last Commit**: feebb255 docs(adopt): note CodeQL + AUTOMERGE_SETUP scaffolding in guide.md Chapter 3.5
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,7 +66,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-a7561bb4 | work_completed | iterate (hook block-channel (WP4): route PostToolUse security-guard reasons to stderr; SessionStart drift gate is honest warn-only via additionalContext) | 2026-06-13 |
+| evt-98471b18 | work_completed | iterate (docs install/Get-Started rewrite + GitHub/auto-merge guide + marketplace metadata parity) | 2026-06-13 |
 | evt-efbff017 | work_completed | iterate (adopt scaffolds profile-aware CodeQL + AUTOMERGE_SETUP doc for brownfield automerge-readiness (bloat-check deferred)) | 2026-06-13 |
 | evt-e7fde4fc | work_completed | iterate (extract diff-driven risk detectors + integration-coverage verifier into dedicated modules to ratchet two bloat baselines down) | 2026-06-13 |
 | evt-b218f0d8 | work_completed | iterate (run-config concurrency & atomicity (WP2: F11/F12/F13)) | 2026-06-13 |
@@ -79,7 +76,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 172
-- **Last iterate**: change — hook block-channel (WP4): route PostToolUse security-guard reasons to stderr; SessionStart drift gate is honest warn-only via additionalContext (2026-06-13)
+- **Last iterate**: change — docs install/Get-Started rewrite + GitHub/auto-merge guide + marketplace metadata parity (2026-06-13)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
