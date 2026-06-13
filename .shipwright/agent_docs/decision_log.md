@@ -2659,3 +2659,133 @@ shipwright/
 - **Rationale:** Fix at the source (from_dict), not per consumer: the same null bricks every compliance MD, and keying off the mechanism (explicit-null vs absent default) generalizes to any future null-emitting producer.
 - **Consequences:** No producer emitting null affected_frs/new_frs/tests/review can brick compliance; the fix sits at the deserialization source so all four RTM consumers are covered by one change. A regression test feeds an explicit-null event end-to-end.
 - **Rejected:** Guarding each of the 4 consumer call-sites ('for fr_id in we.affected_frs') — symptom-patching that misses future consumers; or forcing non-null affected_frs in every upstream producer.
+
+---
+
+### ADR-197: Phase hooks resolve identity from stdin payload; atomic event dedup; failure event types
+- **Date:** 2026-06-13
+- **Section:** Iterate — change: phase-hook lifecycle + event-log integrity (WP1)
+- **Run-ID:** iterate-2026-06-10-phase-hook-lifecycle
+- **Context:** Deep-audit WP1: the 3 phase-session hooks read project_root/session_id from env vars no launcher sets, so the v2 lifecycle silently no-op'd (F1); record_event scanned for dup phase_completed OUTSIDE the append lock (F14); and emitted phase_failed/stale_stop_rejected types argparse rejected (F15).
+- **Decision:** New shared hook_session.py resolves identity from the hook stdin payload (+resolve_project_root fallback); append_event_idempotent does dedup-scan + append in one _FileLock; phase_failed + stale_stop_rejected become first-class --type choices.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Mirrors the proven bloat/bootstrap stdin pattern and triage.append_triage_item_idempotent; new event types are additive (consumers use positive type filters, boundary-probed).
+- **Consequences:** The v2 claim/validate/complete lifecycle engages from a bare launch card; no duplicate phase_completed under concurrent Stop; failure/stale-stop events land in the audit log. record_event.py baseline bumped 797->840 (grandfathered) for the atomic appender.
+- **Rejected:** Inline the payload resolution per-hook (drift risk); route failure events through an existing accepted type (muddier audit provenance).
+
+---
+
+### ADR-198: Adopt scaffolds CodeQL + AUTOMERGE_SETUP; bloat-check deferred
+- **Date:** 2026-06-13
+- **Section:** B4.6 / adopt automerge-readiness
+- **Run-ID:** iterate-2026-06-13-adopt-automerge-readiness
+- **Context:** A freshly /shipwright-adopt-ed repo got the workflows behind only 3 of the 6 monorepo automerge Required-Check job-name families: codeql.yml, bloat-check.yml, and any branch-protection setup guidance were missing, so B4.5-style auto-merge could not be wired on a brownfield repo.
+- **Decision:** Scaffold a profile-aware DORMANT codeql.yml (language matrix rendered per stack; continue-on-error on analyze so the job stays green on a private repo without GHAS) and an AUTOMERGE_SETUP.md whose Required-Check job names are DERIVED by parsing the repo's actually-deployed workflows (matrix-expanded); if:-gated deploy jobs are excluded from the requireable list and surfaced under a 'do-not-require' warning. Defer bloat-check.yml (follow-up trg-33f26f5f).
+- **Commit:** (assigned post-merge)
+- **Rationale:** bloat-check.yml verbatim references monorepo-only shared/scripts/hooks/anti_ratchet_check.py absent in adopted repos -> a permanently-red Required Check (the 'armed but waiting' automerge killer). Deriving names from the deployed workflows (not a hard-coded list) prevents the silent-never-match failure, since adopted job names differ from the monorepo's and dormant checks never report.
+- **Consequences:** Brownfield repos get a working, honest automerge-readiness pack plus step-by-step branch-protection guidance; the dormant-check trap and signing-omission are documented. Deferred bloat-check is tracked, not silently dropped.
+- **Rejected:** Vendoring the anti-ratchet runner into adopted repos now (heavy ~590 LOC, niche opt-in -> deferred to trg-33f26f5f). Blindly mirroring the monorepo's 6 job names (adopted CI job names differ, e.g. 'Python (lint + type + test) - ubuntu-latest', and the workflows ship dormant).
+
+---
+
+### ADR-199: Shared durable_atomic_write primitive for all atomic writers
+- **Date:** 2026-06-13
+- **Section:** Iterate — change: durable atomic writes (fsync)
+- **Run-ID:** iterate-2026-06-13-atomic-write-fsync-durability
+- **Context:** WP2's atomic writers did tmp+os.replace WITHOUT fsync: torn reads were prevented, but a crash/power-loss after replace (before the page cache flushed) could drop the just-written content. External review flagged this as a cross-cutting durability gap across ~20 sibling helpers.
+- **Decision:** Introduced one shared primitive durable_atomic_write (shared/scripts/lib/atomic_write.py): tmp + fsync(file) + os.replace + best-effort POSIX parent-dir fsync. Migrated ~20 atomic-write helpers across shared/{lib,tools,hooks}, dev_server, and 4 plugins to delegate their write to it.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A single primitive is the SSoT for durability so future writers inherit it and the ~20 copies cannot diverge again; the verbatim str/bytes write preserves each caller's exact serialization (no JSON-typed variant to avoid per-site kwarg drift).
+- **Consequences:** All atomic writers are now crash-durable with byte-identical output (fsync is the only added behavior); net -205 LOC. record_event/triage_gc already fsync'd (left as-is); the phase_quality GC file-move is excluded (not a tmp-write).
+- **Rejected:** Duplicating flush+fsync into each of ~20 helpers (drift-prone DRY violation); a durable_atomic_write_json variant (kwargs varied per site -> byte-drift risk); migrating only the canonical run_config (leaves the gap the review named).
+
+---
+
+### ADR-200: Concise README Get-Started + GitHub/auto-merge guide + marketplace parity
+- **Date:** 2026-06-13
+- **Section:** Iterate — change: docs install/Get-Started + marketplace metadata
+- **Run-ID:** iterate-2026-06-13-docs-install-github-automerge
+- **Context:** README led with bash-only install.sh as 'recommended' (broken for Windows non-experts, contradicting guide 2.3), had no Update/GitHub/auto-merge path, and marketplace.json had drifted: 12 plugin-version mismatches plus a stale 'Aikido API' security description.
+- **Decision:** Rewrote the README install area into a concise 5-step Get-Started (marketplace CLI first) that links into the guide; added guide 2.9 Connect GitHub + 2.10 Enable auto-merge; synced marketplace.json plugin versions to plugin.json and corrected the security description to the OSS-default chain; bumped install.sh Node advisory 18 to 20.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Marketplace CLI is the cross-platform recommended path per guide 2.3; plugin versions resolve from plugin.json (marketplace.json fields are cosmetic but sync_check enforces parity).
+- **Consequences:** sync_check now passes 6/6 (was 12 version mismatches). Non-experts get a copy-paste path to a self-merging pipeline. marketplace.json top-level version left at 0.5.0 (no consumer; not release-tracked).
+- **Rejected:** Bumping marketplace top-level version to release v0.25.0 (no convention/consumer); duplicating full install steps into the README instead of linking (chose concise+links per user).
+
+---
+
+### ADR-201: guide.md aligned to code/ADRs (21 fixes)
+- **Date:** 2026-06-13
+- **Section:** Iterate — change: guide.md correctness audit
+- **Run-ID:** iterate-2026-06-13-guide-correctness-audit
+- **Context:** Prior install-only iterate #228 verified only guide.md Ch 2/12; the rest was never checked against code. A 7-agent audit found 21 discrepancies (e.g. '7 check groups' vs 8; '8 risk flags' vs 11; '20/16' tier split vs 24/12; stale build-branch form; 'sprint' agent-doc; F5 marker oracle; OSS-default precedence).
+- **Decision:** Corrected all 21 in docs/guide.md (Ch1/4/6/8/9/10/11 + Appendices A/B) plus one glossary branch-form instance. No code changed.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The guide is the public-facing SSoT; drift accreted across 25 releases. Fixed the doc to the verified code.
+- **Consequences:** guide.md now matches PIPELINE_STEPS, the 11-flag risk taxonomy, the 24/12 phase-quality tier split, the 8 compliance groups (A-H), and the real build branch/review/handoff behavior.
+- **Rejected:** Silently editing code to match the doc (masks real code bugs); fixing code+doc in one PR (mixes concerns). 6 code/SKILL.md drift items deferred to a separate follow-up iterate.
+
+---
+
+### ADR-202: Route hook block reason to the channel the event reads; drift gate is honest warn-only
+- **Date:** 2026-06-13
+- **Section:** Iterate — change: hook block-channel (WP4)
+- **Run-ID:** iterate-2026-06-13-hook-block-channel
+- **Context:** Audit 2026-06-10 WP4: the two PostToolUse security guards (check_secrets.sh, registered check_destructive_migration.sh) emitted their block payload as JSON on stdout + exit 2, which Claude Code discards on exit 2, so the warning never reached the model. The SessionStart artifact-drift gate claimed a 'migrated' hard-gate via {success:false} on stdout + exit 1, but SessionStart cannot block a session — inert.
+- **Decision:** Deliver each hook's reason on the channel the event actually reads: PostToolUse exit-2 guards write the reason to stderr (drop the stdout JSON); the SessionStart drift detector becomes honest warn-only, emitting a schema-valid additionalContext payload on stdout (the model-facing channel) + a stderr notice, exit 0. Pinned by a new regression test that subprocesses the real registered hooks.
+- **Commit:** (assigned post-merge)
+- **Rationale:** ADR-042's own rule: Claude Code surfaces hook stderr on exit 2 and SessionStart stdout (exit 0) as context. SessionStart genuinely cannot block, so warn-only is the honest contract.
+- **Consequences:** Secret/destructive-migration warnings now reach the model; the drift detector now actually informs the model instead of failing inert. No product behavior changes; framework-internal hooks only.
+- **Rejected:** A new generic UserPromptSubmit hard-gate hook across all 12 plugins (speculative machinery + per-prompt scan cost for a rare drift; the existing phase_user_prompt_validate is phase-task-scoped and not reusable) — deferred under YAGNI until an incident warrants it.
+
+---
+
+### ADR-203: Split oversize gate modules to ratchet bloat baselines
+- **Date:** 2026-06-13
+- **Section:** Iterate — change: extract risk detectors + integration-coverage verifier
+- **Run-ID:** iterate-2026-06-13-risk-detector-extract
+- **Context:** The cross_component gate (#218) pushed two already-oversize files further past the 300-LOC limit: classify_complexity.py (430, grandfathered) and iterate_checks.py (1244, exception ADR-093). The additions were load-bearing gate logic, so the proportionate fix is relocation, not removal.
+- **Decision:** Move the diff-driven risk detectors to a new risk_detectors.py (re-exported by classify_complexity) and the integration-coverage gate to integration_coverage.py plus a shared git_helpers.py (re-exported by iterate_checks). Verbatim code, no behavior change. Ratchet baselines: classify_complexity 430->330, iterate_checks 1244->1122.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The classify_complexity split mirrors the existing complexity_vocabulary extraction idiom, and the contract docstring explicitly blesses internal module splits. git_helpers is a neutral shared home so the new verifier sub-module and iterate_checks share one git-wrapper copy without a circular import.
+- **Consequences:** Both baselines tightened; the three new modules are <300 LOC (no baseline entries). Every prior import path (the iterate contract, cc.* attribute access, ic.* verifier symbols, the drift-sync test) still resolves via re-exports. No test changes required; full suite green.
+- **Rejected:** Putting git helpers in common.py (would ratchet it 764->~790, an anti-ratchet block); self-contained git-helper copies in integration_coverage.py (a 3rd _run_git copy alongside iterate_checks + spec_checks); rewriting the contract import source (unneeded — the re-export keeps the contract stable).
+
+---
+
+### ADR-204: Atomic + path-coordinated run_config writes
+- **Date:** 2026-06-13
+- **Section:** Iterate — bug: run-config concurrency & atomicity (WP2)
+- **Run-ID:** iterate-2026-06-13-runconfig-atomic-writes
+- **Context:** Audit 2026-06-10 WP2: the orchestrator wrote run_config unlocked + non-atomically and held a stale copy across a 30s compliance subprocess, clobbering concurrent locked writes (F11); phase_task _write_config was truncate+write causing torn reads -> silent pipeline->standalone demotion (F12); the Stop-fallback outer timeout (30s) <= inner compliance timeout (30s) killed the orchestrator before save (F13).
+- **Decision:** Add run_config_store.py: atomic_write_json (tmp+os.replace) + run_config_lock (shared file_lock on the canonical shipwright_run_config.json.lock path). save_run_config is atomic+lock-free; update_step runs validate+compliance OUTSIDE the lock then reloads a FRESH config under the lock; phase_task._write_config is atomic. Stop-fallback outer timeout 30->60 (> inner 30).
+- **Commit:** (assigned post-merge)
+- **Rationale:** OS advisory locks coordinate by path, so reusing the shared file_lock gives one SSoT lock without fragile cross-tree imports. Reload-fresh (vs holding the lock across compliance) avoids a 30s lock-hold while still preventing clobbers - only update_step's own fields are reapplied to the fresh config.
+- **Consequences:** Three writer families coordinate by lock-file path (not shared code); no torn reads or lost updates under concurrency; the lock is never held across the subprocess. Also hardened file_lock._acquire_windows with seek(0) so byte-0 coordination is deterministic regardless of lock-file content.
+- **Rejected:** Holding the lock across the 30s compliance subprocess (blocks concurrent writers); fsync crash-durability (out of WP2 scope, filed as follow-up trg-dd697d74); a third local lock impl (file_lock reuse is the SSoT).
+
+---
+
+### ADR-205: Read run-config standalone flag without triggering the unlocked legacy migration
+- **Date:** 2026-06-13
+- **Section:** Iterate — change: runconfig standalone-flag read locking
+- **Run-ID:** iterate-2026-06-13-runconfig-standalone-read
+- **Context:** Audit WP2 (#226) moved update_step's read-modify-write under run_config_lock, but its pre-lock 'is_standalone' read called _load_or_bootstrap, which for a legacy config implicitly migrates and persists via save_run_config — an UNLOCKED write a concurrent locked writer could clobber. Residual narrow F11-class window.
+- **Decision:** Add a keyword-only load_run_config(migrate=False) that returns the raw config without running the legacy migration; update_step reads the standalone flag via a new _read_standalone_flag helper using it. The migration still runs, but on the in-lock _load_or_bootstrap reload, so its write is serialized by run_config_lock.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Self-review done (7-point). Behavior-test proves the migration write now occurs under the lock; full shipwright-run suite green (164). Chosen over holding the lock across the standalone read because the WP2 design deliberately keeps the slow validate/compliance work out of the lock.
+- **Consequences:** The orchestrator no longer writes the run config outside the lock. standalone is invariant under migration (which only rewrites pipeline/phase_tasks), so the unmigrated read matches the migrated value. Default migrate=True keeps every existing caller unchanged.
+- **Rejected:** Determine is_standalone inside the lock — would either re-introduce the lock-across-subprocess regression WP2 removed, or add an extra acquire/release just to read one invariant flag.
+
+---
+
+### ADR-206: Fix 6 source staleness items (C1–C6) found by the guide audit
+- **Date:** 2026-06-13
+- **Section:** Iterate — change: sync stale SKILL.md/code/config to the corrected guide
+- **Run-ID:** iterate-2026-06-13-skill-doc-staleness-sync
+- **Context:** The guide-correctness audit (#230) surfaced 6 places where the SOURCE was stale and the guide was right: compliance SKILL.md (7 groups, omits H), run+build SKILL.md banners (sprint word, {project-slug}/NN-name branch), group_f.py F5 label, vite-hono.json Node 20-vs-22, glossary.md six-vs-seven phases.
+- **Decision:** Synced all 6 to current behavior: compliance SKILL.md now lists Group H (A–H); run SKILL.md agent-docs list drops 'sprint'; build SKILL.md banner + setup_implementation_session.py docstring use build/{slug}-{session-id}; group_f.py F5 label = 'Arch-impact drops vs architecture.md text'; vite-hono.json notes Node 22.x; glossary Phase = seven PIPELINE_STEPS, security/compliance out-of-band.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Closes the doc-vs-code loop from #230 on the code side; verified no test pins any changed string before editing.
+- **Consequences:** Source-of-truth docs/labels match the code and the guide. group_f.py edit is a same-line string (no LOC ratchet). No behavior change. Plugin/shared edits need update-marketplace.sh cache-sync after merge.
+- **Rejected:** Leaving the source stale (the guide would re-diverge); bundling into the #230 docs PR (mixes doc + code concerns).
