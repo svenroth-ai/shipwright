@@ -3,7 +3,7 @@
 Pure verdict/record tests on synthetic ``SuiteResult`` inputs + a
 producer->file->consumer round-trip (Boundary Probe for the
 ``touches_io_boundary`` flag). The slow end-to-end CLI integration lives in
-test_behavior_snapshot_cli.py.
+integration-tests/test_behavior_snapshot_gate.py.
 """
 
 from __future__ import annotations
@@ -11,10 +11,9 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-LIB = Path(__file__).resolve().parent.parent / "scripts" / "lib"
-sys.path.insert(0, str(LIB))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))  # shared/
 
-from behavior_snapshot import (  # noqa: E402
+from scripts.tools.behavior_snapshot import (  # noqa: E402
     SuiteResult,
     build_snapshot,
     compute_verdict,

@@ -1,9 +1,16 @@
-"""End-to-end CLI integration for behavior_snapshot.py (OS1 probe-iterate).
+"""End-to-end integration for the shared behavior_snapshot.py gate.
 
-snapshot -> (edit) -> verify against a real synthetic pytest project: a clean
-simplify stays green; behavior drift / removed coverage is rejected. Split out of
-test_behavior_snapshot.py (these are slow, subprocess-spawning) to keep each file
-focused and under the 300-LOC guideline.
+`snapshot -> (edit) -> verify` against a real synthetic pytest project. Proves
+the ONE shared tool (`shared/scripts/tools/behavior_snapshot.py`) serves BOTH
+gates that the unify-simplify-reducibility iterate joined:
+
+- the **simplify** path (OS1): a behavior-preserving simplify stays green;
+- the **reducibility/bloat** path: a catalog reduction (X dead-code delete)
+  proven green->green is the mechanical proof of the catalog's "keeps tests
+  green" / G3 clause; a coverage-destroying reduction is rejected.
+
+Lives in integration-tests/ (CI runs this dir unfiltered, so the slow,
+subprocess-spawning arms execute) — see conftest.py for the shared sys.path.
 """
 
 from __future__ import annotations
@@ -14,14 +21,10 @@ import sys
 import textwrap
 from pathlib import Path
 
-import pytest
+REPO_ROOT = Path(__file__).resolve().parent.parent
+MODULE_PATH = REPO_ROOT / "shared" / "scripts" / "tools" / "behavior_snapshot.py"
 
-PLUGIN_ROOT = Path(__file__).resolve().parent.parent
-LIB = PLUGIN_ROOT / "scripts" / "lib"
-MODULE_PATH = LIB / "behavior_snapshot.py"
-sys.path.insert(0, str(LIB))
-
-from behavior_snapshot import read_snapshot, snapshot_path  # noqa: E402
+from tools.behavior_snapshot import read_snapshot, snapshot_path  # noqa: E402
 
 
 def _cli(*args: str) -> subprocess.CompletedProcess:
@@ -62,12 +65,20 @@ GREEN_TESTS = """
 """
 
 
-@pytest.mark.slow
 class TestBehaviorSnapshotCli:
     """Full snapshot -> (edit) -> verify cycle against a real pytest suite.
 
-    Marked ``slow`` (spawns pytest subprocesses). CI per-plugin runs it; a local
-    fast loop skips it with ``-m 'not slow'``.
+    Each arm spawns pytest subprocesses. Per the integration-tests convention
+    (e.g. test_shipwright_run_e2e.py) such tests stay UNMARKED — the root
+    ``-m 'not slow'`` default that CI's integration step inherits would otherwise
+    deselect them, so marking this ``slow`` would silently skip it in CI.
+
+    The class proves the ONE shared tool serves BOTH unified gates:
+    ``test_clean_simplify_stays_green`` is the **simplify** side;
+    ``test_catalog_reduction_dead_code_stays_green`` is the **reducibility**
+    side (mechanical proof of the catalog's "keeps tests green" / G3 clause);
+    ``test_hidden_side_effect_rejected`` + ``test_removed_coverage_rejected``
+    are the fail-closed arms common to both.
     """
 
     def _snapshot(self, proj: Path, run_id: str) -> subprocess.CompletedProcess:
@@ -80,6 +91,37 @@ class TestBehaviorSnapshotCli:
         return _cli(
             "verify", "--project-root", str(proj), "--run-id", run_id,
             "--test-cmd", f"{sys.executable} -m pytest",
+        )
+
+    def test_catalog_reduction_dead_code_stays_green(self, tmp_path):
+        """Reducibility side: the SAME shared tool accepts a catalog **X
+        (dead-code)** reduction green->green — and uniquely drives the
+        'LOC dropped + coverage intact -> OK' branch end-to-end (the simplify
+        arm is LOC-neutral). X is the easy case (deleting unreferenced code can't
+        flip a covered test); the gate's *discrimination* on live, covered code is
+        proven by the drift / removed-coverage reject arms below, not here."""
+        proj = tmp_path / "reduction"
+        proj.mkdir()
+        # sample.py carries a DEAD (unreferenced) helper alongside live code.
+        (proj / "sample.py").write_text(
+            "def add(a, b):\n    return a + b\n\n"
+            "def _legacy_unused(x):  # dead: no caller, no test\n    return x * 0\n",
+            encoding="utf-8",
+        )
+        (proj / "test_sample.py").write_text(
+            "from sample import add\n\ndef test_add():\n    assert add(2, 3) == 5\n",
+            encoding="utf-8",
+        )
+        run_id = "iterate-2026-06-13-probe-reduction"
+        assert self._snapshot(proj, run_id).returncode == 0
+
+        # Apply the X reduction: delete the dead helper. Behavior preserved.
+        (proj / "sample.py").write_text(
+            "def add(a, b):\n    return a + b\n", encoding="utf-8",
+        )
+        verify = self._verify(proj, run_id)
+        assert verify.returncode == 0, (
+            f"dead-code reduction wrongly rejected: {verify.stdout}\n{verify.stderr}"
         )
 
     def test_clean_simplify_stays_green(self, tmp_path):

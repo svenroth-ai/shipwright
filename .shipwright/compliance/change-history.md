@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-13T16:03:19.756877+00:00
-Total commits: 999
+Generated: 2026-06-13T16:29:51.426705+00:00
+Total commits: 1000
 
 ## Commit Distribution
 
@@ -11,7 +11,7 @@ pie title Commit Types
     "feat" : 272
     "chore" : 217
     "docs" : 128
-    "refactor" : 56
+    "refactor" : 57
     "test" : 24
     "ci" : 7
     "other" : 7
@@ -944,11 +944,12 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 56 commits
+### Refactoring (refactor) — 57 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-13 | events | dedup read_events into a single lib.config SSOT | 9bb7c1e1d2f0 |
+| 2026-06-13 | iterate | unify simplify gate with the reducibility catalog (one shared tool + vocabulary) | 2883b10ad466 |
+| 2026-06-13 | events | dedup read_events into a single lib.config SSOT (#240) | 2d5aad4c753e |
 | 2026-06-13 | shared | extract duplicated _FileLock into lib/file_lock.py (campaign A) (#239) | b8050b57b2c9 |
 | 2026-06-13 | bloat | extract risk detectors + integration-coverage verifier into dedicated modules (#225) | 3c18fc6d9efd |
 | 2026-06-12 | lib | relocate resolve_main_repo_root to lib/repo_root.py with back-compat re-export (#221) | 23dbc8403825 |
@@ -1068,7 +1069,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 999 |
+| Total commits | 1000 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 999 |
+| Human-authored commits | 1000 |
 
