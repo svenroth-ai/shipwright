@@ -224,28 +224,29 @@ snapshots (`.shipwright/compliance/*.md`, `.shipwright/agent_docs/*.md`,
 tree — something only a local `integrate_main` run does. So GitHub-native
 auto-merge (armed in F11 since PR #197) is correct ONLY for the common case of a
 **single iterate whose branch is current** at merge time (committed snapshots ==
-merged-tree snapshots → no conflict, no staleness). For **parallel** iterate
-branches (an `--autonomous` campaign, or concurrent iterates) each branch carries
-its OWN regenerated snapshots; as they merge serially every still-open branch
-either conflicts on those snapshots (`DIRTY` → auto-merge stalls) or merges stale
-(Group-E staleness noise), and *any* concurrent merge — not just the campaign's
-own — re-breaks the open PRs. The contract:
+merged-tree snapshots → no conflict, no staleness). For **concurrently-open**
+iterate branches (independently-launched iterates whose PRs overlap in time) each
+branch carries its OWN regenerated snapshots; as they merge serially every
+still-open branch either conflicts on those snapshots (`DIRTY` → auto-merge stalls)
+or merges stale (Group-E staleness noise). The contract:
 
-- **F11 single iterate** runs `shared/scripts/tools/ensure_current.py` (a thin
-  refresh-if-behind guard over `integrate_main`) BEFORE arming auto-merge: if the
-  branch is behind `origin/<default>` it merges + regenerates first (clean no-op
-  if current), so the PR always arms from a current, already-regenerated tree.
-- **Campaign / concurrency** sets `SHIPWRIGHT_ITERATE_AUTOMERGE=0` so sub-iterate
-  F11 does NOT arm; the orchestrator **drains the PRs serially** (campaign-mode.md
-  step 4), running `ensure_current.py` on each branch against the just-advanced
-  `origin/main` before merging it, one at a time.
+- **F11 single iterate** (incl. independently-concurrent iterates) runs
+  `shared/scripts/tools/ensure_current.py` (a thin refresh-if-behind guard over
+  `integrate_main`) BEFORE arming auto-merge: if the branch is behind
+  `origin/<default>` it merges + regenerates first (clean no-op if current), so the
+  PR always arms from a current, already-regenerated tree.
+- **Autonomous campaign** sets `SHIPWRIGHT_ITERATE_AUTOMERGE=0` so sub-iterate F11
+  does NOT arm; the orchestrator runs **interleaved-serial** (campaign-mode.md) —
+  build one sub-iterate → PR → CI-green → MERGE → build the next off fresh
+  `origin/<default>`. Only ONE campaign PR is open at a time, so the snapshot
+  cascade cannot form and no per-PR regenerate-at-merge drain is needed.
 
 This is host-agnostic (the regeneration uses `integrate_main`/git, never a
 GitHub-only API), reuses existing machinery, and softens no gate — `audit_staleness`
 stays as-is because `main` is kept fresh at each merge. Rejected alternatives:
 a GitHub Action post-merge regen (host-specific); untracking the snapshots (breaks
 `audit_staleness`). A later host-agnostic watcher/producer (Option B, B4.5
-`gh-pr-ci` roadmap) can automate the serial drain but does not replace it.
+`gh-pr-ci` roadmap) can automate the per-iterate merge but does not replace it.
 
 **Delivery is the MERGED PR, not the armed PR
 (iterate-2026-06-12-delivery-watch).** Arming `gh pr merge --auto` and walking

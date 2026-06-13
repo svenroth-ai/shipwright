@@ -47,7 +47,7 @@ class TestCampaignInit:
 
         status = json.loads(Path(result["status_path"]).read_text(encoding="utf-8"))
         assert status["campaign"] == "test-camp"
-        assert status["branch_strategy"] == "stacked"
+        assert status["branch_strategy"] == "serial"  # interleaved default
         assert len(status["sub_iterates"]) == 1
         assert status["sub_iterates"][0]["id"] == "15.0"
         assert status["sub_iterates"][0]["status"] == "pending"
@@ -63,7 +63,7 @@ class TestCampaignInit:
         result = init_campaign(project, "slug", "My big intent", subs)
         md = (Path(result["campaign_dir"]) / "campaign.md").read_text(encoding="utf-8")
         assert "My big intent" in md
-        assert "branch_strategy: stacked" in md
+        assert "branch_strategy: serial" in md
 
     def test_sub_iterate_spec_contains_scope(self, project):
         subs = [{"id": "1.0", "slug": "auth", "scope": "Implement MFA flow"}]

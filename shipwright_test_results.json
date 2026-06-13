@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-13-tighten-bloat-baseline",
+    "run_id": "iterate-2026-06-13-campaign-serial-default",
     "date": "2026-06-13",
     "unit": {
       "status": "passed",
-      "passed": 3442,
-      "total": 3442
+      "passed": 3881,
+      "total": 3881
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 1,
+      "total": 1
     },
     "pgtap": {
       "status": "not_run",
@@ -23,7 +23,7 @@
       "total": 0
     },
     "design_fidelity": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
@@ -31,22 +31,74 @@
       "status": "not_run"
     },
     "degraded": [
-      {
-        "phase": "test-scope",
-        "reason": "Per-plugin suites not re-run: change is data-only (shipwright_bloat_baseline.json); no Python touched, so unrelated plugin tests cannot regress. Ran the shared suite (3442 passed, 0 failed) plus the directly-affected gate tests (96 shared bloat/anti-ratchet + 14 compliance Group-H, all green) and the real Group-H audit (H2 now PASS) + anti-ratchet gate (exit 0)."
-      },
-      {
-        "phase": "setup",
-        "reason": "Pre-existing sweep-outbox warning from setup_iterate_worktree (trg-671bb0a2: a status append dropped by a prior merge) — unrelated background-producer drift; non-fatal."
-      }
+      "classify_complexity returned 'large' (keyword false-positive on 'retire/restructure/single default' prose); overridden to medium per the diff (one prose restructure + small additive cmd_next + doc edits + tests). cross_component flag legitimately fires at F11.",
+      "Pre-existing main-tree triage.jsonl:3 corrupt-line warning (trg-671bb0a2 sweep-outbox drift) surfaced during the run; unrelated to this iterate."
     ],
     "surface_verification": {
       "surface": "none",
-      "justification": "Behavior-preserving gate-config data change (bloat baseline 'current' values tightened to actual on-disk LOC; 3 now-under-limit entries pruned). No runtime code, API, store, SSE, or UI surface touched — nothing to exercise end-to-end. Trivial complexity (F0.5 advisory)."
+      "runner": "surface_verification.py --surface none",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": ".shipwright\\runs\\iterate-2026-06-13-campaign-serial-default\\surface_verification.json",
+      "timestamp": "2026-06-13T22:05:04.051Z",
+      "justification": "Framework campaign-orchestration logic + docs + tests; no startable user surface. Behavior empirically driven via real-git pytest composition test."
     },
     "test_completeness": {
-      "status": "n/a",
-      "justification": "Trivial-complexity, data-only edit to shipwright_bloat_baseline.json — no executable behavior introduced. Gate behavior verified directly: Group H audit H2 now PASS, anti-ratchet exit 0, 110 bloat/audit tests green."
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC1: serial cmd_next base = freshly-fetched origin/<default> (not stale local main); non-main default resolved; fetch fail-soft",
+          "disposition": "tested",
+          "evidence": "test_branch_base.py::test_serial_returns_fresh_remote_default / _first_unit_also_off_fresh_remote / _respects_non_main_default_branch / _fetch_failure_is_failsoft PASSED (base resolution extracted to branch_base.py)"
+        },
+        {
+          "behavior": "AC2: campaign_init default + CLI = serial; choices accept serial; stacked still accepted; bogus rejected",
+          "disposition": "tested",
+          "evidence": "test_campaign_serial_strategy.py (5 tests) + test_campaign.py::test_status_json_has_correct_shape PASSED"
+        },
+        {
+          "behavior": "AC3: campaign-mode.md interleaved loop (CI-green->merge->next), strict-stop, no end-stage drain, serial init",
+          "disposition": "tested",
+          "evidence": "test_campaign_interleaved_serial.py (8 tests incl. merge-inside-loop ordering + no_end_stage_drain + strict_stop) PASSED"
+        },
+        {
+          "behavior": "AC4: SKILL/F11/runner reflect interleaved; SHIPWRIGHT_ITERATE_AUTOMERGE=0 defer preserved",
+          "disposition": "tested",
+          "evidence": "test_f11_automerge_arm.py::test_f11_arm_respects_campaign_defer PASSED"
+        },
+        {
+          "behavior": "AC5: a serial sub-iterate composes on the prior sub-iterate's MERGED change while local main stays stale (real-git)",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "test_campaign_serial_composition_integration.py::test_serial_subiterate_composes_on_prior_merge PASSED"
+        },
+        {
+          "behavior": "AC6/back-compat: stacked/single-branch loop unchanged; f11 defer asserts green",
+          "disposition": "tested",
+          "evidence": "test_branch_base.py::test_stacked_returns_prev_branch / _independent_returns_local_main / test_serial_is_a_valid_strategy / test_legacy_strategies_retained + test_autonomous_loop full suite PASSED"
+        },
+        {
+          "behavior": "AC7: every branch_strategy reader accepts serial (no allowlist rejects); serial campaign loads through status/summary path",
+          "disposition": "tested",
+          "evidence": "test_campaign.py::TestCampaignProgress (default now serial) + campaign_progress passes branch_strategy through PASSED"
+        },
+        {
+          "behavior": "Live campaign loop merges each PR via `gh pr checks --watch` + `gh pr merge` against real GitHub",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "agent-executed orchestrator prose against a live GitHub PR; pinned structurally by test_campaign_interleaved_serial"
+        }
+      ],
+      "counts": {
+        "testable": 7,
+        "tested": 7,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 7,
+        "covered_acs": 7
+      }
     }
   }
 }
