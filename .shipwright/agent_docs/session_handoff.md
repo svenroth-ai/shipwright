@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-13-code-simplify-skill"
+run_id: "iterate-2026-06-13-unify-simplify-reducibility"
 phase: "iterate"
-reason: "F11 pre-merge refresh: iterate-2026-06-13-code-simplify-skill"
-timestamp: "2026-06-13T14:01:54.530271+00:00"
+reason: "iterate: unify simplify + reducibility gate"
+timestamp: "2026-06-13T16:29:51.426705+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-13 14:01:54 UTC
+> Auto-generated 2026-06-13 16:29:51 UTC
 
 ## Session Info
 
 - **Session ID**: 49776804-0473-4fac-9221-1d7ae56857c5
-- **Timestamp**: 2026-06-13 14:01:54 UTC
-- **Reason**: F11 pre-merge refresh: iterate-2026-06-13-code-simplify-skill
+- **Timestamp**: 2026-06-13 16:29:51 UTC
+- **Reason**: iterate: unify simplify + reducibility gate
 
 ## Last Iterate
 
@@ -29,10 +29,9 @@ timestamp: "2026-06-13T14:01:54.530271+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/code-simplify-skill
-- **Run ID**: iterate-2026-06-13-code-simplify-skill
-- **Spec**: .shipwright/planning/iterate/2026-06-13-code-simplify-skill.md
-- **Complexity**: medium (locked; prior_source: keyword)
+- **Branch**: iterate/unify-simplify-reducibility
+- **Run ID**: iterate-2026-06-13-unify-simplify-reducibility
+- **Spec**: .shipwright/planning/iterate/2026-06-13-unify-simplify-reducibility.md
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -51,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/code-simplify-skill
-- **Last Commit**: 5f7c30ad Merge remote-tracking branch 'origin/main' into iterate/code-simplify-skill
+- **Branch**: iterate/unify-simplify-reducibility
+- **Last Commit**: 561bf5a7 feat(iterate): behavior-preserving Simplify sub-mode + snapshot/verify gate (OS1/P3.2) (#238)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +67,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-0862b6bc | work_completed | iterate (unify the code-simplify gate with the bloat/reducibility catalog: relocate behavior_snapshot.py to shared/scripts/tools (SSoT), F-simplify adopts the catalog vocabulary, catalog cites the snapshot/verify gate as the mechanical G3 proof) | 2026-06-13 |
 | evt-0c568942 | work_completed | iterate (Align the bloat marker writer (check_file_size) to key delta/was_in_allowlist off the worktree's own baseline via a shared worktree_root_for SSoT also used by the Stop gate (trg-537334f1).) | 2026-06-13 |
 | evt-3d6824d5 | work_completed | iterate (code-simplify skill (OS1 / P3.2): SIMPLIFY sub-mode of CHANGE + behavior_snapshot snapshot/verify gate + F-simplify.md + guide docs) | 2026-06-13 |
 | evt-35fb72c3 | work_completed | iterate (Read run-config standalone flag without triggering the unlocked legacy migration) | 2026-06-13 |
 | evt-c94b50ab | work_completed | iterate (durable atomic writes (fsync) across all atomic writers) | 2026-06-13 |
-| evt-0e2c6e4d | work_completed | iterate (sync 6 stale SKILL.md/code/config items to the corrected guide (C1-C6)) | 2026-06-13 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 180
-- **Last iterate**: change — Align the bloat marker writer (check_file_size) to key delta/was_in_allowlist off the worktree's own baseline via a shared worktree_root_for SSoT also used by the Stop gate (trg-537334f1). (2026-06-13)
+- **Total work events**: 181
+- **Last iterate**: change — unify the code-simplify gate with the bloat/reducibility catalog: relocate behavior_snapshot.py to shared/scripts/tools (SSoT), F-simplify adopts the catalog vocabulary, catalog cites the snapshot/verify gate as the mechanical G3 proof (2026-06-13)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

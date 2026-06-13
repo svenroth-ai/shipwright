@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-06-13T14:01:54.530271+00:00
+Generated: 2026-06-13T16:29:51.426705+00:00
 Total commits: 996
 
 ## Commit Distribution
@@ -315,7 +315,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-13 | iterate | behavior-preserving Simplify sub-mode + snapshot/verify gate (OS1/P3.2) | 1703459f3615 |
+| 2026-06-13 | iterate | behavior-preserving Simplify sub-mode + snapshot/verify gate (OS1/P3.2) (#238) | 561bf5a70640 |
 | 2026-06-13 | adopt | scaffold profile-aware CodeQL + AUTOMERGE_SETUP for brownfield automerge-readiness (#227) | 279d7d6da5ef |
 | 2026-06-12 | bloat | reducibility reviewer — LOC becomes a router, not the verdict (#222) | 13aa780d02aa |
 | 2026-06-12 | iterate | cross_component risk flag + non-dodgeable integration-coverage gate (#218) | bf8cd8dd171f |

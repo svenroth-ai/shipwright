@@ -23,9 +23,14 @@ PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 SKILL_MD = PLUGIN_ROOT / "skills" / "iterate" / "SKILL.md"
 REFERENCES_DIR = SKILL_MD.parent / "references"
 F_SIMPLIFY = REFERENCES_DIR / "F-simplify.md"
-SNAPSHOT_TOOL = PLUGIN_ROOT / "scripts" / "lib" / "behavior_snapshot.py"
 # plugins/shipwright-iterate -> plugins -> repo root
-GUIDE_MD = PLUGIN_ROOT.parent.parent / "docs" / "guide.md"
+REPO_ROOT = PLUGIN_ROOT.parent.parent
+# behavior_snapshot.py is the shared SSoT gate (relocated from the iterate plugin
+# in iterate-2026-06-13-unify-simplify-reducibility so the reducibility catalog
+# can cite it without an inverted plugin->shared dependency).
+SNAPSHOT_TOOL = REPO_ROOT / "shared" / "scripts" / "tools" / "behavior_snapshot.py"
+GUIDE_MD = REPO_ROOT / "docs" / "guide.md"
+CATALOG = REPO_ROOT / "shared" / "reducibility-catalog.md"
 
 # The Five Osmani Principles — short keywords so prose edits still match.
 FIVE_PRINCIPLES = [

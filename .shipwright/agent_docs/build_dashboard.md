@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-13 14:01 UTC | Session: 49776804-0473-4fac-9221-1d7ae56857c5 | Run: iterate-2026-06-13-code-simplify-skill
+> Updated: 2026-06-13 16:29 UTC | Session: 49776804-0473-4fac-9221-1d7ae56857c5 | Run: iterate-2026-06-13-unify-simplify-reducibility
 
-## Recent Changes (180 iterations)
+## Recent Changes (181 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | unify the code-simplify gate with the bloat/reducibility catalog: relocate behavior_snapshot.py to shared/scripts/tools (SSoT), F-simplify adopts the catalog vocabulary, catalog cites the snapshot/verify gate as the mechanical G3 proof | 3996/3996 |  | tooling | 2026-06-13 |
 | change | Align the bloat marker writer (check_file_size) to key delta/was_in_allowlist off the worktree's own baseline via a shared worktree_root_for SSoT also used by the Stop gate (trg-537334f1). | 3419/3419 |  | tooling | 2026-06-13 |
 | feature | code-simplify skill (OS1 / P3.2): SIMPLIFY sub-mode of CHANGE + behavior_snapshot snapshot/verify gate + F-simplify.md + guide docs | 4082/4082 |  | tooling | 2026-06-13 |
 | change | Read run-config standalone flag without triggering the unlocked legacy migration | 164/164 |  | infra | 2026-06-13 |
@@ -187,7 +188,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-13 | Unit: 4082/4082 | Integration: 147/147 | Smoke: not_run | (iterate)
+Last run: 2026-06-13 | Unit: 3996/3996 | Integration: 7/7 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
