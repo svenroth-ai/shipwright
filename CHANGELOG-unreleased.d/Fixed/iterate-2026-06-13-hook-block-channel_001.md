@@ -1,1 +1,0 @@
-Security hooks now deliver their block reason on stderr (the channel Claude Code reads on a PostToolUse exit-2 soft block) instead of stdout, which exit-2 discards — so hardcoded-secret and destructive-migration warnings actually reach the model

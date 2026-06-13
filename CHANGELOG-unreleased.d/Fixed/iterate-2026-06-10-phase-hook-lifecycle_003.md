@@ -1,1 +1,0 @@
-record_event now accepts the phase_failed and stale_stop_rejected event types, so failed-phase and stale-stop diagnostics reach the authoritative event log instead of being dropped on an argparse rejection (deep-audit F15)
