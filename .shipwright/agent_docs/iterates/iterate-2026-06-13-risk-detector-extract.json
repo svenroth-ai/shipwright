@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-13-risk-detector-extract",
+  "date": "2026-06-13T04:35:58.560434Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/risk-detector-extract",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/2026-06-13-risk-detector-verifier-extract.md",
+  "adr": "iterate-2026-06-13-risk-detector-extract"
+}

@@ -1,64 +1,99 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-10-phase-hook-lifecycle",
+    "run_id": "iterate-2026-06-13-risk-detector-extract",
     "date": "2026-06-13",
-    "unit": { "status": "passed", "passed": 3348, "total": 3362 },
-    "integration": { "status": "passed", "passed": 147, "total": 147 },
-    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
-    "e2e": { "status": "not_run", "passed": 0, "total": 0 },
-    "design_fidelity": { "status": "not_run", "passed": 0, "total": 0 },
-    "smoke": { "status": "not_run" },
+    "unit": {
+      "status": "passed",
+      "passed": 3797,
+      "total": 3809
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 21,
+      "total": 21
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
     "degraded": [],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "F1: phase_session_start.main() engages the claim lifecycle from the stdin payload with NO env vars set", "disposition": "tested",
-          "evidence": "integration-tests/test_phase_hook_main_lifecycle.py::test_start_main_claims_from_payload_without_env PASSED" },
-        { "behavior": "F1: phase_user_prompt_validate.main() consumes the block sentinel + blocks from the payload alone", "disposition": "tested",
-          "evidence": "integration-tests/test_phase_hook_main_lifecycle.py::test_validate_main_blocks_wrong_skill_from_payload PASSED" },
-        { "behavior": "F1: main() degrades to standalone (exit 0, no crash) when the payload cwd is not a Shipwright project", "disposition": "tested",
-          "evidence": "integration-tests/test_phase_hook_main_lifecycle.py::test_standalone_when_payload_cwd_not_a_project PASSED" },
-        { "behavior": "F1: read_hook_payload tolerant parse (valid / empty / whitespace / malformed / non-object / read-error)", "disposition": "tested",
-          "evidence": "shared/tests/test_hook_session.py::TestReadHookPayload (6) PASSED" },
-        { "behavior": "F1: resolve_session_id (payload wins, env fallback, None, blank, non-string)", "disposition": "tested",
-          "evidence": "shared/tests/test_hook_session.py::TestResolveSessionId (6) PASSED" },
-        { "behavior": "F1: resolve_project_root_from_payload (env override, env-ignored-non-project, payload cwd, resolver fallback, ambiguous->None)", "disposition": "tested",
-          "evidence": "shared/tests/test_hook_session.py::TestResolveProjectRootFromPayload (5) PASSED" },
-        { "behavior": "F15: record_event accepts phase_failed and the event lands in the log", "disposition": "tested",
-          "evidence": "shared/tests/test_record_event_lifecycle_integrity.py::test_phase_failed_accepted_and_lands PASSED" },
-        { "behavior": "F15: record_event accepts stale_stop_rejected and the event lands in the log", "disposition": "tested",
-          "evidence": "shared/tests/test_record_event_lifecycle_integrity.py::test_stale_stop_rejected_accepted_and_lands PASSED" },
-        { "behavior": "F15: phase_failed / stale_stop_rejected are NOT phase-deduped (diagnostics may recur)", "disposition": "tested",
-          "evidence": "shared/tests/test_record_event_lifecycle_integrity.py::test_failure_types_not_phase_deduped PASSED" },
-        { "behavior": "F15 end-to-end: phase_session_stop.main() on a failed phase records phase_failed (previously dropped on argparse exit 2)", "disposition": "tested",
-          "evidence": "integration-tests/test_phase_hook_main_lifecycle.py::test_stop_main_records_phase_failed_event PASSED" },
-        { "behavior": "F14: append_event_idempotent appends a new event when no duplicate exists", "disposition": "tested",
-          "evidence": "shared/tests/test_record_event_lifecycle_integrity.py::test_appends_new_event PASSED" },
-        { "behavior": "F14: append_event_idempotent skips a duplicate phase_completed", "disposition": "tested",
-          "evidence": "shared/tests/test_record_event_lifecycle_integrity.py::test_skips_duplicate_phase PASSED" },
-        { "behavior": "F14: append_event_idempotent skips a duplicate by-commit work_completed when the flag is set", "disposition": "tested",
-          "evidence": "shared/tests/test_record_event_lifecycle_integrity.py::test_skips_duplicate_commit_when_flag_set PASSED" },
-        { "behavior": "F14: the dedup scan runs INSIDE the _FileLock (deterministic inject-on-lock-entry proof)", "disposition": "tested",
-          "evidence": "shared/tests/test_record_event_lifecycle_integrity.py::test_dedup_scan_runs_inside_the_lock PASSED" },
-        { "behavior": "F14: no duplicate phase_completed under 8-way concurrent record_event subprocesses", "disposition": "tested", "category": "integration",
-          "evidence": "integration-tests/test_phase_hook_main_lifecycle.py::test_concurrent_phase_completed_records_no_duplicate PASSED" },
-        { "behavior": "Composition: hook stdin-resolution + phase_task_lifecycle + record_event compose end-to-end (start.main()->stop.main()->phase_completed lands)", "disposition": "tested", "category": "integration",
-          "evidence": "integration-tests/test_phase_hook_main_lifecycle.py::test_full_chain_via_main_records_completion_event PASSED" },
-        { "behavior": "Downstream consumers tolerate the newly-appearing phase_failed/stale_stop_rejected event types (positive type filters; no closed type enum)", "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "reason": "every events.jsonl consumer (generate_session_handoff, update_build_dashboard, _triage_bundle, verifiers/common, validate_event_log) filters type=='phase_completed' positively / requires only {v,id,ts,type}; pinned by the existing consumer suites which stay green (full shared suite 3348 passed)" }
+        {
+          "behavior": "is_io_boundary_change / IO_BOUNDARY_FILE_PATTERNS resolve from classify_complexity + the iterate contract after the move",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_boundary_detection.py + integration-tests/test_shared_contracts_consumers.py PASSED"
+        },
+        {
+          "behavior": "is_cross_component_change / CROSS_COMPONENT_FILE_PATTERNS resolve via cc.* attribute access after the move",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_cross_component_detector.py PASSED"
+        },
+        {
+          "behavior": "touches_build_files / TOUCHES_BUILD_FILE_PATTERNS resolve from classify_complexity after the move",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_classify_complexity_perf.py PASSED"
+        },
+        {
+          "behavior": "classify() output is byte-identical after extracting the detectors",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_classify_complexity.py + test_complexity_corpus.py PASSED"
+        },
+        {
+          "behavior": "check_integration_coverage behavior is unchanged after lifting it into integration_coverage.py",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_check_integration_coverage.py PASSED"
+        },
+        {
+          "behavior": "iterate_checks._CROSS_COMPONENT_PATTERNS == classify_complexity.CROSS_COMPONENT_FILE_PATTERNS SSoT (both directions)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_cross_component_patterns_sync.py PASSED"
+        },
+        {
+          "behavior": "run_all_checks / verify_iterate_finalization legacy re-export surface intact",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_verify_iterate_finalization.py PASSED"
+        },
+        {
+          "behavior": "mod.is_io_boundary_change resolves when classify_complexity is loaded standalone via spec_from_file_location",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_record_event.py::test_changed_files_round_trip_with_is_io_boundary_change PASSED"
+        }
       ],
-      "counts": { "testable": 16, "tested": 16, "untestable": 1, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 4, "covered_acs": 4 }
+      "counts": {
+        "testable": 8,
+        "tested": 8,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 8,
+        "covered_acs": 8
+      }
     },
     "surface_verification": {
       "surface": "none",
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": "",
-      "timestamp": "2026-06-12T22:36:24.957Z",
-      "justification": "No startable web/UI/API surface in the diff: Claude-Code phase-session hook plumbing (stdin-payload identity resolution, F1) + the record_event CLI event-log writer (F14 atomic dedup, F15 failure types). The user-erlebbar surface (v2 pipeline lifecycle) is driven end-to-end by integration-tests/test_phase_hook_main_lifecycle.py (each hook main() via a realistic stdin payload with env cleared, claim->validate->complete, plus failure/dedup paths through record_event incl. an 8-way concurrent subprocess dedup test). The monorepo has no dev_server; the Command Center WebUI is a separate repo and the new event types are additive (consumers use positive type filters, boundary-probed)."
+      "evidence_path": ".shipwright/runs/iterate-2026-06-13-risk-detector-extract/surface_verification.json",
+      "timestamp": "2026-06-13T04:30:34.276Z",
+      "justification": "Pure framework-internal Python refactor (verbatim module relocation + re-export of risk detectors and the integration-coverage verifier); no startable web/cli/api surface exists. Behavior preservation is proven by the existing detector/verifier/contract/sync unit + integration suites (iterate-plugin 396 passed, shared 3401 passed, contract 21/21 isolated), all green."
     }
   }
 }
