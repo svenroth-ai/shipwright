@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-13T07:44:42.695706+00:00
+Generated: 2026-06-13T09:21:45.201585+00:00
 
 ## Requirements Coverage
 
@@ -198,6 +198,7 @@ Generated: 2026-06-13T07:44:42.695706+00:00
 | adopt scaffolds profile-aware CodeQL + AUTOMERGE_SETUP doc for brownfield automerge-readiness (bloat-check deferred) | iterate | feature |  | 3737/3737 | — | 2026-06-13 |
 | hook block-channel (WP4): route PostToolUse security-guard reasons to stderr; SessionStart drift gate is honest warn-only via additionalContext | iterate | change |  | 3400/3400 | — | 2026-06-13 |
 | docs install/Get-Started rewrite + GitHub/auto-merge guide + marketplace metadata parity | iterate | change |  | — | — | 2026-06-13 |
+| guide.md correctness audit + 21 fixes vs code/ADRs | iterate | change |  | — | — | 2026-06-13 |
 
 ## Coverage Summary
 
@@ -205,7 +206,7 @@ Generated: 2026-06-13T07:44:42.695706+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 173 |
+| Iterate changes | 174 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

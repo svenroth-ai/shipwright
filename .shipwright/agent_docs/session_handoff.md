@@ -1,43 +1,43 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-13-hook-block-channel"
+run_id: "iterate-2026-06-13-guide-correctness-audit"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-06-13T07:44:42.695706+00:00"
+reason: "F11 pre-merge refresh: iterate-2026-06-13-guide-correctness-audit"
+timestamp: "2026-06-13T09:21:45.201585+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-13 07:44:42 UTC
+> Auto-generated 2026-06-13 09:21:45 UTC
 
 ## Session Info
 
-- **Session ID**: a50898c7-7d3c-4217-a674-0c348ee85ea4
-- **Timestamp**: 2026-06-13 07:44:42 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: 6ae258a2-262e-4e05-9677-bf0575dcdf94
+- **Timestamp**: 2026-06-13 09:21:45 UTC
+- **Reason**: F11 pre-merge refresh: iterate-2026-06-13-guide-correctness-audit
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-13-hook-block-channel
-- **Date**: 2026-06-13T07:44:56.146099Z
+- **Run ID**: iterate-2026-06-13-guide-correctness-audit
+- **Date**: 2026-06-13T09:21:45.786589Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/hook-block-channel
-- **ADR**: iterate-2026-06-13-hook-block-channel
+- **Branch**: iterate/guide-correctness-audit
+- **ADR**: iterate-2026-06-13-guide-correctness-audit
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-13-hook-block-channel.md
+- **Spec**: .shipwright/planning/iterate/2026-06-13-guide-correctness-audit.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/hook-block-channel
-- **Run ID**: `iterate-2026-06-13-hook-block-channel`
-- **Spec**: .shipwright/planning/iterate/2026-06-13-hook-block-channel.md
-- **Complexity**: medium — floored by `cross_component` (edits
+- **Branch**: iterate/guide-correctness-audit
+- **Spec**: .shipwright/planning/iterate/2026-06-13-guide-correctness-audit.md
+- **Complexity**: medium
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -51,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/hook-block-channel
-- **Last Commit**: 97d6e891 Merge remote-tracking branch 'origin/main' into iterate/hook-block-channel
+- **Branch**: iterate/guide-correctness-audit
+- **Last Commit**: b90dfcfc Merge remote-tracking branch 'origin/main' into iterate/guide-correctness-audit
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-208f28f1 | work_completed | iterate (guide.md correctness audit + 21 fixes vs code/ADRs) | 2026-06-13 |
 | evt-98471b18 | work_completed | iterate (docs install/Get-Started rewrite + GitHub/auto-merge guide + marketplace metadata parity) | 2026-06-13 |
 | evt-a7561bb4 | work_completed | iterate (hook block-channel (WP4): route PostToolUse security-guard reasons to stderr; SessionStart drift gate is honest warn-only via additionalContext) | 2026-06-13 |
 | evt-efbff017 | work_completed | iterate (adopt scaffolds profile-aware CodeQL + AUTOMERGE_SETUP doc for brownfield automerge-readiness (bloat-check deferred)) | 2026-06-13 |
 | evt-e7fde4fc | work_completed | iterate (extract diff-driven risk detectors + integration-coverage verifier into dedicated modules to ratchet two bloat baselines down) | 2026-06-13 |
-| evt-b218f0d8 | work_completed | iterate (run-config concurrency & atomicity (WP2: F11/F12/F13)) | 2026-06-13 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 173
-- **Last iterate**: change — docs install/Get-Started rewrite + GitHub/auto-merge guide + marketplace metadata parity (2026-06-13)
+- **Total work events**: 174
+- **Last iterate**: change — guide.md correctness audit + 21 fixes vs code/ADRs (2026-06-13)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
