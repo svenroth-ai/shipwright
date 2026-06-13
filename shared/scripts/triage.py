@@ -21,8 +21,10 @@ The module lives at `shared/scripts/triage.py` (outside `lib/`) per
 ADR-045 so it can be imported from `shared/tests/` AND
 `plugins/*/tests|scripts/` without colliding on `sys.modules['lib']`.
 
-Cross-process file locking mirrors
-`shared/scripts/tools/record_event.py:_FileLock`.
+Cross-process file locking uses the shared `FileLock` class from
+`shared/scripts/lib/file_lock.py`, imported LAZILY and exposed as the
+historical private `_FileLock` name via module `__getattr__` — ADR-045:
+no eager `lib` import at module top (iterate-2026-06-13-shc-file-lock).
 """
 
 from __future__ import annotations
@@ -34,6 +36,28 @@ import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
+
+# Cross-platform append-log mutex, extracted to lib/file_lock.py
+# (iterate-2026-06-13-shc-file-lock). Imported LAZILY (never at module top): an
+# eager `from lib.file_lock import ...` would bind sys.modules['lib'] to
+# shared/scripts/lib, and triage.py deliberately lives OUTSIDE lib/ per ADR-045
+# so it stays importable from plugins/*/{tests,scripts} (which each carry their
+# own `lib` package) without that collision. `_load_file_lock_cls()` mirrors the
+# lazy worktree_isolation import below; the PEP 562 `__getattr__` keeps
+# `triage._FileLock` and `from triage import _FileLock` resolving for external
+# consumers (sweep_outbox, triage_gc, reconcile_triage).
+def _load_file_lock_cls():
+    scripts_dir = str(Path(__file__).resolve().parent)  # shared/scripts
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+    from lib.file_lock import FileLock  # noqa: PLC0415
+    return FileLock
+
+
+def __getattr__(name):  # PEP 562 — lazy `triage._FileLock`, no eager lib import
+    if name == "_FileLock":
+        return _load_file_lock_cls()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 # ---------------------------------------------------------------------------
 # Constants (Single Source of Truth — tests assert against these)
@@ -178,48 +202,6 @@ def _now_z() -> str:
 def _generate_id() -> str:
     """Generate a unique triage item ID: `trg-` + 8 hex chars from UUID4."""
     return f"trg-{uuid4().hex[:8]}"
-
-
-# ---------------------------------------------------------------------------
-# File locking (cross-platform; mirrors record_event.py:_FileLock)
-# ---------------------------------------------------------------------------
-
-class _FileLock:
-    """Cross-platform mutex via a dedicated `.lock` sidecar file."""
-
-    def __init__(self, lock_path: str | Path):
-        self._lock_path = Path(lock_path)
-        self._fp = None
-
-    def __enter__(self):
-        self._lock_path.parent.mkdir(parents=True, exist_ok=True)
-        self._fp = open(self._lock_path, "w", encoding="utf-8")
-        if sys.platform == "win32":
-            import msvcrt
-            import time
-            while True:
-                try:
-                    msvcrt.locking(self._fp.fileno(), msvcrt.LK_NBLCK, 1)
-                    break
-                except OSError:
-                    time.sleep(0.001)
-        else:
-            import fcntl
-            fcntl.flock(self._fp, fcntl.LOCK_EX)
-        return self
-
-    def __exit__(self, *exc):
-        if self._fp:
-            if sys.platform == "win32":
-                import msvcrt
-                try:
-                    msvcrt.locking(self._fp.fileno(), msvcrt.LK_UNLCK, 1)
-                except OSError:
-                    pass
-            else:
-                import fcntl
-                fcntl.flock(self._fp, fcntl.LOCK_UN)
-            self._fp.close()
 
 
 # ---------------------------------------------------------------------------
@@ -434,7 +416,7 @@ def append_triage_item(
     }
     line = json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n"
 
-    with _FileLock(_lock_path(project_root)):
+    with _load_file_lock_cls()(_lock_path(project_root)):
         _append_line(project_root, line, to_outbox=to_outbox)
 
     return item_id
@@ -541,7 +523,7 @@ def append_triage_item_idempotent(
     }
     new_line = json.dumps(new_event, ensure_ascii=False, separators=(",", ":")) + "\n"
 
-    with _FileLock(_lock_path(project_root)):
+    with _load_file_lock_cls()(_lock_path(project_root)):
         # Dedup-scan under the same lock — readers see the merged (union) view.
         for existing in read_all_items(project_root):
             if existing.get("status") != "triage":
@@ -614,7 +596,7 @@ def mark_status(
         )
 
     # Derive residence + write the status to the SAME store, under the lock.
-    with _FileLock(_lock_path(project_root)):
+    with _load_file_lock_cls()(_lock_path(project_root)):
         tracked_ids = _append_ids_at(_triage_path(project_root))
         outbox_ids = _append_ids_at(_outbox_path(project_root))
         if item_id not in tracked_ids and item_id not in outbox_ids:
