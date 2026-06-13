@@ -1,21 +1,21 @@
 # Test Evidence Report
 
-Generated: 2026-06-13T06:43:10.946192+00:00
+Generated: 2026-06-13T05:51:32.227810+00:00
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 170 |
-| Total unit tests (latest) | 3737/3737 |
+| Total unit tests (latest) | 3818/3830 |
 | New tests from iterations | +166 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | adopt scaffolds profile-aware CodeQL + AUTOMERGE_SETUP doc for brownfield automerge-readiness (bloat-check deferred) | iterate | mixed | +0 | 3737/3737 | PASS | 2026-06-13 |
-| 2 | extract diff-driven risk detectors + integration-coverage verifier into dedicated modules to ratchet two bloat baselines down | iterate | unit | +0 | 3818/3830 | FAIL | 2026-06-13 |
+| 1 | extract diff-driven risk detectors + integration-coverage verifier into dedicated modules to ratchet two bloat baselines down | iterate | unit | +0 | 3818/3830 | FAIL | 2026-06-13 |
+| 2 | run-config concurrency & atomicity (WP2: F11/F12/F13) | iterate | unit | +0 | 162/162 | PASS | 2026-06-13 |
 | 3 | WP1: phase-session hooks resolve identity from the stdin payload (F1); atomic event-log dedup (F14); phase_failed/stale_stop_rejected event types (F15) | iterate | unit | +0 | 3348/3362 | FAIL | 2026-06-12 |
 | 4 | Coerce explicit-null affected_frs/new_frs (and tests/review) in WorkEvent.from_dict | iterate | unit | +0 | 697/697 | PASS | 2026-06-12 |
 | 5 | Relocate resolve_main_repo_root from lib/events_log.py to lib/repo_root.py with a lazy back-compat re-export; migrate net-zero consumers; keep the two grandfathered consumers (iterate_checks, group_f) on the re-export to avoid ratcheting bloat. | iterate | — | +0 | — | — | 2026-06-12 |
@@ -217,8 +217,8 @@ Generated: 2026-06-13T06:43:10.946192+00:00
 | 26 | iterate | 3289/3289 | — | — | — | — | 2026-06-12 |
 | 27 | iterate | 697/697 | — | — | — | — | 2026-06-12 |
 | 28 | iterate | 3348/3362 | — | — | — | — | 2026-06-12 |
-| 29 | iterate | 3818/3830 | — | — | — | — | 2026-06-13 |
-| 30 | iterate | 3737/3737 | — | — | — | — | 2026-06-13 |
+| 29 | iterate | 162/162 | — | — | — | — | 2026-06-13 |
+| 30 | iterate | 3818/3830 | — | — | — | — | 2026-06-13 |
 
 ## Code Review Evidence
 

@@ -26,6 +26,10 @@ from .critical_gates import (
     _read_latest_phase_quality_finding,
 )
 
+# ``run_config_store`` is a top-level module in this plugin's scripts/lib;
+# the ``.constants`` import above already put that dir on sys.path.
+from run_config_store import run_config_lock  # noqa: E402
+
 
 def get_next_step(project_root: Path) -> dict[str, Any]:
     """Determine what the next pipeline step should be."""
@@ -79,6 +83,27 @@ def _run_compliance_update(project_root: Path, phase: str) -> dict[str, Any] | N
     return run_compliance_update(project_root, phase)
 
 
+def _bootstrap_standalone_config(step: str) -> dict[str, Any]:
+    """Synthesise a standalone config for a bare phase invocation (no /shipwright-run)."""
+    return {
+        "pipeline": build_pipeline(),
+        "status": "in_progress",
+        "current_step": step,
+        "completed_steps": [],
+        "standalone": True,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        # Iterate 12.0 (ADR-027): empty phase_history on bootstrap so
+        # append_phase_history.py never has to synthesise the schema.
+        "phase_history": {},
+    }
+
+
+def _load_or_bootstrap(project_root: Path, step: str) -> dict[str, Any]:
+    """Load the on-disk config fresh, or bootstrap a standalone one if absent."""
+    config = load_run_config(project_root)
+    return config if config else _bootstrap_standalone_config(step)
+
+
 def update_step(project_root: Path, step: str, status: str, *, force: bool = False) -> dict[str, Any]:
     """Update a pipeline step's status.
 
@@ -88,28 +113,22 @@ def update_step(project_root: Path, step: str, status: str, *, force: bool = Fal
     ask the user and re-call with force=True if the user approves.
 
     On completion, also triggers incremental compliance update.
+
+    Concurrency (audit WP2/F11): the slow read-only work (``validate_phase`` +
+    the compliance subprocess) runs OUTSIDE the advisory run-config lock; only
+    the read-modify-write — reload a FRESH config, apply this function's own
+    fields, atomic-save — runs UNDER the lock. So a concurrent ``phase_task``
+    / ``phase_history`` write (which touches different fields) is never
+    clobbered by a stale in-memory copy, and the lock is never held across the
+    ~30 s subprocess.
     """
-    config = load_run_config(project_root)
-
-    # Bootstrap: standalone invocation without /shipwright-run
-    if not config:
-        config = {
-            "pipeline": build_pipeline(),
-            "status": "in_progress",
-            "current_step": step,
-            "completed_steps": [],
-            "standalone": True,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            # Iterate 12.0 (ADR-027): empty phase_history on bootstrap so
-            # append_phase_history.py never has to synthesise the schema.
-            "phase_history": {},
-        }
-
-    # Standalone configs skip interactive validation (no user to answer)
-    is_standalone = config.get("standalone", False)
+    is_standalone = _load_or_bootstrap(project_root, step).get("standalone", False)
 
     if status == "complete":
-        # Phase validation gate (skip for standalone — no interactive user)
+        inform_issues: list[dict[str, Any]] = []
+
+        # Phase validation gate (skip for standalone — no interactive user).
+        # Reads project artifacts, not the run config, so it runs unlocked.
         if not force and not is_standalone:
             from phase_validators import validate_phase
             valid, issues = validate_phase(step, project_root)
@@ -125,70 +144,81 @@ def update_step(project_root: Path, step: str, status: str, *, force: bool = Fal
                 if finding:
                     ask_issues.extend(_collect_critical_gate_issues(finding))
 
-            # Record inform-level notes (non-blocking)
-            if inform_issues:
-                notes = config.get("validation_notes", [])
-                notes.extend({"step": step, **i} for i in inform_issues)
-                config["validation_notes"] = notes
-
-            # Ask-level issues: pause for user decision
+            # Ask-level issues: pause for user decision (persist under lock).
             if ask_issues:
-                config["current_step"] = step
-                config["status"] = "needs_validation"
-                config["validation_issues"] = [{"step": step, **i} for i in ask_issues]
-                save_run_config(project_root, config)
-                return config
+                with run_config_lock(project_root):
+                    config = _load_or_bootstrap(project_root, step)
+                    _record_inform_notes(config, step, inform_issues)
+                    config["current_step"] = step
+                    config["status"] = "needs_validation"
+                    config["validation_issues"] = [{"step": step, **i} for i in ask_issues]
+                    save_run_config(project_root, config)
+                    return config
 
-        # Clear prior validation state on success/force
-        config.pop("validation_issues", None)
-
-        completed = config.get("completed_steps", [])
-        if step not in completed:
-            completed.append(step)
-        config["completed_steps"] = completed
-
-        # Trigger incremental compliance update (non-blocking on failure)
+        # Trigger incremental compliance update (non-blocking on failure).
+        # Up to a 30 s subprocess — kept OUTSIDE the lock (F11).
         compliance_result = _run_compliance_update(project_root, step)
 
-        # Split-loop: after build, check if more splits remain
-        # Test/changelog/deploy run ONCE after all splits are built
-        if step == "build":
-            progress = get_build_progress(project_root)
-            if progress.get("total_splits", 0) > 0 and not progress.get("all_done", True):
-                # More splits remain — loop back to plan for next split
-                split_steps = {"plan", "build"}
-                config["completed_steps"] = [s for s in completed if s not in split_steps]
-                config["current_step"] = "plan"
-                config["status"] = "in_progress"
-                if compliance_result:
-                    config["last_compliance_update"] = {
-                        "phase": step,
-                        "reports": compliance_result.get("updated_reports", []),
-                    }
-                # Reset tool counter (between-skill cleanup)
-                _reset_tool_counter(project_root)
-                save_run_config(project_root, config)
-                return config
+        with run_config_lock(project_root):
+            config = _load_or_bootstrap(project_root, step)
+            config.pop("validation_issues", None)
+            _record_inform_notes(config, step, inform_issues)
 
-        # Set next step
-        pipeline = config.get("pipeline", PIPELINE_STEPS)
-        remaining = [s for s in pipeline if s not in completed]
-        config["current_step"] = remaining[0] if remaining else None
-        if not remaining:
-            config["status"] = "complete"
+            completed = config.get("completed_steps", [])
+            if step not in completed:
+                completed.append(step)
+            config["completed_steps"] = completed
 
-        if compliance_result:
-            config["last_compliance_update"] = {
-                "phase": step,
-                "reports": compliance_result.get("updated_reports", []),
-            }
+            # Split-loop: after build, loop back to plan if more splits remain
+            # (test/changelog/deploy run ONCE after all splits are built).
+            if step == "build":
+                progress = get_build_progress(project_root)
+                if progress.get("total_splits", 0) > 0 and not progress.get("all_done", True):
+                    split_steps = {"plan", "build"}
+                    config["completed_steps"] = [s for s in completed if s not in split_steps]
+                    config["current_step"] = "plan"
+                    config["status"] = "in_progress"
+                    _record_compliance_result(config, step, compliance_result)
+                    _reset_tool_counter(project_root)
+                    save_run_config(project_root, config)
+                    return config
 
-    elif status == "in_progress":
-        config["current_step"] = step
+            pipeline = config.get("pipeline") or PIPELINE_STEPS  # tolerate explicit null
+            remaining = [s for s in pipeline if s not in completed]
+            config["current_step"] = remaining[0] if remaining else None
+            if not remaining:
+                config["status"] = "complete"
+            _record_compliance_result(config, step, compliance_result)
+            save_run_config(project_root, config)
+            return config
 
-    elif status == "failed":
-        config["current_step"] = step
-        config["status"] = "failed"
+    # in_progress / failed (and any other status): quick locked RMW, no
+    # compliance/validation, so nothing slow runs under the lock.
+    with run_config_lock(project_root):
+        config = _load_or_bootstrap(project_root, step)
+        if status == "in_progress":
+            config["current_step"] = step
+        elif status == "failed":
+            config["current_step"] = step
+            config["status"] = "failed"
+        save_run_config(project_root, config)
+        return config
 
-    save_run_config(project_root, config)
-    return config
+
+def _record_inform_notes(config: dict[str, Any], step: str, inform_issues: list[dict[str, Any]]) -> None:
+    """Append inform-level validation notes (non-blocking) to the config in place."""
+    if inform_issues:
+        notes = config.get("validation_notes", [])
+        notes.extend({"step": step, **i} for i in inform_issues)
+        config["validation_notes"] = notes
+
+
+def _record_compliance_result(
+    config: dict[str, Any], step: str, compliance_result: dict[str, Any] | None,
+) -> None:
+    """Stamp ``last_compliance_update`` from a non-None compliance result, in place."""
+    if compliance_result:
+        config["last_compliance_update"] = {
+            "phase": step,
+            "reports": compliance_result.get("updated_reports", []),
+        }

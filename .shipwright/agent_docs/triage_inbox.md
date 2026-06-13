@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-13T06:43:10.946192Z. Items waiting for triage decision.
+> Auto-generated 2026-06-13T05:51:32.227810Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 190
-- Triage: 18 | Promoted: 1 | Dismissed: 171 | Snoozed: 0
+- Total: 191
+- Triage: 19 | Promoted: 1 | Dismissed: 171 | Snoozed: 0
 
-## Top 18 items (severity-sorted)
+## Top 19 items (severity-sorted)
 
 ### Source: architecture (2 items)
 
@@ -105,6 +105,13 @@
     ```
   - Promote: `triage_promote.py --id trg-a678bd00 --task-ref EXT:<ref>`
 
+### Source: code-review (1 item)
+
+<a id="trg-f9f92335"></a>
+- **update_step: pre-lock standalone read triggers an unlocked legacy migration** `id=trg-f9f92335 | severity=low | kind=improvement → P3/engineering`
+  - Internal review of iterate-2026-06-13-runconfig-atomic-writes: update_step reads the 'standalone' flag via _load_or_boo…
+  - Promote: `triage_promote.py --id trg-f9f92335 --task-ref EXT:<ref>`
+
 ### Source: compliance (1 item)
 
 <a id="trg-a906e79b"></a>
@@ -152,6 +159,13 @@
   - \## Intent  Bundle P8.1 from Spec/external-frameworks-integration.md (MU5 + MU7 + MU-PL1). Single research iterate prod…
   - Promote: `triage_promote.py --id trg-aecf9cde --task-ref EXT:<ref>`
 
+### Source: external-review (1 item)
+
+<a id="trg-dd697d74"></a>
+- **Atomic config writers: add fsync for crash-durability (cross-cutting)** `id=trg-dd697d74 | severity=low | kind=improvement → P3/engineering`
+  - External review of iterate-2026-06-13-runconfig-atomic-writes: run_config_store.atomic_write_json and the ~10 sibling _…
+  - Promote: `triage_promote.py --id trg-dd697d74 --task-ref EXT:<ref>`
+
 ### Source: iterate (3 items)
 
 <a id="trg-af476d87"></a>
@@ -169,7 +183,7 @@
   - Three functions resolve the MAIN repo root via git rev-parse --git-common-dir: lib/worktree_isolation.main_repo_root (r…
   - Promote: `triage_promote.py --id trg-b9acb195 --task-ref EXT:<ref>`
 
-### Source: manual (4 items)
+### Source: manual (3 items)
 
 <a id="trg-9b9a2b9d"></a>
 - **Audit bug-fixes - final batch, run last (docs/SSoT + low-risk hardening)** `id=trg-9b9a2b9d | severity=medium | kind=improvement → P2/engineering`
@@ -185,9 +199,4 @@
 - **Audit bug-fixes - auto batch (encoding/Windows, compliance gates, triage tooling, installer)** `id=trg-d7661cfb | severity=medium | kind=improvement → P2/engineering`
   - Launch surface only. The work plan + details live in the LOCAL, gitignored campaign dir (not in git). Start via the Sta…
   - Promote: `triage_promote.py --id trg-d7661cfb --task-ref EXT:<ref>`
-
-<a id="trg-33f26f5f"></a>
-- **Adopt: scaffold bloat-check.yml + vendor anti-ratchet runner (deferred from B4.6)** `id=trg-33f26f5f | severity=low | kind=feature → P3/engineering`
-  - Follow-up to the B4.6 Automerge-Readiness Pack (trg-a678bd00). The codeql.yml + AUTOMERGE_SETUP.md portion shipped in i…
-  - Promote: `triage_promote.py --id trg-33f26f5f --task-ref EXT:<ref>`
 
