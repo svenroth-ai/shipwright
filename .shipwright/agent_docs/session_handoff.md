@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-13-atomic-write-fsync-durability"
+run_id: "iterate-2026-06-13-runconfig-standalone-read"
 phase: "iterate"
-reason: "iterate: durable atomic writes (fsync)"
-timestamp: "2026-06-13T11:23:59.355031+00:00"
+reason: "iterate: runconfig standalone-flag read locking"
+timestamp: "2026-06-13T10:52:08.925087+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-13 11:23:59 UTC
+> Auto-generated 2026-06-13 10:52:08 UTC
 
 ## Session Info
 
-- **Session ID**: 96f26c03-fb2e-4966-891d-b9671b25b403
-- **Timestamp**: 2026-06-13 11:23:59 UTC
-- **Reason**: iterate: durable atomic writes (fsync)
+- **Session ID**: 2f4ddbdb-5235-4092-9b3c-7c3b85a347f1
+- **Timestamp**: 2026-06-13 10:52:08 UTC
+- **Reason**: iterate: runconfig standalone-flag read locking
 
 ## Last Iterate
 
@@ -29,10 +29,7 @@ timestamp: "2026-06-13T11:23:59.355031+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/atomic-write-fsync-durability
-- **Run ID**: `iterate-2026-06-13-atomic-write-fsync-durability`
-- **Spec**: .shipwright/planning/iterate/2026-06-13-atomic-write-fsync-durability.md
-- **Complexity**: medium (keyword-sourced, confidence 0.7)
+- **Branch**: iterate/runconfig-standalone-read
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -51,7 +48,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/atomic-write-fsync-durability
+- **Branch**: iterate/runconfig-standalone-read
 - **Last Commit**: 8fe2d61e docs(hooks-and-pipeline): reconcile hooks.json format, registry & outbox matrix to shipped reality (audit-3 WP11a) (#232)
 - **Uncommitted Changes**: Yes
 
@@ -68,7 +65,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-c94b50ab | work_completed | iterate (durable atomic writes (fsync) across all atomic writers) | 2026-06-13 |
+| evt-35fb72c3 | work_completed | iterate (Read run-config standalone flag without triggering the unlocked legacy migration) | 2026-06-13 |
 | evt-0e2c6e4d | work_completed | iterate (sync 6 stale SKILL.md/code/config items to the corrected guide (C1-C6)) | 2026-06-13 |
 | evt-b1e3660d | work_completed | iterate (audit-3 WP11a docs/SSoT reconciliation (F3 hooks.json format, F4 registry drift, F9 outbox matrix, F28 F6 decision-drops staging)) | 2026-06-13 |
 | evt-208f28f1 | work_completed | iterate (guide.md correctness audit + 21 fixes vs code/ADRs) | 2026-06-13 |
@@ -78,7 +75,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 177
-- **Last iterate**: change — durable atomic writes (fsync) across all atomic writers (2026-06-13)
+- **Last iterate**: change — Read run-config standalone flag without triggering the unlocked legacy migration (2026-06-13)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

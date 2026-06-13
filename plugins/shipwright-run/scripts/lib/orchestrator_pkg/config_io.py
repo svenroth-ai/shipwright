@@ -22,8 +22,17 @@ from .constants import CONFIG_NAME, SCHEMA_VERSION
 from run_config_store import atomic_write_json  # noqa: E402
 
 
-def load_run_config(project_root: Path) -> dict[str, Any]:
-    """Load orchestrator config (with implicit legacy migration)."""
+def load_run_config(project_root: Path, *, migrate: bool = True) -> dict[str, Any]:
+    """Load orchestrator config (with implicit legacy migration).
+
+    ``migrate=False`` returns the RAW parsed config and runs NO legacy
+    migration — so it performs none of the migration's UNLOCKED
+    ``save_run_config`` write. Callers that only need a migration-invariant
+    field (e.g. ``standalone``, which lives outside ``pipeline`` /
+    ``phase_tasks`` — the only keys migration rewrites) use it to avoid an
+    out-of-lock write; the migration still runs on the next in-lock load
+    (audit WP2/F11 residual window).
+    """
     path = project_root / CONFIG_NAME
     if not path.exists():
         return {}  # Valid: first run, no config yet
@@ -38,6 +47,8 @@ def load_run_config(project_root: Path) -> dict[str, Any]:
             "alternative": "Delete the file and re-run /shipwright-run to recreate",
         }), file=sys.stderr)
         return {}
+    if not migrate:
+        return config
     # Lazy import to avoid a circular dep: legacy_migration imports config_io.
     from .legacy_migration import _migrate_legacy_pipeline_if_needed
     return _migrate_legacy_pipeline_if_needed(project_root, config)

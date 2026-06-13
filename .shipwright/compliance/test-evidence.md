@@ -1,20 +1,20 @@
 # Test Evidence Report
 
-Generated: 2026-06-13T11:23:59.355031+00:00
+Generated: 2026-06-13T10:52:08.925087+00:00
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 177 |
-| Total unit tests (latest) | 4283/4283 |
+| Total unit tests (latest) | 164/164 |
 | New tests from iterations | +166 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | durable atomic writes (fsync) across all atomic writers | iterate | unit | +0 | 4283/4283 | PASS | 2026-06-13 |
+| 1 | Read run-config standalone flag without triggering the unlocked legacy migration | iterate | unit | +0 | 164/164 | PASS | 2026-06-13 |
 | 2 | sync 6 stale SKILL.md/code/config items to the corrected guide (C1-C6) | iterate | unit | +0 | 4343/4343 | PASS | 2026-06-13 |
 | 3 | audit-3 WP11a docs/SSoT reconciliation (F3 hooks.json format, F4 registry drift, F9 outbox matrix, F28 F6 decision-drops staging) | iterate | unit | +0 | 3796/3796 | PASS | 2026-06-13 |
 | 4 | guide.md correctness audit + 21 fixes vs code/ADRs | iterate | — | +0 | — | — | 2026-06-13 |
@@ -225,7 +225,7 @@ Generated: 2026-06-13T11:23:59.355031+00:00
 | 27 | iterate | 3400/3400 | — | — | — | — | 2026-06-13 |
 | 28 | iterate | 3796/3796 | — | — | — | — | 2026-06-13 |
 | 29 | iterate | 4343/4343 | — | — | — | — | 2026-06-13 |
-| 30 | iterate | 4283/4283 | — | — | — | — | 2026-06-13 |
+| 30 | iterate | 164/164 | — | — | — | — | 2026-06-13 |
 
 ## Code Review Evidence
 
