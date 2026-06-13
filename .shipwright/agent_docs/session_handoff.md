@@ -1,40 +1,44 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-13-shc-git-helpers"
+run_id: "iterate-2026-06-13-triage-not-current-work"
 phase: "iterate"
-reason: "campaign serial drain: 2026-06-13-shared-helper-consolidation/C"
-timestamp: "2026-06-13T16:29:51.426705+00:00"
+reason: "F11 pre-merge refresh: iterate-2026-06-13-triage-not-current-work"
+timestamp: "2026-06-13T17:13:46.879674+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-13 16:29:51 UTC
+> Auto-generated 2026-06-13 17:13:46 UTC
 
 ## Session Info
 
-- **Session ID**: 1c1c6790-3768-47d0-bd4f-f7a4ed24bee9
-- **Timestamp**: 2026-06-13 16:29:51 UTC
-- **Reason**: campaign serial drain: 2026-06-13-shared-helper-consolidation/C
+- **Session ID**: 6a2f378c-8669-4874-904a-87c4dc84cdf0
+- **Timestamp**: 2026-06-13 17:13:46 UTC
+- **Reason**: F11 pre-merge refresh: iterate-2026-06-13-triage-not-current-work
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-13-unify-simplify-reducibility
-- **Date**: 2026-06-13T16:29:51.868315Z
+- **Run ID**: iterate-2026-06-13-triage-not-current-work
+- **Date**: 2026-06-13T17:13:20.450524Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/unify-simplify-reducibility
-- **ADR**: iterate-2026-06-13-unify-simplify-reducibility
+- **Branch**: iterate/triage-not-current-work
+- **ADR**: iterate-2026-06-13-triage-not-current-work
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-13-unify-simplify-reducibility.md
+- **Spec**: .shipwright/planning/iterate/2026-06-13-triage-not-current-work.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/2026-06-13-shc-git-helpers
-- **External Review Marker**: completed (external_review_state.json @ 2026-06-13T16:20:48)
+- **Branch**: iterate/triage-not-current-work
+- **Run ID**: `iterate-2026-06-13-triage-not-current-work`
+- **Spec**: .shipwright/planning/iterate/2026-06-13-triage-not-current-work.md
+- **Complexity**: medium
+- **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -48,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/2026-06-13-shc-git-helpers
-- **Last Commit**: 06840572 Merge remote-tracking branch 'origin/main' into iterate/2026-06-13-shc-git-helpers
+- **Branch**: iterate/triage-not-current-work
+- **Last Commit**: 5e8e9cef Merge remote-tracking branch 'origin/main' into iterate/triage-not-current-work
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -66,15 +70,15 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 | Event | Type | Source | Date |
 |-------|------|--------|------|
 | evt-751a4ac4 | work_completed | iterate (Fold spec_checks _run_git/_git_available onto verifiers/git_helpers.py (optional timeout param, unified failure code)) | 2026-06-13 |
+| evt-4393b0bb | work_completed | iterate (Triage not for current-run work — drop plugin-sync + F0.5 triage producers) | 2026-06-13 |
 | evt-ac75c147 | work_completed | iterate (iterate finalization) | 2026-06-13 |
 | evt-29a5f711 | work_completed | iterate (Extract duplicated cross-platform _FileLock into shared/scripts/lib/file_lock.py; both call sites import it; unify on the parent-dir-creating superset.) | 2026-06-13 |
 | evt-0862b6bc | work_completed | iterate (unify the code-simplify gate with the bloat/reducibility catalog: relocate behavior_snapshot.py to shared/scripts/tools (SSoT), F-simplify adopts the catalog vocabulary, catalog cites the snapshot/verify gate as the mechanical G3 proof) | 2026-06-13 |
-| evt-0c568942 | work_completed | iterate (Align the bloat marker writer (check_file_size) to key delta/was_in_allowlist off the worktree's own baseline via a shared worktree_root_for SSoT also used by the Stop gate (trg-537334f1).) | 2026-06-13 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 185
+- **Total work events**: 186
 - **Last iterate**: change — Fold spec_checks _run_git/_git_available onto verifiers/git_helpers.py (optional timeout param, unified failure code) (2026-06-13)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

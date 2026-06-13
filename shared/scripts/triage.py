@@ -85,6 +85,9 @@ KNOWN_SOURCES = (
     "ci",
     "iterate",
     "manual",
+    # legacy: the F0.5 fail-closed triage producer was removed
+    # (iterate-2026-06-13-triage-not-current-work) — the gate STOPs via its exit
+    # code instead. Retained so historical f0.5 items still render/launch.
     "f0.5",
     "drift",
     "github",

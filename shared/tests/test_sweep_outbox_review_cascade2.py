@@ -172,7 +172,10 @@ def test_eol_only_diff_is_no_change_not_error(repo) -> None:
 # in-phase / tracked producers (security / performance / artifact_sync) are
 # CORRECTLY tracked and deliberately excluded here — do NOT add them.
 _BACKGROUND_PRODUCERS = {
-    "plugin_sync_reminder_on_stop": "shared/scripts/hooks/plugin_sync_reminder_on_stop.py",
+    # NOTE: plugin_sync_reminder_on_stop was removed from this set
+    # (iterate-2026-06-13-triage-not-current-work) — it no longer files ANY
+    # triage item (the block-once reminder is the whole surface), so it is no
+    # longer a background triage producer and routes nothing to the outbox.
     "check_drift": "shared/scripts/hooks/check_drift.py",
     "phase_quality_triage_bundle": "shared/scripts/lib/phase_quality/_triage_bundle.py",
     "compliance_triage_bundle": "plugins/shipwright-compliance/scripts/audit/triage_bundle.py",

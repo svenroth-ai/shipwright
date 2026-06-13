@@ -33,6 +33,24 @@ Append ONE compact line to `.shipwright/agent_docs/conventions.md` under
 If the learning won't fit one line, it is a **decision**: write an ADR (above)
 and leave a one-line pointer here.
 
+### For follow-ups — triage is for "later", NOT for tracking "now"
+
+The triage backlog logs **genuine deferred follow-ups** discovered along the way —
+work that is real but out of scope for *this* iterate. It is **not** a tracker for
+the work you are doing right now: the **board / events log** (the `work_completed`
+event F5b records, the iterate PR, the spec's acceptance criteria) owns "now".
+
+Do **not** file a triage item to:
+- track this iterate's own change or a step you are about to do / just did (e.g. "remember
+  to sync the plugin cache", "this iterate still needs X") — that is current work; do it,
+  or put it on the board (spec AC / TodoWrite), not in the backlog;
+- mirror a gate failure that already STOPped the run (the STOP is the signal);
+- restate a finding a background detective producer already emits (drift, compliance,
+  phase-quality, sbom, security, performance) — those auto-append; don't duplicate them.
+
+Only `triage_add` a follow-up when it is a **distinct, deferrable** item a future session
+would otherwise lose. When in doubt, it belongs on the board, not in triage.
+
 ### For cross-project insights (only in main-conversation Skills, not in subagents)
 Save a Claude Code feedback or project memory if the learning applies beyond this project.
 

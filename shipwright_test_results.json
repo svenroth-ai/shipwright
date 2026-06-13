@@ -1,51 +1,129 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-13-unify-simplify-reducibility",
+    "run_id": "iterate-2026-06-13-triage-not-current-work",
     "date": "2026-06-13",
-    "unit": { "status": "passed", "passed": 3996, "total": 3996 },
-    "integration": { "status": "passed", "passed": 7, "total": 7 },
-    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
-    "e2e": { "status": "skipped", "passed": 0, "total": 0 },
-    "design_fidelity": { "status": "not_run", "passed": 0, "total": 0 },
-    "smoke": { "status": "not_run" },
+    "unit": {
+      "status": "passed",
+      "passed": 3653,
+      "total": 3665
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 1,
+      "total": 1
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "passed",
+      "passed": 88,
+      "total": 88
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
     "degraded": [
       {
-        "phase": "f0",
-        "reason": "F0 isolation leak-guard BLOCKED on concurrent main-tree WIP from a separate 'shc-file-lock' iterate (file_lock.py, record_event.py, triage.py, test_file_lock.py + its miniplan) — verified NOT this run; my worktree is isolated and F6 git-adds only worktree paths so the concurrent WIP cannot enter this PR. Override approved by the user (gate-override = ASK-FIRST)."
+        "phase": "setup",
+        "reason": "Pre-existing sweep-outbox warning from setup_iterate_worktree (trg-671bb0a2: a status append dropped by a prior merge) — unrelated to this change's footprint; non-fatal, worktree still created."
       },
       {
-        "phase": "f0",
-        "reason": "Unit 3996 = shared/tests 3424 + iterate-plugin 427 + build-plugin 84 (edited code-reviewer.md) + shared/scripts/tools/tests 61. Integration = the 7-arm bidirectional gate (integration-tests/test_behavior_snapshot_gate.py); full integration-tests/ + other plugin suites not re-run (this diff is a relocation + docs + tests touching no contract surface) — CI re-runs everything."
+        "phase": "classify",
+        "reason": "classify_complexity Stage-1 raised prose-only risk flag 'touches_auth' (matched description keywords, NOT the diff). Authoritative diff-driven flag is 'cross_component' (hooks/*.py). No auth/RLS/middleware path is touched; overridden by judgment per the diff."
       }
     ],
     "surface_verification": {
-      "surface": "none",
-      "runner": "",
+      "surface": "cli",
+      "runner": "uv run --extra dev pytest shared/tests/test_plugin_sync_reminder_on_stop.py shared/tests/test_f0_5_no_triage_emit.py shared/tests/test_using_shipwright_hook.py shared/tests/test_sweep_outbox_review_cascade2.py shared/tests/test_triage_wp9_gc.py -p no:cacheprovider",
       "exit_code": 0,
-      "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-13-unify-simplify-reducibility/surface_verification.json",
-      "timestamp": "2026-06-13T14:00:09.426Z",
-      "justification": "Framework-tooling consolidation: relocate behavior_snapshot.py to shared/scripts/tools (SSoT), cross-wire F-simplify.md <-> reducibility-catalog.md, add one bidirectional integration test. No web/CLI/API surface introduced or changed; proven by the relocated unit suite + the bidirectional integration test + cross-surface parity, all green at F0."
+      "tests_run": 88,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\triage-not-current-work\\.shipwright\\runs\\iterate-2026-06-13-triage-not-current-work\\surface_verification.log",
+      "timestamp": "2026-06-13T17:09:22.116Z",
+      "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "AC1 behavior_snapshot.py relocated to shared/scripts/tools (SSoT); all refs updated; module content unchanged; suites green; 0 live refs to old path", "disposition": "tested",
-          "evidence": "test_simplify_reducibility_unify.py::test_behavior_snapshot_gate_is_shared_ssot + relocated shared/scripts/tools/tests/test_behavior_snapshot.py (10) + grep old-path=0 live refs PASSED" },
-        { "behavior": "AC2 (Side 1) F-simplify.md adopts the closed catalog vocabulary D.A.X.C.S.M.P.T + G1-G6", "disposition": "tested",
-          "evidence": "test_simplify_reducibility_unify.py::test_f_simplify_adopts_the_shared_catalog PASSED" },
-        { "behavior": "AC3 (Side 2) catalog + code-reviewer.md cite behavior_snapshot.py as mechanical G3 proof on exec surfaces; no-exec CI Tier-3 reviewer explicitly exempt", "disposition": "tested",
-          "evidence": "test_simplify_reducibility_unify.py::test_catalog_cites_behavior_snapshot_as_mechanical_g3_proof / ::test_code_reviewer_cites_behavior_snapshot PASSED (asserts 'tier-3'/'self-contained' exemption)" },
-        { "behavior": "AC4 bidirectional integration: ONE shared tool proves BOTH a simplify edit AND an X dead-code reduction green->green; drift + removed-coverage rejected", "disposition": "tested",
+        {
+          "behavior": "plugin-sync Stop reminder fires but appends NO triage item (tracked triage.jsonl + outbox, worktree + main repo)",
+          "disposition": "tested",
+          "evidence": "test_plugin_sync_reminder_on_stop.py::test_reminder_fires_but_no_triage_non_git PASSED"
+        },
+        {
+          "behavior": "plugin-sync block-once: second Stop in same session is silent, still no triage",
+          "disposition": "tested",
+          "evidence": "test_plugin_sync_reminder_on_stop.py::test_reminder_fires_once_per_session PASSED"
+        },
+        {
+          "behavior": "plugin-sync _emit_triage producer removed at source",
+          "disposition": "tested",
+          "evidence": "test_plugin_sync_reminder_on_stop.py::test_emit_triage_helper_is_gone PASSED"
+        },
+        {
+          "behavior": "reminder body no longer mentions a filed triage item",
+          "disposition": "tested",
+          "evidence": "test_plugin_sync_reminder_on_stop.py::test_build_reminder_does_not_mention_triage PASSED"
+        },
+        {
+          "behavior": "F0.5 fail-closed (surface=none, no justification) STOPs via exit code, files no triage",
+          "disposition": "tested",
+          "evidence": "test_f0_5_no_triage_emit.py::test_fail_closed_none_no_justification_stops_without_triage PASSED"
+        },
+        {
+          "behavior": "F0.5 success path (surface=none + justification) returns EXIT_OK unchanged, no triage",
+          "disposition": "tested",
+          "evidence": "test_f0_5_no_triage_emit.py::test_success_path_unchanged_no_triage PASSED"
+        },
+        {
+          "behavior": "F0.5 still writes the evidence block",
+          "disposition": "tested",
+          "evidence": "test_f0_5_no_triage_emit.py::test_evidence_block_still_written PASSED"
+        },
+        {
+          "behavior": "F0.5 producer + resolve helpers removed at source",
+          "disposition": "tested",
+          "evidence": "test_f0_5_no_triage_emit.py::test_f05_triage_producer_helpers_removed PASSED"
+        },
+        {
+          "behavior": "Stop-hook composes with the triage store WITHOUT polluting it — real git monorepo + linked worktree, run() end-to-end, no append in either log in either tree",
+          "disposition": "tested",
           "category": "integration",
-          "evidence": "integration-tests/test_behavior_snapshot_gate.py (7 arms incl. test_catalog_reduction_dead_code_stays_green + test_clean_simplify_stays_green + reject arms) PASSED" },
-        { "behavior": "AC5 cross-surface parity asserts live in a companion file (keeping test_reducibility_gate.py byte-identical, under its LOC cap)", "disposition": "tested",
-          "evidence": "test_simplify_reducibility_unify.py (5) PASSED; test_reducibility_gate.py unchanged (30) PASSED" },
-        { "behavior": "AC6 docs/guide.md documents the unification (shared tool + shared vocabulary)", "disposition": "tested",
-          "evidence": "test_simplify_reducibility_unify.py::test_guide_documents_the_unification PASSED" }
+          "evidence": "test_plugin_sync_reminder_on_stop.py::test_integration_worktree_reminder_no_triage_anywhere PASSED (cross_component integration coverage)"
+        },
+        {
+          "behavior": "f0.5 GC vocabulary (f05Resolved) retained as legacy with no live emitter; MACHINE_REASONS carries no orphan token",
+          "disposition": "tested",
+          "evidence": "test_triage_wp9_gc.py::test_machine_reasons_has_no_unknown_tokens + ::test_legacy_retained_tokens_have_no_live_emitter PASSED"
+        },
+        {
+          "behavior": "plugin_sync_reminder removed from the background-producer outbox-routing set",
+          "disposition": "tested",
+          "evidence": "test_sweep_outbox_review_cascade2.py::test_background_producer_routes_to_outbox PASSED"
+        },
+        {
+          "behavior": "using-shipwright SP4 reminder blocks once and files no triage",
+          "disposition": "tested",
+          "evidence": "test_using_shipwright_hook.py::test_reminder_blocks_once_no_triage PASSED"
+        }
       ],
-      "counts": { "testable": 6, "tested": 6, "untestable": 0, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 6, "covered_acs": 6 }
+      "counts": {
+        "testable": 12,
+        "tested": 12,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
     }
   }
 }
