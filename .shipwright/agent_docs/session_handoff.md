@@ -1,8 +1,8 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-13-code-simplify-skill"
+run_id: "iterate-2026-06-13-low-risk-hardening"
 phase: "iterate"
-reason: "F11 pre-merge refresh: iterate-2026-06-13-code-simplify-skill"
+reason: "F11 re-refresh after #237/#238 merged"
 timestamp: "2026-06-13T14:01:54.530271+00:00"
 ---
 
@@ -12,9 +12,9 @@ timestamp: "2026-06-13T14:01:54.530271+00:00"
 
 ## Session Info
 
-- **Session ID**: 49776804-0473-4fac-9221-1d7ae56857c5
+- **Session ID**: 5b2bf528-d21b-4644-b363-1c053e677024
 - **Timestamp**: 2026-06-13 14:01:54 UTC
-- **Reason**: F11 pre-merge refresh: iterate-2026-06-13-code-simplify-skill
+- **Reason**: F11 re-refresh after #237/#238 merged
 
 ## Last Iterate
 
@@ -29,10 +29,7 @@ timestamp: "2026-06-13T14:01:54.530271+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/code-simplify-skill
-- **Run ID**: iterate-2026-06-13-code-simplify-skill
-- **Spec**: .shipwright/planning/iterate/2026-06-13-code-simplify-skill.md
-- **Complexity**: medium (locked; prior_source: keyword)
+- **Branch**: iterate/low-risk-hardening
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -51,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/code-simplify-skill
-- **Last Commit**: 5f7c30ad Merge remote-tracking branch 'origin/main' into iterate/code-simplify-skill
+- **Branch**: iterate/low-risk-hardening
+- **Last Commit**: 1dadc175 Merge remote-tracking branch 'origin/main' into iterate/low-risk-hardening
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -70,14 +67,14 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 |-------|------|--------|------|
 | evt-0c568942 | work_completed | iterate (Align the bloat marker writer (check_file_size) to key delta/was_in_allowlist off the worktree's own baseline via a shared worktree_root_for SSoT also used by the Stop gate (trg-537334f1).) | 2026-06-13 |
 | evt-3d6824d5 | work_completed | iterate (code-simplify skill (OS1 / P3.2): SIMPLIFY sub-mode of CHANGE + behavior_snapshot snapshot/verify gate + F-simplify.md + guide docs) | 2026-06-13 |
+| evt-8726cab7 | work_completed | iterate (audit-3 WP11b low-risk hardening (F18/F32/F39/F40/F41)) | 2026-06-13 |
 | evt-35fb72c3 | work_completed | iterate (Read run-config standalone flag without triggering the unlocked legacy migration) | 2026-06-13 |
 | evt-c94b50ab | work_completed | iterate (durable atomic writes (fsync) across all atomic writers) | 2026-06-13 |
-| evt-0e2c6e4d | work_completed | iterate (sync 6 stale SKILL.md/code/config items to the corrected guide (C1-C6)) | 2026-06-13 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 180
+- **Total work events**: 181
 - **Last iterate**: change — Align the bloat marker writer (check_file_size) to key delta/was_in_allowlist off the worktree's own baseline via a shared worktree_root_for SSoT also used by the Stop gate (trg-537334f1). (2026-06-13)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

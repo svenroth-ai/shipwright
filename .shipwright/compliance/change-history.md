@@ -1,15 +1,15 @@
 # Commit Change Log
 
 Generated: 2026-06-13T14:01:54.530271+00:00
-Total commits: 996
+Total commits: 998
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 286
+    "fix" : 287
     "feat" : 272
-    "chore" : 217
+    "chore" : 218
     "docs" : 128
     "refactor" : 54
     "test" : 24
@@ -20,11 +20,12 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 286 commits
+### Fixes (fix) — 287 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
 | 2026-06-13 | bloat | marker writer keys delta off the worktree baseline, SSoT with the Stop gate (trg-537334f1) (#237) | 517ae21b73ab |
+| 2026-06-13 | audit-3 | low-risk hardening — event-commit, report-escape, CI pipefail, test-discipline (WP11b) | 6629b2570278 |
 | 2026-06-13 | atomic-writes | fsync before os.replace in a shared durable-write primitive (#234) | 2c183c3b3c90 |
 | 2026-06-13 | run | read run-config standalone flag without the unlocked legacy migration (#233) | ea51ffe55982 |
 | 2026-06-13 | hooks | deliver block reason on the channel the event reads (WP4) (#229) | 7940d67bfd8b |
@@ -315,7 +316,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-13 | iterate | behavior-preserving Simplify sub-mode + snapshot/verify gate (OS1/P3.2) | 1703459f3615 |
+| 2026-06-13 | iterate | behavior-preserving Simplify sub-mode + snapshot/verify gate (OS1/P3.2) (#238) | 561bf5a70640 |
 | 2026-06-13 | adopt | scaffold profile-aware CodeQL + AUTOMERGE_SETUP for brownfield automerge-readiness (#227) | 279d7d6da5ef |
 | 2026-06-12 | bloat | reducibility reviewer — LOC becomes a router, not the verdict (#222) | 13aa780d02aa |
 | 2026-06-12 | iterate | cross_component risk flag + non-dodgeable integration-coverage gate (#218) | bf8cd8dd171f |
@@ -588,10 +589,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 217 commits
+### Chores (chore) — 218 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-13 | churn | regenerate derived snapshots after main merge | b172d757528e |
 | 2026-06-13 | release | v0.26.0 (#235) | c19153359c1d |
 | 2026-06-12 | release | v0.25.0 (#223) | 60481718653b |
 | 2026-06-12 | bloat | clear Group H1/H2 — tighten 51 baseline entries + grandfather 8 (reducibility-catalog dogfood) (#219) | 0e8932f4976f |
@@ -1065,7 +1067,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 996 |
+| Total commits | 998 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 996 |
+| Human-authored commits | 998 |
 
