@@ -11,3 +11,7 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "slow: marks tests that spawn subprocesses or perform long I/O (e.g. the behavior_snapshot CLI integration test). Run with `pytest -m slow`; skip with `-m 'not slow'`.",
+    "cross_plugin: tests that import another plugin's lib/tools modules (excluded from shared/tests CI sessions, see ADR-044).",
+]

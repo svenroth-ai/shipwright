@@ -21,7 +21,7 @@ Complexity-adaptive change lifecycle for completed Shipwright projects. Detects 
 | Design Check, Testing, Visual, E2E | [design-and-testing](references/design-and-testing.md) |
 | Reflection, Boundary Probes, Round-Trip, Confidence | [reflection](references/reflection.md) · [boundary-probes](references/boundary-probes.md) · [round-trip-tests](references/round-trip-tests.md) · [confidence-anti-patterns](references/confidence-anti-patterns.md) |
 | Context Loading | [context-loading](references/context-loading.md) |
-| Path A / B / C body | [path-a-feature](references/path-a-feature.md) · [path-b-change](references/path-b-change.md) · [path-c-bug](references/path-c-bug.md) · [F-debug](references/F-debug.md) (BUG systematic-debugging) |
+| Path A / B / C body (+ SIMPLIFY sub-mode) | [path-a-feature](references/path-a-feature.md) · [path-b-change](references/path-b-change.md) · [path-c-bug](references/path-c-bug.md) · [F-debug](references/F-debug.md) (BUG systematic-debugging) · [F-simplify](references/F-simplify.md) (SIMPLIFY behavior-preserving) |
 | Campaign Mode, Escalation, Degraded, Errors | [campaign-mode](references/campaign-mode.md) · [mid-flight-escalation](references/mid-flight-escalation.md) · [degraded-mode](references/degraded-mode.md) · [error-handling](references/error-handling.md) |
 | Artifact Ownership | [artifact-ownership](references/artifact-ownership.md) |
 | Finalization F-phases | [F0](references/F0.md) · [F0.5](references/F0.5.md) · [F1](references/F1.md) · [F2](references/F2.md) · [F3](references/F3.md) · [F3a](references/F3a.md) · [F4](references/F4.md) · [F5](references/F5.md) · [F5b](references/F5b.md) · [F5c](references/F5c.md) · [F6](references/F6.md) · [F6.5](references/F6.5.md) · [F7](references/F7.md) · [F7b](references/F7b.md) · [F11](references/F11.md) · [F12](references/F12.md) |
@@ -74,7 +74,7 @@ Read **all Layer 1** of `references/context-loading.md` — `CLAUDE.md`, `conven
 
 ### D. Determine Intent Type
 
-Priority: `--type` flag → `[Shipwright] Detected: ...` hook context → `classify_intent.py` → ask user (if confidence < 0.7).
+Priority: `--type` flag → `[Shipwright] Detected: ...` hook context → `classify_intent.py` → ask user (if confidence < 0.7). A `mode: simplify` classification (simplify/clean-up vocabulary) selects the behavior-preserving **SIMPLIFY sub-mode** (Path B → [F-simplify](references/F-simplify.md), Spec Impact NONE).
 
 ### E. Assess Complexity (Two-Stage)
 
@@ -185,7 +185,7 @@ See `references/design-and-testing.md` → "End-to-End Verification — Executio
 
 ## Path B: CHANGE (modify existing behavior)
 
-See `references/path-b-change.md`. Same steps as FEATURE; default Spec Impact is **MODIFY**. Step 7.5 (Confidence Calibration) applies identically — mandatory at medium+, also at small with `touches_io_boundary`.
+See `references/path-b-change.md`. Same steps as FEATURE; default Spec Impact is **MODIFY**. Step 7.5 (Confidence Calibration) applies identically — mandatory at medium+, also at small with `touches_io_boundary`. **SIMPLIFY sub-mode** — when intent-classification returns `mode: simplify` (*simplify / clean up / declutter / streamline / tidy*) OR Spec Impact is **NONE** (behavior-preserving refactor): route through **[F-simplify](references/F-simplify.md)** — Behavior-Snapshot (`scripts/lib/behavior_snapshot.py snapshot`, refuses a red baseline) → Simplify (Five Principles + Chesterton-Fence) → Behavior-Verify (`behavior_snapshot.py verify`). The reviewer **rejects** a simplify that ships behavior drift or removed test coverage (*fewer lines is not the goal*); Spec Impact is forced **NONE**. The gate is only as strong as coverage, so removed coverage is a hard reject.
 
 ---
 
