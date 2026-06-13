@@ -368,15 +368,11 @@ def test_hook_stdout_matches_event_schema(triple: tuple[str, str, str], tmp_path
     # Treat 'uv run --no-project' the same as 'uv run' — both must resolve.
     # The first arg must exist as an executable on PATH for the test to run.
     if cmd_argv[0] == "uv":
-        # 'uv' must be on PATH for the test to be meaningful.
-        # AC-3: local-skip / CI-fail per the canonical convention.
+        # 'uv' must be on PATH (AC-3: local-skip / CI-fail per the convention).
         import shutil as _shutil
         if _shutil.which("uv") is None:
-            _msg = (
-                "uv not on PATH; cannot exercise hook commands. "
-                "Install via astral-sh/setup-uv@v3 in CI; locally see "
-                "https://docs.astral.sh/uv/getting-started/installation/."
-            )
+            _msg = ("uv not on PATH; cannot exercise hook commands. Install via "
+                    "astral-sh/setup-uv@v3 in CI; locally see https://docs.astral.sh/uv/getting-started/installation/.")
             if is_ci():
                 pytest.fail(_msg, pytrace=False)
             pytest.skip(_msg)
@@ -389,7 +385,11 @@ def test_hook_stdout_matches_event_schema(triple: tuple[str, str, str], tmp_path
     except subprocess.TimeoutExpired:
         pytest.fail(f"{plugin_name}/{event_name} timed out — likely hanging on stdin")
     except FileNotFoundError as exc:
-        pytest.skip(f"command not executable: {exc}")
+        # F41 / ADR-044: a silently-absent gate must fail CI, skip only locally.
+        _msg = f"command not executable: {exc}"
+        if is_ci():
+            pytest.fail(_msg, pytrace=False)
+        pytest.skip(_msg)
 
     violations = _validate_stdout(event_name, result.stdout)
     if violations:

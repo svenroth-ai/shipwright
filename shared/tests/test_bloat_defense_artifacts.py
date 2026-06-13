@@ -14,6 +14,8 @@ from pathlib import Path
 import pytest
 import yaml
 
+from test_hygiene import skip_or_fail_on_missing_binary
+
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 
 # ---------------------------------------------------------------------
@@ -173,16 +175,18 @@ def test_glossary_has_external_references_block():
 
 _INSTALL_SH = _REPO_ROOT / "scripts" / "install-hooks.sh"
 
-
-def _has_bash() -> bool:
-    return subprocess.run(
-        ["bash", "--version"], capture_output=True
-    ).returncode == 0
+# F40: gate on bash via the canonical ADR-044 helper. ``shutil.which`` (inside
+# the helper) never raises, unlike the old ``subprocess.run(["bash", ...])``
+# probe which threw FileNotFoundError on a bash-less host — making the intended
+# skip guard dead code. The helper also adds the missing CI-fail branch.
+_BASH_HINT = (
+    "bash is required for these install-hook shell tests. On Windows use Git "
+    "Bash; CI runners (ubuntu/windows) ship it preinstalled."
+)
 
 
 def test_install_hooks_idempotent(tmp_path):
-    if not _has_bash():
-        pytest.skip("bash not available")
+    skip_or_fail_on_missing_binary("bash", _BASH_HINT)
     repo = tmp_path / "repo"
     repo.mkdir()
     subprocess.run(["git", "init", "-q", "-b", "main"], cwd=str(repo), check=True)
@@ -223,8 +227,7 @@ def test_install_hooks_idempotent(tmp_path):
 
 
 def test_install_hooks_refuses_to_overwrite(tmp_path):
-    if not _has_bash():
-        pytest.skip("bash not available")
+    skip_or_fail_on_missing_binary("bash", _BASH_HINT)
     repo = tmp_path / "repo"
     repo.mkdir()
     subprocess.run(["git", "init", "-q", "-b", "main"], cwd=str(repo), check=True)

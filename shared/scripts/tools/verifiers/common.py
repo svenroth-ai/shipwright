@@ -145,7 +145,7 @@ def read_events_jsonl(project_root: Path) -> list[dict[str, Any]]:
     Malformed lines are silently skipped. Callers that need strict
     validation should use ``shared/scripts/tools/validate_event_log.py``.
     """
-    path = project_root / "shipwright_events.jsonl"
+    path = project_root / "shipwright_events.jsonl"  # G5 (iterate-2026-06-13-shc-read-events): NOT unified with record_event/lib.config read_events — verifiers read this LITERAL path (no resolve_events_path worktree redirect) + stay silent (errors=ignore) so corruption surfaces as a CheckResult, not a warning.
     if not path.exists():
         return []
     out: list[dict[str, Any]] = []

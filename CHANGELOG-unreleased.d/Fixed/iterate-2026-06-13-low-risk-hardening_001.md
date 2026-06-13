@@ -1,0 +1,1 @@
+The tracked-events follow-up commit (commit_event_followup) now skips when the index has unrelated staged changes and is path-restricted to shipwright_events.jsonl, so it can no longer sweep hand-staged work-in-progress into a chore(events) commit.

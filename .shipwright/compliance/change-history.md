@@ -1,17 +1,17 @@
 # Commit Change Log
 
-Generated: 2026-06-13T16:29:51.426705+00:00
-Total commits: 996
+Generated: 2026-06-13T16:03:19.756877+00:00
+Total commits: 999
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 286
+    "fix" : 287
     "feat" : 272
     "chore" : 217
     "docs" : 128
-    "refactor" : 54
+    "refactor" : 56
     "test" : 24
     "ci" : 7
     "other" : 7
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 286 commits
+### Fixes (fix) — 287 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-13 | audit-3 | low-risk hardening — event-commit, report-escape, CI pipefail, test-discipline (WP11b) (#236) | 172e39d9ec5b |
 | 2026-06-13 | bloat | marker writer keys delta off the worktree baseline, SSoT with the Stop gate (trg-537334f1) (#237) | 517ae21b73ab |
 | 2026-06-13 | atomic-writes | fsync before os.replace in a shared durable-write primitive (#234) | 2c183c3b3c90 |
 | 2026-06-13 | run | read run-config standalone flag without the unlocked legacy migration (#233) | ea51ffe55982 |
@@ -943,10 +944,12 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 54 commits
+### Refactoring (refactor) — 56 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-13 | events | dedup read_events into a single lib.config SSOT | 9bb7c1e1d2f0 |
+| 2026-06-13 | shared | extract duplicated _FileLock into lib/file_lock.py (campaign A) (#239) | b8050b57b2c9 |
 | 2026-06-13 | bloat | extract risk detectors + integration-coverage verifier into dedicated modules (#225) | 3c18fc6d9efd |
 | 2026-06-12 | lib | relocate resolve_main_repo_root to lib/repo_root.py with back-compat re-export (#221) | 23dbc8403825 |
 | 2026-06-12 | agent-docs | compact backlog to one-line pointers + retire convention-routing fallback (#211) | 16138390ad5f |
@@ -1065,7 +1068,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 996 |
+| Total commits | 999 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 996 |
+| Human-authored commits | 999 |
 

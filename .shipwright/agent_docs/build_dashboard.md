@@ -1,13 +1,15 @@
 # Project Activity Dashboard
-> Updated: 2026-06-13 16:29 UTC | Session: 49776804-0473-4fac-9221-1d7ae56857c5 | Run: iterate-2026-06-13-unify-simplify-reducibility
+> Updated: 2026-06-13 16:03 UTC | Session: 1c1c6790-3768-47d0-bd4f-f7a4ed24bee9 | Run: iterate-2026-06-13-shc-read-events
 
-## Recent Changes (181 iterations)
+## Recent Changes (183 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| change | unify the code-simplify gate with the bloat/reducibility catalog: relocate behavior_snapshot.py to shared/scripts/tools (SSoT), F-simplify adopts the catalog vocabulary, catalog cites the snapshot/verify gate as the mechanical G3 proof | 3996/3996 |  | tooling | 2026-06-13 |
+| change | iterate finalization | 0/0 |  | tooling | 2026-06-13 |
+| change | Extract duplicated cross-platform _FileLock into shared/scripts/lib/file_lock.py; both call sites import it; unify on the parent-dir-creating superset. | 0/0 |  | tooling | 2026-06-13 |
 | change | Align the bloat marker writer (check_file_size) to key delta/was_in_allowlist off the worktree's own baseline via a shared worktree_root_for SSoT also used by the Stop gate (trg-537334f1). | 3419/3419 |  | tooling | 2026-06-13 |
 | feature | code-simplify skill (OS1 / P3.2): SIMPLIFY sub-mode of CHANGE + behavior_snapshot snapshot/verify gate + F-simplify.md + guide docs | 4082/4082 |  | tooling | 2026-06-13 |
+| change | audit-3 WP11b low-risk hardening (F18/F32/F39/F40/F41) | 4220/4236 |  | tooling | 2026-06-13 |
 | change | Read run-config standalone flag without triggering the unlocked legacy migration | 164/164 |  | infra | 2026-06-13 |
 | change | durable atomic writes (fsync) across all atomic writers | 4283/4283 |  | tooling | 2026-06-13 |
 | change | sync 6 stale SKILL.md/code/config items to the corrected guide (C1-C6) | 4343/4343 |  | docs | 2026-06-13 |
@@ -188,7 +190,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-13 | Unit: 3996/3996 | Integration: 7/7 | Smoke: not_run | (iterate)
+Last run: 2026-06-13 | Unit: 4073/4089 | Integration: 147/147 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
