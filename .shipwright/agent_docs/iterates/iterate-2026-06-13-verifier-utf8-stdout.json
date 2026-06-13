@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-13-verifier-utf8-stdout",
+  "date": "2026-06-13T18:21:00.464356Z",
+  "type": "bug",
+  "intent": "bug",
+  "complexity": "small",
+  "branch": "iterate/verifier-utf8-stdout",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-13-verifier-utf8-stdout"
+}
