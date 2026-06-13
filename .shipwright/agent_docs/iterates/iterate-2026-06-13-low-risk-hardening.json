@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-13-low-risk-hardening",
+  "date": "2026-06-13T13:46:55.146326Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/low-risk-hardening",
+  "spec": ".shipwright/planning/iterate/campaigns/2026-06-10-audit-3-final/sub-iterates/a3-2-low-risk-hardening.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-13-low-risk-hardening"
+}

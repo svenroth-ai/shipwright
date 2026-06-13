@@ -182,3 +182,50 @@ def test_commit_message_includes_co_author(tracked_repo: Path) -> None:
     assert result["status"] == "committed"
     msg = _git(["log", "-1", "--format=%B", "HEAD"], tracked_repo).stdout
     assert "Co-Authored-By: Claude <noreply@anthropic.com>" in msg
+
+
+def test_skips_when_index_has_unrelated_staged_changes(tracked_repo: Path) -> None:
+    """F18: an operator may have hand-staged unrelated WIP. A bare
+    ``git commit`` (no pathspec) would sweep that WIP into the chore(events)
+    commit — silent history corruption. Mirror reconcile_triage's guard:
+    a non-empty index means "not our case" → skip rather than commit."""
+    # Simulate F7 append (the event file is dirty, our intended target).
+    events = tracked_repo / "shipwright_events.jsonl"
+    events.write_text(events.read_text(encoding="utf-8") + "{\"id\": \"evt-0002\"}\n", encoding="utf-8")
+    # Operator hand-stages unrelated WIP.
+    (tracked_repo / "wip.txt").write_text("hand-staged work in progress\n", encoding="utf-8")
+    _git(["add", "wip.txt"], tracked_repo)
+
+    head_before = _git(["rev-parse", "HEAD"], tracked_repo).stdout.strip()
+    result = _run_tool(tracked_repo, run_id="iterate-2026-06-13-foo", event_id="evt-0002")
+    head_after = _git(["rev-parse", "HEAD"], tracked_repo).stdout.strip()
+
+    assert result["status"] == "skipped"
+    assert result["reason"] == "staged_changes"
+    # No commit was produced.
+    assert head_before == head_after
+    # The operator's staged WIP is untouched (still staged, not committed).
+    staged = _git(["diff", "--cached", "--name-only"], tracked_repo).stdout.split()
+    assert "wip.txt" in staged
+
+
+def test_commits_only_event_file_not_other_dirty_worktree(tracked_repo: Path) -> None:
+    """F18: the follow-up commit must be path-restricted to the event file.
+    An UNSTAGED, unrelated working-tree change must remain uncommitted —
+    a bare ``git add EVENT_FILE && git commit`` is safe for unstaged files,
+    but the path-restricted ``git commit -- EVENT_FILE`` pins the contract."""
+    events = tracked_repo / "shipwright_events.jsonl"
+    events.write_text(events.read_text(encoding="utf-8") + "{\"id\": \"evt-0002\"}\n", encoding="utf-8")
+    # Unrelated working-tree change, left UNSTAGED.
+    other = tracked_repo / "other.txt"
+    other.write_text("unrelated unstaged change\n", encoding="utf-8")
+
+    result = _run_tool(tracked_repo, run_id="iterate-2026-06-13-foo", event_id="evt-0002")
+    assert result["status"] == "committed"
+
+    # Only the event file is in the new commit.
+    changed = _git(["show", "--name-only", "--format=", "HEAD"], tracked_repo).stdout.split()
+    assert changed == ["shipwright_events.jsonl"], changed
+    # The unrelated change is still present in the working tree, uncommitted.
+    assert other.exists()
+    assert _git(["status", "--porcelain", "--", "other.txt"], tracked_repo).stdout.strip() == "?? other.txt"

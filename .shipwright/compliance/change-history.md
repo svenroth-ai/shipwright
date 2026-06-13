@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-06-13T11:23:59.355031+00:00
+Generated: 2026-06-13T13:45:09.556405+00:00
 Total commits: 993
 
 ## Commit Distribution
@@ -24,7 +24,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-13 | atomic-writes | fsync before os.replace in a shared durable-write primitive | f9d8e0ba8f18 |
+| 2026-06-13 | atomic-writes | fsync before os.replace in a shared durable-write primitive (#234) | 2c183c3b3c90 |
 | 2026-06-13 | run | read run-config standalone flag without the unlocked legacy migration (#233) | ea51ffe55982 |
 | 2026-06-13 | hooks | deliver block reason on the channel the event reads (WP4) (#229) | 7940d67bfd8b |
 | 2026-06-13 | pipeline | atomic + lock-coordinated run_config writes; Stop-fallback timeout headroom (WP2) (#226) | de2df18ab60f |
