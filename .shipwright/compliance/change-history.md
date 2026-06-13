@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-06-13T07:22:52.180798+00:00
-Total commits: 986
+Generated: 2026-06-13T07:44:42.695706+00:00
+Total commits: 988
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 282
+    "fix" : 283
     "feat" : 271
     "chore" : 216
-    "docs" : 124
+    "docs" : 125
     "refactor" : 54
     "test" : 24
     "ci" : 7
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 282 commits
+### Fixes (fix) — 283 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-13 | hooks | deliver block reason on the channel the event reads (WP4) | 5237e5334906 |
 | 2026-06-13 | pipeline | atomic + lock-coordinated run_config writes; Stop-fallback timeout headroom (WP2) (#226) | de2df18ab60f |
 | 2026-06-13 | pipeline | phase hooks resolve identity from stdin payload; atomic event dedup; failure event types (WP1) (#224) | a683d75bb779 |
 | 2026-06-12 | compliance | coerce explicit-null affected_frs/new_frs in WorkEvent.from_dict (#220) | 332b64728fa1 |
@@ -804,10 +805,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 124 commits
+### Documentation (docs) — 125 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-13 | install | end-to-end Get-Started + GitHub/auto-merge guide; sync plugin catalog (#228) | c35088825704 |
 | 2026-06-13 | adopt | note CodeQL + AUTOMERGE_SETUP scaffolding in guide.md Chapter 3.5 | feebb2552c88 |
 | 2026-06-11 | — | drop GPG/SSH commit-signing guidance (keyless workflow) (#192) | 489c615c385c |
 | 2026-06-11 | triage | surface the git-tracked sensitivity rule at the add-triage CLI | 7b7b49c6d45e |
@@ -1055,7 +1057,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 986 |
+| Total commits | 988 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 986 |
+| Human-authored commits | 988 |
 

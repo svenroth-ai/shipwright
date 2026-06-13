@@ -4,12 +4,15 @@
 Wired in every plugin's ``hooks/hooks.json`` as the third SessionStart
 hook (after ``capture_session_id.py`` and ``phase_session_start.py``).
 
-Behavior per ``ARTIFACT_MIGRATIONS`` entry:
+Behavior per ``ARTIFACT_MIGRATIONS`` entry (always exit 0 — a
+SessionStart hook cannot block a session):
 - ``status="in_progress"`` → warn-only stderr notice + drift report
-  written to ``.shipwright/stale-folders.md``. Exit 0 (do not block
-  our own migration sub-iterates).
-- ``status="migrated"``    → structured JSON to stdout + exit 1. The
-  AI orchestrator must detect this and stop the session.
+  written to ``.shipwright/stale-folders.md``.
+- ``status="migrated"``    → warn-only: a schema-valid
+  ``additionalContext`` payload on stdout delivers the drift + ``git mv``
+  remediation to the model (the channel SessionStart actually reads),
+  plus a stderr notice + the report. (Historically documented as an
+  ``exit 1`` "hard-gate"; that was inert — WP4.)
 
 Self-healing: when no findings exist on the next run, the report file
 is deleted (``unlink(missing_ok=True)``) so the absence of the file is

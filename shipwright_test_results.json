@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-13-docs-install-github-automerge",
+    "run_id": "iterate-2026-06-13-hook-block-channel",
     "date": "2026-06-13",
     "unit": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 3400,
+      "total": 3400
     },
     "integration": {
       "status": "not_run",
@@ -18,7 +18,7 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
@@ -30,19 +30,10 @@
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [
-      {
-        "phase": "f0",
-        "reason": "Docs + metadata-only iterate (README.md, docs/guide.md, .claude-plugin/marketplace.json, scripts/install.sh); no Python source changed, so the unit/integration/e2e suites are not applicable. Verified instead via sync_check (6/6 OK), path-canon lints (test_artifact_path_canon.py + test_path_canon_windows.py, 14 passed / 1 skipped), and the F0 leak-guard (ALLOW, isolated)."
-      },
-      {
-        "phase": "setup",
-        "reason": "Pre-existing sweep-outbox warning from setup_iterate_worktree (trg-671bb0a2 status append dropped by a prior merge) — unrelated to this change; not introduced or resolvable here."
-      }
-    ],
+    "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "justification": "Documentation (README + guide §2.9/§2.10) and plugin-catalog metadata (marketplace.json) plus an advisory Node-version threshold in install.sh. No web/CLI end-user app surface and no executable code path changed; verification is the metadata + content gates (sync_check, path-canon) rather than a runnable surface.",
+      "justification": "Framework-internal Claude-Code hook output-channel fix (PostToolUse security guards check_secrets.sh + check_destructive_migration.sh; SessionStart artifact-drift detector). No web/CLI/API product surface exists for this change. Behavior is verified end-to-end by shared/tests/test_hook_block_channel.py, which subprocesses the REAL registered hook commands with production-shaped stdin payloads and asserts the reason lands on the channel each event actually reads.",
       "tests_run": 0,
       "exit_code": 0
     },
@@ -50,48 +41,42 @@
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "marketplace.json plugin versions match each plugin.json",
+          "behavior": "PostToolUse check_secrets.sh: on a detected secret -> exit 2 with the block reason on stderr (the channel Claude reads on exit 2), NOT on the discarded stdout",
           "disposition": "tested",
-          "evidence": "shared/scripts/sync_check.py — [ OK ] Versions (was 12 mismatches)"
+          "evidence": "test_hook_block_channel.py::test_posttooluse_guard_reason_on_stderr[check_secrets.sh] PASSED; test_hooks.py::TestCheckSecrets (5 cases) PASSED"
         },
         {
-          "behavior": "All 13 plugins remain referenced in README.md, CLAUDE.md, install.sh, and marketplace.json",
+          "behavior": "PostToolUse check_destructive_migration.sh (registered build copy): on destructive SQL -> exit 2 with the reason on stderr, not stdout",
           "disposition": "tested",
-          "evidence": "shared/scripts/sync_check.py — [ OK ] Marketplace / README / CLAUDE.md / Install Script"
+          "evidence": "test_hook_block_channel.py::test_posttooluse_guard_reason_on_stderr[check_destructive_migration.sh] PASSED"
         },
         {
-          "behavior": "Edited docs introduce no bare legacy artifact paths (path canon)",
+          "behavior": "SessionStart artifact-drift gate (check_artifact_drift.py -> stale_artifact_detector.hook_main): a migrated/block finding is delivered to the model via a schema-valid additionalContext payload on stdout + stderr notice + exit 0 (warn-only; SessionStart cannot block) — the hook<->detector composition exercised end-to-end via subprocess of the real registered hook",
           "disposition": "tested",
-          "evidence": "test_artifact_path_canon.py + test_path_canon_windows.py — 14 passed, 1 skipped"
+          "category": "integration",
+          "evidence": "test_hook_block_channel.py::test_sessionstart_drift_reason_on_stdout_additionalcontext PASSED; test_stale_artifact_detector.py::test_hook_main_warns_on_block_severity_via_sessionstart_channel PASSED; test_artifact_drift_edge_cases.py::test_drift_detector_reports_both_dirs_present PASSED"
         },
         {
-          "behavior": "marketplace.json remains valid JSON after the rewrite",
+          "behavior": "SessionStart drift gate fail-open: a report-write OSError must NOT suppress the warning — still emit additionalContext + exit 0",
           "disposition": "tested",
-          "evidence": "sync_check.py json.loads parse succeeds ([ OK ] Marketplace)"
+          "evidence": "test_stale_artifact_detector.py::test_hook_main_warn_survives_report_write_failure PASSED"
         },
         {
-          "behavior": "Run stays isolated to the worktree (no main-tree leak)",
-          "disposition": "tested",
-          "evidence": "check_iterate_isolation.py --stage f0 — ALLOW (isolated)"
-        },
-        {
-          "behavior": "install.sh Node advisory threshold reads 20 (was 18)",
+          "behavior": "in_progress (warn-severity) drift path: stderr notice + report + exit 0 (unchanged by this diff)",
           "disposition": "untestable",
-          "reason_code": "requires-interactive-tty",
-          "reason": "Advisory echo branch executes only during an interactive install on a host with Node < 20; no unit harness exercises it — verified by inspection of the edited branch."
-        },
-        {
-          "behavior": "README → guide section links/anchors resolve on GitHub",
-          "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "Anchors computed via the GitHub heading-slug algorithm (§2.1/§2.4/§2.6/§2.9/§2.10/§3/§3.5/§12); the repo has no automated Markdown link checker — links degrade to file-top if imperfect."
+          "reason_code": "covered-by-existing-test",
+          "reason": "behavior is unchanged by this diff; pinned by the pre-existing test_stale_artifact_detector.py::test_hook_main_returns_zero_with_warn_only"
         }
       ],
       "counts": {
-        "testable": 5,
-        "tested": 5,
-        "untestable": 2,
+        "testable": 4,
+        "tested": 4,
+        "untestable": 1,
         "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
       }
     }
   }
