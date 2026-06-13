@@ -1,0 +1,1 @@
+Docs: fixed Hooks Registry drift in docs/hooks-and-pipeline.md — script name generate-handoff.py -> generate_handoff_on_stop.py (9 tables), phase-quality-audit wiring (11 of 12 plugins; run keeps a Stop chain), and the per-plugin order list (now 10, incl. adopt).

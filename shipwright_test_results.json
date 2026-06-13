@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-13-skill-doc-staleness-sync",
+    "run_id": "iterate-2026-06-13-docs-ssot-reconcile",
     "date": "2026-06-13",
     "unit": {
       "status": "passed",
-      "passed": 4343,
-      "total": 4343
+      "passed": 3796,
+      "total": 3796
     },
     "integration": {
       "status": "not_run",
@@ -33,51 +33,58 @@
     "degraded": [
       {
         "phase": "f0",
-        "reason": "Related-scope test run (small complexity): ran the 3 touched plugin suites (shipwright-compliance 697, shipwright-build 84, shipwright-run 162) + shared/tests (3400, -m 'not slow and not cross_plugin') = 4343 passed, 0 failed. ruff (CI gate) passed; sync_check 6/6; vite-hono.json valid JSON. group_f.py is bloat-allowlisted but the edit is a same-line string swap (no LOC delta, no ratchet)."
+        "reason": "Docs-only iterate (docs/hooks-and-pipeline.md + plugins/shipwright-iterate/skills/iterate/references/F6.md). No DB/CRUD/UI changed, so integration/pgtap/e2e suites are not applicable. Unit gate = the full pytest suite that owns the doc-drift/SSoT tests: shared/tests 3400 passed + 12 skipped + 26 deselected, shipwright-iterate 396 passed; doc-drift (test_hooks_json_wrapper, test_churn_merge_doc_sync, test_branch_integration_doc, test_bloat_baseline) + path-canon all green; F0 leak-guard ALLOW."
+      },
+      {
+        "phase": "review",
+        "reason": "Small-complexity, docs-only diff, no risk flags: external LLM review (Advisory) and full code-review subagent skipped per Override Classes — every edit is backed by a source file:line / ADR citation verified in this session (12 hooks.json parsed, ADR-039/040, all 12 Stop chains extracted, grep of to_outbox in the 4 emitters, .gitignore:154 + write_decision_drop drop_dir)."
       },
       {
         "phase": "setup",
-        "reason": "Pre-existing sweep-outbox warning from setup_iterate_worktree (trg-671bb0a2 status append dropped by a prior merge) — unrelated to this change."
+        "reason": "Pre-existing sweep-outbox warning from setup_iterate_worktree (trg-671bb0a2 status append dropped by a prior merge) — unrelated to this change; non-fatal (worktree still created)."
       }
     ],
     "surface_verification": {
       "surface": "none",
-      "justification": "Source-doc / label / profile-config sync (SKILL.md banners, a finding-label string, glossary text, a profile notes field). No web/CLI/API surface and no behavior change; verification is the plugin + shared test suites that exercise these files plus ruff/sync_check, not a runnable surface.",
+      "runner": "",
+      "exit_code": 0,
       "tests_run": 0,
-      "exit_code": 0
+      "evidence_path": ".shipwright/runs/iterate-2026-06-13-docs-ssot-reconcile/surface_verification.json",
+      "timestamp": "2026-06-13T10:20:25.080Z",
+      "justification": "Docs-only SSoT reconciliation: docs/hooks-and-pipeline.md (pure documentation) + F6.md skill-reference staging prose. No startable runtime surface; correctness verified by the doc-drift suite (test_hooks_json_wrapper, test_churn_merge_doc_sync, test_artifact_path_canon) + empirical probes of the 12 shipped hooks.json and the 4 triage emitters."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "C1: compliance SKILL.md documents Group H and states 'eight detective groups (A–H)'",
+          "behavior": "F3: the hooks.json Format section documents the required Claude Code 2.1.132+ shape (top-level 'hooks' wrapper + string matchers, ADR-039/040)",
           "disposition": "tested",
-          "evidence": "shipwright-compliance suite 697 passed; sync_check 6/6 OK; grep confirms Group H line + A–H present"
+          "evidence": "test_hooks_json_wrapper.py (26 parametrized cases: wrapper + matcher-string invariants) PASSED; empirical probe parsed all 12 plugins/*/hooks/hooks.json -> every file uses the wrapper + string matchers"
         },
         {
-          "behavior": "C4: group_f.py F5 finding label updated to 'Arch-impact drops vs architecture.md text' (no behavior change)",
+          "behavior": "F4: the Hooks Registry uses generate_handoff_on_stop.py (real file) with correct counts/order (phase-quality wired into 11 of 12; all 12 have a Stop hook; order list = 10 incl. adopt)",
           "disposition": "tested",
-          "evidence": "shipwright-compliance suite 697 passed (incl. group_f/F5 tests); ruff passed; no test pinned the old label (grep)"
+          "evidence": "empirical probe extracted all 12 Stop chains (11 wire audit_phase_quality_on_stop; run keeps a 4-hook Stop chain; adopt runs audit->handoff); grep confirms 0 hyphenated 'generate-handoff.py' remain; doc-drift suite (test_branch_integration_doc, test_bloat_baseline) PASSED"
         },
         {
-          "behavior": "C2: run SKILL.md completion banner agent-docs list no longer references the non-existent 'sprint' doc",
+          "behavior": "F3/F4: registry matcher cells use the string form ('Bash', 'Write|Edit'), not the object form {tools:[...]}",
           "disposition": "tested",
-          "evidence": "shipwright-run suite 162 passed; grep confirms 'sprint' gone from run SKILL.md, real docs (session_handoff, build_dashboard) present"
+          "evidence": "test_hooks_json_wrapper.py::test_pre_post_tool_use_matchers_are_strings PASSED; grep shows the only remaining {\"tools\" occurrence is the intentional F3 'Old format (removed)' counter-example"
         },
         {
-          "behavior": "C3: build SKILL.md banner + setup_implementation_session.py docstring use build/{slug}-{session-id}",
+          "behavior": "F9: the Artifact Write Matrix states the security/perf/F0.5/F1 emitters append to the tracked triage.jsonl (to_outbox=False), not the outbox; outbox list = true background producers + plugin_sync_reminder",
           "disposition": "tested",
-          "evidence": "shipwright-build suite 84 passed; ruff passed; grep confirms {project-slug}/NN-name gone"
+          "evidence": "empirical probe grep 'to_outbox|should_route_to_outbox' in the 4 emitters = 0 (append_triage_item_idempotent default to_outbox=False); contrasted with the 6 modules that DO route; test_churn_merge_doc_sync.py PASSED (matrix SSoT intact)"
         },
         {
-          "behavior": "C5: vite-hono.json notes field reads Node 22.x (matches stack.runtime.node), still valid JSON + profile loads",
+          "behavior": "F28: the F6 staging reference no longer 'git add's the gitignored, main-resident decision-drops dir",
           "disposition": "tested",
-          "evidence": "shared/tests 3400 passed (profile tests); python json.load succeeds"
+          "evidence": "empirical verification: .gitignore:154 ignores /.shipwright/agent_docs/decision-drops/, write_decision_drop.drop_dir resolves resolve_main_repo_root (main-resident), 0 tracked files in the dir; test_write_decision_drop.py pins the main-resident gitignored producer behavior; F6.md edit replaces the line with an explanatory NOTE"
         },
         {
-          "behavior": "C6: glossary.md Phase lists the 7 PIPELINE_STEPS (project,design,plan,build,test,changelog,deploy), security/compliance out-of-band",
+          "behavior": "The doc edits introduce no bare legacy artifact paths (path canon)",
           "disposition": "tested",
-          "evidence": "shared/tests 3400 passed (glossary/doc-drift tests)"
+          "evidence": "test_artifact_path_canon.py + test_path_canon_windows-adjacent run — 4 passed"
         }
       ],
       "counts": {
@@ -85,6 +92,10 @@
         "tested": 6,
         "untestable": 0,
         "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
       }
     }
   }
