@@ -1,39 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-13-campaign-serial-default"
+run_id: "iterate-2026-06-13-tighten-bloat-baseline"
 phase: "iterate"
-reason: "iterate: interleaved-serial campaign default"
-timestamp: "2026-06-13T22:08:30.653095+00:00"
+reason: "iterate: tighten bloat baseline (clear Group H2)"
+timestamp: "2026-06-13T21:53:33.788116+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-13 22:08:30 UTC
+> Auto-generated 2026-06-13 21:53:33 UTC
 
 ## Session Info
 
-- **Session ID**: 7ef46c34-70e9-4721-a56c-11667233ab34
-- **Timestamp**: 2026-06-13 22:08:30 UTC
-- **Reason**: iterate: interleaved-serial campaign default
+- **Session ID**: a73a306a-6829-4b04-8806-840136fbea2c
+- **Timestamp**: 2026-06-13 21:53:33 UTC
+- **Reason**: iterate: tighten bloat baseline (clear Group H2)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-13-triage-not-current-work
-- **Date**: 2026-06-13T17:13:20.450524Z
-- **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/triage-not-current-work
-- **ADR**: iterate-2026-06-13-triage-not-current-work
+- **Run ID**: iterate-2026-06-13-verifier-utf8-stdout
+- **Date**: 2026-06-13T18:21:00.464356Z
+- **Type**: bug
+- **Complexity**: small
+- **Branch**: iterate/verifier-utf8-stdout
+- **ADR**: iterate-2026-06-13-verifier-utf8-stdout
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-13-triage-not-current-work.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/campaign-serial-default
-- **Run ID**: `iterate-2026-06-13-campaign-serial-default`
-- **Spec**: .shipwright/planning/iterate/2026-06-13-campaign-serial-default.md
-- **Complexity**: medium (classifier said `large` — keyword false-positive on
-- **External Review Marker**: stale (predates spec (2026-06-13T21:37:00))
+- **Branch**: iterate/tighten-bloat-baseline
+- **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
@@ -51,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/campaign-serial-default
-- **Last Commit**: 0f85ff5b refactor(triage): stop the iterate pipeline from filing triage about current-run work (#243)
+- **Branch**: iterate/tighten-bloat-baseline
+- **Last Commit**: 0dfae426 fix(verifiers): pin CLI stdout to UTF-8 so reports don't crash on Windows cp1252 (#244)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-ae982255 | work_completed | iterate (interleaved-serial as the single documented campaign default (branch_strategy: serial)) | 2026-06-13 |
+| evt-ead63c7f | work_completed | iterate (tighten bloat baseline to actual LOC; prune 3 under-limit entries (clear Group H2)) | 2026-06-13 |
+| evt-545e463c | work_completed | iterate (Pin verifier CLI stdout to UTF-8 — fix Windows cp1252 UnicodeEncodeError on '→' in reports) | 2026-06-13 |
 | evt-751a4ac4 | work_completed | iterate (Fold spec_checks _run_git/_git_available onto verifiers/git_helpers.py (optional timeout param, unified failure code)) | 2026-06-13 |
 | evt-4393b0bb | work_completed | iterate (Triage not for current-run work — drop plugin-sync + F0.5 triage producers) | 2026-06-13 |
 | evt-ac75c147 | work_completed | iterate (iterate finalization) | 2026-06-13 |
-| evt-29a5f711 | work_completed | iterate (Extract duplicated cross-platform _FileLock into shared/scripts/lib/file_lock.py; both call sites import it; unify on the parent-dir-creating superset.) | 2026-06-13 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 187
-- **Last iterate**: change — interleaved-serial as the single documented campaign default (branch_strategy: serial) (2026-06-13)
+- **Total work events**: 188
+- **Last iterate**: change — tighten bloat baseline to actual LOC; prune 3 under-limit entries (clear Group H2) (2026-06-13)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

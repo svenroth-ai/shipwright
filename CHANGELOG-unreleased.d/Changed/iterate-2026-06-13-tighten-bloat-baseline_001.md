@@ -1,0 +1,1 @@
+Tightened shipwright_bloat_baseline.json to actual on-disk LOC (9 entries) and pruned 3 now-under-limit entries, clearing the Group H2 ratchet-suggestion finding and locking in the shared-helper consolidation size gains

@@ -1,12 +1,12 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-13T22:08:30.653095Z. Items waiting for triage decision.
+> Auto-generated 2026-06-13T21:53:33.788116Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 192
-- Triage: 20 | Promoted: 1 | Dismissed: 171 | Snoozed: 0
+- Total: 193
+- Triage: 20 | Promoted: 1 | Dismissed: 172 | Snoozed: 0
 
 ## Top 20 items (severity-sorted)
 
@@ -114,18 +114,18 @@
 
 ### Source: compliance (1 item)
 
-<a id="trg-a906e79b"></a>
-- **Compliance: 1 open finding(s)** `id=trg-a906e79b | severity=medium | kind=compliance → P2/compliance`
-  - 1 open compliance finding(s): H/H2  - H/H2: Bloat ratchet-suggestion (baseline current > actual) — shared/tests/test_ev…
+<a id="trg-60404120"></a>
+- **Compliance: 8 open finding(s)** `id=trg-60404120 | severity=medium | kind=compliance → P2/compliance`
+  - 8 open compliance finding(s): E/E1, E/E2, E/E3, E/E5, E/E?, E/E?, E/E?, H/H2  - E/E1: RTM stale (regen vs snapshot) — f…
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-compliance
     
-    Context: 1 open compliance finding(s): H/H2.
+    Context: 8 open compliance finding(s): E/E1, E/E2, E/E3, E/E5, E/E?, E/E?, E/E?, H/H2.
     Dashboard: .shipwright/compliance/dashboard.md
     Each finding + hint is listed in this item's detail.
     ```
-  - Promote: `triage_promote.py --id trg-a906e79b --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-60404120 --task-ref EXT:<ref>`
 
 ### Source: external-frameworks (6 items)
 

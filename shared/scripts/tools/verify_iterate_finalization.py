@@ -41,6 +41,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 # by shared/tests/test_verify_iterate_finalization.py. DO NOT remove any
 # of these without migrating every importer and updating the tests.
 from tools.verifiers.common import CheckResult, Severity, format_report  # noqa: E402,F401
+from tools.verifiers.stdio import ensure_utf8_stdout  # noqa: E402
 from tools.verifiers.iterate_checks import (  # noqa: E402,F401
     check_adr_in_iterate_history,
     check_architecture_documented,
@@ -54,6 +55,7 @@ from tools.verifiers.iterate_checks import (  # noqa: E402,F401
 
 
 def main() -> None:
+    ensure_utf8_stdout()  # report details carry '→' etc.; cp1252 console crashes otherwise
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--run-id", required=True, help="Iterate run id to verify")
     parser.add_argument("--project-root", default=".", help="Project directory")
