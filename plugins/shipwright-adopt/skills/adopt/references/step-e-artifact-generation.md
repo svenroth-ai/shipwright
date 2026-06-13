@@ -222,6 +222,26 @@ Writes — **in order**:
     against those constants. The scaffolder result lands in
     `results.ci_workflow` as `{wrote, path, reason}`.
 
+14b. **CodeQL workflow scaffold (profile-aware).** Adopt writes a dormant
+    `<root>/.github/workflows/codeql.yml` whose `language:` matrix is
+    **rendered** from the detected profile, so a brownfield repo gains the
+    `Analyze (<language>)` Required-Check job names B4.5-style automerge
+    needs. Unlike the pure-copy CI scaffolder, this one substitutes the
+    `${SHIPWRIGHT_CODEQL_LANGUAGES}` placeholder before writing:
+    - `python-plugin-monorepo` → `[python]` → check `Analyze (python)`
+    - `supabase-nextjs` / `vite-hono` → `[javascript-typescript]` →
+      check `Analyze (javascript-typescript)`
+
+    Dormant default (`workflow_dispatch:` only) + never-overwrite, same as
+    CI/Security. The analyze step carries `continue-on-error: true` so the
+    job stays GREEN on a private repo without GitHub Advanced Security (the
+    SARIF upload fails there; the QL analysis still runs) — a Required Check
+    that errors would block every PR. Distinct reason codes
+    (`profile_unresolved` vs `no_codeql_for_profile`). SSoT:
+    `shared/scripts/lib/codeql_workflow.py`; drift test
+    `shared/tests/test_codeql_workflow_convention.py`. Result lands in
+    `results.codeql_workflow` as `{wrote, path, reason, languages}`.
+
 15. **Claude-Review workflow scaffold.** Adopt writes the independent
     Claude-Code-review workflow to `<root>/.github/workflows/claude-review.yml`.
     Profile-agnostic — single template, no profile branching.
@@ -234,6 +254,24 @@ Writes — **in order**:
 
     Origin: commit `8aac61d` (Anthropic Architect Certification best
     practice — "write in one session, review in a different one").
+
+16. **Automerge-readiness doc (`AUTOMERGE_SETUP.md`).** Written **LAST**,
+    after every workflow scaffold above, because it derives the
+    Required-Check job names by **parsing the deployed**
+    `.github/workflows/*.yml` (matrix-expanded) rather than guessing — a
+    wrong name in branch protection silently never matches (the "armed but
+    waiting" automerge killer). The profile-aware doc lands at the repo root
+    and walks the adopter through: which Required-Check names this repo
+    actually produces, the "activate the dormant `pull_request:` trigger
+    **before** requiring the check" rule, the branch-protection UI steps
+    (0 approvals; signing deliberately NOT required for headless iterate
+    PRs), `Allow auto-merge`, and the `gh pr merge --auto --squash` pattern.
+    It also documents that CodeQL is the paid-on-private GHAS path (vs the
+    free `security.yml` scanner chain) and that anti-ratchet `bloat-check`
+    is a deferred manual opt-in. Never-overwrite. SSoT/render:
+    `shared/scripts/lib/automerge_readiness.py`; template
+    `shared/templates/AUTOMERGE_SETUP.md.template`. Result lands in
+    `results.automerge_setup` as `{wrote, path, reason, required_checks}`.
 
 **Vite DX templates (offer-only, NEVER auto-applied).** If
 `package.json` lists `vite` as a dependency (any Vite-based stack), the

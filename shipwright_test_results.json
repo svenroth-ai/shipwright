@@ -1,45 +1,96 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-13-runconfig-atomic-writes",
+    "run_id": "iterate-2026-06-13-adopt-automerge-readiness",
     "date": "2026-06-13",
-    "unit": { "status": "passed", "passed": 162, "total": 162 },
-    "integration": { "status": "passed", "passed": 1, "total": 1 },
-    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
-    "e2e": { "status": "not_run", "passed": 0, "total": 0 },
-    "design_fidelity": { "status": "not_run", "passed": 0, "total": 0 },
-    "smoke": { "status": "not_run" },
+    "unit": {
+      "status": "passed",
+      "passed": 3737,
+      "total": 3737
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 6,
+      "total": 6
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "passed",
+      "passed": 6,
+      "total": 6
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
     "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "runner": "",
-      "exit_code": 0,
+      "justification": "Framework-internal /shipwright-adopt scaffolding + GitHub-Actions templates + shared convention-lock libs; no web/CLI end-user app surface. End-to-end verified by running the REAL generator as a subprocess (plugins/shipwright-adopt/tests/test_adopt_pipeline_subprocess.py::test_full_pipeline_e2e_via_subprocess), which asserts codeql.yml + AUTOMERGE_SETUP.md land with correct payloads.",
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-13-runconfig-atomic-writes/surface_verification.json",
-      "timestamp": "2026-06-13T05:45:35.801Z",
-      "justification": "No startable user-facing surface: WP2 hardens the orchestrator's shipwright_run_config.json persistence layer (atomic writes + path-coordinated advisory lock) and a Stop hook timeout. No API/UI/store/message contract changed. Behavior is empirically driven through real OS processes by test_runconfig_concurrency.py (3 writer families) and the full pytest suite."
+      "exit_code": 0
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "F11: save_run_config writes atomically (tmp+os.replace) — no torn read", "disposition": "tested",
-          "evidence": "test_run_config_store.py::test_atomic_write_json_roundtrip / _leaves_no_tmp / _overwrite_is_complete PASSED" },
-        { "behavior": "F11: update_step reloads a FRESH config under the lock and does not clobber a concurrent writer's fields", "disposition": "tested",
-          "evidence": "test_step_planning_reload_fresh.py::test_update_step_complete_does_not_clobber_concurrent_write + ::test_update_step_in_progress_preserves_unrelated_fields PASSED" },
-        { "behavior": "F11: run_config_lock is mutually exclusive and coordinates by path with phase_task_lifecycle._PhaseTasksLock", "disposition": "tested",
-          "evidence": "test_run_config_store.py::test_run_config_lock_is_mutually_exclusive + ::test_run_config_lock_coordinates_with_phase_tasks_lock PASSED" },
-        { "behavior": "F12: phase_task_lifecycle._write_config is atomic — no half-written config under concurrency", "disposition": "tested",
-          "evidence": "test_phase_task_lifecycle.py suite (36) PASSED; concurrency test parses final config as valid JSON" },
-        { "behavior": "F13: Stop-fallback outer update-step timeout strictly exceeds the inner compliance timeout", "disposition": "tested",
-          "evidence": "test_runconfig_timeout_invariant.py::test_phase_completion_outer_timeout_exceeds_compliance_inner PASSED (captures actual 60 > 30 + asserts the update-step command)" },
-        { "behavior": "file_lock._acquire_windows seek(0) keeps byte-0 lock coordination deterministic regardless of lock-file content", "disposition": "tested",
-          "evidence": "test_run_config_concurrent_writers.py (2 slow) + test_retention_race.py (4) PASSED; coordinate test PASSED" },
-        { "behavior": "Integration: orchestrator + phase_task + phase_history writer families compose under true multi-process concurrency with no truncation or lost update", "disposition": "tested", "category": "integration",
-          "evidence": "test_runconfig_concurrency.py::test_three_process_writers_no_truncation_no_lost_update PASSED (current_step set, version==1+N, phase_history len==N)" },
-        { "behavior": "update_step behavior parity (bootstrap/standalone, ask-issues early return, inform notes, split-loop, in_progress/failed, returned config)", "disposition": "tested",
-          "evidence": "test_orchestrator.py suite (34) PASSED unchanged" }
+        {
+          "behavior": "AC1 codeql template dormant + ${SHIPWRIGHT_CODEQL_LANGUAGES} placeholder + permissions floor + continue-on-error",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_codeql_workflow_convention.py (23) PASSED"
+        },
+        {
+          "behavior": "AC2 codeql scaffolder renders per-profile langs; never-overwrite; reason codes (scaffolded/already_exists/no_codeql_for_profile/profile_unresolved); rendered output valid YAML + dormant",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_codeql_workflow_scaffold.py (17) PASSED"
+        },
+        {
+          "behavior": "AC3 check-name matrix expansion (interpolate / no-name->job-id / no-ref->append-combo / multi-dim / include-exclude excluded) + dormant detection",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_automerge_check_names.py (12) PASSED"
+        },
+        {
+          "behavior": "AC3 if:-gated deploy jobs excluded from requireable + surfaced as conditional (review H1)",
+          "disposition": "tested",
+          "evidence": "test_automerge_readiness.py::test_required_checks_exclude_if_gated_deploy_jobs + ::test_render_warns_about_conditional_deploy_jobs PASSED"
+        },
+        {
+          "behavior": "AC3 derived Required-Check names == deployed workflow names across all 3 profiles + KNOWN_WORKFLOWS drift-pin",
+          "disposition": "tested",
+          "evidence": "test_automerge_readiness.py::test_required_check_names_match_deployed_workflows[3] + ::test_known_workflows_match_convention_modules PASSED"
+        },
+        {
+          "behavior": "AC4 AUTOMERGE_SETUP render: profile + table substituted, dormant-trap + signing-omit prose, dormant/active flags; scaffolder never-overwrite + no-workflow degenerate",
+          "disposition": "tested",
+          "evidence": "test_automerge_readiness.py render tests + plugins/shipwright-adopt/tests/test_automerge_setup_scaffold.py (13) PASSED"
+        },
+        {
+          "behavior": "AC5 orchestrator wiring (codeql after CI; AUTOMERGE doc LAST; reads real deployed files) via real generate_adoption_artifacts subprocess",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_adopt_pipeline_subprocess.py::test_full_pipeline_e2e_via_subprocess PASSED (slow)"
+        },
+        {
+          "behavior": "AC5 SKILL.md + reference-doc cross-links resolve after edits",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_cross_links.py + test_skill_references_link.py PASSED"
+        }
       ],
-      "counts": { "testable": 8, "tested": 8, "untestable": 0, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 3, "covered_acs": 3 }
+      "counts": {
+        "testable": 8,
+        "tested": 8,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
+      }
     }
   }
 }

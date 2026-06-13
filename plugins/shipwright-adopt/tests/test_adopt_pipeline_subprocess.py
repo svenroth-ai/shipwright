@@ -218,6 +218,33 @@ def test_full_pipeline_e2e_via_subprocess(tmp_path: Path) -> None:
     assert "useDefault = true" in gl_text
     assert "cafebabe:deadbeef" in gl_text
 
+    # Step E.14b — CodeQL workflow scaffold landed, language matrix rendered
+    # for the vite-hono profile (javascript-typescript).
+    codeql_wf = tmp_path / ".github" / "workflows" / "codeql.yml"
+    assert codeql_wf.exists(), "Step E.14b did not scaffold .github/workflows/codeql.yml"
+    codeql_payload = payload["codeql_workflow"]
+    assert codeql_payload["wrote"] is True
+    assert codeql_payload["reason"] == "scaffolded"
+    assert codeql_payload["languages"] == ["javascript-typescript"]
+    codeql_text = codeql_wf.read_text(encoding="utf-8")
+    # Placeholder fully substituted; the rendered matrix carries the language.
+    assert "${SHIPWRIGHT_CODEQL_LANGUAGES}" not in codeql_text
+    assert "javascript-typescript" in codeql_text
+    assert "continue-on-error: true" in codeql_text  # private-repo green-job guard
+
+    # Step E.15b — AUTOMERGE_SETUP.md landed at the repo root, AFTER the
+    # workflows, listing the real Required-Check names derived from them.
+    automerge_doc = tmp_path / "AUTOMERGE_SETUP.md"
+    assert automerge_doc.exists(), "Step E.15b did not scaffold AUTOMERGE_SETUP.md"
+    am_payload = payload["automerge_setup"]
+    assert am_payload["wrote"] is True
+    assert am_payload["reason"] == "scaffolded"
+    assert am_payload["required_checks"], "automerge doc derived no Required-Check names"
+    am_text = automerge_doc.read_text(encoding="utf-8")
+    assert "Analyze (javascript-typescript)" in am_text
+    assert "Shipwright Security Scan" in am_text
+    assert "vite-hono" in am_text  # profile label rendered
+
 
 def test_pipeline_ci_scaffold_supabase_nextjs_profile(tmp_path: Path) -> None:
     """External-review #O7: parametrize subprocess coverage across profiles.

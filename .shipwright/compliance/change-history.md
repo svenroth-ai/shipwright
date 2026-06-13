@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-06-13T05:51:32.227810+00:00
-Total commits: 984
+Generated: 2026-06-13T06:43:10.946192+00:00
+Total commits: 985
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 282
-    "feat" : 270
+    "feat" : 271
     "chore" : 216
     "docs" : 123
     "refactor" : 54
@@ -24,7 +24,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-13 | pipeline | atomic + lock-coordinated run_config writes; Stop-fallback timeout headroom (WP2) | df94e468b095 |
+| 2026-06-13 | pipeline | atomic + lock-coordinated run_config writes; Stop-fallback timeout headroom (WP2) (#226) | de2df18ab60f |
 | 2026-06-13 | pipeline | phase hooks resolve identity from stdin payload; atomic event dedup; failure event types (WP1) (#224) | a683d75bb779 |
 | 2026-06-12 | compliance | coerce explicit-null affected_frs/new_frs in WorkEvent.from_dict (#220) | 332b64728fa1 |
 | 2026-06-12 | compliance | W2 SKIPs on unresolvable run_id, mirroring the S2/S3 guard (#217) | 768c2a9c625a |
@@ -307,10 +307,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 270 commits
+### Features (feat) — 271 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-13 | adopt | scaffold profile-aware CodeQL + AUTOMERGE_SETUP for brownfield automerge-readiness | ef1437ebf415 |
 | 2026-06-12 | bloat | reducibility reviewer — LOC becomes a router, not the verdict (#222) | 13aa780d02aa |
 | 2026-06-12 | iterate | cross_component risk flag + non-dodgeable integration-coverage gate (#218) | bf8cd8dd171f |
 | 2026-06-12 | iterate | F11 Delivery-Watch — delivered = merged + green (no shoot-and-forget) (#214) | aeb8932746e2 |
@@ -1053,7 +1054,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 984 |
+| Total commits | 985 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 984 |
+| Human-authored commits | 985 |
 

@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-13T05:51:32.227810Z. Items waiting for triage decision.
+> Auto-generated 2026-06-13T06:43:10.946192Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 191
-- Triage: 19 | Promoted: 1 | Dismissed: 171 | Snoozed: 0
+- Total: 192
+- Triage: 20 | Promoted: 1 | Dismissed: 171 | Snoozed: 0
 
-## Top 19 items (severity-sorted)
+## Top 20 items (severity-sorted)
 
 ### Source: architecture (2 items)
 
@@ -183,7 +183,7 @@
   - Three functions resolve the MAIN repo root via git rev-parse --git-common-dir: lib/worktree_isolation.main_repo_root (r…
   - Promote: `triage_promote.py --id trg-b9acb195 --task-ref EXT:<ref>`
 
-### Source: manual (3 items)
+### Source: manual (4 items)
 
 <a id="trg-9b9a2b9d"></a>
 - **Audit bug-fixes - final batch, run last (docs/SSoT + low-risk hardening)** `id=trg-9b9a2b9d | severity=medium | kind=improvement → P2/engineering`
@@ -199,4 +199,9 @@
 - **Audit bug-fixes - auto batch (encoding/Windows, compliance gates, triage tooling, installer)** `id=trg-d7661cfb | severity=medium | kind=improvement → P2/engineering`
   - Launch surface only. The work plan + details live in the LOCAL, gitignored campaign dir (not in git). Start via the Sta…
   - Promote: `triage_promote.py --id trg-d7661cfb --task-ref EXT:<ref>`
+
+<a id="trg-33f26f5f"></a>
+- **Adopt: scaffold bloat-check.yml + vendor anti-ratchet runner (deferred from B4.6)** `id=trg-33f26f5f | severity=low | kind=feature → P3/engineering`
+  - Follow-up to the B4.6 Automerge-Readiness Pack (trg-a678bd00). The codeql.yml + AUTOMERGE_SETUP.md portion shipped in i…
+  - Promote: `triage_promote.py --id trg-33f26f5f --task-ref EXT:<ref>`
 

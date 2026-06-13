@@ -87,3 +87,39 @@ One test per crawled route. Each test checks:
 - `h1` matches what was seen during crawl
 - Top-3 buttons/CTAs visible
 - (Does NOT assert form submission, auth flow, etc. — would be hallucination)
+
+## GitHub Actions workflow + automerge templates
+
+Scaffolded in Step E into the target repo's `.github/workflows/` (and repo
+root for the doc). All are never-overwrite; CI + Security + CodeQL ship
+**dormant** (`workflow_dispatch:` only); Claude-Review is active on PRs.
+
+| Template | Deployed path | Profile-aware? | SSoT / convention lock |
+|---|---|---|---|
+| `github-actions/ci-<profile>.yml.template` | `.github/workflows/ci.yml` | yes (`TEMPLATE_BY_PROFILE`) | `shared/scripts/lib/ci_workflow.py` |
+| `github-actions/security.yml.template` | `.github/workflows/security.yml` | no | `shared/scripts/lib/security_workflow.py` |
+| `github-actions/gitleaks.toml.template` | `.gitleaks.toml` | no | `shared/scripts/lib/security_workflow.py` |
+| `github-actions/codeql.yml.template` | `.github/workflows/codeql.yml` | yes — `${SHIPWRIGHT_CODEQL_LANGUAGES}` placeholder rendered per profile | `shared/scripts/lib/codeql_workflow.py` |
+| `github-actions/claude-review.yml.template` | `.github/workflows/claude-review.yml` | no | `shared/scripts/lib/ci_workflow.py` |
+| `AUTOMERGE_SETUP.md.template` | `AUTOMERGE_SETUP.md` | yes — `{PROFILE}` + `{REQUIRED_CHECKS_TABLE}` rendered from deployed workflows | `shared/scripts/lib/automerge_readiness.py` |
+
+### `github-actions/codeql.yml.template`
+
+| Slot | Source |
+|---|---|
+| `${SHIPWRIGHT_CODEQL_LANGUAGES}` | `codeql_workflow.CODEQL_LANGUAGES_BY_PROFILE[profile]`, rendered as a YAML flow list (e.g. `[python]`) by the scaffolder |
+
+Everything else (dormant triggers, permissions floor, `continue-on-error` on
+the analyze step) is fixed and drift-pinned by
+`shared/tests/test_codeql_workflow_convention.py`.
+
+### `AUTOMERGE_SETUP.md.template`
+
+| Slot | Source |
+|---|---|
+| `{PROFILE}` | `snapshot.profile.matched` (label only) |
+| `{REQUIRED_CHECKS_TABLE}` | `automerge_readiness.render_checks_table(...)` — derived by **parsing the deployed** `.github/workflows/*.yml` and matrix-expanding each job's check name; never hard-coded |
+
+> **Anti-ratchet `bloat-check.yml` is intentionally NOT scaffolded** (the
+> monorepo runner isn't vendored into adopted repos yet). The doc documents it
+> as a deferred manual opt-in; it is not a Required Check for automerge.
