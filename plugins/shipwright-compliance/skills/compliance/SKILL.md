@@ -45,6 +45,7 @@ Groups:
   E — Compliance-doc content staleness (regen + byte compare; --fix rewrites stale docs)
   F — ADR structural integrity (preventive re-run)
   G — Agent-docs freshness vs. git activity (G2 conventional-commit scope, G3 ADR-ID body refs)
+  H — Bloat-policy detective audit (new crossings of the 300/400-line budgets + ratchets vs shipwright_bloat_baseline.json; Campaign A.review)
 
 Reports written (both gitignored — transient):
   - .shipwright/compliance/audit-report.md    ← human-readable summary
@@ -154,8 +155,9 @@ B4 (matching event) to compare against. Coverage for adopted projects
 comes from B7 (commit-on-default-branch ↔ event match) and Group G
 (commit-quality scans), which both run regardless of split status.
 
-All seven Plan-v7 groups are wired AND the post-Plan-v7 A5 follow-up
-(CI security workflow integrity) is live. A5 ships in the Group A
+All eight detective groups (A–H) are wired — the seven Plan-v7 groups
+(A–G) plus Group H (bloat-policy audit, Campaign A.review). The
+post-Plan-v7 A5 follow-up (CI security workflow integrity) is live. A5 ships in the Group A
 rollup via a composite registry handler that merges A2/A3/A4 (group_a)
 and A5 (group_a5) findings.
 
