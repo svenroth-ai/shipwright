@@ -1,36 +1,38 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-13-shc-read-events"
+run_id: "iterate-2026-06-13-unify-simplify-reducibility"
 phase: "iterate"
-reason: "iterate finalization"
-timestamp: "2026-06-13T16:03:19.756877+00:00"
+reason: "F11 pre-merge refresh: iterate-2026-06-13-unify-simplify-reducibility"
+timestamp: "2026-06-13T16:29:51.426705+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-13 16:03:19 UTC
+> Auto-generated 2026-06-13 16:29:51 UTC
 
 ## Session Info
 
-- **Session ID**: 1c1c6790-3768-47d0-bd4f-f7a4ed24bee9
-- **Timestamp**: 2026-06-13 16:03:19 UTC
-- **Reason**: iterate finalization
+- **Session ID**: 49776804-0473-4fac-9221-1d7ae56857c5
+- **Timestamp**: 2026-06-13 16:29:51 UTC
+- **Reason**: F11 pre-merge refresh: iterate-2026-06-13-unify-simplify-reducibility
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-13-code-simplify-skill
-- **Date**: 2026-06-13T14:02:12.060199Z
-- **Type**: feature
+- **Run ID**: iterate-2026-06-13-unify-simplify-reducibility
+- **Date**: 2026-06-13T16:29:51.868315Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/code-simplify-skill
-- **ADR**: iterate-2026-06-13-code-simplify-skill
+- **Branch**: iterate/unify-simplify-reducibility
+- **ADR**: iterate-2026-06-13-unify-simplify-reducibility
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-13-code-simplify-skill.md
+- **Spec**: .shipwright/planning/iterate/2026-06-13-unify-simplify-reducibility.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/2026-06-13-shc-read-events
-- **External Review Marker**: completed (external_review_state.json @ 2026-06-13T15:09:50)
+- **Branch**: iterate/unify-simplify-reducibility
+- **Run ID**: iterate-2026-06-13-unify-simplify-reducibility
+- **Spec**: .shipwright/planning/iterate/2026-06-13-unify-simplify-reducibility.md
+- **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
@@ -48,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/2026-06-13-shc-read-events
-- **Last Commit**: 9bb7c1e1 refactor(events): dedup read_events into a single lib.config SSOT
+- **Branch**: iterate/unify-simplify-reducibility
+- **Last Commit**: cb2e3254 Merge remote-tracking branch 'origin/main' into iterate/unify-simplify-reducibility
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -67,14 +69,14 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 |-------|------|--------|------|
 | evt-ac75c147 | work_completed | iterate (iterate finalization) | 2026-06-13 |
 | evt-29a5f711 | work_completed | iterate (Extract duplicated cross-platform _FileLock into shared/scripts/lib/file_lock.py; both call sites import it; unify on the parent-dir-creating superset.) | 2026-06-13 |
+| evt-0862b6bc | work_completed | iterate (unify the code-simplify gate with the bloat/reducibility catalog: relocate behavior_snapshot.py to shared/scripts/tools (SSoT), F-simplify adopts the catalog vocabulary, catalog cites the snapshot/verify gate as the mechanical G3 proof) | 2026-06-13 |
 | evt-0c568942 | work_completed | iterate (Align the bloat marker writer (check_file_size) to key delta/was_in_allowlist off the worktree's own baseline via a shared worktree_root_for SSoT also used by the Stop gate (trg-537334f1).) | 2026-06-13 |
 | evt-3d6824d5 | work_completed | iterate (code-simplify skill (OS1 / P3.2): SIMPLIFY sub-mode of CHANGE + behavior_snapshot snapshot/verify gate + F-simplify.md + guide docs) | 2026-06-13 |
-| evt-8726cab7 | work_completed | iterate (audit-3 WP11b low-risk hardening (F18/F32/F39/F40/F41)) | 2026-06-13 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 183
+- **Total work events**: 184
 - **Last iterate**: change — iterate finalization (2026-06-13)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
