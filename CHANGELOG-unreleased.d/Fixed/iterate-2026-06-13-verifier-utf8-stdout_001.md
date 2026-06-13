@@ -1,0 +1,1 @@
+Verifier CLIs (`verify_iterate_finalization.py`, `verify_phase.py`) no longer crash with `UnicodeEncodeError` on a Windows cp1252 console when a check detail contains a non-ASCII character (e.g. `→`); stdout is pinned to UTF-8 at the CLI entrypoint.

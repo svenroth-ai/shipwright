@@ -60,6 +60,7 @@ from tools.verifiers.common import (  # noqa: E402
     format_report,
     summarise,
 )
+from tools.verifiers.stdio import ensure_utf8_stdout  # noqa: E402
 
 
 # The phases that ``--phase all`` dispatches today.
@@ -142,6 +143,7 @@ def dispatch_all(project_root: Path, run_id: str, commit: str) -> list[CheckResu
 
 
 def main() -> None:
+    ensure_utf8_stdout()  # report details carry '→' etc.; cp1252 console crashes otherwise
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument(
         "--phase",

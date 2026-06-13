@@ -1,44 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-13-triage-not-current-work"
+run_id: "iterate-2026-06-13-tighten-bloat-baseline"
 phase: "iterate"
-reason: "F11 pre-merge refresh: iterate-2026-06-13-triage-not-current-work"
-timestamp: "2026-06-13T17:13:46.879674+00:00"
+reason: "iterate: tighten bloat baseline (clear Group H2)"
+timestamp: "2026-06-13T21:53:33.788116+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-13 17:13:46 UTC
+> Auto-generated 2026-06-13 21:53:33 UTC
 
 ## Session Info
 
-- **Session ID**: 6a2f378c-8669-4874-904a-87c4dc84cdf0
-- **Timestamp**: 2026-06-13 17:13:46 UTC
-- **Reason**: F11 pre-merge refresh: iterate-2026-06-13-triage-not-current-work
+- **Session ID**: a73a306a-6829-4b04-8806-840136fbea2c
+- **Timestamp**: 2026-06-13 21:53:33 UTC
+- **Reason**: iterate: tighten bloat baseline (clear Group H2)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-13-triage-not-current-work
-- **Date**: 2026-06-13T17:13:20.450524Z
-- **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/triage-not-current-work
-- **ADR**: iterate-2026-06-13-triage-not-current-work
+- **Run ID**: iterate-2026-06-13-verifier-utf8-stdout
+- **Date**: 2026-06-13T18:21:00.464356Z
+- **Type**: bug
+- **Complexity**: small
+- **Branch**: iterate/verifier-utf8-stdout
+- **ADR**: iterate-2026-06-13-verifier-utf8-stdout
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-13-triage-not-current-work.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/triage-not-current-work
-- **Run ID**: `iterate-2026-06-13-triage-not-current-work`
-- **Spec**: .shipwright/planning/iterate/2026-06-13-triage-not-current-work.md
-- **Complexity**: medium
+- **Branch**: iterate/tighten-bloat-baseline
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/triage-not-current-work
-- **Last Commit**: 5e8e9cef Merge remote-tracking branch 'origin/main' into iterate/triage-not-current-work
+- **Branch**: iterate/tighten-bloat-baseline
+- **Last Commit**: 0dfae426 fix(verifiers): pin CLI stdout to UTF-8 so reports don't crash on Windows cp1252 (#244)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-ead63c7f | work_completed | iterate (tighten bloat baseline to actual LOC; prune 3 under-limit entries (clear Group H2)) | 2026-06-13 |
+| evt-545e463c | work_completed | iterate (Pin verifier CLI stdout to UTF-8 — fix Windows cp1252 UnicodeEncodeError on '→' in reports) | 2026-06-13 |
 | evt-751a4ac4 | work_completed | iterate (Fold spec_checks _run_git/_git_available onto verifiers/git_helpers.py (optional timeout param, unified failure code)) | 2026-06-13 |
 | evt-4393b0bb | work_completed | iterate (Triage not for current-run work — drop plugin-sync + F0.5 triage producers) | 2026-06-13 |
 | evt-ac75c147 | work_completed | iterate (iterate finalization) | 2026-06-13 |
-| evt-29a5f711 | work_completed | iterate (Extract duplicated cross-platform _FileLock into shared/scripts/lib/file_lock.py; both call sites import it; unify on the parent-dir-creating superset.) | 2026-06-13 |
-| evt-0862b6bc | work_completed | iterate (unify the code-simplify gate with the bloat/reducibility catalog: relocate behavior_snapshot.py to shared/scripts/tools (SSoT), F-simplify adopts the catalog vocabulary, catalog cites the snapshot/verify gate as the mechanical G3 proof) | 2026-06-13 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 186
-- **Last iterate**: change — Fold spec_checks _run_git/_git_available onto verifiers/git_helpers.py (optional timeout param, unified failure code) (2026-06-13)
+- **Total work events**: 188
+- **Last iterate**: change — tighten bloat baseline to actual LOC; prune 3 under-limit entries (clear Group H2) (2026-06-13)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
