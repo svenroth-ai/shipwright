@@ -37,8 +37,15 @@ def _run_git(
         return 1, "", ""
 
 
-def _git_available(project_root: Path) -> bool:
-    rc, _, _ = _run_git(project_root, "rev-parse", "--is-inside-work-tree")
+def _git_available(project_root: Path, timeout: float | None = 10.0) -> bool:
+    # ``rev-parse --is-inside-work-tree`` is a trivial metadata read; bound it
+    # (default 10s) so a wedged ``index.lock`` / stalled filesystem cannot hang a
+    # verifier indefinitely. spec_checks bounded this probe at 10s before its
+    # wrappers were folded onto this module (iterate-2026-06-13-shc-git-helpers);
+    # the bound now also covers the integration_coverage / iterate_checks callers.
+    rc, _, _ = _run_git(
+        project_root, "rev-parse", "--is-inside-work-tree", timeout=timeout
+    )
     return rc == 0
 
 
