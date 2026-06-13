@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-13 11:23 UTC | Session: 6ae258a2-262e-4e05-9677-bf0575dcdf94
+> Updated: 2026-06-13 13:45 UTC | Session: 5b2bf528-d21b-4644-b363-1c053e677024 | Run: iterate-2026-06-13-low-risk-hardening
 
-## Recent Changes (178 iterations)
+## Recent Changes (179 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | audit-3 WP11b low-risk hardening (F18/F32/F39/F40/F41) | 4220/4236 |  | tooling | 2026-06-13 |
 | change | Read run-config standalone flag without triggering the unlocked legacy migration | 164/164 |  | infra | 2026-06-13 |
 | change | durable atomic writes (fsync) across all atomic writers | 4283/4283 |  | tooling | 2026-06-13 |
 | change | sync 6 stale SKILL.md/code/config items to the corrected guide (C1-C6) | 4343/4343 |  | docs | 2026-06-13 |
@@ -185,7 +186,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-13 | Unit: 4136/4136 | Integration: 147/147 | Smoke: not_run | (iterate)
+Last run: 2026-06-13 | Unit: 4073/4089 | Integration: 147/147 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
