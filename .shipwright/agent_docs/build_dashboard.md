@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-13 16:03 UTC | Session: 1c1c6790-3768-47d0-bd4f-f7a4ed24bee9 | Run: iterate-2026-06-13-shc-read-events
+> Updated: 2026-06-13 16:28 UTC | Session: 1c1c6790-3768-47d0-bd4f-f7a4ed24bee9 | Run: iterate-2026-06-13-shc-git-helpers
 
-## Recent Changes (183 iterations)
+## Recent Changes (184 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Fold spec_checks _run_git/_git_available onto verifiers/git_helpers.py (optional timeout param, unified failure code) | 69/69 |  | tooling | 2026-06-13 |
 | change | iterate finalization | 0/0 |  | tooling | 2026-06-13 |
 | change | Extract duplicated cross-platform _FileLock into shared/scripts/lib/file_lock.py; both call sites import it; unify on the parent-dir-creating superset. | 0/0 |  | tooling | 2026-06-13 |
 | change | Align the bloat marker writer (check_file_size) to key delta/was_in_allowlist off the worktree's own baseline via a shared worktree_root_for SSoT also used by the Stop gate (trg-537334f1). | 3419/3419 |  | tooling | 2026-06-13 |

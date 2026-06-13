@@ -12,16 +12,28 @@ from __future__ import annotations
 from pathlib import Path
 
 
-def _run_git(project_root: Path, *args: str) -> tuple[int, str, str]:
-    """Run ``git -C <project_root> <args>``; never raises. Returns (rc, out, err)."""
+def _run_git(
+    project_root: Path, *args: str, timeout: float | None = None,
+) -> tuple[int, str, str]:
+    """Run ``git -C <project_root> <args>``; never raises. Returns (rc, out, err).
+
+    ``timeout`` (seconds) is passed through to ``subprocess.run`` only when
+    set; the default ``None`` preserves the original no-timeout behaviour for
+    existing callers. On any failure (git missing, bad args, or — when a
+    timeout is set — the command exceeding it) returns ``(1, "", "")`` so
+    callers can branch on ``rc != 0`` / ``rc == 0`` uniformly.
+    """
     import subprocess
+    # Pass ``timeout`` to subprocess.run only when the caller set it, so an
+    # un-timed call keeps the exact kwarg shape it had before this param existed.
+    kwargs: dict = {"capture_output": True, "text": True,
+                    "encoding": "utf-8", "errors": "ignore"}
+    if timeout is not None:
+        kwargs["timeout"] = timeout
     try:
-        proc = subprocess.run(
-            ["git", "-C", str(project_root), *args],
-            capture_output=True, text=True,
-        )
+        proc = subprocess.run(["git", "-C", str(project_root), *args], **kwargs)
         return proc.returncode, proc.stdout, proc.stderr
-    except (OSError, ValueError):
+    except (OSError, ValueError, subprocess.TimeoutExpired):
         return 1, "", ""
 
 
