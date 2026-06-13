@@ -2,7 +2,7 @@
 canon_generated: true
 run_id: "iterate-2026-06-13-bloat-marker-writer-baseline"
 phase: "iterate"
-reason: "iterate: align bloat marker writer to the worktree baseline (trg-537334f1)"
+reason: "F11 pre-merge refresh: iterate-2026-06-13-bloat-marker-writer-baseline"
 timestamp: "2026-06-13T13:48:43.718381+00:00"
 ---
 
@@ -14,18 +14,18 @@ timestamp: "2026-06-13T13:48:43.718381+00:00"
 
 - **Session ID**: 032d4037-611f-4834-b0b6-4dd890f95642
 - **Timestamp**: 2026-06-13 13:48:43 UTC
-- **Reason**: iterate: align bloat marker writer to the worktree baseline (trg-537334f1)
+- **Reason**: F11 pre-merge refresh: iterate-2026-06-13-bloat-marker-writer-baseline
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-13-atomic-write-fsync-durability
-- **Date**: 2026-06-13T11:25:19.204917Z
+- **Run ID**: iterate-2026-06-13-bloat-marker-writer-baseline
+- **Date**: 2026-06-13T13:49:17.965637Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/atomic-write-fsync-durability
-- **ADR**: iterate-2026-06-13-atomic-write-fsync-durability
+- **Branch**: iterate/2026-06-13-bloat-marker-writer-baseline
+- **ADR**: iterate-2026-06-13-bloat-marker-writer-baseline
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-13-atomic-write-fsync-durability.md
+- **Spec**: .shipwright/planning/iterate/2026-06-13-bloat-marker-writer-baseline.md
 
 ## Current Iterate Progress
 
@@ -52,7 +52,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Git State
 
 - **Branch**: iterate/2026-06-13-bloat-marker-writer-baseline
-- **Last Commit**: 2c183c3b fix(atomic-writes): fsync before os.replace in a shared durable-write primitive (#234)
+- **Last Commit**: aac67890 Merge remote-tracking branch 'origin/main' into iterate/2026-06-13-bloat-marker-writer-baseline
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -83,8 +83,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Recent Decisions
 
-### ADR-196: Coerce explicit-null list/dict fields in WorkEvent.from_dict
-- **Date:** 2026-06-12
-- **Section:** Iterate — bug: WorkEvent null-frs coercion
-- **Run-ID:** iterate-2026-06-12-workevent-null-frs-coerce
-- **Context:** A work_completed event carrying an explicit affected_frs:null (vs the normal key-omit) made WorkEvent.from_dict return None: d.get(key, default) only falls back when the key is ABSENT. map_requirements_to_events then iterated None and crashed the whole compliance markdown regen 
+### ADR-206: Fix 6 source staleness items (C1–C6) found by the guide audit
+- **Date:** 2026-06-13
+- **Section:** Iterate — change: sync stale SKILL.md/code/config to the corrected guide
+- **Run-ID:** iterate-2026-06-13-skill-doc-staleness-sync
+- **Context:** The guide-correctness audit (#230) surfaced 6 places where the SOURCE was stale and the guide was right: compliance SKILL.md (7 groups, omits H), run+build SKILL.md banners (sprint word, {project-slug}/NN-name branch), group_f.py F5 label, vite-hono
