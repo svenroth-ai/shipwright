@@ -12,7 +12,6 @@ CLAUDE.md-sync (new top-level dirs). The S2/S3 run_id guard lives in
 
 from __future__ import annotations
 
-import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -38,6 +37,10 @@ from lib.phase_quality import (  # noqa: E402
 )
 from tools.verifiers._iterate_run_id import (  # noqa: E402
     unresolvable_run_id_skip,
+)
+from tools.verifiers.git_helpers import (  # noqa: E402
+    _git_available,
+    _run_git,
 )
 from lib.spec_parser import (  # noqa: E402
     compute_fr_coherence,
@@ -328,30 +331,6 @@ def check_s3_iterate_miniplan(project_root: Path, run_id: str) -> dict[str, Any]
 # S4 — FR preservation (Tier-2, WARN)
 # ---------------------------------------------------------------------------
 
-def _run_git(project_root: Path, *args: str, timeout: float = 10.0) -> tuple[int, str, str]:
-    """Run a git command inside ``project_root``.
-
-    Returns ``(rc, stdout, stderr)``. Git binary missing or non-repo
-    returns ``(-1, "", <error msg>)`` so callers can SKIP cleanly.
-    """
-    try:
-        result = subprocess.run(
-            ["git", *args],
-            cwd=str(project_root),
-            capture_output=True, text=True,
-            encoding="utf-8", errors="ignore",
-            timeout=timeout,
-        )
-        return result.returncode, result.stdout or "", result.stderr or ""
-    except (FileNotFoundError, OSError, subprocess.TimeoutExpired) as exc:
-        return -1, "", str(exc)
-
-
-def _git_available(project_root: Path) -> bool:
-    rc, _, _ = _run_git(project_root, "rev-parse", "--is-inside-work-tree")
-    return rc == 0
-
-
 def check_s4_fr_preservation(project_root: Path) -> dict[str, Any]:
     """S4 — removed FR ids still marked deprecated. Tier-2 WARN-only."""
     if not _git_available(project_root):
@@ -369,6 +348,7 @@ def check_s4_fr_preservation(project_root: Path) -> dict[str, Any]:
         project_root,
         "log", "-n", "10", "--pretty=format:%H", "--",
         ".shipwright/agent_docs/spec.md", PLANNING_DIRNAME,
+        timeout=10.0,
     )
     if rc != 0 or not log_out.strip():
         return make_finding(
@@ -389,6 +369,7 @@ def check_s4_fr_preservation(project_root: Path) -> dict[str, Any]:
         project_root,
         "diff", baseline, "HEAD",
         "--", ".shipwright/agent_docs/spec.md",
+        timeout=10.0,
     )
     if rc != 0:
         return make_finding(
@@ -597,6 +578,7 @@ def _is_ui_facing_iterate(project_root: Path) -> bool:
         project_root,
         "log", f"-n{_GIT_RECENT_COMMITS}",
         "--name-only", "--pretty=format:",
+        timeout=10.0,
     )
     if rc != 0:
         return False
@@ -615,6 +597,7 @@ def _readme_touched_recently(project_root: Path) -> bool:
         project_root,
         "log", f"-n{_GIT_RECENT_COMMITS}",
         "--name-only", "--pretty=format:", "--", _README_MD,
+        timeout=10.0,
     )
     if rc != 0:
         return False
@@ -676,6 +659,7 @@ def _new_top_level_dirs(project_root: Path) -> list[str]:
         project_root,
         "log", f"-n{_GIT_RECENT_COMMITS}",
         "--name-only", "--pretty=format:",
+        timeout=10.0,
     )
     if rc != 0:
         return []
@@ -706,6 +690,7 @@ def _claude_md_touched_recently(project_root: Path) -> bool:
         project_root,
         "log", f"-n{_GIT_RECENT_COMMITS}",
         "--name-only", "--pretty=format:", "--", _CLAUDE_MD,
+        timeout=10.0,
     )
     if rc != 0:
         return False
