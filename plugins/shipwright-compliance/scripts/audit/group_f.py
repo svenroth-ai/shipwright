@@ -383,7 +383,7 @@ def run(
         "F4", "ADR bloat (> 60 lines without spec_ref)", _check_f4, project_root,
     ))
     findings.append(_detective_finding(
-        "F5", "Architecture marker vs arch-impact drops", _check_f5, project_root,
+        "F5", "Arch-impact drops vs architecture.md text", _check_f5, project_root,
     ))
     findings.append(_detective_finding(
         "F6", "CLAUDE.md size hygiene", _check_f6, project_root,

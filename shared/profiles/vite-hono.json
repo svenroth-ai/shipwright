@@ -88,5 +88,5 @@
     ".env.example": "Template (committed)"
   },
 
-  "notes": "This profile assumes Node 20.x + npm 10+. Service commands use `npm --prefix <dir> run dev`; the `--prefix` flag MUST come before the subcommand for unambiguous parsing on modern npm. Frontend `depends_on: backend` ensures the Vite proxy target is up before the SPA shell is considered ready. Frontend is `primary: true` so dev_server.py's top-level `pid`/`url` reflect the browser-facing URL. Ports use `${PORT:-3847}` / `${VITE_PORT:-5173}` placeholders so /shipwright-adopt can override them via env (avoids collisions when a user dev server is already on the defaults — e.g. running adopt from inside the webui)."
+  "notes": "This profile assumes Node 22.x + npm 10+. Service commands use `npm --prefix <dir> run dev`; the `--prefix` flag MUST come before the subcommand for unambiguous parsing on modern npm. Frontend `depends_on: backend` ensures the Vite proxy target is up before the SPA shell is considered ready. Frontend is `primary: true` so dev_server.py's top-level `pid`/`url` reflect the browser-facing URL. Ports use `${PORT:-3847}` / `${VITE_PORT:-5173}` placeholders so /shipwright-adopt can override them via env (avoids collisions when a user dev server is already on the defaults — e.g. running adopt from inside the webui)."
 }

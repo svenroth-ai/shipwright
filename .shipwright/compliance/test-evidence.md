@@ -1,20 +1,20 @@
 # Test Evidence Report
 
-Generated: 2026-06-13T10:25:13.910813+00:00
+Generated: 2026-06-13T10:07:03.548685+00:00
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 175 |
-| Total unit tests (latest) | 3796/3796 |
+| Total unit tests (latest) | 4343/4343 |
 | New tests from iterations | +166 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | audit-3 WP11a docs/SSoT reconciliation (F3 hooks.json format, F4 registry drift, F9 outbox matrix, F28 F6 decision-drops staging) | iterate | unit | +0 | 3796/3796 | PASS | 2026-06-13 |
+| 1 | sync 6 stale SKILL.md/code/config items to the corrected guide (C1-C6) | iterate | unit | +0 | 4343/4343 | PASS | 2026-06-13 |
 | 2 | guide.md correctness audit + 21 fixes vs code/ADRs | iterate | — | +0 | — | — | 2026-06-13 |
 | 3 | docs install/Get-Started rewrite + GitHub/auto-merge guide + marketplace metadata parity | iterate | — | +0 | — | — | 2026-06-13 |
 | 4 | hook block-channel (WP4): route PostToolUse security-guard reasons to stderr; SessionStart drift gate is honest warn-only via additionalContext | iterate | unit | +0 | 3400/3400 | PASS | 2026-06-13 |
@@ -223,7 +223,7 @@ Generated: 2026-06-13T10:25:13.910813+00:00
 | 27 | iterate | 3818/3830 | — | — | — | — | 2026-06-13 |
 | 28 | iterate | 3737/3737 | — | — | — | — | 2026-06-13 |
 | 29 | iterate | 3400/3400 | — | — | — | — | 2026-06-13 |
-| 30 | iterate | 3796/3796 | — | — | — | — | 2026-06-13 |
+| 30 | iterate | 4343/4343 | — | — | — | — | 2026-06-13 |
 
 ## Code Review Evidence
 

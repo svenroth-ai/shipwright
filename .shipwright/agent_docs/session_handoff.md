@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-13-docs-ssot-reconcile"
+run_id: "iterate-2026-06-13-skill-doc-staleness-sync"
 phase: "iterate"
-reason: "iterate: audit-3 WP11a docs/SSoT reconciliation"
-timestamp: "2026-06-13T10:25:13.910813+00:00"
+reason: "iterate: sync stale source docs/labels to corrected guide (C1-C6)"
+timestamp: "2026-06-13T10:07:03.548685+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-13 10:25:13 UTC
+> Auto-generated 2026-06-13 10:07:03 UTC
 
 ## Session Info
 
-- **Session ID**: 118aad1f-bdd5-4952-8f4c-9d0a776d7981
-- **Timestamp**: 2026-06-13 10:25:13 UTC
-- **Reason**: iterate: audit-3 WP11a docs/SSoT reconciliation
+- **Session ID**: 6ae258a2-262e-4e05-9677-bf0575dcdf94
+- **Timestamp**: 2026-06-13 10:07:03 UTC
+- **Reason**: iterate: sync stale source docs/labels to corrected guide (C1-C6)
 
 ## Last Iterate
 
@@ -29,7 +29,7 @@ timestamp: "2026-06-13T10:25:13.910813+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/docs-ssot-reconcile
+- **Branch**: iterate/skill-doc-staleness-sync
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,7 +48,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/docs-ssot-reconcile
+- **Branch**: iterate/skill-doc-staleness-sync
 - **Last Commit**: c3ee79be docs(guide): correct 21 drifted claims via full code/ADR audit (#230)
 - **Uncommitted Changes**: Yes
 
@@ -65,7 +65,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-b1e3660d | work_completed | iterate (audit-3 WP11a docs/SSoT reconciliation (F3 hooks.json format, F4 registry drift, F9 outbox matrix, F28 F6 decision-drops staging)) | 2026-06-13 |
+| evt-0e2c6e4d | work_completed | iterate (sync 6 stale SKILL.md/code/config items to the corrected guide (C1-C6)) | 2026-06-13 |
 | evt-208f28f1 | work_completed | iterate (guide.md correctness audit + 21 fixes vs code/ADRs) | 2026-06-13 |
 | evt-98471b18 | work_completed | iterate (docs install/Get-Started rewrite + GitHub/auto-merge guide + marketplace metadata parity) | 2026-06-13 |
 | evt-a7561bb4 | work_completed | iterate (hook block-channel (WP4): route PostToolUse security-guard reasons to stderr; SessionStart drift gate is honest warn-only via additionalContext) | 2026-06-13 |
@@ -75,7 +75,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 175
-- **Last iterate**: change — audit-3 WP11a docs/SSoT reconciliation (F3 hooks.json format, F4 registry drift, F9 outbox matrix, F28 F6 decision-drops staging) (2026-06-13)
+- **Last iterate**: change — sync 6 stale SKILL.md/code/config items to the corrected guide (C1-C6) (2026-06-13)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

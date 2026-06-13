@@ -62,7 +62,7 @@ Workflow per section:
   7. Update decision log + docs
 
 Features:
-  - Auto feature branch ({project-slug}/NN-name, derived from run config)
+  - Auto feature branch (build/{slug}-{session-id}, derived from run config)
   - Conventional Commits (feat:, fix:, refactor:, etc.)
   - Migration safety (down.sql + destructive change detection)
   - Session handoff before context limits

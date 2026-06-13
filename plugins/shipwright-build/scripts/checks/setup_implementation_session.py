@@ -12,7 +12,7 @@ Output (JSON):
         "section_file": "/path/to/sections/01-auth.md",
         "project_root": "/path/to/project",
         "plugin_root": "/path/to/plugin",
-        "branch_name": "<project-slug>/01-auth",
+        "branch_name": "build/01-auth-a1b2c3d4",
         "config": { ... },
         "session_id": "<id>"
     }
