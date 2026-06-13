@@ -68,11 +68,11 @@ fi
 
 if ! command -v node &>/dev/null; then
     echo "  [!!] Node.js not found (optional — needed for WebUI)."
-    echo "       Install Node.js 18+: https://nodejs.org/"
+    echo "       Install Node.js 20+: https://nodejs.org/"
 else
     node_major=$(node -e "console.log(process.versions.node.split('.')[0])")
-    if [ "$node_major" -lt 18 ]; then
-        echo "  [!!] Node.js 18+ recommended for WebUI (found $node_major)"
+    if [ "$node_major" -lt 20 ]; then
+        echo "  [!!] Node.js 20+ recommended for WebUI (found $node_major)"
     fi
 fi
 
