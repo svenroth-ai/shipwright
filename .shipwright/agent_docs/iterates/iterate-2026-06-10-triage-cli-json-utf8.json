@@ -1,9 +1,0 @@
-{
-  "run_id": "iterate-2026-06-10-triage-cli-json-utf8",
-  "date": "2026-06-10T08:00:55.618054Z",
-  "type": "bug",
-  "complexity": "small",
-  "branch": "iterate/triage-cli-json-utf8",
-  "tests_passed": true,
-  "adr": "iterate-2026-06-10-triage-cli-json-utf8"
-}
