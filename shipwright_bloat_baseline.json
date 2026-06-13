@@ -424,7 +424,7 @@
     {
       "path": "plugins/shipwright-security/scripts/tools/run_scan_and_report.py",
       "limit": 300,
-      "current": 345,
+      "current": 334,
       "state": "grandfathered",
       "adr": null
     },
@@ -578,7 +578,7 @@
     {
       "path": "shared/scripts/lib/worktree_isolation.py",
       "limit": 300,
-      "current": 447,
+      "current": 438,
       "state": "grandfathered",
       "adr": null
     },
@@ -592,7 +592,7 @@
     {
       "path": "shared/scripts/surface_verification.py",
       "limit": 300,
-      "current": 693,
+      "current": 463,
       "state": "grandfathered",
       "adr": null
     },
@@ -620,7 +620,7 @@
     {
       "path": "shared/scripts/tools/aggregate_changelog.py",
       "limit": 300,
-      "current": 470,
+      "current": 458,
       "state": "grandfathered",
       "adr": null
     },
@@ -632,16 +632,9 @@
       "adr": "ADR-090"
     },
     {
-      "path": "shared/scripts/tools/append_changelog_entry.py",
-      "limit": 300,
-      "current": 312,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
       "path": "shared/scripts/tools/append_iterate_entry.py",
       "limit": 300,
-      "current": 436,
+      "current": 425,
       "state": "grandfathered",
       "adr": null
     },
@@ -655,7 +648,7 @@
     {
       "path": "shared/scripts/tools/finalize_iterate.py",
       "limit": 300,
-      "current": 536,
+      "current": 520,
       "state": "exception",
       "adr": "ADR-096"
     },
@@ -676,7 +669,7 @@
     {
       "path": "shared/scripts/tools/record_event.py",
       "limit": 300,
-      "current": 840,
+      "current": 786,
       "state": "grandfathered",
       "adr": null
     },
@@ -732,7 +725,7 @@
     {
       "path": "shared/scripts/tools/verifiers/spec_checks.py",
       "limit": 300,
-      "current": 808,
+      "current": 793,
       "state": "grandfathered",
       "adr": null
     },
@@ -746,7 +739,7 @@
     {
       "path": "shared/scripts/triage.py",
       "limit": 300,
-      "current": 719,
+      "current": 704,
       "state": "exception",
       "adr": "ADR-100"
     },
@@ -817,13 +810,6 @@
       "path": "shared/tests/test_drift_triage_emit.py",
       "limit": 300,
       "current": 415,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "shared/tests/test_events_log.py",
-      "limit": 300,
-      "current": 321,
       "state": "grandfathered",
       "adr": null
     },
@@ -1083,13 +1069,6 @@
       "path": "plugins/shipwright-security/tests/test_oss_backend_smoke.py",
       "limit": 300,
       "current": 320,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "shared/scripts/lib/events_log.py",
-      "limit": 300,
-      "current": 323,
       "state": "grandfathered",
       "adr": null
     },
