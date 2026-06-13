@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-13 10:25 UTC | Session: 118aad1f-bdd5-4952-8f4c-9d0a776d7981 | Run: iterate-2026-06-13-docs-ssot-reconcile
+> Updated: 2026-06-13 10:52 UTC | Session: 2f4ddbdb-5235-4092-9b3c-7c3b85a347f1 | Run: iterate-2026-06-13-runconfig-standalone-read
 
-## Recent Changes (176 iterations)
+## Recent Changes (177 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Read run-config standalone flag without triggering the unlocked legacy migration | 164/164 |  | infra | 2026-06-13 |
 | change | sync 6 stale SKILL.md/code/config items to the corrected guide (C1-C6) | 4343/4343 |  | docs | 2026-06-13 |
 | change | audit-3 WP11a docs/SSoT reconciliation (F3 hooks.json format, F4 registry drift, F9 outbox matrix, F28 F6 decision-drops staging) | 3796/3796 |  | docs | 2026-06-13 |
 | change | guide.md correctness audit + 21 fixes vs code/ADRs | 0/0 |  | docs | 2026-06-13 |
@@ -183,7 +184,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-13 | Unit: 3796/3796 | Smoke: not_run | (iterate)
+Last run: 2026-06-13 | Unit: 164/164 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
