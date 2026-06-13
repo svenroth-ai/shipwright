@@ -1,17 +1,17 @@
 # Commit Change Log
 
 Generated: 2026-06-13T16:29:51.426705+00:00
-Total commits: 1000
+Total commits: 1002
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 287
+    "fix" : 288
     "feat" : 272
     "chore" : 217
     "docs" : 128
-    "refactor" : 57
+    "refactor" : 58
     "test" : 24
     "ci" : 7
     "other" : 7
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 287 commits
+### Fixes (fix) — 288 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-13 | verifiers | bound _git_available rev-parse probe with a 10s timeout | 68b0dcf99dd5 |
 | 2026-06-13 | audit-3 | low-risk hardening — event-commit, report-escape, CI pipefail, test-discipline (WP11b) (#236) | 172e39d9ec5b |
 | 2026-06-13 | bloat | marker writer keys delta off the worktree baseline, SSoT with the Stop gate (trg-537334f1) (#237) | 517ae21b73ab |
 | 2026-06-13 | atomic-writes | fsync before os.replace in a shared durable-write primitive (#234) | 2c183c3b3c90 |
@@ -944,11 +945,12 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 57 commits
+### Refactoring (refactor) — 58 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-13 | iterate | unify simplify gate with the reducibility catalog (one shared tool + vocabulary) | 2883b10ad466 |
+| 2026-06-13 | iterate | unify simplify gate with the reducibility catalog (one shared tool + vocabulary) (#241) | c7389dfa699c |
+| 2026-06-13 | verifiers | fold spec_checks git wrappers onto git_helpers | b92ea62027a8 |
 | 2026-06-13 | events | dedup read_events into a single lib.config SSOT (#240) | 2d5aad4c753e |
 | 2026-06-13 | shared | extract duplicated _FileLock into lib/file_lock.py (campaign A) (#239) | b8050b57b2c9 |
 | 2026-06-13 | bloat | extract risk detectors + integration-coverage verifier into dedicated modules (#225) | 3c18fc6d9efd |
@@ -1069,7 +1071,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1000 |
+| Total commits | 1002 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1000 |
+| Human-authored commits | 1002 |
 

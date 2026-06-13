@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-13 16:29 UTC | Session: 49776804-0473-4fac-9221-1d7ae56857c5 | Run: iterate-2026-06-13-unify-simplify-reducibility
+> Updated: 2026-06-13 16:29 UTC | Session: 1c1c6790-3768-47d0-bd4f-f7a4ed24bee9 | Run: iterate-2026-06-13-shc-git-helpers
 
-## Recent Changes (184 iterations)
+## Recent Changes (185 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Fold spec_checks _run_git/_git_available onto verifiers/git_helpers.py (optional timeout param, unified failure code) | 69/69 |  | tooling | 2026-06-13 |
 | change | iterate finalization | 0/0 |  | tooling | 2026-06-13 |
 | change | Extract duplicated cross-platform _FileLock into shared/scripts/lib/file_lock.py; both call sites import it; unify on the parent-dir-creating superset. | 0/0 |  | tooling | 2026-06-13 |
 | change | unify the code-simplify gate with the bloat/reducibility catalog: relocate behavior_snapshot.py to shared/scripts/tools (SSoT), F-simplify adopts the catalog vocabulary, catalog cites the snapshot/verify gate as the mechanical G3 proof | 3996/3996 |  | tooling | 2026-06-13 |
