@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-06-13T09:21:45.201585+00:00
+Generated: 2026-06-13T10:25:13.910813+00:00
 Total commits: 989
 
 ## Commit Distribution
@@ -809,7 +809,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-13 | guide | correct 21 drifted claims via full code/ADR audit | 2bf9cdd9efc0 |
+| 2026-06-13 | guide | correct 21 drifted claims via full code/ADR audit (#230) | c3ee79be6d31 |
 | 2026-06-13 | install | end-to-end Get-Started + GitHub/auto-merge guide; sync plugin catalog (#228) | c35088825704 |
 | 2026-06-13 | adopt | note CodeQL + AUTOMERGE_SETUP scaffolding in guide.md Chapter 3.5 | feebb2552c88 |
 | 2026-06-11 | — | drop GPG/SSH commit-signing guidance (keyless workflow) (#192) | 489c615c385c |

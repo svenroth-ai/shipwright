@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-13-guide-correctness-audit",
+    "run_id": "iterate-2026-06-13-docs-ssot-reconcile",
     "date": "2026-06-13",
     "unit": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 3796,
+      "total": 3796
     },
     "integration": {
       "status": "not_run",
@@ -33,53 +33,69 @@
     "degraded": [
       {
         "phase": "f0",
-        "reason": "Docs-only iterate (docs/guide.md). No Python source changed, so unit/integration/e2e suites are not applicable. Verified via the 7-agent correctness audit (file:line evidence per finding), path-canon lints (14 passed / 1 skipped), grep confirmation that all 21 stale target strings are gone and replacements present, and the F0 leak-guard (ALLOW)."
+        "reason": "Docs-only iterate (docs/hooks-and-pipeline.md + plugins/shipwright-iterate/skills/iterate/references/F6.md). No DB/CRUD/UI changed, so integration/pgtap/e2e suites are not applicable. Unit gate = the full pytest suite that owns the doc-drift/SSoT tests: shared/tests 3400 passed + 12 skipped + 26 deselected, shipwright-iterate 396 passed; doc-drift (test_hooks_json_wrapper, test_churn_merge_doc_sync, test_branch_integration_doc, test_bloat_baseline) + path-canon all green; F0 leak-guard ALLOW."
       },
       {
         "phase": "review",
-        "reason": "Medium-complexity gates satisfied in a docs-appropriate way: external LLM review (Advisory per Override Classes) skipped — the 7 independent verification sub-agents + consolidated ledger are a stronger multi-reviewer pass for a prose-correctness diff; full code-review subagent not run (docs-only diff, no risk flags) — each edit is already backed by a source file:line citation from the audit."
+        "reason": "Small-complexity, docs-only diff, no risk flags: external LLM review (Advisory) and full code-review subagent skipped per Override Classes — every edit is backed by a source file:line / ADR citation verified in this session (12 hooks.json parsed, ADR-039/040, all 12 Stop chains extracted, grep of to_outbox in the 4 emitters, .gitignore:154 + write_decision_drop drop_dir)."
       },
       {
         "phase": "setup",
-        "reason": "Pre-existing sweep-outbox warning from setup_iterate_worktree (trg-671bb0a2 status append dropped by a prior merge) — unrelated to this change."
+        "reason": "Pre-existing sweep-outbox warning from setup_iterate_worktree (trg-671bb0a2 status append dropped by a prior merge) — unrelated to this change; non-fatal (worktree still created)."
       }
     ],
     "surface_verification": {
       "surface": "none",
-      "justification": "Documentation-only change (docs/guide.md prose corrections). No web/CLI/API surface and no executable code path changed; verification is the content gates (path-canon) + the 7-agent source cross-check, not a runnable surface.",
+      "runner": "",
+      "exit_code": 0,
       "tests_run": 0,
-      "exit_code": 0
+      "evidence_path": ".shipwright/runs/iterate-2026-06-13-docs-ssot-reconcile/surface_verification.json",
+      "timestamp": "2026-06-13T10:20:25.080Z",
+      "justification": "Docs-only SSoT reconciliation: docs/hooks-and-pipeline.md (pure documentation) + F6.md skill-reference staging prose. No startable runtime surface; correctness verified by the doc-drift suite (test_hooks_json_wrapper, test_churn_merge_doc_sync, test_artifact_path_canon) + empirical probes of the 12 shipped hooks.json and the 4 triage emitters."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "Edited guide.md introduces no bare legacy artifact paths (path canon)",
+          "behavior": "F3: the hooks.json Format section documents the required Claude Code 2.1.132+ shape (top-level 'hooks' wrapper + string matchers, ADR-039/040)",
           "disposition": "tested",
-          "evidence": "test_artifact_path_canon.py + test_path_canon_windows.py — 14 passed, 1 skipped"
+          "evidence": "test_hooks_json_wrapper.py (26 parametrized cases: wrapper + matcher-string invariants) PASSED; empirical probe parsed all 12 plugins/*/hooks/hooks.json -> every file uses the wrapper + string matchers"
         },
         {
-          "behavior": "No stale target strings remain in guide.md and corrected replacements are present (7-vs-8 groups, 8-vs-11 flags, 20/16-vs-24/12 tiers, branch form, sprint doc, plan-vs-iterate config, two-tier review, Groups C+F-vs-A-H)",
+          "behavior": "F4: the Hooks Registry uses generate_handoff_on_stop.py (real file) with correct counts/order (phase-quality wired into 11 of 12; all 12 have a Stop hook; order list = 10 incl. adopt)",
           "disposition": "tested",
-          "evidence": "grep verification: 0 occurrences of each of the 11 stale strings; 10 corrected strings present (8 check groups (A–H), Eleven canonical risk, multi-stage reviewer cascade, build/{slug}-{session-id}, shipwright_iterate_config.json, 24 are Tier-1, Groups A–H all shipped, gh-prompt:{owner}/{repo}, prompt-injection scanner, Aikido first)"
+          "evidence": "empirical probe extracted all 12 Stop chains (11 wire audit_phase_quality_on_stop; run keeps a 4-hook Stop chain; adopt runs audit->handoff); grep confirms 0 hyphenated 'generate-handoff.py' remain; doc-drift suite (test_branch_integration_doc, test_bloat_baseline) PASSED"
         },
         {
-          "behavior": "Run stays isolated to the worktree (no main-tree leak)",
+          "behavior": "F3/F4: registry matcher cells use the string form ('Bash', 'Write|Edit'), not the object form {tools:[...]}",
           "disposition": "tested",
-          "evidence": "check_iterate_isolation.py --stage f0 — ALLOW (isolated)"
+          "evidence": "test_hooks_json_wrapper.py::test_pre_post_tool_use_matchers_are_strings PASSED; grep shows the only remaining {\"tools\" occurrence is the intentional F3 'Old format (removed)' counter-example"
         },
         {
-          "behavior": "Each of the 21 corrected claims matches the current source code/config",
-          "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "Prose-vs-code correctness has no automated guide-to-code linter in the repo; verified instead by 7 independent opus sub-agents that cited a source file:line for every finding, then re-confirmed during fix application."
+          "behavior": "F9: the Artifact Write Matrix states the security/perf/F0.5/F1 emitters append to the tracked triage.jsonl (to_outbox=False), not the outbox; outbox list = true background producers + plugin_sync_reminder",
+          "disposition": "tested",
+          "evidence": "empirical probe grep 'to_outbox|should_route_to_outbox' in the 4 emitters = 0 (append_triage_item_idempotent default to_outbox=False); contrasted with the 6 modules that DO route; test_churn_merge_doc_sync.py PASSED (matrix SSoT intact)"
+        },
+        {
+          "behavior": "F28: the F6 staging reference no longer 'git add's the gitignored, main-resident decision-drops dir",
+          "disposition": "tested",
+          "evidence": "empirical verification: .gitignore:154 ignores /.shipwright/agent_docs/decision-drops/, write_decision_drop.drop_dir resolves resolve_main_repo_root (main-resident), 0 tracked files in the dir; test_write_decision_drop.py pins the main-resident gitignored producer behavior; F6.md edit replaces the line with an explanatory NOTE"
+        },
+        {
+          "behavior": "The doc edits introduce no bare legacy artifact paths (path canon)",
+          "disposition": "tested",
+          "evidence": "test_artifact_path_canon.py + test_path_canon_windows-adjacent run — 4 passed"
         }
       ],
       "counts": {
-        "testable": 3,
-        "tested": 3,
-        "untestable": 1,
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
         "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
       }
     }
   }

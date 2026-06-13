@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-13-docs-ssot-reconcile",
+  "date": "2026-06-13T10:26:31.177362Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/docs-ssot-reconcile",
+  "spec": ".shipwright/planning/iterate/campaigns/2026-06-10-audit-3-final/sub-iterates/a3-1-docs-ssot-reconcile.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-13-docs-ssot-reconcile"
+}

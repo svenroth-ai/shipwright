@@ -539,34 +539,45 @@ The crashed session's later `complete-phase-task` is rejected with exit 2
 
 ## hooks.json Format
 
-> **Breaking change (April 2025):** Claude Code now requires the new hooks format.
-> Plugins with old-format hooks are **skipped entirely** (not just the invalid settings).
+> **Breaking change (Claude Code 2.1.132+, ADR-039/040, 2026-05-07):** Claude
+> Code tightened plugin-schema validation. `plugins/*/hooks/hooks.json` must now
+> **(a)** wrap its event-name dict under a top-level `"hooks"` key, and **(b)**
+> use **string** matchers for `PreToolUse`/`PostToolUse`. A file with the old
+> shape is **skipped entirely** — *no* hooks fire — with `Hook load failed:
+> expected record, received undefined at path ["hooks"]` (missing wrapper) or
+> `Invalid input: expected string, received object` (object matcher). Pinned by
+> `shared/tests/test_hooks_json_wrapper.py` (wrapper + matcher invariants); all
+> 12 shipped `hooks.json` use this form.
 
-**New format** — event types at top level, no `{"hooks": {...}}` wrapper:
+**Required format** — top-level `{"hooks": {...}}` wrapper + string matchers:
 
 ```json
 {
-  "EventName": [
-    {
-      "matcher": {"tools": ["Bash"]},
-      "hooks": [
-        {"type": "command", "command": "path/to/script.sh"}
-      ]
-    }
-  ]
+  "hooks": {
+    "EventName": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {"type": "command", "command": "path/to/script.sh"}
+        ]
+      }
+    ]
+  }
 }
 ```
 
 | Matcher type | Format | Used by |
 |-------------|--------|---------|
-| Single tool | `"matcher": {"tools": ["Bash"]}` | PreToolUse, PostToolUse |
-| Multi tool | `"matcher": {"tools": ["Write", "Edit"]}` | PostToolUse |
-| Subagent name | `"matcher": "agent-name"` (plain string) | SubagentStop |
-| No filter | Omit `matcher` field entirely | SessionStart, Stop |
+| Single tool | `"matcher": "Bash"` | PreToolUse, PostToolUse |
+| Multi tool | `"matcher": "Write\|Edit"` (regex alternation) | PostToolUse |
+| Subagent name | `"matcher": "shipwright-plan:section-writer"` (plain string) | SubagentStop |
+| No filter | Omit `matcher` field entirely | SessionStart, Stop, PostToolUse catch-all (e.g. `track_tool_calls.py`) |
 
 Tool names use short form: `Bash`, `Write`, `Edit`, `Read`, `Glob`, `Grep`.
 
-**Old format (removed):** `{"hooks": {"EventName": [{"matcher": "Bash", ...}]}}` — wrapper + string matchers.
+**Old format (removed, pre-2.1.132):** event names at the JSON document root
+with **no** `{"hooks": {...}}` wrapper, and/or object-form matchers
+`{"tools": ["Bash"]}` — both rejected on plugin load by Claude Code 2.1.132+.
 
 ---
 
@@ -813,8 +824,11 @@ same posture as the A5.0 PyYAML skip. Operator kill-switch:
 
 **Script:** `shared/scripts/hooks/audit_phase_quality_on_stop.py` —
 consolidated Stop-event entry point for the Phase-Quality audit.
-Wired into every plugin that has a Stop hook (10 plugins; `run` and
-`preview` have no Stop hook).
+Wired into 11 of the 12 plugins that ship a Stop hook — every plugin
+*except* `run`, whose 4-hook Stop chain (`generate_handoff_on_stop` →
+`master_stop_check` → `bloat_gate_on_stop` → `plugin_sync_reminder_on_stop`)
+deliberately omits the phase-quality audit. (`preview` ships no `hooks.json`
+at all, so it has no Stop hook.)
 
 **Contract:**
 - Non-blocking. Always exits 0 even on internal errors.
@@ -961,13 +975,13 @@ Aggregate rewrites serialise through
 multiple sessions don't lost-update the summaries.
 
 **Hook order per plugin (plan § 5.1):**
-- 9 plugins total (project, design, plan, build, test, security, deploy,
-  changelog, compliance): `audit_phase_quality_on_stop` runs
+- 10 plugins total (project, design, plan, build, test, security, deploy,
+  changelog, compliance, adopt): `audit_phase_quality_on_stop` runs
   **before** `generate_handoff_on_stop` so the finding JSON lands
   before handoff summarises session state. Of these, 7 are pipeline
-  phases (project/design/plan/build/test/changelog/deploy); security
-  and compliance are out-of-band skills that still run the audit hook
-  on their own Stop events.
+  phases (project/design/plan/build/test/changelog/deploy); security,
+  compliance, and adopt are out-of-band skills that still run the audit
+  hook on their own Stop events.
 - `iterate` Sonderfall: `iterate_stop_finalize` →
   `audit_phase_quality_on_stop` → `write_terminal_marker`. Audit runs
   **after** finalize so F5a/F5b/F7/F11 evidence is on disk when C1-C5
@@ -1117,7 +1131,7 @@ phase to load explicitly.
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + T1/T2 traceability + Q1 ADR substance Tier-2 + S1 spec-has-FR, S5 FR-coherence Tier-2, S6 CLAUDE.md, S7 Structure-block Tier-2, S8 README) |
-| Stop | — | `generate-handoff.py` | Session handoff |
+| Stop | — | `generate_handoff_on_stop.py` (shared) | Session handoff |
 
 ### shipwright-design
 
@@ -1125,7 +1139,7 @@ phase to load explicitly.
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + D1/D2 workflow) |
-| Stop | — | `generate-handoff.py` | Session handoff |
+| Stop | — | `generate_handoff_on_stop.py` (shared) | Session handoff |
 
 ### shipwright-plan
 
@@ -1134,7 +1148,7 @@ phase to load explicitly.
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | SubagentStop | `shipwright-plan:section-writer` | `write-section-on-stop.py` | Persists section files from subagent output to disk |
 | Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + W5 external-review marker + Q1 ADR substance, Tier-2) |
-| Stop | — | `generate-handoff.py` | Session handoff |
+| Stop | — | `generate_handoff_on_stop.py` (shared) | Session handoff |
 
 ### shipwright-build
 
@@ -1142,14 +1156,14 @@ phase to load explicitly.
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | SessionStart | — | `check_drift.py` | Timestamp drift + content drift (Structure block vs filesystem, Development `npm run` vs package.json) |
-| PreToolUse | `{"tools": ["Bash"]}` | `validate_command.sh` | Blocks dangerous shell commands (rm -rf, force push, etc.) |
-| PostToolUse | `{"tools": ["Write", "Edit"]}` | `check_destructive_migration.sh` | Warns on DROP/DELETE in .sql files without down.sql |
-| PostToolUse | `{"tools": ["Write", "Edit"]}` | `check_secrets.sh` | Scans written files for API keys, tokens, passwords |
-| PostToolUse | `{"tools": ["Write", "Edit"]}` | `check_file_size.py` | Non-blocking nudge + per-session marker writer. Crossings of the 300/400 line guideline (300 source/test, 400 runtime-prompt SKILL.md/CLAUDE.md/agents) emit a stdout nudge AND write `<repo-root>/.shipwright/locks/bloat_pending.<session_id>.json` (atomic tmp+rename). The marker/baseline/re-measure root is resolved via `repo_root.main_repo_root_or(Path.cwd())` (fail-soft adapter over `worktree_isolation.main_repo_root`), **never `Path.cwd()`** — a PostToolUse firing with cwd≠repo-root (sub-package test run, monorepo auto-descent) would otherwise leak the marker to a nested `shared/.shipwright/locks/` the root-anchored gitignore misses (fixed `iterate-2026-06-09-idle-main-artifact-hygiene`; a non-anchored `**/.shipwright/locks/` canon ignore is belt-and-suspenders). The Stop-Gate (`bloat_gate_on_stop.py`) resolves the SAME root + reads that marker. Registered in every plugin's `hooks.json` since Campaign A.foundation. `<session_id>` comes from the hook **stdin payload** (`session_id`), falling back to the `SHIPWRIGHT_SESSION_ID` env var then `"unknown"` — both writer and gate must agree (fixed `iterate-2026-05-29-bloat-gate-session-id`; env-only keying pooled every session into one `unknown` bucket so one session's oversize file blocked another's Stop). The Stop-Gate clears an **anti-ratchet** entry when the file is trimmed back to `<=` its baseline `current` (the grandfathered ceiling) — it blocks only when the live size grew PAST `current`, matching the canonical anti-ratchet rule in `anti_ratchet.py` (same iterate; previously it compared only against the 300 limit, so a correctly-trimmed grandfathered file kept blocking). |
+| PreToolUse | `Bash` | `validate_command.sh` | Blocks dangerous shell commands (rm -rf, force push, etc.) |
+| PostToolUse | `Write\|Edit` | `check_destructive_migration.sh` | Warns on DROP/DELETE in .sql files without down.sql |
+| PostToolUse | `Write\|Edit` | `check_secrets.sh` | Scans written files for API keys, tokens, passwords |
+| PostToolUse | `Write\|Edit` | `check_file_size.py` | Non-blocking nudge + per-session marker writer. Crossings of the 300/400 line guideline (300 source/test, 400 runtime-prompt SKILL.md/CLAUDE.md/agents) emit a stdout nudge AND write `<repo-root>/.shipwright/locks/bloat_pending.<session_id>.json` (atomic tmp+rename). The marker/baseline/re-measure root is resolved via `repo_root.main_repo_root_or(Path.cwd())` (fail-soft adapter over `worktree_isolation.main_repo_root`), **never `Path.cwd()`** — a PostToolUse firing with cwd≠repo-root (sub-package test run, monorepo auto-descent) would otherwise leak the marker to a nested `shared/.shipwright/locks/` the root-anchored gitignore misses (fixed `iterate-2026-06-09-idle-main-artifact-hygiene`; a non-anchored `**/.shipwright/locks/` canon ignore is belt-and-suspenders). The Stop-Gate (`bloat_gate_on_stop.py`) resolves the SAME root + reads that marker. Registered in every plugin's `hooks.json` since Campaign A.foundation. `<session_id>` comes from the hook **stdin payload** (`session_id`), falling back to the `SHIPWRIGHT_SESSION_ID` env var then `"unknown"` — both writer and gate must agree (fixed `iterate-2026-05-29-bloat-gate-session-id`; env-only keying pooled every session into one `unknown` bucket so one session's oversize file blocked another's Stop). The Stop-Gate clears an **anti-ratchet** entry when the file is trimmed back to `<=` its baseline `current` (the grandfathered ceiling) — it blocks only when the live size grew PAST `current`, matching the canonical anti-ratchet rule in `anti_ratchet.py` (same iterate; previously it compared only against the 300 limit, so a correctly-trimmed grandfathered file kept blocking). |
 | PostToolUse | — (catch-all) | `track_tool_calls.py` | Increments tool call counter for context pressure detection |
 | Stop | — | `bloat_gate_on_stop.py` | Blocks completion when bloat markers indicate anti-ratchet or a new crossing outside the baseline allowlist (`shipwright_bloat_baseline.json`). Session-scoped (reads only the current session's marker, falls back to `unknown` when `SHIPWRIGHT_SESSION_ID` is unset). Re-measures each entry at decision time so a fixed file isn't punished. Pass-silently when no baseline file exists (fresh / pre-adopt repos). Registered in every plugin's `hooks.json` since Campaign A.foundation. |
 | Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + W1 TDD-order Tier-2 + I1-I4 infrastructure freshness + Q1/Q2 quality) |
-| Stop | — | `generate-handoff.py` | Session handoff (namespaced to `.shipwright/planning/handoffs/<loop_id>/` when `SHIPWRIGHT_LOOP_ID` set) |
+| Stop | — | `generate_handoff_on_stop.py` (shared) | Session handoff (namespaced to `.shipwright/planning/handoffs/<loop_id>/` when `SHIPWRIGHT_LOOP_ID` set) |
 | Stop | — | `check_documentation.py` | Verifies documentation artifacts are up to date |
 | Stop | — | `write_terminal_marker.py` | Writes `.shipwright/runs/<loop_id>/<unit_id>/DONE` (no-op without loop env vars) |
 
@@ -1159,7 +1173,7 @@ phase to load explicitly.
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + W4 coverage threshold + I2 test-evidence freshness) |
-| Stop | — | `generate-handoff.py` | Session handoff |
+| Stop | — | `generate_handoff_on_stop.py` (shared) | Session handoff |
 
 ### shipwright-iterate
 
@@ -1198,14 +1212,14 @@ unnecessary. B1 still classifies `iterate/*` branches via
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + W6 git-tag existence + I3 change-history freshness) |
 | Stop | — | `audit_compliance_on_stop.py` (shared) | **Compliance triage emit/dismiss (iterate-2026-05-30).** Same hook + full-coverage safety gate as the iterate chain — runs the full A-G audit and mirrors compliance findings into / dismisses them out of `.shipwright/triage.jsonl`. Ordered after phase_quality. Idempotent per `(HEAD-sha, session_id)`; non-blocking; opt-out `SHIPWRIGHT_COMPLIANCE_AUDIT_ON_STOP=0`. |
-| Stop | — | `generate-handoff.py` | Session handoff |
+| Stop | — | `generate_handoff_on_stop.py` (shared) | Session handoff |
 
 ### shipwright-deploy
 
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
 | Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + W7 smoke-test status) |
-| Stop | — | `generate-handoff.py` | Session handoff |
+| Stop | — | `generate_handoff_on_stop.py` (shared) | Session handoff |
 
 ### shipwright-security
 
@@ -1216,7 +1230,7 @@ unnecessary. B1 still classifies `iterate/*` branches via
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | SessionStart | — | `check_drift.py` | Timestamp drift + content drift (Structure block vs filesystem, Development `npm run` vs package.json) |
 | Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + Sec1 report freshness + Sec2 unresolved CRITICAL check) |
-| Stop | — | `generate-handoff.py` | Session handoff |
+| Stop | — | `generate_handoff_on_stop.py` (shared) | Session handoff |
 
 ### shipwright-compliance
 
@@ -1252,10 +1266,10 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
-| PreToolUse | `{"tools": ["Bash"]}` | `check_rtm_coverage.py` | Soft-blocks if RTM coverage < 80% threshold |
-| PreToolUse | `{"tools": ["Bash"]}` | `check_security_scan.py` | Checks status of the most recent manual `/shipwright-security` scan (security is no longer auto-inserted; this hook now covers manual scans only) |
+| PreToolUse | `Bash` | `check_rtm_coverage.py` | Soft-blocks if RTM coverage < 80% threshold |
+| PreToolUse | `Bash` | `check_security_scan.py` | Checks status of the most recent manual `/shipwright-security` scan (security is no longer auto-inserted; this hook now covers manual scans only) |
 | Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + Cmp1 dashboard-per-phase Tier-2, Cmp2 RTM coverage) |
-| Stop | — | `generate-handoff.py` | Session handoff |
+| Stop | — | `generate_handoff_on_stop.py` (shared) | Session handoff |
 
 ### shipwright-adopt
 
@@ -1468,7 +1482,7 @@ Each plugin reads project context at startup to ensure consistency. This table s
 | `sync_config.json` | project | iterate (FR mappings) |
 | `{migrations.dir}` (profile) | build, iterate (create + apply DEV, serialized) | deploy (PROD apply only) |
 | `.shipwright/triage.jsonl` (**git-tracked SSoT** since campaign `2026-06-05-track-triage-jsonl`; producers append **per-tree**, finalize **F6** stages it so deltas ship in the iterate PR, churn resolver `resolve_churn_conflicts._reconcile_triage` unions concurrent worktree appends — only the `.lock` / `.bak` siblings stay ignored) | `shared/scripts/triage.py` (auto-creates header on first append) | **Iterate 1a producers:** `audit_phase_quality_on_stop.py` (Stop hook), `plugins/shipwright-compliance/scripts/audit/audit_detector.py::mirror_findings_to_triage`. **Iterate 2 producers:** `plugins/shipwright-security/scripts/tools/generate_security_report.py::_emit_findings_to_triage`, `plugins/shipwright-test/scripts/lib/performance_check.py::_emit_failures_to_triage`, `shared/scripts/surface_verification.py::_emit_failure_to_triage` (F0.5 fail-closed exits), `shared/scripts/hooks/check_drift.py::_emit_drift_to_triage` (SessionStart hook), `shared/scripts/artifact_sync.py::_emit_drift_to_triage` (F1 drift check). **Iterate B0 (2026-05-21)**: wire format codified at [shared/schemas/triage_item.schema.json](../shared/schemas/triage_item.schema.json); new optional cross-link fields `frId` / `suiteId` / `eventId` let the compliance RTM emit `FAIL → [trg-XXX](triage_inbox.md#trg-XXX)` deep-links (the aggregator stamps an HTML anchor over each card so the link resolves in plain-markdown viewers). See guide.md § 4.11.2. **Iterate B.2 (2026-05-21)**: new producer `plugins/shipwright-compliance/scripts/lib/sbom_generator.py::emit_undeclared_triage` — emits one `source="sbom"`, `severity="low"`, `kind="compliance"` item per workspace whose manifest has packages with unresolved licenses (dedupKey `sbom:undeclared:<manifest-rel-path>`). Body lists top-20 offenders, `launchPayload` carries the `cd <workspace> && npm install / uv sync && regenerate-SBOM` block, and a re-run with a clean workspace auto-dismisses the item with `reason="sbomResolved"`. Invoked by `update_compliance.py` whenever the phase regenerates `sbom.md`. **Iterate B.3 (2026-05-21)**: new producer `plugins/shipwright-compliance/scripts/lib/test_evidence.py::emit_test_failure_triage` — emits one `source="test-evidence"` item per failing layer in the latest test_run event (dedupKey `test-fail:<layer>`; severity `high` for e2e/integration/pgtap, `low` for unit; `eventId` set to the originating test_run id; `launchPayload` opens `/shipwright-iterate --type bug` scoped to the layer). Auto-dismiss when the layer goes green (`reason="testEvidenceResolved"`). Plus `record_event.py` now accepts `--integration-passed/total` and `--pgtap-passed/total`, extending the `test_run` event's `layers` dict so the Test Evidence Full Suite Runs table renders a 4-layer breakdown. **Iterate B.4 (2026-05-21)**: first consumer of `frId` cross-link — `plugins/shipwright-compliance/scripts/lib/rtm_generator.py::_open_triage_by_fr` reads open triage items by FR, and the requirements-coverage Status cell renders `FAIL → [trg-XXX](../agent_docs/triage_inbox.md#trg-XXX)` deep-links per matching FR (overrides COVERED/COVERED-baseline). Coverage Summary gains three operator-actionable subsections (FRs without tests / FRs with stale verification > 14 days / FRs with open triage items). **Iterate C.1 (2026-05-21)**: new hard-enforce gate in `record_event.py::_fr_or_change_type_gate_error` — every `work_completed` event with `source=iterate` must carry either `--affected-frs/--new-frs` OR `--change-type` ∈ `{docs,tooling,compliance,infra}` together with `--none-reason '<one-line>'`. Hard-rejects otherwise (exit 1, nothing written). Applies to ALL iterates incl. BUG (unlike the spec-impact gate which exempts BUG); runs BEFORE spec-impact so the broader requirement surfaces first. **Iterate C.2 (2026-05-21)**: four new detective-only documentation-hygiene checks added to `plugins/shipwright-compliance/scripts/audit/group_f.py` — F4 (ADR-bloat: >60 lines without `spec_ref`), F5 (architecture-drift: `architecture.md` marker vs new `architecture_impact ∈ {component, data-flow}` decision-drops), F6 (CLAUDE.md > 200 lines), F7 (CLAUDE.md inline `Iterate X.Y (ADR-NN)` annotations > 5). Fail findings mirror into `.shipwright/triage.jsonl` as `source="compliance"` items via the existing `audit_detector.mirror_findings_to_triage` path. **Iterate C.3 (2026-05-21)**: new standalone script `scripts/check_plugin_cache_sync.py` detects drift between the local plugin-cache (`~/.claude/plugins/cache/shipwright/<plugin>/<version>/`) and repo HEAD via per-file SHA-256 comparison. Fail-soft WARN by default (exit 0); `--strict` flips to exit 1 for CI use; `--json` emits structured output for programmatic consumers. No-ops cleanly when `~/.claude/` is absent (typical CI). Detective-only — does not emit triage items (a future iterate will wire SessionStart hook integration). **Iterate 2026-05-30 (compliance-audit-on-stop)**: the `audit_detector.mirror_findings_to_triage` producer finally gets a frequent automatic trigger — the new `shared/scripts/hooks/audit_compliance_on_stop.py` Stop hook (wired into the iterate + changelog Stop chains) runs the full A-G audit and mirrors/auto-dismisses `source=compliance` items every Stop, instead of only when `/shipwright-compliance` is run manually. A full-coverage safety gate refuses to mirror on any partial/crashed audit so a missing group can't wrongly auto-dismiss another group's items. Idempotent per `(HEAD-sha, session_id)`; opt-out `SHIPWRIGHT_COMPLIANCE_AUDIT_ON_STOP=0`. |
-| `.shipwright/triage.outbox.jsonl` (**per-tree, GITIGNORED** background-triage buffer — campaign `2026-06-08-triage-outbox-delivery`; covered by the canon `/.shipwright/*` whitelist wildcard, pinned explicit by the `/.shipwright/triage.outbox.jsonl` ignore line, NO `!`-re-include) | `shared/scripts/triage.py` (auto-creates header-less buffer on first idle-main append; outbox path SSoT `triage._outbox_path`) | **The same background producers that append to `.shipwright/triage.jsonl` route HERE instead whenever HEAD is on the default branch with an `origin` remote (idle main):** `audit_phase_quality_on_stop.py` (phase-quality Stop hook), `audit_compliance_on_stop.py` / `audit_detector.mirror_findings_to_triage` (compliance audit + triage bundle), `check_drift.py` (SessionStart drift), `generate_security_report.py` / `performance_check.py` / `surface_verification.py` / `artifact_sync.py` (security/perf/F0.5/F1 emitters), and direct `triage_add` on idle main. Idle main therefore accrues NO tracked-log drift. **Swept into the iterate PR branch** by `setup_iterate_worktree.py` (D2 → `shared/scripts/lib/sweep_outbox.sweep_outbox_to_branch`, whole-section triage lock, commit on `iterate/<slug>`), then **GC'd** once the line is origin-delivered (by semantic `id` for appends, normalized text for status flips). **Union-read** for immediacy: `triage.read_all_items` resolves tracked ∪ outbox so consumers see background findings before the sweep. `triage_gc` and `_reconcile_triage` operate on the tracked log ONLY. |
+| `.shipwright/triage.outbox.jsonl` (**per-tree, GITIGNORED** background-triage buffer — campaign `2026-06-08-triage-outbox-delivery`; covered by the canon `/.shipwright/*` whitelist wildcard, pinned explicit by the `/.shipwright/triage.outbox.jsonl` ignore line, NO `!`-re-include) | `shared/scripts/triage.py` (auto-creates header-less buffer on first idle-main append; outbox path SSoT `triage._outbox_path`) | **The same background producers that append to `.shipwright/triage.jsonl` route HERE instead whenever HEAD is on the default branch with an `origin` remote (idle main):** `audit_phase_quality_on_stop.py` (phase-quality Stop hook), `audit_compliance_on_stop.py` / `audit_detector.mirror_findings_to_triage` (compliance audit + triage bundle), `check_drift.py` (SessionStart drift), `plugin_sync_reminder_on_stop.py` (plugin-sync Stop hook), and direct `triage_add` on idle main. Idle main therefore accrues NO tracked-log drift. **The phase-invoked emitters `generate_security_report.py` / `performance_check.py` / `surface_verification.py` / `artifact_sync.py` (security / perf / F0.5 / F1) do NOT route here** — they call `append_triage_item_idempotent(..., to_outbox=False)` and append to the tracked `triage.jsonl`. By design: each fires during an active `/shipwright-security`, `/shipwright-test`, or iterate-finalize phase (F0.5/F1 run inside the iterate worktree), so their appends ship in that phase's PR branch rather than as idle-main drift; any stray main-resident append is folded by `reconcile_main_triage` before fast-forward. **Swept into the iterate PR branch** by `setup_iterate_worktree.py` (D2 → `shared/scripts/lib/sweep_outbox.sweep_outbox_to_branch`, whole-section triage lock, commit on `iterate/<slug>`), then **GC'd** once the line is origin-delivered (by semantic `id` for appends, normalized text for status flips). **Union-read** for immediacy: `triage.read_all_items` resolves tracked ∪ outbox so consumers see background findings before the sweep. `triage_gc` and `_reconcile_triage` operate on the tracked log ONLY. |
 
 ---
 

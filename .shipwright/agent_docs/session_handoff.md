@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-13-guide-correctness-audit"
+run_id: "iterate-2026-06-13-docs-ssot-reconcile"
 phase: "iterate"
-reason: "F11 pre-merge refresh: iterate-2026-06-13-guide-correctness-audit"
-timestamp: "2026-06-13T09:21:45.201585+00:00"
+reason: "iterate: audit-3 WP11a docs/SSoT reconciliation"
+timestamp: "2026-06-13T10:25:13.910813+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-13 09:21:45 UTC
+> Auto-generated 2026-06-13 10:25:13 UTC
 
 ## Session Info
 
-- **Session ID**: 6ae258a2-262e-4e05-9677-bf0575dcdf94
-- **Timestamp**: 2026-06-13 09:21:45 UTC
-- **Reason**: F11 pre-merge refresh: iterate-2026-06-13-guide-correctness-audit
+- **Session ID**: 118aad1f-bdd5-4952-8f4c-9d0a776d7981
+- **Timestamp**: 2026-06-13 10:25:13 UTC
+- **Reason**: iterate: audit-3 WP11a docs/SSoT reconciliation
 
 ## Last Iterate
 
@@ -29,15 +29,12 @@ timestamp: "2026-06-13T09:21:45.201585+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/guide-correctness-audit
-- **Spec**: .shipwright/planning/iterate/2026-06-13-guide-correctness-audit.md
-- **Complexity**: medium
+- **Branch**: iterate/docs-ssot-reconcile
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -51,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/guide-correctness-audit
-- **Last Commit**: b90dfcfc Merge remote-tracking branch 'origin/main' into iterate/guide-correctness-audit
+- **Branch**: iterate/docs-ssot-reconcile
+- **Last Commit**: c3ee79be docs(guide): correct 21 drifted claims via full code/ADR audit (#230)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-b1e3660d | work_completed | iterate (audit-3 WP11a docs/SSoT reconciliation (F3 hooks.json format, F4 registry drift, F9 outbox matrix, F28 F6 decision-drops staging)) | 2026-06-13 |
 | evt-208f28f1 | work_completed | iterate (guide.md correctness audit + 21 fixes vs code/ADRs) | 2026-06-13 |
 | evt-98471b18 | work_completed | iterate (docs install/Get-Started rewrite + GitHub/auto-merge guide + marketplace metadata parity) | 2026-06-13 |
 | evt-a7561bb4 | work_completed | iterate (hook block-channel (WP4): route PostToolUse security-guard reasons to stderr; SessionStart drift gate is honest warn-only via additionalContext) | 2026-06-13 |
 | evt-efbff017 | work_completed | iterate (adopt scaffolds profile-aware CodeQL + AUTOMERGE_SETUP doc for brownfield automerge-readiness (bloat-check deferred)) | 2026-06-13 |
-| evt-e7fde4fc | work_completed | iterate (extract diff-driven risk detectors + integration-coverage verifier into dedicated modules to ratchet two bloat baselines down) | 2026-06-13 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 174
-- **Last iterate**: change — guide.md correctness audit + 21 fixes vs code/ADRs (2026-06-13)
+- **Total work events**: 175
+- **Last iterate**: change — audit-3 WP11a docs/SSoT reconciliation (F3 hooks.json format, F4 registry drift, F9 outbox matrix, F28 F6 decision-drops staging) (2026-06-13)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

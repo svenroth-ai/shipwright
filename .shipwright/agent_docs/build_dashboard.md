@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-13 09:21 UTC | Session: 6ae258a2-262e-4e05-9677-bf0575dcdf94 | Run: iterate-2026-06-13-guide-correctness-audit
+> Updated: 2026-06-13 10:25 UTC | Session: 118aad1f-bdd5-4952-8f4c-9d0a776d7981 | Run: iterate-2026-06-13-docs-ssot-reconcile
 
-## Recent Changes (174 iterations)
+## Recent Changes (175 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | audit-3 WP11a docs/SSoT reconciliation (F3 hooks.json format, F4 registry drift, F9 outbox matrix, F28 F6 decision-drops staging) | 3796/3796 |  | docs | 2026-06-13 |
 | change | guide.md correctness audit + 21 fixes vs code/ADRs | 0/0 |  | docs | 2026-06-13 |
 | change | docs install/Get-Started rewrite + GitHub/auto-merge guide + marketplace metadata parity | 0/0 |  | docs | 2026-06-13 |
 | change | hook block-channel (WP4): route PostToolUse security-guard reasons to stderr; SessionStart drift gate is honest warn-only via additionalContext | 3400/3400 |  | infra | 2026-06-13 |
@@ -181,7 +182,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-13 | Smoke: not_run | (iterate)
+Last run: 2026-06-13 | Unit: 3796/3796 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
