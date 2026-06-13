@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-13-triage-not-current-work"
+run_id: "iterate-2026-06-13-campaign-serial-default"
 phase: "iterate"
-reason: "F11 pre-merge refresh: iterate-2026-06-13-triage-not-current-work"
-timestamp: "2026-06-13T17:13:46.879674+00:00"
+reason: "iterate: interleaved-serial campaign default"
+timestamp: "2026-06-13T22:08:30.653095+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-13 17:13:46 UTC
+> Auto-generated 2026-06-13 22:08:30 UTC
 
 ## Session Info
 
-- **Session ID**: 6a2f378c-8669-4874-904a-87c4dc84cdf0
-- **Timestamp**: 2026-06-13 17:13:46 UTC
-- **Reason**: F11 pre-merge refresh: iterate-2026-06-13-triage-not-current-work
+- **Session ID**: 7ef46c34-70e9-4721-a56c-11667233ab34
+- **Timestamp**: 2026-06-13 22:08:30 UTC
+- **Reason**: iterate: interleaved-serial campaign default
 
 ## Last Iterate
 
@@ -29,16 +29,15 @@ timestamp: "2026-06-13T17:13:46.879674+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/triage-not-current-work
-- **Run ID**: `iterate-2026-06-13-triage-not-current-work`
-- **Spec**: .shipwright/planning/iterate/2026-06-13-triage-not-current-work.md
-- **Complexity**: medium
-- **External Review Marker**: missing
+- **Branch**: iterate/campaign-serial-default
+- **Run ID**: `iterate-2026-06-13-campaign-serial-default`
+- **Spec**: .shipwright/planning/iterate/2026-06-13-campaign-serial-default.md
+- **Complexity**: medium (classifier said `large` — keyword false-positive on
+- **External Review Marker**: stale (predates spec (2026-06-13T21:37:00))
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/triage-not-current-work
-- **Last Commit**: 5e8e9cef Merge remote-tracking branch 'origin/main' into iterate/triage-not-current-work
+- **Branch**: iterate/campaign-serial-default
+- **Last Commit**: 0f85ff5b refactor(triage): stop the iterate pipeline from filing triage about current-run work (#243)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-ae982255 | work_completed | iterate (interleaved-serial as the single documented campaign default (branch_strategy: serial)) | 2026-06-13 |
 | evt-751a4ac4 | work_completed | iterate (Fold spec_checks _run_git/_git_available onto verifiers/git_helpers.py (optional timeout param, unified failure code)) | 2026-06-13 |
 | evt-4393b0bb | work_completed | iterate (Triage not for current-run work — drop plugin-sync + F0.5 triage producers) | 2026-06-13 |
 | evt-ac75c147 | work_completed | iterate (iterate finalization) | 2026-06-13 |
 | evt-29a5f711 | work_completed | iterate (Extract duplicated cross-platform _FileLock into shared/scripts/lib/file_lock.py; both call sites import it; unify on the parent-dir-creating superset.) | 2026-06-13 |
-| evt-0862b6bc | work_completed | iterate (unify the code-simplify gate with the bloat/reducibility catalog: relocate behavior_snapshot.py to shared/scripts/tools (SSoT), F-simplify adopts the catalog vocabulary, catalog cites the snapshot/verify gate as the mechanical G3 proof) | 2026-06-13 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 186
-- **Last iterate**: change — Fold spec_checks _run_git/_git_available onto verifiers/git_helpers.py (optional timeout param, unified failure code) (2026-06-13)
+- **Total work events**: 187
+- **Last iterate**: change — interleaved-serial as the single documented campaign default (branch_strategy: serial) (2026-06-13)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

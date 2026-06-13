@@ -122,7 +122,8 @@ def test_skill_index_line_advertises_arm() -> None:
 # would merge stale (Group-E staleness) or stall DIRTY on the regenerated
 # snapshots. F11 must (1) bring the branch current via `integrate_main
 # --ensure-current` BEFORE arming, and (2) honor a campaign-defer env var so an
-# `--autonomous` campaign drains serially instead of arming every PR at once.
+# `--autonomous` campaign merges each PR in turn (interleaved-serial) instead of
+# arming every PR at once.
 
 
 def test_f11_has_refresh_if_behind_guard() -> None:
@@ -154,8 +155,9 @@ def test_f11_has_refresh_if_behind_guard() -> None:
 def test_f11_arm_respects_campaign_defer() -> None:
     """The arm must be gated on a CONCRETE `SHIPWRIGHT_ITERATE_AUTOMERGE` shell
     check that wraps the `gh pr merge --auto` command, so an autonomous campaign
-    can defer arming (`=0`) and drain serially. Substring presence is not enough —
-    pin the exact condition and that it precedes the arm."""
+    can defer arming (`=0`) and let the orchestrator merge each PR in turn.
+    Substring presence is not enough — pin the exact condition and that it
+    precedes the arm."""
     text = _f11_text()
     assert '"${SHIPWRIGHT_ITERATE_AUTOMERGE:-1}" = "0"' in text, (
         "F11.md must gate the arm on an explicit "

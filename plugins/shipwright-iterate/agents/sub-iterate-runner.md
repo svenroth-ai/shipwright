@@ -19,7 +19,7 @@ You receive these parameters in the prompt:
 - `project_root`: Absolute path to the project root
 - `plugin_root`: Absolute path to the shipwright-iterate plugin
 - `shared_root`: Absolute path to the shared directory
-- `base_branch`: Branch to checkout first (for stacked strategy); null for first sub-iterate
+- `base_branch`: Ref to branch off. **serial (campaign default): the FRESH `origin/<default>` remote ref** — every sub-iterate (incl. the first) branches off it, so it starts from a `main` that already contains every prior merged sub-iterate. (stacked: the previous sub-iterate's branch; null for the first stacked sub-iterate.)
 - `session_id`: Shipwright session ID
 - `branch_name`: Target branch name (e.g., `iterate/campaign-14.2-multi-question`)
 
@@ -27,8 +27,8 @@ You receive these parameters in the prompt:
 
 ### Step 1: Setup
 
-1. If `base_branch` is set: `git checkout {base_branch}`
-2. Create sub-iterate branch: `git checkout -b {branch_name}`
+1. Branch off `base_branch`, fetching first ONLY for a remote (serial) base so a
+   stacked / `origin`-less run still works: serial (`origin/…`) → `git fetch origin && git checkout -b {branch_name} {base_branch}`; stacked (local base) → `git checkout -b {branch_name} {base_branch}`; first stacked (null base) → `git checkout -b {branch_name}`.
 3. Read `CLAUDE.md`, `.shipwright/agent_docs/`, existing specs, architecture docs
 4. Read the sub-iterate spec at `{sub_iterate_spec}`
 5. Read `shipwright_run_config.json` for project context

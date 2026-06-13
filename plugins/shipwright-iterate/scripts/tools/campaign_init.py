@@ -12,7 +12,7 @@ Usage:
         --campaign-slug iterate-15 \
         --intent "Add dashboard features" \
         --sub-iterates '[{"id":"15.0","slug":"layout","title":"...","scope":"..."}]' \
-        --branch-strategy stacked
+        --branch-strategy serial   # default; interleaved (build->PR->merge->next)
 """
 
 from __future__ import annotations
@@ -91,7 +91,7 @@ def init_campaign(
     campaign_slug: str,
     intent: str,
     sub_iterates: list[dict],
-    branch_strategy: str = "stacked",
+    branch_strategy: str = "serial",
     expands_triage: str | None = None,
 ) -> dict:
     # Defensive validation — `init_campaign` is imported directly (tests,
@@ -208,7 +208,7 @@ def main(argv: list[str] | None = None) -> int:
                              "given (then seeded from the triage item); required "
                              "otherwise.")
     parser.add_argument("--sub-iterates", required=True, help="JSON array of sub-iterate specs")
-    parser.add_argument("--branch-strategy", default="stacked", choices=["stacked", "independent"])
+    parser.add_argument("--branch-strategy", default="serial", choices=["serial", "stacked", "independent"])
     parser.add_argument("--expands-triage", default=None,
                         help="Triage item id (trg-<8 hex>) this campaign expands. "
                              "Stamped into status.json AND the campaign.md "

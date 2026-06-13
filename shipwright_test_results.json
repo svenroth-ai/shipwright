@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-13-triage-not-current-work",
+    "run_id": "iterate-2026-06-13-campaign-serial-default",
     "date": "2026-06-13",
     "unit": {
       "status": "passed",
-      "passed": 3653,
-      "total": 3665
+      "passed": 3881,
+      "total": 3881
     },
     "integration": {
       "status": "passed",
@@ -18,9 +18,9 @@
       "total": 0
     },
     "e2e": {
-      "status": "passed",
-      "passed": 88,
-      "total": 88
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "design_fidelity": {
       "status": "not_run",
@@ -31,98 +31,73 @@
       "status": "not_run"
     },
     "degraded": [
-      {
-        "phase": "setup",
-        "reason": "Pre-existing sweep-outbox warning from setup_iterate_worktree (trg-671bb0a2: a status append dropped by a prior merge) — unrelated to this change's footprint; non-fatal, worktree still created."
-      },
-      {
-        "phase": "classify",
-        "reason": "classify_complexity Stage-1 raised prose-only risk flag 'touches_auth' (matched description keywords, NOT the diff). Authoritative diff-driven flag is 'cross_component' (hooks/*.py). No auth/RLS/middleware path is touched; overridden by judgment per the diff."
-      }
+      "classify_complexity returned 'large' (keyword false-positive on 'retire/restructure/single default' prose); overridden to medium per the diff (one prose restructure + small additive cmd_next + doc edits + tests). cross_component flag legitimately fires at F11.",
+      "Pre-existing main-tree triage.jsonl:3 corrupt-line warning (trg-671bb0a2 sweep-outbox drift) surfaced during the run; unrelated to this iterate."
     ],
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --extra dev pytest shared/tests/test_plugin_sync_reminder_on_stop.py shared/tests/test_f0_5_no_triage_emit.py shared/tests/test_using_shipwright_hook.py shared/tests/test_sweep_outbox_review_cascade2.py shared/tests/test_triage_wp9_gc.py -p no:cacheprovider",
+      "surface": "none",
+      "runner": "surface_verification.py --surface none",
       "exit_code": 0,
-      "tests_run": 88,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\triage-not-current-work\\.shipwright\\runs\\iterate-2026-06-13-triage-not-current-work\\surface_verification.log",
-      "timestamp": "2026-06-13T17:09:22.116Z",
-      "attempts": 1
+      "tests_run": 0,
+      "evidence_path": ".shipwright\\runs\\iterate-2026-06-13-campaign-serial-default\\surface_verification.json",
+      "timestamp": "2026-06-13T22:05:04.051Z",
+      "justification": "Framework campaign-orchestration logic + docs + tests; no startable user surface. Behavior empirically driven via real-git pytest composition test."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "plugin-sync Stop reminder fires but appends NO triage item (tracked triage.jsonl + outbox, worktree + main repo)",
+          "behavior": "AC1: serial cmd_next base = freshly-fetched origin/<default> (not stale local main); non-main default resolved; fetch fail-soft",
           "disposition": "tested",
-          "evidence": "test_plugin_sync_reminder_on_stop.py::test_reminder_fires_but_no_triage_non_git PASSED"
+          "evidence": "test_branch_base.py::test_serial_returns_fresh_remote_default / _first_unit_also_off_fresh_remote / _respects_non_main_default_branch / _fetch_failure_is_failsoft PASSED (base resolution extracted to branch_base.py)"
         },
         {
-          "behavior": "plugin-sync block-once: second Stop in same session is silent, still no triage",
+          "behavior": "AC2: campaign_init default + CLI = serial; choices accept serial; stacked still accepted; bogus rejected",
           "disposition": "tested",
-          "evidence": "test_plugin_sync_reminder_on_stop.py::test_reminder_fires_once_per_session PASSED"
+          "evidence": "test_campaign_serial_strategy.py (5 tests) + test_campaign.py::test_status_json_has_correct_shape PASSED"
         },
         {
-          "behavior": "plugin-sync _emit_triage producer removed at source",
+          "behavior": "AC3: campaign-mode.md interleaved loop (CI-green->merge->next), strict-stop, no end-stage drain, serial init",
           "disposition": "tested",
-          "evidence": "test_plugin_sync_reminder_on_stop.py::test_emit_triage_helper_is_gone PASSED"
+          "evidence": "test_campaign_interleaved_serial.py (8 tests incl. merge-inside-loop ordering + no_end_stage_drain + strict_stop) PASSED"
         },
         {
-          "behavior": "reminder body no longer mentions a filed triage item",
+          "behavior": "AC4: SKILL/F11/runner reflect interleaved; SHIPWRIGHT_ITERATE_AUTOMERGE=0 defer preserved",
           "disposition": "tested",
-          "evidence": "test_plugin_sync_reminder_on_stop.py::test_build_reminder_does_not_mention_triage PASSED"
+          "evidence": "test_f11_automerge_arm.py::test_f11_arm_respects_campaign_defer PASSED"
         },
         {
-          "behavior": "F0.5 fail-closed (surface=none, no justification) STOPs via exit code, files no triage",
-          "disposition": "tested",
-          "evidence": "test_f0_5_no_triage_emit.py::test_fail_closed_none_no_justification_stops_without_triage PASSED"
-        },
-        {
-          "behavior": "F0.5 success path (surface=none + justification) returns EXIT_OK unchanged, no triage",
-          "disposition": "tested",
-          "evidence": "test_f0_5_no_triage_emit.py::test_success_path_unchanged_no_triage PASSED"
-        },
-        {
-          "behavior": "F0.5 still writes the evidence block",
-          "disposition": "tested",
-          "evidence": "test_f0_5_no_triage_emit.py::test_evidence_block_still_written PASSED"
-        },
-        {
-          "behavior": "F0.5 producer + resolve helpers removed at source",
-          "disposition": "tested",
-          "evidence": "test_f0_5_no_triage_emit.py::test_f05_triage_producer_helpers_removed PASSED"
-        },
-        {
-          "behavior": "Stop-hook composes with the triage store WITHOUT polluting it — real git monorepo + linked worktree, run() end-to-end, no append in either log in either tree",
+          "behavior": "AC5: a serial sub-iterate composes on the prior sub-iterate's MERGED change while local main stays stale (real-git)",
           "disposition": "tested",
           "category": "integration",
-          "evidence": "test_plugin_sync_reminder_on_stop.py::test_integration_worktree_reminder_no_triage_anywhere PASSED (cross_component integration coverage)"
+          "evidence": "test_campaign_serial_composition_integration.py::test_serial_subiterate_composes_on_prior_merge PASSED"
         },
         {
-          "behavior": "f0.5 GC vocabulary (f05Resolved) retained as legacy with no live emitter; MACHINE_REASONS carries no orphan token",
+          "behavior": "AC6/back-compat: stacked/single-branch loop unchanged; f11 defer asserts green",
           "disposition": "tested",
-          "evidence": "test_triage_wp9_gc.py::test_machine_reasons_has_no_unknown_tokens + ::test_legacy_retained_tokens_have_no_live_emitter PASSED"
+          "evidence": "test_branch_base.py::test_stacked_returns_prev_branch / _independent_returns_local_main / test_serial_is_a_valid_strategy / test_legacy_strategies_retained + test_autonomous_loop full suite PASSED"
         },
         {
-          "behavior": "plugin_sync_reminder removed from the background-producer outbox-routing set",
+          "behavior": "AC7: every branch_strategy reader accepts serial (no allowlist rejects); serial campaign loads through status/summary path",
           "disposition": "tested",
-          "evidence": "test_sweep_outbox_review_cascade2.py::test_background_producer_routes_to_outbox PASSED"
+          "evidence": "test_campaign.py::TestCampaignProgress (default now serial) + campaign_progress passes branch_strategy through PASSED"
         },
         {
-          "behavior": "using-shipwright SP4 reminder blocks once and files no triage",
-          "disposition": "tested",
-          "evidence": "test_using_shipwright_hook.py::test_reminder_blocks_once_no_triage PASSED"
+          "behavior": "Live campaign loop merges each PR via `gh pr checks --watch` + `gh pr merge` against real GitHub",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "agent-executed orchestrator prose against a live GitHub PR; pinned structurally by test_campaign_interleaved_serial"
         }
       ],
       "counts": {
-        "testable": 12,
-        "tested": 12,
-        "untestable": 0,
+        "testable": 7,
+        "tested": 7,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 3,
-        "covered_acs": 3
+        "acs": 7,
+        "covered_acs": 7
       }
     }
   }

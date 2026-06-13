@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-13 17:13 UTC | Session: 6a2f378c-8669-4874-904a-87c4dc84cdf0 | Run: iterate-2026-06-13-triage-not-current-work
+> Updated: 2026-06-13 22:08 UTC | Session: 7ef46c34-70e9-4721-a56c-11667233ab34 | Run: iterate-2026-06-13-campaign-serial-default
 
-## Recent Changes (186 iterations)
+## Recent Changes (187 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | interleaved-serial as the single documented campaign default (branch_strategy: serial) | 3881/3881 |  | tooling | 2026-06-13 |
 | change | Fold spec_checks _run_git/_git_available onto verifiers/git_helpers.py (optional timeout param, unified failure code) | 69/69 |  | tooling | 2026-06-13 |
 | change | Triage not for current-run work — drop plugin-sync + F0.5 triage producers | 3653/3665 |  | tooling | 2026-06-13 |
 | change | iterate finalization | 0/0 |  | tooling | 2026-06-13 |
@@ -193,7 +194,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-13 | Unit: 3653/3665 | Integration: 1/1 | E2E: 88/88 | Smoke: not_run | (iterate)
+Last run: 2026-06-13 | Unit: 3881/3881 | Integration: 1/1 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

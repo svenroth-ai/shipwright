@@ -23,12 +23,15 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from branch_base import resolve_base_branch
 from file_lock import file_lock
 
 
 VALID_STATUSES = {"pending", "in_progress", "complete", "failed", "escalated"}
 VALID_KINDS = {"section", "sub_iterate"}
-VALID_STRATEGIES = {"single-branch", "stacked", "independent"}
+# "serial" (interleaved-campaign default) joins the legacy strategies; base-ref
+# resolution per strategy lives in branch_base.resolve_base_branch.
+VALID_STRATEGIES = {"single-branch", "stacked", "independent", "serial"}
 
 
 def _now_iso() -> str:
@@ -226,14 +229,7 @@ def cmd_next(args: argparse.Namespace) -> int:
                     pass
                 unit["head_sha"] = head_sha
 
-                base_branch = None
-                if state["branch_strategy"] == "stacked":
-                    idx = units.index(unit)
-                    if idx > 0:
-                        prev = units[idx - 1]
-                        base_branch = prev.get("branch")
-                elif state["branch_strategy"] == "independent":
-                    base_branch = "main"
+                base_branch = resolve_base_branch(state["branch_strategy"], units, unit)
 
                 _save_state(state_path, state)
 

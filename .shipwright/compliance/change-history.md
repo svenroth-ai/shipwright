@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-06-13T17:13:46.879674+00:00
+Generated: 2026-06-13T22:08:30.653095+00:00
 Total commits: 1002
 
 ## Commit Distribution
@@ -948,7 +948,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-13 | triage | stop the iterate pipeline from filing triage about current-run work | 3f72e868055a |
+| 2026-06-13 | triage | stop the iterate pipeline from filing triage about current-run work (#243) | 0f85ff5b892f |
 | 2026-06-13 | verifiers | fold spec_checks git wrappers into git_helpers (campaign C) (#242) | 9f7e48cebe3e |
 | 2026-06-13 | iterate | unify simplify gate with the reducibility catalog (one shared tool + vocabulary) (#241) | c7389dfa699c |
 | 2026-06-13 | events | dedup read_events into a single lib.config SSOT (#240) | 2d5aad4c753e |

@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-13-campaign-serial-default",
+  "date": "2026-06-13T22:08:53.488643Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/campaign-serial-default",
+  "spec": ".shipwright/planning/iterate/2026-06-13-campaign-serial-default.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-13-campaign-serial-default"
+}

@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-13T17:13:46.879674+00:00
+Generated: 2026-06-13T22:08:30.653095+00:00
 
 ## Requirements Coverage
 
@@ -211,6 +211,7 @@ Generated: 2026-06-13T17:13:46.879674+00:00
 | iterate finalization | iterate | change |  | — | — | 2026-06-13 |
 | Triage not for current-run work — drop plugin-sync + F0.5 triage producers | iterate | change |  | 3653/3665 | — | 2026-06-13 |
 | Fold spec_checks _run_git/_git_available onto verifiers/git_helpers.py (optional timeout param, unified failure code) | iterate | change |  | 69/69 | — | 2026-06-13 |
+| interleaved-serial as the single documented campaign default (branch_strategy: serial) | iterate | change |  | 3881/3881 | — | 2026-06-13 |
 
 ## Coverage Summary
 
@@ -218,7 +219,7 @@ Generated: 2026-06-13T17:13:46.879674+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 186 |
+| Iterate changes | 187 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
