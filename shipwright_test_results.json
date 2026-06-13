@@ -1,17 +1,43 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-13-atomic-write-fsync-durability",
+    "run_id": "iterate-2026-06-13-bloat-marker-writer-baseline",
     "date": "2026-06-13",
-    "unit": { "status": "passed", "passed": 4136, "total": 4136 },
-    "integration": { "status": "passed", "passed": 147, "total": 147 },
-    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
-    "e2e": { "status": "skipped", "passed": 0, "total": 0 },
-    "design_fidelity": { "status": "not_run", "passed": 0, "total": 0 },
-    "smoke": { "status": "not_run" },
+    "unit": {
+      "status": "passed",
+      "passed": 3419,
+      "total": 3419
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 147,
+      "total": 147
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
     "degraded": [
       {
         "phase": "setup",
-        "reason": "Pre-existing sweep-outbox warning from setup_iterate_worktree (trg-671bb0a2: a status append dropped by a prior merge) — unrelated to this change; non-fatal, the worktree was still created."
+        "reason": "Pre-existing sweep-outbox warning from setup_iterate_worktree (trg-671bb0a2: a status append for an id with no append anywhere, dropped by a prior merge) — unrelated to this change; non-fatal, the worktree was still created."
+      },
+      {
+        "phase": "review",
+        "reason": "External LLM plan-review (Advisory at medium per Override Classes) deliberately skipped for this surgical, fully-tested consistency refactor; the mandatory internal code-reviewer cascade ran (verdict APPROVE-WITH-NITS) and the cwd->main_root nit was applied."
       }
     ],
     "surface_verification": {
@@ -19,33 +45,51 @@
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-13-atomic-write-fsync-durability/surface_verification.json",
-      "timestamp": "2026-06-13T11:20:19.564Z",
-      "justification": "Pure internal durability hardening: new shared durable_atomic_write primitive + ~20 delegating helpers. No UI/API/CLI surface is introduced or changed; written files are byte-identical to before (fsync is the only added behavior), so there is no user-observable or frontend contract change. Verified empirically by 13 primitive unit tests + a 5-writer cross-subsystem composition test + full shared/plugin/integration suites green."
+      "evidence_path": "",
+      "timestamp": "2026-06-13T13:43:33.493Z",
+      "attempts": 0,
+      "justification": "Pure internal bloat-gate mechanics: aligns the PostToolUse marker writer (check_file_size) to key delta/was_in_allowlist off the worktree's own baseline (mirroring the PR #186 Stop-gate reader fix) + extracts a shared worktree_root_for SSoT. No UI/API/CLI surface is introduced or changed; the marker JSON schema is unchanged. Composition verified empirically by test_integration_writer_reader_compose_on_worktree_only_baseline (real writer + real Stop-gate subprocess) plus full shared (3419) + integration (147) suites green."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "AC1 str/bytes/unicode/embedded-newline written verbatim and round-trip byte-identical", "disposition": "tested",
-          "evidence": "shared/tests/test_atomic_write.py::test_roundtrip_str/_roundtrip_bytes/_str_written_verbatim_no_newline_translation/_unicode_roundtrip PASSED" },
-        { "behavior": "AC2 os.fsync of the temp file precedes os.replace (durability ordering)", "disposition": "tested",
-          "evidence": "test_atomic_write.py::test_file_is_fsynced_before_replace PASSED + integration ordering assertion" },
-        { "behavior": "AC3 parent-dir fsync is best-effort (OSError swallowed; Windows skips os.open)", "disposition": "tested",
-          "evidence": "test_atomic_write.py::test_fsync_parent_dir_swallows_oserror/_full_write_survives_dir_fsync_failure/_windows_skips_directory_fsync PASSED" },
-        { "behavior": "AC4 os.replace failure unlinks tmp and re-raises; target never created", "disposition": "tested",
-          "evidence": "test_atomic_write.py::test_replace_failure_cleans_tmp_and_raises PASSED" },
-        { "behavior": "AC5 parent dirs created; wholesale overwrite; no .tmp leftover on success", "disposition": "tested",
-          "evidence": "test_atomic_write.py::test_creates_parent_dirs/_overwrite_is_wholesale/_no_tmp_leftover_on_success PASSED" },
-        { "behavior": "AC6 every migrated helper keeps byte-identical output and routes through the primitive", "disposition": "tested",
-          "evidence": "full shared suite 3414 passed + 4 plugin suites (run 162/project 59/build 84/security 417) + run_config_store round-trip tests unchanged" },
-        { "behavior": "AC7 full test suite green (no regression from the migration)", "disposition": "tested",
-          "evidence": "shared 3414 + integration 147 + 722 plugin tests all passed; full-repo ruff clean" },
-        { "behavior": "INTEGRATION: writers across shared/lib, phase_quality, and shared/tools all compose on one durable primitive (fsync-before-replace + byte round-trip)", "disposition": "tested",
+        {
+          "behavior": "AC-1: worktree_root_for reconstructs the owning worktree root for a .worktrees/<slug>/ path and returns None for a main-tree path (backslash-tolerant)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_bloat_marker_worktree_aware.py::test_worktree_root_for_reconstructs_worktree_root / _none_for_main_tree_path / _backslash_tolerant PASSED"
+        },
+        {
+          "behavior": "AC-2: writer (check_file_size) records delta=anti-ratchet/was_in_allowlist=true for a file present in the WORKTREE baseline but absent from MAIN's",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_bloat_marker_worktree_aware.py::test_recorder_keys_delta_off_worktree_only_baseline PASSED"
+        },
+        {
+          "behavior": "Writer MAIN fallback preserved when no worktree baseline is present (trg-305e2aab behavior unchanged)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_bloat_marker_worktree_aware.py::test_recorder_main_fallback_when_no_worktree_baseline + test_recorder_classifies_worktree_baselined_file_as_anti_ratchet PASSED"
+        },
+        {
+          "behavior": "AC-3: reader (bloat_gate_on_stop) uses the shared worktree_root_for; existing Stop-gate + worktree-baseline behavior intact",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_bloat_gate_on_stop.py (17) + test_bloat_gate_worktree_baseline.py (3) + test_bloat_marker_worktree_aware.py reader tests PASSED"
+        },
+        {
+          "behavior": "AC-4: real writer + real Stop-gate subprocess compose on a worktree-only baseline — at-ceiling does not block, over-ceiling blocks (matches CI anti-ratchet)",
+          "disposition": "tested",
           "category": "integration",
-          "evidence": "shared/tests/test_atomic_write_durability_integration.py::test_writers_across_subsystems_compose_on_durable_primitive PASSED" }
+          "evidence": "shared/tests/test_bloat_marker_worktree_aware.py::test_integration_writer_reader_compose_on_worktree_only_baseline PASSED"
+        }
       ],
-      "counts": { "testable": 8, "tested": 8, "untestable": 0, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 7, "covered_acs": 7 }
+      "counts": {
+        "testable": 5,
+        "tested": 5,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
     }
   }
 }

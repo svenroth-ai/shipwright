@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-13 11:23 UTC | Session: 6ae258a2-262e-4e05-9677-bf0575dcdf94
+> Updated: 2026-06-13 13:48 UTC | Session: 032d4037-611f-4834-b0b6-4dd890f95642 | Run: iterate-2026-06-13-bloat-marker-writer-baseline
 
-## Recent Changes (178 iterations)
+## Recent Changes (179 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Align the bloat marker writer (check_file_size) to key delta/was_in_allowlist off the worktree's own baseline via a shared worktree_root_for SSoT also used by the Stop gate (trg-537334f1). | 3419/3419 |  | tooling | 2026-06-13 |
 | change | Read run-config standalone flag without triggering the unlocked legacy migration | 164/164 |  | infra | 2026-06-13 |
 | change | durable atomic writes (fsync) across all atomic writers | 4283/4283 |  | tooling | 2026-06-13 |
 | change | sync 6 stale SKILL.md/code/config items to the corrected guide (C1-C6) | 4343/4343 |  | docs | 2026-06-13 |
@@ -185,7 +186,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-13 | Unit: 4136/4136 | Integration: 147/147 | Smoke: not_run | (iterate)
+Last run: 2026-06-13 | Unit: 3419/3419 | Integration: 147/147 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

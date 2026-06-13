@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-13T11:23:59.355031+00:00
+Generated: 2026-06-13T13:48:43.718381+00:00
 
 ## Requirements Coverage
 
@@ -203,6 +203,7 @@ Generated: 2026-06-13T11:23:59.355031+00:00
 | sync 6 stale SKILL.md/code/config items to the corrected guide (C1-C6) | iterate | change |  | 4343/4343 | — | 2026-06-13 |
 | durable atomic writes (fsync) across all atomic writers | iterate | change |  | 4283/4283 | — | 2026-06-13 |
 | Read run-config standalone flag without triggering the unlocked legacy migration | iterate | change |  | 164/164 | — | 2026-06-13 |
+| Align the bloat marker writer (check_file_size) to key delta/was_in_allowlist off the worktree's own baseline via a shared worktree_root_for SSoT also used by the Stop gate (trg-537334f1). | iterate | change |  | 3419/3419 | — | 2026-06-13 |
 
 ## Coverage Summary
 
@@ -210,7 +211,7 @@ Generated: 2026-06-13T11:23:59.355031+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 178 |
+| Iterate changes | 179 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
