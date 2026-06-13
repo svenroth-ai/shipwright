@@ -1,99 +1,45 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-13-risk-detector-extract",
+    "run_id": "iterate-2026-06-13-runconfig-atomic-writes",
     "date": "2026-06-13",
-    "unit": {
-      "status": "passed",
-      "passed": 3797,
-      "total": 3809
-    },
-    "integration": {
-      "status": "passed",
-      "passed": 21,
-      "total": 21
-    },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "smoke": {
-      "status": "not_run"
-    },
+    "unit": { "status": "passed", "passed": 162, "total": 162 },
+    "integration": { "status": "passed", "passed": 1, "total": 1 },
+    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
+    "e2e": { "status": "not_run", "passed": 0, "total": 0 },
+    "design_fidelity": { "status": "not_run", "passed": 0, "total": 0 },
+    "smoke": { "status": "not_run" },
     "degraded": [],
-    "test_completeness": {
-      "status": "complete",
-      "behaviors": [
-        {
-          "behavior": "is_io_boundary_change / IO_BOUNDARY_FILE_PATTERNS resolve from classify_complexity + the iterate contract after the move",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-iterate/tests/test_boundary_detection.py + integration-tests/test_shared_contracts_consumers.py PASSED"
-        },
-        {
-          "behavior": "is_cross_component_change / CROSS_COMPONENT_FILE_PATTERNS resolve via cc.* attribute access after the move",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-iterate/tests/test_cross_component_detector.py PASSED"
-        },
-        {
-          "behavior": "touches_build_files / TOUCHES_BUILD_FILE_PATTERNS resolve from classify_complexity after the move",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-iterate/tests/test_classify_complexity_perf.py PASSED"
-        },
-        {
-          "behavior": "classify() output is byte-identical after extracting the detectors",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-iterate/tests/test_classify_complexity.py + test_complexity_corpus.py PASSED"
-        },
-        {
-          "behavior": "check_integration_coverage behavior is unchanged after lifting it into integration_coverage.py",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_check_integration_coverage.py PASSED"
-        },
-        {
-          "behavior": "iterate_checks._CROSS_COMPONENT_PATTERNS == classify_complexity.CROSS_COMPONENT_FILE_PATTERNS SSoT (both directions)",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-iterate/tests/test_cross_component_patterns_sync.py PASSED"
-        },
-        {
-          "behavior": "run_all_checks / verify_iterate_finalization legacy re-export surface intact",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_verify_iterate_finalization.py PASSED"
-        },
-        {
-          "behavior": "mod.is_io_boundary_change resolves when classify_complexity is loaded standalone via spec_from_file_location",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tools/tests/test_record_event.py::test_changed_files_round_trip_with_is_io_boundary_change PASSED"
-        }
-      ],
-      "counts": {
-        "testable": 8,
-        "tested": 8,
-        "untestable": 0,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 8,
-        "covered_acs": 8
-      }
-    },
     "surface_verification": {
       "surface": "none",
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-13-risk-detector-extract/surface_verification.json",
-      "timestamp": "2026-06-13T04:30:34.276Z",
-      "justification": "Pure framework-internal Python refactor (verbatim module relocation + re-export of risk detectors and the integration-coverage verifier); no startable web/cli/api surface exists. Behavior preservation is proven by the existing detector/verifier/contract/sync unit + integration suites (iterate-plugin 396 passed, shared 3401 passed, contract 21/21 isolated), all green."
+      "evidence_path": ".shipwright/runs/iterate-2026-06-13-runconfig-atomic-writes/surface_verification.json",
+      "timestamp": "2026-06-13T05:45:35.801Z",
+      "justification": "No startable user-facing surface: WP2 hardens the orchestrator's shipwright_run_config.json persistence layer (atomic writes + path-coordinated advisory lock) and a Stop hook timeout. No API/UI/store/message contract changed. Behavior is empirically driven through real OS processes by test_runconfig_concurrency.py (3 writer families) and the full pytest suite."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        { "behavior": "F11: save_run_config writes atomically (tmp+os.replace) — no torn read", "disposition": "tested",
+          "evidence": "test_run_config_store.py::test_atomic_write_json_roundtrip / _leaves_no_tmp / _overwrite_is_complete PASSED" },
+        { "behavior": "F11: update_step reloads a FRESH config under the lock and does not clobber a concurrent writer's fields", "disposition": "tested",
+          "evidence": "test_step_planning_reload_fresh.py::test_update_step_complete_does_not_clobber_concurrent_write + ::test_update_step_in_progress_preserves_unrelated_fields PASSED" },
+        { "behavior": "F11: run_config_lock is mutually exclusive and coordinates by path with phase_task_lifecycle._PhaseTasksLock", "disposition": "tested",
+          "evidence": "test_run_config_store.py::test_run_config_lock_is_mutually_exclusive + ::test_run_config_lock_coordinates_with_phase_tasks_lock PASSED" },
+        { "behavior": "F12: phase_task_lifecycle._write_config is atomic — no half-written config under concurrency", "disposition": "tested",
+          "evidence": "test_phase_task_lifecycle.py suite (36) PASSED; concurrency test parses final config as valid JSON" },
+        { "behavior": "F13: Stop-fallback outer update-step timeout strictly exceeds the inner compliance timeout", "disposition": "tested",
+          "evidence": "test_runconfig_timeout_invariant.py::test_phase_completion_outer_timeout_exceeds_compliance_inner PASSED (captures actual 60 > 30 + asserts the update-step command)" },
+        { "behavior": "file_lock._acquire_windows seek(0) keeps byte-0 lock coordination deterministic regardless of lock-file content", "disposition": "tested",
+          "evidence": "test_run_config_concurrent_writers.py (2 slow) + test_retention_race.py (4) PASSED; coordinate test PASSED" },
+        { "behavior": "Integration: orchestrator + phase_task + phase_history writer families compose under true multi-process concurrency with no truncation or lost update", "disposition": "tested", "category": "integration",
+          "evidence": "test_runconfig_concurrency.py::test_three_process_writers_no_truncation_no_lost_update PASSED (current_step set, version==1+N, phase_history len==N)" },
+        { "behavior": "update_step behavior parity (bootstrap/standalone, ask-issues early return, inform notes, split-loop, in_progress/failed, returned config)", "disposition": "tested",
+          "evidence": "test_orchestrator.py suite (34) PASSED unchanged" }
+      ],
+      "counts": { "testable": 8, "tested": 8, "untestable": 0, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 3, "covered_acs": 3 }
     }
   }
 }

@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-13T04:34:38.831317+00:00
+Generated: 2026-06-13T05:51:32.227810+00:00
 
 ## Requirements Coverage
 
@@ -193,6 +193,7 @@ Generated: 2026-06-13T04:34:38.831317+00:00
 | Relocate resolve_main_repo_root from lib/events_log.py to lib/repo_root.py with a lazy back-compat re-export; migrate net-zero consumers; keep the two grandfathered consumers (iterate_checks, group_f) on the re-export to avoid ratcheting bloat. | iterate | change |  | — | — | 2026-06-12 |
 | Coerce explicit-null affected_frs/new_frs (and tests/review) in WorkEvent.from_dict | iterate | bug |  | 697/697 | — | 2026-06-12 |
 | WP1: phase-session hooks resolve identity from the stdin payload (F1); atomic event-log dedup (F14); phase_failed/stale_stop_rejected event types (F15) | iterate | change |  | 3348/3362 | — | 2026-06-12 |
+| run-config concurrency & atomicity (WP2: F11/F12/F13) | iterate | bug |  | 162/162 | — | 2026-06-13 |
 | extract diff-driven risk detectors + integration-coverage verifier into dedicated modules to ratchet two bloat baselines down | iterate | change |  | 3818/3830 | — | 2026-06-13 |
 
 ## Coverage Summary
@@ -201,7 +202,7 @@ Generated: 2026-06-13T04:34:38.831317+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 169 |
+| Iterate changes | 170 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
