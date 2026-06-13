@@ -1,1 +1,0 @@
-Docs: README install flow rewritten into a concise 5-step Get-Started (install plugins via the cross-platform marketplace CLI, update, connect GitHub, enable auto-merge) that links into the guide; added guide sections 2.9 Connect GitHub and 2.10 Enable auto-merge

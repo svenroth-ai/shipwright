@@ -1,1 +1,0 @@
-SessionStart artifact-drift detector is now honest warn-only: it surfaces drift to the model via additionalContext on stdout (a SessionStart hook cannot block a session) instead of an inert exit-1 hard-gate that never reached the model
