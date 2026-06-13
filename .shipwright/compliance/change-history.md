@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-13T07:22:52.180798+00:00
-Total commits: 986
+Generated: 2026-06-13T09:21:45.201585+00:00
+Total commits: 987
 
 ## Commit Distribution
 
@@ -10,7 +10,7 @@ pie title Commit Types
     "fix" : 282
     "feat" : 271
     "chore" : 216
-    "docs" : 124
+    "docs" : 125
     "refactor" : 54
     "test" : 24
     "ci" : 7
@@ -804,10 +804,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 124 commits
+### Documentation (docs) — 125 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-13 | install | end-to-end Get-Started + GitHub/auto-merge guide; sync plugin catalog (#228) | c35088825704 |
 | 2026-06-13 | adopt | note CodeQL + AUTOMERGE_SETUP scaffolding in guide.md Chapter 3.5 | feebb2552c88 |
 | 2026-06-11 | — | drop GPG/SSH commit-signing guidance (keyless workflow) (#192) | 489c615c385c |
 | 2026-06-11 | triage | surface the git-tracked sensitivity rule at the add-triage CLI | 7b7b49c6d45e |
@@ -1055,7 +1056,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 986 |
+| Total commits | 987 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 986 |
+| Human-authored commits | 987 |
 

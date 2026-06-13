@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-13 07:22 UTC | Session: 6ae258a2-262e-4e05-9677-bf0575dcdf94 | Run: iterate-2026-06-13-docs-install-github-automerge
+> Updated: 2026-06-13 09:21 UTC | Session: 6ae258a2-262e-4e05-9677-bf0575dcdf94 | Run: iterate-2026-06-13-guide-correctness-audit
 
-## Recent Changes (172 iterations)
+## Recent Changes (173 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | guide.md correctness audit + 21 fixes vs code/ADRs | 0/0 |  | docs | 2026-06-13 |
 | change | docs install/Get-Started rewrite + GitHub/auto-merge guide + marketplace metadata parity | 0/0 |  | docs | 2026-06-13 |
 | feature | adopt scaffolds profile-aware CodeQL + AUTOMERGE_SETUP doc for brownfield automerge-readiness (bloat-check deferred) | 3737/3737 |  | tooling | 2026-06-13 |
 | change | extract diff-driven risk detectors + integration-coverage verifier into dedicated modules to ratchet two bloat baselines down | 3818/3830 |  | tooling | 2026-06-13 |

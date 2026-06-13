@@ -1,6 +1,6 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-13-docs-install-github-automerge",
+    "run_id": "iterate-2026-06-13-guide-correctness-audit",
     "date": "2026-06-13",
     "unit": {
       "status": "not_run",
@@ -33,16 +33,20 @@
     "degraded": [
       {
         "phase": "f0",
-        "reason": "Docs + metadata-only iterate (README.md, docs/guide.md, .claude-plugin/marketplace.json, scripts/install.sh); no Python source changed, so the unit/integration/e2e suites are not applicable. Verified instead via sync_check (6/6 OK), path-canon lints (test_artifact_path_canon.py + test_path_canon_windows.py, 14 passed / 1 skipped), and the F0 leak-guard (ALLOW, isolated)."
+        "reason": "Docs-only iterate (docs/guide.md). No Python source changed, so unit/integration/e2e suites are not applicable. Verified via the 7-agent correctness audit (file:line evidence per finding), path-canon lints (14 passed / 1 skipped), grep confirmation that all 21 stale target strings are gone and replacements present, and the F0 leak-guard (ALLOW)."
+      },
+      {
+        "phase": "review",
+        "reason": "Medium-complexity gates satisfied in a docs-appropriate way: external LLM review (Advisory per Override Classes) skipped — the 7 independent verification sub-agents + consolidated ledger are a stronger multi-reviewer pass for a prose-correctness diff; full code-review subagent not run (docs-only diff, no risk flags) — each edit is already backed by a source file:line citation from the audit."
       },
       {
         "phase": "setup",
-        "reason": "Pre-existing sweep-outbox warning from setup_iterate_worktree (trg-671bb0a2 status append dropped by a prior merge) — unrelated to this change; not introduced or resolvable here."
+        "reason": "Pre-existing sweep-outbox warning from setup_iterate_worktree (trg-671bb0a2 status append dropped by a prior merge) — unrelated to this change."
       }
     ],
     "surface_verification": {
       "surface": "none",
-      "justification": "Documentation (README + guide §2.9/§2.10) and plugin-catalog metadata (marketplace.json) plus an advisory Node-version threshold in install.sh. No web/CLI end-user app surface and no executable code path changed; verification is the metadata + content gates (sync_check, path-canon) rather than a runnable surface.",
+      "justification": "Documentation-only change (docs/guide.md prose corrections). No web/CLI/API surface and no executable code path changed; verification is the content gates (path-canon) + the 7-agent source cross-check, not a runnable surface.",
       "tests_run": 0,
       "exit_code": 0
     },
@@ -50,24 +54,14 @@
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "marketplace.json plugin versions match each plugin.json",
-          "disposition": "tested",
-          "evidence": "shared/scripts/sync_check.py — [ OK ] Versions (was 12 mismatches)"
-        },
-        {
-          "behavior": "All 13 plugins remain referenced in README.md, CLAUDE.md, install.sh, and marketplace.json",
-          "disposition": "tested",
-          "evidence": "shared/scripts/sync_check.py — [ OK ] Marketplace / README / CLAUDE.md / Install Script"
-        },
-        {
-          "behavior": "Edited docs introduce no bare legacy artifact paths (path canon)",
+          "behavior": "Edited guide.md introduces no bare legacy artifact paths (path canon)",
           "disposition": "tested",
           "evidence": "test_artifact_path_canon.py + test_path_canon_windows.py — 14 passed, 1 skipped"
         },
         {
-          "behavior": "marketplace.json remains valid JSON after the rewrite",
+          "behavior": "No stale target strings remain in guide.md and corrected replacements are present (7-vs-8 groups, 8-vs-11 flags, 20/16-vs-24/12 tiers, branch form, sprint doc, plan-vs-iterate config, two-tier review, Groups C+F-vs-A-H)",
           "disposition": "tested",
-          "evidence": "sync_check.py json.loads parse succeeds ([ OK ] Marketplace)"
+          "evidence": "grep verification: 0 occurrences of each of the 11 stale strings; 10 corrected strings present (8 check groups (A–H), Eleven canonical risk, multi-stage reviewer cascade, build/{slug}-{session-id}, shipwright_iterate_config.json, 24 are Tier-1, Groups A–H all shipped, gh-prompt:{owner}/{repo}, prompt-injection scanner, Aikido first)"
         },
         {
           "behavior": "Run stays isolated to the worktree (no main-tree leak)",
@@ -75,22 +69,16 @@
           "evidence": "check_iterate_isolation.py --stage f0 — ALLOW (isolated)"
         },
         {
-          "behavior": "install.sh Node advisory threshold reads 20 (was 18)",
-          "disposition": "untestable",
-          "reason_code": "requires-interactive-tty",
-          "reason": "Advisory echo branch executes only during an interactive install on a host with Node < 20; no unit harness exercises it — verified by inspection of the edited branch."
-        },
-        {
-          "behavior": "README → guide section links/anchors resolve on GitHub",
+          "behavior": "Each of the 21 corrected claims matches the current source code/config",
           "disposition": "untestable",
           "reason_code": "requires-manual-visual-judgment",
-          "reason": "Anchors computed via the GitHub heading-slug algorithm (§2.1/§2.4/§2.6/§2.9/§2.10/§3/§3.5/§12); the repo has no automated Markdown link checker — links degrade to file-top if imperfect."
+          "reason": "Prose-vs-code correctness has no automated guide-to-code linter in the repo; verified instead by 7 independent opus sub-agents that cited a source file:line for every finding, then re-confirmed during fix application."
         }
       ],
       "counts": {
-        "testable": 5,
-        "tested": 5,
-        "untestable": 2,
+        "testable": 3,
+        "tested": 3,
+        "untestable": 1,
         "untested_testable": 0
       }
     }

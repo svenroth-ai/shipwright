@@ -1,41 +1,42 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-13-docs-install-github-automerge"
+run_id: "iterate-2026-06-13-guide-correctness-audit"
 phase: "iterate"
-reason: "iterate: docs install/Get-Started + GitHub/auto-merge guide + marketplace parity"
-timestamp: "2026-06-13T07:22:52.180798+00:00"
+reason: "iterate: guide.md correctness audit (21 fixes)"
+timestamp: "2026-06-13T09:21:45.201585+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-13 07:22:52 UTC
+> Auto-generated 2026-06-13 09:21:45 UTC
 
 ## Session Info
 
 - **Session ID**: 6ae258a2-262e-4e05-9677-bf0575dcdf94
-- **Timestamp**: 2026-06-13 07:22:52 UTC
-- **Reason**: iterate: docs install/Get-Started + GitHub/auto-merge guide + marketplace parity
+- **Timestamp**: 2026-06-13 09:21:45 UTC
+- **Reason**: iterate: guide.md correctness audit (21 fixes)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-13-adopt-automerge-readiness
-- **Date**: 2026-06-13T06:43:30.814666Z
-- **Type**: feature
-- **Complexity**: medium
-- **Branch**: iterate/adopt-automerge-readiness
-- **ADR**: iterate-2026-06-13-adopt-automerge-readiness
-- **Description**: adopt scaffolds profile-aware CodeQL + AUTOMERGE_SETUP doc (bloat-check deferred -> trg-33f26f5f)
+- **Run ID**: iterate-2026-06-13-docs-install-github-automerge
+- **Date**: 2026-06-13T07:23:03.289334Z
+- **Type**: change
+- **Complexity**: small
+- **Branch**: iterate/docs-install-github-automerge
+- **ADR**: iterate-2026-06-13-docs-install-github-automerge
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-13-adopt-automerge-readiness.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/docs-install-github-automerge
+- **Branch**: iterate/guide-correctness-audit
+- **Spec**: .shipwright/planning/iterate/2026-06-13-guide-correctness-audit.md
+- **Complexity**: medium
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -49,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/docs-install-github-automerge
-- **Last Commit**: feebb255 docs(adopt): note CodeQL + AUTOMERGE_SETUP scaffolding in guide.md Chapter 3.5
+- **Branch**: iterate/guide-correctness-audit
+- **Last Commit**: c3508882 docs(install): end-to-end Get-Started + GitHub/auto-merge guide; sync plugin catalog (#228)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -66,17 +67,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-208f28f1 | work_completed | iterate (guide.md correctness audit + 21 fixes vs code/ADRs) | 2026-06-13 |
 | evt-98471b18 | work_completed | iterate (docs install/Get-Started rewrite + GitHub/auto-merge guide + marketplace metadata parity) | 2026-06-13 |
 | evt-efbff017 | work_completed | iterate (adopt scaffolds profile-aware CodeQL + AUTOMERGE_SETUP doc for brownfield automerge-readiness (bloat-check deferred)) | 2026-06-13 |
 | evt-e7fde4fc | work_completed | iterate (extract diff-driven risk detectors + integration-coverage verifier into dedicated modules to ratchet two bloat baselines down) | 2026-06-13 |
 | evt-b218f0d8 | work_completed | iterate (run-config concurrency & atomicity (WP2: F11/F12/F13)) | 2026-06-13 |
-| evt-8b8ef149 | work_completed | iterate (WP1: phase-session hooks resolve identity from the stdin payload (F1); atomic event-log dedup (F14); phase_failed/stale_stop_rejected event types (F15)) | 2026-06-12 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 172
-- **Last iterate**: change — docs install/Get-Started rewrite + GitHub/auto-merge guide + marketplace metadata parity (2026-06-13)
+- **Total work events**: 173
+- **Last iterate**: change — guide.md correctness audit + 21 fixes vs code/ADRs (2026-06-13)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
