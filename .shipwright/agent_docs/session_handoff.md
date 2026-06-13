@@ -1,36 +1,38 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-13-docs-install-github-automerge"
+run_id: "iterate-2026-06-13-hook-block-channel"
 phase: "iterate"
-reason: "iterate: docs install/Get-Started + GitHub/auto-merge guide + marketplace parity"
-timestamp: "2026-06-13T07:22:52.180798+00:00"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-06-13T07:44:42.695706+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-13 07:22:52 UTC
+> Auto-generated 2026-06-13 07:44:42 UTC
 
 ## Session Info
 
-- **Session ID**: 6ae258a2-262e-4e05-9677-bf0575dcdf94
-- **Timestamp**: 2026-06-13 07:22:52 UTC
-- **Reason**: iterate: docs install/Get-Started + GitHub/auto-merge guide + marketplace parity
+- **Session ID**: a50898c7-7d3c-4217-a674-0c348ee85ea4
+- **Timestamp**: 2026-06-13 07:44:42 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-13-adopt-automerge-readiness
-- **Date**: 2026-06-13T06:43:30.814666Z
-- **Type**: feature
+- **Run ID**: iterate-2026-06-13-hook-block-channel
+- **Date**: 2026-06-13T07:44:56.146099Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/adopt-automerge-readiness
-- **ADR**: iterate-2026-06-13-adopt-automerge-readiness
-- **Description**: adopt scaffolds profile-aware CodeQL + AUTOMERGE_SETUP doc (bloat-check deferred -> trg-33f26f5f)
+- **Branch**: iterate/hook-block-channel
+- **ADR**: iterate-2026-06-13-hook-block-channel
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-13-adopt-automerge-readiness.md
+- **Spec**: .shipwright/planning/iterate/2026-06-13-hook-block-channel.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/docs-install-github-automerge
+- **Branch**: iterate/hook-block-channel
+- **Run ID**: `iterate-2026-06-13-hook-block-channel`
+- **Spec**: .shipwright/planning/iterate/2026-06-13-hook-block-channel.md
+- **Complexity**: medium — floored by `cross_component` (edits
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -49,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/docs-install-github-automerge
-- **Last Commit**: feebb255 docs(adopt): note CodeQL + AUTOMERGE_SETUP scaffolding in guide.md Chapter 3.5
+- **Branch**: iterate/hook-block-channel
+- **Last Commit**: 97d6e891 Merge remote-tracking branch 'origin/main' into iterate/hook-block-channel
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -67,15 +69,15 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 | Event | Type | Source | Date |
 |-------|------|--------|------|
 | evt-98471b18 | work_completed | iterate (docs install/Get-Started rewrite + GitHub/auto-merge guide + marketplace metadata parity) | 2026-06-13 |
+| evt-a7561bb4 | work_completed | iterate (hook block-channel (WP4): route PostToolUse security-guard reasons to stderr; SessionStart drift gate is honest warn-only via additionalContext) | 2026-06-13 |
 | evt-efbff017 | work_completed | iterate (adopt scaffolds profile-aware CodeQL + AUTOMERGE_SETUP doc for brownfield automerge-readiness (bloat-check deferred)) | 2026-06-13 |
 | evt-e7fde4fc | work_completed | iterate (extract diff-driven risk detectors + integration-coverage verifier into dedicated modules to ratchet two bloat baselines down) | 2026-06-13 |
 | evt-b218f0d8 | work_completed | iterate (run-config concurrency & atomicity (WP2: F11/F12/F13)) | 2026-06-13 |
-| evt-8b8ef149 | work_completed | iterate (WP1: phase-session hooks resolve identity from the stdin payload (F1); atomic event-log dedup (F14); phase_failed/stale_stop_rejected event types (F15)) | 2026-06-12 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 172
+- **Total work events**: 173
 - **Last iterate**: change — docs install/Get-Started rewrite + GitHub/auto-merge guide + marketplace metadata parity (2026-06-13)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
