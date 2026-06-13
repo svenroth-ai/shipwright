@@ -2811,3 +2811,16 @@ shipwright/
 - **Commit:** 9bb7c1e1d2f052287402687bb086948ee7ea030e
 - **Consequences:** One implementation of the worktree-aware tolerant reader; record_event.read_events stays a patchable module attribute. Verifier semantics unchanged (no test existed to prove a unification safe, and the spec forbids changing verifier semantics without one).
 - **Rejected:** Unifying all three readers: rejected because read_events_jsonl intentionally diverges (literal path + silent) and no safety test exists.
+
+---
+
+### ADR-209: Fold spec_checks git wrappers onto verifiers/git_helpers.py
+- **Date:** 2026-06-13
+- **Section:** Iterate → 2026-06-13-shc-git-helpers (campaign 2026-06-13-shared-helper-consolidation, sub-iterate C)
+- **Context:** spec_checks.py re-defined _run_git/_git_available though verifiers/git_helpers.py already provided them; the two _run_git variants differed (timeout=/cwd= and -1 vs 1 failure code) — a reducibility D/A duplication finding.
+- **Decision:** Added an optional timeout param (forwarded only when set) to git_helpers._run_git, unified the failure code on git_helpers' existing 1 (caught subprocess.TimeoutExpired too), imported the shared wrappers into spec_checks and deleted the local defs; all 6 spec_checks call sites pass timeout=10.0 to preserve prior behaviour.
+- **Commit:** iterate-2026-06-13-shc-git-helpers
+- **Rationale:** Audited every _run_git/_git_available caller repo-wide; none branch on a specific rc value (-1/1), all use ==0/!=0, so unifying on 1 is safe.
+- **Consequences:** One canonical git wrapper copy (~25 LOC removed); behaviour preserved (test_spec_checks.py green unchanged, new test_git_helpers.py pins success/missing/timeout/no-timeout paths).
+- **Rejected:** Changing git_helpers to return -1 (would widen blast radius for iterate_checks/integration_coverage callers); adding a cwd= param (git -C already scopes the repo, no caller needs cwd).
+- **Details:** [103-shc-git-helpers-unify.md](../planning/adr/103-shc-git-helpers-unify.md)

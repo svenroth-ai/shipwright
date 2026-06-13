@@ -1674,6 +1674,8 @@ A fourth shape rides on **Change**: when you ask iterate to *simplify*, *clean u
 
 The gate is only as strong as the suite's coverage, so removed coverage is a hard reject and the five-principle reasoning is mandatory, not optional. Spec Impact is **NONE** by definition. The full protocol lives in the iterate skill's `references/F-simplify.md` (adapted, with attribution, from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills), MIT).
 
+The simplify gate and the **intelligent bloat/reducibility gate** are unified around one shared tool and one shared vocabulary: a simplify enumerates its changes with the same closed reducibility catalog (`D·A·X·C·S·M·P·T` + guardrails `G1–G6`, in `shared/reducibility-catalog.md`) the code reviewer bounces diffs back with, and the same `shared/scripts/tools/behavior_snapshot.py` snapshot/verify is the **mechanical proof** of the catalog's "keeps tests green" guardrail on every surface that can run tests (the self-contained CI reviewer, which cannot run tests, keeps its conservative LOC heuristic). A simplify is, in effect, the *apply* path for the reductions the reviewer proposes.
+
 ### Override Classes
 
 Not all phases can be skipped. Iterate defines three categories:

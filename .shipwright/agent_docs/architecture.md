@@ -152,6 +152,8 @@ _Existing user-facing documentation discovered by /shipwright-adopt._
 
 - **iterate-2026-06-13-code-simplify-skill** (2026-06-13): Component — new `plugins/shipwright-iterate/scripts/lib/behavior_snapshot.py` (snapshot/verify gate) records the green test-state (collected node-id set + counts + exit + source LOC) at the gitignored `.shipwright/runs/<run_id>/behavior_snapshot.json` and STOPs a simplify on behavior drift or removed coverage; new SIMPLIFY sub-mode of CHANGE (classify_intent `mode`) routes through `references/F-simplify.md` (OS1). → decision_log (Run-ID).
 
+- **iterate-2026-06-13-unify-simplify-reducibility** (2026-06-13): Component — RELOCATED the behavior_snapshot gate to **`shared/scripts/tools/behavior_snapshot.py`** (SSoT; supersedes the OS1 entry's `plugins/.../scripts/lib/` path) so the shared reducibility catalog can cite it without an inverted plugin→shared dep. Unifies the simplify gate + bloat catalog: F-simplify adopts the D·A·X·C·S·M·P·T vocabulary; the catalog cites it as the mechanical G3 ("keeps-tests-green") proof on exec surfaces (CI Tier-3 exempt). → decision_log (Run-ID).
+
 - **ADR-151** (2026-06-07): Reconcile-and-commit main-tree triage.jsonl drift in tooling
 
 - **ADR-160** (2026-06-10): Per-tree campaign status.json: finalize wiring + scoped churn resolver

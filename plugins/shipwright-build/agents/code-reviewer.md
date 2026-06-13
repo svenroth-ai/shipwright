@@ -303,3 +303,10 @@ catalog code in the finding text so the cascade bounces the diff back. Goal B
 (boy-scout improve-on-touch) — reducible code *already present* in a touched
 unit may be raised as a **non-blocking** suggestion, **bounded to the touched
 unit** (never "refactor the whole file").
+
+**Mechanical "keeps tests green" proof (G3).** You run locally, so you are NOT
+limited to *asserting* test-safety: run `shared/scripts/tools/behavior_snapshot.py`
+`snapshot` before a reduction and `verify` after. A green→green verdict (no test
+flips, no removed coverage) is the proof that promotes a reduction from advisory to
+block-eligible; a reject means it changed behavior or dropped coverage — discard it.
+This is the same gate the `/shipwright-iterate` simplify sub-mode applies.
