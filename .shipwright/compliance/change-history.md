@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-13T21:53:33.788116+00:00
-Total commits: 1003
+Generated: 2026-06-13T22:08:30.653095+00:00
+Total commits: 1005
 
 ## Commit Distribution
 
@@ -9,9 +9,9 @@ Total commits: 1003
 pie title Commit Types
     "fix" : 288
     "feat" : 272
-    "chore" : 217
+    "chore" : 218
     "docs" : 128
-    "refactor" : 59
+    "refactor" : 60
     "test" : 24
     "ci" : 7
     "other" : 7
@@ -590,10 +590,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 217 commits
+### Chores (chore) — 218 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-13 | bloat | tighten baseline to actual LOC after consolidation (clear Group H2) (#245) | f2f185be4c0f |
 | 2026-06-13 | release | v0.26.0 (#235) | c19153359c1d |
 | 2026-06-12 | release | v0.25.0 (#223) | 60481718653b |
 | 2026-06-12 | bloat | clear Group H1/H2 — tighten 51 baseline entries + grandfather 8 (reducibility-catalog dogfood) (#219) | 0e8932f4976f |
@@ -945,10 +946,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 59 commits
+### Refactoring (refactor) — 60 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-14 | iterate | interleaved-serial as the single campaign default (retire end-stage drain) | f211a05208fe |
 | 2026-06-13 | triage | stop the iterate pipeline from filing triage about current-run work (#243) | 0f85ff5b892f |
 | 2026-06-13 | verifiers | fold spec_checks git wrappers into git_helpers (campaign C) (#242) | 9f7e48cebe3e |
 | 2026-06-13 | iterate | unify simplify gate with the reducibility catalog (one shared tool + vocabulary) (#241) | c7389dfa699c |
@@ -1072,7 +1074,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1003 |
+| Total commits | 1005 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1003 |
+| Human-authored commits | 1005 |
 
