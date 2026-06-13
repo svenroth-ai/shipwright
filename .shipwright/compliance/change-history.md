@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-06-13T10:25:13.910813+00:00
+Generated: 2026-06-13T11:23:59.355031+00:00
 Total commits: 991
 
 ## Commit Distribution
@@ -809,7 +809,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-13 | hooks-and-pipeline | reconcile hooks.json format, registry, and outbox matrix to shipped reality (audit-3 WP11a) | 1d9988f923c4 |
+| 2026-06-13 | hooks-and-pipeline | reconcile hooks.json format, registry & outbox matrix to shipped reality (audit-3 WP11a) (#232) | 8fe2d61eccfb |
 | 2026-06-13 | skills | sync 6 stale SKILL.md/code/config items to the corrected guide (#231) | c2b6a2aa27c8 |
 | 2026-06-13 | guide | correct 21 drifted claims via full code/ADR audit (#230) | c3ee79be6d31 |
 | 2026-06-13 | install | end-to-end Get-Started + GitHub/auto-merge guide; sync plugin catalog (#228) | c35088825704 |

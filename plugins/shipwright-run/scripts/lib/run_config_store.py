@@ -29,9 +29,7 @@ regardless of which implementation acquired the lock.
 from __future__ import annotations
 
 import json
-import os
 import sys
-import tempfile
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterator
@@ -48,6 +46,7 @@ _SHARED_LIB = Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"
 if str(_SHARED_LIB) not in sys.path:
     sys.path.insert(0, str(_SHARED_LIB))
 
+from atomic_write import durable_atomic_write  # noqa: E402
 from file_lock import LockTimeout, file_lock  # noqa: E402
 
 RUN_CONFIG_NAME = "shipwright_run_config.json"
@@ -91,25 +90,11 @@ def run_config_lock(
 
 
 def atomic_write_json(target: Path, data: dict[str, Any]) -> None:
-    """Serialise ``data`` and replace ``target`` atomically (tmp + os.replace).
+    """Serialise ``data`` and write it durably + atomically to ``target``.
 
-    The temp file is created in the destination directory so ``os.replace``
-    is a same-filesystem rename (atomic on POSIX and Windows) -- a concurrent
-    reader sees either the old file or the new one, never a partial write.
+    Delegates to the shared :func:`durable_atomic_write` (tmp + fsync +
+    os.replace): the same-filesystem rename means a concurrent reader sees
+    either the old file or the new one, never a partial write, and the fsync
+    means a crash/power-loss can't drop the just-written content.
     """
-    target = Path(target)
-    content = json.dumps(data, indent=2) + "\n"
-    target.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp_path = tempfile.mkstemp(
-        prefix=target.name + ".", suffix=".tmp", dir=str(target.parent),
-    )
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as fh:
-            fh.write(content)
-        os.replace(tmp_path, target)
-    except Exception:
-        try:
-            os.unlink(tmp_path)
-        except OSError:
-            pass
-        raise
+    durable_atomic_write(Path(target), json.dumps(data, indent=2) + "\n")

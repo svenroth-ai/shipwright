@@ -31,7 +31,6 @@ import json
 import os
 import re
 import sys
-import tempfile
 from pathlib import Path
 
 _MARKER_PREFIX = "plugin_edit_pending"
@@ -151,23 +150,15 @@ def add_path(project_root: Path, session_id: str, rel: str) -> None:
     """
     mp = marker_path(project_root, session_id)
     try:
-        mp.parent.mkdir(parents=True, exist_ok=True)
         existing = read_paths(project_root, session_id)
         if rel in existing:
             return
         existing.append(rel)
-        data = json.dumps({"sid": session_id, "paths": existing})
-        fd, tmp = tempfile.mkstemp(dir=str(mp.parent), prefix=".pe_", suffix=".tmp")
-        try:
-            with os.fdopen(fd, "w", encoding="utf-8") as fh:
-                fh.write(data)
-            os.replace(tmp, mp)
-        except OSError:
-            try:
-                os.unlink(tmp)
-            except OSError:
-                pass
-            raise
+        scripts_dir = str(Path(__file__).resolve().parent.parent)
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+        from lib.atomic_write import durable_atomic_write  # noqa: PLC0415
+        durable_atomic_write(mp, json.dumps({"sid": session_id, "paths": existing}))
     except OSError as exc:
         print(f"mark_plugin_edit: marker write failed ({exc!r})", file=sys.stderr)
 

@@ -16,11 +16,20 @@ Everything else is derived from file existence:
 import hashlib
 import json
 import os
-import tempfile
+import sys
 from datetime import datetime, timezone
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
+
+# ``shared/scripts/lib`` is at parents[4] in BOTH the dev repo and the runtime
+# plugin cache (``shared/`` is a sibling of ``plugins/`` in both). ``atomic_write``
+# is a unique top-level module name, so it never collides with this plugin's lib.
+_SHARED_LIB = Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"
+if str(_SHARED_LIB) not in sys.path:
+    sys.path.insert(0, str(_SHARED_LIB))
+
+from atomic_write import durable_atomic_write  # noqa: E402
 
 
 class SessionFilename(StrEnum):
@@ -32,28 +41,9 @@ class SessionFilename(StrEnum):
 
 
 def _atomic_write(path: Path, content: str) -> None:
-    """Write file atomically using temp file + rename.
-
-    Cross-platform: no fcntl dependency (Windows compatible).
-    """
-    path = Path(os.fspath(path))
-    fd, tmp_path = tempfile.mkstemp(
-        dir=path.parent,
-        prefix=f".{path.name}.",
-        suffix=".tmp",
-    )
-    try:
-        os.write(fd, content.encode("utf-8"))
-        os.close(fd)
-        # On Windows, target must not exist for rename
-        if os.name == "nt" and path.exists():
-            path.unlink()
-        os.rename(tmp_path, path)
-    except Exception:
-        os.close(fd) if not os.path.exists(tmp_path) else None
-        if os.path.exists(tmp_path):
-            os.unlink(tmp_path)
-        raise
+    """Write ``content`` durably + atomically (tmp + fsync + os.replace via the
+    shared :func:`durable_atomic_write`). Cross-platform (no fcntl)."""
+    durable_atomic_write(path, content)
 
 
 def compute_file_hash(file_path: str | Path) -> str:

@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-13T10:25:13.910813+00:00
+Generated: 2026-06-13T11:23:59.355031+00:00
 
 ## Requirements Coverage
 
@@ -201,6 +201,7 @@ Generated: 2026-06-13T10:25:13.910813+00:00
 | guide.md correctness audit + 21 fixes vs code/ADRs | iterate | change |  | — | — | 2026-06-13 |
 | audit-3 WP11a docs/SSoT reconciliation (F3 hooks.json format, F4 registry drift, F9 outbox matrix, F28 F6 decision-drops staging) | iterate | change |  | 3796/3796 | — | 2026-06-13 |
 | sync 6 stale SKILL.md/code/config items to the corrected guide (C1-C6) | iterate | change |  | 4343/4343 | — | 2026-06-13 |
+| durable atomic writes (fsync) across all atomic writers | iterate | change |  | 4283/4283 | — | 2026-06-13 |
 
 ## Coverage Summary
 
@@ -208,7 +209,7 @@ Generated: 2026-06-13T10:25:13.910813+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 176 |
+| Iterate changes | 177 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

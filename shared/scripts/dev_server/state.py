@@ -12,10 +12,16 @@ dev_server versions.
 from __future__ import annotations
 
 import json
-import os
+import sys
 from pathlib import Path
 
 from .profile_config import _DEFAULT_SERVICE, STATE_FILE, STATE_VERSION
+
+_SCRIPTS_ROOT = Path(__file__).resolve().parents[1]  # shared/scripts
+if str(_SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_ROOT))
+
+from lib.atomic_write import durable_atomic_write  # noqa: E402
 
 
 def _load_state(cwd: Path) -> dict | None:
@@ -61,20 +67,9 @@ def _save_state(cwd: Path, state: dict) -> None:
 
 
 def _save_state_atomic(cwd: Path, state: dict) -> None:
-    """Atomic save: write to <state>.tmp in the same dir, then os.replace."""
-    final = cwd / STATE_FILE
-    tmp = cwd / (STATE_FILE + ".tmp")
-    try:
-        tmp.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
-        os.replace(str(tmp), str(final))
-    except OSError:
-        # Best-effort cleanup of orphan tmp
-        try:
-            if tmp.exists():
-                tmp.unlink()
-        except OSError:
-            pass
-        raise
+    """Durable atomic save (tmp + fsync + os.replace via the shared
+    :func:`durable_atomic_write`)."""
+    durable_atomic_write(cwd / STATE_FILE, json.dumps(state, indent=2) + "\n")
 
 
 def _clear_state(cwd: Path) -> None:

@@ -21,8 +21,6 @@ import json
 import os
 import subprocess
 import sys
-import tempfile
-import uuid
 from pathlib import Path
 
 _SHARED_SCRIPTS = Path(__file__).resolve().parents[1]
@@ -30,6 +28,7 @@ if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 
 from lib import bloat_baseline as _bb  # noqa: E402
+from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.repo_root import main_repo_root_or  # noqa: E402
 
 DEFAULT_MAX_LINES = _bb.LIMIT_SOURCE  # 300; runtime-prompts override to 400.
@@ -180,22 +179,9 @@ def _load_existing_marker(marker: Path) -> dict:
 
 
 def _atomic_write_marker(marker: Path, doc: dict) -> None:
-    marker.parent.mkdir(parents=True, exist_ok=True)
-    payload = json.dumps(doc, indent=2, sort_keys=False) + "\n"
-    fd, tmp = tempfile.mkstemp(
-        prefix=f".{marker.name}.tmp.", suffix=f".{uuid.uuid4().hex[:8]}",
-        dir=str(marker.parent),
-    )
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as fh:
-            fh.write(payload)
-        os.replace(tmp, marker)
-    except Exception:
-        try:
-            os.unlink(tmp)
-        except OSError:
-            pass
-        raise
+    """Durable atomic write (tmp + fsync + os.replace via the shared
+    :func:`durable_atomic_write`)."""
+    durable_atomic_write(marker, json.dumps(doc, indent=2, sort_keys=False) + "\n")
 
 
 def _baseline_paths(cwd: Path) -> set[str]:

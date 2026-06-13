@@ -34,10 +34,8 @@ Exit codes:
 from __future__ import annotations
 
 import argparse
-import os
 import re
 import sys
-import tempfile
 from pathlib import Path
 
 # Bootstrap: make lib.file_lock importable when this file is run
@@ -46,6 +44,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
+from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.file_lock import LockTimeout, file_lock  # noqa: E402
 
 
@@ -237,24 +236,10 @@ def append_entry(
 
 
 def _atomic_write(target: Path, content: str) -> None:
-    target.parent.mkdir(parents=True, exist_ok=True)
-    # Write to a sibling temp file and rename — gives best-effort
-    # atomicity on both POSIX and Windows.
-    fd, tmp_path = tempfile.mkstemp(
-        prefix=target.name + ".",
-        suffix=".tmp",
-        dir=str(target.parent),
-    )
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as fh:
-            fh.write(content)
-        os.replace(tmp_path, target)
-    except Exception:
-        try:
-            os.unlink(tmp_path)
-        except OSError:
-            pass
-        raise
+    """Durable atomic write (tmp + fsync + os.replace) via the shared
+    :func:`durable_atomic_write` — all-or-nothing on POSIX and Windows, and the
+    bytes survive a crash."""
+    durable_atomic_write(target, content)
 
 
 def main() -> int:

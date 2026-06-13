@@ -1,47 +1,17 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-13-docs-ssot-reconcile",
+    "run_id": "iterate-2026-06-13-atomic-write-fsync-durability",
     "date": "2026-06-13",
-    "unit": {
-      "status": "passed",
-      "passed": 3796,
-      "total": 3796
-    },
-    "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "smoke": {
-      "status": "not_run"
-    },
+    "unit": { "status": "passed", "passed": 4136, "total": 4136 },
+    "integration": { "status": "passed", "passed": 147, "total": 147 },
+    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
+    "e2e": { "status": "skipped", "passed": 0, "total": 0 },
+    "design_fidelity": { "status": "not_run", "passed": 0, "total": 0 },
+    "smoke": { "status": "not_run" },
     "degraded": [
       {
-        "phase": "f0",
-        "reason": "Docs-only iterate (docs/hooks-and-pipeline.md + plugins/shipwright-iterate/skills/iterate/references/F6.md). No DB/CRUD/UI changed, so integration/pgtap/e2e suites are not applicable. Unit gate = the full pytest suite that owns the doc-drift/SSoT tests: shared/tests 3400 passed + 12 skipped + 26 deselected, shipwright-iterate 396 passed; doc-drift (test_hooks_json_wrapper, test_churn_merge_doc_sync, test_branch_integration_doc, test_bloat_baseline) + path-canon all green; F0 leak-guard ALLOW."
-      },
-      {
-        "phase": "review",
-        "reason": "Small-complexity, docs-only diff, no risk flags: external LLM review (Advisory) and full code-review subagent skipped per Override Classes — every edit is backed by a source file:line / ADR citation verified in this session (12 hooks.json parsed, ADR-039/040, all 12 Stop chains extracted, grep of to_outbox in the 4 emitters, .gitignore:154 + write_decision_drop drop_dir)."
-      },
-      {
         "phase": "setup",
-        "reason": "Pre-existing sweep-outbox warning from setup_iterate_worktree (trg-671bb0a2 status append dropped by a prior merge) — unrelated to this change; non-fatal (worktree still created)."
+        "reason": "Pre-existing sweep-outbox warning from setup_iterate_worktree (trg-671bb0a2: a status append dropped by a prior merge) — unrelated to this change; non-fatal, the worktree was still created."
       }
     ],
     "surface_verification": {
@@ -49,54 +19,33 @@
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-13-docs-ssot-reconcile/surface_verification.json",
-      "timestamp": "2026-06-13T10:20:25.080Z",
-      "justification": "Docs-only SSoT reconciliation: docs/hooks-and-pipeline.md (pure documentation) + F6.md skill-reference staging prose. No startable runtime surface; correctness verified by the doc-drift suite (test_hooks_json_wrapper, test_churn_merge_doc_sync, test_artifact_path_canon) + empirical probes of the 12 shipped hooks.json and the 4 triage emitters."
+      "evidence_path": ".shipwright/runs/iterate-2026-06-13-atomic-write-fsync-durability/surface_verification.json",
+      "timestamp": "2026-06-13T11:20:19.564Z",
+      "justification": "Pure internal durability hardening: new shared durable_atomic_write primitive + ~20 delegating helpers. No UI/API/CLI surface is introduced or changed; written files are byte-identical to before (fsync is the only added behavior), so there is no user-observable or frontend contract change. Verified empirically by 13 primitive unit tests + a 5-writer cross-subsystem composition test + full shared/plugin/integration suites green."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        {
-          "behavior": "F3: the hooks.json Format section documents the required Claude Code 2.1.132+ shape (top-level 'hooks' wrapper + string matchers, ADR-039/040)",
-          "disposition": "tested",
-          "evidence": "test_hooks_json_wrapper.py (26 parametrized cases: wrapper + matcher-string invariants) PASSED; empirical probe parsed all 12 plugins/*/hooks/hooks.json -> every file uses the wrapper + string matchers"
-        },
-        {
-          "behavior": "F4: the Hooks Registry uses generate_handoff_on_stop.py (real file) with correct counts/order (phase-quality wired into 11 of 12; all 12 have a Stop hook; order list = 10 incl. adopt)",
-          "disposition": "tested",
-          "evidence": "empirical probe extracted all 12 Stop chains (11 wire audit_phase_quality_on_stop; run keeps a 4-hook Stop chain; adopt runs audit->handoff); grep confirms 0 hyphenated 'generate-handoff.py' remain; doc-drift suite (test_branch_integration_doc, test_bloat_baseline) PASSED"
-        },
-        {
-          "behavior": "F3/F4: registry matcher cells use the string form ('Bash', 'Write|Edit'), not the object form {tools:[...]}",
-          "disposition": "tested",
-          "evidence": "test_hooks_json_wrapper.py::test_pre_post_tool_use_matchers_are_strings PASSED; grep shows the only remaining {\"tools\" occurrence is the intentional F3 'Old format (removed)' counter-example"
-        },
-        {
-          "behavior": "F9: the Artifact Write Matrix states the security/perf/F0.5/F1 emitters append to the tracked triage.jsonl (to_outbox=False), not the outbox; outbox list = true background producers + plugin_sync_reminder",
-          "disposition": "tested",
-          "evidence": "empirical probe grep 'to_outbox|should_route_to_outbox' in the 4 emitters = 0 (append_triage_item_idempotent default to_outbox=False); contrasted with the 6 modules that DO route; test_churn_merge_doc_sync.py PASSED (matrix SSoT intact)"
-        },
-        {
-          "behavior": "F28: the F6 staging reference no longer 'git add's the gitignored, main-resident decision-drops dir",
-          "disposition": "tested",
-          "evidence": "empirical verification: .gitignore:154 ignores /.shipwright/agent_docs/decision-drops/, write_decision_drop.drop_dir resolves resolve_main_repo_root (main-resident), 0 tracked files in the dir; test_write_decision_drop.py pins the main-resident gitignored producer behavior; F6.md edit replaces the line with an explanatory NOTE"
-        },
-        {
-          "behavior": "The doc edits introduce no bare legacy artifact paths (path canon)",
-          "disposition": "tested",
-          "evidence": "test_artifact_path_canon.py + test_path_canon_windows-adjacent run — 4 passed"
-        }
+        { "behavior": "AC1 str/bytes/unicode/embedded-newline written verbatim and round-trip byte-identical", "disposition": "tested",
+          "evidence": "shared/tests/test_atomic_write.py::test_roundtrip_str/_roundtrip_bytes/_str_written_verbatim_no_newline_translation/_unicode_roundtrip PASSED" },
+        { "behavior": "AC2 os.fsync of the temp file precedes os.replace (durability ordering)", "disposition": "tested",
+          "evidence": "test_atomic_write.py::test_file_is_fsynced_before_replace PASSED + integration ordering assertion" },
+        { "behavior": "AC3 parent-dir fsync is best-effort (OSError swallowed; Windows skips os.open)", "disposition": "tested",
+          "evidence": "test_atomic_write.py::test_fsync_parent_dir_swallows_oserror/_full_write_survives_dir_fsync_failure/_windows_skips_directory_fsync PASSED" },
+        { "behavior": "AC4 os.replace failure unlinks tmp and re-raises; target never created", "disposition": "tested",
+          "evidence": "test_atomic_write.py::test_replace_failure_cleans_tmp_and_raises PASSED" },
+        { "behavior": "AC5 parent dirs created; wholesale overwrite; no .tmp leftover on success", "disposition": "tested",
+          "evidence": "test_atomic_write.py::test_creates_parent_dirs/_overwrite_is_wholesale/_no_tmp_leftover_on_success PASSED" },
+        { "behavior": "AC6 every migrated helper keeps byte-identical output and routes through the primitive", "disposition": "tested",
+          "evidence": "full shared suite 3414 passed + 4 plugin suites (run 162/project 59/build 84/security 417) + run_config_store round-trip tests unchanged" },
+        { "behavior": "AC7 full test suite green (no regression from the migration)", "disposition": "tested",
+          "evidence": "shared 3414 + integration 147 + 722 plugin tests all passed; full-repo ruff clean" },
+        { "behavior": "INTEGRATION: writers across shared/lib, phase_quality, and shared/tools all compose on one durable primitive (fsync-before-replace + byte round-trip)", "disposition": "tested",
+          "category": "integration",
+          "evidence": "shared/tests/test_atomic_write_durability_integration.py::test_writers_across_subsystems_compose_on_durable_primitive PASSED" }
       ],
-      "counts": {
-        "testable": 6,
-        "tested": 6,
-        "untestable": 0,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 4,
-        "covered_acs": 4
-      }
+      "counts": { "testable": 8, "tested": 8, "untestable": 0, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 7, "covered_acs": 7 }
     }
   }
 }

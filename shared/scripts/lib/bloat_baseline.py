@@ -26,10 +26,18 @@ import json
 import os
 import re
 import sys
-import tempfile
-import uuid
 from pathlib import Path
 from typing import Iterable
+
+# atomic_write is a sibling module in this same dir; insert it so the import
+# resolves whether bloat_baseline was loaded as ``lib.bloat_baseline`` (shared/
+# scripts on path) or as a top-level ``bloat_baseline`` (shared/scripts/lib on
+# path) — mirrors the unique-top-level-name pattern of ``file_lock``.
+_LIB_DIR = Path(__file__).resolve().parent
+if str(_LIB_DIR) not in sys.path:
+    sys.path.insert(0, str(_LIB_DIR))
+
+from atomic_write import durable_atomic_write  # noqa: E402
 
 # ---------------------------------------------------------------------
 # Constants
@@ -235,25 +243,10 @@ def _baseline_path(project_root: Path | str) -> Path:
 
 
 def write_baseline(project_root: Path | str, doc: dict) -> Path:
-    """Atomically write the baseline (tmp+rename). Returns the written path."""
+    """Atomically + durably write the baseline (tmp + fsync + os.replace via the
+    shared :func:`durable_atomic_write`). Returns the written path."""
     target = _baseline_path(project_root)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    payload = json.dumps(doc, indent=2, sort_keys=False) + "\n"
-    fd, tmp_name = tempfile.mkstemp(
-        prefix=f".{BASELINE_FILENAME}.tmp.",
-        suffix=f".{uuid.uuid4().hex[:8]}",
-        dir=str(target.parent),
-    )
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as fh:
-            fh.write(payload)
-        os.replace(tmp_name, target)
-    except Exception:
-        try:
-            os.unlink(tmp_name)
-        except OSError:
-            pass
-        raise
+    durable_atomic_write(target, json.dumps(doc, indent=2, sort_keys=False) + "\n")
     return target
 
 

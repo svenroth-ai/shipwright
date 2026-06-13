@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-13-docs-ssot-reconcile"
+run_id: "iterate-2026-06-13-atomic-write-fsync-durability"
 phase: "iterate"
-reason: "F11 pre-merge refresh: iterate-2026-06-13-docs-ssot-reconcile"
-timestamp: "2026-06-13T10:25:13.910813+00:00"
+reason: "iterate: durable atomic writes (fsync)"
+timestamp: "2026-06-13T11:23:59.355031+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-13 10:25:13 UTC
+> Auto-generated 2026-06-13 11:23:59 UTC
 
 ## Session Info
 
-- **Session ID**: 118aad1f-bdd5-4952-8f4c-9d0a776d7981
-- **Timestamp**: 2026-06-13 10:25:13 UTC
-- **Reason**: F11 pre-merge refresh: iterate-2026-06-13-docs-ssot-reconcile
+- **Session ID**: 96f26c03-fb2e-4966-891d-b9671b25b403
+- **Timestamp**: 2026-06-13 11:23:59 UTC
+- **Reason**: iterate: durable atomic writes (fsync)
 
 ## Last Iterate
 
@@ -29,7 +29,10 @@ timestamp: "2026-06-13T10:25:13.910813+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/docs-ssot-reconcile
+- **Branch**: iterate/atomic-write-fsync-durability
+- **Run ID**: `iterate-2026-06-13-atomic-write-fsync-durability`
+- **Spec**: .shipwright/planning/iterate/2026-06-13-atomic-write-fsync-durability.md
+- **Complexity**: medium (keyword-sourced, confidence 0.7)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/docs-ssot-reconcile
-- **Last Commit**: 90185f7f Merge remote-tracking branch 'origin/main' into iterate/docs-ssot-reconcile
+- **Branch**: iterate/atomic-write-fsync-durability
+- **Last Commit**: 8fe2d61e docs(hooks-and-pipeline): reconcile hooks.json format, registry & outbox matrix to shipped reality (audit-3 WP11a) (#232)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-c94b50ab | work_completed | iterate (durable atomic writes (fsync) across all atomic writers) | 2026-06-13 |
 | evt-0e2c6e4d | work_completed | iterate (sync 6 stale SKILL.md/code/config items to the corrected guide (C1-C6)) | 2026-06-13 |
 | evt-b1e3660d | work_completed | iterate (audit-3 WP11a docs/SSoT reconciliation (F3 hooks.json format, F4 registry drift, F9 outbox matrix, F28 F6 decision-drops staging)) | 2026-06-13 |
 | evt-208f28f1 | work_completed | iterate (guide.md correctness audit + 21 fixes vs code/ADRs) | 2026-06-13 |
 | evt-98471b18 | work_completed | iterate (docs install/Get-Started rewrite + GitHub/auto-merge guide + marketplace metadata parity) | 2026-06-13 |
-| evt-a7561bb4 | work_completed | iterate (hook block-channel (WP4): route PostToolUse security-guard reasons to stderr; SessionStart drift gate is honest warn-only via additionalContext) | 2026-06-13 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 176
-- **Last iterate**: change — sync 6 stale SKILL.md/code/config items to the corrected guide (C1-C6) (2026-06-13)
+- **Total work events**: 177
+- **Last iterate**: change — durable atomic writes (fsync) across all atomic writers (2026-06-13)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
