@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-13-adopt-automerge-readiness"
+run_id: "iterate-2026-06-13-hook-block-channel"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-06-13T06:43:10.946192+00:00"
+reason: "iterate: hook block-channel (WP4) — guard reasons to stderr + drift gate warn-only"
+timestamp: "2026-06-13T07:44:42.695706+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-13 06:43:10 UTC
+> Auto-generated 2026-06-13 07:44:42 UTC
 
 ## Session Info
 
-- **Session ID**: 6e8148e3-66f8-45ef-b4f3-c7171fed20b6
-- **Timestamp**: 2026-06-13 06:43:10 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: a50898c7-7d3c-4217-a674-0c348ee85ea4
+- **Timestamp**: 2026-06-13 07:44:42 UTC
+- **Reason**: iterate: hook block-channel (WP4) — guard reasons to stderr + drift gate warn-only
 
 ## Last Iterate
 
@@ -30,16 +30,15 @@ timestamp: "2026-06-13T06:43:10.946192+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/adopt-automerge-readiness
-- **Run ID**: iterate-2026-06-13-adopt-automerge-readiness
-- **Spec**: .shipwright/planning/iterate/2026-06-13-adopt-automerge-readiness.md
-- **Complexity**: medium
+- **Branch**: iterate/hook-block-channel
+- **Run ID**: `iterate-2026-06-13-hook-block-channel`
+- **Spec**: .shipwright/planning/iterate/2026-06-13-hook-block-channel.md
+- **Complexity**: medium — floored by `cross_component` (edits
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -53,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/adopt-automerge-readiness
-- **Last Commit**: 9b25dd52 Merge remote-tracking branch 'origin/main' into iterate/adopt-automerge-readiness
+- **Branch**: iterate/hook-block-channel
+- **Last Commit**: 279d7d6d feat(adopt): scaffold profile-aware CodeQL + AUTOMERGE_SETUP for brownfield automerge-readiness (#227)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -70,17 +69,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-a7561bb4 | work_completed | iterate (hook block-channel (WP4): route PostToolUse security-guard reasons to stderr; SessionStart drift gate is honest warn-only via additionalContext) | 2026-06-13 |
 | evt-efbff017 | work_completed | iterate (adopt scaffolds profile-aware CodeQL + AUTOMERGE_SETUP doc for brownfield automerge-readiness (bloat-check deferred)) | 2026-06-13 |
 | evt-e7fde4fc | work_completed | iterate (extract diff-driven risk detectors + integration-coverage verifier into dedicated modules to ratchet two bloat baselines down) | 2026-06-13 |
 | evt-b218f0d8 | work_completed | iterate (run-config concurrency & atomicity (WP2: F11/F12/F13)) | 2026-06-13 |
 | evt-8b8ef149 | work_completed | iterate (WP1: phase-session hooks resolve identity from the stdin payload (F1); atomic event-log dedup (F14); phase_failed/stale_stop_rejected event types (F15)) | 2026-06-12 |
-| evt-8c8f2132 | work_completed | iterate (Coerce explicit-null affected_frs/new_frs (and tests/review) in WorkEvent.from_dict) | 2026-06-12 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 171
-- **Last iterate**: feature — adopt scaffolds profile-aware CodeQL + AUTOMERGE_SETUP doc for brownfield automerge-readiness (bloat-check deferred) (2026-06-13)
+- **Total work events**: 172
+- **Last iterate**: change — hook block-channel (WP4): route PostToolUse security-guard reasons to stderr; SessionStart drift gate is honest warn-only via additionalContext (2026-06-13)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

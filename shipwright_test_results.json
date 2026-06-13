@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-13-adopt-automerge-readiness",
+    "run_id": "iterate-2026-06-13-hook-block-channel",
     "date": "2026-06-13",
     "unit": {
       "status": "passed",
-      "passed": 3737,
-      "total": 3737
+      "passed": 3400,
+      "total": 3400
     },
     "integration": {
-      "status": "passed",
-      "passed": 6,
-      "total": 6
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -18,9 +18,9 @@
       "total": 0
     },
     "e2e": {
-      "status": "passed",
-      "passed": 6,
-      "total": 6
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
     },
     "design_fidelity": {
       "status": "not_run",
@@ -33,7 +33,7 @@
     "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "justification": "Framework-internal /shipwright-adopt scaffolding + GitHub-Actions templates + shared convention-lock libs; no web/CLI end-user app surface. End-to-end verified by running the REAL generator as a subprocess (plugins/shipwright-adopt/tests/test_adopt_pipeline_subprocess.py::test_full_pipeline_e2e_via_subprocess), which asserts codeql.yml + AUTOMERGE_SETUP.md land with correct payloads.",
+      "justification": "Framework-internal Claude-Code hook output-channel fix (PostToolUse security guards check_secrets.sh + check_destructive_migration.sh; SessionStart artifact-drift detector). No web/CLI/API product surface exists for this change. Behavior is verified end-to-end by shared/tests/test_hook_block_channel.py, which subprocesses the REAL registered hook commands with production-shaped stdin payloads and asserts the reason lands on the channel each event actually reads.",
       "tests_run": 0,
       "exit_code": 0
     },
@@ -41,55 +41,42 @@
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 codeql template dormant + ${SHIPWRIGHT_CODEQL_LANGUAGES} placeholder + permissions floor + continue-on-error",
+          "behavior": "PostToolUse check_secrets.sh: on a detected secret -> exit 2 with the block reason on stderr (the channel Claude reads on exit 2), NOT on the discarded stdout",
           "disposition": "tested",
-          "evidence": "shared/tests/test_codeql_workflow_convention.py (23) PASSED"
+          "evidence": "test_hook_block_channel.py::test_posttooluse_guard_reason_on_stderr[check_secrets.sh] PASSED; test_hooks.py::TestCheckSecrets (5 cases) PASSED"
         },
         {
-          "behavior": "AC2 codeql scaffolder renders per-profile langs; never-overwrite; reason codes (scaffolded/already_exists/no_codeql_for_profile/profile_unresolved); rendered output valid YAML + dormant",
+          "behavior": "PostToolUse check_destructive_migration.sh (registered build copy): on destructive SQL -> exit 2 with the reason on stderr, not stdout",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-adopt/tests/test_codeql_workflow_scaffold.py (17) PASSED"
+          "evidence": "test_hook_block_channel.py::test_posttooluse_guard_reason_on_stderr[check_destructive_migration.sh] PASSED"
         },
         {
-          "behavior": "AC3 check-name matrix expansion (interpolate / no-name->job-id / no-ref->append-combo / multi-dim / include-exclude excluded) + dormant detection",
+          "behavior": "SessionStart artifact-drift gate (check_artifact_drift.py -> stale_artifact_detector.hook_main): a migrated/block finding is delivered to the model via a schema-valid additionalContext payload on stdout + stderr notice + exit 0 (warn-only; SessionStart cannot block) — the hook<->detector composition exercised end-to-end via subprocess of the real registered hook",
           "disposition": "tested",
-          "evidence": "shared/tests/test_automerge_check_names.py (12) PASSED"
+          "category": "integration",
+          "evidence": "test_hook_block_channel.py::test_sessionstart_drift_reason_on_stdout_additionalcontext PASSED; test_stale_artifact_detector.py::test_hook_main_warns_on_block_severity_via_sessionstart_channel PASSED; test_artifact_drift_edge_cases.py::test_drift_detector_reports_both_dirs_present PASSED"
         },
         {
-          "behavior": "AC3 if:-gated deploy jobs excluded from requireable + surfaced as conditional (review H1)",
+          "behavior": "SessionStart drift gate fail-open: a report-write OSError must NOT suppress the warning — still emit additionalContext + exit 0",
           "disposition": "tested",
-          "evidence": "test_automerge_readiness.py::test_required_checks_exclude_if_gated_deploy_jobs + ::test_render_warns_about_conditional_deploy_jobs PASSED"
+          "evidence": "test_stale_artifact_detector.py::test_hook_main_warn_survives_report_write_failure PASSED"
         },
         {
-          "behavior": "AC3 derived Required-Check names == deployed workflow names across all 3 profiles + KNOWN_WORKFLOWS drift-pin",
-          "disposition": "tested",
-          "evidence": "test_automerge_readiness.py::test_required_check_names_match_deployed_workflows[3] + ::test_known_workflows_match_convention_modules PASSED"
-        },
-        {
-          "behavior": "AC4 AUTOMERGE_SETUP render: profile + table substituted, dormant-trap + signing-omit prose, dormant/active flags; scaffolder never-overwrite + no-workflow degenerate",
-          "disposition": "tested",
-          "evidence": "test_automerge_readiness.py render tests + plugins/shipwright-adopt/tests/test_automerge_setup_scaffold.py (13) PASSED"
-        },
-        {
-          "behavior": "AC5 orchestrator wiring (codeql after CI; AUTOMERGE doc LAST; reads real deployed files) via real generate_adoption_artifacts subprocess",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-adopt/tests/test_adopt_pipeline_subprocess.py::test_full_pipeline_e2e_via_subprocess PASSED (slow)"
-        },
-        {
-          "behavior": "AC5 SKILL.md + reference-doc cross-links resolve after edits",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-adopt/tests/test_cross_links.py + test_skill_references_link.py PASSED"
+          "behavior": "in_progress (warn-severity) drift path: stderr notice + report + exit 0 (unchanged by this diff)",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "reason": "behavior is unchanged by this diff; pinned by the pre-existing test_stale_artifact_detector.py::test_hook_main_returns_zero_with_warn_only"
         }
       ],
       "counts": {
-        "testable": 8,
-        "tested": 8,
-        "untestable": 0,
+        "testable": 4,
+        "tested": 4,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 5,
-        "covered_acs": 5
+        "acs": 3,
+        "covered_acs": 3
       }
     }
   }

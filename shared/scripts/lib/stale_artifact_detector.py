@@ -6,8 +6,11 @@ canonical home is now under ``.shipwright/`` (per
 
 - ``in_progress`` → emit warn-only stderr notice + write report to
   ``.shipwright/stale-folders.md``. Hook continues with exit 0.
-- ``migrated``    → emit structured JSON to stdout (parsable by the
-  AI orchestrator) and exit 1. Hook hard-gates the session.
+- ``migrated``    → **warn-only** (a SessionStart hook cannot block a
+  session): emit a schema-valid ``additionalContext`` payload on stdout
+  so the model receives the drift + ``git mv`` remediation, plus a stderr
+  notice + the report. Exit 0. (Historically this claimed an ``exit 1``
+  "hard-gate"; that was inert — see WP4 / artifact-migration-reference.md.)
 
 Self-healing: when no findings exist on a subsequent run, the report
 file is *deleted* (``unlink(missing_ok=True)``) instead of overwritten,
@@ -149,15 +152,22 @@ def write_drift_report_or_clear(
 
 
 def hook_main(project_root: Path) -> int:
-    """SessionStart-hook entry point.
+    """SessionStart-hook entry point. **Warn-only** (always exit 0).
 
-    - Wraps scan in try/except so a broken filesystem cannot brick the
-      session start.
-    - On ``block``-severity findings (migrated artifacts with stale
-      legacy dirs), prints structured JSON to stdout and exits 1 so the
-      AI orchestrator reliably notices.
-    - On ``warn`` findings (in-progress migrations), only stderr-notes
-      and exits 0 — we do not want to block our own migration sub-iterates.
+    A SessionStart hook *cannot block* a session — its exit code is
+    non-blocking and only ``exit 0`` stdout is injected as model context.
+    So drift is surfaced honestly, on the channel each side actually reads
+    (WP4 / iterate-2026-06-13-hook-block-channel):
+
+    - On ``block``-severity findings (a ``migrated`` artifact whose legacy
+      dir reappeared at the root) → emit a schema-valid SessionStart
+      ``additionalContext`` payload on stdout so the **model** receives the
+      drift + ``git mv`` remediation, plus a stderr notice for the human.
+      (The old ``{"success": false}`` JSON + ``exit 1`` "hard-gate" was
+      inert — SessionStart can't stop a session and that shape was unread.)
+    - On ``warn`` findings (in-progress migrations) → stderr note only.
+    - Scan + report-write are wrapped so a broken filesystem can never
+      brick session start.
     """
     try:
         findings = scan_for_stale_legacy_dirs(project_root)
@@ -165,20 +175,41 @@ def hook_main(project_root: Path) -> int:
         print(f"[shipwright] drift detector skipped: {exc}", file=sys.stderr)
         return 0
 
-    write_drift_report_or_clear(project_root, findings)
+    try:
+        write_drift_report_or_clear(project_root, findings)
+    except OSError as exc:  # fail-open: a report-write failure must not
+        # suppress the warning the model/human still needs to see.
+        print(f"[shipwright] drift report write failed: {exc}", file=sys.stderr)
 
     blocking = [f for f in findings if f["severity"] == "block"]
     if blocking:
+        remediation = [
+            f"git mv {f['legacy_path']} {f['canonical_path']}" for f in blocking
+        ]
+        names = ", ".join(f["legacy_path"] for f in blocking)
+        context_msg = (
+            "=== SHIPWRIGHT-ARTIFACT-DRIFT (warn-only) ===\n"
+            f"{len(blocking)} relocated artifact dir(s) reappeared at the project "
+            f"root and must NOT live there (migrated under .shipwright/): {names}.\n"
+            f"Remediation: {'; '.join(remediation)}.\n"
+            f"See `{REPORT_FILENAME}` for the full report. SessionStart cannot "
+            "block — please fix before continuing.\n"
+            "=== END ARTIFACT-DRIFT ==="
+        )
+        # additionalContext on stdout, exit 0 — the only channel SessionStart
+        # delivers to the model.
         print(json.dumps({
-            "success": False,
-            "error": "stale_artifact_dirs",
-            "findings": blocking,
-            "remediation": [
-                f"git mv {f['legacy_path']} {f['canonical_path']}"
-                for f in blocking
-            ],
+            "hookSpecificOutput": {
+                "hookEventName": "SessionStart",
+                "additionalContext": context_msg,
+            },
         }))
-        return 1
+        print(
+            f"[shipwright] DRIFT (warn-only): {len(blocking)} migrated artifact "
+            f"dir(s) reappeared at root; fix with: {'; '.join(remediation)}",
+            file=sys.stderr,
+        )
+        return 0
 
     if findings:
         print(

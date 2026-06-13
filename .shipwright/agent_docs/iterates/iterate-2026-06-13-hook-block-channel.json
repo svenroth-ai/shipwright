@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-13-hook-block-channel",
+  "date": "2026-06-13T07:44:56.146099Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/hook-block-channel",
+  "spec": ".shipwright/planning/iterate/2026-06-13-hook-block-channel.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-13-hook-block-channel"
+}

@@ -92,9 +92,10 @@ def test_drift_detector_reports_both_dirs_present(tmp_path, designs_migration):
     `.shipwright/designs/`, the drift detector must still surface the
     legacy directory.
 
-    Severity depends on migration status:
+    Severity depends on migration status (both warn-only — a SessionStart
+    hook cannot block; WP4 / iterate-2026-06-13-hook-block-channel):
     - in_progress → exit 0 with warn-style stderr + stale-folders.md
-    - migrated    → exit 1 with structured JSON + stale-folders.md
+    - migrated    → exit 0 with additionalContext on stdout + stale-folders.md
     """
     project = tmp_path / "both-present"
     project.mkdir()
@@ -126,14 +127,17 @@ def test_drift_detector_reports_both_dirs_present(tmp_path, designs_migration):
     assert ".shipwright" in body
     assert designs_migration["status"] in body
 
-    # Severity expectations.
-    if designs_migration["status"] == "in_progress":
-        assert result.returncode == 0, (
-            f"in_progress drift should be warn-only, got rc={result.returncode}"
-        )
-    else:
-        assert result.returncode == 1, (
-            f"migrated drift should hard-gate, got rc={result.returncode}"
+    # Severity expectations — both warn-only (SessionStart cannot block).
+    assert result.returncode == 0, (
+        f"drift is warn-only (SessionStart cannot block), got "
+        f"rc={result.returncode}\nstdout: {result.stdout}\nstderr: {result.stderr}"
+    )
+    if designs_migration["status"] == "migrated":
+        # block-severity delivers its reason to the model via additionalContext
+        # on stdout (the channel SessionStart reads).
+        assert "additionalContext" in result.stdout, (
+            f"migrated drift must deliver additionalContext on stdout; "
+            f"stdout: {result.stdout}"
         )
 
 

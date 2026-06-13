@@ -480,10 +480,12 @@ SessionStart hooks (in order):
    3. check_artifact_drift.py      (scans project_root for legacy artifact
                                     dirs from active migrations in
                                     shared/scripts/lib/artifact_migrations.py;
-                                    in_progress → warn-only stderr +
-                                    .shipwright/stale-folders.md, exit 0;
-                                    migrated → structured JSON to stdout +
-                                    exit 1 (hard-gate))
+                                    warn-only — SessionStart cannot block, so
+                                    always exit 0:
+                                    in_progress → stderr notice +
+                                    .shipwright/stale-folders.md;
+                                    migrated → additionalContext on stdout
+                                    (the model-facing channel) + stderr notice)
    |
    v
 UserPromptSubmit hook (per prompt; first prompt only matters):
@@ -639,10 +641,17 @@ canonical-vs-legacy paths lives in
 - `in_progress` → **warn-only**. Findings produce a stderr notice and
   a markdown report at `.shipwright/stale-folders.md`. Hook exits 0
   so we don't break our own migration sub-iterates.
-- `migrated` → **hard-gate**. Findings produce structured JSON on
-  stdout (`{"success": false, "error": "stale_artifact_dirs", ...}`)
-  and exit code 1. The AI orchestrator parses this and stops the
-  session with a clear `git mv …` remediation list.
+- `migrated` → **warn-only** (a SessionStart hook *cannot* block a
+  session). Findings produce a schema-valid `additionalContext` payload
+  on stdout — the channel SessionStart delivers to the model — carrying
+  the drift summary + a `git mv …` remediation list, plus a stderr
+  notice and the report. Hook exits 0. (WP4 /
+  `iterate-2026-06-13-hook-block-channel`: this was previously documented
+  as an `exit 1` "hard-gate" emitting `{"success": false, ...}`, but
+  SessionStart exit codes are non-blocking and that JSON shape was never
+  read — the gate was inert. A true hard-stop would need a
+  `UserPromptSubmit` hook; deferred under YAGNI until an incident
+  warrants it.)
 
 **Self-healing:** when no findings exist on a subsequent run, the
 report file is *deleted* (`unlink(missing_ok=True)`) instead of
