@@ -10,7 +10,9 @@ sys.path.insert(
     str(Path(__file__).resolve().parent.parent / "scripts" / "lib"),
 )
 
-from classify_intent import classify
+import pytest
+
+from classify_intent import SIMPLIFY_KEYWORDS, SIMPLIFY_PHRASES, classify
 
 
 class TestIntentClassification:
@@ -22,6 +24,62 @@ class TestIntentClassification:
     def test_change_keywords(self):
         result = classify("refactor the sidebar component to use different layout")
         assert result["type"] == "change"
+        # refactor/restructure stay plain CHANGE — NOT the simplify sub-mode.
+        assert result.get("mode") is None
+
+
+class TestSimplifyMode:
+    """OS1 / P3.2 — simplify is a behavior-preserving sub-mode of CHANGE.
+
+    It surfaces as ``type == "change"`` + an additive ``mode == "simplify"`` so
+    the F5c iterate-entry enum ({feature, change, bug}) is untouched.
+    """
+
+    def test_simplify_keyword_sets_change_plus_mode(self):
+        result = classify("simplify the helper in utils.py")
+        assert result["type"] == "change"
+        assert result["mode"] == "simplify"
+        assert result["confidence"] > 0.5
+
+    def test_clean_up_phrase_sets_simplify_mode(self):
+        result = classify("clean up the auth module")
+        assert result["type"] == "change"
+        assert result["mode"] == "simplify"
+
+    def test_declutter_streamline_tidy(self):
+        for msg in ("declutter the dashboard", "streamline the parser", "tidy the imports"):
+            result = classify(msg)
+            assert result["mode"] == "simplify", msg
+            assert result["type"] == "change", msg
+
+    def test_refactor_alone_is_not_simplify(self):
+        result = classify("restructure the module layout")
+        assert result["type"] == "change"
+        assert result.get("mode") is None
+
+    def test_bug_fix_wins_over_simplify(self):
+        # A fix that also says "simplify" is primarily a bug fix — no simplify wrap.
+        result = classify("fix and simplify the broken parser")
+        assert result["type"] == "bug"
+        assert result.get("mode") is None
+
+    def test_plain_feature_has_no_mode(self):
+        result = classify("add a new search feature")
+        assert result.get("mode") is None
+
+    def test_none_result_has_mode_key(self):
+        result = classify("hello there")
+        assert result["type"] == "none"
+        assert result.get("mode") is None
+
+    @pytest.mark.parametrize("word", sorted(SIMPLIFY_KEYWORDS))
+    def test_every_simplify_keyword_triggers_mode(self, word):
+        """Pin the WHOLE vocabulary set so a silent drop is caught (review 3.1)."""
+        assert classify(f"{word} the parser module")["mode"] == "simplify"
+
+    @pytest.mark.parametrize("phrase", SIMPLIFY_PHRASES)
+    def test_every_simplify_phrase_triggers_mode(self, phrase):
+        assert classify(f"{phrase} the parser module")["mode"] == "simplify"
 
     def test_bug_keywords(self):
         result = classify("fix the broken login page error")

@@ -108,6 +108,17 @@ def strip_worktree_prefix(rel_path: str) -> str:
     return _WORKTREE_PREFIX_RE.sub("", normalize_path(rel_path), count=1)
 
 
+def worktree_root_for(main_root: Path | str, rel_path: str) -> Path | None:
+    """Worktree root owning ``rel_path`` via its ``.worktrees/<slug>/`` prefix,
+    else ``None``. SSoT for the marker writer + Stop gate (trg-28e83840/537334f1)."""
+    norm = normalize_path(rel_path)
+    stripped = strip_worktree_prefix(norm)
+    if stripped == norm:
+        return None
+    prefix = norm[: len(norm) - len(stripped)]  # ".worktrees/<slug>/"
+    return Path(main_root) / prefix.rstrip("/")
+
+
 # ---------------------------------------------------------------------
 # Classification
 # ---------------------------------------------------------------------

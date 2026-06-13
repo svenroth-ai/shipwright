@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-13-code-simplify-skill",
+  "date": "2026-06-13T14:02:12.060199Z",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/code-simplify-skill",
+  "spec": ".shipwright/planning/iterate/2026-06-13-code-simplify-skill.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-13-code-simplify-skill"
+}

@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-06-13T13:45:09.556405+00:00
+Generated: 2026-06-13T14:01:54.530271+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -9,10 +9,10 @@ Scope: library
 | Metric | Value | Status | Why warn? |
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
-| Work events (iterate) | 179 changes | INFO |  |
-| All unit tests passing | 4220/4236 | WARN | 16/4236 failing — see test-evidence.md |
+| Work events (iterate) | 180 changes | INFO |  |
+| All unit tests passing | 3419/3419 | PASS |  |
 | Architecture decisions | 206 ADRs | INFO |  |
-| Iterate tests passing | 111/179 iterations tested | WARN | 68 iterate(s) without tests — see test-evidence.md |
+| Iterate tests passing | 112/180 iterations tested | WARN | 68 iterate(s) without tests — see test-evidence.md |
 | Dependencies | 8 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
 | Triage open | 20 open | WARN | 20 actionable item(s) — see ../agent_docs/triage_inbox.md |
@@ -22,7 +22,7 @@ Scope: library
 
 ## Project Velocity
 
-- Iterate: 179 changes (2026-05-02 → 2026-06-13)
+- Iterate: 180 changes (2026-05-02 → 2026-06-13)
 - Last activity: 2026-06-13
 
 ## External LLM Review Evidence

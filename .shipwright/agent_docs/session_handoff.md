@@ -1,35 +1,38 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-13-low-risk-hardening"
+run_id: "iterate-2026-06-13-code-simplify-skill"
 phase: "iterate"
-reason: "F11 pre-merge refresh: iterate-2026-06-13-low-risk-hardening"
-timestamp: "2026-06-13T13:45:09.556405+00:00"
+reason: "F11 pre-merge refresh: iterate-2026-06-13-code-simplify-skill"
+timestamp: "2026-06-13T14:01:54.530271+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-13 13:45:09 UTC
+> Auto-generated 2026-06-13 14:01:54 UTC
 
 ## Session Info
 
-- **Session ID**: 5b2bf528-d21b-4644-b363-1c053e677024
-- **Timestamp**: 2026-06-13 13:45:09 UTC
-- **Reason**: F11 pre-merge refresh: iterate-2026-06-13-low-risk-hardening
+- **Session ID**: 49776804-0473-4fac-9221-1d7ae56857c5
+- **Timestamp**: 2026-06-13 14:01:54 UTC
+- **Reason**: F11 pre-merge refresh: iterate-2026-06-13-code-simplify-skill
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-13-low-risk-hardening
-- **Date**: 2026-06-13T13:46:55.146326Z
-- **Type**: change
-- **Complexity**: small
-- **Branch**: iterate/low-risk-hardening
-- **ADR**: iterate-2026-06-13-low-risk-hardening
+- **Run ID**: iterate-2026-06-13-code-simplify-skill
+- **Date**: 2026-06-13T14:02:12.060199Z
+- **Type**: feature
+- **Complexity**: medium
+- **Branch**: iterate/code-simplify-skill
+- **ADR**: iterate-2026-06-13-code-simplify-skill
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/campaigns/2026-06-10-audit-3-final/sub-iterates/a3-2-low-risk-hardening.md
+- **Spec**: .shipwright/planning/iterate/2026-06-13-code-simplify-skill.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/low-risk-hardening
+- **Branch**: iterate/code-simplify-skill
+- **Run ID**: iterate-2026-06-13-code-simplify-skill
+- **Spec**: .shipwright/planning/iterate/2026-06-13-code-simplify-skill.md
+- **Complexity**: medium (locked; prior_source: keyword)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/low-risk-hardening
-- **Last Commit**: fd340c5a Merge remote-tracking branch 'origin/main' into iterate/low-risk-hardening
+- **Branch**: iterate/code-simplify-skill
+- **Last Commit**: 5f7c30ad Merge remote-tracking branch 'origin/main' into iterate/code-simplify-skill
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-8726cab7 | work_completed | iterate (audit-3 WP11b low-risk hardening (F18/F32/F39/F40/F41)) | 2026-06-13 |
+| evt-0c568942 | work_completed | iterate (Align the bloat marker writer (check_file_size) to key delta/was_in_allowlist off the worktree's own baseline via a shared worktree_root_for SSoT also used by the Stop gate (trg-537334f1).) | 2026-06-13 |
+| evt-3d6824d5 | work_completed | iterate (code-simplify skill (OS1 / P3.2): SIMPLIFY sub-mode of CHANGE + behavior_snapshot snapshot/verify gate + F-simplify.md + guide docs) | 2026-06-13 |
 | evt-35fb72c3 | work_completed | iterate (Read run-config standalone flag without triggering the unlocked legacy migration) | 2026-06-13 |
 | evt-c94b50ab | work_completed | iterate (durable atomic writes (fsync) across all atomic writers) | 2026-06-13 |
 | evt-0e2c6e4d | work_completed | iterate (sync 6 stale SKILL.md/code/config items to the corrected guide (C1-C6)) | 2026-06-13 |
-| evt-b1e3660d | work_completed | iterate (audit-3 WP11a docs/SSoT reconciliation (F3 hooks.json format, F4 registry drift, F9 outbox matrix, F28 F6 decision-drops staging)) | 2026-06-13 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 179
-- **Last iterate**: change — audit-3 WP11b low-risk hardening (F18/F32/F39/F40/F41) (2026-06-13)
+- **Total work events**: 180
+- **Last iterate**: change — Align the bloat marker writer (check_file_size) to key delta/was_in_allowlist off the worktree's own baseline via a shared worktree_root_for SSoT also used by the Stop gate (trg-537334f1). (2026-06-13)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

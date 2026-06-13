@@ -1598,7 +1598,7 @@ Every FEATURE and CHANGE iterate must classify how it changes the requirement sp
 - **ADD** -- a new endpoint, page, or user-visible capability: a new FR row is appended to `spec.md`.
 - **MODIFY** -- an existing FR's behavior changed: its row + acceptance criteria are updated.
 - **REMOVE** -- a capability was deleted: the FR row moves into a `### Removed Requirements` section (never silently dropped).
-- **NONE** -- a behavior-preserving internal refactor: recorded with a one-line justification.
+- **NONE** -- a behavior-preserving internal refactor: recorded with a one-line justification. A NONE iterate (or one explicitly classified `simplify`) runs the **Simplify sub-mode** below, which guards the "behavior-preserving" claim mechanically.
 
 Two layers enforce it. At finalization `record_event.py` refuses (exit 1) a feature/change iterate that names no FR and gives no `spec_impact=none` justification; and the F11 verifier fails the run if its commit touched no `spec.md` without a recorded `spec_impact=none`. The on-demand `/shipwright-compliance` detective audit (Group D, check D5) additionally surfaces any historical feature/change events that landed with no FR linkage. BUG iterates are exempt from the spec-impact gate -- a fix need not change the spec.
 
@@ -1663,6 +1663,16 @@ The three intent types still define the workflow shape, but each is now complexi
 | **Bug** | [spec] → reproduce → [plan] → fix → test → finalize | Reproduces via failing test first, no interview |
 
 Each path runs tests automatically, creates a conventional commit with FR references and a `Run-ID` trailer, records a `work_completed` event in the event log, and triggers incremental compliance report updates.
+
+#### Simplify -- behavior-preserving sub-mode (OS1)
+
+A fourth shape rides on **Change**: when you ask iterate to *simplify*, *clean up*, *declutter*, *streamline*, or *tidy* code -- or whenever a Change/Feature is classified Spec Impact **NONE** -- it runs a behavior-preserving wrap instead of a normal edit:
+
+1. **Behavior-Snapshot** -- before touching anything, `behavior_snapshot.py snapshot` runs the test suite and stores the green state (collected test node-ids + counts + exit code + source LOC). It *refuses a red baseline* -- there is no behavior to preserve if the suite is not already green.
+2. **Simplify** -- the edit follows five principles (Preserve Behavior, Follow Conventions, Clarity over Cleverness, Maintain Balance, Scope to What Changed) plus a Chesterton-Fence pre-flight: before removing any line, guard, or branch you must state *why it exists*. **Fewer lines is not the goal** -- clarity is.
+3. **Behavior-Verify** -- `behavior_snapshot.py verify` re-runs the suite and **rejects** the change if any test flips green→red, a previously-collected test disappears (removed coverage), or source shrinks *while* coverage drops. A clean green→green with a large LOC drop is the win.
+
+The gate is only as strong as the suite's coverage, so removed coverage is a hard reject and the five-principle reasoning is mandatory, not optional. Spec Impact is **NONE** by definition. The full protocol lives in the iterate skill's `references/F-simplify.md` (adapted, with attribution, from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills), MIT).
 
 ### Override Classes
 
