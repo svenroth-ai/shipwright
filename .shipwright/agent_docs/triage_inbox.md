@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-13T14:01:54.530271Z. Items waiting for triage decision.
+> Auto-generated 2026-06-13T16:03:19.756877Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
 - Total: 217
-- Triage: 4 | Promoted: 1 | Dismissed: 211 | Snoozed: 1
+- Triage: 3 | Promoted: 1 | Dismissed: 212 | Snoozed: 1
 
-## Top 4 items (severity-sorted)
+## Top 3 items (severity-sorted)
 
 ### Source: architecture (1 item)
 
@@ -31,13 +31,6 @@
     Each finding + hint is listed in this item's detail.
     ```
   - Promote: `triage_promote.py --id trg-a906e79b --task-ref EXT:<ref>`
-
-### Source: manual (1 item)
-
-<a id="trg-9b9a2b9d"></a>
-- **Audit bug-fixes - final batch, run last (docs/SSoT + low-risk hardening)** `id=trg-9b9a2b9d | severity=medium | kind=improvement → P2/engineering`
-  - Launch surface only. The work plan + details live in the LOCAL, gitignored campaign dir (not in git). Start via the Sta…
-  - Promote: `triage_promote.py --id trg-9b9a2b9d --task-ref EXT:<ref>`
 
 ### Source: reducibility-review (1 item)
 
