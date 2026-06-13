@@ -190,10 +190,13 @@ future migrations can reason about it without reading the source.
      ("X legacy dir(s) seen during in-progress migration; see
      `.shipwright/stale-folders.md`"), exit 0. The migration can
      continue without the hook blocking it.
-   - **Any `block` finding (migrated)** -> emit structured JSON to
-     stdout (parsed by AI orchestrators per Gemini #1 -- stderr alone
-     is overlooked) AND exit 1. The session start fails. The user
-     sees both `stale-folders.md` and the JSON output.
+   - **Any `block` finding (migrated)** -> **warn-only** (a SessionStart
+     hook cannot block a session, so exit codes are non-blocking). Emit a
+     schema-valid `additionalContext` payload on stdout — the channel
+     SessionStart delivers to the model — carrying the drift + `git mv`
+     remediation, plus a stderr notice, exit 0. The user sees both
+     `stale-folders.md` and the model-facing context. (WP4 corrected an
+     earlier inert `exit 1` "hard-gate" claim; see the mode matrix below.)
 
 ### Self-healing behavior
 
@@ -223,7 +226,7 @@ session if the detector misbehaves).
 
 ### Migration-CLI workflow for a stale project
 
-When the detector hard-gates an existing project:
+When the detector flags drift (warn-only) in an existing project:
 
 ```bash
 # Inspect what was found
@@ -265,7 +268,7 @@ The next SessionStart will see no legacy dir and silently delete
 |---|---|---|---|
 | `pending` | no-op | no-op | refuses (`unknown_artifact` if not in manifest yet) |
 | `in_progress` | enforces (with allowlist) | warn-only, exit 0 | usable, recommended for early adopters |
-| `migrated` | enforces (allowlist near-empty) | hard-gate, exit 1 | the documented user-facing remediation |
+| `migrated` | enforces (allowlist near-empty) | warn-only (additionalContext on stdout + stderr), exit 0 | the documented user-facing remediation |
 
 ---
 
@@ -1035,6 +1038,7 @@ CHANGELOG-unreleased.d/ rejection memos for the disqualifying patterns).
 6. External-review the main plan (§ 8).
 7. Flip status to `in_progress` and start Sub-Iterate B.
 8. Run B-F, each with the same TDD + Layer-1-lint-green discipline.
-9. F flips status to `migrated`. The drift detector now hard-gates.
+9. F flips status to `migrated`. The drift detector now warns (warn-only;
+   SessionStart cannot block — see § 1 mode matrix).
 10. G updates THIS reference doc with the new artifact's lessons,
     appends to § 11 reference commits, updates `MEMORY.md` index.

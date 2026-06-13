@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-06-13T09:21:45.201585+00:00
+Generated: 2026-06-13T07:44:42.695706+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -12,7 +12,7 @@ Scope: library
 | Work events (iterate) | 173 changes | INFO |  |
 | All unit tests passing | 0/0 | WARN | no test events recorded yet |
 | Architecture decisions | 196 ADRs | INFO |  |
-| Iterate tests passing | 105/173 iterations tested | WARN | 68 iterate(s) without tests — see test-evidence.md |
+| Iterate tests passing | 106/173 iterations tested | WARN | 67 iterate(s) without tests — see test-evidence.md |
 | Dependencies | 8 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
 | Triage open | 20 open | WARN | 20 actionable item(s) — see ../agent_docs/triage_inbox.md |

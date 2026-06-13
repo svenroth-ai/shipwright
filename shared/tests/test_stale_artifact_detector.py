@@ -2,7 +2,10 @@
 
 Covers ``shared/scripts/lib/stale_artifact_detector.py``: the streaming
 scan, the warn-vs-block severity split, the report write/clear self-heal,
-and the SessionStart hook entry behavior (exit-code + stdout JSON).
+and the SessionStart hook entry behavior. SessionStart cannot block, so
+both severities are warn-only — block (``migrated``) findings reach the
+model via a schema-valid ``additionalContext`` payload on stdout (exit 0),
+warn (``in_progress``) findings via a stderr notice (exit 0).
 """
 from __future__ import annotations
 
@@ -208,22 +211,33 @@ def test_hook_main_returns_zero_with_warn_only(tmp_path, with_in_progress, capsy
     assert (tmp_path / sad.REPORT_FILENAME).exists()
 
 
-def test_hook_main_returns_one_with_block_severity(tmp_path, with_migrated, capsys):
+def test_hook_main_warns_on_block_severity_via_sessionstart_channel(
+    tmp_path, with_migrated, capsys
+):
+    """SessionStart cannot block a session, so a `migrated` (block) finding is
+    delivered honestly as warn-only: a schema-valid SessionStart
+    `additionalContext` JSON on stdout (the channel the model reads) + a stderr
+    notice + the report, and exit 0 — NOT a fake `exit 1` hard-gate the model
+    never sees (WP4 / iterate-2026-06-13-hook-block-channel)."""
     legacy = tmp_path / "planning"
     legacy.mkdir()
     (legacy / "spec.md").write_text("x", encoding="utf-8")
 
     rc = sad.hook_main(tmp_path)
-    assert rc == 1  # hard gate
+    assert rc == 0  # warn-only — SessionStart cannot block
 
     captured = capsys.readouterr()
     payload = json.loads(captured.out.strip())
-    assert payload["success"] is False
-    assert payload["error"] == "stale_artifact_dirs"
-    assert len(payload["findings"]) == 1
-    assert payload["findings"][0]["severity"] == "block"
-    assert payload["remediation"]
-    assert "git mv" in payload["remediation"][0]
+    # Schema-valid SessionStart envelope so the model actually receives it.
+    hso = payload["hookSpecificOutput"]
+    assert hso["hookEventName"] == "SessionStart"
+    ctx = hso["additionalContext"]
+    assert "git mv" in ctx
+    # `success`/`error`/`findings` top-level keys are gone (they were never read).
+    assert "success" not in payload
+    # Human-facing notice still on stderr; report still written.
+    assert "drift" in captured.err.lower()
+    assert (tmp_path / sad.REPORT_FILENAME).exists()
 
 
 def test_hook_main_fails_open_on_scan_exception(tmp_path, monkeypatch, capsys):
@@ -237,3 +251,28 @@ def test_hook_main_fails_open_on_scan_exception(tmp_path, monkeypatch, capsys):
     captured = capsys.readouterr()
     assert "drift detector skipped" in captured.err
     assert "simulated filesystem failure" in captured.err
+
+
+def test_hook_main_warn_survives_report_write_failure(
+    tmp_path, with_migrated, monkeypatch, capsys
+):
+    """A report-write OSError must NOT suppress the warning: the model still
+    receives the additionalContext payload and the hook still exits 0
+    (fail-open, WP4)."""
+    legacy = tmp_path / "planning"
+    legacy.mkdir()
+    (legacy / "spec.md").write_text("x", encoding="utf-8")
+
+    def _broken_write(_root, _findings):
+        raise OSError("simulated unwritable .shipwright/")
+
+    monkeypatch.setattr(sad, "write_drift_report_or_clear", _broken_write)
+    rc = sad.hook_main(tmp_path)
+    assert rc == 0  # fail-open
+
+    captured = capsys.readouterr()
+    # The write failure is noted on stderr, but the drift warning survives.
+    assert "report write failed" in captured.err
+    payload = json.loads(captured.out.strip())
+    assert payload["hookSpecificOutput"]["hookEventName"] == "SessionStart"
+    assert "git mv" in payload["hookSpecificOutput"]["additionalContext"]

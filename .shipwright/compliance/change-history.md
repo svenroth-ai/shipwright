@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-06-13T09:21:45.201585+00:00
-Total commits: 987
+Generated: 2026-06-13T07:44:42.695706+00:00
+Total commits: 988
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 282
+    "fix" : 283
     "feat" : 271
     "chore" : 216
     "docs" : 125
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 282 commits
+### Fixes (fix) — 283 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-13 | hooks | deliver block reason on the channel the event reads (WP4) | 5237e5334906 |
 | 2026-06-13 | pipeline | atomic + lock-coordinated run_config writes; Stop-fallback timeout headroom (WP2) (#226) | de2df18ab60f |
 | 2026-06-13 | pipeline | phase hooks resolve identity from stdin payload; atomic event dedup; failure event types (WP1) (#224) | a683d75bb779 |
 | 2026-06-12 | compliance | coerce explicit-null affected_frs/new_frs in WorkEvent.from_dict (#220) | 332b64728fa1 |
@@ -1056,7 +1057,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 987 |
+| Total commits | 988 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 987 |
+| Human-authored commits | 988 |
 

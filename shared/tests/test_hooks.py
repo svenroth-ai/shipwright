@@ -136,35 +136,35 @@ class TestCheckSecrets:
         f.write_text('AWS_KEY = "AKIAIOSFODNN7EXAMPLE"\n')
         result = run_hook("check_secrets.sh", self._make_payload(str(f)))
         assert result.returncode == 2
-        assert "AWS Access Key" in result.stdout
+        assert "AWS Access Key" in result.stderr
 
     def test_detects_openai_key(self, tmp_path):
         f = tmp_path / "app.ts"
         f.write_text('const key = "sk-abc123def456ghi789jkl012mno345pqr678stu901"\n')
         result = run_hook("check_secrets.sh", self._make_payload(str(f)))
         assert result.returncode == 2
-        assert "API key" in result.stdout
+        assert "API key" in result.stderr
 
     def test_detects_github_token(self, tmp_path):
         f = tmp_path / "deploy.sh"
         f.write_text('TOKEN=ghp_abcdefghijklmnopqrstuvwxyz1234567890\n')
         result = run_hook("check_secrets.sh", self._make_payload(str(f)))
         assert result.returncode == 2
-        assert "GitHub token" in result.stdout
+        assert "GitHub token" in result.stderr
 
     def test_detects_private_key(self, tmp_path):
         f = tmp_path / "key.pem"
         f.write_text("-----BEGIN RSA PRIVATE KEY-----\nMIIE...\n-----END RSA PRIVATE KEY-----\n")
         result = run_hook("check_secrets.sh", self._make_payload(str(f)))
         assert result.returncode == 2
-        assert "Private key" in result.stdout
+        assert "Private key" in result.stderr
 
     def test_detects_hardcoded_password(self, tmp_path):
         f = tmp_path / "db.py"
         f.write_text('password = "SuperSecret123!"\n')
         result = run_hook("check_secrets.sh", self._make_payload(str(f)))
         assert result.returncode == 2
-        assert "password" in result.stdout.lower()
+        assert "password" in result.stderr.lower()
 
     def test_allows_clean_file(self, tmp_path):
         f = tmp_path / "app.py"

@@ -77,7 +77,9 @@ def test_check_destructive_migration_drop_table(tmp_path):
         capture_output=True, text=True, encoding="utf-8",
     )
     assert result.returncode == 2
-    assert "DROP TABLE" in result.stdout
+    # WP4: the block reason is delivered on STDERR (the channel Claude reads on
+    # a PostToolUse exit-2 soft block), not the stdout that exit-2 discards.
+    assert "DROP TABLE" in result.stderr
 
 
 def test_check_destructive_non_sql(tmp_path):

@@ -1,12 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-06-13 09:21 UTC | Session: 6ae258a2-262e-4e05-9677-bf0575dcdf94 | Run: iterate-2026-06-13-guide-correctness-audit
+> Updated: 2026-06-13 07:44 UTC | Session: a50898c7-7d3c-4217-a674-0c348ee85ea4 | Run: iterate-2026-06-13-hook-block-channel
 
 ## Recent Changes (173 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| change | guide.md correctness audit + 21 fixes vs code/ADRs | 0/0 |  | docs | 2026-06-13 |
 | change | docs install/Get-Started rewrite + GitHub/auto-merge guide + marketplace metadata parity | 0/0 |  | docs | 2026-06-13 |
+| change | hook block-channel (WP4): route PostToolUse security-guard reasons to stderr; SessionStart drift gate is honest warn-only via additionalContext | 3400/3400 |  | infra | 2026-06-13 |
 | feature | adopt scaffolds profile-aware CodeQL + AUTOMERGE_SETUP doc for brownfield automerge-readiness (bloat-check deferred) | 3737/3737 |  | tooling | 2026-06-13 |
 | change | extract diff-driven risk detectors + integration-coverage verifier into dedicated modules to ratchet two bloat baselines down | 3818/3830 |  | tooling | 2026-06-13 |
 | bug | run-config concurrency & atomicity (WP2: F11/F12/F13) | 162/162 |  | infra | 2026-06-13 |
@@ -180,7 +180,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-13 | Smoke: not_run | (iterate)
+Last run: 2026-06-13 | Unit: 3400/3400 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

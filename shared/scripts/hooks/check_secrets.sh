@@ -113,8 +113,17 @@ if grep -qiE "(postgres|mysql|mongodb|redis)://[^:]+:[^@]+@" "$FILE_PATH"; then
 fi
 
 if [ -n "$FINDINGS" ]; then
-    FINDINGS_ESCAPED=$(echo -e "$FINDINGS" | sed 's/"/\\"/g' | tr '\n' ' ')
-    echo "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"BLOCKED: Potential secrets detected in ${FILE_PATH}:\\n${FINDINGS_ESCAPED}\\nDo NOT commit files with hardcoded secrets. Use environment variables instead.\\n\\nThe user may say 'Continue anyway' to override. If they do, log the override to .shipwright/agent_docs/compliance_overrides.log.\",\"blocked\":true,\"reason\":\"Secret pattern detected in ${FILE_PATH}\"}}"
+    # Deliver the block reason on STDERR — the channel Claude Code reads on a
+    # PostToolUse exit-2 soft block. (Emitting JSON on stdout + exit 2 is the
+    # bug WP4 fixed: Claude Code discards stdout on exit 2, so the warning
+    # never reached the model.) The message names the file + matched rule
+    # classes + remediation only — never the secret VALUE.
+    {
+        printf 'BLOCKED: Potential secrets detected in %s:\n' "$FILE_PATH"
+        printf '%b' "$FINDINGS"
+        printf 'Do NOT commit files with hardcoded secrets. Use environment variables instead.\n'
+        printf "The user may say 'Continue anyway' to override. If they do, log the override to .shipwright/agent_docs/compliance_overrides.log.\n"
+    } >&2
     exit 2
 fi
 

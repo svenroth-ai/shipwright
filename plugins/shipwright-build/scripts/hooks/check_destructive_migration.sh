@@ -82,9 +82,14 @@ if grep -qiE 'DELETE\s+FROM' "$FILE_PATH" && ! grep -qiE 'DELETE\s+FROM.*WHERE' 
 fi
 
 if [ -n "$WARNINGS" ]; then
-    # Escape for JSON
-    WARNINGS_ESCAPED=$(echo "$WARNINGS" | sed 's/"/\\"/g')
-    echo "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"WARNING: Destructive migration in ${FILE_PATH}: ${WARNINGS_ESCAPED}This will permanently affect data. You MUST ask the user for explicit confirmation before proceeding.\"}}"
+    # Deliver the block reason on STDERR — the channel Claude Code reads on a
+    # PostToolUse exit-2 soft block. (Emitting JSON on stdout + exit 2 is the
+    # bug WP4 fixed: Claude Code discards stdout on exit 2, so the warning
+    # never reached the model.) Reports the matched DDL classes only.
+    {
+        printf 'WARNING: DESTRUCTIVE migration detected in %s: %s\n' "$FILE_PATH" "$WARNINGS"
+        printf 'This will permanently affect data. You MUST ask the user for explicit confirmation before proceeding.\n'
+    } >&2
     exit 2
 fi
 

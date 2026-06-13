@@ -1,6 +1,6 @@
 # Test Evidence Report
 
-Generated: 2026-06-13T09:21:45.201585+00:00
+Generated: 2026-06-13T07:44:42.695706+00:00
 
 ## Summary
 
@@ -14,8 +14,8 @@ Generated: 2026-06-13T09:21:45.201585+00:00
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | guide.md correctness audit + 21 fixes vs code/ADRs | iterate | — | +0 | — | — | 2026-06-13 |
-| 2 | docs install/Get-Started rewrite + GitHub/auto-merge guide + marketplace metadata parity | iterate | — | +0 | — | — | 2026-06-13 |
+| 1 | docs install/Get-Started rewrite + GitHub/auto-merge guide + marketplace metadata parity | iterate | — | +0 | — | — | 2026-06-13 |
+| 2 | hook block-channel (WP4): route PostToolUse security-guard reasons to stderr; SessionStart drift gate is honest warn-only via additionalContext | iterate | unit | +0 | 3400/3400 | PASS | 2026-06-13 |
 | 3 | adopt scaffolds profile-aware CodeQL + AUTOMERGE_SETUP doc for brownfield automerge-readiness (bloat-check deferred) | iterate | mixed | +0 | 3737/3737 | PASS | 2026-06-13 |
 | 4 | extract diff-driven risk detectors + integration-coverage verifier into dedicated modules to ratchet two bloat baselines down | iterate | unit | +0 | 3818/3830 | FAIL | 2026-06-13 |
 | 5 | run-config concurrency & atomicity (WP2: F11/F12/F13) | iterate | unit | +0 | 162/162 | PASS | 2026-06-13 |
@@ -192,36 +192,36 @@ Generated: 2026-06-13T09:21:45.201585+00:00
 
 | Run | Trigger | Unit | Integration | pgTAP | E2E | Smoke | Date |
 |-----|---------|------|-------------|-------|-----|-------|------|
-| 1 | iterate | 2954/2954 | — | — | — | — | 2026-06-08 |
-| 2 | iterate | 6/6 | — | — | — | — | 2026-06-08 |
-| 3 | iterate | 3457/3458 | — | — | — | — | 2026-06-10 |
-| 4 | iterate | 3426/3445 | — | — | — | — | 2026-06-10 |
-| 5 | iterate | 3442/3462 | — | — | — | — | 2026-06-10 |
-| 6 | iterate | 3088/3088 | — | — | — | — | 2026-06-10 |
-| 7 | iterate | 3451/3471 | — | — | — | — | 2026-06-10 |
-| 8 | iterate | 3468/3488 | — | — | — | — | 2026-06-11 |
-| 9 | iterate | 669/679 | — | — | — | — | 2026-06-11 |
-| 10 | iterate | 414/417 | — | — | — | — | 2026-06-11 |
-| 11 | iterate | 363/363 | — | — | — | — | 2026-06-11 |
-| 12 | iterate | 3131/3131 | — | — | — | — | 2026-06-11 |
-| 13 | iterate | 8/8 | — | — | — | — | 2026-06-12 |
-| 14 | iterate | 23/23 | — | — | — | — | 2026-06-12 |
-| 15 | iterate | 3515/3516 | — | — | — | — | 2026-06-12 |
-| 16 | iterate | 3147/3147 | — | — | — | — | 2026-06-12 |
-| 17 | iterate | 3146/3146 | — | — | — | — | 2026-06-12 |
-| 18 | iterate | 3157/3157 | — | — | — | — | 2026-06-12 |
-| 19 | iterate | 3163/3164 | — | — | — | — | 2026-06-12 |
-| 20 | iterate | 3193/3193 | — | — | — | — | 2026-06-12 |
-| 21 | iterate | 4279/4279 | — | — | — | — | 2026-06-12 |
-| 22 | iterate | 19/19 | — | — | — | — | 2026-06-12 |
-| 23 | iterate | 3203/3203 | — | — | — | — | 2026-06-12 |
-| 24 | iterate | 3284/3284 | — | — | — | — | 2026-06-12 |
-| 25 | iterate | 3289/3289 | — | — | — | — | 2026-06-12 |
-| 26 | iterate | 697/697 | — | — | — | — | 2026-06-12 |
-| 27 | iterate | 3348/3362 | — | — | — | — | 2026-06-12 |
-| 28 | iterate | 162/162 | — | — | — | — | 2026-06-13 |
-| 29 | iterate | 3818/3830 | — | — | — | — | 2026-06-13 |
-| 30 | iterate | 3737/3737 | — | — | — | — | 2026-06-13 |
+| 1 | iterate | 6/6 | — | — | — | — | 2026-06-08 |
+| 2 | iterate | 3457/3458 | — | — | — | — | 2026-06-10 |
+| 3 | iterate | 3426/3445 | — | — | — | — | 2026-06-10 |
+| 4 | iterate | 3442/3462 | — | — | — | — | 2026-06-10 |
+| 5 | iterate | 3088/3088 | — | — | — | — | 2026-06-10 |
+| 6 | iterate | 3451/3471 | — | — | — | — | 2026-06-10 |
+| 7 | iterate | 3468/3488 | — | — | — | — | 2026-06-11 |
+| 8 | iterate | 669/679 | — | — | — | — | 2026-06-11 |
+| 9 | iterate | 414/417 | — | — | — | — | 2026-06-11 |
+| 10 | iterate | 363/363 | — | — | — | — | 2026-06-11 |
+| 11 | iterate | 3131/3131 | — | — | — | — | 2026-06-11 |
+| 12 | iterate | 8/8 | — | — | — | — | 2026-06-12 |
+| 13 | iterate | 23/23 | — | — | — | — | 2026-06-12 |
+| 14 | iterate | 3515/3516 | — | — | — | — | 2026-06-12 |
+| 15 | iterate | 3147/3147 | — | — | — | — | 2026-06-12 |
+| 16 | iterate | 3146/3146 | — | — | — | — | 2026-06-12 |
+| 17 | iterate | 3157/3157 | — | — | — | — | 2026-06-12 |
+| 18 | iterate | 3163/3164 | — | — | — | — | 2026-06-12 |
+| 19 | iterate | 3193/3193 | — | — | — | — | 2026-06-12 |
+| 20 | iterate | 4279/4279 | — | — | — | — | 2026-06-12 |
+| 21 | iterate | 19/19 | — | — | — | — | 2026-06-12 |
+| 22 | iterate | 3203/3203 | — | — | — | — | 2026-06-12 |
+| 23 | iterate | 3284/3284 | — | — | — | — | 2026-06-12 |
+| 24 | iterate | 3289/3289 | — | — | — | — | 2026-06-12 |
+| 25 | iterate | 697/697 | — | — | — | — | 2026-06-12 |
+| 26 | iterate | 3348/3362 | — | — | — | — | 2026-06-12 |
+| 27 | iterate | 162/162 | — | — | — | — | 2026-06-13 |
+| 28 | iterate | 3818/3830 | — | — | — | — | 2026-06-13 |
+| 29 | iterate | 3737/3737 | — | — | — | — | 2026-06-13 |
+| 30 | iterate | 3400/3400 | — | — | — | — | 2026-06-13 |
 
 ## Code Review Evidence
 
