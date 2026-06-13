@@ -6,11 +6,12 @@ Bring an iterate branch current with ``origin/<default>`` THROUGH ``integrate_ma
 (regenerating the derived snapshots) before its PR merges. GitHub's server-side
 3-way auto-merge CANNOT run the regenerate-at-merge resolver, so a branch that
 fell behind would merge stale (Group-E staleness) or stall DIRTY on the
-regenerated-snapshot conflict. Two callers:
+regenerated-snapshot conflict. Caller:
 
-  - F11 (single iterate): refresh before arming ``gh pr merge --auto``.
-  - campaign serial drain: refresh each sub-iterate branch before merging it,
-    after the previous PR advanced ``origin/main``.
+  - F11 (every iterate, incl. campaign sub-iterates): refresh before arming
+    ``gh pr merge --auto`` or handing the PR to the campaign orchestrator. The
+    interleaved-serial campaign loop keeps ONE PR open at a time, so this is a
+    clean no-op there — there is no separate end-stage drain.
 
 A branch already current is a CLEAN no-op — ``integrate`` is never invoked
 (nothing fetched-merged-committed) — so the common single-iterate auto-merge path

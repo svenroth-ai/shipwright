@@ -1,0 +1,1 @@
+Autonomous campaign mode now runs interleaved-serially by default (new `branch_strategy: serial`): each sub-iterate builds, opens its PR, merges on CI-green, then the next builds from fresh `origin/main` — retiring the build-all-then-end-stage-drain model and its merge-cascade. `stacked`/`single-branch` remain for builds and legacy campaigns.
