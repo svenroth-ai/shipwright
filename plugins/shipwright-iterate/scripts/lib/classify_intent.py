@@ -9,6 +9,15 @@ FEATURE_KEYWORDS = {"add", "create", "implement", "new", "build", "introduce", "
 CHANGE_KEYWORDS = {"change", "update", "move", "reorder", "rename", "replace", "modify", "adjust", "refactor", "redesign", "restructure", "swap"}
 BUG_KEYWORDS = {"fix", "bug", "broken", "error", "doesn't work", "wrong", "crash", "fail", "issue", "problem"}
 
+# OS1 / P3.2 — simplify is a behavior-preserving SUB-MODE of CHANGE, not a 4th
+# intent type: it surfaces as type="change" + an additive mode="simplify" so the
+# F5c iterate-entry enum (shared/scripts/lib/iterate_entry._VALID_TYPES =
+# {feature, change, bug}) is untouched. `refactor`/`restructure` stay plain
+# CHANGE (they can mean behavior-changing restructuring); the explicit simplify
+# vocabulary below opts into the behavior-snapshot wrap (references/F-simplify.md).
+SIMPLIFY_KEYWORDS = {"simplify", "simplification", "declutter", "streamline", "tidy", "untangle", "cleanup"}
+SIMPLIFY_PHRASES = ("clean up", "clean-up")
+
 # Slash commands and non-code requests to ignore
 SKIP_PATTERNS = [
     r"^/",                    # Slash commands
@@ -24,7 +33,7 @@ def classify(message: str, sync_config_path: str | None = None) -> dict:
     # Skip patterns
     for pattern in SKIP_PATTERNS:
         if re.match(pattern, msg_lower):
-            return {"type": "none", "confidence": 0.0, "affected_frs": [], "summary": ""}
+            return {"type": "none", "confidence": 0.0, "affected_frs": [], "summary": "", "mode": None}
 
     # Count keyword matches
     scores = {"feature": 0, "change": 0, "bug": 0}
@@ -44,14 +53,27 @@ def classify(message: str, sync_config_path: str | None = None) -> dict:
         if kw in msg_lower:
             scores["bug"] += 1
 
+    simplify_score = sum(kw in words for kw in SIMPLIFY_KEYWORDS) + sum(
+        p in msg_lower for p in SIMPLIFY_PHRASES
+    )
+
     # Find winner
     max_score = max(scores.values())
-    if max_score == 0:
-        return {"type": "none", "confidence": 0.0, "affected_frs": [], "summary": ""}
+    intent_type = max(scores, key=scores.get) if max_score else None
 
-    intent_type = max(scores, key=scores.get)
-    # Confidence based on how many keywords matched
-    confidence = min(0.5 + (max_score * 0.15), 0.95)
+    # Simplify overlay: a behavior-preserving CHANGE sub-mode, applied unless the
+    # prompt is primarily a bug fix (a "fix and simplify" is first a fix).
+    mode = None
+    if simplify_score and intent_type != "bug":
+        intent_type = "change"
+        mode = "simplify"
+
+    if intent_type is None:
+        return {"type": "none", "confidence": 0.0, "affected_frs": [], "summary": "", "mode": None}
+
+    # Confidence based on how many keywords matched (simplify counts toward it).
+    score_for_conf = max(max_score, simplify_score) if mode == "simplify" else max_score
+    confidence = min(0.5 + (score_for_conf * 0.15), 0.95)
 
     # Try to find affected FRs from sync config
     affected_frs = []
@@ -67,6 +89,7 @@ def classify(message: str, sync_config_path: str | None = None) -> dict:
 
     return {
         "type": intent_type,
+        "mode": mode,
         "confidence": round(confidence, 2),
         "affected_frs": affected_frs,
         "summary": summary,

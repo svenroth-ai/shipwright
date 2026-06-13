@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-13 11:23 UTC | Session: 96f26c03-fb2e-4966-891d-b9671b25b403 | Run: iterate-2026-06-13-atomic-write-fsync-durability
+> Updated: 2026-06-13 14:01 UTC | Session: 49776804-0473-4fac-9221-1d7ae56857c5 | Run: iterate-2026-06-13-code-simplify-skill
 
-## Recent Changes (178 iterations)
+## Recent Changes (179 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | code-simplify skill (OS1 / P3.2): SIMPLIFY sub-mode of CHANGE + behavior_snapshot snapshot/verify gate + F-simplify.md + guide docs | 4082/4082 |  | tooling | 2026-06-13 |
 | change | Read run-config standalone flag without triggering the unlocked legacy migration | 164/164 |  | infra | 2026-06-13 |
 | change | durable atomic writes (fsync) across all atomic writers | 4283/4283 |  | tooling | 2026-06-13 |
 | change | sync 6 stale SKILL.md/code/config items to the corrected guide (C1-C6) | 4343/4343 |  | docs | 2026-06-13 |
@@ -185,7 +186,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-13 | Unit: 4136/4136 | Integration: 147/147 | Smoke: not_run | (iterate)
+Last run: 2026-06-13 | Unit: 4082/4082 | Integration: 147/147 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

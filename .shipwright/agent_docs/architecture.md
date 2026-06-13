@@ -150,6 +150,8 @@ _Existing user-facing documentation discovered by /shipwright-adopt._
 - **iterate-2026-06-12-triage-status-idle-main-outbox** (2026-06-12): Data-flow — `triage.mark_status` routes an idle-main status flip (dismiss/snooze/promote) to the outbox (`should_route_to_outbox`), symmetric with `append_triage_item`; elsewhere residence-derived (TRACKED-PREFERRED). Completes campaign `2026-06-08-triage-outbox-delivery` D1. ADR-100 file. → archive
 - **iterate-2026-06-12-automerge-serial-integrate** (2026-06-12): Component — new `shared/scripts/tools/ensure_current.py` (thin wrapper over `integrate_main`) is the F11 / campaign "refresh-if-behind" guard fixing the auto-merge churn cascade (Option A): GitHub's server-side 3-way merge can't run the regenerate-at-merge resolver, so a behind branch merges stale or stalls DIRTY on regenerated snapshots. F11 brings the branch current THROUGH `integrate_main` before arming `gh pr merge --auto`; campaigns set `SHIPWRIGHT_ITERATE_AUTOMERGE=0` to drain PRs serially. → decision_log (Run-ID).
 
+- **iterate-2026-06-13-code-simplify-skill** (2026-06-13): Component — new `plugins/shipwright-iterate/scripts/lib/behavior_snapshot.py` (snapshot/verify gate) records the green test-state (collected node-id set + counts + exit + source LOC) at the gitignored `.shipwright/runs/<run_id>/behavior_snapshot.json` and STOPs a simplify on behavior drift or removed coverage; new SIMPLIFY sub-mode of CHANGE (classify_intent `mode`) routes through `references/F-simplify.md` (OS1). → decision_log (Run-ID).
+
 - **ADR-151** (2026-06-07): Reconcile-and-commit main-tree triage.jsonl drift in tooling
 
 - **ADR-160** (2026-06-10): Per-tree campaign status.json: finalize wiring + scoped churn resolver
