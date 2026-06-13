@@ -50,6 +50,9 @@ except (ImportError, ModuleNotFoundError):
         return result
 
 
+# SSoT cell escaper (F32): escape every scanner/repo cell so `|`/newline can't break the table.
+from markdown_table import escape_cell  # noqa: E402
+
 # ---------------------------------------------------------------------------
 # Risk score calculation
 # ---------------------------------------------------------------------------
@@ -257,11 +260,11 @@ def generate_standard_report(
         ])
 
         for i, f in enumerate(findings, 1):
-            sev = f.get("severity", "?")
-            ftype = f.get("type", "?")
-            title = f.get("rule", f.get("title", "?"))
-            afile = f.get("affected_file", f.get("file", "?"))
-            status = f.get("_remediation_status", "open")
+            sev = escape_cell(f.get("severity", "?"))
+            ftype = escape_cell(f.get("type", "?"))
+            title = escape_cell(f.get("rule", f.get("title", "?")))
+            afile = escape_cell(f.get("affected_file", f.get("file", "?")))
+            status = escape_cell(f.get("_remediation_status", "open"))
             lines.append(f"| {i} | {sev} | {ftype} | {title} | {afile} | {status} |")
 
     lines.append("")
@@ -330,15 +333,12 @@ def generate_pr_report(
             "|---|----------|------|------|-------------|",
         ])
         for i, f in enumerate(displayed, 1):
-            sev = f.get("severity", "?")
-            rule = f.get("rule", "?")
-            afile = f.get("affected_file", "?")
+            sev = escape_cell(f.get("severity", "?"))
+            rule = escape_cell(f.get("rule", "?"))
+            afile = escape_cell(f.get("affected_file", "?"))
             line_num = f.get("affected_line")
-            if line_num:
-                afile = f"`{afile}:{line_num}`"
-            else:
-                afile = f"`{afile}`"
-            desc = (f.get("description", "") or "").replace("\n", " ")[:120]
+            afile = f"`{afile}:{line_num}`" if line_num else f"`{afile}`"
+            desc = escape_cell((f.get("description", "") or "")[:120])
             if len(f.get("description", "")) > 120:
                 desc += "…"
             lines.append(f"| {i} | {sev} | `{rule}` | {afile} | {desc} |")

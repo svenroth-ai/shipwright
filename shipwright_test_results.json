@@ -1,8 +1,8 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-13-code-simplify-skill",
+    "run_id": "iterate-2026-06-13-low-risk-hardening",
     "date": "2026-06-13",
-    "unit": { "status": "passed", "passed": 4082, "total": 4082 },
+    "unit": { "status": "passed", "passed": 4073, "total": 4089 },
     "integration": { "status": "passed", "passed": 147, "total": 147 },
     "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
     "e2e": { "status": "skipped", "passed": 0, "total": 0 },
@@ -11,11 +11,7 @@
     "degraded": [
       {
         "phase": "setup",
-        "reason": "Pre-existing sweep-outbox warning from setup_iterate_worktree (trg-671bb0a2: a status append dropped by a prior merge) — unrelated to this change; non-fatal, worktree created."
-      },
-      {
-        "phase": "f0",
-        "reason": "Unit count 4082 = iterate-plugin suite (443) + shared suites (shared/tests 3413, shared/scripts/tests 175, shared/scripts/tools/tests 51). Other plugins' suites not re-run: this diff is iterate-local + docs and touches no shared/ code, so they are unaffected; CI re-runs every plugin suite."
+        "reason": "Pre-existing sweep-outbox warning from setup_iterate_worktree (trg-671bb0a2: a status append dropped by a prior merge) — unrelated to this change's footprint; non-fatal, the worktree was still created."
       }
     ],
     "surface_verification": {
@@ -23,37 +19,34 @@
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-13-code-simplify-skill/surface_verification.json",
-      "timestamp": "2026-06-13T14:00:09.426Z",
-      "justification": "Iterate-internal framework tooling: a new classify_intent mode + behavior_snapshot.py gate + F-simplify.md sub-skill + guide docs. No web/CLI/API surface of its own is introduced; the contract IS the snapshot/verify gate, driven mechanically by the probe suite (tests/test_behavior_snapshot_cli.py: clean simplify->green, drift->reject, removed-coverage->reject, red-baseline->refuse) + unit verdict matrix + round-trip, all green at F0."
+      "evidence_path": ".shipwright/runs/iterate-2026-06-13-low-risk-hardening/surface_verification.json",
+      "timestamp": "2026-06-13T13:41:30.593Z",
+      "justification": "WP11b hardens framework-internal tooling (commit_event_followup, security-report markdown escaping), CI workflow shell config, and pytest CI-discipline guards. No startable web/cli/api application surface; behaviors are verified by the unit + integration suite. small complexity, no touches_io_boundary or UI."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "AC1 classify_intent returns additive mode='simplify' (type='change') for simplify vocab; refactor stays change/no-mode; bug fix wins over simplify; none keeps mode key", "disposition": "tested",
-          "evidence": "test_classify_intent.py::TestSimplifyMode (all cases) + parametrized test_every_simplify_keyword/phrase_triggers_mode + test_change_keywords (refactor no-mode) PASSED" },
-        { "behavior": "AC2 F-simplify.md carries the Five Principles + Chesterton-Fence + 'fewer lines is not the goal' + MIT attribution + <=400 LOC", "disposition": "tested",
-          "evidence": "test_f_simplify_routing.py::test_f_simplify_has_five_principles/_has_chesterton_fence/_has_fewer_lines_rule/_has_mit_attribution/_under_loc_budget PASSED" },
-        { "behavior": "AC3 SKILL.md routes SIMPLIFY through F-simplify (link resolves) + states behavior-preserving gate; net-zero Kern LOC", "disposition": "tested",
-          "evidence": "test_f_simplify_routing.py::test_kern_links_f_simplify/_path_b_routes_simplify_through_f_simplify + test_skill_references_link.py::test_kern_skill_md_under_300_loc PASSED" },
-        { "behavior": "AC4 snapshot stores green-state (node-id set + counts + exit + LOC) and refuses a red baseline (exit 2)", "disposition": "tested",
-          "evidence": "test_behavior_snapshot.py::test_build_snapshot_* + test_behavior_snapshot_cli.py::test_snapshot_refuses_red_baseline PASSED" },
-        { "behavior": "AC5 verify STOPs on test flip / removed coverage / count drop / loc-drop+coverage-loss; loc-drop-alone passes", "disposition": "tested",
-          "evidence": "test_behavior_snapshot.py::test_verdict_rejects_status_flip/_rejects_removed_test_coverage/_loc_drop_with_coverage_loss_rejected/_loc_drop_without_coverage_loss_ok/_added_test_still_ok PASSED" },
-        { "behavior": "AC6 producer->file->consumer round-trip: green-state record byte-faithful; deserialized record reproduces the live verdict (touches_io_boundary Boundary Probe)", "disposition": "tested",
-          "evidence": "test_behavior_snapshot.py::test_snapshot_roundtrip_reproduces_verdict PASSED" },
-        { "behavior": "AC7 probe-iterate both arms: clean simplify->green; behavior drift (covered path) + removed coverage->rejected", "disposition": "tested",
-          "evidence": "test_behavior_snapshot_cli.py::test_clean_simplify_stays_green/_hidden_side_effect_rejected/_removed_coverage_rejected PASSED" },
-        { "behavior": "AC8 docs/guide.md documents the simplify sub-mode (Behavior-Snapshot wrap + behavior_snapshot.py + 'fewer lines is not the goal')", "disposition": "tested",
-          "evidence": "test_f_simplify_routing.py::test_guide_documents_simplify_submode PASSED" },
-        { "behavior": "Review-fix: empty node-ids degrade the gate to green/red only -> snapshot WARNs + records node_ids_collected=false (no silent half-gate)", "disposition": "tested",
-          "evidence": "test_behavior_snapshot.py::test_build_snapshot_flags_empty_node_ids + test_behavior_snapshot_cli.py::test_snapshot_warns_when_no_node_ids PASSED" },
-        { "behavior": "INTEGRATION: full snapshot->edit->verify CLI cycle composes against a real synthetic pytest project (the default verify replays the snapshot's stored command symmetrically)", "disposition": "tested",
-          "category": "integration",
-          "evidence": "test_behavior_snapshot_cli.py::TestBehaviorSnapshotCli::test_verify_replays_snapshot_command_without_test_cmd (+ all 6 CLI arms) PASSED" }
+        { "behavior": "F18: commit_event_followup skips (status=skipped/staged_changes) when the index has unrelated staged WIP", "disposition": "tested",
+          "evidence": "shared/tests/test_commit_event_followup.py::test_skips_when_index_has_unrelated_staged_changes PASSED (red->green)" },
+        { "behavior": "F18: follow-up commit is path-restricted to the event file; other unstaged worktree changes stay uncommitted", "disposition": "tested",
+          "evidence": "shared/tests/test_commit_event_followup.py::test_commits_only_event_file_not_other_dirty_worktree PASSED" },
+        { "behavior": "F32: PR-mode findings table cells pipe/newline-escaped -> no column shift, raw pipe never verbatim", "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_report_cell_escaping.py::test_pr_report_row_not_column_shifted PASSED" },
+        { "behavior": "F32: standard report findings table cells pipe-escaped -> no column shift", "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_report_cell_escaping.py::test_standard_report_row_not_column_shifted PASSED" },
+        { "behavior": "F32: benign cell values render unchanged (escaping is a no-op, no stray backslash-pipe)", "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_report_cell_escaping.py::test_benign_findings_render_unchanged PASSED" },
+        { "behavior": "F39: Install Gitleaks step sets shell:bash (activates -o pipefail) in ci.yml, security.yml, template", "disposition": "tested",
+          "evidence": "shared/tests/test_gitleaks_step_pipefail.py::test_gitleaks_step_sets_shell_bash[x3] PASSED" },
+        { "behavior": "F39: the false default-pipefail comment is removed from all 3 workflow files", "disposition": "tested",
+          "evidence": "shared/tests/test_gitleaks_step_pipefail.py::test_no_false_default_pipefail_comment[x3] PASSED" },
+        { "behavior": "F40: install-hook tests gate on bash via skip_or_fail_on_missing_binary (no crash on bash-less host; CI-fail branch present)", "disposition": "tested",
+          "evidence": "shared/tests/test_silent_skip_ci_discipline.py::test_affected_file_imports_from_lib_test_hygiene[test_bloat_defense_artifacts.py] PASSED; helper behavior covered by test_test_hygiene.py::test_skip_or_fail_on_missing_binary_{local_skips,ci_fails}" },
+        { "behavior": "F41: per-hook-command FileNotFoundError handler hard-fails in CI, skips only locally (ADR-044)", "disposition": "tested",
+          "evidence": "shared/tests/test_silent_skip_ci_discipline.py::test_hook_schema_filenotfound_handler_is_ci_gated PASSED" }
       ],
-      "counts": { "testable": 10, "tested": 10, "untestable": 0, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 8, "covered_acs": 8 }
+      "counts": { "testable": 9, "tested": 9, "untestable": 0, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 4, "covered_acs": 4 }
     }
   }
 }

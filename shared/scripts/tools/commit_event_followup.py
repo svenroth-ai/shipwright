@@ -15,6 +15,7 @@ is tracked AND dirty, produces a small follow-up commit. Idempotent:
 - events.jsonl gitignored             → noop (status: ``ignored``)
 - events.jsonl tracked but not dirty  → noop (status: ``clean``)
 - events.jsonl untracked              → noop (status: ``untracked``)
+- index has unrelated staged changes  → noop (status: ``skipped``)
 - events.jsonl tracked + dirty        → commit + return status ``committed``
 
 CLI:
@@ -106,6 +107,15 @@ def is_untracked(project_root: Path) -> bool:
     return result.returncode != 0  # check-ignore exit 0 = ignored, 1 = not ignored
 
 
+def has_staged_changes(project_root: Path) -> bool:
+    """True when ANYTHING is staged in the index (mirror reconcile_triage's
+    ``_has_staged_changes``). The drift we act on is always the UNSTAGED F7
+    append, so a non-empty index means "not our case": an operator may have
+    hand-staged unrelated WIP, and a follow-up commit would sweep it into the
+    chore(events) commit — silent history corruption. Skip instead (F18)."""
+    return _run_git(["diff", "--cached", "--quiet"], project_root, check=False).returncode != 0
+
+
 def commit_followup(
     project_root: Path,
     run_id: str,
@@ -131,6 +141,12 @@ def commit_followup(
         return {
             "status": "clean",
             "reason": "no uncommitted changes to shipwright_events.jsonl",
+            "main_repo_root": str(main_repo_root),
+        }
+    if has_staged_changes(main_repo_root):
+        return {
+            "status": "skipped",
+            "reason": "staged_changes",
             "main_repo_root": str(main_repo_root),
         }
     # Switch project_root to the main repo for the rest of this function.
@@ -165,8 +181,11 @@ def commit_followup(
             "main_repo_root": str(main_repo_root),
         }
 
-    _run_git(["add", EVENT_FILE], project_root, check=True)
-    _run_git(["commit", "-m", commit_msg], project_root, check=True)
+    # Path-restricted commit (``-- EVENT_FILE``): commits the working-tree
+    # content of the event log only, never any other index entry. Combined
+    # with the staged-changes guard above this makes the follow-up commit
+    # incapable of sweeping unrelated WIP into history (F18).
+    _run_git(["commit", "-m", commit_msg, "--", EVENT_FILE], project_root, check=True)
     sha = _run_git(["rev-parse", "HEAD"], project_root, check=True).stdout.strip()
     return {
         "status": "committed",

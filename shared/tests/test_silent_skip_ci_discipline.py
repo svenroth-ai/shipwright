@@ -36,6 +36,10 @@ AFFECTED_FILES: list[Path] = [
     REPO_ROOT / "shared" / "tests" / "test_setup_writes_canonical.py",
     REPO_ROOT / "shared" / "tests" / "test_path_helpers_template_vitest.py",
     REPO_ROOT / "shared" / "tests" / "test_hook_output_schema_compliance.py",
+    # F40 (audit-3 WP11b): install-hook tests gate on bash via
+    # test_hygiene.skip_or_fail_on_missing_binary (the old _has_bash() probe
+    # crashed on a bash-less host instead of skipping, with no CI-fail branch).
+    REPO_ROOT / "shared" / "tests" / "test_bloat_defense_artifacts.py",
     REPO_ROOT / "plugins" / "shipwright-security" / "tests" / "test_oss_backend_smoke.py",
 ]
 
@@ -205,4 +209,31 @@ def test_vitest_module_pattern_carries_both_ci_branches() -> None:
     assert "if is_ci():" in text, (
         "Vitest module must guard the CI fail branch with `is_ci()` from "
         "test_hygiene. Inline env-expression is the regression."
+    )
+
+
+def test_hook_schema_filenotfound_handler_is_ci_gated() -> None:
+    """F41 (audit-3 WP11b): the per-hook-command FileNotFoundError handler in
+    test_hook_output_schema_compliance.py must fail in CI, not silently skip.
+
+    A misspelled interpreter in a registered hook command means Claude Code
+    can't spawn it — the schema gate is silently absent. The function-scoped
+    static probe whitewashes this site (the same function already carries the
+    `uv` CI-gate), so pin it explicitly at the source level here.
+    """
+    hook_test = REPO_ROOT / "shared" / "tests" / "test_hook_output_schema_compliance.py"
+    text = hook_test.read_text(encoding="utf-8")
+
+    # Locate the FileNotFoundError handler and assert it is CI-gated before
+    # the local-skip (the handler body spans a handful of lines).
+    marker = "except FileNotFoundError as exc:"
+    assert marker in text, (
+        f"{hook_test.name} no longer has a `{marker}` handler — F41 guard is "
+        f"looking at the wrong site; update this test."
+    )
+    handler = text.split(marker, 1)[1][:400]
+    assert "if is_ci():" in handler and "pytest.fail(" in handler, (
+        "The FileNotFoundError handler must hard-fail in CI (`if is_ci(): "
+        "pytest.fail(...)`) before falling back to a local pytest.skip — a "
+        "bare skip leaves a broken hook registration green in CI (ADR-044)."
     )
