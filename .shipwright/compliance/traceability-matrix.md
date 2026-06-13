@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-13T16:29:51.426705+00:00
+Generated: 2026-06-13T17:13:46.879674+00:00
 
 ## Requirements Coverage
 
@@ -209,6 +209,7 @@ Generated: 2026-06-13T16:29:51.426705+00:00
 | unify the code-simplify gate with the bloat/reducibility catalog: relocate behavior_snapshot.py to shared/scripts/tools (SSoT), F-simplify adopts the catalog vocabulary, catalog cites the snapshot/verify gate as the mechanical G3 proof | iterate | change |  | 3996/3996 | — | 2026-06-13 |
 | Extract duplicated cross-platform _FileLock into shared/scripts/lib/file_lock.py; both call sites import it; unify on the parent-dir-creating superset. | iterate | change |  | — | — | 2026-06-13 |
 | iterate finalization | iterate | change |  | — | — | 2026-06-13 |
+| Triage not for current-run work — drop plugin-sync + F0.5 triage producers | iterate | change |  | 3653/3665 | — | 2026-06-13 |
 | Fold spec_checks _run_git/_git_available onto verifiers/git_helpers.py (optional timeout param, unified failure code) | iterate | change |  | 69/69 | — | 2026-06-13 |
 
 ## Coverage Summary
@@ -217,7 +218,7 @@ Generated: 2026-06-13T16:29:51.426705+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 185 |
+| Iterate changes | 186 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
