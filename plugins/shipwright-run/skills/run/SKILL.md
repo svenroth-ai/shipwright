@@ -251,7 +251,7 @@ Deploy:     {deploy_target}
 
 Project artifacts:
   - CLAUDE.md
-  - .shipwright/agent_docs/ (architecture, conventions, decision_log, sprint, handoff)
+  - .shipwright/agent_docs/ (architecture, conventions, decision_log, session_handoff, build_dashboard)
   - CHANGELOG.md
   - .shipwright/compliance/ (RTM, test evidence, change history, SBOM, dashboard)
   - shipwright_*_config.json files

@@ -53,8 +53,10 @@
 
 ## Pipeline & lifecycle
 
-- **Phase** — One of the six SDLC phases: project, design, plan,
-  build, test, security, deploy. Each phase owns one plugin.
+- **Phase** — One of the seven orchestrator SDLC phases: project,
+  design, plan, build, test, changelog, deploy (`PIPELINE_STEPS`). Each
+  phase owns one plugin. Security and compliance are separate skills,
+  not pipeline phases (out-of-band).
 - **Profile** — Stack profile (`shared/profiles/<name>.json`) that
   parameterises a pipeline run: dev_url, test commands, migration
   apply / preflight commands, deploy flavour. Profile name lives in
