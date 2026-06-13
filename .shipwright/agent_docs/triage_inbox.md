@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-13T05:51:32.227810Z. Items waiting for triage decision.
+> Auto-generated 2026-06-13T04:34:38.831317Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 191
-- Triage: 19 | Promoted: 1 | Dismissed: 171 | Snoozed: 0
+- Total: 189
+- Triage: 17 | Promoted: 1 | Dismissed: 171 | Snoozed: 0
 
-## Top 19 items (severity-sorted)
+## Top 17 items (severity-sorted)
 
 ### Source: architecture (2 items)
 
@@ -105,13 +105,6 @@
     ```
   - Promote: `triage_promote.py --id trg-a678bd00 --task-ref EXT:<ref>`
 
-### Source: code-review (1 item)
-
-<a id="trg-f9f92335"></a>
-- **update_step: pre-lock standalone read triggers an unlocked legacy migration** `id=trg-f9f92335 | severity=low | kind=improvement → P3/engineering`
-  - Internal review of iterate-2026-06-13-runconfig-atomic-writes: update_step reads the 'standalone' flag via _load_or_boo…
-  - Promote: `triage_promote.py --id trg-f9f92335 --task-ref EXT:<ref>`
-
 ### Source: compliance (1 item)
 
 <a id="trg-a906e79b"></a>
@@ -158,13 +151,6 @@
 - **[P8.1] Architecture Research Sprint: internal-packages + daemon + skills-lock** `id=trg-aecf9cde | severity=low | kind=maintenance → P3/engineering`
   - \## Intent  Bundle P8.1 from Spec/external-frameworks-integration.md (MU5 + MU7 + MU-PL1). Single research iterate prod…
   - Promote: `triage_promote.py --id trg-aecf9cde --task-ref EXT:<ref>`
-
-### Source: external-review (1 item)
-
-<a id="trg-dd697d74"></a>
-- **Atomic config writers: add fsync for crash-durability (cross-cutting)** `id=trg-dd697d74 | severity=low | kind=improvement → P3/engineering`
-  - External review of iterate-2026-06-13-runconfig-atomic-writes: run_config_store.atomic_write_json and the ~10 sibling _…
-  - Promote: `triage_promote.py --id trg-dd697d74 --task-ref EXT:<ref>`
 
 ### Source: iterate (3 items)
 

@@ -1,0 +1,1 @@
+Relocate the iterate risk detectors and the cross-component integration-coverage verifier into dedicated modules (risk_detectors.py; integration_coverage.py + git_helpers.py), re-exported from their original homes; ratchets the classify_complexity.py (430->330) and iterate_checks.py (1244->1122) bloat baselines down with no behavior change

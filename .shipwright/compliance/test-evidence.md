@@ -1,20 +1,20 @@
 # Test Evidence Report
 
-Generated: 2026-06-13T05:51:32.227810+00:00
+Generated: 2026-06-13T04:34:38.831317+00:00
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 169 |
-| Total unit tests (latest) | 162/162 |
+| Total unit tests (latest) | 3818/3830 |
 | New tests from iterations | +166 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | run-config concurrency & atomicity (WP2: F11/F12/F13) | iterate | unit | +0 | 162/162 | PASS | 2026-06-13 |
+| 1 | extract diff-driven risk detectors + integration-coverage verifier into dedicated modules to ratchet two bloat baselines down | iterate | unit | +0 | 3818/3830 | FAIL | 2026-06-13 |
 | 2 | WP1: phase-session hooks resolve identity from the stdin payload (F1); atomic event-log dedup (F14); phase_failed/stale_stop_rejected event types (F15) | iterate | unit | +0 | 3348/3362 | FAIL | 2026-06-12 |
 | 3 | Coerce explicit-null affected_frs/new_frs (and tests/review) in WorkEvent.from_dict | iterate | unit | +0 | 697/697 | PASS | 2026-06-12 |
 | 4 | Relocate resolve_main_repo_root from lib/events_log.py to lib/repo_root.py with a lazy back-compat re-export; migrate net-zero consumers; keep the two grandfathered consumers (iterate_checks, group_f) on the re-export to avoid ratcheting bloat. | iterate | — | +0 | — | — | 2026-06-12 |
@@ -217,7 +217,7 @@ Generated: 2026-06-13T05:51:32.227810+00:00
 | 27 | iterate | 3289/3289 | — | — | — | — | 2026-06-12 |
 | 28 | iterate | 697/697 | — | — | — | — | 2026-06-12 |
 | 29 | iterate | 3348/3362 | — | — | — | — | 2026-06-12 |
-| 30 | iterate | 162/162 | — | — | — | — | 2026-06-13 |
+| 30 | iterate | 3818/3830 | — | — | — | — | 2026-06-13 |
 
 ## Code Review Evidence
 
