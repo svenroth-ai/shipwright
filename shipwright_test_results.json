@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-13-verifier-utf8-stdout",
+    "run_id": "iterate-2026-06-13-tighten-bloat-baseline",
     "date": "2026-06-13",
     "unit": {
       "status": "passed",
-      "passed": 3441,
-      "total": 3453
+      "passed": 3442,
+      "total": 3442
     },
     "integration": {
       "status": "not_run",
@@ -18,12 +18,12 @@
       "total": 0
     },
     "e2e": {
-      "status": "passed",
-      "passed": 144,
-      "total": 144
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "design_fidelity": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
@@ -32,57 +32,21 @@
     },
     "degraded": [
       {
-        "phase": "classify",
-        "reason": "classify_complexity returned 'medium' via the history-prior fall-through (scope_keyword_estimate=trivial, risk_flags=[], risk_floor=trivial). Actual diff is a focused no-risk bug fix (1 helper + 2 one-line call sites + tests); overridden to 'small' per judgment against the diff."
+        "phase": "test-scope",
+        "reason": "Per-plugin suites not re-run: change is data-only (shipwright_bloat_baseline.json); no Python touched, so unrelated plugin tests cannot regress. Ran the shared suite (3442 passed, 0 failed) plus the directly-affected gate tests (96 shared bloat/anti-ratchet + 14 compliance Group-H, all green) and the real Group-H audit (H2 now PASS) + anti-ratchet gate (exit 0)."
       },
       {
         "phase": "setup",
-        "reason": "Pre-existing sweep-outbox warning from setup_iterate_worktree (trg-671bb0a2: a status append dropped by a prior merge) — unrelated; non-fatal."
+        "reason": "Pre-existing sweep-outbox warning from setup_iterate_worktree (trg-671bb0a2: a status append dropped by a prior merge) — unrelated background-producer drift; non-fatal."
       }
     ],
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --extra dev pytest shared/tests/test_verifiers_common.py shared/tests/test_verify_iterate_finalization.py -p no:cacheprovider",
-      "exit_code": 0,
-      "tests_run": 144,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\verifier-utf8-stdout\\.shipwright\\runs\\iterate-2026-06-13-verifier-utf8-stdout\\surface_verification.log",
-      "timestamp": "2026-06-13T18:20:09.052Z",
-      "attempts": 1
+      "surface": "none",
+      "justification": "Behavior-preserving gate-config data change (bloat baseline 'current' values tightened to actual on-disk LOC; 3 now-under-limit entries pruned). No runtime code, API, store, SSE, or UI surface touched — nothing to exercise end-to-end. Trivial complexity (F0.5 advisory)."
     },
     "test_completeness": {
-      "status": "complete",
-      "behaviors": [
-        {
-          "behavior": "A verifier report whose detail carries '→' (e.g. check_architecture_documented) crashes a cp1252 console with UnicodeEncodeError (root cause)",
-          "disposition": "tested",
-          "evidence": "test_verifier_utf8_stdout.py::test_arrow_report_crashes_cp1252_stdout PASSED"
-        },
-        {
-          "behavior": "ensure_utf8_stdout() reconfigures stdout to UTF-8 so the same '→'-bearing report prints without crashing",
-          "disposition": "tested",
-          "evidence": "test_verifier_utf8_stdout.py::test_ensure_utf8_stdout_makes_report_printable_under_cp1252 PASSED"
-        },
-        {
-          "behavior": "ensure_utf8_stdout() is a safe no-op when stdout is already UTF-8 / lacks reconfigure (never raises)",
-          "disposition": "tested",
-          "evidence": "test_verifier_utf8_stdout.py::test_ensure_utf8_stdout_is_a_noop_when_already_utf8 PASSED"
-        },
-        {
-          "behavior": "verify_iterate_finalization.main() pins stdout at entry, so a '→' finding prints + exits 1 under cp1252 (end-to-end wiring; guards against removal of the call)",
-          "disposition": "tested",
-          "evidence": "test_verifier_utf8_stdout.py::test_main_prints_arrow_report_under_cp1252_without_crashing PASSED + live repro: PYTHONIOENCODING=cp1252 verify_iterate_finalization.py ran clean (rc=1, no crash)"
-        }
-      ],
-      "counts": {
-        "testable": 4,
-        "tested": 4,
-        "untestable": 0,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 1,
-        "covered_acs": 1
-      }
+      "status": "n/a",
+      "justification": "Trivial-complexity, data-only edit to shipwright_bloat_baseline.json — no executable behavior introduced. Gate behavior verified directly: Group H audit H2 now PASS, anti-ratchet exit 0, 110 bloat/audit tests green."
     }
   }
 }
