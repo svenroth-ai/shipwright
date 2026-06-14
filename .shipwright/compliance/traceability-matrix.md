@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-13T22:08:30.653095+00:00
+Generated: 2026-06-14T06:17:50.945901+00:00
 
 ## Requirements Coverage
 
@@ -214,6 +214,7 @@ Generated: 2026-06-13T22:08:30.653095+00:00
 | interleaved-serial as the single documented campaign default (branch_strategy: serial) | iterate | change |  | 3881/3881 | — | 2026-06-13 |
 | Pin verifier CLI stdout to UTF-8 — fix Windows cp1252 UnicodeEncodeError on '→' in reports | iterate | bug |  | 3441/3453 | — | 2026-06-13 |
 | tighten bloat baseline to actual LOC; prune 3 under-limit entries (clear Group H2) | iterate | change |  | 3442/3442 | — | 2026-06-13 |
+| Document the campaign interleaved-serial run-model in docs/guide.md (new Chapter 8 Campaign Mode section + Appendix B sharpening + stale drain-example fix) | iterate | change |  | 7/7 | — | 2026-06-14 |
 
 ## Coverage Summary
 
@@ -221,7 +222,7 @@ Generated: 2026-06-13T22:08:30.653095+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 189 |
+| Iterate changes | 190 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

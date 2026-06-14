@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-14-campaign-runmodel-docs",
+  "date": "2026-06-14T06:18:24.983306Z",
+  "type": "change",
+  "complexity": "trivial",
+  "branch": "iterate/campaign-runmodel-docs",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-06-14-campaign-runmodel-docs"
+}
