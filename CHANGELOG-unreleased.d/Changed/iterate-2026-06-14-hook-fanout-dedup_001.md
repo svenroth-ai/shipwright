@@ -1,0 +1,1 @@
+Hook fan-out consolidated: shared Stop/SessionStart hooks (phase-quality audit, handoff, artifact-drift) now do their work once per event via a fail-open once-per-(event,session) guard instead of N× across every installed plugin.

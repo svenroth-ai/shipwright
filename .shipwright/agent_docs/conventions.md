@@ -133,6 +133,7 @@ Contribution rules, dev setup, the graduated trust model, and high-sensitivity a
 
 ## Convention Updates
 
+- **iterate-2026-06-14-hook-fanout-dedup** (2026-06-14): Convention — cross-cutting Claude-Code hook fan-out deduped symmetrically (no single controlling plugin): register-everywhere kept, genuinely-redundant work wrapped in a fail-open once-per-(event,session) guard (`event_once.claim_once_for_event`) on the audit/handoff/drift hooks; the phase-quality Stop audit resolves engaged phase(s) from session state (`resolve_engaged_phases`) not `CLAUDE_PLUGIN_ROOT`. → decision_log (Run-ID).
 - **ADR-017** (2026-05-02): Repo cleanup post self-adoption: webui drift, legacy plans, FR populate
 
 - **ADR-018** (2026-05-02): Adopt plugin: drift detection, test-fixture filter, compliance fallback fix

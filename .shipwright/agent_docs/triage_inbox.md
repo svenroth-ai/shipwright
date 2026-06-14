@@ -1,21 +1,16 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-14T07:36:05.690741Z. Items waiting for triage decision.
+> Auto-generated 2026-06-14T09:36:10.005777Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
 - Total: 195
-- Triage: 20 | Promoted: 1 | Dismissed: 174 | Snoozed: 0
+- Triage: 19 | Promoted: 1 | Dismissed: 175 | Snoozed: 0
 
-## Top 20 items (severity-sorted)
+## Top 19 items (severity-sorted)
 
-### Source: architecture (2 items)
-
-<a id="trg-721b1765"></a>
-- **Hook fan-out across plugins — collapse to phase-aware dispatchers (Start+Stop+Prompt+PostTool; PreToolUse separate) [ca…** `id=trg-721b1765 | severity=medium | kind=improvement → P2/engineering`
-  - [SCOPE EXPANDED 2026-06-02 -> campaign .shipwright/planning/iterate/campaigns/2026-06-02-hook-consolidation/; this item…
-  - Promote: `triage_promote.py --id trg-721b1765 --task-ref EXT:<ref>`
+### Source: architecture (1 item)
 
 <a id="trg-537334f1"></a>
 - **Align bloat marker WRITER (check_file_size) to worktree baseline — delta label still main-keyed (harmless after the trg…** `id=trg-537334f1 | severity=low | kind=improvement → P3/engineering`

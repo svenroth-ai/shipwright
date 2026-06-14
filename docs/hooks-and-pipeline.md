@@ -595,6 +595,36 @@ with **no** `{"hooks": {...}}` wrapper, and/or object-form matchers
 > show the unique hooks; see § Shared Phase-Session Hooks (v2) for the
 > multi-session trio that every phase plugin inherits.
 
+### Fan-out consolidation (once-per-event guard)
+
+Claude Code fires every *enabled* plugin's hooks with **no active-plugin
+filter**, so a shared hook registered in N plugins runs N× per event
+(SessionStart/Stop/PostToolUse ×11–12). The fix (iterate-2026-06-14-hook-fanout-dedup)
+is **symmetric — no single controlling plugin**: every shared hook stays
+registered in every plugin (preserving the `test_hook_registry_bloat`
+"register-everywhere" invariant + robustness across the greenfield pipeline AND
+iterate — if one plugin is disabled the hook still fires from another), and the
+genuinely-redundant work is wrapped in a fail-open **`event_once.claim_once`**
+guard so exactly one invocation does it per `(event, session)`. Claim files live
+under the gitignored `.shipwright/.cache/<event>-<sid>.claim`
+(`event_once.event_claim_path`, valid for session-unique events only —
+SessionStart/Stop, **not** multi-fire PostToolUse). Guarded hooks:
+
+| Hook | Event | Behavior |
+|---|---|---|
+| `audit_phase_quality_on_stop` | Stop | claim + **session-state phase resolver** (see its section) |
+| `generate_handoff_on_stop` | Stop | claim first-wins — 11× identical handoff/dashboard regen → once |
+| `check_artifact_drift` | SessionStart | claim around the scan + `additionalContext` emit → once (distinct `sessionstart-drift` claim key from `capture_session_id`'s injection claim) |
+
+Hooks already deduped/convergent (left unchanged): `capture_session_id` (claim on
+its injection), `check_drift`, `audit_compliance_on_stop`, `bloat_gate_on_stop`,
+`plugin_sync_reminder_on_stop`, and the PostToolUse pair `mark_plugin_edit`
+(set-idempotent marker) + `check_file_size` (upsert-by-path marker) — their N×
+fan-out converges to **one** net marker entry. Cross-event composition is pinned
+by `integration-tests/test_hook_fanout_consolidation.py` (exactly-once,
+phase-from-session-state, fail-open, robust-when-first-plugin-disabled,
+parallel-fan-out atomicity, marker convergence).
+
 ### Shared Hook: capture_session_id.py
 
 **Script:** `shared/scripts/hooks/capture_session_id.py` — the canonical
@@ -834,7 +864,24 @@ at all, so it has no Stop hook.)
 
 **Contract:**
 - Non-blocking. Always exits 0 even on internal errors.
-- Idempotent via `(phase, run_id, session_id)` triple.
+- **Once-per-(Stop, session) + session-state phase resolution**
+  (iterate-2026-06-14-hook-fanout-dedup): Claude Code fires this hook from all
+  11 plugins per Stop (no active-plugin filter). Exactly ONE invocation wins an
+  `event_once.claim_once` guard (`.shipwright/.cache/stop-phasequality-<sid>.claim`,
+  taken AFTER all no-op guards so a foreign/no-op invocation never consumes it);
+  the rest skip. The winner resolves which phase(s) to audit from SESSION STATE
+  via `phase_quality.resolve_engaged_phases()` (run config `current_step` /
+  `completed_steps` / `status` + `events.jsonl`), **not** from
+  `CLAUDE_PLUGIN_ROOT`. The plugin root is now only a recognition gate
+  (`phase_from_plugin_root(...) is None` → foreign-plugin no-op). This replaces
+  the old "each plugin audits its own plugin-root phase" fan-out, which audited
+  11 phases (10 of which never ran) then rewrote them FAIL→SKIP. **Fail-open
+  ("never fewer"):** a `claim_once` error → the invocation proceeds (audit N×
+  rather than 0×); unreadable/insufficient engagement evidence → ALL canonical
+  phases are audited.
+- Idempotent per phase via the `(phase, run_id, session_id)` triple
+  (`already_audited`) — the per-phase dedup behind the event-level claim, used by
+  the claim re-arm path on a later Stop in the same session.
 - Silent no-op for greenfield / non-Shipwright projects.
 - Silent no-op when the resolver auto-descended into a managed
   subfolder while the user was actually working at a parent level

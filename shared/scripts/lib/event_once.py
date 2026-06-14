@@ -30,8 +30,72 @@ fail-open invariant, over-emission is the safe failure direction.
 from __future__ import annotations
 
 import os
+import re
 import time
 from pathlib import Path
+
+# Restrict event / session tokens to a safe filename charset so an unexpected
+# hook-supplied value (separators, ``..``) can never escape the .cache dir.
+_SAFE_TOKEN_RE = re.compile(r"[^A-Za-z0-9._-]")
+
+
+def event_claim_path(
+    project_root: str | os.PathLike[str],
+    event: str,
+    session_id: str,
+) -> Path:
+    """Canonical claim-file path for a once-per-(event, session) guard.
+
+    Returns ``<project_root>/.shipwright/.cache/<event>-<session_id>.claim``.
+    ``event`` and ``session_id`` are sanitised to ``[A-Za-z0-9._-]`` (other
+    characters → ``_``) so a malformed value cannot traverse out of the
+    gitignored ``.cache`` directory. Empty tokens fall back to a literal.
+
+    **Contract — session-unique events only.** Valid for SessionStart / Stop
+    (logically once per session). Do NOT use for multi-fire events such as
+    PostToolUse without adding a per-event instance discriminator (e.g. a
+    tool-use id): the ``(event, session)`` key alone would suppress every
+    legitimate later firing until the claim's TTL expires.
+    """
+    safe_event = _SAFE_TOKEN_RE.sub("_", event or "") or "event"
+    safe_sid = _SAFE_TOKEN_RE.sub("_", session_id or "") or "unknown"
+    return (
+        Path(project_root) / ".shipwright" / ".cache"
+        / f"{safe_event}-{safe_sid}.claim"
+    )
+
+
+def claim_once_for_event(
+    project_root: str | os.PathLike[str],
+    event: str,
+    session_id: str,
+    *,
+    ttl_seconds: float = 30.0,
+) -> bool:
+    """Return True if THIS invocation should do the once-per-(event, session) work.
+
+    The standard Shipwright fan-out dedup: a shared hook registered in N plugins
+    fires N× per event; exactly one invocation should do the real work. Wraps
+    :func:`claim_once` on :func:`event_claim_path` with the hook contract:
+
+    - **No real session id** (empty / ``"unknown"``) → return True WITHOUT
+      claiming. ``"unknown"`` would be a SHARED key colliding across distinct
+      sessionless events, suppressing later ones for the TTL window. Doing the
+      work N× is the safe failure direction.
+    - **Fail-open:** any guard error → True (never silently drop the work).
+
+    Valid only for session-unique events (SessionStart / Stop), never multi-fire
+    PostToolUse — see :func:`event_claim_path`.
+    """
+    sid = (session_id or "").strip()
+    if not sid or sid == "unknown":
+        return True
+    try:
+        return claim_once(
+            event_claim_path(project_root, event, sid), ttl_seconds=ttl_seconds,
+        )
+    except Exception:  # noqa: BLE001 — fail-open: never drop the work
+        return True
 
 
 def claim_once(

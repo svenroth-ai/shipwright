@@ -89,6 +89,7 @@ from ._resolution import (
     is_shipwright_project,
     phase_from_plugin_root,
     project_root_was_explicitly_selected,
+    resolve_engaged_phases,
     resolve_run_id,
     resolve_source,
 )
@@ -139,6 +140,7 @@ __all__ = [
     "emit_phase_quality_backlog",
     "load_engagement_inputs",
     "phase_is_engaged",
+    "resolve_engaged_phases",
     "cwd_is_strict_ancestor_of",
     "finding_path",
     "flag_enabled",

@@ -20,7 +20,35 @@ _LIB = Path(__file__).resolve().parent.parent / "scripts"
 if str(_LIB) not in sys.path:
     sys.path.insert(0, str(_LIB))
 
-from lib.event_once import claim_once  # noqa: E402
+from lib.event_once import claim_once, event_claim_path  # noqa: E402
+
+
+def test_event_claim_path_shape(tmp_path):
+    p = event_claim_path(tmp_path, "stop-handoff", "sess-123")
+    assert p == tmp_path / ".shipwright" / ".cache" / "stop-handoff-sess-123.claim"
+
+
+def test_event_claim_path_sanitises_traversal(tmp_path):
+    # A malformed event/session token must never escape .cache (path traversal).
+    # Containment is what matters: stripping separators keeps the value a single
+    # filename component, so the claim file stays directly under .cache. (A ``..``
+    # SUBSTRING inside one filename component cannot traverse — only a standalone
+    # ``..`` path SEGMENT can, which the separator-strip makes impossible.)
+    p = event_claim_path(tmp_path, "../../evil", "a/b\\c")
+    cache = (tmp_path / ".shipwright" / ".cache").resolve()
+    assert p.resolve().parent == cache
+    assert "/" not in p.name and "\\" not in p.name
+
+
+def test_event_claim_path_empty_tokens_fall_back(tmp_path):
+    p = event_claim_path(tmp_path, "", "")
+    assert p.name == "event-unknown.claim"
+
+
+def test_event_claim_path_usable_with_claim_once(tmp_path):
+    p = event_claim_path(tmp_path, "stop-x", "sid")
+    assert claim_once(p, ttl_seconds=30) is True   # parent auto-created
+    assert claim_once(p, ttl_seconds=30) is False  # same event → skip
 
 
 def test_first_claim_wins(tmp_path):

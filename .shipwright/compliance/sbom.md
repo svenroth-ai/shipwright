@@ -1,6 +1,6 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-06-14T07:36:05.690741+00:00
+Generated: 2026-06-14T09:36:10.005777+00:00
 
 ## Summary
 
@@ -16,7 +16,7 @@ Generated: 2026-06-14T07:36:05.690741+00:00
 
 ```mermaid
 pie title License Distribution
-    "MIT" : 4
+    "MIT" : 2
     "Apache-2.0" : 1
 ```
 
@@ -35,8 +35,8 @@ pie title License Distribution
 
 | Package | Version | License |
 |---------|---------|---------|
-| pytest | 8.0.0 | MIT |
-| pytest-mock | 3.12.0 | MIT |
+| pytest | 8.0.0 | - |
+| pytest-mock | 3.12.0 | - |
 
 ## License Compliance
 

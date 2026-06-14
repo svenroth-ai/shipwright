@@ -7,6 +7,7 @@ latest-finding-per-phase / multi-code / Tier-2 / filter behavior of
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -81,6 +82,86 @@ def test_unengaged_phase_with_unrelated_event() -> None:
 def test_fail_open_when_cfg_none() -> None:
     # AC-1b: unreadable run_config → engaged (never swallow alerts).
     assert pq.phase_is_engaged("deploy", None, []) is True
+
+
+# --- resolve_engaged_phases (session-state phase resolver) ----------------
+
+def _write_cfg(project: Path, cfg: dict) -> None:
+    (project / "shipwright_run_config.json").write_text(
+        json.dumps(cfg), encoding="utf-8")
+
+
+def test_resolve_engaged_returns_engaged_only(project: Path) -> None:
+    # in_progress, current_step=build, project+plan done → exactly those three.
+    _write_cfg(project, {
+        "status": "in_progress", "current_step": "build",
+        "completed_steps": ["project", "plan"],
+    })
+    engaged = pq.resolve_engaged_phases(project)
+    assert set(engaged) == {"project", "plan", "build"}
+    # phases that did not run are excluded (this is the whole point — no longer
+    # auditing all 11 plugins' phases from the fan-out).
+    assert "deploy" not in engaged and "security" not in engaged
+
+
+def test_resolve_engaged_complete_project_is_iterate_only(project: Path) -> None:
+    # A finished project's only always-on phase is iterate (matches what runs).
+    _write_cfg(project, {"status": "complete"})
+    assert pq.resolve_engaged_phases(project) == ["iterate"]
+
+
+def test_resolve_engaged_via_event_source(project: Path) -> None:
+    # Standalone phase run whose only evidence is a work_completed event.
+    _write_cfg(project, {"status": "complete"})
+    (project / "shipwright_events.jsonl").write_text(
+        json.dumps({"type": "work_completed", "source": "build"}) + "\n",
+        encoding="utf-8")
+    engaged = pq.resolve_engaged_phases(project)
+    assert "build" in engaged and "iterate" in engaged
+
+
+def test_resolve_engaged_fail_open_when_cfg_missing(project: Path) -> None:
+    # No run config → cannot determine → ALL canonical phases (never fewer).
+    engaged = pq.resolve_engaged_phases(project)
+    assert set(engaged) == set(pq.PLUGIN_TO_PHASE.values())
+
+
+def test_resolve_engaged_fail_open_when_cfg_malformed(project: Path) -> None:
+    (project / "shipwright_run_config.json").write_text("{not json", encoding="utf-8")
+    engaged = pq.resolve_engaged_phases(project)
+    assert set(engaged) == set(pq.PLUGIN_TO_PHASE.values())
+
+
+def test_resolve_engaged_fail_open_when_events_unreadable(
+    project: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # cfg valid, but the event log EXISTS and raises on read (partial flush /
+    # OSError) → insufficient evidence → ALL phases. "Never fewer" under stale
+    # end-of-session state (external-review gpt#5 / gem#1).
+    _write_cfg(project, {
+        "status": "in_progress", "current_step": "build", "completed_steps": [],
+    })
+    (project / "shipwright_events.jsonl").write_text("{}", encoding="utf-8")
+    orig_read = Path.read_text
+
+    def boom(self: Path, *a: object, **k: object) -> str:
+        if self.name == "shipwright_events.jsonl":
+            raise OSError("simulated partial flush")
+        return orig_read(self, *a, **k)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(Path, "read_text", boom)
+    engaged = pq.resolve_engaged_phases(project)
+    assert set(engaged) == set(pq.PLUGIN_TO_PHASE.values())
+
+
+def test_resolve_engaged_absent_events_not_failopen(project: Path) -> None:
+    # A genuinely ABSENT event log is NOT "unreadable": cfg-based engagement
+    # still applies, so we get the engaged set, not the full fail-open set.
+    _write_cfg(project, {
+        "status": "in_progress", "current_step": "test", "completed_steps": [],
+    })
+    engaged = pq.resolve_engaged_phases(project)
+    assert engaged == ["test"]
 
 
 # --- load_engagement_inputs fail-open -----------------------------------

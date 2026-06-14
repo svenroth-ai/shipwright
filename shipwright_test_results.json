@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-14-tighten-bloat-baseline",
+    "run_id": "iterate-2026-06-14-hook-fanout-dedup",
     "date": "2026-06-14",
     "unit": {
       "status": "passed",
-      "passed": 96,
-      "total": 96
+      "passed": 3473,
+      "total": 3473
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 163,
+      "total": 163
     },
     "pgtap": {
       "status": "not_run",
@@ -18,7 +18,7 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
@@ -31,21 +31,100 @@
       "status": "not_run"
     },
     "degraded": [
-      "classify_complexity returned estimate=medium via prior_source=history (median of last 20 finalized runs); overridden to trivial \u2014 diff is a single integer in shipwright_bloat_baseline.json, scope_keyword_estimate=trivial, zero risk flags (known prose-vs-diff fall-through pattern).",
-      "setup_iterate_worktree WARNING: sweep-outbox invalid for trg-671bb0a2 (status append dropped by a prior merge) \u2014 pre-existing main-tree triage-outbox state, unrelated to this change."
+      "classifier risk flag 'touches_auth' is a DESCRIPTION-prose false-positive (no middleware/auth/supabase path touched); overridden per the diff-driven detector discipline."
     ],
-    "test_completeness": {
-      "status": "n/a",
-      "justification": "Trivial complexity \u2014 single-integer baseline-metadata tighten; no testable runtime behavior is introduced. The anti-ratchet/H2 logic that consumes this value is already covered by the 96 passing related tests."
-    },
     "surface_verification": {
       "surface": "none",
-      "runner": "",
-      "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": "",
-      "timestamp": "2026-06-14T07:34:08.007Z",
-      "justification": "Data-only tighten of one integer in shipwright_bloat_baseline.json (autonomous_loop.py current 440\u00e2\u2020\u2019436); no runtime code, API, UI, or backend-affects-frontend surface is touched."
+      "exit_code": 0,
+      "justification": "Pure-Python Claude Code hook consolidation; no web/CLI/API surface. Verified by integration-tests/test_hook_fanout_consolidation.py + full shared/tests + integration-tests."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "event_claim_path builds the canonical per-event claim path + sanitises traversal",
+          "disposition": "tested",
+          "evidence": "test_event_once::test_event_claim_path_shape, ::test_event_claim_path_sanitises_traversal PASSED"
+        },
+        {
+          "behavior": "claim_once_for_event: unknown-session → no dedup (fail-open); guard error → work runs",
+          "disposition": "tested",
+          "evidence": "test_generate_handoff_dedup::test_unknown_session_does_not_dedup, test_check_artifact_drift_dedup::test_drift_scan_fail_open_when_claim_errors PASSED"
+        },
+        {
+          "behavior": "resolve_engaged_phases returns engaged-only phases",
+          "disposition": "tested",
+          "evidence": "test_phase_quality_engagement::test_resolve_engaged_returns_engaged_only, ::test_resolve_engaged_via_event_source PASSED"
+        },
+        {
+          "behavior": "resolve_engaged_phases fail-open (cfg missing/malformed, events unreadable) → all phases",
+          "disposition": "tested",
+          "evidence": "test_phase_quality_engagement::test_resolve_engaged_fail_open_when_cfg_missing, ::test_resolve_engaged_fail_open_when_cfg_malformed, ::test_resolve_engaged_fail_open_when_events_unreadable PASSED"
+        },
+        {
+          "behavior": "audit resolves phase from session state, not plugin root (negative + positive)",
+          "disposition": "tested",
+          "evidence": "test_audit_phase_quality::test_hook_phase_from_session_state_not_plugin_root, ::test_hook_audits_iterate_when_engaged_regardless_of_plugin_root; integration::test_audit_phase_from_session_state_not_plugin_root PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "audit runs once across the fan-out + regenerates aggregates once (exactly-one winner)",
+          "disposition": "tested",
+          "evidence": "integration::test_stop_audit_fanout_runs_once, ::test_stop_audit_fanout_concurrent_one_winner PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "audit claim dedup within event + already_audited re-arm idempotency",
+          "disposition": "tested",
+          "evidence": "test_audit_phase_quality::test_hook_claim_dedups_within_event, ::test_hook_is_idempotent PASSED"
+        },
+        {
+          "behavior": "foreign/unrecognized first invocation no-ops WITHOUT consuming the claim",
+          "disposition": "tested",
+          "evidence": "integration::test_foreign_first_invocation_does_not_block; test_audit_phase_quality::test_hook_exits_zero_when_plugin_root_unrecognized PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "generate_handoff dedup once per session + TTL re-arm",
+          "disposition": "tested",
+          "evidence": "test_generate_handoff_dedup::test_claim_dedups_within_session, ::test_claim_once_rearms_after_ttl; integration::test_handoff_fanout_runs_once PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "check_artifact_drift scan/emit once per SessionStart + TTL re-arm",
+          "disposition": "tested",
+          "evidence": "test_check_artifact_drift_dedup::test_drift_scan_runs_once_per_session, ::test_drift_scan_rearms_after_ttl; integration::test_drift_fanout_emits_once PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "robust when the first-firing plugin is disabled (no single owner)",
+          "disposition": "tested",
+          "evidence": "integration::test_robust_when_first_plugin_disabled PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "mark_plugin_edit / check_file_size markers converge to one net entry under fan-out",
+          "disposition": "tested",
+          "evidence": "integration::test_check_file_size_marker_converges, ::test_mark_plugin_edit_marker_converges PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "register-everywhere invariant preserved (no hook removed)",
+          "disposition": "tested",
+          "evidence": "test_hook_registry_bloat (unchanged) PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 13,
+        "tested": 13,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 7,
+        "covered_acs": 7
+      }
     }
   }
 }

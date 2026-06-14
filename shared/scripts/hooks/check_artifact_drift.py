@@ -24,6 +24,7 @@ session start over its own bug.
 """
 from __future__ import annotations
 
+import json
 import os
 import sys
 from pathlib import Path
@@ -43,13 +44,25 @@ def _resolve_root() -> Path:
         return Path(os.getcwd())
 
 
+def _session_id_from(payload: object) -> str:
+    """SessionStart payload ``session_id`` → claim key (env / 'unknown' fallback)."""
+    if isinstance(payload, dict):
+        sid = payload.get("session_id")
+        if isinstance(sid, str) and sid.strip():
+            return sid.strip()
+    return (os.environ.get("SHIPWRIGHT_SESSION_ID") or "").strip() or "unknown"
+
+
 def main() -> int:
-    # Drain stdin (hooks receive a JSON payload we don't need here, but
-    # not draining can cause the parent to block).
+    # Read the SessionStart payload (also drains stdin so the parent never
+    # blocks). The payload carries session_id, used as the dedup claim key.
+    payload: object = {}
     try:
-        sys.stdin.read()
-    except OSError:
-        pass
+        raw = sys.stdin.read()
+        if raw and raw.strip():
+            payload = json.loads(raw)
+    except (OSError, ValueError):
+        payload = {}
 
     project_root = _resolve_root()
 
@@ -57,6 +70,16 @@ def main() -> int:
         from lib.stale_artifact_detector import hook_main  # type: ignore
     except ImportError as exc:  # pragma: no cover — defensive fail-open
         print(f"[shipwright] drift detector import failed: {exc}", file=sys.stderr)
+        return 0
+
+    # Once-per-SessionStart dedup. This hook fires ~12× per SessionStart with
+    # IDENTICAL inputs — it scans project_root and never reads CLAUDE_PLUGIN_ROOT
+    # — so 11 of the 12 scans + any additionalContext drift-remediation message
+    # are pure duplication. The 'sessionstart-drift' key is distinct from
+    # capture_session_id's injection claim. Fail-open + unknown-session handling
+    # in the shared helper.
+    from lib.event_once import claim_once_for_event
+    if not claim_once_for_event(project_root, "sessionstart-drift", _session_id_from(payload)):
         return 0
 
     return hook_main(project_root)

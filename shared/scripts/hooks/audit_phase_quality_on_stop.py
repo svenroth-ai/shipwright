@@ -75,10 +75,13 @@ def main() -> int:
     if not pq.phase_quality_enabled():
         return 0
 
+    # Foreign-plugin gate — the audit is only valid from a recognized Shipwright
+    # plugin root. An unrecognized root no-ops here, BEFORE the claim below, so a
+    # foreign first invocation can never win the claim and block a later
+    # recognized one (external-review gpt#2). The plugin-root phase is used ONLY
+    # as this recognition gate now; the audited phases come from session state.
     plugin_root = os.environ.get("CLAUDE_PLUGIN_ROOT", "")
-    phase = pq.phase_from_plugin_root(plugin_root)
-    if not phase:
-        # Hook wired into a non-Shipwright plugin — silent no-op.
+    if pq.phase_from_plugin_root(plugin_root) is None:
         return 0
 
     project_root = _resolve_project_root()
@@ -98,80 +101,94 @@ def main() -> int:
         return 0
 
     session_id = os.environ.get("SHIPWRIGHT_SESSION_ID", "").strip() or "unknown"
-    run_id = pq.resolve_run_id(project_root, session_id)
-    source = pq.resolve_source(project_root, phase)
 
-    if pq.already_audited(project_root, phase, run_id, session_id):
-        _emit_hook_output({
-            "hookEventName": "Stop",
-            "additionalContext": (
-                f"[phase-quality] already audited phase={phase} "
-                f"run_id={run_id} session={session_id} — skipped"
-            ),
-        })
+    # Once-per-(Stop, session) guard: Claude Code fires this hook from every
+    # enabled plugin (no filter), so one Stop invokes it ~11×. Exactly ONE wins
+    # and audits; the rest skip — replacing the old per-plugin-root fan-out (11
+    # phases audited, 10 never ran). Taken AFTER all no-op guards (a foreign/
+    # no-op invocation must not consume the claim). Fail-open + unknown-session
+    # handling live in the shared helper.
+    from lib.event_once import claim_once_for_event
+    if not claim_once_for_event(project_root, "stop-phasequality", session_id):
         return 0
 
+    run_id = pq.resolve_run_id(project_root, session_id)
+
+    # Resolve which phase(s) ran THIS session from SESSION STATE (events.jsonl +
+    # run_config), not CLAUDE_PLUGIN_ROOT. Fail-open: unknown/unreadable → ALL
+    # canonical phases (audit more, never fewer). One claimed invocation audits
+    # each engaged, not-yet-audited phase.
+    phases = pq.resolve_engaged_phases(project_root)
+
     started = time.monotonic()
+    audited: list[tuple[str, dict[str, int]]] = []
+    for phase in phases:
+        # Whole body (incl. already_audited) is guarded so one bad phase can
+        # neither abort the remaining phases nor crash main → block the Stop
+        # chain (external-review code, gemini).
+        try:
+            if pq.already_audited(project_root, phase, run_id, session_id):
+                continue
+            findings = {
+                "canon": pq.run_canon_checks(phase, project_root),
+                "workflow": pq.run_workflow_checks(phase, project_root, run_id),
+                "infrastructure": pq.run_infrastructure_checks(phase, project_root),
+                "traceability": pq.run_traceability_checks(phase, project_root),
+                "quality": pq.run_quality_checks(phase, project_root),
+                "spec": pq.run_spec_checks(phase, project_root, run_id),
+            }
+            # Defense-in-depth: in the fail-open all-phases path a non-engaged
+            # phase's FAILs are rewritten to SKIP. No-op on the normal path
+            # (every audited phase IS engaged). FAIL-OPEN post-pass.
+            findings = _skip_unengaged_fails(findings, phase, project_root)
+            pq.write_finding_json(
+                project_root, phase, run_id, session_id, findings,
+                source=pq.resolve_source(project_root, phase),
+            )
+            audited.append((phase, _roll_up(findings)))
+        except Exception as exc:  # noqa: BLE001 — one bad phase must not abort the rest
+            sys.stderr.write(
+                f"[audit_phase_quality] Error auditing phase={phase}: "
+                f"{type(exc).__name__}: {exc}\n"
+            )
+            pq.write_error_finding(project_root, phase, run_id, session_id, exc)
+
+    # Project-wide tail — runs ONCE for the whole Stop event. Best-effort; never
+    # blocks. Refreshes aggregates + the single rolling phaseQuality:backlog
+    # action-unit (iterate-2026-05-31-phasequality-triage-bundle).
     try:
-        findings = {
-            "canon": pq.run_canon_checks(phase, project_root),
-            "workflow": pq.run_workflow_checks(phase, project_root, run_id),
-            "infrastructure": pq.run_infrastructure_checks(phase, project_root),
-            "traceability": pq.run_traceability_checks(phase, project_root),
-            "quality": pq.run_quality_checks(phase, project_root),
-            "spec": pq.run_spec_checks(phase, project_root, run_id),
-        }
-        # iterate-2026-05-31-phasequality-dashboard-skip: when the project
-        # never actively engaged this phase, rewrite its FAILs to SKIP so the
-        # dashboard agrees with the inbox (which already suppresses them). The
-        # runners are untouched; this is a hook-level, FAIL-OPEN post-pass.
-        findings = _skip_unengaged_fails(findings, phase, project_root)
-        finding_path = pq.write_finding_json(
-            project_root, phase, run_id, session_id, findings,
-            source=source,
-        )
         pq.regenerate_all_aggregates(project_root)
         _gc_best_effort(project_root)
-
-        # Emit/refresh the single rolling phase-quality backlog action-unit
-        # (iterate-2026-05-31-phasequality-triage-bundle — replaces the prior
-        # 1-FAIL-1-item mirror, which flooded the inbox with one row per
-        # Tier-1 FAIL across every phase the Stop fan-out audited). Reads the
-        # latest finding per phase project-wide, filters by phase-applicability
-        # (Layer 1), keeps exactly one open `phaseQuality:backlog:<sig>` item.
-        # Best-effort — never blocks the Stop chain.
         commit = _git_head_sha(project_root)  # "" on failure (spec contract)
-        pq.emit_phase_quality_backlog(
-            project_root, run_id=run_id, commit=commit,
-        )
-
-        totals = _roll_up(findings)
-        elapsed_ms = int((time.monotonic() - started) * 1000)
-
-        rel = (
-            finding_path.relative_to(project_root)
-            if finding_path.is_relative_to(project_root)
-            else finding_path
-        )
-        _emit_hook_output({
-            "hookEventName": "Stop",
-            "additionalContext": (
-                f"[phase-quality] phase={phase} run={run_id} "
-                f"pass={totals['PASS']} fail={totals['FAIL']} "
-                f"warn={totals['WARN']} skip={totals['SKIP']} "
-                f"({elapsed_ms}ms) → {rel}"
-            ),
-        })
+        pq.emit_phase_quality_backlog(project_root, run_id=run_id, commit=commit)
     except Exception as exc:  # noqa: BLE001 — never block Stop chain
         sys.stderr.write(
-            f"[audit_phase_quality] Error: {type(exc).__name__}: {exc}\n"
+            f"[audit_phase_quality] Error in aggregate tail: "
+            f"{type(exc).__name__}: {exc}\n"
         )
-        pq.write_error_finding(project_root, phase, run_id, session_id, exc)
+
+    elapsed_ms = int((time.monotonic() - started) * 1000)
+    if audited:
+        # One "phase=<p>" token per audited phase keeps the [phase-quality] tag
+        # and downstream routing filters working.
+        parts = " ".join(
+            f"phase={p}(pass={t['PASS']} fail={t['FAIL']} "
+            f"warn={t['WARN']} skip={t['SKIP']})"
+            for p, t in audited
+        )
         _emit_hook_output({
             "hookEventName": "Stop",
             "additionalContext": (
-                f"[phase-quality] audit failed for phase={phase}: "
-                f"{type(exc).__name__}: {exc}"
+                f"[phase-quality] run={run_id} audited {len(audited)} phase(s) "
+                f"({elapsed_ms}ms): {parts}"
+            ),
+        })
+    else:
+        _emit_hook_output({
+            "hookEventName": "Stop",
+            "additionalContext": (
+                f"[phase-quality] run={run_id} already audited "
+                f"{len(phases)} engaged phase(s) — skipped"
             ),
         })
 

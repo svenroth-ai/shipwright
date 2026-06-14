@@ -767,7 +767,7 @@
     {
       "path": "shared/tests/test_audit_phase_quality.py",
       "limit": 300,
-      "current": 760,
+      "current": 820,
       "state": "grandfathered",
       "adr": null
     },

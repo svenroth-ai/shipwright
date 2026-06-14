@@ -341,6 +341,34 @@ def _run_hook(
     )
 
 
+def _findings_by_phase(finding_dir: Path) -> dict[str, dict]:
+    """Map ``phase`` → finding-JSON dict for every finding written this run.
+
+    The Stop audit now resolves the audited phases from SESSION STATE and a
+    single invocation covers every engaged phase, so tests assert on the SET of
+    audited phases rather than "the one finding".
+    """
+    out: dict[str, dict] = {}
+    if not finding_dir.is_dir():
+        return out
+    for p in finding_dir.glob("*.json"):
+        data = json.loads(p.read_text(encoding="utf-8"))
+        out[data["phase"]] = data
+    return out
+
+
+def _age_claim(project: Path, *, session_id: str = "sess-E2E") -> None:
+    """Age the once-per-(Stop, session) claim so the next invocation re-arms
+    (reaches the per-phase already_audited dedup) instead of short-circuiting."""
+    claim = (
+        project / ".shipwright" / ".cache"
+        / f"stop-phasequality-{session_id}.claim"
+    )
+    if claim.exists():
+        old = time.time() - 120
+        os.utime(claim, (old, old))
+
+
 def test_hook_exits_zero_on_greenfield(tmp_path: Path):
     result = _run_hook(tmp_path)
     assert result.returncode == 0
@@ -366,37 +394,54 @@ def test_hook_disabled_when_env_flag_zero(shipwright_project: Path):
 def test_hook_writes_finding_and_aggregates(shipwright_project: Path):
     result = _run_hook(shipwright_project)
     assert result.returncode == 0, result.stderr
-    # Finding JSON exists
     finding_dir = shipwright_project / pq.FINDING_DIR
     assert finding_dir.is_dir()
-    jsons = list(finding_dir.glob("*.json"))
-    assert len(jsons) == 1
-    data = json.loads(jsons[0].read_text(encoding="utf-8"))
-    assert data["phase"] == "build"
-    assert data["run_id"] == "run-abc"  # from shipwright_run_config.json
+    # One Stop now audits every ENGAGED phase resolved from session state
+    # (project/design/plan via completed_steps + build via current_step/event),
+    # not the single plugin-root phase. (Was: exactly one "build" finding.)
+    fbp = _findings_by_phase(finding_dir)
+    assert set(fbp) == {"project", "design", "plan", "build"}
+    build = fbp["build"]
+    assert build["run_id"] == "run-abc"  # from shipwright_run_config.json
     # Canon category populated with 5 checks
-    ids = [f["id"] for f in data["canon"]]
-    assert ids == ["C1", "C2", "C3", "C4", "C5"]
-    # Aggregates exist
+    assert [f["id"] for f in build["canon"]] == ["C1", "C2", "C3", "C4", "C5"]
+    # Aggregates exist (regenerated once for the whole event)
     assert (shipwright_project / pq.REPORT_PATH).exists()
     assert (shipwright_project / pq.SUMMARY_PATH).exists()
     assert (shipwright_project / pq.DASHBOARD_PATH).exists()
+
+
+def test_hook_claim_dedups_within_event(shipwright_project: Path):
+    """Two Stop invocations in one session (the fan-out): the 2nd loses the
+    once-per-event claim and skips entirely — no new findings, no rewrites."""
+    r1 = _run_hook(shipwright_project)
+    assert r1.returncode == 0
+    finding_dir = shipwright_project / pq.FINDING_DIR
+    mtimes1 = {p.name: p.stat().st_mtime for p in finding_dir.glob("*.json")}
+    assert mtimes1  # first invocation wrote findings
+    time.sleep(0.05)
+    r2 = _run_hook(shipwright_project)  # claim still fresh → loses
+    assert r2.returncode == 0
+    mtimes2 = {p.name: p.stat().st_mtime for p in finding_dir.glob("*.json")}
+    assert mtimes2 == mtimes1  # nothing added or rewritten
 
 
 def test_hook_is_idempotent(shipwright_project: Path):
     r1 = _run_hook(shipwright_project)
     assert r1.returncode == 0
     finding_dir = shipwright_project / pq.FINDING_DIR
-    first_mtime = next(finding_dir.glob("*.json")).stat().st_mtime
-    # Second call must not rewrite the finding
+    mtimes1 = {p.name: p.stat().st_mtime for p in finding_dir.glob("*.json")}
+    # Age the once-per-event claim so the 2nd call RE-ARMS (does not short-circuit
+    # on the claim) and reaches the per-phase already_audited dedup instead.
+    _age_claim(shipwright_project)
     time.sleep(0.05)
     r2 = _run_hook(shipwright_project)
     assert r2.returncode == 0
     # Post-ADR-042: idempotency diagnostic surfaces on stderr (Stop schema
     # rejects hookSpecificOutput.additionalContext on stdout).
     assert "already audited" in r2.stderr
-    second_mtime = next(finding_dir.glob("*.json")).stat().st_mtime
-    assert first_mtime == second_mtime
+    mtimes2 = {p.name: p.stat().st_mtime for p in finding_dir.glob("*.json")}
+    assert mtimes2 == mtimes1  # no finding rewritten
 
 
 def test_hook_is_non_blocking_on_error(monkeypatch, shipwright_project: Path):
@@ -410,22 +455,37 @@ def test_hook_is_non_blocking_on_error(monkeypatch, shipwright_project: Path):
     )
     result = _run_hook(shipwright_project)
     assert result.returncode == 0
-    # Finding still written; C5 becomes a WARN/FAIL, not a crash
-    data = json.loads(
-        next((shipwright_project / pq.FINDING_DIR).glob("*.json")).read_text(encoding="utf-8"),
-    )
-    c5 = next(f for f in data["canon"] if f["id"] == "C5")
+    # Build finding still written; C5 becomes a WARN/FAIL, not a crash.
+    build = _findings_by_phase(shipwright_project / pq.FINDING_DIR)["build"]
+    c5 = next(f for f in build["canon"] if f["id"] == "C5")
     assert c5["status"] in (pq.STATUS_FAIL, pq.STATUS_WARN)
 
 
-def test_hook_iterate_plugin_root_maps_to_iterate_phase(shipwright_project: Path):
+def test_hook_phase_from_session_state_not_plugin_root(shipwright_project: Path):
+    """AC-2 (negative): firing from the iterate plugin root must NOT audit the
+    iterate phase when session state says iterate did not run — the plugin root
+    is no longer the phase source."""
     result = _run_hook(shipwright_project, plugin_root="plugins/shipwright-iterate")
-    assert result.returncode == 0
-    jsons = list((shipwright_project / pq.FINDING_DIR).glob("*.json"))
-    assert jsons, result.stderr
-    data = json.loads(jsons[0].read_text(encoding="utf-8"))
-    assert data["phase"] == "iterate"
-    assert data["source"] == "iterate"
+    assert result.returncode == 0, result.stderr
+    fbp = _findings_by_phase(shipwright_project / pq.FINDING_DIR)
+    assert "iterate" not in fbp  # plugin-root phase ignored
+    assert set(fbp) == {"project", "design", "plan", "build"}  # session-state set
+
+
+def test_hook_audits_iterate_when_engaged_regardless_of_plugin_root(tmp_path: Path):
+    """AC-2 (positive): on a finished project (status=complete → iterate engaged),
+    firing from a NON-iterate plugin root still audits iterate — proving the
+    audited phase comes from session state, not CLAUDE_PLUGIN_ROOT."""
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "shipwright_run_config.json").write_text(
+        json.dumps({"run_id": "run-it", "status": "complete"}), encoding="utf-8",
+    )
+    result = _run_hook(tmp_path, plugin_root="plugins/shipwright-build")
+    assert result.returncode == 0, result.stderr
+    fbp = _findings_by_phase(tmp_path / pq.FINDING_DIR)
+    assert "iterate" in fbp
+    assert fbp["iterate"]["source"] == "iterate"
+    assert "build" not in fbp  # plugin-root phase did not run → not audited
 
 
 def test_hook_output_contains_phase_quality_tag(shipwright_project: Path):

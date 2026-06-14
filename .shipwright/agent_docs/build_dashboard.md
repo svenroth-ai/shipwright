@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-14 07:36 UTC | Session: 3c4fce0e-d7c3-45c7-bcaa-d410ad82b624 | Run: iterate-2026-06-14-tighten-bloat-baseline
+> Updated: 2026-06-14 09:36 UTC | Session: b07b377c-0e43-4cdb-8269-cd07759a7a79 | Run: iterate-2026-06-14-hook-fanout-dedup
 
-## Recent Changes (191 iterations)
+## Recent Changes (192 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Hook fan-out consolidation: once-per-event guard (claim_once_for_event) on audit/handoff/drift + session-state phase resolver (resolve_engaged_phases) | 3473/3473 |  | infra | 2026-06-14 |
 | change | tighten bloat baseline for autonomous_loop.py (current 440 to 436) | 96/96 |  | compliance | 2026-06-14 |
 | change | Document the campaign interleaved-serial run-model in docs/guide.md (new Chapter 8 Campaign Mode section + Appendix B sharpening + stale drain-example fix) | 7/7 |  | docs | 2026-06-14 |
 | change | tighten bloat baseline to actual LOC; prune 3 under-limit entries (clear Group H2) | 3442/3442 |  | compliance | 2026-06-13 |
@@ -198,7 +199,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-14 | Unit: 96/96 | Smoke: not_run | (iterate)
+Last run: 2026-06-14 | Unit: 3473/3473 | Integration: 163/163 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
