@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-14T09:36:10.005777+00:00
-Total commits: 1009
+Generated: 2026-06-14T12:57:22.285969+00:00
+Total commits: 1010
 
 ## Commit Distribution
 
@@ -11,7 +11,7 @@ pie title Commit Types
     "feat" : 272
     "chore" : 221
     "docs" : 129
-    "refactor" : 60
+    "refactor" : 61
     "test" : 24
     "ci" : 7
     "other" : 7
@@ -950,10 +950,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 60 commits
+### Refactoring (refactor) — 61 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-14 | hooks | consolidate fan-out via once-per-event guard + session-state phase resolver (#250) | e6e5e4b91764 |
 | 2026-06-14 | iterate | interleaved-serial as the single campaign default (retire end-stage drain) (#246) | 2ec6e2be8bfa |
 | 2026-06-13 | triage | stop the iterate pipeline from filing triage about current-run work (#243) | 0f85ff5b892f |
 | 2026-06-13 | verifiers | fold spec_checks git wrappers into git_helpers (campaign C) (#242) | 9f7e48cebe3e |
@@ -1078,7 +1079,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1009 |
+| Total commits | 1010 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1009 |
+| Human-authored commits | 1010 |
 

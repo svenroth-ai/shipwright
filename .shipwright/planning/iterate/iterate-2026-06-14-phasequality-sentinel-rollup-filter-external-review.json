@@ -1,0 +1,24 @@
+{
+  "run_id": "iterate-2026-06-14-phasequality-sentinel-rollup-filter",
+  "mode": "iterate",
+  "provider": "openrouter",
+  "models": [
+    "openai/gpt-5.4",
+    "google/gemini-3.1-pro-preview"
+  ],
+  "timestamp": "2026-06-14T13:05:00Z",
+  "findings_total": 12,
+  "adopted": [
+    "openai#5 (MEDIUM): audited ALL load_findings( call sites — grep confirms the only one outside the loader/tests is INSIDE load_actionable_findings; all 4 actionable consumers route through the filter, no bypass.",
+    "openai#3/#9 + gemini: self-documenting — load_findings docstring now states it is the RAW/forensic path, actionable rollups MUST use load_actionable_findings, and session_id is intentionally excluded from the sentinel test (a real run_id = resolved run context regardless of session).",
+    "openai#1 (MEDIUM, sentinel-set drift): added test_sentinel_set_matches_iterate_run_id_guard pinning RUN_ID_SENTINELS == _iterate_run_id._RUN_ID_SENTINELS.",
+    "openai#7: trimmed public surface — dropped RUN_ID_SENTINELS from the package __init__ export (kept in _constants for is_sentinel_run).",
+    "openai#1/#4 + gemini#1 (None/missing run_id): verified already handled — is_sentinel_run uses str(run_id or '') (None -> '' -> sentinel) AND load_findings normalises a missing/null run_id to 'unknown'; test asserts (None, True). Tightened spec AC-1 wording to match the impl."
+  ],
+  "rejected": [
+    "openai#2 / gemini#2 (drop LoadedFinding.is_sentinel property): KEPT. Directly tested, reads as a domain concept, parallels the existing sort_key property; _aggregates.py is 210 LOC — far under its 300 budget, so gemini's 'near budget' premise does not hold.",
+    "gemini#3 (operational ghost old-FAIL heads-up): acknowledged, no code change — un-masking an older real FAIL is INTENDED and pinned by test_collect_sentinel_does_not_mask_older_real_fail; it is a real finding the sentinel was masking, not a regression.",
+    "openai#8 (debug-count excluded sentinels): not adopted — raw load_findings + the new docstring already provide the forensic path; a counter adds complexity for marginal value."
+  ],
+  "overall": "Both models: approach sound and appropriately scoped (read/rollup-layer filter is the right fix for both stale and future degenerate snapshots). High-value refinements (call-site audit, drift-pin test, self-documenting docstrings, surface trim) applied; leanness-only suggestions declined with rationale."
+}

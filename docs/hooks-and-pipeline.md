@@ -1023,6 +1023,22 @@ Aggregate rewrites serialise through
 `.shipwright/locks/phase-quality.lock` so concurrent Stop events from
 multiple sessions don't lost-update the summaries.
 
+**Sentinel-run exclusion at the rollup layer
+(iterate-2026-06-14-phasequality-sentinel-rollup-filter).** A per-run Finding
+JSON whose `run_id` is a sentinel (`""` / `"unknown"`) comes from an audit that
+ran with NO resolvable run/session context (`resolve_run_id` only yields
+`"unknown"` when there is no run-config run_id / `run_started` event / loop var
+AND the session id is empty). By the audit-time canon (`unresolvable_run_id_skip`,
+`_skip_unengaged_fails`) such findings are "not applicable", but those guards
+only fire at WRITE time — so a pre-fix or degenerate sentinel snapshot used to
+keep driving the triage backlog action-unit, the SessionStart injection, and
+the dashboard. The four rollup consumers (`collect_in_scope_fails`, the three
+`_dashboard_render` rewrites) now read **`load_actionable_findings`**, which is
+`load_findings` minus sentinel-run snapshots — so a phase whose only snapshot is
+sentinel renders no row / no open-FAIL and cannot drive false surfacing. Raw
+`load_findings` and `gc_old_findings` are unchanged: the per-run JSONs stay on
+disk and GC out at 90d.
+
 **Hook order per plugin (plan § 5.1):**
 - 10 plugins total (project, design, plan, build, test, security, deploy,
   changelog, compliance, adopt): `audit_phase_quality_on_stop` runs

@@ -26,7 +26,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 
 from lib.events_log import resolve_events_path  # noqa: E402
 
-from ._aggregates import load_findings  # noqa: E402
+from ._aggregates import load_actionable_findings  # noqa: E402
 from ._constants import CATEGORIES, DASHBOARD_PATH, STATUS_FAIL  # noqa: E402
 
 BACKLOG_PREFIX = "phaseQuality:backlog:"
@@ -122,16 +122,16 @@ def phase_is_engaged(phase: str, cfg: dict | None, events: list[dict]) -> bool:
 def collect_in_scope_fails(project_root: Path) -> list[dict[str, str]]:
     """Return the open in-scope Tier-1 FAILs across all phases.
 
-    Reads the latest finding JSON per phase (``load_findings`` is sorted
-    newest-first), enumerates every Tier-1 FAIL across all categories in it
-    (so e.g. design's ``C1`` AND ``D1`` both surface), and drops findings
-    whose phase is not engaged (Layer 1). Output is sorted by
-    ``(phase, code)`` for a stable signature.
+    Reads the latest finding per phase via ``load_actionable_findings`` (sorted
+    newest-first; degenerate sentinel-run snapshots already excluded), enumerates
+    every Tier-1 FAIL across all categories in it (so e.g. design's ``C1`` AND
+    ``D1`` both surface), and drops findings whose phase is not engaged (Layer 1).
+    Output is sorted by ``(phase, code)`` for a stable signature.
     """
     cfg, events = load_engagement_inputs(project_root)
     seen_phase: set[str] = set()
     out: list[dict[str, str]] = []
-    for lf in load_findings(project_root):
+    for lf in load_actionable_findings(project_root):
         # source="error" = crashed hook-level audit (empty categories) — skip
         # so it can't mask a real prior FAIL as the latest-per-phase finding.
         if lf.source == "error" or lf.phase in seen_phase:

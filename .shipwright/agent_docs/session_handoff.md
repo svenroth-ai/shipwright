@@ -1,35 +1,37 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-14-hook-fanout-dedup"
+run_id: "iterate-2026-06-14-phasequality-sentinel-rollup-filter"
 phase: "iterate"
-reason: "iterate: hook fan-out consolidation"
-timestamp: "2026-06-14T09:36:10.005777+00:00"
+reason: "iterate: phase-quality rollups exclude degenerate sentinel-run snapshots"
+timestamp: "2026-06-14T12:57:22.285969+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-14 09:36:10 UTC
+> Auto-generated 2026-06-14 12:57:22 UTC
 
 ## Session Info
 
-- **Session ID**: b07b377c-0e43-4cdb-8269-cd07759a7a79
-- **Timestamp**: 2026-06-14 09:36:10 UTC
-- **Reason**: iterate: hook fan-out consolidation
+- **Session ID**: 8b838fb6-ab99-4c09-a550-c3118c02f3d4
+- **Timestamp**: 2026-06-14 12:57:22 UTC
+- **Reason**: iterate: phase-quality rollups exclude degenerate sentinel-run snapshots
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-14-tighten-bloat-baseline
-- **Date**: 2026-06-14T07:36:16.585181Z
+- **Run ID**: iterate-2026-06-14-phasequality-sentinel-rollup-filter
+- **Date**: 2026-06-14T12:55:17.021915Z
 - **Type**: change
-- **Complexity**: trivial
-- **Branch**: iterate/tighten-bloat-baseline
-- **ADR**: iterate-2026-06-14-tighten-bloat-baseline
+- **Complexity**: medium
+- **Branch**: iterate/phasequality-sentinel-rollup-filter
+- **ADR**: iterate-2026-06-14-phasequality-sentinel-rollup-filter
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/2026-06-14-phasequality-sentinel-rollup-filter.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/hook-fanout-dedup
-- **Spec**: .shipwright/planning/iterate/2026-06-14-hook-fanout-dedup.md
+- **Branch**: iterate/phasequality-sentinel-rollup-filter
+- **Spec**: .shipwright/planning/iterate/2026-06-14-phasequality-sentinel-rollup-filter.md
+- **Complexity**: medium (cross-cutting observability machinery: 4 rollup
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/hook-fanout-dedup
-- **Last Commit**: cacfa87f chore(release): v0.27.0 (#249)
+- **Branch**: iterate/phasequality-sentinel-rollup-filter
+- **Last Commit**: e6e5e4b9 refactor(hooks): consolidate fan-out via once-per-event guard + session-state phase resolver (#250)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +67,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-7b6a70cb | work_completed | iterate (Phase-quality rollups read load_actionable_findings (excludes sentinel run_id=unknown snapshots), so stale/degenerate audits stop driving false Tier-1 surfacing across the triage backlog, SessionStart injection, dashboard and report.) | 2026-06-14 |
 | evt-f418f69b | work_completed | iterate (Hook fan-out consolidation: once-per-event guard (claim_once_for_event) on audit/handoff/drift + session-state phase resolver (resolve_engaged_phases)) | 2026-06-14 |
 | evt-984e5022 | work_completed | iterate (tighten bloat baseline for autonomous_loop.py (current 440 to 436)) | 2026-06-14 |
 | evt-3bb2acf3 | work_completed | iterate (Document the campaign interleaved-serial run-model in docs/guide.md (new Chapter 8 Campaign Mode section + Appendix B sharpening + stale drain-example fix)) | 2026-06-14 |
 | evt-ead63c7f | work_completed | iterate (tighten bloat baseline to actual LOC; prune 3 under-limit entries (clear Group H2)) | 2026-06-13 |
-| evt-545e463c | work_completed | iterate (Pin verifier CLI stdout to UTF-8 — fix Windows cp1252 UnicodeEncodeError on '→' in reports) | 2026-06-13 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 192
-- **Last iterate**: change — Hook fan-out consolidation: once-per-event guard (claim_once_for_event) on audit/handoff/drift + session-state phase resolver (resolve_engaged_phases) (2026-06-14)
+- **Total work events**: 193
+- **Last iterate**: change — Phase-quality rollups read load_actionable_findings (excludes sentinel run_id=unknown snapshots), so stale/degenerate audits stop driving false Tier-1 surfacing across the triage backlog, SessionStart injection, dashboard and report. (2026-06-14)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

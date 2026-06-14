@@ -29,7 +29,7 @@ from ._aggregates import (
     LoadedFinding,
     _roll_up_counts,
     count_by_status,
-    load_findings,
+    load_actionable_findings,
 )
 from ._constants import (
     CATEGORIES,
@@ -48,7 +48,7 @@ from ._findings import now_iso
 
 def rewrite_aggregated_report(project_root: Path) -> Path | None:
     """Regenerate the transient ``{FINDING_DIR}/_report.md`` roll-up."""
-    findings = load_findings(project_root)[:MAX_REPORT_RUNS]
+    findings = load_actionable_findings(project_root)[:MAX_REPORT_RUNS]
     path = project_root / REPORT_PATH
     if not findings:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -106,7 +106,7 @@ def _render_run_detail(f: LoadedFinding) -> list[str]:
 
 def rewrite_session_findings_summary(project_root: Path) -> Path | None:
     """Regenerate the transient ``{FINDING_DIR}/_findings.md`` digest."""
-    findings = load_findings(project_root)[:MAX_SESSION_SUMMARY_RUNS]
+    findings = load_actionable_findings(project_root)[:MAX_SESSION_SUMMARY_RUNS]
     path = project_root / SUMMARY_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
     if not findings:
@@ -155,7 +155,7 @@ def write_quality_dashboard_file(project_root: Path) -> Path | None:
     phase wins. Heuristic (Tier-2) checks are reported as a separate
     count so reviewers can ignore low-signal noise (plan § 3).
     """
-    all_findings = load_findings(project_root)
+    all_findings = load_actionable_findings(project_root)
     latest_per_phase: dict[str, LoadedFinding] = {}
     for f in all_findings:
         latest_per_phase.setdefault(f.phase, f)

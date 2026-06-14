@@ -42,6 +42,7 @@ from ._constants import (
     STATUS_PASS,
     STATUS_SKIP,
     STATUS_WARN,
+    is_sentinel_run,
 )
 
 
@@ -59,11 +60,27 @@ class LoadedFinding:
     def sort_key(self) -> tuple[str, float]:
         return (self.audited_at, self.path.stat().st_mtime if self.path.exists() else 0.0)
 
+    @property
+    def is_sentinel(self) -> bool:
+        """Degenerate audit context (no resolvable run/session). Excluded from
+        rollup VIEWS via :func:`load_actionable_findings`; kept by raw
+        :func:`load_findings` + :func:`gc_old_findings`."""
+        return is_sentinel_run(self.run_id)
+
 
 def load_findings(project_root: Path) -> list[LoadedFinding]:
     """Load every valid Finding-JSON under ``.shipwright/compliance/skill-compliance``.
 
     Corrupt files are skipped with a stderr warning (plan § 4.13).
+
+    RAW / forensic loader — returns sentinel-run snapshots too. Any user-facing
+    or trigger-driving rollup MUST read :func:`load_actionable_findings` instead
+    (it drops degenerate ``run_id`` sentinels). A missing/``null`` ``run_id`` in
+    the JSON is normalised to ``"unknown"`` here, so it is already sentinel by the
+    time :func:`load_actionable_findings` filters. ``session_id`` is deliberately
+    NOT part of the sentinel test: a real ``run_id`` means the audit resolved a
+    real run context (from run-config / events) and its findings are actionable
+    regardless of whether the session id was set.
     """
     base = project_root / FINDING_DIR
     if not base.is_dir():
@@ -90,6 +107,18 @@ def load_findings(project_root: Path) -> list[LoadedFinding]:
         ))
     loaded.sort(key=lambda f: f.sort_key, reverse=True)
     return loaded
+
+
+def load_actionable_findings(project_root: Path) -> list[LoadedFinding]:
+    """:func:`load_findings` minus degenerate sentinel-run snapshots.
+
+    The rollup CONSUMERS (triage backlog, SessionStart digest, dashboard,
+    report) read THIS so a stale/degenerate ``run_id="unknown"`` audit — one
+    that ran with no resolvable run/session context — can't drive false
+    surfacing. Ordering (newest-first) and every other field are preserved; raw
+    :func:`load_findings` and :func:`gc_old_findings` still see the sentinels.
+    """
+    return [f for f in load_findings(project_root) if not f.is_sentinel]
 
 
 def count_by_status(findings: Iterable[dict[str, Any]]) -> dict[str, int]:
@@ -175,6 +204,7 @@ __all__ = [
     "_roll_up_counts",
     "count_by_status",
     "gc_old_findings",
+    "load_actionable_findings",
     "load_findings",
     "regenerate_all_aggregates",
 ]
