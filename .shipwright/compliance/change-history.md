@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-13T22:08:30.653095+00:00
-Total commits: 1005
+Generated: 2026-06-14T06:17:50.945901+00:00
+Total commits: 1006
 
 ## Commit Distribution
 
@@ -9,7 +9,7 @@ Total commits: 1005
 pie title Commit Types
     "fix" : 288
     "feat" : 272
-    "chore" : 218
+    "chore" : 219
     "docs" : 128
     "refactor" : 60
     "test" : 24
@@ -590,10 +590,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 218 commits
+### Chores (chore) — 219 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-14 | triage | fold 6 main-tree background append(s) | 82ab46c464d2 |
 | 2026-06-13 | bloat | tighten baseline to actual LOC after consolidation (clear Group H2) (#245) | f2f185be4c0f |
 | 2026-06-13 | release | v0.26.0 (#235) | c19153359c1d |
 | 2026-06-12 | release | v0.25.0 (#223) | 60481718653b |
@@ -950,7 +951,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-14 | iterate | interleaved-serial as the single campaign default (retire end-stage drain) | f211a05208fe |
+| 2026-06-14 | iterate | interleaved-serial as the single campaign default (retire end-stage drain) (#246) | 2ec6e2be8bfa |
 | 2026-06-13 | triage | stop the iterate pipeline from filing triage about current-run work (#243) | 0f85ff5b892f |
 | 2026-06-13 | verifiers | fold spec_checks git wrappers into git_helpers (campaign C) (#242) | 9f7e48cebe3e |
 | 2026-06-13 | iterate | unify simplify gate with the reducibility catalog (one shared tool + vocabulary) (#241) | c7389dfa699c |
@@ -1074,7 +1075,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1005 |
+| Total commits | 1006 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1005 |
+| Human-authored commits | 1006 |
 

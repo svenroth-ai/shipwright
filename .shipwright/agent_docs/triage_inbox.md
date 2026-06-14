@@ -1,12 +1,12 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-13T22:08:30.653095Z. Items waiting for triage decision.
+> Auto-generated 2026-06-14T06:17:50.945901Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 193
-- Triage: 20 | Promoted: 1 | Dismissed: 172 | Snoozed: 0
+- Total: 195
+- Triage: 20 | Promoted: 1 | Dismissed: 174 | Snoozed: 0
 
 ## Top 20 items (severity-sorted)
 
@@ -112,7 +112,7 @@
   - Internal review of iterate-2026-06-13-runconfig-atomic-writes: update_step reads the 'standalone' flag via _load_or_boo…
   - Promote: `triage_promote.py --id trg-f9f92335 --task-ref EXT:<ref>`
 
-### Source: compliance (1 item)
+### Source: compliance (2 items)
 
 <a id="trg-60404120"></a>
 - **Compliance: 8 open finding(s)** `id=trg-60404120 | severity=medium | kind=compliance → P2/compliance`
@@ -126,6 +126,19 @@
     Each finding + hint is listed in this item's detail.
     ```
   - Promote: `triage_promote.py --id trg-60404120 --task-ref EXT:<ref>`
+
+<a id="trg-2dfe762d"></a>
+- **Compliance: 1 open finding(s)** `id=trg-2dfe762d | severity=medium | kind=compliance → P2/compliance`
+  - 1 open compliance finding(s): H/H2  - H/H2: Bloat ratchet-suggestion (baseline current > actual) — plugins/shipwright-s…
+  - Launch payload (copy into a new Claude session):
+    ```text
+    /shipwright-compliance
+    
+    Context: 1 open compliance finding(s): H/H2.
+    Dashboard: .shipwright/compliance/dashboard.md
+    Each finding + hint is listed in this item's detail.
+    ```
+  - Promote: `triage_promote.py --id trg-2dfe762d --task-ref EXT:<ref>`
 
 ### Source: external-frameworks (6 items)
 
@@ -183,12 +196,7 @@
   - Three functions resolve the MAIN repo root via git rev-parse --git-common-dir: lib/worktree_isolation.main_repo_root (r…
   - Promote: `triage_promote.py --id trg-b9acb195 --task-ref EXT:<ref>`
 
-### Source: manual (4 items)
-
-<a id="trg-9b9a2b9d"></a>
-- **Audit bug-fixes - final batch, run last (docs/SSoT + low-risk hardening)** `id=trg-9b9a2b9d | severity=medium | kind=improvement → P2/engineering`
-  - Launch surface only. The work plan + details live in the LOCAL, gitignored campaign dir (not in git). Start via the Sta…
-  - Promote: `triage_promote.py --id trg-9b9a2b9d --task-ref EXT:<ref>`
+### Source: manual (3 items)
 
 <a id="trg-32ef7005"></a>
 - **Audit bug-fixes - manual batch, run one-by-one (hook contracts + run-config concurrency)** `id=trg-32ef7005 | severity=medium | kind=improvement → P2/engineering`

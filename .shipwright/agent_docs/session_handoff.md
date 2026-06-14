@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-13-campaign-serial-default"
+run_id: "iterate-2026-06-14-campaign-runmodel-docs"
 phase: "iterate"
-reason: "F11 pre-merge refresh: iterate-2026-06-13-campaign-serial-default"
-timestamp: "2026-06-13T22:08:30.653095+00:00"
+reason: "iterate: campaign run-model docs"
+timestamp: "2026-06-14T06:17:50.945901+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-13 22:08:30 UTC
+> Auto-generated 2026-06-14 06:17:50 UTC
 
 ## Session Info
 
 - **Session ID**: 7ef46c34-70e9-4721-a56c-11667233ab34
-- **Timestamp**: 2026-06-13 22:08:30 UTC
-- **Reason**: F11 pre-merge refresh: iterate-2026-06-13-campaign-serial-default
+- **Timestamp**: 2026-06-14 06:17:50 UTC
+- **Reason**: iterate: campaign run-model docs
 
 ## Last Iterate
 
@@ -29,11 +29,8 @@ timestamp: "2026-06-13T22:08:30.653095+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/campaign-serial-default
-- **Run ID**: `iterate-2026-06-13-campaign-serial-default`
-- **Spec**: .shipwright/planning/iterate/2026-06-13-campaign-serial-default.md
-- **Complexity**: medium (classifier said `large` — keyword false-positive on
-- **External Review Marker**: stale (predates spec (2026-06-13T21:37:00))
+- **Branch**: iterate/campaign-runmodel-docs
+- **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
@@ -51,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/campaign-serial-default
-- **Last Commit**: 5535965a Merge remote-tracking branch 'origin/main' into iterate/campaign-serial-default
+- **Branch**: iterate/campaign-runmodel-docs
+- **Last Commit**: 672416a4 Merge remote-tracking branch 'origin/main'
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-3bb2acf3 | work_completed | iterate (Document the campaign interleaved-serial run-model in docs/guide.md (new Chapter 8 Campaign Mode section + Appendix B sharpening + stale drain-example fix)) | 2026-06-14 |
 | evt-ead63c7f | work_completed | iterate (tighten bloat baseline to actual LOC; prune 3 under-limit entries (clear Group H2)) | 2026-06-13 |
 | evt-545e463c | work_completed | iterate (Pin verifier CLI stdout to UTF-8 — fix Windows cp1252 UnicodeEncodeError on '→' in reports) | 2026-06-13 |
 | evt-ae982255 | work_completed | iterate (interleaved-serial as the single documented campaign default (branch_strategy: serial)) | 2026-06-13 |
 | evt-751a4ac4 | work_completed | iterate (Fold spec_checks _run_git/_git_available onto verifiers/git_helpers.py (optional timeout param, unified failure code)) | 2026-06-13 |
-| evt-4393b0bb | work_completed | iterate (Triage not for current-run work — drop plugin-sync + F0.5 triage producers) | 2026-06-13 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 189
-- **Last iterate**: change — tighten bloat baseline to actual LOC; prune 3 under-limit entries (clear Group H2) (2026-06-13)
+- **Total work events**: 190
+- **Last iterate**: change — Document the campaign interleaved-serial run-model in docs/guide.md (new Chapter 8 Campaign Mode section + Appendix B sharpening + stale drain-example fix) (2026-06-14)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

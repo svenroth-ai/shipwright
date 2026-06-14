@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-13-campaign-serial-default",
-    "date": "2026-06-13",
+    "run_id": "iterate-2026-06-14-campaign-runmodel-docs",
+    "date": "2026-06-14",
     "unit": {
       "status": "passed",
-      "passed": 3881,
-      "total": 3881
+      "passed": 7,
+      "total": 7
     },
     "integration": {
-      "status": "passed",
-      "passed": 1,
-      "total": 1
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -31,74 +31,18 @@
       "status": "not_run"
     },
     "degraded": [
-      "classify_complexity returned 'large' (keyword false-positive on 'retire/restructure/single default' prose); overridden to medium per the diff (one prose restructure + small additive cmd_next + doc edits + tests). cross_component flag legitimately fires at F11.",
-      "Pre-existing main-tree triage.jsonl:3 corrupt-line warning (trg-671bb0a2 sweep-outbox drift) surfaced during the run; unrelated to this iterate."
+      "classify_complexity returned medium/cross_component via DESCRIPTION-prose false-positive (matched words campaign/cross-component/campaign-mode.md, not the diff); real diff = docs/guide.md only, verified against test_cross_component_detector negative case for docs/guide.md. Reclassified trivial; no real risk flag.",
+      "setup_iterate_worktree sweep-outbox warning (trg-671bb0a2 status append dropped by a prior merge) is pre-existing triage-outbox drift, unrelated to this docs change."
     ],
     "surface_verification": {
       "surface": "none",
-      "runner": "surface_verification.py --surface none",
-      "exit_code": 0,
-      "tests_run": 0,
-      "evidence_path": ".shipwright\\runs\\iterate-2026-06-13-campaign-serial-default\\surface_verification.json",
-      "timestamp": "2026-06-13T22:05:04.051Z",
-      "justification": "Framework campaign-orchestration logic + docs + tests; no startable user surface. Behavior empirically driven via real-git pytest composition test."
+      "justification": "docs-only change to docs/guide.md (user-facing markdown); no user-experienceable web/cli/api surface is affected.",
+      "tests_run": 7,
+      "exit_code": 0
     },
     "test_completeness": {
-      "status": "complete",
-      "behaviors": [
-        {
-          "behavior": "AC1: serial cmd_next base = freshly-fetched origin/<default> (not stale local main); non-main default resolved; fetch fail-soft",
-          "disposition": "tested",
-          "evidence": "test_branch_base.py::test_serial_returns_fresh_remote_default / _first_unit_also_off_fresh_remote / _respects_non_main_default_branch / _fetch_failure_is_failsoft PASSED (base resolution extracted to branch_base.py)"
-        },
-        {
-          "behavior": "AC2: campaign_init default + CLI = serial; choices accept serial; stacked still accepted; bogus rejected",
-          "disposition": "tested",
-          "evidence": "test_campaign_serial_strategy.py (5 tests) + test_campaign.py::test_status_json_has_correct_shape PASSED"
-        },
-        {
-          "behavior": "AC3: campaign-mode.md interleaved loop (CI-green->merge->next), strict-stop, no end-stage drain, serial init",
-          "disposition": "tested",
-          "evidence": "test_campaign_interleaved_serial.py (8 tests incl. merge-inside-loop ordering + no_end_stage_drain + strict_stop) PASSED"
-        },
-        {
-          "behavior": "AC4: SKILL/F11/runner reflect interleaved; SHIPWRIGHT_ITERATE_AUTOMERGE=0 defer preserved",
-          "disposition": "tested",
-          "evidence": "test_f11_automerge_arm.py::test_f11_arm_respects_campaign_defer PASSED"
-        },
-        {
-          "behavior": "AC5: a serial sub-iterate composes on the prior sub-iterate's MERGED change while local main stays stale (real-git)",
-          "disposition": "tested",
-          "category": "integration",
-          "evidence": "test_campaign_serial_composition_integration.py::test_serial_subiterate_composes_on_prior_merge PASSED"
-        },
-        {
-          "behavior": "AC6/back-compat: stacked/single-branch loop unchanged; f11 defer asserts green",
-          "disposition": "tested",
-          "evidence": "test_branch_base.py::test_stacked_returns_prev_branch / _independent_returns_local_main / test_serial_is_a_valid_strategy / test_legacy_strategies_retained + test_autonomous_loop full suite PASSED"
-        },
-        {
-          "behavior": "AC7: every branch_strategy reader accepts serial (no allowlist rejects); serial campaign loads through status/summary path",
-          "disposition": "tested",
-          "evidence": "test_campaign.py::TestCampaignProgress (default now serial) + campaign_progress passes branch_strategy through PASSED"
-        },
-        {
-          "behavior": "Live campaign loop merges each PR via `gh pr checks --watch` + `gh pr merge` against real GitHub",
-          "disposition": "untestable",
-          "reason_code": "requires-external-nondeterministic-service",
-          "reason": "agent-executed orchestrator prose against a live GitHub PR; pinned structurally by test_campaign_interleaved_serial"
-        }
-      ],
-      "counts": {
-        "testable": 7,
-        "tested": 7,
-        "untestable": 1,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 7,
-        "covered_acs": 7
-      }
+      "status": "n/a",
+      "justification": "Trivial docs-only iterate: no executable behavior introduced. Structural doc correctness (path-canon, branch-integration-doc, table integrity) is covered by shared/tests content lints (7 passed); prose accuracy was cross-checked against references/campaign-mode.md and campaign_init.py (default=serial)."
     }
   }
 }

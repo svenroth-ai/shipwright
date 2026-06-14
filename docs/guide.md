@@ -1620,7 +1620,7 @@ Eleven canonical risk flags trigger safety minimums regardless of complexity lev
 | `touches_public_api` | API route handlers, exported types | mandatory code review |
 | `touches_build` | `package.json`, `*-lock.*`, `*.config.*`, `tsconfig.json` | performance test layer (Lighthouse + bundle gate, /shipwright-test Step 3.8) |
 | `touches_io_boundary` | `.env*`, `*_config.json`, `*_state.json`; or `json.dump/load`, `yaml.dump/safe_load`, `parse_env` | round-trip Boundary Probe in build TDD |
-| `cross_component` | merge/churn/event-log resolvers, `hooks.json` / `**/hooks/*.py`, phase validators, campaign drain | non-dodgeable integration coverage + full test suite |
+| `cross_component` | merge/churn/event-log resolvers, `hooks.json` / `**/hooks/*.py`, phase validators, campaign orchestration (`autonomous_loop`) | non-dodgeable integration coverage + full test suite |
 
 ### Context Loading
 
@@ -1691,6 +1691,16 @@ Not all phases can be skipped. Iterate defines three categories:
 **Large scope:** When the Repo Scout determines complexity is large, iterate prints a recommendation with two options: (1) hand off to `/shipwright-project --extend` via a structured handoff file, or (2) continue with iterate under mandatory full review and full test suite.
 
 **Mid-flight escalation:** If scope grows during implementation (more files than estimated, cascading test failures), iterate can upgrade complexity dynamically. For example, small → medium triggers retroactive creation of an iterate spec and mini-plan, plus external LLM review before further code changes.
+
+### Campaign Mode (Autonomous Multi-Iterate)
+
+A **campaign** batches several related sub-iterates under one goal and runs them autonomously, end to end, without manual gates between them. You decompose the goal into sub-iterates once (each trivial-to-medium), then `/shipwright-iterate --campaign <slug> --autonomous` works the list on its own.
+
+Campaigns run **interleaved-serial**, and this is the *default* -- not a choice the agent re-decides each run. Each sub-iterate is its own PR to `main`: it branches off a freshly-fetched `origin/main`, builds, and opens a PR; the orchestrator waits for the Required Checks to go green, merges, and only *then* builds the next sub-iterate -- which again branches off a fresh `main` that now contains the previous merge. There is **only ever one open sub-iterate PR at a time**. The merge is verified, never armed-and-forgotten: if a PR's CI fails, conflicts, or times out, the campaign strict-stops (already-merged sub-iterates stay durable) rather than charging ahead.
+
+It is serial rather than "build all the PRs first, then merge them at the end" in order to avoid **merge theater**. Every sub-iterate regenerates the same *derived* artifacts -- the event log, triage, the compliance reports, the dashboard -- and sibling sub-iterates often edit the same shared source files. If they are all built before any merge, none of them sees the others, so every merge has to 3-way-resolve and regenerate those snapshots against an advancing `main`. Interleaved-serial sidesteps that entirely: because the next sub-iterate starts from a `main` that already contains the prior one, shared-file and snapshot edits compose naturally -- there is no end-stage drain and no regenerate-at-merge step.
+
+This is encoded as `branch_strategy: serial` (the `campaign_init` default; base-freshness is enforced in code, not just documented). The full agent-facing protocol -- campaign setup, the autonomous loop, the sub-iterate-runner contract, and the release prompt -- lives in the iterate skill's `references/campaign-mode.md`.
 
 ### Finalization
 
@@ -2335,7 +2345,7 @@ If you encountered an unfamiliar term in this guide, this is the fast way in. Ea
 | Command | Arguments | Flags | Purpose |
 |---------|-----------|-------|---------|
 | `/shipwright-run` | `"description"` or `@requirements.md` | -- | Coordinate a multi-session pipeline. Writes `shipwright_run_config.json` (schema v2) with `phase_tasks[]`, prints a launch card for the first phase, and ends. Each phase runs in its own external Claude CLI session; phase Stop hooks plan the next phase. Re-invoke on an existing config to print a resume launch card. |
-| `/shipwright-iterate` | `"description"` | `--type feature\|change\|bug`, `--complexity trivial\|small\|medium\|large`, `--review`, `--pause`, `--campaign <slug>`, `--sub-iterate-id <id>`, `--autonomous` | Complexity-adaptive SDLC for ongoing changes. Auto-detects intent and complexity, scales phases from quick fix to structured mini-pipeline with planning, review, and testing. Campaign mode (`--campaign`) groups related sub-iterates; `--autonomous` runs them sequentially via subagents without manual gates. `--campaign <slug> --sub-iterate-id <id>` on a single hand-run sub-iterate stamps `campaign`/`sub_iterate_id` into its `work_completed` event (same self-identification the autonomous runner records). |
+| `/shipwright-iterate` | `"description"` | `--type feature\|change\|bug`, `--complexity trivial\|small\|medium\|large`, `--review`, `--pause`, `--campaign <slug>`, `--sub-iterate-id <id>`, `--autonomous` | Complexity-adaptive SDLC for ongoing changes. Auto-detects intent and complexity, scales phases from quick fix to structured mini-pipeline with planning, review, and testing. Campaign mode (`--campaign`) groups related sub-iterates; `--autonomous` runs them **interleaved-serial** -- each sub-iterate is its own PR, merged after CI-green before the next builds from a fresh `origin/main` (`branch_strategy: serial`, the default), so shared-file edits compose with no end-stage merge drain. `--campaign <slug> --sub-iterate-id <id>` on a single hand-run sub-iterate stamps `campaign`/`sub_iterate_id` into its `work_completed` event (same self-identification the autonomous runner records). |
 | `/shipwright-project` | `"description"` or `@requirements.md` | -- | Decompose requirements into splits and IREB-aligned specs. Generates `CLAUDE.md`, `.shipwright/agent_docs/`, and project config. Interviews you about requirements. |
 | `/shipwright-design` | -- | -- | Generate HTML mockups from specs. Produces screens with review viewer, feedback loop, and spec backflow. Runs after project, before plan. |
 | `/shipwright-plan` | `@spec.md` | -- | Create implementation plan for one split. Researches stack, interviews for clarification, generates section files. Optionally sends plan to external LLMs (Gemini + OpenAI) for review. |
