@@ -1,1 +1,0 @@
-The CI/adopt-template Gitleaks-install step now sets an explicit `shell: bash` so its SHA256 tarball verification actually runs under `pipefail` (the prior comment falsely claimed the default shell already did).

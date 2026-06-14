@@ -1,1 +1,0 @@
-Docs: corrected the hooks.json Format reference (docs/hooks-and-pipeline.md) — it had the required Claude Code 2.1.132+ shape (top-level "hooks" wrapper + string matchers, ADR-039/040) inverted with the removed legacy form, so copying it would have silently disabled every hook in a plugin.

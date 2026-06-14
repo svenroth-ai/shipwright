@@ -1,1 +1,0 @@
-Code-simplify sub-mode for `/shipwright-iterate`: a "simplify X" / "clean up Y" request now runs a behavior-preserving Behavior-Snapshot -> Simplify (five principles + Chesterton-Fence) -> Behavior-Verify wrap (`behavior_snapshot.py`) that rejects any change which flips a test or removes test coverage (OS1 / P3.2).
