@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-14T06:17:50.945901+00:00
-Total commits: 1006
+Generated: 2026-06-14T07:36:05.690741+00:00
+Total commits: 1007
 
 ## Commit Distribution
 
@@ -10,7 +10,7 @@ pie title Commit Types
     "fix" : 288
     "feat" : 272
     "chore" : 219
-    "docs" : 128
+    "docs" : 129
     "refactor" : 60
     "test" : 24
     "ci" : 7
@@ -814,10 +814,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 128 commits
+### Documentation (docs) — 129 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-14 | iterate | document interleaved-serial campaign run-model in guide (#247) | 767473d8ad21 |
 | 2026-06-13 | hooks-and-pipeline | reconcile hooks.json format, registry & outbox matrix to shipped reality (audit-3 WP11a) (#232) | 8fe2d61eccfb |
 | 2026-06-13 | skills | sync 6 stale SKILL.md/code/config items to the corrected guide (#231) | c2b6a2aa27c8 |
 | 2026-06-13 | guide | correct 21 drifted claims via full code/ADR audit (#230) | c3ee79be6d31 |
@@ -1075,7 +1076,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1006 |
+| Total commits | 1007 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1006 |
+| Human-authored commits | 1007 |
 

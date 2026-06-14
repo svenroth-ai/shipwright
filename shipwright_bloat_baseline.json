@@ -550,7 +550,7 @@
     {
       "path": "shared/scripts/lib/autonomous_loop.py",
       "limit": 300,
-      "current": 440,
+      "current": 436,
       "state": "grandfathered",
       "adr": null
     },

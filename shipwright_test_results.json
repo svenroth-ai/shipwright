@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-14-campaign-runmodel-docs",
+    "run_id": "iterate-2026-06-14-tighten-bloat-baseline",
     "date": "2026-06-14",
     "unit": {
       "status": "passed",
-      "passed": 7,
-      "total": 7
+      "passed": 96,
+      "total": 96
     },
     "integration": {
       "status": "not_run",
@@ -31,18 +31,21 @@
       "status": "not_run"
     },
     "degraded": [
-      "classify_complexity returned medium/cross_component via DESCRIPTION-prose false-positive (matched words campaign/cross-component/campaign-mode.md, not the diff); real diff = docs/guide.md only, verified against test_cross_component_detector negative case for docs/guide.md. Reclassified trivial; no real risk flag.",
-      "setup_iterate_worktree sweep-outbox warning (trg-671bb0a2 status append dropped by a prior merge) is pre-existing triage-outbox drift, unrelated to this docs change."
+      "classify_complexity returned estimate=medium via prior_source=history (median of last 20 finalized runs); overridden to trivial \u2014 diff is a single integer in shipwright_bloat_baseline.json, scope_keyword_estimate=trivial, zero risk flags (known prose-vs-diff fall-through pattern).",
+      "setup_iterate_worktree WARNING: sweep-outbox invalid for trg-671bb0a2 (status append dropped by a prior merge) \u2014 pre-existing main-tree triage-outbox state, unrelated to this change."
     ],
-    "surface_verification": {
-      "surface": "none",
-      "justification": "docs-only change to docs/guide.md (user-facing markdown); no user-experienceable web/cli/api surface is affected.",
-      "tests_run": 7,
-      "exit_code": 0
-    },
     "test_completeness": {
       "status": "n/a",
-      "justification": "Trivial docs-only iterate: no executable behavior introduced. Structural doc correctness (path-canon, branch-integration-doc, table integrity) is covered by shared/tests content lints (7 passed); prose accuracy was cross-checked against references/campaign-mode.md and campaign_init.py (default=serial)."
+      "justification": "Trivial complexity \u2014 single-integer baseline-metadata tighten; no testable runtime behavior is introduced. The anti-ratchet/H2 logic that consumes this value is already covered by the 96 passing related tests."
+    },
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-06-14T07:34:08.007Z",
+      "justification": "Data-only tighten of one integer in shipwright_bloat_baseline.json (autonomous_loop.py current 440\u00e2\u2020\u2019436); no runtime code, API, UI, or backend-affects-frontend surface is touched."
     }
   }
 }
