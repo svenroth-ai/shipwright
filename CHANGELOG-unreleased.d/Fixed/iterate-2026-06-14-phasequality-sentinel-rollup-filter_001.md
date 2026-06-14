@@ -1,0 +1,1 @@
+Phase-quality rollups (triage backlog, SessionStart injection, dashboard, report) now exclude degenerate `run_id=unknown` audit snapshots via a shared `load_actionable_findings` loader, so a stale or degenerate audit (one that ran with no resolvable run/session) can no longer drive false Tier-1 FAIL surfacing. Raw `load_findings` and GC are unchanged.

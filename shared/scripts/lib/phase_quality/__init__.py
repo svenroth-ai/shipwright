@@ -42,6 +42,7 @@ from ._aggregates import (
     LoadedFinding,
     count_by_status,
     gc_old_findings,
+    load_actionable_findings,
     load_findings,
     regenerate_all_aggregates,
 )
@@ -53,6 +54,7 @@ from ._constants import (
     CATEGORIES,
     DASHBOARD_PATH,
     FINDING_DIR,
+    GC_AGE_DAYS,
     LOCK_PATH,
     MAX_REPORT_RUNS,
     MAX_SESSION_SUMMARY_RUNS,
@@ -64,6 +66,7 @@ from ._constants import (
     STATUS_WARN,
     SUMMARY_PATH,
     TIER_2_CHECK_IDS,
+    is_sentinel_run,
 )
 from ._dashboard_render import (
     rewrite_aggregated_report,
@@ -118,6 +121,7 @@ __all__ = [
     "CATEGORIES",
     "DASHBOARD_PATH",
     "FINDING_DIR",
+    "GC_AGE_DAYS",
     "LOCK_PATH",
     "MAX_REPORT_RUNS",
     "MAX_SESSION_SUMMARY_RUNS",
@@ -145,7 +149,9 @@ __all__ = [
     "finding_path",
     "flag_enabled",
     "gc_old_findings",
+    "is_sentinel_run",
     "is_shipwright_project",
+    "load_actionable_findings",
     "load_findings",
     "make_finding",
     "override_reason",

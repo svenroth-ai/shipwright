@@ -1,130 +1,41 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-14-hook-fanout-dedup",
+    "run_id": "iterate-2026-06-14-phasequality-sentinel-rollup-filter",
     "date": "2026-06-14",
     "unit": {
-      "status": "passed",
-      "passed": 3473,
-      "total": 3473
+      "suite": "shared/tests",
+      "passed": 3498,
+      "failed": 0,
+      "skipped": 16,
+      "status": "pass",
+      "note": "Full shared/tests suite green (3498 passed, 16 skipped, 20 deselected). New file test_phase_quality_sentinel_rollup_filter.py: 21 passed."
     },
-    "integration": {
-      "status": "passed",
-      "passed": 163,
-      "total": 163
-    },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "e2e": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "smoke": {
-      "status": "not_run"
-    },
-    "degraded": [
-      "classifier risk flag 'touches_auth' is a DESCRIPTION-prose false-positive (no middleware/auth/supabase path touched); overridden per the diff-driven detector discipline."
-    ],
+    "integration": {"status": "n/a", "note": "no cross_component flag; end-to-end backlog test covered in the unit suite"},
+    "pgtap": {"status": "n/a"},
+    "e2e": {"status": "n/a", "note": "no UI/web surface"},
+    "design_fidelity": {"status": "n/a"},
+    "smoke": {"status": "n/a", "note": "library change; no server"},
+    "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "tests_run": 0,
-      "exit_code": 0,
-      "justification": "Pure-Python Claude Code hook consolidation; no web/CLI/API surface. Verified by integration-tests/test_hook_fanout_consolidation.py + full shared/tests + integration-tests."
+      "justification": "Pure Python library change to the phase-quality rollup READ layer (shared/scripts/lib/phase_quality/). There is no web/cli/api product surface in this framework monorepo; the change touches no API route, store mutation, SSE/WS handler, message contract, or UI-consumed code. Executable verification IS the test suite: 21 new unit + end-to-end backlog tests (per-consumer filtering, raw-vs-view split, GC, backlog dismiss/append) plus the full shared/tests regression (3498 passed) — all green. Probe: live collect_in_scope_fails returned [iterate:S2] before the fix and [] after (sentinel excluded)."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        {
-          "behavior": "event_claim_path builds the canonical per-event claim path + sanitises traversal",
-          "disposition": "tested",
-          "evidence": "test_event_once::test_event_claim_path_shape, ::test_event_claim_path_sanitises_traversal PASSED"
-        },
-        {
-          "behavior": "claim_once_for_event: unknown-session → no dedup (fail-open); guard error → work runs",
-          "disposition": "tested",
-          "evidence": "test_generate_handoff_dedup::test_unknown_session_does_not_dedup, test_check_artifact_drift_dedup::test_drift_scan_fail_open_when_claim_errors PASSED"
-        },
-        {
-          "behavior": "resolve_engaged_phases returns engaged-only phases",
-          "disposition": "tested",
-          "evidence": "test_phase_quality_engagement::test_resolve_engaged_returns_engaged_only, ::test_resolve_engaged_via_event_source PASSED"
-        },
-        {
-          "behavior": "resolve_engaged_phases fail-open (cfg missing/malformed, events unreadable) → all phases",
-          "disposition": "tested",
-          "evidence": "test_phase_quality_engagement::test_resolve_engaged_fail_open_when_cfg_missing, ::test_resolve_engaged_fail_open_when_cfg_malformed, ::test_resolve_engaged_fail_open_when_events_unreadable PASSED"
-        },
-        {
-          "behavior": "audit resolves phase from session state, not plugin root (negative + positive)",
-          "disposition": "tested",
-          "evidence": "test_audit_phase_quality::test_hook_phase_from_session_state_not_plugin_root, ::test_hook_audits_iterate_when_engaged_regardless_of_plugin_root; integration::test_audit_phase_from_session_state_not_plugin_root PASSED",
-          "category": "integration"
-        },
-        {
-          "behavior": "audit runs once across the fan-out + regenerates aggregates once (exactly-one winner)",
-          "disposition": "tested",
-          "evidence": "integration::test_stop_audit_fanout_runs_once, ::test_stop_audit_fanout_concurrent_one_winner PASSED",
-          "category": "integration"
-        },
-        {
-          "behavior": "audit claim dedup within event + already_audited re-arm idempotency",
-          "disposition": "tested",
-          "evidence": "test_audit_phase_quality::test_hook_claim_dedups_within_event, ::test_hook_is_idempotent PASSED"
-        },
-        {
-          "behavior": "foreign/unrecognized first invocation no-ops WITHOUT consuming the claim",
-          "disposition": "tested",
-          "evidence": "integration::test_foreign_first_invocation_does_not_block; test_audit_phase_quality::test_hook_exits_zero_when_plugin_root_unrecognized PASSED",
-          "category": "integration"
-        },
-        {
-          "behavior": "generate_handoff dedup once per session + TTL re-arm",
-          "disposition": "tested",
-          "evidence": "test_generate_handoff_dedup::test_claim_dedups_within_session, ::test_claim_once_rearms_after_ttl; integration::test_handoff_fanout_runs_once PASSED",
-          "category": "integration"
-        },
-        {
-          "behavior": "check_artifact_drift scan/emit once per SessionStart + TTL re-arm",
-          "disposition": "tested",
-          "evidence": "test_check_artifact_drift_dedup::test_drift_scan_runs_once_per_session, ::test_drift_scan_rearms_after_ttl; integration::test_drift_fanout_emits_once PASSED",
-          "category": "integration"
-        },
-        {
-          "behavior": "robust when the first-firing plugin is disabled (no single owner)",
-          "disposition": "tested",
-          "evidence": "integration::test_robust_when_first_plugin_disabled PASSED",
-          "category": "integration"
-        },
-        {
-          "behavior": "mark_plugin_edit / check_file_size markers converge to one net entry under fan-out",
-          "disposition": "tested",
-          "evidence": "integration::test_check_file_size_marker_converges, ::test_mark_plugin_edit_marker_converges PASSED",
-          "category": "integration"
-        },
-        {
-          "behavior": "register-everywhere invariant preserved (no hook removed)",
-          "disposition": "tested",
-          "evidence": "test_hook_registry_bloat (unchanged) PASSED"
-        }
+        {"behavior": "is_sentinel_run truth table (None/empty/whitespace/UNKNOWN -> sentinel; real ids -> not) + LoadedFinding.is_sentinel (AC-1)", "disposition": "tested", "evidence": "test_is_sentinel_run_truth_table (7 cases) + test_loaded_finding_is_sentinel_property"},
+        {"behavior": "load_actionable_findings filters sentinel, preserves raw set + newest-first order (AC-2/AC-6)", "disposition": "tested", "evidence": "test_load_actionable_filters_sentinel_preserves_raw + test_load_actionable_preserves_newest_first_order"},
+        {"behavior": "gc_old_findings still archives a sentinel snapshot by mtime (AC-6, raw lifecycle unchanged)", "disposition": "tested", "evidence": "test_gc_still_archives_sentinel_by_mtime"},
+        {"behavior": "collect_in_scope_fails drops sentinel-only FAIL, keeps non-sentinel engaged FAIL, and un-masks an older real FAIL (AC-3/AC-5)", "disposition": "tested", "evidence": "test_collect_drops_sentinel_only_fail + test_collect_keeps_non_sentinel_engaged_fail + test_collect_sentinel_does_not_mask_older_real_fail"},
+        {"behavior": "emit_phase_quality_backlog ignores sentinel-only (0 open) and appends for a non-sentinel FAIL (AC-7, end-to-end)", "disposition": "tested", "evidence": "test_emit_backlog_ignores_sentinel_only + test_emit_backlog_appends_for_non_sentinel"},
+        {"behavior": "dashboard / session digest / report renderers omit sentinel-only snapshots (AC-4)", "disposition": "tested", "evidence": "test_dashboard_omits_sentinel_only_phase + test_session_summary_omits_sentinel_fail + test_report_omits_sentinel_run"},
+        {"behavior": "rollup-layer sentinel set stays equivalent to the audit-time guard set (external-review #1 drift-pin)", "disposition": "tested", "evidence": "test_sentinel_set_matches_iterate_run_id_guard"},
+        {"behavior": "existing phase-quality renderer/triage suites stay green (AC-8 regression)", "disposition": "tested", "evidence": "test_audit_phase_quality + test_phase_quality_triage_emit + test_phase_quality_rollout (140 passed)"},
+        {"behavior": "touched files respect the bloat anti-ratchet baseline (AC-9)", "disposition": "tested", "evidence": "anti_ratchet_check.py --staged exit 0 (_triage_bundle.py held at its 308 baseline)"},
+        {"behavior": "docs/hooks-and-pipeline.md documents the rollup sentinel-exclusion (AC-10)", "disposition": "untestable", "reason_code": "covered-by-existing-test", "evidence": "doc prose; the documented behavior is itself pinned by the tests above"}
       ],
-      "counts": {
-        "testable": 13,
-        "tested": 13,
-        "untestable": 0,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 7,
-        "covered_acs": 7
-      }
+      "counts": {"untested_testable": 0},
+      "enumeration_basis": {"acs": 10, "covered_acs": 10}
     }
   }
 }

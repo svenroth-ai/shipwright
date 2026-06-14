@@ -81,6 +81,21 @@ STATUS_FAIL = "FAIL"
 STATUS_WARN = "WARN"
 STATUS_SKIP = "SKIP"
 
+# Sentinel run_ids — a DEGENERATE audit context (no resolvable run/session).
+# ``resolve_run_id`` only yields ``"unknown"`` when session_id is empty AND there
+# is no run-config run_id / run_started event / loop var, so a sentinel-run
+# finding is "not applicable in this audit context" (mirrors the audit-time
+# guard ``tools/verifiers/_iterate_run_id._RUN_ID_SENTINELS``). The rollup VIEWS
+# exclude such snapshots (see ``_aggregates.load_actionable_findings``); raw
+# ``load_findings`` + ``gc_old_findings`` keep them.
+RUN_ID_SENTINELS: frozenset[str] = frozenset({"", "unknown"})
+
+
+def is_sentinel_run(run_id: str | None) -> bool:
+    """True when ``run_id`` is a degenerate-context sentinel (``""`` / ``"unknown"``)."""
+    return str(run_id or "").strip().lower() in RUN_ID_SENTINELS
+
+
 # NOTE: the Shipwright-project marker set + the greenfield/foreign predicate
 # live in ``lib.project_root`` (CONFIG_MARKERS / is_shipwright_project) — the
 # single source of truth every hook delegates to
@@ -102,10 +117,12 @@ __all__ = [
     "MAX_SESSION_SUMMARY_RUNS",
     "PLUGIN_TO_PHASE",
     "REPORT_PATH",
+    "RUN_ID_SENTINELS",
     "STATUS_FAIL",
     "STATUS_PASS",
     "STATUS_SKIP",
     "STATUS_WARN",
     "SUMMARY_PATH",
     "TIER_2_CHECK_IDS",
+    "is_sentinel_run",
 ]
