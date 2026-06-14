@@ -29,6 +29,14 @@ from ._constants import PLUGIN_TO_PHASE  # noqa: E402
 # existing ``phase_quality.is_shipwright_project`` callers stay unchanged while
 # the marker set lives in exactly one place.
 from lib.project_root import is_shipwright_project  # noqa: E402
+from lib.events_log import resolve_events_path  # noqa: E402
+# Engagement predicate lives in _triage_bundle; importing it here is one-way and
+# acyclic (_triage_bundle does not import _resolution) and keeps
+# resolve_engaged_phases next to the other session-state resolvers.
+from ._triage_bundle import (  # noqa: E402
+    load_engagement_inputs,
+    phase_is_engaged,
+)
 
 
 def phase_from_plugin_root(plugin_root: str | os.PathLike[str] | None) -> str | None:
@@ -206,11 +214,71 @@ def resolve_source(project_root: Path, phase: str) -> str:
     return "orchestrator"
 
 
+def _canonical_phases() -> list[str]:
+    """Unique canonical phase names, in ``PLUGIN_TO_PHASE`` declaration order."""
+    seen: set[str] = set()
+    out: list[str] = []
+    for phase in PLUGIN_TO_PHASE.values():
+        if phase not in seen:
+            seen.add(phase)
+            out.append(phase)
+    return out
+
+
+def _engagement_evidence_unreadable(project_root: Path) -> bool:
+    """``True`` iff the event log EXISTS but cannot be read (partial flush / OSError).
+
+    A genuinely ABSENT event log is NOT "unreadable" — cfg-based engagement
+    (status / current_step / completed_steps) still applies, so absence must not
+    trigger fail-open. Only an existing-but-unreadable log counts as insufficient
+    evidence. Any resolver error is treated as unreadable (conservative).
+    """
+    try:
+        ev_path = resolve_events_path(project_root)
+    except Exception:  # noqa: BLE001
+        return True
+    if not ev_path.exists():
+        return False
+    try:
+        ev_path.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return True
+    return False
+
+
+def resolve_engaged_phases(project_root: Path) -> list[str]:
+    """Canonical phases the Stop-time phase-quality audit should cover.
+
+    Resolved from SESSION STATE (run config + event log) via the well-tested
+    :func:`phase_is_engaged`, NOT from ``CLAUDE_PLUGIN_ROOT``. This is what lets a
+    SINGLE claimed Stop invocation audit the phase(s) that actually ran, instead
+    of the 11× fan-out auditing every plugin's phase (10 of which never ran).
+
+    **Fail-open — "never fewer".** Returns the FULL canonical phase set when
+    engagement evidence is insufficient or unreadable: a missing/malformed run
+    config (``cfg is None``), an existing-but-unreadable event log (partial flush
+    / OSError), any internal error, OR a degenerate empty result. Under stale
+    end-of-session state the audit covers MORE, never silently fewer.
+    """
+    all_phases = _canonical_phases()
+    if _engagement_evidence_unreadable(project_root):
+        return all_phases
+    try:
+        cfg, events = load_engagement_inputs(project_root)
+        if cfg is None:
+            return all_phases
+        engaged = [p for p in all_phases if phase_is_engaged(p, cfg, events)]
+    except Exception:  # noqa: BLE001 — fail-open: audit more, never fewer
+        return all_phases
+    return engaged or all_phases
+
+
 __all__ = [
     "cwd_is_strict_ancestor_of",
     "is_shipwright_project",
     "phase_from_plugin_root",
     "project_root_was_explicitly_selected",
+    "resolve_engaged_phases",
     "resolve_run_id",
     "resolve_source",
 ]

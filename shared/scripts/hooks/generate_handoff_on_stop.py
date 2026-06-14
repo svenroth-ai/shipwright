@@ -256,13 +256,18 @@ def main() -> int:
             return 0
 
         session_id = os.environ.get("SHIPWRIGHT_SESSION_ID", "unknown")
+
+        # Once-per-(Stop, session) dedup of the ~11× fan-out's identical handoff
+        # regen (after greenfield + canon-skip guards). See claim_once_for_event.
+        from lib.event_once import claim_once_for_event
+        if not claim_once_for_event(project_root, "stop-handoff", session_id):
+            return 0
+
         content = generate_handoff(project_root, session_id, reason="session end")
 
-        # F3a multi-session pipeline: if this session is claimed by a
-        # phase_task in a v2 run config, namespace the handoff under
-        # .shipwright/agent_docs/runs/<runId>/<phaseTaskId>/handoff.md instead of
-        # clobbering the generic session_handoff.md (which the master
-        # session owns).
+        # F3a multi-session pipeline: if a v2 phase_task owns this session,
+        # namespace the handoff under runs/<runId>/<phaseTaskId>/ instead of
+        # clobbering the master-session-owned session_handoff.md.
         phase_namespaced = _phase_task_handoff_path(project_root, session_id)
 
         loop_id = os.environ.get("SHIPWRIGHT_LOOP_ID")
@@ -297,16 +302,11 @@ def main() -> int:
         except Exception:
             pass  # Dashboard update is best-effort
 
-        # Compliance MDs are NEVER written by this Stop hook.
-        # iterate-2026-05-23-compliance-md-single-producer makes
-        # iterate-finalize the sole producer of .shipwright/compliance/*.md;
-        # the snapshot audit (audit_staleness) verifies on-disk against the
-        # last iterate-finalize commit. Out-of-band auto-regen here caused
-        # dirty-tree noise on every Stop event in non-iterate sessions
-        # (security work, manual fixes) and wrote MDs using whatever
-        # events.jsonl the local machine had — frequently behind what was
-        # in HEAD on a multi-machine project. Deleted as a class of bug,
-        # not just one heuristic.
+        # Compliance MDs are NEVER written by this Stop hook
+        # (iterate-2026-05-23-compliance-md-single-producer): iterate-finalize is
+        # the sole producer of .shipwright/compliance/*.md. Out-of-band auto-regen
+        # here caused dirty-tree noise on every non-iterate Stop and wrote MDs
+        # from a possibly-stale local events.jsonl. Deleted as a class of bug.
 
         # Fallback: detect incomplete phase-completion and trigger it
         try:

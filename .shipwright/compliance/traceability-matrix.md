@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-14T07:36:05.690741+00:00
+Generated: 2026-06-14T09:36:10.005777+00:00
 
 ## Requirements Coverage
 
@@ -216,6 +216,7 @@ Generated: 2026-06-14T07:36:05.690741+00:00
 | tighten bloat baseline to actual LOC; prune 3 under-limit entries (clear Group H2) | iterate | change |  | 3442/3442 | — | 2026-06-13 |
 | Document the campaign interleaved-serial run-model in docs/guide.md (new Chapter 8 Campaign Mode section + Appendix B sharpening + stale drain-example fix) | iterate | change |  | 7/7 | — | 2026-06-14 |
 | tighten bloat baseline for autonomous_loop.py (current 440 to 436) | iterate | change |  | 96/96 | — | 2026-06-14 |
+| Hook fan-out consolidation: once-per-event guard (claim_once_for_event) on audit/handoff/drift + session-state phase resolver (resolve_engaged_phases) | iterate | change |  | 3473/3473 | — | 2026-06-14 |
 
 ## Coverage Summary
 
@@ -223,7 +224,7 @@ Generated: 2026-06-14T07:36:05.690741+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 191 |
+| Iterate changes | 192 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
