@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-14-tighten-bloat-baseline",
+  "date": "2026-06-14T07:36:16.585181Z",
+  "type": "change",
+  "complexity": "trivial",
+  "branch": "iterate/tighten-bloat-baseline",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-06-14-tighten-bloat-baseline"
+}

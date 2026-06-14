@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-14 06:17 UTC | Session: 7ef46c34-70e9-4721-a56c-11667233ab34 | Run: iterate-2026-06-14-campaign-runmodel-docs
+> Updated: 2026-06-14 07:36 UTC | Session: 3c4fce0e-d7c3-45c7-bcaa-d410ad82b624 | Run: iterate-2026-06-14-tighten-bloat-baseline
 
-## Recent Changes (190 iterations)
+## Recent Changes (191 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | tighten bloat baseline for autonomous_loop.py (current 440 to 436) | 96/96 |  | compliance | 2026-06-14 |
 | change | Document the campaign interleaved-serial run-model in docs/guide.md (new Chapter 8 Campaign Mode section + Appendix B sharpening + stale drain-example fix) | 7/7 |  | docs | 2026-06-14 |
 | change | tighten bloat baseline to actual LOC; prune 3 under-limit entries (clear Group H2) | 3442/3442 |  | compliance | 2026-06-13 |
 | bug | Pin verifier CLI stdout to UTF-8 — fix Windows cp1252 UnicodeEncodeError on '→' in reports | 3441/3453 |  | tooling | 2026-06-13 |
@@ -197,7 +198,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-14 | Unit: 7/7 | Smoke: not_run | (iterate)
+Last run: 2026-06-14 | Unit: 96/96 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
