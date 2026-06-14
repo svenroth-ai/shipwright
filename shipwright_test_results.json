@@ -1,41 +1,108 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-14-phasequality-sentinel-rollup-filter",
+    "run_id": "iterate-2026-06-14-agent-doc-entry-budget-gate",
     "date": "2026-06-14",
     "unit": {
-      "suite": "shared/tests",
-      "passed": 3498,
-      "failed": 0,
-      "skipped": 16,
-      "status": "pass",
-      "note": "Full shared/tests suite green (3498 passed, 16 skipped, 20 deselected). New file test_phase_quality_sentinel_rollup_filter.py: 21 passed."
+      "status": "passed",
+      "passed": 3522,
+      "total": 3522
     },
-    "integration": {"status": "n/a", "note": "no cross_component flag; end-to-end backlog test covered in the unit suite"},
-    "pgtap": {"status": "n/a"},
-    "e2e": {"status": "n/a", "note": "no UI/web surface"},
-    "design_fidelity": {"status": "n/a"},
-    "smoke": {"status": "n/a", "note": "library change; no server"},
+    "integration": {
+      "status": "passed",
+      "passed": 163,
+      "total": 163
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
     "degraded": [],
     "surface_verification": {
-      "surface": "none",
-      "justification": "Pure Python library change to the phase-quality rollup READ layer (shared/scripts/lib/phase_quality/). There is no web/cli/api product surface in this framework monorepo; the change touches no API route, store mutation, SSE/WS handler, message contract, or UI-consumed code. Executable verification IS the test suite: 21 new unit + end-to-end backlog tests (per-consumer filtering, raw-vs-view split, GC, backlog dismiss/append) plus the full shared/tests regression (3498 passed) — all green. Probe: live collect_in_scope_fails returned [iterate:S2] before the fix and [] after (sentinel excluded)."
+      "surface": "cli",
+      "runner": "uv run --extra dev pytest shared/tests/test_check_agent_doc_budget.py -q --color=no",
+      "exit_code": 0,
+      "tests_run": 6,
+      "evidence_path": ".shipwright/runs/iterate-2026-06-14-agent-doc-entry-budget-gate/surface_verification.json",
+      "timestamp": "2026-06-14"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        {"behavior": "is_sentinel_run truth table (None/empty/whitespace/UNKNOWN -> sentinel; real ids -> not) + LoadedFinding.is_sentinel (AC-1)", "disposition": "tested", "evidence": "test_is_sentinel_run_truth_table (7 cases) + test_loaded_finding_is_sentinel_property"},
-        {"behavior": "load_actionable_findings filters sentinel, preserves raw set + newest-first order (AC-2/AC-6)", "disposition": "tested", "evidence": "test_load_actionable_filters_sentinel_preserves_raw + test_load_actionable_preserves_newest_first_order"},
-        {"behavior": "gc_old_findings still archives a sentinel snapshot by mtime (AC-6, raw lifecycle unchanged)", "disposition": "tested", "evidence": "test_gc_still_archives_sentinel_by_mtime"},
-        {"behavior": "collect_in_scope_fails drops sentinel-only FAIL, keeps non-sentinel engaged FAIL, and un-masks an older real FAIL (AC-3/AC-5)", "disposition": "tested", "evidence": "test_collect_drops_sentinel_only_fail + test_collect_keeps_non_sentinel_engaged_fail + test_collect_sentinel_does_not_mask_older_real_fail"},
-        {"behavior": "emit_phase_quality_backlog ignores sentinel-only (0 open) and appends for a non-sentinel FAIL (AC-7, end-to-end)", "disposition": "tested", "evidence": "test_emit_backlog_ignores_sentinel_only + test_emit_backlog_appends_for_non_sentinel"},
-        {"behavior": "dashboard / session digest / report renderers omit sentinel-only snapshots (AC-4)", "disposition": "tested", "evidence": "test_dashboard_omits_sentinel_only_phase + test_session_summary_omits_sentinel_fail + test_report_omits_sentinel_run"},
-        {"behavior": "rollup-layer sentinel set stays equivalent to the audit-time guard set (external-review #1 drift-pin)", "disposition": "tested", "evidence": "test_sentinel_set_matches_iterate_run_id_guard"},
-        {"behavior": "existing phase-quality renderer/triage suites stay green (AC-8 regression)", "disposition": "tested", "evidence": "test_audit_phase_quality + test_phase_quality_triage_emit + test_phase_quality_rollout (140 passed)"},
-        {"behavior": "touched files respect the bloat anti-ratchet baseline (AC-9)", "disposition": "tested", "evidence": "anti_ratchet_check.py --staged exit 0 (_triage_bundle.py held at its 308 baseline)"},
-        {"behavior": "docs/hooks-and-pipeline.md documents the rollup sentinel-exclusion (AC-10)", "disposition": "untestable", "reason_code": "covered-by-existing-test", "evidence": "doc prose; the documented behavior is itself pinned by the tests above"}
+        {
+          "behavior": "iter_entries splits multi-line bullets, stops at next ##",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_agent_doc_budget.py::test_iter_entries_splits_top_level_bullets_and_continuations PASSED"
+        },
+        {
+          "behavior": "entry_date parses bare date, run-id slug, comma form; ignores prose date; rejects invalid",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_agent_doc_budget.py::test_entry_date_* PASSED"
+        },
+        {
+          "behavior": "over_budget flags dated oversize, exempts undated, honors enforced_from, catches slug-dated",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_agent_doc_budget.py::test_over_budget_* PASSED"
+        },
+        {
+          "behavior": "new_over_budget forward-only: flags new oversize, ignores untouched legacy + new-compliant",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_agent_doc_budget.py::test_new_over_budget_* PASSED"
+        },
+        {
+          "behavior": "CLI full-corpus + forward-only(git) + no-git no-op",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_check_agent_doc_budget.py (6) PASSED"
+        },
+        {
+          "behavior": "F11 verifier check wired + drift-guard + fail-soft skip on no git base",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_verify_iterate_finalization.py::test_agent_doc_budget_in_run_all_checks PASSED"
+        },
+        {
+          "behavior": "_append_architecture_update no blank line between bullets",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_arch_update_writer_format.py PASSED"
+        },
+        {
+          "behavior": "monorepo gate consumes shared SSoT; slug-dated entry no longer exempt",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_agent_doc_entry_rules.py PASSED"
+        },
+        {
+          "behavior": "cleaned docs <=600, no info loss, pinned phrases + hook-fanout-dedup run_id kept",
+          "disposition": "tested",
+          "evidence": "check_agent_doc_budget.py --all -> OK + test_skill_e2e_gate_consistency + test_architecture_md_reflects_arch_impact PASSED"
+        },
+        {
+          "behavior": "F2.md routing instruction matches IMPACT_TARGETS SSoT",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_agent_doc_entry_rules.py::test_f2_documents_canonical_routing PASSED"
+        }
       ],
-      "counts": {"untested_testable": 0},
-      "enumeration_basis": {"acs": 10, "covered_acs": 10}
+      "counts": {
+        "testable": 10,
+        "tested": 10,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 7,
+        "covered_acs": 7
+      }
     }
   }
 }

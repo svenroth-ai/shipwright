@@ -1,30 +1,35 @@
 """Entry-budget + routing-SSoT guards for the always-loaded agent docs.
 
 Two structural guards that keep the Layer-1 agent docs lean and consistently
-routed (the agent-doc-entry-rules split, 2026-06-12). They make the progressive-
-disclosure rule enforceable rather than advisory:
+routed (the agent-doc-entry-rules split, 2026-06-12; hole-closed +
+SSoT-extracted, 2026-06-14). They make the progressive-disclosure rule
+enforceable rather than advisory:
 
 1. ENTRY BUDGET (forward-only). Each DATED entry under ``## Architecture
    Updates`` (architecture.md) and ``## Convention Updates`` / ``## Learnings``
    (conventions.md) authored on/after ``_ENFORCED_FROM`` must be
-   ``<= _ENTRY_MAX_CHARS``. Detail belongs ONCE in the on-demand ADR /
+   ``<= ENTRY_MAX_CHARS``. Detail belongs ONCE in the on-demand ADR /
    ``.shipwright/planning/adr/`` spec folder; the always-loaded docs carry a
-   one-line "what + pointer to the ADR". Mirrors the per-field budget already
-   enforced on ``decision_log.md`` (``write_decision_log.ADR_FIELD_MAX_CHARS``).
-   Entries dated before the cutoff (and undated legacy entries) are
-   grandfathered — the follow-up compression iterate shrinks the backlog.
+   one-line "what + pointer". Mirrors the per-field budget already enforced on
+   ``decision_log.md`` (``write_decision_log.ADR_FIELD_MAX_CHARS``).
+
+   The parsing + budget logic is the shared SSoT ``lib.agent_doc_budget`` (also
+   consumed by the repo-agnostic CLI ``tools/check_agent_doc_budget.py`` and the
+   F11 verifier), so the monorepo gate and the adopted-repo runtime gate cannot
+   diverge. ``entry_date`` reads the date from a bare ``(YYYY-MM-DD)`` OR a
+   run-id slug ``(iterate-YYYY-MM-DD-…)``, closing the hole that used to exempt
+   the bold ``- **rule** (iterate-…-slug)`` Learnings form. Genuinely undated
+   entries (no parenthesised date) remain grandfathered.
 
 2. ROUTING SSoT. The impact -> (target doc, section) mapping is defined once in
    ``lib.architecture_doc.IMPACT_TARGETS`` and consumed by the oracle (F11 gate
    + Group-F detective), the producer (``write_decision_log``), and the F2.md
    instruction. These tests pin producer + instruction to the SSoT so the three
-   cannot silently diverge again (``convention`` was being hand-routed to
-   architecture.md while the writer routed it to conventions.md).
+   cannot silently diverge again.
 """
 
 from __future__ import annotations
 
-import re
 import sys
 from datetime import date, timedelta
 from pathlib import Path
@@ -36,101 +41,35 @@ sys.path.insert(0, str(_REPO_ROOT / "shared" / "scripts"))
 sys.path.insert(0, str(_REPO_ROOT / "shared" / "scripts" / "tools"))
 
 import write_decision_log  # noqa: E402
+from lib.agent_doc_budget import (  # noqa: E402
+    ENTRY_MAX_CHARS,
+    SECTIONS,
+    iter_entries,
+    over_budget,
+)
 from lib.architecture_doc import IMPACT_TARGETS, REAL_IMPACTS  # noqa: E402
 
-# One-line "what + pointer". 600 chars ~ a self-contained sentence plus a key
-# surface path and an ADR pointer — generous vs. the typical ~100-300 char
-# compact entry, tight enough to forbid the multi-hundred-word paragraphs.
-_ENTRY_MAX_CHARS = 600
-
 # Enforcement boundary: every entry authored on/after this date must comply.
-# Lowered from 2026-06-13 to 2026-05-01 by iterate-2026-06-12-compress-agent-doc-
-# backlog, which compacted the whole backlog (architecture.md `## Architecture
-# Updates` + conventions.md `## Convention Updates` / `## Learnings`) to one-line
-# pointers and archived the verbatim detail under `.shipwright/planning/adr/`. The
-# date sits just before the earliest dated backlog entry (2026-05-02), so the gate
-# now enforces the entire compacted corpus rather than only forward-dated entries.
-# (Undated entries — e.g. `(2026-06-11, iterate ...)` forms that the strict
-# `(YYYY-MM-DD)` regex does not match — remain exempt by construction.)
+# 2026-05-01 sits just before the earliest dated backlog entry (2026-05-02), so
+# the gate enforces the entire compacted corpus rather than only forward-dated
+# entries. Genuinely undated entries (no parenthesised date) remain exempt.
 _ENFORCED_FROM = date(2026, 5, 1)
 
 _AGENT_DOCS = _REPO_ROOT / ".shipwright" / "agent_docs"
-_SECTIONS: tuple[tuple[str, str], ...] = (
-    ("architecture.md", "## Architecture Updates"),
-    ("conventions.md", "## Convention Updates"),
-    ("conventions.md", "## Learnings"),
-)
-
-_DATE_RE = re.compile(r"\((\d{4})-(\d{2})-(\d{2})\)")
 
 
-def iter_entries(text: str, section_header: str) -> list[str]:
-    """Yield each top-level ``- `` bullet block under ``section_header``.
-
-    An entry is a top-level ``- `` bullet at column 0 plus its continuation
-    lines (deeper indentation / blank lines) up to the next top-level bullet or
-    the next ``## `` heading. Returns the joined entry text (trailing
-    whitespace stripped) for each entry.
-    """
-    lines = text.splitlines()
-    # Find the section body.
-    start = None
-    for i, ln in enumerate(lines):
-        if ln.strip() == section_header:
-            start = i + 1
-            break
-    if start is None:
-        return []
-    entries: list[str] = []
-    cur: list[str] | None = None
-    for ln in lines[start:]:
-        if ln.startswith("## "):
-            break
-        if ln.startswith("- "):
-            if cur is not None:
-                entries.append("\n".join(cur).rstrip())
-            cur = [ln]
-        elif cur is not None:
-            cur.append(ln)
-    if cur is not None:
-        entries.append("\n".join(cur).rstrip())
-    return entries
+# --- entry budget (real files) ----------------------------------------------
 
 
-def entry_date(entry: str) -> date | None:
-    """First ``(YYYY-MM-DD)`` token in ``entry`` as a date, else None."""
-    m = _DATE_RE.search(entry)
-    if not m:
-        return None
-    try:
-        return date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
-    except ValueError:
-        return None
-
-
-def _enforced_violations(entries: list[str]) -> list[str]:
-    """Entries authored on/after the cutoff that exceed the char budget."""
-    bad: list[str] = []
-    for e in entries:
-        d = entry_date(e)
-        if d is not None and d >= _ENFORCED_FROM and len(e) > _ENTRY_MAX_CHARS:
-            head = e.splitlines()[0][:80]
-            bad.append(f"{len(e)} chars (> {_ENTRY_MAX_CHARS}): {head}…")
-    return bad
-
-
-# --- entry budget (real files, forward-only) --------------------------------
-
-
-@pytest.mark.parametrize("filename,header", _SECTIONS)
+@pytest.mark.parametrize("filename,header", SECTIONS)
 def test_new_entries_within_budget(filename: str, header: str):
     """Every entry authored on/after _ENFORCED_FROM is a one-line pointer
-    (<= _ENTRY_MAX_CHARS). Pre-cutoff + undated legacy entries are exempt."""
+    (<= ENTRY_MAX_CHARS). Genuinely undated legacy entries are exempt."""
     path = _AGENT_DOCS / filename
     if not path.exists():
         pytest.skip(f"{filename} absent")
     entries = iter_entries(path.read_text(encoding="utf-8", errors="ignore"), header)
-    violations = _enforced_violations(entries)
+    violations = over_budget(entries, enforced_from=_ENFORCED_FROM)
     if violations:
         pytest.fail(
             f"{filename} '{header}' has over-budget entries authored on/after "
@@ -144,33 +83,26 @@ def test_new_entries_within_budget(filename: str, header: str):
 # --- entry budget (hermetic — proves the gate discriminates) ----------------
 
 
-def test_iter_entries_splits_top_level_bullets():
-    text = (
-        "## Architecture Updates\n\n"
-        "- **a** (2026-06-13): one\n  continued line\n"
-        "- **b** (2026-06-13): two\n\n"
-        "## Next\n- **c**: ignored\n"
-    )
-    entries = iter_entries(text, "## Architecture Updates")
-    assert len(entries) == 2
-    assert entries[0].startswith("- **a**") and "continued line" in entries[0]
-    assert entries[1].startswith("- **b**")
-
-
 def test_over_budget_dated_entry_is_flagged():
     after = (_ENFORCED_FROM + timedelta(days=1)).isoformat()
-    big = f"- **x** ({after}): " + ("y" * (_ENTRY_MAX_CHARS + 50))
-    assert _enforced_violations([big])
+    big = f"- **x** ({after}): " + ("y" * (ENTRY_MAX_CHARS + 50))
+    assert over_budget([big], enforced_from=_ENFORCED_FROM)
+
+
+def test_slug_dated_entry_is_no_longer_exempt():
+    """Regression for the closed hole: a bold-lead entry whose only date is in
+    the run-id slug used to parse as undated (exempt). It must now be enforced."""
+    big = "- **" + ("y" * (ENTRY_MAX_CHARS + 50)) + "** (iterate-2026-06-13-foo)"
+    assert over_budget([big], enforced_from=_ENFORCED_FROM)
 
 
 def test_grandfathered_entries_exempt():
-    # Dates computed relative to the cutoff so the hermetic cases survive a future
-    # _ENFORCED_FROM change: a pre-cutoff dated entry and an undated entry are exempt.
+    # A pre-cutoff dated entry and a genuinely undated entry stay exempt.
     before = (_ENFORCED_FROM - timedelta(days=1)).isoformat()
-    big_old = f"- **x** ({before}): " + ("y" * (_ENTRY_MAX_CHARS + 50))
-    big_undated = "- **x**: " + ("y" * (_ENTRY_MAX_CHARS + 50))
-    assert _enforced_violations([big_old]) == []
-    assert _enforced_violations([big_undated]) == []
+    big_old = f"- **x** ({before}): " + ("y" * (ENTRY_MAX_CHARS + 50))
+    big_undated = "- **x**: " + ("y" * (ENTRY_MAX_CHARS + 50))
+    assert over_budget([big_old], enforced_from=_ENFORCED_FROM) == []
+    assert over_budget([big_undated], enforced_from=_ENFORCED_FROM) == []
 
 
 # --- routing SSoT: producer matches IMPACT_TARGETS --------------------------

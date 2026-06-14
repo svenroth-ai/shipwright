@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-06-14T12:57:22.285969+00:00
-Total commits: 1010
+Generated: 2026-06-14T19:28:08.959355+00:00
+Total commits: 1011
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 288
+    "fix" : 289
     "feat" : 272
     "chore" : 221
     "docs" : 129
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 288 commits
+### Fixes (fix) — 289 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-14 | compliance | exclude degenerate sentinel-run snapshots from phase-quality rollups (#251) | 33cf8da31ef7 |
 | 2026-06-13 | verifiers | pin CLI stdout to UTF-8 so reports don't crash on Windows cp1252 (#244) | 0dfae42697ea |
 | 2026-06-13 | audit-3 | low-risk hardening — event-commit, report-escape, CI pipefail, test-discipline (WP11b) (#236) | 172e39d9ec5b |
 | 2026-06-13 | bloat | marker writer keys delta off the worktree baseline, SSoT with the Stop gate (trg-537334f1) (#237) | 517ae21b73ab |
@@ -1079,7 +1080,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1010 |
+| Total commits | 1011 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1010 |
+| Human-authored commits | 1011 |
 

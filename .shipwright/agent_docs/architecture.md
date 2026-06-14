@@ -76,9 +76,8 @@ _Existing user-facing documentation discovered by /shipwright-adopt._
 - [`docs/guide.md`](../../docs/guide.md)
 
 ## Architecture Updates
-
-> Per-iterate detail is compacted to one-line pointers (run_id · date · impact · gist) to keep this always-loaded doc lean; full verbatim prose for every compacted entry is in [`../planning/adr/_archive-agent-doc-updates.md`](../planning/adr/_archive-agent-doc-updates.md), and the ADR (where aggregated at release) in `decision_log.md` under the same Run-ID. Routing (`lib.architecture_doc.IMPACT_TARGETS`): `convention`-impact entries live in [`conventions.md`](conventions.md) `## Convention Updates`; only `component` / `data-flow` live here. (Compacted by iterate-2026-06-12-compress-agent-doc-backlog.)
-
+> **One line per change** — always-loaded Layer-1 context, so every line costs tokens on every future iterate. Format: `- **<run_id|ADR-NNN>** (YYYY-MM-DD): <Impact> — <one sentence: what + key surface>. → decision_log (Run-ID/ADR)`. **Budget ≤ 600 chars; detail goes in the ADR / `.shipwright/planning/adr/`, not here.** Enforced repo-agnostically (incl. adopted repos) by the F11 verifier + `shared/scripts/tools/check_agent_doc_budget.py` (SSoT `lib.agent_doc_budget`); see `references/F2.md`. Full verbatim prose for compacted entries lives in [`../planning/adr/_archive-agent-doc-updates.md`](../planning/adr/_archive-agent-doc-updates.md). Routing (`lib.architecture_doc.IMPACT_TARGETS`): `convention`-impact → [`conventions.md`](conventions.md) `## Convention Updates`; only `component` / `data-flow` live here.
+- **iterate-2026-06-14-agent-doc-entry-budget-gate** (2026-06-14): Component — new SSoT `shared/scripts/lib/agent_doc_budget.py` + repo-agnostic CLI `tools/check_agent_doc_budget.py` + F11 verifier `check_agent_doc_budget` enforce the ≤600-char one-line agent-doc entry rule in EVERY repo (incl. adopted, via the plugin cache), closing the run-id-slug date hole that exempted the bold Learnings form; also fixes the `_append_architecture_update` blank-line writer. → decision_log (Run-ID).
 - **iterate-2026-06-13-atomic-write-fsync-durability** (2026-06-13): Component — new shared durability primitive `shared/scripts/lib/atomic_write.py::durable_atomic_write` (tmp + `fsync` + `os.replace` + best-effort POSIX dir-fsync); ~20 atomic-write helpers across `shared/{lib,tools,hooks}`, `dev_server`, and 4 plugins delegate to it, closing the *lost-write* gap WP2 left open. Byte-identical output; fsync is the only behavioral change. External-review follow-up to `iterate-2026-06-13-runconfig-atomic-writes`. → decision_log (Run-ID).
 - **iterate-2026-06-13-runconfig-atomic-writes** (2026-06-13): Component — new `run_config_store.py` centralizes atomic (tmp+os.replace) + path-coordinated-lock writes to `shipwright_run_config.json`; the orchestrator (`save_run_config`/`update_step`), `phase_task_lifecycle`, and `append_phase_history` writer families now coordinate by the canonical `*.json.lock` path (audit 2026-06-10 WP2: F11 unlocked/stale RMW, F12 torn read, F13 nested 30s timeout → outer 60s). → decision_log (Run-ID).
 - **iterate-2026-06-10-phase-hook-lifecycle** (2026-06-13): Component — new shared `hook_session.py` resolves phase-hook identity (project_root + session_id) from the Claude-Code **stdin payload** (+`resolve_project_root()` fallback), not env vars no launcher sets (F1), so the v2 lifecycle engages from a bare launch card instead of no-op'ing. `record_event` gains `append_event_idempotent` (dedup scan + append in ONE `_FileLock`, F14) + first-class `phase_failed`/`stale_stop_rejected` event types (F15). (PR #224)
@@ -149,39 +148,21 @@ _Existing user-facing documentation discovered by /shipwright-adopt._
 - **iterate-2026-06-10-triage-dedup-keep-last-append** (2026-06-10): Data-flow — `churn_merge.dedup_triage_lines` collapses same-id `append` events keeping the LAST (mirrors the append-log reader reduction), so a re-appended updated finding no longer wedges the outbox sweep as a `duplicate append`. Campaign `2026-06-08-triage-outbox-delivery` follow-up. → archive
 - **iterate-2026-06-12-triage-status-idle-main-outbox** (2026-06-12): Data-flow — `triage.mark_status` routes an idle-main status flip (dismiss/snooze/promote) to the outbox (`should_route_to_outbox`), symmetric with `append_triage_item`; elsewhere residence-derived (TRACKED-PREFERRED). Completes campaign `2026-06-08-triage-outbox-delivery` D1. ADR-100 file. → archive
 - **iterate-2026-06-12-automerge-serial-integrate** (2026-06-12): Component — new `shared/scripts/tools/ensure_current.py` (thin wrapper over `integrate_main`) is the F11 / campaign "refresh-if-behind" guard fixing the auto-merge churn cascade (Option A): GitHub's server-side 3-way merge can't run the regenerate-at-merge resolver, so a behind branch merges stale or stalls DIRTY on regenerated snapshots. F11 brings the branch current THROUGH `integrate_main` before arming `gh pr merge --auto`; campaigns set `SHIPWRIGHT_ITERATE_AUTOMERGE=0` to drain PRs serially. → decision_log (Run-ID).
-
 - **iterate-2026-06-13-code-simplify-skill** (2026-06-13): Component — new `plugins/shipwright-iterate/scripts/lib/behavior_snapshot.py` (snapshot/verify gate) records the green test-state (collected node-id set + counts + exit + source LOC) at the gitignored `.shipwright/runs/<run_id>/behavior_snapshot.json` and STOPs a simplify on behavior drift or removed coverage; new SIMPLIFY sub-mode of CHANGE (classify_intent `mode`) routes through `references/F-simplify.md` (OS1). → decision_log (Run-ID).
-
 - **iterate-2026-06-13-unify-simplify-reducibility** (2026-06-13): Component — RELOCATED the behavior_snapshot gate to **`shared/scripts/tools/behavior_snapshot.py`** (SSoT; supersedes the OS1 entry's `plugins/.../scripts/lib/` path) so the shared reducibility catalog can cite it without an inverted plugin→shared dep. Unifies the simplify gate + bloat catalog: F-simplify adopts the D·A·X·C·S·M·P·T vocabulary; the catalog cites it as the mechanical G3 ("keeps-tests-green") proof on exec surfaces (CI Tier-3 exempt). → decision_log (Run-ID).
-
 - **ADR-151** (2026-06-07): Reconcile-and-commit main-tree triage.jsonl drift in tooling
-
 - **ADR-160** (2026-06-10): Per-tree campaign status.json: finalize wiring + scoped churn resolver
-
 - **ADR-161** (2026-06-10): Project campaign status from the event log (never-downgrade)
-
 - **ADR-163** (2026-06-10): Triage dedup collapses same-id appends keep-last (reader parity)
-
 - **ADR-166** (2026-06-11): gh-pr-ci producer: failed hard-gates on open PRs -> triage
-
 - **ADR-173** (2026-06-12): Event-ownership scoping for whole-set arch-drift checkers
-
 - **ADR-174** (2026-06-12): Serial integrate_main merge for campaign/parallel iterates (auto-merge churn fix, Option A)
-
 - **ADR-181** (2026-06-12): cross_component risk flag forces integration coverage (non-dodgeable)
-
 - **ADR-182** (2026-06-12): Delivery-Watch: delivered = merged + green (no shoot-and-forget)
-
 - **ADR-189** (2026-06-12): mark_status routes idle-main status flips to the outbox (completes D1)
-
 - **ADR-191** (2026-06-12): merge=union for curated agent-docs (close the structural gap)
-
 - **ADR-197** (2026-06-13): Phase hooks resolve identity from stdin payload; atomic event dedup; failure event types
-
 - **ADR-199** (2026-06-13): Shared durable_atomic_write primitive for all atomic writers
-
 - **ADR-204** (2026-06-13): Atomic + path-coordinated run_config writes
-
 - **ADR-212** (2026-06-13): Behavior-preserving SIMPLIFY sub-mode + snapshot/verify gate
-
 - **ADR-217** (2026-06-13): Unify simplify <-> reducibility around one shared tool + one catalog
