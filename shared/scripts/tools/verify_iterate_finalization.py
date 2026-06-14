@@ -44,6 +44,7 @@ from tools.verifiers.common import CheckResult, Severity, format_report  # noqa:
 from tools.verifiers.stdio import ensure_utf8_stdout  # noqa: E402
 from tools.verifiers.iterate_checks import (  # noqa: E402,F401
     check_adr_in_iterate_history,
+    check_agent_doc_budget,
     check_architecture_documented,
     check_changelog_unreleased,
     check_events_has_commit,

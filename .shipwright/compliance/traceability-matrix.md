@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-14T12:57:22.285969+00:00
+Generated: 2026-06-14T19:28:08.959355+00:00
 
 ## Requirements Coverage
 
@@ -218,6 +218,7 @@ Generated: 2026-06-14T12:57:22.285969+00:00
 | tighten bloat baseline for autonomous_loop.py (current 440 to 436) | iterate | change |  | 96/96 | — | 2026-06-14 |
 | Hook fan-out consolidation: once-per-event guard (claim_once_for_event) on audit/handoff/drift + session-state phase resolver (resolve_engaged_phases) | iterate | change |  | 3473/3473 | — | 2026-06-14 |
 | Phase-quality rollups read load_actionable_findings (excludes sentinel run_id=unknown snapshots), so stale/degenerate audits stop driving false Tier-1 surfacing across the triage backlog, SessionStart injection, dashboard and report. | iterate | change |  | — | — | 2026-06-14 |
+| Repo-agnostic agent-doc entry-budget gate (lib.agent_doc_budget + check_agent_doc_budget.py + F11 verifier check), closed the run-id-slug date hole, fixed the blank-line ADR writer, and compacted/de-bolded architecture.md + conventions.md. | iterate | change |  | — | — | 2026-06-14 |
 
 ## Coverage Summary
 
@@ -225,7 +226,7 @@ Generated: 2026-06-14T12:57:22.285969+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 193 |
+| Iterate changes | 194 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

@@ -1,0 +1,1 @@
+Release-folded ADR bullets no longer get a blank line before each (`write_decision_log._append_architecture_update`); the always-loaded agent docs in both repos are compacted (over-budget entries shortened, Learnings de-bolded to one-line date-lead form).

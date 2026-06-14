@@ -258,8 +258,8 @@ def _append_architecture_update(
         content = content.rstrip() + f"\n\n{section_header}\n"
 
     today = entry_date or date.today().isoformat()
-    update_line = f"\n- **ADR-{adr_number:03d}** ({today}): {summary}\n"
-    content += update_line
+    # rstrip first so a file ending in "\n" doesn't add a blank line per bullet.
+    content = content.rstrip("\n") + f"\n- **ADR-{adr_number:03d}** ({today}): {summary}\n"
     target.write_text(content, encoding="utf-8")
     return target.name
 

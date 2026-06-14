@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-14 12:57 UTC | Session: 8b838fb6-ab99-4c09-a550-c3118c02f3d4 | Run: iterate-2026-06-14-phasequality-sentinel-rollup-filter
+> Updated: 2026-06-14 19:28 UTC | Session: 2d296ac4-914f-4aee-9135-19264ea1125c | Run: iterate-2026-06-14-agent-doc-entry-budget-gate
 
-## Recent Changes (193 iterations)
+## Recent Changes (194 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Repo-agnostic agent-doc entry-budget gate (lib.agent_doc_budget + check_agent_doc_budget.py + F11 verifier check), closed the run-id-slug date hole, fixed the blank-line ADR writer, and compacted/de-bolded architecture.md + conventions.md. | 0/0 |  | tooling | 2026-06-14 |
 | change | Phase-quality rollups read load_actionable_findings (excludes sentinel run_id=unknown snapshots), so stale/degenerate audits stop driving false Tier-1 surfacing across the triage backlog, SessionStart injection, dashboard and report. | 0/0 |  | tooling | 2026-06-14 |
 | change | Hook fan-out consolidation: once-per-event guard (claim_once_for_event) on audit/handoff/drift + session-state phase resolver (resolve_engaged_phases) | 3473/3473 |  | infra | 2026-06-14 |
 | change | tighten bloat baseline for autonomous_loop.py (current 440 to 436) | 96/96 |  | compliance | 2026-06-14 |
@@ -200,7 +201,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-14 | Smoke: n/a | (iterate)
+Last run: 2026-06-14 | Unit: 3522/3522 | Integration: 163/163 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

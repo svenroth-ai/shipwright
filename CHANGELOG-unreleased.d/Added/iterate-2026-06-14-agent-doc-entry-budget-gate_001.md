@@ -1,0 +1,1 @@
+Repo-agnostic agent-doc entry-budget gate: `shared/scripts/lib/agent_doc_budget.py` + `tools/check_agent_doc_budget.py` + an F11 verifier check enforce the 600-char one-line rule for `architecture.md`/`conventions.md` append sections in every repo (incl. adopted), closing the run-id-slug date hole.

@@ -14,9 +14,13 @@ After completing work, reflect on what was learned during implementation.
 `conventions.md` is always-loaded Layer-1 context, so every entry costs tokens on
 every future run. Detail lives ONCE in the ADR (decision-drop ≤500 chars/field +
 the `.shipwright/planning/adr/` spec folder); the `conventions.md` entry is a
-one-line pointer. A forward-only gate
-(`plugins/shipwright-iterate/tests/test_agent_doc_entry_rules.py`) caps NEW
-entries at 600 chars.
+one-line pointer. The ≤600-char rule is enforced **repo-agnostically** (this
+monorepo AND every adopted repo): the F11 verifier `check_agent_doc_budget` STOPs
+finalize on an over-budget NEW entry, and `shared/scripts/tools/check_agent_doc_budget.py`
+(SSoT `lib.agent_doc_budget`) runs the same check by hand. Learnings are a
+**date-lead one-liner, NOT a bold paragraph** (format below); the gate reads the
+date from a bare `(YYYY-MM-DD)` OR the run-id slug, so a bold-lead entry no longer
+slips the budget.
 
 ### For decisions (pattern chosen, convention corrected)
 Use `write_decision_log.py --architecture-impact convention` — creates a proper
