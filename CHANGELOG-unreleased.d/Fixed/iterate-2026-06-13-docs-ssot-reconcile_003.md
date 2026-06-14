@@ -1,1 +1,0 @@
-Docs: corrected the Artifact Write Matrix outbox-routing claim — the security/perf/F0.5/F1 emitters append to the tracked triage.jsonl (to_outbox=False), not the outbox; only true idle-main background producers (incl. plugin_sync_reminder) route to the outbox.

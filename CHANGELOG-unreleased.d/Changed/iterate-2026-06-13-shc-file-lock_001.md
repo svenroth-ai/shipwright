@@ -1,1 +1,0 @@
-Deduplicated the cross-platform append-log file lock: the near-identical `_FileLock` class previously copied in `shared/scripts/tools/record_event.py` and `shared/scripts/triage.py` now lives once as `FileLock` in `shared/scripts/lib/file_lock.py` (both call sites import it aliased; unified on the parent-dir-creating superset behaviour, no regression).

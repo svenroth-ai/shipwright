@@ -2824,3 +2824,146 @@ shipwright/
 - **Consequences:** One canonical git wrapper copy (~25 LOC removed); behaviour preserved (test_spec_checks.py green unchanged, new test_git_helpers.py pins success/missing/timeout/no-timeout paths).
 - **Rejected:** Changing git_helpers to return -1 (would widen blast radius for iterate_checks/integration_coverage callers); adding a cwd= param (git -C already scopes the repo, no caller needs cwd).
 - **Details:** [103-shc-git-helpers-unify.md](../planning/adr/103-shc-git-helpers-unify.md)
+
+---
+
+### ADR-210: Bloat marker writer keys delta off the worktree baseline (SSoT with the Stop reader)
+- **Date:** 2026-06-13
+- **Section:** Bloat Stop-gate / marker writer
+- **Run-ID:** iterate-2026-06-13-bloat-marker-writer-baseline
+- **Context:** PR #186 (trg-28e83840) fixed the Stop-gate READER to resolve a file's ceiling + membership from the worktree's own shipwright_bloat_baseline.json, but the PostToolUse WRITER (check_file_size) still computed delta/was_in_allowlist against the MAIN baseline even for a .worktrees/<slug>/ path.
+- **Decision:** Add a shared worktree_root_for() to lib/bloat_baseline (SSoT) and make the writer classify against the GOVERNING baseline (the worktree's own, MAIN fallback when absent/empty) mirroring the reader's _baseline_for; the reader now reuses worktree_root_for instead of a private copy.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Diff edits shared/scripts/hooks/*.py (cross_component) so an integration test proving writer+reader compose is required and was added; the behavior matches the CI anti-ratchet authority.
+- **Consequences:** Writer and reader key a file's baseline off the same tree, so the stored delta label is internally consistent. Side benefit: the Stop gate now correctly blocks a worktree-only-baselined file grown PAST its worktree ceiling (previously waved through; CI anti-ratchet was the only backstop) — never a new false-block.
+- **Rejected:** Drop delta/was_in_allowlist from the marker since the reader recomputes — rejected: delta is load-bearing (the reader branches on it for write-time temporal classification — already-grandfathered vs crossed-this-session — that it cannot reconstruct from the current baseline). was_in_allowlist is dead-on-read but shares the same bit, so aligning the bit fixes both at zero cost.
+
+---
+
+### ADR-211: Interleaved-serial as the single campaign default
+- **Date:** 2026-06-14
+- **Section:** Iterate — change: interleaved-serial campaign default
+- **Run-ID:** iterate-2026-06-13-campaign-serial-default
+- **Context:** Campaign mode documented build-all-PRs-then-end-stage-drain. Because all sub-iterate branches were built before any merge, siblings (and the shared derived snapshots every sub-iterate regenerates) never composed, so the drain had to ensure_current-regenerate each branch against an advancing main = recurring merge theater.
+- **Decision:** Make interleaved-serial the single campaign default: build one sub-iterate -> PR -> CI-green -> merge -> build next from fresh origin/<default>. New branch_strategy 'serial' (campaign_init default); autonomous_loop cmd_next hands the freshly-fetched origin/<default> as each base. Retire the end-stage drain.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Each campaign sub-iterate is its own PR to main and regenerates the same churn artifacts, so parallel always degrades to drain+regenerate. Build ships ONE PR (single-branch), so its sequential model needs no drain. Serial is the only structurally-safe campaign model.
+- **Consequences:** Only one campaign PR open at a time, so the snapshot cascade cannot form; shared-file edits compose through the prior merge; no regenerate-at-merge. Loses build-ahead parallelism (the thing that caused conflicts). stacked/single-branch kept for shipwright-build + legacy.
+- **Rejected:** Reinterpret 'independent' as interleaved (no new value) — 'independent' misleads (implies parallel); a named 'serial' is clearer for humans. Keep build-all-then-drain as an option — rejected: it is the merge-theater root cause.
+
+---
+
+### ADR-212: Behavior-preserving SIMPLIFY sub-mode + snapshot/verify gate
+- **Date:** 2026-06-13
+- **Section:** Iterate — feature: code-simplify skill (OS1 / P3.2)
+- **Run-ID:** iterate-2026-06-13-code-simplify-skill
+- **Context:** OS1/P3.2 needs a standalone simplify workflow whose 'behavior-preserving' claim is mechanical, not an honor-system prose check.
+- **Decision:** Add SIMPLIFY as a CHANGE sub-mode (classify_intent additive 'mode', not a 4th intent type) routed through references/F-simplify.md and guarded by behavior_snapshot.py (snapshot -> simplify -> verify).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Sub-mode avoids rippling into iterate_entry._VALID_TYPES; the gate compares collected node-id sets + counts + exit code (dependency-free); it is only as strong as coverage, so removed coverage is a hard reject paired with Chesterton-Fence + Five-Principles reasoning.
+- **Consequences:** A simplify STOPs on any test flip or removed coverage; spec_impact forced NONE; the F5c iterate-entry enum stays {feature,change,bug}.
+- **Rejected:** A 4th top-level intent type (ripples F5c + changelog mapping); a /shipwright-simplify mini-plugin (full registration tax, duplicates the pipeline); a prose-only gate (the acceptance is mechanical).
+
+---
+
+### ADR-213: F9: correct the matrix, do not re-wire the emitters
+- **Date:** 2026-06-13
+- **Section:** Iterate — change: audit-3 docs/SSoT reconciliation (WP11a)
+- **Run-ID:** iterate-2026-06-13-docs-ssot-reconcile
+- **Context:** Deep-audit F9: the Artifact Write Matrix falsely listed the security/perf/F0.5/F1 emitters as outbox-routing background producers, but grep confirms all four append with to_outbox=False to the tracked triage.jsonl. The audit asked to pick which side is canonical.
+- **Decision:** Treat the doc as the drifted artifact: remove the four from the outbox list, add plugin_sync_reminder_on_stop, and document that they are phase-invoked producers writing the tracked log. Do NOT wire them to the outbox.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Constitution Surgical-Changes: a docs sub-iterate must not edit source behavior. The four fire during active worktree/skill phases (F0.5/F1 inside the iterate worktree), so their appends ship in the phase PR rather than as idle-main drift — the outbox guarantee already holds without re-wiring.
+- **Consequences:** Doc now matches code; zero behavioral change. Wiring the four to the outbox remains a separate, out-of-scope concern for a docs sub-iterate.
+- **Rejected:** Wiring the four emitters to should_route_to_outbox: a code+test change with idle-main routing implications, mis-scoped for WP11a; left as a possible follow-up.
+
+---
+
+### ADR-214: Audit-3 WP11b: low-risk hardening (F18/F32/F39/F40/F41)
+- **Date:** 2026-06-13
+- **Section:** Iterate — change: audit-3 WP11b low-risk hardening
+- **Run-ID:** iterate-2026-06-13-low-risk-hardening
+- **Context:** 2026-06-10 deep audit WP11b — 5 LOW findings: commit_event_followup could sweep hand-staged WIP into a chore(events) commit; security-report table cells were not pipe-escaped (PR-comment spoofing); the gitleaks-install pipefail comment was false; two pytest skip guards were ADR-044-non-compliant (one crashed on bash-less hosts).
+- **Decision:** Reuse existing SSoTs instead of bespoke code: staged-guard + path-restricted commit mirroring reconcile_triage (F18); markdown_table.escape_cell for report cells (F32); explicit shell:bash + corrected comment on the gitleaks step in both workflows and the adopt template (F39); test_hygiene.skip_or_fail_on_missing_binary replacing the crashing _has_bash (F40); is_ci() fail-branch on the FileNotFoundError skip (F41).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Each fix consolidates onto a pattern the repo already had and the audit cited the sibling for — so the fixes generalize to adopted repos and add no new abstraction.
+- **Consequences:** F7b can no longer corrupt history with staged WIP; scanner/repo strings cannot spoof the PR security table; the gitleaks SHA verify actually gates under pipefail; bash-less hosts skip (not crash) and CI hard-fails on a silently-absent hook gate. Both grandfathered files held at their bloat caps (665, 417).
+- **Rejected:** Inline ad-hoc escaping / a local _md_cell helper (markdown_table.escape_cell already exists and is more correct); a minimal try/except around _has_bash (shutil.which removes the crash class structurally).
+
+---
+
+### ADR-215: Tighten bloat baseline to actual LOC after shared-helper consolidation
+- **Date:** 2026-06-13
+- **Section:** Iterate — change: tighten bloat baseline (clear Group H2)
+- **Run-ID:** iterate-2026-06-13-tighten-bloat-baseline
+- **Context:** Group H2 detective audit flagged 12 baseline entries whose recorded current exceeded on-disk LOC after the shared-helper consolidation campaign shrank the files, leaving anti-ratchet slack (surface_verification.py 693 vs 463 = 230 lines of un-gated regrowth headroom).
+- **Decision:** Lowered current to measured LOC for the 9 still-oversize entries and removed the 3 entries now under the 300-line limit (events_log.py, append_changelog_entry.py, test_events_log.py).
+- **Commit:** (assigned post-merge)
+- **Rationale:** The anti-ratchet is a one-way downward ratchet; tightening after a shrink is the intended maintenance step (precedent PR #219). Pure gate-config data — no code or runtime behavior changed.
+- **Consequences:** Consolidation gains are locked in: a future edit regrowing any of these files past its tighter current trips the anti-ratchet. The 3 removed files re-cross as a fresh H1 crossing (ADR-gated) if they exceed 300 again.
+- **Rejected:** Auto-tightening on every iterate (churns the file, masks transient shrink-then-grow within a run); deferring (leaves the 230-line regrowth windows open).
+
+---
+
+### ADR-216: Triage logs deferred follow-ups, not current-run work — drop the plugin-sync + F0.5 triage producers
+- **Date:** 2026-06-13
+- **Section:** iterate-2026-06-13-triage-not-current-work
+- **Run-ID:** iterate-2026-06-13-triage-not-current-work
+- **Context:** Two iterate-pipeline producers filed triage items about the CURRENT run's own work: the plugin-cache sync reminder (source=plugin-sync, 19 dupes in the live backlog) and the F0.5 surface gate (source=f0.5, critical) which already STOPs via its exit code. Triage is for genuine deferred 'later' items; the board / events log owns 'now'.
+- **Decision:** Removed both triage producers at the source. plugin_sync_reminder_on_stop keeps its once-per-session Stop block-reminder (the 'do it now' surface) but emits no triage. surface_verification keeps fail-closed exit codes + evidence block but emits/auto-resolves no triage. Added a 'triage=later, not now' guardrail to the constitution NEVER tier + iterate reflection.md.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Suppression (severity/env-flag) leaves the conceptual error and the noise; routing to the board is redundant (the STOP + work record already exist). Removal at the source is the correct fix for the user directive.
+- **Consequences:** The triage backlog stops accreting current-run noise. f0.5 stays in KNOWN_SOURCES + f05Resolved/f05Detector stay in triage_gc (legacy-annotated) so historical items still render/GC. ~23 pre-existing orphaned items (19 plugin-sync + 4 open f0.5/P0) are left for operator dismissal — not auto-resolved (open items are not machine-churn). Auditability preserved via the F0.5 evidence block + work_completed event.
+- **Rejected:** (1) Flip items to info / add an opt-out env var — leaves noise + config surface. (2) Re-route to events log/board — the STOP exit + work_completed event already cover 'now'. (3) Backfill-clean the 23 orphaned items now — mid-iterate mutation of the tracked main-durable triage.jsonl from a worktree is the exact op that has caused drift; left for operator.
+
+---
+
+### ADR-217: Unify simplify <-> reducibility around one shared tool + one catalog
+- **Date:** 2026-06-13
+- **Section:** Iterate — change: unify simplify gate + reducibility catalog
+- **Run-ID:** iterate-2026-06-13-unify-simplify-reducibility
+- **Context:** OS1's simplify gate (behavior-snapshot) and the PR #219 reducibility/bloat catalog were parallel artifacts sharing the same Osmani lineage but duplicating; the catalog's 'keeps tests green' (G3) clause was only an LLM assertion (advisory).
+- **Decision:** Relocate behavior_snapshot.py to shared/scripts/tools (SSoT); F-simplify adopts the catalog's D.A.X.C.S.M.P.T vocabulary + G1-G6; catalog + code-reviewer.md cite behavior_snapshot as the mechanical G3 proof on EXECUTABLE surfaces (self-contained CI Tier-3 pr_reviewer exempt — no exec).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Relocation to shared avoids an inverted plugin->shared dependency (MU-PL2); the catalog is the SSoT every reviewer reads, so wiring the proof there reaches all surfaces at once.
+- **Consequences:** A reducibility reduction and a simplify edit prove safety the SAME way; G3 promotes from advisory to block/apply-eligible on a green snapshot/verify. One bidirectional integration test covers both sides.
+- **Rejected:** Reference-only without relocation (a shared rubric pointing at a plugin-local tool inverts the dependency); marking the integration test slow (deselected by integration-tests' inherited -m 'not slow').
+
+---
+
+### ADR-218: Pin verifier CLI stdout to UTF-8 — fix Windows cp1252 UnicodeEncodeError
+- **Date:** 2026-06-13
+- **Section:** iterate-2026-06-13-verifier-utf8-stdout
+- **Run-ID:** iterate-2026-06-13-verifier-utf8-stdout
+- **Context:** verify_iterate_finalization.py / verify_phase.py print format_report(); a finding detail can carry '→' (e.g. check_architecture_documented: "convention → '## Convention Updates'"). On Windows sys.stdout defaults to cp1252, so the print crashed with UnicodeEncodeError and MASKED the verifier's actual check results (surfaced live in the prior iterate's F11).
+- **Decision:** Added ensure_utf8_stdout() in a NEW verifiers/stdio.py module (reconfigures sys.stdout to UTF-8, guarded) and call it at the top of both verifier CLI main()s before any output. Put in a neutral new module — not the size-capped common.py — to avoid ratcheting an oversize file (bloat-extraction recipe). Mirrors triage_cli._ensure_utf8_stdout (PR #182).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Root cause is the strict cp1252 encode of a non-ascii report char; reconfiguring stdout to UTF-8 at the entrypoint is the established, general fix (vs stripping chars from format_report, which loses information, or per-print buffer writes, which are less general).
+- **Consequences:** Verifier reports print on any console codepage (UTF-8 encodes all Unicode). No behavior change to checks/exit codes. Two small copies of the idiom now exist (triage_cli + verifiers/stdio, distinct packages) — acceptable; a future consolidation into shared/lib is optional.
+- **Rejected:** (1) Strip non-ascii in format_report — loses info + whack-a-mole. (2) sys.stdout.buffer.write(report.encode('utf-8')) per print site — less general, repeated. (3) Leave as a known Windows-only gotcha — masks real verifier failures.
+
+---
+
+### ADR-219: Document interleaved-serial as the canonical campaign run-model in the user guide
+- **Date:** 2026-06-14
+- **Section:** Iterate — change: campaign run-model docs
+- **Run-ID:** iterate-2026-06-14-campaign-runmodel-docs
+- **Context:** PR #246 made interleaved-serial the campaign default in code/agent-skill, but docs/guide.md (the primary user-facing doc) never explained how a campaign runs, and still listed the retired 'campaign drain' as a cross_component example.
+- **Decision:** Add a 'Campaign Mode' subsection to guide.md Chapter 8 (serial PR->CI-green->merge->next-from-fresh-main + the merge-theater rationale), sharpen the Appendix B iterate row, and replace the stale 'campaign drain' example with 'campaign orchestration (autonomous_loop)'.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Closes the human-doc gap surfaced when the last stacked-default campaign improvised interleaved-serial by hand; keeps guide.md consistent with references/campaign-mode.md.
+- **Consequences:** Humans and agents read the same canonical campaign run-model; the default is no longer something an orchestrating agent re-derives per run. Docs-only; no code/behavior change.
+- **Rejected:** Also editing the SKILL.md/risk_detectors.py 'campaign drain' comments — deferred (agent-side, escalates to cross_component + needs cache sync); kept out of this docs-only iterate.
+
+---
+
+### ADR-220: Tighten bloat baseline for autonomous_loop.py (440 to 436)
+- **Date:** 2026-06-14
+- **Section:** Iterate — change: tighten bloat baseline (autonomous_loop.py)
+- **Run-ID:** iterate-2026-06-14-tighten-bloat-baseline
+- **Context:** Group H2 ratchet-suggestion: shipwright_bloat_baseline.json recorded current=440 for shared/scripts/lib/autonomous_loop.py, but the file is now 436 lines (it shrank since the baseline was last stamped).
+- **Decision:** Lower the recorded current to 436 to match on-disk LOC, re-arming the anti-ratchet watermark at the lower mark.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Tightening to the measured LOC is the documented H2 remedy; anti-ratchet treats measured==current as a pass, only >current blocks.
+- **Consequences:** Future regrowth past 436 is now blocked by the anti-ratchet gate (was 440); the H2 finding clears. No runtime behavior changes.
+- **Rejected:** Leaving current=440, which keeps 4 lines of slack the file no longer uses and perpetuates the H2 finding.

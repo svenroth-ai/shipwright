@@ -7,8 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.27.0] - 2026-06-14
+
+### Added
+
+- Code-simplify sub-mode for `/shipwright-iterate`: a "simplify X" / "clean up Y" request now runs a behavior-preserving Behavior-Snapshot -> Simplify (five principles + Chesterton-Fence) -> Behavior-Verify wrap (`behavior_snapshot.py`) that rejects any change which flips a test or removes test coverage (OS1 / P3.2).
+
 ### Changed
+
+- Autonomous campaign mode now runs interleaved-serially by default (new `branch_strategy: serial`): each sub-iterate builds, opens its PR, merges on CI-green, then the next builds from fresh `origin/main` — retiring the build-all-then-end-stage-drain model and its merge-cascade. `stacked`/`single-branch` remain for builds and legacy campaigns.
+- Deduplicated the cross-platform append-log file lock: the near-identical `_FileLock` class previously copied in `shared/scripts/tools/record_event.py` and `shared/scripts/triage.py` now lives once as `FileLock` in `shared/scripts/lib/file_lock.py` (both call sites import it aliased; unified on the parent-dir-creating superset behaviour, no regression).
+- Deduplicated the tolerant event-log reader: the byte-identical `read_events()` body in `shared/scripts/tools/record_event.py` now re-exports the single implementation from `shared/scripts/lib/config.py` (both resolved via `resolve_events_path`; tools->lib direction, no circular import). The verifiers' `read_events_jsonl()` in `shared/scripts/tools/verifiers/common.py` is intentionally kept separate (G5) — it audits the literal `project_root/shipwright_events.jsonl` and stays fully silent by design — now documented with a why-comment.
 - Consolidate the iterate-verifier git wrappers: `spec_checks` now reuses `verifiers/git_helpers._run_git`/`_git_available` (optional `timeout` param, unified failure code) instead of re-defining them.
+- Tightened shipwright_bloat_baseline.json to actual on-disk LOC (9 entries) and pruned 3 now-under-limit entries, clearing the Group H2 ratchet-suggestion finding and locking in the shared-helper consolidation size gains
+- Triage is now reserved for genuine deferred follow-ups — the iterate pipeline no longer files triage items about the current run's own work. The plugin-cache sync reminder and the F0.5 surface-verification gate stopped emitting triage items (the once-per-session sync reminder and the F0.5 fail-closed STOP are unchanged); a constitution guardrail codifies "triage = later, the board owns now."
+- Unified the code-simplify gate and the intelligent bloat/reducibility catalog around one shared tool and one vocabulary: `behavior_snapshot.py` moved to `shared/scripts/tools/` (SSoT), the simplify sub-mode now enumerates changes with the catalog's D.A.X.C.S.M.P.T codes, and the catalog cites the snapshot/verify gate as the mechanical 'keeps tests green' (G3) proof on test-executable surfaces (the no-exec CI reviewer keeps its LOC heuristic).
+- Document the campaign run-model in the user guide: a new Chapter 8 'Campaign Mode' section explains that campaigns run interleaved-serial (each sub-iterate is its own PR, merged after CI-green before the next builds from a fresh origin/main) and why this avoids merge theater; sharpened the Appendix B iterate row and corrected the stale 'campaign drain' risk-flag example (drain was retired in #246).
+- Tightened the bloat baseline for shared/scripts/lib/autonomous_loop.py (current 440 to 436) to match its on-disk line count, closing a Group H2 ratchet-suggestion
+
+### Fixed
+
+- Bloat marker writer (`check_file_size`) now classifies `delta`/`was_in_allowlist` against the worktree's own baseline (via a shared `worktree_root_for` SSoT also used by the Stop gate), matching the reader fix from #186; a worktree-only-baselined file grown past its ceiling now blocks at the Stop gate, not only at CI.
+- Docs: corrected the hooks.json Format reference (docs/hooks-and-pipeline.md) — it had the required Claude Code 2.1.132+ shape (top-level "hooks" wrapper + string matchers, ADR-039/040) inverted with the removed legacy form, so copying it would have silently disabled every hook in a plugin.
+- Docs: fixed Hooks Registry drift in docs/hooks-and-pipeline.md — script name generate-handoff.py -> generate_handoff_on_stop.py (9 tables), phase-quality-audit wiring (11 of 12 plugins; run keeps a Stop chain), and the per-plugin order list (now 10, incl. adopt).
+- Docs: corrected the Artifact Write Matrix outbox-routing claim — the security/perf/F0.5/F1 emitters append to the tracked triage.jsonl (to_outbox=False), not the outbox; only true idle-main background producers (incl. plugin_sync_reminder) route to the outbox.
+- Docs: removed the invalid git add of the gitignored, main-resident decision-drops dir from the iterate F6 staging reference (it exited 128 in every worktree iterate).
+- The tracked-events follow-up commit (commit_event_followup) now skips when the index has unrelated staged changes and is path-restricted to shipwright_events.jsonl, so it can no longer sweep hand-staged work-in-progress into a chore(events) commit.
+- Test CI-discipline: the bash-availability and missing-interpreter skip guards now hard-fail in CI (ADR-044) instead of silently skipping, and the bash probe no longer crashes on a bash-less host.
+- Verifier CLIs (`verify_iterate_finalization.py`, `verify_phase.py`) no longer crash with `UnicodeEncodeError` on a Windows cp1252 console when a check detail contains a non-ASCII character (e.g. `→`); stdout is pinned to UTF-8 at the CLI entrypoint.
+
+### Security
+
+- Security report Markdown table cells (description, file path, rule) are now pipe/newline-escaped via the shared escaper, preventing scanner- or repo-controlled strings from breaking or spoofing the summary posted as a PR comment.
+- The CI/adopt-template Gitleaks-install step now sets an explicit `shell: bash` so its SHA256 tarball verification actually runs under `pipefail` (the prior comment falsely claimed the default shell already did).
 
 ## [v0.26.0] - 2026-06-13
 

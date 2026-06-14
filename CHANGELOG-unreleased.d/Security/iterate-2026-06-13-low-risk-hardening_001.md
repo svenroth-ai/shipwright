@@ -1,1 +1,0 @@
-Security report Markdown table cells (description, file path, rule) are now pipe/newline-escaped via the shared escaper, preventing scanner- or repo-controlled strings from breaking or spoofing the summary posted as a PR comment.
