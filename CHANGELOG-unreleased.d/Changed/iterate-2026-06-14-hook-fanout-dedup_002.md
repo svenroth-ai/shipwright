@@ -1,1 +1,0 @@
-Phase-quality Stop audit now resolves which phase(s) ran from session state (events + run config) and audits only those, instead of keying off the firing plugin's root and auditing all 11 phases (10 of which never ran).

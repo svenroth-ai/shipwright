@@ -166,3 +166,4 @@ _Existing user-facing documentation discovered by /shipwright-adopt._
 - **ADR-204** (2026-06-13): Atomic + path-coordinated run_config writes
 - **ADR-212** (2026-06-13): Behavior-preserving SIMPLIFY sub-mode + snapshot/verify gate
 - **ADR-217** (2026-06-13): Unify simplify <-> reducibility around one shared tool + one catalog
+- **ADR-221** (2026-06-14): Repo-agnostic agent-doc entry-budget gate + cleanup
