@@ -1,0 +1,1 @@
+SessionStart phase-quality reminder no longer resurfaces stale sentinel-run (run_id `unknown`) Tier-1 FAILs from a not-yet-regenerated findings cache — the consumer now applies the same sentinel filter as the on-Stop writer, and caps after filtering so real findings aren't starved.

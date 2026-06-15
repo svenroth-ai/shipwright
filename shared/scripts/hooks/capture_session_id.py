@@ -95,13 +95,15 @@ def _phase_quality_inject_enabled() -> bool:
 
 
 def _collect_tier1_fails(summary_text: str) -> list[dict[str, str]]:
-    """Parse the findings digest (``_findings.md``) and return up to N Tier-1 FAILs.
+    """Parse the findings digest (``_findings.md``) and return its Tier-1 FAILs.
 
     The summary file groups runs under ``## {phase} — {run_id}`` headers
     and lists open FAILs as bulleted lines under ``- open FAILs:``.
     Multiple runs might be present; we read them in file order (newest
     first since rewrite_session_findings_summary sorts by ``audited_at``
-    descending). A FAIL id in ``_TIER_2_IDS`` is filtered out.
+    descending). A FAIL id in ``_TIER_2_IDS`` is filtered out. RAW parse — each
+    FAIL keeps its ``run`` id so the caller applies the sentinel-run policy
+    (mirrors the writer's ``load_findings`` vs ``load_actionable_findings``).
     """
     fails: list[dict[str, str]] = []
     current_phase = ""
@@ -137,8 +139,6 @@ def _collect_tier1_fails(summary_text: str) -> list[dict[str, str]]:
             "run": current_run,
             "evidence": m.group("evidence").strip(),
         })
-        if len(fails) >= _MAX_INJECTED_FAILS:
-            break
     return fails
 
 
@@ -189,6 +189,7 @@ def _build_phase_quality_injection(project_root: str) -> str:
     # this minimal hook context there is nothing meaningful to inject.
     try:
         from lib.phase_quality import SUMMARY_PATH as _PQ_SUMMARY_REL
+        from lib.phase_quality import is_sentinel_run
     except ImportError:
         return ""
     summary_path = pr / _PQ_SUMMARY_REL
@@ -196,7 +197,13 @@ def _build_phase_quality_injection(project_root: str) -> str:
         text = summary_path.read_text(encoding="utf-8")
     except (FileNotFoundError, OSError):
         return ""
-    fails = _collect_tier1_fails(text)
+    # Actionability policy (mirrors the writer's load_actionable_findings): drop
+    # sentinel-run snapshots so a stale on-Stop-only digest can't cry wolf at
+    # SessionStart, THEN cap — so sentinels can't starve real FAILs out of the
+    # budget (iterate-2026-06-15-sessionstart-sentinel-filter).
+    fails = [
+        f for f in _collect_tier1_fails(text) if not is_sentinel_run(f.get("run"))
+    ][:_MAX_INJECTED_FAILS]
     if not fails:
         return ""
     return _format_injection(fails)

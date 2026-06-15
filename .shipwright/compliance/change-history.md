@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-06-14T19:28:08.959355+00:00
-Total commits: 1011
+Generated: 2026-06-15T16:39:57.776299+00:00
+Total commits: 1012
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 289
-    "feat" : 272
+    "feat" : 273
     "chore" : 221
     "docs" : 129
     "refactor" : 61
@@ -314,10 +314,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 272 commits
+### Features (feat) — 273 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-14 | iterate | repo-agnostic agent-doc entry-budget gate + doc cleanup (#252) | c7ec0a62e892 |
 | 2026-06-13 | iterate | behavior-preserving Simplify sub-mode + snapshot/verify gate (OS1/P3.2) (#238) | 561bf5a70640 |
 | 2026-06-13 | adopt | scaffold profile-aware CodeQL + AUTOMERGE_SETUP for brownfield automerge-readiness (#227) | 279d7d6da5ef |
 | 2026-06-12 | bloat | reducibility reviewer — LOC becomes a router, not the verdict (#222) | 13aa780d02aa |
@@ -1080,7 +1081,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1011 |
+| Total commits | 1012 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1011 |
+| Human-authored commits | 1012 |
 

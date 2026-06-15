@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-14-agent-doc-entry-budget-gate",
-    "date": "2026-06-14",
+    "run_id": "iterate-2026-06-15-sessionstart-sentinel-filter",
+    "date": "2026-06-15",
     "unit": {
       "status": "passed",
-      "passed": 3522,
-      "total": 3522
+      "passed": 3530,
+      "total": 3530
     },
     "integration": {
       "status": "passed",
-      "passed": 163,
-      "total": 163
+      "passed": 27,
+      "total": 27
     },
     "pgtap": {
       "status": "not_run",
@@ -33,75 +33,55 @@
     "degraded": [],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --extra dev pytest shared/tests/test_check_agent_doc_budget.py -q --color=no",
+      "runner": "uv run --extra dev pytest shared/tests/test_capture_session_id_sentinel_filter.py -q --color=no",
       "exit_code": 0,
-      "tests_run": 6,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-14-agent-doc-entry-budget-gate/surface_verification.json",
-      "timestamp": "2026-06-14"
+      "tests_run": 7,
+      "evidence_path": ".shipwright/runs/iterate-2026-06-15-sessionstart-sentinel-filter/surface_verification.json",
+      "timestamp": "2026-06-15"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "iter_entries splits multi-line bullets, stops at next ##",
+          "behavior": "SessionStart consumer drops sentinel-run (run_id in {'', 'unknown'}) FAILs from a stale digest",
           "disposition": "tested",
-          "evidence": "shared/tests/test_agent_doc_budget.py::test_iter_entries_splits_top_level_bullets_and_continuations PASSED"
+          "evidence": "test_capture_session_id_sentinel_filter.py::test_injection_drops_sentinel_keeps_real + ::test_injection_empty_for_sentinel_only_digest PASSED"
         },
         {
-          "behavior": "entry_date parses bare date, run-id slug, comma form; ignores prose date; rejects invalid",
+          "behavior": "Real-run FAILs are preserved (no over-filtering of the normal path)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_agent_doc_budget.py::test_entry_date_* PASSED"
+          "evidence": "test_capture_session_id_sentinel_filter.py::test_injection_keeps_real_run_unchanged PASSED"
         },
         {
-          "behavior": "over_budget flags dated oversize, exempts undated, honors enforced_from, catches slug-dated",
+          "behavior": "Injection cap is applied AFTER the sentinel filter, so sentinels can't starve real FAILs out of the 5-item budget",
           "disposition": "tested",
-          "evidence": "shared/tests/test_agent_doc_budget.py::test_over_budget_* PASSED"
+          "evidence": "test_capture_session_id_sentinel_filter.py::test_injection_cap_applied_after_filter_no_starvation PASSED"
         },
         {
-          "behavior": "new_over_budget forward-only: flags new oversize, ignores untouched legacy + new-compliant",
+          "behavior": "R20 cap relocated to the consumer: a >5 non-sentinel digest is capped to the first 5",
           "disposition": "tested",
-          "evidence": "shared/tests/test_agent_doc_budget.py::test_new_over_budget_* PASSED"
+          "evidence": "test_capture_session_id_sentinel_filter.py::test_injection_caps_nonsentinel_at_five PASSED"
         },
         {
-          "behavior": "CLI full-corpus + forward-only(git) + no-git no-op",
+          "behavior": "Raw parser returns all Tier-1 FAILs unfiltered and uncapped (raw-parse vs policy split contract)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_check_agent_doc_budget.py (6) PASSED"
+          "evidence": "test_capture_session_id_sentinel_filter.py::test_collect_tier1_fails_is_raw_parse_keeps_sentinel + test_phase_quality_rollout.py::test_collect_tier1_fails_is_raw_uncapped PASSED"
         },
         {
-          "behavior": "F11 verifier check wired + drift-guard + fail-soft skip on no git base",
+          "behavior": "End-to-end: a sentinel-only stale digest emits no Phase-Quality block at SessionStart, env context still emitted",
           "disposition": "tested",
-          "evidence": "shared/tests/test_verify_iterate_finalization.py::test_agent_doc_budget_in_run_all_checks PASSED"
-        },
-        {
-          "behavior": "_append_architecture_update no blank line between bullets",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_arch_update_writer_format.py PASSED"
-        },
-        {
-          "behavior": "monorepo gate consumes shared SSoT; slug-dated entry no longer exempt",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-iterate/tests/test_agent_doc_entry_rules.py PASSED"
-        },
-        {
-          "behavior": "cleaned docs <=600, no info loss, pinned phrases + hook-fanout-dedup run_id kept",
-          "disposition": "tested",
-          "evidence": "check_agent_doc_budget.py --all -> OK + test_skill_e2e_gate_consistency + test_architecture_md_reflects_arch_impact PASSED"
-        },
-        {
-          "behavior": "F2.md routing instruction matches IMPACT_TARGETS SSoT",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-iterate/tests/test_agent_doc_entry_rules.py::test_f2_documents_canonical_routing PASSED"
+          "evidence": "test_capture_session_id_sentinel_filter.py::test_phase_quality_block_suppressed_for_sentinel_only_digest PASSED + F0.5 cli surface_verification (7 tests, exit 0)"
         }
       ],
       "counts": {
-        "testable": 10,
-        "tested": 10,
+        "testable": 6,
+        "tested": 6,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 7,
-        "covered_acs": 7
+        "acs": 6,
+        "covered_acs": 6
       }
     }
   }

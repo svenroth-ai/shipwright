@@ -215,8 +215,9 @@ def test_inject_mode_audit_only_is_only_disabler(monkeypatch, value, expected):
     assert cs._phase_quality_inject_enabled() is expected
 
 
-def test_collect_tier1_fails_caps_at_five():
-    """R20 (revised post-epic) — max 5 Tier-1 FAILs injected, rest dropped."""
+def test_collect_tier1_fails_is_raw_uncapped():
+    """Raw parser returns ALL Tier-1 FAILs in order — the R20 cap moved to the
+    consumer (iterate-2026-06-15; builder cap pinned in the sentinel-filter test)."""
     text = "\n".join([
         "## build — run-1",
         "- audited_at: 2026-04-19",
@@ -233,8 +234,7 @@ def test_collect_tier1_fails_caps_at_five():
         "",
     ])
     fails = cs._collect_tier1_fails(text)
-    assert len(fails) == 5
-    assert [f["id"] for f in fails] == ["W5", "W6", "W7", "I1", "I2"]
+    assert [f["id"] for f in fails] == ["W5", "W6", "W7", "I1", "I2", "I3", "C1"]
 
 
 def test_collect_tier1_fails_filters_tier2():
