@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.28.0] - 2026-06-15
+
+### Added
+
+- Repo-agnostic agent-doc entry-budget gate: `shared/scripts/lib/agent_doc_budget.py` + `tools/check_agent_doc_budget.py` + an F11 verifier check enforce the 600-char one-line rule for `architecture.md`/`conventions.md` append sections in every repo (incl. adopted), closing the run-id-slug date hole.
+
+### Changed
+
+- Hook fan-out consolidated: shared Stop/SessionStart hooks (phase-quality audit, handoff, artifact-drift) now do their work once per event via a fail-open once-per-(event,session) guard instead of N× across every installed plugin.
+- Phase-quality Stop audit now resolves which phase(s) ran from session state (events + run config) and audits only those, instead of keying off the firing plugin's root and auditing all 11 phases (10 of which never ran).
+- Tightened the bloat anti-ratchet baseline for shared/scripts/tools/verifiers/iterate_checks.py (1122 -> 1121 LOC) to match the file's actual size, clearing the Group-H2 ratchet-suggestion
+
+### Fixed
+
+- Release-folded ADR bullets no longer get a blank line before each (`write_decision_log._append_architecture_update`); the always-loaded agent docs in both repos are compacted (over-budget entries shortened, Learnings de-bolded to one-line date-lead form).
+- Phase-quality rollups (triage backlog, SessionStart injection, dashboard, report) now exclude degenerate `run_id=unknown` audit snapshots via a shared `load_actionable_findings` loader, so a stale or degenerate audit (one that ran with no resolvable run/session) can no longer drive false Tier-1 FAIL surfacing. Raw `load_findings` and GC are unchanged.
+- SessionStart phase-quality reminder no longer resurfaces stale sentinel-run (run_id `unknown`) Tier-1 FAILs from a not-yet-regenerated findings cache — the consumer now applies the same sentinel filter as the on-Stop writer, and caps after filtering so real findings aren't starved.
+
 ## [v0.27.0] - 2026-06-14
 
 ### Added

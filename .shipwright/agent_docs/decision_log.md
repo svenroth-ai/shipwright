@@ -2967,3 +2967,68 @@ shipwright/
 - **Rationale:** Tightening to the measured LOC is the documented H2 remedy; anti-ratchet treats measured==current as a pass, only >current blocks.
 - **Consequences:** Future regrowth past 436 is now blocked by the anti-ratchet gate (was 440); the H2 finding clears. No runtime behavior changes.
 - **Rejected:** Leaving current=440, which keeps 4 lines of slack the file no longer uses and perpetuates the H2 finding.
+
+---
+
+### ADR-221: Repo-agnostic agent-doc entry-budget gate + cleanup
+- **Date:** 2026-06-14
+- **Section:** iterate
+- **Run-ID:** iterate-2026-06-14-agent-doc-entry-budget-gate
+- **Context:** The 600-char one-line agent-doc entry rule kept failing: enforced only by a monorepo pytest (not adopted repos), with a date-regex hole that exempted the bold '- rule (iterate-slug)' Learnings form. New entries regrew into bold paragraphs; release-folded ADR bullets got blank-line-separated.
+- **Decision:** Extract SSoT lib.agent_doc_budget (entry_date now reads a paren-enclosed date bare OR run-id slug, closing the hole); add repo-agnostic CLI tools/check_agent_doc_budget.py (forward-only git-base diff or --all) and wire check_agent_doc_budget into the F11 verifier so it enforces in every repo; fix the _append_architecture_update blank-line writer; clean the two docs.
+- **Commit:** (assigned post-merge)
+- **Consequences:** The budget now enforces at finalize in adopted repos too (ships via plugin cache). Learnings are date-lead non-bold; the over-budget backlog is compacted to 600-char one-liners; F2.md/reflection.md/headers state the format. Deferred: run_id-to-ADR dedup (ADR numbers differ across docs) whose root fix belongs in the release aggregator.
+- **Details:** [2026-06-14-agent-doc-entry-budget-gate.md](../planning/iterate/2026-06-14-agent-doc-entry-budget-gate.md)
+
+---
+
+### ADR-222: Hook fan-out deduped via once-per-event guard + session-state phase resolver
+- **Date:** 2026-06-14
+- **Section:** Iterate — change: hook fan-out consolidation
+- **Run-ID:** iterate-2026-06-14-hook-fanout-dedup
+- **Context:** Claude Code fires every enabled plugin's hooks with no active-plugin filter, so each shared cross-cutting hook did its work N× per event (×11–12); audit_phase_quality_on_stop keyed the audited phase off CLAUDE_PLUGIN_ROOT, auditing 11 phases (10 never ran).
+- **Decision:** Keep every shared hook registered in every plugin, but wrap genuinely-redundant work in a fail-open once-per-(event,session) guard (event_once.claim_once_for_event) on the audit/handoff/drift hooks, and resolve the audited phase(s) from session state (phase_quality.resolve_engaged_phases) instead of plugin root.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Symmetric dedup keeps the fan-out robust if any one plugin is disabled (no single controlling plugin), reuses the proven claim_once primitive, and preserves the test_hook_registry_bloat invariant + consumer back-compat with zero hooks.json churn.
+- **Consequences:** One Stop now audits only the engaged phase(s) once; handoff/drift run once per event. No hooks.json removed (register-everywhere invariant + robustness across pipeline AND iterate preserved). mark_plugin_edit/check_file_size left unchanged (already convergent).
+- **Rejected:** Single-owner dispatcher in shipwright-iterate (couples a framework concern to one phase plugin; breaks if iterate disabled); single-owner in shipwright-run or a new shipwright-core plugin (breaks register-everywhere; needs a new ADR + back-compat surface).
+- **Details:** [2026-06-14-hook-fanout-dedup.md](../planning/iterate/2026-06-14-hook-fanout-dedup.md)
+
+---
+
+### ADR-223: Phase-quality rollups exclude degenerate sentinel-run snapshots
+- **Date:** 2026-06-14
+- **Section:** iterate F3
+- **Run-ID:** iterate-2026-06-14-phasequality-sentinel-rollup-filter
+- **Context:** A stale run_id=unknown phase-quality snapshot (audited 2026-05-31, ~4.5h before the run_id guard landed) kept surfacing iterate:S2 as an open Tier-1 FAIL and triggered autonomous remediation. The audit-time guards (unresolvable_run_id_skip, _skip_unengaged_fails) only neutralise such degenerate findings at WRITE time; the rollup consumers re-render pre-fix snapshots, so a fresh audit yields zero FAILs but the dashboard/backlog stay red.
+- **Decision:** Add a single read-layer filter: load_actionable_findings = load_findings minus sentinel-run (run_id in {'', 'unknown'}) snapshots, routed through the 4 rollup consumers (triage backlog collect_in_scope_fails + the 3 _dashboard_render rewrites). Raw load_findings + gc_old_findings keep the snapshots; only the actionable VIEWS exclude them.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The discriminating property is the degenerate run context (sentinel), not age; a real run_id means the audit resolved real context and its findings stay actionable. Filtering at the read layer (not the write hook) fixes both existing and future degenerate snapshots without a cross_component hook change.
+- **Consequences:** Stale/degenerate audits stop driving false Tier-1 surfacing across the triage backlog, SessionStart injection, dashboard and report; un-masking an older real FAIL hidden behind a newer sentinel is intended. Per-run JSONs remain on disk for forensics and GC out at 90d. A phase whose only snapshot is sentinel renders no row until a real audit runs.
+- **Rejected:** WRITE-path change in audit_phase_quality_on_stop (hook/cross_component; would not retroactively clear on-disk pre-fix snapshots); a staleness/age window (arbitrary threshold); filtering load_findings itself (keep the raw enumerator honest for GC/forensics).
+
+---
+
+### ADR-224: Sentinel-run filter at the SessionStart Phase-Quality read path
+- **Date:** 2026-06-15
+- **Section:** shared/scripts/hooks/capture_session_id.py — SessionStart Phase-Quality injection
+- **Run-ID:** iterate-2026-06-15-sessionstart-sentinel-filter
+- **Context:** _findings.md is a derived cache regenerated only on-Stop but consumed at-SessionStart. The on-Stop writer (load_actionable_findings) drops sentinel-run (run_id in '', 'unknown') snapshots, but the user-facing SessionStart consumer read the digest directly without re-applying that filter, so a stale digest could resurface false Tier-1 FAILs (a cry-wolf defect).
+- **Decision:** Apply the canonical is_sentinel_run predicate at the consumer (_build_phase_quality_injection); move the 5-item injection cap from the raw parser to the consumer so it runs AFTER the filter. _collect_tier1_fails stays a raw parser — raw-parse vs actionability-policy split mirrors the writer's load_findings vs load_actionable_findings.
+- **Commit:** (assigned post-merge)
+- **Rationale:** User-facing trust signal — a gates framework can't afford cry-wolf; reuse the canonical predicate (no duplicated invariant); defense-in-depth instead of relying on cache freshness.
+- **Consequences:** A stale/not-yet-regenerated digest can no longer surface filtered-out sentinel findings at SessionStart; the fresh (sentinel-free) path is unchanged; sentinels can no longer starve real FAILs out of the cap; R20 cap coverage relocated to a builder-level test.
+- **Rejected:** regenerate-the-digest-on-read (SessionStart hot path, ~12x/event); filter inside the raw parser (needs a lazy import + crosses the 300-line bloat threshold).
+
+---
+
+### ADR-225: Tighten iterate_checks.py bloat-baseline entry to actual LOC
+- **Date:** 2026-06-15
+- **Section:** Iterate — change: tighten bloat baseline
+- **Run-ID:** iterate-2026-06-15-tighten-bloat-baseline
+- **Context:** Group-H2 detective audit flagged shipwright_bloat_baseline.json as over-recording shared/scripts/tools/verifiers/iterate_checks.py at 1122 lines while the file is 1121 — a prior iterate trimmed one line and never re-tightened the baseline.
+- **Decision:** Lower the entry's current from 1122 to 1121 so the recorded ceiling equals the on-disk newline count.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Anti-ratchet ceilings must track real reductions so a trimmed file cannot silently regrow into a stale higher baseline.
+- **Consequences:** H2 clears (0 over-recorded entries); the anti-ratchet ceiling now blocks any regrowth past 1121 (==cap passes, >cap blocks). No source or behavior change.
+- **Rejected:** Leave the baseline at 1122 — keeps a 1-line slack window that defeats the ratchet and re-triggers H2 on every audit.

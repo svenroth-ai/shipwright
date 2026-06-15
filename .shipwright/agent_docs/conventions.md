@@ -251,3 +251,4 @@ Contribution rules, dev setup, the graduated trust model, and high-sensitivity a
 - **ADR-188** (2026-06-12): triage_gc under-lock recompute is union-residence aware
 - **ADR-190** (2026-06-12): Triage tooling hardening: GC token SSoT, GC TOCTOU, control-char sanitizer, outbox CLI
 - **ADR-192** (2026-06-12): UTF-8-strict churn _git + structured commit-failure handling
+- **ADR-222** (2026-06-14): Hook fan-out deduped via once-per-event guard + session-state phase resolver
