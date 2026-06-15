@@ -1,35 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-15-sessionstart-sentinel-filter"
+run_id: "iterate-2026-06-15-tighten-bloat-baseline"
 phase: "iterate"
-reason: "iterate: SessionStart phase-quality sentinel-run filter (read-path hardening)"
-timestamp: "2026-06-15T16:39:57.776299+00:00"
+reason: "iterate: tighten bloat baseline for iterate_checks.py"
+timestamp: "2026-06-15T19:44:59.332134+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-15 16:39:57 UTC
+> Auto-generated 2026-06-15 19:44:59 UTC
 
 ## Session Info
 
-- **Session ID**: 248ffea8-5678-449d-a2c0-82374cfb1c0b
-- **Timestamp**: 2026-06-15 16:39:57 UTC
-- **Reason**: iterate: SessionStart phase-quality sentinel-run filter (read-path hardening)
+- **Session ID**: 68d923a7-12a0-4c43-a3e1-22795c07be3b
+- **Timestamp**: 2026-06-15 19:44:59 UTC
+- **Reason**: iterate: tighten bloat baseline for iterate_checks.py
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-14-agent-doc-entry-budget-gate
-- **Date**: 2026-06-14T19:29:15.803851Z
+- **Run ID**: iterate-2026-06-15-sessionstart-sentinel-filter
+- **Date**: 2026-06-15T16:40:12.252401Z
 - **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/agent-doc-entry-budget-gate
-- **ADR**: iterate-2026-06-14-agent-doc-entry-budget-gate
+- **Complexity**: small
+- **Branch**: iterate/sessionstart-sentinel-filter
+- **ADR**: iterate-2026-06-15-sessionstart-sentinel-filter
+- **Description**: SessionStart phase-quality reader filters sentinel-run FAILs + caps after filter (read-path hardening)
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-14-agent-doc-entry-budget-gate.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/sessionstart-sentinel-filter
+- **Branch**: iterate/tighten-bloat-baseline
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/sessionstart-sentinel-filter
-- **Last Commit**: c7ec0a62 feat(iterate): repo-agnostic agent-doc entry-budget gate + doc cleanup (#252)
+- **Branch**: iterate/tighten-bloat-baseline
+- **Last Commit**: 582897b6 chore(triage): sweep 92 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-873c69a9 | work_completed | iterate (tighten bloat baseline for iterate_checks.py (1122->1121)) | 2026-06-15 |
 | evt-5fb3dfc0 | work_completed | iterate (SessionStart phase-quality consumer drops sentinel-run (run_id unknown) FAILs from a stale findings digest and caps AFTER filtering; raw parser left uncapped. Defense-in-depth mirroring load_actionable_findings.) | 2026-06-15 |
 | evt-1ee82e4f | work_completed | iterate (Repo-agnostic agent-doc entry-budget gate (lib.agent_doc_budget + check_agent_doc_budget.py + F11 verifier check), closed the run-id-slug date hole, fixed the blank-line ADR writer, and compacted/de-bolded architecture.md + conventions.md.) | 2026-06-14 |
 | evt-7b6a70cb | work_completed | iterate (Phase-quality rollups read load_actionable_findings (excludes sentinel run_id=unknown snapshots), so stale/degenerate audits stop driving false Tier-1 surfacing across the triage backlog, SessionStart injection, dashboard and report.) | 2026-06-14 |
 | evt-f418f69b | work_completed | iterate (Hook fan-out consolidation: once-per-event guard (claim_once_for_event) on audit/handoff/drift + session-state phase resolver (resolve_engaged_phases)) | 2026-06-14 |
-| evt-984e5022 | work_completed | iterate (tighten bloat baseline for autonomous_loop.py (current 440 to 436)) | 2026-06-14 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 195
-- **Last iterate**: change — SessionStart phase-quality consumer drops sentinel-run (run_id unknown) FAILs from a stale findings digest and caps AFTER filtering; raw parser left uncapped. Defense-in-depth mirroring load_actionable_findings. (2026-06-15)
+- **Total work events**: 196
+- **Last iterate**: change — tighten bloat baseline for iterate_checks.py (1122->1121) (2026-06-15)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

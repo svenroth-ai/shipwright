@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-15 16:39 UTC | Session: 248ffea8-5678-449d-a2c0-82374cfb1c0b | Run: iterate-2026-06-15-sessionstart-sentinel-filter
+> Updated: 2026-06-15 19:44 UTC | Session: 68d923a7-12a0-4c43-a3e1-22795c07be3b | Run: iterate-2026-06-15-tighten-bloat-baseline
 
-## Recent Changes (195 iterations)
+## Recent Changes (196 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | tighten bloat baseline for iterate_checks.py (1122->1121) | 94/94 |  | compliance | 2026-06-15 |
 | change | SessionStart phase-quality consumer drops sentinel-run (run_id unknown) FAILs from a stale findings digest and caps AFTER filtering; raw parser left uncapped. Defense-in-depth mirroring load_actionable_findings. | 0/0 |  | tooling | 2026-06-15 |
 | change | Repo-agnostic agent-doc entry-budget gate (lib.agent_doc_budget + check_agent_doc_budget.py + F11 verifier check), closed the run-id-slug date hole, fixed the blank-line ADR writer, and compacted/de-bolded architecture.md + conventions.md. | 0/0 |  | tooling | 2026-06-14 |
 | change | Phase-quality rollups read load_actionable_findings (excludes sentinel run_id=unknown snapshots), so stale/degenerate audits stop driving false Tier-1 surfacing across the triage backlog, SessionStart injection, dashboard and report. | 0/0 |  | tooling | 2026-06-14 |
@@ -202,7 +203,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-15 | Unit: 3530/3530 | Integration: 27/27 | Smoke: not_run | (iterate)
+Last run: 2026-06-15 | Unit: 94/94 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
