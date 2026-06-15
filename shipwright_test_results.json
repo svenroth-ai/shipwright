@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-15-sessionstart-sentinel-filter",
+    "run_id": "iterate-2026-06-15-tighten-bloat-baseline",
     "date": "2026-06-15",
     "unit": {
       "status": "passed",
-      "passed": 3530,
-      "total": 3530
+      "passed": 94,
+      "total": 94
     },
     "integration": {
-      "status": "passed",
-      "passed": 27,
-      "total": 27
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -18,12 +18,12 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "design_fidelity": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
@@ -31,58 +31,9 @@
       "status": "not_run"
     },
     "degraded": [],
-    "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --extra dev pytest shared/tests/test_capture_session_id_sentinel_filter.py -q --color=no",
-      "exit_code": 0,
-      "tests_run": 7,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-15-sessionstart-sentinel-filter/surface_verification.json",
-      "timestamp": "2026-06-15"
-    },
     "test_completeness": {
-      "status": "complete",
-      "behaviors": [
-        {
-          "behavior": "SessionStart consumer drops sentinel-run (run_id in {'', 'unknown'}) FAILs from a stale digest",
-          "disposition": "tested",
-          "evidence": "test_capture_session_id_sentinel_filter.py::test_injection_drops_sentinel_keeps_real + ::test_injection_empty_for_sentinel_only_digest PASSED"
-        },
-        {
-          "behavior": "Real-run FAILs are preserved (no over-filtering of the normal path)",
-          "disposition": "tested",
-          "evidence": "test_capture_session_id_sentinel_filter.py::test_injection_keeps_real_run_unchanged PASSED"
-        },
-        {
-          "behavior": "Injection cap is applied AFTER the sentinel filter, so sentinels can't starve real FAILs out of the 5-item budget",
-          "disposition": "tested",
-          "evidence": "test_capture_session_id_sentinel_filter.py::test_injection_cap_applied_after_filter_no_starvation PASSED"
-        },
-        {
-          "behavior": "R20 cap relocated to the consumer: a >5 non-sentinel digest is capped to the first 5",
-          "disposition": "tested",
-          "evidence": "test_capture_session_id_sentinel_filter.py::test_injection_caps_nonsentinel_at_five PASSED"
-        },
-        {
-          "behavior": "Raw parser returns all Tier-1 FAILs unfiltered and uncapped (raw-parse vs policy split contract)",
-          "disposition": "tested",
-          "evidence": "test_capture_session_id_sentinel_filter.py::test_collect_tier1_fails_is_raw_parse_keeps_sentinel + test_phase_quality_rollout.py::test_collect_tier1_fails_is_raw_uncapped PASSED"
-        },
-        {
-          "behavior": "End-to-end: a sentinel-only stale digest emits no Phase-Quality block at SessionStart, env context still emitted",
-          "disposition": "tested",
-          "evidence": "test_capture_session_id_sentinel_filter.py::test_phase_quality_block_suppressed_for_sentinel_only_digest PASSED + F0.5 cli surface_verification (7 tests, exit 0)"
-        }
-      ],
-      "counts": {
-        "testable": 6,
-        "tested": 6,
-        "untestable": 0,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 6,
-        "covered_acs": 6
-      }
+      "status": "n/a",
+      "justification": "Trivial data-only change: one integer in shipwright_bloat_baseline.json (1122->1121). Introduces no new testable behavior; the anti-ratchet + Group-H2 logic consuming the entry is covered by 94 passing tests re-run at F0."
     }
   }
 }

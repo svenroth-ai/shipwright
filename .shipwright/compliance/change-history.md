@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-06-15T16:39:57.776299+00:00
-Total commits: 1012
+Generated: 2026-06-15T19:44:59.332134+00:00
+Total commits: 1014
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 289
+    "fix" : 290
     "feat" : 273
-    "chore" : 221
+    "chore" : 222
     "docs" : 129
     "refactor" : 61
     "test" : 24
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 289 commits
+### Fixes (fix) — 290 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-15 | hooks | filter sentinel-run FAILs at the SessionStart phase-quality read path (#253) | e379c8cb1712 |
 | 2026-06-14 | compliance | exclude degenerate sentinel-run snapshots from phase-quality rollups (#251) | 33cf8da31ef7 |
 | 2026-06-13 | verifiers | pin CLI stdout to UTF-8 so reports don't crash on Windows cp1252 (#244) | 0dfae42697ea |
 | 2026-06-13 | audit-3 | low-risk hardening — event-commit, report-escape, CI pipefail, test-discipline (WP11b) (#236) | 172e39d9ec5b |
@@ -592,10 +593,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 221 commits
+### Chores (chore) — 222 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-15 | triage | sweep 92 outbox append(s) into branch | 582897b6bd15 |
 | 2026-06-14 | release | v0.27.0 (#249) | cacfa87f2529 |
 | 2026-06-14 | compliance | tighten bloat baseline for autonomous_loop.py (440 to 436) (#248) | 8cf799228041 |
 | 2026-06-14 | triage | fold 6 main-tree background append(s) | 82ab46c464d2 |
@@ -1081,7 +1083,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1012 |
+| Total commits | 1014 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1012 |
+| Human-authored commits | 1014 |
 
