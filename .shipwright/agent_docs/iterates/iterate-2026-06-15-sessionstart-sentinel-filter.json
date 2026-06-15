@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-06-15-sessionstart-sentinel-filter",
+  "date": "2026-06-15T16:40:12.252401Z",
+  "type": "change",
+  "intent": "change",
+  "complexity": "small",
+  "branch": "iterate/sessionstart-sentinel-filter",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-15-sessionstart-sentinel-filter",
+  "description": "SessionStart phase-quality reader filters sentinel-run FAILs + caps after filter (read-path hardening)"
+}

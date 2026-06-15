@@ -1,38 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-14-agent-doc-entry-budget-gate"
+run_id: "iterate-2026-06-15-sessionstart-sentinel-filter"
 phase: "iterate"
-reason: "Repo-agnostic agent-doc entry-budget gate + doc cleanup; tests green (F0/F0.5)"
-timestamp: "2026-06-14T19:28:08.959355+00:00"
+reason: "iterate: SessionStart phase-quality sentinel-run filter (read-path hardening)"
+timestamp: "2026-06-15T16:39:57.776299+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-14 19:28:08 UTC
+> Auto-generated 2026-06-15 16:39:57 UTC
 
 ## Session Info
 
-- **Session ID**: 2d296ac4-914f-4aee-9135-19264ea1125c
-- **Timestamp**: 2026-06-14 19:28:08 UTC
-- **Reason**: Repo-agnostic agent-doc entry-budget gate + doc cleanup; tests green (F0/F0.5)
+- **Session ID**: 248ffea8-5678-449d-a2c0-82374cfb1c0b
+- **Timestamp**: 2026-06-15 16:39:57 UTC
+- **Reason**: iterate: SessionStart phase-quality sentinel-run filter (read-path hardening)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-14-phasequality-sentinel-rollup-filter
-- **Date**: 2026-06-14T12:55:17.021915Z
+- **Run ID**: iterate-2026-06-14-agent-doc-entry-budget-gate
+- **Date**: 2026-06-14T19:29:15.803851Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/phasequality-sentinel-rollup-filter
-- **ADR**: iterate-2026-06-14-phasequality-sentinel-rollup-filter
+- **Branch**: iterate/agent-doc-entry-budget-gate
+- **ADR**: iterate-2026-06-14-agent-doc-entry-budget-gate
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-14-phasequality-sentinel-rollup-filter.md
+- **Spec**: .shipwright/planning/iterate/2026-06-14-agent-doc-entry-budget-gate.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/agent-doc-entry-budget-gate
-- **Run ID**: iterate-2026-06-14-agent-doc-entry-budget-gate
-- **Spec**: .shipwright/planning/iterate/2026-06-14-agent-doc-entry-budget-gate.md
-- **Complexity**: medium (history-calibrated)
+- **Branch**: iterate/sessionstart-sentinel-filter
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -51,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/agent-doc-entry-budget-gate
-- **Last Commit**: 33cf8da3 fix(compliance): exclude degenerate sentinel-run snapshots from phase-quality rollups (#251)
+- **Branch**: iterate/sessionstart-sentinel-filter
+- **Last Commit**: c7ec0a62 feat(iterate): repo-agnostic agent-doc entry-budget gate + doc cleanup (#252)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-5fb3dfc0 | work_completed | iterate (SessionStart phase-quality consumer drops sentinel-run (run_id unknown) FAILs from a stale findings digest and caps AFTER filtering; raw parser left uncapped. Defense-in-depth mirroring load_actionable_findings.) | 2026-06-15 |
 | evt-1ee82e4f | work_completed | iterate (Repo-agnostic agent-doc entry-budget gate (lib.agent_doc_budget + check_agent_doc_budget.py + F11 verifier check), closed the run-id-slug date hole, fixed the blank-line ADR writer, and compacted/de-bolded architecture.md + conventions.md.) | 2026-06-14 |
 | evt-7b6a70cb | work_completed | iterate (Phase-quality rollups read load_actionable_findings (excludes sentinel run_id=unknown snapshots), so stale/degenerate audits stop driving false Tier-1 surfacing across the triage backlog, SessionStart injection, dashboard and report.) | 2026-06-14 |
 | evt-f418f69b | work_completed | iterate (Hook fan-out consolidation: once-per-event guard (claim_once_for_event) on audit/handoff/drift + session-state phase resolver (resolve_engaged_phases)) | 2026-06-14 |
 | evt-984e5022 | work_completed | iterate (tighten bloat baseline for autonomous_loop.py (current 440 to 436)) | 2026-06-14 |
-| evt-3bb2acf3 | work_completed | iterate (Document the campaign interleaved-serial run-model in docs/guide.md (new Chapter 8 Campaign Mode section + Appendix B sharpening + stale drain-example fix)) | 2026-06-14 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 194
-- **Last iterate**: change — Repo-agnostic agent-doc entry-budget gate (lib.agent_doc_budget + check_agent_doc_budget.py + F11 verifier check), closed the run-id-slug date hole, fixed the blank-line ADR writer, and compacted/de-bolded architecture.md + conventions.md. (2026-06-14)
+- **Total work events**: 195
+- **Last iterate**: change — SessionStart phase-quality consumer drops sentinel-run (run_id unknown) FAILs from a stale findings digest and caps AFTER filtering; raw parser left uncapped. Defense-in-depth mirroring load_actionable_findings. (2026-06-15)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

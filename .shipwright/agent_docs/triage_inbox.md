@@ -6,9 +6,9 @@
 ## Status summary
 
 - Total: 195
-- Triage: 19 | Promoted: 1 | Dismissed: 175 | Snoozed: 0
+- Triage: 18 | Promoted: 1 | Dismissed: 176 | Snoozed: 0
 
-## Top 19 items (severity-sorted)
+## Top 18 items (severity-sorted)
 
 ### Source: architecture (1 item)
 
@@ -107,20 +107,7 @@
   - Internal review of iterate-2026-06-13-runconfig-atomic-writes: update_step reads the 'standalone' flag via _load_or_boo…
   - Promote: `triage_promote.py --id trg-f9f92335 --task-ref EXT:<ref>`
 
-### Source: compliance (2 items)
-
-<a id="trg-60404120"></a>
-- **Compliance: 8 open finding(s)** `id=trg-60404120 | severity=medium | kind=compliance → P2/compliance`
-  - 8 open compliance finding(s): E/E1, E/E2, E/E3, E/E5, E/E?, E/E?, E/E?, H/H2  - E/E1: RTM stale (regen vs snapshot) — f…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-compliance
-    
-    Context: 8 open compliance finding(s): E/E1, E/E2, E/E3, E/E5, E/E?, E/E?, E/E?, H/H2.
-    Dashboard: .shipwright/compliance/dashboard.md
-    Each finding + hint is listed in this item's detail.
-    ```
-  - Promote: `triage_promote.py --id trg-60404120 --task-ref EXT:<ref>`
+### Source: compliance (1 item)
 
 <a id="trg-2dfe762d"></a>
 - **Compliance: 1 open finding(s)** `id=trg-2dfe762d | severity=medium | kind=compliance → P2/compliance`
