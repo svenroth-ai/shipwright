@@ -1,12 +1,12 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-16T20:39:48.683899+00:00
+Generated: 2026-06-16T21:58:22.471386+00:00
 
 ## Requirements Coverage
 
 | Requirement | Title | Priority | Verified By | Tests | Last Verified | Status |
 |-------------|-------|----------|-------------|-------|---------------|--------|
-| [FR-01.01](../../.shipwright/planning/01-adopted/spec.md#fr-0101) | Orchestrate the full Shipwright SDLC pipeline — drives proje... | Must | evt-e3d2949e, evt-b0b9c422, evt-ca7b7d64, evt-7620210f | 225/225 → 1691/1716 | 2026-05-05 (iter) | FAIL |
+| [FR-01.01](../../.shipwright/planning/01-adopted/spec.md#fr-0101) | Orchestrate the full Shipwright SDLC pipeline — drives proje... | Must | evt-e3d2949e, evt-b0b9c422, evt-ca7b7d64, evt-7620210f | 225/225 → 1691/1716 | 2026-05-05 (iter) | COVERED |
 | [FR-01.02](../../.shipwright/planning/01-adopted/spec.md#fr-0102) | Decompose project requirements (IREB) into well-scoped plann... | Must | evt-e3d2949e, evt-b0b9c422, evt-ca7b7d64, evt-7620210f +1 | 225/225 → 140/140 | 2026-05-16 (iter) | COVERED |
 | [FR-01.03](../../.shipwright/planning/01-adopted/spec.md#fr-0103) | AI-assisted deep planning with research, optional interview,... | Must | evt-e3d2949e, evt-ca7b7d64, evt-ddb23fe7 | 225/225 → 13/13 | 2026-05-03 (iter) | COVERED |
 | [FR-01.04](../../.shipwright/planning/01-adopted/spec.md#fr-0104) | Generate UI mockups from IREB specs as standalone HTML scree... | Should | evt-e3d2949e, evt-ca7b7d64, evt-ddb23fe7 | 225/225 → 13/13 | 2026-05-03 (iter) | COVERED |
@@ -30,7 +30,7 @@ Generated: 2026-06-16T20:39:48.683899+00:00
 | fix hook_installer Shape A -> B | iterate | bug | FR-01.11 | 5/5 | 1ddf9ae | 2026-05-03 |
 | suggest_iterate hook quoted-path + Shape A/B upgrade-in-place | iterate | bug | FR-01.13, FR-01.02, FR-01.01 | 249/249 | b24f804 | 2026-05-03 |
 | iterate: adopt scaffolds .env.local with profile + framework keys (ADR-021) | iterate | feature | FR-01.13 | 47/47 | 9953008 | 2026-05-03 |
-| iterate fix: parse_env_file inline-comment stripping + lib copy sync | iterate | fix | FR-01.11 | 53/53 | 1a9c7f4 | 2026-05-03 |
+| iterate fix: parse_env_file inline-comment stripping + lib copy sync | iterate | bug | FR-01.11 | 53/53 | 1a9c7f4 | 2026-05-03 |
 | hooks.json quoting (deferred from ADR-020) | iterate | bug | FR-01.01, FR-01.02, FR-01.03 +10 | 13/13 | 6ca369d | 2026-05-03 |
 | changelog MSYS path-mangling linter | iterate | bug | FR-01.09 | 19/19 | a13fd64 | 2026-05-03 |
 | test plugin: boundary coverage report (campaign iterate-skill-hardening Sub-Iterate D, ADR-027) | iterate | feature | FR-01.06 | 19/19 | 216f8b3 | 2026-05-03 |
@@ -66,10 +66,10 @@ Generated: 2026-06-16T20:39:48.683899+00:00
 | VERIFICATION: bug+change-type — should pass | iterate | bug |  | — | 376c870 | 2026-05-21 |
 | empirical-verification follow-ups: triage_add CLI + Full Suite Runs synthesis + path-canon ALLOWLIST | iterate | change |  | 2621/2621 | d8f3c05 | 2026-05-21 |
 | deterministic render timestamps from max(event.ts) | iterate | bug |  | 34/34 | d325fd6 | 2026-05-21 |
-| Extended g2_stoplist with 13 cross-cutting monorepo scopes; backfilled ADR-054..061 stubs in decision_log.md; regenerated RTM/test-evidence/dashboard | iterate | Clear 5 compliance triage bloat items (G2 stoplist + G3 ADR stubs + 3x artifact-stale) from artifact-polish/empirical-verification campaigns |  | — | c3057ff | 2026-05-22 |
-| Re-aggregated triage_inbox.md; refreshed sbom.md, dashboard.md, test-evidence.md, traceability-matrix.md, change-history.md, session_handoff.md, build_dashboard.md | iterate | Re-aggregate triage inbox to surface SBOM bug cluster (trg-8bc99ae4) and commit regen artifacts |  | — | 69f1498 | 2026-05-22 |
-| Re-aggregated triage_inbox.md; refreshed sbom.md, dashboard.md, test-evidence.md, traceability-matrix.md, change-history.md, session_handoff.md, build_dashboard.md | iterate | Re-aggregate triage inbox to surface SBOM bug cluster (trg-8bc99ae4) and commit regen artifacts |  | — | 69f1498 | 2026-05-22 |
-| mirror_findings_to_triage now scoped to groups_run; --only E no longer dismisses A/B/C/D items | iterate | Fix partial-run audit incorrectly dismissing out-of-scope compliance triage items |  | — | 09fedde | 2026-05-22 |
+| Extended g2_stoplist with 13 cross-cutting monorepo scopes; backfilled ADR-054..061 stubs in decision_log.md; regenerated RTM/test-evidence/dashboard | iterate | change |  | — | c3057ff | 2026-05-22 |
+| Re-aggregated triage_inbox.md; refreshed sbom.md, dashboard.md, test-evidence.md, traceability-matrix.md, change-history.md, session_handoff.md, build_dashboard.md | iterate | change |  | — | 69f1498 | 2026-05-22 |
+| Re-aggregated triage_inbox.md; refreshed sbom.md, dashboard.md, test-evidence.md, traceability-matrix.md, change-history.md, session_handoff.md, build_dashboard.md | iterate | change |  | — | 69f1498 | 2026-05-22 |
+| mirror_findings_to_triage now scoped to groups_run; --only E no longer dismisses A/B/C/D items | iterate | change |  | — | 09fedde | 2026-05-22 |
 | compliance reconciliation: D1 spec-FR coverage — multi-FR event covering FR-01.03/04/05/06/07/08/09/12 (post-2026-05-04 watermark gap; no source/test/spec changes) | iterate | change | FR-01.03, FR-01.04, FR-01.05 +5 | — | 1ca566a | 2026-05-22 |
 | iterate skill F7b: seals tracked event-log appends to prevent silent reset wipe (commit_event_followup.py + SKILL.md + 6 tests) | iterate | change | FR-01.11 | 6/6 | 24d77be | 2026-05-22 |
 | F11 verifier multi-commit-aware via run_id lookup (fixes false positives on iterate-f7-tracked-event-log-commit) | iterate | change | FR-01.11 | 70/70 | c1c8820 | 2026-05-23 |
@@ -144,9 +144,9 @@ Generated: 2026-06-16T20:39:48.683899+00:00
 | Track campaign status.json for compliance-detective-realign + track-triage-jsonl (durable per-sub board on fresh clone / deployed WebUI; stopgap for trg-fda5f7a3). | iterate | change |  | — | — | 2026-06-07 |
 | triage main-tree drift reconcile-and-commit at integrate/sync | iterate | change |  | 2861/2861 | — | 2026-06-07 |
 | scaffold the append-log merge=union .gitattributes driver into managed repos (adopt E.13c + iterate self-heal) | iterate | change |  | 2884/2884 | — | 2026-06-07 |
-| Add .shipwright/triage.outbox.jsonl gitignored buffer; route 3 background producers via should_route_to_outbox; two-pass ts-primary union reader; tracked-only GC. ADR-100 bloat exception. | iterate | Gitignored per-tree triage outbox + reroute background producers + union reader |  | 2913/2913 | 2293a76 | 2026-06-08 |
-| evt-b9b5ddf2 | iterate | Sweep triage outbox into PR branch + abandoned-branch-safe GC; drop integrate_main reconcile |  | 2954/2954 | 005f643 | 2026-06-08 |
-| Real non-mocked empirical harness over the real D2 code + real git: 200 thread + 40 cross-process concurrency trials (multiset zero-loss/zero-dup), abandoned-branch e2e, exactly-once after a real merge, no main pollution; pytest_sessionfinish fails a partial gate. GATE PASS (all 5 methods). | iterate | D2V empirical verification gate — prove the D2 outbox sweep/GC loses no triage line (HARD insurance before D3) |  | 6/6 | 7a31e33 | 2026-06-08 |
+| Add .shipwright/triage.outbox.jsonl gitignored buffer; route 3 background producers via should_route_to_outbox; two-pass ts-primary union reader; tracked-only GC. ADR-100 bloat exception. | iterate | change |  | 2913/2913 | 2293a76 | 2026-06-08 |
+| evt-b9b5ddf2 | iterate | change |  | 2954/2954 | 005f643 | 2026-06-08 |
+| Real non-mocked empirical harness over the real D2 code + real git: 200 thread + 40 cross-process concurrency trials (multiset zero-loss/zero-dup), abandoned-branch e2e, exactly-once after a real merge, no main pollution; pytest_sessionfinish fails a partial gate. GATE PASS (all 5 methods). | iterate | change |  | 6/6 | 7a31e33 | 2026-06-08 |
 | evt-ec8e9621 | iterate | change |  | — | 77cc652 | 2026-06-08 |
 | Relocate phase-quality skill-compliance roll-ups under the gitignored FINDING_DIR; resolve main_repo_root (not cwd) in the bloat marker writer+reader via a shared fail-soft resolver; defensive nested-locks gitignore canon. | iterate | change |  | — | — | 2026-06-08 |
 | Relocate detective-audit JSON from repo root to .shipwright/compliance/audit-report.json; canon re-excludes audit-report.{md,json} (propagates to adopted repos); drop obsolete framework root ignore. | iterate | change |  | — | — | 2026-06-09 |
@@ -223,6 +223,7 @@ Generated: 2026-06-16T20:39:48.683899+00:00
 | tighten bloat baseline for iterate_checks.py (1122->1121) | iterate | change |  | 94/94 | — | 2026-06-15 |
 | Remove development-provenance references (ADRs, iterate IDs, version/campaign stamps) from docs/guide.md so it documents current behavior, not its origin history | iterate | change |  | 85/85 | — | 2026-06-16 |
 | Lead README and guide openings with the brand tagline 'Ship right, not just fast.' and the vibe-coding-to-agentic-engineering positioning | iterate | change |  | 24/24 | — | 2026-06-16 |
+| Compliance-artifact rendering fixes: shared normalize_intent() for the Type column (RTM Verification Timeline + Build Dashboard); skip-aware PASS/COVERED for merged-work passed<total gaps in Test Evidence + RTM (never a gap-driven FAIL); unconditional Audit Report + conditional Activity Dashboard links in the Compliance Dashboard. | iterate | change |  | 701/701 | — | 2026-06-16 |
 
 ## Coverage Summary
 
@@ -230,7 +231,7 @@ Generated: 2026-06-16T20:39:48.683899+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 198 |
+| Iterate changes | 199 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

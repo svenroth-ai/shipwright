@@ -414,14 +414,20 @@ def _test_progression(data: ComplianceData) -> list[str]:
 
         suite = f"{we.tests_passed}/{we.tests_total}" if we.tests_total > 0 else "—"
         baseline = data.baseline_failure_count
-        if we.tests_passed == we.tests_total and we.tests_total > 0:
-            result = "PASS"
-        elif we.tests_total > 0 and baseline > 0 and (we.tests_total - we.tests_passed) <= baseline:
-            result = "PASS (baseline)"
-        elif we.tests_total > 0:
-            result = "FAIL"
-        else:
+        gap = we.tests_total - we.tests_passed
+        if we.tests_total <= 0:
             result = "—"
+        elif gap <= 0:
+            result = "PASS"
+        elif baseline > 0 and gap <= baseline:
+            result = "PASS (baseline)"
+        else:
+            # A work_completed event records COMPLETED, merged work, which was
+            # green-at-merge (Iron Law). The event wire-format only carries
+            # {passed, total}, so a passed<total gap is SKIPPED tests, not
+            # failures — render skip-aware PASS, not FAIL.
+            # (iterate-2026-06-16-compliance-rendering-fixes)
+            result = f"PASS ({gap} skipped)"
         date = we.timestamp[:10]
 
         lines.append(

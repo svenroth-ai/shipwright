@@ -392,6 +392,38 @@ class TestRunIdEmbed:
         assert "Recent Changes" in content  # confirms the event path was taken
 
 
+class TestRecentChangesTypeColumn:
+    """The Recent Changes Type column must render a clean token, never a
+    free-text description leaked into the event ``intent`` field."""
+
+    def test_freetext_intent_collapses_to_change(self, tmp_project):
+        (tmp_project / "shipwright_events.jsonl").write_text(
+            json.dumps({"v": 1, "id": "evt-x", "ts": "2026-05-20T00:00:00Z",
+                        "type": "work_completed", "source": "iterate",
+                        "commit": "abc1234",
+                        "intent": "Clear 5 compliance triage bloat items (G2 stoplist)",
+                        "description": "Some change",
+                        "change_type": "compliance"}) + "\n",
+            encoding="utf-8",
+        )
+        content = generate_dashboard(tmp_project, phase="iterate", session_id="s")
+        recent_block = content.split("## Recent Changes")[1].split("## ")[0]
+        assert "| change | Some change |" in recent_block
+        assert "Clear 5 compliance triage bloat" not in recent_block
+
+    def test_alias_intent_normalized(self, tmp_project):
+        (tmp_project / "shipwright_events.jsonl").write_text(
+            json.dumps({"v": 1, "id": "evt-y", "ts": "2026-05-20T00:00:00Z",
+                        "type": "work_completed", "source": "iterate",
+                        "commit": "def5678", "intent": "fix",
+                        "description": "Some fix"}) + "\n",
+            encoding="utf-8",
+        )
+        content = generate_dashboard(tmp_project, phase="iterate", session_id="s")
+        recent_block = content.split("## Recent Changes")[1].split("## ")[0]
+        assert "| bug | Some fix |" in recent_block
+
+
 class TestFrColumnFallback:
     """The FRs column prefers affected_frs; if absent, it falls back to the
     change_type tag (docs/tooling/compliance/infra) so non-FR iterates show

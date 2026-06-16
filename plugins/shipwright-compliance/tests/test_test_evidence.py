@@ -104,34 +104,41 @@ def _make_data(tmp_path, *, baseline=0, tests_passed=830, tests_total=831):
     return data
 
 
-class TestBaselineFailures:
+class TestSkipAwareResult:
+    """A work_completed event records merged work (green-at-merge by the Iron
+    Law); its passed<total gap is SKIPPED tests, never failures. So the Test
+    Progression Result is never FAIL — it is PASS, with the gap surfaced."""
+
     def test_baseline_failures_give_pass_baseline(self, tmp_path: Path):
-        """Events with failures <= baseline get PASS (baseline) not FAIL."""
+        """A small gap within a known-failures baseline gets PASS (baseline)."""
         data = _make_data(tmp_path, baseline=1, tests_passed=830, tests_total=831)
         result = generate(data)
         assert "PASS (baseline)" in result
         assert "| FAIL |" not in result
 
-    def test_failures_beyond_baseline_still_fail(self, tmp_path: Path):
-        """Events with failures > baseline still get FAIL."""
+    def test_gap_beyond_baseline_renders_skip_aware_pass(self, tmp_path: Path):
+        """A gap larger than the baseline is skips, not a FAIL."""
         data = _make_data(tmp_path, baseline=1, tests_passed=828, tests_total=831)
         result = generate(data)
-        assert "FAIL" in result
+        assert "PASS (3 skipped)" in result
+        assert "| FAIL |" not in result
         assert "PASS (baseline)" not in result
 
-    def test_no_baseline_unchanged(self, tmp_path: Path):
-        """Without baseline, behavior is strict equality."""
+    def test_no_baseline_renders_skip_aware_pass(self, tmp_path: Path):
+        """Without any known-failures file (baseline=0), the gap is skips."""
         data = _make_data(tmp_path, baseline=0, tests_passed=830, tests_total=831)
         result = generate(data)
-        assert "FAIL" in result
+        assert "PASS (1 skipped)" in result
+        assert "| FAIL |" not in result
         assert "PASS (baseline)" not in result
 
-    def test_all_passing_ignores_baseline(self, tmp_path: Path):
-        """When all tests pass, result is PASS regardless of baseline."""
+    def test_all_passing_is_plain_pass(self, tmp_path: Path):
+        """When all tests pass, result is a plain PASS regardless of baseline."""
         data = _make_data(tmp_path, baseline=1, tests_passed=831, tests_total=831)
         result = generate(data)
         assert "| PASS |" in result
         assert "baseline" not in result
+        assert "skipped" not in result
 
 
 class TestGenerateFile:

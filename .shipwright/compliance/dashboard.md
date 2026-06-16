@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-06-16T20:39:48.683899+00:00
+Generated: 2026-06-16T21:58:22.471386+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -9,10 +9,10 @@ Scope: library
 | Metric | Value | Status | Why warn? |
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
-| Work events (iterate) | 198 changes | INFO |  |
-| All unit tests passing | 24/24 | PASS |  |
+| Work events (iterate) | 199 changes | INFO |  |
+| All unit tests passing | 701/701 | PASS |  |
 | Architecture decisions | 225 ADRs | INFO |  |
-| Iterate tests passing | 125/198 iterations tested | WARN | 73 iterate(s) without tests — see test-evidence.md |
+| Iterate tests passing | 126/199 iterations tested | WARN | 73 iterate(s) without tests — see test-evidence.md |
 | Dependencies | 8 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
 | Triage open | 0 open | PASS |  |
@@ -22,7 +22,7 @@ Scope: library
 
 ## Project Velocity
 
-- Iterate: 198 changes (2026-05-02 → 2026-06-16)
+- Iterate: 199 changes (2026-05-02 → 2026-06-16)
 - Last activity: 2026-06-16
 
 ## External LLM Review Evidence
@@ -43,5 +43,7 @@ Scope: library
 | Commit Change Log | [change-history.md](./change-history.md) | Conventional Commits by type |
 | Decision Log | [decision_log.md](../agent_docs/decision_log.md) | Architecture decisions (ADRs) |
 | SBOM | [sbom.md](./sbom.md) | Open-source dependencies + licenses |
+| Audit Report | [audit-report.md](./audit-report.md) | Detective cross-artifact consistency audit |
+| Activity Dashboard | [build_dashboard.md](../agent_docs/build_dashboard.md) | Per-event change history + pipeline status |
 | Changelog | [CHANGELOG.md](../../CHANGELOG.md) | Release notes |
 

@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-16T20:39:48.683899+00:00
-Total commits: 1016
+Generated: 2026-06-16T21:58:22.471386+00:00
+Total commits: 1017
 
 ## Commit Distribution
 
@@ -10,7 +10,7 @@ pie title Commit Types
     "fix" : 290
     "feat" : 273
     "chore" : 223
-    "docs" : 130
+    "docs" : 131
     "refactor" : 61
     "test" : 24
     "ci" : 7
@@ -821,10 +821,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 130 commits
+### Documentation (docs) — 131 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-16 | — | lead README and guide openings with the brand tagline (#257) | f15b00bd432b |
 | 2026-06-16 | guide | remove development-provenance references (#256) | b6b5e8a4c8de |
 | 2026-06-14 | iterate | document interleaved-serial campaign run-model in guide (#247) | 767473d8ad21 |
 | 2026-06-13 | hooks-and-pipeline | reconcile hooks.json format, registry & outbox matrix to shipped reality (audit-3 WP11a) (#232) | 8fe2d61eccfb |
@@ -1085,7 +1086,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1016 |
+| Total commits | 1017 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1016 |
+| Human-authored commits | 1017 |
 

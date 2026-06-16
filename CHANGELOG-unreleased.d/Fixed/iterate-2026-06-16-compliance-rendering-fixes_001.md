@@ -1,0 +1,1 @@
+Compliance Traceability Matrix and Build Dashboard no longer render a free-text description in the Type column — a shared intent-normalizer collapses leaked/legacy intents to a clean token (and maps git conventional-commit types in adopted repos).
