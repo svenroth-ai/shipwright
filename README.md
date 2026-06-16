@@ -1,9 +1,11 @@
 # Shipwright SDLC
 
+> ### Ship right, not just fast.
+
 ![Status](https://img.shields.io/badge/status-early--access--beta-orange)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-**Shipwright is the harness around your AI coding workflow.** Specs, Tests, Architectural Decisions, Living Traceability, and Compliance artifacts that turn AI velocity into shippable software. Not a stack framework; not autonomous codegen — the discipline layer that makes the rest reliable.
+**Shipwright is the harness around your AI coding workflow — it turns vibe coding into agentic engineering you can trust.** Specs, Tests, Architectural Decisions, Living Traceability, and Compliance artifacts that turn AI velocity into shippable software. Not a stack framework; not autonomous codegen — the discipline layer that makes the rest reliable.
 
 > **Sidenote.** What Shipwright builds, the wider AI engineering field is starting to call *harness engineering* (Martin Fowler, 2026). Shipwright is your harness.
 

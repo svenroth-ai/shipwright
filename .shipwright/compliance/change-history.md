@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-06-16T20:12:09.635271+00:00
+Generated: 2026-06-16T20:39:48.683899+00:00
 Total commits: 1016
 
 ## Commit Distribution
@@ -9,8 +9,8 @@ Total commits: 1016
 pie title Commit Types
     "fix" : 290
     "feat" : 273
-    "chore" : 224
-    "docs" : 129
+    "chore" : 223
+    "docs" : 130
     "refactor" : 61
     "test" : 24
     "ci" : 7
@@ -593,11 +593,10 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 224 commits
+### Chores (chore) — 223 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-16 | triage | sweep 1 outbox append(s) into branch | e5b3c84b788d |
 | 2026-06-15 | release | v0.28.0 (#255) | a41273a671a6 |
 | 2026-06-15 | compliance | tighten bloat baseline for iterate_checks.py to actual LOC (#254) | 244471c0a964 |
 | 2026-06-14 | release | v0.27.0 (#249) | cacfa87f2529 |
@@ -822,10 +821,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 129 commits
+### Documentation (docs) — 130 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-16 | guide | remove development-provenance references (#256) | b6b5e8a4c8de |
 | 2026-06-14 | iterate | document interleaved-serial campaign run-model in guide (#247) | 767473d8ad21 |
 | 2026-06-13 | hooks-and-pipeline | reconcile hooks.json format, registry & outbox matrix to shipped reality (audit-3 WP11a) (#232) | 8fe2d61eccfb |
 | 2026-06-13 | skills | sync 6 stale SKILL.md/code/config items to the corrected guide (#231) | c2b6a2aa27c8 |
