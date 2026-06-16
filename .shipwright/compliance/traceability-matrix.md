@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-15T19:44:59.332134+00:00
+Generated: 2026-06-16T20:12:09.635271+00:00
 
 ## Requirements Coverage
 
@@ -221,6 +221,7 @@ Generated: 2026-06-15T19:44:59.332134+00:00
 | Repo-agnostic agent-doc entry-budget gate (lib.agent_doc_budget + check_agent_doc_budget.py + F11 verifier check), closed the run-id-slug date hole, fixed the blank-line ADR writer, and compacted/de-bolded architecture.md + conventions.md. | iterate | change |  | — | — | 2026-06-14 |
 | SessionStart phase-quality consumer drops sentinel-run (run_id unknown) FAILs from a stale findings digest and caps AFTER filtering; raw parser left uncapped. Defense-in-depth mirroring load_actionable_findings. | iterate | change |  | — | — | 2026-06-15 |
 | tighten bloat baseline for iterate_checks.py (1122->1121) | iterate | change |  | 94/94 | — | 2026-06-15 |
+| Remove development-provenance references (ADRs, iterate IDs, version/campaign stamps) from docs/guide.md so it documents current behavior, not its origin history | iterate | change |  | 85/85 | — | 2026-06-16 |
 
 ## Coverage Summary
 
@@ -228,7 +229,7 @@ Generated: 2026-06-15T19:44:59.332134+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 196 |
+| Iterate changes | 197 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

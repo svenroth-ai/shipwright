@@ -1,0 +1,9 @@
+{
+  "run_id": "iterate-2026-06-16-guide-remove-provenance-refs",
+  "date": "2026-06-16T20:12:41.330694Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/guide-remove-provenance-refs",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-16-guide-remove-provenance-refs"
+}

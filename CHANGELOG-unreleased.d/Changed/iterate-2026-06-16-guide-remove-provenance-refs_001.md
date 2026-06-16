@@ -1,0 +1,1 @@
+Documentation: removed development-provenance references (ADR numbers, dated iterate IDs, internal campaign/plan labels, version-introduced stamps) from docs/guide.md so the guide documents current behavior rather than its development history.

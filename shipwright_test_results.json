@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-15-tighten-bloat-baseline",
-    "date": "2026-06-15",
+    "run_id": "iterate-2026-06-16-guide-remove-provenance-refs",
+    "date": "2026-06-16",
     "unit": {
       "status": "passed",
-      "passed": 94,
-      "total": 94
+      "passed": 85,
+      "total": 85
     },
     "integration": {
       "status": "skipped",
@@ -30,10 +30,36 @@
     "smoke": {
       "status": "not_run"
     },
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "justification": "Documentation-only edit of docs/guide.md (provenance-reference removal). No user-experienceable surface (web/cli/api) is touched."
+    },
     "degraded": [],
     "test_completeness": {
-      "status": "n/a",
-      "justification": "Trivial data-only change: one integer in shipwright_bloat_baseline.json (1122->1121). Introduces no new testable behavior; the anti-ratchet + Group-H2 logic consuming the entry is covered by 94 passing tests re-run at F0."
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "docs/guide.md retains its load-bearing documented invariants after provenance removal (Simplify sub-mode description, behavior_snapshot.py reference, 'fewer lines is not the goal' principle, reducibility unification note)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_f_simplify_routing.py (15 passed) + shared/tests/test_simplify_reducibility_unify.py PASSED"
+        },
+        {
+          "behavior": "docs/guide.md introduces no legacy artifact-path references",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_artifact_path_canon.py PASSED (70 passed in suite run)"
+        }
+      ],
+      "counts": {
+        "testable": 2,
+        "tested": 2,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 2,
+        "covered_acs": 2
+      }
     }
   }
 }
