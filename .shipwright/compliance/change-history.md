@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-15T19:44:59.332134+00:00
-Total commits: 1014
+Generated: 2026-06-16T20:12:09.635271+00:00
+Total commits: 1016
 
 ## Commit Distribution
 
@@ -9,7 +9,7 @@ Total commits: 1014
 pie title Commit Types
     "fix" : 290
     "feat" : 273
-    "chore" : 222
+    "chore" : 224
     "docs" : 129
     "refactor" : 61
     "test" : 24
@@ -593,11 +593,13 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 222 commits
+### Chores (chore) — 224 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-15 | triage | sweep 92 outbox append(s) into branch | 582897b6bd15 |
+| 2026-06-16 | triage | sweep 1 outbox append(s) into branch | e5b3c84b788d |
+| 2026-06-15 | release | v0.28.0 (#255) | a41273a671a6 |
+| 2026-06-15 | compliance | tighten bloat baseline for iterate_checks.py to actual LOC (#254) | 244471c0a964 |
 | 2026-06-14 | release | v0.27.0 (#249) | cacfa87f2529 |
 | 2026-06-14 | compliance | tighten bloat baseline for autonomous_loop.py (440 to 436) (#248) | 8cf799228041 |
 | 2026-06-14 | triage | fold 6 main-tree background append(s) | 82ab46c464d2 |
@@ -1083,7 +1085,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1014 |
+| Total commits | 1016 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1014 |
+| Human-authored commits | 1016 |
 
