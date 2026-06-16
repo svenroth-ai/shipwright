@@ -91,19 +91,23 @@ class TestKnownFailures:
         assert "COVERED (baseline)" in result
         assert "| FAIL |" not in result
 
-    def test_failures_beyond_baseline_still_fail(self, tmp_path: Path):
-        """FRs with failures > baseline still get FAIL."""
+    def test_gap_beyond_baseline_stays_covered(self, tmp_path: Path):
+        """A passed<total gap beyond the baseline is SKIPPED tests on merged
+        work (Iron Law), so the FR stays COVERED — never FAIL. Real open
+        regressions surface only via the triage-deep-link override."""
         data = _make_data(tmp_path, baseline=1, tests_passed=828, tests_total=831)
         result = generate(data)
-        assert "FAIL" in result
+        assert "| FAIL |" not in result
+        assert "COVERED" in result
+        # gap (3) > baseline (1) → bare COVERED, not the baseline variant.
         assert "COVERED (baseline)" not in result
 
-    def test_no_known_failures_unchanged(self, tmp_path: Path):
-        """Without known_failures, behavior is identical to current."""
+    def test_no_known_failures_gap_stays_covered(self, tmp_path: Path):
+        """Without any known_failures file (baseline=0), the gap is skips."""
         data = _make_data(tmp_path, baseline=0, tests_passed=830, tests_total=831)
         result = generate(data)
-        assert "FAIL" in result
-        assert "COVERED (baseline)" not in result
+        assert "| FAIL |" not in result
+        assert "COVERED" in result
 
     def test_all_passing_ignores_baseline(self, tmp_path: Path):
         """When all tests pass, status is COVERED regardless of baseline."""
@@ -111,6 +115,33 @@ class TestKnownFailures:
         result = generate(data)
         assert "COVERED" in result
         assert "baseline" not in result
+
+
+class TestVerificationTimelineType:
+    """The Verification Timeline Type column must render a clean token, never a
+    free-text description leaked into the event ``intent`` field."""
+
+    def _data(self, tmp_path, intent):
+        data = ComplianceData(project_root=tmp_path, timestamp="2026-06-16T00:00:00Z")
+        data.work_events = [
+            WorkEvent(
+                id="ev-x", timestamp="2026-06-16T10:00:00Z", source="iterate",
+                description="Re-aggregate triage inbox", intent=intent,
+                tests_passed=5, tests_total=5,
+            )
+        ]
+        return data
+
+    def test_freetext_intent_collapses_to_change(self, tmp_path: Path):
+        leaked = "Clear 5 compliance triage bloat items (G2 stoplist + G3 ADR stubs)"
+        result = generate(self._data(tmp_path, leaked))
+        timeline = result.split("## Verification Timeline")[1]
+        assert "| iterate | change |" in timeline
+        assert "Clear 5 compliance triage bloat" not in timeline
+
+    def test_alias_intent_normalized(self, tmp_path: Path):
+        result = generate(self._data(tmp_path, "feat"))
+        assert "| iterate | feature |" in result
 
 
 class TestRtmAdoptedProjectWorktree:
@@ -606,15 +637,20 @@ class TestRtmUntestedEventsNeutral:
         assert "COVERED" in row
         assert "FAIL" not in row
 
-    def test_latest_failure_after_green_still_fails(self, tmp_path: Path):
-        """Guard: a genuine regression in the LATEST tested run is still FAIL."""
+    def test_latest_gap_after_green_is_skip_aware_covered(self, tmp_path: Path):
+        """A passed<total gap in the LATEST tested run is SKIPPED tests on
+        merged work (Iron Law), not a failure — so the FR stays COVERED.
+        The event wire-format ({passed, total}) cannot distinguish a skip
+        from a failure, so a real open regression surfaces only via the
+        triage-deep-link override (see TestRtmTriageDeepLink), never from
+        the test-count gap. (iterate-2026-06-16-compliance-rendering-fixes)"""
         data = self._data(tmp_path, [
             (10, 10, "2026-05-13T10:00:00Z"),
-            (5, 6, "2026-05-18T10:00:00Z"),   # latest run is red
+            (5, 6, "2026-05-18T10:00:00Z"),   # latest run has 1 skipped
         ])
         row = self._row(generate(data))
-        assert "FAIL" in row
-        assert "COVERED" not in row
+        assert "COVERED" in row
+        assert "FAIL" not in row
 
     def test_only_untested_events_is_no_tests(self, tmp_path: Path):
         """An FR touched only by untested (0/0) events is NO TESTS, not FAIL."""

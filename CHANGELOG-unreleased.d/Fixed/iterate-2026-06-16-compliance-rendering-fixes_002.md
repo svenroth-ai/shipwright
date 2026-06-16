@@ -1,0 +1,1 @@
+Test Evidence and the Traceability Matrix per-FR status no longer false-FAIL on merged-iterate test runs that skipped tests: a completed-work passed<total gap now renders skip-aware PASS / COVERED (real regressions still surface via the open-triage deep link).

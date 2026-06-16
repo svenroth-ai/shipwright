@@ -179,14 +179,14 @@
     {
       "path": "plugins/shipwright-compliance/scripts/lib/compliance_report.py",
       "limit": 300,
-      "current": 405,
+      "current": 413,
       "state": "grandfathered",
       "adr": null
     },
     {
       "path": "plugins/shipwright-compliance/scripts/lib/rtm_generator.py",
       "limit": 300,
-      "current": 801,
+      "current": 808,
       "state": "grandfathered",
       "adr": null
     },
@@ -200,7 +200,7 @@
     {
       "path": "plugins/shipwright-compliance/scripts/lib/test_evidence.py",
       "limit": 300,
-      "current": 920,
+      "current": 926,
       "state": "grandfathered",
       "adr": null
     },
@@ -249,7 +249,7 @@
     {
       "path": "plugins/shipwright-compliance/tests/test_compliance_report.py",
       "limit": 300,
-      "current": 333,
+      "current": 347,
       "state": "grandfathered",
       "adr": null
     },
@@ -263,7 +263,7 @@
     {
       "path": "plugins/shipwright-compliance/tests/test_rtm_generator.py",
       "limit": 300,
-      "current": 656,
+      "current": 692,
       "state": "exception",
       "adr": "ADR-092"
     },
@@ -277,7 +277,7 @@
     {
       "path": "plugins/shipwright-compliance/tests/test_test_evidence.py",
       "limit": 300,
-      "current": 568,
+      "current": 575,
       "state": "grandfathered",
       "adr": null
     },
@@ -606,7 +606,7 @@
     {
       "path": "shared/scripts/tests/test_build_dashboard.py",
       "limit": 300,
-      "current": 440,
+      "current": 472,
       "state": "grandfathered",
       "adr": null
     },
@@ -683,7 +683,7 @@
     {
       "path": "shared/scripts/tools/update_build_dashboard.py",
       "limit": 300,
-      "current": 488,
+      "current": 492,
       "state": "grandfathered",
       "adr": null
     },

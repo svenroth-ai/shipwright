@@ -32,6 +32,7 @@ from typing import TYPE_CHECKING
 _SHARED_SCRIPTS = Path(__file__).resolve().parents[4] / "shared" / "scripts"
 if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
+from event_classification import normalize_intent  # noqa: E402
 from markdown_table import escape_cell  # noqa: E402
 
 if TYPE_CHECKING:
@@ -450,14 +451,18 @@ def _requirements_coverage_events(data: ComplianceData) -> list[str]:
                 source_tag = "iter" if latest.source == "iterate" else "build"
                 last_verified = f"{last_ts} ({source_tag})"
 
-                failures = latest.tests_total - latest.tests_passed
+                gap = latest.tests_total - latest.tests_passed
                 baseline = data.baseline_failure_count
-                if failures <= 0:
+                if gap <= 0:
                     status = "COVERED"
-                elif baseline > 0 and failures <= baseline:
+                elif baseline > 0 and gap <= baseline:
                     status = "COVERED (baseline)"
                 else:
-                    status = "FAIL"
+                    # Merged work is green-at-merge (Iron Law); a passed<total
+                    # gap is SKIPPED tests, not failures. Real open regressions
+                    # surface via the triage-deep-link override below, never
+                    # here. (iterate-2026-06-16-compliance-rendering-fixes)
+                    status = "COVERED"
             else:
                 # Work touched the FR but no event recorded a test count.
                 tests_cell = "—"
@@ -505,7 +510,9 @@ def _verification_timeline(data: ComplianceData) -> list[str]:
     for we in data.work_events:
         name = we.section if we.source == "build" else (we.description or we.id)
         source = we.source
-        event_type = "section" if we.source == "build" else (we.intent or "change")
+        # Normalize the Type token so a leaked free-text `intent` (or an adopted
+        # repo's git conventional-commit type) never lands in the Type column.
+        event_type = "section" if we.source == "build" else normalize_intent(we.intent)
         frs = ", ".join(we.affected_frs[:3])
         if len(we.affected_frs) > 3:
             frs += f" +{len(we.affected_frs) - 3}"

@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-16-brand-tagline-opening",
+    "run_id": "iterate-2026-06-16-compliance-rendering-fixes",
     "date": "2026-06-16",
     "unit": {
       "status": "passed",
-      "passed": 24,
-      "total": 24
+      "passed": 701,
+      "total": 701
     },
     "integration": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 163,
+      "total": 163
     },
     "pgtap": {
       "status": "not_run",
@@ -33,32 +33,75 @@
     "surface_verification": {
       "surface": "none",
       "tests_run": 0,
-      "justification": "Documentation-only edit of README.md + docs/guide.md openings (brand tagline + agentic-engineering framing). No user-experienceable surface (web/cli/api) is touched."
+      "justification": "Library/tooling change to compliance report GENERATORS (rtm/test-evidence/dashboard/build-dashboard) + a new shared pure helper. No user-experienceable surface (web/cli/api) is touched; verified via unit suites + deterministic regeneration of the artifacts in this repo."
     },
-    "degraded": [],
+    "degraded": [
+      "external LLM review unavailable (no OPENROUTER/GEMINI/OPENAI key) -> Claude-only full code review (review_type: full-review)"
+    ],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "README.md + docs/guide.md openings gain the brand tagline and agentic-engineering framing without breaking the guide's documented invariants (Simplify sub-mode strings, behavior_snapshot.py reference, reducibility unification note)",
+          "behavior": "normalize_intent keeps canonical tokens, aliases feat->feature/fix->bug, keeps other single short tokens, collapses free-text/empty/over-long -> default",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-iterate/tests/test_f_simplify_routing.py (15 passed) + shared/tests/test_simplify_reducibility_unify.py PASSED"
+          "evidence": "shared/scripts/tests/test_event_classification.py (19 passed)"
         },
         {
-          "behavior": "the additive doc edits introduce no legacy artifact-path references",
+          "behavior": "RTM Verification Timeline Type column renders a normalized token (leaked description -> 'change', alias -> canonical)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_artifact_path_canon.py PASSED"
+          "evidence": "plugins/shipwright-compliance/tests/test_rtm_generator.py::TestVerificationTimelineType"
+        },
+        {
+          "behavior": "Build Dashboard Recent-Changes Type column renders a normalized token",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tests/test_build_dashboard.py::TestRecentChangesTypeColumn"
+        },
+        {
+          "behavior": "Test-Evidence Test Progression renders skip-aware PASS (never FAIL) for a merged-work passed<total gap",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_test_evidence.py::TestSkipAwareResult"
+        },
+        {
+          "behavior": "RTM per-FR status renders COVERED (never gap-driven FAIL) for a merged-work passed<total gap",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_rtm_generator.py::TestKnownFailures + TestRtmUntestedEventsNeutral::test_latest_gap_after_green_is_skip_aware_covered"
+        },
+        {
+          "behavior": "PASS (baseline)/COVERED (baseline) path preserved when a known-failures baseline exists",
+          "disposition": "tested",
+          "evidence": "test_test_evidence.py::TestSkipAwareResult::test_baseline_failures_give_pass_baseline + test_rtm_generator.py::TestKnownFailures::test_baseline_failures_give_covered_baseline"
+        },
+        {
+          "behavior": "Real open regressions still surface via the triage-deep-link override (unchanged)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_rtm_generator.py::TestRtmTriageDeepLink (unchanged, still green)"
+        },
+        {
+          "behavior": "Compliance Dashboard links Audit Report unconditionally and Activity Dashboard conditionally",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_compliance_report.py::test_audit_report_always_linked + test_activity_dashboard_linked_when_present"
+        },
+        {
+          "behavior": "Monorepo compliance artifacts regenerate clean (0 gap-driven FAILs, 0 free-text Type cells, audit-report link present)",
+          "disposition": "tested",
+          "evidence": "manual deterministic regeneration verified: test-evidence FAIL count 0; RTM Type column clean; dashboard Compliance Artifacts table includes Audit Report + Activity Dashboard"
+        },
+        {
+          "behavior": "WebUI compliance artifacts regenerate clean (same cached generators)",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "note": "separate git repo (shipwright-webui); verified by inspection in the paired webui regeneration after cache-sync"
         }
       ],
       "counts": {
-        "testable": 2,
-        "tested": 2,
-        "untestable": 0,
+        "testable": 9,
+        "tested": 9,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 2,
-        "covered_acs": 2
+        "acs": 3,
+        "covered_acs": 3
       }
     }
   }

@@ -110,7 +110,15 @@ def generate(data: ComplianceData) -> str:
         "| Commit Change Log | [change-history.md](./change-history.md) | Conventional Commits by type |",
         "| Decision Log | [decision_log.md](../agent_docs/decision_log.md) | Architecture decisions (ADRs) |",
         "| SBOM | [sbom.md](./sbom.md) | Open-source dependencies + licenses |",
+        # Audit report linked unconditionally (like the rows above): it is
+        # gitignored/transient, so a conditional link would flip-flop in the
+        # committed dashboard. (iterate-2026-06-16-compliance-rendering-fixes)
+        "| Audit Report | [audit-report.md](./audit-report.md) | Detective cross-artifact consistency audit |",
     ]
+    # Activity / build dashboard (per-event change + pipeline view). Tracked, so
+    # conditional-on-existence is stable (no flip-flop).
+    if (data.project_root / ".shipwright" / "agent_docs" / "build_dashboard.md").exists():
+        artifact_rows.append("| Activity Dashboard | [build_dashboard.md](../agent_docs/build_dashboard.md) | Per-event change history + pipeline status |")
     # Event log
     # NOTE: Reports now live at .shipwright/compliance/<file>.md (2-deep), so links
     # to project-root files use ../../ instead of ../. Sibling links under

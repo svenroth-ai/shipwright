@@ -1,9 +1,0 @@
-{
-  "run_id": "iterate-2026-06-12-utf8-churn-merge",
-  "date": "2026-06-12T06:45:16.536305Z",
-  "type": "bug",
-  "complexity": "small",
-  "branch": "iterate/audit1-utf8-churn-merge",
-  "tests_passed": true,
-  "adr": "iterate-2026-06-12-utf8-churn-merge"
-}

@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from lib.config import collect_all_build_sections, read_config, read_events
 from lib.events_log import latest_event_dt
+from event_classification import normalize_intent
 from markdown_table import escape_cell
 
 
@@ -338,7 +339,10 @@ def _generate_from_events(project_root: Path, session_id: str | None = None,
             "|------|-------------|-------|--------|-----|------|",
         ])
         for we in reversed(iterate_events):
-            intent = we.get("intent", "change")
+            # Normalize the Type token: a handful of historical events leaked a
+            # free-text description into `intent`; adopted repos seed it from git
+            # conventional-commit types. See shared/scripts/event_classification.
+            intent = normalize_intent(we.get("intent"))
             desc = we.get("description", "—")
             tests = we.get("tests", {})
             new_str = f"+{tests.get('new', 0)} new, " if tests.get("new") else ""

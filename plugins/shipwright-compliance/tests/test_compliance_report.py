@@ -50,6 +50,20 @@ class TestGenerate:
         assert "./change-history.md" in result
         assert "./sbom.md" in result
 
+    def test_audit_report_always_linked(self, project_root: Path):
+        # The audit report is gitignored/transient, so the link is rendered
+        # unconditionally (deterministic, no flip-flop) — present even when the
+        # fixture has not generated audit-report.md.
+        result = generate(collect_all(project_root))
+        assert "| Audit Report | [audit-report.md](./audit-report.md) |" in result
+
+    def test_activity_dashboard_linked_when_present(self, project_root: Path):
+        (project_root / ".shipwright" / "agent_docs" / "build_dashboard.md").write_text(
+            "# activity", encoding="utf-8"
+        )
+        result = generate(collect_all(project_root))
+        assert "[build_dashboard.md](../agent_docs/build_dashboard.md)" in result
+
     def test_no_traceability_overview(self, project_root: Path):
         data = collect_all(project_root)
         result = generate(data)
