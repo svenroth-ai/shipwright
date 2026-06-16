@@ -1,5 +1,7 @@
 # Shipwright -- The AI-Powered SDLC for Claude Code
 
+> **Ship right, not just fast.** — the harness that turns vibe coding into agentic engineering you can trust.
+
 ## 1. What is Shipwright?
 
 ### The Problem

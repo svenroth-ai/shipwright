@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-16-guide-remove-provenance-refs",
+    "run_id": "iterate-2026-06-16-brand-tagline-opening",
     "date": "2026-06-16",
     "unit": {
       "status": "passed",
-      "passed": 85,
-      "total": 85
+      "passed": 24,
+      "total": 24
     },
     "integration": {
       "status": "skipped",
@@ -33,21 +33,21 @@
     "surface_verification": {
       "surface": "none",
       "tests_run": 0,
-      "justification": "Documentation-only edit of docs/guide.md (provenance-reference removal). No user-experienceable surface (web/cli/api) is touched."
+      "justification": "Documentation-only edit of README.md + docs/guide.md openings (brand tagline + agentic-engineering framing). No user-experienceable surface (web/cli/api) is touched."
     },
     "degraded": [],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "docs/guide.md retains its load-bearing documented invariants after provenance removal (Simplify sub-mode description, behavior_snapshot.py reference, 'fewer lines is not the goal' principle, reducibility unification note)",
+          "behavior": "README.md + docs/guide.md openings gain the brand tagline and agentic-engineering framing without breaking the guide's documented invariants (Simplify sub-mode strings, behavior_snapshot.py reference, reducibility unification note)",
           "disposition": "tested",
           "evidence": "plugins/shipwright-iterate/tests/test_f_simplify_routing.py (15 passed) + shared/tests/test_simplify_reducibility_unify.py PASSED"
         },
         {
-          "behavior": "docs/guide.md introduces no legacy artifact-path references",
+          "behavior": "the additive doc edits introduce no legacy artifact-path references",
           "disposition": "tested",
-          "evidence": "shared/tests/test_artifact_path_canon.py PASSED (70 passed in suite run)"
+          "evidence": "shared/tests/test_artifact_path_canon.py PASSED"
         }
       ],
       "counts": {

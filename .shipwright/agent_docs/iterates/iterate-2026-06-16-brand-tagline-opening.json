@@ -1,0 +1,9 @@
+{
+  "run_id": "iterate-2026-06-16-brand-tagline-opening",
+  "date": "2026-06-16T20:40:00.096011Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/brand-tagline-opening",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-16-brand-tagline-opening"
+}

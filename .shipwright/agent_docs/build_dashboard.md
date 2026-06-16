@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-16 20:12 UTC | Session: 44a9cd49-1896-4ee5-8591-ed918170e8e0 | Run: iterate-2026-06-16-guide-remove-provenance-refs
+> Updated: 2026-06-16 20:39 UTC | Session: 44a9cd49-1896-4ee5-8591-ed918170e8e0 | Run: iterate-2026-06-16-brand-tagline-opening
 
-## Recent Changes (197 iterations)
+## Recent Changes (198 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Lead README and guide openings with the brand tagline 'Ship right, not just fast.' and the vibe-coding-to-agentic-engineering positioning | 24/24 |  | docs | 2026-06-16 |
 | change | Remove development-provenance references (ADRs, iterate IDs, version/campaign stamps) from docs/guide.md so it documents current behavior, not its origin history | 85/85 |  | docs | 2026-06-16 |
 | change | tighten bloat baseline for iterate_checks.py (1122->1121) | 94/94 |  | compliance | 2026-06-15 |
 | change | SessionStart phase-quality consumer drops sentinel-run (run_id unknown) FAILs from a stale findings digest and caps AFTER filtering; raw parser left uncapped. Defense-in-depth mirroring load_actionable_findings. | 0/0 |  | tooling | 2026-06-15 |
@@ -204,7 +205,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-16 | Unit: 85/85 | Smoke: not_run | (iterate)
+Last run: 2026-06-16 | Unit: 24/24 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
