@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-17-launch-version-branding",
+    "run_id": "iterate-2026-06-17-launch-pii-scrub",
     "date": "2026-06-17",
     "unit": {
       "status": "passed",
-      "passed": 28,
-      "total": 29
+      "passed": 20,
+      "total": 20
     },
     "integration": {
       "status": "not_run",
@@ -33,37 +33,42 @@
     "surface_verification": {
       "surface": "none",
       "tests_run": 0,
-      "justification": "Version-metadata + documentation/branding edits only; no user-experienceable surface (web/cli/api) and no functional code touched. Verified via ruff lint, sync_check version parity, the plugin-cache-sync + artifact-path-canon suites, and the F0 isolation leak-guard. Full monorepo suite runs as the authoritative gate on the PR (watched to green before merge)."
+      "justification": "Hygiene scrub of tracked content (planning docs, an installer comment, a test fixture string, and the triage backlog log) — no user-experienceable surface (web/cli/api) and no functional code behavior touched. Verified via ruff, the installer shell-test suite (incl. the spaced-path tokenization regression), artifact-path-canon, JSONL validity of triage.jsonl, and the F0 isolation leak-guard. Full monorepo suite runs as the authoritative gate on the PR."
     },
     "degraded": [],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "All plugin manifest + marketplace versions are mutually consistent at 0.29.0 (one number everywhere)",
+          "behavior": "Installer alias still tokenizes a space-containing REPO_ROOT into single --plugin-dir args after the fixture path was de-PII'd (kept a space)",
           "disposition": "tested",
-          "evidence": "shared/scripts/sync_check.py -> [ OK ] Versions (all 13 plugins in sync); shared/tests/test_plugin_cache_sync.py PASSED"
+          "evidence": "shared/tests/test_installer_shell_scripts.py::test_f36_emitted_alias_survives_spaced_repo_root PASSED (16 tests green)"
         },
         {
-          "behavior": "Public docs (README badge+banner, SECURITY, CONTRIBUTING) carry a consistent 'Beta' label and introduce no dead/legacy artifact paths",
+          "behavior": "triage.jsonl remains valid JSONL after the in-place path scrub (every line still parses)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_artifact_path_canon.py PASSED; git grep 'Early Access' confirms only out-of-scope CI comment + internal migration note remain"
+          "evidence": "in-place json.loads validation over all lines during the scrub; git diff shows only the 3 PII-bearing lines changed"
         },
         {
-          "behavior": "docs/guide.md no longer links to the gitignored Spec/external-frameworks-integration.md (no permanent dead links once public)",
+          "behavior": "No machine-local path / PII (Windows user-home, company name, maintainer email) remains in tracked files",
           "disposition": "tested",
-          "evidence": "git grep 'Spec/' docs/guide.md returns empty after edit"
+          "evidence": "git grep for the user-home path, company name, and maintainer email patterns across tracked files (excl. gitignored Spec/) returns empty; the only remaining maintainer-name hits are intentional LICENSE/author attribution"
+        },
+        {
+          "behavior": "Generated/tracked artifact paths stay canonical (no bare legacy paths) after the scrub",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_artifact_path_canon.py PASSED"
         }
       ],
       "counts": {
-        "testable": 3,
-        "tested": 3,
+        "testable": 4,
+        "tested": 4,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 3,
-        "covered_acs": 3
+        "acs": 4,
+        "covered_acs": 4
       }
     }
   }

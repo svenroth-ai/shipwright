@@ -182,7 +182,7 @@ def test_f36_emitted_alias_survives_spaced_repo_root():
     m = re.search(r'(ALIAS_BLOCK="\n.*?\n")', src, flags=re.DOTALL)
     assert m, "could not extract ALIAS_BLOCK assignment"
     probe = (
-        'REPO_ROOT="/tmp/dinovo GmbH/Sven Roth/shipwright"\n'
+        'REPO_ROOT="/tmp/Program Files/My Projects/shipwright"\n'
         + m.group(1) + "\n"
         + 'claude() { for a in "$@"; do printf "ARG:%s\\n" "$a"; done; }\n'
         + 'eval "$ALIAS_BLOCK"\nshipwright\n'
@@ -196,7 +196,7 @@ def test_f36_emitted_alias_survives_spaced_repo_root():
         f"expected {len(PLUGIN_NAMES)}\nall args={args!r}"
     )
     for pd in plugin_dirs:
-        assert pd.startswith("/tmp/dinovo GmbH/Sven Roth/shipwright/plugins/shipwright-"), (
+        assert pd.startswith("/tmp/Program Files/My Projects/shipwright/plugins/shipwright-"), (
             f"plugin-dir path was split on a space: {pd!r}"
         )
 
