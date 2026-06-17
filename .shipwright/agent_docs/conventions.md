@@ -255,3 +255,5 @@ Contribution rules, dev setup, the graduated trust model, and high-sensitivity a
 - **ADR-190** (2026-06-12): Triage tooling hardening: GC token SSoT, GC TOCTOU, control-char sanitizer, outbox CLI
 - **ADR-192** (2026-06-12): UTF-8-strict churn _git + structured commit-failure handling
 - **ADR-222** (2026-06-14): Hook fan-out deduped via once-per-event guard + session-state phase resolver
+- **ADR-227** (2026-06-16): Skip-aware compliance rendering + centralized intent normalization
+- **ADR-230** (2026-06-17): Unify all plugin/marketplace versions to 0.29.0; relabel Early Access Beta to Beta
