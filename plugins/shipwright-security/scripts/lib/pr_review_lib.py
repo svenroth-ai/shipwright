@@ -13,8 +13,10 @@ import json
 from pathlib import Path
 
 # A diff larger than this is reviewed on a truncated copy. A truncated (partial)
-# review must NOT auto-BLOCK (we never saw the whole change) — it downgrades to
-# comment-state + a warning + exit 0 so a human notices. See B4.5 error-behavior.
+# review FAILS CLOSED (we never saw the whole change): for a required gate on an
+# untrusted PR the reviewer forces a request-changes state + non-zero exit (needs
+# human) so a large diff cannot bypass review by size. See B4.5 error-behavior +
+# iterate-2026-06-17-pr-review-truncation-failclosed (was: comment-state + exit 0).
 MAX_DIFF_CHARS = 200_000
 
 EXIT_OK = 0
@@ -143,8 +145,9 @@ def render_comment(review: dict, *, model: str, truncated: bool) -> str:
     if truncated:
         lines += [
             f"> ⚠️ **Diff truncated** at {MAX_DIFF_CHARS:,} characters — this review is "
-            "**partial**. The check is not auto-blocking; a human review is recommended "
-            "before merge.",
+            "**partial**, so the check **fails closed**: a human must review this PR "
+            "before merge (a maintainer can apply the `skip-pr-review` label after a "
+            "manual look).",
             "",
         ]
     blocking = [b for b in (review.get("blocking") or []) if str(b).strip()]

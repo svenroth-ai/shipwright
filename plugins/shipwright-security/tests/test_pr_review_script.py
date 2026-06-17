@@ -6,7 +6,7 @@ for Tier-3 PRs (external contributors, sensitive paths, or `needs-review` label)
 - fetch the PR diff, call OpenRouter, parse a strict-JSON decision, post a PR comment
 - map the decision to an exit code: 0 = approve/comment, 1 = block, 2 = error
 - dump the raw response (redacted) on a JSON-parse failure and exit 2
-- truncate a > 200k-char diff and NOT auto-block on a (partial) truncated review
+- truncate a > 200k-char diff and FAIL CLOSED on a (partial) truncated review (needs human)
 - never write the OpenRouter API key to logs
 
 The pure helpers (parse/truncate/render/redact/decision-mapping) live in
@@ -242,16 +242,23 @@ class TestMainOrchestration:
         err = capsys.readouterr().err
         assert "rate limited" in err  # raw response dumped to logs
 
-    def test_truncation_forces_exit_0_even_on_block(self, monkeypatch):
-        # A truncated (partial) review must not auto-block: comment-state + exit 0.
+    def test_truncation_fails_closed_needs_human(self, monkeypatch):
+        # A truncated (partial) diff means we did NOT see the whole change. For a
+        # required gate on an untrusted PR, a large diff must not bypass review by
+        # size — fail CLOSED (non-zero) even on a partial APPROVE, forcing a
+        # request-changes review state so a human must look. The red required
+        # check is also what lets the gh-pr-ci triage producer surface the PR.
         posted = _wire(
             monkeypatch,
             diff="z" * (pr_review.MAX_DIFF_CHARS + 1000),
             review_json=json.dumps(
-                {"decision": "block", "summary": "huge", "blocking": ["x"], "comments": []}),
+                {"decision": "approve", "summary": "huge", "blocking": [], "comments": []}),
         )
-        assert pr_review.main(ARGV) == 0
+        rc = pr_review.main(ARGV)
+        assert rc == pr_review.EXIT_BLOCK
+        assert rc != pr_review.EXIT_OK  # the size-bypass is closed
         assert "truncat" in posted["comment"].lower()
+        assert posted["state"] == "block"  # forced request-changes on truncation
 
     def test_api_key_never_logged(self, monkeypatch, capsys):
         # Force the worst path (error message embeds the key) and assert it is

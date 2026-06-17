@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-17T07:37:33.167308+00:00
-Total commits: 1021
+Generated: 2026-06-17T12:57:54.625529+00:00
+Total commits: 1023
 
 ## Commit Distribution
 
@@ -9,7 +9,7 @@ Total commits: 1021
 pie title Commit Types
     "fix" : 291
     "feat" : 273
-    "chore" : 226
+    "chore" : 228
     "docs" : 131
     "refactor" : 61
     "test" : 24
@@ -594,10 +594,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 226 commits
+### Chores (chore) — 228 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-17 | triage | sweep 3 outbox append(s) into branch | 1954da1a4632 |
+| 2026-06-17 | — | align root pyproject.toml to 0.29.0 + de-PII a source comment (#262) | 6c0c1ea626c4 |
 | 2026-06-17 | release | v0.29.0 (#261) | 392152b988ec |
 | 2026-06-17 | — | scrub machine-local paths and PII from tracked files (#260) | 32840c3fc45a |
 | 2026-06-17 | — | unify plugin versions to 0.29.0 and relabel maturity to Beta (#259) | ae41b4521e67 |
@@ -1090,7 +1092,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1021 |
+| Total commits | 1023 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1021 |
+| Human-authored commits | 1023 |
 
