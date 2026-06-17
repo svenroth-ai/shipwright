@@ -1,1 +1,0 @@
-Replaced machine-local paths and personal/company identifiers in tracked planning docs, the installer comment and its test fixture, and the triage backlog log with neutral placeholders (no behavior change)

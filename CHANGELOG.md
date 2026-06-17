@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.29.0] - 2026-06-17
+
+### Added
+
+- Compliance Dashboard now links the detective Audit Report and the Activity (build) Dashboard from its Compliance Artifacts table.
+
+### Changed
+
+- Documentation: README and guide openings now lead with the brand tagline 'Ship right, not just fast.' and the vibe-coding-to-agentic-engineering positioning.
+- Documentation: removed development-provenance references (ADR numbers, dated iterate IDs, internal campaign/plan labels, version-introduced stamps) from docs/guide.md so the guide documents current behavior rather than its development history.
+- Replaced machine-local paths and personal/company identifiers in tracked planning docs, the installer comment and its test fixture, and the triage backlog log with neutral placeholders (no behavior change)
+- Unified all plugin and marketplace versions to a single 0.29.0 across marketplace.json and all 13 plugin.json manifests
+- Relabeled project maturity from Early Access Beta to Beta in README, SECURITY, and CONTRIBUTING, with a lighter, more inviting beta banner
+
+### Fixed
+
+- Compliance Traceability Matrix and Build Dashboard no longer render a free-text description in the Type column — a shared intent-normalizer collapses leaked/legacy intents to a clean token (and maps git conventional-commit types in adopted repos).
+- Test Evidence and the Traceability Matrix per-FR status no longer false-FAIL on merged-iterate test runs that skipped tests: a completed-work passed<total gap now renders skip-aware PASS / COVERED (real regressions still surface via the open-triage deep link).
+- Removed two dead documentation links in docs/guide.md that pointed at the gitignored Spec/ directory
+
 ## [v0.28.0] - 2026-06-15
 
 ### Added

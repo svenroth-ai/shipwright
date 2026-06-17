@@ -3032,3 +3032,66 @@ shipwright/
 - **Rationale:** Anti-ratchet ceilings must track real reductions so a trimmed file cannot silently regrow into a stale higher baseline.
 - **Consequences:** H2 clears (0 over-recorded entries); the anti-ratchet ceiling now blocks any regrowth past 1121 (==cap passes, >cap blocks). No source or behavior change.
 - **Rejected:** Leave the baseline at 1122 — keeps a 1-line slack window that defeats the ratchet and re-triggers H2 on every audit.
+
+---
+
+### ADR-226: Brand tagline + agentic-engineering framing in doc openings
+- **Date:** 2026-06-16
+- **Section:** README.md + docs/guide.md
+- **Run-ID:** iterate-2026-06-16-brand-tagline-opening
+- **Context:** The teaser video crystallised two brand assets that were absent from the README and guide openings: the name-play tagline 'Ship right, not just fast.' and the positioning 'vibe coding -> agentic engineering you can trust.'
+- **Decision:** Add the tagline as a blockquote under the H1 of both README.md and docs/guide.md, and fold the agentic-engineering framing into the README lead sentence (the guide tagline line carries both).
+- **Commit:** (assigned post-merge)
+- **Rationale:** The tagline plays on the product name and is the single most memorable line; it belonged at the very top and was nowhere in the docs.
+- **Consequences:** Both openings now lead with the brand promise. Purely additive (+5/-1 lines), no behavior change. Origin story, masterclass funnel, and full teaser script deliberately NOT imported.
+
+---
+
+### ADR-227: Skip-aware compliance rendering + centralized intent normalization
+- **Date:** 2026-06-16
+- **Section:** compliance report rendering
+- **Run-ID:** iterate-2026-06-16-compliance-rendering-fixes
+- **Context:** Four rendering defects in the auto-generated compliance artifacts (shared by the monorepo and the adopted webui via the same cached generators): free-text descriptions leaked into the Type column of the RTM Verification Timeline and Build Dashboard; merged-iterate passed<total skip gaps false-FAILed in Test Evidence and the RTM per-FR status (no known_failures file => baseline 0); the dashboard omitted the audit-report link.
+- **Decision:** Add a shared normalize_intent() helper (top-level shared/scripts) consumed by both Type-column producers. Render a completed-work passed<total gap as skip-aware PASS / COVERED (never FAIL) since a merged iterate is green-at-merge (Iron Law) and {passed,total} cannot distinguish skip from fail; real regressions still surface via the triage-deep-link override. Link the audit report unconditionally (it is gitignored/transient => a conditional link flip-flops).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reader-side normalization generalizes to adopted repos and future bad data without rewriting the union-merged event log; the Iron Law makes a gap-driven FAIL semantically impossible for completed work.
+- **Consequences:** Type columns always render a clean token; Test Evidence / RTM no longer false-FAIL on skips; the dashboard deterministically links the audit report + activity dashboard. The baseline_failure_count public-contract plumbing is kept; only the final FAIL branch changed.
+- **Rejected:** Rewriting the malformed events in the union-merged log (old lines resurrect on merge); maintaining a global known_failures baseline (manual upkeep, one number cannot fit per-run skip counts); conditional audit-report link (flip-flops in the committed dashboard).
+
+---
+
+### ADR-228: Guide documents current behavior, not its provenance
+- **Date:** 2026-06-16
+- **Section:** docs/guide.md
+- **Run-ID:** iterate-2026-06-16-guide-remove-provenance-refs
+- **Context:** docs/guide.md had accumulated development-provenance references — ADR numbers, dated/numbered iterate IDs, internal campaign/plan labels, version-introduced stamps, and shipped/drift-protected markers — embedded inside feature descriptions. The guide's job is to explain what Shipwright does and how to use it; provenance belongs in the changelog, decision log, and ADR specs.
+- **Decision:** Strip all provenance references from docs/guide.md, rewriting each affected sentence to describe current behavior. Kept ADR/iterate as concepts, the /shipwright-iterate command, illustrative example run-ids, and cross-references to user-facing docs and chapters.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A user-facing guide that explains where features came from instead of what they do and how to use them is noise to the reader and drifts as history accretes.
+- **Consequences:** The guide reads as present-tense product documentation. Net -1 line, no behavior change. Future edits must not reintroduce development provenance into the guide.
+
+---
+
+### ADR-229: Scrub machine-local path and PII strings from tracked files
+- **Date:** 2026-06-17
+- **Section:** Iterate — change: launch PII / local-path scrub
+- **Run-ID:** iterate-2026-06-17-launch-pii-scrub
+- **Context:** Pre-public-launch a few tracked files carried machine-specific absolute paths and PII examples: two planning docs + the installer comment + its test fixture used a Windows user-home / OneDrive company-folder / personal-name path as the example, and triage.jsonl drift/f0.5 entries embedded the maintainer's full local evidence paths.
+- **Decision:** Replace the local-path/PII strings with neutral placeholders: ~/.claude/... in the campaign doc, generic space-containing examples ('Program Files' / 'My Projects') in install.sh + miniplan + the installer test fixture (assertion updated in lockstep), and <project-root> for the triage.jsonl path strings. Author + copyright attribution in LICENSE / plugin authors intentionally retained.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A public repo must not leak the maintainer's machine layout or company name; placeholders keep docs/tests instructive. Behavior-preserving: the fixture keeps a space so the F36 regression test still bites.
+- **Consequences:** Plan section-3 greps (user-home, company name, maintainer email) are empty across tracked files; the installer test still proves space-containing path tokenization; no behavior change.
+- **Rejected:** Scrub the public author name (intentional attribution per launch decision); delete the triage entries (append-log history, scrub in place, B7-exempt chore); remove the .gitignore root /planning/ ignore (documented do-not-remove legacy safety-net, not stray).
+
+---
+
+### ADR-230: Unify all plugin/marketplace versions to 0.29.0; relabel Early Access Beta to Beta
+- **Date:** 2026-06-17
+- **Section:** Iterate — change: launch version unification & Beta branding
+- **Run-ID:** iterate-2026-06-17-launch-version-branding
+- **Context:** Pre-public-launch the repo carried 3 divergent version namespaces (tag v0.28.0, marketplace 0.5.0, plugins 0.2.x-0.4.1) plus an 'Early Access Beta' label with a production-deterrent banner; docs/guide.md linked twice to the gitignored Spec/ dir (permanent dead links once public).
+- **Decision:** Set one version 0.29.0 across marketplace.json top-level + 13 per-plugin entries + all 13 plugin.json; relabel to 'Beta' (badge status-beta-blue) in README/SECURITY/CONTRIBUTING with a lighter, inviting banner; remove the two gitignored-Spec links in guide.md.
+- **Commit:** (assigned post-merge)
+- **Rationale:** One number everywhere ends the namespace drift and matches the curated-release-playbook (tag after merge); honest+inviting beta wording beats hard deterrence; gitignored Spec/ is never public so its links must go.
+- **Consequences:** sync_check version parity stays green; next release tags v0.29.0; public docs carry no dead links and one consistent Beta label.
+- **Rejected:** Per-plugin independent SemVer (drift is exactly what we fix); keep 'Early Access' (launch decision is plain Beta); scrub Leadwright/author provenance (companion project also going public).
