@@ -5,8 +5,9 @@ Thin CLI shim over ``shared/scripts/lib/anti_ratchet.py`` (core logic).
 Two measurement modes: ``--staged`` (default, pre-commit use) and
 ``--worktree`` (CI use). Block rule: for every entry in
 ``shipwright_bloat_baseline.json``, if measured > entry.current → exit 1.
-New files outside the baseline are advisory. Missing / malformed
-baseline → fail-open exit 0.
+New files outside the baseline are advisory. An ABSENT baseline →
+fail-open exit 0; a PRESENT-but-malformed baseline → fail-closed exit 1
+(a corrupt baseline must not silently disable the gate).
 
 # source-hash-canonical: see shared/tests/test_anti_ratchet_check_staged.py
 # — webui vendored copy pins the canonical hash via this marker.
@@ -73,6 +74,26 @@ def main(argv: list[str] | None = None) -> int:
 
     doc = _ar.load_baseline_override(project_root, args.baseline)
     if doc is None:
+        baseline_path = (
+            Path(args.baseline) if args.baseline is not None
+            else project_root / _bb.BASELINE_FILENAME
+        )
+        # A PRESENT-but-unreadable/malformed/wrong-shape baseline must NOT
+        # silently disable the gate: fail-open here would let a real ratchet
+        # sail through under a broken baseline. Fail CLOSED. A genuinely ABSENT
+        # baseline (fresh repo) still fails open.
+        if baseline_path.is_file():
+            print(
+                f"anti_ratchet_check: baseline at {baseline_path} exists but is "
+                "unreadable or malformed — failing closed (a corrupt baseline must "
+                "not disable the gate). Fix or regenerate it.",
+                file=sys.stderr,
+            )
+            if args.json:
+                print(json.dumps(
+                    {"status": "error", "reason": "malformed-baseline", "ratchets": []}
+                ))
+            return 1
         if args.baseline is None:
             print(
                 "anti_ratchet_check: baseline not found at "

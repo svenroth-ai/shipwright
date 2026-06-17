@@ -10,8 +10,10 @@ Block rule (state-agnostic, Campaign A.defense):
         if measured-LOC(path) > entry.current → RATCHET (block).
 
 Files outside the baseline that exceed their limit are advisory; stale
-entries (file gone) are advisory; missing / malformed baseline is
-fail-open (consumer reports 0 ratchets).
+entries (file gone) are advisory. ``load_baseline_override`` returns
+``None`` for both an absent and a malformed baseline; the CLI consumer
+fails open on an absent baseline but fails closed on a present-but-corrupt
+one (a corrupt baseline must not silently disable the gate).
 """
 
 from __future__ import annotations
