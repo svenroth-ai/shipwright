@@ -88,7 +88,7 @@ def _format_recover_command(task: dict[str, Any], orch_path: str,
                             *, force_status: str | None = None) -> str:
     extra = f" --force-status {force_status}" if force_status else ""
     # Always quote the orchestrator path — installations under directories
-    # with spaces (e.g. Windows "AI Backup - Documents") would otherwise
+    # with spaces (e.g. Windows "Program Files" or a OneDrive-synced folder) would otherwise
     # break when the user pastes the snippet into their shell.
     return (
         f"      uv run \"{orch_path}\" recover-phase-task "
