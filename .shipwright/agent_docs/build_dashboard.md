@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-16 21:58 UTC | Session: 3ffdae52-8dd2-42c0-9f28-a96ee998ff66 | Run: iterate-2026-06-16-compliance-rendering-fixes
+> Updated: 2026-06-17 06:33 UTC | Session: d5c0fc31-305f-484e-a14a-65dfa049e854 | Run: iterate-2026-06-17-launch-version-branding
 
-## Recent Changes (199 iterations)
+## Recent Changes (200 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | launch version unification & Beta branding | 28/29 |  | tooling | 2026-06-17 |
 | change | Compliance-artifact rendering fixes: shared normalize_intent() for the Type column (RTM Verification Timeline + Build Dashboard); skip-aware PASS/COVERED for merged-work passed<total gaps in Test Evidence + RTM (never a gap-driven FAIL); unconditional Audit Report + conditional Activity Dashboard links in the Compliance Dashboard. | +25 new, 701/701 |  | compliance | 2026-06-16 |
 | change | Lead README and guide openings with the brand tagline 'Ship right, not just fast.' and the vibe-coding-to-agentic-engineering positioning | 24/24 |  | docs | 2026-06-16 |
 | change | Remove development-provenance references (ADRs, iterate IDs, version/campaign stamps) from docs/guide.md so it documents current behavior, not its origin history | 85/85 |  | docs | 2026-06-16 |
@@ -206,7 +207,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-16 | Unit: 701/701 | Integration: 163/163 | Smoke: not_run | (iterate)
+Last run: 2026-06-17 | Unit: 28/29 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-16-compliance-rendering-fixes",
-    "date": "2026-06-16",
+    "run_id": "iterate-2026-06-17-launch-version-branding",
+    "date": "2026-06-17",
     "unit": {
       "status": "passed",
-      "passed": 701,
-      "total": 701
+      "passed": 28,
+      "total": 29
     },
     "integration": {
-      "status": "passed",
-      "passed": 163,
-      "total": 163
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -33,70 +33,32 @@
     "surface_verification": {
       "surface": "none",
       "tests_run": 0,
-      "justification": "Library/tooling change to compliance report GENERATORS (rtm/test-evidence/dashboard/build-dashboard) + a new shared pure helper. No user-experienceable surface (web/cli/api) is touched; verified via unit suites + deterministic regeneration of the artifacts in this repo."
+      "justification": "Version-metadata + documentation/branding edits only; no user-experienceable surface (web/cli/api) and no functional code touched. Verified via ruff lint, sync_check version parity, the plugin-cache-sync + artifact-path-canon suites, and the F0 isolation leak-guard. Full monorepo suite runs as the authoritative gate on the PR (watched to green before merge)."
     },
-    "degraded": [
-      "external LLM review unavailable (no OPENROUTER/GEMINI/OPENAI key) -> Claude-only full code review (review_type: full-review)"
-    ],
+    "degraded": [],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "normalize_intent keeps canonical tokens, aliases feat->feature/fix->bug, keeps other single short tokens, collapses free-text/empty/over-long -> default",
+          "behavior": "All plugin manifest + marketplace versions are mutually consistent at 0.29.0 (one number everywhere)",
           "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_event_classification.py (19 passed)"
+          "evidence": "shared/scripts/sync_check.py -> [ OK ] Versions (all 13 plugins in sync); shared/tests/test_plugin_cache_sync.py PASSED"
         },
         {
-          "behavior": "RTM Verification Timeline Type column renders a normalized token (leaked description -> 'change', alias -> canonical)",
+          "behavior": "Public docs (README badge+banner, SECURITY, CONTRIBUTING) carry a consistent 'Beta' label and introduce no dead/legacy artifact paths",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_rtm_generator.py::TestVerificationTimelineType"
+          "evidence": "shared/tests/test_artifact_path_canon.py PASSED; git grep 'Early Access' confirms only out-of-scope CI comment + internal migration note remain"
         },
         {
-          "behavior": "Build Dashboard Recent-Changes Type column renders a normalized token",
+          "behavior": "docs/guide.md no longer links to the gitignored Spec/external-frameworks-integration.md (no permanent dead links once public)",
           "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_build_dashboard.py::TestRecentChangesTypeColumn"
-        },
-        {
-          "behavior": "Test-Evidence Test Progression renders skip-aware PASS (never FAIL) for a merged-work passed<total gap",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_test_evidence.py::TestSkipAwareResult"
-        },
-        {
-          "behavior": "RTM per-FR status renders COVERED (never gap-driven FAIL) for a merged-work passed<total gap",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_rtm_generator.py::TestKnownFailures + TestRtmUntestedEventsNeutral::test_latest_gap_after_green_is_skip_aware_covered"
-        },
-        {
-          "behavior": "PASS (baseline)/COVERED (baseline) path preserved when a known-failures baseline exists",
-          "disposition": "tested",
-          "evidence": "test_test_evidence.py::TestSkipAwareResult::test_baseline_failures_give_pass_baseline + test_rtm_generator.py::TestKnownFailures::test_baseline_failures_give_covered_baseline"
-        },
-        {
-          "behavior": "Real open regressions still surface via the triage-deep-link override (unchanged)",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_rtm_generator.py::TestRtmTriageDeepLink (unchanged, still green)"
-        },
-        {
-          "behavior": "Compliance Dashboard links Audit Report unconditionally and Activity Dashboard conditionally",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_compliance_report.py::test_audit_report_always_linked + test_activity_dashboard_linked_when_present"
-        },
-        {
-          "behavior": "Monorepo compliance artifacts regenerate clean (0 gap-driven FAILs, 0 free-text Type cells, audit-report link present)",
-          "disposition": "tested",
-          "evidence": "manual deterministic regeneration verified: test-evidence FAIL count 0; RTM Type column clean; dashboard Compliance Artifacts table includes Audit Report + Activity Dashboard"
-        },
-        {
-          "behavior": "WebUI compliance artifacts regenerate clean (same cached generators)",
-          "disposition": "untestable",
-          "reason_code": "requires-external-nondeterministic-service",
-          "note": "separate git repo (shipwright-webui); verified by inspection in the paired webui regeneration after cache-sync"
+          "evidence": "git grep 'Spec/' docs/guide.md returns empty after edit"
         }
       ],
       "counts": {
-        "testable": 9,
-        "tested": 9,
-        "untestable": 1,
+        "testable": 3,
+        "tested": 3,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {

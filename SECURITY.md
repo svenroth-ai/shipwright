@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-Shipwright is currently in Early Access Beta. Security updates are provided for the latest `main` branch only. Older beta releases do not receive backports.
+Shipwright is currently in Beta. Security updates are provided for the latest `main` branch only. Older beta releases do not receive backports.
 
 ## Reporting a Vulnerability
 

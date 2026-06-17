@@ -2,7 +2,7 @@
 
 > ### Ship right, not just fast.
 
-![Status](https://img.shields.io/badge/status-early--access--beta-orange)
+![Status](https://img.shields.io/badge/status-beta-blue)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 **Shipwright is the harness around your AI coding workflow — it turns vibe coding into agentic engineering you can trust.** Specs, Tests, Architectural Decisions, Living Traceability, and Compliance artifacts that turn AI velocity into shippable software. Not a stack framework; not autonomous codegen — the discipline layer that makes the rest reliable.
@@ -15,7 +15,7 @@ From one-line description to deployed, tested, secured app — via a cleanly orc
 /shipwright-run "A SaaS time tracking app with Supabase and Next.js"
 ```
 
-> **Early Access Beta:** Shipwright is currently in Early Access. Expect rough edges. Please [report issues](https://github.com/svenroth-ai/shipwright/issues/new/choose) — but do not use it for production-critical workflows without thorough evaluation.
+> **Beta:** Shipwright is in active beta — it builds itself daily, but you're an early user, so expect the occasional rough edge. [Report issues](https://github.com/svenroth-ai/shipwright/issues/new/choose) and feedback are very welcome.
 
 ## Shipwright Command Center
 
@@ -332,7 +332,7 @@ Other references:
 
 ## Security
 
-Shipwright uses its own `shipwright-security` plugin to scan every change to this repository. **Starting with the Early Access release, every commit on `main` passes the full scanner chain:**
+Shipwright uses its own `shipwright-security` plugin to scan every change to this repository. **Every commit on `main` passes the full scanner chain:**
 
 - **Semgrep** — Static Application Security Testing (SAST)
 - **Trivy** — Software Composition Analysis (SCA, CVE detection)
