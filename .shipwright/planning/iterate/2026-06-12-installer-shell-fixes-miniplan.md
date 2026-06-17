@@ -19,7 +19,7 @@ are affected: `install.sh`, `update-marketplace.sh`, `verify-setup.sh`.
   pre-existing alias, permanently pinning a stale block. → add adopt; replace
   the skip-guard with an awk strip-and-rewrite so a re-run refreshes the alias.
 - **F36 (MED, install.sh):** `--plugin-dir $REPO_ROOT/…` is unquoted → a
-  space-containing clone path (OneDrive 'dinovo GmbH', 'Sven Roth') splits into
+  space-containing clone path (e.g. 'Program Files', 'My Projects') splits into
   two args. → double-quote every `--plugin-dir` path.
 - **F37 (MED, update-marketplace.sh):** three `$(python -c …)` substitutions
   call bare `python` with stderr suppressed → on Debian/Ubuntu/macOS (only

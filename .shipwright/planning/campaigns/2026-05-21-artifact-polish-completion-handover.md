@@ -195,7 +195,7 @@ uv run shared/scripts/tools/external_review.py \
   --mode iterate \
   --spec-file ".shipwright/planning/iterate/2026-05-21-<slug>.md" \
   --plan-file ".shipwright/planning/iterate/2026-05-21-<slug>.md" \
-  --plugin-root "C:/Users/SvenRoth/.claude/plugins/cache/shipwright/shipwright-plan/0.3.1"
+  --plugin-root "~/.claude/plugins/cache/shipwright/shipwright-plan/0.3.1"
 ```
 
 (For these iterates the spec is small enough that `--spec-file` and
@@ -250,7 +250,7 @@ uv run shared/scripts/tools/external_review.py \
   --mode code \
   --diff-file /tmp/shipwright-code-review-diff.txt \
   --spec-file ".shipwright/planning/iterate/2026-05-21-<slug>.md" \
-  --plugin-root "C:/Users/SvenRoth/.claude/plugins/cache/shipwright/shipwright-plan/0.3.1"
+  --plugin-root "~/.claude/plugins/cache/shipwright/shipwright-plan/0.3.1"
 ```
 
 Parse findings, address high/medium inline, log in the ADR's

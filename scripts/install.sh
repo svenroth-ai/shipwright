@@ -110,7 +110,7 @@ echo ""
 echo "Setting up shell alias..."
 
 # Every ``--plugin-dir`` path is double-quoted so a space-containing clone
-# path (e.g. OneDrive 'dinovo GmbH', 'Sven Roth') stays a single argument
+# path (e.g. 'Program Files', 'My Projects') stays a single argument
 # (deep-audit F36). All 13 plugins are listed, incl. shipwright-adopt
 # (deep-audit F35).
 ALIAS_BLOCK="

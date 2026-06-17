@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-06-17T06:33:00.347332+00:00
+Generated: 2026-06-17T06:52:25.834092+00:00
 Total commits: 1019
 
 ## Commit Distribution
@@ -598,7 +598,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-17 | triage | sweep 1 outbox append(s) into branch | 603d9f14d042 |
+| 2026-06-17 | — | unify plugin versions to 0.29.0 and relabel maturity to Beta (#259) | ae41b4521e67 |
 | 2026-06-15 | release | v0.28.0 (#255) | a41273a671a6 |
 | 2026-06-15 | compliance | tighten bloat baseline for iterate_checks.py to actual LOC (#254) | 244471c0a964 |
 | 2026-06-14 | release | v0.27.0 (#249) | cacfa87f2529 |
