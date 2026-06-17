@@ -23,8 +23,8 @@ Environment:
     GH_TOKEN / GITHUB_TOKEN     used by the `gh` CLI for diff + comment + review
 
 Exit codes:
-    0  decision approve | comment  (also: a truncated/partial review never blocks)
-    1  decision block
+    0  decision approve | comment
+    1  decision block  (also: a truncated/partial review fails closed — needs human)
     2  error (no key, OpenRouter down/rate-limited, JSON parse failure, unknown
        decision, prompt/diff fetch failure)
 """
@@ -241,23 +241,37 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_ERROR
 
     decision = str(review.get("decision", ""))
+    # A truncated diff is a PARTIAL review — we never saw the whole change. For a
+    # required gate on an untrusted (external/sensitive) PR, neither auto-passing
+    # nor trusting the partial verdict is safe: a large diff must not be able to
+    # BYPASS review by exceeding the size cap. Fail CLOSED — force a
+    # request-changes state + non-zero exit (below) so a human must review; a
+    # maintainer can apply the `skip-pr-review` label after a manual look. The red
+    # required check is also what lets the gh-pr-ci triage producer surface the PR
+    # as a tracked follow-up. (Until iterate-2026-06-17-pr-review-truncation-
+    # failclosed this returned EXIT_OK — a silent size-bypass of the gate.)
+    effective_decision = "block" if truncated else decision
     body = render_comment(review, model=model, truncated=truncated)
 
     # Comment + review state are best-effort: a posting failure must not flip the
-    # gate, which reflects the review DECISION (the exit code) not the side-effect.
+    # gate, which reflects the review outcome (the exit code) not the side-effect.
     try:
         post_pr_comment(args.pr_number, args.repo, body)
     except Exception as e:  # noqa: BLE001
         print(_redact(f"[pr_review] failed to post PR comment: {e}", api_key), file=sys.stderr)
     try:
-        post_pr_review_state(args.pr_number, args.repo, decision, str(review.get("summary", "")))
+        post_pr_review_state(args.pr_number, args.repo, effective_decision, str(review.get("summary", "")))
     except Exception as e:  # noqa: BLE001
         print(_redact(f"[pr_review] failed to post review state: {e}", api_key), file=sys.stderr)
 
     if truncated:
-        # Partial review: never auto-block, surface for human review.
-        print("[pr_review] diff was truncated — exiting 0 (comment-state).", file=sys.stderr)
-        return EXIT_OK
+        # Partial review fails closed — needs human (see comment above).
+        print(
+            "[pr_review] diff was truncated — failing closed (needs human review). "
+            "Apply the `skip-pr-review` label after a manual review to override.",
+            file=sys.stderr,
+        )
+        return EXIT_BLOCK
 
     exit_code = decision_to_exit(decision)
     if exit_code == EXIT_ERROR:

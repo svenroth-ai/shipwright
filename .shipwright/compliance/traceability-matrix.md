@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-17T07:37:33.167308+00:00
+Generated: 2026-06-17T12:57:54.625529+00:00
 
 ## Requirements Coverage
 
@@ -227,6 +227,7 @@ Generated: 2026-06-17T07:37:33.167308+00:00
 | launch version unification & Beta branding | iterate | change |  | 28/29 | — | 2026-06-17 |
 | launch PII / local-path scrub | iterate | change |  | 20/20 | — | 2026-06-17 |
 | align root pyproject version + de-PII a source comment | iterate | change |  | 34/34 | — | 2026-06-17 |
+| pr-review truncation fails closed | iterate | bug |  | 420/423 | — | 2026-06-17 |
 
 ## Coverage Summary
 
@@ -234,7 +235,7 @@ Generated: 2026-06-17T07:37:33.167308+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 202 |
+| Iterate changes | 203 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

@@ -1,34 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-17-launch-polish"
+run_id: "iterate-2026-06-17-pr-review-truncation-failclosed"
 phase: "iterate"
-reason: "iterate: align pyproject version + de-PII source comment"
-timestamp: "2026-06-17T07:37:33.167308+00:00"
+reason: "iterate: pr-review truncation fail-closed"
+timestamp: "2026-06-17T12:57:54.625529+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-17 07:37:33 UTC
+> Auto-generated 2026-06-17 12:57:54 UTC
 
 ## Session Info
 
-- **Session ID**: d5c0fc31-305f-484e-a14a-65dfa049e854
-- **Timestamp**: 2026-06-17 07:37:33 UTC
-- **Reason**: iterate: align pyproject version + de-PII source comment
+- **Session ID**: 5fbca8de-0f0f-47fd-8d08-1cd103da350a
+- **Timestamp**: 2026-06-17 12:57:54 UTC
+- **Reason**: iterate: pr-review truncation fail-closed
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-17-launch-pii-scrub
-- **Date**: 2026-06-17T06:52:42.878953Z
+- **Run ID**: iterate-2026-06-17-launch-polish
+- **Date**: 2026-06-17T07:37:33.856464Z
 - **Type**: change
 - **Complexity**: small
-- **Branch**: iterate/launch-pii-scrub
-- **ADR**: iterate-2026-06-17-launch-pii-scrub
+- **Branch**: iterate/launch-polish
+- **ADR**: iterate-2026-06-17-launch-polish
 - **Tests passed**: True
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/launch-polish
+- **Branch**: iterate/pr-review-truncation-failclosed
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -47,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/launch-polish
-- **Last Commit**: 392152b9 chore(release): v0.29.0 (#261)
+- **Branch**: iterate/pr-review-truncation-failclosed
+- **Last Commit**: 1954da1a chore(triage): sweep 3 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-65f20e11 | work_completed | iterate (pr-review truncation fails closed) | 2026-06-17 |
 | evt-f339b083 | work_completed | iterate (align root pyproject version + de-PII a source comment) | 2026-06-17 |
 | evt-8335968f | work_completed | iterate (launch PII / local-path scrub) | 2026-06-17 |
 | evt-3f127b0e | work_completed | iterate (launch version unification & Beta branding) | 2026-06-17 |
 | evt-2f6fb8be | work_completed | iterate (Compliance-artifact rendering fixes: shared normalize_intent() for the Type column (RTM Verification Timeline + Build Dashboard); skip-aware PASS/COVERED for merged-work passed<total gaps in Test Evidence + RTM (never a gap-driven FAIL); unconditional Audit Report + conditional Activity Dashboard links in the Compliance Dashboard.) | 2026-06-16 |
-| evt-61e7068b | work_completed | iterate (Lead README and guide openings with the brand tagline 'Ship right, not just fast.' and the vibe-coding-to-agentic-engineering positioning) | 2026-06-16 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 202
-- **Last iterate**: change — align root pyproject version + de-PII a source comment (2026-06-17)
+- **Total work events**: 203
+- **Last iterate**: bug — pr-review truncation fails closed (2026-06-17)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

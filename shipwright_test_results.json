@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-17-launch-polish",
+    "run_id": "iterate-2026-06-17-pr-review-truncation-failclosed",
     "date": "2026-06-17",
     "unit": {
       "status": "passed",
-      "passed": 34,
-      "total": 34
+      "passed": 420,
+      "total": 423
     },
     "integration": {
       "status": "not_run",
@@ -18,12 +18,12 @@
       "total": 0
     },
     "e2e": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "design_fidelity": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
@@ -32,33 +32,42 @@
     },
     "surface_verification": {
       "surface": "none",
+      "runner": "",
+      "exit_code": 0,
       "tests_run": 0,
-      "justification": "Version-metadata edit (root pyproject.toml 0.5.0->0.29.0) plus a comment-only generalization in master_stop_check.py. No user-experienceable surface (web/cli/api) and no functional code behavior changed. Verified via ruff, the master_stop_check + phase/plugin-hooks suites, uv venv provisioning from pyproject (proves the TOML still parses), and the F0 isolation leak-guard."
+      "evidence_path": ".shipwright/runs/iterate-2026-06-17-pr-review-truncation-failclosed/surface_verification.json",
+      "timestamp": "2026-06-17T12:55:46.243Z",
+      "justification": "Pure Python CLI gate logic (pr_review.py main() exit behavior + posted review state); no web/API/UI/io-boundary surface to drive. Covered by unit tests of main() exit codes."
     },
     "degraded": [],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "Root pyproject.toml stays valid TOML and the project still provisions after the version bump to 0.29.0 (lockstep with marketplace + plugin manifests)",
+          "behavior": "truncated Tier-3 diff -> non-green EXIT_BLOCK (no size bypass)",
           "disposition": "tested",
-          "evidence": "uv run provisioned the .venv from pyproject without error during F0; uvx ruff@0.15.15 green; no test asserts the old 0.5.0"
+          "evidence": "test_pr_review_script.py::TestMainOrchestration::test_truncation_fails_closed_needs_human PASSED"
         },
         {
-          "behavior": "master_stop_check recover-command formatting is unchanged (comment-only edit; path still quoted)",
+          "behavior": "truncated diff -> request-changes review state (not comment/green)",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-run/tests/test_master_stop_check.py 7 passed; shared/tests/test_phase_plugin_hooks_consistency.py 27 passed"
+          "evidence": "test_truncation_fails_closed_needs_human asserts posted state == 'block' PASSED"
+        },
+        {
+          "behavior": "render_comment truncation warning reflects fail-closed wording",
+          "disposition": "tested",
+          "evidence": "test_pr_review_lib.py::TestRenderComment::test_truncation_warning_present_when_truncated PASSED"
         }
       ],
       "counts": {
-        "testable": 2,
-        "tested": 2,
+        "testable": 3,
+        "tested": 3,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 2,
-        "covered_acs": 2
+        "acs": 3,
+        "covered_acs": 3
       }
     }
   }

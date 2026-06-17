@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-17 07:37 UTC | Session: d5c0fc31-305f-484e-a14a-65dfa049e854 | Run: iterate-2026-06-17-launch-polish
+> Updated: 2026-06-17 12:57 UTC | Session: 5fbca8de-0f0f-47fd-8d08-1cd103da350a | Run: iterate-2026-06-17-pr-review-truncation-failclosed
 
-## Recent Changes (202 iterations)
+## Recent Changes (203 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | pr-review truncation fails closed | 420/423 |  | tooling | 2026-06-17 |
 | change | align root pyproject version + de-PII a source comment | 34/34 |  | tooling | 2026-06-17 |
 | change | launch PII / local-path scrub | 20/20 |  | tooling | 2026-06-17 |
 | change | launch version unification & Beta branding | 28/29 |  | tooling | 2026-06-17 |
@@ -209,7 +210,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-17 | Unit: 34/34 | Smoke: not_run | (iterate)
+Last run: 2026-06-17 | Unit: 420/423 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
