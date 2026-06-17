@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-06-17T12:57:54.625529+00:00
+Generated: 2026-06-17T13:12:57.377414+00:00
 Total commits: 1023
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 291
+    "fix" : 292
     "feat" : 273
-    "chore" : 228
+    "chore" : 227
     "docs" : 131
     "refactor" : 61
     "test" : 24
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 291 commits
+### Fixes (fix) — 292 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-17 | security | Tier-3 PR review fails closed on a truncated diff (#263) | 84aa059dbd1c |
 | 2026-06-17 | compliance | clean Type column, skip-aware status, dashboard links (#258) | dab9c2fd7ea7 |
 | 2026-06-15 | hooks | filter sentinel-run FAILs at the SessionStart phase-quality read path (#253) | e379c8cb1712 |
 | 2026-06-14 | compliance | exclude degenerate sentinel-run snapshots from phase-quality rollups (#251) | 33cf8da31ef7 |
@@ -594,11 +595,10 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 228 commits
+### Chores (chore) — 227 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-17 | triage | sweep 3 outbox append(s) into branch | 1954da1a4632 |
 | 2026-06-17 | — | align root pyproject.toml to 0.29.0 + de-PII a source comment (#262) | 6c0c1ea626c4 |
 | 2026-06-17 | release | v0.29.0 (#261) | 392152b988ec |
 | 2026-06-17 | — | scrub machine-local paths and PII from tracked files (#260) | 32840c3fc45a |

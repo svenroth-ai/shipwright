@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-17 12:57 UTC | Session: 5fbca8de-0f0f-47fd-8d08-1cd103da350a | Run: iterate-2026-06-17-pr-review-truncation-failclosed
+> Updated: 2026-06-17 13:12 UTC | Session: 5fbca8de-0f0f-47fd-8d08-1cd103da350a | Run: iterate-2026-06-17-anti-ratchet-corrupt-failclosed
 
-## Recent Changes (203 iterations)
+## Recent Changes (204 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | anti-ratchet corrupt-baseline fail-closed | 139/139 |  | infra | 2026-06-17 |
 | bug | pr-review truncation fails closed | 420/423 |  | tooling | 2026-06-17 |
 | change | align root pyproject version + de-PII a source comment | 34/34 |  | tooling | 2026-06-17 |
 | change | launch PII / local-path scrub | 20/20 |  | tooling | 2026-06-17 |
@@ -210,7 +211,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-17 | Unit: 420/423 | Smoke: not_run | (iterate)
+Last run: 2026-06-17 | Unit: 139/139 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

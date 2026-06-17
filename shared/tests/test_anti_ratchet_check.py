@@ -7,7 +7,9 @@ the 300-LOC bloat baseline.
 The check is the pre-commit + CI gate that blocks anti-ratchet on the
 bloat baseline. Block rule: for every entry in baseline, if measured-LOC
 > entry.current, exit 1. New files outside baseline are advisory.
-Missing baseline = fail-open exit 0. Stale entries = advisory.
+Absent baseline = fail-open exit 0; present-but-malformed baseline =
+fail-closed exit 1 (a corrupt baseline must not disable the gate).
+Stale entries = advisory.
 """
 
 from __future__ import annotations
@@ -144,12 +146,20 @@ def test_stale_entry_is_advisory_only(tmp_path):
     assert "stale" in res.stderr.lower() or "gone.py" in res.stderr
 
 
-def test_malformed_baseline_fails_open(tmp_path):
-    """Malformed JSON → exit 0 with diagnostic."""
+def test_malformed_baseline_fails_closed(tmp_path):
+    """A present-but-corrupt baseline must NOT silently disable the gate — a
+    fail-open here would let a real ratchet sail through under a broken baseline.
+    Fail CLOSED → exit 1 + diagnostic. (A genuinely ABSENT baseline still fails
+    open — see test_no_baseline_file_fails_open.)"""
     repo = _init_repo(tmp_path)
     (repo / "shipwright_bloat_baseline.json").write_text("{ bad json", encoding="utf-8")
     res = _run_check(repo, "--worktree")
-    assert res.returncode == 0
+    assert res.returncode == 1, res.stderr
+    assert (
+        "malformed" in res.stderr.lower()
+        or "corrupt" in res.stderr.lower()
+        or "failing closed" in res.stderr.lower()
+    )
 
 
 def test_ratchet_diagnostic_includes_block_table(tmp_path):

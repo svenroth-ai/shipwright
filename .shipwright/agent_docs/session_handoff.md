@@ -1,34 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-17-pr-review-truncation-failclosed"
+run_id: "iterate-2026-06-17-anti-ratchet-corrupt-failclosed"
 phase: "iterate"
-reason: "iterate: pr-review truncation fail-closed"
-timestamp: "2026-06-17T12:57:54.625529+00:00"
+reason: "iterate: anti-ratchet corrupt-baseline fail-closed"
+timestamp: "2026-06-17T13:12:57.377414+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-17 12:57:54 UTC
+> Auto-generated 2026-06-17 13:12:57 UTC
 
 ## Session Info
 
 - **Session ID**: 5fbca8de-0f0f-47fd-8d08-1cd103da350a
-- **Timestamp**: 2026-06-17 12:57:54 UTC
-- **Reason**: iterate: pr-review truncation fail-closed
+- **Timestamp**: 2026-06-17 13:12:57 UTC
+- **Reason**: iterate: anti-ratchet corrupt-baseline fail-closed
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-17-launch-polish
-- **Date**: 2026-06-17T07:37:33.856464Z
-- **Type**: change
+- **Run ID**: iterate-2026-06-17-pr-review-truncation-failclosed
+- **Date**: 2026-06-17T12:57:55.359411Z
+- **Type**: bug
 - **Complexity**: small
-- **Branch**: iterate/launch-polish
-- **ADR**: iterate-2026-06-17-launch-polish
+- **Branch**: iterate/pr-review-truncation-failclosed
+- **ADR**: iterate-2026-06-17-pr-review-truncation-failclosed
 - **Tests passed**: True
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/pr-review-truncation-failclosed
+- **Branch**: iterate/anti-ratchet-corrupt-failclosed
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -47,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/pr-review-truncation-failclosed
-- **Last Commit**: 1954da1a chore(triage): sweep 3 outbox append(s) into branch
+- **Branch**: iterate/anti-ratchet-corrupt-failclosed
+- **Last Commit**: 84aa059d fix(security): Tier-3 PR review fails closed on a truncated diff (#263)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-c1c861cd | work_completed | iterate (anti-ratchet corrupt-baseline fail-closed) | 2026-06-17 |
 | evt-65f20e11 | work_completed | iterate (pr-review truncation fails closed) | 2026-06-17 |
 | evt-f339b083 | work_completed | iterate (align root pyproject version + de-PII a source comment) | 2026-06-17 |
 | evt-8335968f | work_completed | iterate (launch PII / local-path scrub) | 2026-06-17 |
 | evt-3f127b0e | work_completed | iterate (launch version unification & Beta branding) | 2026-06-17 |
-| evt-2f6fb8be | work_completed | iterate (Compliance-artifact rendering fixes: shared normalize_intent() for the Type column (RTM Verification Timeline + Build Dashboard); skip-aware PASS/COVERED for merged-work passed<total gaps in Test Evidence + RTM (never a gap-driven FAIL); unconditional Audit Report + conditional Activity Dashboard links in the Compliance Dashboard.) | 2026-06-16 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 203
-- **Last iterate**: bug — pr-review truncation fails closed (2026-06-17)
+- **Total work events**: 204
+- **Last iterate**: bug — anti-ratchet corrupt-baseline fail-closed (2026-06-17)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-17-pr-review-truncation-failclosed",
+    "run_id": "iterate-2026-06-17-anti-ratchet-corrupt-failclosed",
     "date": "2026-06-17",
     "unit": {
       "status": "passed",
-      "passed": 420,
-      "total": 423
+      "passed": 139,
+      "total": 139
     },
     "integration": {
       "status": "not_run",
@@ -35,39 +35,34 @@
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-17-pr-review-truncation-failclosed/surface_verification.json",
-      "timestamp": "2026-06-17T12:55:46.243Z",
-      "justification": "Pure Python CLI gate logic (pr_review.py main() exit behavior + posted review state); no web/API/UI/io-boundary surface to drive. Covered by unit tests of main() exit codes."
+      "evidence_path": ".shipwright/runs/iterate-2026-06-17-anti-ratchet-corrupt-failclosed/surface_verification.json",
+      "timestamp": "2026-06-17T13:11:50.274Z",
+      "justification": "Pure Python CLI gate logic (anti_ratchet_check.py exit behavior: absent vs corrupt baseline); no web/API/UI surface. Covered by subprocess-driven CLI tests."
     },
     "degraded": [],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "truncated Tier-3 diff -> non-green EXIT_BLOCK (no size bypass)",
+          "behavior": "present-but-malformed bloat baseline -> exit 1 (fail-closed; gate not silently disabled)",
           "disposition": "tested",
-          "evidence": "test_pr_review_script.py::TestMainOrchestration::test_truncation_fails_closed_needs_human PASSED"
+          "evidence": "test_anti_ratchet_check.py::test_malformed_baseline_fails_closed PASSED"
         },
         {
-          "behavior": "truncated diff -> request-changes review state (not comment/green)",
+          "behavior": "absent baseline -> exit 0 (fail-open) PRESERVED",
           "disposition": "tested",
-          "evidence": "test_truncation_fails_closed_needs_human asserts posted state == 'block' PASSED"
-        },
-        {
-          "behavior": "render_comment truncation warning reflects fail-closed wording",
-          "disposition": "tested",
-          "evidence": "test_pr_review_lib.py::TestRenderComment::test_truncation_warning_present_when_truncated PASSED"
+          "evidence": "test_anti_ratchet_check.py::test_no_baseline_file_fails_open PASSED"
         }
       ],
       "counts": {
-        "testable": 3,
-        "tested": 3,
+        "testable": 2,
+        "tested": 2,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 3,
-        "covered_acs": 3
+        "acs": 2,
+        "covered_acs": 2
       }
     }
   }
