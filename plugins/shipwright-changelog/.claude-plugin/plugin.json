@@ -1,7 +1,7 @@
 {
   "name": "shipwright-changelog",
   "description": "Generate changelogs from Conventional Commits, create tags, and manage PRs",
-  "version": "0.2.1",
+  "version": "0.29.0",
   "author": {
     "name": "Sven Roth",
     "url": "https://github.com/svenroth-ai"

@@ -2,7 +2,7 @@
 
 Thanks for your interest in contributing to Shipwright! This document explains how to set up your environment, the rules for code contributions, and our trust model.
 
-> **Early Access Beta:** Shipwright is currently in Early Access. Breaking changes are possible. Please open an issue before investing significant time in a large contribution.
+> **Beta:** Shipwright is currently in Beta. Breaking changes are possible. Please open an issue before investing significant time in a large contribution.
 
 ## Table of Contents
 

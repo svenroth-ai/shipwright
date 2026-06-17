@@ -1,7 +1,7 @@
 {
   "name": "shipwright-adopt",
   "description": "Onboard an existing repository (brownfield) into the Shipwright SDLC — analyze codebase, generate docs, configs, compliance artifacts, and an E2E baseline",
-  "version": "0.2.1",
+  "version": "0.29.0",
   "author": {
     "name": "Sven Roth",
     "url": "https://github.com/svenroth-ai"

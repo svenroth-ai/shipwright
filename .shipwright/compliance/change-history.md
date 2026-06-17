@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-06-16T21:58:22.471386+00:00
-Total commits: 1017
+Generated: 2026-06-17T06:33:00.347332+00:00
+Total commits: 1019
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 290
+    "fix" : 291
     "feat" : 273
-    "chore" : 223
+    "chore" : 224
     "docs" : 131
     "refactor" : 61
     "test" : 24
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 290 commits
+### Fixes (fix) — 291 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-17 | compliance | clean Type column, skip-aware status, dashboard links (#258) | dab9c2fd7ea7 |
 | 2026-06-15 | hooks | filter sentinel-run FAILs at the SessionStart phase-quality read path (#253) | e379c8cb1712 |
 | 2026-06-14 | compliance | exclude degenerate sentinel-run snapshots from phase-quality rollups (#251) | 33cf8da31ef7 |
 | 2026-06-13 | verifiers | pin CLI stdout to UTF-8 so reports don't crash on Windows cp1252 (#244) | 0dfae42697ea |
@@ -593,10 +594,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 223 commits
+### Chores (chore) — 224 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-17 | triage | sweep 1 outbox append(s) into branch | 603d9f14d042 |
 | 2026-06-15 | release | v0.28.0 (#255) | a41273a671a6 |
 | 2026-06-15 | compliance | tighten bloat baseline for iterate_checks.py to actual LOC (#254) | 244471c0a964 |
 | 2026-06-14 | release | v0.27.0 (#249) | cacfa87f2529 |
@@ -1086,7 +1088,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1017 |
+| Total commits | 1019 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1017 |
+| Human-authored commits | 1019 |
 
