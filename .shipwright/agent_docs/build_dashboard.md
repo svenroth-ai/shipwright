@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-17 06:52 UTC | Session: d5c0fc31-305f-484e-a14a-65dfa049e854 | Run: iterate-2026-06-17-launch-pii-scrub
+> Updated: 2026-06-17 07:37 UTC | Session: d5c0fc31-305f-484e-a14a-65dfa049e854 | Run: iterate-2026-06-17-launch-polish
 
-## Recent Changes (201 iterations)
+## Recent Changes (202 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | align root pyproject version + de-PII a source comment | 34/34 |  | tooling | 2026-06-17 |
 | change | launch PII / local-path scrub | 20/20 |  | tooling | 2026-06-17 |
 | change | launch version unification & Beta branding | 28/29 |  | tooling | 2026-06-17 |
 | change | Compliance-artifact rendering fixes: shared normalize_intent() for the Type column (RTM Verification Timeline + Build Dashboard); skip-aware PASS/COVERED for merged-work passed<total gaps in Test Evidence + RTM (never a gap-driven FAIL); unconditional Audit Report + conditional Activity Dashboard links in the Compliance Dashboard. | +25 new, 701/701 |  | compliance | 2026-06-16 |
@@ -208,7 +209,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-17 | Unit: 20/20 | Smoke: not_run | (iterate)
+Last run: 2026-06-17 | Unit: 34/34 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

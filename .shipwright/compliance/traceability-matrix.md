@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-17T06:52:25.834092+00:00
+Generated: 2026-06-17T07:37:33.167308+00:00
 
 ## Requirements Coverage
 
@@ -226,6 +226,7 @@ Generated: 2026-06-17T06:52:25.834092+00:00
 | Compliance-artifact rendering fixes: shared normalize_intent() for the Type column (RTM Verification Timeline + Build Dashboard); skip-aware PASS/COVERED for merged-work passed<total gaps in Test Evidence + RTM (never a gap-driven FAIL); unconditional Audit Report + conditional Activity Dashboard links in the Compliance Dashboard. | iterate | change |  | 701/701 | — | 2026-06-16 |
 | launch version unification & Beta branding | iterate | change |  | 28/29 | — | 2026-06-17 |
 | launch PII / local-path scrub | iterate | change |  | 20/20 | — | 2026-06-17 |
+| align root pyproject version + de-PII a source comment | iterate | change |  | 34/34 | — | 2026-06-17 |
 
 ## Coverage Summary
 
@@ -233,7 +234,7 @@ Generated: 2026-06-17T06:52:25.834092+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 201 |
+| Iterate changes | 202 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

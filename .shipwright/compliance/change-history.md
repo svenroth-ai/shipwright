@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-17T06:52:25.834092+00:00
-Total commits: 1019
+Generated: 2026-06-17T07:37:33.167308+00:00
+Total commits: 1021
 
 ## Commit Distribution
 
@@ -9,7 +9,7 @@ Total commits: 1019
 pie title Commit Types
     "fix" : 291
     "feat" : 273
-    "chore" : 224
+    "chore" : 226
     "docs" : 131
     "refactor" : 61
     "test" : 24
@@ -594,10 +594,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 224 commits
+### Chores (chore) — 226 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-17 | release | v0.29.0 (#261) | 392152b988ec |
+| 2026-06-17 | — | scrub machine-local paths and PII from tracked files (#260) | 32840c3fc45a |
 | 2026-06-17 | — | unify plugin versions to 0.29.0 and relabel maturity to Beta (#259) | ae41b4521e67 |
 | 2026-06-15 | release | v0.28.0 (#255) | a41273a671a6 |
 | 2026-06-15 | compliance | tighten bloat baseline for iterate_checks.py to actual LOC (#254) | 244471c0a964 |
@@ -1088,7 +1090,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1019 |
+| Total commits | 1021 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1019 |
+| Human-authored commits | 1021 |
 
