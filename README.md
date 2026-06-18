@@ -104,7 +104,7 @@ After the initial build, day-to-day changes run through `/shipwright-iterate` �
 
 **From the Shipwright Command Center**
 
-Multi-project kanban across every Shipwright task you touch. Click a task for its live transcript; click **Launch** to start a new pipeline or iterate — the `claude` command auto-runs in an embedded terminal on the task page (or copy it into your own terminal / VS Code Extension if you prefer). The Command Center never spawns Claude itself; it follows the session live. Same skills, same events, same compliance artifacts as running directly. What you gain is the overview: 3+ projects, 8+ tasks, one board instead of a pile of windows and VS Code sessions.
+Multi-project kanban across every Shipwright task you touch. Click a task for its live transcript; click **Launch** to start a new pipeline or iterate — the `claude` command auto-runs in an embedded terminal on the task page. The Command Center never spawns Claude itself; it follows the session live. Same skills, same events, same compliance artifacts as running directly. What you gain is the overview: 3+ projects, 8+ tasks, one board instead of a pile of windows and VS Code sessions.
 
 **Standalone skills on any project**
 
@@ -260,8 +260,8 @@ make dev-client    # Terminal 2 — frontend on :5173
 ```
 
 The Command Center never spawns Claude itself — **Launch** runs the
-`claude` command in an embedded terminal (or your own terminal, if you
-prefer) and watches its JSONL transcript. Full install,
+`claude` command in an embedded terminal and watches its JSONL
+transcript. Full install,
 parallel-worktree tips, Windows autostart, and custom actions for your
 own slash skills are documented in the WebUI repo's
 **[docs/guide.md](https://github.com/svenroth-ai/shipwright-webui/blob/main/docs/guide.md)**.

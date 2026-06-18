@@ -22,7 +22,7 @@ After the initial build, daily work happens through `/shipwright-iterate` -- com
 
 Every phase emits events into an append-only log. That log is the single source of truth -- and the raw material for audit-ready compliance documentation (traceability matrix, test evidence, SBOM, change history), regenerated automatically as a side effect of every phase completion. Drift that accumulates between sessions (manual edits, force-pushes, content rot that passes mtime checks) is caught on demand via `/shipwright-compliance` — a cross-artifact detective audit across 8 check groups (A–H). You get the compliance paperwork that usually costs weeks of manual work as a byproduct of just building the software.
 
-You can drive all of this from the Claude Code VSCode Extension or CLI terminal, or through the **Shipwright Command Center** — a local web UI with a kanban board across every Shipwright task, live transcripts per task, and a global inbox for agent questions. Instead of hunting through terminal windows or VS Code sessions, one place shows where everything stands. When you launch a new pipeline or iterate from the Command Center, the `claude` command runs in an embedded terminal right on the task page — or you copy it into your own terminal or VS Code Extension if you prefer. Either way the Command Center never spawns Claude itself; it follows the session transcript live.
+You can drive all of this from the Claude Code VSCode Extension or CLI terminal, or through the **Shipwright Command Center** — a local web UI with a kanban board across every Shipwright task, live transcripts per task, and a global inbox for agent questions. Instead of hunting through terminal windows or VS Code sessions, one place shows where everything stands. When you launch a new pipeline or iterate from the Command Center, the `claude` command runs in an embedded terminal right on the task page. The Command Center never spawns Claude itself; it follows the session transcript live.
 
 ### Three ways to use it
 
@@ -30,7 +30,7 @@ You can drive all of this from the Claude Code VSCode Extension or CLI terminal,
 - **Daily iteration** -- `/shipwright-iterate "..."` for every change after the first deploy. Classifies intent, assesses complexity, runs the right amount of process.
 - **Single skill** -- `/shipwright-plan`, `/shipwright-test`, `/shipwright-security`, or any other skill on its own -- even on projects that never used Shipwright before.
 
-All three work from the Claude Code VSCode Extension or CLI terminal directly. The Command Center WebUI layers a multi-project kanban on top — Claude runs in an embedded terminal on the task page (or your own terminal / VS Code Extension if you prefer), you just stop juggling windows and VS Code sessions to see what's where.
+All three work from the Claude Code VSCode Extension or CLI terminal directly. The Command Center WebUI layers a multi-project kanban on top — Claude runs in an embedded terminal on the task page, you just stop juggling windows and VS Code sessions to see what's where.
 
 ### Who is Shipwright for?
 
@@ -2274,9 +2274,8 @@ everything stands.
 The web server never spawns Claude itself. When you hit **Launch** on a
 task, the `claude` command auto-runs in an embedded terminal pane on the
 task detail page — the embedded terminal hosts a shell, Claude runs
-inside it. Prefer your own setup? The same command is available to copy
-into your terminal or the VS Code Extension. Either way the Command
-Center watches the resulting session transcript live — fire and forget:
+inside it. The Command Center watches the resulting session transcript
+live — fire and forget:
 the dashboard updates while you keep coding.
 
 The Command Center lives in its own repo:
