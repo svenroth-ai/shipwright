@@ -22,15 +22,15 @@ From one-line description to deployed, tested, secured app — via a cleanly orc
 <table>
 <tr>
 <td width="50%"><img src="docs/images/command-center-board.png" alt="Shipwright Command Center — Kanban view" /></td>
-<td width="50%"><img src="docs/images/command-center-task-detail.png" alt="Shipwright Command Center — Task detail with Claude chat" /></td>
+<td width="50%"><img src="docs/images/command-center-task-detail.png" alt="Shipwright Command Center — Task detail" /></td>
 </tr>
 <tr>
 <td><em>Kanban board across every Shipwright project — Backlog, In Progress, In Review, Done. One place to see where everything stands.</em></td>
-<td><em>Task detail — live transcript with messages, tool calls, diffs, and IREB acceptance criteria side by side.</em></td>
+<td><em>Task detail — embedded terminal, Project File Viewer, Markdown Editor.</em></td>
 </tr>
 </table>
 
-The Command Center is the browser surface for the same skills you run in the terminal or VS Code Extension. Instead of keeping 4 terminal windows or VS Code sessions open for 4 projects, you get one kanban board, one inbox for agent questions, and one place to launch a new pipeline or iterate. When you launch, the `claude` command runs in an embedded terminal on the task page — or your own terminal / VS Code Extension if you prefer — and the Command Center follows the session live. It lives in its own repo — see [Start the Command Center](#start-the-command-center).
+The Command Center is the browser surface for the same skills you run in the terminal or VS Code Extension. Instead of keeping 4 terminal windows or VS Code sessions open for 4 projects, you get one kanban board, one inbox for agent questions, and one place to launch a new pipeline or iterate. When you launch, the `claude` command runs in an embedded terminal on the task page, and the Command Center follows the session live. It lives in its own repo — see [Start the Command Center](#start-the-command-center).
 
 ## Why Shipwright?
 
@@ -200,6 +200,28 @@ claude plugin list   # all 13 should show ✔ enabled
 ```
 
 See [Chapter 3](docs/guide.md#3-your-first-project) (greenfield) and [Chapter 3.5](docs/guide.md#35-adopting-an-existing-repo) (brownfield).
+
+### The daily loop — `/shipwright-iterate`
+
+After the first build, the initial pipeline is the exception — daily work
+runs through **`/shipwright-iterate`**. Give it one prompt and it
+auto-detects whether you're asking for a feature, a behavior change, a
+bug fix, or a refactor, then runs the right slice of the full pipeline:
+it classifies intent, sizes complexity (trivial → large), writes a
+failing test first, implements, runs an external code review on
+non-trivial diffs, and finalizes through a clean Conventional-Commit PR —
+keeping specs, the append-only event log, and compliance artifacts in
+sync as it goes. No need to re-run the whole project pipeline for a
+one-line change.
+
+```
+/shipwright-iterate "Add a dark mode toggle"
+/shipwright-iterate "Fix the timezone bug in the weekly report"
+```
+
+For larger work it scales up to **Campaign Mode** (autonomous,
+multi-iterate). The full complexity matrix and finalization steps are in
+[§8 Ongoing Development with /shipwright-iterate](docs/guide.md#8-ongoing-development-with-shipwright-iterate).
 
 ### 3. Keep Shipwright updated
 
