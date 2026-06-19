@@ -38,6 +38,18 @@ The Command Center is the browser surface for the same skills you run in the ter
 - **Flexible, not linear.** Run the full pipeline with `/shipwright-run`, iterate daily with `/shipwright-iterate`, or invoke any single skill on its own.
 - **Compliance without the overhead.** Traceability matrix, test evidence, change history, SBOM, and a dashboard — all generated automatically from an append-only event log. The audit paperwork that normally costs weeks of manual work ships as a byproduct of building the software.
 - **Mechanical quality gates.** Hooks block dangerous actions deterministically (exit code 2), so quality doesn't depend on the agent remembering the rules.
+- **Proven on itself.** Shipwright builds Shipwright — every commit on `main` runs through the same pipeline, scanner chain, and compliance gates it ships to you.
+
+## Who is it for?
+
+- **Developers** who want more than vibe coding — a structured pipeline from day one, with a visual dashboard to stay on top.
+- **Practitioners** who've already invested heavily in Claude Code and want the next step: from "I can prompt it" to "I understand what else is possible with it."
+- **Serious Founders** with enough technical background to know that more prompting won't give better quality — looking for the discipline that turns AI velocity into shippable products.
+- **IT Allrounders** who can't or won't use Replit-style tools — for compliance, customer reputation, or because they want to understand what's running in production.
+- **Consultants** and smaller boutiques that deliver to clients and refuse to ship vibe-coded output with their name on it.
+- **Business Analysts** bringing requirements discipline back into AI-coded projects — what to demand of specs, what to verify, what to reject.
+- **Tech Leaders** who want to understand how the SDLC needs to evolve into a model that's AI-native.
+- **Solution Architects** learning to recognize when AI-coded systems honor the architecture — and when they quietly drift away from it.
 
 ## Initial Pipeline
 
