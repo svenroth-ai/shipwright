@@ -89,7 +89,27 @@ phases:
                          — auto-background after every phase + on-demand audit
 ```
 
-After the initial build, day-to-day changes run through `/shipwright-iterate` — complexity-adaptive, keeps every artifact in sync.
+## Daily Iteration — `/shipwright-iterate`
+
+After the first build, the initial pipeline is the exception — daily work
+runs through **`/shipwright-iterate`**. Give it one prompt and it
+auto-detects whether you're asking for a feature, a behavior change, a
+bug fix, or a refactor, then runs the right slice of the full pipeline:
+it classifies intent, sizes complexity (trivial → large), writes a
+failing test first, implements, runs an external code review on
+non-trivial diffs, and finalizes through a clean Conventional-Commit PR —
+keeping specs, the append-only event log, and compliance artifacts in
+sync as it goes. No need to re-run the whole project pipeline for a
+one-line change.
+
+```
+/shipwright-iterate "Add a dark mode toggle"
+/shipwright-iterate "Fix the timezone bug in the weekly report"
+```
+
+For larger work it scales up to **Campaign Mode** (autonomous,
+multi-iterate). The full complexity matrix and finalization steps are in
+[§8 Ongoing Development with /shipwright-iterate](docs/guide.md#8-ongoing-development-with-shipwright-iterate).
 
 ## Using Shipwright
 
@@ -200,28 +220,6 @@ claude plugin list   # all 13 should show ✔ enabled
 ```
 
 See [Chapter 3](docs/guide.md#3-your-first-project) (greenfield) and [Chapter 3.5](docs/guide.md#35-adopting-an-existing-repo) (brownfield).
-
-### The daily loop — `/shipwright-iterate`
-
-After the first build, the initial pipeline is the exception — daily work
-runs through **`/shipwright-iterate`**. Give it one prompt and it
-auto-detects whether you're asking for a feature, a behavior change, a
-bug fix, or a refactor, then runs the right slice of the full pipeline:
-it classifies intent, sizes complexity (trivial → large), writes a
-failing test first, implements, runs an external code review on
-non-trivial diffs, and finalizes through a clean Conventional-Commit PR —
-keeping specs, the append-only event log, and compliance artifacts in
-sync as it goes. No need to re-run the whole project pipeline for a
-one-line change.
-
-```
-/shipwright-iterate "Add a dark mode toggle"
-/shipwright-iterate "Fix the timezone bug in the weekly report"
-```
-
-For larger work it scales up to **Campaign Mode** (autonomous,
-multi-iterate). The full complexity matrix and finalization steps are in
-[§8 Ongoing Development with /shipwright-iterate](docs/guide.md#8-ongoing-development-with-shipwright-iterate).
 
 ### 3. Keep Shipwright updated
 
