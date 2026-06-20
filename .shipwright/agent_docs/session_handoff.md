@@ -1,34 +1,36 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-17-anti-ratchet-corrupt-failclosed"
+run_id: "iterate-2026-06-20-bloat-gate-stop-fanout-dedup"
 phase: "iterate"
-reason: "iterate: anti-ratchet corrupt-baseline fail-closed"
-timestamp: "2026-06-17T13:12:57.377414+00:00"
+reason: "bloat-gate Stop fan-out dedup complete"
+timestamp: "2026-06-20T19:05:14.224233+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-17 13:12:57 UTC
+> Auto-generated 2026-06-20 19:05:14 UTC
 
 ## Session Info
 
-- **Session ID**: 5fbca8de-0f0f-47fd-8d08-1cd103da350a
-- **Timestamp**: 2026-06-17 13:12:57 UTC
-- **Reason**: iterate: anti-ratchet corrupt-baseline fail-closed
+- **Session ID**: e3a4f186-b6fd-4993-aea8-5f883bf5a1e3
+- **Timestamp**: 2026-06-20 19:05:14 UTC
+- **Reason**: bloat-gate Stop fan-out dedup complete
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-17-pr-review-truncation-failclosed
-- **Date**: 2026-06-17T12:57:55.359411Z
+- **Run ID**: iterate-2026-06-17-anti-ratchet-corrupt-failclosed
+- **Date**: 2026-06-17T13:12:58.043716Z
 - **Type**: bug
 - **Complexity**: small
-- **Branch**: iterate/pr-review-truncation-failclosed
-- **ADR**: iterate-2026-06-17-pr-review-truncation-failclosed
+- **Branch**: iterate/anti-ratchet-corrupt-failclosed
+- **ADR**: iterate-2026-06-17-anti-ratchet-corrupt-failclosed
 - **Tests passed**: True
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/anti-ratchet-corrupt-failclosed
+- **Branch**: iterate/bloat-gate-stop-fanout-dedup
+- **Run ID**: `iterate-2026-06-20-bloat-gate-stop-fanout-dedup`
+- **Spec**: .shipwright/planning/iterate/2026-06-20-bloat-gate-stop-fanout-dedup.md
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -47,8 +49,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/anti-ratchet-corrupt-failclosed
-- **Last Commit**: 84aa059d fix(security): Tier-3 PR review fails closed on a truncated diff (#263)
+- **Branch**: iterate/bloat-gate-stop-fanout-dedup
+- **Last Commit**: b7039786 chore(triage): sweep 3 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +66,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-c8a8b003 | work_completed | iterate (Add a once-per-(Stop,session) claim_once_for_event guard to bloat_gate_on_stop's block path so a single stop event emits one bloat block instead of one-per-plugin (12x in webui session bfd244ca).) | 2026-06-20 |
 | evt-c1c861cd | work_completed | iterate (anti-ratchet corrupt-baseline fail-closed) | 2026-06-17 |
 | evt-65f20e11 | work_completed | iterate (pr-review truncation fails closed) | 2026-06-17 |
 | evt-f339b083 | work_completed | iterate (align root pyproject version + de-PII a source comment) | 2026-06-17 |
 | evt-8335968f | work_completed | iterate (launch PII / local-path scrub) | 2026-06-17 |
-| evt-3f127b0e | work_completed | iterate (launch version unification & Beta branding) | 2026-06-17 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 204
-- **Last iterate**: bug — anti-ratchet corrupt-baseline fail-closed (2026-06-17)
+- **Total work events**: 205
+- **Last iterate**: bug — Add a once-per-(Stop,session) claim_once_for_event guard to bloat_gate_on_stop's block path so a single stop event emits one bloat block instead of one-per-plugin (12x in webui session bfd244ca). (2026-06-20)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
