@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-20 19:05 UTC | Session: e3a4f186-b6fd-4993-aea8-5f883bf5a1e3 | Run: iterate-2026-06-20-bloat-gate-stop-fanout-dedup
+> Updated: 2026-06-20 20:32 UTC | Session: e3a4f186-b6fd-4993-aea8-5f883bf5a1e3 | Run: iterate-2026-06-20-aggregate-triage-stop-fanout-dedup
 
-## Recent Changes (205 iterations)
+## Recent Changes (206 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Add a once-per-(Stop,session) claim_once_for_event guard to aggregate_triage_on_stop so one stop regenerates triage_inbox.md once instead of once-per-plugin; a failed winner releases the claim so a sibling retries. | 0/0 |  | tooling | 2026-06-20 |
 | bug | Add a once-per-(Stop,session) claim_once_for_event guard to bloat_gate_on_stop's block path so a single stop event emits one bloat block instead of one-per-plugin (12x in webui session bfd244ca). | 0/0 |  | tooling | 2026-06-20 |
 | bug | anti-ratchet corrupt-baseline fail-closed | 139/139 |  | infra | 2026-06-17 |
 | bug | pr-review truncation fails closed | 420/423 |  | tooling | 2026-06-17 |
@@ -212,7 +213,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-20 | Unit: 3534/3534 | Integration: 166/166 | Smoke: not_run | (iterate)
+Last run: 2026-06-20 | Unit: 3539/3539 | Integration: 169/169 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

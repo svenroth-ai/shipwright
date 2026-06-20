@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-20-bloat-gate-stop-fanout-dedup",
+    "run_id": "iterate-2026-06-20-aggregate-triage-stop-fanout-dedup",
     "date": "2026-06-20",
     "unit": {
       "status": "passed",
-      "passed": 3534,
-      "total": 3534
+      "passed": 3539,
+      "total": 3539
     },
     "integration": {
       "status": "passed",
-      "passed": 166,
-      "total": 166
+      "passed": 169,
+      "total": 169
     },
     "pgtap": {
       "status": "not_run",
@@ -32,45 +32,45 @@
     },
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --with pytest python -m pytest integration-tests/test_bloat_gate_fanout.py shared/tests/test_bloat_gate_fanout_dedup.py -q -p no:cacheprovider",
+      "runner": "uv run --with pytest python -m pytest integration-tests/test_aggregate_triage_fanout.py shared/tests/test_aggregate_triage_fanout_dedup.py -q -p no:cacheprovider",
       "exit_code": 0,
-      "tests_run": 6,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-20-bloat-gate-stop-fanout-dedup/surface_verification.json",
-      "timestamp": "2026-06-20T18:59:40.358Z",
-      "justification": "Behavior is a Claude Code Stop hook (Python CLI). The fan-out integration test drives the REAL hook script across all 12 plugin roots in a git-backed project; cli surface, tests_run=6. No web/API/UI/store/SSE surface — the bloat gate is a local dev-time hook, not consumed by any client."
+      "tests_run": 7,
+      "evidence_path": ".shipwright/runs/iterate-2026-06-20-aggregate-triage-stop-fanout-dedup/surface_verification.json",
+      "timestamp": "2026-06-20T20:28:50.103Z",
+      "justification": "Behavior is a Claude Code Stop hook (Python CLI). The fan-out integration test drives the REAL hook script across all 12 plugin roots in a git-backed project; cli surface, tests_run=7. No web/API/UI/store/SSE surface — the hook regenerates a local gitignored derived cache, not consumed by any client."
     },
     "degraded": [],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "N fan-out invocations with offenders (same Stop, same session) -> exactly one decision:block, the rest empty stdout (register-everywhere hook + claim guard COMPOSE under a real 12-plugin fan-out)",
+          "behavior": "N fan-out invocations (same Stop, session) -> exactly ONE regen, the other 11 emit the dedup-skip diag (register-everywhere hook + claim guard COMPOSE under a real 12-plugin fan-out)",
           "disposition": "tested",
           "category": "integration",
-          "evidence": "integration test_bloat_gate_fanout.py::test_bloat_gate_fanout_blocks_once + ::test_bloat_gate_fanout_concurrent_one_blocker (drives the real hook across all 12 plugin roots in a git project, sequential + parallel); unit test_bloat_gate_fanout_dedup.py::test_fanout_dedup_blocks_once_then_passes PASSED"
+          "evidence": "integration test_aggregate_triage_fanout.py::test_aggregate_triage_fanout_regenerates_once + ::test_aggregate_triage_fanout_concurrent_one_regen (real hook across all 12 plugin roots, sequential + parallel, 1 regen + 11 skips); unit test_fanout_dedup_regenerates_once PASSED"
         },
         {
-          "behavior": "claim is per (event, session): a second session still blocks once (no cross-session suppression)",
+          "behavior": "claim is per (event, session): a second session regenerates independently",
           "disposition": "tested",
-          "evidence": "test_bloat_gate_fanout.py::test_bloat_gate_fanout_per_session_independent + test_bloat_gate_fanout_dedup.py::test_fanout_dedup_is_per_session PASSED"
+          "evidence": "test_aggregate_triage_fanout.py::test_aggregate_triage_fanout_per_session_independent + test_aggregate_triage_fanout_dedup.py::test_fanout_dedup_is_per_session PASSED"
         },
         {
-          "behavior": "single firing with offenders still blocks (no regression to existing gate behavior)",
+          "behavior": "a single firing still regenerates (no regression to existing write-runtime behavior)",
           "disposition": "tested",
-          "evidence": "existing test_bloat_gate_on_stop.py::test_blocks_on_anti_ratchet + ::test_blocks_on_new_crossing_outside_baseline PASSED (unchanged, 16-case suite green)"
+          "evidence": "existing test_stop_hooks_write_runtime.py::test_stop_hook_writes_runtime_only[aggregate_triage_on_stop] PASSED (unchanged)"
         },
         {
-          "behavior": "pass-path invocation (no offender) never creates/consumes the claim file (claim-after-no-op-guards ordering)",
+          "behavior": "a non-Shipwright / pass-path invocation no-ops and never creates the claim",
           "disposition": "tested",
-          "evidence": "test_bloat_gate_fanout_dedup.py::test_pass_path_does_not_create_claim PASSED"
+          "evidence": "test_aggregate_triage_fanout_dedup.py::test_non_shipwright_project_no_claim PASSED"
         },
         {
-          "behavior": "sid == 'unknown' -> helper does the work without claiming (fail-open over-emit, never a dropped block)",
+          "behavior": "a failed regen (exception or non-zero rc) RELEASES the claim so a sibling/later stop retries (does not starve the event)",
           "disposition": "tested",
-          "evidence": "existing test_bloat_gate_on_stop.py::test_session_scoping_unknown_fallback PASSED (still blocks under unknown sid)"
+          "evidence": "test_aggregate_triage_fanout_dedup.py::test_failed_regen_releases_claim PASSED (runtime/ blocked as a file -> mkdir raises -> claim released -> retry after unblock regenerates)"
         },
         {
-          "behavior": "a genuinely-later Stop (>30s) re-arms and re-blocks a still-oversize file",
+          "behavior": "a genuinely-later Stop (>30s) re-arms and regenerates again",
           "disposition": "untestable",
           "reason_code": "covered-by-existing-test",
           "evidence": "no new TTL logic in this diff; the 30s-TTL re-arm is owned and proven by shared/tests/test_event_once.py"

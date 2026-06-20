@@ -1,36 +1,37 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-20-bloat-gate-stop-fanout-dedup"
+run_id: "iterate-2026-06-20-aggregate-triage-stop-fanout-dedup"
 phase: "iterate"
-reason: "bloat-gate Stop fan-out dedup complete"
-timestamp: "2026-06-20T19:05:14.224233+00:00"
+reason: "aggregate_triage Stop fan-out dedup complete"
+timestamp: "2026-06-20T20:32:05.954367+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-20 19:05:14 UTC
+> Auto-generated 2026-06-20 20:32:05 UTC
 
 ## Session Info
 
 - **Session ID**: e3a4f186-b6fd-4993-aea8-5f883bf5a1e3
-- **Timestamp**: 2026-06-20 19:05:14 UTC
-- **Reason**: bloat-gate Stop fan-out dedup complete
+- **Timestamp**: 2026-06-20 20:32:05 UTC
+- **Reason**: aggregate_triage Stop fan-out dedup complete
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-17-anti-ratchet-corrupt-failclosed
-- **Date**: 2026-06-17T13:12:58.043716Z
+- **Run ID**: iterate-2026-06-20-bloat-gate-stop-fanout-dedup
+- **Date**: 2026-06-20T19:05:51.783269Z
 - **Type**: bug
-- **Complexity**: small
-- **Branch**: iterate/anti-ratchet-corrupt-failclosed
-- **ADR**: iterate-2026-06-17-anti-ratchet-corrupt-failclosed
+- **Complexity**: medium
+- **Branch**: iterate/bloat-gate-stop-fanout-dedup
+- **ADR**: iterate-2026-06-20-bloat-gate-stop-fanout-dedup
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/2026-06-20-bloat-gate-stop-fanout-dedup.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/bloat-gate-stop-fanout-dedup
-- **Run ID**: `iterate-2026-06-20-bloat-gate-stop-fanout-dedup`
-- **Spec**: .shipwright/planning/iterate/2026-06-20-bloat-gate-stop-fanout-dedup.md
+- **Branch**: iterate/aggregate-triage-stop-fanout-dedup
+- **Run ID**: `iterate-2026-06-20-aggregate-triage-stop-fanout-dedup`
+- **Spec**: .shipwright/planning/iterate/2026-06-20-aggregate-triage-stop-fanout-dedup.md
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -49,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/bloat-gate-stop-fanout-dedup
-- **Last Commit**: b7039786 chore(triage): sweep 3 outbox append(s) into branch
+- **Branch**: iterate/aggregate-triage-stop-fanout-dedup
+- **Last Commit**: f89cd5fc chore(triage): sweep 1 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -66,17 +67,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-6b111a3b | work_completed | iterate (Add a once-per-(Stop,session) claim_once_for_event guard to aggregate_triage_on_stop so one stop regenerates triage_inbox.md once instead of once-per-plugin; a failed winner releases the claim so a sibling retries.) | 2026-06-20 |
 | evt-c8a8b003 | work_completed | iterate (Add a once-per-(Stop,session) claim_once_for_event guard to bloat_gate_on_stop's block path so a single stop event emits one bloat block instead of one-per-plugin (12x in webui session bfd244ca).) | 2026-06-20 |
 | evt-c1c861cd | work_completed | iterate (anti-ratchet corrupt-baseline fail-closed) | 2026-06-17 |
 | evt-65f20e11 | work_completed | iterate (pr-review truncation fails closed) | 2026-06-17 |
 | evt-f339b083 | work_completed | iterate (align root pyproject version + de-PII a source comment) | 2026-06-17 |
-| evt-8335968f | work_completed | iterate (launch PII / local-path scrub) | 2026-06-17 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 205
-- **Last iterate**: bug — Add a once-per-(Stop,session) claim_once_for_event guard to bloat_gate_on_stop's block path so a single stop event emits one bloat block instead of one-per-plugin (12x in webui session bfd244ca). (2026-06-20)
+- **Total work events**: 206
+- **Last iterate**: change — Add a once-per-(Stop,session) claim_once_for_event guard to aggregate_triage_on_stop so one stop regenerates triage_inbox.md once instead of once-per-plugin; a failed winner releases the claim so a sibling retries. (2026-06-20)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

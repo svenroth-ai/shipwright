@@ -1,0 +1,1 @@
+The triage-inbox Stop hook now regenerates its derived cache once per stop instead of once per installed plugin (~12×), via a once-per-(stop,session) dedup guard; a failed regeneration releases the guard so another invocation retries.

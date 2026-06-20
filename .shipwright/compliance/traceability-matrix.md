@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-20T19:05:14.224233+00:00
+Generated: 2026-06-20T20:32:05.954367+00:00
 
 ## Requirements Coverage
 
@@ -230,6 +230,7 @@ Generated: 2026-06-20T19:05:14.224233+00:00
 | pr-review truncation fails closed | iterate | bug |  | 420/423 | — | 2026-06-17 |
 | anti-ratchet corrupt-baseline fail-closed | iterate | bug |  | 139/139 | — | 2026-06-17 |
 | Add a once-per-(Stop,session) claim_once_for_event guard to bloat_gate_on_stop's block path so a single stop event emits one bloat block instead of one-per-plugin (12x in webui session bfd244ca). | iterate | bug |  | — | — | 2026-06-20 |
+| Add a once-per-(Stop,session) claim_once_for_event guard to aggregate_triage_on_stop so one stop regenerates triage_inbox.md once instead of once-per-plugin; a failed winner releases the claim so a sibling retries. | iterate | change |  | — | — | 2026-06-20 |
 
 ## Coverage Summary
 
@@ -237,7 +238,7 @@ Generated: 2026-06-20T19:05:14.224233+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 205 |
+| Iterate changes | 206 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
