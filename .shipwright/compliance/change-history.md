@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-06-17T13:12:57.377414+00:00
-Total commits: 1023
+Generated: 2026-06-20T19:05:14.224233+00:00
+Total commits: 1029
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 292
+    "fix" : 293
     "feat" : 273
-    "chore" : 227
-    "docs" : 131
+    "chore" : 228
+    "docs" : 135
     "refactor" : 61
     "test" : 24
     "ci" : 7
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 292 commits
+### Fixes (fix) — 293 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-17 | bloat | anti-ratchet gate fails closed on a corrupt baseline (#264) | 045962260896 |
 | 2026-06-17 | security | Tier-3 PR review fails closed on a truncated diff (#263) | 84aa059dbd1c |
 | 2026-06-17 | compliance | clean Type column, skip-aware status, dashboard links (#258) | dab9c2fd7ea7 |
 | 2026-06-15 | hooks | filter sentinel-run FAILs at the SessionStart phase-quality read path (#253) | e379c8cb1712 |
@@ -595,10 +596,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 227 commits
+### Chores (chore) — 228 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-20 | triage | sweep 3 outbox append(s) into branch | b70397864436 |
 | 2026-06-17 | — | align root pyproject.toml to 0.29.0 + de-PII a source comment (#262) | 6c0c1ea626c4 |
 | 2026-06-17 | release | v0.29.0 (#261) | 392152b988ec |
 | 2026-06-17 | — | scrub machine-local paths and PII from tracked files (#260) | 32840c3fc45a |
@@ -827,10 +829,14 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 131 commits
+### Documentation (docs) — 135 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-19 | readme | add "Who is it for?" personas and elevate the dogfooding proof (#268) | 5c40b22ba451 |
+| 2026-06-19 | readme | move the iterate block to follow Initial Pipeline (#267) | 6a3b8c6c2bc3 |
+| 2026-06-19 | — | drop "run it in your own terminal" as a second path (#266) | 31f212c81c2e |
+| 2026-06-18 | readme | add /shipwright-iterate subsection, refresh Command Center caption (#265) | fbe825a1e6e0 |
 | 2026-06-16 | — | lead README and guide openings with the brand tagline (#257) | f15b00bd432b |
 | 2026-06-16 | guide | remove development-provenance references (#256) | b6b5e8a4c8de |
 | 2026-06-14 | iterate | document interleaved-serial campaign run-model in guide (#247) | 767473d8ad21 |
@@ -1092,7 +1098,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1023 |
+| Total commits | 1029 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1023 |
+| Human-authored commits | 1029 |
 

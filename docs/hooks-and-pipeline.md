@@ -615,15 +615,22 @@ SessionStart/Stop, **not** multi-fire PostToolUse). Guarded hooks:
 | `audit_phase_quality_on_stop` | Stop | claim + **session-state phase resolver** (see its section) |
 | `generate_handoff_on_stop` | Stop | claim first-wins — 11× identical handoff/dashboard regen → once |
 | `check_artifact_drift` | SessionStart | claim around the scan + `additionalContext` emit → once (distinct `sessionstart-drift` claim key from `capture_session_id`'s injection claim) |
+| `bloat_gate_on_stop` | Stop | claim (`stop-bloat`) on the **block path only**, after every no-op/pass guard — N× identical Iron-Law block → once; the pass path stays empty + unclaimed (iterate-2026-06-20-bloat-gate-stop-fanout-dedup) |
 
 Hooks already deduped/convergent (left unchanged): `capture_session_id` (claim on
-its injection), `check_drift`, `audit_compliance_on_stop`, `bloat_gate_on_stop`,
+its injection), `check_drift`, `audit_compliance_on_stop`,
 `plugin_sync_reminder_on_stop`, and the PostToolUse pair `mark_plugin_edit`
 (set-idempotent marker) + `check_file_size` (upsert-by-path marker) — their N×
-fan-out converges to **one** net marker entry. Cross-event composition is pinned
-by `integration-tests/test_hook_fanout_consolidation.py` (exactly-once,
-phase-from-session-state, fail-open, robust-when-first-plugin-disabled,
-parallel-fan-out atomicity, marker convergence).
+fan-out converges to **one** net marker entry. (`bloat_gate_on_stop` was
+originally placed in this "convergent" list by iterate-2026-06-14-hook-fanout-dedup,
+but it is **not** convergent: its *pass* path is empty/invisible, which masked
+that the *block* path re-emits the full Iron-Law `reason` once per plugin —
+12 identical Stop blocks in one event, observed in webui session `bfd244ca`.
+It now carries the `stop-bloat` claim in the table above.) Cross-event
+composition is pinned by `integration-tests/test_hook_fanout_consolidation.py`
+(exactly-once, phase-from-session-state, fail-open, robust-when-first-plugin-disabled,
+parallel-fan-out atomicity, marker convergence) + `integration-tests/test_bloat_gate_fanout.py`
+(one block across the 12-plugin fan-out, sequential + parallel, per-session isolation).
 
 ### Shared Hook: capture_session_id.py
 

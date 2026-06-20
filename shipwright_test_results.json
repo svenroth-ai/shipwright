@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-17-anti-ratchet-corrupt-failclosed",
-    "date": "2026-06-17",
+    "run_id": "iterate-2026-06-20-bloat-gate-stop-fanout-dedup",
+    "date": "2026-06-20",
     "unit": {
       "status": "passed",
-      "passed": 139,
-      "total": 139
+      "passed": 3534,
+      "total": 3534
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 166,
+      "total": 166
     },
     "pgtap": {
       "status": "not_run",
@@ -31,38 +31,60 @@
       "status": "not_run"
     },
     "surface_verification": {
-      "surface": "none",
-      "runner": "",
+      "surface": "cli",
+      "runner": "uv run --with pytest python -m pytest integration-tests/test_bloat_gate_fanout.py shared/tests/test_bloat_gate_fanout_dedup.py -q -p no:cacheprovider",
       "exit_code": 0,
-      "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-17-anti-ratchet-corrupt-failclosed/surface_verification.json",
-      "timestamp": "2026-06-17T13:11:50.274Z",
-      "justification": "Pure Python CLI gate logic (anti_ratchet_check.py exit behavior: absent vs corrupt baseline); no web/API/UI surface. Covered by subprocess-driven CLI tests."
+      "tests_run": 6,
+      "evidence_path": ".shipwright/runs/iterate-2026-06-20-bloat-gate-stop-fanout-dedup/surface_verification.json",
+      "timestamp": "2026-06-20T18:59:40.358Z",
+      "justification": "Behavior is a Claude Code Stop hook (Python CLI). The fan-out integration test drives the REAL hook script across all 12 plugin roots in a git-backed project; cli surface, tests_run=6. No web/API/UI/store/SSE surface — the bloat gate is a local dev-time hook, not consumed by any client."
     },
     "degraded": [],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "present-but-malformed bloat baseline -> exit 1 (fail-closed; gate not silently disabled)",
+          "behavior": "N fan-out invocations with offenders (same Stop, same session) -> exactly one decision:block, the rest empty stdout (register-everywhere hook + claim guard COMPOSE under a real 12-plugin fan-out)",
           "disposition": "tested",
-          "evidence": "test_anti_ratchet_check.py::test_malformed_baseline_fails_closed PASSED"
+          "category": "integration",
+          "evidence": "integration test_bloat_gate_fanout.py::test_bloat_gate_fanout_blocks_once + ::test_bloat_gate_fanout_concurrent_one_blocker (drives the real hook across all 12 plugin roots in a git project, sequential + parallel); unit test_bloat_gate_fanout_dedup.py::test_fanout_dedup_blocks_once_then_passes PASSED"
         },
         {
-          "behavior": "absent baseline -> exit 0 (fail-open) PRESERVED",
+          "behavior": "claim is per (event, session): a second session still blocks once (no cross-session suppression)",
           "disposition": "tested",
-          "evidence": "test_anti_ratchet_check.py::test_no_baseline_file_fails_open PASSED"
+          "evidence": "test_bloat_gate_fanout.py::test_bloat_gate_fanout_per_session_independent + test_bloat_gate_fanout_dedup.py::test_fanout_dedup_is_per_session PASSED"
+        },
+        {
+          "behavior": "single firing with offenders still blocks (no regression to existing gate behavior)",
+          "disposition": "tested",
+          "evidence": "existing test_bloat_gate_on_stop.py::test_blocks_on_anti_ratchet + ::test_blocks_on_new_crossing_outside_baseline PASSED (unchanged, 16-case suite green)"
+        },
+        {
+          "behavior": "pass-path invocation (no offender) never creates/consumes the claim file (claim-after-no-op-guards ordering)",
+          "disposition": "tested",
+          "evidence": "test_bloat_gate_fanout_dedup.py::test_pass_path_does_not_create_claim PASSED"
+        },
+        {
+          "behavior": "sid == 'unknown' -> helper does the work without claiming (fail-open over-emit, never a dropped block)",
+          "disposition": "tested",
+          "evidence": "existing test_bloat_gate_on_stop.py::test_session_scoping_unknown_fallback PASSED (still blocks under unknown sid)"
+        },
+        {
+          "behavior": "a genuinely-later Stop (>30s) re-arms and re-blocks a still-oversize file",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "evidence": "no new TTL logic in this diff; the 30s-TTL re-arm is owned and proven by shared/tests/test_event_once.py"
         }
       ],
       "counts": {
-        "testable": 2,
-        "tested": 2,
-        "untestable": 0,
+        "testable": 5,
+        "tested": 5,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 2,
-        "covered_acs": 2
+        "acs": 5,
+        "covered_acs": 5
       }
     }
   }

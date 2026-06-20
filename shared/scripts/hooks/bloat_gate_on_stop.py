@@ -26,6 +26,7 @@ if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 
 from lib import bloat_baseline as _bb  # noqa: E402
+from lib.event_once import claim_once_for_event  # noqa: E402
 from lib.repo_root import main_repo_root_or  # noqa: E402
 
 
@@ -273,6 +274,15 @@ def main() -> int:
         elif delta == "crossing" and not in_baseline:
             offenders.append({**entry, "path": path, "now": current})
     if not offenders:
+        _emit_pass()
+        return 0
+    # Fan-out dedup (rationale in the iterate spec / PR #250): the gate is
+    # registered in every plugin, so one Stop event fires it ~12×, each emitting
+    # the same block (webui session bfd244ca, 2026-06-20). Claim once per (Stop,
+    # session) — first to reach a real block wins; the rest pass. Placed AFTER
+    # every no-op/pass guard so a marker-less / cleared-file invocation never
+    # consumes the claim. sid=="unknown" → helper over-emits (fail-open).
+    if not claim_once_for_event(root, "stop-bloat", sid):
         _emit_pass()
         return 0
     _emit_block(_build_block_reason(offenders))

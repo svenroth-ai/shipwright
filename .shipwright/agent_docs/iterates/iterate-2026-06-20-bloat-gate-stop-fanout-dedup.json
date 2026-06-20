@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-20-bloat-gate-stop-fanout-dedup",
+  "date": "2026-06-20T19:05:51.783269Z",
+  "type": "bug",
+  "complexity": "medium",
+  "branch": "iterate/bloat-gate-stop-fanout-dedup",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/2026-06-20-bloat-gate-stop-fanout-dedup.md",
+  "adr": "iterate-2026-06-20-bloat-gate-stop-fanout-dedup"
+}
