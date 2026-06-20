@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-20-aggregate-triage-stop-fanout-dedup",
+  "date": "2026-06-20T20:32:18.239202Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/aggregate-triage-stop-fanout-dedup",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/2026-06-20-aggregate-triage-stop-fanout-dedup.md",
+  "adr": "iterate-2026-06-20-aggregate-triage-stop-fanout-dedup"
+}

@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-06-20T19:05:14.224233+00:00
+Generated: 2026-06-20T20:32:05.954367+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -9,20 +9,20 @@ Scope: library
 | Metric | Value | Status | Why warn? |
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
-| Work events (iterate) | 205 changes | INFO |  |
+| Work events (iterate) | 206 changes | INFO |  |
 | All unit tests passing | 0/0 | WARN | no test events recorded yet |
 | Architecture decisions | 230 ADRs | INFO |  |
-| Iterate tests passing | 131/205 iterations tested | WARN | 74 iterate(s) without tests — see test-evidence.md |
+| Iterate tests passing | 131/206 iterations tested | WARN | 75 iterate(s) without tests — see test-evidence.md |
 | Dependencies | 8 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 1 open | WARN | 1 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Triage open | 0 open | PASS |  |
 | Bloat over-limit | 128 | WARN | 128 file(s) past limit AND not ADR-justified — see shipwright_bloat_baseline.json |
 | Bloat in allowlist | 158 entries | INFO |  |
 | Bloat ratchet delta | +0 lines | PASS |  |
 
 ## Project Velocity
 
-- Iterate: 205 changes (2026-05-02 → 2026-06-20)
+- Iterate: 206 changes (2026-05-02 → 2026-06-20)
 - Last activity: 2026-06-20
 
 ## External LLM Review Evidence

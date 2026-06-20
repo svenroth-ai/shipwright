@@ -616,6 +616,7 @@ SessionStart/Stop, **not** multi-fire PostToolUse). Guarded hooks:
 | `generate_handoff_on_stop` | Stop | claim first-wins — 11× identical handoff/dashboard regen → once |
 | `check_artifact_drift` | SessionStart | claim around the scan + `additionalContext` emit → once (distinct `sessionstart-drift` claim key from `capture_session_id`'s injection claim) |
 | `bloat_gate_on_stop` | Stop | claim (`stop-bloat`) on the **block path only**, after every no-op/pass guard — N× identical Iron-Law block → once; the pass path stays empty + unclaimed (iterate-2026-06-20-bloat-gate-stop-fanout-dedup) |
+| `aggregate_triage_on_stop` | Stop | claim (`stop-triage-inbox`) after the `is_shipwright_project` no-op guard — N× redundant `triage_inbox.md` regen (a non-atomic write) → once; a failed winner releases the claim so a sibling retries (iterate-2026-06-20-aggregate-triage-stop-fanout-dedup) |
 
 Hooks already deduped/convergent (left unchanged): `capture_session_id` (claim on
 its injection), `check_drift`, `audit_compliance_on_stop`,
@@ -630,7 +631,9 @@ It now carries the `stop-bloat` claim in the table above.) Cross-event
 composition is pinned by `integration-tests/test_hook_fanout_consolidation.py`
 (exactly-once, phase-from-session-state, fail-open, robust-when-first-plugin-disabled,
 parallel-fan-out atomicity, marker convergence) + `integration-tests/test_bloat_gate_fanout.py`
-(one block across the 12-plugin fan-out, sequential + parallel, per-session isolation).
+(one block across the 12-plugin fan-out, sequential + parallel, per-session isolation)
++ `integration-tests/test_aggregate_triage_fanout.py` (one regen + 11 dedup-skips
+across the fan-out, sequential + parallel, per-session isolation).
 
 ### Shared Hook: capture_session_id.py
 

@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-06-20T19:05:14.224233+00:00
-Total commits: 1029
+Generated: 2026-06-20T20:32:05.954367+00:00
+Total commits: 1030
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 293
+    "fix" : 294
     "feat" : 273
     "chore" : 228
     "docs" : 135
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 293 commits
+### Fixes (fix) — 294 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-20 | bloat | dedup bloat-gate Stop block across the plugin fan-out (#269) | 05992f878e7c |
 | 2026-06-17 | bloat | anti-ratchet gate fails closed on a corrupt baseline (#264) | 045962260896 |
 | 2026-06-17 | security | Tier-3 PR review fails closed on a truncated diff (#263) | 84aa059dbd1c |
 | 2026-06-17 | compliance | clean Type column, skip-aware status, dashboard links (#258) | dab9c2fd7ea7 |
@@ -600,7 +601,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-20 | triage | sweep 3 outbox append(s) into branch | b70397864436 |
+| 2026-06-20 | triage | sweep 1 outbox append(s) into branch | f89cd5fc39e3 |
 | 2026-06-17 | — | align root pyproject.toml to 0.29.0 + de-PII a source comment (#262) | 6c0c1ea626c4 |
 | 2026-06-17 | release | v0.29.0 (#261) | 392152b988ec |
 | 2026-06-17 | — | scrub machine-local paths and PII from tracked files (#260) | 32840c3fc45a |
@@ -1098,7 +1099,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1029 |
+| Total commits | 1030 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1029 |
+| Human-authored commits | 1030 |
 
