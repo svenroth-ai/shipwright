@@ -5,11 +5,11 @@
 ![Status](https://img.shields.io/badge/status-beta-blue)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-**Shipwright is the harness around your AI coding workflow — it turns vibe coding into agentic engineering you can trust.** Specs, Tests, Architectural Decisions, Living Traceability, and Compliance artifacts that turn AI velocity into shippable software. Not a stack framework; not autonomous codegen — the discipline layer that makes the rest reliable.
+**You can only keep changing software safely if whatever builds it knows what is already true** — what the product is meant to do, how it is built, and why the calls were made. Giving an AI that written record is now common and genuinely useful: the model no longer starts from zero each session. But a record only helps while it stays true, and on its own nothing re-checks it — so trust slips late rather than early, when something you'd already settled gets quietly undone and no one notices. That's what Shipwright keeps true: on every change it checks the work back against the baseline — your requirements, architecture, and decisions — and won't let through a change that silently drops a requirement or reverses a past call. Traceability and change history just fall out of it.
 
-> **Sidenote.** What Shipwright builds, the wider AI engineering field is starting to call *harness engineering* (Martin Fowler, 2026). Shipwright is your harness.
+Shipwright is **the harness your AI follows** — the discipline layer that keeps it true to what you already decided. Not a stack framework, not autonomous codegen: the layer that makes whatever generates your code something you can stand behind.
 
-From one-line description to deployed, tested, secured app — via a cleanly orchestrated pipeline of skills that also work on their own. Use it from the **Claude Code VSCode Extension or CLI terminal**, or — for multi-project work — through the **Shipwright Command Center** web UI: one kanban board across every Shipwright task. Built for daily iteration, not one-shot generation. **Ships audit-ready compliance artifacts as a byproduct — no extra work.**
+From one-line description to deployed, tested, secured app — via a cleanly orchestrated pipeline of skills that also work on their own. Use it from the **Claude Code VSCode Extension or CLI terminal**, or — for multi-project work — through the **Shipwright Command Center** web UI: one kanban board across every Shipwright task. Built for daily iteration, not one-shot generation.
 
 ```
 /shipwright-run "A SaaS time tracking app with Supabase and Next.js"
@@ -30,10 +30,11 @@ From one-line description to deployed, tested, secured app — via a cleanly orc
 </tr>
 </table>
 
-The Command Center is the browser surface for the same skills you run in the terminal or VS Code Extension. Instead of keeping 4 terminal windows or VS Code sessions open for 4 projects, you get one kanban board, one inbox for agent questions, and one place to launch a new pipeline or iterate. When you launch, the `claude` command runs in an embedded terminal on the task page, and the Command Center follows the session live. It lives in its own repo — see [Start the Command Center](#start-the-command-center).
+The Command Center is the browser surface for the same skills you run in the terminal or VS Code Extension. Instead of keeping 4 terminal windows or VS Code sessions open for 4 projects, you get one kanban board, one inbox for agent questions, and one place to launch a new pipeline or iterate. When you launch, the `claude` command runs in an embedded terminal on the task page, and the Command Center follows the session live. It lives in its own repo — see [Start the Command Center](#start-the-command-center-optional).
 
 ## Why Shipwright?
 
+- **Keeps your context true.** On every change, Shipwright re-checks the diff against the requirements, architecture, and decisions — and blocks anything that drops a requirement or reverses a past call. Enforced mechanically, not left to the model to remember.
 - **Structure over vibes.** IREB-aligned specs, TDD with acceptance criteria, mechanical hooks — not advisory prose.
 - **Flexible, not linear.** Run the full pipeline with `/shipwright-run`, iterate daily with `/shipwright-iterate`, or invoke any single skill on its own.
 - **Compliance without the overhead.** Traceability matrix, test evidence, change history, SBOM, and a dashboard — all generated automatically from an append-only event log. The audit paperwork that normally costs weeks of manual work ships as a byproduct of building the software.

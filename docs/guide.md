@@ -1,8 +1,12 @@
 # Shipwright -- The AI-Powered SDLC for Claude Code
 
-> **Ship right, not just fast.** — the harness that turns vibe coding into agentic engineering you can trust.
+> **Ship right, not just fast.** — the harness your AI follows, turning vibe coding into agentic engineering you can trust.
 
 ## 1. What is Shipwright?
+
+**You can only keep changing software safely if whatever builds it knows what is already true** — what the product is meant to do, how it is built, and why the calls were made. Giving an AI that written record is now common, and the good tools do it well; the model no longer starts from zero each session. But a written record only helps while it stays true. On their own, these tools hold a baseline — whether a new change quietly contradicts it is left to you to notice. And that is where trust actually slips: not when something is first built, but later, when a decision you had already settled gets undone and no one sees it.
+
+That is the part Shipwright looks after. On every change it checks the work back against the baseline — the requirements, the architecture, the decisions — and it won't wave through a change that silently drops a requirement or reverses a past call. The baseline isn't a document kept on the side; it is the agent's source of truth the next time it runs. Traceability and change history just fall out of working this way.
 
 ### The Problem
 
