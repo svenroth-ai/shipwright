@@ -5,11 +5,17 @@
 ![Status](https://img.shields.io/badge/status-beta-blue)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-**You can only keep changing software safely if whatever builds it knows what is already true.** That means what the product is meant to do, how it is built, and why the calls were made. Giving an AI that written record is now common and genuinely useful, so the model no longer starts from zero each session. But a record only helps while it stays true, and on its own nothing re-checks it. So trust slips late rather than early, when something you'd already settled gets quietly undone and no one notices. That's what Shipwright keeps true. On every change it checks the work back against the baseline (your requirements, architecture, and decisions) and won't let through a change that silently drops a requirement or reverses a past call. Traceability and change history just fall out of it.
+**AI can build your software now. The hard part is keeping it true to what you already decided, on every change, not just the first.**
 
-Shipwright is **the harness your AI follows**, the discipline layer that keeps it true to what you already decided. Not a stack framework, not autonomous codegen, just the layer that makes whatever generates your code something you can stand behind.
+Shipwright is **the harness your AI follows**. On every change it checks the work back against your baseline (requirements, architecture, past decisions) and won't let through a change that silently drops a requirement or reverses a call you already made. That is enforced in code, not left to the model to remember; the traceability and audit trail just fall out of it.
 
-From one-line description to deployed, tested, secured app, via a cleanly orchestrated pipeline of skills that also work on their own. Use it from the **Claude Code VSCode Extension or CLI terminal**, or for multi-project work through the **Shipwright Command Center** web UI: one kanban board across every Shipwright task. Built for daily iteration, not one-shot generation.
+```
+/shipwright-iterate "Add a dark mode toggle"
+```
+
+**What comes with it:** a failing test written first, the change, your specs and traceability updated to match, and a clean Conventional-Commit PR, security-scanned and gated on green checks. Nothing you'd already settled gets quietly undone.
+
+Not a stack framework, not autonomous codegen, just the discipline layer that makes whatever generates your code something you can stand behind. Use it from the **Claude Code VSCode Extension or CLI terminal**, or for multi-project work through the **Shipwright Command Center** web UI. Built for daily iteration, not one-shot generation. It scales from a one-line change to a whole new app:
 
 ```
 /shipwright-run "A SaaS time tracking app with Supabase and Next.js"
