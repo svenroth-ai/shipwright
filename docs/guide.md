@@ -24,9 +24,9 @@ Shipwright infers your stack, interviews you about requirements, designs the UI,
 
 After the initial build, daily work happens through `/shipwright-iterate` -- complexity-adaptive, keeps every artifact in sync. Every skill also works standalone, so you can reach for `/shipwright-plan`, `/shipwright-test`, or `/shipwright-security` on its own, any time.
 
-Every phase emits events into an append-only log. That log is the single source of truth -- and the raw material for audit-ready compliance documentation (traceability matrix, test evidence, SBOM, change history), regenerated automatically as a side effect of every phase completion. Drift that accumulates between sessions (manual edits, force-pushes, content rot that passes mtime checks) is caught on demand via `/shipwright-compliance` — a cross-artifact detective audit across 8 check groups (A–H). You get the compliance paperwork that usually costs weeks of manual work as a byproduct of just building the software.
+Every phase emits events into an append-only log. That log is the single source of truth, and the raw material for audit-ready compliance documentation (traceability matrix, test evidence, SBOM, change history), regenerated automatically as a side effect of every phase completion. Drift that accumulates between sessions (manual edits, force-pushes, content rot that passes mtime checks) is caught on demand via `/shipwright-compliance`: a cross-artifact detective audit across 8 check groups (A–H). You get the compliance paperwork that usually costs weeks of manual work as a byproduct of just building the software.
 
-You can drive all of this from the Claude Code VSCode Extension or CLI terminal, or through the **Shipwright Command Center** — a local web UI with a kanban board across every Shipwright task, live transcripts per task, and a global inbox for agent questions. Instead of hunting through terminal windows or VS Code sessions, one place shows where everything stands. When you launch a new pipeline or iterate from the Command Center, the `claude` command runs in an embedded terminal right on the task page. The Command Center never spawns Claude itself; it follows the session transcript live.
+You can drive all of this from the Claude Code VSCode Extension or CLI terminal, or through the **Shipwright Command Center**: a local web UI with a kanban board across every Shipwright task, live transcripts per task, and a global inbox for agent questions. Instead of hunting through terminal windows or VS Code sessions, one place shows where everything stands. When you launch a new pipeline or iterate from the Command Center, the `claude` command runs in an embedded terminal right on the task page. The Command Center never spawns Claude itself; it follows the session transcript live.
 
 ### Three ways to use it
 
@@ -34,25 +34,25 @@ You can drive all of this from the Claude Code VSCode Extension or CLI terminal,
 - **Daily iteration** -- `/shipwright-iterate "..."` for every change after the first deploy. Classifies intent, assesses complexity, runs the right amount of process.
 - **Single skill** -- `/shipwright-plan`, `/shipwright-test`, `/shipwright-security`, or any other skill on its own -- even on projects that never used Shipwright before.
 
-All three work from the Claude Code VSCode Extension or CLI terminal directly. The Command Center WebUI layers a multi-project kanban on top — Claude runs in an embedded terminal on the task page, you just stop juggling windows and VS Code sessions to see what's where.
+All three work from the Claude Code VSCode Extension or CLI terminal directly. The Command Center WebUI layers a multi-project kanban on top. Claude runs in an embedded terminal on the task page, you just stop juggling windows and VS Code sessions to see what's where.
 
 ### Who is Shipwright for?
 
-Shipwright is for engineers, BAs, architects, and tech leads who work with Claude Code — and have noticed that AI velocity alone does not get you to a shippable product. What they build (or oversee) gets seen by others: customers, colleagues, markets. They are not necessarily engineers in the classical sense, but they have enough technical judgment to know that more prompting does not produce more quality. They are looking for the guardrails that turn AI from "fast" into "fast *and* good." Shipwright is the discipline layer — Specs, Tests, traceable decisions, living traceability — and the Masterclass guides the path from "AI as a tool" to "AI as a professional discipline."
+Shipwright is for engineers, BAs, architects, and tech leads who work with Claude Code, and have noticed that AI velocity alone does not get you to a shippable product. What they build (or oversee) gets seen by others: customers, colleagues, markets. They are not necessarily engineers in the classical sense, but they have enough technical judgment to know that more prompting does not produce more quality. They are looking for the guardrails that turn AI from "fast" into "fast *and* good." Shipwright is the discipline layer (Specs, Tests, traceable decisions, living traceability), and the Masterclass guides the path from "AI as a tool" to "AI as a professional discipline."
 
-**Tool users — actively run Shipwright in their own projects:**
+**Tool users, actively run Shipwright in their own projects:**
 
 - **Developers** that want more than just vibe coding. A structured pipeline from day one, with a visual dashboard to stay on top.
 - **IT Allrounders** who can't or won't use Replit-style tools: for compliance, customer reputation, or because they want to understand what is running in production.
 - **Consultants and smaller boutiques** that deliver to clients and refuse to ship vibe-coded output with their name on it.
-- **Serious founders** with enough technical background to know that more prompting won't give better quality — looking for the discipline that turns AI velocity into shippable products.
+- **Serious founders** with enough technical background to know that more prompting won't give better quality, looking for the discipline that turns AI velocity into shippable products.
 
-**Curriculum audience — typically in larger organizations, learning the discipline rather than running the tool day-to-day:**
+**Curriculum audience, typically in larger organizations, learning the discipline rather than running the tool day-to-day:**
 
-- **Business Analysts and Requirements Engineers** looking to bring requirements discipline back into AI-coded projects — what to demand of specs, what to verify, what to reject.
+- **Business Analysts and Requirements Engineers** looking to bring requirements discipline back into AI-coded projects: what to demand of specs, what to verify, what to reject.
 - **Solution Architects** learning to recognize when AI-coded systems honor the architecture, and when they quietly drift away from it.
 - **Tech Leaders** who want to understand how the current SDLC needs to evolve into a model that is AI-native.
-- **Practitioners** who have already invested heavily in Claude Code and are looking for the next step — moving from "I can prompt it" to "I understand what else is possible and needed with it."
+- **Practitioners** who have already invested heavily in Claude Code and are looking for the next step: moving from "I can prompt it" to "I understand what else is possible and needed with it."
 
 ### Not for
 
@@ -67,9 +67,9 @@ Shipwright positions itself as a **discipline layer for AI coding**, not a stack
 
 > **Sidenote.** What Shipwright builds, the wider AI engineering field is starting to call *harness engineering* (Martin Fowler, 2026). The harness is the surrounding system of guides (Specs, Conventions, Architecture docs) and sensors (Linters, Tests, Reviews, Scanners) that steers and corrects AI output before and after generation.
 
-**Honest limit.** Shipwright takes the supervision overhead off Maintainability and Architecture-Fitness. **Behavior correctness — does this actually do what users need — remains your call.** We make that judgment cheaper, not unnecessary. The "behavior harness" is unsolved across the industry; do not expect Shipwright (or any tool) to remove the human from that loop.
+**Honest limit.** Shipwright takes the supervision overhead off Maintainability and Architecture-Fitness. **Behavior correctness (does this actually do what users need) remains your call.** We make that judgment cheaper, not unnecessary. The "behavior harness" is unsolved across the industry; do not expect Shipwright (or any tool) to remove the human from that loop.
 
-> **First time seeing IREB, RTM, ADR, SBOM, or Harness?** Jump to the [Plain-Language Index in Appendix A](#plain-language-index) — every industry term in this guide has a one-sentence plain-language equivalent.
+> **First time seeing IREB, RTM, ADR, SBOM, or Harness?** Jump to the [Plain-Language Index in Appendix A](#plain-language-index): every industry term in this guide has a one-sentence plain-language equivalent.
 
 ### What You Get
 
@@ -121,7 +121,7 @@ User Description
   /shipwright-compliance ... Auto-background doc update after every phase + on-demand detective audit
 ```
 
-The orchestrator runs **7 phases** (project → design → plan → build → test → changelog → deploy). Security and compliance are **separate skills, not pipeline phases** — security is invoked manually after test (or scheduled via `.github/workflows/security.yml`), and compliance fires as a non-blocking auto-background side-effect after every completed phase plus an on-demand `/shipwright-compliance` detective audit.
+The orchestrator runs **7 phases** (project → design → plan → build → test → changelog → deploy). Security and compliance are **separate skills, not pipeline phases**: security is invoked manually after test (or scheduled via `.github/workflows/security.yml`), and compliance fires as a non-blocking auto-background side-effect after every completed phase plus an on-demand `/shipwright-compliance` detective audit.
 
 Each phase is a standalone Claude Code plugin. `/shipwright-run` orchestrates the full pipeline for the initial build, `/shipwright-iterate` drives daily changes afterwards, and every single skill can be invoked on its own. Pick the entry point that matches your moment: the terminal or VS Code Extension directly for single-project flow, or the Command Center WebUI when you're tracking multiple projects at once and want one board that says where everything stands.
 
@@ -184,26 +184,26 @@ Aligned with the five domains of Anthropic's [Claude Certified Architect](https:
 
 Patterns from [`obra/superpowers`](https://github.com/obra/superpowers) (MIT, © Jesse Vincent) drive the parts of Shipwright that say "no" to drive-by AI output:
 
-- **Iron-Law verification language** — the "NO X WITHOUT Y FIRST" framing in the bloat Stop-gate (`shared/scripts/hooks/bloat_gate_on_stop.py`) and in the PR template's Human Authorization / Duplicate Search / Verification sections (`.github/PULL_REQUEST_TEMPLATE.md`).
-- **Two-stage review pattern** — a `spec-reviewer` spec-compliance HARD-GATE runs first, then the `code-reviewer` quality stage (`plugins/shipwright-build/agents/spec-reviewer.md`; build Step 6 / `references/code-review.md`). An optional third `doubt-reviewer` (fresh-context, disprove-biased — addyosmani/agent-skills OS3) runs after for non-trivial diffs.
-- **Anti-slop PR-template framing** — the "most AI-generated PRs are rejected because process is skipped" banner, the explicit "If you are an AI agent" rules, and the empirical-verification-before-checkbox stance, all citing Superpowers attribution in the template footer.
+- **Iron-Law verification language:** the "NO X WITHOUT Y FIRST" framing in the bloat Stop-gate (`shared/scripts/hooks/bloat_gate_on_stop.py`) and in the PR template's Human Authorization / Duplicate Search / Verification sections (`.github/PULL_REQUEST_TEMPLATE.md`).
+- **Two-stage review pattern:** a `spec-reviewer` spec-compliance HARD-GATE runs first, then the `code-reviewer` quality stage (`plugins/shipwright-build/agents/spec-reviewer.md`; build Step 6 / `references/code-review.md`). An optional third `doubt-reviewer` (fresh-context, disprove-biased, addyosmani/agent-skills OS3) runs after for non-trivial diffs.
+- **Anti-slop PR-template framing:** the "most AI-generated PRs are rejected because process is skipped" banner, the explicit "If you are an AI agent" rules, and the empirical-verification-before-checkbox stance, all citing Superpowers attribution in the template footer.
 
 #### Karpathy — Four Pre-Phase Principles
 
 Patterns from [`multica-ai/andrej-karpathy-skills`](https://github.com/multica-ai/andrej-karpathy-skills) (MIT, © 2025 multica-ai) live at two surfaces:
 
-- **`shared/constitution.md`** — the Pre-Phase Principles header cites *Think Before Coding · Simplicity First · Surgical Changes · Goal-Driven Execution* verbatim. Constitution is always loaded into Claude's context, so this is enforcement, not reference.
-- **`shared/glossary.md`** — same four principles listed as reference vocabulary, on-demand loaded.
-- **`plugins/shipwright-build/agents/code-reviewer.md`** — applied post-hoc as review-rejection criteria.
+- **`shared/constitution.md`:** the Pre-Phase Principles header cites *Think Before Coding · Simplicity First · Surgical Changes · Goal-Driven Execution* verbatim. Constitution is always loaded into Claude's context, so this is enforcement, not reference.
+- **`shared/glossary.md`:** same four principles listed as reference vocabulary, on-demand loaded.
+- **`plugins/shipwright-build/agents/code-reviewer.md`:** applied post-hoc as review-rejection criteria.
 
 #### Multica — Architectural Patterns (no code or text copied)
 
-[`multica-ai/multica`](https://github.com/multica-ai/multica) is Apache-2.0 *modified* with a hosting restriction (Clause 1a) — incompatible with our public-launch strategy. We deliberately copy **no code and no text** from it, and instead borrow the following architectural patterns:
+[`multica-ai/multica`](https://github.com/multica-ai/multica) is Apache-2.0 *modified* with a hosting restriction (Clause 1a), incompatible with our public-launch strategy. We deliberately copy **no code and no text** from it, and instead borrow the following architectural patterns:
 
 - WebSocket transcript streaming (replaces 1 s JSONL polling) for the Shipwright Command Center.
 - Multi-workspace isolation for multi-tenant Command Center installs.
 - Runtime registry abstraction (Claude Code, Codex CLI, Copilot CLI, Gemini CLI as pluggable adapters).
-- "Parse, don't cast" — Pydantic schemas for cross-plugin `shipwright_*_config.json` reads.
+- "Parse, don't cast": Pydantic schemas for cross-plugin `shipwright_*_config.json` reads.
 
 The shipwright-webui repo carries its own Acknowledgments block referencing the same Multica patterns; the shipwright monorepo carries the constitution and code-reviewer adoptions. Both repos stay MIT.
 
@@ -236,7 +236,7 @@ winget install GitHub.cli            # optional, for /shipwright-changelog
 node --version; python --version; uv --version; claude --version
 ```
 
-Claude Code itself runs natively under PowerShell — Git Bash is no longer required. If you prefer a Linux-style shell on Windows, WSL2 also works (use the Linux block below from inside the WSL distro).
+Claude Code itself runs natively under PowerShell; Git Bash is no longer required. If you prefer a Linux-style shell on Windows, WSL2 also works (use the Linux block below from inside the WSL distro).
 
 **macOS:**
 
@@ -255,7 +255,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # Install Claude Code from https://docs.anthropic.com/en/docs/claude-code
 ```
 
-Some distros ship Python older than 3.11 — check `python3 --version` and use your distro's deadsnakes/`pyenv`/`uv python install 3.13` path if needed. uv manages per-project venvs, but it does not install system Python on Linux.
+Some distros ship Python older than 3.11; check `python3 --version` and use your distro's deadsnakes/`pyenv`/`uv python install 3.13` path if needed. uv manages per-project venvs, but it does not install system Python on Linux.
 
 ### 2.2 Required tools reference
 
@@ -319,15 +319,15 @@ Verify:
 claude plugin list
 ```
 
-All entries should show `✔ enabled`. If any show `✘ failed to load` with `expected record, received undefined at path ["hooks"]`, you have an outdated `hooks.json` schema — file an issue at [github.com/svenroth-ai/shipwright](https://github.com/svenroth-ai/shipwright).
+All entries should show `✔ enabled`. If any show `✘ failed to load` with `expected record, received undefined at path ["hooks"]`, you have an outdated `hooks.json` schema. File an issue at [github.com/svenroth-ai/shipwright](https://github.com/svenroth-ai/shipwright).
 
-> **Important — restart Claude Code.** Freshly installed plugins only activate in a NEW Claude Code session. Close and reopen the VSCode Extension or restart the CLI before invoking `/shipwright-*` commands.
+> **Important, restart Claude Code.** Freshly installed plugins only activate in a NEW Claude Code session. Close and reopen the VSCode Extension or restart the CLI before invoking `/shipwright-*` commands.
 
 ### 2.4 Plugin install — Option B: `scripts/install.sh` (macOS, Linux, Git Bash on Windows)
 
-> **PowerShell users on Windows:** this script is bash-only and modifies `~/.bashrc` / `~/.zshrc`. Use Option A (Marketplace via `claude plugin` CLI) instead — it works natively in PowerShell.
+> **PowerShell users on Windows:** this script is bash-only and modifies `~/.bashrc` / `~/.zshrc`. Use Option A (Marketplace via `claude plugin` CLI) instead; it works natively in PowerShell.
 
-The all-in-one bash installer — one script installs Python deps, WebUI deps, a shell alias, and runs verification.
+The all-in-one bash installer: one script installs Python deps, WebUI deps, a shell alias, and runs verification.
 
 ```bash
 git clone https://github.com/svenroth-ai/shipwright.git ~/shipwright
@@ -348,7 +348,7 @@ Once done, type `shipwright` in any terminal and go.
 
 If you prefer not to register a marketplace, define a shell alias that loads all plugins from a local clone.
 
-**bash / zsh** — add to `~/.bashrc` or `~/.zshrc`:
+**bash / zsh:** add to `~/.bashrc` or `~/.zshrc`:
 
 ```bash
 shipwright() {
@@ -370,7 +370,7 @@ shipwright() {
 }
 ```
 
-**PowerShell** — add to `$PROFILE`:
+**PowerShell:** add to `$PROFILE`:
 
 ```powershell
 function shipwright {
@@ -441,7 +441,7 @@ cd ~/shipwright && uv sync
 claude plugin list
 ```
 
-All 13 shipwright plugins should show `✔ enabled`. Then in Claude Code (NEW session — restart if you just installed):
+All 13 shipwright plugins should show `✔ enabled`. Then in Claude Code (NEW session, restart if you just installed):
 
 ```
 /shipwright-run
@@ -473,7 +473,7 @@ Autostart on Windows, port overrides for parallel worktrees, and the `SHIPWRIGHT
 Shipwright works fully offline on a local repo, but several features come alive only once your project is on GitHub:
 
 - **`/shipwright-changelog`** opens a release PR (`gh pr create`).
-- **`/shipwright-iterate`** finalization pushes its branch and opens a PR per change — and can arm auto-merge (see §2.10).
+- **`/shipwright-iterate`** finalization pushes its branch and opens a PR per change, and can arm auto-merge (see §2.10).
 - **`/shipwright-security`** in CI mode (and the GitHub-findings → triage producer) reads results from GitHub Actions / code scanning.
 
 You need the **GitHub CLI** (`gh`), authenticated once:
@@ -496,7 +496,7 @@ For an existing remote, a plain `git push -u origin main` is enough. Once the re
 
 ### 2.10 Enable auto-merge (optional)
 
-With branch protection in place, `/shipwright-iterate` PRs can merge themselves the moment every Required Check is green — no bot, no polling loop, just GitHub-native auto-merge. `/shipwright-adopt` writes an **`AUTOMERGE_SETUP.md`** into your repo listing the exact Required-Check names *your* workflows produce; the steps below are the general flow.
+With branch protection in place, `/shipwright-iterate` PRs can merge themselves the moment every Required Check is green: no bot, no polling loop, just GitHub-native auto-merge. `/shipwright-adopt` writes an **`AUTOMERGE_SETUP.md`** into your repo listing the exact Required-Check names *your* workflows produce; the steps below are the general flow.
 
 **1. Know your Required-Check names.** Branch protection matches on the **rendered GitHub check name** (the job name shown on a PR), **not** the workflow file name. Open a throwaway PR and copy the names from its checks list.
 
@@ -504,11 +504,11 @@ With branch protection in place, `/shipwright-iterate` PRs can merge themselves 
 
 **2. Configure branch protection.** GitHub → **Settings → Branches → Add branch ruleset** for `main`:
 
-- ☑ **Require a pull request before merging** — Required approvals: **0** (a solo maintainer has no second approver; Shipwright's local review + the checks are the gate).
+- ☑ **Require a pull request before merging.** Required approvals: **0** (a solo maintainer has no second approver; Shipwright's local review + the checks are the gate).
 - ☑ **Require status checks to pass before merging** → add each Required-Check name you activated in step 1 (type it exactly).
 - ☑ **Require branches to be up to date before merging**.
 
-> Do **not** enable *Require signed commits* — `/shipwright-iterate` commits headless without a signing key, so requiring signatures leaves every iterate PR permanently `BLOCKED` and silently kills auto-merge. (The squash commit GitHub writes to `main` is verified on its own.)
+> Do **not** enable *Require signed commits*: `/shipwright-iterate` commits headless without a signing key, so requiring signatures leaves every iterate PR permanently `BLOCKED` and silently kills auto-merge. (The squash commit GitHub writes to `main` is verified on its own.)
 
 **3. Allow auto-merge.** GitHub → **Settings → General → Pull Requests → ☑ Allow auto-merge.**
 
@@ -526,7 +526,7 @@ See the generated `AUTOMERGE_SETUP.md` for your repo's specific check names, and
 
 ## 3. Your First Project
 
-> **Already have a codebase?** Skip to [Chapter 3.5 — Adopting an existing repo](#35-adopting-an-existing-repo) below. `/shipwright-project` and `/shipwright-run` are optimized for greenfield starts; brownfield repos use `/shipwright-adopt` instead.
+> **Already have a codebase?** Skip to [Chapter 3.5: Adopting an existing repo](#35-adopting-an-existing-repo) below. `/shipwright-project` and `/shipwright-run` are optimized for greenfield starts; brownfield repos use `/shipwright-adopt` instead.
 
 ### Step by Step
 
@@ -547,7 +547,7 @@ If you installed via shell alias, start with `shipwright` and then type the comm
 
 ### What to Expect
 
-Your first run kicks off with a short confirmation of stack, scope, and autonomy. Then Shipwright asks 5-10 requirements questions and generates interactive HTML mockups you review in the browser. After that, planning, build, test, changelog, and deploy run largely unattended -- guided mode pauses at each phase transition so you stay in control, autonomous mode runs straight through. Deployment to DEV is automatic if configured; production always needs explicit confirmation. Security scanning is **out-of-band** — invoke `/shipwright-security` manually after test (or activate the GitHub Actions workflow); it's not part of the orchestrator pipeline.
+Your first run kicks off with a short confirmation of stack, scope, and autonomy. Then Shipwright asks 5-10 requirements questions and generates interactive HTML mockups you review in the browser. After that, planning, build, test, changelog, and deploy run largely unattended -- guided mode pauses at each phase transition so you stay in control, autonomous mode runs straight through. Deployment to DEV is automatic if configured; production always needs explicit confirmation. Security scanning is **out-of-band**: invoke `/shipwright-security` manually after test (or activate the GitHub Actions workflow); it's not part of the orchestrator pipeline.
 
 Estimated time for a small app: 15-30 minutes. See Chapter 4 for the full phase-by-phase breakdown.
 
@@ -582,11 +582,11 @@ Every skill works standalone. You can run `/shipwright-test` without having used
 
 ## 3.5 Adopting an existing repo
 
-If your repo already has code — commits, dependencies, routes, conventions — use **`/shipwright-adopt`**. It onboards the codebase into Shipwright without asking you to re-describe what the code already tells us, and it leaves the repo in a state where `/shipwright-iterate`, `/shipwright-test`, and `/shipwright-compliance` work as if the project had been built with Shipwright from day one.
+If your repo already has code (commits, dependencies, routes, conventions), use **`/shipwright-adopt`**. It onboards the codebase into Shipwright without asking you to re-describe what the code already tells us, and it leaves the repo in a state where `/shipwright-iterate`, `/shipwright-test`, and `/shipwright-compliance` work as if the project had been built with Shipwright from day one.
 
 ### When to use it
 
-- The repo has `package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, or similar — not empty.
+- The repo has `package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, or similar, not empty.
 - There's a git history with prior commits.
 - No `shipwright_run_config.json` exists yet.
 
@@ -594,13 +594,13 @@ If those are true, `/shipwright-adopt` is the right entry point. `/shipwright-pr
 
 ### What it does
 
-1. **Layer 1 — deterministic analysis.** Scans manifests, tsconfig/eslint/prettier, folder layout, test frameworks, CI, and git log. Produces `.shipwright/adopt/snapshot.json`.
-2. **Layer 1.5 — Playwright route crawl (if web app).** Starts the dev-server, crawls the running app BFS-style, captures route + h1 + CTAs + screenshots into `.shipwright/adopt/routes.json`. Falls back to AST-based route inference if no dev-server is available.
-3. **Layer 2 — Claude Code semantic enrichment.** Inline with the skill, Claude reads the snapshot + sample files + screenshots and writes `enrichment.json` with a product description, FR labels, architecture prose, conventions prose, and retroactive ADR drafts.
-4. **Artifact generation.** Writes `CLAUDE.md`, `.shipwright/agent_docs/{architecture,conventions,decision_log,build_dashboard}.md`, `.shipwright/planning/01-adopted/spec.md`, the six `shipwright_*_config.json` files, `shipwright_events.jsonl`, and `e2e/flows/adopted-baseline.spec.ts` (regression guard from the crawl). It also merges a `merge=union` `.gitattributes` for the append-log artifacts (`shipwright_events.jsonl`, `.shipwright/triage.jsonl`) so concurrent iterates auto-line-union those logs instead of hitting merge conflicts — an existing `.gitattributes` is preserved, only missing lines are appended.
+1. **Layer 1, deterministic analysis.** Scans manifests, tsconfig/eslint/prettier, folder layout, test frameworks, CI, and git log. Produces `.shipwright/adopt/snapshot.json`.
+2. **Layer 1.5, Playwright route crawl (if web app).** Starts the dev-server, crawls the running app BFS-style, captures route + h1 + CTAs + screenshots into `.shipwright/adopt/routes.json`. Falls back to AST-based route inference if no dev-server is available.
+3. **Layer 2, Claude Code semantic enrichment.** Inline with the skill, Claude reads the snapshot + sample files + screenshots and writes `enrichment.json` with a product description, FR labels, architecture prose, conventions prose, and retroactive ADR drafts.
+4. **Artifact generation.** Writes `CLAUDE.md`, `.shipwright/agent_docs/{architecture,conventions,decision_log,build_dashboard}.md`, `.shipwright/planning/01-adopted/spec.md`, the six `shipwright_*_config.json` files, `shipwright_events.jsonl`, and `e2e/flows/adopted-baseline.spec.ts` (regression guard from the crawl). It also merges a `merge=union` `.gitattributes` for the append-log artifacts (`shipwright_events.jsonl`, `.shipwright/triage.jsonl`) so concurrent iterates auto-line-union those logs instead of hitting merge conflicts (an existing `.gitattributes` is preserved, only missing lines are appended).
 5. **Compliance seeding.** Generates `.shipwright/compliance/{sbom,change-history,traceability-matrix,test-evidence,dashboard}.md` via the existing compliance infrastructure.
-6. **Workflow scaffolding + automerge guide (CI + Security + CodeQL + Claude-Review).** Lands dormant GitHub Actions workflows in `.github/workflows/`: profile-specific `ci.yml` (with the cross-platform OS matrix `ubuntu-latest` + `windows-latest` as the default), `security.yml` (Semgrep + Trivy + Gitleaks scanner chain), `codeql.yml` (GitHub-native SAST; the `language:` matrix is rendered per detected stack profile, and `continue-on-error` on the analyze step keeps the `Analyze (<language>)` check green on a private repo without GitHub Advanced Security), and `claude-review.yml` (independent Claude Code review on PRs). All are byte-equal idempotent — pre-existing workflow files are preserved bit-for-bit. CI + Security + CodeQL ship dormant (`workflow_dispatch:` only); Claude-Review fires on `pull_request` by design. Adopt also writes a repo-root **`AUTOMERGE_SETUP.md`** — a profile-aware branch-protection / auto-merge guide whose Required-Check job names are *derived by parsing the actually-deployed workflows* (matrix-expanded; conditional `if:`-gated deploy jobs are flagged, not listed as requireable), so a brownfield repo can be wired for GitHub auto-merge without trial-and-error. (Anti-ratchet `bloat-check.yml` is a deferred follow-up.) See [docs/security-ci-setup.md](security-ci-setup.md) for the free Path-A scanner chain vs. CodeQL/GHAS Path-B trade-off.
-7. **Layer 3 — external LLM review.** Runs `llm_review.py` over the generated artifacts to flag hallucinations or contradictions (skipped gracefully if no API key is set).
+6. **Workflow scaffolding + automerge guide (CI + Security + CodeQL + Claude-Review).** Lands dormant GitHub Actions workflows in `.github/workflows/`: profile-specific `ci.yml` (with the cross-platform OS matrix `ubuntu-latest` + `windows-latest` as the default), `security.yml` (Semgrep + Trivy + Gitleaks scanner chain), `codeql.yml` (GitHub-native SAST; the `language:` matrix is rendered per detected stack profile, and `continue-on-error` on the analyze step keeps the `Analyze (<language>)` check green on a private repo without GitHub Advanced Security), and `claude-review.yml` (independent Claude Code review on PRs). All are byte-equal idempotent: pre-existing workflow files are preserved bit-for-bit. CI + Security + CodeQL ship dormant (`workflow_dispatch:` only); Claude-Review fires on `pull_request` by design. Adopt also writes a repo-root **`AUTOMERGE_SETUP.md`**, a profile-aware branch-protection / auto-merge guide whose Required-Check job names are *derived by parsing the actually-deployed workflows* (matrix-expanded; conditional `if:`-gated deploy jobs are flagged, not listed as requireable), so a brownfield repo can be wired for GitHub auto-merge without trial-and-error. (Anti-ratchet `bloat-check.yml` is a deferred follow-up.) See [docs/security-ci-setup.md](security-ci-setup.md) for the free Path-A scanner chain vs. CodeQL/GHAS Path-B trade-off.
+7. **Layer 3, external LLM review.** Runs `llm_review.py` over the generated artifacts to flag hallucinations or contradictions (skipped gracefully if no API key is set).
 8. **Validation + commit.** Runs `validate_adoption.py`, then a single Conventional Commit `chore(shipwright): adopt repository into Shipwright SDLC`.
 
 ### Usage
@@ -642,23 +642,23 @@ If Adopt finds a directory with its own `.git/`, `shipwright_run_config.json`, o
 
 Everything afterward is identical to a natively-built Shipwright project:
 
-- `/shipwright-iterate "add a profile page"` — all future changes go through this
-- `/shipwright-test` — first real test run populates test-evidence compliance
-- `/shipwright-compliance` — on-demand detective audit of artifacts
+- `/shipwright-iterate "add a profile page"`: all future changes go through this
+- `/shipwright-test`: first real test run populates test-evidence compliance
+- `/shipwright-compliance`: on-demand detective audit of artifacts
 
-Do **not** run `/shipwright-project`, `/shipwright-plan`, or `/shipwright-build` on an adopted repo — adoption replaces those phases, and iterate covers ongoing work.
+Do **not** run `/shipwright-project`, `/shipwright-plan`, or `/shipwright-build` on an adopted repo: adoption replaces those phases, and iterate covers ongoing work.
 
 ## 4. The Pipeline: Phase by Phase
 
-Shipwright's orchestrator pipeline consists of **7 phases** (project, design, plan, build, test, changelog, deploy), each handling a distinct step in the software delivery lifecycle. The phases run in sequence when you invoke the full pipeline via `/shipwright-run`, but every phase can also run as a standalone command. Two additional skills — `/shipwright-security` (Section 4.7) and `/shipwright-compliance` (Section 4.10) — are documented in this chapter for completeness but **run out-of-band**, not as orchestrator phases: security is manual or CI-triggered; compliance fires as an auto-background side-effect after every completed phase plus an on-demand audit.
+Shipwright's orchestrator pipeline consists of **7 phases** (project, design, plan, build, test, changelog, deploy), each handling a distinct step in the software delivery lifecycle. The phases run in sequence when you invoke the full pipeline via `/shipwright-run`, but every phase can also run as a standalone command. Two additional skills (`/shipwright-security`, Section 4.7, and `/shipwright-compliance`, Section 4.10) are documented in this chapter for completeness but **run out-of-band**, not as orchestrator phases: security is manual or CI-triggered; compliance fires as an auto-background side-effect after every completed phase plus an on-demand audit.
 
-**Phase finalization canon.** Every decision-taking phase runs a five-step finalization sequence at the end of its work — the **Minimum Phase Completion Canon** (C1–C5): record a `phase_completed` event, update the build dashboard, regenerate `session_handoff.md` with a canon marker, write an ADR (where applicable), and append a CHANGELOG bullet (where applicable). The unified verifier `verify_phase.py` enforces these cross-artifact invariants and runs automatically through `phase_validators.py` between phases. See [Chapter 9 — Pipeline Verifier and Phase Completion Canon](#pipeline-verifier-and-phase-completion-canon) for the full mechanics and skip criteria per phase.
+**Phase finalization canon.** Every decision-taking phase runs a five-step finalization sequence at the end of its work, the **Minimum Phase Completion Canon** (C1–C5): record a `phase_completed` event, update the build dashboard, regenerate `session_handoff.md` with a canon marker, write an ADR (where applicable), and append a CHANGELOG bullet (where applicable). The unified verifier `verify_phase.py` enforces these cross-artifact invariants and runs automatically through `phase_validators.py` between phases. See [Chapter 9: Pipeline Verifier and Phase Completion Canon](#pipeline-verifier-and-phase-completion-canon) for the full mechanics and skip criteria per phase.
 
 ---
 
 ### 4.1 Orchestration -- /shipwright-run
 
-**Purpose.** `/shipwright-run` is the **Pipeline Initializer & Phase Coordinator** — your single entry point. It takes a project description, infers settings, writes the pipeline spec to `shipwright_run_config.json`, prints a launch card for the first phase, and ends. Each phase then runs in its **own external Claude CLI session** — phase Stop hooks plan the next phase via the orchestrator state machine, so the pipeline progresses without the master session being open. (Multi-session lifecycle, schema v2 — see [Multi-Session Pipeline Lifecycle](hooks-and-pipeline.md#multi-session-pipeline-lifecycle-v2).)
+**Purpose.** `/shipwright-run` is the **Pipeline Initializer & Phase Coordinator**, your single entry point. It takes a project description, infers settings, writes the pipeline spec to `shipwright_run_config.json`, prints a launch card for the first phase, and ends. Each phase then runs in its **own external Claude CLI session**: phase Stop hooks plan the next phase via the orchestrator state machine, so the pipeline progresses without the master session being open. (Multi-session lifecycle, schema v2; see [Multi-Session Pipeline Lifecycle](hooks-and-pipeline.md#multi-session-pipeline-lifecycle-v2).)
 
 **Command and Arguments**
 
@@ -678,7 +678,7 @@ Shipwright's orchestrator pipeline consists of **7 phases** (project, design, pl
 
 **What it produces**
 
-- `shipwright_run_config.json` (schema v2) — `runId`, frozen `runConditions`, `splits_frozen[]`, and the authoritative `phase_tasks[]` array (one entry per phase, each with a pre-bound `sessionUuid` and a `status` of `awaiting_launch | in_progress | done | failed | skipped`).
+- `shipwright_run_config.json` (schema v2): `runId`, frozen `runConditions`, `splits_frozen[]`, and the authoritative `phase_tasks[]` array (one entry per phase, each with a pre-bound `sessionUuid` and a `status` of `awaiting_launch | in_progress | done | failed | skipped`).
 - A launch-card banner with the exact `claude --session-id <uuid> --add-dir <path> --name '...' '/shipwright-<phase>'` command to paste into a new terminal.
 - Orchestration is delegated: phase Stop hooks (`phase_session_stop.py`) call `complete-phase-task`, which materialises the next `phase_tasks[]` entry. The final phase's Stop hook flips `run.status = "complete"`.
 
@@ -687,12 +687,12 @@ Shipwright's orchestrator pipeline consists of **7 phases** (project, design, pl
 - Detects your input (file, inline text, or interactive chat) and asks 1-3 clarifying questions if the description is vague.
 - Infers settings automatically: scope (new project vs. extension), technology profile (e.g., `supabase-nextjs`), and autonomy level (guided or autonomous).
 - Presents inferred settings for your confirmation before starting.
-- Writes `shipwright_run_config.json` with `phase_tasks[0]` for the project phase, prints the launch card, and ends the master session. (The `suggest_iterate.py` post-pipeline router needs no install step — it is registered in shipwright-iterate's own `hooks.json`.)
+- Writes `shipwright_run_config.json` with `phase_tasks[0]` for the project phase, prints the launch card, and ends the master session. (The `suggest_iterate.py` post-pipeline router needs no install step; it is registered in shipwright-iterate's own `hooks.json`.)
 - Each phase session you launch externally runs SessionStart → UserPromptSubmit → Stop hooks that handle ownership claim, validation, and next-phase planning. Within a phase session, `guided` vs `autonomous` autonomy controls whether destructive actions ask for confirmation.
 
-**Standalone usage.** `/shipwright-run` is the top-level coordinator. Individual phase commands (`/shipwright-project`, `/shipwright-build`, …) still run standalone if no `phase_tasks[]` match — useful for re-running or debugging a single phase without an active pipeline.
+**Standalone usage.** `/shipwright-run` is the top-level coordinator. Individual phase commands (`/shipwright-project`, `/shipwright-build`, …) still run standalone if no `phase_tasks[]` match, useful for re-running or debugging a single phase without an active pipeline.
 
-**Resume support.** If the pipeline is interrupted, re-invoking `/shipwright-run` on the existing `shipwright_run_config.json` reads `phase_tasks[]`, identifies the next `awaiting_launch` task, and prints its launch card. Stale `in_progress` tasks (likely from crashed sessions) are surfaced with a `recover-phase-task` hint. The master never mutates state during resume — it only points you at what to launch next.
+**Resume support.** If the pipeline is interrupted, re-invoking `/shipwright-run` on the existing `shipwright_run_config.json` reads `phase_tasks[]`, identifies the next `awaiting_launch` task, and prints its launch card. Stale `in_progress` tasks (likely from crashed sessions) are surfaced with a `recover-phase-task` hint. The master never mutates state during resume; it only points you at what to launch next.
 
 ---
 
@@ -738,7 +738,7 @@ Shipwright's orchestrator pipeline consists of **7 phases** (project, design, pl
 
 **Standalone usage.** Yes. Run `/shipwright-project` independently whenever you want to decompose requirements without running the full pipeline. The output feeds directly into `/shipwright-plan`.
 
-**Where the planning artifacts live.** The planning directory is `.shipwright/planning/` — under the hidden project-state folder, alongside `securityreports/`, `adopt/`, `runs/`, and `tmp/`. The same hidden home also covers `.shipwright/designs/`, `.shipwright/agent_docs/`, and `.shipwright/compliance/`. The only Shipwright-owned top-level directory is `e2e/`.
+**Where the planning artifacts live.** The planning directory is `.shipwright/planning/`, under the hidden project-state folder, alongside `securityreports/`, `adopt/`, `runs/`, and `tmp/`. The same hidden home also covers `.shipwright/designs/`, `.shipwright/agent_docs/`, and `.shipwright/compliance/`. The only Shipwright-owned top-level directory is `e2e/`.
 
 If a session start finds a legacy top-level `planning/` directory, the drift detector writes `.shipwright/stale-folders.md` with a `git mv planning .shipwright/planning` remediation hint and exits non-zero so you see it. Run `uv run shared/scripts/tools/migrate_artifact_dir.py --artifact planning` to do the move automatically. <!-- artifact-path-canon: legacy -->
 
@@ -790,7 +790,7 @@ If a session start finds a legacy top-level `planning/` directory, the drift det
 
 ### 4.4 Planning -- /shipwright-plan
 
-**Purpose.** Creates a detailed, section-based implementation plan from a single spec file. The plan follows a TDD approach (tests defined before code) and is **reviewed by external LLMs by default** (Gemini + OpenAI via OpenRouter, or direct API keys). If no API key is set in `.env.local`, the skill **asks you interactively** whether to add one or fall back to a mandatory self-review ("2x denken") pass — it no longer silently skips review.
+**Purpose.** Creates a detailed, section-based implementation plan from a single spec file. The plan follows a TDD approach (tests defined before code) and is **reviewed by external LLMs by default** (Gemini + OpenAI via OpenRouter, or direct API keys). If no API key is set in `.env.local`, the skill **asks you interactively** whether to add one or fall back to a mandatory self-review ("2x denken") pass; it no longer silently skips review.
 
 **Command and Arguments**
 
@@ -942,7 +942,7 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 
 ### 4.7 Security Scanning -- /shipwright-security
 
-> **Out-of-band skill — not part of `PIPELINE_STEPS`.** Run `/shipwright-security` manually after `/shipwright-test`, or activate `.github/workflows/security.yml` triggers for CI-driven scans. The orchestrator does not auto-insert a security phase.
+> **Out-of-band skill, not part of `PIPELINE_STEPS`.** Run `/shipwright-security` manually after `/shipwright-test`, or activate `.github/workflows/security.yml` triggers for CI-driven scans. The orchestrator does not auto-insert a security phase.
 
 **Purpose:** Scans your project for security vulnerabilities -- static analysis (SAST), dependency vulnerabilities (SCA), and leaked secrets. Supports two scanner backends: **OSS** (local CLI tools, default) and **Aikido** (cloud SaaS, legacy). When invoked manually or via CI, findings are automatically routed to a subagent for remediation.
 
@@ -951,9 +951,9 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 | Backend | Tools | Runs where | Status |
 |---------|-------|-----------|--------|
 | **OSS** (default) | Semgrep + Trivy + Gitleaks | Local (CLI binaries) | Actively maintained |
-| **Aikido** (optional) | Aikido Security API | Cloud (SaaS) | Legacy — see note below |
+| **Aikido** (optional) | Aikido Security API | Cloud (SaaS) | Legacy: see note below |
 
-> **Plus a prompt-injection scanner.** Beyond the SAST/SCA/secrets chain above, the plugin ships `prompt_injection_scan.py` — a Claude-Code-specific scanner for malicious patterns in skill, hook, and agent files. It runs as its own step in `.github/workflows/security.yml` (diff-scoped on PRs, full on push), emits `prompt_risks.json`, and is merged into the combined report via `generate_security_report.py --prompt-risks`. It is a **separate finding class** from the local Semgrep + Trivy + Gitleaks scan chain and surfaces in triage via the `gh-prompt:{owner}/{repo}` action-unit (§4.11.1).
+> **Plus a prompt-injection scanner.** Beyond the SAST/SCA/secrets chain above, the plugin ships `prompt_injection_scan.py`, a Claude-Code-specific scanner for malicious patterns in skill, hook, and agent files. It runs as its own step in `.github/workflows/security.yml` (diff-scoped on PRs, full on push), emits `prompt_risks.json`, and is merged into the combined report via `generate_security_report.py --prompt-risks`. It is a **separate finding class** from the local Semgrep + Trivy + Gitleaks scan chain and surfaces in triage via the `gh-prompt:{owner}/{repo}` action-unit (§4.11.1).
 
 **Command & Arguments:**
 
@@ -994,11 +994,11 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 6. Needs-review findings are presented to you with options to fix, decline, or defer.
 7. Generates a Markdown report summarizing all findings and their remediation status (fixed, declined, deferred, open).
 
-**Usage:** Always standalone (security is no longer a pipeline phase — see banner above). Runs when any scanner backend is available. With OSS tools installed, it works without any cloud account. With Aikido, the standalone commands (`issues`, `summary`, `report`, `repos`) work against any connected repository.
+**Usage:** Always standalone (security is no longer a pipeline phase; see banner above). Runs when any scanner backend is available. With OSS tools installed, it works without any cloud account. With Aikido, the standalone commands (`issues`, `summary`, `report`, `repos`) work against any connected repository.
 
 > **Aikido backend -- legacy / not re-verified:** The current scanner flow (report persistence, iterate handoff, orchestrator decouple) was built and verified against the OSS backend only. The Aikido path in SKILL.md Step 6 is preserved and should continue to function via `aikido_client.py report`, but has not been re-run end-to-end against it. New deployments are encouraged to use the OSS backend; if you use Aikido, please report any regressions in GitHub issues.
 
-**CI integration:** `.github/workflows/security.yml` is shipped DORMANT -- only `workflow_dispatch` is active out of the box. The workflow is fully wired (SARIF upload to GitHub Security tab, PR-comment, fork-PR guards, weekly cron) but the auto-triggers are commented out so consumers activate them deliberately at Phase B / Go-Live. `/shipwright-adopt` Step E.13 scaffolds the same template into brownfield repos that don't already have a security workflow. **Operational details — Phase-B activation, fork-PR semantics, the `actions: read` permissions footgun, and the convention lock — live at [docs/security-ci-setup.md](security-ci-setup.md).**
+**CI integration:** `.github/workflows/security.yml` is shipped DORMANT -- only `workflow_dispatch` is active out of the box. The workflow is fully wired (SARIF upload to GitHub Security tab, PR-comment, fork-PR guards, weekly cron) but the auto-triggers are commented out so consumers activate them deliberately at Phase B / Go-Live. `/shipwright-adopt` Step E.13 scaffolds the same template into brownfield repos that don't already have a security workflow. **Operational details (Phase-B activation, fork-PR semantics, the `actions: read` permissions footgun, and the convention lock) live at [docs/security-ci-setup.md](security-ci-setup.md).**
 
 ---
 
@@ -1031,7 +1031,7 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 1. Runs a setup script that detects the last version tag and collects all commits since then. If there are no unreleased changes, it stops early.
 2. Parses each commit message into type and scope using Conventional Commits conventions. Types map to changelog sections: `feat` becomes "Added", `fix` becomes "Fixed", `refactor` becomes "Changed", and so on.
 3. Determines the version bump: any `BREAKING CHANGE` triggers a major bump, any `feat` triggers a minor bump, and everything else triggers a patch bump. If no previous tag exists, it suggests `v0.1.0`.
-4. Aggregates the `CHANGELOG-unreleased.d/<category>/` drop files that iterate F4 has been writing since the last release, renders a Keep-a-Changelog versioned section, and inserts it at the structural point in `CHANGELOG.md` (above the first existing `## [version]` heading — NOT blindly at the top, which would corrupt the `# Changelog` title). If `CHANGELOG.md` carries legacy `## [Unreleased]` bullets from pre-refactor iterates, the aggregator emits a loud stderr WARNING so the operator can fold them in manually or accept split-brain.
+4. Aggregates the `CHANGELOG-unreleased.d/<category>/` drop files that iterate F4 has been writing since the last release, renders a Keep-a-Changelog versioned section, and inserts it at the structural point in `CHANGELOG.md` (above the first existing `## [version]` heading, NOT blindly at the top, which would corrupt the `# Changelog` title). If `CHANGELOG.md` carries legacy `## [Unreleased]` bullets from pre-refactor iterates, the aggregator emits a loud stderr WARNING so the operator can fold them in manually or accept split-brain.
 5. In guided mode, shows you the entry for review with options to accept, edit, or cancel. In autonomous mode, it proceeds without prompting.
 6. Commits the changelog, creates an annotated git tag, and pushes both to origin.
 7. If you are on a feature branch, it creates a GitHub PR with the changelog as the body. In autonomous mode, the PR is merged immediately; in guided mode, it stays open for your review.
@@ -1096,14 +1096,14 @@ The two stubs exist to keep the deploy-profile schema honest across genuinely di
 
 ### 4.10 Compliance -- /shipwright-compliance
 
-> **Out-of-band skill — not a pipeline phase.** Compliance is **not** part of `PIPELINE_STEPS`. Instead, it has two surfaces (below) — both run **outside** the orchestrator state machine.
+> **Out-of-band skill, not a pipeline phase.** Compliance is **not** part of `PIPELINE_STEPS`. Instead, it has two surfaces (below), both run **outside** the orchestrator state machine.
 
 **Purpose.** `/shipwright-compliance` has two surfaces:
 
 1. **Auto-background compliance-doc generation** (non-blocking side-effect after every phase completion). The orchestrator calls `update_compliance.py --phase <name>` after each pipeline phase as a fire-and-forget subprocess; no user interaction, no blocking. Produces the same five reports (dashboard, RTM, test-evidence, change-history, SBOM) described below.
-2. **On-demand detective audit** (new). `/shipwright-compliance` invoked by a user runs `run_audit.py` — a cross-artifact consistency scan that catches drift the preventive Canon gate and reactive Phase-Quality Stop hook don't see (config ↔ event coherence, content rot in compliance docs, reverse-direction git-log scans, scope-to-doc heuristics, FR-vs-event evidence checks).
+2. **On-demand detective audit** (new). `/shipwright-compliance` invoked by a user runs `run_audit.py`, a cross-artifact consistency scan that catches drift the preventive Canon gate and reactive Phase-Quality Stop hook don't see (config ↔ event coherence, content rot in compliance docs, reverse-direction git-log scans, scope-to-doc heuristics, FR-vs-event evidence checks).
 
-Together with preventive Canon and reactive Phase-Quality, it's a three-layer quality net — see `docs/hooks-and-pipeline.md → shipwright-compliance` for the table.
+Together with preventive Canon and reactive Phase-Quality, it's a three-layer quality net; see `docs/hooks-and-pipeline.md → shipwright-compliance` for the table.
 
 **Command & Arguments:**
 
@@ -1116,30 +1116,30 @@ Together with preventive Canon and reactive Phase-Quality, it's a three-layer qu
 
 **What the detective audit checks** (8 groups):
 
-- **A** — Artifact presence + path integrity — `npm run`, `uv run`, `make` commands in READMEs resolve; markdown links resolve; config path fields point to real files. The composite handler also runs **A5** (CI security-workflow integrity) so `.github/workflows/security.yml` parity drift surfaces here.
-- **B** — Config ↔ config ↔ event-log coherence — `project_config.splits[]` matches `.shipwright/planning/NN-*/`; build section test files exist; commits on main have matching `work_completed` events; **B7** reverse-direction git-log scan catches commits without events.
-- **C** — Planning internal coherence (preventive re-run): every spec FR appears in a plan section, plan section IDs valid, section manifest ↔ files.
-- **D** — Implementation evidence — every FR has at least one `work_completed` event (D5 enforces FR-or-`spec_impact=none` linkage), every built section has `test_count > 0`.
-- **E** — Compliance-doc content staleness — regenerate each doc in memory, strip volatile `Generated:` header, byte-compare against disk. Strictly deeper than Phase-Quality's mtime checks. A **snapshot-provenance audit** widens coverage to the 8 tracked compliance + agent-doc MDs and walks worktree branch lineage via `find_snapshot_commit` so post-merge state stays clean.
-- **F** — ADR structural integrity (preventive re-run F1–F3): unique sequential IDs, valid status enum, supersession refs exist. **F4–F7 doc-hygiene detectors** on top: F4 flags ADRs > 60 lines without a `**Details:** [spec-folder link](...)`; F5 reconciles every decision-drop declaring `architecture_impact` against the *text* of `architecture.md` (the same content oracle the F11 `check_architecture_documented` finalize gate uses); F6 caps `CLAUDE.md` at 200 lines; F7 flags > 5 inline `Iterate X (ADR-N)` annotations leaking into CLAUDE.md.
-- **G** — Agent-docs freshness vs. git activity — conventional-commit scope ↔ architecture.md substring match (with stoplist/alias map), ADR-ID references in commit bodies vs. decision_log.
-- **H** — Bloat-policy detective audit. Walks the codebase against `shipwright_bloat_baseline.json`, flags new crossings of the 300-line source / 400-line runtime-prompt budgets, and surfaces ratchets (existing entries that grew past their frozen `current` value). New crossings render as `info` triage items; ratchets are blocked at commit by the pre-commit hook (see Chapter 9 → Bloat anti-ratchet).
+- **A:** Artifact presence + path integrity. `npm run`, `uv run`, `make` commands in READMEs resolve; markdown links resolve; config path fields point to real files. The composite handler also runs **A5** (CI security-workflow integrity) so `.github/workflows/security.yml` parity drift surfaces here.
+- **B:** Config ↔ config ↔ event-log coherence. `project_config.splits[]` matches `.shipwright/planning/NN-*/`; build section test files exist; commits on main have matching `work_completed` events; **B7** reverse-direction git-log scan catches commits without events.
+- **C:** Planning internal coherence (preventive re-run): every spec FR appears in a plan section, plan section IDs valid, section manifest ↔ files.
+- **D:** Implementation evidence. Every FR has at least one `work_completed` event (D5 enforces FR-or-`spec_impact=none` linkage), every built section has `test_count > 0`.
+- **E:** Compliance-doc content staleness. Regenerate each doc in memory, strip volatile `Generated:` header, byte-compare against disk. Strictly deeper than Phase-Quality's mtime checks. A **snapshot-provenance audit** widens coverage to the 8 tracked compliance + agent-doc MDs and walks worktree branch lineage via `find_snapshot_commit` so post-merge state stays clean.
+- **F:** ADR structural integrity (preventive re-run F1–F3): unique sequential IDs, valid status enum, supersession refs exist. **F4–F7 doc-hygiene detectors** on top: F4 flags ADRs > 60 lines without a `**Details:** [spec-folder link](...)`; F5 reconciles every decision-drop declaring `architecture_impact` against the *text* of `architecture.md` (the same content oracle the F11 `check_architecture_documented` finalize gate uses); F6 caps `CLAUDE.md` at 200 lines; F7 flags > 5 inline `Iterate X (ADR-N)` annotations leaking into CLAUDE.md.
+- **G:** Agent-docs freshness vs. git activity. Conventional-commit scope ↔ architecture.md substring match (with stoplist/alias map), ADR-ID references in commit bodies vs. decision_log.
+- **H:** Bloat-policy detective audit. Walks the codebase against `shipwright_bloat_baseline.json`, flags new crossings of the 300-line source / 400-line runtime-prompt budgets, and surfaces ratchets (existing entries that grew past their frozen `current` value). New crossings render as `info` triage items; ratchets are blocked at commit by the pre-commit hook (see Chapter 9 → Bloat anti-ratchet).
 
 > **Detective-only tagging.** Every Group F4–F7 and Group H finding is tagged `SOURCE_DETECTIVE_ONLY` so the audit report distinguishes them from preventive re-runs of F1–F3 / C / B3 / B6. Failing detective checks are mirrored into `.shipwright/triage.jsonl` (source `compliance`) and auto-dismiss when the underlying drift resolves.
 
 **What it needs (detective audit):**
-- `shipwright_events.jsonl` — primary event source.
-- `.shipwright/planning/*/spec.md` and `.shipwright/planning/*/plan.md` — FR definitions + section manifests.
-- `.shipwright/agent_docs/decision_log.md` — ADRs.
+- `shipwright_events.jsonl`: primary event source.
+- `.shipwright/planning/*/spec.md` and `.shipwright/planning/*/plan.md`: FR definitions + section manifests.
+- `.shipwright/agent_docs/decision_log.md`: ADRs.
 - `.shipwright/compliance/` docs (for Group E staleness comparison).
 - A git repo (Group B7 reverse-direction scan, Group G git-log activity).
 
 **What it produces (detective audit):**
-- `.shipwright/compliance/audit-report.md` — human-readable report split into Preventive re-checks (C/F/B3/B6) and Detective-only checks (everything else). Fail-first ordering, suggested `/shipwright-iterate` command per finding, per-group summary table.
-- `.shipwright/compliance/audit-report.json` — structured payload (also emitted on stdout); every finding carries a `source` field (`detective-only` or `preventive-rerun`). Both reports are transient/gitignored, so the gitignore canon covers them in every adopted repo.
+- `.shipwright/compliance/audit-report.md`: human-readable report split into Preventive re-checks (C/F/B3/B6) and Detective-only checks (everything else). Fail-first ordering, suggested `/shipwright-iterate` command per finding, per-group summary table.
+- `.shipwright/compliance/audit-report.json`: structured payload (also emitted on stdout); every finding carries a `source` field (`detective-only` or `preventive-rerun`). Both reports are transient/gitignored, so the gitignore canon covers them in every adopted repo.
 
 **What the auto-background generator produces:**
-- `.shipwright/compliance/dashboard.md` -- Start-here overview with quality indicators, project velocity, and links. Mode-aware: adopted projects (`run_config.adoption` set) render `Pipeline phases completed: n/a (adopted)` instead of a fake `1/7 WARN` and hide the structurally-N/A `Work events (build)` + `All sections reviewed` rows. Every WARN row carries a 4th `Why warn?` column with a one-line diagnostic pointer (`"X failing — see test-evidence.md"`, `"see sbom.md"`, ...). A `Triage open` indicator surfaces the count of open items in `.shipwright/triage.jsonl` (signal severities prominent, info-severity shown in parens — `"3 open (1 info)"`) so the inbox status lives on the compliance home page. **Bloat column:** the per-phase quality matrix carries a Bloat indicator sourced from `shipwright_bloat_baseline.json` — green when no entry's measured LOC exceeds its frozen `current`, WARN when any file ratcheted past its limit, with a one-click pointer to the Group H detective audit.
+- `.shipwright/compliance/dashboard.md` -- Start-here overview with quality indicators, project velocity, and links. Mode-aware: adopted projects (`run_config.adoption` set) render `Pipeline phases completed: n/a (adopted)` instead of a fake `1/7 WARN` and hide the structurally-N/A `Work events (build)` + `All sections reviewed` rows. Every WARN row carries a 4th `Why warn?` column with a one-line diagnostic pointer (`"X failing — see test-evidence.md"`, `"see sbom.md"`, ...). A `Triage open` indicator surfaces the count of open items in `.shipwright/triage.jsonl` (signal severities prominent, info-severity shown in parens, `"3 open (1 info)"`) so the inbox status lives on the compliance home page. **Bloat column:** the per-phase quality matrix carries a Bloat indicator sourced from `shipwright_bloat_baseline.json`: green when no entry's measured LOC exceeds its frozen `current`, WARN when any file ratcheted past its limit, with a one-click pointer to the Group H detective audit.
 - `.shipwright/compliance/traceability-matrix.md` -- Every requirement mapped to the work events that verify it, with a "Last Verified" column. The Requirements Coverage Status cell renders `FAIL → [trg-XXX](../agent_docs/triage_inbox.md#trg-XXX)` deep-links for every FR with an open triage card carrying `frId == row.fr_id` (overrides COVERED / COVERED (baseline) when an operator flagged a regression). The Coverage Summary section gains three operator-actionable subsections rendered only when non-empty: "FRs without tests", "FRs with stale verification (> 14 days)", "FRs with open triage items".
 - `.shipwright/compliance/test-evidence.md` -- Test results across unit / integration / pgTAP / smoke / E2E / consistency / visual, with pass/fail counts and skip reasons. **Layer column:** the `## Test Progression` table classifies each work_completed event into `unit | e2e | mixed | —`; `## Full Suite Runs` breaks out Integration + pgTAP alongside Unit + E2E (sourced from the `layers.integration` and `layers.pgtap` keys on test_run events). **Triage producer:** one `source="test-evidence"` triage item per failing layer in the latest test_run event, dedupKey `test-fail:<layer>`, severity layer-based (high for e2e/integration/pgtap, low for unit), `eventId` cross-link to the originating test_run, `launchPayload` carries `/shipwright-iterate --type bug`. Auto-dismisses layers that go green.
 - `.shipwright/compliance/change-history.md` -- All commits + decisions (from `.shipwright/agent_docs/decision_log.md`) + version tags.
@@ -1147,29 +1147,29 @@ Together with preventive Canon and reactive Phase-Quality, it's a three-layer qu
 
 **How the detective audit works:**
 1. `run_audit.py` loads `audit_config.json` (G2 scope stoplist, alias map, A4 path-field allowlist, B7 exclusions) and `ComplianceData`.
-2. Version gate probes every symbol the audit imports. On drift, the audit aborts with exit code 3 and a single message naming every missing / reshaped symbol — no silent coverage loss.
+2. Version gate probes every symbol the audit imports. On drift, the audit aborts with exit code 3 and a single message naming every missing / reshaped symbol: no silent coverage loss.
 3. Each registered group runs; failures in one group don't take down the others.
 4. Group E (per-doc staleness) optionally auto-regenerates the specific stale doc when `--fix` is passed. Other groups never write to the working tree.
 5. `audit_report.py` renders Markdown + JSON. stdout always carries the JSON payload with a `written` map pointing at the on-disk artifacts.
 
-**Auto-background mode:** Fires after every `/shipwright-run` phase. If the compliance plugin is missing, the orchestrator **loud-fails** — stderr JSON warning + `compliance_update_failed` event — so a broken install is visible rather than silently skipped.
+**Auto-background mode:** Fires after every `/shipwright-run` phase. If the compliance plugin is missing, the orchestrator **loud-fails** (stderr JSON warning + `compliance_update_failed` event) so a broken install is visible rather than silently skipped.
 
-**Standalone usage:** Yes. You can run `/shipwright-compliance` at any point during or after the pipeline. The detective audit works against whatever data is present — missing inputs surface as skipped findings with a concrete reason rather than fabricating passes.
+**Standalone usage:** Yes. You can run `/shipwright-compliance` at any point during or after the pipeline. The detective audit works against whatever data is present: missing inputs surface as skipped findings with a concrete reason rather than fabricating passes.
 
 ### 4.11 Triage Inbox (cross-cutting intake)
 
-Pre-backlog buffer for findings emitted by hooks, scans, and audits. Triage and the backlog (`ExternalTask` in [shipwright-webui](https://github.com/svenroth-ai/shipwright-webui)) are separate stores; **promote** is the explicit bridge between them. The inbox is a **launch-surface**, not a finding-mirror — see § 4.11.1 below.
+Pre-backlog buffer for findings emitted by hooks, scans, and audits. Triage and the backlog (`ExternalTask` in [shipwright-webui](https://github.com/svenroth-ai/shipwright-webui)) are separate stores; **promote** is the explicit bridge between them. The inbox is a **launch-surface**, not a finding-mirror; see § 4.11.1 below.
 
-- **Store:** `.shipwright/triage.jsonl` — the **git-tracked SSoT** backlog (per project, append-only with history events). It is committed like `shipwright_events.jsonl`: an explicit `!/.shipwright/triage.jsonl` negation in the canonical gitignore makes it trackable inside the otherwise-ignored `.shipwright/` subtree (only the `.lock` / `.bak` siblings stay ignored). Producers append **per-tree**; iterate finalize **F6** stages it so deltas ship in that iterate's PR; concurrent cross-worktree appends reconcile automatically via the churn resolver (`resolve_churn_conflicts._reconcile_triage` → `churn_merge.dedup_triage_lines` + `validate_triage_text`, with `TRIAGE_LOG` in `CHURN_ALLOWLIST`) — a union + exact-line dedup that preserves the intentional `append`+`status` shared `id` without a false dedup warning. The committed `.shipwright/agent_docs/triage_inbox.md` is a pure **derived view** of this log (regenerated by `aggregate_triage.py`), not an independent store. Keys are camelCase because the wire format is shared with the [shipwright-webui](https://github.com/svenroth-ai/shipwright-webui) `ExternalTask` schema; status resolution is last-status-wins by file order, and lines that fail JSON-decode are skipped with a stderr warning. Status enum: `triage` (new) → `promoted` (turned into ExternalTask) / `dismissed` (operator decision) / `snoozed` (defer).
-- **Producers:** `audit_phase_quality_on_stop` (Tier-1 FAILs, 24h dedup), `audit_detector.mirror_findings_to_triage` (compliance findings + auto-dismiss when resolved), `generate_security_report._emit_findings_to_triage` (security-report runs), `performance_check._emit_failures_to_triage` (perf-gate runs), `check_drift._emit_drift_to_triage` and `artifact_sync._emit_drift_to_triage` (drift hooks), and the throttled SessionStart hook `import_github_findings.py` (GitHub action-units — see § 4.11.1 below).
-- **Consumer:** the Stop hook `aggregate_triage_on_stop` regenerates `.shipwright/agent_docs/triage_inbox.md` after every iterate finalize. Every open item carries an optional `launchPayload` field; when present, the aggregator renders it inside a fenced markdown code block under the item header — operators copy that fence into a new Claude session to start the matching run (§ 4.11.1). Rendered output is capped at 50 items per source, sorted by `(severity, originalTs DESC)`.
-- **Operate from CLI** (first-class — parallel to the WebUI Triage tab):
-  - `uv run shared/scripts/tools/triage_cli.py list` — list open items + their `launchPayload`.
-  - `uv run shared/scripts/tools/triage_cli.py promote trg-XXXXXXXX --task-ref "EXT:linear-ENG-7"` — promote to backlog.
-  - `uv run shared/scripts/tools/triage_cli.py dismiss trg-XXXXXXXX --reason notRelevant` — dismiss as false-positive / won't-fix.
+- **Store:** `.shipwright/triage.jsonl`, the **git-tracked SSoT** backlog (per project, append-only with history events). It is committed like `shipwright_events.jsonl`: an explicit `!/.shipwright/triage.jsonl` negation in the canonical gitignore makes it trackable inside the otherwise-ignored `.shipwright/` subtree (only the `.lock` / `.bak` siblings stay ignored). Producers append **per-tree**; iterate finalize **F6** stages it so deltas ship in that iterate's PR; concurrent cross-worktree appends reconcile automatically via the churn resolver (`resolve_churn_conflicts._reconcile_triage` → `churn_merge.dedup_triage_lines` + `validate_triage_text`, with `TRIAGE_LOG` in `CHURN_ALLOWLIST`): a union + exact-line dedup that preserves the intentional `append`+`status` shared `id` without a false dedup warning. The committed `.shipwright/agent_docs/triage_inbox.md` is a pure **derived view** of this log (regenerated by `aggregate_triage.py`), not an independent store. Keys are camelCase because the wire format is shared with the [shipwright-webui](https://github.com/svenroth-ai/shipwright-webui) `ExternalTask` schema; status resolution is last-status-wins by file order, and lines that fail JSON-decode are skipped with a stderr warning. Status enum: `triage` (new) → `promoted` (turned into ExternalTask) / `dismissed` (operator decision) / `snoozed` (defer).
+- **Producers:** `audit_phase_quality_on_stop` (Tier-1 FAILs, 24h dedup), `audit_detector.mirror_findings_to_triage` (compliance findings + auto-dismiss when resolved), `generate_security_report._emit_findings_to_triage` (security-report runs), `performance_check._emit_failures_to_triage` (perf-gate runs), `check_drift._emit_drift_to_triage` and `artifact_sync._emit_drift_to_triage` (drift hooks), and the throttled SessionStart hook `import_github_findings.py` (GitHub action-units, see § 4.11.1 below).
+- **Consumer:** the Stop hook `aggregate_triage_on_stop` regenerates `.shipwright/agent_docs/triage_inbox.md` after every iterate finalize. Every open item carries an optional `launchPayload` field; when present, the aggregator renders it inside a fenced markdown code block under the item header, and operators copy that fence into a new Claude session to start the matching run (§ 4.11.1). Rendered output is capped at 50 items per source, sorted by `(severity, originalTs DESC)`.
+- **Operate from CLI** (first-class, parallel to the WebUI Triage tab):
+  - `uv run shared/scripts/tools/triage_cli.py list`: list open items + their `launchPayload`.
+  - `uv run shared/scripts/tools/triage_cli.py promote trg-XXXXXXXX --task-ref "EXT:linear-ENG-7"`: promote to backlog.
+  - `uv run shared/scripts/tools/triage_cli.py dismiss trg-XXXXXXXX --reason notRelevant`: dismiss as false-positive / won't-fix.
   - The pre-existing `triage_promote.py --id …` tool is unchanged for back-compat; the new `triage_cli.py promote` subcommand delegates to the same library helper (`triage_promote.promote`), so audit-trail shape is byte-identical (only the `by` field differs: `"cli"` vs `"manualPromote"`).
 
-Mapping is mechanical: `critical→P0 / high→P1 / medium→P2 / low→P3 / info→P3` for severity; `compliance→compliance / else→engineering` for source domain. Both values are recorded on the triage record as `suggestedPriority` + `suggestedDomain` so the promote step doesn't have to recompute them — the mapping matches the `leadwright` ExternalTask extension (see [`leadwright/docs/specs/phase-1-external-task-extension.md`](https://github.com/svenroth-ai/leadwright)). The full table lives in `shared/scripts/triage.py` (`PRIORITY_FROM_SEVERITY`, `DOMAIN_FROM_SOURCE`) and is exported as the SSoT — tests assert against the imports, not duplicated literals.
+Mapping is mechanical: `critical→P0 / high→P1 / medium→P2 / low→P3 / info→P3` for severity; `compliance→compliance / else→engineering` for source domain. Both values are recorded on the triage record as `suggestedPriority` + `suggestedDomain` so the promote step doesn't have to recompute them; the mapping matches the `leadwright` ExternalTask extension (see [`leadwright/docs/specs/phase-1-external-task-extension.md`](https://github.com/svenroth-ai/leadwright)). The full table lives in `shared/scripts/triage.py` (`PRIORITY_FROM_SEVERITY`, `DOMAIN_FROM_SOURCE`) and is exported as the SSoT; tests assert against the imports, not duplicated literals.
 
 #### 4.11.1 Triage as Launch-Surface
 
@@ -1178,34 +1178,34 @@ A triage item represents **one handling**, not one finding. GitHub already has a
 | Source                                | Action-unit dedup key             | Maps to                                                       |
 |---------------------------------------|-----------------------------------|---------------------------------------------------------------|
 | code-scanning + Dependabot (combined) | `gh-security:{owner}/{repo}`      | `/shipwright-security`                                        |
-| secret-scanning                       | `gh-secrets:{owner}/{repo}`       | Manual rotation (no slash command — secret rotation is manual)|
+| secret-scanning                       | `gh-secrets:{owner}/{repo}`       | Manual rotation (no slash command, secret rotation is manual)|
 | failed default-branch CI per workflow | `gh-ci:{workflow_id}`             | `/shipwright-iterate --type bug`                              |
 | failed hard-gates on an open PR       | `gh-pr-ci:{pr_number}`            | `/shipwright-iterate --type bug` (automerge loop-closing)     |
 | shipwright-security prompt-injection (artifact) | `gh-prompt:{owner}/{repo}` | `/shipwright-security` (parallels `gh-security`; separately dismissable, GHAS-independent, sourced from `prompt_risks.json`) |
 
 **Two ingestion paths for the `gh-security` action-unit:**
 
-- **GHAS API path** (preferred when available) — `import_github_findings.py` calls the `code-scanning/alerts` + `dependabot/alerts` GitHub APIs. Requires GitHub Advanced Security on private repos.
-- **shipwright-security artifact path** (fallback, fires when `cs_alerts is None`) — the importer downloads the latest successful run's `security-scan-results` artifact via `gh run download` and parses `findings.json`. Gated by a freshness window (`SHIPWRIGHT_GITHUB_ARTIFACT_MAX_AGE_DAYS`, default 14d) and only attempted on the default branch. This makes Shipwright work on private repos without paying for GHAS.
+- **GHAS API path** (preferred when available): `import_github_findings.py` calls the `code-scanning/alerts` + `dependabot/alerts` GitHub APIs. Requires GitHub Advanced Security on private repos.
+- **shipwright-security artifact path** (fallback, fires when `cs_alerts is None`): the importer downloads the latest successful run's `security-scan-results` artifact via `gh run download` and parses `findings.json`. Gated by a freshness window (`SHIPWRIGHT_GITHUB_ARTIFACT_MAX_AGE_DAYS`, default 14d) and only attempted on the default branch. This makes Shipwright work on private repos without paying for GHAS.
 
-Both paths produce the SAME dedup key and `launchPayload` contract — `by_source["gh-security:artifact"]` distinguishes the ingestion path for telemetry. See **[docs/security-ci-setup.md](security-ci-setup.md)** for the choice between paths and the activation procedure.
+Both paths produce the SAME dedup key and `launchPayload` contract; `by_source["gh-security:artifact"]` distinguishes the ingestion path for telemetry. See **[docs/security-ci-setup.md](security-ci-setup.md)** for the choice between paths and the activation procedure.
 
-**Loop-closing for auto-merge (`gh-pr-ci:{pr_number}`).** The `gh-ci` source only watches the **default branch**. Once GitHub-native auto-merge is armed, a hard-gate that goes red on the **open PR** would leave it "armed but waiting" with no visibility. The `gh-pr-ci` source closes that loop: for each non-draft open PR carrying ≥1 failing check (`failure`/`timed_out`/`startup_failure`/`cancelled`/`action_required`), the importer emits one action-unit whose `launchPayload` starts `/shipwright-iterate --type bug`. Draft PRs are excluded (a draft can't be auto-merge-armed). Auto-resolve is **differentiated** — `prChecksResolved` (PR still open, checks went green), `prMerged`, or `prClosed` — and is gated by the same symmetry rule as the other sources: if the open-PR list **or any** per-PR check-runs fetch fails, the whole PR-CI source is skipped this run (no emit, no resolve) so a transient network failure never mass-resolves open items.
+**Loop-closing for auto-merge (`gh-pr-ci:{pr_number}`).** The `gh-ci` source only watches the **default branch**. Once GitHub-native auto-merge is armed, a hard-gate that goes red on the **open PR** would leave it "armed but waiting" with no visibility. The `gh-pr-ci` source closes that loop: for each non-draft open PR carrying ≥1 failing check (`failure`/`timed_out`/`startup_failure`/`cancelled`/`action_required`), the importer emits one action-unit whose `launchPayload` starts `/shipwright-iterate --type bug`. Draft PRs are excluded (a draft can't be auto-merge-armed). Auto-resolve is **differentiated** (`prChecksResolved` for PR still open with checks green, `prMerged`, or `prClosed`) and is gated by the same symmetry rule as the other sources: if the open-PR list **or any** per-PR check-runs fetch fails, the whole PR-CI source is skipped this run (no emit, no resolve) so a transient network failure never mass-resolves open items.
 
-Each action-unit carries a `launchPayload` — a ready-to-paste block containing the slash command + context + the relevant GitHub URL. The payload is **frozen at first append** (subsequent imports with the same key are deduplicated and the persisted payload is unchanged); live counts in `detail` are best-effort, so operators click through the GitHub URL for current state.
+Each action-unit carries a `launchPayload`: a ready-to-paste block containing the slash command + context + the relevant GitHub URL. The payload is **frozen at first append** (subsequent imports with the same key are deduplicated and the persisted payload is unchanged); live counts in `detail` are best-effort, so operators click through the GitHub URL for current state.
 
 Operator flow has three verbs:
 
-- **Fix now** — open `.shipwright/agent_docs/triage_inbox.md` (or run `triage_cli.py list`), copy the `launchPayload` fence into a new Claude session. The matching slash command auto-fires and the run resolves the item via the existing lifecycle hooks.
-- **Promote** — `triage_cli.py promote <id> --task-ref EXT:<ref>` creates a backlog task for deferred work; the item flips to `promoted`.
-- **Dismiss** — `triage_cli.py dismiss <id> --reason <reason>` for false-positives / won't-fix. (Per-finding false-positives are dismissed on GitHub at SARIF level, not in the triage inbox.)
+- **Fix now:** open `.shipwright/agent_docs/triage_inbox.md` (or run `triage_cli.py list`), copy the `launchPayload` fence into a new Claude session. The matching slash command auto-fires and the run resolves the item via the existing lifecycle hooks.
+- **Promote:** `triage_cli.py promote <id> --task-ref EXT:<ref>` creates a backlog task for deferred work; the item flips to `promoted`.
+- **Dismiss:** `triage_cli.py dismiss <id> --reason <reason>` for false-positives / won't-fix. (Per-finding false-positives are dismissed on GitHub at SARIF level, not in the triage inbox.)
 
 Legacy producers (phase-quality, drift, compliance, security, performance, F0.5) stay finding-granular; they MAY emit `launch_payload=None` and the renderer falls back to the historical bullet layout. Only the GitHub action-unit emitter populates `launchPayload` today; the WebUI Triage-tab in `shipwright-webui` is a thin wrapper over the same library helpers so the CLI is the single source of truth.
 
 #### 4.11.2 Triage Producer Contract
 
 Codified in `shared/schemas/triage_item.schema.json`. The schema is
-the SSoT for the JSONL wire shape — three
+the SSoT for the JSONL wire shape: three
 event kinds share `.shipwright/triage.jsonl`: the file header (line 1),
 `append` events (one per new triage item), and `status` events (one
 per Promote / Dismiss / Snooze).
@@ -1225,14 +1225,14 @@ consumers can read without `.get(..., default)`):
 | `dedupKey`      | Producer-stable id for idempotent re-emit (convention `<producer>:<key>`)   |
 | `launchPayload` | Ready-to-paste Fix-now block (§ 4.11.1)                                     |
 | `frId`          | FR id this item is rooted in (e.g. `FR-01.05`)                              |
-| `suiteId`       | Test-suite identifier — lets the RTM cross-link failing rows                |
+| `suiteId`       | Test-suite identifier, lets the RTM cross-link failing rows                |
 | `eventId`       | Back-ref into `shipwright_events.jsonl`                                     |
 
 The three FR / suite / event refs are populated opportunistically by
 producers that have the context (the test-evidence emitter does; the
 generic drift / phase-quality producers don't). When present, the
 compliance RTM renderer emits `[FAIL → trg-XXX](triage_inbox.md#trg-XXX)`
-deep-links — the aggregator stamps an HTML anchor
+deep-links; the aggregator stamps an HTML anchor
 `<a id="trg-XXX"></a>` above each card so the link resolves in plain
 markdown (VS Code preview, CommonMark, GitHub) without any WebUI
 dependency.
@@ -1255,9 +1255,9 @@ Three profiles ship out-of-the-box:
 |---------|--------|-------------|
 | `supabase-nextjs` (default) | Single-service Next.js + Supabase | Standard SaaS: Next.js full-stack with Supabase as backend |
 | `vite-hono` | Multi-service: Vite (frontend) + Hono (backend) | Split frontend/backend with a separate API server (or any project that wants the Vite dev-experience) |
-| `python-plugin-monorepo` | Python `uv` workspace — no web server | Libraries, frameworks, or CLI / plugin monorepos with no deployable frontend (pytest + ruff, no dev server, no deploy target) |
+| `python-plugin-monorepo` | Python `uv` workspace, no web server | Libraries, frameworks, or CLI / plugin monorepos with no deployable frontend (pytest + ruff, no dev server, no deploy target) |
 
-The `vite-hono` profile uses the multi-service `services: [...]` declaration documented in Section 7.3 (topo-ordered start, `depends_on` between services, partial-failure rollback). Legacy single-service profiles continue to use `dev_server: {...}`. The `python-plugin-monorepo` profile sets `dev_server: null` and `deploy: null` — `/shipwright-preview` and `/shipwright-deploy` skip cleanly for projects that have nothing to serve or ship. (The Shipwright monorepo itself uses this profile.)
+The `vite-hono` profile uses the multi-service `services: [...]` declaration documented in Section 7.3 (topo-ordered start, `depends_on` between services, partial-failure rollback). Legacy single-service profiles continue to use `dev_server: {...}`. The `python-plugin-monorepo` profile sets `dev_server: null` and `deploy: null`, so `/shipwright-preview` and `/shipwright-deploy` skip cleanly for projects that have nothing to serve or ship. (The Shipwright monorepo itself uses this profile.)
 
 **Sibling concept -- Deploy Profiles.** Where stack profiles describe the build-and-run shape of a project, **deploy profiles** describe the deploy-target shape (auth, environments, smoke test, rollback discipline). They live at `shared/profiles/deploy/<target_id>.json`, are validated against `shared/profiles/deploy-profile.schema.json`, and are introduced in Section 4.9. Three reference deploy profiles ship today: `jelastic` (full implementation), `vercel` (declarative stub), `compose-vps` (declarative stub). The validator at `shared/scripts/tools/validate_deploy_profile.py --all` enforces both JSON-Schema structure and a layer of cross-field semantic checks.
 
@@ -1277,7 +1277,7 @@ The default profile ships a modern full-stack setup:
 | Design System | Untitled UI (for mockups) | -- |
 | Unit Testing | Vitest | ^4.1.0 |
 | E2E Testing | Playwright | ^1.58.2 |
-| Security Scanning | OSS (Semgrep, Trivy, Gitleaks) — Aikido optional/legacy | Local CLI; Aikido via Cloud API |
+| Security Scanning | OSS (Semgrep, Trivy, Gitleaks); Aikido optional/legacy | Local CLI; Aikido via Cloud API |
 | Linting | ESLint (flat config), Prettier | ^10.0.3, ^3.8.1 |
 | Error Tracking | Sentry | ^10.45.0 (free tier) |
 | CI | GitHub Actions | On push + PR |
@@ -1321,18 +1321,18 @@ The profile enforces these conventions across all pipeline phases:
 | `OPENROUTER_API_KEY` | OpenRouter key for external plan review | Plugin (optional) |
 | `GEMINI_API_KEY` | Google Gemini key (alternative to OpenRouter) | Plugin (optional) |
 | `OPENAI_API_KEY` | OpenAI key (alternative to OpenRouter) | Plugin (optional) |
-| `AIKIDO_CLIENT_ID` | Aikido Security API client ID | Plugin (optional, legacy — OSS preferred) |
-| `AIKIDO_CLIENT_SECRET` | Aikido Security API client secret | Plugin (optional, legacy — OSS preferred) |
+| `AIKIDO_CLIENT_ID` | Aikido Security API client ID | Plugin (optional, legacy; OSS preferred) |
+| `AIKIDO_CLIENT_SECRET` | Aikido Security API client secret | Plugin (optional, legacy; OSS preferred) |
 
 ### Generated-App DX (Vite-based profiles)
 
 Vite-based profiles (e.g. `vite-hono`) get three drop-in templates from `shared/templates/` baked into newly built projects:
 
-- `vite.config.ts.template` — `defineConfig(({ mode }) => …)` form with a mode-gated slot for dev-only Vite plugins, sensible defaults (sourcemaps, `host: true` for tunnels), and `minify` switched off in dev so the runtime-error overlay shows usable stacks.
-- `dev-error-overlay.tsx.template` — React component that listens for `window.error` + `unhandledrejection` and renders a modal in dev mode with the error and stack. Renders `null` in production via `import.meta.env.DEV`.
-- `dev-banner.tsx.template` — small fixed-position pill so a dev tab cannot be confused with a prod tab. Customizable label (`<DevBanner label="DEV — staging" />`).
+- `vite.config.ts.template`: `defineConfig(({ mode }) => …)` form with a mode-gated slot for dev-only Vite plugins, sensible defaults (sourcemaps, `host: true` for tunnels), and `minify` switched off in dev so the runtime-error overlay shows usable stacks.
+- `dev-error-overlay.tsx.template`: React component that listens for `window.error` + `unhandledrejection` and renders a modal in dev mode with the error and stack. Renders `null` in production via `import.meta.env.DEV`.
+- `dev-banner.tsx.template`: small fixed-position pill so a dev tab cannot be confused with a prod tab. Customizable label (`<DevBanner label="DEV — staging" />`).
 
-`/shipwright-build` writes these into newly generated apps automatically. `/shipwright-adopt` lists them as opt-in offers in the adoption handoff but never overwrites an existing `vite.config.ts`. Both components are self-contained — no extra npm dependency beyond React itself.
+`/shipwright-build` writes these into newly generated apps automatically. `/shipwright-adopt` lists them as opt-in offers in the adoption handoff but never overwrites an existing `vite.config.ts`. Both components are self-contained, with no extra npm dependency beyond React itself.
 
 ---
 
@@ -1407,7 +1407,7 @@ OPENAI_API_KEY=sk-your-key
 
 ### Security Scanning
 
-`/shipwright-security` runs **out-of-band** (not as a pipeline phase — see Section 4.7). It supports two backends:
+`/shipwright-security` runs **out-of-band** (not as a pipeline phase; see Section 4.7). It supports two backends:
 
 **Option A -- OSS Backend (recommended; local, free, actively maintained):** Install one or more CLI tools on your machine:
 
@@ -1417,14 +1417,14 @@ OPENAI_API_KEY=sk-your-key
 
 Each tool is optional -- install at least one to enable the OSS backend. Semgrep and Trivy auto-update their rules/vulnerability databases on every scan.
 
-**Option B -- Aikido Backend (optional, legacy — see Section 4.7 note):** Add your API credentials:
+**Option B -- Aikido Backend (optional, legacy, see Section 4.7 note):** Add your API credentials:
 
 ```
 AIKIDO_CLIENT_ID=your-client-id
 AIKIDO_CLIENT_SECRET=your-client-secret
 ```
 
-**Backend selection** is automatic, but auto-detection probes **Aikido first**: if `AIKIDO_CLIENT_ID` is set, Aikido is chosen; otherwise it falls back to the OSS tools on PATH. So OSS is the recommended, actively-maintained path and the effective default *when no Aikido credentials are present* — a repo that has both configured will get Aikido (whose API path has not been re-verified end-to-end). To force OSS even with Aikido creds set, use `SHIPWRIGHT_SCANNER_BACKEND=oss` (or the profile's `testing.security.provider`).
+**Backend selection** is automatic, but auto-detection probes **Aikido first**: if `AIKIDO_CLIENT_ID` is set, Aikido is chosen; otherwise it falls back to the OSS tools on PATH. So OSS is the recommended, actively-maintained path and the effective default *when no Aikido credentials are present*: a repo that has both configured will get Aikido (whose API path has not been re-verified end-to-end). To force OSS even with Aikido creds set, use `SHIPWRIGHT_SCANNER_BACKEND=oss` (or the profile's `testing.security.provider`).
 
 `/shipwright-security` only runs when at least one backend is available; if neither is configured it prints setup instructions and stops.
 
@@ -1509,8 +1509,8 @@ Every skill works standalone -- you do not always need the full pipeline:
 | `/shipwright-test --design-fidelity` | Run design fidelity check only (code-level mockup vs implementation) |
 | `/shipwright-deploy` | Just deploy to Jelastic |
 | `/shipwright-changelog` | Just generate changelog and create a PR |
-| `/shipwright-security` | Run security scan (out-of-band — not a pipeline phase). OSS backend by default; Aikido optional. |
-| `/shipwright-compliance` | Detective cross-artifact audit (flags: `--fix` regenerate stale compliance docs, `--only C,F` restrict to groups, `--format md\|json\|both`). Out-of-band — also fires as auto-background side-effect after every pipeline phase. |
+| `/shipwright-security` | Run security scan (out-of-band, not a pipeline phase). OSS backend by default; Aikido optional. |
+| `/shipwright-compliance` | Detective cross-artifact audit (flags: `--fix` regenerate stale compliance docs, `--only C,F` restrict to groups, `--format md\|json\|both`). Out-of-band; also fires as auto-background side-effect after every pipeline phase. |
 
 When using skills individually, provide the input artifact (spec file, section file) as an argument. The skill reads what it needs from the project's config files.
 
@@ -1544,7 +1544,7 @@ The **constitution** (`shared/constitution.md`) defines behavioral boundaries fo
 - Validate input at system boundaries.
 - Run the self-review checklist before committing.
 - Log deviating decisions in `.shipwright/agent_docs/decision_log.md`.
-- Keep files under **300 lines (source / tests) / 400 lines (runtime-prompts: `SKILL.md`, `CLAUDE.md`, plugin agents, shared prompts)** — split if larger. The bloat anti-ratchet hook hard-blocks commits that grow an allowlisted entry past its frozen `current`; new crossings are advisory and surfaced by the Group H detective audit post-merge. Exceptions go through `.shipwright/planning/adr/_template-bloat-exception.md` with mandatory Ousterhout / YAGNI / Chesterton-Fence / Re-Review-Date / Incident-Reference fields. Allowlist / Ratchet / Anti-Ratchet vocabulary lives in `shared/glossary.md`.
+- Keep files under **300 lines (source / tests) / 400 lines (runtime-prompts: `SKILL.md`, `CLAUDE.md`, plugin agents, shared prompts)**, split if larger. The bloat anti-ratchet hook hard-blocks commits that grow an allowlisted entry past its frozen `current`; new crossings are advisory and surfaced by the Group H detective audit post-merge. Exceptions go through `.shipwright/planning/adr/_template-bloat-exception.md` with mandatory Ousterhout / YAGNI / Chesterton-Fence / Re-Review-Date / Incident-Reference fields. Allowlist / Ratchet / Anti-Ratchet vocabulary lives in `shared/glossary.md`.
 - Fix the code, not the test -- never weaken assertions to pass.
 
 **ASK FIRST (require user confirmation):**
@@ -1687,7 +1687,7 @@ Not all phases can be skipped. Iterate defines three categories:
 
 | Category | Includes | User Can Skip? |
 |----------|----------|----------------|
-| **Mandatory** | Self-review, unit test, commit, ADR, compliance, test results JSON, iterate entry (file-per-iterate), **Confidence Calibration at medium+**, **E2E Verification at medium+** (F0.5 — author + execute), **Test Completeness Ledger at small+** (F5 produce → F11 gate) | Never |
+| **Mandatory** | Self-review, unit test, commit, ADR, compliance, test results JSON, iterate entry (file-per-iterate), **Confidence Calibration at medium+**, **E2E Verification at medium+** (F0.5, author + execute), **Test Completeness Ledger at small+** (F5 produce → F11 gate) | Never |
 | **Safety-enforced** | Full review (when risk flags), full test suite (when shared infra), down.sql (when migrations), **E2E Verification at small with `touches_io_boundary` or UI** | Only with explicit risk acknowledgment |
 | **Advisory** | Design check, mini-plan, design fidelity, external LLM review | Freely skippable |
 
@@ -1722,10 +1722,10 @@ Every iterate run -- regardless of complexity -- ends with the same mandatory fi
 6. **Test results JSON** -- write structured test results to `shipwright_test_results.json`
 7. **Update compliance** -- regenerate traceability and reports (pre-commit)
 8. **Update build dashboard** -- refresh `build_dashboard.md` (pre-commit)
-9. **Record iterate entry** -- `append_iterate_entry.py` writes `.shipwright/agent_docs/iterates/<run_id>.json` (last 50 entries retained; commit hash intentionally omitted — look it up in `shipwright_events.jsonl` by `run_id`). On first contact with a legacy `iterate_history` array, the tool migrates all valid rows under the same transaction lock; invalid / duplicate rows land in `.shipwright/agent_docs/iterates/_quarantine/` and the count surfaces in the handoff + verifier output.
+9. **Record iterate entry** -- `append_iterate_entry.py` writes `.shipwright/agent_docs/iterates/<run_id>.json` (last 50 entries retained; commit hash intentionally omitted, look it up in `shipwright_events.jsonl` by `run_id`). On first contact with a legacy `iterate_history` array, the tool migrates all valid rows under the same transaction lock; invalid / duplicate rows land in `.shipwright/agent_docs/iterates/_quarantine/` and the count surfaces in the handoff + verifier output.
 10. **Conventional commit** -- single atomic commit with explicit `git add` list (never `-A`), `Run-ID` trailer and FR references
-11. **Record event** -- the `work_completed` event is appended to **this worktree's** `shipwright_events.jsonl` at finalize (F5b, *before* the commit) and **staged in the same atomic commit** above (step 10), so it ships in the iterate PR and merges to `main` like every other artifact — a per-tree, PR-committed model. The main tree is never written, so there is no orphaned dirty line and **no separate `chore(events)` sealing commit**. The F11 verifier fails closed if a tracked log's event isn't in the commit. *(Legacy/out-of-band only: when an event is recorded into a tree it does NOT commit — replay, non-worktree phases — the **F7b** `commit_event_followup.py` seal still applies; it is a no-op for the normal worktree flow.)*
-12. **Merge, push & verify** -- push branch, open PR via `gh pr create`, then **arm GitHub-native auto-merge** for the `iterate/*` branch via `gh pr merge --auto --squash --delete-branch` so the PR squash-merges itself once the Required Checks pass. The arm is gated two ways: branch-scope (`iterate/*` only — a manual human PR never self-arms; opt in per-PR yourself) and **fail-soft** (if the repo's "Allow auto-merge" / branch-protection setting is off, `gh pr merge --auto` errors → WARN and leave the PR open for a manual merge, never breaking finalize for the run). Then verify event was recorded, regenerate session handoff via the **runtime/snapshot split**: Stop hooks write live state to `.shipwright/agent_docs/runtime/` (gitignored); iterate-finalize is the **sole producer** of the tracked `session_handoff.md`, `build_dashboard.md`, and `triage_inbox.md`. The repair pass refuses to run when the session→worktree pointer is invalid — stale-pointer sessions no longer poison main.
+11. **Record event** -- the `work_completed` event is appended to **this worktree's** `shipwright_events.jsonl` at finalize (F5b, *before* the commit) and **staged in the same atomic commit** above (step 10), so it ships in the iterate PR and merges to `main` like every other artifact: a per-tree, PR-committed model. The main tree is never written, so there is no orphaned dirty line and **no separate `chore(events)` sealing commit**. The F11 verifier fails closed if a tracked log's event isn't in the commit. *(Legacy/out-of-band only: when an event is recorded into a tree it does NOT commit (replay, non-worktree phases), the **F7b** `commit_event_followup.py` seal still applies; it is a no-op for the normal worktree flow.)*
+12. **Merge, push & verify** -- push branch, open PR via `gh pr create`, then **arm GitHub-native auto-merge** for the `iterate/*` branch via `gh pr merge --auto --squash --delete-branch` so the PR squash-merges itself once the Required Checks pass. The arm is gated two ways: branch-scope (`iterate/*` only; a manual human PR never self-arms, opt in per-PR yourself) and **fail-soft** (if the repo's "Allow auto-merge" / branch-protection setting is off, `gh pr merge --auto` errors → WARN and leave the PR open for a manual merge, never breaking finalize for the run). Then verify event was recorded, regenerate session handoff via the **runtime/snapshot split**: Stop hooks write live state to `.shipwright/agent_docs/runtime/` (gitignored); iterate-finalize is the **sole producer** of the tracked `session_handoff.md`, `build_dashboard.md`, and `triage_inbox.md`. The repair pass refuses to run when the session→worktree pointer is invalid; stale-pointer sessions no longer poison main.
 
 > **Branch-integration rule.** Use `git merge` (not `git rebase` / `gh pr merge --rebase`) for branches carrying `Run-ID:` commits. Rebase rewrites the Run-ID SHAs that the snapshot-provenance audit (Group E) follows via `git log --grep=Run-ID:` and can silently strip merge-bearing trailers. Recover an accidental rebase via `git reflog`.
 
@@ -1761,8 +1761,8 @@ Shipwright runs a CLAUDE.md drift check automatically at every session start (vi
 ## 8.5 Parallel Development with Worktrees
 
 **Worktree isolation is automatic and unconditional.** Every
-`/shipwright-iterate` run executes in its own git worktree + branch + PR —
-you do not set this up by hand, and there is no "parallel mode" to opt
+`/shipwright-iterate` run executes in its own git worktree + branch + PR.
+You do not set this up by hand, and there is no "parallel mode" to opt
 into. Git worktrees give each run a second checkout of the same repo, on
 its own branch, in a sibling directory: shared git history, isolated files.
 
@@ -1778,12 +1778,12 @@ things you still do manually.
   are isolated.
 - Every iterate run lives in `.worktrees/<slug>/` on branch
   `iterate/<slug>` (the `.worktrees/` folder is `.gitignore`'d). B1a cuts
-  the branch from a freshly-fetched `origin/<default>` — never local
+  the branch from a freshly-fetched `origin/<default>`, never local
   `main`, never another `iterate/*`.
 - The session process stays in the main repo; only the skill's working
   paths point into the worktree, so webui session discovery is unaffected.
 - One iterate = one worktree = one branch = one PR. The run finalizes by
-  pushing the branch and opening a PR (F11) — it never merges the default
+  pushing the branch and opening a PR (F11); it never merges the default
   branch itself.
 
 ### Running iterates — including in parallel
@@ -1791,15 +1791,15 @@ things you still do manually.
 There is nothing to set up. Run `/shipwright-iterate` and B1a creates the
 worktree. To run a SECOND iterate in parallel, just open another Claude
 Code session against the same repo and run `/shipwright-iterate` with the
-new request — it gets its own worktree automatically. The two runs cannot
+new request; it gets its own worktree automatically. The two runs cannot
 share a working tree, race a `git checkout`, or cross-write each other's
 files.
 
 The former "Parallel" menu option and the canonical/secondary
-session-role machinery are gone — they were a workaround for isolation
+session-role machinery are gone; they were a workaround for isolation
 that used to be conditional. Isolation is now structural.
 
-A worktree carries tracked files only — neither `.env*` nor
+A worktree carries tracked files only: neither `.env*` nor
 `node_modules`/`.venv` transfer. Re-hydrate after creation: copy `.env*`
 from the main repo and run the project's install command (`npm install`,
 `uv sync`). This per-run overhead is accepted by design.
@@ -1813,7 +1813,7 @@ worktree and continues; Abandon removes the worktree + branch.
 ### Cleanup
 
 Worktree removal does **not** delete the branch. After a PR merges, run
-both — from the main repo, not from inside the worktree:
+both, from the main repo, not from inside the worktree:
 
 ```bash
 git worktree remove .worktrees/<slug>
@@ -1830,7 +1830,7 @@ worktree directory.
    (`CHANGELOG-unreleased.d/` drop files), `iterate_history`
    (file-per-iterate under `.shipwright/agent_docs/iterates/`), and ADRs
    (decision-drops under `.shipwright/agent_docs/decision-drops/`) are all
-   per-run files — two parallel iterates never collide on them. A PR only
+   per-run files; two parallel iterates never collide on them. A PR only
    conflicts if it touches the same SOURCE files; rebase the second PR
    onto the updated `origin/<default>` to resolve.
 2. **`shipwright_run_config.json` is not multi-writer safe.** Several
@@ -1838,11 +1838,11 @@ worktree directory.
    the same target project; iterate runs no longer touch
    `iterate_history` in it (file-per-iterate).
 3. **Editor / VSCode.** Open the worktree as a separate workspace window,
-   not as a subfolder of the main repo workspace — nested-worktree
+   not as a subfolder of the main repo workspace; nested-worktree
    file-watching and project-wide search behave poorly.
 4. **Stale iterate branches.** B1 calls
    `shared/scripts/tools/list_iterate_branches.py` to classify `iterate/*`
-   branches as `active`, `stale`, or `locked`. The helper is read-only —
+   branches as `active`, `stale`, or `locked`. The helper is read-only:
    it reports, the operator deletes. Limitations: (a) squash-merged
    branches stay `active` until manual `git branch -D iterate/<slug>`;
    (b) if both `main` AND `master` exist locally, pass `--main <name>`.
@@ -1857,9 +1857,9 @@ worktree directory.
 
 | Situation | Approach |
 |-----------|----------|
-| Unrelated fix that blocks nothing | Second `/shipwright-iterate` session — its own worktree, automatically |
+| Unrelated fix that blocks nothing | Second `/shipwright-iterate` session, its own worktree, automatically |
 | Related follow-up on the same topic | Stay in the current iterate; add a sub-task |
-| Conflicting change on the same files | Serialize — parallelize only disjoint file scopes |
+| Conflicting change on the same files | Serialize; parallelize only disjoint file scopes |
 | Quick one-line doc fix | Still goes through `/shipwright-iterate`; the worktree overhead is automatic now |
 
 See also the skill-level enforcement in
@@ -1888,13 +1888,13 @@ Hooks are Python and shell scripts that fire on specific Claude Code events. The
 
 | Layer | Trigger | What It Prevents |
 |-------|---------|-----------------|
-| `scripts/hooks/pre-commit` | local `git commit` | **Hard-blocks** commits that raise the measured LOC of any allowlisted entry past its frozen `current` in `shipwright_bloat_baseline.json`. New crossings (a previously-clean file gaining its first allowlist entry) are nudged, not blocked — Group H surfaces them post-merge. Installed once per clone via `bash scripts/install-hooks.sh` (POSIX/Git-Bash) or `.\scripts\install-hooks.ps1` (PowerShell). |
-| `bloat_gate_on_stop.py` | Stop | Reads the session bloat marker and refuses to finalize a turn while a ratchet is pending — the gate that catches in-session ratchets the same Claude that wrote them. |
+| `scripts/hooks/pre-commit` | local `git commit` | **Hard-blocks** commits that raise the measured LOC of any allowlisted entry past its frozen `current` in `shipwright_bloat_baseline.json`. New crossings (a previously-clean file gaining its first allowlist entry) are nudged, not blocked; Group H surfaces them post-merge. Installed once per clone via `bash scripts/install-hooks.sh` (POSIX/Git-Bash) or `.\scripts\install-hooks.ps1` (PowerShell). |
+| `bloat_gate_on_stop.py` | Stop | Reads the session bloat marker and refuses to finalize a turn while a ratchet is pending: the gate that catches in-session ratchets the same Claude that wrote them. |
 | `.github/workflows/bloat-check.yml` | CI on PRs to main | Same anti-ratchet rule on the merge gate, defense-in-depth against operators who skip the pre-commit install. |
 
 Exception path: write an ADR using `.shipwright/planning/adr/_template-bloat-exception.md` (mandatory Ousterhout / YAGNI / Chesterton-Fence / Re-Review-Date / Incident-Reference sections), bump the entry's `current` in the allowlist with `state="exception"` and `adr="ADR-NNN"`.
 
-**Reducibility reviewer (the qualitative complement).** The anti-ratchet hook above is purely *quantitative* — it counts lines, which cannot tell long-but-coherent code from genuinely reducible code. The reducibility reviewer closes that gap: a line-count crossing is treated as a **router**, not a verdict (`LOC-as-Router`), escalating the file to a reviewer that blocks **only** on a concrete, falsifiable reduction from a closed catalog (`D` duplication · `A` needless-abstraction · `X` dead-code · `C` control-flow · `S` data-shape · `M` comment-restating-code · `P` dependency-footprint · `T` test-repetition), each citing what-to-remove + est-LOC-saved + keeps-tests-green. No concrete finding → PASS, so coherent long code is never churned (guardrails G1–G6). It runs at two enforcement surfaces — the local diff reviewer (`plugins/shipwright-build/agents/code-reviewer.md`, bounce-back cascade) and the CI Tier-3 reviewer (`shared/prompts/pr_reviewer/system`) — plus an advisory plan-stage pre-emption in `shared/prompts/iterate_reviewer/system`. The rubric and per-language idiom-map live in `shared/reducibility-catalog.md` and `shared/profiles/reducibility-idioms.json`.
+**Reducibility reviewer (the qualitative complement).** The anti-ratchet hook above is purely *quantitative*: it counts lines, which cannot tell long-but-coherent code from genuinely reducible code. The reducibility reviewer closes that gap: a line-count crossing is treated as a **router**, not a verdict (`LOC-as-Router`), escalating the file to a reviewer that blocks **only** on a concrete, falsifiable reduction from a closed catalog (`D` duplication · `A` needless-abstraction · `X` dead-code · `C` control-flow · `S` data-shape · `M` comment-restating-code · `P` dependency-footprint · `T` test-repetition), each citing what-to-remove + est-LOC-saved + keeps-tests-green. No concrete finding → PASS, so coherent long code is never churned (guardrails G1–G6). It runs at two enforcement surfaces (the local diff reviewer in `plugins/shipwright-build/agents/code-reviewer.md`, bounce-back cascade, and the CI Tier-3 reviewer in `shared/prompts/pr_reviewer/system`), plus an advisory plan-stage pre-emption in `shared/prompts/iterate_reviewer/system`. The rubric and per-language idiom-map live in `shared/reducibility-catalog.md` and `shared/profiles/reducibility-idioms.json`.
 
 **Multi-session lifecycle (orchestrator-driven phases):**
 
@@ -1914,7 +1914,7 @@ Exception path: write an ADR using `.shipwright/planning/adr/_template-bloat-exc
 | `track_tool_calls.py` | PostToolUse | Counts tool calls for context-pressure detection |
 | `audit_phase_quality_on_stop.py` | Stop | Runs the 36-check Phase-Quality audit (see Section 9 below) |
 | `generate_handoff_on_stop.py` | Stop | Writes the **gitignored runtime mirror** `.shipwright/agent_docs/runtime/session_handoff.md`; iterate-finalize is the sole producer of the tracked `session_handoff.md` |
-| `suggest_iterate.py` | UserPromptSubmit | Multilingual phase router — auto-suggests `/shipwright-iterate` for post-test code changes |
+| `suggest_iterate.py` | UserPromptSubmit | Multilingual phase router; auto-suggests `/shipwright-iterate` for post-test code changes |
 | `write_terminal_marker.py` | SessionStart | Writes a terminal marker the WebUI Command Center watches |
 
 Hooks use **exit code 2 (soft-block)**: you can say "Continue anyway," but the override is logged to `.shipwright/agent_docs/compliance_overrides.log` and flagged at the next checkpoint.
@@ -1969,13 +1969,13 @@ uv run scripts/check_plugin_cache_sync.py --strict    # exit 1 on drift (CI use)
 uv run scripts/check_plugin_cache_sync.py --json      # structured output for tooling
 ```
 
-The check is no-op when `~/.claude/plugins/cache/shipwright/` does not exist (typical CI runners), so it slots cleanly into a sanity-check pipeline without false negatives. Scope: shipwright dev repo only — end-users consuming the plugins on their own projects run the installed cache versions and never need this step.
+The check is no-op when `~/.claude/plugins/cache/shipwright/` does not exist (typical CI runners), so it slots cleanly into a sanity-check pipeline without false negatives. Scope: shipwright dev repo only; end-users consuming the plugins on their own projects run the installed cache versions and never need this step.
 
 ### Pipeline Verifier and Phase Completion Canon
 
-Shipwright ships a **pipeline-wide finalization verifier** that runs after every phase to catch cross-artifact drift — the kind of failure mode where the code compiles, the tests pass, but `decision_log.md` is out of date, the `CHANGELOG` is missing a bullet, or the build dashboard still shows last week's state. The verifier lives at `shared/scripts/tools/verify_phase.py` and is dispatched automatically through `plugins/shipwright-run/scripts/lib/phase_validators.py` between phases; you can also invoke it manually.
+Shipwright ships a **pipeline-wide finalization verifier** that runs after every phase to catch cross-artifact drift: the kind of failure mode where the code compiles, the tests pass, but `decision_log.md` is out of date, the `CHANGELOG` is missing a bullet, or the build dashboard still shows last week's state. The verifier lives at `shared/scripts/tools/verify_phase.py` and is dispatched automatically through `plugins/shipwright-run/scripts/lib/phase_validators.py` between phases; you can also invoke it manually.
 
-**What it checks — the Minimum Phase Completion Canon (C1–C5):**
+**What it checks, the Minimum Phase Completion Canon (C1–C5):**
 
 | Step | Invariant | Severity |
 |------|-----------|----------|
@@ -1985,9 +1985,9 @@ Shipwright ships a **pipeline-wide finalization verifier** that runs after every
 | **C4** | `.shipwright/agent_docs/decision_log.md` has an ADR referencing the phase | ERROR (decision-taking phases only) |
 | **C5** | `CHANGELOG.md [Unreleased]` has a bullet under the right category | ERROR (user-facing phases only) |
 
-Plus per-phase preventive checks: build verifies every section's test files exist on disk (**B3**) and every recorded section commit SHA is reachable via git (**B6**) — the latter catches history rewrites before they contaminate compliance. Plan verifies section manifest consistency, FR orphans, and section-id validity. Design verifies every screen in `design-manifest.md` exists and every FR is linked to at least one screen. Changelog runs two Sonder-Checks — the latest `## [vX.Y.Z]` in `CHANGELOG.md` must match an existing git tag, and the top version must match the latest `git tag --list v*`.
+Plus per-phase preventive checks: build verifies every section's test files exist on disk (**B3**) and every recorded section commit SHA is reachable via git (**B6**); the latter catches history rewrites before they contaminate compliance. Plan verifies section manifest consistency, FR orphans, and section-id validity. Design verifies every screen in `design-manifest.md` exists and every FR is linked to at least one screen. Changelog runs two Sonder-Checks: the latest `## [vX.Y.Z]` in `CHANGELOG.md` must match an existing git tag, and the top version must match the latest `git tag --list v*`.
 
-C4 is skipped for design (transformation, not decision), test (events, not decisions), changelog (process), deploy (execution) and compliance (derived). C5 is skipped for plan (internal), test (results live in `shipwright_test_results.json`), changelog (owns its own prepend) and compliance. Severity is fixed per-check — you cannot downgrade an ERROR without touching the code.
+C4 is skipped for design (transformation, not decision), test (events, not decisions), changelog (process), deploy (execution) and compliance (derived). C5 is skipped for plan (internal), test (results live in `shipwright_test_results.json`), changelog (owns its own prepend) and compliance. Severity is fixed per-check; you cannot downgrade an ERROR without touching the code.
 
 **Running it manually.** Against a Shipwright-managed project:
 
@@ -2010,7 +2010,7 @@ Full canon definition, skip criteria, and per-plugin coverage matrix live in [do
 
 ### Phase-Quality Audit (Consolidated Stop-Hook)
 
-Beyond the orchestrator-driven Canon, Shipwright runs a **consolidated Stop-Hook audit** at the end of every plugin session — orchestrated or standalone. It's observability, not a gate by default: the hook writes findings to `.shipwright/compliance/skill-compliance/` and regenerates three summary files but never blocks the session.
+Beyond the orchestrator-driven Canon, Shipwright runs a **consolidated Stop-Hook audit** at the end of every plugin session, orchestrated or standalone. It's observability, not a gate by default: the hook writes findings to `.shipwright/compliance/skill-compliance/` and regenerates three summary files but never blocks the session.
 
 The audit covers six categories:
 
@@ -2023,15 +2023,15 @@ The audit covers six categories:
 | **Quality** | 2 (Q1-Q2) | ADR substance, planned sections ⊆ build completed |
 | **Spec** | 10 (S1-S10) | spec.md + FR headings, iterate-spec for medium+, CLAUDE.md + README presence + freshness, FR coherence |
 
-**Tier classification:** Of the 36 checks, 24 are Tier-1 (candidate for enforcement after burn-in) and 12 are Tier-2 (heuristic, never enforcement). Tier-2 ids are `W1`, `I4`, `T2`, `Q1`, `S3`, `S4`, `S5`, `S7`, `S9`, `S10`, `Cmp1`, `D2` — they always land as WARN/SKIP and carry `"tier": 2` so the dashboard can group them as low-signal.
+**Tier classification:** Of the 36 checks, 24 are Tier-1 (candidate for enforcement after burn-in) and 12 are Tier-2 (heuristic, never enforcement). Tier-2 ids are `W1`, `I4`, `T2`, `Q1`, `S3`, `S4`, `S5`, `S7`, `S9`, `S10`, `Cmp1`, `D2`; they always land as WARN/SKIP and carry `"tier": 2` so the dashboard can group them as low-signal.
 
 **Artifacts** (deterministically regenerated, hard-capped). All four live under
 the gitignored `skill-compliance` dir; the 3 `.md` roll-ups are transient derived
 caches (never tracked → idle `main` stays clean):
-- `.shipwright/compliance/skill-compliance/<phase>-<run_id>-<session>.json` — per-run finding (atomic, GC after 90 days)
-- `.shipwright/compliance/skill-compliance/_report.md` — last 10 runs, markdown table
-- `.shipwright/compliance/skill-compliance/_findings.md` — last 5 runs, source for SessionStart-Injection
-- `.shipwright/compliance/skill-compliance/_dashboard.md` — phase × category matrix
+- `.shipwright/compliance/skill-compliance/<phase>-<run_id>-<session>.json`: per-run finding (atomic, GC after 90 days)
+- `.shipwright/compliance/skill-compliance/_report.md`: last 10 runs, markdown table
+- `.shipwright/compliance/skill-compliance/_findings.md`: last 5 runs, source for SessionStart-Injection
+- `.shipwright/compliance/skill-compliance/_dashboard.md`: phase × category matrix
 
 **Enforcement rollout (staggered, default OFF in code):**
 
@@ -2060,14 +2060,14 @@ The `.shipwright/agent_docs/` directory is the project's knowledge base for AI a
 | `architecture.md` | System overview, stack table, data flow, security model. Carries a `<!-- shipwright:architecture v=N last-sync=<sha> -->` marker that the Group F5 detective audit uses to detect diagram drift against architecture-impacting decision-drops | `/shipwright-project` |
 | `conventions.md` | Code patterns, naming, git workflow, component examples | `/shipwright-project` |
 | `decision_log.md` | Architecture Decision Records (ADR format). Compact one-row entries with mandatory 500-char field caps; long-form prose lives in the flat `.shipwright/planning/adr/<NNN>-<slug>.md` spec folder | All phases |
-| `session_handoff.md` | Recovery document: last events, git state, resume instructions. **Single producer** = `iterate_finalize` | Iterate finalization — runtime mirror at `.shipwright/agent_docs/runtime/session_handoff.md` (gitignored) |
-| `build_dashboard.md` | Project activity: recent changes, test status, pipeline, build history. **Single producer** = `iterate_finalize` | Iterate finalization — runtime mirror at `runtime/build_dashboard.md` (gitignored) |
-| `triage_inbox.md` | Aggregated Triage Inbox rendered from `.shipwright/triage.jsonl` (see § 4.11) | Iterate finalization via atomic `os.replace` from the runtime mirror — Stop hooks write only to `runtime/triage_inbox.md` |
+| `session_handoff.md` | Recovery document: last events, git state, resume instructions. **Single producer** = `iterate_finalize` | Iterate finalization; runtime mirror at `.shipwright/agent_docs/runtime/session_handoff.md` (gitignored) |
+| `build_dashboard.md` | Project activity: recent changes, test status, pipeline, build history. **Single producer** = `iterate_finalize` | Iterate finalization; runtime mirror at `runtime/build_dashboard.md` (gitignored) |
+| `triage_inbox.md` | Aggregated Triage Inbox rendered from `.shipwright/triage.jsonl` (see § 4.11) | Iterate finalization via atomic `os.replace` from the runtime mirror; Stop hooks write only to `runtime/triage_inbox.md` |
 | `iterates/<run_id>.json` | Per-iterate record (one file per iterate; legacy `iterate_history` array is migration-only) | Iterate finalization (F5c, 50-entry retention) |
 | `decision-drops/<run_id>.json` | Per-iterate ADR draft, aggregated at `/shipwright-changelog` release into sequentially-numbered `decision_log.md` entries (gitignored, main-repo path) | Iterate F3 |
 | `compliance_overrides.log` | Audit log of hook overrides | Hooks (when user says "Continue anyway") |
 
-**Runtime/tracked split.** Stop hooks write live mid-session state to `.shipwright/agent_docs/runtime/` (gitignored via re-exclude in the allowlist block); iterate-finalize is the single producer of the tracked variants above. The split closes the recurring "main is dirty after every session" regression class while preserving mid-session inspection — `cat .shipwright/agent_docs/runtime/triage_inbox.md` for fresh state; the tracked copy reflects the last iterate's snapshot.
+**Runtime/tracked split.** Stop hooks write live mid-session state to `.shipwright/agent_docs/runtime/` (gitignored via re-exclude in the allowlist block); iterate-finalize is the single producer of the tracked variants above. The split closes the recurring "main is dirty after every session" regression class while preserving mid-session inspection: `cat .shipwright/agent_docs/runtime/triage_inbox.md` for fresh state; the tracked copy reflects the last iterate's snapshot.
 
 ### CLAUDE.md
 
@@ -2084,7 +2084,7 @@ The project master document, generated during `/shipwright-project`. It stays le
 
 Each decision record follows the ADR template: Status, Context, Decision, Consequences (including rejected alternatives). Profile-level decisions (stack, auth pattern, folder structure) are implicit in the stack profile. Only project-specific decisions go in the log.
 
-**Per-field length budget (hard-enforced).** Every new ADR field — context / decision / consequences / rationale / rejected — must fit in **500 characters**. `decision_log.md` is always-loaded Layer-1 context; verbose entries inflate every future iterate's prompt. The writers (`write_decision_log.py`, `write_decision_drop.py`) exit non-zero on overflow with a message pointing at the spec folder. Existing ADRs are not rewritten — the gate is forward-only.
+**Per-field length budget (hard-enforced).** Every new ADR field (context / decision / consequences / rationale / rejected) must fit in **500 characters**. `decision_log.md` is always-loaded Layer-1 context; verbose entries inflate every future iterate's prompt. The writers (`write_decision_log.py`, `write_decision_drop.py`) exit non-zero on overflow with a message pointing at the spec folder. Existing ADRs are not rewritten; the gate is forward-only.
 
 **ADR spec folder:** `.shipwright/planning/adr/<NNN>-<slug>.md`, flat, one file per ADR. ADR-number prefix gives collision protection. Drops opt in via `--spec-ref <path>`; aggregation renders a `**Details:** [filename](../planning/adr/...)` link and rebuilds `.shipwright/planning/adr/INDEX.md` after every release pass. Schema lives at [shared/schemas/decision_drop.schema.json](../shared/schemas/decision_drop.schema.json).
 
@@ -2118,7 +2118,7 @@ The framework deliberately does not aggregate this information into a single `PR
 
 #### Reading Order
 
-Read these in order. Stop as soon as you have the answer you need — most reviews never need to go past step 3.
+Read these in order. Stop as soon as you have the answer you need; most reviews never need to go past step 3.
 
 | # | File | What you learn | Time |
 |---|------|----------------|------|
@@ -2126,21 +2126,21 @@ Read these in order. Stop as soon as you have the answer you need — most revie
 | 2 | `CLAUDE.md` | Stack, build/test/deploy commands, structure, key files, gotchas | ~3 min |
 | 3 | `.shipwright/agent_docs/conventions.md` | Code patterns, naming, git workflow, component examples | ~5 min |
 | 4 | `.shipwright/agent_docs/architecture.md` | System overview, stack table, data flow, security model | ~5 min |
-| 5 | `.shipwright/agent_docs/decision_log.md` | Architecture Decision Records — why each non-obvious choice was made | scan-based |
+| 5 | `.shipwright/agent_docs/decision_log.md` | Architecture Decision Records: why each non-obvious choice was made | scan-based |
 | 6 | `.shipwright/agent_docs/session_handoff.md` | Most recent state: last commit, last test status, last completed phase | ~1 min |
-| 7 | `shipwright_*_config.json` | Pipeline state machine: current step, completed steps, project metadata. Several files (run, project, plan, build, test, deploy, security, sync) — grep the one whose name matches your question | scan-based |
-| 8 | `shipwright_events.jsonl` | Append-only event log — single source of truth for what happened, when. Compliance reports and the activity dashboard derive from this | scan-based |
+| 7 | `shipwright_*_config.json` | Pipeline state machine: current step, completed steps, project metadata. Several files (run, project, plan, build, test, deploy, security, sync); grep the one whose name matches your question | scan-based |
+| 8 | `shipwright_events.jsonl` | Append-only event log, single source of truth for what happened, when. Compliance reports and the activity dashboard derive from this | scan-based |
 
-Files 1–4 are the primer. Files 5–8 are reference material — you grep them for a specific question, you do not read them cover to cover.
+Files 1–4 are the primer. Files 5–8 are reference material: you grep them for a specific question, you do not read them cover to cover.
 
 #### Single-Source-of-Truth Map
 
-When you have a specific question, go directly to the file that owns the answer. Do not infer from `CLAUDE.md` if the canonical answer lives elsewhere — `CLAUDE.md` is a summary and may be a step behind on details.
+When you have a specific question, go directly to the file that owns the answer. Do not infer from `CLAUDE.md` if the canonical answer lives elsewhere; `CLAUDE.md` is a summary and may be a step behind on details.
 
 | Question | Authoritative File | Why |
 |----------|-------------------|-----|
 | What stack / framework? | `shipwright_run_config.json` (`profile`) + `.shipwright/agent_docs/architecture.md` (Stack table) | Profile is normative; architecture.md expands it |
-| What conventions / code style? | `.shipwright/agent_docs/conventions.md` | Single source — never duplicated |
+| What conventions / code style? | `.shipwright/agent_docs/conventions.md` | Single source, never duplicated |
 | Why was X chosen over Y? | `.shipwright/agent_docs/decision_log.md` | ADR format with rejected alternatives |
 | What did the last iterate do? | `shipwright_events.jsonl` (most recent `work_completed`) + `.shipwright/agent_docs/build_dashboard.md` | Event log is canonical; dashboard is a rendered view |
 | What test status right now? | `shipwright_test_results.json` | Last test run, pass/fail counts per layer |
@@ -2148,7 +2148,7 @@ When you have a specific question, go directly to the file that owns the answer.
 | What requirements does this project even have? | `.shipwright/planning/*/spec.md` | IREB-aligned FR/NFR specs |
 | Where in the pipeline are we? | `shipwright_run_config.json` (`status`, `current_step`) + `phase_history` for "which step ran when" | Pipeline state machine; `current_step` is the live cursor, `phase_history` is the trail |
 | What sections has build completed? | `shipwright_build_config.json` (`completed_sections`) | Per-section build state lives here, not in run config |
-| What iterates have run? | `.shipwright/agent_docs/iterates/*.json` (one file per iterate) — fall back to legacy `iterate_history` array in `shipwright_run_config.json` for older projects | One file per iterate; the run-config array is migration-only for older projects |
+| What iterates have run? | `.shipwright/agent_docs/iterates/*.json` (one file per iterate); fall back to legacy `iterate_history` array in `shipwright_run_config.json` for older projects | One file per iterate; the run-config array is migration-only for older projects |
 | What was the most recent decision? | `.shipwright/agent_docs/decision_log.md` (latest ADR) | Forward-only append |
 | Did anyone override a hook? | `.shipwright/agent_docs/compliance_overrides.log` | Audit trail of soft-block overrides |
 
@@ -2167,7 +2167,7 @@ Every Shipwright project follows the same three-command shape, regardless of sta
 <test-command>                   # e.g. npm test, uv run pytest, etc.
 ```
 
-If `CLAUDE.md` does not show one of these, that path is not used in the project — there is no second-guessing.
+If `CLAUDE.md` does not show one of these, that path is not used in the project; there is no second-guessing.
 
 #### When to Reach for Which Skill
 
@@ -2182,11 +2182,11 @@ Once oriented, common follow-up actions:
 | Tag a release | `/shipwright-changelog` | Aggregates `[Unreleased]` entries, bumps semver, opens PR |
 | Deploy to DEV/PROD | `/shipwright-deploy` | DEV auto, PROD manual (per design principle) |
 
-Avoid editing files directly when the skill exists — the skill keeps `.shipwright/agent_docs/`, `shipwright_events.jsonl`, and compliance reports in sync. Hand-edits silently produce drift that `/shipwright-compliance` will flag later.
+Avoid editing files directly when the skill exists; the skill keeps `.shipwright/agent_docs/`, `shipwright_events.jsonl`, and compliance reports in sync. Hand-edits silently produce drift that `/shipwright-compliance` will flag later.
 
 #### Why No Aggregated Project Summary File
 
-Frameworks like Replit ship a single `replit.md` that aggregates setup, API, deployment, troubleshooting into one file. It looks hand-off-friendly on day one. Six iterates later, half of it is wrong — the aggregate is a view over files that have moved on, and nothing forced it to update.
+Frameworks like Replit ship a single `replit.md` that aggregates setup, API, deployment, troubleshooting into one file. It looks hand-off-friendly on day one. Six iterates later, half of it is wrong: the aggregate is a view over files that have moved on, and nothing forced it to update.
 
 Shipwright takes the opposite approach: each file owns one concern. `CLAUDE.md` is the entry point and stays lean (~200 lines). Detail lives in `.shipwright/agent_docs/`. Pipeline state lives in `shipwright_*_config.json`. Compliance evidence lives in `shipwright_events.jsonl`. There is no synthesized "everything" file because there is no way to keep one in sync without paying drift in tokens or operator attention every iterate.
 
@@ -2206,7 +2206,7 @@ The price is that you read 2–3 files to onboard instead of 1. The benefit is t
 | External review prompt appears every run | No API keys set for OpenRouter, Gemini, or OpenAI | The skill prompts in Step 5 Branch B rather than silently skipping. Fix: add `OPENROUTER_API_KEY=...` to `.env.local` at the repo root. To permanently opt out, set `external_review.feedback_iterations: 0` in `shipwright_iterate_config.json` and the skill will fall straight into the self-review fallback without asking. |
 | Git operations fail (PR creation, changelog) | GitHub CLI not authenticated | Run `gh auth login` and follow the prompts. |
 | Deploy fails with auth error | Jelastic token expired or invalid | Generate a new token in the Infomaniak Jelastic Dashboard under Settings > Access Tokens. |
-| `/shipwright-security` reports "no backend available" | No scanner installed | Install OSS tools (semgrep, trivy, gitleaks — recommended). Aikido credentials (`AIKIDO_CLIENT_ID`, `AIKIDO_CLIENT_SECRET`) work as a legacy fallback. |
+| `/shipwright-security` reports "no backend available" | No scanner installed | Install OSS tools (semgrep, trivy, gitleaks; recommended). Aikido credentials (`AIKIDO_CLIENT_ID`, `AIKIDO_CLIENT_SECRET`) work as a legacy fallback. |
 | Build hangs after multiple fix attempts | Agent stuck in a debugging loop | The constitution limits retries to 3 attempts, then escalates. If it still loops, type "stop" and review the error manually. |
 | Invalid JSON in `shipwright_events.jsonl` | Interrupted write or manual editing | Run `uv run shared/scripts/tools/validate_event_log.py --project-root .` -- the reader skips corrupt lines automatically, but the validator will identify them. |
 | Commit exists but no event recorded | Agent crashed after commit but before event recording | Run `validate_event_log.py` -- it checks git history against events and reports unmatched commits. |
@@ -2271,15 +2271,15 @@ Or read `CHANGELOG.md` in the repository root for release notes.
 Running more than one Shipwright project at once? The **Shipwright
 Command Center** is an optional local web application that gives you
 **one Kanban board across every project**, a live transcript per task,
-and a global inbox for every "Claude needs permission to..." prompt —
+and a global inbox for every "Claude needs permission to..." prompt,
 so you stop hunting between VS Code windows to see where
 everything stands.
 
 The web server never spawns Claude itself. When you hit **Launch** on a
 task, the `claude` command auto-runs in an embedded terminal pane on the
-task detail page — the embedded terminal hosts a shell, Claude runs
+task detail page: the embedded terminal hosts a shell, Claude runs
 inside it. The Command Center watches the resulting session transcript
-live — fire and forget:
+live, fire and forget:
 the dashboard updates while you keep coding.
 
 The Command Center lives in its own repo:
@@ -2295,9 +2295,9 @@ make dev-server    # Terminal 1 — backend on :3847
 make dev-client    # Terminal 2 — frontend on :5173
 ```
 
-Then open <http://localhost:5173>. The full user guide — installation,
+Then open <http://localhost:5173>. The full user guide (installation,
 daily workflow, recommended terminal setup, custom actions for your
-own slash skills, Windows autostart — lives at
+own slash skills, Windows autostart) lives at
 **[docs/guide.md](https://github.com/svenroth-ai/shipwright-webui/blob/main/docs/guide.md)**
 in the WebUI repo.
 
@@ -2312,9 +2312,9 @@ If you encountered an unfamiliar term in this guide, this is the fast way in. Ea
 | If you mean… | Official term |
 |---|---|
 | Description of what the app should do, who it's for, and what it must not do | **IREB-Spec** (a requirements specification written per IREB practice) |
-| Log of architectural decisions with rationale — why this database, why this pattern | **ADR** (Architecture Decision Record) |
+| Log of architectural decisions with rationale (why this database, why this pattern) | **ADR** (Architecture Decision Record) |
 | Coverage matrix where every requirement points at the test that proves it | **RTM** (Requirements Traceability Matrix) |
-| Inventory of every third-party component in the app — for license and CVE tracking | **SBOM** (Software Bill of Materials) |
+| Inventory of every third-party component in the app, for license and CVE tracking | **SBOM** (Software Bill of Materials) |
 | Standardized commit-message format (`feat:`, `fix:`, etc.) so version history is machine-readable | **Conventional Commits** |
 | A checkpoint between two pipeline steps where output is verified before the next step starts | **Phase Gate** / **Quality Gate** |
 | The whole system of guides (Specs, Conventions) and sensors (Tests, Reviews, Scanners) that steers AI output before and after generation | **Harness** (Martin Fowler 2026: "harness engineering") |
@@ -2355,11 +2355,11 @@ If you encountered an unfamiliar term in this guide, this is the fast way in. Ea
 | `/shipwright-plan` | `@spec.md` | -- | Create implementation plan for one split. Researches stack, interviews for clarification, generates section files. Optionally sends plan to external LLMs (Gemini + OpenAI) for review. |
 | `/shipwright-build` | `@section.md` | `--autonomous`, `--from <section>` | Implement one section using TDD. Writes failing test, implements code, runs code review subagent, creates Conventional Commit on feature branch. With `--autonomous`, loops through all pending sections via subagents without manual gates. |
 | `/shipwright-test` | -- | `--fix` | Run test suite: unit tests (Vitest), integration tests (real DB), pgTAP (RLS), smoke test (HTTP), E2E (Playwright). The `--fix` flag enables auto-repair of failing tests. |
-| `/shipwright-security` | -- | -- | **Out-of-band** — not part of `PIPELINE_STEPS`. Run security scan (OSS backend by default; Aikido optional/legacy). Classifies findings, runs remediation loop with security-fixer subagent, generates report. Runs when any scanner backend is available. CI activation steps and the GitHub Actions workflow shape live at [docs/security-ci-setup.md](security-ci-setup.md). |
+| `/shipwright-security` | -- | -- | **Out-of-band**, not part of `PIPELINE_STEPS`. Run security scan (OSS backend by default; Aikido optional/legacy). Classifies findings, runs remediation loop with security-fixer subagent, generates report. Runs when any scanner backend is available. CI activation steps and the GitHub Actions workflow shape live at [docs/security-ci-setup.md](security-ci-setup.md). |
 | `/shipwright-changelog` | -- | -- | Parse Conventional Commits from git history, generate Keep-a-Changelog entries, suggest semver bump, create version tag, and open a pull request. |
 | `/shipwright-deploy` | -- | `--prod`, `--rollback` | Deploy via the project's deploy profile (Jelastic is the verified reference target; Vercel / Compose-VPS ship as declarative stubs). DEV deploys automatically; PROD requires `--prod` and explicit confirmation. Runs a smoke test after deploy, rolls back on failure. |
-| `/shipwright-compliance` | -- | `--fix`, `--only <groups>`, `--format md\|json\|both` | **Out-of-band** — detective cross-artifact audit (Groups A–H). Also fires as auto-background subprocess after every completed pipeline phase via `update_compliance.py --phase <name>` (no manual flag needed). |
-| `/shipwright-adopt` | -- | `--dry-run`, `--profile <name>`, `--scope full_app\|library\|cli`, `--include-nested`, `--exclude-path <p>`, `--skip-crawl`, `--crawl-base-url <url>`, `--crawl-auth-token <tok>`, `--crawl-max-depth <n>`, `--crawl-max-pages <n>`, `--no-backfill-events`, `--no-sync`, `--planning-split <name>` | Onboard an existing (brownfield) repo into Shipwright. Analyzes stack + routes + conventions + git history, writes CLAUDE.md + .shipwright/agent_docs + configs + compliance reports + an E2E baseline. Not a pipeline phase — runs once per repo. |
+| `/shipwright-compliance` | -- | `--fix`, `--only <groups>`, `--format md\|json\|both` | **Out-of-band** detective cross-artifact audit (Groups A–H). Also fires as auto-background subprocess after every completed pipeline phase via `update_compliance.py --phase <name>` (no manual flag needed). |
+| `/shipwright-adopt` | -- | `--dry-run`, `--profile <name>`, `--scope full_app\|library\|cli`, `--include-nested`, `--exclude-path <p>`, `--skip-crawl`, `--crawl-base-url <url>`, `--crawl-auth-token <tok>`, `--crawl-max-depth <n>`, `--crawl-max-pages <n>`, `--no-backfill-events`, `--no-sync`, `--planning-split <name>` | Onboard an existing (brownfield) repo into Shipwright. Analyzes stack + routes + conventions + git history, writes CLAUDE.md + .shipwright/agent_docs + configs + compliance reports + an E2E baseline. Not a pipeline phase; runs once per repo. |
 
 ### Verifier and Canon Helper Scripts
 
