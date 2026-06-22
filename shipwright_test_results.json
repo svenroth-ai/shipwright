@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-22-trivy-risk-accept",
+    "run_id": "iterate-2026-06-22-trivyignore-policy-check",
     "date": "2026-06-22",
     "unit": {
       "status": "passed",
-      "passed": 424,
-      "total": 424
+      "passed": 4,
+      "total": 4
     },
     "integration": {
       "status": "not_run",
@@ -33,46 +33,40 @@
     "surface_verification": {
       "surface": "none",
       "exit_code": 0,
-      "tests_run": 0,
-      "justification": "Internal security-scanner enhancement (CLI library code) + a config register. No web/api/cli-product/UI/store surface is introduced. The new behavior (_run_trivy passes --ignorefile) is covered by 4 unit tests against a mocked subprocess; the end-to-end Trivy suppression of CVE-2026-54285 is a CI-gated check (trivy is not installed on the local dev box) confirmed in this PR's security.yml run before merge."
+      "tests_run": 4,
+      "justification": "Test-only CI guardrail (a policy check over .trivyignore.yaml). No product web/api/cli/UI/store surface is introduced or changed. The guardrail is self-tested by 4 tests run CI-style (uv run --with pytest pytest shared/tests/...): good register passes, sloppy entry rejected, absent file passes."
     },
     "degraded": [
-      "Full monorepo suite delegated to CI ci.yml. Blast radius is isolated to the shipwright-security plugin (oss_backend._run_trivy + tests) and a new repo-root .trivyignore.yaml; other plugins/shared are untouched. Local scoped gate = full shipwright-security suite (424 passed, 3 skipped = real-scanner smoke tests) + ruff clean.",
-      "End-to-end accepted-risk suppression (Trivy honoring .trivyignore.yaml for CVE-2026-54285) is verified in the PR's security.yml CI scan, not locally (trivy not on PATH). 'Done' is gated on the CI medium count dropping 1 -> 0."
+      "Full monorepo + shared/tests suites delegated to CI ci.yml. This change is purely additive (one new test file in shared/tests/, no source/runtime code touched), so blast radius is zero. Local gate = the new policy test (4 passed, CI-style invocation) + ruff clean."
     ],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "_run_trivy passes `--ignorefile <target>/.trivyignore.yaml` when an ignore file exists at the scanned target root (target stays last arg)",
+          "behavior": "the policy rejects a sloppy accept — an entry missing id / expired_at / statement, or with no paths|purls scope (repo-wide blanket suppression)",
           "disposition": "tested",
-          "evidence": "test_oss_backend_ignorefile.py::TestTrivyIgnorefile::test_trivy_cmd_passes_ignorefile_when_present PASSED"
+          "evidence": "shared/tests/test_trivyignore_register.py::test_policy_rejects_a_sloppy_accept PASSED (asserts _violations flags the 3 bad shapes and accepts a well-formed one)"
         },
         {
-          "behavior": "_run_trivy omits `--ignorefile` when no ignore file is present (backward-compatible; existing skip-dirs + target-last contract unchanged)",
+          "behavior": "the current repo-root .trivyignore.yaml passes the policy (CVE-2026-54285 is scoped + time-bounded + justified) and is well-formed YAML",
           "disposition": "tested",
-          "evidence": "test_oss_backend_ignorefile.py::test_trivy_cmd_omits_ignorefile_when_absent PASSED; existing test_oss_backend.py::test_trivy_cmd_passes_each_default_as_skip_dirs unchanged + still PASSED (full security suite 424 passed)"
+          "evidence": "test_accepts_are_scoped_timebound_and_justified + test_register_is_well_formed_if_present PASSED against the real register"
         },
         {
-          "behavior": "_resolve_trivy_ignorefile prefers .trivyignore.yaml over the classic .trivyignore and returns None when neither exists",
+          "behavior": "the register is OPTIONAL: an absent .trivyignore.yaml yields no violations (no false CI failure on a fresh checkout or a fully-expired-and-removed register)",
           "disposition": "tested",
-          "evidence": "test_oss_backend_ignorefile.py::TestTrivyIgnorefile::test_resolve_prefers_yaml_over_classic + ::test_resolve_returns_none_when_absent PASSED"
-        },
-        {
-          "behavior": "the repo-root .trivyignore.yaml suppresses CVE-2026-54285 scoped to the perf package-lock, so the OTel medium no longer reports (and no other finding is suppressed)",
-          "disposition": "tested",
-          "evidence": "Verified in this PR's security.yml CI (real Trivy with --ignorefile active): @opentelemetry/core CVE-2026-54285 suppressed, medium count 1 -> 0, high/critical still 0. Trivy not installed locally (Windows dev box) so this is a CI-gated check confirmed before merge; YAML schema validated locally (id/paths/expired_at/statement parse)."
+          "evidence": "test_passes_when_register_absent PASSED (_entries(nonexistent path) == [])"
         }
       ],
       "counts": {
-        "testable": 4,
-        "tested": 4,
+        "testable": 3,
+        "tested": 3,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 4,
-        "covered_acs": 4
+        "acs": 3,
+        "covered_acs": 3
       }
     }
   }

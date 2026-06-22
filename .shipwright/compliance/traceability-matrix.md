@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-22T21:15:55.707058+00:00
+Generated: 2026-06-22T21:48:01.463729+00:00
 
 ## Requirements Coverage
 
@@ -233,6 +233,7 @@ Generated: 2026-06-22T21:15:55.707058+00:00
 | Add a once-per-(Stop,session) claim_once_for_event guard to aggregate_triage_on_stop so one stop regenerates triage_inbox.md once instead of once-per-plugin; a failed winner releases the claim so a sibling retries. | iterate | change |  | — | — | 2026-06-20 |
 | Bump cryptography 48.0.0->49.0.0 (shipwright-plan/uv.lock) and ws 8.20.1->8.21.0 + 7.5.10->7.5.11 (shipwright-test/scripts/perf/package-lock.json) to clear 3 HIGH dependency CVEs from the 2026-06-22 scheduled security scan. | iterate | change |  | — | — | 2026-06-22 |
 | Add _resolve_trivy_ignorefile + wire --ignorefile <target>/.trivyignore.yaml into _run_trivy (oss_backend.py) so Trivy SCA findings can be accepted via a scoped, time-bounded repo-root register; add .trivyignore.yaml accepting CVE-2026-54285 (perf package-lock, expired_at 2026-12-22) + 4 unit tests. | iterate | change |  | — | — | 2026-06-22 |
+| Add shared/tests/test_trivyignore_register.py enforcing that every .trivyignore.yaml accepted-risk entry is scoped (paths\|purls) + time-bounded (expired_at) + justified (statement); register optional (absent passes). Self-tested (rejects sloppy, accepts well-formed). | iterate | change |  | — | — | 2026-06-22 |
 
 ## Coverage Summary
 
@@ -240,7 +241,7 @@ Generated: 2026-06-22T21:15:55.707058+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 208 |
+| Iterate changes | 209 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
