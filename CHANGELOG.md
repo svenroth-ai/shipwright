@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.29.1] - 2026-06-22
+
+### Changed
+
+- Aligned the root pyproject.toml version to 0.29.0 (completing the one-version-everywhere convention) and generalized a personal folder name in one source comment to a neutral example
+- The triage-inbox Stop hook now regenerates its derived cache once per stop instead of once per installed plugin (~12×), via a once-per-(stop,session) dedup guard; a failed regeneration releases the guard so another invocation retries.
+
+### Fixed
+
+- Bloat-gate Stop hook no longer fires its block once per installed plugin — a single stop now shows ONE bloat-gate block instead of 12 identical ones, via a once-per-(stop,session) dedup guard on the block path.
+
+### Security
+
+- Anti-ratchet gate now fails closed on a present-but-corrupt bloat baseline (was: fail-open), so a corrupted baseline can no longer silently disable the gate; an absent baseline still fails open
+- Tier-3 PR review now fails closed on a truncated diff (was: passed green), so an oversized diff can no longer bypass the required review gate
+
 ## [0.29.0] - 2026-06-17
 
 ### Added
