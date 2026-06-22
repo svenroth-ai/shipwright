@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-22 20:54 UTC | Session: 02f0bc3e-2401-4d08-b3aa-d0b9fee8b86c | Run: iterate-2026-06-22-security-dep-bumps
+> Updated: 2026-06-22 21:15 UTC | Session: 02f0bc3e-2401-4d08-b3aa-d0b9fee8b86c | Run: iterate-2026-06-22-trivy-risk-accept
 
-## Recent Changes (207 iterations)
+## Recent Changes (208 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Add _resolve_trivy_ignorefile + wire --ignorefile <target>/.trivyignore.yaml into _run_trivy (oss_backend.py) so Trivy SCA findings can be accepted via a scoped, time-bounded repo-root register; add .trivyignore.yaml accepting CVE-2026-54285 (perf package-lock, expired_at 2026-12-22) + 4 unit tests. | 0/0 |  | tooling | 2026-06-22 |
 | change | Bump cryptography 48.0.0->49.0.0 (shipwright-plan/uv.lock) and ws 8.20.1->8.21.0 + 7.5.10->7.5.11 (shipwright-test/scripts/perf/package-lock.json) to clear 3 HIGH dependency CVEs from the 2026-06-22 scheduled security scan. | 0/0 |  | infra | 2026-06-22 |
 | change | Add a once-per-(Stop,session) claim_once_for_event guard to aggregate_triage_on_stop so one stop regenerates triage_inbox.md once instead of once-per-plugin; a failed winner releases the claim so a sibling retries. | 0/0 |  | tooling | 2026-06-20 |
 | bug | Add a once-per-(Stop,session) claim_once_for_event guard to bloat_gate_on_stop's block path so a single stop event emits one bloat block instead of one-per-plugin (12x in webui session bfd244ca). | 0/0 |  | tooling | 2026-06-20 |
@@ -214,7 +215,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-22 | Unit: 37/37 | Smoke: not_run | (iterate)
+Last run: 2026-06-22 | Unit: 424/424 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

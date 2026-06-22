@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-22T20:54:44.602476+00:00
-Total commits: 1038
+Generated: 2026-06-22T21:15:55.707058+00:00
+Total commits: 1037
 
 ## Commit Distribution
 
@@ -9,7 +9,7 @@ Total commits: 1038
 pie title Commit Types
     "fix" : 295
     "feat" : 273
-    "chore" : 229
+    "chore" : 228
     "docs" : 140
     "refactor" : 62
     "test" : 24
@@ -24,7 +24,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-22 | security | bump cryptography and ws to clear 3 high-severity dependency CVEs | ae0fc4b12ee6 |
+| 2026-06-22 | security | bump cryptography + ws to clear 3 high-severity dependency CVEs (#272) | d7cd255c7214 |
 | 2026-06-20 | bloat | dedup bloat-gate Stop block across the plugin fan-out (#269) | 05992f878e7c |
 | 2026-06-17 | bloat | anti-ratchet gate fails closed on a corrupt baseline (#264) | 045962260896 |
 | 2026-06-17 | security | Tier-3 PR review fails closed on a truncated diff (#263) | 84aa059dbd1c |
@@ -598,12 +598,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 229 commits
+### Chores (chore) — 228 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
 | 2026-06-22 | release | v0.29.1 (#271) | af7a3fc04fae |
-| 2026-06-22 | triage | sweep 2 outbox append(s) into branch | c032189f1a12 |
 | 2026-06-17 | — | align root pyproject.toml to 0.29.0 + de-PII a source comment (#262) | 6c0c1ea626c4 |
 | 2026-06-17 | release | v0.29.0 (#261) | 392152b988ec |
 | 2026-06-17 | — | scrub machine-local paths and PII from tracked files (#260) | 32840c3fc45a |
@@ -1107,7 +1106,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1038 |
+| Total commits | 1037 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1038 |
+| Human-authored commits | 1037 |
 

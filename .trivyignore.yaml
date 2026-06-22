@@ -1,0 +1,27 @@
+# Trivy accepted-risk register for the Shipwright monorepo's OWN self-scan.
+#
+# Entries here are DOCUMENTED, SCOPED, and TIME-BOUNDED risk acceptances — not
+# blanket suppressions. Each MUST carry an `expired_at` (re-review date) and a
+# `statement` (why it is accepted). Trivy applies this file via `--ignorefile`,
+# wired in plugins/shipwright-security/scripts/lib/oss_backend.py::_run_trivy
+# (keyed to the scanned target root, so it works identically in CI and locally).
+#
+# This is for findings assessed as non-exploitable in THIS repo and chosen not
+# to fix — NOT a place to silence real, reachable vulns. Prefer a root
+# remediation (dependency bump) whenever one exists.
+vulnerabilities:
+  - id: CVE-2026-54285
+    paths:
+      - "plugins/shipwright-test/scripts/perf/package-lock.json"
+    expired_at: 2026-12-22
+    statement: >-
+      Accepted risk; re-review 2026-12-22. @opentelemetry/core 1.30.1 —
+      "unbounded memory allocation in W3C Baggage propagation". Transitive and
+      dev-only: it reaches this repo solely through the Lighthouse perf-runner
+      (lighthouse -> @sentry/node -> @opentelemetry/*), whose Sentry OTel
+      tracing is never initialized; the runner is a client driving Chrome with
+      no untrusted W3C Baggage header input, so the vulnerable path is not
+      reachable. The only fix (2.8.0) is a MAJOR bump the pinned tree refuses —
+      @opentelemetry/resources / sdk-trace-base / instrumentation-http require
+      exactly 1.30.1 and @sentry/node caps <2.0.0. Re-fix when lighthouse ships
+      an OTel-2.x dependency tree. Origin: iterate-2026-06-22-trivy-risk-accept.
