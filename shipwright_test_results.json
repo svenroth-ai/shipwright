@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-20-aggregate-triage-stop-fanout-dedup",
-    "date": "2026-06-20",
+    "run_id": "iterate-2026-06-22-security-dep-bumps",
+    "date": "2026-06-22",
     "unit": {
       "status": "passed",
-      "passed": 3539,
-      "total": 3539
+      "passed": 37,
+      "total": 37
     },
     "integration": {
-      "status": "passed",
-      "passed": 169,
-      "total": 169
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -31,60 +31,42 @@
       "status": "not_run"
     },
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --with pytest python -m pytest integration-tests/test_aggregate_triage_fanout.py shared/tests/test_aggregate_triage_fanout_dedup.py -q -p no:cacheprovider",
+      "surface": "none",
       "exit_code": 0,
-      "tests_run": 7,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-20-aggregate-triage-stop-fanout-dedup/surface_verification.json",
-      "timestamp": "2026-06-20T20:28:50.103Z",
-      "justification": "Behavior is a Claude Code Stop hook (Python CLI). The fan-out integration test drives the REAL hook script across all 12 plugin roots in a git-backed project; cli surface, tests_run=7. No web/API/UI/store/SSE surface — the hook regenerates a local gitignored derived cache, not consumed by any client."
+      "tests_run": 0,
+      "justification": "Behavior-preserving dependency lockfile bumps (cryptography in shipwright-plan/uv.lock; ws in shipwright-test/scripts/perf/package-lock.json) to remediate SCA CVEs. No web/api/cli/UI/store surface is introduced or changed. Regression is verified by the shipwright-plan unit suite (37/37) against the bumped lock + an import smoke; the empirical CVE re-scan runs in the PR's security.yml CI (Trivy)."
     },
-    "degraded": [],
+    "degraded": [
+      "Full monorepo suite (prev iterate: 3539 unit / 169 integration) delegated to CI ci.yml. This change's blast radius is isolated: cryptography is pinned only in shipwright-plan's own uv.lock (per-plugin venvs, so other plugins' resolved deps are unchanged), and the perf package-lock is a JS Lighthouse-runner artifact with no Python tests. Local scoped regression gate = shipwright-plan suite 37/37 + cryptography/google-auth import smoke."
+    ],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "N fan-out invocations (same Stop, session) -> exactly ONE regen, the other 11 emit the dedup-skip diag (register-everywhere hook + claim guard COMPOSE under a real 12-plugin fan-out)",
+          "behavior": "cryptography in shipwright-plan/uv.lock is pinned at a non-vulnerable version (>=48.0.1) -> clears GHSA-537c-gmf6-5ccf (vulnerable OpenSSL in cryptography wheels)",
           "disposition": "tested",
-          "category": "integration",
-          "evidence": "integration test_aggregate_triage_fanout.py::test_aggregate_triage_fanout_regenerates_once + ::test_aggregate_triage_fanout_concurrent_one_regen (real hook across all 12 plugin roots, sequential + parallel, 1 regen + 11 skips); unit test_fanout_dedup_regenerates_once PASSED"
+          "evidence": "uv.lock now pins cryptography 49.0.0 (>= fix 48.0.1); single version line changed, no other package added/removed/edged; import smoke (cryptography 49.0.0 + google.auth + default_backend()) OK"
         },
         {
-          "behavior": "claim is per (event, session): a second session regenerates independently",
+          "behavior": "ws in shipwright-test/scripts/perf/package-lock.json is pinned at non-vulnerable versions for BOTH installs (root + lighthouse subtree) -> clears CVE-2026-48779 (trivy-0003 + trivy-0004)",
           "disposition": "tested",
-          "evidence": "test_aggregate_triage_fanout.py::test_aggregate_triage_fanout_per_session_independent + test_aggregate_triage_fanout_dedup.py::test_fanout_dedup_is_per_session PASSED"
+          "evidence": "package-lock jq: node_modules/ws=8.21.0 and node_modules/lighthouse/node_modules/ws=7.5.11 (both on the Trivy fixed list 5.2.5/6.2.4/7.5.11/8.21.0); only ws version lines changed in the lockfile"
         },
         {
-          "behavior": "a single firing still regenerates (no regression to existing write-runtime behavior)",
+          "behavior": "the cryptography 48->49 major bump introduces no regression in shipwright-plan (its only consumer; transitive via google-auth)",
           "disposition": "tested",
-          "evidence": "existing test_stop_hooks_write_runtime.py::test_stop_hook_writes_runtime_only[aggregate_triage_on_stop] PASSED (unchanged)"
-        },
-        {
-          "behavior": "a non-Shipwright / pass-path invocation no-ops and never creates the claim",
-          "disposition": "tested",
-          "evidence": "test_aggregate_triage_fanout_dedup.py::test_non_shipwright_project_no_claim PASSED"
-        },
-        {
-          "behavior": "a failed regen (exception or non-zero rc) RELEASES the claim so a sibling/later stop retries (does not starve the event)",
-          "disposition": "tested",
-          "evidence": "test_aggregate_triage_fanout_dedup.py::test_failed_regen_releases_claim PASSED (runtime/ blocked as a file -> mkdir raises -> claim released -> retry after unblock regenerates)"
-        },
-        {
-          "behavior": "a genuinely-later Stop (>30s) re-arms and regenerates again",
-          "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "evidence": "no new TTL logic in this diff; the 30s-TTL re-arm is owned and proven by shared/tests/test_event_once.py"
+          "evidence": "uv --extra dev pytest tests/ -> 37 passed in 1.19s against the bumped lock"
         }
       ],
       "counts": {
-        "testable": 5,
-        "tested": 5,
-        "untestable": 1,
+        "testable": 3,
+        "tested": 3,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 5,
-        "covered_acs": 5
+        "acs": 3,
+        "covered_acs": 3
       }
     }
   }
