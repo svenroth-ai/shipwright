@@ -263,3 +263,5 @@ Contribution rules, dev setup, the graduated trust model, and high-sensitivity a
 - **ADR-222** (2026-06-14): Hook fan-out deduped via once-per-event guard + session-state phase resolver
 - **ADR-227** (2026-06-16): Skip-aware compliance rendering + centralized intent normalization
 - **ADR-230** (2026-06-17): Unify all plugin/marketplace versions to 0.29.0; relabel Early Access Beta to Beta
+- **ADR-234** (2026-06-20): Dedup the aggregate_triage Stop regen across the plugin fan-out
+- **ADR-235** (2026-06-20): Dedup the bloat-gate Stop block across the plugin fan-out

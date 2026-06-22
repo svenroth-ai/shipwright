@@ -3095,3 +3095,68 @@ shipwright/
 - **Rationale:** One number everywhere ends the namespace drift and matches the curated-release-playbook (tag after merge); honest+inviting beta wording beats hard deterrence; gitignored Spec/ is never public so its links must go.
 - **Consequences:** sync_check version parity stays green; next release tags v0.29.0; public docs carry no dead links and one consistent Beta label.
 - **Rejected:** Per-plugin independent SemVer (drift is exactly what we fix); keep 'Early Access' (launch decision is plain Beta); scrub Leadwright/author provenance (companion project also going public).
+
+---
+
+### ADR-231: Corrupt bloat baseline fails the gate closed
+- **Date:** 2026-06-17
+- **Section:** Iterate — bug: anti-ratchet corrupt-baseline fail-closed
+- **Run-ID:** iterate-2026-06-17-anti-ratchet-corrupt-failclosed
+- **Context:** anti_ratchet_check.py returned exit 0 (fail-open) for a present-but-malformed shipwright_bloat_baseline.json, silently disabling the CI/pre-commit anti-ratchet gate so a real ratchet could pass.
+- **Decision:** Distinguish absent from corrupt at the CLI via is_file(): an absent baseline stays fail-open (fresh repo); a present-but-unreadable/malformed baseline fails closed (exit 1).
+- **Commit:** (assigned post-merge)
+- **Rationale:** A gate that silently disables itself on corruption is a false-green; a corrupt baseline signals tampering or a merge accident, not a fresh repo.
+- **Consequences:** A corrupted baseline now blocks instead of silently disabling the gate; absent stays fail-open. The separate Stop-hook bloat gate is intentionally left fail-open (advisory).
+- **Rejected:** Distinguish in the loader lib (larger vendored surface); fail-closed on absent too (breaks legitimate fresh-repo first run).
+
+---
+
+### ADR-232: Root pyproject.toml to 0.29.0; generalize OneDrive folder example in a source comment
+- **Date:** 2026-06-17
+- **Section:** Iterate — change: align root pyproject version + de-PII a source comment
+- **Run-ID:** iterate-2026-06-17-launch-polish
+- **Context:** Post-v0.29.0 launch polish: root pyproject.toml still read 0.5.0 while marketplace + all 13 plugin.json are 0.29.0 (ADR-230 lockstep); and one source comment (master_stop_check.py) used the maintainer's real OneDrive folder name as the spaces-in-path example.
+- **Decision:** Set root pyproject.toml version to 0.29.0 (extends ADR-230 one-number-everywhere to the root package metadata); replace the personal folder name in the master_stop_check.py comment with a neutral example ('Program Files' / 'a OneDrive-synced folder'), keeping the OneDrive compat guidance intact.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Public-repo consistency + tidiness; pyproject is dev metadata (no PyPI consumer) so no re-tag needed. OneDrive guidance stays; only the identifying folder name is generalized.
+- **Consequences:** pyproject version matches everywhere; no personal folder name in active source; v0.29.0 tag unchanged (post-release dev-metadata polish, not a release artifact).
+- **Rejected:** Re-tag v0.29.0 to include the bump (never move a pushed tag); scrub the OneDrive example from historical CHANGELOG/ADRs (non-sensitive example + no-monorepo-history-rewrite policy).
+
+---
+
+### ADR-233: Truncated Tier-3 review fails closed
+- **Date:** 2026-06-17
+- **Section:** Iterate — bug: pr-review truncation fail-closed
+- **Run-ID:** iterate-2026-06-17-pr-review-truncation-failclosed
+- **Context:** pr_review.py returned EXIT_OK on a truncated (>200k char) diff, so a required PR-review gate passed green even on a block verdict — an untrusted PR could bypass review by size.
+- **Decision:** On truncation, force a request-changes state + EXIT_BLOCK (needs human); a maintainer overrides via the skip-pr-review label.
+- **Commit:** (assigned post-merge)
+- **Rationale:** For a required gate on untrusted PRs, auto-passing on partial info is a silent bypass; neither auto-block-on-partial nor auto-pass is right — require human.
+- **Consequences:** An oversized external/sensitive diff can no longer bypass the gate; the red required check surfaces the PR via the gh-pr-ci triage producer.
+- **Rejected:** Raise MAX_DIFF_CHARS only (still bypassable); honor-block-else-neutral (more complex, still trusts a partial verdict).
+
+---
+
+### ADR-234: Dedup the aggregate_triage Stop regen across the plugin fan-out
+- **Date:** 2026-06-20
+- **Section:** shared/scripts/hooks/aggregate_triage_on_stop.py
+- **Run-ID:** iterate-2026-06-20-aggregate-triage-stop-fanout-dedup
+- **Context:** aggregate_triage_on_stop regenerates the triage_inbox.md derived cache and is registered in all 12 plugins, so one Stop event fired it ~12×, each doing a redundant non-atomic write_text (a latent parallel-corruption window). Found auditing the other un-guarded Stop hooks after the bloat-gate fix.
+- **Decision:** Add event_once.claim_once_for_event(project_root, 'stop-triage-inbox', sid) after the is_shipwright_project no-op guard so one invocation regenerates per (Stop, session); serializing to one writer also closes the corruption window. A failed winner (exception or non-zero rc) releases the claim (event_claim_path.unlink) so a sibling/later stop retries.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reuses the bloat-gate dedup primitive + key shape. First-wins still observes settled triage: aggregate_triage runs after the producer audit_compliance_on_stop in every plugin Stop array. Release-on-failure is safe to retry because aggregate_triage's only non-zero rc path is pre-write.
+- **Consequences:** One Stop regenerates triage_inbox.md once, not 12×. 30s-TTL staleness is benign (derived cache; RTM + WebUI read triage.jsonl directly). audit_compliance_on_stop left as-is (its (sha,session) marker dedups under serial Stop execution; only a theoretical parallel race). docs/hooks-and-pipeline.md guarded-table updated; stale 'LAST Stop hook' docstring corrected.
+- **Rejected:** Make the write atomic instead (fixes corruption, keeps 11x redundant work). Per-stop-event discriminator key (unbounded .cache leak). Also guarding audit_compliance now (its marker already dedups under serial execution; kept single-concern).
+
+---
+
+### ADR-235: Dedup the bloat-gate Stop block across the plugin fan-out
+- **Date:** 2026-06-20
+- **Section:** shared/scripts/hooks/bloat_gate_on_stop.py
+- **Run-ID:** iterate-2026-06-20-bloat-gate-stop-fanout-dedup
+- **Context:** The bloat gate is registered in all 12 plugins, so one Stop event fires it 12x. PR #250 (hook-fanout-dedup) guarded audit/handoff/drift but listed bloat_gate_on_stop as 'already convergent' — wrong: its empty pass path is invisible, masking that the BLOCK path re-emits the full Iron-Law reason once per plugin (12 identical Stop blocks in webui session bfd244ca).
+- **Decision:** Add event_once.claim_once_for_event(root, 'stop-bloat', sid) on the block path ONLY, after every no-op/pass guard, so the first invocation to reach a real block wins and the other 11 emit the empty pass. The 30s-TTL (event,session) key re-arms a genuinely-later stop.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reuses the established PR #250 dedup primitive and key shape for consistency; placing the claim on the block edge (not the top) keeps the PR #250 ordering rule so no-op invocations never starve a real block.
+- **Consequences:** One Stop event now shows ONE bloat block, not 12. A re-stop within 30s on a still-oversize file is not re-blocked locally (a cleared file re-measures to pass before the claim; CI anti-ratchet is the authoritative gate; the TTL also damps the tight block-loop). docs/hooks-and-pipeline.md corrected.
+- **Rejected:** Per-stop-event discriminator (transcript UUID in the key) would avoid the 30s window but leaks one unbounded .cache claim per stop and diverges from the three sibling hooks; the local gate is an advisory nudge so the window is benign.

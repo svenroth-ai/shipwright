@@ -1,1 +1,0 @@
-Bloat-gate Stop hook no longer fires its block once per installed plugin — a single stop now shows ONE bloat-gate block instead of 12 identical ones, via a once-per-(stop,session) dedup guard on the block path.
