@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-22-trivyignore-policy-check",
+  "date": "2026-06-22T21:47:52.146404Z",
+  "type": "change",
+  "intent": "change",
+  "complexity": "small",
+  "branch": "iterate/trivyignore-policy-check",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-22-trivyignore-policy-check"
+}
