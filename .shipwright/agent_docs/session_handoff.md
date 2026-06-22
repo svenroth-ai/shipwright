@@ -1,37 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-20-aggregate-triage-stop-fanout-dedup"
+run_id: "iterate-2026-06-22-security-dep-bumps"
 phase: "iterate"
-reason: "aggregate_triage Stop fan-out dedup complete"
-timestamp: "2026-06-20T20:32:05.954367+00:00"
+reason: "Security dep bumps: 3 HIGH CVEs (cryptography, ws) cleared; OTel medium split to follow-up"
+timestamp: "2026-06-22T20:54:44.602476+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-20 20:32:05 UTC
+> Auto-generated 2026-06-22 20:54:44 UTC
 
 ## Session Info
 
-- **Session ID**: e3a4f186-b6fd-4993-aea8-5f883bf5a1e3
-- **Timestamp**: 2026-06-20 20:32:05 UTC
-- **Reason**: aggregate_triage Stop fan-out dedup complete
+- **Session ID**: 02f0bc3e-2401-4d08-b3aa-d0b9fee8b86c
+- **Timestamp**: 2026-06-22 20:54:44 UTC
+- **Reason**: Security dep bumps: 3 HIGH CVEs (cryptography, ws) cleared; OTel medium split to follow-up
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-20-bloat-gate-stop-fanout-dedup
-- **Date**: 2026-06-20T19:05:51.783269Z
-- **Type**: bug
-- **Complexity**: medium
-- **Branch**: iterate/bloat-gate-stop-fanout-dedup
-- **ADR**: iterate-2026-06-20-bloat-gate-stop-fanout-dedup
+- **Run ID**: iterate-2026-06-22-security-dep-bumps
+- **Date**: 2026-06-22T20:54:14.160172Z
+- **Type**: change
+- **Complexity**: small
+- **Branch**: iterate/security-dep-bumps
+- **ADR**: iterate-2026-06-22-security-dep-bumps
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-20-bloat-gate-stop-fanout-dedup.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/aggregate-triage-stop-fanout-dedup
-- **Run ID**: `iterate-2026-06-20-aggregate-triage-stop-fanout-dedup`
-- **Spec**: .shipwright/planning/iterate/2026-06-20-aggregate-triage-stop-fanout-dedup.md
+- **Branch**: iterate/security-dep-bumps
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -50,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/aggregate-triage-stop-fanout-dedup
-- **Last Commit**: f89cd5fc chore(triage): sweep 1 outbox append(s) into branch
+- **Branch**: iterate/security-dep-bumps
+- **Last Commit**: c032189f chore(triage): sweep 2 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -67,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-670808ea | work_completed | iterate (Bump cryptography 48.0.0->49.0.0 (shipwright-plan/uv.lock) and ws 8.20.1->8.21.0 + 7.5.10->7.5.11 (shipwright-test/scripts/perf/package-lock.json) to clear 3 HIGH dependency CVEs from the 2026-06-22 scheduled security scan.) | 2026-06-22 |
 | evt-6b111a3b | work_completed | iterate (Add a once-per-(Stop,session) claim_once_for_event guard to aggregate_triage_on_stop so one stop regenerates triage_inbox.md once instead of once-per-plugin; a failed winner releases the claim so a sibling retries.) | 2026-06-20 |
 | evt-c8a8b003 | work_completed | iterate (Add a once-per-(Stop,session) claim_once_for_event guard to bloat_gate_on_stop's block path so a single stop event emits one bloat block instead of one-per-plugin (12x in webui session bfd244ca).) | 2026-06-20 |
 | evt-c1c861cd | work_completed | iterate (anti-ratchet corrupt-baseline fail-closed) | 2026-06-17 |
 | evt-65f20e11 | work_completed | iterate (pr-review truncation fails closed) | 2026-06-17 |
-| evt-f339b083 | work_completed | iterate (align root pyproject version + de-PII a source comment) | 2026-06-17 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 206
-- **Last iterate**: change — Add a once-per-(Stop,session) claim_once_for_event guard to aggregate_triage_on_stop so one stop regenerates triage_inbox.md once instead of once-per-plugin; a failed winner releases the claim so a sibling retries. (2026-06-20)
+- **Total work events**: 207
+- **Last iterate**: change — Bump cryptography 48.0.0->49.0.0 (shipwright-plan/uv.lock) and ws 8.20.1->8.21.0 + 7.5.10->7.5.11 (shipwright-test/scripts/perf/package-lock.json) to clear 3 HIGH dependency CVEs from the 2026-06-22 scheduled security scan. (2026-06-22)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

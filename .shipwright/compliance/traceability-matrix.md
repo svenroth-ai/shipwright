@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-20T20:32:05.954367+00:00
+Generated: 2026-06-22T20:54:44.602476+00:00
 
 ## Requirements Coverage
 
@@ -231,6 +231,7 @@ Generated: 2026-06-20T20:32:05.954367+00:00
 | anti-ratchet corrupt-baseline fail-closed | iterate | bug |  | 139/139 | — | 2026-06-17 |
 | Add a once-per-(Stop,session) claim_once_for_event guard to bloat_gate_on_stop's block path so a single stop event emits one bloat block instead of one-per-plugin (12x in webui session bfd244ca). | iterate | bug |  | — | — | 2026-06-20 |
 | Add a once-per-(Stop,session) claim_once_for_event guard to aggregate_triage_on_stop so one stop regenerates triage_inbox.md once instead of once-per-plugin; a failed winner releases the claim so a sibling retries. | iterate | change |  | — | — | 2026-06-20 |
+| Bump cryptography 48.0.0->49.0.0 (shipwright-plan/uv.lock) and ws 8.20.1->8.21.0 + 7.5.10->7.5.11 (shipwright-test/scripts/perf/package-lock.json) to clear 3 HIGH dependency CVEs from the 2026-06-22 scheduled security scan. | iterate | change |  | — | — | 2026-06-22 |
 
 ## Coverage Summary
 
@@ -238,7 +239,7 @@ Generated: 2026-06-20T20:32:05.954367+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 206 |
+| Iterate changes | 207 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

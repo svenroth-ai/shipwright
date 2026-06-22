@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-20T20:32:05.954367+00:00
-Total commits: 1030
+Generated: 2026-06-22T20:54:44.602476+00:00
+Total commits: 1036
 
 ## Commit Distribution
 
@@ -10,8 +10,8 @@ pie title Commit Types
     "fix" : 294
     "feat" : 273
     "chore" : 228
-    "docs" : 135
-    "refactor" : 61
+    "docs" : 140
+    "refactor" : 62
     "test" : 24
     "ci" : 7
     "other" : 7
@@ -601,7 +601,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-20 | triage | sweep 1 outbox append(s) into branch | f89cd5fc39e3 |
+| 2026-06-22 | triage | sweep 2 outbox append(s) into branch | c032189f1a12 |
 | 2026-06-17 | — | align root pyproject.toml to 0.29.0 + de-PII a source comment (#262) | 6c0c1ea626c4 |
 | 2026-06-17 | release | v0.29.0 (#261) | 392152b988ec |
 | 2026-06-17 | — | scrub machine-local paths and PII from tracked files (#260) | 32840c3fc45a |
@@ -830,10 +830,15 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 135 commits
+### Documentation (docs) — 140 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-21 | — | tighten the README hero and show what one iterate produces | 7cf1f4c6dadd |
+| 2026-06-21 | guide | replace prose em-dashes with colons, periods, and commas | 3e7480ca3c09 |
+| 2026-06-21 | readme | replace em-dashes with colons, periods, and commas | beed2062df8e |
+| 2026-06-21 | — | trim em-dashes in the README and guide opening | 259ac75b9053 |
+| 2026-06-21 | — | lead README and guide with the "keep context true" USP | 5ab1edb6556b |
 | 2026-06-19 | readme | add "Who is it for?" personas and elevate the dogfooding proof (#268) | 5c40b22ba451 |
 | 2026-06-19 | readme | move the iterate block to follow Initial Pipeline (#267) | 6a3b8c6c2bc3 |
 | 2026-06-19 | — | drop "run it in your own terminal" as a second path (#266) | 31f212c81c2e |
@@ -970,10 +975,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 61 commits
+### Refactoring (refactor) — 62 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-20 | triage | dedup aggregate_triage Stop regen across the plugin fan-out (#270) | 019778a14927 |
 | 2026-06-14 | hooks | consolidate fan-out via once-per-event guard + session-state phase resolver (#250) | e6e5e4b91764 |
 | 2026-06-14 | iterate | interleaved-serial as the single campaign default (retire end-stage drain) (#246) | 2ec6e2be8bfa |
 | 2026-06-13 | triage | stop the iterate pipeline from filing triage about current-run work (#243) | 0f85ff5b892f |
@@ -1099,7 +1105,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1030 |
+| Total commits | 1036 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1030 |
+| Human-authored commits | 1036 |
 
