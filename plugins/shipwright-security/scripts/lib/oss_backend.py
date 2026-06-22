@@ -274,12 +274,35 @@ def _run_semgrep(
     return normalize_semgrep(raw)
 
 
+def _resolve_trivy_ignorefile(target: str) -> str | None:
+    """Return a Trivy ignore file at the SCANNED target root, if present.
+
+    This is the accepted-risk register for SCA findings. Prefers the rich
+    ``.trivyignore.yaml`` (``vulnerabilities[].{id,paths,expired_at,statement}``
+    — scoped + time-bounded, documented acceptances) over the classic flat
+    ``.trivyignore``. Keyed to the scanned ``target``, NOT Trivy's working
+    directory: Trivy only auto-detects an ignore file in its CWD, which differs
+    between CI (``plugins/shipwright-security``) and a local / adopted-repo run
+    (the project root), so auto-detection is unreliable. Passing
+    ``--ignorefile`` explicitly makes the register live at the project root in
+    every context (and gives adopted repos the same first-class mechanism).
+    """
+    for name in (".trivyignore.yaml", ".trivyignore.yml", ".trivyignore"):
+        candidate = os.path.join(target, name)
+        if os.path.isfile(candidate):
+            return candidate
+    return None
+
+
 def _run_trivy(
     target: str, errors: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     """Run Trivy and return normalized findings (see ``_run_semgrep`` for
     the ``errors`` accumulator contract)."""
     cmd = ["trivy", "fs", "--format", "json", "--scanners", "vuln"]
+    ignorefile = _resolve_trivy_ignorefile(target)
+    if ignorefile:
+        cmd.extend(["--ignorefile", ignorefile])
     for name in _resolve_excludes("trivy"):
         cmd.extend(["--skip-dirs", name])
     cmd.append(target)

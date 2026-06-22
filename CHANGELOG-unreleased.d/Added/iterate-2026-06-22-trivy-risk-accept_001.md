@@ -1,0 +1,1 @@
+shipwright-security: Trivy SCA findings can now be accepted via a repo-root `.trivyignore.yaml` (scoped by path, time-bounded via `expired_at`), wired through `--ignorefile` keyed to the scanned target so it works in CI, locally, and adopted repos. First use: the non-reachable OTel medium (CVE-2026-54285) in the Lighthouse perf-runner is accepted with a 2026-12-22 re-review.
