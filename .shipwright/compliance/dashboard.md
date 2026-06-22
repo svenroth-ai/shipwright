@@ -11,7 +11,7 @@ Scope: library
 | Pipeline phases completed | n/a (adopted) | INFO |  |
 | Work events (iterate) | 207 changes | INFO |  |
 | All unit tests passing | 0/0 | WARN | no test events recorded yet |
-| Architecture decisions | 230 ADRs | INFO |  |
+| Architecture decisions | 235 ADRs | INFO |  |
 | Iterate tests passing | 131/207 iterations tested | WARN | 76 iterate(s) without tests — see test-evidence.md |
 | Dependencies | 8 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |

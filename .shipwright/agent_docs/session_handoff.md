@@ -2,7 +2,7 @@
 canon_generated: true
 run_id: "iterate-2026-06-22-security-dep-bumps"
 phase: "iterate"
-reason: "Security dep bumps: 3 HIGH CVEs (cryptography, ws) cleared; OTel medium split to follow-up"
+reason: "ensure-current pre-merge refresh"
 timestamp: "2026-06-22T20:54:44.602476+00:00"
 ---
 
@@ -14,7 +14,7 @@ timestamp: "2026-06-22T20:54:44.602476+00:00"
 
 - **Session ID**: 02f0bc3e-2401-4d08-b3aa-d0b9fee8b86c
 - **Timestamp**: 2026-06-22 20:54:44 UTC
-- **Reason**: Security dep bumps: 3 HIGH CVEs (cryptography, ws) cleared; OTel medium split to follow-up
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
@@ -31,11 +31,6 @@ timestamp: "2026-06-22T20:54:44.602476+00:00"
 - **Branch**: iterate/security-dep-bumps
 - **External Review Marker**: missing
 
-### Mandatory replay on Resume
-
-Before dispatching to the handoff's Remaining phase, run these if missing:
-- Finalization (F0–F11) after all mandatory phases pass
-
 ## Legacy build state
 
 - **Phase**: design
@@ -48,8 +43,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Git State
 
 - **Branch**: iterate/security-dep-bumps
-- **Last Commit**: c032189f chore(triage): sweep 2 outbox append(s) into branch
-- **Uncommitted Changes**: Yes
+- **Last Commit**: 036369fb Merge remote-tracking branch 'origin/main' into iterate/security-dep-bumps
+- **Uncommitted Changes**: None
 
 ## Config Files to Read
 
@@ -79,8 +74,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Recent Decisions
 
-### ADR-230: Unify all plugin/marketplace versions to 0.29.0; relabel Early Access Beta to Beta
-- **Date:** 2026-06-17
-- **Section:** Iterate — change: launch version unification & Beta branding
-- **Run-ID:** iterate-2026-06-17-launch-version-branding
-- **Context:** Pre-public-launch the repo carried 3 divergent version namespaces (tag v0.28.0, marketplace 0.5.0, plugins 0.2.x-0.4.1) plus an 'Early Access Beta' label with a production-deterrent banner; docs/guide.md linked twice to the gitignored Spec/ 
+### ADR-235: Dedup the bloat-gate Stop block across the plugin fan-out
+- **Date:** 2026-06-20
+- **Section:** shared/scripts/hooks/bloat_gate_on_stop.py
+- **Run-ID:** iterate-2026-06-20-bloat-gate-stop-fanout-dedup
+- **Context:** The bloat gate is registered in all 12 plugins, so one Stop event fires it 12x. PR #250 (hook-fanout-dedup) guarded audit/handoff/drift but listed bloat_gate_on_stop as 'already convergent' — wrong: its empty pass path is invisible, masking that the BLOCK path re-emits the full 
