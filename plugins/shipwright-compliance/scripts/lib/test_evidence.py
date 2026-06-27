@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from scripts.lib.mermaid import testing_pyramid_diagram
+from scripts.lib._latest_suite import resolve_latest_full_suite  # AR-02
 
 # Cross-cutting markdown helper lives at shared/scripts/markdown_table.py
 # (outside the `lib/` namespace per ADR-045 so it can be imported here
@@ -369,8 +370,7 @@ def _test_progression(data: ComplianceData) -> list[str]:
     iterate_events = [we for we in data.work_events if we.source == "iterate"]
     new_from_iterate = sum(we.tests_new for we in iterate_events)
 
-    # Latest test counts
-    latest = data.work_events[-1]
+    suite = resolve_latest_full_suite(data.work_events)  # AR-02: last full suite
 
     lines = [
         "## Summary",
@@ -378,7 +378,7 @@ def _test_progression(data: ComplianceData) -> list[str]:
         "| Metric | Value |",
         "|--------|-------|",
         f"| Total test checkpoints | {len(data.work_events)} |",
-        f"| Total unit tests (latest) | {latest.tests_passed}/{latest.tests_total} |",
+        f"| Total unit tests (latest full suite) | {(f'{suite.passed}/{suite.total} ({suite.date})' if suite else '0/0')} |",
     ]
 
     if data.test_runs:

@@ -1,94 +1,130 @@
 {
-  "iterate_latest": {
-    "run_id": "iterate-2026-06-27-codeql-security-hardening",
-    "date": "2026-06-27",
-    "unit": {
-      "status": "passed",
-      "passed": 5192,
-      "total": 5192
+ "iterate_latest": {
+  "run_id": "iterate-2026-06-27-compliance-control-grade",
+  "date": "2026-06-27",
+  "unit": {
+   "status": "passed",
+   "passed": 720,
+   "total": 720
+  },
+  "integration": {
+   "status": "not_run",
+   "passed": 0,
+   "total": 0
+  },
+  "pgtap": {
+   "status": "not_run",
+   "passed": 0,
+   "total": 0
+  },
+  "e2e": {
+   "status": "not_run",
+   "passed": 0,
+   "total": 0
+  },
+  "design_fidelity": {
+   "status": "not_run",
+   "passed": 0,
+   "total": 0
+  },
+  "smoke": {
+   "status": "not_run"
+  },
+  "surface_verification": {
+   "surface": "none",
+   "exit_code": 0,
+   "tests_run": 720,
+   "justification": "Pure compliance renderer/scorer change (dashboard + test-evidence markdown generators + a new pure scoring lib). No product web/api/cli/UI/store surface is introduced or changed; the dashboard is a static tracked .md. Verified by the full shipwright-compliance suite (720 passed) plus a real-data render probe of the dashboard top block."
+  },
+  "degraded": [
+   "Full monorepo + shared/tests suites delegated to CI ci.yml. This change touches only plugins/shipwright-compliance/scripts/lib + tests + docs/guide.md; local gate = the compliance plugin suite (720 passed) + pinned-ruff clean.",
+   "Security dimension rendered n/a (not scored): the local securityreports/latest.md is stale (2026-04-28) + test-fixture-FP-laden; authoritative posture = the CI security gate, ingested later by AR-10.",
+   "Change-reconciliation dimension rendered n/a: per-FR behavior impact is not yet persisted on events (BP-2). Grader consumes it the moment BP-2 lands; no scorer change."
+  ],
+  "test_completeness": {
+   "status": "complete",
+   "behaviors": [
+    {
+     "behavior": "Weighted aggregate over measurable dims; all-green -> A",
+     "disposition": "tested",
+     "evidence": "test_control_grade.py::TestBands::test_all_green_is_A"
     },
-    "integration": {
-      "status": "passed",
-      "passed": 169,
-      "total": 169
+    {
+     "behavior": "Band thresholds inclusive (90/80/70/50)",
+     "disposition": "tested",
+     "evidence": "test_control_grade.py::TestBands::test_band_thresholds_are_inclusive"
     },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+    {
+     "behavior": "n/a dimensions excluded from the weighted denominator",
+     "disposition": "tested",
+     "evidence": "test_control_grade.py::TestNaExclusion (3 cases)"
     },
-    "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+    {
+     "behavior": "All-n/a -> Not Gradeable, never an unearned F",
+     "disposition": "tested",
+     "evidence": "test_control_grade.py::TestNotGradeable::test_all_na_is_not_gradeable_never_F"
     },
-    "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+    {
+     "behavior": "FR-tag freeze caps the grade; real shipwright case -> B",
+     "disposition": "tested",
+     "evidence": "test_control_grade.py::TestFreezeCase (2 cases)"
     },
-    "smoke": {
-      "status": "not_run"
+    {
+     "behavior": "Deterministic: same inputs -> same grade",
+     "disposition": "tested",
+     "evidence": "test_control_grade.py::test_same_inputs_same_grade"
     },
-    "surface_verification": {
-      "surface": "none",
-      "exit_code": 0,
-      "tests_run": 5192,
-      "justification": "Tooling + CI-config change: a tailored CodeQL query-filter config plus Python script hardening (file modes, two ReDoS regexes, a test loop-capture fix, removal of 13 dead module globals). No product web/api/cli/UI/store surface is introduced or changed. Verified by the full shared suites (3556+196+61), all four touched plugin suites (adopt 334, test 143, rollback-plugin 26, compliance 707) and the cross-plugin integration suite (169), all CI-style, plus ruff clean."
+    {
+     "behavior": "Verdict maps to the band label (no free-text drift)",
+     "disposition": "tested",
+     "evidence": "test_control_grade.py::test_verdict_maps_to_band_no_freetext"
     },
-    "degraded": [
-      "The six untouched plugin suites (run/project/plan/design/changelog/preview/security/iterate) were delegated to CI: none import the changed shared modules on a path the green shared + integration suites do not already exercise."
-    ],
-    "test_completeness": {
-      "status": "complete",
-      "behaviors": [
-        {
-          "behavior": "AC-1: claim/marker/drop files are created owner-only (0o600), not world-readable",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_event_once.py::test_create_claim_is_owner_only PASSED (asserts st_mode 0o600 on POSIX); the 4 other sites use the identical os.open(...,0o600) pattern with create paths covered by the green hook/tool suites"
-        },
-        {
-          "behavior": "AC-2: _GITHUB_HOST_RE parses every recognised remote unchanged AND a catastrophic input fails fast",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_github_api.py (27 PASSED incl. test_parse_github_remote_no_catastrophic_backtracking)"
-        },
-        {
-          "behavior": "AC-2: _FR_TABLE_RE parses 3/5/6-column rows unchanged AND a catastrophic input fails fast",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_rtm_fr_table_redos.py (5 PASSED)"
-        },
-        {
-          "behavior": "AC-3: each generated fixture check reports its own id (no loop-variable late-binding)",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_group_cf_fixture_loop_capture.py PASSED"
-        },
-        {
-          "behavior": "AC-4: result is always bound for any --strategy value (defensive else)",
-          "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "reason": "the else is unreachable by argparse choices=[git,clone]; it is a static-analysis guard with no runtime-reachable state. The reachable git/clone dispatch + validation are covered by plugins/shipwright-deploy/tests/test_rollback.py"
-        },
-        {
-          "behavior": "AC-5: 13 truly-dead module globals removed and 8 live/deliberate ones kept, with no breakage anywhere",
-          "disposition": "tested",
-          "evidence": "ruff clean + full shared (3556+196+61) + four plugin suites + integration (169) green after removals"
-        },
-        {
-          "behavior": "AC-6: the CodeQL config excludes exactly the six ruff-owned/convention-conflicting query ids and excludes no security or high-value-correctness query",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_codeql_config_query_filters.py (15 PASSED)"
-        }
-      ],
-      "counts": {
-        "testable": 6,
-        "tested": 6,
-        "untestable": 1,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 6,
-        "covered_acs": 6
-      }
+    {
+     "behavior": "Displayed integer can never contradict the letter band",
+     "disposition": "tested",
+     "evidence": "test_control_grade.py::test_displayed_int_never_contradicts_letter_at_boundary + test_floored_score_shares_band_with_letter"
+    },
+    {
+     "behavior": "Out-of-range adapter inputs stay within [0,100]",
+     "disposition": "tested",
+     "evidence": "test_control_grade.py::test_garbage_inputs_stay_in_range"
+    },
+    {
+     "behavior": "Reconciliation lights up when measurable (BP-2 seam)",
+     "disposition": "tested",
+     "evidence": "test_control_grade.py::test_reconciliation_scored_when_measurable"
+    },
+    {
+     "behavior": "AR-02 resolver: latest FULL suite, skips trailing 0/0 + subset, most-recent-not-max",
+     "disposition": "tested",
+     "evidence": "test_control_grade.py::TestLatestSuiteResolver (3 cases)"
+    },
+    {
+     "behavior": "AR-02 dashboard headline reads the latest full suite (no 0/0)",
+     "disposition": "tested",
+     "evidence": "test_compliance_report.py::TestWhyWarnColumn (failing+passing)"
+    },
+    {
+     "behavior": "AR-02 test-evidence summary uses the shared resolver",
+     "disposition": "tested",
+     "evidence": "test_test_evidence.py suite (green)"
+    },
+    {
+     "behavior": "AR-03 no dead audit link + inline consistency-audit summary",
+     "disposition": "tested",
+     "evidence": "test_compliance_report.py::test_audit_report_not_linked_but_inlined"
     }
+   ],
+   "counts": {
+    "behaviors_total": 14,
+    "tested": 14,
+    "untestable": 0,
+    "untested_testable": 0
+   },
+   "enumeration_basis": {
+    "acs": 7,
+    "covered_acs": 7
+   }
   }
+ }
 }
