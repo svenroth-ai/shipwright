@@ -114,7 +114,17 @@
      "disposition": "tested",
      "evidence": "test_compliance_report.py::test_audit_report_not_linked_but_inlined"
     }
-   ]
+   ],
+   "counts": {
+    "behaviors_total": 14,
+    "tested": 14,
+    "untestable": 0,
+    "untested_testable": 0
+   },
+   "enumeration_basis": {
+    "acs": 7,
+    "covered_acs": 7
+   }
   }
  }
 }
