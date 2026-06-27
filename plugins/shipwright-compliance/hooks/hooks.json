@@ -24,11 +24,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/check_rtm_coverage.py\""
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/check_rtm_coverage.py\""
           },
           {
             "type": "command",
-            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/check_security_scan.py\""
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/check_security_scan.py\""
           }
         ]
       }

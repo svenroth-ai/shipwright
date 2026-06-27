@@ -1341,8 +1341,22 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
-| PreToolUse | `Bash` | `check_rtm_coverage.py` | Soft-blocks if RTM coverage < 80% threshold |
-| PreToolUse | `Bash` | `check_security_scan.py` | Checks status of the most recent manual `/shipwright-security` scan (security is no longer auto-inserted; this hook now covers manual scans only) |
+| PreToolUse | `Bash` | `check_rtm_coverage.py` | Soft-blocks `git commit` if RTM coverage < 80% threshold. Invoked `uv run --no-project` + routed through `lib/hook_failopen.run_failopen` (see note). |
+| PreToolUse | `Bash` | `check_security_scan.py` | Soft-blocks **deploy** commands when unresolved findings exceed threshold (security is no longer auto-inserted; manual scans only). Invoked `uv run --no-project` + routed through `lib/hook_failopen.run_failopen` (see note). |
+
+> **Fail-open invocation (both Bash gates).** These two hooks fire on **every**
+> Bash tool call (matcher `Bash`), but only act on `git commit` / deploy
+> commands — every other call early-returns 0 (allow). Two robustness layers
+> ensure a flaky or crashing gate can never hard-block an unrelated Bash call
+> (the `iterate-2026-06-27` "No stderr output" fail-close): (1) both are invoked
+> with **`uv run --no-project`** so each Bash call skips the per-call project
+> sync (whose intermittent failure on Windows surfaced as a block); (2) both
+> route their entrypoint through `lib/hook_failopen.run_failopen`, which catches
+> any unexpected exception, appends a one-line diagnostic to the gitignored
+> `.shipwright/agent_docs/runtime/hook_errors.log`, and returns 0 (ALLOW). The
+> deliberate soft-block (`return 2` + the "Continue anyway" override context) is
+> a normal return value and is unaffected. Integration coverage:
+> `integration-tests/test_compliance_hook_failopen.py`.
 | Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + Cmp1 dashboard-per-phase Tier-2, Cmp2 RTM coverage) |
 | Stop | — | `generate_handoff_on_stop.py` (shared) | Session handoff |
 

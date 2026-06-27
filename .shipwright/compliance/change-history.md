@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-27T21:14:40.530729+00:00
-Total commits: 1043
+Generated: 2026-06-27T22:43:07.150922+00:00
+Total commits: 1042
 
 ## Commit Distribution
 
@@ -9,7 +9,7 @@ Total commits: 1043
 pie title Commit Types
     "fix" : 296
     "feat" : 275
-    "chore" : 229
+    "chore" : 228
     "docs" : 141
     "refactor" : 62
     "test" : 25
@@ -325,7 +325,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-27 | compliance | Control Grade verdict block + latest-full-suite + inline audit (AR-01/02/03) | 7a01e70eef03 |
+| 2026-06-28 | compliance | Control Grade verdict block + latest-full-suite + inline audit (AR-01/02/03) (#277) | fdab00716d26 |
 | 2026-06-22 | security | add a Trivy accepted-risk register (.trivyignore.yaml) and accept the OTel medium (#273) | 64aef0de33b7 |
 | 2026-06-14 | iterate | repo-agnostic agent-doc entry-budget gate + doc cleanup (#252) | c7ec0a62e892 |
 | 2026-06-13 | iterate | behavior-preserving Simplify sub-mode + snapshot/verify gate (OS1/P3.2) (#238) | 561bf5a70640 |
@@ -601,11 +601,10 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 229 commits
+### Chores (chore) — 228 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-27 | compliance | add test-completeness counts to satisfy F11 ledger verifier | d7a8ecef1521 |
 | 2026-06-22 | release | v0.29.1 (#271) | af7a3fc04fae |
 | 2026-06-17 | — | align root pyproject.toml to 0.29.0 + de-PII a source comment (#262) | 6c0c1ea626c4 |
 | 2026-06-17 | release | v0.29.0 (#261) | 392152b988ec |
@@ -1112,7 +1111,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1043 |
+| Total commits | 1042 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1043 |
+| Human-authored commits | 1042 |
 

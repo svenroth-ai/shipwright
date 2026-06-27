@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-28-security-scan-hook-failopen",
+  "date": "2026-06-27T22:43:35.568860Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/2026-06-28-security-scan-hook-failopen",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/2026-06-28-security-scan-hook-failopen.md",
+  "adr": "iterate-2026-06-28-security-scan-hook-failopen"
+}

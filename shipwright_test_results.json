@@ -1,16 +1,16 @@
 {
  "iterate_latest": {
-  "run_id": "iterate-2026-06-27-compliance-control-grade",
-  "date": "2026-06-27",
+  "run_id": "iterate-2026-06-28-security-scan-hook-failopen",
+  "date": "2026-06-28",
   "unit": {
    "status": "passed",
-   "passed": 720,
-   "total": 720
+   "passed": 3560,
+   "total": 3560
   },
   "integration": {
-   "status": "not_run",
-   "passed": 0,
-   "total": 0
+   "status": "passed",
+   "passed": 15,
+   "total": 15
   },
   "pgtap": {
    "status": "not_run",
@@ -28,102 +28,73 @@
    "total": 0
   },
   "smoke": {
-   "status": "not_run"
+   "status": "passed"
   },
   "surface_verification": {
    "surface": "none",
    "exit_code": 0,
-   "tests_run": 720,
-   "justification": "Pure compliance renderer/scorer change (dashboard + test-evidence markdown generators + a new pure scoring lib). No product web/api/cli/UI/store surface is introduced or changed; the dashboard is a static tracked .md. Verified by the full shipwright-compliance suite (720 passed) plus a real-data render probe of the dashboard top block."
+   "tests_run": 3560,
+   "justification": "Framework-internal change to two compliance PreToolUse Bash hooks (robust `uv run --no-project` invocation + a fail-open guard) plus a new pure-stdlib helper lib and a docs row. No product web/api/cli/UI/store surface is introduced or changed. The hook IS the surface: verified end-to-end through the real `uv run --no-project` invocation path -- a non-deploy bash call exits 0 (allow), an internal crash (`tool_input` is a string) exits 0 (FAIL-OPEN) and writes a diagnostic to the gitignored runtime hook-error log, and a deploy-with-findings still exits 2 (deliberate soft-block + 'Continue anyway' override context preserved)."
   },
   "degraded": [
-   "Full monorepo + shared/tests suites delegated to CI ci.yml. This change touches only plugins/shipwright-compliance/scripts/lib + tests + docs/guide.md; local gate = the compliance plugin suite (720 passed) + pinned-ruff clean.",
-   "Security dimension rendered n/a (not scored): the local securityreports/latest.md is stale (2026-04-28) + test-fixture-FP-laden; authoritative posture = the CI security gate, ingested later by AR-10.",
-   "Change-reconciliation dimension rendered n/a: per-FR behavior impact is not yet persisted on events (BP-2). Grader consumes it the moment BP-2 lands; no scorer change."
+   "Full per-plugin monorepo suites delegated to CI ci.yml. Local F0 gate ran: shared/tests (3560 passed, 12 skipped, 26 deselected cross_plugin/slow) + shipwright-compliance plugin suite (734 passed) + integration-tests enforcement+failopen (15 passed) + pinned-ruff clean on all changed files."
   ],
   "test_completeness": {
    "status": "complete",
    "behaviors": [
     {
-     "behavior": "Weighted aggregate over measurable dims; all-green -> A",
+     "behavior": "run_failopen returns 0 and logs a diagnostic when main() raises (crash never hard-blocks)",
      "disposition": "tested",
-     "evidence": "test_control_grade.py::TestBands::test_all_green_is_A"
+     "evidence": "test_hook_failopen.py::TestRunFailopen::test_raising_main_fails_open + test_raising_main_logs_warning PASSED"
     },
     {
-     "behavior": "Band thresholds inclusive (90/80/70/50)",
+     "behavior": "run_failopen passes 0 and the deliberate soft-block 2 through unchanged; non-int -> 0",
      "disposition": "tested",
-     "evidence": "test_control_grade.py::TestBands::test_band_thresholds_are_inclusive"
+     "evidence": "test_hook_failopen.py::TestRunFailopen::test_passes_through_zero + test_passes_through_block_exit_two + test_non_int_return_coerced_to_allow PASSED"
     },
     {
-     "behavior": "n/a dimensions excluded from the weighted denominator",
+     "behavior": "log_hook_error writes to gitignored runtime/hook_errors.log, appends, never raises on a bad root",
      "disposition": "tested",
-     "evidence": "test_control_grade.py::TestNaExclusion (3 cases)"
+     "evidence": "test_hook_failopen.py::TestLogHookError (3 cases) PASSED"
     },
     {
-     "behavior": "All-n/a -> Not Gradeable, never an unearned F",
+     "behavior": "check_security_scan fails OPEN (exit 0 + diagnostic) on an internal crash, end-to-end as a subprocess",
      "disposition": "tested",
-     "evidence": "test_control_grade.py::TestNotGradeable::test_all_na_is_not_gradeable_never_F"
+     "evidence": "test_compliance_hook_failopen.py::TestFailOpenComposition::test_security_scan_fails_open_on_internal_crash + test_diagnostic_names_the_failing_hook PASSED",
+     "category": "integration"
     },
     {
-     "behavior": "FR-tag freeze caps the grade; real shipwright case -> B",
+     "behavior": "check_rtm_coverage fails OPEN (exit 0 + diagnostic) on an internal crash, end-to-end as a subprocess",
      "disposition": "tested",
-     "evidence": "test_control_grade.py::TestFreezeCase (2 cases)"
+     "evidence": "test_compliance_hook_failopen.py::TestFailOpenComposition::test_rtm_coverage_fails_open_on_internal_crash PASSED",
+     "category": "integration"
     },
     {
-     "behavior": "Deterministic: same inputs -> same grade",
+     "behavior": "compliance hooks.json: both Bash PreToolUse gates carry `--no-project`; file is valid JSON (io-boundary round-trip)",
      "disposition": "tested",
-     "evidence": "test_control_grade.py::test_same_inputs_same_grade"
+     "evidence": "test_compliance_hook_failopen.py::TestInvocationContract::test_both_bash_gates_use_no_project + test_hooks_json_is_valid_json PASSED",
+     "category": "integration"
     },
     {
-     "behavior": "Verdict maps to the band label (no free-text drift)",
+     "behavior": "Deliberate deploy-with-findings still soft-blocks (exit 2); RTM-coverage commit gate still soft-blocks (regression preserved)",
      "disposition": "tested",
-     "evidence": "test_control_grade.py::test_verdict_maps_to_band_no_freetext"
+     "evidence": "test_enforcement_hooks.py::TestCheckSecurityScan/TestCheckRtmCoverage + integration test_compliance_enforcement.py (rc==2 cases) PASSED + real `uv run --no-project` smoke exit 2"
     },
     {
-     "behavior": "Displayed integer can never contradict the letter band",
+     "behavior": "Override/remediation path preserved: blocked output carries 'Continue anyway' additionalContext -> compliance_overrides.log",
      "disposition": "tested",
-     "evidence": "test_control_grade.py::test_displayed_int_never_contradicts_letter_at_boundary + test_floored_score_shares_band_with_letter"
-    },
-    {
-     "behavior": "Out-of-range adapter inputs stay within [0,100]",
-     "disposition": "tested",
-     "evidence": "test_control_grade.py::test_garbage_inputs_stay_in_range"
-    },
-    {
-     "behavior": "Reconciliation lights up when measurable (BP-2 seam)",
-     "disposition": "tested",
-     "evidence": "test_control_grade.py::test_reconciliation_scored_when_measurable"
-    },
-    {
-     "behavior": "AR-02 resolver: latest FULL suite, skips trailing 0/0 + subset, most-recent-not-max",
-     "disposition": "tested",
-     "evidence": "test_control_grade.py::TestLatestSuiteResolver (3 cases)"
-    },
-    {
-     "behavior": "AR-02 dashboard headline reads the latest full suite (no 0/0)",
-     "disposition": "tested",
-     "evidence": "test_compliance_report.py::TestWhyWarnColumn (failing+passing)"
-    },
-    {
-     "behavior": "AR-02 test-evidence summary uses the shared resolver",
-     "disposition": "tested",
-     "evidence": "test_test_evidence.py suite (green)"
-    },
-    {
-     "behavior": "AR-03 no dead audit link + inline consistency-audit summary",
-     "disposition": "tested",
-     "evidence": "test_compliance_report.py::test_audit_report_not_linked_but_inlined"
+     "evidence": "test_enforcement_hooks.py::test_blocks_deploy_with_findings asserts additionalContext; test_compliance_enforcement.py::test_rtm_hook_blocks_commit_after_build asserts 'Continue anyway' PASSED"
     }
    ],
    "counts": {
-    "behaviors_total": 14,
-    "tested": 14,
+    "behaviors_total": 8,
+    "tested": 8,
     "untestable": 0,
     "untested_testable": 0
    },
    "enumeration_basis": {
-    "acs": 7,
-    "covered_acs": 7
+    "acs": 8,
+    "covered_acs": 8
    }
   }
  }
