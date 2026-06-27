@@ -7,7 +7,7 @@ Generated: 2026-06-27T21:14:40.530729+00:00
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 211 |
-| Total unit tests (latest) | 0/0 |
+| Total unit tests (latest full suite) | 3473/3473 (2026-06-14) |
 | New tests from iterations | +191 |
 
 ## Test Progression
