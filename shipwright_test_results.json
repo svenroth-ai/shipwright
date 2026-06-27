@@ -1,73 +1,120 @@
 {
-  "iterate_latest": {
-    "run_id": "iterate-2026-06-22-trivyignore-policy-check",
-    "date": "2026-06-22",
-    "unit": {
-      "status": "passed",
-      "passed": 4,
-      "total": 4
+ "iterate_latest": {
+  "run_id": "iterate-2026-06-27-compliance-control-grade",
+  "date": "2026-06-27",
+  "unit": {
+   "status": "passed",
+   "passed": 720,
+   "total": 720
+  },
+  "integration": {
+   "status": "not_run",
+   "passed": 0,
+   "total": 0
+  },
+  "pgtap": {
+   "status": "not_run",
+   "passed": 0,
+   "total": 0
+  },
+  "e2e": {
+   "status": "not_run",
+   "passed": 0,
+   "total": 0
+  },
+  "design_fidelity": {
+   "status": "not_run",
+   "passed": 0,
+   "total": 0
+  },
+  "smoke": {
+   "status": "not_run"
+  },
+  "surface_verification": {
+   "surface": "none",
+   "exit_code": 0,
+   "tests_run": 720,
+   "justification": "Pure compliance renderer/scorer change (dashboard + test-evidence markdown generators + a new pure scoring lib). No product web/api/cli/UI/store surface is introduced or changed; the dashboard is a static tracked .md. Verified by the full shipwright-compliance suite (720 passed) plus a real-data render probe of the dashboard top block."
+  },
+  "degraded": [
+   "Full monorepo + shared/tests suites delegated to CI ci.yml. This change touches only plugins/shipwright-compliance/scripts/lib + tests + docs/guide.md; local gate = the compliance plugin suite (720 passed) + pinned-ruff clean.",
+   "Security dimension rendered n/a (not scored): the local securityreports/latest.md is stale (2026-04-28) + test-fixture-FP-laden; authoritative posture = the CI security gate, ingested later by AR-10.",
+   "Change-reconciliation dimension rendered n/a: per-FR behavior impact is not yet persisted on events (BP-2). Grader consumes it the moment BP-2 lands; no scorer change."
+  ],
+  "test_completeness": {
+   "status": "complete",
+   "behaviors": [
+    {
+     "behavior": "Weighted aggregate over measurable dims; all-green -> A",
+     "disposition": "tested",
+     "evidence": "test_control_grade.py::TestBands::test_all_green_is_A"
     },
-    "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+    {
+     "behavior": "Band thresholds inclusive (90/80/70/50)",
+     "disposition": "tested",
+     "evidence": "test_control_grade.py::TestBands::test_band_thresholds_are_inclusive"
     },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+    {
+     "behavior": "n/a dimensions excluded from the weighted denominator",
+     "disposition": "tested",
+     "evidence": "test_control_grade.py::TestNaExclusion (3 cases)"
     },
-    "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+    {
+     "behavior": "All-n/a -> Not Gradeable, never an unearned F",
+     "disposition": "tested",
+     "evidence": "test_control_grade.py::TestNotGradeable::test_all_na_is_not_gradeable_never_F"
     },
-    "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+    {
+     "behavior": "FR-tag freeze caps the grade; real shipwright case -> B",
+     "disposition": "tested",
+     "evidence": "test_control_grade.py::TestFreezeCase (2 cases)"
     },
-    "smoke": {
-      "status": "not_run"
+    {
+     "behavior": "Deterministic: same inputs -> same grade",
+     "disposition": "tested",
+     "evidence": "test_control_grade.py::test_same_inputs_same_grade"
     },
-    "surface_verification": {
-      "surface": "none",
-      "exit_code": 0,
-      "tests_run": 4,
-      "justification": "Test-only CI guardrail (a policy check over .trivyignore.yaml). No product web/api/cli/UI/store surface is introduced or changed. The guardrail is self-tested by 4 tests run CI-style (uv run --with pytest pytest shared/tests/...): good register passes, sloppy entry rejected, absent file passes."
+    {
+     "behavior": "Verdict maps to the band label (no free-text drift)",
+     "disposition": "tested",
+     "evidence": "test_control_grade.py::test_verdict_maps_to_band_no_freetext"
     },
-    "degraded": [
-      "Full monorepo + shared/tests suites delegated to CI ci.yml. This change is purely additive (one new test file in shared/tests/, no source/runtime code touched), so blast radius is zero. Local gate = the new policy test (4 passed, CI-style invocation) + ruff clean."
-    ],
-    "test_completeness": {
-      "status": "complete",
-      "behaviors": [
-        {
-          "behavior": "the policy rejects a sloppy accept — an entry missing id / expired_at / statement, or with no paths|purls scope (repo-wide blanket suppression)",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_trivyignore_register.py::test_policy_rejects_a_sloppy_accept PASSED (asserts _violations flags the 3 bad shapes and accepts a well-formed one)"
-        },
-        {
-          "behavior": "the current repo-root .trivyignore.yaml passes the policy (CVE-2026-54285 is scoped + time-bounded + justified) and is well-formed YAML",
-          "disposition": "tested",
-          "evidence": "test_accepts_are_scoped_timebound_and_justified + test_register_is_well_formed_if_present PASSED against the real register"
-        },
-        {
-          "behavior": "the register is OPTIONAL: an absent .trivyignore.yaml yields no violations (no false CI failure on a fresh checkout or a fully-expired-and-removed register)",
-          "disposition": "tested",
-          "evidence": "test_passes_when_register_absent PASSED (_entries(nonexistent path) == [])"
-        }
-      ],
-      "counts": {
-        "testable": 3,
-        "tested": 3,
-        "untestable": 0,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 3,
-        "covered_acs": 3
-      }
+    {
+     "behavior": "Displayed integer can never contradict the letter band",
+     "disposition": "tested",
+     "evidence": "test_control_grade.py::test_displayed_int_never_contradicts_letter_at_boundary + test_floored_score_shares_band_with_letter"
+    },
+    {
+     "behavior": "Out-of-range adapter inputs stay within [0,100]",
+     "disposition": "tested",
+     "evidence": "test_control_grade.py::test_garbage_inputs_stay_in_range"
+    },
+    {
+     "behavior": "Reconciliation lights up when measurable (BP-2 seam)",
+     "disposition": "tested",
+     "evidence": "test_control_grade.py::test_reconciliation_scored_when_measurable"
+    },
+    {
+     "behavior": "AR-02 resolver: latest FULL suite, skips trailing 0/0 + subset, most-recent-not-max",
+     "disposition": "tested",
+     "evidence": "test_control_grade.py::TestLatestSuiteResolver (3 cases)"
+    },
+    {
+     "behavior": "AR-02 dashboard headline reads the latest full suite (no 0/0)",
+     "disposition": "tested",
+     "evidence": "test_compliance_report.py::TestWhyWarnColumn (failing+passing)"
+    },
+    {
+     "behavior": "AR-02 test-evidence summary uses the shared resolver",
+     "disposition": "tested",
+     "evidence": "test_test_evidence.py suite (green)"
+    },
+    {
+     "behavior": "AR-03 no dead audit link + inline consistency-audit summary",
+     "disposition": "tested",
+     "evidence": "test_compliance_report.py::test_audit_report_not_linked_but_inlined"
     }
+   ]
   }
+ }
 }

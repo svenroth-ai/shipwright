@@ -50,12 +50,12 @@ class TestGenerate:
         assert "./change-history.md" in result
         assert "./sbom.md" in result
 
-    def test_audit_report_always_linked(self, project_root: Path):
-        # The audit report is gitignored/transient, so the link is rendered
-        # unconditionally (deterministic, no flip-flop) — present even when the
-        # fixture has not generated audit-report.md.
+    def test_audit_report_not_linked_but_inlined(self, project_root: Path):
+        # AR-03: audit-report.md is gitignored (404 on public GitHub) — the
+        # dashboard inlines a Consistency Audit summary instead of linking it.
         result = generate(collect_all(project_root))
-        assert "| Audit Report | [audit-report.md](./audit-report.md) |" in result
+        assert "[audit-report.md](./audit-report.md)" not in result
+        assert "## 🔎 Consistency Audit" in result
 
     def test_activity_dashboard_linked_when_present(self, project_root: Path):
         (project_root / ".shipwright" / "agent_docs" / "build_dashboard.md").write_text(
@@ -185,8 +185,8 @@ class TestWhyWarnColumn:
             project_root=tmp_path, adopted=False, work_events=events,
         )
         result = generate(data)
-        # The Why-warn cell mentions where to look
-        assert "4/12 failing" in result
+        # Why-warn cell shows the gap (AR-02 skip-aware wording) + the pointer.
+        assert "4/12 not green" in result
         assert "test-evidence.md" in result
 
     def test_passing_tests_have_empty_diagnostic(self, tmp_path: Path):

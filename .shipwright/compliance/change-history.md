@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-22T21:48:01.463729+00:00
-Total commits: 1038
+Generated: 2026-06-27T21:14:40.530729+00:00
+Total commits: 1040
 
 ## Commit Distribution
 
@@ -10,9 +10,9 @@ pie title Commit Types
     "fix" : 295
     "feat" : 274
     "chore" : 228
-    "docs" : 140
+    "docs" : 141
     "refactor" : 62
-    "test" : 24
+    "test" : 25
     "ci" : 7
     "other" : 7
     "build" : 1
@@ -832,10 +832,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 140 commits
+### Documentation (docs) — 141 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-24 | images | update command-center board screenshot (#275) | 4cfb9d2dc9e3 |
 | 2026-06-21 | — | tighten the README hero and show what one iterate produces | 7cf1f4c6dadd |
 | 2026-06-21 | guide | replace prose em-dashes with colons, periods, and commas | 3e7480ca3c09 |
 | 2026-06-21 | readme | replace em-dashes with colons, periods, and commas | beed2062df8e |
@@ -1044,10 +1045,11 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 24 commits
+### Tests (test) — 25 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-22 | security | enforce scoped + time-bounded accept-discipline for .trivyignore.yaml (#274) | 5f16590eb98d |
 | 2026-06-12 | merge | end-to-end parallel-merge cascade integration test (#215) | 5321dfaf2b46 |
 | 2026-06-11 | campaign | drop tracked-campaign guard now that campaigns are local-only | a8abe956570e |
 | 2026-06-08 | triage | empirical verification gate for outbox sweep/GC (>=200 real concurrency trials) | 41127433617a |
@@ -1107,7 +1109,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1038 |
+| Total commits | 1040 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1038 |
+| Human-authored commits | 1040 |
 

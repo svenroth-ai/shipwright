@@ -1,0 +1,1 @@
+compliance: Control Verdict + Control Grade (A–F) block atop the dashboard — a deterministic, importance-weighted control-posture grade (lib/control_grade.py, methodology in Anlehnung an OpenSSF Scorecard; dimensions anchored to SLSA, NIST SSDF, DO-178C/RTM, OWASP, ISO 25010), reusable by the future repo-grader and certification gate

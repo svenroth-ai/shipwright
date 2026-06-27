@@ -26,6 +26,7 @@ try:
 except ImportError:  # pragma: no cover - triage helper always available in practice
     _read_triage_items = None  # type: ignore[assignment]
 from ._bloat_dashboard_rows import bloat_rows_events_mode, bloat_rows_legacy_mode  # B3
+from ._control_block import latest_tests_row, render_consistency_audit, render_control_block  # AR-01/02/03
 if TYPE_CHECKING:
     from scripts.lib.data_collector import ComplianceData
 
@@ -94,6 +95,8 @@ def generate(data: ComplianceData) -> str:
         "",
     ]
 
+    lines.extend(render_control_block(data))  # AR-01: Control Verdict + Grade
+
     # Quality indicators — event-based if events exist, legacy otherwise
     if data.work_events:
         lines.extend(_quality_indicators_events(data))
@@ -102,6 +105,7 @@ def generate(data: ComplianceData) -> str:
         lines.extend(_quality_indicators_legacy(data))
 
     lines.extend(_external_review_evidence(data))
+    lines.extend(render_consistency_audit(data.project_root))  # AR-03: inline audit
 
     # Compliance artifacts
     artifact_rows = [
@@ -110,10 +114,8 @@ def generate(data: ComplianceData) -> str:
         "| Commit Change Log | [change-history.md](./change-history.md) | Conventional Commits by type |",
         "| Decision Log | [decision_log.md](../agent_docs/decision_log.md) | Architecture decisions (ADRs) |",
         "| SBOM | [sbom.md](./sbom.md) | Open-source dependencies + licenses |",
-        # Audit report linked unconditionally (like the rows above): it is
-        # gitignored/transient, so a conditional link would flip-flop in the
-        # committed dashboard. (iterate-2026-06-16-compliance-rendering-fixes)
-        "| Audit Report | [audit-report.md](./audit-report.md) | Detective cross-artifact consistency audit |",
+        # AR-03: the audit report is gitignored (404 on the public repo), so we
+        # inline its summary above instead of linking it (render_consistency_audit).
     ]
     # Activity / build dashboard (per-event change + pipeline view). Tracked, so
     # conditional-on-existence is stable (no flip-flop).
@@ -173,10 +175,6 @@ def _quality_indicators_events(data: ComplianceData) -> list[str]:
     completed_phases = [e["phase"] for e in data.phase_events if e.get("type") == "phase_completed"]
     total_pipeline = 7  # project, design, plan, build, test, changelog, deploy
 
-    # Latest test counts from work events
-    latest_passed = data.work_events[-1].tests_passed if data.work_events else 0
-    latest_total = data.work_events[-1].tests_total if data.work_events else 0
-
     # Review counts
     reviewed = sum(1 for we in build_events if we.review_type)
 
@@ -234,16 +232,7 @@ def _quality_indicators_events(data: ComplianceData) -> list[str]:
         f"| Work events (iterate) | {len(iterate_events)} changes | INFO |  |"
     )
 
-    tests_ok = latest_passed == latest_total and latest_total > 0
-    tests_why = (
-        f"{latest_total - latest_passed}/{latest_total} failing — see test-evidence.md"
-        if not tests_ok and latest_total > 0 else
-        "no test events recorded yet" if latest_total == 0 else ""
-    )
-    lines.append(
-        f"| All unit tests passing | {latest_passed}/{latest_total} | "
-        f"{_status_badge(tests_ok)} | {tests_why} |"
-    )
+    lines.append(latest_tests_row(data.work_events))  # AR-02: latest full suite
 
     if not adopted:
         review_ok = reviewed == len(build_events) and len(build_events) > 0
