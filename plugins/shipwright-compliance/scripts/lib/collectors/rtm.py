@@ -155,7 +155,11 @@ def collect_decision_log(project_root: Path) -> list[DecisionEntry]:
 _FR_TABLE_RE = re.compile(
     r"^\|\s*(FR-[\d.]+)\s*\|\s*([^|]+?)\s*\|\s*(Must|Should|May)\s*\|"
     r"(?:\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|)?"  # optional Description (4) + Source (5)
-    r"(?:\s*[^|]*?\s*\|)*\s*$"                # any number of further columns, ignored
+    # Any number of further columns, ignored. Each iteration consumes one
+    # pipe-terminated cell: `[^|]*\|`. The earlier form `(?:\s*[^|]*?\s*\|)*`
+    # overlapped `\s` with `[^|]`, backtracking exponentially on rows with many
+    # ` |` cells that fail `$` (CodeQL py/redos). Same language, linear time.
+    r"(?:[^|]*\|)*\s*$"
 )
 
 # Rows inside a `## Removed Requirements` / `### Removed Requirements`

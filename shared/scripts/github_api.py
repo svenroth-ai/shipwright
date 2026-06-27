@@ -134,12 +134,12 @@ def fetch_secret_scanning_alerts() -> list[dict] | None:
 # IN — chicken-and-egg). Pure git-remote parse.
 # ---------------------------------------------------------------------------
 
-# Capture group 1 = owner, group 2 = repo. Anchored at end so trailing
-# ``.git`` (optional) and a single trailing slash are tolerated. Accepts
-# `github.com` and any `github.*` host (GitHub Enterprise).
+# Capture group 1 = host, 2 = owner, 3 = repo. Accepts `github.com` and any
+# `github.*` host (GHE); trailing ``.git``/slash tolerated. The host label
+# class excludes `.` (`[a-zA-Z0-9-]`) so each `\.` is one separator — no ReDoS.
 _GITHUB_HOST_RE = re.compile(
     r"^(?:https?://(?:[^@/]+@)?|ssh://(?:git@)?|git@)"
-    r"(github(?:\.[a-zA-Z0-9.-]+)+)"
+    r"(github(?:\.[a-zA-Z0-9-]+)+)"
     r"[:/]"
     r"([A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?)"
     r"/"

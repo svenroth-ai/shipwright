@@ -35,7 +35,7 @@ def _patch_iterate12(monkeypatch, module, mapping):
 
 
 def _passing_checks(ids):
-    return {cid: (lambda _r: _FakeCheck(cid, ok=True)) for cid in ids}
+    return {cid: (lambda _r, cid=cid: _FakeCheck(cid, ok=True)) for cid in ids}
 
 
 # ---------------------------------------------------------------------------

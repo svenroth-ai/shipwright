@@ -31,6 +31,11 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           queries: security-and-quality
+          # Monorepo-only tailoring: keep the full security + high-value
+          # correctness net, exclude only ruff-owned / convention-conflicting
+          # quality queries. See .github/codeql/codeql-config.yml for the
+          # per-exclusion rationale. (Not scaffolded into adopted repos.)
+          config-file: ./.github/codeql/codeql-config.yml
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@v3

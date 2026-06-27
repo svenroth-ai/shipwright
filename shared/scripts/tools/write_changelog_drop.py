@@ -171,7 +171,8 @@ def _atomic_exclusive_write(target: Path, content: str) -> None:
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
     if hasattr(os, "O_BINARY"):
         flags |= os.O_BINARY  # Windows: bypass newline rewriting at OS layer
-    fd = os.open(target, flags, 0o644)
+    # 0o600 (owner-only): a local, non-secret changelog drop owned by the author.
+    fd = os.open(target, flags, 0o600)
     try:
         # Normalize newlines ourselves so POSIX and Windows output match.
         with os.fdopen(fd, "wb", closefd=True) as fh:

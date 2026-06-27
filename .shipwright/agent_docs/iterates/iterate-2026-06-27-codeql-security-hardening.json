@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-27-codeql-security-hardening",
+  "date": "2026-06-27T21:10:51.001641Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/codeql-security-hardening",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/2026-06-27-codeql-security-hardening.md",
+  "adr": "iterate-2026-06-27-codeql-security-hardening"
+}

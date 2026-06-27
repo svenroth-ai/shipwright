@@ -28,6 +28,24 @@ def test_event_claim_path_shape(tmp_path):
     assert p == tmp_path / ".shipwright" / ".cache" / "stop-handoff-sess-123.claim"
 
 
+def test_create_claim_is_owner_only(tmp_path):
+    """Hardening: claim/marker files are created 0o600 (not world-readable).
+
+    The exact permission bit is only observable on POSIX (Windows ignores the
+    ``os.open`` mode), so the strict assertion runs there — including Linux CI,
+    where the security property actually matters.
+    """
+    from lib.event_once import _create
+
+    p = tmp_path / "owner-only.claim"
+    assert _create(p) is True
+    assert p.exists()
+    if sys.platform != "win32":
+        import stat
+
+        assert stat.S_IMODE(p.stat().st_mode) == 0o600
+
+
 def test_event_claim_path_sanitises_traversal(tmp_path):
     # A malformed event/session token must never escape .cache (path traversal).
     # Containment is what matters: stripping separators keeps the value a single
