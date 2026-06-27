@@ -89,7 +89,8 @@ def _claim_once(project_root: Path, session_id: str) -> bool:
     try:
         locks.mkdir(parents=True, exist_ok=True)
         sentinel = locks / f"{_SENTINEL_PREFIX}.{session_id}"
-        fd = os.open(str(sentinel), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+        # 0o600 (owner-only): per-session sentinel, non-secret + single-user.
+        fd = os.open(str(sentinel), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
         os.close(fd)
         return True
     except FileExistsError:

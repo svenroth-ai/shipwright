@@ -84,13 +84,6 @@ _HARDCODED_COLOR_RE = re.compile(
     r"(?:-\d+)?(?:/\d+)?"
 )
 
-# Semantic tokens (these are OK)
-_SEMANTIC_TOKEN_RE = re.compile(
-    r"(?:bg|text|border|ring)-"
-    r"(?:background|foreground|card|popover|primary|secondary|muted|accent|destructive|"
-    r"sidebar|input|ring|chart|overlay)"
-)
-
 # Interactive component detection
 _DIALOG_RE = re.compile(r"<(Dialog|AlertDialog|Sheet|Drawer|Modal)\b")
 _TOAST_RE = re.compile(r"(?:toast\(|sonner|useToast|Toaster|toast\.)")

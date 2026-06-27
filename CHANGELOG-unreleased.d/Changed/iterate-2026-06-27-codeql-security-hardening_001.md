@@ -1,0 +1,1 @@
+Tailored the monorepo CodeQL configuration: keep the full security and high-value-correctness query suite, excluding only quality checks already owned by ruff or that conflict with the fail-open hook convention.

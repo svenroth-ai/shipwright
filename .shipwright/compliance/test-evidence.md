@@ -1,20 +1,20 @@
 # Test Evidence Report
 
-Generated: 2026-06-27T21:14:40.530729+00:00
+Generated: 2026-06-27T21:10:50.533812+00:00
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 210 |
-| Total unit tests (latest) | 720/720 |
+| Total unit tests (latest) | 0/0 |
 | New tests from iterations | +191 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | Control Grade scorer (lib/control_grade.py, in Anlehnung an OpenSSF Scorecard) + Control Verdict block atop the dashboard (AR-01); latest-full-suite resolver kills the 0/0 headline in dashboard + test-evidence (AR-02); inline consistency-audit summary replaces the dead gitignored audit-report.md link (AR-03). | iterate | unit | +0 | 720/720 | PASS | 2026-06-27 |
+| 1 | CodeQL security hardening: tailor the query suite via codeql-config.yml; root-fix genuine findings (file modes to 0o600, two ReDoS regexes, a loop-capture bug, a rollback-CLI else-guard); remove 13 dead module globals. | iterate | — | +0 | — | — | 2026-06-27 |
 | 2 | Add shared/tests/test_trivyignore_register.py enforcing that every .trivyignore.yaml accepted-risk entry is scoped (paths\|purls) + time-bounded (expired_at) + justified (statement); register optional (absent passes). Self-tested (rejects sloppy, accepts well-formed). | iterate | — | +0 | — | — | 2026-06-22 |
 | 3 | Add _resolve_trivy_ignorefile + wire --ignorefile <target>/.trivyignore.yaml into _run_trivy (oss_backend.py) so Trivy SCA findings can be accepted via a scoped, time-bounded repo-root register; add .trivyignore.yaml accepting CVE-2026-54285 (perf package-lock, expired_at 2026-12-22) + 4 unit tests. | iterate | — | +0 | — | — | 2026-06-22 |
 | 4 | Bump cryptography 48.0.0->49.0.0 (shipwright-plan/uv.lock) and ws 8.20.1->8.21.0 + 7.5.10->7.5.11 (shipwright-test/scripts/perf/package-lock.json) to clear 3 HIGH dependency CVEs from the 2026-06-22 scheduled security scan. | iterate | — | +0 | — | — | 2026-06-22 |
@@ -229,36 +229,36 @@ Generated: 2026-06-27T21:14:40.530729+00:00
 
 | Run | Trigger | Unit | Integration | pgTAP | E2E | Smoke | Date |
 |-----|---------|------|-------------|-------|-----|-------|------|
-| 1 | iterate | 162/162 | — | — | — | — | 2026-06-13 |
-| 2 | iterate | 3818/3830 | — | — | — | — | 2026-06-13 |
-| 3 | iterate | 3737/3737 | — | — | — | — | 2026-06-13 |
-| 4 | iterate | 3400/3400 | — | — | — | — | 2026-06-13 |
-| 5 | iterate | 3796/3796 | — | — | — | — | 2026-06-13 |
-| 6 | iterate | 4343/4343 | — | — | — | — | 2026-06-13 |
-| 7 | iterate | 4283/4283 | — | — | — | — | 2026-06-13 |
-| 8 | iterate | 164/164 | — | — | — | — | 2026-06-13 |
-| 9 | iterate | 4220/4236 | — | — | — | — | 2026-06-13 |
-| 10 | iterate | 4082/4082 | — | — | — | — | 2026-06-13 |
-| 11 | iterate | 3419/3419 | — | — | — | — | 2026-06-13 |
-| 12 | iterate | 3996/3996 | — | — | — | — | 2026-06-13 |
-| 13 | iterate | 3653/3665 | — | — | — | — | 2026-06-13 |
-| 14 | iterate | 69/69 | — | — | — | — | 2026-06-13 |
-| 15 | iterate | 3881/3881 | — | — | — | — | 2026-06-13 |
-| 16 | iterate | 3441/3453 | — | — | — | — | 2026-06-13 |
-| 17 | iterate | 3442/3442 | — | — | — | — | 2026-06-13 |
-| 18 | iterate | 7/7 | — | — | — | — | 2026-06-14 |
-| 19 | iterate | 96/96 | — | — | — | — | 2026-06-14 |
-| 20 | iterate | 3473/3473 | — | — | — | — | 2026-06-14 |
-| 21 | iterate | 94/94 | — | — | — | — | 2026-06-15 |
-| 22 | iterate | 85/85 | — | — | — | — | 2026-06-16 |
-| 23 | iterate | 24/24 | — | — | — | — | 2026-06-16 |
-| 24 | iterate | 701/701 | — | — | — | — | 2026-06-16 |
-| 25 | iterate | 28/29 | — | — | — | — | 2026-06-17 |
-| 26 | iterate | 20/20 | — | — | — | — | 2026-06-17 |
-| 27 | iterate | 34/34 | — | — | — | — | 2026-06-17 |
-| 28 | iterate | 420/423 | — | — | — | — | 2026-06-17 |
-| 29 | iterate | 139/139 | — | — | — | — | 2026-06-17 |
-| 30 | iterate | 720/720 | — | — | — | — | 2026-06-27 |
+| 1 | iterate | 3348/3362 | — | — | — | — | 2026-06-12 |
+| 2 | iterate | 162/162 | — | — | — | — | 2026-06-13 |
+| 3 | iterate | 3818/3830 | — | — | — | — | 2026-06-13 |
+| 4 | iterate | 3737/3737 | — | — | — | — | 2026-06-13 |
+| 5 | iterate | 3400/3400 | — | — | — | — | 2026-06-13 |
+| 6 | iterate | 3796/3796 | — | — | — | — | 2026-06-13 |
+| 7 | iterate | 4343/4343 | — | — | — | — | 2026-06-13 |
+| 8 | iterate | 4283/4283 | — | — | — | — | 2026-06-13 |
+| 9 | iterate | 164/164 | — | — | — | — | 2026-06-13 |
+| 10 | iterate | 4220/4236 | — | — | — | — | 2026-06-13 |
+| 11 | iterate | 4082/4082 | — | — | — | — | 2026-06-13 |
+| 12 | iterate | 3419/3419 | — | — | — | — | 2026-06-13 |
+| 13 | iterate | 3996/3996 | — | — | — | — | 2026-06-13 |
+| 14 | iterate | 3653/3665 | — | — | — | — | 2026-06-13 |
+| 15 | iterate | 69/69 | — | — | — | — | 2026-06-13 |
+| 16 | iterate | 3881/3881 | — | — | — | — | 2026-06-13 |
+| 17 | iterate | 3441/3453 | — | — | — | — | 2026-06-13 |
+| 18 | iterate | 3442/3442 | — | — | — | — | 2026-06-13 |
+| 19 | iterate | 7/7 | — | — | — | — | 2026-06-14 |
+| 20 | iterate | 96/96 | — | — | — | — | 2026-06-14 |
+| 21 | iterate | 3473/3473 | — | — | — | — | 2026-06-14 |
+| 22 | iterate | 94/94 | — | — | — | — | 2026-06-15 |
+| 23 | iterate | 85/85 | — | — | — | — | 2026-06-16 |
+| 24 | iterate | 24/24 | — | — | — | — | 2026-06-16 |
+| 25 | iterate | 701/701 | — | — | — | — | 2026-06-16 |
+| 26 | iterate | 28/29 | — | — | — | — | 2026-06-17 |
+| 27 | iterate | 20/20 | — | — | — | — | 2026-06-17 |
+| 28 | iterate | 34/34 | — | — | — | — | 2026-06-17 |
+| 29 | iterate | 420/423 | — | — | — | — | 2026-06-17 |
+| 30 | iterate | 139/139 | — | — | — | — | 2026-06-17 |
 
 ## Code Review Evidence
 

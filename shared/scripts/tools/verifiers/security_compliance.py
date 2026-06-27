@@ -14,7 +14,6 @@ Implements Sec1 and Sec2:
 
 from __future__ import annotations
 
-import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -45,11 +44,6 @@ SEC1_REMEDIATION = (
 SEC2_REMEDIATION = (
     "Remediate CRITICAL findings in the report, or append a line to "
     f"{COMPLIANCE_DIR}/compliance_overrides.log with timestamp + reason."
-)
-
-_CRITICAL_ROW_RE = re.compile(
-    r"^\|[^|]*\|\s*(?P<sev>[A-Z]+)\s*\|.*(?P<status>unresolved|open)",
-    re.IGNORECASE | re.MULTILINE,
 )
 
 

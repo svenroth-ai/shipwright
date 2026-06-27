@@ -80,16 +80,6 @@ def _candidate_test_files(project_root: Path, source_file: str) -> list[Path]:
     return [p for p in candidates if p.is_file()]
 
 
-# `describe('label', ...)` and `it('case', ...)` and `test('case', ...)`.
-# Single OR double quote. Capture group 2 is the label.
-_DESCRIBE_RE = re.compile(
-    r"""\bdescribe\s*\(\s*(['"])([^'"]+)\1""",
-)
-_IT_RE = re.compile(
-    r"""\b(it|test)\s*\(\s*(['"])([^'"]+)\2""",
-)
-
-
 _DESCRIBE_FINDER = re.compile(r"""\bdescribe\s*\(\s*(['"])([^'"]+)\1""")
 _IT_FINDER = re.compile(r"""\b(it|test)\s*\(\s*(['"])([^'"]+)\2""")
 

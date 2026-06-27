@@ -742,16 +742,6 @@ def check_s10_claude_md_sync(
     )
 
 
-# ---------------------------------------------------------------------------
-# Phase → check-list dispatch (plan § 5.1 "Plugin-Coverage")
-# ---------------------------------------------------------------------------
-
-_PROJECT_CHECKS: tuple[str, ...] = ("S1", "S5", "S6", "S7", "S8")
-_ITERATE_CHECKS: tuple[str, ...] = (
-    "S2", "S3", "S4", "S5", "S9", "S10",
-)
-
-
 def run(
     phase: str,
     project_root: Path,

@@ -50,8 +50,6 @@ _ROUTER_FILE_GLOBS = (
 # share this shape, and the false-positive cost of grabbing an unrelated
 # `path:` is just an extra harmless GET.
 _ROUTE_LITERAL_RE = re.compile(r"""\bpath\s*:\s*['"]([^'"\n]+)['"]""")
-# Detects `index: true` so we can map an index child back to its parent.
-_INDEX_TRUE_RE = re.compile(r"""\bindex\s*:\s*true\b""")
 
 
 def _read_playwright_error_context(run_cwd: Path, max_chars: int = 1500) -> str:

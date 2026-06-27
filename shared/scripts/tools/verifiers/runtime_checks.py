@@ -33,13 +33,6 @@ from typing import Any
 from .common import CheckResult, Severity, read_events_jsonl
 
 
-# Terminal event-store statuses — task is definitively done, no zombie
-# possible regardless of PID state.
-_TERMINAL_STATUSES = frozenset({
-    "done", "failed", "cancelled", "orphaned",
-})
-
-
 def _replay_task_states(events: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     """Minimal event-replay to derive current task status.
 

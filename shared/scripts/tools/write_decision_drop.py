@@ -89,7 +89,8 @@ def _atomic_exclusive_write(target: Path, content: str) -> None:
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
     if hasattr(os, "O_BINARY"):
         flags |= os.O_BINARY
-    fd = os.open(target, flags, 0o644)
+    # 0o600 (owner-only): a local, non-secret decision drop owned by the author.
+    fd = os.open(target, flags, 0o600)
     try:
         with os.fdopen(fd, "wb", closefd=True) as fh:
             fh.write(content.encode("utf-8"))

@@ -28,7 +28,6 @@ from pathlib import Path
 import pytest
 
 _SHARED_SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
-_REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # helpers (precede scripts)
 sys.path.insert(0, str(_SHARED_SCRIPTS))  # shared/scripts — wins for ``tools``
 

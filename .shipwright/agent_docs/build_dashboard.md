@@ -1,11 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-27 21:14 UTC | Session: 61dd0280-20fb-4933-93d7-7ea41e1a40f6 | Run: iterate-2026-06-27-compliance-control-grade
+> Updated: 2026-06-27 21:10 UTC | Session: 12c9c16a-2f03-47d2-9d1b-612113aa9379 | Run: iterate-2026-06-27-codeql-security-hardening
 
 ## Recent Changes (210 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| feature | Control Grade scorer (lib/control_grade.py, in Anlehnung an OpenSSF Scorecard) + Control Verdict block atop the dashboard (AR-01); latest-full-suite resolver kills the 0/0 headline in dashboard + test-evidence (AR-02); inline consistency-audit summary replaces the dead gitignored audit-report.md link (AR-03). | 720/720 |  | compliance | 2026-06-27 |
+| change | CodeQL security hardening: tailor the query suite via codeql-config.yml; root-fix genuine findings (file modes to 0o600, two ReDoS regexes, a loop-capture bug, a rollback-CLI else-guard); remove 13 dead module globals. | 0/0 |  | tooling | 2026-06-27 |
 | change | Add shared/tests/test_trivyignore_register.py enforcing that every .trivyignore.yaml accepted-risk entry is scoped (paths\|purls) + time-bounded (expired_at) + justified (statement); register optional (absent passes). Self-tested (rejects sloppy, accepts well-formed). | 0/0 |  | tooling | 2026-06-22 |
 | change | Add _resolve_trivy_ignorefile + wire --ignorefile <target>/.trivyignore.yaml into _run_trivy (oss_backend.py) so Trivy SCA findings can be accepted via a scoped, time-bounded repo-root register; add .trivyignore.yaml accepting CVE-2026-54285 (perf package-lock, expired_at 2026-12-22) + 4 unit tests. | 0/0 |  | tooling | 2026-06-22 |
 | change | Bump cryptography 48.0.0->49.0.0 (shipwright-plan/uv.lock) and ws 8.20.1->8.21.0 + 7.5.10->7.5.11 (shipwright-test/scripts/perf/package-lock.json) to clear 3 HIGH dependency CVEs from the 2026-06-22 scheduled security scan. | 0/0 |  | infra | 2026-06-22 |
@@ -217,7 +217,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-27 | Unit: 720/720 | Smoke: not_run | (iterate)
+Last run: 2026-06-27 | Unit: 5192/5192 | Integration: 169/169 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

@@ -338,15 +338,6 @@ def run_all(
 # AC-5 of iterate-2026-05-11-triage-inbox-1a: triage emission
 # ---------------------------------------------------------------------------
 
-_SEVERITY_MAP: dict[str, str] = {
-    "CRITICAL": "critical",
-    "HIGH": "high",
-    "MEDIUM": "medium",
-    "LOW": "low",
-    "INFO": "info",
-}
-
-
 def _import_triage_api():
     """Lazy import of the triage helpers (avoids perturbing existing module
     import order — the audit_detector skeleton must keep importing cleanly

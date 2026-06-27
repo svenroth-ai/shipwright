@@ -28,10 +28,6 @@ from tools.verifiers.common import read_events_jsonl  # noqa: E402
 
 
 W1_NAME = "W1 TDD order (test_run before work_completed)"
-W1_REMEDIATION = (
-    "Write a failing test first (F5 in build/SKILL.md); the order is "
-    "heuristic — if you followed TDD, this becomes PASS on the next run."
-)
 
 
 def check_w1_tdd_order(project_root: Path, run_id: str) -> dict[str, Any]:
