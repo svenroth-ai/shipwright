@@ -45,6 +45,10 @@ import github_api  # noqa: E402
         ("https://github.example.com/acme/foo", "acme/foo"),
         # GitHub Enterprise — SSH
         ("git@github.example.com:acme/foo", "acme/foo"),
+        # Multi-part GHE subdomains — the host group repeats `\.<label>` per dot,
+        # so 3+ part hosts parse fine (refutes the PR #276 review false-positive).
+        ("https://github.corp.example.com/acme/foo.git", "acme/foo"),
+        ("git@github.corp.example.com:acme/foo", "acme/foo"),
         # Hyphens, dots, underscores in repo name
         ("https://github.com/acme-corp/my-tool.git", "acme-corp/my-tool"),
         ("https://github.com/acme/my.tool.js", "acme/my.tool.js"),
