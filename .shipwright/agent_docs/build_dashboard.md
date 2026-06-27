@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-27 21:14 UTC | Session: 61dd0280-20fb-4933-93d7-7ea41e1a40f6 | Run: iterate-2026-06-27-compliance-control-grade
+> Updated: 2026-06-27 22:43 UTC | Session: a0dc1dca-ceaf-4731-b3db-1d33dd94cc32 | Run: iterate-2026-06-28-security-scan-hook-failopen
 
-## Recent Changes (211 iterations)
+## Recent Changes (212 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | compliance PreToolUse Bash gates: robust uv run --no-project invocation + fail-open guard | 3560/3560 |  | tooling | 2026-06-27 |
 | change | CodeQL security hardening: tailor the query suite via codeql-config.yml; root-fix genuine findings (file modes to 0o600, two ReDoS regexes, a loop-capture bug, a rollback-CLI else-guard); remove 13 dead module globals. | 0/0 |  | tooling | 2026-06-27 |
 | feature | Control Grade scorer (lib/control_grade.py, in Anlehnung an OpenSSF Scorecard) + Control Verdict block atop the dashboard (AR-01); latest-full-suite resolver kills the 0/0 headline in dashboard + test-evidence (AR-02); inline consistency-audit summary replaces the dead gitignored audit-report.md link (AR-03). | 720/720 |  | compliance | 2026-06-27 |
 | change | Add shared/tests/test_trivyignore_register.py enforcing that every .trivyignore.yaml accepted-risk entry is scoped (paths\|purls) + time-bounded (expired_at) + justified (statement); register optional (absent passes). Self-tested (rejects sloppy, accepts well-formed). | 0/0 |  | tooling | 2026-06-22 |
@@ -218,7 +219,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-27 | Unit: 720/720 | Smoke: not_run | (iterate)
+Last run: 2026-06-28 | Unit: 3560/3560 | Integration: 15/15 | Smoke: passed | (iterate)
 
 ## Pipeline
 
