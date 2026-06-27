@@ -1,0 +1,41 @@
+name: "Shipwright CodeQL config (monorepo)"
+
+# This config tailors CodeQL FOR THIS MONOREPO ONLY. It is NOT the template that
+# `/shipwright-adopt` scaffolds into target repos (that template is pinned by
+# shared/tests/test_codeql_workflow_convention.py) — adopted repos have their own
+# lint config and conventions, so these exclusions must not leak to them.
+#
+# The workflow runs the full `security-and-quality` suite (see
+# .github/workflows/codeql.yml). We deliberately KEEP the entire security half
+# AND the high-value correctness queries from the quality half — notably
+# py/loop-variable-capture, which caught a real late-binding bug. We exclude ONLY
+# quality queries that are either (a) already enforced by ruff, a hard, green CI
+# gate (.github/workflows/ci.yml → root pyproject.toml [tool.ruff.lint]), so
+# CodeQL only duplicates them or false-positives on re-exports, or (b) in direct
+# conflict with a documented repo convention. NO security query is excluded.
+
+query-filters:
+  # (b) Repo convention: hooks and background producers are intentionally
+  # fail-open — best-effort `except ...: pass` blocks annotated `# noqa: BLE001`.
+  # The fail-open design is load-bearing (a hook must never break a session).
+  - exclude:
+      id: py/empty-except
+
+  # (a) Owned by ruff F401 (unused-import). ruff is the authoritative, green
+  # gate; CodeQL here only re-flags __all__ / TYPE_CHECKING re-exports as FPs.
+  - exclude:
+      id: py/unused-import
+
+  # (a) Owned by ruff F841 (unused local variable).
+  - exclude:
+      id: py/unused-local-variable
+
+  # (a) Pure import-placement style. ruff intentionally omits the cosmetic
+  # E401/E402 import rules (see pyproject.toml comment) because they fire heavily
+  # on this repo's sys.path-bootstrapping scripts without catching bugs.
+  - exclude:
+      id: py/import-and-import-from
+  - exclude:
+      id: py/repeated-import
+  - exclude:
+      id: py/import-own-module

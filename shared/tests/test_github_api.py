@@ -81,6 +81,24 @@ def test_parse_github_remote_handles_none() -> None:
     assert github_api.parse_github_remote(None) is None  # type: ignore[arg-type]
 
 
+def test_parse_github_remote_no_catastrophic_backtracking() -> None:
+    """Regression for CodeQL py/redos on ``_GITHUB_HOST_RE``.
+
+    Before the fix the host group ``(github(?:\\.[a-zA-Z0-9.-]+)+)`` had the dot
+    in the inner class, making the partition of a ``.-.-.-…`` tail ambiguous —
+    exponential backtracking when the trailing ``[:/]owner/repo`` failed. The
+    de-ambiguated class resolves it in linear time. A pathological input that
+    would hang the old regex must now return ``None`` near-instantly.
+    """
+    import time
+
+    evil = "git@github" + ".-" * 60 + "!"  # fails [:/]; old regex backtracks
+    start = time.perf_counter()
+    assert github_api.parse_github_remote(evil) is None
+    elapsed = time.perf_counter() - start
+    assert elapsed < 1.0, f"parse took {elapsed:.2f}s — ReDoS regression"
+
+
 # ---------------------------------------------------------------------------
 # owner_repo — integration with git remote
 # ---------------------------------------------------------------------------

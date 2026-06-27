@@ -52,13 +52,11 @@ try:
         complete_phase_task,
         find_phase_task_by_session_uuid,
         freeze_splits,
-        mark_phase_failed,
     )
 except ImportError:  # pragma: no cover
     complete_phase_task = None
     find_phase_task_by_session_uuid = None
     freeze_splits = None
-    mark_phase_failed = None
 
 # Hook stdin-payload resolution (deep-audit F1). Guarded so a broken install
 # degrades to standalone rather than crashing the Stop hook.

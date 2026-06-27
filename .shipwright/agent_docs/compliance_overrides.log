@@ -1,0 +1,1 @@
+2026-06-27T20:59:17Z | check_security_scan | OVERRIDE | iterate-2026-06-27-codeql-security-hardening: remediating the 24 flagged CodeQL findings; code-only change that reduces findings; user-approved go for verification suites

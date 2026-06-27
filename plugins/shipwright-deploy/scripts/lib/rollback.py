@@ -100,6 +100,17 @@ def main() -> int:
             return 1
         result = rollback_clone(args.env_name, args.clone_name)
 
+    else:
+        # Unreachable today (argparse `choices` constrains --strategy), but an
+        # explicit else keeps `result` always-bound — a 3rd strategy added
+        # without its own branch would otherwise be a NameError (CodeQL
+        # py/uninitialized-local-variable).
+        print(json.dumps(
+            {"success": False, "error": f"unknown strategy {args.strategy!r}"},
+            indent=2,
+        ))
+        return 1
+
     print(json.dumps(result, indent=2))
     return 0 if result.get("success") else 1
 

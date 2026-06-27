@@ -45,7 +45,6 @@ sys.path.insert(0, _shared_scripts_str)
 # cleanly against shared/scripts.
 _stale_tools = sys.modules.get("tools")
 if _stale_tools is not None:
-    _tools_file = getattr(_stale_tools, "__file__", "") or ""
     _tools_path = getattr(_stale_tools, "__path__", None)
     if _tools_path is not None:
         _expected = str(_SHARED_SCRIPTS / "tools")

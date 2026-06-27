@@ -145,7 +145,9 @@ def claim_once(
 def _create(path: Path) -> bool | None:
     """Atomic exclusive create. True=created(winner), False=exists, None=error."""
     try:
-        fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+        # 0o600 (owner-only): a single-user, non-secret event-once marker —
+        # no other user/process reads it, so don't make it world-readable.
+        fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
     except FileExistsError:
         return False
     except OSError:

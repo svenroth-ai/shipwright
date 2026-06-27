@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-22-trivyignore-policy-check",
-    "date": "2026-06-22",
+    "run_id": "iterate-2026-06-27-codeql-security-hardening",
+    "date": "2026-06-27",
     "unit": {
       "status": "passed",
-      "passed": 4,
-      "total": 4
+      "passed": 5192,
+      "total": 5192
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 169,
+      "total": 169
     },
     "pgtap": {
       "status": "not_run",
@@ -33,40 +33,61 @@
     "surface_verification": {
       "surface": "none",
       "exit_code": 0,
-      "tests_run": 4,
-      "justification": "Test-only CI guardrail (a policy check over .trivyignore.yaml). No product web/api/cli/UI/store surface is introduced or changed. The guardrail is self-tested by 4 tests run CI-style (uv run --with pytest pytest shared/tests/...): good register passes, sloppy entry rejected, absent file passes."
+      "tests_run": 5192,
+      "justification": "Tooling + CI-config change: a tailored CodeQL query-filter config plus Python script hardening (file modes, two ReDoS regexes, a test loop-capture fix, removal of 13 dead module globals). No product web/api/cli/UI/store surface is introduced or changed. Verified by the full shared suites (3556+196+61), all four touched plugin suites (adopt 334, test 143, rollback-plugin 26, compliance 707) and the cross-plugin integration suite (169), all CI-style, plus ruff clean."
     },
     "degraded": [
-      "Full monorepo + shared/tests suites delegated to CI ci.yml. This change is purely additive (one new test file in shared/tests/, no source/runtime code touched), so blast radius is zero. Local gate = the new policy test (4 passed, CI-style invocation) + ruff clean."
+      "The six untouched plugin suites (run/project/plan/design/changelog/preview/security/iterate) were delegated to CI: none import the changed shared modules on a path the green shared + integration suites do not already exercise."
     ],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "the policy rejects a sloppy accept — an entry missing id / expired_at / statement, or with no paths|purls scope (repo-wide blanket suppression)",
+          "behavior": "AC-1: claim/marker/drop files are created owner-only (0o600), not world-readable",
           "disposition": "tested",
-          "evidence": "shared/tests/test_trivyignore_register.py::test_policy_rejects_a_sloppy_accept PASSED (asserts _violations flags the 3 bad shapes and accepts a well-formed one)"
+          "evidence": "shared/tests/test_event_once.py::test_create_claim_is_owner_only PASSED (asserts st_mode 0o600 on POSIX); the 4 other sites use the identical os.open(...,0o600) pattern with create paths covered by the green hook/tool suites"
         },
         {
-          "behavior": "the current repo-root .trivyignore.yaml passes the policy (CVE-2026-54285 is scoped + time-bounded + justified) and is well-formed YAML",
+          "behavior": "AC-2: _GITHUB_HOST_RE parses every recognised remote unchanged AND a catastrophic input fails fast",
           "disposition": "tested",
-          "evidence": "test_accepts_are_scoped_timebound_and_justified + test_register_is_well_formed_if_present PASSED against the real register"
+          "evidence": "shared/tests/test_github_api.py (27 PASSED incl. test_parse_github_remote_no_catastrophic_backtracking)"
         },
         {
-          "behavior": "the register is OPTIONAL: an absent .trivyignore.yaml yields no violations (no false CI failure on a fresh checkout or a fully-expired-and-removed register)",
+          "behavior": "AC-2: _FR_TABLE_RE parses 3/5/6-column rows unchanged AND a catastrophic input fails fast",
           "disposition": "tested",
-          "evidence": "test_passes_when_register_absent PASSED (_entries(nonexistent path) == [])"
+          "evidence": "plugins/shipwright-compliance/tests/test_rtm_fr_table_redos.py (5 PASSED)"
+        },
+        {
+          "behavior": "AC-3: each generated fixture check reports its own id (no loop-variable late-binding)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_group_cf_fixture_loop_capture.py PASSED"
+        },
+        {
+          "behavior": "AC-4: result is always bound for any --strategy value (defensive else)",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "reason": "the else is unreachable by argparse choices=[git,clone]; it is a static-analysis guard with no runtime-reachable state. The reachable git/clone dispatch + validation are covered by plugins/shipwright-deploy/tests/test_rollback.py"
+        },
+        {
+          "behavior": "AC-5: 13 truly-dead module globals removed and 8 live/deliberate ones kept, with no breakage anywhere",
+          "disposition": "tested",
+          "evidence": "ruff clean + full shared (3556+196+61) + four plugin suites + integration (169) green after removals"
+        },
+        {
+          "behavior": "AC-6: the CodeQL config excludes exactly the six ruff-owned/convention-conflicting query ids and excludes no security or high-value-correctness query",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_codeql_config_query_filters.py (15 PASSED)"
         }
       ],
       "counts": {
-        "testable": 3,
-        "tested": 3,
-        "untestable": 0,
+        "testable": 6,
+        "tested": 6,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 3,
-        "covered_acs": 3
+        "acs": 6,
+        "covered_acs": 6
       }
     }
   }
