@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-28T08:01:22.320966+00:00
+Generated: 2026-06-28T08:48:14.752152+00:00
 
 ## Requirements Coverage
 
@@ -240,6 +240,7 @@ Generated: 2026-06-28T08:01:22.320966+00:00
 | compliance PreToolUse Bash gates: robust uv run --no-project invocation + fail-open guard | iterate | change |  | 3560/3560 | — | 2026-06-27 |
 | CodeQL fixture-noise cleanup: paths-ignore test fixtures + explicit string-concat refactor | iterate | change |  | 4720/4720 | — | 2026-06-28 |
 | Break 3 CodeQL py/cyclic-import cycles via neutral leaf extraction + fix 2 py/mixed-returns | iterate | change |  | 4719/4719 | — | 2026-06-28 |
+| BP-2: per-FR fr_impact map on work_completed events lights the Control-Grade change-reconciliation dimension | iterate | change |  | — | — | 2026-06-28 |
 | Fix events_log lazy-import rationale (load_shared_lib isolation, not the removed cycle) + 2 repo_root docstring refs | iterate | change |  | 492/492 | — | 2026-06-28 |
 
 ## Coverage Summary
@@ -248,7 +249,7 @@ Generated: 2026-06-28T08:01:22.320966+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 216 |
+| Iterate changes | 217 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
