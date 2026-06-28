@@ -43,8 +43,10 @@ from typing import Any
 # even though the grade/render paths used cross-plugin never touch YAML (ADR-045).
 
 #: Tracked, public-safe summary — committed so security is visible on the
-#: public repo / webui (which has no local ``securityreports/``).
-SUMMARY_REL = Path(".shipwright") / "compliance" / "ci-security.json"
+#: public repo / webui (which has no local ``securityreports/``). Single
+#: canonical literal (not Path()/"compliance"/...) so the artifact-path-canon
+#: AST lint sees the ``.shipwright/`` prefix.
+SUMMARY_REL = Path(".shipwright/compliance/ci-security.json")
 _TRIVYIGNORE_NAMES = (".trivyignore.yaml", ".trivyignore.yml")
 _BUCKETS = ("critical", "high", "medium", "low")
 #: Bumped if the summary shape changes (lets future readers degrade safely).
