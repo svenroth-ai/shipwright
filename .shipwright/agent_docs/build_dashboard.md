@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-28 12:48 UTC | Session: eb5e3975-6030-4b5a-9cca-fd8f5201a11f | Run: iterate-2026-06-28-sbom-honesty
+> Updated: 2026-06-28 19:34 UTC | Session: 1b1b2661-e12b-4c54-a36d-fd6bd039a8f2 | Run: iterate-2026-06-28-grade-anchor-clarity
 
-## Recent Changes (221 iterations)
+## Recent Changes (222 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Control-Grade anchors: plain-language + open-standard-only (drop SonarQube), English methodology note, guide dimensions table | 850/850 |  | compliance | 2026-06-28 |
 | change | AR-05: RTM Reconciled? column + readability (consumes BP-2) | 4812/4812 |  | compliance | 2026-06-28 |
 | change | Remove mtime-based timestamp-drift detector from check_drift.py; keep content-drift; legacy :timestamp triage items auto-resolve | 3853/3853 |  | tooling | 2026-06-28 |
 | feature | AR-10: ingest CI security posture (security.yml findings.json) into the compliance dashboard via a fail-soft producer + tracked public-safe ci-security.json; light the Control-Grade Security dimension; render a CI Security section. | 0/0 |  | compliance | 2026-06-28 |
@@ -228,7 +229,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-28 | Unit: 794/794 | Smoke: skipped | (iterate)
+Last run: 2026-06-28 | Unit: 850/850 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

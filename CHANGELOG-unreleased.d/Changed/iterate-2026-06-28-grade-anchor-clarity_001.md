@@ -1,0 +1,1 @@
+Control Grade dashboard: the seven dimension Anchors now read in plain language and cite only open standards (DO-178C, IEC 62304, ISO 26262, ISO/IEC 25010, NIST SSDF, OWASP, SLSA, OpenSSF Scorecard); the commercial SonarQube / Sonar Way references were removed

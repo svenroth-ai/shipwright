@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-28-sbom-honesty"
+run_id: "iterate-2026-06-28-grade-anchor-clarity"
 phase: "iterate"
-reason: "F11 refresh #2: re-integrate origin/main (churn cascade during CI)"
-timestamp: "2026-06-28T12:48:12.844908+00:00"
+reason: "iterate: Control-Grade anchor clarity + open-standards-only"
+timestamp: "2026-06-28T19:34:52.090773+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-28 12:48:12 UTC
+> Auto-generated 2026-06-28 19:34:52 UTC
 
 ## Session Info
 
-- **Session ID**: eb5e3975-6030-4b5a-9cca-fd8f5201a11f
-- **Timestamp**: 2026-06-28 12:48:12 UTC
-- **Reason**: F11 refresh #2: re-integrate origin/main (churn cascade during CI)
+- **Session ID**: 1b1b2661-e12b-4c54-a36d-fd6bd039a8f2
+- **Timestamp**: 2026-06-28 19:34:52 UTC
+- **Reason**: iterate: Control-Grade anchor clarity + open-standards-only
 
 ## Last Iterate
 
@@ -29,10 +29,7 @@ timestamp: "2026-06-28T12:48:12.844908+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/sbom-honesty
-- **Run ID**: iterate-2026-06-28-sbom-honesty
-- **Spec**: .shipwright/planning/iterate/2026-06-28-sbom-honesty.md
-- **Complexity**: medium (classifier said `small`/history; upgraded for scope: new
+- **Branch**: iterate/grade-anchor-clarity
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -51,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/sbom-honesty
-- **Last Commit**: c1337a6f Merge remote-tracking branch 'origin/main' into iterate/sbom-honesty
+- **Branch**: iterate/grade-anchor-clarity
+- **Last Commit**: f4498bb3 fix(compliance): SBOM dedup by installed version + honest license verdict (AR-04) (#286)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-75761dd3 | work_completed | iterate (Control-Grade anchors: plain-language + open-standard-only (drop SonarQube), English methodology note, guide dimensions table) | 2026-06-28 |
 | evt-a0fb4818 | work_completed | iterate (AR-05: RTM Reconciled? column + readability (consumes BP-2)) | 2026-06-28 |
 | evt-62cb4cbd | work_completed | iterate (Remove mtime-based timestamp-drift detector from check_drift.py; keep content-drift; legacy :timestamp triage items auto-resolve) | 2026-06-28 |
 | evt-07b1fe9c | work_completed | iterate (AR-10: ingest CI security posture (security.yml findings.json) into the compliance dashboard via a fail-soft producer + tracked public-safe ci-security.json; light the Control-Grade Security dimension; render a CI Security section.) | 2026-06-28 |
 | evt-2aa2ddcf | work_completed | iterate (AR-04 SBOM data quality: dedupe by installed version from uv.lock, resolve licenses across all venvs, make the compliance line honest) | 2026-06-28 |
-| evt-5ba214bd | work_completed | iterate (Fix events_log lazy-import rationale (load_shared_lib isolation, not the removed cycle) + 2 repo_root docstring refs) | 2026-06-28 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 221
-- **Last iterate**: change — AR-05: RTM Reconciled? column + readability (consumes BP-2) (2026-06-28)
+- **Total work events**: 222
+- **Last iterate**: change — Control-Grade anchors: plain-language + open-standard-only (drop SonarQube), English methodology note, guide dimensions table (2026-06-28)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

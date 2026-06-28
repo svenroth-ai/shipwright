@@ -149,7 +149,7 @@ def _score_dimensions(inp: GradeInputs) -> list[DimensionResult]:
         req_score, req_detail = None, "no requirements declared"
     dims.append(DimensionResult(
         "requirement_traceability", "Requirement traceability", 0.25,
-        req_score, "DO-178C §11.9 / IEC 62304 / ALM RTM", req_detail,
+        req_score, "requirement-to-work traceability (DO-178C, IEC 62304)", req_detail,
     ))
 
     # 2. Test health (20%) — latest *full* suite pass-ratio.
@@ -166,7 +166,7 @@ def _score_dimensions(inp: GradeInputs) -> list[DimensionResult]:
         th_score, th_detail = None, "no full suite run recorded"
     dims.append(DimensionResult(
         "test_health", "Test health", 0.20,
-        th_score, "coverage gating (SonarQube 'Sonar Way')", th_detail,
+        th_score, "automated tests pass (OpenSSF Scorecard)", th_detail,
     ))
 
     # 3. Change traceability (15%) — provenance to commit/ADR/test.
@@ -181,7 +181,7 @@ def _score_dimensions(inp: GradeInputs) -> list[DimensionResult]:
         ct_score, ct_detail = None, "no change events recorded"
     dims.append(DimensionResult(
         "change_traceability", "Change traceability", 0.15,
-        ct_score, "SLSA provenance / OpenSSF Code-Review", ct_detail,
+        ct_score, "change provenance (SLSA, OpenSSF Scorecard)", ct_detail,
     ))
 
     # 4. Change reconciliation (15%) — needs BP-2 behavior-affecting impact.
@@ -201,7 +201,7 @@ def _score_dimensions(inp: GradeInputs) -> list[DimensionResult]:
         rec_detail = "not measurable — needs per-change behavior-impact (BP-2)"
     dims.append(DimensionResult(
         "change_reconciliation", "Change reconciliation", 0.15,
-        rec_score, "ALM suspect-links + DO-178C/ISO 26262 re-verification",
+        rec_score, "re-verify changed requirements (DO-178C, ISO 26262)",
         rec_detail,
     ))
 
@@ -216,7 +216,7 @@ def _score_dimensions(inp: GradeInputs) -> list[DimensionResult]:
         sec_detail = "no trustworthy local scan (see CI security gate)"
     dims.append(DimensionResult(
         "security", "Security", 0.10,
-        sec_score, "NIST SSDF (SP 800-218) / OWASP / OpenSSF", sec_detail,
+        sec_score, "no open high/critical vulns (NIST SSDF, OWASP)", sec_detail,
     ))
 
     # 6. Size / maintainability (10%) — net ratchet growth (delta <= 0 good).
@@ -229,7 +229,7 @@ def _score_dimensions(inp: GradeInputs) -> list[DimensionResult]:
         mt_score, mt_detail = None, "no size baseline"
     dims.append(DimensionResult(
         "maintainability", "Size / maintainability discipline", 0.10,
-        mt_score, "ISO 25010 maintainability / SonarQube", mt_detail,
+        mt_score, "size/maintainability discipline (ISO/IEC 25010)", mt_detail,
     ))
 
     # 7. Dependency hygiene (5%) — resolved licenses, 0 copyleft surprises.
@@ -244,7 +244,7 @@ def _score_dimensions(inp: GradeInputs) -> list[DimensionResult]:
         dep_score, dep_detail = None, "no dependencies declared"
     dims.append(DimensionResult(
         "dependency_hygiene", "Dependency hygiene", 0.05,
-        dep_score, "OWASP A06:2021 / OpenSSF Scorecard", dep_detail,
+        dep_score, "dependency license & risk (OWASP, OpenSSF Scorecard)", dep_detail,
     ))
 
     return dims

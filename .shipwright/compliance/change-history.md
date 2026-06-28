@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-28T12:48:12.844908+00:00
-Total commits: 1054
+Generated: 2026-06-28T19:34:52.090773+00:00
+Total commits: 1052
 
 ## Commit Distribution
 
@@ -9,7 +9,7 @@ Total commits: 1054
 pie title Commit Types
     "fix" : 298
     "feat" : 279
-    "chore" : 231
+    "chore" : 229
     "docs" : 142
     "refactor" : 64
     "test" : 25
@@ -24,7 +24,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-28 | compliance | SBOM dedup by installed version + honest license verdict (AR-04) | df338087cfc7 |
+| 2026-06-28 | compliance | SBOM dedup by installed version + honest license verdict (AR-04) (#286) | f4498bb30ccc |
 | 2026-06-28 | compliance | fail-open + robust invocation for PreToolUse Bash gates (#278) | 01059128d910 |
 | 2026-06-27 | security | remediate CodeQL findings + tailor the query suite to this repo (#276) | 6e7d956f1297 |
 | 2026-06-22 | security | bump cryptography + ws to clear 3 high-severity dependency CVEs (#272) | d7cd255c7214 |
@@ -607,12 +607,10 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 231 commits
+### Chores (chore) — 229 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-28 | churn | regenerate derived snapshots after main merge | 7987cc8f57e5 |
-| 2026-06-28 | compliance | reclassify iterate as spec_impact=none (no-FR renderer fix) | abfb4d3fc9d5 |
 | 2026-06-28 | security | exclude test fixtures from CodeQL + make intentional string-concat explicit (#279) | 6f1f35076dfa |
 | 2026-06-22 | release | v0.29.1 (#271) | af7a3fc04fae |
 | 2026-06-17 | — | align root pyproject.toml to 0.29.0 + de-PII a source comment (#262) | 6c0c1ea626c4 |
@@ -1123,7 +1121,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1054 |
+| Total commits | 1052 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1054 |
+| Human-authored commits | 1052 |
 
