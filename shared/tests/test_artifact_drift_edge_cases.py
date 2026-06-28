@@ -69,12 +69,14 @@ def _run_drift_hook(project_root: Path) -> subprocess.CompletedProcess:
 def designs_migration():
     """The designs migration entry — skip if not active."""
     mod = _load_artifact_migrations()
-    for mig in mod.ARTIFACT_MIGRATIONS:
-        if mig["name"] == "designs":
-            if mig["status"] == "pending":
-                pytest.skip("designs migration is pending; nothing to test yet")
-            return mig
-    pytest.skip("designs migration entry not present in manifest")
+    match = next(
+        (m for m in mod.ARTIFACT_MIGRATIONS if m["name"] == "designs"), None
+    )
+    if match is None:
+        pytest.skip("designs migration entry not present in manifest")
+    if match["status"] == "pending":
+        pytest.skip("designs migration is pending; nothing to test yet")
+    return match
 
 
 def _seed_minimal_shipwright_project(project_root: Path) -> None:

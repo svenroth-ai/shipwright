@@ -59,25 +59,15 @@ REQUIRED_FINDING_KEYS = {
 # Re-export classify_finding (backend-agnostic)
 # ---------------------------------------------------------------------------
 
-# Import from aikido_client to avoid duplication.  The function itself does
-# not depend on Aikido – it only looks at severity and type fields.
-try:
-    from aikido_client import classify_finding  # noqa: F401
-except ImportError:
-    # Fallback: inline copy for when aikido_client is not on sys.path
-    AUTO_FIXABLE_TYPES = {"dependency", "sca"}
-    AGENT_FIXABLE_TYPES = {"sast", "secret_detection"}
-
-    def classify_finding(finding: dict[str, Any]) -> str:  # type: ignore[misc]
-        severity = finding.get("severity", "").lower()
-        finding_type = finding.get("type", "").lower()
-        if severity in ("low", "info", "informational"):
-            return "informational"
-        if finding_type in AUTO_FIXABLE_TYPES:
-            return "auto-fixable"
-        if finding_type in AGENT_FIXABLE_TYPES:
-            return "agent-fixable"
-        return "needs-review"
+# classify_finding is backend-agnostic and lives in its OWN leaf module
+# (finding_classify), so this generic interface need not import the Aikido
+# client — that closed the scanner_backend <-> aikido_client import cycle
+# (CodeQL py/cyclic-import) without losing the shared classifier or keeping a
+# duplicated inline copy. finding_classify is always a sibling on disk, so
+# ensuring SCRIPT_DIR is on sys.path makes the import resolve in any context.
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+from finding_classify import classify_finding  # noqa: E402,F401  (re-export)
 
 
 # ---------------------------------------------------------------------------

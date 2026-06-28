@@ -63,7 +63,7 @@ def _gate_run_body() -> str:
                 run = step.get("run")
                 assert run, f"gate step {CRITICAL_GATE_STEP_ID!r} has an empty run: body"
                 return run
-    pytest.fail(f"no step with id={CRITICAL_GATE_STEP_ID!r} in {TEMPLATE_FILE}")
+    raise AssertionError(f"no step with id={CRITICAL_GATE_STEP_ID!r} in {TEMPLATE_FILE}")
 
 
 # --------------------------------------------------------------------------- #

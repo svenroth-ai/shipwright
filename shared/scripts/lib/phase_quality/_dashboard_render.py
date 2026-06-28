@@ -25,7 +25,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from ._aggregates import (
+from ._findings_model import (
     LoadedFinding,
     _roll_up_counts,
     count_by_status,

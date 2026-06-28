@@ -50,7 +50,7 @@ import subprocess
 import warnings
 from pathlib import Path
 
-from lib.worktree_isolation import GitError, main_repo_root
+from lib.git_base import GitError, main_repo_root
 
 # git path-resolution is a single fast call; cap it so a hung git cannot wedge a
 # caller (e.g. an iterate finalize append or a Stop-hook resolution).
