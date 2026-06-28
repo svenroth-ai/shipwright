@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-28T11:26:48.955723+00:00
+Generated: 2026-06-28T12:34:00.983777+00:00
 
 ## Requirements Coverage
 
@@ -244,6 +244,7 @@ Generated: 2026-06-28T11:26:48.955723+00:00
 | <a id="evt-bc8ebee5"></a>Break 3 CodeQL py/cyclic-import cycles via neutral leaf extraction + fix 2 py/mixed-returns | iterate | change |  | 4719/4719 | — | 2026-06-28 |
 | <a id="evt-280e7afe"></a>BP-2: per-FR fr_impact map on work_completed events lights the Control-Grade change-reconciliation dimension | iterate | change |  | — | — | 2026-06-28 |
 | <a id="evt-5ba214bd"></a>Fix events_log lazy-import rationale (load_shared_lib isolation, not the removed cycle) + 2 repo_root docstring refs | iterate | change |  | 492/492 | — | 2026-06-28 |
+| <a id="evt-62cb4cbd"></a>Remove mtime-based timestamp-drift detector from check_drift.py; keep content-drift; legacy :timestamp triage items auto-resolve | iterate | change |  | 3853/3853 | — | 2026-06-28 |
 | <a id="evt-a0fb4818"></a>AR-05: RTM Reconciled? column + readability (consumes BP-2) | iterate | change |  | 4812/4812 | — | 2026-06-28 |
 
 ## Coverage Summary
@@ -252,7 +253,7 @@ Generated: 2026-06-28T11:26:48.955723+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 218 |
+| Iterate changes | 219 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
