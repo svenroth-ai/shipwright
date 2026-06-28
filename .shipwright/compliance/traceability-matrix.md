@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-28T08:48:14.752152+00:00
+Generated: 2026-06-28T12:18:28.241981+00:00
 
 ## Requirements Coverage
 
@@ -242,6 +242,7 @@ Generated: 2026-06-28T08:48:14.752152+00:00
 | Break 3 CodeQL py/cyclic-import cycles via neutral leaf extraction + fix 2 py/mixed-returns | iterate | change |  | 4719/4719 | — | 2026-06-28 |
 | BP-2: per-FR fr_impact map on work_completed events lights the Control-Grade change-reconciliation dimension | iterate | change |  | — | — | 2026-06-28 |
 | Fix events_log lazy-import rationale (load_shared_lib isolation, not the removed cycle) + 2 repo_root docstring refs | iterate | change |  | 492/492 | — | 2026-06-28 |
+| AR-10: ingest CI security posture (security.yml findings.json) into the compliance dashboard via a fail-soft producer + tracked public-safe ci-security.json; light the Control-Grade Security dimension; render a CI Security section. | iterate | feature |  | — | — | 2026-06-28 |
 
 ## Coverage Summary
 
@@ -249,7 +250,7 @@ Generated: 2026-06-28T08:48:14.752152+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 217 |
+| Iterate changes | 218 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

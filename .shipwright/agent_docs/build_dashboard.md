@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-28 08:48 UTC | Session: 86f21e38-8222-42f0-ba25-456fc45395fa | Run: iterate-2026-06-28-cc2-bp2-impact-producer
+> Updated: 2026-06-28 12:18 UTC | Session: 034b86b6-c5c7-4534-abfd-a4c6d08b087c | Run: iterate-2026-06-28-ci-security-dashboard
 
-## Recent Changes (217 iterations)
+## Recent Changes (218 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | AR-10: ingest CI security posture (security.yml findings.json) into the compliance dashboard via a fail-soft producer + tracked public-safe ci-security.json; light the Control-Grade Security dimension; render a CI Security section. | 0/0 |  | compliance | 2026-06-28 |
 | change | Fix events_log lazy-import rationale (load_shared_lib isolation, not the removed cycle) + 2 repo_root docstring refs | 492/492 |  | docs | 2026-06-28 |
 | change | BP-2: per-FR fr_impact map on work_completed events lights the Control-Grade change-reconciliation dimension | 0/0 |  | compliance | 2026-06-28 |
 | change | Break 3 CodeQL py/cyclic-import cycles via neutral leaf extraction + fix 2 py/mixed-returns | 4719/4719 |  | tooling | 2026-06-28 |
@@ -224,7 +225,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-28 | Unit: 4799/4799 | Integration: 174/174 | Smoke: not_run | (iterate)
+Last run: 2026-06-28 | Unit: 795/795 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

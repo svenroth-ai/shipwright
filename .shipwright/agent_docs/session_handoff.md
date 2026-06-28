@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-28-cc2-bp2-impact-producer"
+run_id: "iterate-2026-06-28-ci-security-dashboard"
 phase: "iterate"
-reason: "F11 refresh before PR (integrate #282)"
-timestamp: "2026-06-28T08:48:14.752152+00:00"
+reason: "AR-10 CI-security dashboard ingest complete"
+timestamp: "2026-06-28T12:18:28.241981+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-28 08:48:14 UTC
+> Auto-generated 2026-06-28 12:18:28 UTC
 
 ## Session Info
 
-- **Session ID**: 86f21e38-8222-42f0-ba25-456fc45395fa
-- **Timestamp**: 2026-06-28 08:48:14 UTC
-- **Reason**: F11 refresh before PR (integrate #282)
+- **Session ID**: 034b86b6-c5c7-4534-abfd-a4c6d08b087c
+- **Timestamp**: 2026-06-28 12:18:28 UTC
+- **Reason**: AR-10 CI-security dashboard ingest complete
 
 ## Last Iterate
 
@@ -29,8 +29,7 @@ timestamp: "2026-06-28T08:48:14.752152+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/cc2-bp2-impact-producer
-- **Spec**: .shipwright/planning/iterate/2026-06-28-cc2-bp2-impact-producer.md
+- **Branch**: iterate/ar10-ci-security-dashboard
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -49,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/cc2-bp2-impact-producer
-- **Last Commit**: 03fa8ce6 Merge remote-tracking branch 'origin/main' into iterate/cc2-bp2-impact-producer
+- **Branch**: iterate/ar10-ci-security-dashboard
+- **Last Commit**: 9941383a feat(compliance): per-FR fr_impact map lights the Control-Grade reconciliation dimension (cc2/BP-2) (#283)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -66,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-07b1fe9c | work_completed | iterate (AR-10: ingest CI security posture (security.yml findings.json) into the compliance dashboard via a fail-soft producer + tracked public-safe ci-security.json; light the Control-Grade Security dimension; render a CI Security section.) | 2026-06-28 |
 | evt-5ba214bd | work_completed | iterate (Fix events_log lazy-import rationale (load_shared_lib isolation, not the removed cycle) + 2 repo_root docstring refs) | 2026-06-28 |
 | evt-280e7afe | work_completed | iterate (BP-2: per-FR fr_impact map on work_completed events lights the Control-Grade change-reconciliation dimension) | 2026-06-28 |
 | evt-bc8ebee5 | work_completed | iterate (Break 3 CodeQL py/cyclic-import cycles via neutral leaf extraction + fix 2 py/mixed-returns) | 2026-06-28 |
 | evt-5d34869b | work_completed | iterate (CodeQL fixture-noise cleanup: paths-ignore test fixtures + explicit string-concat refactor) | 2026-06-28 |
-| evt-d50b793d | work_completed | iterate (compliance PreToolUse Bash gates: robust uv run --no-project invocation + fail-open guard) | 2026-06-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 217
-- **Last iterate**: change — Fix events_log lazy-import rationale (load_shared_lib isolation, not the removed cycle) + 2 repo_root docstring refs (2026-06-28)
+- **Total work events**: 218
+- **Last iterate**: feature — AR-10: ingest CI security posture (security.yml findings.json) into the compliance dashboard via a fail-soft producer + tracked public-safe ci-security.json; light the Control-Grade Security dimension; render a CI Security section. (2026-06-28)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

@@ -179,7 +179,7 @@
     {
       "path": "plugins/shipwright-compliance/scripts/lib/compliance_report.py",
       "limit": 300,
-      "current": 413,
+      "current": 357,
       "state": "grandfathered",
       "adr": null
     },
