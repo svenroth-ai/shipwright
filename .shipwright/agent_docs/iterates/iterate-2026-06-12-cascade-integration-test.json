@@ -1,9 +1,0 @@
-{
-  "run_id": "iterate-2026-06-12-cascade-integration-test",
-  "date": "2026-06-12T17:56:47.240864Z",
-  "type": "change",
-  "complexity": "small",
-  "branch": "iterate/cascade-integration-test",
-  "tests_passed": true,
-  "adr": "iterate-2026-06-12-cascade-integration-test"
-}

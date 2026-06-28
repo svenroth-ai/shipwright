@@ -14,6 +14,17 @@ name: "Shipwright CodeQL config (monorepo)"
 # CodeQL only duplicates them or false-positives on re-exports, or (b) in direct
 # conflict with a documented repo convention. NO security query is excluded.
 
+# Path-level exclusion (honored for the interpreted languages we analyze —
+# python + javascript-typescript). Test fixtures are generated, non-first-party
+# sample apps / scanner-bait (e.g. the bundled sample-app under
+# plugins/shipwright-test/tests/fixtures/bundle/), NOT shipped code — a single
+# minified fixture otherwise floods the dashboard with ~1000 quality alerts
+# (js/assignment-to-constant). ruff already excludes the same paths
+# (root pyproject.toml [tool.ruff] extend-exclude); this keeps the two scanners
+# aligned. NO security query is disarmed — this only narrows WHERE queries run.
+paths-ignore:
+  - '**/tests/fixtures/**'
+
 query-filters:
   # (b) Repo convention: hooks and background producers are intentionally
   # fail-open — best-effort `except ...: pass` blocks annotated `# noqa: BLE001`.

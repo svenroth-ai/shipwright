@@ -40,6 +40,13 @@ EXPECTED_EXCLUDES = {
     "py/import-own-module",
 }
 
+# Test fixtures (generated sample apps / scanner-bait) are intentional
+# non-first-party code — ruff already excludes them via pyproject
+# [tool.ruff] extend-exclude. CodeQL must skip them too: a single bundled
+# sample app otherwise floods the dashboard with ~1000 quality alerts. This is
+# a path-level exclusion, NOT a query-filter — no security query is disarmed.
+EXPECTED_PATHS_IGNORE = {"**/tests/fixtures/**"}
+
 # Queries that MUST stay armed — excluding any of these is the regression we are
 # defending against. Security queries + high-value correctness queries.
 KEEP_SHARF = {
@@ -113,4 +120,19 @@ def test_workflow_keeps_security_and_quality_suite() -> None:
     assert with_.get("queries") == "security-and-quality", (
         "We keep the full security-and-quality suite and tailor via "
         "query-filters — dropping the suite would defeat the whole approach."
+    )
+
+
+def _paths_ignore() -> set[str]:
+    parsed = yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8"))
+    entries = parsed.get("paths-ignore") or []
+    return {e for e in entries if isinstance(e, str)}
+
+
+def test_paths_ignore_is_exactly_test_fixtures() -> None:
+    assert _paths_ignore() == EXPECTED_PATHS_IGNORE, (
+        "CodeQL paths-ignore drifted. Fixtures (**/tests/fixtures/**) are "
+        "excluded because they are generated, non-first-party code (mirrors "
+        "ruff's extend-exclude); any change must be justified inline in "
+        "codeql-config.yml."
     )

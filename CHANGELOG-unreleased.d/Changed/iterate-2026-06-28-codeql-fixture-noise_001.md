@@ -1,0 +1,1 @@
+Tailored the monorepo CodeQL config to skip test fixtures (paths-ignore for **/tests/fixtures/**, mirroring ruff's exclusion), clearing ~1000 spurious code-quality alerts a bundled sample-app fixture had been flooding the security dashboard with
