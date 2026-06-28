@@ -1,20 +1,20 @@
 # Test Evidence Report
 
-Generated: 2026-06-28T12:34:00.983777+00:00
+Generated: 2026-06-28T11:26:48.955723+00:00
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 218 |
-| Total unit tests (latest full suite) | 3853/3853 (2026-06-28) |
+| Total unit tests (latest full suite) | 4812/4812 (2026-06-28) |
 | New tests from iterations | +191 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | Remove mtime-based timestamp-drift detector from check_drift.py; keep content-drift; legacy :timestamp triage items auto-resolve | iterate | unit | +0 | 3853/3853 | PASS | 2026-06-28 |
+| 1 | AR-05: RTM Reconciled? column + readability (consumes BP-2) | iterate | unit | +0 | 4812/4812 | PASS | 2026-06-28 |
 | 2 | Fix events_log lazy-import rationale (load_shared_lib isolation, not the removed cycle) + 2 repo_root docstring refs | iterate | unit | +0 | 492/492 | PASS | 2026-06-28 |
 | 3 | BP-2: per-FR fr_impact map on work_completed events lights the Control-Grade change-reconciliation dimension | iterate | — | +0 | — | — | 2026-06-28 |
 | 4 | Break 3 CodeQL py/cyclic-import cycles via neutral leaf extraction + fix 2 py/mixed-returns | iterate | unit | +0 | 4719/4719 | PASS | 2026-06-28 |
@@ -266,7 +266,7 @@ Generated: 2026-06-28T12:34:00.983777+00:00
 | 27 | iterate | 4720/4720 | — | — | — | — | 2026-06-28 |
 | 28 | iterate | 4719/4719 | — | — | — | — | 2026-06-28 |
 | 29 | iterate | 492/492 | — | — | — | — | 2026-06-28 |
-| 30 | iterate | 3853/3853 | — | — | — | — | 2026-06-28 |
+| 30 | iterate | 4812/4812 | — | — | — | — | 2026-06-28 |
 
 ## Code Review Evidence
 

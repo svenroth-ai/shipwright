@@ -1,31 +1,42 @@
+---
+canon_generated: true
+run_id: "iterate-2026-06-28-cc3-ar05-rtm-reconciled"
+phase: "iterate"
+reason: "iterate: AR-05 RTM Reconciled? column + readability"
+timestamp: "2026-06-28T11:26:48.955723+00:00"
+---
+
 # Session Handoff
 
-> Auto-generated 2026-06-28 12:34:00 UTC
+> Auto-generated 2026-06-28 11:26:48 UTC
 
 ## Session Info
 
-- **Session ID**: e6723b45-9aed-4208-8b66-4d4653da8543
-- **Timestamp**: 2026-06-28 12:34:00 UTC
-- **Reason**: iterate completion: iterate-2026-06-28-drop-timestamp-drift
+- **Session ID**: 1b1b2661-e12b-4c54-a36d-fd6bd039a8f2
+- **Timestamp**: 2026-06-28 11:26:48 UTC
+- **Reason**: iterate: AR-05 RTM Reconciled? column + readability
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-28-drop-timestamp-drift
-- **Date**: 2026-06-28T12:34:42.883837Z
+- **Run ID**: iterate-2026-06-28-cc2-bp2-impact-producer
+- **Date**: 2026-06-28T08:49:20.842153Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/drop-timestamp-drift
-- **ADR**: iterate-2026-06-28-drop-timestamp-drift
+- **Branch**: iterate/cc2-bp2-impact-producer
+- **ADR**: iterate-2026-06-28-cc2-bp2-impact-producer
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-28-drop-timestamp-drift.md
+- **Spec**: .shipwright/planning/iterate/2026-06-28-cc2-bp2-impact-producer.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/drop-timestamp-drift
-- **Run ID**: iterate-2026-06-28-drop-timestamp-drift
-- **Spec**: .shipwright/planning/iterate/2026-06-28-drop-timestamp-drift.md
-- **Complexity**: medium (diff-driven `cross_component`: `check_drift.py` matches
+- **Branch**: iterate/cc3-ar05-rtm-reconciled
+- **Spec**: .shipwright/planning/iterate/2026-06-28-cc3-ar05-rtm-reconciled.md
 - **External Review Marker**: missing
+
+### Mandatory replay on Resume
+
+Before dispatching to the handoff's Remaining phase, run these if missing:
+- Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
 
@@ -38,9 +49,9 @@
 
 ## Git State
 
-- **Branch**: iterate/drop-timestamp-drift
-- **Last Commit**: cba4d380 refactor(hooks): drop mtime timestamp-drift detector from check_drift.py
-- **Uncommitted Changes**: None
+- **Branch**: iterate/cc3-ar05-rtm-reconciled
+- **Last Commit**: 9941383a feat(compliance): per-FR fr_impact map lights the Control-Grade reconciliation dimension (cc2/BP-2) (#283)
+- **Uncommitted Changes**: Yes
 
 ## Config Files to Read
 
@@ -55,7 +66,7 @@
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-62cb4cbd | work_completed | iterate (Remove mtime-based timestamp-drift detector from check_drift.py; keep content-drift; legacy :timestamp triage items auto-resolve) | 2026-06-28 |
+| evt-a0fb4818 | work_completed | iterate (AR-05: RTM Reconciled? column + readability (consumes BP-2)) | 2026-06-28 |
 | evt-5ba214bd | work_completed | iterate (Fix events_log lazy-import rationale (load_shared_lib isolation, not the removed cycle) + 2 repo_root docstring refs) | 2026-06-28 |
 | evt-280e7afe | work_completed | iterate (BP-2: per-FR fr_impact map on work_completed events lights the Control-Grade change-reconciliation dimension) | 2026-06-28 |
 | evt-bc8ebee5 | work_completed | iterate (Break 3 CodeQL py/cyclic-import cycles via neutral leaf extraction + fix 2 py/mixed-returns) | 2026-06-28 |
@@ -65,7 +76,7 @@
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 218
-- **Last iterate**: change — Remove mtime-based timestamp-drift detector from check_drift.py; keep content-drift; legacy :timestamp triage items auto-resolve (2026-06-28)
+- **Last iterate**: change — AR-05: RTM Reconciled? column + readability (consumes BP-2) (2026-06-28)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
