@@ -213,12 +213,15 @@ def render_ci_security(project_root: Path | str, *, now: date) -> list[str]:
     lines = ["## 🛡️ CI Security (fail-closed gate)", ""]
     summary = load_ci_security(project_root)
     if summary is None:
-        lines.extend([
+        # Explicit `+` (not adjacent-literal concat inside the list) so the
+        # CodeQL py/implicit-string-concatenation-in-list query doesn't read it
+        # as a missing-comma bug.
+        not_ingested = (
             "_CI security results not yet ingested. Run "
-            "`refresh_ci_security.py` (auto-run by `update_compliance.py`) "
-            "to pull the latest `security.yml` scan._",
-            "",
-        ])
+            + "`refresh_ci_security.py` (auto-run by `update_compliance.py`) "
+            + "to pull the latest `security.yml` scan._"
+        )
+        lines.extend([not_ingested, ""])
         return lines
 
     scan_date = (summary.get("scan_date") or "")[:10] or "unknown"
@@ -254,12 +257,12 @@ def render_ci_security(project_root: Path | str, *, now: date) -> list[str]:
                 f"| {row['id']} | {row['expired_at'] or '—'} | {status} |")
         lines.append("")
 
-    lines.extend([
+    footer = (
         "_Ingested from CI `findings.json` (public-safe: severity counts + gate "
-        "verdict only — no finding detail). The local "
-        "`.shipwright/securityreports/` is intentionally **not** used "
-        "(stale/FP-laden). Open high/critical feed the Control Grade's Security "
-        "dimension._",
-        "",
-    ])
+        + "verdict only — no finding detail). The local "
+        + "`.shipwright/securityreports/` is intentionally **not** used "
+        + "(stale/FP-laden). Open high/critical feed the Control Grade's Security "
+        + "dimension._"
+    )
+    lines.extend([footer, ""])
     return lines
