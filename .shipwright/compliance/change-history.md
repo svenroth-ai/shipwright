@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-06-28T11:26:48.955723+00:00
-Total commits: 1048
+Generated: 2026-06-28T12:48:12.844908+00:00
+Total commits: 1051
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 297
-    "feat" : 277
-    "chore" : 229
+    "fix" : 298
+    "feat" : 278
+    "chore" : 230
     "docs" : 142
     "refactor" : 63
     "test" : 25
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 297 commits
+### Fixes (fix) — 298 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-28 | compliance | SBOM dedup by installed version + honest license verdict (AR-04) | df338087cfc7 |
 | 2026-06-28 | compliance | fail-open + robust invocation for PreToolUse Bash gates (#278) | 01059128d910 |
 | 2026-06-27 | security | remediate CodeQL findings + tailor the query suite to this repo (#276) | 6e7d956f1297 |
 | 2026-06-22 | security | bump cryptography + ws to clear 3 high-severity dependency CVEs (#272) | d7cd255c7214 |
@@ -322,10 +323,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 277 commits
+### Features (feat) — 278 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-28 | compliance | RTM "Reconciled?" column + readability reuse the BP-2 grade helper (cc3/AR-05) (#284) | fb95a4765ef0 |
 | 2026-06-28 | compliance | per-FR fr_impact map lights the Control-Grade reconciliation dimension (cc2/BP-2) (#283) | 9941383afecf |
 | 2026-06-28 | compliance | BP-1 FR-mapping — credit satisfied no-FR, behavior-aware gate, traced-% metric (#280) | eb7bf10bf297 |
 | 2026-06-28 | compliance | Control Grade verdict block + latest-full-suite + inline audit (AR-01/02/03) (#277) | fdab00716d26 |
@@ -604,10 +606,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 229 commits
+### Chores (chore) — 230 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-28 | compliance | reclassify iterate as spec_impact=none (no-FR renderer fix) | abfb4d3fc9d5 |
 | 2026-06-28 | security | exclude test fixtures from CodeQL + make intentional string-concat explicit (#279) | 6f1f35076dfa |
 | 2026-06-22 | release | v0.29.1 (#271) | af7a3fc04fae |
 | 2026-06-17 | — | align root pyproject.toml to 0.29.0 + de-PII a source comment (#262) | 6c0c1ea626c4 |
@@ -1117,7 +1120,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1048 |
+| Total commits | 1051 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1048 |
+| Human-authored commits | 1051 |
 

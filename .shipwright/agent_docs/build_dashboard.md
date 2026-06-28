@@ -1,11 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-06-28 11:26 UTC | Session: 1b1b2661-e12b-4c54-a36d-fd6bd039a8f2 | Run: iterate-2026-06-28-cc3-ar05-rtm-reconciled
+> Updated: 2026-06-28 12:48 UTC | Session: eb5e3975-6030-4b5a-9cca-fd8f5201a11f | Run: iterate-2026-06-28-sbom-honesty
 
-## Recent Changes (218 iterations)
+## Recent Changes (219 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
 | change | AR-05: RTM Reconciled? column + readability (consumes BP-2) | 4812/4812 |  | compliance | 2026-06-28 |
+| change | AR-04 SBOM data quality: dedupe by installed version from uv.lock, resolve licenses across all venvs, make the compliance line honest | 794/794 |  | compliance | 2026-06-28 |
 | change | Fix events_log lazy-import rationale (load_shared_lib isolation, not the removed cycle) + 2 repo_root docstring refs | 492/492 |  | docs | 2026-06-28 |
 | change | BP-2: per-FR fr_impact map on work_completed events lights the Control-Grade change-reconciliation dimension | 0/0 |  | compliance | 2026-06-28 |
 | change | Break 3 CodeQL py/cyclic-import cycles via neutral leaf extraction + fix 2 py/mixed-returns | 4719/4719 |  | tooling | 2026-06-28 |
@@ -225,7 +226,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-28 | Unit: 4812/4812 | Integration: 174/174 | Smoke: not_run | (iterate)
+Last run: 2026-06-28 | Unit: 794/794 | Smoke: skipped | (iterate)
 
 ## Pipeline
 
