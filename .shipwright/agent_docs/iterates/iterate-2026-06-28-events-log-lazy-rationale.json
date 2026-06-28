@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-28-events-log-lazy-rationale",
+  "date": "2026-06-28T08:01:31.013960Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/events-log-lazy-rationale",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-06-28-events-log-lazy-rationale"
+}

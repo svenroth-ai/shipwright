@@ -66,12 +66,18 @@ def resolve_main_repo_root(project_root: Path | str) -> Path | None:
     ``audit_adapters.load_shared_lib("events_log")``). New code should import it
     from ``lib.repo_root``.
 
-    The import is **lazy** (call-time) on purpose: a module-level
-    ``from lib.repo_root import resolve_main_repo_root`` would close the cycle
-    ``events_log → repo_root → worktree_isolation → events_log``
-    (``worktree_isolation`` imports ``events_log.EVENT_FILE``), raising
-    ``ImportError`` under any import order where ``repo_root`` /
-    ``worktree_isolation`` loads first.
+    The import is **lazy** (call-time) on purpose — and stays lazy even though the
+    old ``events_log → repo_root → worktree_isolation → events_log`` import cycle
+    was removed in ``iterate-2026-06-28-codeql-import-cycles`` (``repo_root`` now
+    depends on the leaf ``lib.git_base``, not ``worktree_isolation``). The
+    still-live reason is import-context isolation: the compliance Group-F detective
+    loads this module via ``audit_adapters.load_shared_lib("events_log")``, which
+    ``exec``s it from file under a sentinel name to keep the ``lib`` namespace OUT
+    of ``sys.modules`` (ADR-044 — otherwise shared's ``lib`` shadows the compliance
+    plugin's own ``lib``). A module-level ``from lib.repo_root import …`` would run
+    during that ``exec`` and bind/pollute ``sys.modules['lib']``, defeating that
+    isolation; deferring to call-time keeps the loader namespace-clean. So: do NOT
+    hoist this to module scope even though the cycle is gone.
     """
     from lib.repo_root import resolve_main_repo_root as _impl  # noqa: PLC0415
 

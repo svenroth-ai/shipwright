@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-28 07:10 UTC | Session: 9c7f94f2-7a49-4e59-accb-719250884744 | Run: iterate-2026-06-28-cc1-bp1-fr-mapping
+> Updated: 2026-06-28 08:01 UTC | Session: a9af39f8-f3c8-445b-a07a-86412ffe4704 | Run: iterate-2026-06-28-events-log-lazy-rationale
 
-## Recent Changes (215 iterations)
+## Recent Changes (216 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Fix events_log lazy-import rationale (load_shared_lib isolation, not the removed cycle) + 2 repo_root docstring refs | 492/492 |  | docs | 2026-06-28 |
 | change | Break 3 CodeQL py/cyclic-import cycles via neutral leaf extraction + fix 2 py/mixed-returns | 4719/4719 |  | tooling | 2026-06-28 |
 | change | CodeQL fixture-noise cleanup: paths-ignore test fixtures + explicit string-concat refactor | 4720/4720 |  | infra | 2026-06-28 |
 | change | compliance PreToolUse Bash gates: robust uv run --no-project invocation + fail-open guard | 3560/3560 |  | tooling | 2026-06-27 |
@@ -222,7 +223,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-28 | Unit: 736/736 | Integration: 169/169 | Smoke: not_run | (iterate)
+Last run: 2026-06-28 | Unit: 492/492 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
