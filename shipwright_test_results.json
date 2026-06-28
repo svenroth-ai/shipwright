@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-28-cc2-bp2-impact-producer",
+    "run_id": "iterate-2026-06-28-cc3-ar05-rtm-reconciled",
     "date": "2026-06-28",
     "unit": {
       "status": "passed",
-      "passed": 4799,
-      "total": 4799
+      "passed": 4812,
+      "total": 4812
     },
     "integration": {
       "status": "passed",
@@ -23,69 +23,87 @@
       "total": 0
     },
     "design_fidelity": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "smoke": {
       "status": "not_run"
     },
+    "degraded": [],
     "surface_verification": {
       "surface": "none",
+      "runner": "",
       "exit_code": 0,
-      "tests_run": 4973,
-      "justification": "BP-2 is a framework/library change: a per-FR fr_impact map on the work_completed event wire-format (record_event + finalize), a tolerant WorkEvent reader, a new compliance reconciliation helper, and the Control-Grade adapter lighting the change-reconciliation dimension. No product web/api/cli/UI/store surface is introduced or changed; the compliance dashboard/RTM are static tracked .md and the WebUI is unaffected. Verified empirically against the real event log: reconciliation measurable=True, 4 behavior-touched FRs, 0 unreconciled, grade holds A 100 (dimension n/a->live). Full suites green: compliance 765, shared 3598, iterate 436, integration 174; pinned-ruff clean; anti-ratchet 0 ratchets / 0 new crossings."
+      "tests_run": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-06-28-cc3-ar05-rtm-reconciled/surface_verification.json",
+      "timestamp": "2026-06-28T11:23:06.879Z",
+      "justification": "cc3/AR-05 is a compliance-reporting/library change: rtm_generator gains a per-FR Reconciled? column + an 'FRs needing re-verification' summary subsection driven by the shared BP-2 _reconciliation helper, plus readability fixes (full FR titles, clickable evt- evidence, column legend, Last Verified->Last tested) and removal of the age-based stale clause; cohesive helpers extracted to a new leaf module for anti-ratchet. No product web/api/cli/UI/store surface changes; the RTM is a static tracked .md. Verified empirically against the real event log: the RTM Reconciled? column (4 check, 0 warn, 10 dash) is byte-identical to the Control-Grade reconciliation dimension (4 behavior-touched, 0 unreconciled) - both read the one helper. Full suites green: compliance 780, shared 3596, iterate 436, integration 174; pinned-ruff clean; anti-ratchet 0 ratchets."
     },
-    "degraded": [],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "normalize_fr_impact validates+normalizes the per-FR map (lowercase/trim) and raises on malformed structure (non-dict, unknown impact, blank/non-str key, non-str value)",
+          "behavior": "Reconciled? column renders the helper's per-FR status (check / needs-re-verification / dash)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_fr_classification.py::TestNormalizeFrImpact (8)"
+          "evidence": "test_rtm_reconciled_column.py::TestReconciledColumn (reverified/unverified/not-touched) PASSED"
         },
         {
-          "behavior": "record_event CLI/build_event writes fr_impact, round-trips write->read, rejects invalid value/JSON, and still passes the ADR-059 FR-gate with FR linkage",
+          "behavior": "Reconciled? fires only on touched-without-re-verify, never on age",
           "disposition": "tested",
-          "evidence": "shared/tests/test_fr_impact_roundtrip.py::TestRecordEventFrImpact (5)"
+          "evidence": "TestReconciledColumn::test_age_alone_never_flags + TestRtmCoverageSummaryRewrite::test_age_alone_does_not_list_a_reverified_change PASSED"
         },
         {
-          "behavior": "finalize_iterate F5b path carries+normalizes fr_impact and FAILS CLOSED (FinalizeGateError) on a malformed map, writing nothing",
+          "behavior": "RTM Reconciled? column agrees with the Control-Grade reconciliation dimension (one shared helper)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_fr_impact_roundtrip.py::TestFinalizeFrImpact (2)"
+          "category": "integration",
+          "evidence": "TestColumnAgreesWithHelper::test_per_fr_status_matches_compute_reconciliation PASSED + real-event-log probe (RTM 4 check/0 warn/10 dash == grade 4 touched/0 unreconciled)"
         },
         {
-          "behavior": "WorkEvent.from_dict parses fr_impact and tolerates legacy/null/garbage (->{}), stripping+lowercasing values",
+          "behavior": "Age-based '>14d stale verification' clause removed; reconciliation-driven 'FRs needing re-verification' subsection added",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_reconciliation.py::TestWorkEventFrImpact (4)"
+          "evidence": "TestNeedsReverificationSection + TestRtmCoverageSummaryRewrite::test_frs_needing_reverification_section PASSED"
         },
         {
-          "behavior": "compute_reconciliation: touched-without-re-verify (age-neutral), spec_impact fallback for legacy events, per-FR granularity, doc-only never flagged, malformed ts skipped",
+          "behavior": "'Last Verified' column renamed to neutral 'Last tested'",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_reconciliation.py::TestComputeReconciliation (10)"
+          "evidence": "TestReconciledColumn::test_header_renamed_and_column_added PASSED"
         },
         {
-          "behavior": "build_grade_inputs lights reconciliation: measurable=bool(behavior-touched), counts filtered to declared requirements, agrees with the helper; n/a when no reqs or no behavior touches",
+          "behavior": "evt- ids clickable, linked to a Verification Timeline anchor; malformed ids stay plain text",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_reconciliation.py::TestBuildGradeInputsReconciliation (4)"
+          "evidence": "TestReadability::test_evt_id_links_to_timeline_anchor + test_malformed_evt_id_not_linked PASSED"
         },
         {
-          "behavior": "guide.md Control-Grade block documents fr_impact + the reconciliation dimension going n/a->live",
-          "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "documentation prose accuracy is verified by reading, not an automated assertion (guide.md is bloat-exempt and content-untested)"
+          "behavior": "Full FR titles (no 60-char truncation) in the coverage table",
+          "disposition": "tested",
+          "evidence": "TestReadability::test_full_fr_title_not_truncated PASSED"
+        },
+        {
+          "behavior": "Column legend decodes Tests / Last tested / Reconciled?",
+          "disposition": "tested",
+          "evidence": "TestReadability::test_legend_decodes_columns PASSED"
+        },
+        {
+          "behavior": "Reconciled? glyph map keys can't drift from the helper's status constants",
+          "disposition": "tested",
+          "evidence": "TestReconciledMarkNoDrift::test_keys_match_reconciliation_constants PASSED"
+        },
+        {
+          "behavior": "Minimal-env fallback: helper unimportable degrades the column to '—', never crashes the render",
+          "disposition": "tested",
+          "evidence": "TestNullReconciliationFallback (null reads untouched; safe wrapper returns usable object) PASSED"
         }
       ],
       "counts": {
-        "testable": 6,
-        "tested": 6,
-        "untestable": 1,
+        "testable": 10,
+        "tested": 10,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 5,
-        "covered_acs": 5
+        "acs": 4,
+        "covered_acs": 4
       }
     }
   }

@@ -22,9 +22,21 @@ from __future__ import annotations
 
 import re
 import sys
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+# cc3 (AR-05) reconciliation-rendering helpers live in a sibling leaf module so
+# this grandfathered file stays under its anti-ratchet ceiling. The module is
+# stdlib-only at import time (the BP-2 helper is imported lazily inside it), so
+# importing it here is cheap and cycle-free.
+from scripts.lib._rtm_reconciliation_render import (
+    _RECONCILED_MARK,
+    _compute_reconciliation_safe,
+    _coverage_table_legend,
+    _evt_anchor_ref,
+    _render_needs_reverification_section,
+)
 
 # Cross-cutting markdown helper lives at shared/scripts/markdown_table.py
 # (outside the `lib/` namespace per ADR-045 so it can be imported here
@@ -38,11 +50,6 @@ from markdown_table import escape_cell  # noqa: E402
 if TYPE_CHECKING:
     from scripts.lib.data_collector import ComplianceData, SectionInfo, WorkEvent
 
-
-# Iterate B.4 (ADR-058): the "stale verification" coverage section
-# flags FRs whose last verification is older than this window. 14
-# days mirrors the artifact-polish plan B.4 spec.
-_STALE_VERIFICATION_DAYS = 14
 
 # Where the triage inbox lives relative to the RTM's own output
 # directory (.shipwright/compliance/). The aggregator stamps stable
@@ -400,28 +407,45 @@ def _requirements_coverage_events(data: ComplianceData) -> list[str]:
     # below overlays them onto the per-row Status cell.
     open_triage = _open_triage_by_fr(data.project_root)
 
+    # cc3 (AR-05): the per-FR "Reconciled?" status comes from the SAME BP-2
+    # helper the Control-Grade reconciliation dimension reads
+    # (_control_block.build_grade_inputs), so the grade and this column can
+    # never disagree. Reconciliation keys on touched-without-re-verify, never
+    # on age. `_compute_reconciliation_safe` lazy-imports the helper so a
+    # minimal env degrades to "—" instead of crashing.
+    rec = _compute_reconciliation_safe(data.work_events)
+
     lines = [
         "## Requirements Coverage",
         "",
-        "| Requirement | Title | Priority | Verified By | Tests | Last Verified | Status |",
-        "|-------------|-------|----------|-------------|-------|---------------|--------|",
+        "| Requirement | Title | Priority | Verified By | Tests | Last tested "
+        "| Reconciled? | Status |",
+        "|-------------|-------|----------|-------------|-------|-------------"
+        "|-------------|--------|",
     ]
 
     for req in data.requirements:
         anchor = _make_anchor(req.id)
         req_link = f"[{req.id}](../../{req.spec_path}#{anchor})"
-        display_text = req.text[:60] + ("..." if len(req.text) > 60 else "")
+        # cc3 (AR-05): full FR title — the 60-char truncation hid the
+        # requirement text the matrix exists to trace. `escape_cell` keeps a
+        # pipe / newline in a long title from breaking the row.
+        display_text = req.text
 
         events = fr_events.get(req.id, [])
         if events:
             # Verified-by lists ALL work events that touched the FR (section
             # names for build, event IDs for iterate) — "what work happened".
+            # cc3 (AR-05): a canonical `evt-` iterate id links to its row in
+            # the Verification Timeline below; build section names and
+            # non-canonical ids stay plain text.
             refs = []
             for we in events:
                 if we.source == "build" and we.section:
                     refs.append(we.section)
                 else:
-                    refs.append(we.id)
+                    frag = _evt_anchor_ref(we.id)
+                    refs.append(f"[{we.id}]({frag})" if frag else we.id)
             verified_cell = ", ".join(refs[:4])
             if len(refs) > 4:
                 verified_cell += f" +{len(refs) - 4}"
@@ -446,10 +470,12 @@ def _requirements_coverage_events(data: ComplianceData) -> list[str]:
                     if first_tests != last_tests else last_tests
                 )
 
-                # "Last verified" = the latest event that actually ran tests.
+                # "Last tested" = the latest event that actually ran tests.
+                # Age is informational, not a penalty (cc3 AR-05) — staleness
+                # is now a reconciliation signal, not a date threshold.
                 last_ts = latest.timestamp[:10]
                 source_tag = "iter" if latest.source == "iterate" else "build"
-                last_verified = f"{last_ts} ({source_tag})"
+                last_tested = f"{last_ts} ({source_tag})"
 
                 gap = latest.tests_total - latest.tests_passed
                 baseline = data.baseline_failure_count
@@ -466,12 +492,12 @@ def _requirements_coverage_events(data: ComplianceData) -> list[str]:
             else:
                 # Work touched the FR but no event recorded a test count.
                 tests_cell = "—"
-                last_verified = "—"
+                last_tested = "—"
                 status = "NO TESTS"
         else:
             verified_cell = "—"
             tests_cell = "—"
-            last_verified = "—"
+            last_tested = "—"
             status = "NOT VERIFIED"
 
         # B.4 deep-link overlay — an open triage item always wins over
@@ -485,13 +511,16 @@ def _requirements_coverage_events(data: ComplianceData) -> list[str]:
             if rendered:
                 status = rendered
 
+        reconciled_cell = _RECONCILED_MARK[rec.status(req.id)]
+
         lines.append(
             f"| {escape_cell(req_link)} | {escape_cell(display_text)} | {req.priority} "
             f"| {escape_cell(verified_cell)} | {escape_cell(tests_cell)} "
-            f"| {escape_cell(last_verified)} | {status} |"
+            f"| {escape_cell(last_tested)} | {reconciled_cell} | {status} |"
         )
 
     lines.append("")
+    lines.extend(_coverage_table_legend())
     return lines
 
 
@@ -509,6 +538,13 @@ def _verification_timeline(data: ComplianceData) -> list[str]:
 
     for we in data.work_events:
         name = we.section if we.source == "build" else (we.description or we.id)
+        # cc3 (AR-05): anchor canonical iterate `evt-` ids so the Requirements
+        # Coverage "Verified By" links resolve to this row. The anchor tag is
+        # prepended raw (escape_cell would mangle it, and it carries no pipe).
+        frag = None if we.source == "build" else _evt_anchor_ref(we.id)
+        event_cell = (
+            f'<a id="{we.id}"></a>{escape_cell(name)}' if frag else escape_cell(name)
+        )
         source = we.source
         # Normalize the Type token so a leaked free-text `intent` (or an adopted
         # repo's git conventional-commit type) never lands in the Type column.
@@ -521,7 +557,7 @@ def _verification_timeline(data: ComplianceData) -> list[str]:
         date = we.timestamp[:10]
 
         lines.append(
-            f"| {escape_cell(name)} | {escape_cell(source)} | {escape_cell(event_type)} "
+            f"| {event_cell} | {escape_cell(source)} | {escape_cell(event_type)} "
             f"| {escape_cell(frs)} | {escape_cell(tests)} | {escape_cell(commit)} "
             f"| {escape_cell(date)} |"
         )
@@ -537,9 +573,9 @@ def _coverage_summary_events(data: ComplianceData) -> list[str]:
     operator-actionable sections answering three solo-dev questions:
 
     1. Which FRs don't have tests yet? → ``### FRs without tests``
-    2. Which FRs have stale verification (> 14 days OR new iterate
-       touched FR without a test_run)? → ``### FRs with stale
-       verification``
+    2. Which behavior-affected FRs await re-verification? → ``### FRs
+       needing re-verification`` (cc3/AR-05: touched-without-re-verify,
+       **never age** — the old > 14-day stale clause is gone).
     3. Which FRs have active regressions (open triage items)? →
        ``### FRs with open triage items``
 
@@ -604,8 +640,13 @@ def _coverage_summary_events(data: ComplianceData) -> list[str]:
     no_tests = _frs_without_tests(data.requirements, fr_events_map)
     lines.extend(_render_no_tests_section(no_tests))
 
-    stale = _frs_with_stale_verification(data.requirements, fr_events_map, data.test_runs)
-    lines.extend(_render_stale_section(stale))
+    # cc3 (AR-05): behavior-affected FRs not re-verified since their last
+    # change — the SAME reconciliation helper the Control-Grade dimension reads,
+    # so the summary and the grade agree. Filtered to declared requirements
+    # exactly as ``build_grade_inputs`` filters its sets. Age is never consulted.
+    rec = _compute_reconciliation_safe(data.work_events)
+    needs_reverify = [r for r in data.requirements if r.id in rec.unreconciled]
+    lines.extend(_render_needs_reverification_section(needs_reverify, fr_events_map))
 
     open_triage = _open_triage_by_fr(data.project_root)
     open_fr_items = _frs_with_open_triage(data.requirements, open_triage)
@@ -624,8 +665,8 @@ def _frs_without_tests(
 def _parse_iso_ts(ts: str) -> datetime | None:
     """Parse an ISO-8601 timestamp string into an aware datetime.
 
-    Returns ``None`` on malformed input. Used by the stale-verification
-    detector so a single corrupt timestamp doesn't crash the whole
+    Returns ``None`` on malformed input. Used by the latest-tested-event
+    selectors so a single corrupt timestamp doesn't crash the whole
     RTM render. Reviewer-flagged OpenAI-L6 / Gemini-M4: parse failures
     raise a `warnings.warn` so operators see them in test output even
     though the row is skipped.
@@ -641,8 +682,7 @@ def _parse_iso_ts(ts: str) -> datetime | None:
 def _latest_tested_event(tested):
     """Return the event with the max *parsed* timestamp from ``tested``.
 
-    Mirrors the robustness of ``_frs_with_stale_verification`` (reviewer-flagged
-    code-review-M2): list order is an unreliable proxy for "latest" because
+    Robust against unreliable list order (reviewer-flagged code-review-M2):
     ``event_amended`` rewrites + multi-machine usage break append order. Events
     whose timestamp won't parse are excluded from the ``max()``; if NONE parse
     we fall back to list order. Callers pass only events with
@@ -653,72 +693,6 @@ def _latest_tested_event(tested):
     if parseable:
         return max(parseable, key=lambda p: p[1])[0]
     return tested[-1]
-
-
-def _reference_now(work_events) -> datetime:
-    """Pick the "now" timestamp for stale-verification math.
-
-    Reviewer-flagged Gemini-H1: anchoring to ``datetime.now()`` makes
-    every RTM regeneration non-deterministic (the same event log
-    produces different output on different days). Anchor instead to
-    the latest work_completed event's timestamp — regeneration is
-    deterministic for a given event log, and the staleness window
-    advances only when the operator records new work. Falls back to
-    ``datetime.now()`` only when no events exist (greenfield project
-    pre-first-iterate).
-    """
-    candidates: list[datetime] = []
-    for we in work_events:
-        parsed = _parse_iso_ts(we.timestamp)
-        if parsed is not None:
-            candidates.append(parsed)
-    if candidates:
-        return max(candidates)
-    return datetime.now(timezone.utc)
-
-
-def _frs_with_stale_verification(
-    requirements, fr_events_map: dict[str, list], test_runs,
-    *, reference_now: datetime | None = None,
-) -> list[tuple]:
-    """FRs whose last verification is older than 14 days.
-
-    "Verification" = the latest work_completed event referencing the FR.
-    No events → caught by ``_frs_without_tests`` instead. Returns a
-    list of ``(req, days_old, last_event)`` tuples sorted oldest-first.
-
-    ``reference_now`` defaults to the latest event timestamp via
-    ``_reference_now`` (deterministic regeneration); callers may
-    override for testing.
-    """
-    if reference_now is None:
-        # Flatten events for the reference computation.
-        all_events = [e for evs in fr_events_map.values() for e in evs]
-        reference_now = _reference_now(all_events)
-    out: list[tuple] = []
-    for req in requirements:
-        events = fr_events_map.get(req.id) or []
-        if not events:
-            continue
-        # Reviewer-flagged code-review-M2: pick the event with the
-        # maximum *parsed* timestamp, not list[-1]. The event log is
-        # append-only and usually chronological, but `event_amended`
-        # rewrites + multi-machine usage make list order an unreliable
-        # proxy. Skip events whose timestamp won't parse — they can't
-        # contribute to "latest".
-        parsed = [
-            (e, _parse_iso_ts(e.timestamp))
-            for e in events
-        ]
-        parsed = [(e, dt) for e, dt in parsed if dt is not None]
-        if not parsed:
-            continue
-        latest, dt = max(parsed, key=lambda p: p[1])
-        days = (reference_now - dt).days
-        if days > _STALE_VERIFICATION_DAYS:
-            out.append((req, days, latest))
-    out.sort(key=lambda r: -r[1])
-    return out
 
 
 def _frs_with_open_triage(requirements, open_triage: dict[str, list]) -> list[tuple]:
@@ -739,23 +713,6 @@ def _render_no_tests_section(no_tests) -> list[str]:
         lines.append(
             f"- [{req.id}](../../{req.spec_path}) ({req.priority}): "
             f"{req.text[:80]}"
-        )
-    lines.append("")
-    return lines
-
-
-def _render_stale_section(stale) -> list[str]:
-    if not stale:
-        return []
-    lines = [
-        f"### FRs with stale verification (> {_STALE_VERIFICATION_DAYS} days)",
-        "",
-    ]
-    for req, days, latest in stale:
-        ref = latest.section if latest.source == "build" and latest.section else latest.id
-        lines.append(
-            f"- [{req.id}](../../{req.spec_path}) — last verified "
-            f"{days}d ago by `{ref}` ({latest.timestamp[:10]})"
         )
     lines.append("")
     return lines

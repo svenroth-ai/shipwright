@@ -373,34 +373,36 @@ class TestRtmCoverageSummaryRewrite:
         no_tests_block = result.split("### FRs without tests")[1].split("###")[0]
         assert "FR-01.01" not in no_tests_block
 
-    def test_frs_with_stale_verification_section(self, tmp_path: Path):
-        """Reference "now" = latest event timestamp (Gemini-H1 determinism fix)."""
+    def test_frs_needing_reverification_section(self, tmp_path: Path):
+        """cc3 (AR-05): the age-based stale clause is replaced by a
+        reconciliation-driven section — a behavior change without a later test
+        run is listed; a re-verified behavior change is not."""
         data = ComplianceData(project_root=tmp_path, timestamp="2026-05-21T00:00:00Z")
         data.requirements = [
-            RequirementInfo(id="FR-01.01", text="Stale FR", priority="Must", split="01-auth"),
-            RequirementInfo(id="FR-01.02", text="Recent FR", priority="Must", split="01-auth"),
+            RequirementInfo(id="FR-01.01", text="Unreconciled FR", priority="Must", split="01-auth"),
+            RequirementInfo(id="FR-01.02", text="Reconciled FR", priority="Must", split="01-auth"),
         ]
-        # FR-01.01 last verified 2026-04-15. FR-01.02 last verified
-        # 2026-05-21 (35 days later). Reference-now = max event ts =
-        # 2026-05-21. FR-01.01 is 35 days behind → stale.
+        # FR-01.01: behavior-modified, never tested → needs re-verification.
+        # FR-01.02: behavior-modified AND tested in the same event → reconciled.
         data.work_events = [
             WorkEvent(
-                id="ev-old", timestamp="2026-04-15T10:00:00Z", source="iterate",
-                description="login", tests_passed=5, tests_total=5,
-                affected_frs=["FR-01.01"],
+                id="evt-01010101", timestamp="2026-04-15T10:00:00Z", source="iterate",
+                description="modify login", tests_passed=0, tests_total=0,
+                affected_frs=["FR-01.01"], fr_impact={"FR-01.01": "modify"},
             ),
             WorkEvent(
-                id="ev-fresh", timestamp="2026-05-21T10:00:00Z", source="iterate",
-                description="profile", tests_passed=5, tests_total=5,
-                affected_frs=["FR-01.02"],
+                id="evt-02020202", timestamp="2026-05-21T10:00:00Z", source="iterate",
+                description="modify profile", tests_passed=5, tests_total=5,
+                affected_frs=["FR-01.02"], fr_impact={"FR-01.02": "modify"},
             ),
         ]
         result = generate(data)
-        assert "### FRs with stale verification" in result
-        stale_block = result.split("### FRs with stale verification")[1].split("###")[0]
-        assert "FR-01.01" in stale_block
-        # FR-01.02 is the fresh one (matches the reference); not stale.
-        assert "FR-01.02" not in stale_block
+        assert "### FRs needing re-verification" in result
+        block = result.split("### FRs needing re-verification")[1].split("###")[0]
+        assert "FR-01.01" in block
+        assert "FR-01.02" not in block
+        # The old age-based clause is gone for good.
+        assert "stale verification" not in result
 
     def test_frs_with_open_triage_section(self, tmp_path: Path):
         data = self._make_multi_fr_data(tmp_path)
@@ -427,36 +429,31 @@ class TestRtmCoverageSummaryRewrite:
         # are absent (no work for the operator).
         assert "## Coverage Summary" in result
         assert "### FRs without tests" not in result
-        assert "### FRs with stale verification" not in result
+        assert "### FRs needing re-verification" not in result
         assert "### FRs with open triage items" not in result
 
-    def test_recent_verification_not_stale(self, tmp_path: Path):
-        """An FR verified within 14 days of latest event is NOT listed as stale."""
+    def test_age_alone_does_not_list_a_reverified_change(self, tmp_path: Path):
+        """cc3 (AR-05): age is never the signal. A very old behavior change
+        that WAS re-verified is NOT listed (the old > 14-day stale clause
+        would have flagged it)."""
         data = ComplianceData(project_root=tmp_path, timestamp="2026-05-21T00:00:00Z")
         data.requirements = [
-            RequirementInfo(id="FR-01.01", text="Fresh", priority="Must", split="01-auth"),
+            RequirementInfo(id="FR-01.01", text="Old but reconciled", priority="Must", split="01-auth"),
         ]
-        # Two events 3 days apart — second is the reference "now",
-        # first is well within the 14-day window.
+        # A 2020 behavior change, tested in the same event → reconciled forever.
         data.work_events = [
             WorkEvent(
-                id="ev-1", timestamp="2026-05-18T10:00:00Z", source="iterate",
-                description="login", tests_passed=5, tests_total=5,
-                affected_frs=["FR-01.01"],
-            ),
-            WorkEvent(
-                id="ev-2", timestamp="2026-05-21T10:00:00Z", source="iterate",
-                description="login follow-up", tests_passed=5, tests_total=5,
-                affected_frs=["FR-01.01"],
+                id="evt-20200101", timestamp="2020-01-01T10:00:00Z", source="iterate",
+                description="ancient but verified", tests_passed=5, tests_total=5,
+                affected_frs=["FR-01.01"], fr_impact={"FR-01.01": "modify"},
             ),
         ]
         result = generate(data)
-        assert "### FRs with stale verification" not in result
+        assert "### FRs needing re-verification" not in result
 
     def test_regeneration_is_deterministic(self, tmp_path: Path):
-        """Gemini-H1: two regenerations against the same event log produce
-        byte-identical output (the stale window is anchored to the event
-        log's latest timestamp, not wall-clock)."""
+        """Two regenerations against the same event log produce byte-identical
+        output (rendering is a pure function of the event log)."""
         data = ComplianceData(project_root=tmp_path, timestamp="2026-05-21T00:00:00Z")
         data.requirements = [
             RequirementInfo(id="FR-01.01", text="Stale", priority="Must", split="01-auth"),
@@ -479,32 +476,31 @@ class TestRtmCoverageSummaryRewrite:
         assert first == second
 
     def test_iso_timestamp_with_plus_0000_suffix_accepted(self, tmp_path: Path):
-        """Code-review-M5: AC-9 accepts both `Z` and `+00:00` suffixes."""
+        """Both `Z` and `+00:00` suffixes parse in the reconciliation path."""
         data = ComplianceData(project_root=tmp_path, timestamp="2026-05-21T00:00:00Z")
         data.requirements = [
-            RequirementInfo(id="FR-01.01", text="Stale", priority="Must", split="01-auth"),
-            RequirementInfo(id="FR-01.02", text="Fresh", priority="Must", split="01-auth"),
+            RequirementInfo(id="FR-01.01", text="Unreconciled", priority="Must", split="01-auth"),
+            RequirementInfo(id="FR-01.02", text="Reconciled", priority="Must", split="01-auth"),
         ]
-        # First event ends with `+00:00` (the canonical Python isoformat),
-        # second with `Z` (the JSON wire format). Both must parse.
+        # FR-01.01 behavior-touched with the `+00:00` suffix, untested → needs
+        # re-verification. FR-01.02 behavior-touched + tested with `Z` →
+        # reconciled. Both suffixes must parse for the section to be correct.
         data.work_events = [
             WorkEvent(
-                id="ev-old", timestamp="2026-04-15T10:00:00+00:00", source="iterate",
-                description="x", tests_passed=5, tests_total=5,
-                affected_frs=["FR-01.01"],
+                id="evt-aaaa0000", timestamp="2026-04-15T10:00:00+00:00", source="iterate",
+                description="x", tests_passed=0, tests_total=0,
+                affected_frs=["FR-01.01"], fr_impact={"FR-01.01": "modify"},
             ),
             WorkEvent(
-                id="ev-new", timestamp="2026-05-21T10:00:00Z", source="iterate",
+                id="evt-bbbb0000", timestamp="2026-05-21T10:00:00Z", source="iterate",
                 description="y", tests_passed=5, tests_total=5,
-                affected_frs=["FR-01.02"],
+                affected_frs=["FR-01.02"], fr_impact={"FR-01.02": "modify"},
             ),
         ]
         result = generate(data)
-        # The mixed-suffix events parsed successfully — FR-01.01 lands
-        # in the stale subsection, FR-01.02 does not.
-        stale_block = result.split("### FRs with stale verification")[1].split("###")[0]
-        assert "FR-01.01" in stale_block
-        assert "FR-01.02" not in stale_block
+        block = result.split("### FRs needing re-verification")[1].split("###")[0]
+        assert "FR-01.01" in block
+        assert "FR-01.02" not in block
 
     def test_malformed_timestamp_warns_and_skips(self, tmp_path: Path):
         """OpenAI-L6 / Gemini-M4: corrupt timestamps emit a warning, row skipped."""
