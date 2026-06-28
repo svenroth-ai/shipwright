@@ -22,6 +22,20 @@ from __future__ import annotations
 import re
 from datetime import datetime
 
+# Public surface re-exported by ``rtm_generator``. Declaring it also tells
+# CodeQL's py/unused-global-variable that ``_RECONCILED_MARK`` (read across the
+# module boundary, invisible to intra-file analysis) is intentionally exported.
+__all__ = [
+    "_EVENT_ID_RE",
+    "_RECONCILED_MARK",
+    "_NullReconciliation",
+    "_compute_reconciliation_safe",
+    "_coverage_table_legend",
+    "_evt_anchor_ref",
+    "_latest_event_for",
+    "_render_needs_reverification_section",
+]
+
 # Work-event ids follow the `evt-<hex>` shape (see
 # `shared/scripts/tools/record_event.py:_generate_id`). cc3 (AR-05) makes the
 # "Verified By" iterate refs clickable: each `evt-` id links to a matching
@@ -84,15 +98,18 @@ def _compute_reconciliation_safe(work_events):
 
 def _coverage_table_legend() -> list[str]:
     """Decode the coverage table's terse columns (cc3 AR-05)."""
-    return [
+    # Built as a parenthesized expression (not adjacent literals inside the list)
+    # so CodeQL's py/implicit-string-concatenation-in-list doesn't read it as a
+    # missing comma.
+    legend = (
         "> **Legend** — *Tests*: `passed/total` of the latest event that ran "
         "tests; `first → latest` shows progression across tested runs. "
         "*Last tested*: date of that event (`iter` / `build` source); age is "
         "informational, **not a penalty**. *Reconciled?*: ✅ behavior-affected "
         "FR re-verified since its last change · ⚠️ needs re-verification "
-        "(behavior changed, not yet re-tested) · — not behavior-touched.",
-        "",
-    ]
+        "(behavior changed, not yet re-tested) · — not behavior-touched."
+    )
+    return [legend, ""]
 
 
 def _parse_ts(ts):

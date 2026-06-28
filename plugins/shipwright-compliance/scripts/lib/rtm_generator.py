@@ -418,10 +418,8 @@ def _requirements_coverage_events(data: ComplianceData) -> list[str]:
     lines = [
         "## Requirements Coverage",
         "",
-        "| Requirement | Title | Priority | Verified By | Tests | Last tested "
-        "| Reconciled? | Status |",
-        "|-------------|-------|----------|-------------|-------|-------------"
-        "|-------------|--------|",
+        "| Requirement | Title | Priority | Verified By | Tests | Last tested | Reconciled? | Status |",
+        "|-------------|-------|----------|-------------|-------|-------------|-------------|--------|",
     ]
 
     for req in data.requirements:
