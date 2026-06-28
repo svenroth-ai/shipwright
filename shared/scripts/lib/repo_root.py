@@ -3,12 +3,12 @@
 Thematic home for "resolve the MAIN repo's working-tree root, git-worktree-aware,
 without bricking the caller" helpers. It hosts two. They share an intent but have
 **deliberately different failure contracts**, so a caller picks the one whose
-contract matches (the strict, raising variant is
-``worktree_isolation.main_repo_root``):
+contract matches (the strict, raising variant is ``lib.git_base.main_repo_root``,
+also re-exported as ``worktree_isolation.main_repo_root`` for back-compat):
 
 - :func:`main_repo_root_or` — returns a ``Path`` ALWAYS; on any git failure it
   degrades to ``fallback`` (default ``start``). A thin adapter over
-  ``worktree_isolation.main_repo_root`` for the hot-path bloat hooks
+  ``lib.git_base.main_repo_root`` for the hot-path bloat hooks
   (``check_file_size`` PostToolUse recorder + ``bloat_gate_on_stop``), which MUST
   key the marker / baseline / re-measure off the SAME canonical MAIN root — never
   ``Path.cwd()`` (a hook firing with cwd != repo-root would write the marker into a

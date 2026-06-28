@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-28-cc1-bp1-fr-mapping"
+run_id: "iterate-2026-06-28-events-log-lazy-rationale"
 phase: "iterate"
-reason: "F11 resolve DIRTY (main advanced)"
-timestamp: "2026-06-28T07:10:14.008342+00:00"
+reason: "iterate: events_log lazy-import rationale fix"
+timestamp: "2026-06-28T08:01:22.320966+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-28 07:10:14 UTC
+> Auto-generated 2026-06-28 08:01:22 UTC
 
 ## Session Info
 
-- **Session ID**: 9c7f94f2-7a49-4e59-accb-719250884744
-- **Timestamp**: 2026-06-28 07:10:14 UTC
-- **Reason**: F11 resolve DIRTY (main advanced)
+- **Session ID**: a9af39f8-f3c8-445b-a07a-86412ffe4704
+- **Timestamp**: 2026-06-28 08:01:22 UTC
+- **Reason**: iterate: events_log lazy-import rationale fix
 
 ## Last Iterate
 
@@ -28,8 +28,7 @@ timestamp: "2026-06-28T07:10:14.008342+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/cc1-bp1-fr-mapping
-- **Spec**: .shipwright/planning/iterate/2026-06-28-cc1-bp1-fr-mapping.md
+- **Branch**: iterate/events-log-lazy-rationale
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/cc1-bp1-fr-mapping
-- **Last Commit**: 7662c4d9 Merge remote-tracking branch 'origin/main' into iterate/cc1-bp1-fr-mapping
+- **Branch**: iterate/events-log-lazy-rationale
+- **Last Commit**: eb7bf10b feat(compliance): BP-1 FR-mapping — credit satisfied no-FR, behavior-aware gate, traced-% metric (#280)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-5ba214bd | work_completed | iterate (Fix events_log lazy-import rationale (load_shared_lib isolation, not the removed cycle) + 2 repo_root docstring refs) | 2026-06-28 |
 | evt-bc8ebee5 | work_completed | iterate (Break 3 CodeQL py/cyclic-import cycles via neutral leaf extraction + fix 2 py/mixed-returns) | 2026-06-28 |
 | evt-5d34869b | work_completed | iterate (CodeQL fixture-noise cleanup: paths-ignore test fixtures + explicit string-concat refactor) | 2026-06-28 |
 | evt-d50b793d | work_completed | iterate (compliance PreToolUse Bash gates: robust uv run --no-project invocation + fail-open guard) | 2026-06-27 |
 | evt-1ab9c3af | work_completed | iterate (BP-1: FR-mapping — traced-% metric + behavior-aware verifier + legacy backfill) | 2026-06-28 |
-| evt-64f7e287 | event_amended | — | 2026-06-28 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 215
-- **Last iterate**: change — Break 3 CodeQL py/cyclic-import cycles via neutral leaf extraction + fix 2 py/mixed-returns (2026-06-28)
+- **Total work events**: 216
+- **Last iterate**: change — Fix events_log lazy-import rationale (load_shared_lib isolation, not the removed cycle) + 2 repo_root docstring refs (2026-06-28)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

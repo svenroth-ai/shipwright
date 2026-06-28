@@ -1,0 +1,1 @@
+Corrected the events_log.resolve_main_repo_root lazy-import rationale (the cycle it cited was removed in #281; the live reason is load_shared_lib namespace isolation) and two repo_root docstring refs (main_repo_root now homes in lib.git_base) — comment/docstring only, no behavior change
