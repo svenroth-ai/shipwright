@@ -1,11 +1,3 @@
----
-canon_generated: true
-run_id: "iterate-2026-06-28-drop-timestamp-drift"
-phase: "iterate"
-reason: "iterate: drop timestamp-drift check"
-timestamp: "2026-06-28T12:34:00.983777+00:00"
----
-
 # Session Handoff
 
 > Auto-generated 2026-06-28 12:34:00 UTC
@@ -14,18 +6,18 @@ timestamp: "2026-06-28T12:34:00.983777+00:00"
 
 - **Session ID**: e6723b45-9aed-4208-8b66-4d4653da8543
 - **Timestamp**: 2026-06-28 12:34:00 UTC
-- **Reason**: iterate: drop timestamp-drift check
+- **Reason**: iterate completion: iterate-2026-06-28-drop-timestamp-drift
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-28-cc2-bp2-impact-producer
-- **Date**: 2026-06-28T08:49:20.842153Z
+- **Run ID**: iterate-2026-06-28-drop-timestamp-drift
+- **Date**: 2026-06-28T12:34:42.883837Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/cc2-bp2-impact-producer
-- **ADR**: iterate-2026-06-28-cc2-bp2-impact-producer
+- **Branch**: iterate/drop-timestamp-drift
+- **ADR**: iterate-2026-06-28-drop-timestamp-drift
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-28-cc2-bp2-impact-producer.md
+- **Spec**: .shipwright/planning/iterate/2026-06-28-drop-timestamp-drift.md
 
 ## Current Iterate Progress
 
@@ -34,11 +26,6 @@ timestamp: "2026-06-28T12:34:00.983777+00:00"
 - **Spec**: .shipwright/planning/iterate/2026-06-28-drop-timestamp-drift.md
 - **Complexity**: medium (diff-driven `cross_component`: `check_drift.py` matches
 - **External Review Marker**: missing
-
-### Mandatory replay on Resume
-
-Before dispatching to the handoff's Remaining phase, run these if missing:
-- Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
 
@@ -52,8 +39,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Git State
 
 - **Branch**: iterate/drop-timestamp-drift
-- **Last Commit**: 9941383a feat(compliance): per-FR fr_impact map lights the Control-Grade reconciliation dimension (cc2/BP-2) (#283)
-- **Uncommitted Changes**: Yes
+- **Last Commit**: cba4d380 refactor(hooks): drop mtime timestamp-drift detector from check_drift.py
+- **Uncommitted Changes**: None
 
 ## Config Files to Read
 
