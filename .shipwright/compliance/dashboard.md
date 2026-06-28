@@ -1,23 +1,23 @@
 # Compliance Dashboard
 
-Generated: 2026-06-28T06:18:50.409295+00:00
+Generated: 2026-06-28T07:10:14.008342+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
 ## ✅ Control Verdict
 
-> **Under full control.**
+> **Controlled, minor gaps. Primarily capped by requirement traceability.**
 
-### Control Grade: **A** (100/100) — Under full control.
+### Control Grade: **B** (88/100) — Controlled, minor gaps.
 
 | | Dimension | Signal | Anchor |
 |---|-----------|--------|--------|
-| ✅ | Requirement traceability | 14/14 FRs covered; 214/214 changes traced (FR-linked or classified no-FR) | DO-178C §11.9 / IEC 62304 / ALM RTM |
-| ✅ | Test health | latest full suite 4720/4720 (2026-06-28) | coverage gating (SonarQube 'Sonar Way') |
+| ⚠️ | Requirement traceability | 14/14 FRs covered; 35/214 changes FR-tagged | DO-178C §11.9 / IEC 62304 / ALM RTM |
+| ✅ | Test health | latest full suite 4719/4719 (2026-06-28) | coverage gating (SonarQube 'Sonar Way') |
 | ✅ | Change traceability | 214/214 changes linked to a commit, ADR or test run | SLSA provenance / OpenSSF Code-Review |
 | n/a | Change reconciliation | not measurable — needs per-change behavior-impact (BP-2) | ALM suspect-links + DO-178C/ISO 26262 re-verification |
 | n/a | Security | no trustworthy local scan (see CI security gate) | NIST SSDF (SP 800-218) / OWASP / OpenSSF |
-| ✅ | Size / maintainability discipline | ratchet delta -38 lines (net growth) | ISO 25010 maintainability / SonarQube |
+| ✅ | Size / maintainability discipline | ratchet delta -132 lines (net growth) | ISO 25010 maintainability / SonarQube |
 | ✅ | Dependency hygiene | 0 unresolved / 8 licenses; 0 copyleft | OWASP A06:2021 / OpenSSF Scorecard |
 
 Verified from: `shipwright_events.jsonl (214 events, 2026-05-02 → 2026-06-28)`
@@ -30,8 +30,7 @@ _Grade = importance-weighted average over the measurable dimensions (n/a exclude
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
 | Work events (iterate) | 214 changes | INFO |  |
-| Recent changes traced to an FR | 1/30 (3%) | WARN | FR-tagging dropped to 3% (last 30) vs 19% all-time — recent changes classified no-FR; see the Control Verdict traceability dimension |
-| All unit tests passing | 4720/4720 | PASS | +1 change(s) since last full suite |
+| All unit tests passing | 4719/4719 | PASS |  |
 | Architecture decisions | 235 ADRs | INFO |  |
 | Iterate tests passing | 135/214 iterations tested | WARN | 79 iterate(s) without tests — see test-evidence.md |
 | Dependencies | 8 packages | INFO |  |
@@ -39,7 +38,7 @@ _Grade = importance-weighted average over the measurable dimensions (n/a exclude
 | Triage open | 0 open | PASS |  |
 | Bloat over-limit | 128 | WARN | 128 file(s) past limit AND not ADR-justified — see shipwright_bloat_baseline.json |
 | Bloat in allowlist | 158 entries | INFO |  |
-| Bloat ratchet delta | -38 lines | PASS |  |
+| Bloat ratchet delta | -132 lines | PASS |  |
 
 ## Project Velocity
 

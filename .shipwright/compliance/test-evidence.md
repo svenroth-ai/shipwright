@@ -1,22 +1,22 @@
 # Test Evidence Report
 
-Generated: 2026-06-28T06:18:50.409295+00:00
+Generated: 2026-06-28T07:10:14.008342+00:00
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 214 |
-| Total unit tests (latest full suite) | 4720/4720 (2026-06-28) |
+| Total unit tests (latest full suite) | 4719/4719 (2026-06-28) |
 | New tests from iterations | +191 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | CodeQL fixture-noise cleanup: paths-ignore test fixtures + explicit string-concat refactor | iterate | unit | +0 | 4720/4720 | PASS | 2026-06-28 |
-| 2 | compliance PreToolUse Bash gates: robust uv run --no-project invocation + fail-open guard | iterate | unit | +0 | 3560/3560 | PASS | 2026-06-27 |
-| 3 | BP-1: FR-mapping — traced-% metric + behavior-aware verifier + legacy backfill | iterate | unit | +0 | 736/736 | PASS | 2026-06-28 |
+| 1 | Break 3 CodeQL py/cyclic-import cycles via neutral leaf extraction + fix 2 py/mixed-returns | iterate | unit | +0 | 4719/4719 | PASS | 2026-06-28 |
+| 2 | CodeQL fixture-noise cleanup: paths-ignore test fixtures + explicit string-concat refactor | iterate | unit | +0 | 4720/4720 | PASS | 2026-06-28 |
+| 3 | compliance PreToolUse Bash gates: robust uv run --no-project invocation + fail-open guard | iterate | unit | +0 | 3560/3560 | PASS | 2026-06-27 |
 | 4 | CodeQL security hardening: tailor the query suite via codeql-config.yml; root-fix genuine findings (file modes to 0o600, two ReDoS regexes, a loop-capture bug, a rollback-CLI else-guard); remove 13 dead module globals. | iterate | — | +0 | — | — | 2026-06-27 |
 | 5 | Control Grade scorer (lib/control_grade.py, in Anlehnung an OpenSSF Scorecard) + Control Verdict block atop the dashboard (AR-01); latest-full-suite resolver kills the 0/0 headline in dashboard + test-evidence (AR-02); inline consistency-audit summary replaces the dead gitignored audit-report.md link (AR-03). | iterate | unit | +0 | 720/720 | PASS | 2026-06-27 |
 | 6 | Add shared/tests/test_trivyignore_register.py enforcing that every .trivyignore.yaml accepted-risk entry is scoped (paths\|purls) + time-bounded (expired_at) + justified (statement); register optional (absent passes). Self-tested (rejects sloppy, accepts well-formed). | iterate | — | +0 | — | — | 2026-06-22 |
@@ -190,7 +190,7 @@ Generated: 2026-06-28T06:18:50.409295+00:00
 | 174 | deterministic render timestamps from max(event.ts) | iterate | unit | +34 | 34/34 | PASS | 2026-05-21 |
 | 175 | empirical-verification follow-ups: triage_add CLI + Full Suite Runs synthesis + path-canon ALLOWLIST | iterate | unit | +0 | 2621/2621 | PASS | 2026-05-21 |
 | 176 | VERIFICATION: bug+change-type — should pass | iterate | — | +0 | — | — | 2026-05-21 |
-| 177 | VERIFICATION artifact (leaked from the 2026-05-21 empirical-verification campaign; no real FR work) | iterate | — | +0 | — | — | 2026-05-21 |
+| 177 | VERIFICATION artifact (amended: leaked from 2026-05-21 empirical-verification campaign; no real FR work) — neutralized by iterate-2026-05-30-rtm-covered-ignore-untested-events | iterate | — | +0 | — | — | 2026-05-21 |
 | 178 | Artifact-based GitHub security producer for Triage Inbox (+ spec.md FR-01.14 update) | iterate | mixed | +0 | 122/122 | PASS | 2026-05-20 |
 | 179 | Artifact-based GitHub security producer for Triage Inbox | iterate | mixed | +0 | 122/122 | PASS | 2026-05-20 |
 | 180 | escape pipe and newline in markdown table cells | iterate | unit | +23 | 23/23 | PASS | 2026-05-20 |
@@ -260,9 +260,9 @@ Generated: 2026-06-28T06:18:50.409295+00:00
 | 25 | iterate | 420/423 | — | — | — | — | 2026-06-17 |
 | 26 | iterate | 139/139 | — | — | — | — | 2026-06-17 |
 | 27 | iterate | 720/720 | — | — | — | — | 2026-06-27 |
-| 28 | iterate | 736/736 | — | — | — | — | 2026-06-28 |
-| 29 | iterate | 3560/3560 | — | — | — | — | 2026-06-27 |
-| 30 | iterate | 4720/4720 | — | — | — | — | 2026-06-28 |
+| 28 | iterate | 3560/3560 | — | — | — | — | 2026-06-27 |
+| 29 | iterate | 4720/4720 | — | — | — | — | 2026-06-28 |
+| 30 | iterate | 4719/4719 | — | — | — | — | 2026-06-28 |
 
 ## Code Review Evidence
 

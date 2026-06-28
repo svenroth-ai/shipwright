@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-06-28T06:18:50.409295+00:00
-Total commits: 1045
+Generated: 2026-06-28T07:10:14.008342+00:00
+Total commits: 1044
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 297
-    "feat" : 276
+    "feat" : 275
     "chore" : 229
     "docs" : 141
     "refactor" : 62
@@ -322,11 +322,10 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 276 commits
+### Features (feat) — 275 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-28 | compliance | BP-1 FR-mapping — credit satisfied no-FR, behavior-aware gate, traced-% metric | e0a11777520d |
 | 2026-06-28 | compliance | Control Grade verdict block + latest-full-suite + inline audit (AR-01/02/03) (#277) | fdab00716d26 |
 | 2026-06-22 | security | add a Trivy accepted-risk register (.trivyignore.yaml) and accept the OTel medium (#273) | 64aef0de33b7 |
 | 2026-06-14 | iterate | repo-agnostic agent-doc entry-budget gate + doc cleanup (#252) | c7ec0a62e892 |
@@ -1114,7 +1113,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1045 |
+| Total commits | 1044 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1045 |
+| Human-authored commits | 1044 |
 

@@ -1,0 +1,124 @@
+"""Finding model + loaders + count helpers (phase-quality skill-compliance).
+
+The typed :class:`LoadedFinding`, the raw/actionable loaders, and the small
+status-count helpers live in their OWN leaf module so BOTH the orchestrator
+(:mod:`._aggregates`) and the Markdown renderers (:mod:`._dashboard_render`) can
+import them WITHOUT importing each other. That broke the
+``_aggregates -> _dashboard_render -> _aggregates`` import cycle (CodeQL
+``py/cyclic-import``). This module depends only on :mod:`._constants` (a leaf)
+and the stdlib, so it introduces no new edges.
+
+``_aggregates`` re-exports every name here, so existing
+``from ._aggregates import LoadedFinding`` (and the package ``__init__``) keep
+working unchanged.
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Iterable
+
+from ._constants import (
+    CATEGORIES,
+    FINDING_DIR,
+    STATUS_FAIL,
+    STATUS_PASS,
+    STATUS_SKIP,
+    STATUS_WARN,
+    is_sentinel_run,
+)
+
+
+@dataclass
+class LoadedFinding:
+    path: Path
+    phase: str
+    run_id: str
+    session_id: str
+    audited_at: str
+    source: str
+    payload: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def sort_key(self) -> tuple[str, float]:
+        return (self.audited_at, self.path.stat().st_mtime if self.path.exists() else 0.0)
+
+    @property
+    def is_sentinel(self) -> bool:
+        """Degenerate audit context (no resolvable run/session). Excluded from
+        rollup VIEWS via :func:`load_actionable_findings`; kept by raw
+        :func:`load_findings` + :func:`gc_old_findings`."""
+        return is_sentinel_run(self.run_id)
+
+
+def load_findings(project_root: Path) -> list[LoadedFinding]:
+    """Load every valid Finding-JSON under ``.shipwright/compliance/skill-compliance``.
+
+    Corrupt files are skipped with a stderr warning (plan § 4.13).
+
+    RAW / forensic loader — returns sentinel-run snapshots too. Any user-facing
+    or trigger-driving rollup MUST read :func:`load_actionable_findings` instead
+    (it drops degenerate ``run_id`` sentinels). A missing/``null`` ``run_id`` in
+    the JSON is normalised to ``"unknown"`` here, so it is already sentinel by the
+    time :func:`load_actionable_findings` filters. ``session_id`` is deliberately
+    NOT part of the sentinel test: a real ``run_id`` means the audit resolved a
+    real run context (from run-config / events) and its findings are actionable
+    regardless of whether the session id was set.
+    """
+    base = project_root / FINDING_DIR
+    if not base.is_dir():
+        return []
+    loaded: list[LoadedFinding] = []
+    for path in base.glob("*.json"):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as exc:
+            sys.stderr.write(
+                f"[audit_phase_quality] skipping corrupt finding {path}: {exc}\n"
+            )
+            continue
+        if not isinstance(data, dict):
+            continue
+        loaded.append(LoadedFinding(
+            path=path,
+            phase=data.get("phase") or "unknown",
+            run_id=data.get("run_id") or "unknown",
+            session_id=data.get("session_id") or "unknown",
+            audited_at=data.get("audited_at") or "",
+            source=data.get("source") or "unknown",
+            payload=data,
+        ))
+    loaded.sort(key=lambda f: f.sort_key, reverse=True)
+    return loaded
+
+
+def load_actionable_findings(project_root: Path) -> list[LoadedFinding]:
+    """:func:`load_findings` minus degenerate sentinel-run snapshots.
+
+    The rollup CONSUMERS (triage backlog, SessionStart digest, dashboard,
+    report) read THIS so a stale/degenerate ``run_id="unknown"`` audit — one
+    that ran with no resolvable run/session context — can't drive false
+    surfacing. Ordering (newest-first) and every other field are preserved; raw
+    :func:`load_findings` and :func:`gc_old_findings` still see the sentinels.
+    """
+    return [f for f in load_findings(project_root) if not f.is_sentinel]
+
+
+def count_by_status(findings: Iterable[dict[str, Any]]) -> dict[str, int]:
+    counts = {STATUS_PASS: 0, STATUS_FAIL: 0, STATUS_WARN: 0, STATUS_SKIP: 0}
+    for item in findings:
+        status = item.get("status") or STATUS_SKIP
+        if status in counts:
+            counts[status] += 1
+    return counts
+
+
+def _roll_up_counts(payload: dict[str, Any]) -> dict[str, int]:
+    total = {STATUS_PASS: 0, STATUS_FAIL: 0, STATUS_WARN: 0, STATUS_SKIP: 0}
+    for category in CATEGORIES:
+        for k, v in count_by_status(payload.get(category, [])).items():
+            total[k] += v
+    return total
