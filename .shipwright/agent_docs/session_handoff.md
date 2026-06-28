@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-28-grade-anchor-clarity"
+run_id: "iterate-2026-06-28-grade-anchor-maint-wording"
 phase: "iterate"
-reason: "F11 pre-merge refresh: iterate-2026-06-28-grade-anchor-clarity"
-timestamp: "2026-06-28T19:34:52.090773+00:00"
+reason: "iterate: maintainability anchor wording"
+timestamp: "2026-06-28T19:59:19.170941+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-28 19:34:52 UTC
+> Auto-generated 2026-06-28 19:59:19 UTC
 
 ## Session Info
 
 - **Session ID**: 1b1b2661-e12b-4c54-a36d-fd6bd039a8f2
-- **Timestamp**: 2026-06-28 19:34:52 UTC
-- **Reason**: F11 pre-merge refresh: iterate-2026-06-28-grade-anchor-clarity
+- **Timestamp**: 2026-06-28 19:59:19 UTC
+- **Reason**: iterate: maintainability anchor wording
 
 ## Last Iterate
 
@@ -28,7 +28,7 @@ timestamp: "2026-06-28T19:34:52.090773+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/grade-anchor-clarity
+- **Branch**: iterate/grade-anchor-maint-wording
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -47,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/grade-anchor-clarity
-- **Last Commit**: ed112d73 Merge remote-tracking branch 'origin/main' into iterate/grade-anchor-clarity
+- **Branch**: iterate/grade-anchor-maint-wording
+- **Last Commit**: 9a4dbec1 feat(compliance): plain-language, open-standard-only Control-Grade anchors + dimensions guide (#289)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-0bcce391 | work_completed | iterate (Control-Grade maintainability anchor describes the check (no unchecked code-size growth) instead of repeating the dimension label) | 2026-06-28 |
 | evt-2d2828bd | work_completed | iterate (Refresh ci-security.json + dashboard from the post-#272 clean CI scan (0 high/critical) -> Control Grade A 90 -> A 100/100.) | 2026-06-28 |
 | evt-75761dd3 | work_completed | iterate (Control-Grade anchors: plain-language + open-standard-only (drop SonarQube), English methodology note, guide dimensions table) | 2026-06-28 |
 | evt-a0fb4818 | work_completed | iterate (AR-05: RTM Reconciled? column + readability (consumes BP-2)) | 2026-06-28 |
 | evt-62cb4cbd | work_completed | iterate (Remove mtime-based timestamp-drift detector from check_drift.py; keep content-drift; legacy :timestamp triage items auto-resolve) | 2026-06-28 |
-| evt-07b1fe9c | work_completed | iterate (AR-10: ingest CI security posture (security.yml findings.json) into the compliance dashboard via a fail-soft producer + tracked public-safe ci-security.json; light the Control-Grade Security dimension; render a CI Security section.) | 2026-06-28 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 223
-- **Last iterate**: change — Refresh ci-security.json + dashboard from the post-#272 clean CI scan (0 high/critical) -> Control Grade A 90 -> A 100/100. (2026-06-28)
+- **Total work events**: 224
+- **Last iterate**: change — Control-Grade maintainability anchor describes the check (no unchecked code-size growth) instead of repeating the dimension label (2026-06-28)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-28-grade-anchor-maint-wording",
+  "date": "2026-06-28T19:59:34.944428Z",
+  "type": "change",
+  "complexity": "trivial",
+  "branch": "iterate/grade-anchor-maint-wording",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-06-28-grade-anchor-maint-wording"
+}

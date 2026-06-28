@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-28-grade-anchor-clarity",
+    "run_id": "iterate-2026-06-28-grade-anchor-maint-wording",
     "date": "2026-06-28",
     "unit": {
       "status": "passed",
-      "passed": 850,
-      "total": 850
+      "passed": 851,
+      "total": 851
     },
     "integration": {
       "status": "not_run",
@@ -36,45 +36,13 @@
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-28-grade-anchor-clarity/surface_verification.json",
+      "evidence_path": ".shipwright/runs/iterate-2026-06-28-grade-anchor-maint-wording/surface_verification.json",
       "timestamp": "2026-06-28T00:00:00Z",
-      "justification": "Compliance-reporting wording + docs change: the 7 Control-Grade dimension Anchors reworded to plain-language + open-standard-only (SonarQube/Sonar Way removed), German 'in Anlehnung an' -> English 'modeled on', plus a plain-language dimensions table in guide.md. No scorer logic touched; grade computation byte-identical. No product web/api/cli/UI surface. Verified: compliance suite 850 green; render probe on real data shows the 7 new anchors, no 'Sonar', no 'Anlehnung', 'modeled on' present; pinned-ruff clean."
+      "justification": "Trivial copy fix: the Size/maintainability Control-Grade dimension Anchor reworded from 'size/maintainability discipline (ISO/IEC 25010)' (a verbatim repeat of the dimension label) to 'no unchecked code-size growth (ISO/IEC 25010)' so the Anchor describes the actual check (bloat ratchet) instead of echoing the label; + a regression test that no anchor restates its label. No scorer change, no product surface. compliance suite 851 green, ruff clean."
     },
     "test_completeness": {
-      "status": "complete",
-      "behaviors": [
-        {
-          "behavior": "All 7 Control-Grade anchors read as plain-hint + open-standard (more 'speaking')",
-          "disposition": "tested",
-          "evidence": "test_control_grade.py::TestAnchorClarity::test_every_anchor_names_an_open_standard PASSED + render probe on real data shows the 7 new anchors"
-        },
-        {
-          "behavior": "No commercial-vendor trademark in any anchor (SonarQube/Sonar Way removed)",
-          "disposition": "tested",
-          "evidence": "test_control_grade.py::TestAnchorClarity::test_no_commercial_vendor_trademark_in_anchors PASSED"
-        },
-        {
-          "behavior": "Methodology note reads in English ('modeled on OpenSSF Scorecard', no 'Anlehnung')",
-          "disposition": "tested",
-          "evidence": "test_control_grade.py::TestAnchorClarity::test_methodology_note_is_english PASSED"
-        },
-        {
-          "behavior": "guide.md gains a plain-language table explaining each dimension + its open standard",
-          "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "Clarity/accuracy of the plain-language doc table is editorial review, not an automatable assertion; verified by author review + markdown render."
-        }
-      ],
-      "counts": {
-        "testable": 3,
-        "tested": 3,
-        "untestable": 1,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 4,
-        "covered_acs": 4
-      }
+      "status": "n/a",
+      "justification": "Trivial one-string copy fix (Control-Grade maintainability anchor wording) + a one-assert regression guard; the behavior is covered by test_control_grade::TestAnchorClarity (23 green). Ledger auto-n/a at trivial complexity."
     }
   }
 }
