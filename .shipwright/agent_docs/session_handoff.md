@@ -1,35 +1,38 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-28-ci-security-dashboard"
+run_id: "iterate-2026-06-28-sbom-honesty"
 phase: "iterate"
-reason: "regenerate compliance snapshots after cc3 #284 merge"
-timestamp: "2026-06-28T12:34:00.983777+00:00"
+reason: "F11 refresh #2: re-integrate origin/main (churn cascade during CI)"
+timestamp: "2026-06-28T12:48:12.844908+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-28 12:34:00 UTC
+> Auto-generated 2026-06-28 12:48:12 UTC
 
 ## Session Info
 
-- **Session ID**: 034b86b6-c5c7-4534-abfd-a4c6d08b087c
-- **Timestamp**: 2026-06-28 12:34:00 UTC
-- **Reason**: regenerate compliance snapshots after cc3 #284 merge
+- **Session ID**: eb5e3975-6030-4b5a-9cca-fd8f5201a11f
+- **Timestamp**: 2026-06-28 12:48:12 UTC
+- **Reason**: F11 refresh #2: re-integrate origin/main (churn cascade during CI)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-28-drop-timestamp-drift
-- **Date**: 2026-06-28T12:34:42.883837Z
+- **Run ID**: iterate-2026-06-28-sbom-honesty
+- **Date**: 2026-06-28T12:39:43.577598Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/drop-timestamp-drift
-- **ADR**: iterate-2026-06-28-drop-timestamp-drift
+- **Branch**: iterate/sbom-honesty
+- **ADR**: iterate-2026-06-28-sbom-honesty
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-28-drop-timestamp-drift.md
+- **Spec**: .shipwright/planning/iterate/2026-06-28-sbom-honesty.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/ar10-ci-security-dashboard
+- **Branch**: iterate/sbom-honesty
+- **Run ID**: iterate-2026-06-28-sbom-honesty
+- **Spec**: .shipwright/planning/iterate/2026-06-28-sbom-honesty.md
+- **Complexity**: medium (classifier said `small`/history; upgraded for scope: new
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/ar10-ci-security-dashboard
-- **Last Commit**: 270ab593 Merge remote-tracking branch 'origin/main' into iterate/ar10-ci-security-dashboard
+- **Branch**: iterate/sbom-honesty
+- **Last Commit**: c1337a6f Merge remote-tracking branch 'origin/main' into iterate/sbom-honesty
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,13 +71,13 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 | evt-a0fb4818 | work_completed | iterate (AR-05: RTM Reconciled? column + readability (consumes BP-2)) | 2026-06-28 |
 | evt-62cb4cbd | work_completed | iterate (Remove mtime-based timestamp-drift detector from check_drift.py; keep content-drift; legacy :timestamp triage items auto-resolve) | 2026-06-28 |
 | evt-07b1fe9c | work_completed | iterate (AR-10: ingest CI security posture (security.yml findings.json) into the compliance dashboard via a fail-soft producer + tracked public-safe ci-security.json; light the Control-Grade Security dimension; render a CI Security section.) | 2026-06-28 |
+| evt-2aa2ddcf | work_completed | iterate (AR-04 SBOM data quality: dedupe by installed version from uv.lock, resolve licenses across all venvs, make the compliance line honest) | 2026-06-28 |
 | evt-5ba214bd | work_completed | iterate (Fix events_log lazy-import rationale (load_shared_lib isolation, not the removed cycle) + 2 repo_root docstring refs) | 2026-06-28 |
-| evt-280e7afe | work_completed | iterate (BP-2: per-FR fr_impact map on work_completed events lights the Control-Grade change-reconciliation dimension) | 2026-06-28 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 220
+- **Total work events**: 221
 - **Last iterate**: change — AR-05: RTM Reconciled? column + readability (consumes BP-2) (2026-06-28)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-06-28T12:34:00.983777+00:00
+Generated: 2026-06-28T12:48:12.844908+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -12,15 +12,15 @@ Scope: library
 
 | | Dimension | Signal | Anchor |
 |---|-----------|--------|--------|
-| ✅ | Requirement traceability | 14/14 FRs covered; 220/220 changes traced (FR-linked or classified no-FR) | DO-178C §11.9 / IEC 62304 / ALM RTM |
+| ✅ | Requirement traceability | 14/14 FRs covered; 221/221 changes traced (FR-linked or classified no-FR) | DO-178C §11.9 / IEC 62304 / ALM RTM |
 | ✅ | Test health | latest full suite 3853/3853 (2026-06-28) | coverage gating (SonarQube 'Sonar Way') |
-| ✅ | Change traceability | 220/220 changes linked to a commit, ADR or test run | SLSA provenance / OpenSSF Code-Review |
+| ✅ | Change traceability | 221/221 changes linked to a commit, ADR or test run | SLSA provenance / OpenSSF Code-Review |
 | ✅ | Change reconciliation | 0/4 behavior-touched FRs not re-verified | ALM suspect-links + DO-178C/ISO 26262 re-verification |
 | ⚠️ | Security | 3 open high/critical | NIST SSDF (SP 800-218) / OWASP / OpenSSF |
 | ✅ | Size / maintainability discipline | ratchet delta -167 lines (net growth) | ISO 25010 maintainability / SonarQube |
-| ✅ | Dependency hygiene | 0 unresolved / 8 licenses; 0 copyleft | OWASP A06:2021 / OpenSSF Scorecard |
+| ✅ | Dependency hygiene | 0 unresolved / 7 licenses; 0 copyleft | OWASP A06:2021 / OpenSSF Scorecard |
 
-Verified from: `shipwright_events.jsonl (220 events, 2026-05-02 → 2026-06-28)`
+Verified from: `shipwright_events.jsonl (221 events, 2026-05-02 → 2026-06-28)`
 
 _Grade = importance-weighted average over the measurable dimensions (n/a excluded from the denominator), in Anlehnung an OpenSSF Scorecard. Age is neutral; only unreconciled change and net growth are control failures._
 
@@ -50,12 +50,12 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Metric | Value | Status | Why warn? |
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
-| Work events (iterate) | 220 changes | INFO |  |
+| Work events (iterate) | 221 changes | INFO |  |
 | Recent changes traced to an FR | 1/30 (3%) | WARN | FR-tagging dropped to 3% (last 30) vs 18% all-time — recent changes classified no-FR; see the Control Verdict traceability dimension |
-| All unit tests passing | 3853/3853 | PASS |  |
+| All unit tests passing | 3853/3853 | PASS | +1 change(s) since last full suite |
 | Architecture decisions | 235 ADRs | INFO |  |
-| Iterate tests passing | 139/220 iterations tested | WARN | 81 iterate(s) without tests — see test-evidence.md |
-| Dependencies | 8 packages | INFO |  |
+| Iterate tests passing | 140/221 iterations tested | WARN | 81 iterate(s) without tests — see test-evidence.md |
+| Dependencies | 7 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
 | Triage open | 1 open | WARN | 1 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit | 127 | WARN | 127 file(s) past limit AND not ADR-justified — see shipwright_bloat_baseline.json |
@@ -64,7 +64,7 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 
 ## Project Velocity
 
-- Iterate: 220 changes (2026-05-02 → 2026-06-28)
+- Iterate: 221 changes (2026-05-02 → 2026-06-28)
 - Last activity: 2026-06-28
 
 ## External LLM Review Evidence
