@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-28T06:17:09.227517+00:00
+Generated: 2026-06-28T06:18:50.409295+00:00
 
 ## Requirements Coverage
 
@@ -15,8 +15,8 @@ Generated: 2026-06-28T06:17:09.227517+00:00
 | [FR-01.07](../../.shipwright/planning/01-adopted/spec.md#fr-0107) | Security scanning chain (Aikido + Semgrep + Trivy + Gitleaks... | Must | evt-e3d2949e, evt-ca7b7d64, evt-ddb23fe7 | 225/225 → 13/13 | 2026-05-03 (iter) | COVERED |
 | [FR-01.08](../../.shipwright/planning/01-adopted/spec.md#fr-0108) | Deploy to configured targets with smoke testing and rollback... | Should | evt-e3d2949e, evt-ca7b7d64, evt-ddb23fe7 | 225/225 → 13/13 | 2026-05-03 (iter) | COVERED |
 | [FR-01.09](../../.shipwright/planning/01-adopted/spec.md#fr-0109) | Parse Conventional Commits from git history, generate Keep-a... | Must | evt-e3d2949e, evt-ca7b7d64, evt-530b0980, evt-ddb23fe7 | 225/225 → 19/19 | 2026-05-03 (iter) | COVERED |
-| [FR-01.10](../../.shipwright/planning/01-adopted/spec.md#fr-0110) | Generate audit-ready compliance documentation (RTM, test evi... | Must | evt-e3d2949e, evt-ca7b7d64, evt-30338dac, evt-a3888caf +1 | 225/225 → 140/140 | 2026-05-16 (iter) | COVERED |
-| [FR-01.11](../../.shipwright/planning/01-adopted/spec.md#fr-0111) | Complexity-adaptive SDLC for ongoing changes — auto-detects ... | Must | evt-e3d2949e, evt-6c637864, evt-baaf4b0e, evt-ca7b7d64 +15 | 225/225 → 2/2 | 2026-05-23 (iter) | COVERED |
+| [FR-01.10](../../.shipwright/planning/01-adopted/spec.md#fr-0110) | Generate audit-ready compliance documentation (RTM, test evi... | Must | evt-e3d2949e, evt-ca7b7d64, evt-30338dac, evt-a3888caf +6 | 225/225 → 736/736 | 2026-06-28 (iter) | COVERED |
+| [FR-01.11](../../.shipwright/planning/01-adopted/spec.md#fr-0111) | Complexity-adaptive SDLC for ongoing changes — auto-detects ... | Must | evt-e3d2949e, evt-6c637864, evt-baaf4b0e, evt-ca7b7d64 +16 | 225/225 → 736/736 | 2026-06-28 (iter) | COVERED |
 | [FR-01.12](../../.shipwright/planning/01-adopted/spec.md#fr-0112) | Local browser preview — start dev server for the target proj... | May | evt-e3d2949e, evt-ca7b7d64, evt-ddb23fe7 | 225/225 → 13/13 | 2026-05-03 (iter) | COVERED |
 | [FR-01.13](../../.shipwright/planning/01-adopted/spec.md#fr-0113) | Onboard an existing (brownfield) repository into the Shipwri... | Must | evt-e3d2949e, evt-273bbb54, evt-b0b9c422, evt-aab7ddbd +5 | 225/225 → 304/304 | 2026-05-16 (iter) | COVERED |
 | [FR-01.14](../../.shipwright/planning/01-adopted/spec.md#fr-0114) | Pre-backlog triage buffer — findings from local hooks/scans/... | Must | evt-3f488ddc, evt-32f2f1f4, evt-84dbdf5e, evt-e14e5f26 +3 | 1642/1649 → 122/122 | 2026-05-20 (iter) | COVERED |
@@ -62,7 +62,7 @@ Generated: 2026-06-28T06:17:09.227517+00:00
 | escape pipe and newline in markdown table cells | iterate | bug |  | 23/23 | 9dd6c8b | 2026-05-20 |
 | Artifact-based GitHub security producer for Triage Inbox | iterate | feature | FR-01.14 | 122/122 | 6f5dd5f | 2026-05-20 |
 | Artifact-based GitHub security producer for Triage Inbox (+ spec.md FR-01.14 update) | iterate | feature | FR-01.14 | 122/122 | 861c0fd | 2026-05-20 |
-| VERIFICATION artifact (amended: leaked from 2026-05-21 empirical-verification campaign; no real FR work) — neutralized by iterate-2026-05-30-rtm-covered-ignore-untested-events | iterate | feature |  | — | 376c870 | 2026-05-21 |
+| VERIFICATION artifact (leaked from the 2026-05-21 empirical-verification campaign; no real FR work) | iterate | feature |  | — | 376c870 | 2026-05-21 |
 | VERIFICATION: bug+change-type — should pass | iterate | bug |  | — | 376c870 | 2026-05-21 |
 | empirical-verification follow-ups: triage_add CLI + Full Suite Runs synthesis + path-canon ALLOWLIST | iterate | change |  | 2621/2621 | d8f3c05 | 2026-05-21 |
 | deterministic render timestamps from max(event.ts) | iterate | bug |  | 34/34 | d325fd6 | 2026-05-21 |
@@ -102,16 +102,16 @@ Generated: 2026-06-28T06:17:09.227517+00:00
 | Propagate canonical .shipwright artifact-ignore block to consuming projects via SSoT template + idempotent merge in adopt/project + drift test | iterate | change |  | — | — | 2026-05-30 |
 | iterate complete: P3.1 reviewer stack (spec-reviewer + doubt-reviewer cascade) | iterate | change |  | — | — | 2026-05-30 |
 | iterate completion: test-completeness-gate | iterate | change |  | — | — | 2026-05-30 |
-| Collapse phase-quality Tier-1 FAIL triage into one rolling phaseQuality:backlog action-unit; add phase-applicability gate and run_id=unknown spec-check guard | iterate | change |  | — | — | 2026-05-31 |
-| Render unengaged phases as SKIP (not FAIL) in the persisted finding JSON so the skill-compliance dashboard agrees with the triage inbox | iterate | change |  | — | — | 2026-05-31 |
-| Collapse the compliance detective-audit mirror into one rolling compliance:backlog action-unit (auto-dismiss + refresh + legacy retirement) | iterate | change |  | — | — | 2026-05-31 |
+| Collapse phase-quality Tier-1 FAIL triage into one rolling phaseQuality:backlog action-unit; add phase-applicability gate and run_id=unknown spec-check guard | iterate | change | FR-01.10 | — | — | 2026-05-31 |
+| Render unengaged phases as SKIP (not FAIL) in the persisted finding JSON so the skill-compliance dashboard agrees with the triage inbox | iterate | change | FR-01.10 | — | — | 2026-05-31 |
+| Collapse the compliance detective-audit mirror into one rolling compliance:backlog action-unit (auto-dismiss + refresh + legacy retirement) | iterate | change | FR-01.10 | — | — | 2026-05-31 |
 | events=union + churn-merge resolver/integrate_main: auto-reconcile generated artifacts on origin/main merge | iterate | change |  | — | — | 2026-06-01 |
 | remove vestigial "\|\| true" from CI integration step (gate failures) + add pathlib.Path import to clear 14 F821 in test_events_log.py | iterate | change |  | 2771/2771 | — | 2026-05-31 |
 | Wire shared/ test suites (shared/tests, shared/scripts/tests, shared/scripts/tools/tests) into ci.yml as blocking per-dir invocations; fix 2 non-hermetic validate_env tests via a dir conftest; make the born-red arch-md sibling skip when gitignored decision-drops are absent. | iterate | change |  | — | — | 2026-05-31 |
 | Gate CI Python lint on a curated bug-focused ruff ruleset (pyflakes F + high-signal E/W); remove the \|\| true + continue-on-error neutering; provision ruff via pinned uvx; rename job to Python (lint + test). | iterate | change |  | — | — | 2026-05-31 |
 | CI gate-coverage guard + workflow hardening (test-dir coverage, loose-gate allowlist, security fail-closed) | iterate | feature |  | 2674/2675 | — | 2026-05-31 |
 | plugin-sync Stop-hook triage item written to durable main-repo log (worktree-aware) | iterate | bug |  | 48/49 | — | 2026-06-01 |
-| D5 honors change_type+none_reason exemption; add audit_config.disabled_checks applicability gate; framework repo disables A5.6/B7/D1/G2 | iterate | change |  | — | — | 2026-06-01 |
+| D5 honors change_type+none_reason exemption; add audit_config.disabled_checks applicability gate; framework repo disables A5.6/B7/D1/G2 | iterate | change | FR-01.10 | — | — | 2026-06-01 |
 | Document the gating ruff CI lint step in CLAUDE.md Development section. | iterate | change |  | — | — | 2026-06-01 |
 | Detective audit honors event_amended corrections (group_d applies shared apply_amendments SSOT before D1-D5; new shared/scripts/lib/events_amend.py, re-exported by config.py); D4 disabled for the framework monorepo (gating-CI stale-noise); evt-5aca940d corrected to spec_impact=none. | iterate | change |  | — | — | 2026-06-01 |
 | Pinned third-party GitHub Actions (setup-uv, create-or-update-comment) to commit SHAs; added SHA256 verification for the Gitleaks binary download in ci.yml + security.yml; corrected stale SECURITY.md scope (webui) and Dependabot wording. | iterate | change |  | — | — | 2026-06-01 |
@@ -236,6 +236,7 @@ Generated: 2026-06-28T06:17:09.227517+00:00
 | Add shared/tests/test_trivyignore_register.py enforcing that every .trivyignore.yaml accepted-risk entry is scoped (paths\|purls) + time-bounded (expired_at) + justified (statement); register optional (absent passes). Self-tested (rejects sloppy, accepts well-formed). | iterate | change |  | — | — | 2026-06-22 |
 | Control Grade scorer (lib/control_grade.py, in Anlehnung an OpenSSF Scorecard) + Control Verdict block atop the dashboard (AR-01); latest-full-suite resolver kills the 0/0 headline in dashboard + test-evidence (AR-02); inline consistency-audit summary replaces the dead gitignored audit-report.md link (AR-03). | iterate | feature |  | 720/720 | — | 2026-06-27 |
 | CodeQL security hardening: tailor the query suite via codeql-config.yml; root-fix genuine findings (file modes to 0o600, two ReDoS regexes, a loop-capture bug, a rollback-CLI else-guard); remove 13 dead module globals. | iterate | change |  | — | — | 2026-06-27 |
+| BP-1: FR-mapping — traced-% metric + behavior-aware verifier + legacy backfill | iterate | change | FR-01.10, FR-01.11 | 736/736 | — | 2026-06-28 |
 | compliance PreToolUse Bash gates: robust uv run --no-project invocation + fail-open guard | iterate | change |  | 3560/3560 | — | 2026-06-27 |
 | CodeQL fixture-noise cleanup: paths-ignore test fixtures + explicit string-concat refactor | iterate | change |  | 4720/4720 | — | 2026-06-28 |
 
@@ -245,7 +246,7 @@ Generated: 2026-06-28T06:17:09.227517+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 213 |
+| Iterate changes | 214 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
@@ -254,5 +255,16 @@ Generated: 2026-06-28T06:17:09.227517+00:00
 
 ### FRs with stale verification (> 14 days)
 
-- [FR-01.01](../../.shipwright/planning/01-adopted/spec.md) — last verified 17d ago by `evt-7620210f` (2026-05-05)
+- [FR-01.01](../../.shipwright/planning/01-adopted/spec.md) — last verified 53d ago by `evt-7620210f` (2026-05-05)
+- [FR-01.02](../../.shipwright/planning/01-adopted/spec.md) — last verified 42d ago by `evt-8659999c` (2026-05-16)
+- [FR-01.13](../../.shipwright/planning/01-adopted/spec.md) — last verified 42d ago by `evt-38e36ac6` (2026-05-16)
+- [FR-01.14](../../.shipwright/planning/01-adopted/spec.md) — last verified 38d ago by `evt-64f8cd79` (2026-05-20)
+- [FR-01.03](../../.shipwright/planning/01-adopted/spec.md) — last verified 36d ago by `evt-ddb23fe7` (2026-05-22)
+- [FR-01.04](../../.shipwright/planning/01-adopted/spec.md) — last verified 36d ago by `evt-ddb23fe7` (2026-05-22)
+- [FR-01.05](../../.shipwright/planning/01-adopted/spec.md) — last verified 36d ago by `evt-ddb23fe7` (2026-05-22)
+- [FR-01.06](../../.shipwright/planning/01-adopted/spec.md) — last verified 36d ago by `evt-ddb23fe7` (2026-05-22)
+- [FR-01.07](../../.shipwright/planning/01-adopted/spec.md) — last verified 36d ago by `evt-ddb23fe7` (2026-05-22)
+- [FR-01.08](../../.shipwright/planning/01-adopted/spec.md) — last verified 36d ago by `evt-ddb23fe7` (2026-05-22)
+- [FR-01.09](../../.shipwright/planning/01-adopted/spec.md) — last verified 36d ago by `evt-ddb23fe7` (2026-05-22)
+- [FR-01.12](../../.shipwright/planning/01-adopted/spec.md) — last verified 36d ago by `evt-ddb23fe7` (2026-05-22)
 

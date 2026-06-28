@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-06-28T06:17:09.227517+00:00
-Total commits: 1043
+Generated: 2026-06-28T06:18:50.409295+00:00
+Total commits: 1045
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 297
-    "feat" : 275
-    "chore" : 228
+    "feat" : 276
+    "chore" : 229
     "docs" : 141
     "refactor" : 62
     "test" : 25
@@ -322,10 +322,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 275 commits
+### Features (feat) — 276 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-28 | compliance | BP-1 FR-mapping — credit satisfied no-FR, behavior-aware gate, traced-% metric | e0a11777520d |
 | 2026-06-28 | compliance | Control Grade verdict block + latest-full-suite + inline audit (AR-01/02/03) (#277) | fdab00716d26 |
 | 2026-06-22 | security | add a Trivy accepted-risk register (.trivyignore.yaml) and accept the OTel medium (#273) | 64aef0de33b7 |
 | 2026-06-14 | iterate | repo-agnostic agent-doc entry-budget gate + doc cleanup (#252) | c7ec0a62e892 |
@@ -602,10 +603,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 228 commits
+### Chores (chore) — 229 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-28 | security | exclude test fixtures from CodeQL + make intentional string-concat explicit (#279) | 6f1f35076dfa |
 | 2026-06-22 | release | v0.29.1 (#271) | af7a3fc04fae |
 | 2026-06-17 | — | align root pyproject.toml to 0.29.0 + de-PII a source comment (#262) | 6c0c1ea626c4 |
 | 2026-06-17 | release | v0.29.0 (#261) | 392152b988ec |
@@ -1112,7 +1114,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1043 |
+| Total commits | 1045 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1043 |
+| Human-authored commits | 1045 |
 
