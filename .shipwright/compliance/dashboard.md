@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-06-28T12:39:12.238585+00:00
+Generated: 2026-06-28T12:48:12.844908+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -30,7 +30,7 @@ _Grade = importance-weighted average over the measurable dimensions (n/a exclude
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
 | Work events (iterate) | 218 changes | INFO |  |
-| Recent changes traced to an FR | 2/30 (7%) | WARN | FR-tagging dropped to 7% (last 30) vs 19% all-time — recent changes classified no-FR; see the Control Verdict traceability dimension |
+| Recent changes traced to an FR | 1/30 (3%) | WARN | FR-tagging dropped to 3% (last 30) vs 18% all-time — recent changes classified no-FR; see the Control Verdict traceability dimension |
 | All unit tests passing | 4719/4719 | PASS | +3 change(s) since last full suite |
 | Architecture decisions | 235 ADRs | INFO |  |
 | Iterate tests passing | 138/218 iterations tested | WARN | 80 iterate(s) without tests — see test-evidence.md |

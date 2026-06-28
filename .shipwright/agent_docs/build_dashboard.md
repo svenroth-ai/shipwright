@@ -1,11 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-28 12:39 UTC | Session: eb5e3975-6030-4b5a-9cca-fd8f5201a11f | Run: iterate-2026-06-28-sbom-honesty
+> Updated: 2026-06-28 12:48 UTC | Session: eb5e3975-6030-4b5a-9cca-fd8f5201a11f | Run: iterate-2026-06-28-sbom-honesty
 
 ## Recent Changes (218 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| change | AR-04 SBOM data quality: dedupe by installed version from uv.lock, resolve licenses across all venvs, make the compliance line honest | 794/794 |  | FR-01.10 | 2026-06-28 |
+| change | AR-04 SBOM data quality: dedupe by installed version from uv.lock, resolve licenses across all venvs, make the compliance line honest | 794/794 |  | compliance | 2026-06-28 |
 | change | Fix events_log lazy-import rationale (load_shared_lib isolation, not the removed cycle) + 2 repo_root docstring refs | 492/492 |  | docs | 2026-06-28 |
 | change | BP-2: per-FR fr_impact map on work_completed events lights the Control-Grade change-reconciliation dimension | 0/0 |  | compliance | 2026-06-28 |
 | change | Break 3 CodeQL py/cyclic-import cycles via neutral leaf extraction + fix 2 py/mixed-returns | 4719/4719 |  | tooling | 2026-06-28 |

@@ -5,7 +5,10 @@
 - **Complexity:** medium (classifier said `small`/history; upgraded for scope: new
   lockfile parser, cross-cutting license/version resolution, generator output-contract
   change, a documented-behavior change, tracked-artifact regen)
-- **Spec Impact:** MODIFY (changes how `sbom.md` is rendered; no new FR)
+- **Spec Impact:** NONE — a correctness fix to the SBOM renderer (FR-01.10's
+  "audit-ready compliance documentation"); no FR definition or behavior is
+  changed, so it is a satisfied no-FR change (`change_type=compliance`), matching
+  the `2026-06-16-compliance-rendering-fixes` precedent
 - **Source spec:** `Spec/course-launch-compliance-control-coverage.md` → **AR-04**
   (triage anchor `trg-268c0655`, lane B)
 

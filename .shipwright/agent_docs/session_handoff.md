@@ -3,29 +3,29 @@ canon_generated: true
 run_id: "iterate-2026-06-28-sbom-honesty"
 phase: "iterate"
 reason: "iterate: SBOM data quality / honesty (AR-04)"
-timestamp: "2026-06-28T12:39:12.238585+00:00"
+timestamp: "2026-06-28T12:48:12.844908+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-28 12:39:12 UTC
+> Auto-generated 2026-06-28 12:48:12 UTC
 
 ## Session Info
 
 - **Session ID**: eb5e3975-6030-4b5a-9cca-fd8f5201a11f
-- **Timestamp**: 2026-06-28 12:39:12 UTC
+- **Timestamp**: 2026-06-28 12:48:12 UTC
 - **Reason**: iterate: SBOM data quality / honesty (AR-04)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-28-cc2-bp2-impact-producer
-- **Date**: 2026-06-28T08:49:20.842153Z
+- **Run ID**: iterate-2026-06-28-sbom-honesty
+- **Date**: 2026-06-28T12:39:43.577598Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/cc2-bp2-impact-producer
-- **ADR**: iterate-2026-06-28-cc2-bp2-impact-producer
+- **Branch**: iterate/sbom-honesty
+- **ADR**: iterate-2026-06-28-sbom-honesty
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-28-cc2-bp2-impact-producer.md
+- **Spec**: .shipwright/planning/iterate/2026-06-28-sbom-honesty.md
 
 ## Current Iterate Progress
 
@@ -52,7 +52,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Git State
 
 - **Branch**: iterate/sbom-honesty
-- **Last Commit**: 9941383a feat(compliance): per-FR fr_impact map lights the Control-Grade reconciliation dimension (cc2/BP-2) (#283)
+- **Last Commit**: df338087 fix(compliance): SBOM dedup by installed version + honest license verdict (AR-04)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,7 +68,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-e2a52d5b | work_completed | iterate (AR-04 SBOM data quality: dedupe by installed version from uv.lock, resolve licenses across all venvs, make the compliance line honest) | 2026-06-28 |
+| evt-2aa2ddcf | work_completed | iterate (AR-04 SBOM data quality: dedupe by installed version from uv.lock, resolve licenses across all venvs, make the compliance line honest) | 2026-06-28 |
 | evt-5ba214bd | work_completed | iterate (Fix events_log lazy-import rationale (load_shared_lib isolation, not the removed cycle) + 2 repo_root docstring refs) | 2026-06-28 |
 | evt-280e7afe | work_completed | iterate (BP-2: per-FR fr_impact map on work_completed events lights the Control-Grade change-reconciliation dimension) | 2026-06-28 |
 | evt-bc8ebee5 | work_completed | iterate (Break 3 CodeQL py/cyclic-import cycles via neutral leaf extraction + fix 2 py/mixed-returns) | 2026-06-28 |
