@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-06-28T19:25:13.871751+00:00
-Total commits: 1052
+Generated: 2026-06-28T19:34:52.090773+00:00
+Total commits: 1054
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 298
-    "feat" : 279
-    "chore" : 229
+    "feat" : 280
+    "chore" : 230
     "docs" : 142
     "refactor" : 64
     "test" : 25
@@ -323,10 +323,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 279 commits
+### Features (feat) — 280 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-28 | compliance | plain-language, open-standard-only Control-Grade anchors + dimensions guide | 03d6a50ef5a1 |
 | 2026-06-28 | compliance | ingest CI security posture into the dashboard + light the Control-Grade Security dimension (AR-10) (#285) | 15a0af09fb55 |
 | 2026-06-28 | compliance | RTM "Reconciled?" column + readability reuse the BP-2 grade helper (cc3/AR-05) (#284) | fb95a4765ef0 |
 | 2026-06-28 | compliance | per-FR fr_impact map lights the Control-Grade reconciliation dimension (cc2/BP-2) (#283) | 9941383afecf |
@@ -607,10 +608,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 229 commits
+### Chores (chore) — 230 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-28 | compliance | refresh CI-security summary to the clean post-#272 scan (A100) (#288) | dac886347e26 |
 | 2026-06-28 | security | exclude test fixtures from CodeQL + make intentional string-concat explicit (#279) | 6f1f35076dfa |
 | 2026-06-22 | release | v0.29.1 (#271) | af7a3fc04fae |
 | 2026-06-17 | — | align root pyproject.toml to 0.29.0 + de-PII a source comment (#262) | 6c0c1ea626c4 |
@@ -1121,7 +1123,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1052 |
+| Total commits | 1054 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1052 |
+| Human-authored commits | 1054 |
 
