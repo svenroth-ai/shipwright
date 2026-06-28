@@ -15,9 +15,10 @@ Group D — Event-log FR coverage:
   same-event-or-later ``affected_frs`` (same-event delivery counts)
 - D4: most recent covering event has ``tests.passed < tests.total``
 
-Epoch floor (D1/D2): the latest event carrying a ``spec_updated`` field
-acts as a watermark — older events are excluded so a renamed FR doesn't
-generate a stale-coverage finding against its old id.
+Epoch floor (D2 only since BP-1): the latest event carrying a ``spec_updated``
+field acts as a watermark — older events are excluded so a renamed FR doesn't
+generate a stale-coverage finding against its old id. D1 dropped the watermark:
+coverage is all-time ("a requirement untouched for months is under control").
 
 These tests are hermetic: every fixture is built under ``tmp_path``, no
 network, no real plugin/shared imports beyond the audit modules
@@ -483,12 +484,12 @@ def test_d1_skips_when_no_work_completed_events(tmp_path):
     assert d1.status == "skip"
 
 
-def test_d1_epoch_floor_excludes_pre_watermark_events(tmp_path):
-    """An event for FR-01.01 BEFORE the spec_updated watermark should be ignored —
-    the FR may have been redefined, so old coverage is not authoritative."""
+def test_d1_coverage_persists_across_later_spec_update(tmp_path):
+    """BP-1: D1 has NO epoch floor — an FR covered by an event stays covered
+    even after a later spec_updated ("untouched for months is under control")."""
     _write(
         tmp_path / ".shipwright" / "planning" / "01-foo" / "spec.md",
-        _spec_with_frs([("FR-01.01", "Renamed FR", "Must")]),
+        _spec_with_frs([("FR-01.01", "Stable FR", "Must")]),
     )
     _events(tmp_path / "shipwright_events.jsonl", [
         {"type": "work_completed", "ts": "2026-01-01T00:00:00+00:00",
@@ -499,8 +500,7 @@ def test_d1_epoch_floor_excludes_pre_watermark_events(tmp_path):
 
     findings = group_d.run(tmp_path, _default_config(), None)
     d1 = next(f for f in findings if f.check_id == "D1")
-    assert d1.status == "fail"
-    assert "FR-01.01" in d1.detail
+    assert d1.status == "pass", d1.detail
 
 
 # ---------------------------------------------------------------------------

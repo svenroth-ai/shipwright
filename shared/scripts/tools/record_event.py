@@ -27,7 +27,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -57,6 +56,18 @@ from lib.config import read_events  # noqa: E402,F401 — re-exported SSOT
 # lifecycle-integrity test monkeypatches it) and the `with _FileLock(...)`
 # call sites below resolve via the module global.
 from lib.file_lock import FileLock as _FileLock  # noqa: E402
+# SSOT for FR-classification (BP-1). The gate below and the compliance
+# Control-Grade adapter share these so "classified" (gate) and "traced" (grade)
+# can never drift. Aliased to the historical private names so existing call
+# sites + tests (record_event._CHANGE_TYPE_VALUES, ._is_valid_none_reason, …)
+# keep resolving.
+from lib.fr_classification import (  # noqa: E402
+    CHANGE_TYPE_VALUES as _CHANGE_TYPE_VALUES,
+    NONE_REASON_MAX_LEN as _NONE_REASON_MAX_LEN,
+    is_behavior_affecting as _is_behavior_affecting,
+    is_non_empty_fr_list as _is_non_empty_fr_list,
+    is_valid_none_reason as _is_valid_none_reason,
+)
 
 SCHEMA_VERSION = 1
 
@@ -565,42 +576,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return p.parse_args(argv)
 
 
-_CHANGE_TYPE_VALUES = ("docs", "tooling", "compliance", "infra")
-_NONE_REASON_MAX_LEN = 280  # ~tweet-length; long enough for a real reason, short enough for one-line audit grep
-_NONE_REASON_CONTROL_RE = re.compile(r"[\x00-\x08\x0a-\x1f\x7f]")  # disallow newlines, ctrl, DEL; tab (0x09) ok
-
-
-def _is_non_empty_fr_list(value) -> bool:
-    """True iff ``value`` is a list with ≥1 non-empty-string element.
-
-    Reviewer-flagged OpenAI-M3: naive `bool(value)` accepted
-    `["", " "]` or `(FR-X,)` (tuple). Type-strict shape check rejects
-    those.
-    """
-    if not isinstance(value, list):
-        return False
-    return any(isinstance(x, str) and x.strip() for x in value)
-
-
-def _is_valid_none_reason(value) -> bool:
-    """Validate `none_reason` shape: trimmed, single-line, ≤ cap.
-
-    Reviewer-flagged OpenAI-M5: a "one-line justification" must
-    actually be one line + not pathologically long. Reject multi-line
-    inputs, control chars (except `\\t`), and strings longer than
-    ``_NONE_REASON_MAX_LEN`` characters.
-    """
-    if not isinstance(value, str):
-        return False
-    if not value.strip():
-        return False
-    if _NONE_REASON_CONTROL_RE.search(value):
-        return False
-    if len(value) > _NONE_REASON_MAX_LEN:
-        return False
-    return True
-
-
 def _fr_or_change_type_gate_error(event) -> dict | None:
     """Iterate C.1 (ADR-059) FR-gate. Hard-enforce forward-only.
 
@@ -612,6 +587,12 @@ def _fr_or_change_type_gate_error(event) -> dict | None:
     - ``change_type`` ∈ ``{docs, tooling, compliance, infra}`` AND
       ``none_reason`` is a valid one-line justification (see
       ``_is_valid_none_reason``).
+
+    BP-1 (campaign 2026-06-27) adds one rule: a **behavior-affecting**
+    change (``spec_impact`` ∈ ``{add, modify, remove}``) MUST link an FR
+    — the no-FR ``change_type`` branch is reserved for behavior-preserving
+    changes. Unlike the CLI-only, intent-gated ``_spec_impact_gate_error``,
+    this rule runs at finalize too (F5b parity) and is intent-independent.
 
     Additional consistency check (reviewer-flagged Gemini-M2 /
     OpenAI-L4): if ``change_type`` is present at all (even alongside
@@ -653,6 +634,29 @@ def _fr_or_change_type_gate_error(event) -> dict | None:
 
     change_type = event.get("change_type")
     none_reason = event.get("none_reason")
+    has_frs = (
+        _is_non_empty_fr_list(event.get("affected_frs"))
+        or _is_non_empty_fr_list(event.get("new_frs"))
+    )
+
+    # BP-1 (campaign 2026-06-27): a behavior-affecting change (spec_impact ∈
+    # add/modify/remove) MUST link an FR — the no-FR change_type branch is not
+    # available to it. Closes two holes the CLI-only, intent-gated
+    # _spec_impact_gate_error left open: this runs at finalize too (F5b parity)
+    # AND is intent-independent (catches BUG + intent-less events). Without it a
+    # behavior change could dodge FR-linkage by self-labeling "tooling", which
+    # would also starve BP-2's per-FR reconciliation.
+    if _is_behavior_affecting(event.get("spec_impact")) and not has_frs:
+        return {
+            "error": "fr_gate_behavior_affecting_requires_fr",
+            "detail": (
+                f"spec_impact={event.get('spec_impact')!r} is behavior-"
+                "affecting but no --affected-frs/--new-frs was recorded. A "
+                "behavior-affecting change must link the FR(s) it touches; the "
+                "no-FR change_type branch is only for behavior-preserving "
+                "(spec_impact none) changes. See SKILL.md step F4."
+            ),
+        }
 
     # Defense in depth: if change_type is present at all, the FULL
     # pair must be valid — both a recognized value AND a non-empty
@@ -683,10 +687,6 @@ def _fr_or_change_type_gate_error(event) -> dict | None:
         return None
 
     # No change_type → must classify via FRs.
-    has_frs = (
-        _is_non_empty_fr_list(event.get("affected_frs"))
-        or _is_non_empty_fr_list(event.get("new_frs"))
-    )
     if has_frs:
         return None
 

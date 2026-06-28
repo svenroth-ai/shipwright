@@ -1,13 +1,14 @@
 # Project Activity Dashboard
-> Updated: 2026-06-28 07:10 UTC | Session: a9af39f8-f3c8-445b-a07a-86412ffe4704 | Run: iterate-2026-06-28-codeql-import-cycles
+> Updated: 2026-06-28 07:10 UTC | Session: 9c7f94f2-7a49-4e59-accb-719250884744 | Run: iterate-2026-06-28-cc1-bp1-fr-mapping
 
-## Recent Changes (214 iterations)
+## Recent Changes (215 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
 | change | Break 3 CodeQL py/cyclic-import cycles via neutral leaf extraction + fix 2 py/mixed-returns | 4719/4719 |  | tooling | 2026-06-28 |
 | change | CodeQL fixture-noise cleanup: paths-ignore test fixtures + explicit string-concat refactor | 4720/4720 |  | infra | 2026-06-28 |
 | change | compliance PreToolUse Bash gates: robust uv run --no-project invocation + fail-open guard | 3560/3560 |  | tooling | 2026-06-27 |
+| change | BP-1: FR-mapping — traced-% metric + behavior-aware verifier + legacy backfill | 736/736 |  | FR-01.10, FR-01.11 | 2026-06-28 |
 | change | CodeQL security hardening: tailor the query suite via codeql-config.yml; root-fix genuine findings (file modes to 0o600, two ReDoS regexes, a loop-capture bug, a rollback-CLI else-guard); remove 13 dead module globals. | 0/0 |  | tooling | 2026-06-27 |
 | feature | Control Grade scorer (lib/control_grade.py, in Anlehnung an OpenSSF Scorecard) + Control Verdict block atop the dashboard (AR-01); latest-full-suite resolver kills the 0/0 headline in dashboard + test-evidence (AR-02); inline consistency-audit summary replaces the dead gitignored audit-report.md link (AR-03). | 720/720 |  | compliance | 2026-06-27 |
 | change | Add shared/tests/test_trivyignore_register.py enforcing that every .trivyignore.yaml accepted-risk entry is scoped (paths\|purls) + time-bounded (expired_at) + justified (statement); register optional (absent passes). Self-tested (rejects sloppy, accepts well-formed). | 0/0 |  | tooling | 2026-06-22 |
@@ -221,7 +222,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-28 | Unit: 4719/4719 | Smoke: not_run | (iterate)
+Last run: 2026-06-28 | Unit: 736/736 | Integration: 169/169 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

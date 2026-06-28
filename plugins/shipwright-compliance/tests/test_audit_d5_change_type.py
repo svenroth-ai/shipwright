@@ -31,17 +31,29 @@ def _d5(tmp_path: Path):
     return next(f for f in findings if f.check_id == "D5")
 
 
-@pytest.mark.parametrize("change_type", ["tooling", "compliance", "infra", "docs", "COMPLIANCE"])
+@pytest.mark.parametrize("change_type", ["tooling", "compliance", "infra", "docs"])
 def test_d5_exempts_known_change_types_with_none_reason(tmp_path, change_type):
-    # Parity with the record_event gate: exempt change_type REQUIRES a
-    # non-empty none_reason. (Case-insensitive on read.)
+    # Parity with the record_event gate (BP-1): exempt change_type requires a
+    # valid none_reason AND a behavior-preserving spec_impact.
     _events(tmp_path / "shipwright_events.jsonl", [
         {"type": "work_completed", "source": "iterate", "intent": "change",
          "ts": "2026-05-31T00:00:00+00:00", "commit": "c1",
          "change_type": change_type, "none_reason": "framework-internal change",
-         "spec_impact": "MODIFY"},
+         "spec_impact": "none"},
     ])
     assert _d5(tmp_path).status == "pass"
+
+
+def test_d5_flags_behavior_affecting_change_type(tmp_path):
+    # BP-1 gate parity: a behavior-affecting change (spec_impact modify) cannot
+    # be exempted by change_type — it must link an FR, so D5 flags it.
+    _events(tmp_path / "shipwright_events.jsonl", [
+        {"type": "work_completed", "source": "iterate", "intent": "change",
+         "ts": "2026-05-31T00:00:00+00:00", "commit": "deadbee4",
+         "change_type": "compliance", "none_reason": "behavior change",
+         "spec_impact": "MODIFY"},
+    ])
+    assert _d5(tmp_path).status == "fail"
 
 
 def test_d5_flags_exempt_change_type_without_none_reason(tmp_path):
@@ -50,7 +62,7 @@ def test_d5_flags_exempt_change_type_without_none_reason(tmp_path):
     _events(tmp_path / "shipwright_events.jsonl", [
         {"type": "work_completed", "source": "iterate", "intent": "change",
          "ts": "2026-05-31T00:00:00+00:00", "commit": "deadbee3",
-         "change_type": "compliance", "spec_impact": "MODIFY"},
+         "change_type": "compliance"},
     ])
     assert _d5(tmp_path).status == "fail"
 

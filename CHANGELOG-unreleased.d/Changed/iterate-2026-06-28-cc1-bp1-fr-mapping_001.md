@@ -1,0 +1,1 @@
+Compliance Control Grade: a change now counts as traceable when it either links an FR or is an explicitly-classified no-FR change, and the dashboard shows a "Recent changes traced to an FR" indicator that warns when FR-tagging drops or freezes.

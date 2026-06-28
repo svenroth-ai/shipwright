@@ -1,50 +1,108 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-28-codeql-import-cycles",
+    "run_id": "iterate-2026-06-28-cc1-bp1-fr-mapping",
     "date": "2026-06-28",
-    "unit": { "status": "passed", "passed": 4719, "total": 4719 },
-    "integration": { "status": "not_run", "passed": 0, "total": 0 },
-    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
-    "e2e": { "status": "not_run", "passed": 0, "total": 0 },
-    "design_fidelity": { "status": "not_run", "passed": 0, "total": 0 },
-    "smoke": { "status": "not_run" },
+    "unit": {
+      "status": "passed",
+      "passed": 736,
+      "total": 736
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 169,
+      "total": 169
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
     "surface_verification": {
       "surface": "none",
-      "justification": "Pure internal Python-library refactor (import-cycle break + test-helper return-shape fixes); no web/CLI runtime surface. Verified by the full unit suites, import-identity smoke tests (moved symbols resolve to the same objects via re-export), and by executing the iterate's own leak-guard which imports the refactored modules."
+      "exit_code": 0,
+      "tests_run": 736,
+      "justification": "BP-1 producer change to compliance scoring + the iterate FR-gate + the detective audit + a new shared classification SSOT. No product web/api/cli/UI/store surface is introduced or changed; the compliance dashboard/RTM are static tracked .md, and the event wire-format already carried change_type/none_reason/spec_impact (only the compliance reader gained them) so the WebUI is unaffected. Empirically verified by live real-data runs: grade B 87.2 -> A 100.0, D1 fail -> pass, full detective audit any_fail=False, 211/211 events traced + gate-valid, dashboard freeze row WARN; plus the full suites (compliance 736, shared 3580+61+196, integration 169) and pinned-ruff clean."
     },
-    "degraded": [],
+    "degraded": [
+      "External LLM review unavailable (no OPENROUTER/GEMINI/OPENAI key in this env); the internal code-reviewer ran as the documented fallback (no HIGH findings; M1/M2/M4 fixed, M3 documented trade-off).",
+      "Full monorepo per-plugin suites delegated to CI ci.yml; locally ran the touched scopes green: shipwright-compliance 736, shared/tests 3580 (+12 skip), shared/scripts/tools/tests 61, shared/scripts/tests 196, integration-tests 169.",
+      "arch-impact meta-test (test_architecture_md_reflects_arch_impact) may false-fail locally on OTHER iterates' gitignored staged decision-drops resolved from the main root; this run's own drop (component) has its architecture.md entry. CI sees only committed drops (green).",
+      "Security dimension n/a (local securityreports stale/FP-laden; authoritative = CI gate via AR-10). Change-reconciliation dimension n/a until BP-2 persists per-FR impact. D4 detective left at its honest pre-existing fail (stale FR-01.01 snapshot; disabled in audit_config) \u2014 not masked."
+    ],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "Cycle A broken: git primitives extracted to lib/git_base.py; worktree_isolation re-exports them; repo_root imports from git_base (no worktree_isolation edge)",
+          "behavior": "is_traced / is_satisfied_no_fr / is_behavior_affecting predicates (incl. behavior-affecting is never satisfied)",
           "disposition": "tested",
-          "evidence": "import-identity smoke (worktree_isolation.run_git/GitError/main_repo_root/is_worktree IS git_base.*; repo_root.* IS git_base.*) + shared suite 3561 passed incl test_worktree_isolation_lib + check_iterate_isolation runs ALLOW"
+          "evidence": "shared/tests/test_fr_classification.py"
         },
         {
-          "behavior": "Cycle B broken: phase_quality model/loaders extracted to _findings_model.py; _aggregates re-exports; _dashboard_render imports from the leaf",
+          "behavior": "FR-gate blocks a behavior-affecting (spec_impact add/modify/remove) change with no FR, at CLI AND finalize, intent-independently",
           "disposition": "tested",
-          "evidence": "import-identity smoke (_aggregates.LoadedFinding IS _findings_model.LoadedFinding; _dashboard_render.count_by_status IS _findings_model.count_by_status) + shared 3561 + compliance 734 passed (consumes phase_quality)"
+          "evidence": "shared/tests/test_fr_gate_behavior_affecting.py (6); finalize parity test_finalize_iterate.py"
         },
         {
-          "behavior": "Cycle C broken: classify_finding extracted to security/finding_classify.py; scanner_backend + aikido_client import the leaf (no scanner_backend->aikido_client edge)",
+          "behavior": "Gate still accepts FR-linked / satisfied-no-FR and rejects unclassified",
           "disposition": "tested",
-          "evidence": "import-identity smoke (scanner_backend.classify_finding IS aikido_client.classify_finding IS finding_classify.classify_finding) + security suite 424 passed"
+          "evidence": "shared/tests/test_record_event.py::TestFrOrChangeTypeGate + TestFrGateInputValidation"
         },
         {
-          "behavior": "Two py/mixed-returns fixed: test helpers end in an explicit return/raise; skip/fail semantics preserved",
+          "behavior": "WorkEvent change_type/none_reason/spec_impact round-trip (legacy + explicit-null tolerant)",
           "disposition": "tested",
-          "evidence": "test_artifact_drift_edge_cases.py + test_security_critical_gate.py PASSED in the shared suite"
+          "evidence": "plugins/shipwright-compliance/tests/test_workevent_null_coercion.py"
         },
         {
-          "behavior": "CodeQL CI marks the 6 py/cyclic-import + 2 py/mixed-returns alerts as fixed",
+          "behavior": "count_traced credits FR-linked AND satisfied-no-FR (feeds events_fr_tagged)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_traceability.py::TestCountTraced + live grade A"
+        },
+        {
+          "behavior": "Dashboard 'Recent changes traced to an FR' WARNs on a relative drop AND an absolute-zero freeze",
+          "disposition": "tested",
+          "evidence": "test_traceability.py::TestRenderTracedRow (5 cases)"
+        },
+        {
+          "behavior": "D1 coverage is all-time (no spec-update watermark); never-covered FR still flagged",
+          "disposition": "tested",
+          "evidence": "test_audit_groups_a_d.py::test_d1_coverage_persists_across_later_spec_update + test_d1_flags_uncovered_must_fr_as_high"
+        },
+        {
+          "behavior": "D5 no-FR exemption excludes behavior-affecting changes (write-gate parity)",
           "disposition": "untestable",
-          "reason_code": "requires-external-nondeterministic-service",
-          "reason": "Runs in GitHub Actions CodeQL post-merge; the locally-assertable proxies (no static cycle, behavior preserved) are covered by the behaviors above."
+          "reason_code": "covered-by-existing-test",
+          "evidence": "is_satisfied_no_fr unit test pins the carve-out; D5 delegates to it (live D5 pass)"
+        },
+        {
+          "behavior": "audit_config re-enables D1 (passes honestly) and keeps D4 disabled",
+          "disposition": "tested",
+          "evidence": "test_audit_detector.py::test_framework_audit_config_disables_expected_checks + live full audit any_fail=False"
+        },
+        {
+          "behavior": "Backfill: all 211 work_completed events traced + gate-valid; evt-9a656b5f suppression preserved; D4 not masked",
+          "disposition": "tested",
+          "evidence": "empirical probe (live: 0 untraced, 0 gate-invalid, D4 honest-fail, grade A 100.0)"
         }
       ],
-      "counts": { "testable": 4, "tested": 4, "untestable": 1, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 4, "covered_acs": 4 }
+      "counts": {
+        "total": 10,
+        "tested": 9,
+        "untestable": 1,
+        "untested_testable": 0
+      }
     }
   }
 }

@@ -1332,8 +1332,10 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
    `run_all` rewrites a listed check's finding to `skip` (before the triage
    mirror, so it drops out of `any_fail` + the `compliance:backlog` bundle).
    Explicit, per-project declaration — never auto-detected; default `[]` runs
-   every check. The Shipwright framework monorepo disables A5.6/B7/D1/G2 (each
+   every check. The Shipwright framework monorepo disables A5.6/B7/D4/G2 (each
    with a documented reason) as an adopted, multi-component, active-CI repo.
+   (BP-1 **re-enabled D1**: now that D1 uses all-time coverage and every FR is
+   event-covered, it passes honestly rather than being suppressed.)
    Separately, **D5** now exempts iterate events whose `change_type` ∈
    `{tooling,compliance,infra,docs}` (parity with the `record_event` ADR-C.1
    gate), not just `spec_impact=none`.
@@ -1787,6 +1789,25 @@ non-FR iterates show their classification instead of a blank cell. Today
 these fields are read-side only — Iterate C.1 will gate finalize on
 "`affected_frs` non-empty OR `change_type+none_reason` set".
 Origin: Phase 0a of the artifact-polish plan.
+
+**BP-1 — behavior-affecting changes must be FR-linked.**
+`record_event._fr_or_change_type_gate_error` (the gate that runs at the CLI
+boundary AND inside `finalize_iterate._record_event`) adds one rule: a
+**behavior-affecting** change (`spec_impact` ∈ `add`/`modify`/`remove`) with no
+`affected_frs`/`new_frs` is rejected (`fr_gate_behavior_affecting_requires_fr`)
+**regardless** of `change_type`/`none_reason` — the no-FR branch is reserved for
+behavior-preserving work. Unlike the CLI-only, intent-gated
+`_spec_impact_gate_error`, this rule is enforced at finalize too (F5b parity) and
+is intent-independent (covers BUG + intent-less events). The classification SSOT
+(`shared/scripts/lib/fr_classification.py`) is shared by the gate and the
+compliance Control-Grade adapter, so "classified" (gate) and "traced" (grade)
+cannot drift. The Control-Grade requirement-traceability dimension's
+`events_fr_tagged` input now counts **traced** changes (FR-linked OR satisfied
+no-FR), and the dashboard adds a `Recent changes traced to an FR` indicator that
+WARNs when FR-tagging drops below the all-time rate (freeze visibility). The
+Group-D **D1** coverage check dropped its spec-update watermark: an FR is covered
+when **any** event has ever named it ("a requirement untouched for months is
+under control" — re-verification under change is D4/reconciliation, not a D1 gap).
 
 ### Scripts Supporting Self-Healing
 

@@ -149,13 +149,17 @@ class WorkEvent:
     e2e_run: bool = False
     spec_updated: str = ""
     adr_id: str = ""
+    # FR-classification (BP-1) — lets the Control-Grade adapter + traced-% metric
+    # tell an FR-linked change from a satisfied no-FR one; legacy events coerce
+    # to "" (tolerant, no schema break).
+    change_type: str = ""
+    none_reason: str = ""
+    spec_impact: str = ""
 
     @classmethod
     def from_dict(cls, d: dict) -> WorkEvent:
-        # `or {}` / `or []` (not a `.get` default) so an EXPLICIT `null` in the
-        # event coerces like a missing key — an `affected_frs: null` producer
-        # would otherwise crash `map_requirements_to_events`. Mirrors
-        # `TestRunEvent.from_dict`'s `layers = d.get("layers") or {}` guard.
+        # `or {}` / `or []` (not a `.get` default) so an EXPLICIT `null` coerces
+        # like a missing key (an `affected_frs: null` would crash readers).
         tests = d.get("tests") or {}
         review = d.get("review") or {}
         return cls(
@@ -179,6 +183,9 @@ class WorkEvent:
             e2e_run=tests.get("e2e_run", False),
             spec_updated=d.get("spec_updated", ""),
             adr_id=d.get("adr_id", ""),
+            change_type=d.get("change_type") or "",
+            none_reason=d.get("none_reason") or "",
+            spec_impact=d.get("spec_impact") or "",
         )
 
 
@@ -186,19 +193,12 @@ class WorkEvent:
 class TestRunEvent:
     """Full test suite execution from event log.
 
-    Iterate B.3 (ADR-057): the ``layers`` dict now formally carries
-    ``integration`` and ``pgtap`` keys alongside the legacy ``unit`` /
-    ``e2e`` / ``smoke`` keys. Each layer also carries an optional
-    ``failed`` field (reviewer-flagged Gemini-H1) so producers can
-    distinguish skipped tests from real failures; readers fall back
-    to ``total - passed`` when ``failed`` is absent. Old events
-    without the new keys are read as zero-valued (tolerant
-    fall-through) so the dashboard / RTM / Test Evidence reports
-    never crash when scanning historical runs.
-
-    ``*_evaluated`` flags whether a layer was reported AT ALL in the
-    event — distinguishes "layer omitted" (unknown state) from "layer
-    ran with zero tests" (configured but empty).
+    The ``layers`` dict carries ``unit`` / ``integration`` / ``pgtap`` /
+    ``e2e`` / ``smoke`` keys; each may carry an optional ``failed`` count
+    (readers fall back to ``total - passed`` when absent). Missing keys read
+    as zero-valued so historical runs never crash the readers. ``*_evaluated``
+    flags whether a layer was reported AT ALL — "layer omitted" (unknown) vs
+    "ran with zero tests" (configured but empty).
     """
     id: str
     timestamp: str

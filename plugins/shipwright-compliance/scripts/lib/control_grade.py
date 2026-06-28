@@ -56,6 +56,8 @@ class GradeInputs:
     frs_total: int = 0
     frs_covered: int = 0
     events_total: int = 0
+    # Changes *traced* to a requirement decision: FR-linked OR satisfied no-FR
+    # (adapter decides; see _traceability.count_traced). "_fr_tagged" = back-compat.
     events_fr_tagged: int = 0
     # Test health (latest *full* suite, not the last event)
     latest_full_suite_passed: int | None = None
@@ -130,7 +132,7 @@ def _score_dimensions(inp: GradeInputs) -> list[DimensionResult]:
     """Compute each dimension's [0, 1] score (or None when not measurable)."""
     dims: list[DimensionResult] = []
 
-    # 1. Requirement traceability (25%) — coverage + active FR-tagging.
+    # 1. Requirement traceability (25%) — coverage + change classification.
     if inp.frs_total > 0:
         coverage = _ratio(inp.frs_covered, inp.frs_total)
         tag_rate = (
@@ -140,7 +142,8 @@ def _score_dimensions(inp: GradeInputs) -> list[DimensionResult]:
         req_score: float | None = 0.6 * coverage + 0.4 * tag_rate
         req_detail = (
             f"{inp.frs_covered}/{inp.frs_total} FRs covered; "
-            f"{inp.events_fr_tagged}/{inp.events_total} changes FR-tagged"
+            f"{inp.events_fr_tagged}/{inp.events_total} changes traced "
+            "(FR-linked or classified no-FR)"
         )
     else:
         req_score, req_detail = None, "no requirements declared"
