@@ -1,15 +1,15 @@
 # Commit Change Log
 
 Generated: 2026-06-28T12:34:00.983777+00:00
-Total commits: 1051
+Total commits: 1053
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 297
-    "feat" : 278
-    "chore" : 230
+    "fix" : 299
+    "feat" : 279
+    "chore" : 229
     "docs" : 142
     "refactor" : 64
     "test" : 25
@@ -20,10 +20,12 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 297 commits
+### Fixes (fix) — 299 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-28 | compliance | use canonical .shipwright/compliance literal for ci-security.json path | 89e737ec5318 |
+| 2026-06-28 | compliance | lazy-import PyYAML in ci_security so the cross-plugin import chain stays dependency-free | adb0f093d777 |
 | 2026-06-28 | compliance | fail-open + robust invocation for PreToolUse Bash gates (#278) | 01059128d910 |
 | 2026-06-27 | security | remediate CodeQL findings + tailor the query suite to this repo (#276) | 6e7d956f1297 |
 | 2026-06-22 | security | bump cryptography + ws to clear 3 high-severity dependency CVEs (#272) | d7cd255c7214 |
@@ -322,11 +324,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 278 commits
+### Features (feat) — 279 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
 | 2026-06-28 | compliance | RTM "Reconciled?" column + readability reuse the BP-2 grade helper (cc3/AR-05) (#284) | fb95a4765ef0 |
+| 2026-06-28 | compliance | ingest CI security posture into the dashboard + light the Control-Grade Security dimension (AR-10) | 2831db17c96b |
 | 2026-06-28 | compliance | per-FR fr_impact map lights the Control-Grade reconciliation dimension (cc2/BP-2) (#283) | 9941383afecf |
 | 2026-06-28 | compliance | BP-1 FR-mapping — credit satisfied no-FR, behavior-aware gate, traced-% metric (#280) | eb7bf10bf297 |
 | 2026-06-28 | compliance | Control Grade verdict block + latest-full-suite + inline audit (AR-01/02/03) (#277) | fdab00716d26 |
@@ -605,11 +608,10 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 230 commits
+### Chores (chore) — 229 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-28 | iterate | refresh session handoff for iterate-2026-06-28-drop-timestamp-drift completion | bd2c845f862a |
 | 2026-06-28 | security | exclude test fixtures from CodeQL + make intentional string-concat explicit (#279) | 6f1f35076dfa |
 | 2026-06-22 | release | v0.29.1 (#271) | af7a3fc04fae |
 | 2026-06-17 | — | align root pyproject.toml to 0.29.0 + de-PII a source comment (#262) | 6c0c1ea626c4 |
@@ -991,7 +993,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-28 | hooks | drop mtime timestamp-drift detector from check_drift.py | cba4d3803af1 |
+| 2026-06-28 | hooks | drop mtime timestamp-drift detector from check_drift.py (#287) | 9cde2be5e20c |
 | 2026-06-28 | codeql | break 3 import cycles via neutral leaf modules + fix 2 mixed-returns (#281) | 07eb0841c26d |
 | 2026-06-20 | triage | dedup aggregate_triage Stop regen across the plugin fan-out (#270) | 019778a14927 |
 | 2026-06-14 | hooks | consolidate fan-out via once-per-event guard + session-state phase resolver (#250) | e6e5e4b91764 |
@@ -1120,7 +1122,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1051 |
+| Total commits | 1053 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1051 |
+| Human-authored commits | 1053 |
 
