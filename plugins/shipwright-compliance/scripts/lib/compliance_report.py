@@ -9,13 +9,11 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-# Cross-cutting markdown helper lives at shared/scripts/markdown_table.py
-# (outside the `lib/` namespace per ADR-045 so it can be imported here
-# without colliding with this plugin's own `lib/` regular package).
+# Shared helpers (``triage``) live at shared/scripts/, outside this plugin's
+# `lib/` namespace (ADR-045) so they can be imported without colliding with it.
 _SHARED_SCRIPTS = Path(__file__).resolve().parents[4] / "shared" / "scripts"
 if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
-from markdown_table import escape_cell  # noqa: E402
 
 # Triage Inbox count surfaces in the dashboard's Quality Indicators
 # section (Iterate B.1). Import is deferred to keep the test fixture
@@ -27,7 +25,9 @@ except ImportError:  # pragma: no cover - triage helper always available in prac
     _read_triage_items = None  # type: ignore[assignment]
 from ._bloat_dashboard_rows import bloat_rows_events_mode, bloat_rows_legacy_mode  # B3
 from ._control_block import latest_tests_row, render_consistency_audit, render_control_block  # AR-01/02/03
+from ._dashboard_sections import external_review_evidence, project_velocity, render_date
 from ._traceability import render_traced_row  # BP-1: FR-tagging freeze metric
+from .ci_security import render_ci_security  # AR-10: CI security ingest
 if TYPE_CHECKING:
     from scripts.lib.data_collector import ComplianceData
 
@@ -97,15 +97,19 @@ def generate(data: ComplianceData) -> str:
     ]
 
     lines.extend(render_control_block(data))  # AR-01: Control Verdict + Grade
+    # AR-10: drill-down detail for the Security dimension — scan date, severity
+    # table, critical-gate, accepted-risk register. Expiry is keyed to the
+    # deterministic event-pinned timestamp so the render stays byte-stable.
+    lines.extend(render_ci_security(data.project_root, now=render_date(data.timestamp)))
 
     # Quality indicators — event-based if events exist, legacy otherwise
     if data.work_events:
         lines.extend(_quality_indicators_events(data))
-        lines.extend(_project_velocity(data))
+        lines.extend(project_velocity(data))
     else:
         lines.extend(_quality_indicators_legacy(data))
 
-    lines.extend(_external_review_evidence(data))
+    lines.extend(external_review_evidence(data))
     lines.extend(render_consistency_audit(data.project_root))  # AR-03: inline audit
 
     # Compliance artifacts
@@ -297,57 +301,6 @@ def _quality_indicators_events(data: ComplianceData) -> list[str]:
         f"| Triage open | {triage_value} | {_status_badge(triage_ok)} | {triage_why} |"
     )
     lines.extend(bloat_rows_events_mode(data.project_root))  # B3 (includes trailing "")
-    return lines
-
-
-def _project_velocity(data: ComplianceData) -> list[str]:
-    """Project velocity computed from event timestamps."""
-    build_events = [we for we in data.work_events if we.source == "build"]
-    iterate_events = [we for we in data.work_events if we.source == "iterate"]
-
-    lines = ["## Project Velocity", ""]
-
-    if build_events:
-        first_date = build_events[0].timestamp[:10]
-        last_date = build_events[-1].timestamp[:10]
-        lines.append(f"- Build: {len(build_events)} sections ({first_date} → {last_date})")
-
-    if iterate_events:
-        first_date = iterate_events[0].timestamp[:10]
-        last_date = iterate_events[-1].timestamp[:10]
-        lines.append(f"- Iterate: {len(iterate_events)} changes ({first_date} → {last_date})")
-
-    if data.work_events:
-        lines.append(f"- Last activity: {data.work_events[-1].timestamp[:10]}")
-
-    lines.append("")
-    return lines
-
-
-def _external_review_evidence(data: ComplianceData) -> list[str]:
-    """External LLM review audit evidence — one row per planning split.
-
-    Reads the markers written by shipwright-plan v0.3.0+ Step 5. Splits with
-    no marker are shown as "missing" so auditors can see the gap.
-    """
-    if not data.external_review_states:
-        return []
-
-    lines = [
-        "## External LLM Review Evidence",
-        "",
-        "| Split | Status | Provider | Findings | Self-review fallback | Reason |",
-        "|-------|--------|----------|----------|----------------------|--------|",
-    ]
-    for s in data.external_review_states:
-        provider = s.provider or "—"
-        fallback = "yes" if s.self_review_fallback_ran else "no"
-        reason = s.reason or "—"
-        lines.append(
-            f"| {escape_cell(s.split)} | {escape_cell(s.status)} | {escape_cell(provider)} "
-            f"| {s.findings_count} | {fallback} | {escape_cell(reason)} |"
-        )
-    lines.append("")
     return lines
 
 

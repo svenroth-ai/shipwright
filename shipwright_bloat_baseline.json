@@ -179,7 +179,7 @@
     {
       "path": "plugins/shipwright-compliance/scripts/lib/compliance_report.py",
       "limit": 300,
-      "current": 413,
+      "current": 357,
       "state": "grandfathered",
       "adr": null
     },
@@ -529,7 +529,7 @@
     {
       "path": "shared/scripts/hooks/check_drift.py",
       "limit": 300,
-      "current": 534,
+      "current": 432,
       "state": "grandfathered",
       "adr": null
     },
@@ -809,7 +809,7 @@
     {
       "path": "shared/tests/test_drift_triage_emit.py",
       "limit": 300,
-      "current": 415,
+      "current": 405,
       "state": "grandfathered",
       "adr": null
     },
@@ -886,7 +886,7 @@
     {
       "path": "shared/tests/test_hooks.py",
       "limit": 300,
-      "current": 551,
+      "current": 482,
       "state": "grandfathered",
       "adr": null
     },
@@ -1103,7 +1103,7 @@
     {
       "path": "shared/tests/test_wp5_hook_resolvers.py",
       "limit": 300,
-      "current": 304,
+      "current": 281,
       "state": "grandfathered",
       "adr": null
     }

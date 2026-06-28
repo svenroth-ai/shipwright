@@ -113,7 +113,6 @@ class TestCheckDriftProjectGuard:
         # nothing (no .shipwright/, no triage.jsonl, no lock).
         appended = check_drift._emit_drift_to_triage(
             tmp_path,
-            timestamp_drifted=["pyproject.toml"],
             content_findings=["CLAUDE.md: Structure lists 'gone/' but directory not found"],
         )
         assert appended == 0
@@ -124,8 +123,7 @@ class TestCheckDriftProjectGuard:
         _mark_shipwright_project(tmp_path)
         appended = check_drift._emit_drift_to_triage(
             tmp_path,
-            timestamp_drifted=["pyproject.toml"],
-            content_findings=[],
+            content_findings=["CLAUDE.md: Structure lists 'gone/' but directory not found"],
         )
         assert appended == 1
         items = read_all_items(tmp_path)
@@ -169,27 +167,6 @@ class TestContentAnchorRepoRelative:
         k_wt = f"drift:{check_drift._content_anchor(f_wt, wt_root)}:content"
         assert k_main == k_wt
 
-    def test_timestamp_keys_are_tree_independent(self, tmp_path: Path):
-        # External code-review (gemini) flagged: are timestamp dedup keys also
-        # cross-tree stable? check_timestamp_drift emits BARE names (pyproject.toml,
-        # "src/ (source changes)") from fixed KEY_FILES/KEY_DIRS — never absolute
-        # paths — so the key is already repo-relative regardless of tree.
-        main_root = tmp_path / "main"
-        wt_root = tmp_path / ".worktrees" / "slug"
-        main_root.mkdir(parents=True)
-        wt_root.mkdir(parents=True)
-        _mark_shipwright_project(main_root)
-        _mark_shipwright_project(wt_root)
-        check_drift._emit_drift_to_triage(
-            main_root, timestamp_drifted=["pyproject.toml"], content_findings=[],
-        )
-        check_drift._emit_drift_to_triage(
-            wt_root, timestamp_drifted=["pyproject.toml"], content_findings=[],
-        )
-        k_main = {i["dedupKey"] for i in read_all_items(main_root)}
-        k_wt = {i["dedupKey"] for i in read_all_items(wt_root)}
-        assert k_main == k_wt == {"drift:pyproject.toml:timestamp"}
-
     def test_relative_finding_path_unchanged(self, tmp_path: Path):
         # A finding already carrying a repo-relative path is kept verbatim (NOT
         # realpath'd against the process cwd) and case/sep-folded via normcase
@@ -214,7 +191,7 @@ class TestContentAnchorRepoRelative:
         # And the full _emit path stays best-effort (no exception escapes).
         _mark_shipwright_project(root)
         appended = check_drift._emit_drift_to_triage(
-            root, timestamp_drifted=[], content_findings=[finding],
+            root, content_findings=[finding],
         )
         assert appended == 1
 

@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-28-drop-timestamp-drift",
+  "date": "2026-06-28T12:34:42.883837Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/drop-timestamp-drift",
+  "spec": ".shipwright/planning/iterate/2026-06-28-drop-timestamp-drift.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-28-drop-timestamp-drift"
+}

@@ -4,7 +4,6 @@ import json
 import os
 import subprocess
 import sys
-import time
 from pathlib import Path
 
 
@@ -481,71 +480,3 @@ class TestCheckFileSize:
         result = run_python_hook("check_file_size.py", payload, cwd=str(tmp_path))
         assert result.returncode == 0
         assert "310" in result.stdout
-
-
-class TestCheckDrift:
-    """Tests for CLAUDE.md drift detection hook."""
-
-    def test_warns_when_source_newer(self, tmp_path):
-        # Create CLAUDE.md first (older)
-        claude_md = tmp_path / "CLAUDE.md"
-        claude_md.write_text("# Project\n")
-
-        # Ensure timestamp difference
-        time.sleep(0.1)
-
-        # Create source file (newer)
-        src = tmp_path / "src"
-        src.mkdir()
-        (src / "app.py").write_text("print('hello')\n")
-
-        result = run_python_hook("check_drift.py", cwd=str(tmp_path))
-        assert result.returncode == 0
-        assert "DRIFT WARNING" in result.stdout
-
-    def test_no_warning_when_claude_md_newer(self, tmp_path):
-        # Create source first (older)
-        src = tmp_path / "src"
-        src.mkdir()
-        (src / "app.py").write_text("print('hello')\n")
-
-        # Ensure timestamp difference
-        time.sleep(0.1)
-
-        # Create CLAUDE.md (newer)
-        claude_md = tmp_path / "CLAUDE.md"
-        claude_md.write_text("# Project\n")
-
-        result = run_python_hook("check_drift.py", cwd=str(tmp_path))
-        assert result.returncode == 0
-        assert "DRIFT" not in result.stdout
-
-    def test_no_warning_without_claude_md(self, tmp_path):
-        result = run_python_hook("check_drift.py", cwd=str(tmp_path))
-        assert result.returncode == 0
-        assert result.stdout.strip() == ""
-
-    def test_detects_package_json_drift(self, tmp_path):
-        claude_md = tmp_path / "CLAUDE.md"
-        claude_md.write_text("# Project\n")
-        time.sleep(0.1)
-        pkg = tmp_path / "package.json"
-        pkg.write_text('{"name": "test"}')
-
-        result = run_python_hook("check_drift.py", cwd=str(tmp_path))
-        assert result.returncode == 0
-        assert "package.json" in result.stdout
-
-    def test_never_blocks(self, tmp_path):
-        """Drift detection should never return non-zero exit code."""
-        claude_md = tmp_path / "CLAUDE.md"
-        claude_md.write_text("# Project\n")
-        time.sleep(0.1)
-        src = tmp_path / "src"
-        src.mkdir()
-        (src / "app.py").write_text("print('hello')\n")
-        pkg = tmp_path / "package.json"
-        pkg.write_text('{"name": "test"}')
-
-        result = run_python_hook("check_drift.py", cwd=str(tmp_path))
-        assert result.returncode == 0  # Always 0, never blocks
