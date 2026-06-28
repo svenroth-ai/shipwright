@@ -49,32 +49,16 @@ def project(tmp_path: Path) -> Path:
 
 
 # --- check_drift.py producer --------------------------------------------
-
-def test_check_drift_timestamp_only_emits_per_file(project: Path) -> None:
-    """One timestamp-drift finding per file in the list."""
-    appended = check_drift._emit_drift_to_triage(
-        project,
-        timestamp_drifted=["pyproject.toml", "package.json"],
-        content_findings=[],
-    )
-    assert appended == 2
-    items = read_all_items(project)
-    keys = {it["dedupKey"] for it in items}
-    assert "drift:pyproject.toml:timestamp" in keys
-    assert "drift:package.json:timestamp" in keys
-    for it in items:
-        assert it["source"] == "drift"
-        assert it["severity"] == "medium"
-        assert it["kind"] == "maintenance"
-        assert it["suggestedPriority"] == "P2"
-
+# (subprocess + the timestamp-removal/migration regressions live in
+#  test_check_drift_hook.py; this file keeps the producer schema/dedup surface
+#  shared with artifact_sync.)
 
 def test_check_drift_content_findings_dedup_by_file(project: Path) -> None:
     """Two content findings on the SAME file collapse to one triage item
     (dedup-key is file:content; same file is the same noise source).
     """
     appended = check_drift._emit_drift_to_triage(
-        project, timestamp_drifted=[],
+        project,
         content_findings=[
             "CLAUDE.md: 'docs/' exists on disk but not listed in Structure",
             "CLAUDE.md: references 'npm run xx' but not defined in package.json",
@@ -90,7 +74,7 @@ def test_check_drift_content_findings_dedup_by_file(project: Path) -> None:
 def test_check_drift_content_findings_per_distinct_file(project: Path) -> None:
     """Content findings on DIFFERENT files emit one item per file."""
     appended = check_drift._emit_drift_to_triage(
-        project, timestamp_drifted=[],
+        project,
         content_findings=[
             "CLAUDE.md: 'docs/' exists on disk but not listed in Structure",
             "webui/CLAUDE.md: 'src/' exists on disk but not listed in Structure",
@@ -104,23 +88,23 @@ def test_check_drift_content_findings_per_distinct_file(project: Path) -> None:
     }
 
 
-def test_check_drift_both_kinds_combined(project: Path) -> None:
+def test_check_drift_only_content_kind_emitted(project: Path) -> None:
+    """Only ``:content`` items are produced now (the timestamp kind is gone)."""
     check_drift._emit_drift_to_triage(
         project,
-        timestamp_drifted=["pyproject.toml"],
         content_findings=[
             "CLAUDE.md: 'docs/' exists on disk but not listed in Structure",
         ],
     )
     items = read_all_items(project)
-    assert len(items) == 2
+    assert len(items) == 1
     kinds = {it["dedupKey"].split(":")[-1] for it in items}
-    assert kinds == {"timestamp", "content"}
+    assert kinds == {"content"}
 
 
 def test_check_drift_no_findings_no_op(project: Path) -> None:
     appended = check_drift._emit_drift_to_triage(
-        project, timestamp_drifted=[], content_findings=[],
+        project, content_findings=[],
     )
     assert appended == 0
     assert read_all_items(project) == []
@@ -128,12 +112,9 @@ def test_check_drift_no_findings_no_op(project: Path) -> None:
 
 def test_check_drift_dedups_across_sessions(project: Path) -> None:
     """match_commit=False, window=None → same file:kind stays ONE item."""
-    check_drift._emit_drift_to_triage(
-        project, timestamp_drifted=["pyproject.toml"], content_findings=[],
-    )
-    appended2 = check_drift._emit_drift_to_triage(
-        project, timestamp_drifted=["pyproject.toml"], content_findings=[],
-    )
+    finding = ["CLAUDE.md: 'docs/' exists on disk but not listed in Structure"]
+    check_drift._emit_drift_to_triage(project, content_findings=finding)
+    appended2 = check_drift._emit_drift_to_triage(project, content_findings=finding)
     assert appended2 == 0
     assert len(read_all_items(project)) == 1
 
@@ -169,7 +150,6 @@ def test_check_drift_drive_letter_casing_dedups_to_one_item(
     )
     appended = check_drift._emit_drift_to_triage(
         project,
-        timestamp_drifted=[],
         content_findings=[
             f"{variant_a}: Structure lists 'docs/' but directory not found",
             f"{variant_b}: Structure lists 'docs/' but directory not found",
@@ -186,13 +166,13 @@ def test_check_drift_drive_letter_casing_dedups_across_sessions(
     the same file under different abspath casing still yield ONE item."""
     variant_a, variant_b = _two_casings(tmp_path)
     check_drift._emit_drift_to_triage(
-        project, timestamp_drifted=[],
+        project,
         content_findings=[
             f"{variant_a}: Structure lists 'docs/' but directory not found",
         ],
     )
     appended2 = check_drift._emit_drift_to_triage(
-        project, timestamp_drifted=[],
+        project,
         content_findings=[
             f"{variant_b}: Structure lists 'docs/' but directory not found",
         ],
@@ -226,7 +206,7 @@ def test_check_drift_legacy_noncanonical_item_resolved_on_recanon(
 
     # Post-fix run: same logical file → canonical key, distinct from legacy.
     check_drift._emit_drift_to_triage(
-        project, timestamp_drifted=[],
+        project,
         content_findings=[
             f"{variant_a}: Structure lists 'docs/' but directory not found",
         ],
@@ -249,9 +229,9 @@ def test_check_drift_resolves_cleared_finding(project: Path) -> None:
     triage items to dismissed with reason=driftResolved."""
     check_drift._emit_drift_to_triage(
         project,
-        timestamp_drifted=["pyproject.toml"],
         content_findings=[
             "CLAUDE.md: 'docs/' exists on disk but not listed in Structure",
+            "webui/CLAUDE.md: 'src/' exists on disk but not listed in Structure",
         ],
     )
     items = read_all_items(project)
@@ -260,7 +240,7 @@ def test_check_drift_resolves_cleared_finding(project: Path) -> None:
 
     # Next run: no findings at all — both drift conditions cleared.
     check_drift._emit_drift_to_triage(
-        project, timestamp_drifted=[], content_findings=[],
+        project, content_findings=[],
     )
     items = read_all_items(project)
     assert len(items) == 2  # no new items appended
@@ -273,24 +253,28 @@ def test_check_drift_resolves_cleared_finding(project: Path) -> None:
 def test_check_drift_resolves_only_vanished_findings(project: Path) -> None:
     """A finding still present on the next run stays in triage; only the
     finding that vanished is dismissed."""
+    k_root = f"drift:{check_drift._canonical_anchor('CLAUDE.md', project)}:content"
+    k_webui = f"drift:{check_drift._canonical_anchor('webui/CLAUDE.md', project)}:content"
     check_drift._emit_drift_to_triage(
         project,
-        timestamp_drifted=["pyproject.toml", "package.json"],
-        content_findings=[],
+        content_findings=[
+            "CLAUDE.md: 'docs/' exists on disk but not listed in Structure",
+            "webui/CLAUDE.md: 'src/' exists on disk but not listed in Structure",
+        ],
     )
     assert len(read_all_items(project)) == 2
 
-    # Re-run: package.json drift cleared, pyproject.toml drift persists.
+    # Re-run: webui/CLAUDE.md drift cleared, CLAUDE.md drift persists.
     check_drift._emit_drift_to_triage(
-        project, timestamp_drifted=["pyproject.toml"], content_findings=[],
+        project,
+        content_findings=[
+            "CLAUDE.md: 'docs/' exists on disk but not listed in Structure",
+        ],
     )
     by_key = {it["dedupKey"]: it for it in read_all_items(project)}
-    assert by_key["drift:pyproject.toml:timestamp"]["status"] == "triage"
-    assert by_key["drift:package.json:timestamp"]["status"] == "dismissed"
-    assert (
-        by_key["drift:package.json:timestamp"]["statusReason"]
-        == "driftResolved"
-    )
+    assert by_key[k_root]["status"] == "triage"
+    assert by_key[k_webui]["status"] == "dismissed"
+    assert by_key[k_webui]["statusReason"] == "driftResolved"
 
 
 def test_check_drift_resolve_ignores_artifact_sync_items(project: Path) -> None:
@@ -310,7 +294,7 @@ def test_check_drift_resolve_ignores_artifact_sync_items(project: Path) -> None:
     # check_drift runs with NO findings — its resolve pass sees the
     # artifact item but must leave it alone (wrong key suffix).
     check_drift._emit_drift_to_triage(
-        project, timestamp_drifted=[], content_findings=[],
+        project, content_findings=[],
     )
     [item] = read_all_items(project)
     assert item["dedupKey"].endswith(":artifact")
@@ -323,7 +307,10 @@ def test_check_drift_resolve_leaves_terminal_items(project: Path) -> None:
     from triage import mark_status
 
     check_drift._emit_drift_to_triage(
-        project, timestamp_drifted=["pyproject.toml"], content_findings=[],
+        project,
+        content_findings=[
+            "CLAUDE.md: 'docs/' exists on disk but not listed in Structure",
+        ],
     )
     [item] = read_all_items(project)
     mark_status(project, item["id"], new_status="promoted", by="operator",
@@ -331,7 +318,7 @@ def test_check_drift_resolve_leaves_terminal_items(project: Path) -> None:
 
     # Finding vanishes on the next run.
     check_drift._emit_drift_to_triage(
-        project, timestamp_drifted=[], content_findings=[],
+        project, content_findings=[],
     )
     [item] = read_all_items(project)
     assert item["status"] == "promoted"  # NOT flipped to dismissed
@@ -394,7 +381,10 @@ def test_artifact_sync_dedups_across_sessions(project: Path) -> None:
 def test_both_sites_emit_compatible_items(project: Path) -> None:
     """A drift item from either site reads the same shape via read_all_items."""
     check_drift._emit_drift_to_triage(
-        project, timestamp_drifted=["pyproject.toml"], content_findings=[],
+        project,
+        content_findings=[
+            "CLAUDE.md: 'docs/' exists on disk but not listed in Structure",
+        ],
     )
     artifact_sync._emit_drift_to_triage(
         project,

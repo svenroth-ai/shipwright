@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-28-cc2-bp2-impact-producer"
+run_id: "iterate-2026-06-28-drop-timestamp-drift"
 phase: "iterate"
-reason: "F11 refresh before PR (integrate #282)"
-timestamp: "2026-06-28T08:48:14.752152+00:00"
+reason: "iterate: drop timestamp-drift check"
+timestamp: "2026-06-28T12:34:00.983777+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-28 08:48:14 UTC
+> Auto-generated 2026-06-28 12:34:00 UTC
 
 ## Session Info
 
-- **Session ID**: 86f21e38-8222-42f0-ba25-456fc45395fa
-- **Timestamp**: 2026-06-28 08:48:14 UTC
-- **Reason**: F11 refresh before PR (integrate #282)
+- **Session ID**: e6723b45-9aed-4208-8b66-4d4653da8543
+- **Timestamp**: 2026-06-28 12:34:00 UTC
+- **Reason**: iterate: drop timestamp-drift check
 
 ## Last Iterate
 
@@ -29,8 +29,10 @@ timestamp: "2026-06-28T08:48:14.752152+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/cc2-bp2-impact-producer
-- **Spec**: .shipwright/planning/iterate/2026-06-28-cc2-bp2-impact-producer.md
+- **Branch**: iterate/drop-timestamp-drift
+- **Run ID**: iterate-2026-06-28-drop-timestamp-drift
+- **Spec**: .shipwright/planning/iterate/2026-06-28-drop-timestamp-drift.md
+- **Complexity**: medium (diff-driven `cross_component`: `check_drift.py` matches
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -49,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/cc2-bp2-impact-producer
-- **Last Commit**: 03fa8ce6 Merge remote-tracking branch 'origin/main' into iterate/cc2-bp2-impact-producer
+- **Branch**: iterate/drop-timestamp-drift
+- **Last Commit**: 9941383a feat(compliance): per-FR fr_impact map lights the Control-Grade reconciliation dimension (cc2/BP-2) (#283)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -66,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-62cb4cbd | work_completed | iterate (Remove mtime-based timestamp-drift detector from check_drift.py; keep content-drift; legacy :timestamp triage items auto-resolve) | 2026-06-28 |
 | evt-5ba214bd | work_completed | iterate (Fix events_log lazy-import rationale (load_shared_lib isolation, not the removed cycle) + 2 repo_root docstring refs) | 2026-06-28 |
 | evt-280e7afe | work_completed | iterate (BP-2: per-FR fr_impact map on work_completed events lights the Control-Grade change-reconciliation dimension) | 2026-06-28 |
 | evt-bc8ebee5 | work_completed | iterate (Break 3 CodeQL py/cyclic-import cycles via neutral leaf extraction + fix 2 py/mixed-returns) | 2026-06-28 |
 | evt-5d34869b | work_completed | iterate (CodeQL fixture-noise cleanup: paths-ignore test fixtures + explicit string-concat refactor) | 2026-06-28 |
-| evt-d50b793d | work_completed | iterate (compliance PreToolUse Bash gates: robust uv run --no-project invocation + fail-open guard) | 2026-06-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 217
-- **Last iterate**: change — Fix events_log lazy-import rationale (load_shared_lib isolation, not the removed cycle) + 2 repo_root docstring refs (2026-06-28)
+- **Total work events**: 218
+- **Last iterate**: change — Remove mtime-based timestamp-drift detector from check_drift.py; keep content-drift; legacy :timestamp triage items auto-resolve (2026-06-28)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

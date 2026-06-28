@@ -1,24 +1,24 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-28-cc2-bp2-impact-producer",
+    "run_id": "iterate-2026-06-28-drop-timestamp-drift",
     "date": "2026-06-28",
     "unit": {
       "status": "passed",
-      "passed": 4799,
-      "total": 4799
+      "passed": 3596,
+      "total": 3596
     },
     "integration": {
       "status": "passed",
-      "passed": 174,
-      "total": 174
+      "passed": 1,
+      "total": 1
     },
     "pgtap": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
@@ -32,49 +32,57 @@
     },
     "surface_verification": {
       "surface": "none",
+      "runner": "",
       "exit_code": 0,
-      "tests_run": 4973,
-      "justification": "BP-2 is a framework/library change: a per-FR fr_impact map on the work_completed event wire-format (record_event + finalize), a tolerant WorkEvent reader, a new compliance reconciliation helper, and the Control-Grade adapter lighting the change-reconciliation dimension. No product web/api/cli/UI/store surface is introduced or changed; the compliance dashboard/RTM are static tracked .md and the WebUI is unaffected. Verified empirically against the real event log: reconciliation measurable=True, 4 behavior-touched FRs, 0 unreconciled, grade holds A 100 (dimension n/a->live). Full suites green: compliance 765, shared 3598, iterate 436, integration 174; pinned-ruff clean; anti-ratchet 0 ratchets / 0 new crossings."
+      "tests_run": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-06-28-drop-timestamp-drift/surface_verification.json",
+      "justification": "Framework-internal SessionStart hook (check_drift.py); no startable web/cli/api app surface. The removed timestamp detector and retained content-drift + triage resolve path are driven end-to-end by the subprocess integration test test_check_drift_hook.py::TestCheckDriftHook::test_integration_hook_composes_content_drift_and_retires_timestamp (category:integration). Full suites green: shared/tests 3596, shared/scripts/tests 196, shared/scripts/tools/tests 61; pinned-ruff clean; anti-ratchet baselines ratcheted down (check_drift.py 534->432, test_hooks.py 551->482, test_drift_triage_emit.py 415->405, test_wp5_hook_resolvers.py 304->281)."
     },
-    "degraded": [],
+    "degraded": [
+      {
+        "condition": "external_llm_review",
+        "reason": "medium iterate normally runs external LLM plan review; external-review keys not configured in this interactive session, so it fell back to the internal shipwright-build:code-reviewer (verdict APPROVE, one minor baseline-hygiene finding fixed) per degraded-mode."
+      }
+    ],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "normalize_fr_impact validates+normalizes the per-FR map (lowercase/trim) and raises on malformed structure (non-dict, unknown impact, blank/non-str key, non-str value)",
+          "behavior": "AC-1: timestamp symbols (check_timestamp_drift, get_newest_in_dir, get_mtime, KEY_FILES, KEY_DIRS) + the main() timestamp warning block are removed from check_drift.py",
           "disposition": "tested",
-          "evidence": "shared/tests/test_fr_classification.py::TestNormalizeFrImpact (8)"
+          "evidence": "repo-wide grep -> 0 .py references; py_compile OK; ruff@0.15.15 clean; behaviour pinned by shared/tests/test_check_drift_hook.py::test_producer_never_emits_timestamp_item PASSED"
         },
         {
-          "behavior": "record_event CLI/build_event writes fr_impact, round-trips write->read, rejects invalid value/JSON, and still passes the ADR-059 FR-gate with FR linkage",
+          "behavior": "AC-2: _emit_drift_to_triage drops the timestamp_drifted parameter and never emits a new :timestamp triage item",
           "disposition": "tested",
-          "evidence": "shared/tests/test_fr_impact_roundtrip.py::TestRecordEventFrImpact (5)"
+          "evidence": "shared/tests/test_check_drift_hook.py::test_producer_never_emits_timestamp_item + test_drift_triage_emit.py::test_check_drift_only_content_kind_emitted PASSED"
         },
         {
-          "behavior": "finalize_iterate F5b path carries+normalizes fr_impact and FAILS CLOSED (FinalizeGateError) on a malformed map, writing nothing",
+          "behavior": "AC-3: the resolve pass dismisses pre-existing open legacy :timestamp items and leaves artifact_sync's :artifact items untouched",
           "disposition": "tested",
-          "evidence": "shared/tests/test_fr_impact_roundtrip.py::TestFinalizeFrImpact (2)"
+          "evidence": "shared/tests/test_check_drift_hook.py::test_producer_retires_legacy_timestamp_item + test_drift_triage_emit.py::test_check_drift_resolve_ignores_artifact_sync_items PASSED"
         },
         {
-          "behavior": "WorkEvent.from_dict parses fr_impact and tolerates legacy/null/garbage (->{}), stripping+lowercasing values",
+          "behavior": "AC-4: content-drift detection (structure + command) is unchanged: same warnings, same :content triage items, hook exits 0",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_reconciliation.py::TestWorkEventFrImpact (4)"
+          "evidence": "shared/tests/test_check_drift_hook.py::TestCheckDriftHook::test_content_drift_still_detected + test_drift_triage_emit.py::test_check_drift_content_findings_dedup_by_file / test_check_drift_content_findings_per_distinct_file PASSED"
         },
         {
-          "behavior": "compute_reconciliation: touched-without-re-verify (age-neutral), spec_impact fallback for legacy events, per-FR granularity, doc-only never flagged, malformed ts skipped",
+          "behavior": "AC-5: no Timestamp-drift warning even when a former KEY_FILE (pyproject.toml) is modified more recently than CLAUDE.md",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_reconciliation.py::TestComputeReconciliation (10)"
+          "evidence": "shared/tests/test_check_drift_hook.py::TestCheckDriftHook::test_no_timestamp_warning_when_keyfile_newer PASSED"
         },
         {
-          "behavior": "build_grade_inputs lights reconciliation: measurable=bool(behavior-touched), counts filtered to declared requirements, agrees with the helper; n/a when no reqs or no behavior touches",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_reconciliation.py::TestBuildGradeInputsReconciliation (4)"
-        },
-        {
-          "behavior": "guide.md Control-Grade block documents fr_impact + the reconciliation dimension going n/a->live",
+          "behavior": "AC-6: docs/hooks-and-pipeline.md no longer describes a timestamp detector",
           "disposition": "untestable",
           "reason_code": "requires-manual-visual-judgment",
-          "reason": "documentation prose accuracy is verified by reading, not an automated assertion (guide.md is bloat-exempt and content-untested)"
+          "reason": "doc prose correctness; verified by grep (0 'Timestamp drift' rows remain in docs/) + manual read. guide.md was already content-only, no change needed."
+        },
+        {
+          "behavior": "Integration composition: the SessionStart hook subprocess composes content-drift detection + triage :content emission + resolve-pass retirement of a pre-seeded legacy :timestamp item, exit 0",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "shared/tests/test_check_drift_hook.py::TestCheckDriftHook::test_integration_hook_composes_content_drift_and_retires_timestamp PASSED (real subprocess end-to-end against a fixture Shipwright project)"
         }
       ],
       "counts": {
@@ -84,8 +92,8 @@
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 5,
-        "covered_acs": 5
+        "acs": 6,
+        "covered_acs": 6
       }
     }
   }
