@@ -73,9 +73,13 @@ except (ImportError, ModuleNotFoundError):
 API_BASE = "https://app.aikido.dev/api"
 TOKEN_URL = f"{API_BASE}/oauth/token"
 
-# Finding classification rules
-AUTO_FIXABLE_TYPES = {"dependency", "sca"}
-AGENT_FIXABLE_TYPES = {"sast", "secret_detection"}
+# Finding classification — shared, backend-agnostic. Extracted to its own leaf
+# module (finding_classify) to break the scanner_backend <-> aikido_client
+# import cycle; finding_classify is a sibling on disk, so SCRIPT_DIR on
+# sys.path resolves it in any import context.
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+from finding_classify import classify_finding  # noqa: E402
 
 SETUP_URL = "https://app.aikido.dev/settings/integrations/api/aikido/rest"
 
@@ -144,34 +148,6 @@ class AikidoClient:
         )
         resp.raise_for_status()
         return resp.json()
-
-
-# ---------------------------------------------------------------------------
-# Finding classification
-# ---------------------------------------------------------------------------
-
-def classify_finding(finding: dict[str, Any]) -> str:
-    """Classify a finding into a remediation category.
-
-    Returns one of: auto-fixable, agent-fixable, needs-review, informational.
-    """
-    severity = finding.get("severity", "").lower()
-    finding_type = finding.get("type", "").lower()
-
-    # Low severity and informational → just log
-    if severity in ("low", "info", "informational"):
-        return "informational"
-
-    # Dependency/SCA issues with known patches → auto-fixable
-    if finding_type in AUTO_FIXABLE_TYPES:
-        return "auto-fixable"
-
-    # SAST / secret detection → agent can analyze and fix
-    if finding_type in AGENT_FIXABLE_TYPES:
-        return "agent-fixable"
-
-    # Everything else (architecture, business logic, etc.) → human review
-    return "needs-review"
 
 
 def normalize_issues(data: Any) -> list[dict[str, Any]]:

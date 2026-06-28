@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-28T06:17:09.227517+00:00
+Generated: 2026-06-28T07:10:14.008342+00:00
 
 ## Requirements Coverage
 
@@ -238,6 +238,7 @@ Generated: 2026-06-28T06:17:09.227517+00:00
 | CodeQL security hardening: tailor the query suite via codeql-config.yml; root-fix genuine findings (file modes to 0o600, two ReDoS regexes, a loop-capture bug, a rollback-CLI else-guard); remove 13 dead module globals. | iterate | change |  | — | — | 2026-06-27 |
 | compliance PreToolUse Bash gates: robust uv run --no-project invocation + fail-open guard | iterate | change |  | 3560/3560 | — | 2026-06-27 |
 | CodeQL fixture-noise cleanup: paths-ignore test fixtures + explicit string-concat refactor | iterate | change |  | 4720/4720 | — | 2026-06-28 |
+| Break 3 CodeQL py/cyclic-import cycles via neutral leaf extraction + fix 2 py/mixed-returns | iterate | change |  | 4719/4719 | — | 2026-06-28 |
 
 ## Coverage Summary
 
@@ -245,7 +246,7 @@ Generated: 2026-06-28T06:17:09.227517+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 213 |
+| Iterate changes | 214 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

@@ -1,8 +1,8 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-28-codeql-fixture-noise",
+    "run_id": "iterate-2026-06-28-codeql-import-cycles",
     "date": "2026-06-28",
-    "unit": { "status": "passed", "passed": 4720, "total": 4720 },
+    "unit": { "status": "passed", "passed": 4719, "total": 4719 },
     "integration": { "status": "not_run", "passed": 0, "total": 0 },
     "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
     "e2e": { "status": "not_run", "passed": 0, "total": 0 },
@@ -10,31 +10,41 @@
     "smoke": { "status": "not_run" },
     "surface_verification": {
       "surface": "none",
-      "justification": "No web/CLI runtime surface affected — a CI CodeQL scan-config change plus byte-preserving Python refactors; verified by the unit suites and a compile-constant equivalence gate."
+      "justification": "Pure internal Python-library refactor (import-cycle break + test-helper return-shape fixes); no web/CLI runtime surface. Verified by the full unit suites, import-identity smoke tests (moved symbols resolve to the same objects via re-export), and by executing the iterate's own leak-guard which imports the refactored modules."
     },
     "degraded": [],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "CodeQL config excludes test fixtures via paths-ignore (**/tests/fixtures/**)",
+          "behavior": "Cycle A broken: git primitives extracted to lib/git_base.py; worktree_isolation re-exports them; repo_root imports from git_base (no worktree_isolation edge)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_codeql_config_query_filters.py::test_paths_ignore_is_exactly_test_fixtures PASSED (RED before config edit, GREEN after)"
+          "evidence": "import-identity smoke (worktree_isolation.run_git/GitError/main_repo_root/is_worktree IS git_base.*; repo_root.* IS git_base.*) + shared suite 3561 passed incl test_worktree_isolation_lib + check_iterate_isolation runs ALLOW"
         },
         {
-          "behavior": "Six implicit string-concatenations refactored to explicit '+' with byte-identical resulting values",
+          "behavior": "Cycle B broken: phase_quality model/loaders extracted to _findings_model.py; _aggregates re-exports; _dashboard_render imports from the leaf",
           "disposition": "tested",
-          "evidence": "compile-constant equivalence gate (co_consts before==after for all 4 files) + test_control_grade (19) / security report+degraded (48) / adopt data-preservation (1) / installer shell-scripts suites PASSED"
+          "evidence": "import-identity smoke (_aggregates.LoadedFinding IS _findings_model.LoadedFinding; _dashboard_render.count_by_status IS _findings_model.count_by_status) + shared 3561 + compliance 734 passed (consumes phase_quality)"
         },
         {
-          "behavior": "CodeQL CI analysis actually skips the fixtures so the ~1000 js/assignment-to-constant alerts auto-close",
+          "behavior": "Cycle C broken: classify_finding extracted to security/finding_classify.py; scanner_backend + aikido_client import the leaf (no scanner_backend->aikido_client edge)",
+          "disposition": "tested",
+          "evidence": "import-identity smoke (scanner_backend.classify_finding IS aikido_client.classify_finding IS finding_classify.classify_finding) + security suite 424 passed"
+        },
+        {
+          "behavior": "Two py/mixed-returns fixed: test helpers end in an explicit return/raise; skip/fail semantics preserved",
+          "disposition": "tested",
+          "evidence": "test_artifact_drift_edge_cases.py + test_security_critical_gate.py PASSED in the shared suite"
+        },
+        {
+          "behavior": "CodeQL CI marks the 6 py/cyclic-import + 2 py/mixed-returns alerts as fixed",
           "disposition": "untestable",
           "reason_code": "requires-external-nondeterministic-service",
-          "reason": "Runs in GitHub Actions CodeQL post-merge; the locally-assertable proxy (config contains the exclusion) is covered by the first behavior."
+          "reason": "Runs in GitHub Actions CodeQL post-merge; the locally-assertable proxies (no static cycle, behavior preserved) are covered by the behaviors above."
         }
       ],
-      "counts": { "testable": 2, "tested": 2, "untestable": 1, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 2, "covered_acs": 2 }
+      "counts": { "testable": 4, "tested": 4, "untestable": 1, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 4, "covered_acs": 4 }
     }
   }
 }
