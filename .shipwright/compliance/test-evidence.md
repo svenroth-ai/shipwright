@@ -1,6 +1,6 @@
 # Test Evidence Report
 
-Generated: 2026-06-28T19:34:52.090773+00:00
+Generated: 2026-06-28T19:25:13.871751+00:00
 
 ## Summary
 
@@ -14,7 +14,7 @@ Generated: 2026-06-28T19:34:52.090773+00:00
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | Control-Grade anchors: plain-language + open-standard-only (drop SonarQube), English methodology note, guide dimensions table | iterate | unit | +0 | 850/850 | PASS | 2026-06-28 |
+| 1 | Refresh ci-security.json + dashboard from the post-#272 clean CI scan (0 high/critical) -> Control Grade A 90 -> A 100/100. | iterate | — | +0 | — | — | 2026-06-28 |
 | 2 | AR-05: RTM Reconciled? column + readability (consumes BP-2) | iterate | unit | +0 | 4812/4812 | PASS | 2026-06-28 |
 | 3 | Remove mtime-based timestamp-drift detector from check_drift.py; keep content-drift; legacy :timestamp triage items auto-resolve | iterate | unit | +0 | 3853/3853 | PASS | 2026-06-28 |
 | 4 | AR-10: ingest CI security posture (security.yml findings.json) into the compliance dashboard via a fail-soft producer + tracked public-safe ci-security.json; light the Control-Grade Security dimension; render a CI Security section. | iterate | — | +0 | — | — | 2026-06-28 |
@@ -241,36 +241,36 @@ Generated: 2026-06-28T19:34:52.090773+00:00
 
 | Run | Trigger | Unit | Integration | pgTAP | E2E | Smoke | Date |
 |-----|---------|------|-------------|-------|-----|-------|------|
-| 1 | iterate | 4082/4082 | — | — | — | — | 2026-06-13 |
-| 2 | iterate | 3419/3419 | — | — | — | — | 2026-06-13 |
-| 3 | iterate | 3996/3996 | — | — | — | — | 2026-06-13 |
-| 4 | iterate | 3653/3665 | — | — | — | — | 2026-06-13 |
-| 5 | iterate | 69/69 | — | — | — | — | 2026-06-13 |
-| 6 | iterate | 3881/3881 | — | — | — | — | 2026-06-13 |
-| 7 | iterate | 3441/3453 | — | — | — | — | 2026-06-13 |
-| 8 | iterate | 3442/3442 | — | — | — | — | 2026-06-13 |
-| 9 | iterate | 7/7 | — | — | — | — | 2026-06-14 |
-| 10 | iterate | 96/96 | — | — | — | — | 2026-06-14 |
-| 11 | iterate | 3473/3473 | — | — | — | — | 2026-06-14 |
-| 12 | iterate | 94/94 | — | — | — | — | 2026-06-15 |
-| 13 | iterate | 85/85 | — | — | — | — | 2026-06-16 |
-| 14 | iterate | 24/24 | — | — | — | — | 2026-06-16 |
-| 15 | iterate | 701/701 | — | — | — | — | 2026-06-16 |
-| 16 | iterate | 28/29 | — | — | — | — | 2026-06-17 |
-| 17 | iterate | 20/20 | — | — | — | — | 2026-06-17 |
-| 18 | iterate | 34/34 | — | — | — | — | 2026-06-17 |
-| 19 | iterate | 420/423 | — | — | — | — | 2026-06-17 |
-| 20 | iterate | 139/139 | — | — | — | — | 2026-06-17 |
-| 21 | iterate | 720/720 | — | — | — | — | 2026-06-27 |
-| 22 | iterate | 736/736 | — | — | — | — | 2026-06-28 |
-| 23 | iterate | 3560/3560 | — | — | — | — | 2026-06-27 |
-| 24 | iterate | 4720/4720 | — | — | — | — | 2026-06-28 |
-| 25 | iterate | 4719/4719 | — | — | — | — | 2026-06-28 |
-| 26 | iterate | 492/492 | — | — | — | — | 2026-06-28 |
-| 27 | iterate | 794/794 | — | — | — | — | 2026-06-28 |
-| 28 | iterate | 3853/3853 | — | — | — | — | 2026-06-28 |
-| 29 | iterate | 4812/4812 | — | — | — | — | 2026-06-28 |
-| 30 | iterate | 850/850 | — | — | — | — | 2026-06-28 |
+| 1 | iterate | 4220/4236 | — | — | — | — | 2026-06-13 |
+| 2 | iterate | 4082/4082 | — | — | — | — | 2026-06-13 |
+| 3 | iterate | 3419/3419 | — | — | — | — | 2026-06-13 |
+| 4 | iterate | 3996/3996 | — | — | — | — | 2026-06-13 |
+| 5 | iterate | 3653/3665 | — | — | — | — | 2026-06-13 |
+| 6 | iterate | 69/69 | — | — | — | — | 2026-06-13 |
+| 7 | iterate | 3881/3881 | — | — | — | — | 2026-06-13 |
+| 8 | iterate | 3441/3453 | — | — | — | — | 2026-06-13 |
+| 9 | iterate | 3442/3442 | — | — | — | — | 2026-06-13 |
+| 10 | iterate | 7/7 | — | — | — | — | 2026-06-14 |
+| 11 | iterate | 96/96 | — | — | — | — | 2026-06-14 |
+| 12 | iterate | 3473/3473 | — | — | — | — | 2026-06-14 |
+| 13 | iterate | 94/94 | — | — | — | — | 2026-06-15 |
+| 14 | iterate | 85/85 | — | — | — | — | 2026-06-16 |
+| 15 | iterate | 24/24 | — | — | — | — | 2026-06-16 |
+| 16 | iterate | 701/701 | — | — | — | — | 2026-06-16 |
+| 17 | iterate | 28/29 | — | — | — | — | 2026-06-17 |
+| 18 | iterate | 20/20 | — | — | — | — | 2026-06-17 |
+| 19 | iterate | 34/34 | — | — | — | — | 2026-06-17 |
+| 20 | iterate | 420/423 | — | — | — | — | 2026-06-17 |
+| 21 | iterate | 139/139 | — | — | — | — | 2026-06-17 |
+| 22 | iterate | 720/720 | — | — | — | — | 2026-06-27 |
+| 23 | iterate | 736/736 | — | — | — | — | 2026-06-28 |
+| 24 | iterate | 3560/3560 | — | — | — | — | 2026-06-27 |
+| 25 | iterate | 4720/4720 | — | — | — | — | 2026-06-28 |
+| 26 | iterate | 4719/4719 | — | — | — | — | 2026-06-28 |
+| 27 | iterate | 492/492 | — | — | — | — | 2026-06-28 |
+| 28 | iterate | 794/794 | — | — | — | — | 2026-06-28 |
+| 29 | iterate | 3853/3853 | — | — | — | — | 2026-06-28 |
+| 30 | iterate | 4812/4812 | — | — | — | — | 2026-06-28 |
 
 ## Code Review Evidence
 
