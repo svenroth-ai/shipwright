@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-28-sbom-honesty",
+    "run_id": "iterate-2026-06-28-ci-security-refresh",
     "date": "2026-06-28",
     "unit": {
-      "status": "passed",
-      "passed": 794,
-      "total": 794
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "integration": {
       "status": "not_run",
@@ -18,94 +18,31 @@
       "total": 0
     },
     "e2e": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "design_fidelity": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "smoke": {
-      "status": "skipped"
+      "status": "not_run"
     },
     "surface_verification": {
       "surface": "none",
+      "runner": "",
       "exit_code": 0,
-      "tests_run": 794,
-      "justification": "Library/CLI change to the compliance SBOM generator + collector (AR-04). No product web/api/cli/UI/store runtime surface exists in this repo (the WebUI is a separate repo); sbom.md is a static tracked markdown artifact. Verified end-to-end by running the new generator against the synced main tree AND the worktree (byte-identical clean 7/7 artifact, openai deduped to 2.30.0, ASCII-OK) plus the 794-test compliance suite green and pinned-ruff clean; anti-ratchet 0 ratchets."
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-06-28T19:20:00.000Z",
+      "justification": "Trivial data-refresh: no code changed. Regenerated the committed ci-security.json + dashboard from a fresh, authoritative CI scan (security.yml#28333095923, 0 findings) that was dispatched + verified out-of-band; AR-10's producer/render code is unchanged and already test-covered."
     },
     "degraded": [],
     "test_completeness": {
-      "status": "complete",
-      "behaviors": [
-        {
-          "behavior": "Parse uv.lock -> {canonical_name: version} (canonical names, missing file, malformed TOML)",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_sbom_lockfile_honesty.py::TestLoadLockVersions (4)"
-        },
-        {
-          "behavior": "Resolve Python version from sibling uv.lock; dedupe by installed version (openai collapses to one row); floor fallback when no lock",
-          "disposition": "tested",
-          "evidence": "test_sbom_lockfile_honesty.py::TestDedupByInstalledVersion (3)"
-        },
-        {
-          "behavior": "Dedup survives one missing/stale lock via the project-wide union fallback (code-review finding #1)",
-          "disposition": "tested",
-          "evidence": "test_sbom_lockfile_honesty.py::TestDedupByInstalledVersion::test_dedup_survives_one_missing_lock_via_global_union"
-        },
-        {
-          "behavior": "Resolve license across ALL venvs (sibling-workspace venv, installed-no-license, real-license-wins, not-installed-anywhere)",
-          "disposition": "tested",
-          "evidence": "test_sbom_lockfile_honesty.py::TestGlobalLicenseResolution (4)"
-        },
-        {
-          "behavior": "ComplianceData dedup/lock flags set by collect_all (default False without a lock)",
-          "disposition": "tested",
-          "evidence": "test_sbom_lockfile_honesty.py::TestCollectAllFlags (2)"
-        },
-        {
-          "behavior": "Summary counts ALL packages: 'Licenses resolved X/Y' row, '(deduplicated)' annotation (guarded vs 0-runtime), header 'resolved from uv.lock' note",
-          "disposition": "tested",
-          "evidence": "test_sbom_lockfile_honesty.py::TestHonestRender (4)"
-        },
-        {
-          "behavior": "Pie counts all packages + an 'unknown' slice; license_pie back-compat for the no-kwargs callers",
-          "disposition": "tested",
-          "evidence": "test_sbom_lockfile_honesty.py::test_pie_counts_all_packages + test_mermaid.py::TestLicensePie"
-        },
-        {
-          "behavior": "Honest verdict: clean / 'could not be resolved - verify' / 'declare no license'; never claims 'all permissive' while any license is unresolved",
-          "disposition": "tested",
-          "evidence": "test_sbom_lockfile_honesty.py::TestHonestRender + test_sbom_not_installed.py + test_sbom_generator.py (updated)"
-        },
-        {
-          "behavior": "SBOM doc is ASCII-only across all branches (copyleft/no_license/not_installed/clean/empty)",
-          "disposition": "tested",
-          "evidence": "test_sbom_lockfile_honesty.py::test_output_is_ascii + test_sbom_not_installed.py::test_doc_is_ascii_even_with_fall2_deps"
-        },
-        {
-          "behavior": "Deterministic license resolution (sorted venvs)",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_data_collector_determinism.py (18)"
-        },
-        {
-          "behavior": "Triage producer unchanged (strict per-manifest NOT_INSTALLED vs UNKNOWN semantics preserved)",
-          "disposition": "tested",
-          "evidence": "test_sbom_generator.py::TestEmitUndeclaredTriage* + test_sbom_not_installed.py (unchanged, still green)"
-        }
-      ],
-      "counts": {
-        "testable": 11,
-        "tested": 11,
-        "untestable": 0,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 4,
-        "covered_acs": 4
-      }
+      "status": "n/a",
+      "justification": "Trivial complexity, artifact-only refresh (regenerate ci-security.json + dashboard from a fresh CI scan); no source/behavior change, so there is no new testable behavior. The AR-10 producer/render it re-runs is fully covered by test_ci_security.py / test_refresh_ci_security.py."
     }
   }
 }
