@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 from scripts.lib._latest_suite import resolve_latest_full_suite
 from scripts.lib._reconciliation import compute_reconciliation
 from scripts.lib._traceability import count_traced
+from scripts.lib.ci_security import grade_security_signal, load_ci_security
 from scripts.lib.control_grade import GradeInputs, GradeReport, compute_grade
 
 if TYPE_CHECKING:
@@ -56,6 +57,13 @@ def build_grade_inputs(data: ComplianceData) -> GradeInputs:
         if r.id in fr_ids_in_events or r.sections
     )
     suite = resolve_latest_full_suite(events)
+
+    # AR-10: light the Security dimension from the committed, public-safe CI
+    # summary (refreshed by tools/refresh_ci_security.py from the security.yml
+    # findings.json). grade_security_signal returns (False, None) when there is
+    # no trustworthy summary → dimension stays n/a, never a false CRITICAL.
+    sec_measurable, sec_open_hc = grade_security_signal(
+        load_ci_security(data.project_root))
 
     # BP-2: reconciliation keyed on per-FR behavior impact (fr_impact, with the
     # event-level spec_impact fallback). Filtered to DECLARED requirements so
@@ -103,10 +111,11 @@ def build_grade_inputs(data: ComplianceData) -> GradeInputs:
         reconciliation_measurable=reconciliation_measurable,
         frs_behavior_touched=len(frs_behavior_touched),
         frs_unreconciled=len(frs_unreconciled),
-        # Security: the local report is stale/FP-laden; the authoritative
-        # posture is the CI gate (AR-10 ingest). n/a until then — never a
-        # false CRITICAL.
-        security_measurable=False,
+        # Security (AR-10): lit from the committed CI summary — the local
+        # report is stale/FP-laden, so the authoritative posture is the CI
+        # security.yml gate. n/a (never a false CRITICAL) when un-ingested.
+        security_measurable=sec_measurable,
+        security_open_high_critical=sec_open_hc,
         bloat_ratchet_delta=_ratchet_delta(data.project_root),
         deps_total=len(deps),
         deps_unknown_license=unknown,

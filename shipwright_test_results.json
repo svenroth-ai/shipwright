@@ -1,29 +1,29 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-28-drop-timestamp-drift",
+    "run_id": "iterate-2026-06-28-ci-security-dashboard",
     "date": "2026-06-28",
     "unit": {
       "status": "passed",
-      "passed": 3596,
-      "total": 3596
+      "passed": 795,
+      "total": 795
     },
     "integration": {
-      "status": "passed",
-      "passed": 1,
-      "total": 1
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "e2e": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "design_fidelity": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
@@ -35,59 +35,64 @@
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-28-drop-timestamp-drift/surface_verification.json",
-      "justification": "Framework-internal SessionStart hook (check_drift.py); no startable web/cli/api app surface. The removed timestamp detector and retained content-drift + triage resolve path are driven end-to-end by the subprocess integration test test_check_drift_hook.py::TestCheckDriftHook::test_integration_hook_composes_content_drift_and_retires_timestamp (category:integration). Full suites green: shared/tests 3596, shared/scripts/tests 196, shared/scripts/tools/tests 61; pinned-ruff clean; anti-ratchet baselines ratcheted down (check_drift.py 534->432, test_hooks.py 551->482, test_drift_triage_emit.py 415->405, test_wp5_hook_resolvers.py 304->281)."
+      "evidence_path": ".shipwright/runs/iterate-2026-06-28-ci-security-dashboard/surface_verification.json",
+      "timestamp": "2026-06-28T12:15:40.880Z",
+      "justification": "Compliance dashboard-generator / library change: no startable web/API/UI surface. Verified via 35 pytest cases + a real producer run (security.yml#27950188761) \u2192 update_compliance.py --phase iterate regenerated dashboard.md to Control Grade A 90/100 with the CI Security section."
     },
-    "degraded": [
-      {
-        "condition": "external_llm_review",
-        "reason": "medium iterate normally runs external LLM plan review; external-review keys not configured in this interactive session, so it fell back to the internal shipwright-build:code-reviewer (verdict APPROVE, one minor baseline-hygiene finding fixed) per degraded-mode."
-      }
-    ],
+    "degraded": [],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC-1: timestamp symbols (check_timestamp_drift, get_newest_in_dir, get_mtime, KEY_FILES, KEY_DIRS) + the main() timestamp warning block are removed from check_drift.py",
+          "behavior": "summarize_ci_security severity/gate/public-safe/prompt",
           "disposition": "tested",
-          "evidence": "repo-wide grep -> 0 .py references; py_compile OK; ruff@0.15.15 clean; behaviour pinned by shared/tests/test_check_drift_hook.py::test_producer_never_emits_timestamp_item PASSED"
+          "evidence": "tests/test_ci_security.py::TestSummarize (5) PASSED"
         },
         {
-          "behavior": "AC-2: _emit_drift_to_triage drops the timestamp_drifted parameter and never emits a new :timestamp triage item",
+          "behavior": "grade_security_signal measurable / n-a guards (never false CRITICAL)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_check_drift_hook.py::test_producer_never_emits_timestamp_item + test_drift_triage_emit.py::test_check_drift_only_content_kind_emitted PASSED"
+          "evidence": "tests/test_ci_security.py::TestGradeSignal (5) PASSED"
         },
         {
-          "behavior": "AC-3: the resolve pass dismisses pre-existing open legacy :timestamp items and leaves artifact_sync's :artifact items untouched",
+          "behavior": "write/load round-trip + None root + corrupt JSON",
           "disposition": "tested",
-          "evidence": "shared/tests/test_check_drift_hook.py::test_producer_retires_legacy_timestamp_item + test_drift_triage_emit.py::test_check_drift_resolve_ignores_artifact_sync_items PASSED"
+          "evidence": "tests/test_ci_security.py::TestRoundTrip (5) PASSED"
         },
         {
-          "behavior": "AC-4: content-drift detection (structure + command) is unchanged: same warnings, same :content triage items, hook exits 0",
+          "behavior": "parse_accepted_risks ids/expiry/tolerant/no-id",
           "disposition": "tested",
-          "evidence": "shared/tests/test_check_drift_hook.py::TestCheckDriftHook::test_content_drift_still_detected + test_drift_triage_emit.py::test_check_drift_content_findings_dedup_by_file / test_check_drift_content_findings_per_distinct_file PASSED"
+          "evidence": "tests/test_ci_security.py::TestAcceptedRisks (4) PASSED"
         },
         {
-          "behavior": "AC-5: no Timestamp-drift warning even when a former KEY_FILE (pyproject.toml) is modified more recently than CLAUDE.md",
+          "behavior": "render_ci_security date/gate/table/register/expired/not-ingested",
           "disposition": "tested",
-          "evidence": "shared/tests/test_check_drift_hook.py::TestCheckDriftHook::test_no_timestamp_warning_when_keyfile_newer PASSED"
+          "evidence": "tests/test_ci_security.py::TestRender (4) PASSED"
         },
         {
-          "behavior": "AC-6: docs/hooks-and-pipeline.md no longer describes a timestamp detector",
+          "behavior": "render_date ISO/bare/garbage",
+          "disposition": "tested",
+          "evidence": "tests/test_ci_security.py::TestRenderDate (3) PASSED"
+        },
+        {
+          "behavior": "build_grade_inputs lights Security from committed summary",
+          "disposition": "tested",
+          "evidence": "tests/test_ci_security.py::TestGraderIntegration (2) PASSED"
+        },
+        {
+          "behavior": "producer happy-path + every fail-soft branch (no clobber)",
+          "disposition": "tested",
+          "evidence": "tests/test_refresh_ci_security.py (7) PASSED"
+        },
+        {
+          "behavior": "update_compliance runs the refresh before the dashboard regen",
           "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "doc prose correctness; verified by grep (0 'Timestamp drift' rows remain in docs/) + manual read. guide.md was already content-only, no change needed."
-        },
-        {
-          "behavior": "Integration composition: the SessionStart hook subprocess composes content-drift detection + triage :content emission + resolve-pass retirement of a pre-seeded legacy :timestamp item, exit 0",
-          "disposition": "tested",
-          "category": "integration",
-          "evidence": "shared/tests/test_check_drift_hook.py::TestCheckDriftHook::test_integration_hook_composes_content_drift_and_retires_timestamp PASSED (real subprocess end-to-end against a fixture Shipwright project)"
+          "reason_code": "covered-by-existing-test",
+          "reason": "thin fail-soft glue over the unit-tested refresh_ci_security producer; also empirically verified by the real --phase iterate run (output ci_security: written, dashboard A 90/100)"
         }
       ],
       "counts": {
-        "testable": 6,
-        "tested": 6,
+        "testable": 9,
+        "tested": 8,
         "untestable": 1,
         "untested_testable": 0
       },

@@ -98,6 +98,18 @@ def main() -> int:
     # Collect data once
     data = collect_all(project_root)
 
+    # AR-10: refresh the committed CI-security summary from the latest
+    # security.yml run BEFORE the dashboard reads it. Best-effort + fail-soft
+    # (gh missing / offline / no fresh run → leaves the existing summary
+    # untouched), so it never blocks a regen and never fabricates a scan.
+    ci_security_result: dict | None = None
+    if "dashboard" in reports_to_update:
+        try:
+            from scripts.tools.refresh_ci_security import refresh_ci_security
+            ci_security_result = refresh_ci_security(project_root)
+        except Exception as exc:  # noqa: BLE001 — never block compliance regen
+            ci_security_result = {"status": "error", "reason": str(exc)}
+
     updated = []
     sbom_triage_result: dict | None = None
     test_evidence_triage_result: dict | None = None
@@ -155,6 +167,8 @@ def main() -> int:
         output["sbom_triage"] = sbom_triage_result
     if test_evidence_triage_result is not None:
         output["test_evidence_triage"] = test_evidence_triage_result
+    if ci_security_result is not None:
+        output["ci_security"] = ci_security_result
     print(json.dumps(output, indent=2))
     return 0
 
