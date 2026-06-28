@@ -1,18 +1,18 @@
 # Commit Change Log
 
 Generated: 2026-06-28T07:10:14.008342+00:00
-Total commits: 1044
+Total commits: 1050
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 297
-    "feat" : 275
-    "chore" : 229
+    "feat" : 276
+    "chore" : 232
     "docs" : 141
-    "refactor" : 62
-    "test" : 25
+    "refactor" : 63
+    "test" : 26
     "ci" : 7
     "other" : 7
     "build" : 1
@@ -322,10 +322,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 275 commits
+### Features (feat) — 276 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-28 | compliance | BP-1 FR-mapping — credit satisfied no-FR, behavior-aware gate, traced-% metric | e0a11777520d |
 | 2026-06-28 | compliance | Control Grade verdict block + latest-full-suite + inline audit (AR-01/02/03) (#277) | fdab00716d26 |
 | 2026-06-22 | security | add a Trivy accepted-risk register (.trivyignore.yaml) and accept the OTel medium (#273) | 64aef0de33b7 |
 | 2026-06-14 | iterate | repo-agnostic agent-doc entry-budget gate + doc cleanup (#252) | c7ec0a62e892 |
@@ -602,10 +603,13 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 229 commits
+### Chores (chore) — 232 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-28 | ci | re-trigger checks on a clean SHA (supersede the stale truncation-failed PR Review run; skip-pr-review label set) | e4f57ae626be |
+| 2026-06-28 | iterate | add test-completeness counts to the F5 ledger | a0b57a433683 |
+| 2026-06-28 | churn | regenerate derived snapshots after main merge | b9c0ae0dc288 |
 | 2026-06-28 | security | exclude test fixtures from CodeQL + make intentional string-concat explicit (#279) | 6f1f35076dfa |
 | 2026-06-22 | release | v0.29.1 (#271) | af7a3fc04fae |
 | 2026-06-17 | — | align root pyproject.toml to 0.29.0 + de-PII a source comment (#262) | 6c0c1ea626c4 |
@@ -982,10 +986,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 62 commits
+### Refactoring (refactor) — 63 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-28 | codeql | break 3 import cycles via neutral leaf modules + fix 2 mixed-returns (#281) | 07eb0841c26d |
 | 2026-06-20 | triage | dedup aggregate_triage Stop regen across the plugin fan-out (#270) | 019778a14927 |
 | 2026-06-14 | hooks | consolidate fan-out via once-per-event guard + session-state phase resolver (#250) | e6e5e4b91764 |
 | 2026-06-14 | iterate | interleaved-serial as the single campaign default (retire end-stage drain) (#246) | 2ec6e2be8bfa |
@@ -1049,10 +1054,11 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 25 commits
+### Tests (test) — 26 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-28 | compliance | align D5 change_type tests with the BP-1 behavior-affecting gate | 4b1f38528ec8 |
 | 2026-06-22 | security | enforce scoped + time-bounded accept-discipline for .trivyignore.yaml (#274) | 5f16590eb98d |
 | 2026-06-12 | merge | end-to-end parallel-merge cascade integration test (#215) | 5321dfaf2b46 |
 | 2026-06-11 | campaign | drop tracked-campaign guard now that campaigns are local-only | a8abe956570e |
@@ -1113,7 +1119,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1044 |
+| Total commits | 1050 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1044 |
+| Human-authored commits | 1050 |
 
