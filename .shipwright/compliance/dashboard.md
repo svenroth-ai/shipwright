@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-06-28T11:26:48.955723+00:00
+Generated: 2026-06-28T12:34:00.983777+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -12,15 +12,15 @@ Scope: library
 
 | | Dimension | Signal | Anchor |
 |---|-----------|--------|--------|
-| ✅ | Requirement traceability | 14/14 FRs covered; 218/218 changes traced (FR-linked or classified no-FR) | DO-178C §11.9 / IEC 62304 / ALM RTM |
-| ✅ | Test health | latest full suite 4812/4812 (2026-06-28) | coverage gating (SonarQube 'Sonar Way') |
-| ✅ | Change traceability | 218/218 changes linked to a commit, ADR or test run | SLSA provenance / OpenSSF Code-Review |
+| ✅ | Requirement traceability | 14/14 FRs covered; 219/219 changes traced (FR-linked or classified no-FR) | DO-178C §11.9 / IEC 62304 / ALM RTM |
+| ✅ | Test health | latest full suite 3853/3853 (2026-06-28) | coverage gating (SonarQube 'Sonar Way') |
+| ✅ | Change traceability | 219/219 changes linked to a commit, ADR or test run | SLSA provenance / OpenSSF Code-Review |
 | ✅ | Change reconciliation | 0/4 behavior-touched FRs not re-verified | ALM suspect-links + DO-178C/ISO 26262 re-verification |
 | n/a | Security | no trustworthy local scan (see CI security gate) | NIST SSDF (SP 800-218) / OWASP / OpenSSF |
-| ✅ | Size / maintainability discipline | ratchet delta -174 lines (net growth) | ISO 25010 maintainability / SonarQube |
+| ✅ | Size / maintainability discipline | ratchet delta -176 lines (net growth) | ISO 25010 maintainability / SonarQube |
 | ✅ | Dependency hygiene | 0 unresolved / 8 licenses; 0 copyleft | OWASP A06:2021 / OpenSSF Scorecard |
 
-Verified from: `shipwright_events.jsonl (218 events, 2026-05-02 → 2026-06-28)`
+Verified from: `shipwright_events.jsonl (219 events, 2026-05-02 → 2026-06-28)`
 
 _Grade = importance-weighted average over the measurable dimensions (n/a excluded from the denominator), in Anlehnung an OpenSSF Scorecard. Age is neutral; only unreconciled change and net growth are control failures._
 
@@ -29,21 +29,21 @@ _Grade = importance-weighted average over the measurable dimensions (n/a exclude
 | Metric | Value | Status | Why warn? |
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
-| Work events (iterate) | 218 changes | INFO |  |
+| Work events (iterate) | 219 changes | INFO |  |
 | Recent changes traced to an FR | 1/30 (3%) | WARN | FR-tagging dropped to 3% (last 30) vs 18% all-time — recent changes classified no-FR; see the Control Verdict traceability dimension |
-| All unit tests passing | 4812/4812 | PASS |  |
+| All unit tests passing | 3853/3853 | PASS |  |
 | Architecture decisions | 235 ADRs | INFO |  |
-| Iterate tests passing | 138/218 iterations tested | WARN | 80 iterate(s) without tests — see test-evidence.md |
+| Iterate tests passing | 139/219 iterations tested | WARN | 80 iterate(s) without tests — see test-evidence.md |
 | Dependencies | 8 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
 | Triage open | 0 open | PASS |  |
-| Bloat over-limit | 128 | WARN | 128 file(s) past limit AND not ADR-justified — see shipwright_bloat_baseline.json |
+| Bloat over-limit | 127 | WARN | 127 file(s) past limit AND not ADR-justified — see shipwright_bloat_baseline.json |
 | Bloat in allowlist | 158 entries | INFO |  |
-| Bloat ratchet delta | -174 lines | PASS |  |
+| Bloat ratchet delta | -176 lines | PASS |  |
 
 ## Project Velocity
 
-- Iterate: 218 changes (2026-05-02 → 2026-06-28)
+- Iterate: 219 changes (2026-05-02 → 2026-06-28)
 - Last activity: 2026-06-28
 
 ## External LLM Review Evidence

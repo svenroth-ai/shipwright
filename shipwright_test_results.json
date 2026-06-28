@@ -1,109 +1,99 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-28-cc3-ar05-rtm-reconciled",
+    "run_id": "iterate-2026-06-28-drop-timestamp-drift",
     "date": "2026-06-28",
     "unit": {
       "status": "passed",
-      "passed": 4812,
-      "total": 4812
+      "passed": 3596,
+      "total": 3596
     },
     "integration": {
       "status": "passed",
-      "passed": 174,
-      "total": 174
+      "passed": 1,
+      "total": 1
     },
     "pgtap": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "design_fidelity": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [],
     "surface_verification": {
       "surface": "none",
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-28-cc3-ar05-rtm-reconciled/surface_verification.json",
-      "timestamp": "2026-06-28T11:23:06.879Z",
-      "justification": "cc3/AR-05 is a compliance-reporting/library change: rtm_generator gains a per-FR Reconciled? column + an 'FRs needing re-verification' summary subsection driven by the shared BP-2 _reconciliation helper, plus readability fixes (full FR titles, clickable evt- evidence, column legend, Last Verified->Last tested) and removal of the age-based stale clause; cohesive helpers extracted to a new leaf module for anti-ratchet. No product web/api/cli/UI/store surface changes; the RTM is a static tracked .md. Verified empirically against the real event log: the RTM Reconciled? column (4 check, 0 warn, 10 dash) is byte-identical to the Control-Grade reconciliation dimension (4 behavior-touched, 0 unreconciled) - both read the one helper. Full suites green: compliance 780, shared 3596, iterate 436, integration 174; pinned-ruff clean; anti-ratchet 0 ratchets."
+      "evidence_path": ".shipwright/runs/iterate-2026-06-28-drop-timestamp-drift/surface_verification.json",
+      "justification": "Framework-internal SessionStart hook (check_drift.py); no startable web/cli/api app surface. The removed timestamp detector and retained content-drift + triage resolve path are driven end-to-end by the subprocess integration test test_check_drift_hook.py::TestCheckDriftHook::test_integration_hook_composes_content_drift_and_retires_timestamp (category:integration). Full suites green: shared/tests 3596, shared/scripts/tests 196, shared/scripts/tools/tests 61; pinned-ruff clean; anti-ratchet baselines ratcheted down (check_drift.py 534->432, test_hooks.py 551->482, test_drift_triage_emit.py 415->405, test_wp5_hook_resolvers.py 304->281)."
     },
+    "degraded": [
+      {
+        "condition": "external_llm_review",
+        "reason": "medium iterate normally runs external LLM plan review; external-review keys not configured in this interactive session, so it fell back to the internal shipwright-build:code-reviewer (verdict APPROVE, one minor baseline-hygiene finding fixed) per degraded-mode."
+      }
+    ],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "Reconciled? column renders the helper's per-FR status (check / needs-re-verification / dash)",
+          "behavior": "AC-1: timestamp symbols (check_timestamp_drift, get_newest_in_dir, get_mtime, KEY_FILES, KEY_DIRS) + the main() timestamp warning block are removed from check_drift.py",
           "disposition": "tested",
-          "evidence": "test_rtm_reconciled_column.py::TestReconciledColumn (reverified/unverified/not-touched) PASSED"
+          "evidence": "repo-wide grep -> 0 .py references; py_compile OK; ruff@0.15.15 clean; behaviour pinned by shared/tests/test_check_drift_hook.py::test_producer_never_emits_timestamp_item PASSED"
         },
         {
-          "behavior": "Reconciled? fires only on touched-without-re-verify, never on age",
+          "behavior": "AC-2: _emit_drift_to_triage drops the timestamp_drifted parameter and never emits a new :timestamp triage item",
           "disposition": "tested",
-          "evidence": "TestReconciledColumn::test_age_alone_never_flags + TestRtmCoverageSummaryRewrite::test_age_alone_does_not_list_a_reverified_change PASSED"
+          "evidence": "shared/tests/test_check_drift_hook.py::test_producer_never_emits_timestamp_item + test_drift_triage_emit.py::test_check_drift_only_content_kind_emitted PASSED"
         },
         {
-          "behavior": "RTM Reconciled? column agrees with the Control-Grade reconciliation dimension (one shared helper)",
+          "behavior": "AC-3: the resolve pass dismisses pre-existing open legacy :timestamp items and leaves artifact_sync's :artifact items untouched",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_check_drift_hook.py::test_producer_retires_legacy_timestamp_item + test_drift_triage_emit.py::test_check_drift_resolve_ignores_artifact_sync_items PASSED"
+        },
+        {
+          "behavior": "AC-4: content-drift detection (structure + command) is unchanged: same warnings, same :content triage items, hook exits 0",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_check_drift_hook.py::TestCheckDriftHook::test_content_drift_still_detected + test_drift_triage_emit.py::test_check_drift_content_findings_dedup_by_file / test_check_drift_content_findings_per_distinct_file PASSED"
+        },
+        {
+          "behavior": "AC-5: no Timestamp-drift warning even when a former KEY_FILE (pyproject.toml) is modified more recently than CLAUDE.md",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_check_drift_hook.py::TestCheckDriftHook::test_no_timestamp_warning_when_keyfile_newer PASSED"
+        },
+        {
+          "behavior": "AC-6: docs/hooks-and-pipeline.md no longer describes a timestamp detector",
+          "disposition": "untestable",
+          "reason_code": "requires-manual-visual-judgment",
+          "reason": "doc prose correctness; verified by grep (0 'Timestamp drift' rows remain in docs/) + manual read. guide.md was already content-only, no change needed."
+        },
+        {
+          "behavior": "Integration composition: the SessionStart hook subprocess composes content-drift detection + triage :content emission + resolve-pass retirement of a pre-seeded legacy :timestamp item, exit 0",
           "disposition": "tested",
           "category": "integration",
-          "evidence": "TestColumnAgreesWithHelper::test_per_fr_status_matches_compute_reconciliation PASSED + real-event-log probe (RTM 4 check/0 warn/10 dash == grade 4 touched/0 unreconciled)"
-        },
-        {
-          "behavior": "Age-based '>14d stale verification' clause removed; reconciliation-driven 'FRs needing re-verification' subsection added",
-          "disposition": "tested",
-          "evidence": "TestNeedsReverificationSection + TestRtmCoverageSummaryRewrite::test_frs_needing_reverification_section PASSED"
-        },
-        {
-          "behavior": "'Last Verified' column renamed to neutral 'Last tested'",
-          "disposition": "tested",
-          "evidence": "TestReconciledColumn::test_header_renamed_and_column_added PASSED"
-        },
-        {
-          "behavior": "evt- ids clickable, linked to a Verification Timeline anchor; malformed ids stay plain text",
-          "disposition": "tested",
-          "evidence": "TestReadability::test_evt_id_links_to_timeline_anchor + test_malformed_evt_id_not_linked PASSED"
-        },
-        {
-          "behavior": "Full FR titles (no 60-char truncation) in the coverage table",
-          "disposition": "tested",
-          "evidence": "TestReadability::test_full_fr_title_not_truncated PASSED"
-        },
-        {
-          "behavior": "Column legend decodes Tests / Last tested / Reconciled?",
-          "disposition": "tested",
-          "evidence": "TestReadability::test_legend_decodes_columns PASSED"
-        },
-        {
-          "behavior": "Reconciled? glyph map keys can't drift from the helper's status constants",
-          "disposition": "tested",
-          "evidence": "TestReconciledMarkNoDrift::test_keys_match_reconciliation_constants PASSED"
-        },
-        {
-          "behavior": "Minimal-env fallback: helper unimportable degrades the column to '—', never crashes the render",
-          "disposition": "tested",
-          "evidence": "TestNullReconciliationFallback (null reads untouched; safe wrapper returns usable object) PASSED"
+          "evidence": "shared/tests/test_check_drift_hook.py::TestCheckDriftHook::test_integration_hook_composes_content_drift_and_retires_timestamp PASSED (real subprocess end-to-end against a fixture Shipwright project)"
         }
       ],
       "counts": {
-        "testable": 10,
-        "tested": 10,
-        "untestable": 0,
+        "testable": 6,
+        "tested": 6,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 4,
-        "covered_acs": 4
+        "acs": 6,
+        "covered_acs": 6
       }
     }
   }
