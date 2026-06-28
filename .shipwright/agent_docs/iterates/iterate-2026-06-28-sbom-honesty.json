@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-28-sbom-honesty",
+  "date": "2026-06-28T12:39:43.577598Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/sbom-honesty",
+  "spec": ".shipwright/planning/iterate/2026-06-28-sbom-honesty.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-28-sbom-honesty"
+}

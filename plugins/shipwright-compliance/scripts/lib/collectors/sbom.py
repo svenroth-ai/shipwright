@@ -15,8 +15,14 @@ from pathlib import Path
 
 from ._license_const import UNKNOWN_LICENSE
 from ._npm_license import detect_npm_license
-from ._python_license import parse_pyproject_deps
+from ._python_license import (
+    _canonical_pkg_name,
+    parse_pyproject_dep_specs,
+    parse_pyproject_deps,
+)
 from ._types import DependencyInfo
+from ._uv_lock import load_lock_versions
+from ._venv_scan import detect_python_license_across, iter_all_site_packages
 
 
 # Phase 0f (artifact-polish plan): workspace-aware traversal exclude list.
@@ -61,53 +67,96 @@ def _find_manifests(project_root: Path, max_depth: int = 3) -> dict[str, list[Pa
     return found
 
 
-def collect_dependencies(project_root: Path) -> list[DependencyInfo]:
-    """Read dependencies from every package.json + pyproject.toml under project_root.
+def _collect_dependency_rows(
+    project_root: Path,
+) -> tuple[list[DependencyInfo], int, bool]:
+    """Build the deduplicated SBOM dependency inventory + render metadata.
 
-    Phase 0f (artifact-polish plan): workspace-aware traversal (depth 3,
-    excludes node_modules / .venv / build dirs / .shipwright). License
-    resolution is lockfile-first for JS (package-lock.json v3) and
-    importlib.metadata for Python (reads installed site-packages after
-    `uv sync`). No network, no subprocess.
+    Workspace-aware traversal (depth 3). Python **versions** come from the
+    manifest's sibling ``uv.lock`` so a package declared at different specifier
+    floors in two manifests dedupes to ONE row at the installed version (AR-04 —
+    e.g. ``openai>=2.30.0`` + ``openai>=1.0.0`` -> ``2.30.0``). Python
+    **licenses** resolve across ALL venvs (a stale manifest-local venv no longer
+    drops a row to ``-``). npm is unchanged. No network, no subprocess.
+
+    Returns ``(rows, merged_count, lock_used)``: ``merged_count`` drives the
+    ``(deduplicated)`` summary annotation; ``lock_used`` the
+    ``resolved from uv.lock`` header note.
     """
     deps: list[DependencyInfo] = []
     manifests = _find_manifests(project_root)
+    merged = 0
+    lock_used = False
 
-    # Track dedup across workspaces: (name, version, dep_type) per manifest.
-    # Multiple manifests legitimately re-declare deps; we keep one row per
-    # (name, version) pair to keep the SBOM clean.
-    seen: set[tuple[str, str, str]] = set()
-
+    # npm — license + version from package.json/lockfile; dedup across
+    # workspaces by (name, version, dep_type).
+    seen_npm: set[tuple[str, str, str]] = set()
     for pkg_path in manifests["npm"]:
         manifest_dir = pkg_path.parent
         try:
             pkg = json.loads(pkg_path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             continue
-        for name, version in pkg.get("dependencies", {}).items():
-            key = (name, str(version), "runtime")
-            if key in seen:
+        if not isinstance(pkg, dict):
+            continue
+        for section, dep_type in (("dependencies", "runtime"), ("devDependencies", "dev")):
+            block = pkg.get(section)
+            if not isinstance(block, dict):
                 continue
-            seen.add(key)
-            license_ = detect_npm_license(manifest_dir, name)
-            deps.append(DependencyInfo(name=name, version=version, dep_type="runtime", license=license_))
-        for name, version in pkg.get("devDependencies", {}).items():
-            key = (name, str(version), "dev")
-            if key in seen:
-                continue
-            seen.add(key)
-            license_ = detect_npm_license(manifest_dir, name)
-            deps.append(DependencyInfo(name=name, version=version, dep_type="dev", license=license_))
+            for name, version in block.items():
+                key = (name, str(version), dep_type)
+                if key in seen_npm:
+                    merged += 1
+                    continue
+                seen_npm.add(key)
+                deps.append(DependencyInfo(
+                    name=name, version=version, dep_type=dep_type,
+                    license=detect_npm_license(manifest_dir, name)))
 
+    # python — version from sibling uv.lock; license across all venvs; dedup by
+    # (canonical_name, installed_version, dep_type).
+    all_site_packages = iter_all_site_packages(project_root)
+    # Per-manifest lock versions + a project-wide UNION fallback. Version
+    # resolution must be as robust as the (global) license scan: if one
+    # manifest's uv.lock is missing/stale, a sibling lock's resolved version
+    # still dedupes the row (else the duplicate-openai bug recurs on the next
+    # unsynced regen — code-review finding #1). The manifest's OWN lock wins
+    # first, so genuinely-divergent per-workspace versions stay distinct.
+    manifest_locks = {p: load_lock_versions(p.parent) for p in manifests["python"]}
+    global_lock: dict[str, str] = {}
+    for lv in manifest_locks.values():
+        for canon, ver in lv.items():
+            global_lock.setdefault(canon, ver)
+
+    seen_py: set[tuple[str, str, str]] = set()
     for pyproject_path in manifests["python"]:
-        for dep in parse_pyproject_deps(pyproject_path):
-            key = (dep.name, dep.version, dep.dep_type)
-            if key in seen:
+        lock_versions = manifest_locks[pyproject_path]
+        for name, floor, dep_type in parse_pyproject_dep_specs(pyproject_path):
+            canonical = _canonical_pkg_name(name)
+            installed = lock_versions.get(canonical) or global_lock.get(canonical)
+            if installed:
+                lock_used = True
+            version = installed or floor
+            key = (canonical, version, dep_type)
+            if key in seen_py:
+                merged += 1
                 continue
-            seen.add(key)
-            deps.append(dep)
+            seen_py.add(key)
+            deps.append(DependencyInfo(
+                name=name, version=version, dep_type=dep_type,
+                license=detect_python_license_across(name, all_site_packages)))
 
-    return deps
+    return deps, merged, lock_used
+
+
+def collect_dependencies(project_root: Path) -> list[DependencyInfo]:
+    """Deduplicated SBOM dependency inventory (versions resolved from the
+    lockfile, licenses from package metadata). See ``_collect_dependency_rows``
+    for the version/dedup/license semantics; ``collect_all`` reads the
+    merged-count + lock-used metadata via that function directly.
+    """
+    rows, _merged, _lock = _collect_dependency_rows(project_root)
+    return rows
 
 
 def collect_undeclared_by_workspace(project_root: Path) -> list[dict]:

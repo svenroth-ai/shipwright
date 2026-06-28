@@ -144,9 +144,7 @@ class WorkEvent:
     e2e_run: bool = False
     spec_updated: str = ""
     adr_id: str = ""
-    # FR-classification (BP-1) — lets the Control-Grade adapter + traced-% metric
-    # tell an FR-linked change from a satisfied no-FR one; legacy events coerce
-    # to "" (tolerant, no schema break).
+    # FR-classification (BP-1): FR-linked vs satisfied-no-FR change; legacy -> "".
     change_type: str = ""
     none_reason: str = ""
     spec_impact: str = ""
@@ -290,6 +288,9 @@ class ComplianceData:
     decisions: list[DecisionEntry] = field(default_factory=list)
     commits: list[CommitEntry] = field(default_factory=list)
     dependencies: list[DependencyInfo] = field(default_factory=list)
+    # SBOM render metadata (AR-04); legacy ctors keep 0/False.
+    dependencies_deduped: int = 0
+    dependencies_lock_resolved: bool = False
     requirements: list[RequirementInfo] = field(default_factory=list)
     test_file_map: dict[str, list[str]] = field(default_factory=dict)
     external_review_states: list[ExternalReviewState] = field(default_factory=list)

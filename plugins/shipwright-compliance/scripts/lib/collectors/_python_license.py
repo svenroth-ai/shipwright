@@ -186,41 +186,54 @@ def detect_python_license(package_name: str, manifest_dir: Path) -> str:
     return NOT_INSTALLED
 
 
-def parse_pyproject_deps(pyproject_path: Path) -> list[DependencyInfo]:
-    """Parse dependencies from pyproject.toml + resolve each license from
-    the manifest-local .venv dist-info METADATA (NOT ambient sys.path).
-    """
-    deps: list[DependencyInfo] = []
+def parse_pyproject_dep_specs(pyproject_path: Path) -> list[tuple[str, str, str]]:
+    """Parse ``(name, version_floor_or_"any", dep_type)`` triples from a
+    pyproject.toml WITHOUT resolving licenses. The SBOM-inventory path resolves
+    the installed version (lockfile) + license (global venv scan) itself; this
+    keeps the text parse in one place. Pure parse, single manifest read."""
+    specs: list[tuple[str, str, str]] = []
     content = pyproject_path.read_text(encoding="utf-8")
-    manifest_dir = pyproject_path.parent
 
-    # Simple extraction of dependencies array
     in_deps = False
     in_dev = False
     for line in content.splitlines():
         stripped = line.strip()
         if stripped == "dependencies = [":
-            in_deps = True
-            in_dev = False
+            in_deps, in_dev = True, False
             continue
         if "dev" in stripped and "= [" in stripped:
-            in_deps = True
-            in_dev = True
+            in_deps, in_dev = True, True
             continue
         if in_deps and stripped == "]":
             in_deps = False
             continue
         if in_deps and stripped.startswith('"'):
-            # Parse "package>=version" or "package"
             dep_str = stripped.strip('",')
-            match = re.match(r"^([a-zA-Z0-9_-]+)(?:[><=!~]+(.+))?$", dep_str)
+            match = re.match(r"^([a-zA-Z0-9_.-]+)(?:[><=!~]+(.+))?$", dep_str)
             if match:
-                name = match.group(1)
-                deps.append(DependencyInfo(
-                    name=name,
-                    version=match.group(2) or "any",
-                    dep_type="dev" if in_dev else "runtime",
-                    license=detect_python_license(name, manifest_dir),
+                specs.append((
+                    match.group(1),
+                    match.group(2) or "any",
+                    "dev" if in_dev else "runtime",
                 ))
+    return specs
 
-    return deps
+
+def parse_pyproject_deps(pyproject_path: Path) -> list[DependencyInfo]:
+    """Parse dependencies + resolve each license from the manifest-local .venv
+    dist-info METADATA (per-manifest; NOT ambient sys.path).
+
+    Used by the **triage producer**, which keeps strict per-manifest
+    NOT_INSTALLED-vs-UNKNOWN semantics. The SBOM-inventory path uses
+    ``parse_pyproject_dep_specs`` + lockfile/global-venv resolution instead.
+    """
+    manifest_dir = pyproject_path.parent
+    return [
+        DependencyInfo(
+            name=name,
+            version=floor,
+            dep_type=dep_type,
+            license=detect_python_license(name, manifest_dir),
+        )
+        for name, floor, dep_type in parse_pyproject_dep_specs(pyproject_path)
+    ]

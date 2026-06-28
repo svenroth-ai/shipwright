@@ -96,15 +96,15 @@ class TestGenerate:
         result = generate(_make_data(deps))
         assert "No license concerns" in result
 
-    def test_not_installed_deps_are_silent_in_doc(self, project_root: Path):
+    def test_not_installed_deps_counted_unresolved_in_verdict(self, project_root: Path):
         data = collect_all(project_root)
         result = generate(data)
-        # All deps are not-installed (no node_modules / .venv in fixture): a scan
-        # artifact, NOT a concern. No "unknown"/undeclared section; rendered `—`.
+        # All fixture deps are not-installed: rendered `-` and (AR-04) counted as
+        # unresolved in the verdict, but NOT a declared-no-license section.
         assert "## Unknown Licenses" not in result
         assert "## Dependencies Without a Declared License" not in result
-        assert "No dependency licenses were resolved in this scan." in result
-        assert "| - |" in result  # not-installed → neutral ASCII dash
+        assert "could not be resolved in this scan" in result
+        assert "| - |" in result  # not-installed -> neutral ASCII dash
 
     def test_no_deps(self, empty_project_root: Path):
         data = collect_all(empty_project_root)

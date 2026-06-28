@@ -58,6 +58,7 @@ from .rtm import (
     map_requirements_to_events,
 )
 from .sbom import (
+    _collect_dependency_rows,
     collect_dependencies,
     collect_undeclared_by_workspace,
 )
@@ -91,6 +92,10 @@ def collect_all(project_root: Path) -> ComplianceData:
 
     known_failures, baseline_count = collect_known_failures(project_root)
 
+    # SBOM inventory + render metadata in one pass (AR-04): dedup-merge count
+    # and whether any version was resolved from a uv.lock.
+    dependencies, deps_deduped, deps_lock_resolved = _collect_dependency_rows(project_root)
+
     return ComplianceData(
         project_root=project_root,
         # Event-sourced
@@ -105,7 +110,9 @@ def collect_all(project_root: Path) -> ComplianceData:
         # Shared
         decisions=collect_decision_log(project_root),
         commits=collect_git_history(project_root),
-        dependencies=collect_dependencies(project_root),
+        dependencies=dependencies,
+        dependencies_deduped=deps_deduped,
+        dependencies_lock_resolved=deps_lock_resolved,
         requirements=requirements,
         test_file_map=collect_test_files(project_root),
         external_review_states=collect_external_review_states(project_root),
