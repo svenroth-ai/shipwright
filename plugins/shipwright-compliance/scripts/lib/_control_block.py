@@ -196,9 +196,10 @@ def format_control_block(report: GradeReport) -> list[str]:
         f"Verified from: `{report.verified_from}`",
         "",
         "_Grade = importance-weighted average over the measurable dimensions "
-        + "(n/a excluded from the denominator), in Anlehnung an OpenSSF "
+        + "(n/a excluded from the denominator), modeled on OpenSSF "
         + "Scorecard. Age is neutral; only unreconciled change and net growth "
-        + "are control failures._",
+        + "are control failures. Each Anchor names the open standard the "
+        + "dimension follows — see the guide's Control-Grade dimensions table._",
         "",
     ])
     return lines

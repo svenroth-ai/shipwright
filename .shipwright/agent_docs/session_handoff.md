@@ -1,35 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-28-ci-security-refresh"
+run_id: "iterate-2026-06-28-grade-anchor-clarity"
 phase: "iterate"
-reason: "CI-security refresh to A100 complete"
-timestamp: "2026-06-28T19:25:13.871751+00:00"
+reason: "F11 pre-merge refresh: iterate-2026-06-28-grade-anchor-clarity"
+timestamp: "2026-06-28T19:34:52.090773+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-28 19:25:13 UTC
+> Auto-generated 2026-06-28 19:34:52 UTC
 
 ## Session Info
 
-- **Session ID**: 034b86b6-c5c7-4534-abfd-a4c6d08b087c
-- **Timestamp**: 2026-06-28 19:25:13 UTC
-- **Reason**: CI-security refresh to A100 complete
+- **Session ID**: 1b1b2661-e12b-4c54-a36d-fd6bd039a8f2
+- **Timestamp**: 2026-06-28 19:34:52 UTC
+- **Reason**: F11 pre-merge refresh: iterate-2026-06-28-grade-anchor-clarity
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-28-sbom-honesty
-- **Date**: 2026-06-28T12:39:43.577598Z
+- **Run ID**: iterate-2026-06-28-grade-anchor-clarity
+- **Date**: 2026-06-28T19:35:15.960523Z
 - **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/sbom-honesty
-- **ADR**: iterate-2026-06-28-sbom-honesty
+- **Complexity**: small
+- **Branch**: iterate/grade-anchor-clarity
+- **ADR**: iterate-2026-06-28-grade-anchor-clarity
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-28-sbom-honesty.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/ci-security-refresh
+- **Branch**: iterate/grade-anchor-clarity
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/ci-security-refresh
-- **Last Commit**: f4498bb3 fix(compliance): SBOM dedup by installed version + honest license verdict (AR-04) (#286)
+- **Branch**: iterate/grade-anchor-clarity
+- **Last Commit**: ed112d73 Merge remote-tracking branch 'origin/main' into iterate/grade-anchor-clarity
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -66,15 +65,15 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 | Event | Type | Source | Date |
 |-------|------|--------|------|
 | evt-2d2828bd | work_completed | iterate (Refresh ci-security.json + dashboard from the post-#272 clean CI scan (0 high/critical) -> Control Grade A 90 -> A 100/100.) | 2026-06-28 |
+| evt-75761dd3 | work_completed | iterate (Control-Grade anchors: plain-language + open-standard-only (drop SonarQube), English methodology note, guide dimensions table) | 2026-06-28 |
 | evt-a0fb4818 | work_completed | iterate (AR-05: RTM Reconciled? column + readability (consumes BP-2)) | 2026-06-28 |
 | evt-62cb4cbd | work_completed | iterate (Remove mtime-based timestamp-drift detector from check_drift.py; keep content-drift; legacy :timestamp triage items auto-resolve) | 2026-06-28 |
 | evt-07b1fe9c | work_completed | iterate (AR-10: ingest CI security posture (security.yml findings.json) into the compliance dashboard via a fail-soft producer + tracked public-safe ci-security.json; light the Control-Grade Security dimension; render a CI Security section.) | 2026-06-28 |
-| evt-2aa2ddcf | work_completed | iterate (AR-04 SBOM data quality: dedupe by installed version from uv.lock, resolve licenses across all venvs, make the compliance line honest) | 2026-06-28 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 222
+- **Total work events**: 223
 - **Last iterate**: change — Refresh ci-security.json + dashboard from the post-#272 clean CI scan (0 high/critical) -> Control Grade A 90 -> A 100/100. (2026-06-28)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

@@ -234,3 +234,35 @@ class TestDeterminismAndShape:
         inp.security_open_high_critical = 2
         report = compute_grade(inp)
         assert len(report.reasons) <= 3
+
+
+class TestAnchorClarity:
+    """Anchors cite only OPEN standards (no commercial-vendor trademark) and the
+    methodology note reads in English — see the guide's dimensions table."""
+
+    # The recognized open standards/frameworks an anchor may cite. A new anchor
+    # must name at least one of these (keeps the grade anchored to a public,
+    # googleable standard rather than prose or a vendor product).
+    OPEN_STANDARDS = (
+        "DO-178C", "IEC 62304", "OpenSSF Scorecard", "SLSA",
+        "ISO 26262", "NIST SSDF", "OWASP", "ISO/IEC 25010",
+    )
+
+    def test_no_commercial_vendor_trademark_in_anchors(self):
+        # "Sonar" covers SonarQube + Sonar Way (SonarSource is a commercial
+        # vendor — cite the open standard it implements, not the product).
+        dims = compute_grade(_all_green()).dimensions
+        for d in dims:
+            assert "Sonar" not in d.anchor, f"{d.key}: vendor trademark in anchor"
+
+    def test_every_anchor_names_an_open_standard(self):
+        dims = compute_grade(_all_green()).dimensions
+        for d in dims:
+            assert any(std in d.anchor for std in self.OPEN_STANDARDS), (
+                f"{d.key}: anchor names no recognized open standard: {d.anchor!r}"
+            )
+
+    def test_methodology_note_is_english(self):
+        text = "\n".join(format_control_block(compute_grade(_all_green())))
+        assert "modeled on OpenSSF Scorecard" in text
+        assert "Anlehnung" not in text  # the old German phrasing is gone

@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-28-grade-anchor-clarity",
+  "date": "2026-06-28T19:35:15.960523Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/grade-anchor-clarity",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-06-28-grade-anchor-clarity"
+}
