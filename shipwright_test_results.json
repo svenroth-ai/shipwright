@@ -96,7 +96,13 @@
           "disposition": "tested",
           "evidence": "empirical probe (live: 0 untraced, 0 gate-invalid, D4 honest-fail, grade A 100.0)"
         }
-      ]
+      ],
+      "counts": {
+        "total": 10,
+        "tested": 9,
+        "untestable": 1,
+        "untested_testable": 0
+      }
     }
   }
 }
