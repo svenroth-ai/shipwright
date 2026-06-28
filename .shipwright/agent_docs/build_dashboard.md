@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-28 19:59 UTC | Session: 1b1b2661-e12b-4c54-a36d-fd6bd039a8f2 | Run: iterate-2026-06-28-grade-anchor-maint-wording
+> Updated: 2026-06-28 20:55 UTC | Session: d0a3ca22-cdbd-40bd-a869-8350a27c3c1b | Run: iterate-2026-06-28-ar10-sarif-ingestion
 
-## Recent Changes (224 iterations)
+## Recent Changes (225 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | AR-10 SARIF-ingestion fallback in shared github_api.py: when the security-scan-results artifact has no findings.json (every /shipwright-adopt repo runs the SARIF-only scanner template), parse sarif/*.sarif into severity-bucketed findings (security-severity CVSS bands; gitleaks->critical). findings.json stays authoritative when present (empty list never falls through). So the Control-Grade Security dimension lights for adopted repos, not just the monorepo. +6 unit tests; real-webui-SARIF probe parsed 165 findings (135 low / 24 medium / 6 high). | 0/0 |  | compliance | 2026-06-28 |
 | change | Control-Grade maintainability anchor describes the check (no unchecked code-size growth) instead of repeating the dimension label | 851/851 |  | compliance | 2026-06-28 |
 | change | Refresh ci-security.json + dashboard from the post-#272 clean CI scan (0 high/critical) -> Control Grade A 90 -> A 100/100. | 0/0 |  | compliance | 2026-06-28 |
 | change | Control-Grade anchors: plain-language + open-standard-only (drop SonarQube), English methodology note, guide dimensions table | 850/850 |  | compliance | 2026-06-28 |
