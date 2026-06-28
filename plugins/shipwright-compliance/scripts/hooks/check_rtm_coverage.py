@@ -154,5 +154,25 @@ def _find_uncovered_sections(project_root: str) -> list[str]:
     return uncovered
 
 
+def _run() -> int:
+    """Entrypoint with fail-open semantics.
+
+    A PreToolUse ``Bash`` hook fires on every Bash call; an unhandled crash here
+    would make Claude Code hard-block the unrelated command. Route ``main()``
+    through ``run_failopen`` so any internal error logs + ALLOWs (exit 0). The
+    deliberate soft-block (``main`` returns 2) passes through unchanged. Even the
+    guard's own import failing must not hard-block — fall back to ALLOW.
+    """
+    try:
+        lib_dir = Path(__file__).resolve().parent.parent / "lib"
+        if str(lib_dir) not in sys.path:
+            sys.path.insert(0, str(lib_dir))
+        from hook_failopen import run_failopen  # noqa: PLC0415
+
+        return run_failopen("check_rtm_coverage", main)
+    except Exception:
+        return 0
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(_run())

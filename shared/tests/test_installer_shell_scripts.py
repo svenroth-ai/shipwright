@@ -339,9 +339,9 @@ def test_f38_spaced_dotenv_value_does_not_execute_as_command(tmp_path):
         [
             sys.executable, "-c",
             "import sys; sys.path.insert(0, sys.argv[1]); "
-            "from env import parse_env_file; from pathlib import Path; "
-            "d = parse_env_file(Path(sys.argv[2])); "
-            "print('KEY=' + repr(d.get('OPENROUTER_API_KEY')))",
+            + "from env import parse_env_file; from pathlib import Path; "
+            + "d = parse_env_file(Path(sys.argv[2])); "
+            + "print('KEY=' + repr(d.get('OPENROUTER_API_KEY')))",
             str(parser_dir), str(env_file),
         ],
         capture_output=True, text=True,

@@ -37,10 +37,10 @@ def _realistic_claude_md() -> str:
         "# Webui Project — load-bearing rules\n\n",
         "## WHAT\n\nAssistant-UI based chat for Shipwright pipelines.\n\n",
         "## DO NOT\n\n"
-        "- Do not introduce CLI subprocess in the chat path — see ADR-019.\n"
-        "- Do not regress on the assistant-ui pivot decided in iterate 7.\n"
-        "- Do not stage webui/* paths when committing framework work.\n"
-        "- Do not auto-amend commits — use new commits instead.\n\n",
+        + "- Do not introduce CLI subprocess in the chat path — see ADR-019.\n"
+        + "- Do not regress on the assistant-ui pivot decided in iterate 7.\n"
+        + "- Do not stage webui/* paths when committing framework work.\n"
+        + "- Do not auto-amend commits — use new commits instead.\n\n",
     ]
     # Pad with realistic-shape prose to reach ~16 KB
     paragraph = (
