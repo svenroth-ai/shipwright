@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-28T19:59:19.170941+00:00
+Generated: 2026-06-28T20:55:31.664132+00:00
 
 ## Requirements Coverage
 
@@ -251,6 +251,7 @@ Generated: 2026-06-28T19:59:19.170941+00:00
 | <a id="evt-75761dd3"></a>Control-Grade anchors: plain-language + open-standard-only (drop SonarQube), English methodology note, guide dimensions table | iterate | change |  | 850/850 | — | 2026-06-28 |
 | <a id="evt-2d2828bd"></a>Refresh ci-security.json + dashboard from the post-#272 clean CI scan (0 high/critical) -> Control Grade A 90 -> A 100/100. | iterate | change |  | — | — | 2026-06-28 |
 | <a id="evt-0bcce391"></a>Control-Grade maintainability anchor describes the check (no unchecked code-size growth) instead of repeating the dimension label | iterate | change |  | 851/851 | — | 2026-06-28 |
+| <a id="evt-f8975c35"></a>AR-10 SARIF-ingestion fallback in shared github_api.py: when the security-scan-results artifact has no findings.json (every /shipwright-adopt repo runs the SARIF-only scanner template), parse sarif/*.sarif into severity-bucketed findings (security-severity CVSS bands; gitleaks->critical). findings.json stays authoritative when present (empty list never falls through). So the Control-Grade Security dimension lights for adopted repos, not just the monorepo. +6 unit tests; real-webui-SARIF probe parsed 165 findings (135 low / 24 medium / 6 high). | iterate | change |  | — | — | 2026-06-28 |
 
 ## Coverage Summary
 
@@ -258,7 +259,7 @@ Generated: 2026-06-28T19:59:19.170941+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 224 |
+| Iterate changes | 225 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

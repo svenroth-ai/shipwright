@@ -22,19 +22,19 @@ import re
 import shutil
 import subprocess
 import sys
-import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
+from security_findings import (  # noqa: F401  - re-export; impl split for anti-ratchet
+    download_prompt_risks,
+    download_security_findings,
+)
 
 # `gh` calls are network-bound — a bounded timeout keeps a hung request
 # from ever stalling the SessionStart hook.
 _TIMEOUT_SECONDS = 30
 
-# Artifact download can pull a few-MB zip on slow networks. Give it a
-# longer ceiling than a JSON API call, but still strictly bounded.
-_DOWNLOAD_TIMEOUT_SECONDS = 60
 
 # Default freshness window for the shipwright-security artifact path —
 # 14 days mirrors a typical sprint cycle. A run older than this is
@@ -48,10 +48,6 @@ _ENV_ARTIFACT_MAX_AGE = "SHIPWRIGHT_GITHUB_ARTIFACT_MAX_AGE_DAYS"
 # this constant is the URL-suffix form (basename only) for the
 # ``actions/workflows/{file}/runs`` endpoint.
 _SECURITY_WORKFLOW_FILE = "security.yml"
-
-# Artifact name produced by ``.github/workflows/security.yml`` —
-# ``actions/upload-artifact@v4 with: name: security-scan-results``.
-_SECURITY_ARTIFACT_NAME = "security-scan-results"
 
 
 def gh_available() -> bool:
@@ -323,69 +319,3 @@ def latest_security_workflow_run() -> dict | None:
             return run
     return None
 
-
-def download_security_findings(run_id: int) -> list[dict] | None:
-    """SAST/SCA findings from the ``security-scan-results`` artifact's
-    ``findings.json``. Contract (subprocess hygiene, rglob discovery, semantic
-    list-validation, ADR-052 None-vs-``[]``) lives in ``_download_artifact_findings``.
-    """
-    return _download_artifact_findings(run_id, "findings.json")
-
-
-def download_prompt_risks(run_id: int) -> list[dict] | None:
-    """Prompt-injection findings from the artifact's ``prompt_risks.json`` (same
-    contract as ``download_security_findings`` — see ``_download_artifact_findings``)."""
-    return _download_artifact_findings(run_id, "prompt_risks.json")
-
-
-def _download_artifact_findings(run_id: int, filename: str) -> list[dict] | None:
-    """Shared impl for the artifact-download helpers: download the
-    ``security-scan-results`` artifact and return the ``findings`` array out of
-    ``filename`` (``findings.json`` | ``prompt_risks.json``). Same hygiene as
-    the original ``download_security_findings`` (argv subprocess, robust rglob,
-    semantic list-validation, tempdir cleanup, ADR-052 None-vs-``[]``).
-    """
-    tmpdir = tempfile.mkdtemp(prefix="shipwright-artifact-")
-    try:
-        cmd: list[str] = [
-            "gh", "run", "download", str(run_id),
-            "--name", _SECURITY_ARTIFACT_NAME,
-            "--dir", tmpdir,
-        ]
-        try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=_DOWNLOAD_TIMEOUT_SECONDS,
-            )
-        except (OSError, subprocess.SubprocessError):
-            return None
-        if result.returncode != 0:
-            return None
-        # Robust discovery: gh usually flattens, but nested layouts are tolerated.
-        matches = list(Path(tmpdir).rglob(filename))
-        if not matches:
-            return None
-        try:
-            raw = matches[0].read_text(encoding="utf-8")
-            payload = json.loads(raw)
-        except (OSError, json.JSONDecodeError):
-            return None
-        if not isinstance(payload, dict):
-            return None
-        findings = payload.get("findings")
-        # Semantic validation — ``findings`` must be a list (possibly empty).
-        # Trusting the redundant aggregate would be unsafe if it disagreed.
-        if not isinstance(findings, list):
-            return None
-        # Defensive: every element should be a dict; non-dict entries
-        # are silently dropped so the caller's mapper never crashes on
-        # malformed individual entries.
-        return [f for f in findings if isinstance(f, dict)]
-    finally:
-        # Best-effort cleanup — never raise if the tempdir already vanished.
-        try:
-            shutil.rmtree(tmpdir, ignore_errors=True)
-        except OSError:
-            pass

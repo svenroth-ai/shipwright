@@ -522,7 +522,7 @@
     {
       "path": "shared/scripts/github_api.py",
       "limit": 300,
-      "current": 391,
+      "current": 321,
       "state": "grandfathered",
       "adr": null
     },

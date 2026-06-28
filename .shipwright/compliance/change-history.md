@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-06-28T19:59:19.170941+00:00
-Total commits: 1054
+Generated: 2026-06-28T20:55:31.664132+00:00
+Total commits: 1055
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 298
+    "fix" : 299
     "feat" : 280
     "chore" : 230
     "docs" : 142
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 298 commits
+### Fixes (fix) — 299 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-28 | compliance | maintainability grade anchor describes the check, not the label (#290) | e96a989ab04c |
 | 2026-06-28 | compliance | SBOM dedup by installed version + honest license verdict (AR-04) (#286) | f4498bb30ccc |
 | 2026-06-28 | compliance | fail-open + robust invocation for PreToolUse Bash gates (#278) | 01059128d910 |
 | 2026-06-27 | security | remediate CodeQL findings + tailor the query suite to this repo (#276) | 6e7d956f1297 |
@@ -1123,7 +1124,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1054 |
+| Total commits | 1055 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1054 |
+| Human-authored commits | 1055 |
 
