@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-28 19:34 UTC | Session: 1b1b2661-e12b-4c54-a36d-fd6bd039a8f2 | Run: iterate-2026-06-28-grade-anchor-clarity
+> Updated: 2026-06-28 19:59 UTC | Session: 1b1b2661-e12b-4c54-a36d-fd6bd039a8f2 | Run: iterate-2026-06-28-grade-anchor-maint-wording
 
-## Recent Changes (223 iterations)
+## Recent Changes (224 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Control-Grade maintainability anchor describes the check (no unchecked code-size growth) instead of repeating the dimension label | 851/851 |  | compliance | 2026-06-28 |
 | change | Refresh ci-security.json + dashboard from the post-#272 clean CI scan (0 high/critical) -> Control Grade A 90 -> A 100/100. | 0/0 |  | compliance | 2026-06-28 |
 | change | Control-Grade anchors: plain-language + open-standard-only (drop SonarQube), English methodology note, guide dimensions table | 850/850 |  | compliance | 2026-06-28 |
 | change | AR-05: RTM Reconciled? column + readability (consumes BP-2) | 4812/4812 |  | compliance | 2026-06-28 |
@@ -230,7 +231,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-28 | Unit: 850/850 | Smoke: not_run | (iterate)
+Last run: 2026-06-28 | Unit: 851/851 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-28T19:34:52.090773+00:00
+Generated: 2026-06-28T19:59:19.170941+00:00
 
 ## Requirements Coverage
 
@@ -250,6 +250,7 @@ Generated: 2026-06-28T19:34:52.090773+00:00
 | <a id="evt-a0fb4818"></a>AR-05: RTM Reconciled? column + readability (consumes BP-2) | iterate | change |  | 4812/4812 | — | 2026-06-28 |
 | <a id="evt-75761dd3"></a>Control-Grade anchors: plain-language + open-standard-only (drop SonarQube), English methodology note, guide dimensions table | iterate | change |  | 850/850 | — | 2026-06-28 |
 | <a id="evt-2d2828bd"></a>Refresh ci-security.json + dashboard from the post-#272 clean CI scan (0 high/critical) -> Control Grade A 90 -> A 100/100. | iterate | change |  | — | — | 2026-06-28 |
+| <a id="evt-0bcce391"></a>Control-Grade maintainability anchor describes the check (no unchecked code-size growth) instead of repeating the dimension label | iterate | change |  | 851/851 | — | 2026-06-28 |
 
 ## Coverage Summary
 
@@ -257,7 +258,7 @@ Generated: 2026-06-28T19:34:52.090773+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 223 |
+| Iterate changes | 224 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

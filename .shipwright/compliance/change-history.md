@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-06-28T19:34:52.090773+00:00
+Generated: 2026-06-28T19:59:19.170941+00:00
 Total commits: 1054
 
 ## Commit Distribution
@@ -327,7 +327,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-28 | compliance | plain-language, open-standard-only Control-Grade anchors + dimensions guide | 03d6a50ef5a1 |
+| 2026-06-28 | compliance | plain-language, open-standard-only Control-Grade anchors + dimensions guide (#289) | 9a4dbec16894 |
 | 2026-06-28 | compliance | ingest CI security posture into the dashboard + light the Control-Grade Security dimension (AR-10) (#285) | 15a0af09fb55 |
 | 2026-06-28 | compliance | RTM "Reconciled?" column + readability reuse the BP-2 grade helper (cc3/AR-05) (#284) | fb95a4765ef0 |
 | 2026-06-28 | compliance | per-FR fr_impact map lights the Control-Grade reconciliation dimension (cc2/BP-2) (#283) | 9941383afecf |

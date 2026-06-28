@@ -266,3 +266,14 @@ class TestAnchorClarity:
         text = "\n".join(format_control_block(compute_grade(_all_green())))
         assert "modeled on OpenSSF Scorecard" in text
         assert "Anlehnung" not in text  # the old German phrasing is gone
+
+    def test_anchor_hint_does_not_just_restate_the_label(self):
+        # The anchor's plain hint (text before the "(standard)") must add
+        # information, not merely echo the Dimension label — otherwise the row
+        # reads the same thing twice (the size/maintainability case).
+        def norm(s: str) -> str:
+            return s.split("(")[0].strip().lower().replace(" ", "").replace("/", "")
+        for d in compute_grade(_all_green()).dimensions:
+            assert norm(d.anchor) != norm(d.label), (
+                f"{d.key}: anchor merely restates the label ({d.anchor!r})"
+            )

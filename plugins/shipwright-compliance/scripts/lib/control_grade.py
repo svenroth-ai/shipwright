@@ -229,7 +229,7 @@ def _score_dimensions(inp: GradeInputs) -> list[DimensionResult]:
         mt_score, mt_detail = None, "no size baseline"
     dims.append(DimensionResult(
         "maintainability", "Size / maintainability discipline", 0.10,
-        mt_score, "size/maintainability discipline (ISO/IEC 25010)", mt_detail,
+        mt_score, "no unchecked code-size growth (ISO/IEC 25010)", mt_detail,
     ))
 
     # 7. Dependency hygiene (5%) — resolved licenses, 0 copyleft surprises.
