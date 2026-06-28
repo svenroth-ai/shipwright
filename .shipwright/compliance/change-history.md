@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-06-28T08:01:22.320966+00:00
-Total commits: 1046
+Generated: 2026-06-28T08:48:14.752152+00:00
+Total commits: 1048
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 297
-    "feat" : 276
+    "feat" : 277
     "chore" : 229
-    "docs" : 141
+    "docs" : 142
     "refactor" : 63
     "test" : 25
     "ci" : 7
@@ -322,10 +322,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 276 commits
+### Features (feat) — 277 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-28 | compliance | per-FR fr_impact map lights the Control-Grade reconciliation dimension (cc2/BP-2) | af05eba5f03e |
 | 2026-06-28 | compliance | BP-1 FR-mapping — credit satisfied no-FR, behavior-aware gate, traced-% metric (#280) | eb7bf10bf297 |
 | 2026-06-28 | compliance | Control Grade verdict block + latest-full-suite + inline audit (AR-01/02/03) (#277) | fdab00716d26 |
 | 2026-06-22 | security | add a Trivy accepted-risk register (.trivyignore.yaml) and accept the OTel medium (#273) | 64aef0de33b7 |
@@ -837,10 +838,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 141 commits
+### Documentation (docs) — 142 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-28 | lib | fix events_log lazy-import rationale (load_shared_lib isolation, not removed cycle) (#282) | faa96b699135 |
 | 2026-06-24 | images | update command-center board screenshot (#275) | 4cfb9d2dc9e3 |
 | 2026-06-21 | — | tighten the README hero and show what one iterate produces | 7cf1f4c6dadd |
 | 2026-06-21 | guide | replace prose em-dashes with colons, periods, and commas | 3e7480ca3c09 |
@@ -1115,7 +1117,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1046 |
+| Total commits | 1048 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1046 |
+| Human-authored commits | 1048 |
 

@@ -33,6 +33,7 @@ from lib.artifact_paths import (  # noqa: E402
 )
 from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.campaign_status_io import finalize_campaign_status  # noqa: E402
+from lib.fr_classification import normalize_fr_impact as _normalize_fr_impact  # noqa: E402
 
 
 class FinalizeGateError(RuntimeError):
@@ -245,6 +246,14 @@ def _record_event(
                 if k in {"id", "ts", "type", "source", "adr_id", "commit"}:
                     continue
                 event[k] = v
+        # BP-2: validate a supplied per-FR impact map via the shared SSOT (parity
+        # with the record_event CLI). Fail closed like the FR-gate — a malformed
+        # map is a producer bug; raise rather than silently drop a grade signal.
+        if "fr_impact" in event:
+            try:
+                event["fr_impact"] = _normalize_fr_impact(event["fr_impact"])
+            except ValueError as exc:
+                raise FinalizeGateError(f"malformed fr_impact: {exc}") from exc
 
         event.update({
             "v": 1,
@@ -368,31 +377,21 @@ def run(
 ) -> dict:
     """Run all finalization steps. Returns structured result dict.
 
-    Order (iterate-2026-05-23-compliance-md-single-producer):
+    Order: (1) record the ``work_completed`` event into events.jsonl —
+    ``commit=""`` in the common F5b-pre case, patched later via
+    :func:`attach_commit_after_finalize`; ``event_extras`` supplies the
+    F11-mandated fields (``intent``/``spec_impact``/``affected_frs``/
+    ``new_frs``/``change_type``/``none_reason``/``fr_impact``/``description``/
+    ``changed_files``) so the event is COMPLETE at recording time. (2)
+    regenerate compliance MDs (now reflecting that event). (3) build dashboard.
+    (4) session handoff.
 
-      1. Record ``work_completed`` event into events.jsonl. If ``commit``
-         is empty (the common F5b-pre case), the event lands with
-         ``commit=""`` placeholder — caller patches via
-         :func:`attach_commit_after_finalize` once F6 produces a SHA.
-         ``event_extras`` (optional) supplies the F11-mandated fields
-         (``intent``, ``spec_impact``, ``affected_frs``, ``new_frs``,
-         ``change_type``, ``none_reason``, ``description``,
-         ``changed_files``) so the event is COMPLETE at recording time
-         and the F11 verifier passes without a second record_event call.
-      2. Regenerate compliance MDs. They now reflect the just-recorded
-         event, so the F6 commit snapshot is self-consistent.
-      3. Regenerate build dashboard.
-      4. Generate session handoff.
+    ``result["steps"]["event"]["id"]`` is the event_id F6.5 passes back to
+    :func:`attach_commit_after_finalize`.
 
-    The returned ``result["steps"]["event"]["id"]`` is the event_id F6.5
-    must pass back to :func:`attach_commit_after_finalize`.
-
-    **Fail-closed (iterate-2026-06-05-fr-linkage-lifecycle):** if Step 1's
-    FR-gate rejects the event, :func:`_record_event` raises
-    :class:`FinalizeGateError`, which propagates out of ``run`` BEFORE Steps
-    2-5 — the derived artifacts are deliberately NOT refreshed for an
-    unclassified (incomplete) iterate. ``main`` turns it into exit 1; the
-    Stop-hook fallback catches it and logs. Re-run F5b with classification.
+    Fail-closed (ADR-059 FR-gate): if Step 1's gate rejects the event,
+    :func:`_record_event` raises :class:`FinalizeGateError`, propagating BEFORE
+    Steps 2-5 — derived artifacts are NOT refreshed for an unclassified iterate.
     """
     session_id = os.environ.get("SHIPWRIGHT_SESSION_ID", "unknown")
     result: dict = {"steps": {}, "project_root": str(project_root)}

@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from scripts.lib._latest_suite import resolve_latest_full_suite
+from scripts.lib._reconciliation import compute_reconciliation
 from scripts.lib._traceability import count_traced
 from scripts.lib.control_grade import GradeInputs, GradeReport, compute_grade
 
@@ -56,6 +57,19 @@ def build_grade_inputs(data: ComplianceData) -> GradeInputs:
     )
     suite = resolve_latest_full_suite(events)
 
+    # BP-2: reconciliation keyed on per-FR behavior impact (fr_impact, with the
+    # event-level spec_impact fallback). Filtered to DECLARED requirements so
+    # this dimension and cc3's RTM "Reconciled?" column — both reading the same
+    # helper — agree (the RTM iterates requirements).
+    rec = compute_reconciliation(events)
+    req_ids = {r.id for r in data.requirements}
+    frs_behavior_touched = rec.behavior_touched & req_ids
+    frs_unreconciled = rec.unreconciled & req_ids
+    # Measurable only when there are behavior-affected requirements to assess —
+    # the grade's "n/a when no data" rule (Scorecard's -1 inconclusive), not a
+    # vacuous 1.0 for a repo that simply made no behavior changes.
+    reconciliation_measurable = bool(frs_behavior_touched)
+
     deps = data.dependencies
     unknown = sum(
         1 for d in deps if (d.license or "").strip().lower() in _UNKNOWN_LICENSES)
@@ -84,9 +98,11 @@ def build_grade_inputs(data: ComplianceData) -> GradeInputs:
         # provenance = linked to an ADR, a commit, or a recorded test run.
         events_with_provenance=sum(
             1 for we in events if we.adr_id or we.commit or we.tests_total > 0),
-        # Reconciliation needs per-change behavior-impact (BP-2); not yet on
-        # the event wire-format, so n/a here. Flip when WorkEvent gains it.
-        reconciliation_measurable=False,
+        # Reconciliation lit by BP-2: behavior-touched FRs (per-FR fr_impact /
+        # spec_impact fallback) vs those re-verified after the touch.
+        reconciliation_measurable=reconciliation_measurable,
+        frs_behavior_touched=len(frs_behavior_touched),
+        frs_unreconciled=len(frs_unreconciled),
         # Security: the local report is stale/FP-laden; the authoritative
         # posture is the CI gate (AR-10 ingest). n/a until then — never a
         # false CRITICAL.

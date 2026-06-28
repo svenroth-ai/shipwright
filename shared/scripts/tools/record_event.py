@@ -41,20 +41,13 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.events_log import resolve_events_path  # noqa: E402
-# Single source of truth for the tolerant event-log reader. ``record_event``
-# and ``lib.config`` had byte-identical ``read_events`` bodies (both resolve
-# via ``resolve_events_path``); re-export the lib copy here so there is one
-# implementation (iterate-2026-06-13-shc-read-events). The name stays a
-# ``record_event`` module attribute, so callers (`record_event.read_events`,
-# `from record_event import read_events`) and the F14 lifecycle test that reads
-# through it keep working. Direction is tools->lib (no circular import: lib.*
-# never imports record_event).
+# Re-export the single tolerant event-log reader (SSOT in lib.config) so module
+# attributes `record_event.read_events` / `from record_event import read_events`
+# keep resolving for callers and the F14 lifecycle test. Direction tools->lib.
 from lib.config import read_events  # noqa: E402,F401 — re-exported SSOT
-# Cross-platform append-log mutex. Extracted to lib/file_lock.py
-# (iterate-2026-06-13-shc-file-lock); aliased to the historical private name
-# so module attribute `record_event._FileLock` stays patchable (the F14
-# lifecycle-integrity test monkeypatches it) and the `with _FileLock(...)`
-# call sites below resolve via the module global.
+# Cross-platform append-log mutex (impl in lib/file_lock.py); aliased to the
+# historical private name so `record_event._FileLock` stays monkeypatchable
+# (F14 lifecycle test) and the `with _FileLock(...)` call sites resolve it.
 from lib.file_lock import FileLock as _FileLock  # noqa: E402
 # SSOT for FR-classification (BP-1). The gate below and the compliance
 # Control-Grade adapter share these so "classified" (gate) and "traced" (grade)
@@ -67,6 +60,7 @@ from lib.fr_classification import (  # noqa: E402
     is_behavior_affecting as _is_behavior_affecting,
     is_non_empty_fr_list as _is_non_empty_fr_list,
     is_valid_none_reason as _is_valid_none_reason,
+    normalize_fr_impact as _normalize_fr_impact,
 )
 
 SCHEMA_VERSION = 1
@@ -239,6 +233,9 @@ def build_event(args: argparse.Namespace) -> dict:
             event["spec_impact"] = args.spec_impact
         if args.spec_impact_justification:
             event["spec_impact_justification"] = args.spec_impact_justification
+        # BP-2: per-FR behavior impact map (validated via the shared SSOT).
+        if args.fr_impact:
+            event["fr_impact"] = _normalize_fr_impact(json.loads(args.fr_impact))
         if args.adr_id:
             event["adr_id"] = args.adr_id
         # E spec MEDIUM-D1: changed_files is required by D's drift detection
@@ -522,6 +519,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--spec-impact-justification",
                    help="Why a feature/change iterate touches no FR. "
                         "Required when --spec-impact is none.")
+    p.add_argument("--fr-impact",
+                   help="JSON {FR-id: add|modify|remove|none} per-FR behavior impact (BP-2)")
     p.add_argument("--adr-id", help="ADR reference (e.g. ADR-055)")
     p.add_argument(
         "--changed-files",

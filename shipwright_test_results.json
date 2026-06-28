@@ -1,29 +1,92 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-28-events-log-lazy-rationale",
+    "run_id": "iterate-2026-06-28-cc2-bp2-impact-producer",
     "date": "2026-06-28",
-    "unit": { "status": "passed", "passed": 492, "total": 492 },
-    "integration": { "status": "not_run", "passed": 0, "total": 0 },
-    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
-    "e2e": { "status": "not_run", "passed": 0, "total": 0 },
-    "design_fidelity": { "status": "not_run", "passed": 0, "total": 0 },
-    "smoke": { "status": "not_run" },
+    "unit": {
+      "status": "passed",
+      "passed": 4799,
+      "total": 4799
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 174,
+      "total": 174
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
     "surface_verification": {
       "surface": "none",
-      "justification": "Docstring/comment-only change (events_log lazy-import rationale + 2 repo_root docstring refs); zero runtime behavior change, no web/CLI surface. Verified by ruff, import smoke, a load_shared_lib('events_log') isolation smoke, and the events_log/repo_root + compliance Group-F test subsets."
+      "exit_code": 0,
+      "tests_run": 4973,
+      "justification": "BP-2 is a framework/library change: a per-FR fr_impact map on the work_completed event wire-format (record_event + finalize), a tolerant WorkEvent reader, a new compliance reconciliation helper, and the Control-Grade adapter lighting the change-reconciliation dimension. No product web/api/cli/UI/store surface is introduced or changed; the compliance dashboard/RTM are static tracked .md and the WebUI is unaffected. Verified empirically against the real event log: reconciliation measurable=True, 4 behavior-touched FRs, 0 unreconciled, grade holds A 100 (dimension n/a->live). Full suites green: compliance 765, shared 3598, iterate 436, integration 174; pinned-ruff clean; anti-ratchet 0 ratchets / 0 new crossings."
     },
     "degraded": [],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "events_log import-context isolation preserved and the lazy shim still resolves after the comment/docstring edits (no behavior change)",
+          "behavior": "normalize_fr_impact validates+normalizes the per-FR map (lowercase/trim) and raises on malformed structure (non-dict, unknown impact, blank/non-str key, non-str value)",
           "disposition": "tested",
-          "evidence": "load_shared_lib('events_log') smoke (loads under sentinel module, 'lib' NOT polluted in sys.modules, resolve_main_repo_root reachable) + import smoke (events_log.resolve_main_repo_root delegates to repo_root) + 472 shared tests (events_log/repo_root/worktree/arch-meta) + 20 compliance Group-F/adapter tests PASSED; ruff (pinned) clean"
+          "evidence": "shared/tests/test_fr_classification.py::TestNormalizeFrImpact (8)"
+        },
+        {
+          "behavior": "record_event CLI/build_event writes fr_impact, round-trips write->read, rejects invalid value/JSON, and still passes the ADR-059 FR-gate with FR linkage",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_impact_roundtrip.py::TestRecordEventFrImpact (5)"
+        },
+        {
+          "behavior": "finalize_iterate F5b path carries+normalizes fr_impact and FAILS CLOSED (FinalizeGateError) on a malformed map, writing nothing",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_impact_roundtrip.py::TestFinalizeFrImpact (2)"
+        },
+        {
+          "behavior": "WorkEvent.from_dict parses fr_impact and tolerates legacy/null/garbage (->{}), stripping+lowercasing values",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_reconciliation.py::TestWorkEventFrImpact (4)"
+        },
+        {
+          "behavior": "compute_reconciliation: touched-without-re-verify (age-neutral), spec_impact fallback for legacy events, per-FR granularity, doc-only never flagged, malformed ts skipped",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_reconciliation.py::TestComputeReconciliation (10)"
+        },
+        {
+          "behavior": "build_grade_inputs lights reconciliation: measurable=bool(behavior-touched), counts filtered to declared requirements, agrees with the helper; n/a when no reqs or no behavior touches",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_reconciliation.py::TestBuildGradeInputsReconciliation (4)"
+        },
+        {
+          "behavior": "guide.md Control-Grade block documents fr_impact + the reconciliation dimension going n/a->live",
+          "disposition": "untestable",
+          "reason_code": "requires-manual-visual-judgment",
+          "reason": "documentation prose accuracy is verified by reading, not an automated assertion (guide.md is bloat-exempt and content-untested)"
         }
       ],
-      "counts": { "testable": 1, "tested": 1, "untestable": 0, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 1, "covered_acs": 1 }
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
+      }
     }
   }
 }

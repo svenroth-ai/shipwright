@@ -29,6 +29,10 @@ CHANGE_TYPE_VALUES = ("docs", "tooling", "compliance", "infra")
 NONE_REASON_MAX_LEN = 280
 # spec_impact values that mean "this change alters an FR's observable behavior".
 BEHAVIOR_AFFECTING = ("add", "modify", "remove")
+# The full closed impact vocabulary (mirrors record_event's --spec-impact
+# choices). BP-2 ``fr_impact`` map values are drawn from this same set so a
+# per-FR impact can never be a value an event-level spec_impact couldn't be.
+SPEC_IMPACT_VALUES = ("add", "modify", "remove", "none")
 # Disallow newlines, control chars and DEL; tab (0x09) is tolerated.
 _NONE_REASON_CONTROL_RE = re.compile(r"[\x00-\x08\x0a-\x1f\x7f]")
 
@@ -90,3 +94,35 @@ def is_traced(affected_frs, new_frs=None, change_type=None,
     FR-linked or a satisfied no-FR change (BP-1's "FR or explicit no-FR")."""
     return is_fr_tagged(affected_frs, new_frs) or is_satisfied_no_fr(
         change_type, none_reason, spec_impact)
+
+
+def normalize_fr_impact(value) -> dict[str, str]:
+    """Validate + normalize a BP-2 per-FR impact map ``{FR-id: impact}``.
+
+    Producer-side SSOT for the ``fr_impact`` field, shared by ``record_event``
+    (CLI/build_event) and ``finalize_iterate`` (worktree F5b path) so the
+    written shape can never drift between the two write-paths. Returns a new
+    dict with trimmed FR-id keys and lower-cased impact values, each in
+    :data:`SPEC_IMPACT_VALUES`.
+
+    ``None`` (or an empty dict) yields ``{}``. Raises ``ValueError`` on any
+    structurally malformed input — a non-dict, a blank/non-string key, a
+    non-string value, or an impact outside the closed vocabulary — so a corrupt
+    map surfaces at the write boundary, never on disk."""
+    if value is None:
+        return {}
+    if not isinstance(value, dict):
+        raise ValueError(
+            f"fr_impact must be a JSON object of {{FR-id: impact}}, got {type(value).__name__}")
+    out: dict[str, str] = {}
+    for fr, impact in value.items():
+        if not isinstance(fr, str) or not fr.strip():
+            raise ValueError(f"fr_impact key must be a non-empty FR id, got {fr!r}")
+        if not isinstance(impact, str):
+            raise ValueError(f"fr_impact[{fr!r}] must be a string impact, got {impact!r}")
+        norm = impact.strip().lower()
+        if norm not in SPEC_IMPACT_VALUES:
+            raise ValueError(
+                f"fr_impact[{fr!r}]={impact!r} is not one of {list(SPEC_IMPACT_VALUES)}")
+        out[fr.strip()] = norm
+    return out
