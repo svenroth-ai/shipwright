@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-28T12:48:12.844908+00:00
+Generated: 2026-06-28T19:25:13.871751+00:00
 
 ## Requirements Coverage
 
@@ -248,6 +248,7 @@ Generated: 2026-06-28T12:48:12.844908+00:00
 | <a id="evt-07b1fe9c"></a>AR-10: ingest CI security posture (security.yml findings.json) into the compliance dashboard via a fail-soft producer + tracked public-safe ci-security.json; light the Control-Grade Security dimension; render a CI Security section. | iterate | feature |  | — | — | 2026-06-28 |
 | <a id="evt-62cb4cbd"></a>Remove mtime-based timestamp-drift detector from check_drift.py; keep content-drift; legacy :timestamp triage items auto-resolve | iterate | change |  | 3853/3853 | — | 2026-06-28 |
 | <a id="evt-a0fb4818"></a>AR-05: RTM Reconciled? column + readability (consumes BP-2) | iterate | change |  | 4812/4812 | — | 2026-06-28 |
+| <a id="evt-2d2828bd"></a>Refresh ci-security.json + dashboard from the post-#272 clean CI scan (0 high/critical) -> Control Grade A 90 -> A 100/100. | iterate | change |  | — | — | 2026-06-28 |
 
 ## Coverage Summary
 
@@ -255,7 +256,7 @@ Generated: 2026-06-28T12:48:12.844908+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 221 |
+| Iterate changes | 222 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
