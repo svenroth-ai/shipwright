@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-28-cc2-bp2-impact-producer",
+    "run_id": "iterate-2026-06-28-sbom-honesty",
     "date": "2026-06-28",
     "unit": {
       "status": "passed",
-      "passed": 4799,
-      "total": 4799
+      "passed": 794,
+      "total": 794
     },
     "integration": {
-      "status": "passed",
-      "passed": 174,
-      "total": 174
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -18,7 +18,7 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
@@ -28,64 +28,83 @@
       "total": 0
     },
     "smoke": {
-      "status": "not_run"
+      "status": "skipped"
     },
     "surface_verification": {
       "surface": "none",
       "exit_code": 0,
-      "tests_run": 4973,
-      "justification": "BP-2 is a framework/library change: a per-FR fr_impact map on the work_completed event wire-format (record_event + finalize), a tolerant WorkEvent reader, a new compliance reconciliation helper, and the Control-Grade adapter lighting the change-reconciliation dimension. No product web/api/cli/UI/store surface is introduced or changed; the compliance dashboard/RTM are static tracked .md and the WebUI is unaffected. Verified empirically against the real event log: reconciliation measurable=True, 4 behavior-touched FRs, 0 unreconciled, grade holds A 100 (dimension n/a->live). Full suites green: compliance 765, shared 3598, iterate 436, integration 174; pinned-ruff clean; anti-ratchet 0 ratchets / 0 new crossings."
+      "tests_run": 794,
+      "justification": "Library/CLI change to the compliance SBOM generator + collector (AR-04). No product web/api/cli/UI/store runtime surface exists in this repo (the WebUI is a separate repo); sbom.md is a static tracked markdown artifact. Verified end-to-end by running the new generator against the synced main tree AND the worktree (byte-identical clean 7/7 artifact, openai deduped to 2.30.0, ASCII-OK) plus the 794-test compliance suite green and pinned-ruff clean; anti-ratchet 0 ratchets."
     },
     "degraded": [],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "normalize_fr_impact validates+normalizes the per-FR map (lowercase/trim) and raises on malformed structure (non-dict, unknown impact, blank/non-str key, non-str value)",
+          "behavior": "Parse uv.lock -> {canonical_name: version} (canonical names, missing file, malformed TOML)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_fr_classification.py::TestNormalizeFrImpact (8)"
+          "evidence": "plugins/shipwright-compliance/tests/test_sbom_lockfile_honesty.py::TestLoadLockVersions (4)"
         },
         {
-          "behavior": "record_event CLI/build_event writes fr_impact, round-trips write->read, rejects invalid value/JSON, and still passes the ADR-059 FR-gate with FR linkage",
+          "behavior": "Resolve Python version from sibling uv.lock; dedupe by installed version (openai collapses to one row); floor fallback when no lock",
           "disposition": "tested",
-          "evidence": "shared/tests/test_fr_impact_roundtrip.py::TestRecordEventFrImpact (5)"
+          "evidence": "test_sbom_lockfile_honesty.py::TestDedupByInstalledVersion (3)"
         },
         {
-          "behavior": "finalize_iterate F5b path carries+normalizes fr_impact and FAILS CLOSED (FinalizeGateError) on a malformed map, writing nothing",
+          "behavior": "Dedup survives one missing/stale lock via the project-wide union fallback (code-review finding #1)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_fr_impact_roundtrip.py::TestFinalizeFrImpact (2)"
+          "evidence": "test_sbom_lockfile_honesty.py::TestDedupByInstalledVersion::test_dedup_survives_one_missing_lock_via_global_union"
         },
         {
-          "behavior": "WorkEvent.from_dict parses fr_impact and tolerates legacy/null/garbage (->{}), stripping+lowercasing values",
+          "behavior": "Resolve license across ALL venvs (sibling-workspace venv, installed-no-license, real-license-wins, not-installed-anywhere)",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_reconciliation.py::TestWorkEventFrImpact (4)"
+          "evidence": "test_sbom_lockfile_honesty.py::TestGlobalLicenseResolution (4)"
         },
         {
-          "behavior": "compute_reconciliation: touched-without-re-verify (age-neutral), spec_impact fallback for legacy events, per-FR granularity, doc-only never flagged, malformed ts skipped",
+          "behavior": "ComplianceData dedup/lock flags set by collect_all (default False without a lock)",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_reconciliation.py::TestComputeReconciliation (10)"
+          "evidence": "test_sbom_lockfile_honesty.py::TestCollectAllFlags (2)"
         },
         {
-          "behavior": "build_grade_inputs lights reconciliation: measurable=bool(behavior-touched), counts filtered to declared requirements, agrees with the helper; n/a when no reqs or no behavior touches",
+          "behavior": "Summary counts ALL packages: 'Licenses resolved X/Y' row, '(deduplicated)' annotation (guarded vs 0-runtime), header 'resolved from uv.lock' note",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_reconciliation.py::TestBuildGradeInputsReconciliation (4)"
+          "evidence": "test_sbom_lockfile_honesty.py::TestHonestRender (4)"
         },
         {
-          "behavior": "guide.md Control-Grade block documents fr_impact + the reconciliation dimension going n/a->live",
-          "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "documentation prose accuracy is verified by reading, not an automated assertion (guide.md is bloat-exempt and content-untested)"
+          "behavior": "Pie counts all packages + an 'unknown' slice; license_pie back-compat for the no-kwargs callers",
+          "disposition": "tested",
+          "evidence": "test_sbom_lockfile_honesty.py::test_pie_counts_all_packages + test_mermaid.py::TestLicensePie"
+        },
+        {
+          "behavior": "Honest verdict: clean / 'could not be resolved - verify' / 'declare no license'; never claims 'all permissive' while any license is unresolved",
+          "disposition": "tested",
+          "evidence": "test_sbom_lockfile_honesty.py::TestHonestRender + test_sbom_not_installed.py + test_sbom_generator.py (updated)"
+        },
+        {
+          "behavior": "SBOM doc is ASCII-only across all branches (copyleft/no_license/not_installed/clean/empty)",
+          "disposition": "tested",
+          "evidence": "test_sbom_lockfile_honesty.py::test_output_is_ascii + test_sbom_not_installed.py::test_doc_is_ascii_even_with_fall2_deps"
+        },
+        {
+          "behavior": "Deterministic license resolution (sorted venvs)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_data_collector_determinism.py (18)"
+        },
+        {
+          "behavior": "Triage producer unchanged (strict per-manifest NOT_INSTALLED vs UNKNOWN semantics preserved)",
+          "disposition": "tested",
+          "evidence": "test_sbom_generator.py::TestEmitUndeclaredTriage* + test_sbom_not_installed.py (unchanged, still green)"
         }
       ],
       "counts": {
-        "testable": 6,
-        "tested": 6,
-        "untestable": 1,
+        "testable": 11,
+        "tested": 11,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 5,
-        "covered_acs": 5
+        "acs": 4,
+        "covered_acs": 4
       }
     }
   }

@@ -193,7 +193,7 @@
     {
       "path": "plugins/shipwright-compliance/scripts/lib/sbom_generator.py",
       "limit": 300,
-      "current": 580,
+      "current": 522,
       "state": "grandfathered",
       "adr": null
     },

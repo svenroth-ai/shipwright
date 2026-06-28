@@ -121,18 +121,31 @@ def commit_type_pie(commits: list[CommitEntry]) -> str:
     return "\n".join(lines)
 
 
-def license_pie(dependencies: list[DependencyInfo]) -> str:
-    """Generate pie chart of license distribution."""
-    if not dependencies:
+def license_pie(
+    dependencies: list[DependencyInfo], *, total: int | None = None, unknown: int = 0
+) -> str:
+    """Generate pie chart of license distribution.
+
+    ``dependencies`` are the resolved-license rows. When ``total`` is given the
+    title notes the chart counts ALL packages and an ``unknown`` slice
+    (``unknown`` = count of unresolved licenses) is appended so the slices sum
+    to ``total`` (AR-04 — "make the pie count all packages")."""
+    if not dependencies and not unknown:
         return "```mermaid\npie title License Distribution\n    \"no packages\" : 1\n```"
 
     license_counts: dict[str, int] = {}
     for d in dependencies:
         license_counts[d.license] = license_counts.get(d.license, 0) + 1
 
-    lines = ["```mermaid", "pie title License Distribution"]
+    title = (
+        f"License Distribution (all {total} packages)"
+        if total is not None else "License Distribution"
+    )
+    lines = ["```mermaid", f"pie title {title}"]
     for lic, count in sorted(license_counts.items(), key=lambda x: -x[1]):
         lines.append(f'    "{lic}" : {count}')
+    if unknown:
+        lines.append(f'    "unknown" : {unknown}')
     lines.append("```")
     return "\n".join(lines)
 

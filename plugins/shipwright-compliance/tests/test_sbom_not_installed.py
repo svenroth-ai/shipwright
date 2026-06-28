@@ -4,10 +4,12 @@ iterate-2026-06-07-sbom-not-installed-vs-undeclared. Two non-license outcomes
 are kept apart on purpose:
 
 - ``NOT_INSTALLED`` — package not resolvable in the scan env (no ``.venv``
-  dist-info / no lockfile+node_modules). A scan artifact, not a repo property:
-  stays silent (no triage, ``—`` in the doc, excluded from counts/verdict).
+  dist-info / no lockfile+node_modules). A scan artifact: stays silent in
+  TRIAGE, but (AR-04, iterate-2026-06-28) renders ``-`` and is counted as
+  unresolved in the doc summary + verdict, so the report never claims
+  "all permissive" while ``-`` rows remain.
 - ``UNKNOWN_LICENSE`` — package resolved but declares no license. A genuine
-  concern: triaged + surfaced in the doc.
+  concern: triaged + surfaced in the doc as a declared-no-license section.
 """
 
 from __future__ import annotations
@@ -150,10 +152,13 @@ class TestDocSemantics:
         assert "No license concerns" in result
 
     def test_verdict_nothing_resolved_when_all_not_installed(self):
+        # AR-04: unresolved licenses are counted in the verdict ("verify"), and
+        # the report never claims "all permissive" while any remain.
         deps = [DependencyInfo("ghost", "1.0.0", "runtime", NOT_INSTALLED)]
         result = generate(_data(deps))
-        assert "No dependency licenses were resolved in this scan." in result
+        assert "could not be resolved in this scan" in result
         assert "No license concerns" not in result
+        assert "permissively licensed" not in result
 
     def test_no_scan_coverage_or_install_nag(self):
         deps = [DependencyInfo("ghost", "1.0.0", "runtime", NOT_INSTALLED)]

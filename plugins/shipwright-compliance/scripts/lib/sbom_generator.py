@@ -26,119 +26,67 @@ from typing import TYPE_CHECKING
 
 from scripts.lib.collectors import NOT_INSTALLED, UNKNOWN_LICENSE
 from scripts.lib.mermaid import license_pie
+from scripts.lib.sbom_render import (
+    license_cell,
+    license_compliance_lines,
+    summary_lines,
+)
 
 if TYPE_CHECKING:
     from scripts.lib.data_collector import ComplianceData
 
 
-_COPYLEFT_LICENSES = {
-    "GPL", "GPL-2.0", "GPL-3.0",
-    "AGPL", "AGPL-3.0",
-    "LGPL", "LGPL-2.1", "LGPL-3.0",
-    "MPL-2.0",
-}
-
-
-def _license_cell(license_: str) -> str:
-    """Inventory-table cell for a license. ``NOT_INSTALLED`` (a scan artifact,
-    not a repo property) renders as a neutral ``-`` so it never reads as a
-    concern; everything else (real license or genuine ``unknown``) is verbatim.
-    ASCII-only on purpose: the artifact is printed by cp1252-default tooling.
-    """
-    return "-" if license_ == NOT_INSTALLED else license_
-
-
 def generate(data: ComplianceData) -> str:
     """Generate SBOM as Markdown — answers "is this repo license-sound?".
 
-    Surfaces genuine concerns (copyleft + resolved-but-no-license); stays silent
-    about ``NOT_INSTALLED`` deps (a scan-environment artifact): they render as
-    ``—`` in the inventory and are excluded from the license count, pie, and the
-    compliance verdict.
+    Versions are resolved from the lockfile and deduped by installed version;
+    licenses are resolved from package metadata across all venvs. The summary,
+    pie, and verdict count EVERY package and never claim "all permissive" while
+    any license is unresolved (AR-04). The verdict treats an unresolved license
+    (``NOT_INSTALLED`` or declared-none) as "verify"; triage stays silent about
+    ``NOT_INSTALLED`` (a scan artifact) on its own surface. ASCII-only output.
     """
     deps = data.dependencies
-
-    runtime = [d for d in deps if d.dep_type == "runtime"]
-    dev = [d for d in deps if d.dep_type == "dev"]
-    copyleft = [d for d in deps if _is_copyleft(d.license)]
-    no_license = [d for d in deps if d.license == UNKNOWN_LICENSE]  # Fall 2
     resolved = [d for d in deps if d.license not in (NOT_INSTALLED, UNKNOWN_LICENSE)]
+    unresolved = len(deps) - len(resolved)
 
-    # Unique licenses = real, resolved licenses only (no sentinels).
-    unique_licenses = sorted({d.license for d in resolved})
+    header = f"Generated: {data.timestamp}"
+    if data.dependencies_lock_resolved:
+        header += " (dependency versions resolved from uv.lock)"
 
     lines = [
         "# Software Bill of Materials (SBOM)",
         "",
-        f"Generated: {data.timestamp}",
-        "",
-        "## Summary",
-        "",
-        "| Metric | Value |",
-        "|--------|-------|",
-        f"| Runtime dependencies | {len(runtime)} |",
-        f"| Dev dependencies | {len(dev)} |",
-        f"| Total packages | {len(deps)} |",
-        f"| Unique licenses | {len(unique_licenses)} ({', '.join(unique_licenses) if unique_licenses else 'none'}) |",
-        f"| Copyleft licenses | {len(copyleft)} |",
+        header,
         "",
     ]
+    lines += summary_lines(deps, deduped=data.dependencies_deduped)
 
     if not deps:
         lines.append("_No dependency manifests found (package.json, pyproject.toml)._")
         return "\n".join(lines) + "\n"
 
-    # License distribution — resolved licenses only (sentinels are not licenses).
-    lines.extend(["## License Distribution", "", license_pie(resolved), ""])
+    # License distribution — counts ALL packages (resolved slices + an
+    # `unknown` slice for unresolved licenses).
+    lines.extend([
+        "## License Distribution",
+        "",
+        license_pie(resolved, total=len(deps), unknown=unresolved),
+        "",
+    ])
 
-    # Dependency inventory (NOT_INSTALLED → `—`).
+    # Dependency inventory (NOT_INSTALLED -> `-`).
+    runtime = [d for d in deps if d.dep_type == "runtime"]
+    dev = [d for d in deps if d.dep_type == "dev"]
     for title, group in (("Runtime Dependencies", runtime), ("Dev Dependencies", dev)):
         if not group:
             continue
         lines.extend([f"## {title}", "", "| Package | Version | License |", "|---------|---------|---------|"])
         for d in sorted(group, key=lambda x: x.name):
-            lines.append(f"| {d.name} | {d.version} | {_license_cell(d.license)} |")
+            lines.append(f"| {d.name} | {d.version} | {license_cell(d.license)} |")
         lines.append("")
 
-    # License compliance — a clear verdict for the reader.
-    lines.extend(["## License Compliance", ""])
-    if copyleft:
-        lines.extend([
-            "**WARNING: Copyleft licenses detected.** These may restrict commercial use.",
-            "",
-            "| Package | Version | License | Risk |",
-            "|---------|---------|---------|------|",
-        ])
-        for d in copyleft:
-            lines.append(f"| {d.name} | {d.version} | {d.license} | Review required |")
-        lines.append("")
-    if no_license:
-        lines.append(
-            f"**{len(no_license)} dependency(ies) declare no license** - see "
-            "'Dependencies Without a Declared License' below."
-        )
-        lines.append("")
-    if not copyleft and not no_license:
-        lines.append(
-            "No license concerns: all resolved dependencies are permissively licensed."
-            if resolved else "No dependency licenses were resolved in this scan."
-        )
-        lines.append("")
-
-    # Genuine no-declared-license (Fall 2) — the reader must verify these.
-    if no_license:
-        lines.extend([
-            "## Dependencies Without a Declared License",
-            "",
-            f"**{len(no_license)} package(s)** are installed but ship no license "
-            "metadata. Verify their license terms before distribution.",
-            "",
-            "| Package | Version | Type |",
-            "|---------|---------|------|",
-        ])
-        for d in sorted(no_license, key=lambda x: x.name):
-            lines.append(f"| {d.name} | {d.version} | {d.dep_type} |")
-        lines.append("")
+    lines += license_compliance_lines(deps)
 
     return "\n".join(lines) + "\n"
 
@@ -158,12 +106,6 @@ def generate_file(project_root: Path, data: ComplianceData | None = None) -> Pat
     output_path = output_dir / "sbom.md"
     output_path.write_text(generate(data), encoding="utf-8")
     return output_path
-
-
-def _is_copyleft(license_str: str) -> bool:
-    """Check if a license is copyleft."""
-    upper = license_str.upper()
-    return any(cl in upper for cl in ("GPL", "AGPL", "LGPL", "MPL"))
 
 
 # ---------------------------------------------------------------------------
