@@ -1,13 +1,8 @@
 """Public dataclass surface for the compliance collectors package.
 
-Single owner of the dataclass definitions imported by every collector
-module and re-exported by ``collectors/__init__.py``.
-
-Iterate Campaign B (B2): split out of ``data_collector.py`` (1559 LOC →
-multiple ≤300-LOC modules). The dataclasses live HERE so they have a
-single canonical home; ``_common.py`` carries the shared runtime
-helpers (config-file readers). Together they replace the dataclass
-section of the pre-split monolith.
+Single owner of the dataclass definitions imported by every collector module
+and re-exported by ``collectors/__init__.py``; ``_common.py`` carries the
+shared runtime helpers (config-file readers).
 """
 
 from __future__ import annotations
@@ -155,6 +150,8 @@ class WorkEvent:
     change_type: str = ""
     none_reason: str = ""
     spec_impact: str = ""
+    # BP-2: per-FR behavior impact {FR-id: add|modify|remove|none}; legacy → {}.
+    fr_impact: dict[str, str] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, d: dict) -> WorkEvent:
@@ -186,6 +183,9 @@ class WorkEvent:
             change_type=d.get("change_type") or "",
             none_reason=d.get("none_reason") or "",
             spec_impact=d.get("spec_impact") or "",
+            fr_impact={k: v.strip().lower() for k, v in (d.get("fr_impact") or {}).items()
+                       if isinstance(k, str) and isinstance(v, str)}
+            if isinstance(d.get("fr_impact"), dict) else {},
         )
 
 

@@ -74,6 +74,59 @@ class TestIsTraced:
         assert fc.is_traced([], [], "compliance", "realign", "modify") is False
 
 
+class TestNormalizeFrImpact:
+    """BP-2: the per-FR impact map validator (producer-side SSOT)."""
+
+    def test_none_and_empty_yield_empty(self):
+        assert fc.normalize_fr_impact(None) == {}
+        assert fc.normalize_fr_impact({}) == {}
+
+    def test_valid_map_lowercased_and_trimmed(self):
+        out = fc.normalize_fr_impact({"FR-01.07": "MODIFY", " FR-02.03 ": "none"})
+        assert out == {"FR-01.07": "modify", "FR-02.03": "none"}
+
+    def test_all_impact_values_accepted(self):
+        out = fc.normalize_fr_impact(
+            {"FR-1": "add", "FR-2": "modify", "FR-3": "remove", "FR-4": "none"})
+        assert out == {"FR-1": "add", "FR-2": "modify", "FR-3": "remove", "FR-4": "none"}
+
+    def test_non_dict_rejected(self):
+        for bad in ("modify", ["FR-01.07"], 7):
+            try:
+                fc.normalize_fr_impact(bad)
+            except ValueError:
+                continue
+            raise AssertionError(f"expected ValueError for {bad!r}")
+
+    def test_invalid_impact_value_rejected(self):
+        try:
+            fc.normalize_fr_impact({"FR-01.07": "tweak"})
+        except ValueError:
+            return
+        raise AssertionError("expected ValueError for unknown impact")
+
+    def test_blank_key_rejected(self):
+        try:
+            fc.normalize_fr_impact({"  ": "modify"})
+        except ValueError:
+            return
+        raise AssertionError("expected ValueError for blank FR id")
+
+    def test_non_string_impact_rejected(self):
+        try:
+            fc.normalize_fr_impact({"FR-01.07": 1})
+        except ValueError:
+            return
+        raise AssertionError("expected ValueError for non-string impact")
+
+    def test_spec_impact_values_superset_of_behavior_affecting(self):
+        # The fr_impact vocab MUST include every behavior-affecting value plus
+        # 'none' — drift here would let a valid spec_impact be an invalid
+        # fr_impact value.
+        assert set(fc.BEHAVIOR_AFFECTING) <= set(fc.SPEC_IMPACT_VALUES)
+        assert "none" in fc.SPEC_IMPACT_VALUES
+
+
 class TestDriftWithGate:
     """The compliance 'traced' notion must not drift from the record_event gate."""
 

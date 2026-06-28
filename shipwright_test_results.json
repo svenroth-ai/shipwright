@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-28-cc1-bp1-fr-mapping",
+    "run_id": "iterate-2026-06-28-cc2-bp2-impact-producer",
     "date": "2026-06-28",
     "unit": {
       "status": "passed",
-      "passed": 736,
-      "total": 736
+      "passed": 4799,
+      "total": 4799
     },
     "integration": {
       "status": "passed",
-      "passed": 169,
-      "total": 169
+      "passed": 174,
+      "total": 174
     },
     "pgtap": {
       "status": "not_run",
@@ -23,7 +23,7 @@
       "total": 0
     },
     "design_fidelity": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
@@ -33,75 +33,59 @@
     "surface_verification": {
       "surface": "none",
       "exit_code": 0,
-      "tests_run": 736,
-      "justification": "BP-1 producer change to compliance scoring + the iterate FR-gate + the detective audit + a new shared classification SSOT. No product web/api/cli/UI/store surface is introduced or changed; the compliance dashboard/RTM are static tracked .md, and the event wire-format already carried change_type/none_reason/spec_impact (only the compliance reader gained them) so the WebUI is unaffected. Empirically verified by live real-data runs: grade B 87.2 -> A 100.0, D1 fail -> pass, full detective audit any_fail=False, 211/211 events traced + gate-valid, dashboard freeze row WARN; plus the full suites (compliance 736, shared 3580+61+196, integration 169) and pinned-ruff clean."
+      "tests_run": 4973,
+      "justification": "BP-2 is a framework/library change: a per-FR fr_impact map on the work_completed event wire-format (record_event + finalize), a tolerant WorkEvent reader, a new compliance reconciliation helper, and the Control-Grade adapter lighting the change-reconciliation dimension. No product web/api/cli/UI/store surface is introduced or changed; the compliance dashboard/RTM are static tracked .md and the WebUI is unaffected. Verified empirically against the real event log: reconciliation measurable=True, 4 behavior-touched FRs, 0 unreconciled, grade holds A 100 (dimension n/a->live). Full suites green: compliance 765, shared 3598, iterate 436, integration 174; pinned-ruff clean; anti-ratchet 0 ratchets / 0 new crossings."
     },
-    "degraded": [
-      "External LLM review unavailable (no OPENROUTER/GEMINI/OPENAI key in this env); the internal code-reviewer ran as the documented fallback (no HIGH findings; M1/M2/M4 fixed, M3 documented trade-off).",
-      "Full monorepo per-plugin suites delegated to CI ci.yml; locally ran the touched scopes green: shipwright-compliance 736, shared/tests 3580 (+12 skip), shared/scripts/tools/tests 61, shared/scripts/tests 196, integration-tests 169.",
-      "arch-impact meta-test (test_architecture_md_reflects_arch_impact) may false-fail locally on OTHER iterates' gitignored staged decision-drops resolved from the main root; this run's own drop (component) has its architecture.md entry. CI sees only committed drops (green).",
-      "Security dimension n/a (local securityreports stale/FP-laden; authoritative = CI gate via AR-10). Change-reconciliation dimension n/a until BP-2 persists per-FR impact. D4 detective left at its honest pre-existing fail (stale FR-01.01 snapshot; disabled in audit_config) \u2014 not masked."
-    ],
+    "degraded": [],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "is_traced / is_satisfied_no_fr / is_behavior_affecting predicates (incl. behavior-affecting is never satisfied)",
+          "behavior": "normalize_fr_impact validates+normalizes the per-FR map (lowercase/trim) and raises on malformed structure (non-dict, unknown impact, blank/non-str key, non-str value)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_fr_classification.py"
+          "evidence": "shared/tests/test_fr_classification.py::TestNormalizeFrImpact (8)"
         },
         {
-          "behavior": "FR-gate blocks a behavior-affecting (spec_impact add/modify/remove) change with no FR, at CLI AND finalize, intent-independently",
+          "behavior": "record_event CLI/build_event writes fr_impact, round-trips write->read, rejects invalid value/JSON, and still passes the ADR-059 FR-gate with FR linkage",
           "disposition": "tested",
-          "evidence": "shared/tests/test_fr_gate_behavior_affecting.py (6); finalize parity test_finalize_iterate.py"
+          "evidence": "shared/tests/test_fr_impact_roundtrip.py::TestRecordEventFrImpact (5)"
         },
         {
-          "behavior": "Gate still accepts FR-linked / satisfied-no-FR and rejects unclassified",
+          "behavior": "finalize_iterate F5b path carries+normalizes fr_impact and FAILS CLOSED (FinalizeGateError) on a malformed map, writing nothing",
           "disposition": "tested",
-          "evidence": "shared/tests/test_record_event.py::TestFrOrChangeTypeGate + TestFrGateInputValidation"
+          "evidence": "shared/tests/test_fr_impact_roundtrip.py::TestFinalizeFrImpact (2)"
         },
         {
-          "behavior": "WorkEvent change_type/none_reason/spec_impact round-trip (legacy + explicit-null tolerant)",
+          "behavior": "WorkEvent.from_dict parses fr_impact and tolerates legacy/null/garbage (->{}), stripping+lowercasing values",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_workevent_null_coercion.py"
+          "evidence": "plugins/shipwright-compliance/tests/test_reconciliation.py::TestWorkEventFrImpact (4)"
         },
         {
-          "behavior": "count_traced credits FR-linked AND satisfied-no-FR (feeds events_fr_tagged)",
+          "behavior": "compute_reconciliation: touched-without-re-verify (age-neutral), spec_impact fallback for legacy events, per-FR granularity, doc-only never flagged, malformed ts skipped",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_traceability.py::TestCountTraced + live grade A"
+          "evidence": "plugins/shipwright-compliance/tests/test_reconciliation.py::TestComputeReconciliation (10)"
         },
         {
-          "behavior": "Dashboard 'Recent changes traced to an FR' WARNs on a relative drop AND an absolute-zero freeze",
+          "behavior": "build_grade_inputs lights reconciliation: measurable=bool(behavior-touched), counts filtered to declared requirements, agrees with the helper; n/a when no reqs or no behavior touches",
           "disposition": "tested",
-          "evidence": "test_traceability.py::TestRenderTracedRow (5 cases)"
+          "evidence": "plugins/shipwright-compliance/tests/test_reconciliation.py::TestBuildGradeInputsReconciliation (4)"
         },
         {
-          "behavior": "D1 coverage is all-time (no spec-update watermark); never-covered FR still flagged",
-          "disposition": "tested",
-          "evidence": "test_audit_groups_a_d.py::test_d1_coverage_persists_across_later_spec_update + test_d1_flags_uncovered_must_fr_as_high"
-        },
-        {
-          "behavior": "D5 no-FR exemption excludes behavior-affecting changes (write-gate parity)",
+          "behavior": "guide.md Control-Grade block documents fr_impact + the reconciliation dimension going n/a->live",
           "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "evidence": "is_satisfied_no_fr unit test pins the carve-out; D5 delegates to it (live D5 pass)"
-        },
-        {
-          "behavior": "audit_config re-enables D1 (passes honestly) and keeps D4 disabled",
-          "disposition": "tested",
-          "evidence": "test_audit_detector.py::test_framework_audit_config_disables_expected_checks + live full audit any_fail=False"
-        },
-        {
-          "behavior": "Backfill: all 211 work_completed events traced + gate-valid; evt-9a656b5f suppression preserved; D4 not masked",
-          "disposition": "tested",
-          "evidence": "empirical probe (live: 0 untraced, 0 gate-invalid, D4 honest-fail, grade A 100.0)"
+          "reason_code": "requires-manual-visual-judgment",
+          "reason": "documentation prose accuracy is verified by reading, not an automated assertion (guide.md is bloat-exempt and content-untested)"
         }
       ],
       "counts": {
-        "total": 10,
-        "tested": 9,
+        "testable": 6,
+        "tested": 6,
         "untestable": 1,
         "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
       }
     }
   }
