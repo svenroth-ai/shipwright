@@ -1,11 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-06-28 12:18 UTC | Session: 034b86b6-c5c7-4534-abfd-a4c6d08b087c | Run: iterate-2026-06-28-ci-security-dashboard
+> Updated: 2026-06-28 12:34 UTC | Session: e6723b45-9aed-4208-8b66-4d4653da8543 | Run: iterate-2026-06-28-drop-timestamp-drift
 
-## Recent Changes (218 iterations)
+## Recent Changes (219 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| feature | AR-10: ingest CI security posture (security.yml findings.json) into the compliance dashboard via a fail-soft producer + tracked public-safe ci-security.json; light the Control-Grade Security dimension; render a CI Security section. | 0/0 |  | compliance | 2026-06-28 |
+| change | AR-05: RTM Reconciled? column + readability (consumes BP-2) | 4812/4812 |  | compliance | 2026-06-28 |
+| change | Remove mtime-based timestamp-drift detector from check_drift.py; keep content-drift; legacy :timestamp triage items auto-resolve | 3853/3853 |  | tooling | 2026-06-28 |
 | change | Fix events_log lazy-import rationale (load_shared_lib isolation, not the removed cycle) + 2 repo_root docstring refs | 492/492 |  | docs | 2026-06-28 |
 | change | BP-2: per-FR fr_impact map on work_completed events lights the Control-Grade change-reconciliation dimension | 0/0 |  | compliance | 2026-06-28 |
 | change | Break 3 CodeQL py/cyclic-import cycles via neutral leaf extraction + fix 2 py/mixed-returns | 4719/4719 |  | tooling | 2026-06-28 |
@@ -225,7 +226,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-28 | Unit: 795/795 | Smoke: not_run | (iterate)
+Last run: 2026-06-28 | Unit: 3596/3596 | Integration: 1/1 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

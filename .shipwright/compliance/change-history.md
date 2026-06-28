@@ -1,17 +1,17 @@
 # Commit Change Log
 
-Generated: 2026-06-28T12:18:28.241981+00:00
-Total commits: 1048
+Generated: 2026-06-28T12:34:00.983777+00:00
+Total commits: 1051
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 297
-    "feat" : 277
-    "chore" : 229
+    "feat" : 278
+    "chore" : 230
     "docs" : 142
-    "refactor" : 63
+    "refactor" : 64
     "test" : 25
     "ci" : 7
     "other" : 7
@@ -322,10 +322,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 277 commits
+### Features (feat) — 278 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-28 | compliance | RTM "Reconciled?" column + readability reuse the BP-2 grade helper (cc3/AR-05) (#284) | fb95a4765ef0 |
 | 2026-06-28 | compliance | per-FR fr_impact map lights the Control-Grade reconciliation dimension (cc2/BP-2) (#283) | 9941383afecf |
 | 2026-06-28 | compliance | BP-1 FR-mapping — credit satisfied no-FR, behavior-aware gate, traced-% metric (#280) | eb7bf10bf297 |
 | 2026-06-28 | compliance | Control Grade verdict block + latest-full-suite + inline audit (AR-01/02/03) (#277) | fdab00716d26 |
@@ -604,10 +605,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 229 commits
+### Chores (chore) — 230 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-28 | iterate | refresh session handoff for iterate-2026-06-28-drop-timestamp-drift completion | bd2c845f862a |
 | 2026-06-28 | security | exclude test fixtures from CodeQL + make intentional string-concat explicit (#279) | 6f1f35076dfa |
 | 2026-06-22 | release | v0.29.1 (#271) | af7a3fc04fae |
 | 2026-06-17 | — | align root pyproject.toml to 0.29.0 + de-PII a source comment (#262) | 6c0c1ea626c4 |
@@ -985,10 +987,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 63 commits
+### Refactoring (refactor) — 64 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-28 | hooks | drop mtime timestamp-drift detector from check_drift.py | cba4d3803af1 |
 | 2026-06-28 | codeql | break 3 import cycles via neutral leaf modules + fix 2 mixed-returns (#281) | 07eb0841c26d |
 | 2026-06-20 | triage | dedup aggregate_triage Stop regen across the plugin fan-out (#270) | 019778a14927 |
 | 2026-06-14 | hooks | consolidate fan-out via once-per-event guard + session-state phase resolver (#250) | e6e5e4b91764 |
@@ -1117,7 +1120,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1048 |
+| Total commits | 1051 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1048 |
+| Human-authored commits | 1051 |
 

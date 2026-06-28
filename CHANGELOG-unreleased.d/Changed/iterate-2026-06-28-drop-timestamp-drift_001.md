@@ -1,0 +1,1 @@
+SessionStart CLAUDE.md drift check (check_drift.py) no longer emits mtime-based timestamp-drift warnings — filesystem mtime is reset by checkout, worktree creation, and release version-bumps, so the heuristic fired on noise. Content drift (Structure block + npm-run vs filesystem) is now the sole, deterministic drift signal; pre-existing legacy timestamp triage items auto-resolve.

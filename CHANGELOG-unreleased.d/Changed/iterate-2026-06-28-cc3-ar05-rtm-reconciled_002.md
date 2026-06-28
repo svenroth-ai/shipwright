@@ -1,0 +1,1 @@
+Traceability matrix readability: full FR titles, a column legend, clickable evt- evidence linking each iterate event to its Verification Timeline row, and "Last Verified" renamed to the neutral "Last tested"

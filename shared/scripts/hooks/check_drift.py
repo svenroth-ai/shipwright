@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 """SessionStart hook: Detect CLAUDE.md drift from source code changes.
 
-Two kinds of drift are surfaced:
+**Content drift** -- parses the Structure block and Development block of
+every CLAUDE.md at `./CLAUDE.md` and `*/CLAUDE.md` (one level down) and
+compares them to the actual filesystem and to `package.json` scripts.
+Catches missing plugin folders, obsolete directory listings, and
+`npm run <script>` references to scripts that no longer exist.
 
-1. **Timestamp drift** (original) -- if hard-coded config/source files have
-   been modified more recently than CLAUDE.md, the agent should refresh
-   its mental model before making architectural decisions.
-
-2. **Content drift** -- parses the Structure block and Development block of
-   every CLAUDE.md at `./CLAUDE.md` and `*/CLAUDE.md` (one level down) and
-   compares them to the actual filesystem and to `package.json` scripts.
-   Catches missing plugin folders, obsolete directory listings, and
-   `npm run <script>` references to scripts that no longer exist.
+A former *timestamp drift* detector (compared `CLAUDE.md`'s mtime against a
+hard-coded config-file list) was removed in iterate-2026-06-28: filesystem
+mtime is not a content-staleness signal in a git repo -- a checkout, branch
+switch, worktree creation, or a release `version =` bump resets mtimes, so it
+fired on noise (e.g. every worktree-based iterate). Content drift is the
+deterministic, content-based replacement. The triage resolve pass below still
+dismisses any pre-existing ``:timestamp`` drift items left over from that era.
 
 Exit codes:
   0 = allow (always -- informational warning only, never blocks)
@@ -42,78 +44,6 @@ from lib.drift_parsers import (  # noqa: E402  — after path bootstrap
     parse_structure_entries,
     read_package_scripts,
 )
-
-
-# ---------------------------------------------------------------------------
-# Timestamp drift (original behaviour, kept intact)
-# ---------------------------------------------------------------------------
-
-KEY_FILES = [
-    "package.json",
-    "pyproject.toml",
-    "tsconfig.json",
-    "Cargo.toml",
-    "go.mod",
-    "requirements.txt",
-    "docker-compose.yml",
-    "Dockerfile",
-]
-
-KEY_DIRS = ["src", "app", "lib", "packages"]
-
-
-def get_mtime(path: str) -> float | None:
-    try:
-        return os.path.getmtime(path)
-    except OSError:
-        return None
-
-
-def get_newest_in_dir(directory: str, max_depth: int = 2) -> float | None:
-    newest = None
-    try:
-        for root, dirs, files in os.walk(directory):
-            depth = root.replace(directory, "").count(os.sep)
-            if depth >= max_depth:
-                dirs.clear()
-                continue
-            dirs[:] = [
-                d for d in dirs
-                if not d.startswith(".")
-                and d not in ("node_modules", "__pycache__", "vendor", "dist", "build")
-            ]
-            for f in files:
-                if f.startswith("."):
-                    continue
-                fp = os.path.join(root, f)
-                mt = get_mtime(fp)
-                if mt and (newest is None or mt > newest):
-                    newest = mt
-    except OSError:
-        pass
-    return newest
-
-
-def check_timestamp_drift(project_root: str) -> list[str]:
-    claude_md = os.path.join(project_root, "CLAUDE.md")
-    claude_mtime = get_mtime(claude_md)
-    if claude_mtime is None:
-        return []
-
-    drifted: list[str] = []
-    for fname in KEY_FILES:
-        mt = get_mtime(os.path.join(project_root, fname))
-        if mt and mt > claude_mtime:
-            drifted.append(fname)
-
-    for dirname in KEY_DIRS:
-        dpath = os.path.join(project_root, dirname)
-        if os.path.isdir(dpath):
-            mt = get_newest_in_dir(dpath)
-            if mt and mt > claude_mtime:
-                drifted.append(f"{dirname}/ (source changes)")
-
-    return drifted
 
 
 # ---------------------------------------------------------------------------
@@ -323,18 +253,17 @@ from lib.drift_anchor import (  # noqa: E402, F401  (re-exported under historica
 
 def _emit_drift_to_triage(
     project_root,
-    timestamp_drifted: list[str],
     content_findings: list[str],
 ) -> int:
-    """Append drift findings to the triage store and resolve stale ones.
+    """Append content-drift findings to the triage store and resolve stale ones.
 
     One triage item per finding. ``source="drift"``, ``severity="medium"``,
-    ``kind="maintenance"``, dedup key ``f"drift:{file}:{kind}"`` with
-    ``kind ∈ {"timestamp", "content"}``. ``match_commit=False`` +
-    ``window_seconds=None`` → a drift finding stays as ONE item until it
-    resolves / is dismissed. The ``content`` path is canonicalized **repo-relative**
-    via :func:`_canonical_anchor` so neither drive-letter casing (Bug 1) nor an
-    absolute tree prefix (F8) can split one logical drift.
+    ``kind="maintenance"``, dedup key ``f"drift:{anchor}:content"``.
+    ``match_commit=False`` + ``window_seconds=None`` → a drift finding stays as
+    ONE item until it resolves / is dismissed. The ``content`` path is
+    canonicalized **repo-relative** via :func:`_canonical_anchor` so neither
+    drive-letter casing (Bug 1) nor an absolute tree prefix (F8) can split one
+    logical drift.
 
     **F7 project guard:** no-ops (returns 0, writes nothing) unless
     ``project_root`` is a Shipwright-managed project — without it, opening a
@@ -343,8 +272,11 @@ def _emit_drift_to_triage(
 
     **Resolve pass (Bug 2):** after appending, every still-open
     (``status == "triage"``) ``source="drift"`` item THIS detector owns (key
-    ending ``:timestamp`` / ``:content`` — NOT ``artifact_sync``'s ``:artifact``)
-    whose key is absent from the current set flips to ``dismissed``.
+    ending ``:content`` — or a legacy ``:timestamp`` item from the removed
+    timestamp detector — but NOT ``artifact_sync``'s ``:artifact``) whose key is
+    absent from the current set flips to ``dismissed``. The ``:timestamp`` branch
+    is retained purely to retire any stale items left by the old detector; this
+    producer never emits a new ``:timestamp`` item.
 
     Best-effort: per-item errors logged + swallowed (the SessionStart hook MUST
     exit 0). Returns the count of NEW items appended.
@@ -376,43 +308,14 @@ def _emit_drift_to_triage(
     to_outbox = should_route_to_outbox(project_root)
 
     # The full set of dedup keys this run produced — drives BOTH the
-    # idempotent append and the resolve pass below.
+    # idempotent append and the resolve pass below. Only ``:content`` keys are
+    # produced now; any open ``:timestamp`` item is therefore absent from this
+    # set and gets dismissed by the resolve pass (legacy cleanup).
     current_keys = {
-        f"drift:{fname}:timestamp" for fname in timestamp_drifted
-    }
-    current_keys |= {
         f"drift:{_content_anchor(f, project_root)}:content" for f in content_findings
     }
 
     appended = 0
-    for fname in timestamp_drifted:
-        try:
-            title = f"Drift: {fname} mtime newer than CLAUDE.md"[:160]
-            detail = (
-                f"Timestamp drift: {fname} was modified more recently than "
-                f"CLAUDE.md. Re-read CLAUDE.md or refresh it before making "
-                f"architectural decisions."
-            )
-            new_id = append_triage_item_idempotent(
-                project_root,
-                source="drift",
-                severity="medium",
-                kind="maintenance",
-                title=title,
-                detail=detail,
-                dedup_key=f"drift:{fname}:timestamp",
-                match_commit=False,
-                window_seconds=None,
-                to_outbox=to_outbox,
-            )
-            if new_id is not None:
-                appended += 1
-        except Exception as exc:  # noqa: BLE001
-            sys.stderr.write(
-                f"[drift] timestamp triage emit failed for {fname}: "
-                f"{type(exc).__name__}: {exc}\n"
-            )
-
     for finding in content_findings:
         try:
             # The title/detail keep the original-case path for the human
@@ -485,15 +388,9 @@ def main() -> int:
         project_root = os.getcwd()
     warnings: list[str] = []
 
-    # 1. Timestamp drift (legacy behaviour)
-    timestamp_drifted = check_timestamp_drift(project_root)
-    if timestamp_drifted:
-        warnings.append(
-            "Timestamp drift: CLAUDE.md may be outdated. These files changed more recently: "
-            + ", ".join(timestamp_drifted)
-        )
-
-    # 2. Content drift -- structure + commands
+    # Content drift -- structure + commands. (The former timestamp-drift
+    # detector was removed in iterate-2026-06-28: mtime is not a content
+    # signal in a git repo — see the module docstring.)
     content_findings: list[str] = []
     for claude_md in _find_claude_md_files(project_root):
         content_findings.extend(check_structure_drift(claude_md))
@@ -505,9 +402,10 @@ def main() -> int:
         )
 
     # Iterate-2 AC-5: mirror drift findings into .shipwright/triage.jsonl.
-    # Best-effort — must NOT change the hook's always-0 exit semantics.
+    # Best-effort — must NOT change the hook's always-0 exit semantics. Also
+    # retires any stale ``:timestamp`` items left by the removed detector.
     try:
-        _emit_drift_to_triage(project_root, timestamp_drifted, content_findings)
+        _emit_drift_to_triage(project_root, content_findings)
     except Exception as exc:  # noqa: BLE001
         sys.stderr.write(
             f"[drift] triage emission top-level failed: "
