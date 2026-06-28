@@ -27,6 +27,7 @@ except ImportError:  # pragma: no cover - triage helper always available in prac
     _read_triage_items = None  # type: ignore[assignment]
 from ._bloat_dashboard_rows import bloat_rows_events_mode, bloat_rows_legacy_mode  # B3
 from ._control_block import latest_tests_row, render_consistency_audit, render_control_block  # AR-01/02/03
+from ._traceability import render_traced_row  # BP-1: FR-tagging freeze metric
 if TYPE_CHECKING:
     from scripts.lib.data_collector import ComplianceData
 
@@ -232,6 +233,7 @@ def _quality_indicators_events(data: ComplianceData) -> list[str]:
         f"| Work events (iterate) | {len(iterate_events)} changes | INFO |  |"
     )
 
+    lines.append(render_traced_row(data.work_events))  # BP-1: FR-tagging freeze
     lines.append(latest_tests_row(data.work_events))  # AR-02: latest full suite
 
     if not adopted:

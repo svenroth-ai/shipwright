@@ -75,6 +75,15 @@ Refined by `iterate-2026-05-16-spec-impact-gate` (spec-impact classification
   verifier runs `check_spec_impact_recorded`, then the run FAILS unless
   the F7 event recorded `spec_impact=none` with a non-empty justification.
 
+Refined by BP-1 (behavior-affecting changes must link an FR):
+
+- (E) Given a `work_completed` iterate event whose `spec_impact` is
+  `add`/`modify`/`remove` (behavior-affecting) and whose `affected_frs`/`new_frs`
+  are both empty, when the `record_event` FR-gate runs (at the CLI AND inside
+  `finalize_iterate`, intent-independently), then the event is rejected
+  (`fr_gate_behavior_affecting_requires_fr`) regardless of `change_type` — the
+  no-FR branch is reserved for behavior-preserving (`spec_impact=none`) work.
+
 Refined by `iterate-2026-05-16-backfill-historical-frs` (backfill — F0.5
 End-to-End Verification Gate; historical events evt-510b8df3 + evt-40c653f7):
 
@@ -145,6 +154,19 @@ Refined by `iterate-2026-05-16-spec-impact-gate`.
   that recorded no `spec_impact=none`, when the detective audit runs,
   then Group D check D5 ("Iterate feature/change events link an FR")
   reports it as a MEDIUM finding with a suggested remediation command.
+
+Refined by BP-1 (Control-Grade traceability coverage):
+
+- (E) Given the event log, when the Control Verdict block computes the
+  requirement-traceability dimension, then a change counts as *traced* if it is
+  FR-linked OR a satisfied no-FR change (a recognized `change_type` + one-line
+  `none_reason`, behavior-preserving), and the dashboard additionally renders a
+  `Recent changes traced to an FR` indicator that WARNs when the recent
+  FR-tagging rate drops below the all-time rate or is zero (freeze visibility).
+- (E) Given a spec FR covered by at least one `work_completed` event at any
+  point, when the Group D detective audit runs, then D1 reports it as covered
+  regardless of any later `spec_updated` watermark (coverage is all-time; D5's
+  no-FR exemption matches the `record_event` write-gate exactly).
 
 ### FR-01.06 — `/shipwright-test` (boundary coverage report)
 

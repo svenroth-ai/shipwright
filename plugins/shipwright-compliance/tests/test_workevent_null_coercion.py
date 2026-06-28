@@ -69,6 +69,25 @@ class TestWorkEventNullCoercion:
         assert we.tests_passed == 3
         assert we.tests_total == 4
 
+    def test_bp1_classification_fields_round_trip(self):
+        # BP-1: change_type / none_reason / spec_impact must survive from_dict
+        # (the producer→reader boundary the traced-% metric + grade depend on).
+        we = WorkEvent.from_dict(self._evt(
+            change_type="compliance", none_reason="audit realign",
+            spec_impact="none",
+        ))
+        assert we.change_type == "compliance"
+        assert we.none_reason == "audit realign"
+        assert we.spec_impact == "none"
+
+    def test_bp1_fields_tolerant_of_legacy_and_null(self):
+        # Legacy events (fields absent) and explicit-null both coerce to "".
+        legacy = WorkEvent.from_dict(self._evt())
+        assert (legacy.change_type, legacy.none_reason, legacy.spec_impact) == ("", "", "")
+        nulled = WorkEvent.from_dict(self._evt(
+            change_type=None, none_reason=None, spec_impact=None))
+        assert (nulled.change_type, nulled.none_reason, nulled.spec_impact) == ("", "", "")
+
     def test_null_affected_frs_does_not_brick_rtm_mapping(self):
         # The actual reported failure mode: the whole compliance regen crashed
         # because map_requirements_to_events iterated a None affected_frs.

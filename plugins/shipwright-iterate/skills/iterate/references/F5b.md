@@ -32,6 +32,14 @@ placeholder such as `"change_type": "{docs|…}"` is itself a rejection (a prese
   `{docs,tooling,compliance,infra}` + a one-line `none_reason`; **omit**
   `affected_frs`/`new_frs`.
 
+**Behavior-affecting changes must be FR-linked.** If `spec_impact` is
+`add`/`modify`/`remove` (the change alters an FR's observable behavior), the
+No-FR branch is **not available** — the gate rejects it even with a valid
+`change_type`/`none_reason`, because a real behavior change must name the FR it
+touches. The No-FR branch is reserved for behavior-preserving work
+(`spec_impact: none`). This rule is intent-independent (it also covers BUG and
+intent-less events).
+
 ```bash
 # Example: FR-linked iterate. For a no-FR iterate, drop affected_frs/new_frs
 # and instead set "change_type" + "none_reason" (see the two branches above).

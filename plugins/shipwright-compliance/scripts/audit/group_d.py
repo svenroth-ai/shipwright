@@ -24,11 +24,10 @@ Canon gate cannot see them, only a holistic events × spec scan can.
   are both empty and that did not record ``spec_impact=none`` — a
   capability that landed without producing a requirement. Severity MEDIUM.
 
-**Epoch floor (D1 + D2 only):** the most recent event carrying a
-``spec_updated`` field is treated as a watermark. Older events are
-ignored when computing FR coverage / stale-ref findings, because the
-spec set may have been redefined at that point. D3 and D4 don't apply
-the watermark — promises and test-state are time-invariant signals.
+**Epoch floor (D2 only):** the most recent ``spec_updated`` event is a
+watermark; older events are ignored for stale-ref findings. **D1 dropped
+the watermark (BP-1):** coverage is all-time ("a requirement untouched for
+months is under control"). D3/D4 are time-invariant.
 """
 
 from __future__ import annotations
@@ -48,6 +47,7 @@ from scripts.audit.audit_adapters import (
 # without touching the ``lib`` namespace.
 drift_parsers = load_shared_lib("drift_parsers")
 events_amend = load_shared_lib("events_amend")  # honor event_amended corrections
+fr_classification = load_shared_lib("fr_classification")  # D5↔write-gate SSOT parity
 
 
 # ---------------------------------------------------------------------------
@@ -145,12 +145,10 @@ def _check_d1(
     if not work_completed:
         return "skip", "LOW", "no work_completed events recorded", []
 
-    # Apply the epoch floor.
-    watermark = _watermark_ts(events)
-    in_window = _filter_after_watermark(work_completed, watermark)
-
+    # BP-1: covered = named by ANY work_completed event, ever (no epoch floor —
+    # "untouched for months is under control"). See hooks-and-pipeline.md.
     covered: set[str] = set()
-    for ev in in_window:
+    for ev in work_completed:
         for fr in ev.get("affected_frs", []) or []:
             if isinstance(fr, str):
                 covered.add(fr)
@@ -383,9 +381,11 @@ def _check_d5(
             continue
         if str(ev.get("spec_impact", "")).lower() == "none":
             continue  # explicit, justified no-op
-        # ADR-C.1 write-gate parity: exempt change_type AND non-empty none_reason.
-        ct = str(ev.get("change_type", "")).lower()
-        if ct in {"tooling", "compliance", "infra", "docs"} and str(ev.get("none_reason", "")).strip():  # artifact-path-canon: legacy
+        # Write-gate parity (BP-1): exempt only a *satisfied* no-FR change
+        # (behavior-affecting must link an FR — matches the record_event gate).
+        if fr_classification.is_satisfied_no_fr(
+                ev.get("change_type"), ev.get("none_reason"),
+                ev.get("spec_impact")):
             continue
         unlinked.append(ev)
 

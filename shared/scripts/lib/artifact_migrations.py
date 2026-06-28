@@ -549,6 +549,8 @@ ALLOWLIST: dict[str, list[str]] = {
         # "compliance", "infra"] enumerates change-type values; the
         # quoted "compliance" is an enum element, not a path reference.
         "shared/scripts/tools/record_event.py",
+        # fr_classification.py (BP-1): CHANGE_TYPE_VALUES enum, not a path.
+        "shared/scripts/lib/fr_classification.py",
         # Tests (narrowed in B+C as files migrate)
         "shared/tests/**",
         "shared/scripts/tests/**",

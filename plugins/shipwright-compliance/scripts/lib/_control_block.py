@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from scripts.lib._latest_suite import resolve_latest_full_suite
+from scripts.lib._traceability import count_traced
 from scripts.lib.control_grade import GradeInputs, GradeReport, compute_grade
 
 if TYPE_CHECKING:
@@ -72,7 +73,11 @@ def build_grade_inputs(data: ComplianceData) -> GradeInputs:
         frs_total=len(data.requirements),
         frs_covered=covered,
         events_total=len(events),
-        events_fr_tagged=sum(1 for we in events if we.affected_frs),
+        # BP-1: "traced" credits FR-linked AND satisfied no-FR changes (valid
+        # change_type+none_reason, behavior-preserving) — every change mapped to
+        # a requirement decision. Keying on affected_frs alone froze this at the
+        # 2026-05-23 cap even though the no-FR work was properly classified.
+        events_fr_tagged=count_traced(events),
         latest_full_suite_passed=suite.passed if suite else None,
         latest_full_suite_total=suite.total if suite else None,
         latest_full_suite_date=suite.date if suite else "",

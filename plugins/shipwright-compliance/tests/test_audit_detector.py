@@ -254,6 +254,10 @@ def test_framework_audit_config_disables_expected_checks():
     repo_root = PLUGIN_ROOT.parent.parent
     cfg_path = repo_root / "audit_config.json"
     cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
-    assert set(cfg["disabled_checks"]) == {"A5.6", "B7", "D1", "D4", "G2"}
+    # BP-1 re-enabled D1: all-time coverage + the FR backfill make it pass
+    # honestly, so it is no longer suppressed (D4 stays disabled — its stale
+    # latest-covering-snapshot reason still holds).
+    assert set(cfg["disabled_checks"]) == {"A5.6", "B7", "D4", "G2"}
+    assert "D1" not in cfg["disabled_checks"]
     # Every disabled check carries a documented reason.
     assert set(cfg["disabled_checks"]) <= set(cfg["_disabled_checks_reasons"])

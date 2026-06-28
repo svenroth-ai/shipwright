@@ -543,7 +543,7 @@
     {
       "path": "shared/scripts/lib/artifact_migrations.py",
       "limit": 300,
-      "current": 628,
+      "current": 630,
       "state": "exception",
       "adr": "ADR-091"
     },
