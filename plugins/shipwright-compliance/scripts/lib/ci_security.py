@@ -35,7 +35,12 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-import yaml
+# NOTE: ``yaml`` (PyYAML) is imported LAZILY inside ``parse_accepted_risks`` —
+# NOT at module top. This module is reached by a cross-plugin import chain
+# (shared.contracts.iterate → compliance.update_compliance → _control_block →
+# ci_security), and PyYAML is only a shipwright-compliance dependency. An eager
+# import would break that chain (and CI) in plugins that don't install PyYAML,
+# even though the grade/render paths used cross-plugin never touch YAML (ADR-045).
 
 #: Tracked, public-safe summary — committed so security is visible on the
 #: public repo / webui (which has no local ``securityreports/``).
@@ -167,6 +172,10 @@ def parse_accepted_risks(
     for name in _TRIVYIGNORE_NAMES:
         path = root / name
         if path.exists():
+            # Lazy (see module-top note): import PyYAML only when a register
+            # file actually exists, so the cross-plugin import chain — and any
+            # repo without a .trivyignore.yaml — never needs the dependency.
+            import yaml
             try:
                 doc = yaml.safe_load(path.read_text(encoding="utf-8"))
             except (OSError, yaml.YAMLError):

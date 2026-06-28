@@ -210,6 +210,30 @@ class TestRender:
         assert "EXPIRED" in md.upper()
 
 
+class TestPyYamlFreeImportChain:
+    """Regression: the grade/render path must not require PyYAML.
+
+    ci_security is reached by a cross-plugin import chain (shared.contracts.iterate
+    → compliance.update_compliance → _control_block → ci_security); PyYAML is only
+    a shipwright-compliance dependency. An eager top-level `import yaml` broke CI
+    in plugins that don't install it. yaml must be needed ONLY when an actual
+    `.trivyignore.yaml` register is parsed.
+    """
+
+    def test_grade_path_works_without_yaml(self, tmp_path, monkeypatch):
+        import sys
+        monkeypatch.setitem(sys.modules, "yaml", None)  # any `import yaml` → ImportError
+        write_ci_security(tmp_path, summarize_ci_security(
+            _LIVE_FINDINGS, [], scan_date="x", source="y"))
+        # summarize / grade / load / render-without-register must all work.
+        assert grade_security_signal(load_ci_security(tmp_path)) == (True, 3)
+        assert summarize_ci_security([], [], scan_date="x", source="y")["total"] == 0
+        # No register file present → parse must not even attempt the yaml import.
+        assert parse_accepted_risks(tmp_path, now=date(2026, 6, 28)) == []
+        md = "\n".join(render_ci_security(tmp_path, now=date(2026, 6, 28)))
+        assert "CI Security" in md
+
+
 class TestGraderIntegration:
     """The grade adapter lights the Security dimension from the committed summary."""
 
