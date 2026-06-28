@@ -166,9 +166,9 @@ def format_control_block(report: GradeReport) -> list[str]:
         f"Verified from: `{report.verified_from}`",
         "",
         "_Grade = importance-weighted average over the measurable dimensions "
-        "(n/a excluded from the denominator), in Anlehnung an OpenSSF "
-        "Scorecard. Age is neutral; only unreconciled change and net growth "
-        "are control failures._",
+        + "(n/a excluded from the denominator), in Anlehnung an OpenSSF "
+        + "Scorecard. Age is neutral; only unreconciled change and net growth "
+        + "are control failures._",
         "",
     ])
     return lines
@@ -198,7 +198,7 @@ def render_consistency_audit(project_root: Path) -> list[str]:
     if not path.exists():
         lines.extend([
             "_Detective cross-artifact audit not run this session — "
-            "run `/shipwright-compliance` to refresh._",
+            + "run `/shipwright-compliance` to refresh._",
             "",
         ])
         return lines
@@ -220,7 +220,7 @@ def render_consistency_audit(project_root: Path) -> list[str]:
         f"{len(findings)} checks — {passed} pass, {failed} fail, {skipped} skip.",
         "",
         "_Inlined from `audit-report.json` (a gitignored transient — no "
-        "external link, so this stays visible on the public repo)._",
+        + "external link, so this stays visible on the public repo)._",
         "",
     ])
     return lines

@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-27T22:43:07.150922+00:00
+Generated: 2026-06-28T06:17:09.227517+00:00
 
 ## Requirements Coverage
 
@@ -237,6 +237,7 @@ Generated: 2026-06-27T22:43:07.150922+00:00
 | Control Grade scorer (lib/control_grade.py, in Anlehnung an OpenSSF Scorecard) + Control Verdict block atop the dashboard (AR-01); latest-full-suite resolver kills the 0/0 headline in dashboard + test-evidence (AR-02); inline consistency-audit summary replaces the dead gitignored audit-report.md link (AR-03). | iterate | feature |  | 720/720 | — | 2026-06-27 |
 | CodeQL security hardening: tailor the query suite via codeql-config.yml; root-fix genuine findings (file modes to 0o600, two ReDoS regexes, a loop-capture bug, a rollback-CLI else-guard); remove 13 dead module globals. | iterate | change |  | — | — | 2026-06-27 |
 | compliance PreToolUse Bash gates: robust uv run --no-project invocation + fail-open guard | iterate | change |  | 3560/3560 | — | 2026-06-27 |
+| CodeQL fixture-noise cleanup: paths-ignore test fixtures + explicit string-concat refactor | iterate | change |  | 4720/4720 | — | 2026-06-28 |
 
 ## Coverage Summary
 
@@ -244,7 +245,7 @@ Generated: 2026-06-27T22:43:07.150922+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 212 |
+| Iterate changes | 213 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

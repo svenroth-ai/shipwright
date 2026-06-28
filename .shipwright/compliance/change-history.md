@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-06-27T22:43:07.150922+00:00
-Total commits: 1042
+Generated: 2026-06-28T06:17:09.227517+00:00
+Total commits: 1043
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 296
+    "fix" : 297
     "feat" : 275
     "chore" : 228
     "docs" : 141
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 296 commits
+### Fixes (fix) — 297 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-28 | compliance | fail-open + robust invocation for PreToolUse Bash gates (#278) | 01059128d910 |
 | 2026-06-27 | security | remediate CodeQL findings + tailor the query suite to this repo (#276) | 6e7d956f1297 |
 | 2026-06-22 | security | bump cryptography + ws to clear 3 high-severity dependency CVEs (#272) | d7cd255c7214 |
 | 2026-06-20 | bloat | dedup bloat-gate Stop block across the plugin fan-out (#269) | 05992f878e7c |
@@ -1111,7 +1112,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1042 |
+| Total commits | 1043 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1042 |
+| Human-authored commits | 1043 |
 

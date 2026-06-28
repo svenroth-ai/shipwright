@@ -174,8 +174,8 @@ def degraded_banner(scan_errors: list[dict[str, Any]] | None) -> list[str]:
         return []
     lines = [
         "> ⚠️ **Degraded Scan** — one or more scanners failed to produce "
-        "parseable output. Results below are INCOMPLETE; do not read this as a "
-        "clean pass.",
+        + "parseable output. Results below are INCOMPLETE; do not read this as a "
+        + "clean pass.",
         "",
         "| Scanner | Reason | Detail |",
         "|---------|--------|--------|",

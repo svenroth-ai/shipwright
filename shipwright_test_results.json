@@ -1,101 +1,40 @@
 {
- "iterate_latest": {
-  "run_id": "iterate-2026-06-28-security-scan-hook-failopen",
-  "date": "2026-06-28",
-  "unit": {
-   "status": "passed",
-   "passed": 3560,
-   "total": 3560
-  },
-  "integration": {
-   "status": "passed",
-   "passed": 15,
-   "total": 15
-  },
-  "pgtap": {
-   "status": "not_run",
-   "passed": 0,
-   "total": 0
-  },
-  "e2e": {
-   "status": "not_run",
-   "passed": 0,
-   "total": 0
-  },
-  "design_fidelity": {
-   "status": "not_run",
-   "passed": 0,
-   "total": 0
-  },
-  "smoke": {
-   "status": "passed"
-  },
-  "surface_verification": {
-   "surface": "none",
-   "exit_code": 0,
-   "tests_run": 3560,
-   "justification": "Framework-internal change to two compliance PreToolUse Bash hooks (robust `uv run --no-project` invocation + a fail-open guard) plus a new pure-stdlib helper lib and a docs row. No product web/api/cli/UI/store surface is introduced or changed. The hook IS the surface: verified end-to-end through the real `uv run --no-project` invocation path -- a non-deploy bash call exits 0 (allow), an internal crash (`tool_input` is a string) exits 0 (FAIL-OPEN) and writes a diagnostic to the gitignored runtime hook-error log, and a deploy-with-findings still exits 2 (deliberate soft-block + 'Continue anyway' override context preserved)."
-  },
-  "degraded": [
-   "Full per-plugin monorepo suites delegated to CI ci.yml. Local F0 gate ran: shared/tests (3560 passed, 12 skipped, 26 deselected cross_plugin/slow) + shipwright-compliance plugin suite (734 passed) + integration-tests enforcement+failopen (15 passed) + pinned-ruff clean on all changed files."
-  ],
-  "test_completeness": {
-   "status": "complete",
-   "behaviors": [
-    {
-     "behavior": "run_failopen returns 0 and logs a diagnostic when main() raises (crash never hard-blocks)",
-     "disposition": "tested",
-     "evidence": "test_hook_failopen.py::TestRunFailopen::test_raising_main_fails_open + test_raising_main_logs_warning PASSED"
+  "iterate_latest": {
+    "run_id": "iterate-2026-06-28-codeql-fixture-noise",
+    "date": "2026-06-28",
+    "unit": { "status": "passed", "passed": 4720, "total": 4720 },
+    "integration": { "status": "not_run", "passed": 0, "total": 0 },
+    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
+    "e2e": { "status": "not_run", "passed": 0, "total": 0 },
+    "design_fidelity": { "status": "not_run", "passed": 0, "total": 0 },
+    "smoke": { "status": "not_run" },
+    "surface_verification": {
+      "surface": "none",
+      "justification": "No web/CLI runtime surface affected — a CI CodeQL scan-config change plus byte-preserving Python refactors; verified by the unit suites and a compile-constant equivalence gate."
     },
-    {
-     "behavior": "run_failopen passes 0 and the deliberate soft-block 2 through unchanged; non-int -> 0",
-     "disposition": "tested",
-     "evidence": "test_hook_failopen.py::TestRunFailopen::test_passes_through_zero + test_passes_through_block_exit_two + test_non_int_return_coerced_to_allow PASSED"
-    },
-    {
-     "behavior": "log_hook_error writes to gitignored runtime/hook_errors.log, appends, never raises on a bad root",
-     "disposition": "tested",
-     "evidence": "test_hook_failopen.py::TestLogHookError (3 cases) PASSED"
-    },
-    {
-     "behavior": "check_security_scan fails OPEN (exit 0 + diagnostic) on an internal crash, end-to-end as a subprocess",
-     "disposition": "tested",
-     "evidence": "test_compliance_hook_failopen.py::TestFailOpenComposition::test_security_scan_fails_open_on_internal_crash + test_diagnostic_names_the_failing_hook PASSED",
-     "category": "integration"
-    },
-    {
-     "behavior": "check_rtm_coverage fails OPEN (exit 0 + diagnostic) on an internal crash, end-to-end as a subprocess",
-     "disposition": "tested",
-     "evidence": "test_compliance_hook_failopen.py::TestFailOpenComposition::test_rtm_coverage_fails_open_on_internal_crash PASSED",
-     "category": "integration"
-    },
-    {
-     "behavior": "compliance hooks.json: both Bash PreToolUse gates carry `--no-project`; file is valid JSON (io-boundary round-trip)",
-     "disposition": "tested",
-     "evidence": "test_compliance_hook_failopen.py::TestInvocationContract::test_both_bash_gates_use_no_project + test_hooks_json_is_valid_json PASSED",
-     "category": "integration"
-    },
-    {
-     "behavior": "Deliberate deploy-with-findings still soft-blocks (exit 2); RTM-coverage commit gate still soft-blocks (regression preserved)",
-     "disposition": "tested",
-     "evidence": "test_enforcement_hooks.py::TestCheckSecurityScan/TestCheckRtmCoverage + integration test_compliance_enforcement.py (rc==2 cases) PASSED + real `uv run --no-project` smoke exit 2"
-    },
-    {
-     "behavior": "Override/remediation path preserved: blocked output carries 'Continue anyway' additionalContext -> compliance_overrides.log",
-     "disposition": "tested",
-     "evidence": "test_enforcement_hooks.py::test_blocks_deploy_with_findings asserts additionalContext; test_compliance_enforcement.py::test_rtm_hook_blocks_commit_after_build asserts 'Continue anyway' PASSED"
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "CodeQL config excludes test fixtures via paths-ignore (**/tests/fixtures/**)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_codeql_config_query_filters.py::test_paths_ignore_is_exactly_test_fixtures PASSED (RED before config edit, GREEN after)"
+        },
+        {
+          "behavior": "Six implicit string-concatenations refactored to explicit '+' with byte-identical resulting values",
+          "disposition": "tested",
+          "evidence": "compile-constant equivalence gate (co_consts before==after for all 4 files) + test_control_grade (19) / security report+degraded (48) / adopt data-preservation (1) / installer shell-scripts suites PASSED"
+        },
+        {
+          "behavior": "CodeQL CI analysis actually skips the fixtures so the ~1000 js/assignment-to-constant alerts auto-close",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "Runs in GitHub Actions CodeQL post-merge; the locally-assertable proxy (config contains the exclusion) is covered by the first behavior."
+        }
+      ],
+      "counts": { "testable": 2, "tested": 2, "untestable": 1, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 2, "covered_acs": 2 }
     }
-   ],
-   "counts": {
-    "behaviors_total": 8,
-    "tested": 8,
-    "untestable": 0,
-    "untested_testable": 0
-   },
-   "enumeration_basis": {
-    "acs": 8,
-    "covered_acs": 8
-   }
   }
- }
 }
