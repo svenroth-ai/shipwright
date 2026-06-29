@@ -46,6 +46,50 @@ def count_traced(work_events) -> int:
     return sum(1 for we in work_events if _is_traced(we))
 
 
+def _iterate_needs_tests(we) -> bool:
+    """True iff this iterate change is EXPECTED to carry tests.
+
+    The test-side mirror of BP-1's traced-credit: a behavior-preserving
+    **satisfied no-FR change** (a recognized non-feature ``change_type`` —
+    docs/tooling/compliance/infra — with a valid one-line ``none_reason`` and no
+    behavior impact) is legitimately test-free, so it is NOT expected to carry
+    tests. Everything else that is real iterate work — feature/change/bug work or
+    any behavior-affecting change — is.
+
+    Only ``source == "iterate"`` events are in scope. Build sections are credited
+    by the sections-reviewed metric; synthetic ``backfill*`` / ``*-retro`` /
+    ``*-merge-retro`` sources are not iterate work at all and never enter the
+    denominator.
+
+    The discriminator is behavior-preservation, NOT FR-linkage: a behavior-
+    preserving docs/tooling/compliance/infra change is test-free even if it
+    incidentally references an FR (``is_satisfied_no_fr`` already requires
+    ``spec_impact`` to be non-behavior-affecting, so any add/modify/remove change
+    — FR-linked or not — is always retained). Excluding such a change is the goal
+    (fewer false deficits); keying on FR-linkage instead would re-flag
+    behavior-preserving FR-referencing docs as untested."""
+    if we.source != "iterate":
+        return False
+    return not _fc.is_satisfied_no_fr(we.change_type, we.none_reason, we.spec_impact)
+
+
+def iterate_test_coverage(work_events) -> tuple[int, int]:
+    """Return ``(tested, testable)`` over iterate changes expected to carry tests.
+
+    ``testable`` excludes behavior-preserving no-FR changes
+    (docs/tooling/compliance/infra) so the dashboard's "Iterate tests passing"
+    row stops counting legitimately test-free work as a deficit (alarm-fatigue,
+    the same root flaw BP-1 fixed for the traced-% metric). ``tested`` counts the
+    testable changes that recorded ≥1 test. The residual gap (FR-linked or
+    behavior-affecting work with no recorded tests) is honest signal and stays a
+    WARN. Shares :data:`_fc`'s ``is_satisfied_no_fr`` with :func:`count_traced`
+    so "traced" and "testable" can never disagree about what a non-feature
+    change is."""
+    testable = [we for we in work_events if _iterate_needs_tests(we)]
+    tested = sum(1 for we in testable if we.tests_total > 0)
+    return tested, len(testable)
+
+
 def _pct(num: int, den: int) -> float:
     return (num / den) if den else 0.0
 

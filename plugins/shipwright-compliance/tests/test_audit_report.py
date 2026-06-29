@@ -87,6 +87,22 @@ def test_render_markdown_orders_failures_first():
     assert md.index("**C2**") < md.index("**C3**")
 
 
+def test_suggested_cmd_only_renders_for_failures():
+    # A remediation command on a PASS/SKIP check is a false action (the check is
+    # not a problem). Only a real FAIL gets the "Suggested:" line.
+    cmd = "/shipwright-iterate --type change \"reconcile C1\""
+    report = AuditReport(findings=[
+        _finding(check_id="C1", status="pass", suggested_iterate_cmd=cmd),
+        _finding(check_id="C2", status="skip", suggested_iterate_cmd=cmd),
+        _finding(check_id="C3", status="fail", suggested_iterate_cmd=cmd),
+    ])
+    md = render_markdown(report)
+    # Exactly one Suggested line — the failing C3.
+    assert md.count("_Suggested:_") == 1
+    # The failing finding's check_id precedes the only Suggested line.
+    assert md.index("**C3**") < md.index("_Suggested:_")
+
+
 def test_render_markdown_lists_groups_skipped():
     report = AuditReport(groups_skipped=[("A", "not-implemented"),
                                          ("B", "not-implemented")])

@@ -183,25 +183,25 @@ class TestDashboardRendersBloatRows:
         # No baseline → all three rows render with zeros.
         data = self._minimal_data(tmp_path)
         md = generate(data)
-        assert "| Bloat over-limit | 0 |" in md
+        assert "| Bloat over-limit (grandfathered) | 0 |" in md
         assert "| Bloat in allowlist | 0 entries |" in md
         assert "| Bloat ratchet delta | +0 lines |" in md
 
-    def test_legacy_mode_over_limit_warns(self, tmp_path: Path) -> None:
+    def test_legacy_mode_over_limit_is_info_not_warn(self, tmp_path: Path) -> None:
+        # Grandfathering IS the acceptance → over-limit is INFO, never WARN. The
+        # ratchet delta carries the real signal (regression) and stays WARN.
         _write_baseline(tmp_path, [{
             "path": "src/big.py", "limit": 300, "current": 500,
             "state": "grandfathered", "adr": None,
         }])
         _write_file(tmp_path, "src/big.py", 600)
-
-        data = self._minimal_data(tmp_path)
-        md = generate(data)
-        assert "| Bloat over-limit | 1 | WARN" in md
+        md = generate(self._minimal_data(tmp_path))
+        assert "| Bloat over-limit (grandfathered) | 1 | INFO" in md
         assert "| Bloat ratchet delta | +100 lines | WARN" in md
 
     def test_legacy_mode_clean_baseline_passes(self, tmp_path: Path) -> None:
         # Campaign B goal: post-campaign, every grandfathered entry
-        # should be measured <= current. Verify the row renders PASS.
+        # should be measured <= current. Over-limit is INFO; ratchet PASS.
         _write_baseline(tmp_path, [{
             "path": "src/big.py", "limit": 300, "current": 500,
             "state": "grandfathered", "adr": None,
@@ -210,7 +210,7 @@ class TestDashboardRendersBloatRows:
 
         data = self._minimal_data(tmp_path)
         md = generate(data)
-        assert "| Bloat over-limit | 0 | PASS" in md
+        assert "| Bloat over-limit (grandfathered) | 0 | INFO" in md
         assert "| Bloat ratchet delta | -220 lines | PASS" in md
 
     def test_events_mode_renders_bloat_rows(self, tmp_path: Path) -> None:
@@ -233,7 +233,7 @@ class TestDashboardRendersBloatRows:
         md = generate(data)
         # Events-mode also renders the column (proves the integration on
         # both branches of _quality_indicators_*).
-        assert "| Bloat over-limit | 1 | WARN" in md
+        assert "| Bloat over-limit (grandfathered) | 1 | INFO" in md
         assert "| Bloat in allowlist | 1 entries | INFO" in md
         assert "| Bloat ratchet delta | +10 lines | WARN" in md
 
@@ -274,7 +274,7 @@ class TestRoundTripDashboardMd:
         # in_allowlist=2 (1 grandfathered + 1 exception); over_limit=1
         # (big.py 450 > limit 300; exc excluded); delta=-50 (shrinking).
         assert "| Bloat in allowlist | 2 entries |" in rendered
-        assert "| Bloat over-limit | 1 | WARN" in rendered
+        assert "| Bloat over-limit (grandfathered) | 1 | INFO" in rendered
         assert "| Bloat ratchet delta | -50 lines | PASS" in rendered
 
 

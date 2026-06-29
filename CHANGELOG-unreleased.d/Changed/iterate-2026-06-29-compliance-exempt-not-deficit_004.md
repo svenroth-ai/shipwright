@@ -1,0 +1,1 @@
+Compliance: routine regens (update_compliance) stamp a churn-free staleness banner on the not-refreshed audit-report.md so a stale on-disk audit announces it should be re-run via /shipwright-compliance.

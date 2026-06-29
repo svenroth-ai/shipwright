@@ -49,18 +49,20 @@ def bloat_rows_events_mode(project_root: Path) -> list[str]:
     ratchet rule satisfied (Iterate Campaign B B3).
     """
     s = _summary(project_root)
-    ol_ok = s["over_limit"] == 0
-    ol_why = (
-        f"{s['over_limit']} file(s) past limit AND not ADR-justified — see "
-        "shipwright_bloat_baseline.json" if not ol_ok else ""
-    )
+    # over_limit counts grandfathered files above the standard limit. The
+    # baseline only holds grandfathered/exception entries, so this is the
+    # ACCEPTED set — grandfathering IS the acceptance, not a deficit — and a
+    # genuinely new crossing is never in it (the Group H detective owns those).
+    # Render INFO, not WARN: the live signal is the ratchet delta below
+    # (regression past the accepted ceiling). Keying the WARN off the
+    # grandfathered count is the alarm-fatigue flaw BP-1 fixed for traceability.
     rd_ok = s["ratchet_delta"] <= 0
     rd_why = (
         f"grandfathered surface ratcheted up by {s['ratchet_delta']} line(s) — "
         "Iron Law violation" if not rd_ok else ""
     )
     return [
-        f"| Bloat over-limit | {s['over_limit']} | {_badge(ol_ok)} | {ol_why} |",
+        f"| Bloat over-limit (grandfathered) | {s['over_limit']} | INFO |  |",
         f"| Bloat in allowlist | {s['in_allowlist']} entries | INFO |  |",
         f"| Bloat ratchet delta | {s['ratchet_delta']:+d} lines | {_badge(rd_ok)} | {rd_why} |",
         "",
@@ -70,11 +72,11 @@ def bloat_rows_events_mode(project_root: Path) -> list[str]:
 def bloat_rows_legacy_mode(project_root: Path) -> list[str]:
     """Three rows for the legacy (``Description``) Quality table."""
     s = _summary(project_root)
-    ol_ok = s["over_limit"] == 0
     rd_ok = s["ratchet_delta"] <= 0
     return [
-        f"| Bloat over-limit | {s['over_limit']} | {_badge(ol_ok)} | "
-        "Files exceeding their LOC limit + not ADR-justified |",
+        f"| Bloat over-limit (grandfathered) | {s['over_limit']} | INFO | "
+        "Grandfathered files above the standard LOC limit — accepted via the "
+        "baseline; the ratchet delta is the live signal |",
         f"| Bloat in allowlist | {s['in_allowlist']} entries | INFO | "
         "Grandfathered or ADR-exception entries in shipwright_bloat_baseline.json |",
         f"| Bloat ratchet delta | {s['ratchet_delta']:+d} lines | {_badge(rd_ok)} | "

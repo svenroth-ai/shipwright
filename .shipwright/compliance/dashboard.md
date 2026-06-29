@@ -1,26 +1,26 @@
 # Compliance Dashboard
 
-Generated: 2026-06-28T20:55:31.664132+00:00
+Generated: 2026-06-29T07:44:01.619236+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
 ## ✅ Control Verdict
 
-> **Under full control. Primarily capped by size / maintainability discipline.**
+> **Under full control.**
 
-### Control Grade: **A** (96/100) — Under full control.
+### Control Grade: **A** (100/100) — Under full control.
 
 | | Dimension | Signal | Anchor |
 |---|-----------|--------|--------|
-| ✅ | Requirement traceability | 14/14 FRs covered; 225/225 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (DO-178C, IEC 62304) |
+| ✅ | Requirement traceability | 14/14 FRs covered; 226/226 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (DO-178C, IEC 62304) |
 | ✅ | Test health | latest full suite 3853/3853 (2026-06-28) | automated tests pass (OpenSSF Scorecard) |
-| ✅ | Change traceability | 225/225 changes linked to a commit, ADR or test run | change provenance (SLSA, OpenSSF Scorecard) |
+| ✅ | Change traceability | 226/226 changes linked to a commit, ADR or test run | change provenance (SLSA, OpenSSF Scorecard) |
 | ✅ | Change reconciliation | 0/4 behavior-touched FRs not re-verified | re-verify changed requirements (DO-178C, ISO 26262) |
 | ✅ | Security | 0 open high/critical | no open high/critical vulns (NIST SSDF, OWASP) |
-| ⚠️ | Size / maintainability discipline | ratchet delta +31 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
+| ✅ | Size / maintainability discipline | ratchet delta -168 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
 | ✅ | Dependency hygiene | 0 unresolved / 7 licenses; 0 copyleft | dependency license & risk (OWASP, OpenSSF Scorecard) |
 
-Verified from: `shipwright_events.jsonl (225 events, 2026-05-02 → 2026-06-28)`
+Verified from: `shipwright_events.jsonl (226 events, 2026-05-02 → 2026-06-29)`
 
 _Grade = importance-weighted average over the measurable dimensions (n/a excluded from the denominator), modeled on OpenSSF Scorecard. Age is neutral; only unreconciled change and net growth are control failures. Each Anchor names the open standard the dimension follows — see the guide's Control-Grade dimensions table._
 
@@ -50,22 +50,22 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Metric | Value | Status | Why warn? |
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
-| Work events (iterate) | 225 changes | INFO |  |
+| Work events (iterate) | 226 changes | INFO |  |
 | Recent changes traced to an FR | 1/30 (3%) | WARN | FR-tagging dropped to 3% (last 30) vs 18% all-time — recent changes classified no-FR; see the Control Verdict traceability dimension |
-| All unit tests passing | 3853/3853 | PASS | +5 change(s) since last full suite |
+| All unit tests passing | 3853/3853 | PASS | +6 change(s) since last full suite |
 | Architecture decisions | 235 ADRs | INFO |  |
-| Iterate tests passing | 142/225 iterations tested | WARN | 83 iterate(s) without tests — see test-evidence.md |
+| Iterate tests passing | 35/40 testable changes tested | WARN | 5 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 7 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 0 open | PASS |  |
-| Bloat over-limit | 127 | WARN | 127 file(s) past limit AND not ADR-justified — see shipwright_bloat_baseline.json |
+| Triage open | 1 open | WARN | 1 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Bloat over-limit (grandfathered) | 127 | INFO |  |
 | Bloat in allowlist | 158 entries | INFO |  |
-| Bloat ratchet delta | +31 lines | WARN | grandfathered surface ratcheted up by 31 line(s) — Iron Law violation |
+| Bloat ratchet delta | -168 lines | PASS |  |
 
 ## Project Velocity
 
-- Iterate: 225 changes (2026-05-02 → 2026-06-28)
-- Last activity: 2026-06-28
+- Iterate: 226 changes (2026-05-02 → 2026-06-29)
+- Last activity: 2026-06-29
 
 ## External LLM Review Evidence
 

@@ -26,7 +26,7 @@ except ImportError:  # pragma: no cover - triage helper always available in prac
 from ._bloat_dashboard_rows import bloat_rows_events_mode, bloat_rows_legacy_mode  # B3
 from ._control_block import latest_tests_row, render_consistency_audit, render_control_block  # AR-01/02/03
 from ._dashboard_sections import external_review_evidence, project_velocity, render_date
-from ._traceability import render_traced_row  # BP-1: FR-tagging freeze metric
+from ._traceability import iterate_test_coverage, render_traced_row  # BP-1: FR-tagging freeze + test-coverage credit
 from .ci_security import render_ci_security  # AR-10: CI security ingest
 if TYPE_CHECKING:
     from scripts.lib.data_collector import ComplianceData
@@ -190,8 +190,9 @@ def _quality_indicators_events(data: ComplianceData) -> list[str]:
         if any(cl in d.license.upper() for cl in ("GPL", "AGPL", "LGPL", "MPL"))
     )
 
-    # Iterate test coverage
-    iterate_tested = sum(1 for we in iterate_events if we.tests_total > 0)
+    # Iterate test coverage — excludes behavior-preserving no-FR changes from
+    # both sides (BP-1 mirror), so exempt work isn't flagged as a deficit.
+    iterate_tested, iterate_testable = iterate_test_coverage(data.work_events)
 
     # Triage open counts — signal vs info-severity (B0 ADR-054 D6).
     triage_signal, triage_info = _triage_open_counts(data.project_root)
@@ -265,13 +266,11 @@ def _quality_indicators_events(data: ComplianceData) -> list[str]:
     )
 
     if iterate_events:
-        iter_ok = iterate_tested == len(iterate_events)
-        iter_why = (
-            f"{len(iterate_events) - iterate_tested} iterate(s) without tests — see test-evidence.md"
-            if not iter_ok else ""
-        )
+        iter_ok = iterate_tested == iterate_testable
+        gap = iterate_testable - iterate_tested
+        iter_why = f"{gap} testable change(s) without tests — see test-evidence.md" if not iter_ok else ""
         lines.append(
-            f"| Iterate tests passing | {iterate_tested}/{len(iterate_events)} iterations tested | "
+            f"| Iterate tests passing | {iterate_tested}/{iterate_testable} testable changes tested | "
             f"{_status_badge(iter_ok)} | {iter_why} |"
         )
 
