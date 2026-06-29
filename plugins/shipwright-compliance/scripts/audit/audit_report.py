@@ -76,7 +76,11 @@ def _render_findings_block(title: str, items: list[Finding]) -> list[str]:
         )
         if f.detail:
             lines.append(f"  - {f.detail}")
-        if f.suggested_iterate_cmd:
+        # Only a real FAIL warrants a remediation command. A passing/skipped
+        # check is not a problem, so emitting "Suggested: …reconcile" on it is a
+        # false action (alarm-fatigue). The JSON payload still carries the field
+        # alongside ``status`` for callers that want to gate differently.
+        if f.suggested_iterate_cmd and f.status == "fail":
             lines.append(f"  - _Suggested:_ `{f.suggested_iterate_cmd}`")
     lines.append("")
     return lines

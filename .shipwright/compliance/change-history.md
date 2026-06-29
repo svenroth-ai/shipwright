@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-06-28T20:55:31.664132+00:00
-Total commits: 1055
+Generated: 2026-06-29T07:44:01.619236+00:00
+Total commits: 1056
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 299
-    "feat" : 280
+    "feat" : 281
     "chore" : 230
     "docs" : 142
     "refactor" : 64
@@ -324,10 +324,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 280 commits
+### Features (feat) — 281 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-28 | compliance | AR-10 SARIF-ingestion fallback so adopted repos light the Security dimension (#291) | 27e1251be0b8 |
 | 2026-06-28 | compliance | plain-language, open-standard-only Control-Grade anchors + dimensions guide (#289) | 9a4dbec16894 |
 | 2026-06-28 | compliance | ingest CI security posture into the dashboard + light the Control-Grade Security dimension (AR-10) (#285) | 15a0af09fb55 |
 | 2026-06-28 | compliance | RTM "Reconciled?" column + readability reuse the BP-2 grade helper (cc3/AR-05) (#284) | fb95a4765ef0 |
@@ -1124,7 +1125,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1055 |
+| Total commits | 1056 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1055 |
+| Human-authored commits | 1056 |
 

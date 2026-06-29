@@ -101,3 +101,47 @@ def test_cli_phase_security_excludes_rtm(synthetic_project):
     assert expected.issubset(names), f"missing security docs. Got: {names}"
     # Should NOT regen RTM.
     assert "traceability-matrix.md" not in names
+
+
+_MARKER = "<!-- shipwright:audit-staleness:start -->"
+
+
+def _seed_audit_report(project_root: Path) -> Path:
+    """Write a minimal on-disk audit-report.md (run_audit's artifact)."""
+    path = project_root / ".shipwright" / "compliance" / "audit-report.md"
+    path.write_text(
+        "# Shipwright Detective Audit\n\nGenerated: 2026-05-01 00:00:00 UTC\n\n"
+        "## Findings\n\n- demo\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def test_cli_phase_iterate_stamps_audit_staleness(synthetic_project):
+    """A routine `--phase iterate` regen (which does NOT re-run the audit) stamps
+    the on-disk audit-report.md with a staleness banner (F4)."""
+    audit_md = _seed_audit_report(synthetic_project)
+    result = subprocess.run(
+        [sys.executable, str(UPDATE_SCRIPT),
+         "--project-root", str(synthetic_project), "--phase", "iterate"],
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    assert result.returncode == 0, f"stderr: {result.stderr}"
+    payload = json.loads(result.stdout)
+    assert payload["audit_staleness"]["stamped"] is True
+    assert _MARKER in audit_md.read_text(encoding="utf-8")
+
+
+def test_cli_phase_compliance_does_not_stamp(synthetic_project):
+    """The `/shipwright-compliance` flow (phase=='compliance') re-runs the audit
+    itself, so update_compliance must NOT mark a fresh audit stale."""
+    audit_md = _seed_audit_report(synthetic_project)
+    result = subprocess.run(
+        [sys.executable, str(UPDATE_SCRIPT),
+         "--project-root", str(synthetic_project), "--phase", "compliance"],
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    assert result.returncode == 0, f"stderr: {result.stderr}"
+    payload = json.loads(result.stdout)
+    assert "audit_staleness" not in payload
+    assert _MARKER not in audit_md.read_text(encoding="utf-8")

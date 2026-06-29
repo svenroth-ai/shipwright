@@ -1,85 +1,49 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-28-ar10-sarif-ingestion",
-    "date": "2026-06-28",
-    "unit": {
-      "status": "passed",
-      "passed": 3604,
-      "total": 3604
-    },
-    "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "e2e": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "design_fidelity": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "smoke": {
-      "status": "not_run"
-    },
+    "run_id": "iterate-2026-06-29-compliance-exempt-not-deficit",
+    "date": "2026-06-29",
+    "unit": { "status": "passed", "passed": 868, "total": 868 },
+    "integration": { "status": "not_run", "passed": 0, "total": 0 },
+    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
+    "e2e": { "status": "not_run", "passed": 0, "total": 0 },
+    "design_fidelity": { "status": "not_run", "passed": 0, "total": 0 },
+    "smoke": { "status": "not_run" },
     "surface_verification": {
       "surface": "none",
+      "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "justification": "Shared-library change (AR-10 SARIF-ingestion fallback in github_api.py); no startable UI/app surface. Verified by 6 new unit tests + a real-webui-SARIF probe (165 findings parsed) + the full shared suite (3604 green), recorded under unit."
+      "evidence_path": ".shipwright/runs/iterate-2026-06-29-compliance-exempt-not-deficit/surface_verification.json",
+      "timestamp": "2026-06-29T07:38:09.320Z",
+      "justification": "Framework-internal compliance producer/render change (dashboard rows, audit-report suggestion gating + staleness banner). No app UI/API/CLI surface; the user-facing output is the compliance markdown, verified empirically by regenerating dashboard.md + audit-report.md against both the monorepo and shipwright-webui event logs (logged in the iterate spec) plus 868 pytest cases."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        {
-          "behavior": "SARIF results bucket by CVSS band (>=9 critical, >=7 high, >=4 medium, else/none low), resolved off the rule's security-severity",
+        { "behavior": "Bloat over-limit (grandfathered) renders INFO, never WARN (events + legacy modes)",
           "disposition": "tested",
-          "evidence": "test_github_api_sarif_fallback.py::test_sarif_fallback_buckets_by_cvss_band PASSED"
-        },
-        {
-          "behavior": "A Gitleaks SARIF result maps to critical regardless of (absent) score",
+          "evidence": "test_collectors_dashboard.py::test_legacy_mode_over_limit_is_info_not_warn + events/round-trip asserts PASSED" },
+        { "behavior": "Ratchet delta remains the WARN-bearing bloat signal",
           "disposition": "tested",
-          "evidence": "test_github_api_sarif_fallback.py::test_sarif_fallback_gitleaks_is_critical PASSED"
-        },
-        {
-          "behavior": "findings.json stays authoritative when present; an empty findings.json never falls through to SARIF",
+          "evidence": "test_collectors_dashboard.py::test_legacy_mode_over_limit_is_info_not_warn (ratchet WARN assert) PASSED" },
+        { "behavior": "iterate_test_coverage excludes satisfied-no-FR; retains FR-linked + behavior-affecting work",
           "disposition": "tested",
-          "evidence": "test_findings_json_wins_over_sarif + test_empty_findings_json_not_overridden_by_sarif PASSED"
-        },
-        {
-          "behavior": "Neither findings.json nor SARIF in the artifact -> None (no scan output, ADR-052 None-vs-[])",
+          "evidence": "test_traceability.py::TestIterateTestCoverage (8 cases) PASSED" },
+        { "behavior": "Dashboard 'Iterate tests passing' row uses the testable denominator + new wording",
           "disposition": "tested",
-          "evidence": "test_no_json_no_sarif_returns_none PASSED"
-        },
-        {
-          "behavior": "download_prompt_risks has no SARIF fallback (prompt-injection is not a SARIF concept)",
+          "evidence": "test_dashboard_iterate_row.py (2 cases) PASSED" },
+        { "behavior": "Audit _Suggested: line renders only on status==fail (suppresses pass/skip)",
           "disposition": "tested",
-          "evidence": "test_prompt_risks_has_no_sarif_fallback PASSED"
-        },
-        {
-          "behavior": "Boundary probe: the real webui security run's SARIF parses end-to-end via the fallback",
+          "evidence": "test_audit_report.py::test_suggested_cmd_only_renders_for_failures PASSED" },
+        { "behavior": "Staleness banner: stamp / idempotent-churn-free / noop-absent / overwrite-clears",
           "disposition": "tested",
-          "evidence": "live probe vs run 28333874301 -> 165 findings parsed (135 low / 24 medium / 6 high / 0 critical)"
-        }
+          "evidence": "test_audit_freshness.py (4 cases) PASSED" },
+        { "behavior": "update_compliance stamps the marker on --phase iterate, skips on --phase compliance",
+          "disposition": "tested",
+          "evidence": "test_update_compliance_phases.py (2 cases) PASSED" }
       ],
-      "counts": {
-        "testable": 6,
-        "tested": 6,
-        "untestable": 0,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 6,
-        "covered_acs": 6
-      }
+      "counts": { "testable": 7, "tested": 7, "untestable": 0, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 4, "covered_acs": 4 }
     },
     "degraded": []
   }

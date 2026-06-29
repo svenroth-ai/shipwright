@@ -14,6 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from scripts.lib.audit_freshness import mark_audit_report_stale
 from scripts.lib.data_collector import collect_all
 from scripts.lib.rtm_generator import generate_file as generate_rtm
 from scripts.lib.test_evidence import (
@@ -158,11 +159,26 @@ def main() -> int:
 
     config_path.write_text(json.dumps(config, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
+    # Routine regens refresh the dashboard et al. but NOT the detective
+    # audit-report.md (only /shipwright-compliance → run_audit.py writes it), so a
+    # month-old audit can sit on disk looking current. Stamp a staleness banner so
+    # it announces it's stale. Skip the /shipwright-compliance flow itself
+    # (phase == "compliance"), which re-runs the audit and fully overwrites the
+    # file. Best-effort + fail-soft: never block a regen.
+    audit_staleness_result: dict | None = None
+    if phase != "compliance":
+        try:
+            audit_staleness_result = mark_audit_report_stale(project_root)
+        except Exception as exc:  # noqa: BLE001 — never block compliance regen
+            audit_staleness_result = {"stamped": False, "reason": str(exc)}
+
     output = {
         "success": True,
         "phase": phase,
         "updated_reports": updated,
     }
+    if audit_staleness_result is not None:
+        output["audit_staleness"] = audit_staleness_result
     if sbom_triage_result is not None:
         output["sbom_triage"] = sbom_triage_result
     if test_evidence_triage_result is not None:
