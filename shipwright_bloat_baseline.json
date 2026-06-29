@@ -116,14 +116,14 @@
     {
       "path": "plugins/shipwright-compliance/scripts/audit/audit_adapters.py",
       "limit": 300,
-      "current": 350,
+      "current": 349,
       "state": "grandfathered",
       "adr": null
     },
     {
       "path": "plugins/shipwright-compliance/scripts/audit/audit_detector.py",
       "limit": 300,
-      "current": 409,
+      "current": 400,
       "state": "grandfathered",
       "adr": null
     },
@@ -179,14 +179,14 @@
     {
       "path": "plugins/shipwright-compliance/scripts/lib/compliance_report.py",
       "limit": 300,
-      "current": 357,
+      "current": 356,
       "state": "grandfathered",
       "adr": null
     },
     {
       "path": "plugins/shipwright-compliance/scripts/lib/rtm_generator.py",
       "limit": 300,
-      "current": 808,
+      "current": 763,
       "state": "grandfathered",
       "adr": null
     },
@@ -263,7 +263,7 @@
     {
       "path": "plugins/shipwright-compliance/tests/test_rtm_generator.py",
       "limit": 300,
-      "current": 692,
+      "current": 688,
       "state": "exception",
       "adr": "ADR-092"
     },
@@ -396,7 +396,7 @@
     {
       "path": "plugins/shipwright-security/scripts/lib/aikido_client.py",
       "limit": 300,
-      "current": 448,
+      "current": 424,
       "state": "grandfathered",
       "adr": null
     },
@@ -494,7 +494,7 @@
     {
       "path": "plugins/shipwright-test/scripts/lib/ui_consistency_check.py",
       "limit": 300,
-      "current": 525,
+      "current": 518,
       "state": "grandfathered",
       "adr": null
     },
@@ -578,14 +578,14 @@
     {
       "path": "shared/scripts/lib/worktree_isolation.py",
       "limit": 300,
-      "current": 438,
+      "current": 370,
       "state": "grandfathered",
       "adr": null
     },
     {
       "path": "shared/scripts/route_crawler.py",
       "limit": 300,
-      "current": 354,
+      "current": 352,
       "state": "grandfathered",
       "adr": null
     },
@@ -648,7 +648,7 @@
     {
       "path": "shared/scripts/tools/finalize_iterate.py",
       "limit": 300,
-      "current": 520,
+      "current": 519,
       "state": "exception",
       "adr": "ADR-096"
     },
@@ -669,7 +669,7 @@
     {
       "path": "shared/scripts/tools/record_event.py",
       "limit": 300,
-      "current": 786,
+      "current": 785,
       "state": "grandfathered",
       "adr": null
     },
@@ -725,7 +725,7 @@
     {
       "path": "shared/scripts/tools/verifiers/spec_checks.py",
       "limit": 300,
-      "current": 793,
+      "current": 783,
       "state": "grandfathered",
       "adr": null
     },

@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-06-29T07:44:01.619236+00:00
+Generated: 2026-06-29T21:52:28.977021+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -12,21 +12,21 @@ Scope: library
 
 | | Dimension | Signal | Anchor |
 |---|-----------|--------|--------|
-| ✅ | Requirement traceability | 14/14 FRs covered; 226/226 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (DO-178C, IEC 62304) |
-| ✅ | Test health | latest full suite 3853/3853 (2026-06-28) | automated tests pass (OpenSSF Scorecard) |
-| ✅ | Change traceability | 226/226 changes linked to a commit, ADR or test run | change provenance (SLSA, OpenSSF Scorecard) |
+| ✅ | Requirement traceability | 14/14 FRs covered; 227/227 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (DO-178C, IEC 62304) |
+| ✅ | Test health | latest full suite 3618/3618 (2026-06-29) | automated tests pass (OpenSSF Scorecard) |
+| ✅ | Change traceability | 227/227 changes linked to a commit, ADR or test run | change provenance (SLSA, OpenSSF Scorecard) |
 | ✅ | Change reconciliation | 0/4 behavior-touched FRs not re-verified | re-verify changed requirements (DO-178C, ISO 26262) |
 | ✅ | Security | 0 open high/critical | no open high/critical vulns (NIST SSDF, OWASP) |
-| ✅ | Size / maintainability discipline | ratchet delta -168 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
+| ✅ | Size / maintainability discipline | ratchet delta +0 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
 | ✅ | Dependency hygiene | 0 unresolved / 7 licenses; 0 copyleft | dependency license & risk (OWASP, OpenSSF Scorecard) |
 
-Verified from: `shipwright_events.jsonl (226 events, 2026-05-02 → 2026-06-29)`
+Verified from: `shipwright_events.jsonl (227 events, 2026-05-02 → 2026-06-29)`
 
 _Grade = importance-weighted average over the measurable dimensions (n/a excluded from the denominator), modeled on OpenSSF Scorecard. Age is neutral; only unreconciled change and net growth are control failures. Each Anchor names the open standard the dimension follows — see the guide's Control-Grade dimensions table._
 
 ## 🛡️ CI Security (fail-closed gate)
 
-Latest scan: **2026-06-28** · source `security.yml#28333095923` · critical-gate **✅ PASS**
+Latest scan: **2026-06-29** · source `security.yml#28366536467` · critical-gate **✅ PASS**
 
 | Severity | Count |
 |----------|-------|
@@ -35,7 +35,7 @@ Latest scan: **2026-06-28** · source `security.yml#28333095923` · critical-gat
 | Medium | 0 |
 | Low | 0 |
 
-Prompt-injection findings: **0**
+Prompt-injection findings: **1**
 
 **Accepted risks** (`.trivyignore.yaml` register):
 
@@ -50,9 +50,9 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Metric | Value | Status | Why warn? |
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
-| Work events (iterate) | 226 changes | INFO |  |
+| Work events (iterate) | 227 changes | INFO |  |
 | Recent changes traced to an FR | 1/30 (3%) | WARN | FR-tagging dropped to 3% (last 30) vs 18% all-time — recent changes classified no-FR; see the Control Verdict traceability dimension |
-| All unit tests passing | 3853/3853 | PASS | +6 change(s) since last full suite |
+| All unit tests passing | 3618/3618 | PASS |  |
 | Architecture decisions | 235 ADRs | INFO |  |
 | Iterate tests passing | 35/40 testable changes tested | WARN | 5 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 7 packages | INFO |  |
@@ -60,11 +60,11 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Triage open | 1 open | WARN | 1 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit (grandfathered) | 127 | INFO |  |
 | Bloat in allowlist | 158 entries | INFO |  |
-| Bloat ratchet delta | -168 lines | PASS |  |
+| Bloat ratchet delta | +0 lines | PASS |  |
 
 ## Project Velocity
 
-- Iterate: 226 changes (2026-05-02 → 2026-06-29)
+- Iterate: 227 changes (2026-05-02 → 2026-06-29)
 - Last activity: 2026-06-29
 
 ## External LLM Review Evidence

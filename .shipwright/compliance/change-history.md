@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-06-29T07:44:01.619236+00:00
-Total commits: 1056
+Generated: 2026-06-29T21:52:28.977021+00:00
+Total commits: 1057
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 299
+    "fix" : 300
     "feat" : 281
     "chore" : 230
     "docs" : 142
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 299 commits
+### Fixes (fix) — 300 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-29 | compliance | exempt items no longer flagged as deficits (bloat/tests/audit) (#292) | e8a9e53c1a75 |
 | 2026-06-28 | compliance | maintainability grade anchor describes the check, not the label (#290) | e96a989ab04c |
 | 2026-06-28 | compliance | SBOM dedup by installed version + honest license verdict (AR-04) (#286) | f4498bb30ccc |
 | 2026-06-28 | compliance | fail-open + robust invocation for PreToolUse Bash gates (#278) | 01059128d910 |
@@ -1125,7 +1126,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1056 |
+| Total commits | 1057 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1056 |
+| Human-authored commits | 1057 |
 
