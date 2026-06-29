@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-29 07:44 UTC | Session: 1d0408e4-4f23-4d3b-9deb-33139d432694 | Run: iterate-2026-06-29-compliance-exempt-not-deficit
+> Updated: 2026-06-29 21:52 UTC | Session: 3b44205a-4312-4480-aaae-fd92c8a37e37 | Run: iterate-2026-06-29-tighten-bloat-baseline
 
-## Recent Changes (226 iterations)
+## Recent Changes (227 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | tighten bloat baseline current to on-disk LOC (Group H2) | 3618/3618 |  | compliance | 2026-06-29 |
 | change | Compliance producers stop flagging legitimately-exempt items as deficits: grandfathered bloat over-limit renders INFO (ratchet delta stays the WARN), the iterate-tests denominator excludes satisfied-no-FR changes, audit Suggested lines emit only on FAIL, and routine regens stamp a churn-free staleness banner on audit-report.md. | 868/868 |  | compliance | 2026-06-29 |
 | change | AR-10 SARIF-ingestion fallback in shared github_api.py: when the security-scan-results artifact has no findings.json (every /shipwright-adopt repo runs the SARIF-only scanner template), parse sarif/*.sarif into severity-bucketed findings (security-severity CVSS bands; gitleaks->critical). findings.json stays authoritative when present (empty list never falls through). So the Control-Grade Security dimension lights for adopted repos, not just the monorepo. +6 unit tests; real-webui-SARIF probe parsed 165 findings (135 low / 24 medium / 6 high). | 0/0 |  | compliance | 2026-06-28 |
 | change | Control-Grade maintainability anchor describes the check (no unchecked code-size growth) instead of repeating the dimension label | 851/851 |  | compliance | 2026-06-28 |
@@ -233,7 +234,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-29 | Unit: 868/868 | Smoke: not_run | (iterate)
+Last run: 2026-06-29 | Unit: 3618/3618 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

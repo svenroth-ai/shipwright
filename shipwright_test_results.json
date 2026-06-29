@@ -1,49 +1,47 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-29-compliance-exempt-not-deficit",
+    "run_id": "iterate-2026-06-29-tighten-bloat-baseline",
     "date": "2026-06-29",
-    "unit": { "status": "passed", "passed": 868, "total": 868 },
-    "integration": { "status": "not_run", "passed": 0, "total": 0 },
-    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
-    "e2e": { "status": "not_run", "passed": 0, "total": 0 },
-    "design_fidelity": { "status": "not_run", "passed": 0, "total": 0 },
-    "smoke": { "status": "not_run" },
+    "unit": {
+      "status": "passed",
+      "passed": 3618,
+      "total": 3618
+    },
+    "integration": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
     "surface_verification": {
       "surface": "none",
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-29-compliance-exempt-not-deficit/surface_verification.json",
-      "timestamp": "2026-06-29T07:38:09.320Z",
-      "justification": "Framework-internal compliance producer/render change (dashboard rows, audit-report suggestion gating + staleness banner). No app UI/API/CLI surface; the user-facing output is the compliance markdown, verified empirically by regenerating dashboard.md + audit-report.md against both the monorepo and shipwright-webui event logs (logged in the iterate spec) plus 868 pytest cases."
+      "evidence_path": "",
+      "timestamp": "2026-06-29T21:49:09.393Z",
+      "justification": "Data-only tighten of shipwright_bloat_baseline.json integer floors; no startable user-facing surface. The file is consumed only by the anti-ratchet pre-commit hook and the Group-H detective audit, both covered by passing unit tests (group_h 14, shared bloat/anti-ratchet 83)."
     },
     "test_completeness": {
-      "status": "complete",
-      "behaviors": [
-        { "behavior": "Bloat over-limit (grandfathered) renders INFO, never WARN (events + legacy modes)",
-          "disposition": "tested",
-          "evidence": "test_collectors_dashboard.py::test_legacy_mode_over_limit_is_info_not_warn + events/round-trip asserts PASSED" },
-        { "behavior": "Ratchet delta remains the WARN-bearing bloat signal",
-          "disposition": "tested",
-          "evidence": "test_collectors_dashboard.py::test_legacy_mode_over_limit_is_info_not_warn (ratchet WARN assert) PASSED" },
-        { "behavior": "iterate_test_coverage excludes satisfied-no-FR; retains FR-linked + behavior-affecting work",
-          "disposition": "tested",
-          "evidence": "test_traceability.py::TestIterateTestCoverage (8 cases) PASSED" },
-        { "behavior": "Dashboard 'Iterate tests passing' row uses the testable denominator + new wording",
-          "disposition": "tested",
-          "evidence": "test_dashboard_iterate_row.py (2 cases) PASSED" },
-        { "behavior": "Audit _Suggested: line renders only on status==fail (suppresses pass/skip)",
-          "disposition": "tested",
-          "evidence": "test_audit_report.py::test_suggested_cmd_only_renders_for_failures PASSED" },
-        { "behavior": "Staleness banner: stamp / idempotent-churn-free / noop-absent / overwrite-clears",
-          "disposition": "tested",
-          "evidence": "test_audit_freshness.py (4 cases) PASSED" },
-        { "behavior": "update_compliance stamps the marker on --phase iterate, skips on --phase compliance",
-          "disposition": "tested",
-          "evidence": "test_update_compliance_phases.py (2 cases) PASSED" }
-      ],
-      "counts": { "testable": 7, "tested": 7, "untestable": 0, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 4, "covered_acs": 4 }
+      "status": "n/a",
+      "justification": "Trivial complexity: data-only tighten of 12 integer floors in shipwright_bloat_baseline.json (no code/behavior change). The H2 invariant (0 entries with actual < current) and the baseline's consumers are covered by group_h (14) + shared bloat/anti-ratchet (83) unit tests, all passing."
     },
     "degraded": []
   }
