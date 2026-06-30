@@ -36,7 +36,7 @@ re-run against each.
   (monorepo) / `90/179 | WARN | 89 |` (webui). The denominator is every
   `source=="iterate"` event, including behavior-preserving no-FR changes
   (docs/tooling/compliance/infra + `none_reason`) that are **legitimately test-free**.
-  (Synthetic `backfill*/​*-retro/​*-merge-retro` sources are already excluded by the
+  (Synthetic `backfill*/*-retro/*-merge-retro` sources are already excluded by the
   exact `source=="iterate"` filter.)
 - **Fix:** mirror the BP-1 traced-credit — exclude **satisfied-no-FR** changes
   (`fr_classification.is_satisfied_no_fr`) from BOTH numerator and denominator. The
