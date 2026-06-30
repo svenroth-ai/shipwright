@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-06-30T14:50:51.559955+00:00
-Total commits: 1061
+Generated: 2026-06-30T19:20:59.443976+00:00
+Total commits: 1062
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 301
+    "fix" : 302
     "feat" : 283
     "chore" : 231
     "docs" : 142
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 301 commits
+### Fixes (fix) — 302 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-30 | ci | pin ossf/scorecard-action by tag so publish stops failing (#297) | efca5737b380 |
 | 2026-06-30 | compliance | UTC-normalize the RTM Verification Timeline Date column (#295) | 64f89aa45cb7 |
 | 2026-06-29 | compliance | exempt items no longer flagged as deficits (bloat/tests/audit) (#292) | e8a9e53c1a75 |
 | 2026-06-28 | compliance | maintainability grade anchor describes the check, not the label (#290) | e96a989ab04c |
@@ -1130,7 +1131,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1061 |
+| Total commits | 1062 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1061 |
+| Human-authored commits | 1062 |
 

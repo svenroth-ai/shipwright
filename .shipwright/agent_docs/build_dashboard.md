@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-30 14:50 UTC | Session: 998fb4e1-d677-4d0a-89cf-cec4a7c4a6ee | Run: iterate-2026-06-30-scorecard-publish-tag
+> Updated: 2026-06-30 19:20 UTC | Session: 998fb4e1-d677-4d0a-89cf-cec4a7c4a6ee | Run: iterate-2026-06-30-remove-native-scorecard
 
-## Recent Changes (231 iterations)
+## Recent Changes (232 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Remove .github/workflows/scorecard.yml + its ci_gate_allowlist entry + the Added changelog drop. Keep the A+C grade work and the Scorecard methodology citation. Token-permissions + pinned-deps + branch-protection tracked as triage. | 0/0 |  | infra | 2026-06-30 |
 | change | Fix the red Scorecard workflow on main: the publish step failed 400 imposter-commit because the action was SHA-pinned; the OpenSSF publish API only verifies official release tags. Pin to @v2.4.3. | 0/0 |  | infra | 2026-06-30 |
 | bug | RTM Verification Timeline Date column UTC-normalized (utc_date) so it reads monotonically descending across mixed-timezone events; a +02:00 near-midnight event no longer prints a local date one day off its sort position | +3 new, 897/897 |  | FR-01.10 | 2026-06-30 |
 | change | Goodhart-resistant Control Grade: honesty layer caps the headline on the weakest load-bearing control; anchors pivoted to open SE/NIST standards; native scorecard.yml. | 0/0 |  | compliance | 2026-06-30 |
