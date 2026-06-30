@@ -1,6 +1,6 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-06-30T20:26:19.491004+00:00 (dependency versions resolved from uv.lock)
+Generated: 2026-06-30T21:39:52.892260+00:00 (dependency versions resolved from uv.lock)
 
 ## Summary
 
@@ -9,7 +9,7 @@ Generated: 2026-06-30T20:26:19.491004+00:00 (dependency versions resolved from u
 | Runtime dependencies | 5 (deduplicated) |
 | Dev dependencies | 2 |
 | Total packages | 7 |
-| Licenses resolved | 3 / 7 |
+| Licenses resolved | 5 / 7 |
 | Unique licenses | 2 (Apache-2.0, MIT) |
 | Copyleft licenses | 0 |
 
@@ -17,9 +17,9 @@ Generated: 2026-06-30T20:26:19.491004+00:00 (dependency versions resolved from u
 
 ```mermaid
 pie title License Distribution (all 7 packages)
-    "MIT" : 2
+    "MIT" : 4
     "Apache-2.0" : 1
-    "unknown" : 4
+    "unknown" : 2
 ```
 
 ## Runtime Dependencies
@@ -36,10 +36,10 @@ pie title License Distribution (all 7 packages)
 
 | Package | Version | License |
 |---------|---------|---------|
-| pytest | 9.0.3 | - |
-| pytest-mock | 3.15.1 | - |
+| pytest | 9.0.3 | MIT |
+| pytest-mock | 3.15.1 | MIT |
 
 ## License Compliance
 
-**4 dependency(ies) could not be resolved in this scan** - license unverified; verify before distribution.
+**2 dependency(ies) could not be resolved in this scan** - license unverified; verify before distribution.
 

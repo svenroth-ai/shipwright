@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-30-strip-zwsp-planning-doc",
+    "run_id": "iterate-2026-06-30-sarif-suppression-filter",
     "date": "2026-06-30",
     "unit": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 3604,
+      "total": 3604
     },
     "integration": {
       "status": "not_run",
@@ -31,13 +31,63 @@
       "status": "not_run"
     },
     "surface_verification": {
-      "surface": "none",
-      "justification": "Markdown-only edit to an internal planning note (removed 2 U+200B chars); no executable surface (web/cli/api) changed. Verification = prompt-injection scan = 0 findings."
+      "surface": "cli",
+      "runner": "uv run --extra dev pytest shared/tests/test_github_api_sarif_fallback.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 8,
+      "evidence_path": ".shipwright/runs/iterate-2026-06-30-sarif-suppression-filter/surface_verification.log",
+      "timestamp": "2026-06-30T21:36:44.114Z"
     },
     "test_completeness": {
-      "status": "n/a",
-      "justification": "Trivial markdown-only edit — removed invisible Unicode from a dev planning doc; no executable behavior introduced or changed. Authoritative check is the prompt-injection scan (0 findings)."
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "An inline-suppressed SARIF result (suppressions:[{kind:inSource}], no status) is not counted as a live finding",
+          "disposition": "tested",
+          "evidence": "test_github_api_sarif_fallback.py::test_sarif_all_inline_suppressed_results_yield_clean_empty PASSED"
+        },
+        {
+          "behavior": "A SARIF file present but with all results suppressed returns [] (clean), not None and not phantom findings",
+          "disposition": "tested",
+          "evidence": "test_github_api_sarif_fallback.py::test_sarif_all_inline_suppressed_results_yield_clean_empty PASSED (asserts == [])"
+        },
+        {
+          "behavior": "A live result with no suppressions is retained",
+          "disposition": "tested",
+          "evidence": "test_github_api_sarif_fallback.py::test_sarif_only_suppressed_results_dropped_live_retained PASSED"
+        },
+        {
+          "behavior": "A result whose only suppression has status=rejected stays live (no security false-negative)",
+          "disposition": "tested",
+          "evidence": "test_github_api_sarif_fallback.py::test_sarif_only_suppressed_results_dropped_live_retained PASSED (3rd result retained)"
+        },
+        {
+          "behavior": "A mixed scan drops only the suppressed result (2 live high, not 3)",
+          "disposition": "tested",
+          "evidence": "test_github_api_sarif_fallback.py::test_sarif_only_suppressed_results_dropped_live_retained PASSED (sorted == ['high','high'])"
+        },
+        {
+          "behavior": "Non-suppressed Trivy/Gitleaks SARIF parsing is unchanged by the filter",
+          "disposition": "tested",
+          "evidence": "test_github_api_sarif_fallback.py::test_sarif_fallback_buckets_by_cvss_band + ::test_sarif_fallback_gitleaks_is_critical PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 6,
+        "covered_acs": 6
+      }
     },
-    "degraded": []
+    "degraded": [
+      {
+        "condition": "complexity_override",
+        "detail": "classify_complexity returned 'medium' (prior_source: keyword, confidence 0.7); overridden to 'small'. Authoritative diff-driven detectors (risk_detectors.py, F11-recomputed) yield zero risk flags: not touches_io_boundary, not cross_component, not touches_build. Surgical single-function root-cause fix + regression tests, library scope, no UI/API/schema."
+      }
+    ]
   }
 }
