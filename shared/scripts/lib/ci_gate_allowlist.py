@@ -65,14 +65,6 @@ LOOSE_GATE_ALLOWLIST: list[AllowEntry] = [
         "by-design", launch_gate=True,
     ),
     AllowEntry(
-        "scorecard.yml", "Upload SARIF to GitHub Security",
-        "By design: the Scorecard SARIF upload is best-effort and must not turn "
-        "this non-required, default-branch-only workflow red on a transient "
-        "code-scanning hiccup — the analysis run + published score are the "
-        "signal. Mirrors security.yml's upload step.",
-        "by-design",
-    ),
-    AllowEntry(
         "codeql.yml", "Perform analysis",
         "Private-repo: codeql-action/analyze uploads SARIF, which needs code "
         "scanning (Advanced Security). MUST be removed at public launch so "

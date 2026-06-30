@@ -1,1 +1,0 @@
-A native OpenSSF Scorecard workflow (.github/workflows/scorecard.yml) that runs the recognized ossf/scorecard-action against the repo, so the 0–10 supply-chain anchor the Control Grade is modeled on now runs natively (SARIF to the Security tab + published score).
