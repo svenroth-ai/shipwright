@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-06-30T20:25:16.760138+00:00
+Generated: 2026-06-30T20:26:19.491004+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -13,7 +13,7 @@ Scope: library
 | | Dimension | Signal | Anchor |
 |---|-----------|--------|--------|
 | ⚠️ | Requirement traceability | 14/14 FRs covered; 233/233 changes traced (FR-linked or classified no-FR); FR-tag rate 10% vs 18% all-time — declining | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
-| ✅ | Test health | latest full suite 3610/3610 (2026-06-30) | automated tests pass (OpenSSF Scorecard) |
+| ✅ | Test health | latest full suite 3618/3618 (2026-06-29) | automated tests pass (OpenSSF Scorecard) |
 | ✅ | Change traceability | 233/233 changes linked to a commit, ADR or test run | change provenance (SLSA) |
 | ✅ | Change reconciliation | 0/4 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
 | ✅ | Security | 0 open high/critical | no open high/critical vulns (NIST SSDF) |
@@ -52,7 +52,7 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Pipeline phases completed | n/a (adopted) | INFO |  |
 | Work events (iterate) | 233 changes | INFO |  |
 | Recent changes traced to an FR | 3/30 (10%) | WARN | FR-tagging dropped to 10% (last 30) vs 18% all-time — recent changes classified no-FR; see the Control Verdict traceability dimension |
-| All unit tests passing | 3610/3610 | PASS |  |
+| All unit tests passing | 3618/3618 | PASS | +6 change(s) since last full suite |
 | Architecture decisions | 235 ADRs | INFO |  |
 | Iterate tests passing | 37/42 testable changes tested | WARN | 5 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 7 packages | INFO |  |

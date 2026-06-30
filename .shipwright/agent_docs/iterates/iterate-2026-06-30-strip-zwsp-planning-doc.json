@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-30-strip-zwsp-planning-doc",
+  "date": "2026-06-30T20:26:48.157375Z",
+  "type": "change",
+  "complexity": "trivial",
+  "branch": "iterate/strip-zwsp-planning-doc",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-06-30-strip-zwsp-planning-doc"
+}

@@ -1,20 +1,20 @@
 # Test Evidence Report
 
-Generated: 2026-06-30T20:25:16.760138+00:00
+Generated: 2026-06-30T20:26:19.491004+00:00
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 233 |
-| Total unit tests (latest full suite) | 3610/3610 (2026-06-30) |
+| Total unit tests (latest full suite) | 3618/3618 (2026-06-29) |
 | New tests from iterations | +220 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | Locked the GitHub Actions CI workflows to read-only token permissions, granting write access only to the specific jobs that need it. | [iterate](traceability-matrix.md#evt-bf0c17a2) | unit | +0 | 3610/3610 | PASS | 2026-06-30 |
+| 1 | Removed two invisible characters from an internal planning note that a security check had flagged. | [iterate](traceability-matrix.md#evt-87d55739) | — | +0 | — | — | 2026-06-30 |
 | 2 | Remove .github/workflows/scorecard.yml + its ci_gate_allowlist entry + the Added changelog drop. Keep the A+C grade work and the Scorecard methodology citation. Token-permissions + pinned-deps + branch-protection tracked as triage. | [iterate](traceability-matrix.md#evt-b89652cc) | — | +0 | — | — | 2026-06-30 |
 | 3 | Fix the red Scorecard workflow on main: the publish step failed 400 imposter-commit because the action was SHA-pinned; the OpenSSF publish API only verifies official release tags. Pin to @v2.4.3. | [iterate](traceability-matrix.md#evt-e1d5bdb0) | — | +0 | — | — | 2026-06-30 |
 | 4 | Fixed the dates in the traceability timeline so they always count down correctly, even for entries recorded in a different time zone. | [iterate](traceability-matrix.md#evt-cf798241) | unit | +3 | 897/897 | PASS | 2026-06-30 |
@@ -254,36 +254,36 @@ _Synthesized from per-iterate **unit** results — Integration / pgTAP / E2E / S
 
 | Run | Trigger | Unit | Integration | pgTAP | E2E | Smoke | Date |
 |-----|---------|------|-------------|-------|-----|-------|------|
-| 1 | iterate | 3441/3453 | — | — | — | — | 2026-06-13 |
-| 2 | iterate | 3442/3442 | — | — | — | — | 2026-06-13 |
-| 3 | iterate | 7/7 | — | — | — | — | 2026-06-14 |
-| 4 | iterate | 96/96 | — | — | — | — | 2026-06-14 |
-| 5 | iterate | 3473/3473 | — | — | — | — | 2026-06-14 |
-| 6 | iterate | 94/94 | — | — | — | — | 2026-06-15 |
-| 7 | iterate | 85/85 | — | — | — | — | 2026-06-16 |
-| 8 | iterate | 24/24 | — | — | — | — | 2026-06-16 |
-| 9 | iterate | 701/701 | — | — | — | — | 2026-06-16 |
-| 10 | iterate | 28/29 | — | — | — | — | 2026-06-17 |
-| 11 | iterate | 20/20 | — | — | — | — | 2026-06-17 |
-| 12 | iterate | 34/34 | — | — | — | — | 2026-06-17 |
-| 13 | iterate | 420/423 | — | — | — | — | 2026-06-17 |
-| 14 | iterate | 139/139 | — | — | — | — | 2026-06-17 |
-| 15 | iterate | 720/720 | — | — | — | — | 2026-06-27 |
-| 16 | iterate | 736/736 | — | — | — | — | 2026-06-28 |
-| 17 | iterate | 3560/3560 | — | — | — | — | 2026-06-27 |
-| 18 | iterate | 4720/4720 | — | — | — | — | 2026-06-28 |
-| 19 | iterate | 4719/4719 | — | — | — | — | 2026-06-28 |
-| 20 | iterate | 492/492 | — | — | — | — | 2026-06-28 |
-| 21 | iterate | 794/794 | — | — | — | — | 2026-06-28 |
-| 22 | iterate | 3853/3853 | — | — | — | — | 2026-06-28 |
-| 23 | iterate | 4812/4812 | — | — | — | — | 2026-06-28 |
-| 24 | iterate | 850/850 | — | — | — | — | 2026-06-28 |
-| 25 | iterate | 851/851 | — | — | — | — | 2026-06-28 |
-| 26 | iterate | 868/868 | — | — | — | — | 2026-06-29 |
-| 27 | iterate | 3618/3618 | — | — | — | — | 2026-06-29 |
-| 28 | iterate | 894/894 | — | — | — | — | 2026-06-30 |
-| 29 | iterate | 897/897 | — | — | — | — | 2026-06-30 |
-| 30 | iterate | 3610/3610 | — | — | — | — | 2026-06-30 |
+| 1 | iterate | 3881/3881 | — | — | — | — | 2026-06-13 |
+| 2 | iterate | 3441/3453 | — | — | — | — | 2026-06-13 |
+| 3 | iterate | 3442/3442 | — | — | — | — | 2026-06-13 |
+| 4 | iterate | 7/7 | — | — | — | — | 2026-06-14 |
+| 5 | iterate | 96/96 | — | — | — | — | 2026-06-14 |
+| 6 | iterate | 3473/3473 | — | — | — | — | 2026-06-14 |
+| 7 | iterate | 94/94 | — | — | — | — | 2026-06-15 |
+| 8 | iterate | 85/85 | — | — | — | — | 2026-06-16 |
+| 9 | iterate | 24/24 | — | — | — | — | 2026-06-16 |
+| 10 | iterate | 701/701 | — | — | — | — | 2026-06-16 |
+| 11 | iterate | 28/29 | — | — | — | — | 2026-06-17 |
+| 12 | iterate | 20/20 | — | — | — | — | 2026-06-17 |
+| 13 | iterate | 34/34 | — | — | — | — | 2026-06-17 |
+| 14 | iterate | 420/423 | — | — | — | — | 2026-06-17 |
+| 15 | iterate | 139/139 | — | — | — | — | 2026-06-17 |
+| 16 | iterate | 720/720 | — | — | — | — | 2026-06-27 |
+| 17 | iterate | 736/736 | — | — | — | — | 2026-06-28 |
+| 18 | iterate | 3560/3560 | — | — | — | — | 2026-06-27 |
+| 19 | iterate | 4720/4720 | — | — | — | — | 2026-06-28 |
+| 20 | iterate | 4719/4719 | — | — | — | — | 2026-06-28 |
+| 21 | iterate | 492/492 | — | — | — | — | 2026-06-28 |
+| 22 | iterate | 794/794 | — | — | — | — | 2026-06-28 |
+| 23 | iterate | 3853/3853 | — | — | — | — | 2026-06-28 |
+| 24 | iterate | 4812/4812 | — | — | — | — | 2026-06-28 |
+| 25 | iterate | 850/850 | — | — | — | — | 2026-06-28 |
+| 26 | iterate | 851/851 | — | — | — | — | 2026-06-28 |
+| 27 | iterate | 868/868 | — | — | — | — | 2026-06-29 |
+| 28 | iterate | 3618/3618 | — | — | — | — | 2026-06-29 |
+| 29 | iterate | 894/894 | — | — | — | — | 2026-06-30 |
+| 30 | iterate | 897/897 | — | — | — | — | 2026-06-30 |
 
 ## Code Review Evidence
 
