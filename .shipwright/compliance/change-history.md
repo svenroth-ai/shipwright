@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-06-30T13:58:18.154430+00:00
+Generated: 2026-06-30T14:50:51.559955+00:00
 Total commits: 1061
 
 ## Commit Distribution
@@ -330,7 +330,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-30 | compliance | honesty gate for the Control Grade + native Scorecard | def7a069600e |
+| 2026-06-30 | compliance | honesty gate for the Control Grade + native Scorecard (#296) | 09b5a59f324a |
 | 2026-06-30 | compliance | navigable test-evidence + traceability artifacts; plain-language Event labels (#294) | 7d8c9f6220bb |
 | 2026-06-28 | compliance | AR-10 SARIF-ingestion fallback so adopted repos light the Security dimension (#291) | 27e1251be0b8 |
 | 2026-06-28 | compliance | plain-language, open-standard-only Control-Grade anchors + dimensions guide (#289) | 9a4dbec16894 |
