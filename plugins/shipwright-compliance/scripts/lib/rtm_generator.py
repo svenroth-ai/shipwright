@@ -37,7 +37,7 @@ from scripts.lib._rtm_reconciliation_render import (
     _evt_anchor_ref,
     _render_needs_reverification_section,
 )
-from scripts.lib._rtm_links import commit_cell, fr_anchor_id, last_tested_cell, link_frs, resolve_repo_url, timeline_order  # noqa: E501
+from scripts.lib._rtm_links import commit_cell, fr_anchor_id, last_tested_cell, link_frs, resolve_repo_url, timeline_order, utc_date  # noqa: E501
 from scripts.lib.event_display import event_display_name
 
 # Cross-cutting markdown helper lives at shared/scripts/markdown_table.py
@@ -552,7 +552,7 @@ def _verification_timeline(data: ComplianceData) -> list[str]:
         event_type = "section" if we.source == "build" else normalize_intent(we.intent)
         frs = link_frs(we.affected_frs, known_fr_ids)
         tests = f"{we.tests_passed}/{we.tests_total}" if we.tests_total > 0 else "—"
-        date = we.timestamp[:10]
+        date = utc_date(we.timestamp)  # UTC frame matches the sort → monotonic Date column
 
         lines.append(
             f"| {event_cell} | {escape_cell(we.source)} | {escape_cell(event_type)} "
