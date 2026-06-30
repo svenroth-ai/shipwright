@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-30-fr-retag-honesty",
+  "date": "2026-06-30T21:38:14.229822Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/fr-retag-honesty",
+  "spec": ".shipwright/planning/iterate/2026-06-30-fr-retag-honesty.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-30-fr-retag-honesty"
+}
