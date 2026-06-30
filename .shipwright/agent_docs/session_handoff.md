@@ -1,11 +1,3 @@
----
-canon_generated: true
-run_id: "iterate-2026-06-30-workflow-token-permissions"
-phase: "iterate"
-reason: "iterate: workflow token-permissions hardening"
-timestamp: "2026-06-30T20:25:16.760138+00:00"
----
-
 # Session Handoff
 
 > Auto-generated 2026-06-30 20:25:16 UTC
@@ -14,27 +6,22 @@ timestamp: "2026-06-30T20:25:16.760138+00:00"
 
 - **Session ID**: 21cb3b0b-74e2-4d54-b9ee-595f850b42db
 - **Timestamp**: 2026-06-30 20:25:16 UTC
-- **Reason**: iterate: workflow token-permissions hardening
+- **Reason**: iterate completion: iterate-2026-06-30-workflow-token-permissions
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-30-remove-native-scorecard
-- **Date**: 2026-06-30T19:21:21.850964Z
+- **Run ID**: iterate-2026-06-30-workflow-token-permissions
+- **Date**: 2026-06-30T20:25:53.385630Z
 - **Type**: change
-- **Complexity**: trivial
-- **Branch**: iterate/remove-native-scorecard
-- **ADR**: iterate-2026-06-30-remove-native-scorecard
+- **Complexity**: small
+- **Branch**: iterate/wf-token-perms
+- **ADR**: iterate-2026-06-30-workflow-token-permissions
 - **Tests passed**: True
 
 ## Current Iterate Progress
 
 - **Branch**: iterate/wf-token-perms
 - **External Review Marker**: missing
-
-### Mandatory replay on Resume
-
-Before dispatching to the handoff's Remaining phase, run these if missing:
-- Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
 
@@ -48,8 +35,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Git State
 
 - **Branch**: iterate/wf-token-perms
-- **Last Commit**: 0962051d chore(ci): remove native OpenSSF Scorecard workflow (wrong anchor for AI-first) (#298)
-- **Uncommitted Changes**: Yes
+- **Last Commit**: db5de35d ci(security): least-privilege GITHUB_TOKEN permissions per workflow
+- **Uncommitted Changes**: None
 
 ## Config Files to Read
 
