@@ -11,6 +11,15 @@ from __future__ import annotations
 import fnmatch
 import json
 
+# Triage-log validation lives in lib.triage_validate (extracted so this module
+# stays under the 300-LOC guideline). Re-exported so the historical
+# `from lib.churn_merge import validate_triage_text` import path is unchanged.
+from lib.triage_validate import (  # noqa: F401  (re-export surface)
+    TriageValidation,
+    classify_triage_text,
+    validate_triage_text,
+)
+
 # --- the churn allowlist (POSIX relpaths) -----------------------------------
 
 COMPLIANCE_MDS: frozenset[str] = frozenset(
@@ -180,59 +189,9 @@ def dedup_triage_lines(lines: list[str]) -> tuple[list[str], list[str]]:
     return out, []
 
 
-def validate_triage_text(text: str) -> list[str]:
-    """Return a list of error strings (empty = valid) for the triage log.
-
-    Checks: (a) the first non-blank line is the ``{"schema":"triage",...}``
-    header; (b) every non-blank line parses as JSON; (c) no duplicate ``append``
-    for one id; (d) no ``status`` event without a preceding ``append`` (the
-    reader silently DROPS such orphans — ``triage.read_all_items`` skips a
-    status for an unknown id — so a merge that lost an append would otherwise
-    pass validation while silently dropping triage state). Parallel to
-    :func:`validate_events_text` but triage-specific.
-    """
-    errors: list[str] = []
-    header_seen = False
-    append_ids: set[str] = set()
-    status_ids: list[tuple[int, str]] = []
-    for n, line in enumerate(text.splitlines(), start=1):
-        if not line.strip():
-            continue
-        try:
-            obj = json.loads(line)
-        except json.JSONDecodeError as exc:
-            errors.append(
-                f"line {n}: not valid JSON ({exc.msg}) — union may have corrupted a historic line"
-            )
-            continue
-        if not header_seen:
-            header_seen = True
-            if not (isinstance(obj, dict) and obj.get("schema") == "triage" and "v" in obj):
-                errors.append(
-                    f"line {n}: first non-blank line is not the triage header "
-                    '({"v":...,"schema":"triage",...}) — the merge reordered or dropped it'
-                )
-            continue
-        if not isinstance(obj, dict):
-            continue
-        event, iid = obj.get("event"), obj.get("id")
-        if event == "append":
-            if iid in append_ids:
-                errors.append(f"line {n}: duplicate append for id {iid!r} — the merge double-counted an item")
-            append_ids.add(iid)
-        elif event == "status":
-            status_ids.append((n, iid))
-    # Second pass: status ids are checked against the FULL append set, NOT only
-    # appends seen earlier in file order — ``merge=union`` may legitimately
-    # interleave lines so a status precedes its append while both are present
-    # (order-sensitive validation would false-fail `triage_invalid`). Only a
-    # status whose append is absent ANYWHERE is a real merge drop.
-    for n, iid in status_ids:
-        if iid not in append_ids:
-            errors.append(f"line {n}: status for id {iid!r} has no append anywhere — the merge dropped it")
-    if not header_seen:
-        errors.append("triage log is empty after merge — the header was dropped")
-    return errors
+# `TriageValidation`, `classify_triage_text`, and `validate_triage_text` now live in
+# lib.triage_validate (re-exported at the top of this module). See that module for
+# the triage-log validation + orphan-status classification rules.
 
 
 def validate_events_text(text: str, *, require_run_id: str | None = None) -> list[str]:

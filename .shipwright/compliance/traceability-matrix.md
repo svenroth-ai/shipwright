@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-30T21:37:37.185087+00:00
+Generated: 2026-06-30T21:50:52.825435+00:00
 
 ## Requirements Coverage
 
@@ -15,7 +15,7 @@ Generated: 2026-06-30T21:37:37.185087+00:00
 | [FR-01.07](../../.shipwright/planning/01-adopted/spec.md#fr-0107)<a id="rtm-fr-0107"></a> | Security scanning chain (Aikido + Semgrep + Trivy + Gitleaks) with automated remediation loop and per-scanner exclude lists. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7), [evt-07b1fe9c](#evt-07b1fe9c) +2 | 225/225 → 4955/4967 | 2026-06-30 ([iter](#evt-f90c7126)) | ✅ | COVERED |
 | [FR-01.08](../../.shipwright/planning/01-adopted/spec.md#fr-0108)<a id="rtm-fr-0108"></a> | Deploy to configured targets with smoke testing and rollback; Jelastic (Infomaniak) shipped, Vercel + compose-VPS profiles documented as stubs. | Should | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7) | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | — | COVERED |
 | [FR-01.09](../../.shipwright/planning/01-adopted/spec.md#fr-0109)<a id="rtm-fr-0109"></a> | Parse Conventional Commits from git history, generate Keep-a-Changelog entries, create version tags, open release PRs. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-530b0980](#evt-530b0980), [evt-ddb23fe7](#evt-ddb23fe7) | 225/225 → 19/19 | 2026-05-03 ([iter](#evt-530b0980)) | — | COVERED |
-| [FR-01.10](../../.shipwright/planning/01-adopted/spec.md#fr-0110)<a id="rtm-fr-0110"></a> | Generate audit-ready compliance documentation (RTM, test evidence, change history, SBOM) and run on-demand cross-artifact detective audit. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-30338dac](#evt-30338dac), [evt-a3888caf](#evt-a3888caf) +16 | 225/225 → 4955/4967 | 2026-06-30 ([iter](#evt-f90c7126)) | ✅ | COVERED |
+| [FR-01.10](../../.shipwright/planning/01-adopted/spec.md#fr-0110)<a id="rtm-fr-0110"></a> | Generate audit-ready compliance documentation (RTM, test evidence, change history, SBOM) and run on-demand cross-artifact detective audit. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-30338dac](#evt-30338dac), [evt-a3888caf](#evt-a3888caf) +16 | 225/225 → 4955/4967 | 2026-06-30 ([iter](#evt-f90c7126)) | ✅ | FAIL → [trg-cced399c](../agent_docs/triage_inbox.md#trg-cced399c) |
 | [FR-01.11](../../.shipwright/planning/01-adopted/spec.md#fr-0111)<a id="rtm-fr-0111"></a> | Complexity-adaptive SDLC for ongoing changes — auto-detects intent and complexity, scales from quick fix to structured feature with specs, plans, reviews, tests; every feature/change classifies its spec impact (ADD/MODIFY/REMOVE/NONE), enforced at finalization. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-6c637864](#evt-6c637864), [evt-baaf4b0e](#evt-baaf4b0e), [evt-ca7b7d64](#evt-ca7b7d64) +16 | 225/225 → 736/736 | 2026-06-28 ([iter](#evt-1ab9c3af)) | ✅ | COVERED |
 | [FR-01.12](../../.shipwright/planning/01-adopted/spec.md#fr-0112)<a id="rtm-fr-0112"></a> | Local browser preview — start dev server for the target project and show the URL. | May | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7) | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | — | COVERED |
 | [FR-01.13](../../.shipwright/planning/01-adopted/spec.md#fr-0113)<a id="rtm-fr-0113"></a> | Onboard an existing (brownfield) repository into the Shipwright SDLC; analyzes codebase, generates CLAUDE.md, agent_docs, planning specs, compliance artifacts, suggest_iterate hook, and an E2E baseline; scaffolds `.env.local` with the profile's framework keys. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-273bbb54](#evt-273bbb54), [evt-b0b9c422](#evt-b0b9c422), [evt-aab7ddbd](#evt-aab7ddbd) +5 | 225/225 → 304/304 | 2026-05-16 ([iter](#evt-38e36ac6)) | — | COVERED |
@@ -27,6 +27,7 @@ Generated: 2026-06-30T21:37:37.185087+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-dee1d490"></a>Fixed a bug where one bad leftover note in the background triage buffer silently blocked ALL pending findings from being delivered; the bad note is now set aside and the good findings still get through. | iterate | change |  | 3633/3633 | — | 2026-06-30 |
 | <a id="evt-f90c7126"></a>Corrected the functional-requirement tags on recent compliance and security features so the audit grade honestly reflects the real work, lifting it from B back to A. | iterate | change | [FR-01.10](#rtm-fr-0110), [FR-01.07](#rtm-fr-0107) | 4955/4967 | — | 2026-06-30 |
 | <a id="evt-87d55739"></a>Removed two invisible characters from an internal planning note that a security check had flagged. | iterate | change |  | — | — | 2026-06-30 |
 | <a id="evt-b89652cc"></a>Remove .github/workflows/scorecard.yml + its ci_gate_allowlist entry + the Added changelog drop. Keep the A+C grade work and the Scorecard methodology citation. Token-permissions + pinned-deps + branch-protection tracked as triage. | iterate | change |  | — | — | 2026-06-30 |
@@ -268,10 +269,14 @@ Generated: 2026-06-30T21:37:37.185087+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 234 |
+| Iterate changes | 235 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
 | Total review findings | 66 |
 | Unresolved findings | 24 |
+
+### FRs with open triage items
+
+- [FR-01.10](../../.shipwright/planning/01-adopted/spec.md): FAIL → [trg-cced399c](../agent_docs/triage_inbox.md#trg-cced399c)
 

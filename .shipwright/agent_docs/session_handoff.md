@@ -1,43 +1,41 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-30-fr-retag-honesty"
+run_id: "iterate-2026-06-30-sweep-outbox-quarantine-orphans"
 phase: "iterate"
-reason: "iterate: re-tag mis-filed compliance/security work to FR-01.10/FR-01.07"
-timestamp: "2026-06-30T21:37:37.185087+00:00"
+reason: "F11 pre-merge refresh: iterate-2026-06-30-sweep-outbox-quarantine-orphans"
+timestamp: "2026-06-30T21:50:52.825435+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-30 21:37:37 UTC
+> Auto-generated 2026-06-30 21:50:52 UTC
 
 ## Session Info
 
-- **Session ID**: a93268fc-73cb-47be-baab-2209bc730d47
-- **Timestamp**: 2026-06-30 21:37:37 UTC
-- **Reason**: iterate: re-tag mis-filed compliance/security work to FR-01.10/FR-01.07
+- **Session ID**: 5f73a0dc-14af-4a8b-a2f3-7844589c9752
+- **Timestamp**: 2026-06-30 21:50:52 UTC
+- **Reason**: F11 pre-merge refresh: iterate-2026-06-30-sweep-outbox-quarantine-orphans
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-30-strip-zwsp-planning-doc
-- **Date**: 2026-06-30T20:26:48.157375Z
+- **Run ID**: iterate-2026-06-30-sweep-outbox-quarantine-orphans
+- **Date**: 2026-06-30T21:51:01.051639Z
 - **Type**: change
-- **Complexity**: trivial
-- **Branch**: iterate/strip-zwsp-planning-doc
-- **ADR**: iterate-2026-06-30-strip-zwsp-planning-doc
+- **Complexity**: medium
+- **Branch**: iterate/sweep-outbox-quarantine-orphans
+- **ADR**: iterate-2026-06-30-sweep-outbox-quarantine-orphans
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/2026-06-30-sweep-outbox-quarantine-orphans.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/fr-retag-honesty
-- **Run ID**: `iterate-2026-06-30-fr-retag-honesty`
-- **Spec**: .shipwright/planning/iterate/2026-06-30-fr-retag-honesty.md
-- **Complexity**: medium
+- **Branch**: iterate/sweep-outbox-quarantine-orphans
+- **Spec**: .shipwright/planning/iterate/2026-06-30-sweep-outbox-quarantine-orphans.md
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -51,8 +49,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/fr-retag-honesty
-- **Last Commit**: e04991c6 fix(security): strip zero-width Unicode (U+200B) from a planning note flagged by the prompt-injection scan (#300)
+- **Branch**: iterate/sweep-outbox-quarantine-orphans
+- **Last Commit**: 20bce0c5 Merge remote-tracking branch 'origin/main' into iterate/sweep-outbox-quarantine-orphans
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -77,7 +75,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 234
+- **Total work events**: 235
 - **Last iterate**: change — Re-tag mis-filed compliance/security FEATURE work to FR-01.10/FR-01.07 via event_amended overlays; clears the honesty-gate FR-tag decline (Control Grade B->A) (2026-06-30)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

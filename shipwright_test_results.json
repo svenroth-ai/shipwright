@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-30-fr-retag-honesty",
+    "run_id": "iterate-2026-06-30-sweep-outbox-quarantine-orphans",
     "date": "2026-06-30",
     "unit": {
       "status": "passed",
-      "passed": 4781,
-      "total": 4793
+      "passed": 60,
+      "total": 60
     },
     "integration": {
       "status": "passed",
-      "passed": 174,
-      "total": 174
+      "passed": 3633,
+      "total": 3633
     },
     "pgtap": {
       "status": "not_run",
@@ -32,35 +32,59 @@
     },
     "surface_verification": {
       "surface": "none",
-      "justification": "Compliance-metadata correction (append-only event_amended overlays); no web/cli/api app surface. End-to-end verification = the real compliance producer regen asserting Control Grade A + reconciliation green, plus a 4955-test regression sweep across all event-log/compliance-consuming suites."
+      "justification": "Internal triage-delivery library change (sweep_outbox/sweep_quarantine/triage_validate); no web/cli/api surface. Exercised by the full shared/tests suite incl. REAL-git end-to-end sweep tests (test_sweep_outbox*.py)."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "7 events re-tagged to FR-01.10 (+FR-01.07 on the 2 AR-10 events) via event_amended overlays",
+        {
+          "behavior": "AC1: outbox orphan-status quarantined; valid pending append still delivered to branch; quarantined==1",
           "disposition": "tested",
-          "evidence": "post-overlay rule-replay sim on the real 262-line worktree log: recent FR-tag 3/30->10/30, all-time 18.0%->21.0%; overlays applied 7/7 (record_event success)" },
-        { "behavior": "FR-tag decline cleared -> honesty-gate B-cap lifts -> Control Grade A",
+          "category": "integration",
+          "evidence": "test_sweep_outbox_guards.py::test_orphan_status_quarantined_remainder_delivered PASSED (real git: orphan->quarantine file, real append->branch HEAD)"
+        },
+        {
+          "behavior": "AC2: non-orphan corruption (invalid JSON) -> status=invalid, no commit, outbox intact, nothing quarantined",
           "disposition": "tested",
-          "evidence": "real producer (update_compliance.py): baseline dashboard 'B (89/100) Capped: traceability declining'; post-finalize regen asserts grade A (confirmed at F5b)" },
-        { "behavior": "Reconciliation dimension stays green (FR-01.10 + FR-01.07 RECONCILED)",
+          "evidence": "test_sweep_outbox_guards.py::test_non_orphan_corruption_does_not_commit_or_clear PASSED"
+        },
+        {
+          "behavior": "AC3: orphan + corruption mixed -> corruption wins -> invalid, nothing quarantined, outbox intact",
           "disposition": "tested",
-          "evidence": "sim ratio 1.0 with the F5b verify event; real RTM Reconciled? column + change_reconciliation dimension in the post-finalize dashboard" },
-        { "behavior": "The F5b verify event is load-bearing for the newest (tests.total=0) re-tagged touch",
+          "evidence": "test_sweep_outbox_guards.py::test_mixed_orphan_and_corruption_hard_blocks PASSED"
+        },
+        {
+          "behavior": "AC4: orphan-status in worktree-tracked(origin) log, not outbox -> NOT quarantined -> invalid",
           "disposition": "tested",
-          "evidence": "stress-test sim WITHOUT the verify event: reconciliation ratio drops to 0.6, FR-01.10/FR-01.07 NEEDS_REVERIFICATION" },
-        { "behavior": "No source regression (zero .py diff; data-only)",
+          "evidence": "test_sweep_outbox_guards.py::test_orphan_status_in_tracked_log_not_quarantined PASSED"
+        },
+        {
+          "behavior": "classify_triage_text distinguishes orphan-status (recoverable) from corruption (has_non_orphan_error); validate_triage_text string API unchanged + re-exported from churn_merge",
           "disposition": "tested",
-          "evidence": "F0 full sweep of all event-log/compliance-consuming suites: 4955 passed, 0 failed (compliance 922, shared 3602+196+61, integration 174)" },
-        { "behavior": "Genuine infra events stay no-FR (not over-tagged)",
+          "evidence": "test_triage_validate.py (9 cases) PASSED incl. test_validate_triage_text_reexported_from_churn_merge"
+        },
+        {
+          "behavior": "byte-compat: sweep_quarantine dedup+validate are the SAME single-source objects reconcile uses",
           "disposition": "tested",
-          "evidence": "stay-list (scorecard CI, bloat-baseline, drift-detector removal, events_log doc, ci-security refresh) excluded from the overlay set; all-time FR-tag rose only +3.4pp, confirming targeted correction" }
+          "evidence": "test_sweep_outbox.py::test_sweep_reuses_reconcile_helpers PASSED"
+        }
       ],
-      "counts": { "testable": 6, "tested": 6, "untestable": 0, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 6, "covered_acs": 6 }
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
+      }
     },
     "degraded": [
-      "F0 scope: ran every suite that consumes the event log / FR / compliance machinery (compliance plugin + 3 shared dirs + integration = 4955 tests). The other 13 plugin suites test their own code and were not re-run because this iterate has zero .py diff (append-only events.jsonl + regenerated compliance artifacts). CI runs the full per-plugin matrix as the backstop."
+      {
+        "phase": "external_review",
+        "reason": "external-review tooling unavailable in this environment (check-external-review-keys.py not present); plan reviewed via self-review + full code review instead."
+      }
     ]
   }
 }
