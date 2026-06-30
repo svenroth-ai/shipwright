@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-30T21:39:52.892260Z. Items waiting for triage decision.
+> Auto-generated 2026-06-30T21:50:52.825435Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 251
-- Triage: 6 | Promoted: 1 | Dismissed: 243 | Snoozed: 1
+- Total: 252
+- Triage: 7 | Promoted: 1 | Dismissed: 243 | Snoozed: 1
 
-## Top 6 items (severity-sorted)
+## Top 7 items (severity-sorted)
 
 ### Source: compliance (1 item)
 
@@ -44,12 +44,17 @@
   - The 14 FRs are one-per-plugin/command (FR-01.10 = the whole /shipwright-compliance plugin), so coverage is trivially 14…
   - Promote: `triage_promote.py --id trg-2206b2b6 --task-ref EXT:<ref>`
 
-### Source: manual (1 item)
+### Source: manual (2 items)
 
 <a id="trg-35d03ca5"></a>
 - **github_triage artifact-ingest counts inline-suppressed Semgrep findings as live, inflating gh-security triage and block…** `id=trg-35d03ca5 | severity=medium | kind=bug → P2/engineering`
   - shared/scripts/github_triage/producer.py security_artifact_action_unit() sets artifact_total = len(findings) with no su…
   - Promote: `triage_promote.py --id trg-35d03ca5 --task-ref EXT:<ref>`
+
+<a id="trg-cced399c"></a>
+- **Decompose FR-01.10 / FR-01.07 into sub-FRs for precise feature traceability** `id=trg-cced399c | severity=low | kind=improvement → P3/engineering`
+  - Follow-up to iterate-2026-06-30-fr-retag-honesty. Introduce sub-FRs (e.g. FR-01.10.x for Control Grade / RTM / SBOM / d…
+  - Promote: `triage_promote.py --id trg-cced399c --task-ref EXT:<ref>`
 
 ### Source: scorecard-followup (1 item)
 

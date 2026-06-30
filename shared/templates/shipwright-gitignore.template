@@ -35,6 +35,10 @@
 # with the /.shipwright/* wildcard but pins the intent so a future `!`-negation
 # can never silently start tracking the buffer. DO NOT add a `!`-re-include for it.
 /.shipwright/triage.outbox.jsonl
+# triage.outbox.quarantine.jsonl — orphan-status lines the sweep set aside instead of
+# hard-blocking delivery (iterate-2026-06-30-sweep-outbox-quarantine-orphans). Local
+# operator-review buffer, same gitignored-intent as the outbox above.
+/.shipwright/triage.outbox.quarantine.jsonl
 # Re-exclude transient / internal / generated content inside the doc homes:
 /.shipwright/adopt/backups/
 /.shipwright/adopt/screenshots/

@@ -46,11 +46,12 @@ def repo(git_origin_repo):
 
 
 def test_sweep_reuses_reconcile_helpers() -> None:
-    """The sweep imports the IDENTICAL dedup + validate helpers reconcile uses."""
-    from lib import reconcile_triage
+    """The sweep's quarantine pipeline uses the IDENTICAL dedup + validate helpers
+    reconcile uses — they moved to ``lib.sweep_quarantine`` but stay single-source."""
+    from lib import reconcile_triage, sweep_quarantine
     from lib.churn_merge import dedup_triage_lines, validate_triage_text
-    assert sweep_outbox.dedup_triage_lines is dedup_triage_lines
-    assert sweep_outbox.validate_triage_text is validate_triage_text
+    assert sweep_quarantine.dedup_triage_lines is dedup_triage_lines
+    assert sweep_quarantine.validate_triage_text is validate_triage_text
     assert reconcile_triage.dedup_triage_lines is dedup_triage_lines
     assert reconcile_triage.validate_triage_text is validate_triage_text
 

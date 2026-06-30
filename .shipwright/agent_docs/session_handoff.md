@@ -1,34 +1,36 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-30-sarif-suppression-filter"
+run_id: "iterate-2026-06-30-sweep-outbox-quarantine-orphans"
 phase: "iterate"
-reason: "iterate: SARIF suppression filter"
-timestamp: "2026-06-30T21:39:52.892260+00:00"
+reason: "F11 pre-merge refresh: iterate-2026-06-30-sweep-outbox-quarantine-orphans"
+timestamp: "2026-06-30T21:50:52.825435+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-30 21:39:52 UTC
+> Auto-generated 2026-06-30 21:50:52 UTC
 
 ## Session Info
 
-- **Session ID**: 1d00268f-7922-410c-8e5f-5621ef9995de
-- **Timestamp**: 2026-06-30 21:39:52 UTC
-- **Reason**: iterate: SARIF suppression filter
+- **Session ID**: 5f73a0dc-14af-4a8b-a2f3-7844589c9752
+- **Timestamp**: 2026-06-30 21:50:52 UTC
+- **Reason**: F11 pre-merge refresh: iterate-2026-06-30-sweep-outbox-quarantine-orphans
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-30-strip-zwsp-planning-doc
-- **Date**: 2026-06-30T20:26:48.157375Z
+- **Run ID**: iterate-2026-06-30-sweep-outbox-quarantine-orphans
+- **Date**: 2026-06-30T21:51:01.051639Z
 - **Type**: change
-- **Complexity**: trivial
-- **Branch**: iterate/strip-zwsp-planning-doc
-- **ADR**: iterate-2026-06-30-strip-zwsp-planning-doc
+- **Complexity**: medium
+- **Branch**: iterate/sweep-outbox-quarantine-orphans
+- **ADR**: iterate-2026-06-30-sweep-outbox-quarantine-orphans
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/2026-06-30-sweep-outbox-quarantine-orphans.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/sarif-suppression-filter
+- **Branch**: iterate/sweep-outbox-quarantine-orphans
+- **Spec**: .shipwright/planning/iterate/2026-06-30-sweep-outbox-quarantine-orphans.md
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -47,8 +49,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/sarif-suppression-filter
-- **Last Commit**: 989218a8 chore(triage): sweep 30 outbox append(s) into branch
+- **Branch**: iterate/sweep-outbox-quarantine-orphans
+- **Last Commit**: 20bce0c5 Merge remote-tracking branch 'origin/main' into iterate/sweep-outbox-quarantine-orphans
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +66,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-20169b3e | work_completed | iterate (SARIF suppression filter: inline-suppressed Semgrep results no longer counted as live in shared security-artifact ingestion) | 2026-06-30 |
-| evt-87d55739 | work_completed | iterate (Strip 2 zero-width-space (U+200B) chars from a planning note to clear a high prompt-injection scanner finding (UNICODE_ZERO_WIDTH_SPACE)) | 2026-06-30 |
-| evt-b89652cc | work_completed | iterate (Remove .github/workflows/scorecard.yml + its ci_gate_allowlist entry + the Added changelog drop. Keep the A+C grade work and the Scorecard methodology citation. Token-permissions + pinned-deps + branch-protection tracked as triage.) | 2026-06-30 |
-| evt-e1d5bdb0 | work_completed | iterate (Fix the red Scorecard workflow on main: the publish step failed 400 imposter-commit because the action was SHA-pinned; the OpenSSF publish API only verifies official release tags. Pin to @v2.4.3.) | 2026-06-30 |
-| evt-cf798241 | work_completed | iterate (RTM Verification Timeline Date column UTC-normalized (utc_date) so it reads monotonically descending across mixed-timezone events; a +02:00 near-midnight event no longer prints a local date one day off its sort position) | 2026-06-30 |
+| evt-f90c7126 | work_completed | iterate (Re-tag mis-filed compliance/security FEATURE work to FR-01.10/FR-01.07 via event_amended overlays; clears the honesty-gate FR-tag decline (Control Grade B->A)) | 2026-06-30 |
+| evt-0b72de69 | event_amended | — | 2026-06-30 |
+| evt-2cf2540c | event_amended | — | 2026-06-30 |
+| evt-e13851a3 | event_amended | — | 2026-06-30 |
+| evt-1fad1111 | event_amended | — | 2026-06-30 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 234
-- **Last iterate**: bug — SARIF suppression filter: inline-suppressed Semgrep results no longer counted as live in shared security-artifact ingestion (2026-06-30)
+- **Total work events**: 235
+- **Last iterate**: change — Re-tag mis-filed compliance/security FEATURE work to FR-01.10/FR-01.07 via event_amended overlays; clears the honesty-gate FR-tag decline (Control Grade B->A) (2026-06-30)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

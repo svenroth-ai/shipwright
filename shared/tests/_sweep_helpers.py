@@ -19,6 +19,7 @@ if str(_SHARED_SCRIPTS) not in sys.path:
 
 TRIAGE = ".shipwright/triage.jsonl"
 OUTBOX = ".shipwright/triage.outbox.jsonl"
+QUARANTINE = ".shipwright/triage.outbox.quarantine.jsonl"
 HEADER = '{"v":1,"schema":"triage","created":"2026-06-08T00:00:00Z"}'
 
 
@@ -39,6 +40,20 @@ def item(iid: str, title: str = "x") -> str:
         f'{{"event":"append","id":"{iid}","ts":"2026-06-08T00:00:00Z",'
         f'"title":"{title}","status":"triage"}}'
     )
+
+
+def status(iid: str, new_status: str = "dismissed") -> str:
+    """A status event line (orphan if no matching append exists in the log)."""
+    return (
+        f'{{"event":"status","id":"{iid}","ts":"2026-06-08T00:00:01Z",'
+        f'"newStatus":"{new_status}"}}'
+    )
+
+
+def quarantine_text(work: Path) -> str:
+    """Raw quarantine-log text ('' if absent)."""
+    p = work / QUARANTINE
+    return p.read_text(encoding="utf-8") if p.exists() else ""
 
 
 def seed_tracked(work: Path, *items: str) -> None:
