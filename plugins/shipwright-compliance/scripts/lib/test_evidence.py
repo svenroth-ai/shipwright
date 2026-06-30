@@ -544,12 +544,17 @@ def _full_suite_runs_from_work_events(data: ComplianceData) -> list[str]:
     # Cap at the last 30 in file order (filter-first per OpenAI #3).
     rows = qualifying[-_SYNTHESIS_CAP:]
 
+    # Parenthesized concat (NOT adjacent literals inside the list) so CodeQL's
+    # py/implicit-string-concatenation-in-list doesn't read it as a missing comma.
+    note = (
+        "_Synthesized from per-iterate **unit** results — Integration / pgTAP / E2E / Smoke "
+        "read `—` because no `test_run` events (the only source of a full layer breakdown) are "
+        "recorded; an empty column means the breakdown is unavailable, not that a layer failed._"
+    )
     lines = [
         "## Full Suite Runs",
         "",
-        "_Synthesized from per-iterate **unit** results — Integration / pgTAP / E2E / Smoke "
-        "read `—` because no `test_run` events (the only source of a full layer breakdown) are "
-        "recorded; an empty column means the breakdown is unavailable, not that a layer failed._",
+        note,
         "",
         "| Run | Trigger | Unit | Integration | pgTAP | E2E | Smoke | Date |",
         "|-----|---------|------|-------------|-------|-----|-------|------|",
