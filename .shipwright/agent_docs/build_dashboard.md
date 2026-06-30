@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-30 20:26 UTC | Session: 5f73a0dc-14af-4a8b-a2f3-7844589c9752 | Run: iterate-2026-06-30-strip-zwsp-planning-doc
+> Updated: 2026-06-30 21:50 UTC | Session: 5f73a0dc-14af-4a8b-a2f3-7844589c9752 | Run: iterate-2026-06-30-sweep-outbox-quarantine-orphans
 
-## Recent Changes (233 iterations)
+## Recent Changes (234 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Quarantine outbox-originating orphan-status lines in the triage sweep instead of hard-blocking the whole buffer; deliver the valid remainder | 3633/3633 |  | infra | 2026-06-30 |
 | change | Strip 2 zero-width-space (U+200B) chars from a planning note to clear a high prompt-injection scanner finding (UNICODE_ZERO_WIDTH_SPACE) | 0/0 |  | docs | 2026-06-30 |
 | change | Remove .github/workflows/scorecard.yml + its ci_gate_allowlist entry + the Added changelog drop. Keep the A+C grade work and the Scorecard methodology citation. Token-permissions + pinned-deps + branch-protection tracked as triage. | 0/0 |  | infra | 2026-06-30 |
 | change | Fix the red Scorecard workflow on main: the publish step failed 400 imposter-commit because the action was SHA-pinned; the OpenSSF publish API only verifies official release tags. Pin to @v2.4.3. | 0/0 |  | infra | 2026-06-30 |
@@ -240,7 +241,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-30 | Smoke: not_run | (iterate)
+Last run: 2026-06-30 | Unit: 60/60 | Integration: 3633/3633 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

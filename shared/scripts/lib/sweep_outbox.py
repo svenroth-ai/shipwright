@@ -16,16 +16,14 @@ Two invariants make this loss-proof:
   GC. A concurrent background producer appending to the outbox serializes
   against the ENTIRE sweep — it is never read-then-lost.
 * **Origin-delivered GC (Codex unlisted failure mode):** an outbox line is
-  dropped ONLY once it is present in ``origin/<default>``'s tracked log — by
-  semantic ``id`` for append lines (serialization-drift-immune, FIX B) and by
-  normalized text for status lines (see :mod:`lib.sweep_gc`). A just-swept line
-  is on the branch but not yet in origin, so it STAYS in the outbox; an
-  abandoned/deleted branch re-sweeps it next setup. Re-sweeping is harmless —
-  ``merge=union`` + dedup collapses it to exactly-once. NEVER reset-after-read.
+  dropped ONLY once present in ``origin/<default>``'s tracked log — by semantic
+  ``id`` for append lines (FIX B) + normalized text for status (see
+  :mod:`lib.sweep_gc`). A just-swept line stays until origin-delivered; re-sweeping
+  is harmless (``merge=union`` + dedup → exactly-once). NEVER reset-after-read.
 
-The EOL-normalize + ``dedup_triage_lines`` + ``validate_triage_text`` pipeline
-is IDENTICAL to :mod:`lib.reconcile_triage` (Codex Q3) so the materialized
-bytes are byte-compatible with the union merge driver.
+The EOL-normalize + dedup + validate pipeline (now in :mod:`lib.sweep_quarantine`,
+which also quarantines orphan-status lines) is byte-compatible with
+:mod:`lib.reconcile_triage` (Codex Q3) so the union merge driver agrees.
 """
 
 from __future__ import annotations
@@ -43,8 +41,9 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 
 import triage  # noqa: E402  — canonical lock + outbox path SSoT
 from lib.atomic_write import durable_atomic_write  # noqa: E402
-from lib.churn_merge import TRIAGE_LOG, dedup_triage_lines, validate_triage_text  # noqa: E402
+from lib.churn_merge import TRIAGE_LOG  # noqa: E402
 from lib.sweep_gc import is_delivered, parse_delivered  # noqa: E402
+from lib.sweep_quarantine import append_quarantine, decide as quarantine_decide, quarantine_path  # noqa: E402
 from lib.worktree_isolation import run_git  # noqa: E402
 
 #: Truthy spellings of ``$CI`` that disable the auto-commit unless ``allow_ci``.
@@ -59,14 +58,16 @@ class SweepResult:
     ``error``}. ``reason`` carries the guard name for ``skipped`` / ``error``;
     ``swept`` is the count of genuinely-new (deduped) lines folded into the
     branch on a ``committed`` run; ``gc_dropped`` is the count of outbox lines
-    dropped because they are already origin-delivered; ``errors`` holds
-    validator messages for ``invalid``.
+    dropped because they are already origin-delivered; ``quarantined`` is the
+    count of orphan-status lines moved to the quarantine log this run; ``errors``
+    holds validator messages for ``invalid``.
     """
 
     status: str
     reason: str = ""
     swept: int = 0
     gc_dropped: int = 0
+    quarantined: int = 0
     commit_subject: str = ""
     errors: list[str] = field(default_factory=list)
 
@@ -76,6 +77,7 @@ class SweepResult:
             "reason": self.reason,
             "swept": self.swept,
             "gc_dropped": self.gc_dropped,
+            "quarantined": self.quarantined,
             "commit_subject": self.commit_subject,
             "errors": self.errors,
         }
@@ -209,17 +211,22 @@ def sweep_outbox_to_branch(
         # checkout); fall back to LF when the worktree log is absent/empty.
         eol = wt_eol if worktree_raw else "\n"
 
-        # Materialize: worktree-tracked THEN outbox, deduped (first-seen order),
-        # exactly the reconcile pipeline. The header (worktree line 1) is
-        # preserved because it sorts first in worktree_lines.
-        combined = worktree_lines_norm + outbox_lines
-        deduped, _warn = dedup_triage_lines(combined)
-        deduped_text = (eol.join(deduped) + eol) if deduped else ""
-
-        errors = validate_triage_text(deduped_text)
-        if errors:
+        # Materialize + classify. Orphan-status lines that ORIGINATE IN THE OUTBOX are
+        # QUARANTINED rather than hard-blocking the whole sweep (genuine corruption —
+        # bad header / dup append / invalid JSON — still fails closed). See sweep_quarantine.
+        decision = quarantine_decide(worktree_lines_norm, outbox_lines, eol)
+        if decision.action == "block":
             # Do NOT commit, do NOT touch the outbox — surface for the operator.
-            return SweepResult(status="invalid", errors=errors)
+            return SweepResult(status="invalid", errors=decision.errors)
+        quarantined = 0
+        if decision.action == "quarantine":
+            append_quarantine(
+                quarantine_path(main_root), decision.candidates,
+                reason="orphan-status: no append anywhere in the combined triage log",
+            )
+            outbox_lines = decision.trimmed_outbox
+            quarantined = len(decision.candidates)
+        deduped_text = decision.deduped_text
 
         # Count genuinely-new lines (not already in the worktree tracked log).
         # JSONL producer lines carry NO surrounding whitespace (``json.dumps(...) +
@@ -272,7 +279,9 @@ def sweep_outbox_to_branch(
             if not is_delivered(ln.strip(), delivered_ids, delivered_text)
         ]
         gc_dropped = len(outbox_lines) - len(survivors)
-        if gc_dropped:
+        # Rewrite the outbox when GC trimmed delivered lines OR quarantine removed orphans
+        # this run (``outbox_lines`` is already the trimmed set).
+        if gc_dropped or quarantined:
             survivor_text = (outbox_eol.join(survivors) + outbox_eol) if survivors else ""
             _atomic_write(outbox_path, survivor_text)
 
@@ -282,10 +291,10 @@ def sweep_outbox_to_branch(
             status = "committed" if gc_dropped else "no_change"
             return SweepResult(
                 status=status, reason="" if gc_dropped else "no_branch_change",
-                swept=0, gc_dropped=gc_dropped,
+                swept=0, gc_dropped=gc_dropped, quarantined=quarantined,
             )
 
         return SweepResult(
             status="committed", swept=swept, gc_dropped=gc_dropped,
-            commit_subject=committed_subject,
+            quarantined=quarantined, commit_subject=committed_subject,
         )

@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-30-strip-zwsp-planning-doc",
+    "run_id": "iterate-2026-06-30-sweep-outbox-quarantine-orphans",
     "date": "2026-06-30",
     "unit": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 60,
+      "total": 60
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 3633,
+      "total": 3633
     },
     "pgtap": {
       "status": "not_run",
@@ -32,12 +32,59 @@
     },
     "surface_verification": {
       "surface": "none",
-      "justification": "Markdown-only edit to an internal planning note (removed 2 U+200B chars); no executable surface (web/cli/api) changed. Verification = prompt-injection scan = 0 findings."
+      "justification": "Internal triage-delivery library change (sweep_outbox/sweep_quarantine/triage_validate); no web/cli/api surface. Exercised by the full shared/tests suite incl. REAL-git end-to-end sweep tests (test_sweep_outbox*.py)."
     },
     "test_completeness": {
-      "status": "n/a",
-      "justification": "Trivial markdown-only edit — removed invisible Unicode from a dev planning doc; no executable behavior introduced or changed. Authoritative check is the prompt-injection scan (0 findings)."
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC1: outbox orphan-status quarantined; valid pending append still delivered to branch; quarantined==1",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "test_sweep_outbox_guards.py::test_orphan_status_quarantined_remainder_delivered PASSED (real git: orphan->quarantine file, real append->branch HEAD)"
+        },
+        {
+          "behavior": "AC2: non-orphan corruption (invalid JSON) -> status=invalid, no commit, outbox intact, nothing quarantined",
+          "disposition": "tested",
+          "evidence": "test_sweep_outbox_guards.py::test_non_orphan_corruption_does_not_commit_or_clear PASSED"
+        },
+        {
+          "behavior": "AC3: orphan + corruption mixed -> corruption wins -> invalid, nothing quarantined, outbox intact",
+          "disposition": "tested",
+          "evidence": "test_sweep_outbox_guards.py::test_mixed_orphan_and_corruption_hard_blocks PASSED"
+        },
+        {
+          "behavior": "AC4: orphan-status in worktree-tracked(origin) log, not outbox -> NOT quarantined -> invalid",
+          "disposition": "tested",
+          "evidence": "test_sweep_outbox_guards.py::test_orphan_status_in_tracked_log_not_quarantined PASSED"
+        },
+        {
+          "behavior": "classify_triage_text distinguishes orphan-status (recoverable) from corruption (has_non_orphan_error); validate_triage_text string API unchanged + re-exported from churn_merge",
+          "disposition": "tested",
+          "evidence": "test_triage_validate.py (9 cases) PASSED incl. test_validate_triage_text_reexported_from_churn_merge"
+        },
+        {
+          "behavior": "byte-compat: sweep_quarantine dedup+validate are the SAME single-source objects reconcile uses",
+          "disposition": "tested",
+          "evidence": "test_sweep_outbox.py::test_sweep_reuses_reconcile_helpers PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
+      }
     },
-    "degraded": []
+    "degraded": [
+      {
+        "phase": "external_review",
+        "reason": "external-review tooling unavailable in this environment (check-external-review-keys.py not present); plan reviewed via self-review + full code review instead."
+      }
+    ]
   }
 }

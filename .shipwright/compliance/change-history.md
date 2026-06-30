@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-06-30T20:26:19.491004+00:00
-Total commits: 1063
+Generated: 2026-06-30T21:50:52.825435+00:00
+Total commits: 1065
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 302
+    "fix" : 303
     "feat" : 283
-    "chore" : 232
+    "chore" : 233
     "docs" : 142
     "refactor" : 64
     "test" : 25
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 302 commits
+### Fixes (fix) — 303 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-30 | security | strip zero-width Unicode (U+200B) from a planning note flagged by the prompt-injection scan (#300) | e04991c66e81 |
 | 2026-06-30 | ci | pin ossf/scorecard-action by tag so publish stops failing (#297) | efca5737b380 |
 | 2026-06-30 | compliance | UTC-normalize the RTM Verification Timeline Date column (#295) | 64f89aa45cb7 |
 | 2026-06-29 | compliance | exempt items no longer flagged as deficits (bloat/tests/audit) (#292) | e8a9e53c1a75 |
@@ -615,10 +616,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 232 commits
+### Chores (chore) — 233 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-30 | triage | sweep 30 outbox append(s) into branch | 9df6ecb3918b |
 | 2026-06-30 | ci | remove native OpenSSF Scorecard workflow (wrong anchor for AI-first) (#298) | 0962051d7704 |
 | 2026-06-29 | bloat | tighten baseline floors to on-disk LOC (Group H2) (#293) | 4594948315b5 |
 | 2026-06-28 | compliance | refresh CI-security summary to the clean post-#272 scan (A100) (#288) | dac886347e26 |
@@ -1132,7 +1134,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1063 |
+| Total commits | 1065 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1063 |
+| Human-authored commits | 1065 |
 
