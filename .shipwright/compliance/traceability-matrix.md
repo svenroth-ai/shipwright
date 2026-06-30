@@ -28,6 +28,7 @@ Generated: 2026-06-30T21:50:52.825435+00:00
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
 | <a id="evt-dee1d490"></a>Fixed a bug where one bad leftover note in the background triage buffer silently blocked ALL pending findings from being delivered; the bad note is now set aside and the good findings still get through. | iterate | change |  | 3633/3633 | — | 2026-06-30 |
+| <a id="evt-20169b3e"></a>Security scan results that a developer marked as false positives with an inline ignore comment are no longer counted as real problems, so a fully-cleared scan shows zero and stops re-appearing in the triage inbox. | iterate | bug |  | 3604/3604 | — | 2026-06-30 |
 | <a id="evt-f90c7126"></a>Corrected the functional-requirement tags on recent compliance and security features so the audit grade honestly reflects the real work, lifting it from B back to A. | iterate | change | [FR-01.10](#rtm-fr-0110), [FR-01.07](#rtm-fr-0107) | 4955/4967 | — | 2026-06-30 |
 | <a id="evt-87d55739"></a>Removed two invisible characters from an internal planning note that a security check had flagged. | iterate | change |  | — | — | 2026-06-30 |
 | <a id="evt-b89652cc"></a>Remove .github/workflows/scorecard.yml + its ci_gate_allowlist entry + the Added changelog drop. Keep the A+C grade work and the Scorecard methodology citation. Token-permissions + pinned-deps + branch-protection tracked as triage. | iterate | change |  | — | — | 2026-06-30 |
@@ -269,7 +270,7 @@ Generated: 2026-06-30T21:50:52.825435+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 235 |
+| Iterate changes | 236 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

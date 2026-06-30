@@ -1,8 +1,8 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-30-sweep-outbox-quarantine-orphans"
+run_id: "iterate-2026-06-30-sarif-suppression-filter"
 phase: "iterate"
-reason: "F11 pre-merge refresh: iterate-2026-06-30-sweep-outbox-quarantine-orphans"
+reason: "F11 refresh: integrate origin/main (DIRTY after parallel merge)"
 timestamp: "2026-06-30T21:50:52.825435+00:00"
 ---
 
@@ -12,9 +12,9 @@ timestamp: "2026-06-30T21:50:52.825435+00:00"
 
 ## Session Info
 
-- **Session ID**: 5f73a0dc-14af-4a8b-a2f3-7844589c9752
+- **Session ID**: 1d00268f-7922-410c-8e5f-5621ef9995de
 - **Timestamp**: 2026-06-30 21:50:52 UTC
-- **Reason**: F11 pre-merge refresh: iterate-2026-06-30-sweep-outbox-quarantine-orphans
+- **Reason**: F11 refresh: integrate origin/main (DIRTY after parallel merge)
 
 ## Last Iterate
 
@@ -29,8 +29,7 @@ timestamp: "2026-06-30T21:50:52.825435+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/sweep-outbox-quarantine-orphans
-- **Spec**: .shipwright/planning/iterate/2026-06-30-sweep-outbox-quarantine-orphans.md
+- **Branch**: iterate/sarif-suppression-filter
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -49,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/sweep-outbox-quarantine-orphans
-- **Last Commit**: 20bce0c5 Merge remote-tracking branch 'origin/main' into iterate/sweep-outbox-quarantine-orphans
+- **Branch**: iterate/sarif-suppression-filter
+- **Last Commit**: 54875eae Merge remote-tracking branch 'origin/main' into iterate/sarif-suppression-filter
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -75,7 +74,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 235
+- **Total work events**: 236
 - **Last iterate**: change — Re-tag mis-filed compliance/security FEATURE work to FR-01.10/FR-01.07 via event_amended overlays; clears the honesty-gate FR-tag decline (Control Grade B->A) (2026-06-30)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
