@@ -41,7 +41,11 @@ jobs:
           persist-credentials: false
 
       - name: Run Scorecard analysis
-        uses: ossf/scorecard-action@99c09fe975337306107572b4fdf4db224cf8e2f2  # v2.4.3
+        # Tag (NOT a SHA): with publish_results the OpenSSF API verifies the
+        # workflow and rejects a SHA pin as an "imposter commit" — it only
+        # recognises official release tags. ossf/scorecard-action is the one
+        # third-party action this repo pins by tag, for that reason.
+        uses: ossf/scorecard-action@v2.4.3
         with:
           results_file: results.sarif
           results_format: sarif
