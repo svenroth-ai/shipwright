@@ -28,6 +28,7 @@ Generated: 2026-06-30T20:26:19.491004+00:00
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
 | <a id="evt-87d55739"></a>Removed two invisible characters from an internal planning note that a security check had flagged. | iterate | change |  | — | — | 2026-06-30 |
+| <a id="evt-bf0c17a2"></a>Locked the GitHub Actions CI workflows to read-only token permissions, granting write access only to the specific jobs that need it. | iterate | change |  | 3610/3610 | — | 2026-06-30 |
 | <a id="evt-b89652cc"></a>Remove .github/workflows/scorecard.yml + its ci_gate_allowlist entry + the Added changelog drop. Keep the A+C grade work and the Scorecard methodology citation. Token-permissions + pinned-deps + branch-protection tracked as triage. | iterate | change |  | — | — | 2026-06-30 |
 | <a id="evt-e1d5bdb0"></a>Fix the red Scorecard workflow on main: the publish step failed 400 imposter-commit because the action was SHA-pinned; the OpenSSF publish API only verifies official release tags. Pin to @v2.4.3. | iterate | change |  | — | — | 2026-06-30 |
 | <a id="evt-bcd40c31"></a>Goodhart-resistant Control Grade: honesty layer caps the headline on the weakest load-bearing control; anchors pivoted to open SE/NIST standards; native scorecard.yml. | iterate | change |  | — | — | 2026-06-30 |
@@ -267,7 +268,7 @@ Generated: 2026-06-30T20:26:19.491004+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 233 |
+| Iterate changes | 234 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

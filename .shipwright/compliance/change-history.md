@@ -1,29 +1,30 @@
 # Commit Change Log
 
 Generated: 2026-06-30T20:26:19.491004+00:00
-Total commits: 1063
+Total commits: 1067
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 302
+    "fix" : 303
     "feat" : 283
-    "chore" : 232
-    "docs" : 142
+    "chore" : 233
+    "docs" : 143
     "refactor" : 64
     "test" : 25
-    "ci" : 7
+    "ci" : 8
     "other" : 7
     "build" : 1
 ```
 
 ## Changes by Type
 
-### Fixes (fix) — 302 commits
+### Fixes (fix) — 303 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-30 | security | strip zero-width Unicode (U+200B) from a planning note flagged by the prompt-injection scan (#300) | e04991c66e81 |
 | 2026-06-30 | ci | pin ossf/scorecard-action by tag so publish stops failing (#297) | efca5737b380 |
 | 2026-06-30 | compliance | UTC-normalize the RTM Verification Timeline Date column (#295) | 64f89aa45cb7 |
 | 2026-06-29 | compliance | exempt items no longer flagged as deficits (bloat/tests/audit) (#292) | e8a9e53c1a75 |
@@ -615,10 +616,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 232 commits
+### Chores (chore) — 233 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-30 | iterate | refresh session handoff + triage after F11 | b4ecb1cb7e5b |
 | 2026-06-30 | ci | remove native OpenSSF Scorecard workflow (wrong anchor for AI-first) (#298) | 0962051d7704 |
 | 2026-06-29 | bloat | tighten baseline floors to on-disk LOC (Group H2) (#293) | 4594948315b5 |
 | 2026-06-28 | compliance | refresh CI-security summary to the clean post-#272 scan (A100) (#288) | dac886347e26 |
@@ -852,10 +854,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 142 commits
+### Documentation (docs) — 143 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-30 | conventions | record least-privilege workflow-permissions convention | 459b8b86e000 |
 | 2026-06-28 | lib | fix events_log lazy-import rationale (load_shared_lib isolation, not removed cycle) (#282) | faa96b699135 |
 | 2026-06-24 | images | update command-center board screenshot (#275) | 4cfb9d2dc9e3 |
 | 2026-06-21 | — | tighten the README hero and show what one iterate produces | 7cf1f4c6dadd |
@@ -1098,10 +1101,11 @@ pie title Commit Types
 | 2026-04-11 | — | complete test phase — 299 unit tests, 5 E2E tests, smoke PASS | e843d458942d |
 | 2026-04-11 | e2e | set up Playwright with E2E specs and smoke test results | cba0fd6e9012 |
 
-### CI/CD (ci) — 7 commits
+### CI/CD (ci) — 8 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-30 | security | least-privilege GITHUB_TOKEN permissions per workflow | db5de35d7eee |
 | 2026-06-05 | security | scope self-scan to shipped code (exclude tests/) | b49fa41db2ae |
 | 2026-06-05 | security-template | checkout at fetch-depth 1 (no scanner reads git history) | f6dd93918acf |
 | 2026-06-01 | — | pin third-party actions to SHA and verify gitleaks download integrity | 32bc15a5aa01 |
@@ -1132,7 +1136,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1063 |
+| Total commits | 1067 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1063 |
+| Human-authored commits | 1067 |
 

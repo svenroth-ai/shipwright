@@ -12,15 +12,15 @@ Scope: library
 
 | | Dimension | Signal | Anchor |
 |---|-----------|--------|--------|
-| ⚠️ | Requirement traceability | 14/14 FRs covered; 233/233 changes traced (FR-linked or classified no-FR); FR-tag rate 10% vs 18% all-time — declining | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
-| ✅ | Test health | latest full suite 3618/3618 (2026-06-29) | automated tests pass (OpenSSF Scorecard) |
-| ✅ | Change traceability | 233/233 changes linked to a commit, ADR or test run | change provenance (SLSA) |
+| ⚠️ | Requirement traceability | 14/14 FRs covered; 234/234 changes traced (FR-linked or classified no-FR); FR-tag rate 10% vs 18% all-time — declining | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
+| ✅ | Test health | latest full suite 3610/3610 (2026-06-30) | automated tests pass (OpenSSF Scorecard) |
+| ✅ | Change traceability | 234/234 changes linked to a commit, ADR or test run | change provenance (SLSA) |
 | ✅ | Change reconciliation | 0/4 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
 | ✅ | Security | 0 open high/critical | no open high/critical vulns (NIST SSDF) |
 | ✅ | Size / maintainability discipline | ratchet delta -9 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
 | ✅ | Dependency hygiene | 0 unresolved / 7 licenses; 0 copyleft | dependency license & risk (OWASP) |
 
-Verified from: `shipwright_events.jsonl (233 events, 2026-05-02 → 2026-06-30)`
+Verified from: `shipwright_events.jsonl (234 events, 2026-05-02 → 2026-06-30)`
 
 _Grade = importance-weighted average over the measurable dimensions (n/a excluded from the denominator), modeled on OpenSSF Scorecard. Age is neutral; only unreconciled change and net growth are control failures. Each Anchor names the open standard the dimension follows — see the guide's Control-Grade dimensions table._
 
@@ -50,9 +50,9 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Metric | Value | Status | Why warn? |
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
-| Work events (iterate) | 233 changes | INFO |  |
+| Work events (iterate) | 234 changes | INFO |  |
 | Recent changes traced to an FR | 3/30 (10%) | WARN | FR-tagging dropped to 10% (last 30) vs 18% all-time — recent changes classified no-FR; see the Control Verdict traceability dimension |
-| All unit tests passing | 3618/3618 | PASS | +6 change(s) since last full suite |
+| All unit tests passing | 3610/3610 | PASS | +1 change(s) since last full suite |
 | Architecture decisions | 235 ADRs | INFO |  |
 | Iterate tests passing | 37/42 testable changes tested | WARN | 5 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 7 packages | INFO |  |
@@ -64,7 +64,7 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 
 ## Project Velocity
 
-- Iterate: 233 changes (2026-05-02 → 2026-06-30)
+- Iterate: 234 changes (2026-05-02 → 2026-06-30)
 - Last activity: 2026-06-30
 
 ## External LLM Review Evidence
