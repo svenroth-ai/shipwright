@@ -1,21 +1,21 @@
 # Compliance Dashboard
 
-Generated: 2026-06-30T21:50:52.825435+00:00
+Generated: 2026-06-30T21:37:37.185087+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
 ## ✅ Control Verdict
 
-> **Controlled, minor gaps. Capped: traceability declining (FR-tag 10% vs 18% all-time, last 30).**
+> **Under full control. Primarily capped by test health.**
 
-### Control Grade: **B** (89/100) — Controlled, minor gaps.
+### Control Grade: **A** (100/100) — Under full control.
 
 | | Dimension | Signal | Anchor |
 |---|-----------|--------|--------|
-| ⚠️ | Requirement traceability | 14/14 FRs covered; 234/234 changes traced (FR-linked or classified no-FR); FR-tag rate 10% vs 18% all-time — declining | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
-| ✅ | Test health | latest full suite 3633/3633 (2026-06-30) | automated tests pass (OpenSSF Scorecard) |
+| ✅ | Requirement traceability | 14/14 FRs covered; 234/234 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
+| ✅ | Test health | latest full suite 4955/4967 (2026-06-30) | automated tests pass (OpenSSF Scorecard) |
 | ✅ | Change traceability | 234/234 changes linked to a commit, ADR or test run | change provenance (SLSA) |
-| ✅ | Change reconciliation | 0/4 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
+| ✅ | Change reconciliation | 0/5 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
 | ✅ | Security | 0 open high/critical | no open high/critical vulns (NIST SSDF) |
 | ✅ | Size / maintainability discipline | ratchet delta -9 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
 | ✅ | Dependency hygiene | 0 unresolved / 7 licenses; 0 copyleft | dependency license & risk (OWASP) |
@@ -51,13 +51,13 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
 | Work events (iterate) | 234 changes | INFO |  |
-| Recent changes traced to an FR | 3/30 (10%) | WARN | FR-tagging dropped to 10% (last 30) vs 18% all-time — recent changes classified no-FR; see the Control Verdict traceability dimension |
-| All unit tests passing | 3633/3633 | PASS |  |
+| Recent changes traced to an FR | 11/30 (37%) | PASS |  |
+| All unit tests passing | 4955/4967 | WARN | 12/4967 not green in last full suite — see test-evidence.md |
 | Architecture decisions | 235 ADRs | INFO |  |
-| Iterate tests passing | 37/42 testable changes tested | WARN | 5 testable change(s) without tests — see test-evidence.md |
+| Iterate tests passing | 42/50 testable changes tested | WARN | 8 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 7 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 6 open | WARN | 6 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Triage open | 3 open | WARN | 3 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit (grandfathered) | 127 | INFO |  |
 | Bloat in allowlist | 158 entries | INFO |  |
 | Bloat ratchet delta | -9 lines | PASS |  |

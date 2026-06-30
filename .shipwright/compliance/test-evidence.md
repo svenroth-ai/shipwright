@@ -1,20 +1,20 @@
 # Test Evidence Report
 
-Generated: 2026-06-30T21:50:52.825435+00:00
+Generated: 2026-06-30T21:37:37.185087+00:00
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 234 |
-| Total unit tests (latest full suite) | 3633/3633 (2026-06-30) |
+| Total unit tests (latest full suite) | 4955/4967 (2026-06-30) |
 | New tests from iterations | +220 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | Fixed a bug where one bad leftover note in the background triage buffer silently blocked ALL pending findings from being delivered; the bad note is now set aside and the good findings still get through. | [iterate](traceability-matrix.md#evt-dee1d490) | unit | +0 | 3633/3633 | PASS | 2026-06-30 |
+| 1 | Corrected the functional-requirement tags on recent compliance and security features so the audit grade honestly reflects the real work, lifting it from B back to A. | [iterate](traceability-matrix.md#evt-f90c7126) | unit | +0 | 4955/4967 | PASS (12 skipped) | 2026-06-30 |
 | 2 | Removed two invisible characters from an internal planning note that a security check had flagged. | [iterate](traceability-matrix.md#evt-87d55739) | — | +0 | — | — | 2026-06-30 |
 | 3 | Remove .github/workflows/scorecard.yml + its ci_gate_allowlist entry + the Added changelog drop. Keep the A+C grade work and the Scorecard methodology citation. Token-permissions + pinned-deps + branch-protection tracked as triage. | [iterate](traceability-matrix.md#evt-b89652cc) | — | +0 | — | — | 2026-06-30 |
 | 4 | Fix the red Scorecard workflow on main: the publish step failed 400 imposter-commit because the action was SHA-pinned; the OpenSSF publish API only verifies official release tags. Pin to @v2.4.3. | [iterate](traceability-matrix.md#evt-e1d5bdb0) | — | +0 | — | — | 2026-06-30 |
@@ -284,7 +284,7 @@ _Synthesized from per-iterate **unit** results — Integration / pgTAP / E2E / S
 | 27 | iterate | 3618/3618 | — | — | — | — | 2026-06-29 |
 | 28 | iterate | 894/894 | — | — | — | — | 2026-06-30 |
 | 29 | iterate | 897/897 | — | — | — | — | 2026-06-30 |
-| 30 | iterate | 3633/3633 | — | — | — | — | 2026-06-30 |
+| 30 | iterate | 4955/4967 | — | — | — | — | 2026-06-30 |
 
 ## Code Review Evidence
 

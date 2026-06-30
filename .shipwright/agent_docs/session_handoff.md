@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-30-sweep-outbox-quarantine-orphans"
+run_id: "iterate-2026-06-30-fr-retag-honesty"
 phase: "iterate"
-reason: "iterate: quarantine orphan-status in triage outbox sweep"
-timestamp: "2026-06-30T21:50:52.825435+00:00"
+reason: "iterate: re-tag mis-filed compliance/security work to FR-01.10/FR-01.07"
+timestamp: "2026-06-30T21:37:37.185087+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-30 21:50:52 UTC
+> Auto-generated 2026-06-30 21:37:37 UTC
 
 ## Session Info
 
-- **Session ID**: 5f73a0dc-14af-4a8b-a2f3-7844589c9752
-- **Timestamp**: 2026-06-30 21:50:52 UTC
-- **Reason**: iterate: quarantine orphan-status in triage outbox sweep
+- **Session ID**: a93268fc-73cb-47be-baab-2209bc730d47
+- **Timestamp**: 2026-06-30 21:37:37 UTC
+- **Reason**: iterate: re-tag mis-filed compliance/security work to FR-01.10/FR-01.07
 
 ## Last Iterate
 
@@ -28,13 +28,16 @@ timestamp: "2026-06-30T21:50:52.825435+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/sweep-outbox-quarantine-orphans
-- **Spec**: .shipwright/planning/iterate/2026-06-30-sweep-outbox-quarantine-orphans.md
+- **Branch**: iterate/fr-retag-honesty
+- **Run ID**: `iterate-2026-06-30-fr-retag-honesty`
+- **Spec**: .shipwright/planning/iterate/2026-06-30-fr-retag-honesty.md
+- **Complexity**: medium
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -48,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/sweep-outbox-quarantine-orphans
-- **Last Commit**: 9df6ecb3 chore(triage): sweep 30 outbox append(s) into branch
+- **Branch**: iterate/fr-retag-honesty
+- **Last Commit**: e04991c6 fix(security): strip zero-width Unicode (U+200B) from a planning note flagged by the prompt-injection scan (#300)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-dee1d490 | work_completed | iterate (Quarantine outbox-originating orphan-status lines in the triage sweep instead of hard-blocking the whole buffer; deliver the valid remainder) | 2026-06-30 |
-| evt-87d55739 | work_completed | iterate (Strip 2 zero-width-space (U+200B) chars from a planning note to clear a high prompt-injection scanner finding (UNICODE_ZERO_WIDTH_SPACE)) | 2026-06-30 |
-| evt-b89652cc | work_completed | iterate (Remove .github/workflows/scorecard.yml + its ci_gate_allowlist entry + the Added changelog drop. Keep the A+C grade work and the Scorecard methodology citation. Token-permissions + pinned-deps + branch-protection tracked as triage.) | 2026-06-30 |
-| evt-e1d5bdb0 | work_completed | iterate (Fix the red Scorecard workflow on main: the publish step failed 400 imposter-commit because the action was SHA-pinned; the OpenSSF publish API only verifies official release tags. Pin to @v2.4.3.) | 2026-06-30 |
-| evt-cf798241 | work_completed | iterate (RTM Verification Timeline Date column UTC-normalized (utc_date) so it reads monotonically descending across mixed-timezone events; a +02:00 near-midnight event no longer prints a local date one day off its sort position) | 2026-06-30 |
+| evt-f90c7126 | work_completed | iterate (Re-tag mis-filed compliance/security FEATURE work to FR-01.10/FR-01.07 via event_amended overlays; clears the honesty-gate FR-tag decline (Control Grade B->A)) | 2026-06-30 |
+| evt-0b72de69 | event_amended | — | 2026-06-30 |
+| evt-2cf2540c | event_amended | — | 2026-06-30 |
+| evt-e13851a3 | event_amended | — | 2026-06-30 |
+| evt-1fad1111 | event_amended | — | 2026-06-30 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 234
-- **Last iterate**: change — Quarantine outbox-originating orphan-status lines in the triage sweep instead of hard-blocking the whole buffer; deliver the valid remainder (2026-06-30)
+- **Last iterate**: change — Re-tag mis-filed compliance/security FEATURE work to FR-01.10/FR-01.07 via event_amended overlays; clears the honesty-gate FR-tag decline (Control Grade B->A) (2026-06-30)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
