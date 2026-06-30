@@ -238,3 +238,39 @@ class TestBuildGradeInputsReconciliation:
         req_ids = {r.id for r in reqs}
         assert inp.frs_behavior_touched == len(rec.behavior_touched & req_ids)
         assert inp.frs_unreconciled == len(rec.unreconciled & req_ids)
+
+
+class TestBuildGradeInputsHonestyGate:
+    """The adapter lights the traceability-decline trend + the dark-control
+    expectation that the _grade_gate honesty layer reads."""
+
+    def test_lights_fr_tag_trend_from_events(self):
+        # 2 FR-tagged + 1 untagged iterate event → 2/3 strict-tag rate.
+        events = [
+            _wev("2026-06-01T00:00:00+00:00", affected=["FR-1"]),
+            _wev("2026-06-02T00:00:00+00:00", affected=["FR-2"]),
+            _wev("2026-06-03T00:00:00+00:00"),  # untagged
+        ]
+        inp = build_grade_inputs(_data(events, [_req("FR-1"), _req("FR-2")]))
+        assert inp.fr_tag_window == 3
+        assert abs(inp.fr_tag_recent_pct - 2 / 3) < 1e-9
+        assert abs(inp.fr_tag_all_pct - 2 / 3) < 1e-9
+
+    def test_trend_is_none_signal_without_iterate_events(self):
+        inp = build_grade_inputs(_data([], [_req("FR-1")]))
+        assert inp.fr_tag_recent_pct is None
+        assert inp.fr_tag_all_pct is None
+
+    def test_security_expected_when_workflow_present(self, tmp_path):
+        (tmp_path / ".github" / "workflows").mkdir(parents=True)
+        (tmp_path / ".github" / "workflows" / "security.yml").write_text("on: {}")
+        data = SimpleNamespace(
+            work_events=[], requirements=[], dependencies=[],
+            project_root=tmp_path)
+        assert build_grade_inputs(data).expected_dimensions == ("security",)
+
+    def test_no_expectation_without_security_workflow(self, tmp_path):
+        data = SimpleNamespace(
+            work_events=[], requirements=[], dependencies=[],
+            project_root=tmp_path)
+        assert build_grade_inputs(data).expected_dimensions == ()

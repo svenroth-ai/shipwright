@@ -1,0 +1,1 @@
+Control Grade now gates the headline verdict on the weakest load-bearing control: a self-relative FR-tagging decline depresses the requirement dimension, and the grade is held below "A — full control" when a pillar is declining, configured-but-unmeasured, or collapsed — so a green grade can no longer mask a decayed control (Goodhart fix).

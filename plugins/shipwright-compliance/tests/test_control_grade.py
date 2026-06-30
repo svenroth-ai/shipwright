@@ -241,11 +241,13 @@ class TestAnchorClarity:
     methodology note reads in English — see the guide's dimensions table."""
 
     # The recognized open standards/frameworks an anchor may cite. A new anchor
-    # must name at least one of these (keeps the grade anchored to a public,
-    # googleable standard rather than prose or a vendor product).
+    # must name at least one of these. The safety-critical certification
+    # standards (DO-178C / IEC 62304 / ISO 26262) were retired for the
+    # software-engineering / secure-development standards below — see
+    # test_grade_gate.py for the no-safety-critical + single-standard guards.
     OPEN_STANDARDS = (
-        "DO-178C", "IEC 62304", "OpenSSF Scorecard", "SLSA",
-        "ISO 26262", "NIST SSDF", "OWASP", "ISO/IEC 25010",
+        "ISO/IEC/IEEE 29148", "ISO/IEC/IEEE 12207", "OpenSSF Scorecard",
+        "SLSA", "NIST SSDF", "OWASP", "ISO/IEC 25010",
     )
 
     def test_no_commercial_vendor_trademark_in_anchors(self):

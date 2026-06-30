@@ -1,69 +1,135 @@
 {
-  "iterate_latest": {
-    "run_id": "iterate-2026-06-30-compliance-artifact-usability",
-    "date": "2026-06-30",
-    "unit": {
-      "status": "passed",
-      "passed": 894,
-      "total": 894
+ "iterate_latest": {
+  "run_id": "iterate-2026-06-30-control-grade-honesty",
+  "date": "2026-06-30",
+  "unit": {
+   "status": "passed",
+   "passed": 919,
+   "total": 919
+  },
+  "integration": {
+   "status": "passed",
+   "passed": 174,
+   "total": 174
+  },
+  "pgtap": {
+   "status": "not_run",
+   "passed": 0,
+   "total": 0
+  },
+  "e2e": {
+   "status": "skipped",
+   "passed": 0,
+   "total": 0
+  },
+  "design_fidelity": {
+   "status": "skipped",
+   "passed": 0,
+   "total": 0
+  },
+  "smoke": {
+   "status": "not_run"
+  },
+  "surface_verification": {
+   "surface": "none",
+   "runner": "",
+   "exit_code": 0,
+   "tests_run": 0,
+   "evidence_path": "",
+   "timestamp": "2026-06-30T00:00:00.000Z",
+   "justification": "Change is a Python compliance-scoring library (_grade_gate / _grade_types / control_grade / _traceability / _control_block) plus a CI workflow and docs; no startable user-facing web/UI surface in this repo. Verified by the compliance suite (919), shared + cross-plugin integration (174), and a live-data probe (collect_all -> build_grade_inputs -> compute_grade) yielding the intended honest B/89 with 'traceability declining'. The WebUI that renders the dashboard is a separate repo (propagation is a named fast-follow)."
+  },
+  "test_completeness": {
+   "status": "complete",
+   "behaviors": [
+    {
+     "behavior": "Self-relative decline severity (freeze / relative-drop / stable-low / improvement)",
+     "disposition": "tested",
+     "evidence": "test_grade_gate.py::TestDeclineSeverity (5) PASSED"
     },
-    "integration": {
-      "status": "passed",
-      "passed": 15,
-      "total": 15
+    {
+     "behavior": "Capped (<=35%) traceability-decline penalty, never zeroing the dimension",
+     "disposition": "tested",
+     "evidence": "test_grade_gate.py::TestTraceabilityPenalty (3) PASSED"
     },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+    {
+     "behavior": "A traceability decline caps the headline below A with a 'declining' reason",
+     "disposition": "tested",
+     "evidence": "test_grade_gate.py::TestVerdictGateDecline::test_decline_caps_headline_below_A PASSED"
     },
-    "e2e": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
+    {
+     "behavior": "A non-binding decline does NOT claim 'Capped:' (raw already below ceiling)",
+     "disposition": "tested",
+     "evidence": "test_grade_gate.py::test_nonbinding_decline_does_not_claim_capped PASSED"
     },
-    "design_fidelity": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
+    {
+     "behavior": "A dark EXPECTED control caps below A and flags 'verification incomplete'; unexpected stays A",
+     "disposition": "tested",
+     "evidence": "test_grade_gate.py::TestVerdictGateDarkExpected (2) PASSED"
     },
-    "smoke": {
-      "status": "not_run"
+    {
+     "behavior": "A collapsed (F-band) load-bearing pillar caps the headline to F",
+     "disposition": "tested",
+     "evidence": "test_grade_gate.py::test_broken_load_bearing_pillar_caps_to_F PASSED"
     },
-    "surface_verification": {
-      "surface": "none",
-      "runner": "",
-      "exit_code": 0,
-      "tests_run": 0,
-      "evidence_path": "",
-      "timestamp": "2026-06-30T00:00:00.000Z",
-      "justification": "Internal compliance-artifact generators (test-evidence.md + traceability-matrix.md) plus one optional event-format field; no startable user-facing web/UI surface. Verified by the compliance suite (894), cross-plugin contract + enforcement (15), and a real-data render probe against the live event log (71 commit links, 40 FR links, descending timeline, summary fallback)."
+    {
+     "behavior": "The decline penalty NEVER triggers the F-collapse cap (review #1 regression)",
+     "disposition": "tested",
+     "evidence": "test_grade_gate.py::test_decline_penalty_never_triggers_the_F_collapse_cap PASSED"
     },
-    "test_completeness": {
-      "status": "complete",
-      "behaviors": [
-        { "behavior": "AC-1 Test Progression Source links canonical iterate event cross-file to its Verification Timeline row; non-canonical stays plain",
-          "disposition": "tested", "evidence": "test_compliance_artifact_usability.py::TestProgressionSourceLink (2) PASSED" },
-        { "behavior": "AC-2 Requirements Coverage (iter) token links to the latest-tested event timeline anchor; build stays plain",
-          "disposition": "tested", "evidence": "TestCoverageLinks::test_iter_token_links_same_file / test_build_source_stays_plain PASSED" },
-        { "behavior": "AC-3 each coverage row carries an in-document rtm-fr anchor placed after the requirement link",
-          "disposition": "tested", "evidence": "TestCoverageLinks::test_row_carries_in_document_anchor_after_link PASSED" },
-        { "behavior": "AC-4 Verification Timeline sorted descending (newest first); malformed timestamps sort last",
-          "disposition": "tested", "evidence": "TestTimelineDescending (2) PASSED" },
-        { "behavior": "AC-5 timeline FRs link declared FRs to their coverage-row anchor; unknown FRs stay plain",
-          "disposition": "tested", "evidence": "TestTimelineFrLinks (2) PASSED" },
-        { "behavior": "AC-6 commit links to host diff when repo url resolvable; empty commit / no url stays plain; git remote https+ssh resolution",
-          "disposition": "tested", "evidence": "TestCommitLink (7, incl. real-git probes) PASSED" },
-        { "behavior": "AC-7 Event label prefers authored summary, else cleaned description (strips iterate: prefix), else id; from_dict round-trip",
-          "disposition": "tested", "evidence": "TestEventDisplayName (5) PASSED" },
-        { "behavior": "AC-8 F5b reference documents authoring the summary field",
-          "disposition": "tested", "evidence": "test_f5b_reference_documents_summary_field PASSED" },
-        { "behavior": "AC-9 synthesized Full Suite Runs carries the honest unit-only note; real test_run path has none",
-          "disposition": "tested", "evidence": "TestFullSuiteNote (2) PASSED" }
-      ],
-      "counts": { "testable": 9, "tested": 9, "untestable": 0, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 9, "covered_acs": 9 }
+    {
+     "behavior": "A broken supporting/excluded dim does not hard-cap; one open critical is a gap not a cap",
+     "disposition": "tested",
+     "evidence": "test_grade_gate.py::test_broken_supporting_dim_does_not_hard_cap + test_one_open_critical_is_a_gap_not_a_hard_cap PASSED"
     },
-    "degraded": []
-  }
+    {
+     "behavior": "Anchors cite no safety-critical standard and exactly one open standard each",
+     "disposition": "tested",
+     "evidence": "test_grade_gate.py::TestAnchorPivot (3) + test_control_grade.py::test_every_anchor_names_an_open_standard PASSED"
+    },
+    {
+     "behavior": "The adapter lights the fr_tag trend + the security expectation from repo state",
+     "disposition": "tested",
+     "evidence": "test_reconciliation.py::TestBuildGradeInputsHonestyGate (4) PASSED"
+    },
+    {
+     "behavior": "fr_tag_trend SSoT keeps the dashboard 'Recent changes traced to an FR' row byte-identical",
+     "disposition": "tested",
+     "evidence": "test_traceability.py::TestRenderTracedRow (existing, unchanged) PASSED"
+    },
+    {
+     "behavior": "Back-compat: with no trend/expectation signal the pure scorer behaves identically",
+     "disposition": "tested",
+     "evidence": "test_control_grade.py (pre-existing fixtures incl. test_real_shipwright_case_grades_B) PASSED"
+    },
+    {
+     "behavior": "control_grade.py value model split to _grade_types.py imports/re-exports cleanly",
+     "disposition": "tested",
+     "evidence": "full compliance suite 919 PASSED + ruff clean"
+    },
+    {
+     "behavior": "scorecard.yml runs the native ossf/scorecard-action in CI",
+     "disposition": "untestable",
+     "reason_code": "requires-external-nondeterministic-service",
+     "note": "GitHub Actions runtime; YAML parse verified, SHA-pinned @v2.4.3, repo confirmed PUBLIC, job guarded to canonical repo."
+    }
+   ],
+   "counts": {
+    "tested": 13,
+    "untestable": 1,
+    "untested_testable": 0,
+    "total": 14
+   },
+   "enumeration_basis": {
+    "acs": 7,
+    "covered_acs": 7
+   }
+  },
+  "degraded": [
+   {
+    "area": "external_llm_review",
+    "reason": "check-external-review-keys.py not present at the expected shared/scripts/tools path in this worktree; external review treated as advisory/opt-out. Mitigated by an independent adversarial opus code review (1 blocker found + fixed) + full suite + ruff."
+   }
+  ]
+ }
 }

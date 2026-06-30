@@ -9,20 +9,35 @@ dependency on Shipwright's collectors. A thin adapter
 onto ``GradeInputs``; a future generic-grader plugin populates the same
 struct from any repo's data and reuses ``compute_grade`` unchanged.
 
-Methodology — *in Anlehnung an* **OpenSSF Scorecard** (Apache-2.0): the
-aggregate is an importance-weighted average of per-dimension [0, 1] scores,
-and a dimension that cannot be evaluated is excluded from the denominator
-(Scorecard's ``-1`` "inconclusive" convention) rather than scored 0. If no
-dimension can be measured the result is "Not Gradeable" — never an unearned
-``F``. A measurable-but-poor dimension *does* score low and *does* count:
-``failed != n/a``. Each dimension carries an ``anchor`` naming the recognized
-standard it follows (DO-178C/RTM, SLSA, NIST SSDF, OWASP, ISO 25010), so the
-rubric is defensible rather than bespoke.
+Methodology — *modeled on* **OpenSSF Scorecard** (Apache-2.0): the aggregate is
+an importance-weighted average of per-dimension [0, 1] scores, and a dimension
+that cannot be evaluated is excluded from the denominator (Scorecard's ``-1``
+"inconclusive" convention) rather than scored 0. If no dimension can be measured
+the result is "Not Gradeable" — never an unearned ``F``. A measurable-but-poor
+dimension *does* score low and *does* count: ``failed != n/a``. Each dimension
+carries an ``anchor`` naming the recognized **open** standard it follows
+(ISO/IEC/IEEE 29148/12207, SLSA, NIST SSDF, OWASP, ISO/IEC 25010, OpenSSF
+Scorecard), so the rubric is defensible rather than bespoke — and a CI dashboard
+deliberately does *not* borrow safety-certification (DO-178C/IEC 62304)
+vocabulary it cannot honestly claim.
+
+The raw average is then passed through :mod:`scripts.lib._grade_gate` (the
+honesty layer): a self-relative traceability decline depresses the requirement
+dimension, and the headline is capped below "A — full control" when a
+load-bearing pillar is declining, dark-but-expected, or broken — so the headline
+can't lie while the per-dimension table keeps the full detail.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from scripts.lib._grade_gate import (
+    apply_traceability_penalty,
+    apply_verdict_gate,
+)
+from scripts.lib._grade_types import DimensionResult, GradeInputs, GradeReport
+
+# Re-export the value model so external callers keep importing it from here.
+__all__ = ["GradeInputs", "DimensionResult", "GradeReport", "compute_grade"]
 
 
 # --- Bands (per the agreed rubric; 50-point F-floor has SQALE precedent) ----
@@ -38,87 +53,6 @@ _BANDS: list[tuple[float, str, str]] = [
 _NOT_GRADEABLE_VERDICT = (
     "Not gradeable — no control dimension could be measured for this repository."
 )
-
-# Status thresholds for the per-dimension marker.
-_OK_THRESHOLD = 0.9
-
-
-@dataclass
-class GradeInputs:
-    """Normalized, repo-agnostic inputs for :func:`compute_grade`.
-
-    Every field is a plain count/flag so any grader (Shipwright or the
-    future generic plugin) can populate it. ``None`` on an optional signal
-    means "not measurable here" → that dimension is excluded from the score.
-    """
-
-    # Requirement traceability
-    frs_total: int = 0
-    frs_covered: int = 0
-    events_total: int = 0
-    # Changes *traced* to a requirement decision: FR-linked OR satisfied no-FR
-    # (adapter decides; see _traceability.count_traced). "_fr_tagged" = back-compat.
-    events_fr_tagged: int = 0
-    # Test health (latest *full* suite, not the last event)
-    latest_full_suite_passed: int | None = None
-    latest_full_suite_total: int | None = None
-    latest_full_suite_date: str = ""
-    # Change → commit/ADR/test provenance
-    events_with_provenance: int = 0
-    # Change reconciliation (BP-2 — behavior-affecting impact persisted)
-    reconciliation_measurable: bool = False
-    frs_behavior_touched: int = 0
-    frs_unreconciled: int = 0
-    # Security (None → no trustworthy local signal; see AR-10 CI ingest)
-    security_measurable: bool = False
-    security_open_high_critical: int | None = None
-    # Size / maintainability (net ratchet growth; None → no baseline)
-    bloat_ratchet_delta: int | None = None
-    # Dependency hygiene
-    deps_total: int = 0
-    deps_unknown_license: int = 0
-    deps_copyleft: int = 0
-    # Provenance stamp (for reproducibility, per Scorecard Version/SHA/Date)
-    verified_from: str = ""
-
-
-@dataclass
-class DimensionResult:
-    """One scored dimension. ``score is None`` ⇒ excluded (n/a)."""
-
-    key: str
-    label: str
-    weight: float
-    score: float | None
-    anchor: str
-    detail: str
-
-    @property
-    def status(self) -> str:
-        if self.score is None:
-            return "n/a"
-        return "ok" if self.score >= _OK_THRESHOLD else "gap"
-
-    @property
-    def weighted_loss(self) -> float:
-        """Points (in weight units) lost — drives the 'top reasons' list."""
-        if self.score is None:
-            return 0.0
-        return self.weight * (1.0 - self.score)
-
-
-@dataclass
-class GradeReport:
-    """Result of a grade computation."""
-
-    gradeable: bool
-    score: float | None          # 0–100, or None when not gradeable
-    grade: str                   # "A".."F", or "?" when not gradeable
-    verdict: str
-    band_label: str
-    dimensions: list[DimensionResult] = field(default_factory=list)
-    reasons: list[str] = field(default_factory=list)
-    verified_from: str = ""
 
 
 def _ratio(num: int, den: int) -> float:
@@ -145,11 +79,16 @@ def _score_dimensions(inp: GradeInputs) -> list[DimensionResult]:
             f"{inp.events_fr_tagged}/{inp.events_total} changes traced "
             "(FR-linked or classified no-FR)"
         )
+        # Honesty gate: a self-relative FR-tag decline depresses this dimension
+        # (capped) so a broad "classified no-FR" credit can't mask a freeze.
+        req_score, _decline_suffix = apply_traceability_penalty(req_score, inp)
+        req_detail += _decline_suffix
     else:
         req_score, req_detail = None, "no requirements declared"
     dims.append(DimensionResult(
         "requirement_traceability", "Requirement traceability", 0.25,
-        req_score, "requirement-to-work traceability (DO-178C, IEC 62304)", req_detail,
+        req_score, "requirement-to-work traceability (ISO/IEC/IEEE 29148)",
+        req_detail,
     ))
 
     # 2. Test health (20%) — latest *full* suite pass-ratio.
@@ -181,7 +120,7 @@ def _score_dimensions(inp: GradeInputs) -> list[DimensionResult]:
         ct_score, ct_detail = None, "no change events recorded"
     dims.append(DimensionResult(
         "change_traceability", "Change traceability", 0.15,
-        ct_score, "change provenance (SLSA, OpenSSF Scorecard)", ct_detail,
+        ct_score, "change provenance (SLSA)", ct_detail,
     ))
 
     # 4. Change reconciliation (15%) — needs BP-2 behavior-affecting impact.
@@ -201,7 +140,7 @@ def _score_dimensions(inp: GradeInputs) -> list[DimensionResult]:
         rec_detail = "not measurable — needs per-change behavior-impact (BP-2)"
     dims.append(DimensionResult(
         "change_reconciliation", "Change reconciliation", 0.15,
-        rec_score, "re-verify changed requirements (DO-178C, ISO 26262)",
+        rec_score, "re-verify changed requirements (ISO/IEC/IEEE 12207)",
         rec_detail,
     ))
 
@@ -216,7 +155,7 @@ def _score_dimensions(inp: GradeInputs) -> list[DimensionResult]:
         sec_detail = "no trustworthy local scan (see CI security gate)"
     dims.append(DimensionResult(
         "security", "Security", 0.10,
-        sec_score, "no open high/critical vulns (NIST SSDF, OWASP)", sec_detail,
+        sec_score, "no open high/critical vulns (NIST SSDF)", sec_detail,
     ))
 
     # 6. Size / maintainability (10%) — net ratchet growth (delta <= 0 good).
@@ -244,7 +183,7 @@ def _score_dimensions(inp: GradeInputs) -> list[DimensionResult]:
         dep_score, dep_detail = None, "no dependencies declared"
     dims.append(DimensionResult(
         "dependency_hygiene", "Dependency hygiene", 0.05,
-        dep_score, "dependency license & risk (OWASP, OpenSSF Scorecard)", dep_detail,
+        dep_score, "dependency license & risk (OWASP)", dep_detail,
     ))
 
     return dims
@@ -279,19 +218,34 @@ def compute_grade(inp: GradeInputs) -> GradeReport:
     weighted = sum(d.weight * d.score for d in measurable)
     # Clamp to [0, 100] — dimension scores are already [0, 1], this makes the
     # contract explicit and bulletproof against out-of-range adapter inputs.
-    score100 = max(0.0, min(100.0, round(weighted / total_weight * 100.0, 1)))
-    grade, band_label = _band(score100)
+    raw_score = max(0.0, min(100.0, round(weighted / total_weight * 100.0, 1)))
 
-    # Top 1–3 reasons = dimensions that lost the most weighted points.
+    # Honesty gate: cap the headline (score + letter together) when a
+    # load-bearing pillar is declining, dark-but-expected, or broken. The number
+    # stays the weighted average unless a gate condition fires.
+    ceiling, gate_reasons = apply_verdict_gate(inp, dims, raw_score)
+    score100 = min(raw_score, ceiling)
+    grade, band_label = _band(score100)
+    # The gate only owns the headline when it actually lowered it; a non-binding
+    # condition (raw already below the ceiling) must not claim "Capped:".
+    gate_binding = bool(gate_reasons) and ceiling < raw_score
+
+    # Top reasons: when the gate capped the headline its why leads (it explains
+    # the cap); otherwise the dimensions that lost the most weighted points —
+    # capped at three total.
     losers = sorted(
         (d for d in measurable if d.weighted_loss > 0),
         key=lambda d: d.weighted_loss, reverse=True,
-    )[:3]
-    reasons = [f"{d.label}: {d.detail}" for d in losers]
-
-    verdict = band_label
-    if losers:
-        verdict = f"{band_label} Primarily capped by {losers[0].label.lower()}."
+    )
+    loser_reasons = [f"{d.label}: {d.detail}" for d in losers]
+    if gate_binding:
+        reasons = (gate_reasons + loser_reasons)[:3]
+        verdict = f"{band_label} Capped: {gate_reasons[0]}."
+    else:
+        reasons = loser_reasons[:3]
+        verdict = band_label
+        if losers:
+            verdict = f"{band_label} Primarily capped by {losers[0].label.lower()}."
 
     return GradeReport(
         gradeable=True, score=score100, grade=grade, verdict=verdict,

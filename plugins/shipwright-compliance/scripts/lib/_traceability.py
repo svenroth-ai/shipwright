@@ -94,27 +94,49 @@ def _pct(num: int, den: int) -> float:
     return (num / den) if den else 0.0
 
 
+def fr_tag_trend(work_events) -> dict | None:
+    """Strict genuine-FR-tag rate over the recent window vs all-time.
+
+    Returns ``None`` when there are no iterate events (no trend to assess);
+    otherwise ``{recent_tagged, window, all_tagged, total, recent_pct, all_pct}``.
+    The shared SSoT for :func:`render_traced_row` (the Quality-Indicators row) and
+    the Control-Grade traceability-decline gate (``GradeInputs.fr_tag_*_pct``), so
+    the dashboard row and the grade can never disagree about the freeze."""
+    iterate = [we for we in work_events if we.source == "iterate"]
+    if not iterate:
+        return None
+    all_tagged = sum(
+        1 for we in iterate if _fc.is_fr_tagged(we.affected_frs, we.new_frs))
+    window = iterate[-_RECENT_WINDOW:]
+    recent_tagged = sum(
+        1 for we in window if _fc.is_fr_tagged(we.affected_frs, we.new_frs))
+    return {
+        "recent_tagged": recent_tagged,
+        "window": len(window),
+        "all_tagged": all_tagged,
+        "total": len(iterate),
+        "recent_pct": _pct(recent_tagged, len(window)),
+        "all_pct": _pct(all_tagged, len(iterate)),
+    }
+
+
 def render_traced_row(work_events) -> str:
     """The '% of recent changes traced to an FR' Quality-Indicators row.
 
     Measures genuine FR-linkage (``affected_frs``/``new_frs``) — NOT the broader
     'classified' notion — over the last :data:`_RECENT_WINDOW` iterate changes,
     and WARNs when that rate has dropped below the all-time rate (a freeze)."""
-    iterate = [we for we in work_events if we.source == "iterate"]
-    if not iterate:
+    trend = fr_tag_trend(work_events)
+    if trend is None:
         return (
             "| Recent changes traced to an FR | n/a | n/a | "
             "no iterate changes recorded yet |"
         )
 
-    all_tagged = sum(
-        1 for we in iterate if _fc.is_fr_tagged(we.affected_frs, we.new_frs))
-    window = iterate[-_RECENT_WINDOW:]
-    recent_tagged = sum(
-        1 for we in window if _fc.is_fr_tagged(we.affected_frs, we.new_frs))
-
-    recent_pct = _pct(recent_tagged, len(window))
-    all_pct = _pct(all_tagged, len(iterate))
+    recent_tagged = trend["recent_tagged"]
+    window = trend["window"]
+    recent_pct = trend["recent_pct"]
+    all_pct = trend["all_pct"]
 
     # WARN on a freeze, two ways: a relative drop below the all-time rate, OR an
     # absolute floor — zero FR-tags in the recent window (a steady-state freeze
@@ -122,13 +144,13 @@ def render_traced_row(work_events) -> str:
     # "X/N (P%)" stays honest regardless of the badge.
     if recent_tagged == 0:
         why = (
-            f"no recent change carries an FR tag (last {len(window)}) — "
+            f"no recent change carries an FR tag (last {window}) — "
             "FR-tagging is frozen; see the Control Verdict traceability dimension"
         )
         badge = "WARN"
     elif recent_pct < all_pct:
         why = (
-            f"FR-tagging dropped to {recent_pct:.0%} (last {len(window)}) vs "
+            f"FR-tagging dropped to {recent_pct:.0%} (last {window}) vs "
             f"{all_pct:.0%} all-time — recent changes classified no-FR; see the "
             "Control Verdict traceability dimension"
         )
@@ -137,6 +159,6 @@ def render_traced_row(work_events) -> str:
         why = ""
         badge = "PASS"
     return (
-        f"| Recent changes traced to an FR | {recent_tagged}/{len(window)} "
+        f"| Recent changes traced to an FR | {recent_tagged}/{window} "
         f"({recent_pct:.0%}) | {badge} | {why} |"
     )

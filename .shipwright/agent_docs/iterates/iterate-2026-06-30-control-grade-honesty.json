@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-30-control-grade-honesty",
+  "date": "2026-06-30T13:59:58.094217Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/control-grade-honesty",
+  "spec": ".shipwright/planning/iterate/2026-06-30-control-grade-honesty.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-30-control-grade-honesty"
+}
