@@ -57,6 +57,24 @@ def timeline_order(events):
     return sorted(events, key=_key, reverse=True)
 
 
+def utc_date(ts: str) -> str:
+    """Date (YYYY-MM-DD) in the SAME frame ``timeline_order`` sorts by — UTC.
+
+    The Verification Timeline sorts by absolute instant, but a literal ``ts[:10]``
+    shows the event's local-offset date, so a non-UTC event recorded near
+    midnight prints a date one day off its sort position (a visual inversion).
+    Normalizing the displayed date to UTC keeps the Date column monotonic.
+    Falls back to the literal ``ts[:10]`` prefix when the timestamp won't parse.
+    """
+    try:
+        dt = datetime.fromisoformat((ts or "").replace("Z", "+00:00"))
+    except (ValueError, AttributeError, TypeError):
+        return (ts or "")[:10]
+    if dt.tzinfo is not None:
+        dt = dt.astimezone(timezone.utc)
+    return dt.strftime("%Y-%m-%d")
+
+
 def resolve_repo_url(project_root) -> str:
     """Best-effort HTTPS base of the project's ``origin`` remote, else ``""``.
 
@@ -125,4 +143,5 @@ __all__ = [
     "link_frs",
     "resolve_repo_url",
     "timeline_order",
+    "utc_date",
 ]
