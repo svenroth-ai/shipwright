@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-30T13:13:15.166540+00:00
+Generated: 2026-06-30T13:58:18.154430+00:00
 
 ## Requirements Coverage
 
@@ -27,6 +27,7 @@ Generated: 2026-06-30T13:13:15.166540+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-bcd40c31"></a>Goodhart-resistant Control Grade: honesty layer caps the headline on the weakest load-bearing control; anchors pivoted to open SE/NIST standards; native scorecard.yml. | iterate | change |  | — | — | 2026-06-30 |
 | <a id="evt-cf798241"></a>Fixed the dates in the traceability timeline so they always count down correctly, even for entries recorded in a different time zone. | iterate | bug | [FR-01.10](#rtm-fr-0110) | 897/897 | — | 2026-06-30 |
 | <a id="evt-ad994b33"></a>Made the compliance reports easier to navigate: you can now click from an entry to its details, requirements, and code change, and entries can show a plain-language summary instead of only the technical text. | iterate | change | [FR-01.10](#rtm-fr-0110) | 894/894 | — | 2026-06-30 |
 | <a id="evt-244f895d"></a>tighten bloat baseline current to on-disk LOC (Group H2) | iterate | change |  | 3618/3618 | — | 2026-06-29 |
@@ -263,7 +264,7 @@ Generated: 2026-06-30T13:13:15.166540+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 229 |
+| Iterate changes | 230 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
