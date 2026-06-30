@@ -1,0 +1,1 @@
+Control-Grade dimension anchors pivoted off the safety-critical certification standards (DO-178C / IEC 62304 / ISO 26262) to a single open software-engineering / secure-development standard each (ISO/IEC/IEEE 29148, ISO/IEC/IEEE 12207, NIST SSDF, SLSA, OWASP), de-crowding the dashboard.

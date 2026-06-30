@@ -1,11 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-06-30 13:13 UTC | Session: 07bc0ece-2501-4f67-91c1-69c2c92e929a | Run: iterate-2026-06-30-timeline-utc-date
+> Updated: 2026-06-30 13:58 UTC | Session: 998fb4e1-d677-4d0a-89cf-cec4a7c4a6ee | Run: iterate-2026-06-30-control-grade-honesty
 
-## Recent Changes (229 iterations)
+## Recent Changes (230 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
 | bug | RTM Verification Timeline Date column UTC-normalized (utc_date) so it reads monotonically descending across mixed-timezone events; a +02:00 near-midnight event no longer prints a local date one day off its sort position | +3 new, 897/897 |  | FR-01.10 | 2026-06-30 |
+| change | Goodhart-resistant Control Grade: honesty layer caps the headline on the weakest load-bearing control; anchors pivoted to open SE/NIST standards; native scorecard.yml. | 0/0 |  | compliance | 2026-06-30 |
 | change | Navigable compliance artifacts (test-evidence + traceability-matrix): linked iterate/(iter) tokens, descending Verification Timeline, FR + commit links, plain-language summary-preferred Event labels, honest synthesized Full-Suite note | +26 new, 894/894 |  | FR-01.10 | 2026-06-30 |
 | change | tighten bloat baseline current to on-disk LOC (Group H2) | 3618/3618 |  | compliance | 2026-06-29 |
 | change | Compliance producers stop flagging legitimately-exempt items as deficits: grandfathered bloat over-limit renders INFO (ratchet delta stays the WARN), the iterate-tests denominator excludes satisfied-no-FR changes, audit Suggested lines emit only on FAIL, and routine regens stamp a churn-free staleness banner on audit-report.md. | 868/868 |  | compliance | 2026-06-29 |
@@ -236,7 +237,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-30 | Unit: 897/897 | Smoke: not_run | (iterate)
+Last run: 2026-06-30 | Unit: 919/919 | Integration: 174/174 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

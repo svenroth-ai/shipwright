@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-06-30T13:13:15.166540+00:00
-Total commits: 1059
+Generated: 2026-06-30T13:58:18.154430+00:00
+Total commits: 1061
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 300
-    "feat" : 282
+    "fix" : 301
+    "feat" : 283
     "chore" : 231
     "docs" : 142
     "refactor" : 64
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 300 commits
+### Fixes (fix) — 301 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-30 | compliance | UTC-normalize the RTM Verification Timeline Date column (#295) | 64f89aa45cb7 |
 | 2026-06-29 | compliance | exempt items no longer flagged as deficits (bloat/tests/audit) (#292) | e8a9e53c1a75 |
 | 2026-06-28 | compliance | maintainability grade anchor describes the check, not the label (#290) | e96a989ab04c |
 | 2026-06-28 | compliance | SBOM dedup by installed version + honest license verdict (AR-04) (#286) | f4498bb30ccc |
@@ -325,10 +326,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 282 commits
+### Features (feat) — 283 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-30 | compliance | honesty gate for the Control Grade + native Scorecard | def7a069600e |
 | 2026-06-30 | compliance | navigable test-evidence + traceability artifacts; plain-language Event labels (#294) | 7d8c9f6220bb |
 | 2026-06-28 | compliance | AR-10 SARIF-ingestion fallback so adopted repos light the Security dimension (#291) | 27e1251be0b8 |
 | 2026-06-28 | compliance | plain-language, open-standard-only Control-Grade anchors + dimensions guide (#289) | 9a4dbec16894 |
@@ -1128,7 +1130,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1059 |
+| Total commits | 1061 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1059 |
+| Human-authored commits | 1061 |
 

@@ -1,35 +1,135 @@
 {
-  "iterate_latest": {
-    "run_id": "iterate-2026-06-30-timeline-utc-date",
-    "date": "2026-06-30",
-    "unit": { "status": "passed", "passed": 897, "total": 897 },
-    "integration": { "status": "not_run", "passed": 0, "total": 0 },
-    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
-    "e2e": { "status": "skipped", "passed": 0, "total": 0 },
-    "design_fidelity": { "status": "skipped", "passed": 0, "total": 0 },
-    "smoke": { "status": "not_run" },
-    "surface_verification": {
-      "surface": "none",
-      "runner": "",
-      "exit_code": 0,
-      "tests_run": 0,
-      "evidence_path": "",
-      "timestamp": "2026-06-30T00:00:00.000Z",
-      "justification": "Internal RTM renderer date-formatting fix (Verification Timeline Date column); no startable user-facing surface. Verified by the compliance suite (897) and a real-data probe: re-rendering the live webui event log with the fix yields 0 date-column inversions (was 1) and the +02:00 event now shows its UTC date 2026-05-12."
+ "iterate_latest": {
+  "run_id": "iterate-2026-06-30-control-grade-honesty",
+  "date": "2026-06-30",
+  "unit": {
+   "status": "passed",
+   "passed": 919,
+   "total": 919
+  },
+  "integration": {
+   "status": "passed",
+   "passed": 174,
+   "total": 174
+  },
+  "pgtap": {
+   "status": "not_run",
+   "passed": 0,
+   "total": 0
+  },
+  "e2e": {
+   "status": "skipped",
+   "passed": 0,
+   "total": 0
+  },
+  "design_fidelity": {
+   "status": "skipped",
+   "passed": 0,
+   "total": 0
+  },
+  "smoke": {
+   "status": "not_run"
+  },
+  "surface_verification": {
+   "surface": "none",
+   "runner": "",
+   "exit_code": 0,
+   "tests_run": 0,
+   "evidence_path": "",
+   "timestamp": "2026-06-30T00:00:00.000Z",
+   "justification": "Change is a Python compliance-scoring library (_grade_gate / _grade_types / control_grade / _traceability / _control_block) plus a CI workflow and docs; no startable user-facing web/UI surface in this repo. Verified by the compliance suite (919), shared + cross-plugin integration (174), and a live-data probe (collect_all -> build_grade_inputs -> compute_grade) yielding the intended honest B/89 with 'traceability declining'. The WebUI that renders the dashboard is a separate repo (propagation is a named fast-follow)."
+  },
+  "test_completeness": {
+   "status": "complete",
+   "behaviors": [
+    {
+     "behavior": "Self-relative decline severity (freeze / relative-drop / stable-low / improvement)",
+     "disposition": "tested",
+     "evidence": "test_grade_gate.py::TestDeclineSeverity (5) PASSED"
     },
-    "test_completeness": {
-      "status": "complete",
-      "behaviors": [
-        { "behavior": "utc_date normalizes a non-UTC offset to the UTC date (e.g. 00:27+02:00 -> previous-day 2026-05-12)",
-          "disposition": "tested", "evidence": "TestTimelineUtcDate::test_utc_date_normalizes_offset PASSED" },
-        { "behavior": "utc_date falls back to the literal ts[:10] prefix when the timestamp won't parse",
-          "disposition": "tested", "evidence": "TestTimelineUtcDate::test_utc_date_fallback_on_unparseable PASSED" },
-        { "behavior": "Verification Timeline Date column is monotonic descending across mixed-timezone events; the +02:00 event renders its UTC date, not local",
-          "disposition": "tested", "evidence": "TestTimelineUtcDate::test_timeline_date_column_monotonic_across_timezones PASSED + real webui-data probe (0 inversions)" }
-      ],
-      "counts": { "testable": 3, "tested": 3, "untestable": 0, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 3, "covered_acs": 3 }
+    {
+     "behavior": "Capped (<=35%) traceability-decline penalty, never zeroing the dimension",
+     "disposition": "tested",
+     "evidence": "test_grade_gate.py::TestTraceabilityPenalty (3) PASSED"
     },
-    "degraded": []
-  }
+    {
+     "behavior": "A traceability decline caps the headline below A with a 'declining' reason",
+     "disposition": "tested",
+     "evidence": "test_grade_gate.py::TestVerdictGateDecline::test_decline_caps_headline_below_A PASSED"
+    },
+    {
+     "behavior": "A non-binding decline does NOT claim 'Capped:' (raw already below ceiling)",
+     "disposition": "tested",
+     "evidence": "test_grade_gate.py::test_nonbinding_decline_does_not_claim_capped PASSED"
+    },
+    {
+     "behavior": "A dark EXPECTED control caps below A and flags 'verification incomplete'; unexpected stays A",
+     "disposition": "tested",
+     "evidence": "test_grade_gate.py::TestVerdictGateDarkExpected (2) PASSED"
+    },
+    {
+     "behavior": "A collapsed (F-band) load-bearing pillar caps the headline to F",
+     "disposition": "tested",
+     "evidence": "test_grade_gate.py::test_broken_load_bearing_pillar_caps_to_F PASSED"
+    },
+    {
+     "behavior": "The decline penalty NEVER triggers the F-collapse cap (review #1 regression)",
+     "disposition": "tested",
+     "evidence": "test_grade_gate.py::test_decline_penalty_never_triggers_the_F_collapse_cap PASSED"
+    },
+    {
+     "behavior": "A broken supporting/excluded dim does not hard-cap; one open critical is a gap not a cap",
+     "disposition": "tested",
+     "evidence": "test_grade_gate.py::test_broken_supporting_dim_does_not_hard_cap + test_one_open_critical_is_a_gap_not_a_hard_cap PASSED"
+    },
+    {
+     "behavior": "Anchors cite no safety-critical standard and exactly one open standard each",
+     "disposition": "tested",
+     "evidence": "test_grade_gate.py::TestAnchorPivot (3) + test_control_grade.py::test_every_anchor_names_an_open_standard PASSED"
+    },
+    {
+     "behavior": "The adapter lights the fr_tag trend + the security expectation from repo state",
+     "disposition": "tested",
+     "evidence": "test_reconciliation.py::TestBuildGradeInputsHonestyGate (4) PASSED"
+    },
+    {
+     "behavior": "fr_tag_trend SSoT keeps the dashboard 'Recent changes traced to an FR' row byte-identical",
+     "disposition": "tested",
+     "evidence": "test_traceability.py::TestRenderTracedRow (existing, unchanged) PASSED"
+    },
+    {
+     "behavior": "Back-compat: with no trend/expectation signal the pure scorer behaves identically",
+     "disposition": "tested",
+     "evidence": "test_control_grade.py (pre-existing fixtures incl. test_real_shipwright_case_grades_B) PASSED"
+    },
+    {
+     "behavior": "control_grade.py value model split to _grade_types.py imports/re-exports cleanly",
+     "disposition": "tested",
+     "evidence": "full compliance suite 919 PASSED + ruff clean"
+    },
+    {
+     "behavior": "scorecard.yml runs the native ossf/scorecard-action in CI",
+     "disposition": "untestable",
+     "reason_code": "requires-external-nondeterministic-service",
+     "note": "GitHub Actions runtime; YAML parse verified, SHA-pinned @v2.4.3, repo confirmed PUBLIC, job guarded to canonical repo."
+    }
+   ],
+   "counts": {
+    "tested": 13,
+    "untestable": 1,
+    "untested_testable": 0,
+    "total": 14
+   },
+   "enumeration_basis": {
+    "acs": 7,
+    "covered_acs": 7
+   }
+  },
+  "degraded": [
+   {
+    "area": "external_llm_review",
+    "reason": "check-external-review-keys.py not present at the expected shared/scripts/tools path in this worktree; external review treated as advisory/opt-out. Mitigated by an independent adversarial opus code review (1 blocker found + fixed) + full suite + ruff."
+   }
+  ]
+ }
 }
