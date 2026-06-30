@@ -9,6 +9,12 @@ on:
     - cron: '0 6 * * 1'
   workflow_dispatch:
 
+# Least-privilege GITHUB_TOKEN (OpenSSF Scorecard Token-Permissions): read-only
+# default for any future job; the analyze job below widens itself to the exact
+# scopes codeql-action needs (security-events: write for the SARIF upload).
+permissions:
+  contents: read
+
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})

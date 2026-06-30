@@ -42,10 +42,25 @@ def test_workflow_triggers_on_pull_request_not_target():
 
 
 def test_workflow_permissions_minimal():
+    # Least-privilege GITHUB_TOKEN (OpenSSF Scorecard Token-Permissions): the
+    # top-level token is read-only (contents:read, NO write scope) and the
+    # single `bloat-check` job widens itself to pull-requests:write for the
+    # comment-post step. A job-level block REPLACES (not merges with) the
+    # top-level in GitHub Actions, so the job must re-declare contents:read.
     doc = yaml.safe_load(_WORKFLOW.read_text(encoding="utf-8"))
-    perms = doc.get("permissions") or {}
-    assert perms.get("contents") == "read"
-    assert perms.get("pull-requests") == "write"
+    top = doc.get("permissions") or {}
+    assert top.get("contents") == "read"
+    assert "write" not in [str(v) for v in top.values()], (
+        f"top-level permissions must stay read-only (no write scope); got {top!r}"
+    )
+    job_perms = ((doc.get("jobs") or {}).get("bloat-check") or {}).get("permissions") or {}
+    assert job_perms.get("pull-requests") == "write", (
+        "the bloat-check job must declare pull-requests:write for its PR comment step"
+    )
+    assert job_perms.get("contents") == "read", (
+        "a job-level permissions block REPLACES the top-level — the job must "
+        "re-declare contents:read for actions/checkout"
+    )
 
 
 def test_workflow_checkout_full_depth():
