@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-30-compliance-artifact-usability",
+  "date": "2026-06-30T12:02:24.520358Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/compliance-artifact-usability",
+  "spec": ".shipwright/planning/iterate/2026-06-30-compliance-artifact-usability.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-30-compliance-artifact-usability"
+}

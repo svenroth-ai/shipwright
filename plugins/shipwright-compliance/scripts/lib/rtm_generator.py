@@ -37,6 +37,8 @@ from scripts.lib._rtm_reconciliation_render import (
     _evt_anchor_ref,
     _render_needs_reverification_section,
 )
+from scripts.lib._rtm_links import commit_cell, fr_anchor_id, last_tested_cell, link_frs, resolve_repo_url, timeline_order  # noqa: E501
+from scripts.lib.event_display import event_display_name
 
 # Cross-cutting markdown helper lives at shared/scripts/markdown_table.py
 # (outside the `lib/` namespace per ADR-045 so it can be imported here
@@ -468,12 +470,10 @@ def _requirements_coverage_events(data: ComplianceData) -> list[str]:
                     if first_tests != last_tests else last_tests
                 )
 
-                # "Last tested" = the latest event that actually ran tests.
-                # Age is informational, not a penalty (cc3 AR-05) — staleness
-                # is now a reconciliation signal, not a date threshold.
-                last_ts = latest.timestamp[:10]
-                source_tag = "iter" if latest.source == "iterate" else "build"
-                last_tested = f"{last_ts} ({source_tag})"
+                # "Last tested" = latest event that actually ran tests; its
+                # (iter) token links to that event's Verification Timeline row.
+                # Age is informational, not a penalty (cc3 AR-05).
+                last_tested = last_tested_cell(latest)
 
                 gap = latest.tests_total - latest.tests_passed
                 baseline = data.baseline_failure_count
@@ -510,9 +510,11 @@ def _requirements_coverage_events(data: ComplianceData) -> list[str]:
                 status = rendered
 
         reconciled_cell = _RECONCILED_MARK[rec.status(req.id)]
+        # In-document anchor AFTER the req link (keeps row prefix `| [FR-…]`); Timeline FRs link here.
+        anchor = f'<a id="{fr_anchor_id(req.id)}"></a>'
 
         lines.append(
-            f"| {escape_cell(req_link)} | {escape_cell(display_text)} | {req.priority} "
+            f"| {escape_cell(req_link)}{anchor} | {escape_cell(display_text)} | {req.priority} "
             f"| {escape_cell(verified_cell)} | {escape_cell(tests_cell)} "
             f"| {escape_cell(last_tested)} | {reconciled_cell} | {status} |"
         )
@@ -523,7 +525,7 @@ def _requirements_coverage_events(data: ComplianceData) -> list[str]:
 
 
 def _verification_timeline(data: ComplianceData) -> list[str]:
-    """Chronological timeline of all work events verifying requirements."""
+    """Timeline of all work events verifying requirements — newest first."""
     if not data.work_events:
         return []
 
@@ -534,30 +536,28 @@ def _verification_timeline(data: ComplianceData) -> list[str]:
         "|-------|--------|------|-----|-------|--------|------|",
     ]
 
-    for we in data.work_events:
-        name = we.section if we.source == "build" else (we.description or we.id)
+    repo_url = resolve_repo_url(data.project_root)
+    known_fr_ids = {r.id for r in data.requirements}
+
+    for we in timeline_order(data.work_events):  # AC-4: descending (newest first)
+        name = we.section if we.source == "build" else event_display_name(we)
         # cc3 (AR-05): anchor canonical iterate `evt-` ids so the Requirements
-        # Coverage "Verified By" links resolve to this row. The anchor tag is
-        # prepended raw (escape_cell would mangle it, and it carries no pipe).
+        # Coverage "Verified By" links resolve to this row (raw — carries no pipe).
         frag = None if we.source == "build" else _evt_anchor_ref(we.id)
         event_cell = (
             f'<a id="{we.id}"></a>{escape_cell(name)}' if frag else escape_cell(name)
         )
-        source = we.source
         # Normalize the Type token so a leaked free-text `intent` (or an adopted
         # repo's git conventional-commit type) never lands in the Type column.
         event_type = "section" if we.source == "build" else normalize_intent(we.intent)
-        frs = ", ".join(we.affected_frs[:3])
-        if len(we.affected_frs) > 3:
-            frs += f" +{len(we.affected_frs) - 3}"
+        frs = link_frs(we.affected_frs, known_fr_ids)
         tests = f"{we.tests_passed}/{we.tests_total}" if we.tests_total > 0 else "—"
-        commit = we.commit[:7] if we.commit else "—"
         date = we.timestamp[:10]
 
         lines.append(
-            f"| {event_cell} | {escape_cell(source)} | {escape_cell(event_type)} "
-            f"| {escape_cell(frs)} | {escape_cell(tests)} | {escape_cell(commit)} "
-            f"| {escape_cell(date)} |"
+            f"| {event_cell} | {escape_cell(we.source)} | {escape_cell(event_type)} "
+            f"| {escape_cell(frs)} | {escape_cell(tests)} "
+            f"| {escape_cell(commit_cell(we.commit, repo_url))} | {escape_cell(date)} |"
         )
 
     lines.append("")

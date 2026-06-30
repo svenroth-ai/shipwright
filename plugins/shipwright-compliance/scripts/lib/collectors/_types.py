@@ -150,11 +150,11 @@ class WorkEvent:
     spec_impact: str = ""
     # BP-2: per-FR behavior impact {FR-id: add|modify|remove|none}; legacy → {}.
     fr_impact: dict[str, str] = field(default_factory=dict)
+    summary: str = ""  # plain-language one-liner (forward-only); preferred in the Event column
 
     @classmethod
     def from_dict(cls, d: dict) -> WorkEvent:
-        # `or {}` / `or []` (not a `.get` default) so an EXPLICIT `null` coerces
-        # like a missing key (an `affected_frs: null` would crash readers).
+        # `or {}`/`or []` (not a `.get` default) so an EXPLICIT `null` coerces like a missing key.
         tests = d.get("tests") or {}
         review = d.get("review") or {}
         return cls(
@@ -181,6 +181,7 @@ class WorkEvent:
             change_type=d.get("change_type") or "",
             none_reason=d.get("none_reason") or "",
             spec_impact=d.get("spec_impact") or "",
+            summary=d.get("summary", ""),
             fr_impact={k: v.strip().lower() for k, v in (d.get("fr_impact") or {}).items()
                        if isinstance(k, str) and isinstance(v, str)}
             if isinstance(d.get("fr_impact"), dict) else {},
@@ -192,11 +193,10 @@ class TestRunEvent:
     """Full test suite execution from event log.
 
     The ``layers`` dict carries ``unit`` / ``integration`` / ``pgtap`` /
-    ``e2e`` / ``smoke`` keys; each may carry an optional ``failed`` count
-    (readers fall back to ``total - passed`` when absent). Missing keys read
-    as zero-valued so historical runs never crash the readers. ``*_evaluated``
-    flags whether a layer was reported AT ALL — "layer omitted" (unknown) vs
-    "ran with zero tests" (configured but empty).
+    ``e2e`` / ``smoke`` keys, each with an optional ``failed`` count (readers
+    fall back to ``total - passed``). Missing keys read as zero so historical
+    runs never crash. ``*_evaluated`` flags whether a layer was reported AT ALL
+    — "omitted" (unknown) vs "ran with zero tests" (configured but empty).
     """
     id: str
     timestamp: str

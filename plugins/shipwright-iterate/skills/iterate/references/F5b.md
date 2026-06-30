@@ -46,6 +46,7 @@ intent-less events).
 extras='{
   "intent": "{feature|change|bug}",
   "description": "{short_description}",
+  "summary": "{one plain-language sentence a non-expert can read}",
   "spec_impact": "{add|modify|remove|none}",
   "spec_impact_justification": "{required when spec_impact=none}",
   "affected_frs": ["FR-..."],
@@ -58,6 +59,13 @@ uv run "{shared_root}/scripts/tools/finalize_iterate.py" \
   --reason "iterate: {short_description}" \
   --event-extras-json "$extras"
 ```
+
+**Plain-language `summary` (readability).** The one-sentence, jargon-free
+`summary` says what changed in terms a non-expert can read. The compliance Event
+column (Test Evidence "Test Progression" + RTM "Verification Timeline") prefers
+it over the technical `description`; omit it and the column falls back to
+`description`. Merged verbatim via `--event-extras-json`; forward-only (it only
+affects events recorded from now on).
 
 **Campaign identity stamp (campaign 2026-06-07-tracked-campaign-status, S1):**
 when the iterate is a campaign sub-iterate — spawned by the autonomous loop OR

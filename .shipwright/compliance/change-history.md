@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-29T21:52:28.977021+00:00
-Total commits: 1057
+Generated: 2026-06-30T12:02:34.356971+00:00
+Total commits: 1058
 
 ## Commit Distribution
 
@@ -9,7 +9,7 @@ Total commits: 1057
 pie title Commit Types
     "fix" : 300
     "feat" : 281
-    "chore" : 230
+    "chore" : 231
     "docs" : 142
     "refactor" : 64
     "test" : 25
@@ -611,10 +611,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 230 commits
+### Chores (chore) — 231 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-29 | bloat | tighten baseline floors to on-disk LOC (Group H2) (#293) | 4594948315b5 |
 | 2026-06-28 | compliance | refresh CI-security summary to the clean post-#272 scan (A100) (#288) | dac886347e26 |
 | 2026-06-28 | security | exclude test fixtures from CodeQL + make intentional string-concat explicit (#279) | 6f1f35076dfa |
 | 2026-06-22 | release | v0.29.1 (#271) | af7a3fc04fae |
@@ -1126,7 +1127,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1057 |
+| Total commits | 1058 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1057 |
+| Human-authored commits | 1058 |
 

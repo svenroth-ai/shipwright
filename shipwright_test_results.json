@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-29-tighten-bloat-baseline",
-    "date": "2026-06-29",
+    "run_id": "iterate-2026-06-30-compliance-artifact-usability",
+    "date": "2026-06-30",
     "unit": {
       "status": "passed",
-      "passed": 3618,
-      "total": 3618
+      "passed": 894,
+      "total": 894
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 15,
+      "total": 15
     },
     "pgtap": {
       "status": "not_run",
@@ -36,12 +36,33 @@
       "exit_code": 0,
       "tests_run": 0,
       "evidence_path": "",
-      "timestamp": "2026-06-29T21:49:09.393Z",
-      "justification": "Data-only tighten of shipwright_bloat_baseline.json integer floors; no startable user-facing surface. The file is consumed only by the anti-ratchet pre-commit hook and the Group-H detective audit, both covered by passing unit tests (group_h 14, shared bloat/anti-ratchet 83)."
+      "timestamp": "2026-06-30T00:00:00.000Z",
+      "justification": "Internal compliance-artifact generators (test-evidence.md + traceability-matrix.md) plus one optional event-format field; no startable user-facing web/UI surface. Verified by the compliance suite (894), cross-plugin contract + enforcement (15), and a real-data render probe against the live event log (71 commit links, 40 FR links, descending timeline, summary fallback)."
     },
     "test_completeness": {
-      "status": "n/a",
-      "justification": "Trivial complexity: data-only tighten of 12 integer floors in shipwright_bloat_baseline.json (no code/behavior change). The H2 invariant (0 entries with actual < current) and the baseline's consumers are covered by group_h (14) + shared bloat/anti-ratchet (83) unit tests, all passing."
+      "status": "complete",
+      "behaviors": [
+        { "behavior": "AC-1 Test Progression Source links canonical iterate event cross-file to its Verification Timeline row; non-canonical stays plain",
+          "disposition": "tested", "evidence": "test_compliance_artifact_usability.py::TestProgressionSourceLink (2) PASSED" },
+        { "behavior": "AC-2 Requirements Coverage (iter) token links to the latest-tested event timeline anchor; build stays plain",
+          "disposition": "tested", "evidence": "TestCoverageLinks::test_iter_token_links_same_file / test_build_source_stays_plain PASSED" },
+        { "behavior": "AC-3 each coverage row carries an in-document rtm-fr anchor placed after the requirement link",
+          "disposition": "tested", "evidence": "TestCoverageLinks::test_row_carries_in_document_anchor_after_link PASSED" },
+        { "behavior": "AC-4 Verification Timeline sorted descending (newest first); malformed timestamps sort last",
+          "disposition": "tested", "evidence": "TestTimelineDescending (2) PASSED" },
+        { "behavior": "AC-5 timeline FRs link declared FRs to their coverage-row anchor; unknown FRs stay plain",
+          "disposition": "tested", "evidence": "TestTimelineFrLinks (2) PASSED" },
+        { "behavior": "AC-6 commit links to host diff when repo url resolvable; empty commit / no url stays plain; git remote https+ssh resolution",
+          "disposition": "tested", "evidence": "TestCommitLink (7, incl. real-git probes) PASSED" },
+        { "behavior": "AC-7 Event label prefers authored summary, else cleaned description (strips iterate: prefix), else id; from_dict round-trip",
+          "disposition": "tested", "evidence": "TestEventDisplayName (5) PASSED" },
+        { "behavior": "AC-8 F5b reference documents authoring the summary field",
+          "disposition": "tested", "evidence": "test_f5b_reference_documents_summary_field PASSED" },
+        { "behavior": "AC-9 synthesized Full Suite Runs carries the honest unit-only note; real test_run path has none",
+          "disposition": "tested", "evidence": "TestFullSuiteNote (2) PASSED" }
+      ],
+      "counts": { "testable": 9, "tested": 9, "untestable": 0, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 9, "covered_acs": 9 }
     },
     "degraded": []
   }
