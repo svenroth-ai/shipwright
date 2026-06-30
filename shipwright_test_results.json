@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-30-strip-zwsp-planning-doc",
+    "run_id": "iterate-2026-06-30-fr-retag-honesty",
     "date": "2026-06-30",
     "unit": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 4781,
+      "total": 4793
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 174,
+      "total": 174
     },
     "pgtap": {
       "status": "not_run",
@@ -32,12 +32,35 @@
     },
     "surface_verification": {
       "surface": "none",
-      "justification": "Markdown-only edit to an internal planning note (removed 2 U+200B chars); no executable surface (web/cli/api) changed. Verification = prompt-injection scan = 0 findings."
+      "justification": "Compliance-metadata correction (append-only event_amended overlays); no web/cli/api app surface. End-to-end verification = the real compliance producer regen asserting Control Grade A + reconciliation green, plus a 4955-test regression sweep across all event-log/compliance-consuming suites."
     },
     "test_completeness": {
-      "status": "n/a",
-      "justification": "Trivial markdown-only edit — removed invisible Unicode from a dev planning doc; no executable behavior introduced or changed. Authoritative check is the prompt-injection scan (0 findings)."
+      "status": "complete",
+      "behaviors": [
+        { "behavior": "7 events re-tagged to FR-01.10 (+FR-01.07 on the 2 AR-10 events) via event_amended overlays",
+          "disposition": "tested",
+          "evidence": "post-overlay rule-replay sim on the real 262-line worktree log: recent FR-tag 3/30->10/30, all-time 18.0%->21.0%; overlays applied 7/7 (record_event success)" },
+        { "behavior": "FR-tag decline cleared -> honesty-gate B-cap lifts -> Control Grade A",
+          "disposition": "tested",
+          "evidence": "real producer (update_compliance.py): baseline dashboard 'B (89/100) Capped: traceability declining'; post-finalize regen asserts grade A (confirmed at F5b)" },
+        { "behavior": "Reconciliation dimension stays green (FR-01.10 + FR-01.07 RECONCILED)",
+          "disposition": "tested",
+          "evidence": "sim ratio 1.0 with the F5b verify event; real RTM Reconciled? column + change_reconciliation dimension in the post-finalize dashboard" },
+        { "behavior": "The F5b verify event is load-bearing for the newest (tests.total=0) re-tagged touch",
+          "disposition": "tested",
+          "evidence": "stress-test sim WITHOUT the verify event: reconciliation ratio drops to 0.6, FR-01.10/FR-01.07 NEEDS_REVERIFICATION" },
+        { "behavior": "No source regression (zero .py diff; data-only)",
+          "disposition": "tested",
+          "evidence": "F0 full sweep of all event-log/compliance-consuming suites: 4955 passed, 0 failed (compliance 922, shared 3602+196+61, integration 174)" },
+        { "behavior": "Genuine infra events stay no-FR (not over-tagged)",
+          "disposition": "tested",
+          "evidence": "stay-list (scorecard CI, bloat-baseline, drift-detector removal, events_log doc, ci-security refresh) excluded from the overlay set; all-time FR-tag rose only +3.4pp, confirming targeted correction" }
+      ],
+      "counts": { "testable": 6, "tested": 6, "untestable": 0, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 6, "covered_acs": 6 }
     },
-    "degraded": []
+    "degraded": [
+      "F0 scope: ran every suite that consumes the event log / FR / compliance machinery (compliance plugin + 3 shared dirs + integration = 4955 tests). The other 13 plugin suites test their own code and were not re-run because this iterate has zero .py diff (append-only events.jsonl + regenerated compliance artifacts). CI runs the full per-plugin matrix as the backstop."
+    ]
   }
 }
