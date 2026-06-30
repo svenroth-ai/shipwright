@@ -21,6 +21,7 @@ from scripts.lib._rtm_links import (
     commit_cell,
     fr_anchor_id,
     resolve_repo_url,
+    utc_date,
 )
 from scripts.lib.data_collector import (
     ComplianceData,
@@ -238,3 +239,36 @@ def test_f5b_reference_documents_summary_field():
     text = f5b.read_text(encoding="utf-8")
     assert '"summary"' in text
     assert "event-extras-json" in text
+
+
+# --- Timeline Date column UTC-normalized (cross-timezone monotonicity) --------
+
+class TestTimelineUtcDate:
+    def test_utc_date_normalizes_offset(self):
+        # 00:27 at +02:00 is 22:27 the PREVIOUS day in UTC.
+        assert utc_date("2026-05-13T00:27:38+02:00") == "2026-05-12"
+        assert utc_date("2026-05-12T22:51:57.835014+00:00") == "2026-05-12"
+        assert utc_date("2026-05-12T10:00:00Z") == "2026-05-12"
+
+    def test_utc_date_fallback_on_unparseable(self):
+        assert utc_date("garbage") == "garbage"
+        assert utc_date("") == ""
+
+    def test_timeline_date_column_monotonic_across_timezones(self, tmp_path):
+        # Real-data repro: a +02:00 near-midnight event sorts by UTC instant but
+        # previously printed its local date (one day ahead) → visual inversion.
+        out = rtm_generate(_data(tmp_path, [
+            _ev("evt-0c3127ae", "2026-05-12T22:51:57+00:00", desc="utc event"),
+            _ev("evt-a0277cdf", "2026-05-13T00:27:38+02:00", desc="plus2 event"),
+        ]))
+        tl = _timeline(out)
+        # The +02:00 event renders its UTC date (05-12), not its local 05-13.
+        plus2_row = next(l for l in tl.splitlines() if "plus2 event" in l)
+        assert plus2_row.split("|")[-2].strip() == "2026-05-12"
+        assert "2026-05-13" not in plus2_row
+        # Date column is non-increasing (no inversion).
+        rows = [l for l in tl.splitlines()
+                if l.startswith("| ") and "|---" not in l and not l.startswith("| Event ")]
+        dates = [r.split("|")[-2].strip() for r in rows]
+        dates = [d for d in dates if len(d) == 10 and d[4] == "-"]
+        assert all(dates[i] >= dates[i + 1] for i in range(len(dates) - 1))

@@ -1,6 +1,6 @@
 # Test Evidence Report
 
-Generated: 2026-06-30T13:58:18.154430+00:00
+Generated: 2026-06-30T13:13:15.166540+00:00
 
 ## Summary
 
@@ -8,13 +8,13 @@ Generated: 2026-06-30T13:58:18.154430+00:00
 |--------|-------|
 | Total test checkpoints | 229 |
 | Total unit tests (latest full suite) | 3618/3618 (2026-06-29) |
-| New tests from iterations | +217 |
+| New tests from iterations | +220 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | Goodhart-resistant Control Grade: honesty layer caps the headline on the weakest load-bearing control; anchors pivoted to open SE/NIST standards; native scorecard.yml. | [iterate](traceability-matrix.md#evt-bcd40c31) | — | +0 | — | — | 2026-06-30 |
+| 1 | Fixed the dates in the traceability timeline so they always count down correctly, even for entries recorded in a different time zone. | [iterate](traceability-matrix.md#evt-cf798241) | unit | +3 | 897/897 | PASS | 2026-06-30 |
 | 2 | Made the compliance reports easier to navigate: you can now click from an entry to its details, requirements, and code change, and entries can show a plain-language summary instead of only the technical text. | [iterate](traceability-matrix.md#evt-ad994b33) | unit | +26 | 894/894 | PASS | 2026-06-30 |
 | 3 | tighten bloat baseline current to on-disk LOC (Group H2) | [iterate](traceability-matrix.md#evt-244f895d) | unit | +0 | 3618/3618 | PASS | 2026-06-29 |
 | 4 | Compliance producers stop flagging legitimately-exempt items as deficits: grandfathered bloat over-limit renders INFO (ratchet delta stays the WARN), the iterate-tests denominator excludes satisfied-no-FR changes, audit Suggested lines emit only on FAIL, and routine regens stamp a churn-free staleness banner on audit-report.md. | [iterate](traceability-matrix.md#evt-83b58b36) | unit | +0 | 868/868 | PASS | 2026-06-29 |
@@ -250,36 +250,36 @@ _Synthesized from per-iterate **unit** results — Integration / pgTAP / E2E / S
 
 | Run | Trigger | Unit | Integration | pgTAP | E2E | Smoke | Date |
 |-----|---------|------|-------------|-------|-----|-------|------|
-| 1 | iterate | 69/69 | — | — | — | — | 2026-06-13 |
-| 2 | iterate | 3881/3881 | — | — | — | — | 2026-06-13 |
-| 3 | iterate | 3441/3453 | — | — | — | — | 2026-06-13 |
-| 4 | iterate | 3442/3442 | — | — | — | — | 2026-06-13 |
-| 5 | iterate | 7/7 | — | — | — | — | 2026-06-14 |
-| 6 | iterate | 96/96 | — | — | — | — | 2026-06-14 |
-| 7 | iterate | 3473/3473 | — | — | — | — | 2026-06-14 |
-| 8 | iterate | 94/94 | — | — | — | — | 2026-06-15 |
-| 9 | iterate | 85/85 | — | — | — | — | 2026-06-16 |
-| 10 | iterate | 24/24 | — | — | — | — | 2026-06-16 |
-| 11 | iterate | 701/701 | — | — | — | — | 2026-06-16 |
-| 12 | iterate | 28/29 | — | — | — | — | 2026-06-17 |
-| 13 | iterate | 20/20 | — | — | — | — | 2026-06-17 |
-| 14 | iterate | 34/34 | — | — | — | — | 2026-06-17 |
-| 15 | iterate | 420/423 | — | — | — | — | 2026-06-17 |
-| 16 | iterate | 139/139 | — | — | — | — | 2026-06-17 |
-| 17 | iterate | 720/720 | — | — | — | — | 2026-06-27 |
-| 18 | iterate | 736/736 | — | — | — | — | 2026-06-28 |
-| 19 | iterate | 3560/3560 | — | — | — | — | 2026-06-27 |
-| 20 | iterate | 4720/4720 | — | — | — | — | 2026-06-28 |
-| 21 | iterate | 4719/4719 | — | — | — | — | 2026-06-28 |
-| 22 | iterate | 492/492 | — | — | — | — | 2026-06-28 |
-| 23 | iterate | 794/794 | — | — | — | — | 2026-06-28 |
-| 24 | iterate | 3853/3853 | — | — | — | — | 2026-06-28 |
-| 25 | iterate | 4812/4812 | — | — | — | — | 2026-06-28 |
-| 26 | iterate | 850/850 | — | — | — | — | 2026-06-28 |
-| 27 | iterate | 851/851 | — | — | — | — | 2026-06-28 |
-| 28 | iterate | 868/868 | — | — | — | — | 2026-06-29 |
-| 29 | iterate | 3618/3618 | — | — | — | — | 2026-06-29 |
-| 30 | iterate | 894/894 | — | — | — | — | 2026-06-30 |
+| 1 | iterate | 3881/3881 | — | — | — | — | 2026-06-13 |
+| 2 | iterate | 3441/3453 | — | — | — | — | 2026-06-13 |
+| 3 | iterate | 3442/3442 | — | — | — | — | 2026-06-13 |
+| 4 | iterate | 7/7 | — | — | — | — | 2026-06-14 |
+| 5 | iterate | 96/96 | — | — | — | — | 2026-06-14 |
+| 6 | iterate | 3473/3473 | — | — | — | — | 2026-06-14 |
+| 7 | iterate | 94/94 | — | — | — | — | 2026-06-15 |
+| 8 | iterate | 85/85 | — | — | — | — | 2026-06-16 |
+| 9 | iterate | 24/24 | — | — | — | — | 2026-06-16 |
+| 10 | iterate | 701/701 | — | — | — | — | 2026-06-16 |
+| 11 | iterate | 28/29 | — | — | — | — | 2026-06-17 |
+| 12 | iterate | 20/20 | — | — | — | — | 2026-06-17 |
+| 13 | iterate | 34/34 | — | — | — | — | 2026-06-17 |
+| 14 | iterate | 420/423 | — | — | — | — | 2026-06-17 |
+| 15 | iterate | 139/139 | — | — | — | — | 2026-06-17 |
+| 16 | iterate | 720/720 | — | — | — | — | 2026-06-27 |
+| 17 | iterate | 736/736 | — | — | — | — | 2026-06-28 |
+| 18 | iterate | 3560/3560 | — | — | — | — | 2026-06-27 |
+| 19 | iterate | 4720/4720 | — | — | — | — | 2026-06-28 |
+| 20 | iterate | 4719/4719 | — | — | — | — | 2026-06-28 |
+| 21 | iterate | 492/492 | — | — | — | — | 2026-06-28 |
+| 22 | iterate | 794/794 | — | — | — | — | 2026-06-28 |
+| 23 | iterate | 3853/3853 | — | — | — | — | 2026-06-28 |
+| 24 | iterate | 4812/4812 | — | — | — | — | 2026-06-28 |
+| 25 | iterate | 850/850 | — | — | — | — | 2026-06-28 |
+| 26 | iterate | 851/851 | — | — | — | — | 2026-06-28 |
+| 27 | iterate | 868/868 | — | — | — | — | 2026-06-29 |
+| 28 | iterate | 3618/3618 | — | — | — | — | 2026-06-29 |
+| 29 | iterate | 894/894 | — | — | — | — | 2026-06-30 |
+| 30 | iterate | 897/897 | — | — | — | — | 2026-06-30 |
 
 ## Code Review Evidence
 

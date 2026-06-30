@@ -1,24 +1,24 @@
 # Compliance Dashboard
 
-Generated: 2026-06-30T13:58:18.154430+00:00
+Generated: 2026-06-30T13:13:15.166540+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
 ## ✅ Control Verdict
 
-> **Controlled, minor gaps. Capped: traceability declining (FR-tag 7% vs 18% all-time, last 30).**
+> **Under full control.**
 
-### Control Grade: **B** (89/100) — Controlled, minor gaps.
+### Control Grade: **A** (100/100) — Under full control.
 
 | | Dimension | Signal | Anchor |
 |---|-----------|--------|--------|
-| ⚠️ | Requirement traceability | 14/14 FRs covered; 229/229 changes traced (FR-linked or classified no-FR); FR-tag rate 7% vs 18% all-time — declining | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
+| ✅ | Requirement traceability | 14/14 FRs covered; 229/229 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (DO-178C, IEC 62304) |
 | ✅ | Test health | latest full suite 3618/3618 (2026-06-29) | automated tests pass (OpenSSF Scorecard) |
-| ✅ | Change traceability | 229/229 changes linked to a commit, ADR or test run | change provenance (SLSA) |
-| ✅ | Change reconciliation | 0/4 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
-| ✅ | Security | 0 open high/critical | no open high/critical vulns (NIST SSDF) |
+| ✅ | Change traceability | 229/229 changes linked to a commit, ADR or test run | change provenance (SLSA, OpenSSF Scorecard) |
+| ✅ | Change reconciliation | 0/4 behavior-touched FRs not re-verified | re-verify changed requirements (DO-178C, ISO 26262) |
+| ✅ | Security | 0 open high/critical | no open high/critical vulns (NIST SSDF, OWASP) |
 | ✅ | Size / maintainability discipline | ratchet delta -9 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
-| ✅ | Dependency hygiene | 0 unresolved / 7 licenses; 0 copyleft | dependency license & risk (OWASP) |
+| ✅ | Dependency hygiene | 0 unresolved / 7 licenses; 0 copyleft | dependency license & risk (OWASP, OpenSSF Scorecard) |
 
 Verified from: `shipwright_events.jsonl (229 events, 2026-05-02 → 2026-06-30)`
 
@@ -51,10 +51,10 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
 | Work events (iterate) | 229 changes | INFO |  |
-| Recent changes traced to an FR | 2/30 (7%) | WARN | FR-tagging dropped to 7% (last 30) vs 18% all-time — recent changes classified no-FR; see the Control Verdict traceability dimension |
+| Recent changes traced to an FR | 3/30 (10%) | WARN | FR-tagging dropped to 10% (last 30) vs 18% all-time — recent changes classified no-FR; see the Control Verdict traceability dimension |
 | All unit tests passing | 3618/3618 | PASS | +2 change(s) since last full suite |
 | Architecture decisions | 235 ADRs | INFO |  |
-| Iterate tests passing | 36/41 testable changes tested | WARN | 5 testable change(s) without tests — see test-evidence.md |
+| Iterate tests passing | 37/42 testable changes tested | WARN | 5 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 7 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
 | Triage open | 1 open | WARN | 1 actionable item(s) — see ../agent_docs/triage_inbox.md |
