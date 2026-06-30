@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-29 21:52 UTC | Session: 3b44205a-4312-4480-aaae-fd92c8a37e37 | Run: iterate-2026-06-29-tighten-bloat-baseline
+> Updated: 2026-06-30 12:02 UTC | Session: 07bc0ece-2501-4f67-91c1-69c2c92e929a | Run: iterate-2026-06-30-compliance-artifact-usability
 
-## Recent Changes (227 iterations)
+## Recent Changes (228 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Navigable compliance artifacts (test-evidence + traceability-matrix): linked iterate/(iter) tokens, descending Verification Timeline, FR + commit links, plain-language summary-preferred Event labels, honest synthesized Full-Suite note | +26 new, 894/894 |  | FR-01.10 | 2026-06-30 |
 | change | tighten bloat baseline current to on-disk LOC (Group H2) | 3618/3618 |  | compliance | 2026-06-29 |
 | change | Compliance producers stop flagging legitimately-exempt items as deficits: grandfathered bloat over-limit renders INFO (ratchet delta stays the WARN), the iterate-tests denominator excludes satisfied-no-FR changes, audit Suggested lines emit only on FAIL, and routine regens stamp a churn-free staleness banner on audit-report.md. | 868/868 |  | compliance | 2026-06-29 |
 | change | AR-10 SARIF-ingestion fallback in shared github_api.py: when the security-scan-results artifact has no findings.json (every /shipwright-adopt repo runs the SARIF-only scanner template), parse sarif/*.sarif into severity-bucketed findings (security-severity CVSS bands; gitleaks->critical). findings.json stays authoritative when present (empty list never falls through). So the Control-Grade Security dimension lights for adopted repos, not just the monorepo. +6 unit tests; real-webui-SARIF probe parsed 165 findings (135 low / 24 medium / 6 high). | 0/0 |  | compliance | 2026-06-28 |
@@ -234,7 +235,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-29 | Unit: 3618/3618 | Smoke: not_run | (iterate)
+Last run: 2026-06-30 | Unit: 894/894 | Integration: 15/15 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

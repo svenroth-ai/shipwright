@@ -345,7 +345,7 @@ class TestFullSuiteRunsSynthesisHelpers:
         ]
         run_lines = _full_suite_runs(data_run)
 
-        # Both produce: ["## Full Suite Runs", "", "<header>", "<sep>", ...].
+        # Same heading + header/separator rows; synthesis adds an honest note.
         assert synth_lines[0] == run_lines[0] == "## Full Suite Runs"
-        assert synth_lines[2] == run_lines[2]  # header row
-        assert synth_lines[3] == run_lines[3]  # separator row
+        assert run_lines[2] in synth_lines and run_lines[3] in synth_lines
+        assert any("no `test_run` events" in l for l in synth_lines)

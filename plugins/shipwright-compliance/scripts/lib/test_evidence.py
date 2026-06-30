@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 from scripts.lib.mermaid import testing_pyramid_diagram
 from scripts.lib._latest_suite import resolve_latest_full_suite  # AR-02
+from scripts.lib.event_display import event_anchor, event_display_name
 
 # Cross-cutting markdown helper lives at shared/scripts/markdown_table.py
 # (outside the `lib/` namespace per ADR-045 so it can be imported here
@@ -397,8 +398,11 @@ def _test_progression(data: ComplianceData) -> list[str]:
     ])
 
     for i, we in enumerate(reversed(data.work_events), 1):
-        name = we.section if we.source == "build" else (we.description or we.id)
-        source = we.source
+        name = we.section if we.source == "build" else event_display_name(we)
+        # Source links iterate events to their Verification Timeline row in the
+        # sibling artifact (AC-1); build / non-canonical ids stay plain text.
+        frag = event_anchor(we.id, "traceability-matrix.md") if we.source == "iterate" else None
+        source = f"[{we.source}]({frag})" if frag else we.source
         layer = _classify_work_event_layer(we)
 
         # New tests display
@@ -519,38 +523,16 @@ _DASH = "—"
 def _full_suite_runs_from_work_events(data: ComplianceData) -> list[str]:
     """Synthesize the Full Suite Runs table from work_completed events.
 
-    Iterate-2026-05-21-empirical-followups AC-2. Fallback for the common
-    empirical case where no `test_run`-type events have been recorded on
-    the wire (verified on both shipwright and webui: zero `test_run`
-    events in `shipwright_events.jsonl`). Renders the same 8-column
-    table shape as the test_run-based path so the section is structurally
-    indistinguishable to operators.
+    Fallback for the common case where no `test_run` events exist on the wire
+    (true for both shipwright and webui). The `work_completed` format carries
+    only a single unit pass/total, so Integration / pgTAP / E2E / Smoke render
+    em-dash ALWAYS in this branch — promoting ``e2e_run`` (a boolean) to a count
+    would mislead operators. The honest note under the heading says exactly that
+    so an empty column reads as "breakdown unavailable", not "tests missing".
 
-    Selection semantics (per external-review OpenAI #3 + Gemini #5):
-
-    1. Filter on ``we.tests_total > 0`` FIRST — zero-test events (pure
-       docs / tooling iterates) don't qualify and don't consume the cap
-       budget.
-    2. Cap at the last 30 in `data.work_events` file order — preserves
-       collector append order from `shipwright_events.jsonl`.
-
-    Column mapping:
-
-    - ``Run``: 1-based index after filter+cap.
-    - ``Trigger``: ``we.source`` (`iterate` / `build`).
-    - ``Unit``: ``we.tests_passed / we.tests_total``.
-    - ``Integration`` / ``pgTAP`` / ``Smoke``: em-dash. The
-      ``work_completed`` wire format doesn't carry these layers; the
-      test_run path is the only producer that can populate them.
-    - ``E2E``: em-dash ALWAYS in the synthesis branch. ``we.e2e_run``
-      is a boolean signal without counts; promoting a boolean to a
-      count would mislead operators. Documented limitation; a future
-      iterate can lift this when real `test_run` events become routine
-      (per OpenAI #2 in the plan review).
-    - ``Date``: ``we.timestamp[:10]``.
-
-    Returns ``[]`` (renders no section) when no qualifying events exist,
-    matching the test_run path's empty-data behavior.
+    Selection: filter on ``tests_total > 0`` FIRST (zero-test docs / tooling
+    iterates don't consume the cap), then cap at the last ``_SYNTHESIS_CAP`` in
+    file order. Returns ``[]`` (no section) when no qualifying events exist.
     """
     if not data.work_events:
         return []
@@ -564,6 +546,10 @@ def _full_suite_runs_from_work_events(data: ComplianceData) -> list[str]:
 
     lines = [
         "## Full Suite Runs",
+        "",
+        "_Synthesized from per-iterate **unit** results — Integration / pgTAP / E2E / Smoke "
+        "read `—` because no `test_run` events (the only source of a full layer breakdown) are "
+        "recorded; an empty column means the breakdown is unavailable, not that a layer failed._",
         "",
         "| Run | Trigger | Unit | Integration | pgTAP | E2E | Smoke | Date |",
         "|-----|---------|------|-------------|-------|-----|-------|------|",
@@ -603,7 +589,7 @@ def _code_review_evidence_events(data: ComplianceData) -> list[str]:
     ]
 
     for we in events_with_review:
-        name = we.section if we.source == "build" else (we.description or we.id)
+        name = we.section if we.source == "build" else event_display_name(we)
         review_label = _REVIEW_LABELS.get(we.review_type, we.review_type)
         deferred = we.review_findings - we.review_fixed
         if we.review_type == "self-review" and we.review_findings == 0:
