@@ -63,6 +63,39 @@ _SARIF_GITLEAKS = json.dumps({
     }],
 })
 
+# Semgrep SARIF where EVERY result is inline-suppressed (`# nosemgrep` →
+# ``suppressions: [{"kind": "inSource"}]``, no ``status`` → accepted). A
+# fully-suppressed scan is a CLEAN result, not live findings.
+_SARIF_SEMGREP_ALL_SUPPRESSED = json.dumps({
+    "runs": [{
+        "tool": {"driver": {"name": "Semgrep", "rules": [
+            {"id": "py.audit.fp", "properties": {}},
+        ]}},
+        "results": [
+            {"ruleId": "py.audit.fp", "suppressions": [{"kind": "inSource"}]},
+            {"ruleId": "py.audit.fp", "suppressions": [{"kind": "inSource"}]},
+        ],
+    }],
+})
+
+# Semgrep SARIF mixing a live result, an inline-suppressed FP, and a result
+# whose only suppression was *rejected* (status != accepted → still live).
+_SARIF_SEMGREP_MIXED = json.dumps({
+    "runs": [{
+        "tool": {"driver": {"name": "Semgrep", "rules": [
+            {"id": "py.high", "properties": {"security-severity": "7.5"}},
+            {"id": "py.fp", "properties": {"security-severity": "7.5"}},
+        ]}},
+        "results": [
+            {"ruleId": "py.high"},  # live — no suppressions
+            {"ruleId": "py.fp",     # suppressed FP — dropped
+             "suppressions": [{"kind": "inSource"}]},
+            {"ruleId": "py.high",   # live — suppression was rejected
+             "suppressions": [{"kind": "external", "status": "rejected"}]},
+        ],
+    }],
+})
+
 
 def test_sarif_fallback_buckets_by_cvss_band(monkeypatch: pytest.MonkeyPatch) -> None:
     """No findings.json but SARIF present → results bucketed by CVSS band
@@ -119,3 +152,40 @@ def test_prompt_risks_has_no_sarif_fallback(monkeypatch: pytest.MonkeyPatch) -> 
         subprocess, "run",
         _stub_gh_download_writing({"sarif/trivy.sarif": _SARIF_TRIVY}))
     assert github_api.download_prompt_risks(900) is None
+
+
+def test_sarif_all_inline_suppressed_results_yield_clean_empty(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Inline-suppressed (`# nosemgrep`) SARIF results carry
+    ``suppressions:[{kind:inSource}]`` and must NOT count as live findings.
+
+    A SARIF file with results present but ALL suppressed is a *clean* scan:
+    the parser returns ``[]`` (not ``None`` — SARIF output existed), so the
+    gh-security action-unit count reaches 0 and the orchestrator's
+    auto-resolve gate can dismiss the item. Counting the suppressed FPs (the
+    pre-fix behaviour) left the count permanently > 0, so a manually-dismissed
+    item reappeared on every import (CI run 28407935303: 12 inSource FPs)."""
+    monkeypatch.setattr(
+        subprocess, "run",
+        _stub_gh_download_writing(
+            {"sarif/semgrep.sarif": _SARIF_SEMGREP_ALL_SUPPRESSED}))
+    assert github_api.download_security_findings(900) == []
+
+
+def test_sarif_only_suppressed_results_dropped_live_retained(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Only accepted suppressions are dropped; live results stay — including a
+    result whose sole suppression was ``rejected`` (the suppression itself was
+    rejected, so the finding is live). Guards against silently hiding a real
+    finding behind an over-broad ``length(suppressions) > 0`` filter."""
+    monkeypatch.setattr(
+        subprocess, "run",
+        _stub_gh_download_writing(
+            {"sarif/semgrep.sarif": _SARIF_SEMGREP_MIXED}))
+    result = github_api.download_security_findings(900)
+    assert result is not None
+    # py.high (live) + py.high w/ rejected suppression (live) = two high;
+    # the inSource-suppressed py.fp is dropped.
+    assert sorted(f["severity"] for f in result) == ["high", "high"]

@@ -1,13 +1,13 @@
 # Commit Change Log
 
 Generated: 2026-06-30T21:50:52.825435+00:00
-Total commits: 1067
+Total commits: 1068
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 304
+    "fix" : 305
     "feat" : 283
     "chore" : 234
     "docs" : 142
@@ -20,11 +20,12 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 304 commits
+### Fixes (fix) — 305 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-30 | triage | quarantine orphan-status in the outbox sweep instead of hard-blocking | 56bb1397a72e |
+| 2026-06-30 | triage | quarantine orphan-status in the outbox sweep instead of hard-blocking (#303) | 33234ef43c90 |
+| 2026-06-30 | triage | drop inline-suppressed SARIF results at the ingest layer | 63c8178bf77b |
 | 2026-06-30 | security | strip zero-width Unicode (U+200B) from a planning note flagged by the prompt-injection scan (#300) | e04991c66e81 |
 | 2026-06-30 | ci | pin ossf/scorecard-action by tag so publish stops failing (#297) | efca5737b380 |
 | 2026-06-30 | compliance | UTC-normalize the RTM Verification Timeline Date column (#295) | 64f89aa45cb7 |
@@ -622,7 +623,7 @@ pie title Commit Types
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
-| 2026-06-30 | triage | sweep 30 outbox append(s) into branch | 9df6ecb3918b |
+| 2026-06-30 | triage | sweep 30 outbox append(s) into branch | 989218a8b553 |
 | 2026-06-30 | ci | remove native OpenSSF Scorecard workflow (wrong anchor for AI-first) (#298) | 0962051d7704 |
 | 2026-06-29 | bloat | tighten baseline floors to on-disk LOC (Group H2) (#293) | 4594948315b5 |
 | 2026-06-28 | compliance | refresh CI-security summary to the clean post-#272 scan (A100) (#288) | dac886347e26 |
@@ -1136,7 +1137,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1067 |
+| Total commits | 1068 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1067 |
+| Human-authored commits | 1068 |
 

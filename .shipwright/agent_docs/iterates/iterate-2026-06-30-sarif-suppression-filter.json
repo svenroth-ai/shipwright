@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-30-sarif-suppression-filter",
+  "date": "2026-06-30T21:40:11.205375Z",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/sarif-suppression-filter",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-06-30-sarif-suppression-filter"
+}
