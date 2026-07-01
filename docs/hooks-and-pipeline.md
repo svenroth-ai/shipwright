@@ -1803,8 +1803,9 @@ is intent-independent (covers BUG + intent-less events). The classification SSOT
 compliance Control-Grade adapter, so "classified" (gate) and "traced" (grade)
 cannot drift. The Control-Grade requirement-traceability dimension's
 `events_fr_tagged` input now counts **traced** changes (FR-linked OR satisfied
-no-FR), and the dashboard adds a `Recent changes traced to an FR` indicator that
-WARNs when FR-tagging drops below the all-time rate (freeze visibility). The
+no-FR), and the dashboard adds an **informational** `Recent changes traced to an
+FR` indicator (INFO, never WARN — the feature-vs-maintenance mix is grade-neutral,
+not a control signal). The
 Group-D **D1** coverage check dropped its spec-update watermark: an FR is covered
 when **any** event has ever named it ("a requirement untouched for months is
 under control" — re-verification under change is D4/reconciliation, not a D1 gap).

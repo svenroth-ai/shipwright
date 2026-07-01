@@ -160,13 +160,23 @@ Refined by BP-1 (Control-Grade traceability coverage):
 - (E) Given the event log, when the Control Verdict block computes the
   requirement-traceability dimension, then a change counts as *traced* if it is
   FR-linked OR a satisfied no-FR change (a recognized `change_type` + one-line
-  `none_reason`, behavior-preserving), and the dashboard additionally renders a
-  `Recent changes traced to an FR` indicator that WARNs when the recent
-  FR-tagging rate drops below the all-time rate or is zero (freeze visibility).
+  `none_reason`, behavior-preserving), and the dashboard additionally renders an
+  informational `Recent changes traced to an FR` indicator.
 - (E) Given a spec FR covered by at least one `work_completed` event at any
   point, when the Group D detective audit runs, then D1 reports it as covered
   regardless of any later `spec_updated` watermark (coverage is all-time; D5's
   no-FR exemption matches the `record_event` write-gate exactly).
+
+Refined by `iterate-2026-07-01-grade-composition-neutral` (composition-neutral grade):
+
+- (E) Given the event log, when the Control Grade is computed, then workload
+  composition — the feature-vs-maintenance mix, i.e. the recent FR-tagging rate —
+  does NOT affect the grade: the `Recent changes traced to an FR` indicator is
+  informational (INFO, never WARN), and the headline verdict is capped below
+  "A — full control" only when a load-bearing pillar is *expected but unmeasured*
+  or *broken* — never by a decline in the FR-tagging rate. Traceability control is
+  carried by requirement coverage + change reconciliation (both
+  composition-independent) and by the write-time FR-gate.
 
 ### FR-01.06 — `/shipwright-test` (boundary coverage report)
 

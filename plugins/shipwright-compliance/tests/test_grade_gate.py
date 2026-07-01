@@ -1,10 +1,12 @@
 """Tests for the Control-Grade honesty layer (_grade_gate) + the anchor pivot.
 
-Covers the three Goodhart-resistance mechanisms — the self-relative traceability
-decline penalty, and the weakest-link verdict gate (decline cap / dark-expected
-cap / broken-pillar cap) — plus the de-crowded, safety-critical-free anchors.
-The pure scorer's back-compat (no signal ⇒ unchanged) is asserted in
-test_control_grade.py; here we light the new signals explicitly.
+Covers the two Goodhart-resistance caps kept in the verdict gate — the
+dark-expected cap and the broken-pillar cap — plus the de-crowded,
+safety-critical-free anchors. Workload composition (feature vs. maintenance mix)
+is deliberately **grade-neutral**: it is no longer a GradeInputs field and never
+caps or penalises the score. The composition-neutral quality-indicator row is
+covered in test_traceability.py; the pure scorer's back-compat (no signal ⇒
+unchanged) is asserted in test_control_grade.py.
 """
 
 from __future__ import annotations
@@ -13,7 +15,6 @@ from scripts.lib._grade_gate import (
     BROKEN_PILLAR_CEILING,
     NON_A_CEILING,
     apply_verdict_gate,
-    trace_decline_severity,
 )
 from scripts.lib.control_grade import GradeInputs, compute_grade
 
@@ -41,76 +42,12 @@ def _dim(report, key):
     return next(d for d in report.dimensions if d.key == key)
 
 
-class TestDeclineSeverity:
-    def test_no_signal_is_zero(self):
-        assert trace_decline_severity(_green()) == 0.0
-
-    def test_total_freeze_is_one(self):
-        assert trace_decline_severity(
-            _green(fr_tag_recent_pct=0.0, fr_tag_all_pct=0.18)) == 1.0
-
-    def test_relative_drop_is_fractional(self):
-        sev = trace_decline_severity(
-            _green(fr_tag_recent_pct=0.03, fr_tag_all_pct=0.18))
-        assert 0.8 < sev < 0.84  # (0.18-0.03)/0.18 ≈ 0.833
-
-    def test_stable_low_is_not_a_decline(self):
-        # recent == all-time (steadily low) is NOT erosion → no penalty.
-        assert trace_decline_severity(
-            _green(fr_tag_recent_pct=0.05, fr_tag_all_pct=0.05)) == 0.0
-
-    def test_improvement_is_not_a_decline(self):
-        assert trace_decline_severity(
-            _green(fr_tag_recent_pct=0.30, fr_tag_all_pct=0.18)) == 0.0
-
-
-class TestTraceabilityPenalty:
-    def test_decline_depresses_requirement_dimension(self):
-        report = compute_grade(
-            _green(fr_tag_recent_pct=0.03, fr_tag_all_pct=0.18))
-        req = _dim(report, "requirement_traceability")
-        assert req.score < 1.0
-        assert req.status == "gap"
-        assert "declining" in req.detail
-
-    def test_penalty_is_capped_not_zeroing(self):
-        # A full freeze removes at most TRACE_DECLINE_MAX_PENALTY (0.35) of a
-        # dimension that was otherwise 1.0 → floors at 0.65, never 0.
-        report = compute_grade(
-            _green(fr_tag_recent_pct=0.0, fr_tag_all_pct=0.20))
-        req = _dim(report, "requirement_traceability")
-        assert abs(req.score - 0.65) < 1e-9
-
-    def test_no_signal_leaves_dimension_intact(self):
-        req = _dim(compute_grade(_green()), "requirement_traceability")
-        assert req.score == 1.0
-
-
-class TestVerdictGateDecline:
-    def test_decline_caps_headline_below_A(self):
-        report = compute_grade(
-            _green(fr_tag_recent_pct=0.03, fr_tag_all_pct=0.18))
-        assert report.grade == "B"
-        assert report.score <= NON_A_CEILING
-        assert int(report.score) == 89  # score+letter stay consistent
-        assert "Capped" in report.verdict
-        assert "declining" in report.verdict
-
-    def test_perfect_repo_without_decline_is_A(self):
+class TestPerfectRepoIsA:
+    def test_perfect_repo_is_A(self):
         report = compute_grade(_green())
         assert report.grade == "A"
         assert report.score >= 90.0
-
-    def test_nonbinding_decline_does_not_claim_capped(self):
-        # raw already below the 89 ceiling → the decline cap isn't binding, so the
-        # verdict must NOT say "Capped:"; the decline still surfaces via the
-        # requirement dimension's detail.
-        report = compute_grade(_green(
-            frs_total=14, frs_covered=7, events_total=200, events_fr_tagged=100,
-            fr_tag_recent_pct=0.03, fr_tag_all_pct=0.18, fr_tag_window=30))
-        assert report.score < 89.0
-        assert "Capped:" not in report.verdict
-        assert any("declining" in r for r in report.reasons)
+        assert "Capped" not in report.verdict
 
 
 class TestVerdictGateDarkExpected:
@@ -146,17 +83,14 @@ class TestVerdictGateBrokenPillar:
         assert _dim(report, "dependency_hygiene").score == 0.0
         assert report.grade == "A"  # 0.05*0 off a 1.0 base → 95 → still A
 
-    def test_decline_penalty_never_triggers_the_F_collapse_cap(self):
-        # Regression (review #1): a steep decline penalty can drag an otherwise
-        # healthy requirement dimension below 0.5, but traceability erosion is a
-        # *decline* (cap B), NEVER a verifiability *collapse* (cap F). req_pre =
-        # 0.6*1.0 + 0.4*0.25 = 0.70 → penalised ~0.496 (< 0.5) yet must not F-cap.
+    def test_low_requirement_traceability_is_a_gap_not_an_F(self):
+        # requirement_traceability is deliberately NOT a collapse pillar: poor
+        # coverage/tagging drops its score AND the weighted average, but it must
+        # never weakest-link the headline to F (only test/provenance/security do).
         report = compute_grade(_green(
-            events_total=200, events_fr_tagged=50,  # tag_rate 0.25 → req_pre 0.70
-            fr_tag_recent_pct=0.03, fr_tag_all_pct=0.18, fr_tag_window=30))
+            frs_total=14, frs_covered=1, events_total=200, events_fr_tagged=20))
         assert _dim(report, "requirement_traceability").score < 0.5
         assert report.grade != "F"
-        assert report.grade in ("B", "C")
 
     def test_one_open_critical_is_a_gap_not_a_hard_cap(self):
         # A single high/critical scores the security dim ~0.66 (>= 0.5) → it is a

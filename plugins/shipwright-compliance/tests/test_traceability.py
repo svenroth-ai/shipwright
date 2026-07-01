@@ -1,7 +1,8 @@
 """Tests for the BP-1 dashboard traceability metrics.
 
 count_traced (grade input) credits FR-linked AND satisfied-no-FR changes;
-render_traced_row (dashboard) measures genuine FR-linkage and flags a freeze;
+render_traced_row (dashboard) reports genuine FR-linkage as INFORMATIONAL and
+grade-neutral (composition is work type, not control — never WARNs);
 iterate_test_coverage (dashboard) credits the test-EXEMPT satisfied-no-FR changes
 out of the "tests passing" denominator (the test-side BP-1 mirror).
 """
@@ -59,30 +60,35 @@ class TestCountTraced:
 
 
 class TestRenderTracedRow:
-    def test_flags_a_relative_drop(self):
-        # 10 FR-tagged then 25 no-FR: recent window (30) holds 5 FR-tags at a
-        # LOWER rate than all-time → WARN via the relative-drop branch.
+    """INFORMATIONAL + grade-neutral: it reports the FR-tag mix but never WARNs —
+    feature vs. maintenance composition is not a control signal."""
+
+    def test_lower_recent_rate_is_info_never_warn(self):
+        # 10 FR-tagged then 25 no-FR: recent rate below all-time. Under the old
+        # decline gate this WARNed; composition is now grade-neutral → INFO.
         events = [_ev(affected_frs=["FR-01.01"]) for _ in range(10)]
         events += [_ev(change_type="tooling", none_reason="x", spec_impact="none")
                    for _ in range(25)]
         row = render_traced_row(events)
         assert "Recent changes traced to an FR" in row
-        assert "WARN" in row
-        assert "FR-tagging dropped" in row
+        assert "INFO" in row
+        assert "WARN" not in row
 
-    def test_flags_a_total_freeze(self):
-        # 1 FR-tagged early, then 40 no-FR → recent window 0% → WARN (freeze).
+    def test_zero_recent_is_info_not_a_freeze_warn(self):
+        # A maintenance sprint (0 FR-tags in the recent window) is honest work,
+        # not a control failure → INFO, never WARN / "frozen".
         events = [_ev(affected_frs=["FR-01.01"])]
         events += [_ev(change_type="tooling", none_reason="x", spec_impact="none")
                    for _ in range(40)]
         row = render_traced_row(events)
-        assert "WARN" in row
-        assert "frozen" in row
+        assert "INFO" in row
+        assert "WARN" not in row
+        assert "frozen" not in row
 
-    def test_no_drop_when_recent_meets_alltime(self):
+    def test_high_rate_shown_as_info(self):
         events = [_ev(affected_frs=["FR-01.01"]) for _ in range(10)]
         row = render_traced_row(events)
-        assert "PASS" in row
+        assert "INFO" in row
         assert "100%" in row
 
     def test_no_iterate_events(self):
@@ -90,20 +96,13 @@ class TestRenderTracedRow:
         assert "n/a" in row
 
     def test_measures_fr_linkage_not_classification(self):
-        # All satisfied no-FR → FR-linkage is 0%, even though all are "traced".
+        # All satisfied no-FR → FR-linkage is 0% (still shown), INFO not WARN.
         events = [_ev(change_type="tooling", none_reason="x", spec_impact="none")
                   for _ in range(10)]
         row = render_traced_row(events)
         assert "0/10 (0%)" in row
-
-    def test_steady_state_freeze_warns_on_absolute_floor(self):
-        # No FR tags ever (recent == all-time == 0%) must still WARN — a steady
-        # freeze the relative drop test alone would miss.
-        events = [_ev(change_type="tooling", none_reason="x", spec_impact="none")
-                  for _ in range(10)]
-        row = render_traced_row(events)
-        assert "WARN" in row
-        assert "frozen" in row
+        assert "INFO" in row
+        assert "WARN" not in row
 
 
 class TestIterateTestCoverage:

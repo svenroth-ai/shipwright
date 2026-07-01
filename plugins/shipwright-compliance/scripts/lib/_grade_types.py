@@ -51,13 +51,6 @@ class GradeInputs:
     deps_total: int = 0
     deps_unknown_license: int = 0
     deps_copyleft: int = 0
-    # Traceability trend (honesty gate). Strict genuine-FR-tag rate over the
-    # recent window vs all-time; None on either → no trend signal (penalty + gate
-    # off) so the pure scorer and its synthetic-input tests are unaffected. The
-    # Shipwright adapter lights them from _traceability.fr_tag_trend.
-    fr_tag_recent_pct: float | None = None
-    fr_tag_all_pct: float | None = None
-    fr_tag_window: int = 0
     # Control pillars this repo is configured to measure. A pillar named here
     # whose score is None (n/a) is a *dark control* → the verdict is capped below
     # A and flagged "verification incomplete". Empty default → pure-scorer
