@@ -1,8 +1,8 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-30-sarif-suppression-filter"
+run_id: "iterate-2026-06-30-workflow-token-permissions"
 phase: "iterate"
-reason: "F11 refresh: integrate origin/main (DIRTY after parallel merge)"
+reason: "F11 refresh: integrate #301/#303/#302 churn"
 timestamp: "2026-06-30T21:50:52.825435+00:00"
 ---
 
@@ -12,9 +12,9 @@ timestamp: "2026-06-30T21:50:52.825435+00:00"
 
 ## Session Info
 
-- **Session ID**: 1d00268f-7922-410c-8e5f-5621ef9995de
+- **Session ID**: 21cb3b0b-74e2-4d54-b9ee-595f850b42db
 - **Timestamp**: 2026-06-30 21:50:52 UTC
-- **Reason**: F11 refresh: integrate origin/main (DIRTY after parallel merge)
+- **Reason**: F11 refresh: integrate #301/#303/#302 churn
 
 ## Last Iterate
 
@@ -29,7 +29,7 @@ timestamp: "2026-06-30T21:50:52.825435+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/sarif-suppression-filter
+- **Branch**: iterate/wf-token-perms
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/sarif-suppression-filter
-- **Last Commit**: 54875eae Merge remote-tracking branch 'origin/main' into iterate/sarif-suppression-filter
+- **Branch**: iterate/wf-token-perms
+- **Last Commit**: ae11b9d8 Merge remote-tracking branch 'origin/main' into iterate/wf-token-perms
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -74,7 +74,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 236
+- **Total work events**: 237
 - **Last iterate**: change — Re-tag mis-filed compliance/security FEATURE work to FR-01.10/FR-01.07 via event_amended overlays; clears the honesty-gate FR-tag decline (Control Grade B->A) (2026-06-30)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
