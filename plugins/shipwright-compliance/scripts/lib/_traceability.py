@@ -7,10 +7,10 @@ Two consumers, one shared SSOT:
   it is FR-linked OR a *satisfied no-FR change* (valid change_type + one-line
   none_reason, behavior-preserving) — the discriminating definition the Spec
   handoff seam asked for.
-- :func:`render_traced_row` surfaces the **FR-tagging freeze** as a
-  Quality-Indicators row and flags a drop. This is the honesty counterweight:
-  even as the grade credits classified no-FR work, the dashboard transparently
-  shows that FR-tagging *itself* is rare (mostly framework infra).
+- :func:`render_traced_row` surfaces the recent FR-tag rate as an **informational,
+  grade-neutral** Quality-Indicators row (INFO, never WARN). It makes the
+  feature-vs-maintenance mix visible for transparency, but that mix is work type,
+  not control, so it never affects the grade (see ``_grade_gate``).
 
 Both key off the shared :mod:`fr_classification` SSOT, loaded pollution-free via
 ``audit_adapters.load_shared_lib`` so "classified" (the record_event gate) and
@@ -23,7 +23,7 @@ from scripts.audit.audit_adapters import load_shared_lib
 
 _fc = load_shared_lib("fr_classification")
 
-# How many most-recent iterate changes the freeze metric looks back over.
+# How many most-recent iterate changes the informational FR-tag row looks back over.
 _RECENT_WINDOW = 30
 
 
@@ -99,9 +99,9 @@ def fr_tag_trend(work_events) -> dict | None:
 
     Returns ``None`` when there are no iterate events (no trend to assess);
     otherwise ``{recent_tagged, window, all_tagged, total, recent_pct, all_pct}``.
-    The shared SSoT for :func:`render_traced_row` (the Quality-Indicators row) and
-    the Control-Grade traceability-decline gate (``GradeInputs.fr_tag_*_pct``), so
-    the dashboard row and the grade can never disagree about the freeze."""
+    Backs the informational :func:`render_traced_row` Quality-Indicators row only —
+    the recent FR-tag rate is grade-neutral (composition is not a control signal),
+    so it does not feed the Control Grade."""
     iterate = [we for we in work_events if we.source == "iterate"]
     if not iterate:
         return None
@@ -123,9 +123,13 @@ def fr_tag_trend(work_events) -> dict | None:
 def render_traced_row(work_events) -> str:
     """The '% of recent changes traced to an FR' Quality-Indicators row.
 
-    Measures genuine FR-linkage (``affected_frs``/``new_frs``) — NOT the broader
-    'classified' notion — over the last :data:`_RECENT_WINDOW` iterate changes,
-    and WARNs when that rate has dropped below the all-time rate (a freeze)."""
+    Purely **informational and grade-neutral**: it reports genuine FR-linkage
+    (``affected_frs``/``new_frs``) over the last :data:`_RECENT_WINDOW` iterate
+    changes so the feature-vs-maintenance mix is visible, but that rate does NOT
+    affect the Control Grade. Composition is work type, not control — a correct,
+    honest maintenance sprint (few new FR-tags) is fully in control (see
+    ``_grade_gate``). Honest attribution is enforced structurally by the write-time
+    FR-gate; coverage + reconciliation carry the traceability control signal."""
     trend = fr_tag_trend(work_events)
     if trend is None:
         return (
@@ -136,29 +140,10 @@ def render_traced_row(work_events) -> str:
     recent_tagged = trend["recent_tagged"]
     window = trend["window"]
     recent_pct = trend["recent_pct"]
-    all_pct = trend["all_pct"]
-
-    # WARN on a freeze, two ways: a relative drop below the all-time rate, OR an
-    # absolute floor — zero FR-tags in the recent window (a steady-state freeze
-    # that the relative test misses once all-time decays toward recent). The raw
-    # "X/N (P%)" stays honest regardless of the badge.
-    if recent_tagged == 0:
-        why = (
-            f"no recent change carries an FR tag (last {window}) — "
-            "FR-tagging is frozen; see the Control Verdict traceability dimension"
-        )
-        badge = "WARN"
-    elif recent_pct < all_pct:
-        why = (
-            f"FR-tagging dropped to {recent_pct:.0%} (last {window}) vs "
-            f"{all_pct:.0%} all-time — recent changes classified no-FR; see the "
-            "Control Verdict traceability dimension"
-        )
-        badge = "WARN"
-    else:
-        why = ""
-        badge = "PASS"
+    # INFO, never WARN: the raw "X/N (P%)" is shown for transparency, but the mix
+    # of feature vs. maintenance work is not a control signal, so it never alarms.
     return (
         f"| Recent changes traced to an FR | {recent_tagged}/{window} "
-        f"({recent_pct:.0%}) | {badge} | {why} |"
+        f"({recent_pct:.0%}) | INFO | feature vs. maintenance mix — "
+        "informational, does not affect the Control Grade |"
     )

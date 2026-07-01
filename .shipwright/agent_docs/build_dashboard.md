@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-30 21:50 UTC | Session: 21cb3b0b-74e2-4d54-b9ee-595f850b42db | Run: iterate-2026-06-30-workflow-token-permissions
+> Updated: 2026-07-01 07:04 UTC | Session: a93268fc-73cb-47be-baab-2209bc730d47 | Run: iterate-2026-07-01-grade-composition-neutral
 
-## Recent Changes (237 iterations)
+## Recent Changes (238 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Make the Control Grade composition-neutral: remove the FR-tag-decline penalty + verdict cap so the feature-vs-maintenance work mix no longer affects the grade | 4964/4976 |  | FR-01.10 | 2026-07-01 |
 | change | Re-tag mis-filed compliance/security FEATURE work to FR-01.10/FR-01.07 via event_amended overlays; clears the honesty-gate FR-tag decline (Control Grade B->A) | 4955/4967 |  | FR-01.10, FR-01.07 | 2026-06-30 |
 | change | Quarantine outbox-originating orphan-status lines in the triage sweep instead of hard-blocking the whole buffer; deliver the valid remainder | 3633/3633 |  | infra | 2026-06-30 |
 | bug | SARIF suppression filter: inline-suppressed Semgrep results no longer counted as live in shared security-artifact ingestion | 3604/3604 |  | compliance | 2026-06-30 |
@@ -244,7 +245,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-30 | Unit: 3610/3610 | Integration: 5/5 | Smoke: not_run | (iterate)
+Last run: 2026-07-01 | Unit: 4790/4802 | Integration: 174/174 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

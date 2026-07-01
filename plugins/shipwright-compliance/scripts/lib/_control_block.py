@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 
 from scripts.lib._latest_suite import resolve_latest_full_suite
 from scripts.lib._reconciliation import compute_reconciliation
-from scripts.lib._traceability import count_traced, fr_tag_trend
+from scripts.lib._traceability import count_traced
 from scripts.lib.ci_security import grade_security_signal, load_ci_security
 from scripts.lib.control_grade import GradeInputs, GradeReport, compute_grade
 
@@ -91,15 +91,11 @@ def build_grade_inputs(data: ComplianceData) -> GradeInputs:
     else:
         verified = "shipwright_events.jsonl (no events)"
 
-    # Honesty gate inputs. The strict FR-tag trend (same SSoT as the dashboard's
-    # "Recent changes traced to an FR" row) lights the traceability-decline
-    # penalty + verdict cap; None when there are no iterate events.
-    trend = fr_tag_trend(events)
     # A control this repo is CONFIGURED to measure but that is dark (n/a) caps the
     # verdict below A. Security is "expected" once security.yml exists, so a
     # missing/un-ingested CI summary reads as "verification incomplete", never a
-    # clean A (the symmetric guard to the traceability decline — a green headline
-    # can't coexist with a control that simply isn't running).
+    # clean A — a green headline can't coexist with a control that simply isn't
+    # running.
     expected: list[str] = []
     pr = data.project_root
     if pr is not None and (pr / ".github" / "workflows" / "security.yml").exists():
@@ -134,9 +130,6 @@ def build_grade_inputs(data: ComplianceData) -> GradeInputs:
         deps_total=len(deps),
         deps_unknown_license=unknown,
         deps_copyleft=copyleft,
-        fr_tag_recent_pct=trend["recent_pct"] if trend else None,
-        fr_tag_all_pct=trend["all_pct"] if trend else None,
-        fr_tag_window=trend["window"] if trend else 0,
         expected_dimensions=tuple(expected),
         verified_from=verified,
     )

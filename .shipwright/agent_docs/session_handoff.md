@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-30-workflow-token-permissions"
+run_id: "iterate-2026-07-01-grade-composition-neutral"
 phase: "iterate"
-reason: "F11 refresh: integrate #301/#303/#302 churn"
-timestamp: "2026-06-30T21:50:52.825435+00:00"
+reason: "iterate: make the Control Grade composition-neutral"
+timestamp: "2026-07-01T07:04:50.416749+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-30 21:50:52 UTC
+> Auto-generated 2026-07-01 07:04:50 UTC
 
 ## Session Info
 
-- **Session ID**: 21cb3b0b-74e2-4d54-b9ee-595f850b42db
-- **Timestamp**: 2026-06-30 21:50:52 UTC
-- **Reason**: F11 refresh: integrate #301/#303/#302 churn
+- **Session ID**: a93268fc-73cb-47be-baab-2209bc730d47
+- **Timestamp**: 2026-07-01 07:04:50 UTC
+- **Reason**: iterate: make the Control Grade composition-neutral
 
 ## Last Iterate
 
@@ -29,7 +29,10 @@ timestamp: "2026-06-30T21:50:52.825435+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/wf-token-perms
+- **Branch**: iterate/grade-composition-neutral
+- **Run ID**: `iterate-2026-07-01-grade-composition-neutral`
+- **Spec**: .shipwright/planning/iterate/2026-07-01-grade-composition-neutral.md
+- **Complexity**: medium (core metric — compliance grading logic)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/wf-token-perms
-- **Last Commit**: ae11b9d8 Merge remote-tracking branch 'origin/main' into iterate/wf-token-perms
+- **Branch**: iterate/grade-composition-neutral
+- **Last Commit**: aa2e4d48 chore(triage): sweep 2 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-a2c95dc8 | work_completed | iterate (Make the Control Grade composition-neutral: remove the FR-tag-decline penalty + verdict cap so the feature-vs-maintenance work mix no longer affects the grade) | 2026-07-01 |
 | evt-f90c7126 | work_completed | iterate (Re-tag mis-filed compliance/security FEATURE work to FR-01.10/FR-01.07 via event_amended overlays; clears the honesty-gate FR-tag decline (Control Grade B->A)) | 2026-06-30 |
 | evt-0b72de69 | event_amended | — | 2026-06-30 |
 | evt-2cf2540c | event_amended | — | 2026-06-30 |
 | evt-e13851a3 | event_amended | — | 2026-06-30 |
-| evt-1fad1111 | event_amended | — | 2026-06-30 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 237
-- **Last iterate**: change — Re-tag mis-filed compliance/security FEATURE work to FR-01.10/FR-01.07 via event_amended overlays; clears the honesty-gate FR-tag decline (Control Grade B->A) (2026-06-30)
+- **Total work events**: 238
+- **Last iterate**: change — Make the Control Grade composition-neutral: remove the FR-tag-decline penalty + verdict cap so the feature-vs-maintenance work mix no longer affects the grade (2026-07-01)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

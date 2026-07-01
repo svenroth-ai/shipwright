@@ -22,18 +22,17 @@ deliberately does *not* borrow safety-certification (DO-178C/IEC 62304)
 vocabulary it cannot honestly claim.
 
 The raw average is then passed through :mod:`scripts.lib._grade_gate` (the
-honesty layer): a self-relative traceability decline depresses the requirement
-dimension, and the headline is capped below "A — full control" when a
-load-bearing pillar is declining, dark-but-expected, or broken — so the headline
-can't lie while the per-dimension table keeps the full detail.
+honesty layer): the headline is capped below "A — full control" when a
+load-bearing pillar is dark-but-expected (configured but unmeasured) or broken
+(F-band) — so the headline can't lie while the per-dimension table keeps the
+full detail. Workload composition (feature vs. maintenance mix) is deliberately
+grade-neutral: it measures work type, not control, so it never caps or penalises
+the score.
 """
 
 from __future__ import annotations
 
-from scripts.lib._grade_gate import (
-    apply_traceability_penalty,
-    apply_verdict_gate,
-)
+from scripts.lib._grade_gate import apply_verdict_gate
 from scripts.lib._grade_types import DimensionResult, GradeInputs, GradeReport
 
 # Re-export the value model so external callers keep importing it from here.
@@ -73,16 +72,15 @@ def _score_dimensions(inp: GradeInputs) -> list[DimensionResult]:
             _ratio(inp.events_fr_tagged, inp.events_total)
             if inp.events_total > 0 else 1.0
         )
+        # Composition-neutral: coverage (are all FRs implemented?) + classification
+        # completeness (is every change traced — FR-linked or classified no-FR?).
+        # Both are independent of the feature-vs-maintenance work mix.
         req_score: float | None = 0.6 * coverage + 0.4 * tag_rate
         req_detail = (
             f"{inp.frs_covered}/{inp.frs_total} FRs covered; "
             f"{inp.events_fr_tagged}/{inp.events_total} changes traced "
             "(FR-linked or classified no-FR)"
         )
-        # Honesty gate: a self-relative FR-tag decline depresses this dimension
-        # (capped) so a broad "classified no-FR" credit can't mask a freeze.
-        req_score, _decline_suffix = apply_traceability_penalty(req_score, inp)
-        req_detail += _decline_suffix
     else:
         req_score, req_detail = None, "no requirements declared"
     dims.append(DimensionResult(
@@ -221,8 +219,9 @@ def compute_grade(inp: GradeInputs) -> GradeReport:
     raw_score = max(0.0, min(100.0, round(weighted / total_weight * 100.0, 1)))
 
     # Honesty gate: cap the headline (score + letter together) when a
-    # load-bearing pillar is declining, dark-but-expected, or broken. The number
-    # stays the weighted average unless a gate condition fires.
+    # load-bearing pillar is dark-but-expected or broken. The number stays the
+    # weighted average unless a gate condition fires. Workload composition is
+    # grade-neutral and never caps here.
     ceiling, gate_reasons = apply_verdict_gate(inp, dims, raw_score)
     score100 = min(raw_score, ceiling)
     grade, band_label = _band(score100)
