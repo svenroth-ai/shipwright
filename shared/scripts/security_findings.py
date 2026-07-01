@@ -147,13 +147,41 @@ def _sarif_severity_bucket(value: Any, is_gitleaks: bool) -> str:
     return "low"
 
 
+def _result_is_suppressed(res: dict) -> bool:
+    """A SARIF result is suppressed when it carries at least one suppression
+    that is not explicitly ``rejected``.
+
+    Semgrep's ``# nosemgrep`` inline suppressions emit
+    ``suppressions: [{"kind": "inSource"}]`` (no ``status`` → ``accepted`` per
+    SARIF 2.1.0 §3.27.23), so an inline-suppressed false positive must not be
+    counted as a live finding — otherwise the ``gh-security`` action-unit count
+    never reaches 0 and the orchestrator's auto-resolve gate never dismisses
+    the item (it reappears after every manual dismiss).
+
+    A suppression whose ``status`` is ``rejected`` means the suppression itself
+    was rejected, so the finding stays LIVE — we never silently drop a real
+    finding behind an over-broad "has any suppression" filter."""
+    suppressions = res.get("suppressions")
+    if not isinstance(suppressions, list) or not suppressions:
+        return False
+    return any(
+        isinstance(s, dict)
+        and str(s.get("status", "accepted")).strip().lower() != "rejected"
+        for s in suppressions
+    )
+
+
 def _findings_from_sarif(root: Path) -> list[dict] | None:
     """Parse every ``*.sarif`` under ``root`` into severity-only findings (the
     minimal shape ``ci_security.summarize`` needs). ``None`` when no SARIF file
     exists at all, so the caller distinguishes "no scan output" from a clean
     empty scan. SARIF carries ``security-severity`` on the RULE, so each result
     is resolved to its rule by ``ruleId`` (``ruleIndex`` as a fallback) — reading
-    it off the result directly is the bug the CI critical-gate documents."""
+    it off the result directly is the bug the CI critical-gate documents.
+
+    Inline-suppressed results (``# nosemgrep`` → ``suppressions:[{kind:inSource}]``)
+    are dropped via :func:`_result_is_suppressed`, so a fully-suppressed scan
+    yields ``[]`` (clean) rather than a wall of phantom live findings."""
     sarifs = list(root.rglob("*.sarif"))
     if not sarifs:
         return None
@@ -179,6 +207,8 @@ def _findings_from_sarif(root: Path) -> list[dict] | None:
             for res in run.get("results") or []:
                 if not isinstance(res, dict):
                     continue
+                if _result_is_suppressed(res):
+                    continue  # inline-suppressed FP — not a live finding
                 score = (res.get("properties") or {}).get("security-severity")
                 if score is None:
                     score = by_id.get(res.get("ruleId"))
