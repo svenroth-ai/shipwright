@@ -1,7 +1,7 @@
 # Commit Change Log
 
 Generated: 2026-06-30T21:50:52.825435+00:00
-Total commits: 1068
+Total commits: 1072
 
 ## Commit Distribution
 
@@ -9,11 +9,11 @@ Total commits: 1068
 pie title Commit Types
     "fix" : 305
     "feat" : 283
-    "chore" : 234
-    "docs" : 142
+    "chore" : 236
+    "docs" : 143
     "refactor" : 64
     "test" : 25
-    "ci" : 7
+    "ci" : 8
     "other" : 7
     "build" : 1
 ```
@@ -24,8 +24,8 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-01 | triage | drop inline-suppressed SARIF results at the ingest layer (#302) | d2be654546c0 |
 | 2026-06-30 | triage | quarantine orphan-status in the outbox sweep instead of hard-blocking (#303) | 33234ef43c90 |
-| 2026-06-30 | triage | drop inline-suppressed SARIF results at the ingest layer | 63c8178bf77b |
 | 2026-06-30 | security | strip zero-width Unicode (U+200B) from a planning note flagged by the prompt-injection scan (#300) | e04991c66e81 |
 | 2026-06-30 | ci | pin ossf/scorecard-action by tag so publish stops failing (#297) | efca5737b380 |
 | 2026-06-30 | compliance | UTC-normalize the RTM Verification Timeline Date column (#295) | 64f89aa45cb7 |
@@ -618,12 +618,14 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 234 commits
+### Chores (chore) — 236 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-01 | iterate | refresh triage before re-integrate | 7e4b88cb5040 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
-| 2026-06-30 | triage | sweep 30 outbox append(s) into branch | 989218a8b553 |
+| 2026-06-30 | churn | regenerate derived snapshots after main merge | cf5276d42148 |
+| 2026-06-30 | iterate | refresh session handoff + triage after F11 | b4ecb1cb7e5b |
 | 2026-06-30 | ci | remove native OpenSSF Scorecard workflow (wrong anchor for AI-first) (#298) | 0962051d7704 |
 | 2026-06-29 | bloat | tighten baseline floors to on-disk LOC (Group H2) (#293) | 4594948315b5 |
 | 2026-06-28 | compliance | refresh CI-security summary to the clean post-#272 scan (A100) (#288) | dac886347e26 |
@@ -857,10 +859,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 142 commits
+### Documentation (docs) — 143 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-30 | conventions | record least-privilege workflow-permissions convention | 459b8b86e000 |
 | 2026-06-28 | lib | fix events_log lazy-import rationale (load_shared_lib isolation, not removed cycle) (#282) | faa96b699135 |
 | 2026-06-24 | images | update command-center board screenshot (#275) | 4cfb9d2dc9e3 |
 | 2026-06-21 | — | tighten the README hero and show what one iterate produces | 7cf1f4c6dadd |
@@ -1103,10 +1106,11 @@ pie title Commit Types
 | 2026-04-11 | — | complete test phase — 299 unit tests, 5 E2E tests, smoke PASS | e843d458942d |
 | 2026-04-11 | e2e | set up Playwright with E2E specs and smoke test results | cba0fd6e9012 |
 
-### CI/CD (ci) — 7 commits
+### CI/CD (ci) — 8 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-30 | security | least-privilege GITHUB_TOKEN permissions per workflow | db5de35d7eee |
 | 2026-06-05 | security | scope self-scan to shipped code (exclude tests/) | b49fa41db2ae |
 | 2026-06-05 | security-template | checkout at fetch-depth 1 (no scanner reads git history) | f6dd93918acf |
 | 2026-06-01 | — | pin third-party actions to SHA and verify gitleaks download integrity | 32bc15a5aa01 |
@@ -1137,7 +1141,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1068 |
+| Total commits | 1072 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1068 |
+| Human-authored commits | 1072 |
 

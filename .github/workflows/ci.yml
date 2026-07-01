@@ -7,6 +7,12 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Least-privilege GITHUB_TOKEN (OpenSSF Scorecard Token-Permissions): this
+# workflow only reads — checkout + lint + tests, no writes — so the top-level
+# token is read-only and no job widens it.
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true

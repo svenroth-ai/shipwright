@@ -12,11 +12,11 @@ on:
   workflow_dispatch:
 
 # `pull_request` (not pull_request_target) keeps untrusted fork PR code
-# from running with elevated privileges.  pull-requests:write is needed
-# for the comment-post step.
+# from running with elevated privileges. Least-privilege GITHUB_TOKEN
+# (OpenSSF Scorecard Token-Permissions): the top-level token is read-only;
+# the bloat-check job widens itself to pull-requests:write for its comment step.
 permissions:
   contents: read
-  pull-requests: write
 
 concurrency:
   group: bloat-check-${{ github.ref }}
@@ -26,6 +26,10 @@ jobs:
   bloat-check:
     name: Anti-ratchet + allowlist diff
     runs-on: ubuntu-latest
+    # pull-requests:write — required by the "Post / update PR comment" step.
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - name: Checkout PR head with full history
         uses: actions/checkout@v4

@@ -10,6 +10,14 @@ on:
     - cron: '0 6 * * 1'  # Monday 06:00 UTC — weekly full scan
   workflow_dispatch:
 
+# Intentionally TOP-LEVEL — unlike the sibling workflows (ci/codeql/bloat-check/
+# pr-review), which keep a read-only top-level and widen per-job. This single-job
+# SARIF workflow is convention-locked: the compliance A5.3 audit
+# (security_workflow.REQUIRED_PERMISSIONS) reads the *top-level* `permissions:`
+# block to confirm the SARIF upload can run. With one job, top-level == job-level
+# effective scope, so there is no least-privilege loss from keeping it here. Do
+# NOT move these to the `scan` job without first teaching A5.3 to read the SARIF
+# job's effective (job-level) permissions, or the audit fails closed.
 permissions:
   contents: read
   actions: read          # required by github/codeql-action/upload-sarif@v4 to attach SARIF to the run

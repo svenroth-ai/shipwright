@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-30-sarif-suppression-filter",
+    "run_id": "iterate-2026-06-30-workflow-token-permissions",
     "date": "2026-06-30",
     "unit": {
       "status": "passed",
-      "passed": 3604,
-      "total": 3604
+      "passed": 3610,
+      "total": 3610
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 5,
+      "total": 5
     },
     "pgtap": {
       "status": "not_run",
@@ -18,58 +18,58 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "design_fidelity": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "smoke": {
       "status": "not_run"
     },
+    "degraded": [],
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --extra dev pytest shared/tests/test_github_api_sarif_fallback.py -q -p no:cacheprovider",
+      "surface": "none",
+      "runner": "",
       "exit_code": 0,
-      "tests_run": 8,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-30-sarif-suppression-filter/surface_verification.log",
-      "timestamp": "2026-06-30T21:36:44.114Z"
+      "tests_run": 0,
+      "justification": "CI workflow YAML hardening (GITHUB_TOKEN permissions) \u2014 no runtime/app surface. Verified via YAML parse of all 5 workflows + the workflow permission/shape test suites."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "An inline-suppressed SARIF result (suppressions:[{kind:inSource}], no status) is not counted as a live finding",
+          "behavior": "ci/codeql/bloat-check/pr-review top-level token is read-only (contents:read, no write scope)",
           "disposition": "tested",
-          "evidence": "test_github_api_sarif_fallback.py::test_sarif_all_inline_suppressed_results_yield_clean_empty PASSED"
+          "evidence": "test_workflow_token_permissions.py::test_top_level_token_is_read_only[ci.yml,codeql.yml,bloat-check.yml,pr-review.yml] PASSED"
         },
         {
-          "behavior": "A SARIF file present but with all results suppressed returns [] (clean), not None and not phantom findings",
+          "behavior": "bloat-check job widens to pull-requests:write and re-declares contents:read",
           "disposition": "tested",
-          "evidence": "test_github_api_sarif_fallback.py::test_sarif_all_inline_suppressed_results_yield_clean_empty PASSED (asserts == [])"
+          "evidence": "test_workflow_token_permissions.py::test_bloat_check_job_widens_to_pr_write + test_bloat_defense_artifacts.py::test_workflow_permissions_minimal PASSED"
         },
         {
-          "behavior": "A live result with no suppressions is retained",
+          "behavior": "pr-review: only the review job widens to pull-requests:write; decide/selftest hold no write scope",
           "disposition": "tested",
-          "evidence": "test_github_api_sarif_fallback.py::test_sarif_only_suppressed_results_dropped_live_retained PASSED"
+          "evidence": "test_workflow_token_permissions.py::test_pr_review_only_review_job_widens PASSED"
         },
         {
-          "behavior": "A result whose only suppression has status=rejected stays live (no security false-negative)",
+          "behavior": "codeql analyze job retains security-events:write for the SARIF upload",
           "disposition": "tested",
-          "evidence": "test_github_api_sarif_fallback.py::test_sarif_only_suppressed_results_dropped_live_retained PASSED (3rd result retained)"
+          "evidence": "test_workflow_token_permissions.py::test_codeql_analyze_job_has_security_events_write PASSED"
         },
         {
-          "behavior": "A mixed scan drops only the suppressed result (2 live high, not 3)",
+          "behavior": "security.yml top-level still satisfies the A5.3 REQUIRED_PERMISSIONS convention lock (documented exception)",
           "disposition": "tested",
-          "evidence": "test_github_api_sarif_fallback.py::test_sarif_only_suppressed_results_dropped_live_retained PASSED (sorted == ['high','high'])"
+          "evidence": "test_workflow_token_permissions.py::test_security_yml_is_the_documented_top_level_exception + test_workflow_shape.py::TestPermissions PASSED"
         },
         {
-          "behavior": "Non-suppressed Trivy/Gitleaks SARIF parsing is unchanged by the filter",
+          "behavior": "all 5 workflow YAML files remain valid after the permission edits",
           "disposition": "tested",
-          "evidence": "test_github_api_sarif_fallback.py::test_sarif_fallback_buckets_by_cvss_band + ::test_sarif_fallback_gitleaks_is_critical PASSED"
+          "evidence": "yaml.safe_load over all 5 workflows (verified) + every guard test parses them PASSED"
         }
       ],
       "counts": {
@@ -82,12 +82,6 @@
         "acs": 6,
         "covered_acs": 6
       }
-    },
-    "degraded": [
-      {
-        "condition": "complexity_override",
-        "detail": "classify_complexity returned 'medium' (prior_source: keyword, confidence 0.7); overridden to 'small'. Authoritative diff-driven detectors (risk_detectors.py, F11-recomputed) yield zero risk flags: not touches_io_boundary, not cross_component, not touches_build. Surgical single-function root-cause fix + regression tests, library scope, no UI/API/schema."
-      }
-    ]
+    }
   }
 }

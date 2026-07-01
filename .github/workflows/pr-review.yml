@@ -19,9 +19,11 @@ on:
     branches: [main]
     types: [opened, synchronize, reopened, labeled]
 
+# Least-privilege GITHUB_TOKEN (OpenSSF Scorecard Token-Permissions): top-level
+# is read-only; only the `review` job widens to pull-requests:write to post the
+# Tier-3 review. The `decide` job needs just contents:read (checkout + git diff).
 permissions:
   contents: read
-  pull-requests: write
 
 concurrency:
   group: pr-review-${{ github.event.pull_request.number }}
@@ -84,6 +86,10 @@ jobs:
     needs: decide
     if: needs.decide.outputs.needs_review == 'true'
     runs-on: ubuntu-latest
+    # pull-requests:write — the review job posts the Tier-3 review via the API.
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       # Default (shallow) checkout is enough: pr_review.py fetches the diff via
       # `gh pr diff` (GitHub API) and only needs the prompt + script files on disk.
