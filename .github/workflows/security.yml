@@ -6,6 +6,17 @@ name: Security Scan
 on:
   pull_request:
     branches: [main]
+  push:
+    # Full scan on every merge to main so the security-scan-results artifact
+    # (read by the github_triage producer via latest_security_workflow_run)
+    # tracks HEAD. Without this, main was only re-scanned weekly, so a finding
+    # fixed between weekly scans re-surfaced from the stale artifact for up to 7
+    # days (iterate-2026-07-02-gh-prompt-ghost-fix). This repo is public ⇒
+    # Actions minutes are free; the `concurrency` block below cancels superseded
+    # runs. NOTE: deliberately NOT added to the adopt template
+    # (shared/templates/github-actions/security.yml.template) — adopted repos may
+    # be private, where per-push scans cost minutes; they keep weekly + PR.
+    branches: [main]
   schedule:
     - cron: '0 6 * * 1'  # Monday 06:00 UTC — weekly full scan
   workflow_dispatch:

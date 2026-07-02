@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-07-02T11:47:15.333187+00:00
+Generated: 2026-07-02T16:48:24.926158+00:00
 Total commits: 1070
 
 ## Commit Distribution
@@ -9,8 +9,8 @@ Total commits: 1070
 pie title Commit Types
     "fix" : 306
     "feat" : 283
-    "chore" : 234
-    "docs" : 142
+    "chore" : 233
+    "docs" : 143
     "refactor" : 64
     "test" : 25
     "ci" : 8
@@ -619,11 +619,10 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 234 commits
+### Chores (chore) — 233 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-02 | triage | sweep 3 outbox append(s) into branch | 8dd796156bcc |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
 | 2026-06-30 | ci | remove native OpenSSF Scorecard workflow (wrong anchor for AI-first) (#298) | 0962051d7704 |
 | 2026-06-29 | bloat | tighten baseline floors to on-disk LOC (Group H2) (#293) | 4594948315b5 |
@@ -858,10 +857,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 142 commits
+### Documentation (docs) — 143 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-02 | planning | phased diff/patch-coverage roadmap (trg-8fdebda3) (#305) | 892001e73858 |
 | 2026-06-28 | lib | fix events_log lazy-import rationale (load_shared_lib isolation, not removed cycle) (#282) | faa96b699135 |
 | 2026-06-24 | images | update command-center board screenshot (#275) | 4cfb9d2dc9e3 |
 | 2026-06-21 | — | tighten the README hero and show what one iterate produces | 7cf1f4c6dadd |

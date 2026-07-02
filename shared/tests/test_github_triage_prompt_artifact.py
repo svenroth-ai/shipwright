@@ -105,3 +105,75 @@ def test_prompt_fetch_failed_is_none(tmp_path, monkeypatch) -> None:
     _patch(monkeypatch, prompt_findings=None)
     result = github_triage.import_findings(tmp_path)
     assert result["by_source"][github_triage.PREFIX_PROMPT] is None
+
+
+# --------------------------------------------------------------------------- #
+# Decoupling from Code Scanning (iterate-2026-07-02-gh-prompt-ghost-fix, defect A)
+# --------------------------------------------------------------------------- #
+# Prompt-injection findings are NEVER uploaded to GitHub Code Scanning
+# (security.yml streams only the OSS SAST SARIF). Gating the prompt source on
+# ``cs_alerts is None`` therefore left the repo BLIND to prompt-injection whenever
+# Code Scanning was available (the healthy-repo case) — a signal loss, and the
+# root of the recurring gh-prompt ghost. The prompt source must be evaluated on
+# every run, independent of Code Scanning availability. The SAST artifact path
+# stays gated (it CAN double-count SARIF findings; prompt-injection cannot).
+def _patch_cs_available(
+    monkeypatch, *, prompt_findings: Any, sast_findings: Any = None
+) -> dict[str, int]:
+    """Like ``_patch`` but Code Scanning is AVAILABLE (cs_alerts non-None).
+
+    Returns a call-counter dict so tests can assert the SAST findings.json is NOT
+    downloaded when Code Scanning is up (no double-count, no wasted bandwidth).
+    """
+    calls = {"security_findings": 0, "prompt_risks": 0}
+
+    def _dl_security(rid: Any) -> Any:
+        calls["security_findings"] += 1
+        return sast_findings
+
+    def _dl_prompt(rid: Any) -> Any:
+        calls["prompt_risks"] += 1
+        return prompt_findings
+
+    monkeypatch.setattr(github_api, "gh_available", lambda: True)
+    monkeypatch.setattr(github_api, "default_branch", lambda: "main")
+    monkeypatch.setattr(github_api, "owner_repo", lambda _: OWNER_REPO)
+    # Code Scanning AVAILABLE — returns a (possibly empty) list, NOT None.
+    monkeypatch.setattr(github_api, "fetch_code_scanning_alerts", lambda: [])
+    monkeypatch.setattr(github_api, "fetch_dependabot_alerts", lambda: [])
+    monkeypatch.setattr(github_api, "fetch_secret_scanning_alerts", lambda: None)
+    monkeypatch.setattr(github_api, "fetch_workflow_runs", lambda b: None)
+    monkeypatch.setattr(
+        github_api, "latest_security_workflow_run",
+        lambda: {"id": 900, "html_url": "https://github.com/acme/foo/actions/runs/900"},
+    )
+    monkeypatch.setattr(github_api, "download_security_findings", _dl_security)
+    monkeypatch.setattr(github_api, "download_prompt_risks", _dl_prompt)
+    return calls
+
+
+def test_prompt_source_fires_when_code_scanning_available(tmp_path, monkeypatch) -> None:
+    # Defect A regression: with Code Scanning UP, an open prompt finding must still
+    # be surfaced. Pre-fix this returned None (source dead when repo healthy).
+    _patch_cs_available(monkeypatch, prompt_findings=[{"severity": "high"}])
+    result = github_triage.import_findings(tmp_path)
+    assert result["by_source"][github_triage.PREFIX_PROMPT] == 1
+
+
+def test_clean_prompt_scan_resolves_when_code_scanning_available(tmp_path, monkeypatch) -> None:
+    # [] = clean scan with Code Scanning up: fetch succeeded, no item emitted, and
+    # the auto-resolve gate opens for PREFIX_PROMPT (so a fixed finding can clear).
+    _patch_cs_available(monkeypatch, prompt_findings=[])
+    result = github_triage.import_findings(tmp_path)
+    assert result["by_source"][github_triage.PREFIX_PROMPT] == 0
+
+
+def test_sast_findings_stay_gated_when_code_scanning_available(tmp_path, monkeypatch) -> None:
+    # Invariant preserved: prompt_risks.json IS fetched (orthogonal to Code Scanning),
+    # but the SAST findings.json is NOT — it would double-count the SARIF alerts.
+    calls = _patch_cs_available(
+        monkeypatch, prompt_findings=[{"severity": "high"}], sast_findings=[{"severity": "critical"}]
+    )
+    github_triage.import_findings(tmp_path)
+    assert calls["prompt_risks"] == 1, "prompt_risks.json must be fetched even when Code Scanning is up"
+    assert calls["security_findings"] == 0, "SAST findings.json must stay gated on cs_alerts is None"

@@ -76,33 +76,33 @@ def import_findings(project_root) -> dict:
     db_alerts = github_api.fetch_dependabot_alerts()
     ss_alerts = github_api.fetch_secret_scanning_alerts()
 
-    # Iterate C — security-artifact-producer. The artifact path fires ONLY
-    # when ``cs_alerts is None`` (i.e. GHAS Code Scanning is unavailable —
-    # private repo without GHAS). Probing gh-run-download when GHAS works
-    # would (a) waste network bandwidth and (b) risk double-counting the
-    # same semgrep/trivy findings that the workflow's SARIF upload already
-    # streamed into Code Scanning. Dependabot's status is irrelevant —
-    # Dependabot is free and orthogonal to the SAST source (external LLM
-    # review HIGH #1 — gemini-1).
+    # Security-scan-results artifact: two findings classes, gated DIFFERENTLY
+    # (iterate-2026-07-02-gh-prompt-ghost-fix). findings.json (SAST) is fetched
+    # ONLY when ``cs_alerts is None`` — when GHAS works the SARIF upload already
+    # streamed it into Code Scanning, so re-ingesting double-counts. prompt_risks.json
+    # is fetched on EVERY run: prompt-injection is never in SARIF, so it can't
+    # double-count, and gating it on ``cs_alerts is None`` left the repo blind to
+    # prompt-injection whenever Code Scanning was up (root of the gh-prompt ghost).
     artifact_run: dict | None = None
     artifact_findings: list[dict] | None = None
     prompt_findings: list[dict] | None = None
-    if cs_alerts is None:
-        try:
-            artifact_run = github_api.latest_security_workflow_run()
-            if artifact_run is not None:
-                run_id = artifact_run.get("id") or 0
+    try:
+        artifact_run = github_api.latest_security_workflow_run()
+        if artifact_run is not None:
+            run_id = artifact_run.get("id") or 0
+            # prompt_risks.json — always (orthogonal to Code Scanning).
+            prompt_findings = github_api.download_prompt_risks(run_id)
+            # findings.json (SAST) — only when Code Scanning is unavailable.
+            if cs_alerts is None:
                 artifact_findings = github_api.download_security_findings(run_id)
-                # prompt_risks.json ships in the SAME artifact (gh-prompt source).
-                prompt_findings = github_api.download_prompt_risks(run_id)
-        except Exception as exc:  # noqa: BLE001 — fail-soft, never block
-            sys.stderr.write(
-                f"[github-triage] artifact fetch failed: "
-                f"{type(exc).__name__}: {exc}\n"
-            )
-            artifact_run = None
-            artifact_findings = None
-            prompt_findings = None
+    except Exception as exc:  # noqa: BLE001 — fail-soft, never block
+        sys.stderr.write(
+            f"[github-triage] artifact fetch failed: "
+            f"{type(exc).__name__}: {exc}\n"
+        )
+        artifact_run = None
+        artifact_findings = None
+        prompt_findings = None
 
     fetch_succeeded = {
         "code_scanning": cs_alerts is not None,
@@ -157,14 +157,15 @@ def import_findings(project_root) -> dict:
         if (cs_alerts is None and artifact_findings is not None)
         else None
     )
-    # Prompt-injection artifact path: parallel to artifact_unit, separate source.
+    # Prompt-injection artifact path: separate source, INDEPENDENT of cs_alerts
+    # (never in Code Scanning ⇒ no double-count; see the ingestion block above).
     prompt_unit = (
         prompt_injection_action_unit_from_artifact(
             findings=prompt_findings,
             owner_repo=owner_repo,
             workflow_run_url=(artifact_run or {}).get("html_url"),
         )
-        if (cs_alerts is None and prompt_findings is not None)
+        if prompt_findings is not None
         else None
     )
     secrets_unit = (
@@ -240,10 +241,11 @@ def import_findings(project_root) -> dict:
     else:
         by_source[PREFIX_SECRETS] = None
 
-    # Prompt-injection (artifact path; parallel to + independent of gh-security).
-    # Gated on cs_alerts is None like the artifact security unit; auto-resolve
-    # opens for PREFIX_PROMPT so a clean scan ([] findings) dismisses an open item.
-    if cs_alerts is None and fetch_succeeded["prompt"]:
+    # Prompt-injection (artifact path; independent of Code Scanning — prompt
+    # findings are never in SARIF, so this fires whether or not GHAS is up).
+    # Auto-resolve opens for PREFIX_PROMPT so a clean scan ([] findings) dismisses
+    # an open item.
+    if fetch_succeeded["prompt"]:
         if owner_repo is not None:
             resolvable_prefixes.add(PREFIX_PROMPT)
         prompt_id = _maybe_append(prompt_unit)
