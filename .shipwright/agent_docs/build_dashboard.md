@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-02 11:47 UTC | Session: a93268fc-73cb-47be-baab-2209bc730d47 | Run: iterate-2026-07-01-diff-coverage-plan
+> Updated: 2026-07-02 16:48 UTC | Session: 25acbbdd-b8f4-43f8-b655-892cb636b579 | Run: iterate-2026-07-02-gh-prompt-ghost-fix
 
-## Recent Changes (239 iterations)
+## Recent Changes (240 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | Decouple the prompt-injection triage source from Code Scanning availability (github_triage consumer) + add push:[main] to security.yml so the scan artifact tracks HEAD — fixes the recurring gh-prompt ghost. | 3627/3639 |  | FR-01.14 | 2026-07-02 |
 | change | Persist the phased diff/patch-coverage roadmap (trg-8fdebda3) as a planning doc | 0/0 |  | docs | 2026-07-02 |
 | change | Make the Control Grade composition-neutral: remove the FR-tag-decline penalty + verdict cap so the feature-vs-maintenance work mix no longer affects the grade | 4964/4976 |  | FR-01.10 | 2026-07-01 |
 | change | Re-tag mis-filed compliance/security FEATURE work to FR-01.10/FR-01.07 via event_amended overlays; clears the honesty-gate FR-tag decline (Control Grade B->A) | 4955/4967 |  | FR-01.10, FR-01.07 | 2026-06-30 |
@@ -246,7 +247,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-01 | Smoke: not_run | (iterate)
+Last run: 2026-07-02 | Unit: 3627/3639 | Smoke: skipped | (iterate)
 
 ## Pipeline
 

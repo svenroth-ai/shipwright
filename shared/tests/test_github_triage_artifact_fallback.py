@@ -12,7 +12,8 @@ is free and orthogonal.
 AC matrix:
 - AC-1: cs=None + fresh artifact with findings → emit gh-security from artifact
 - AC-2: artifact 0 findings (fresh clean) → auto-resolve previous open item
-- AC-3: cs succeeds → artifact path NOT fetched (no double-counting)
+- AC-3: cs succeeds → SAST findings.json NOT fetched (no double-count), but
+  prompt_risks.json IS fetched (prompt-injection is orthogonal — never in SARIF)
 - AC-4: all paths fail → no emission, no auto-resolve (None ≠ empty)
 - AC-5: by_source carries `gh-security:artifact` for artifact emissions
 - AC-6: source-switching transitions (artifact ↔ GHAS) preserve idempotency
@@ -182,36 +183,27 @@ def test_artifact_emits_when_cs_alerts_unavailable(
     assert result["by_source"].get("gh-security:artifact") == 1
 
 
-def test_artifact_not_fetched_when_cs_alerts_succeeds(
+def test_sast_gated_but_prompt_fetched_when_cs_alerts_succeeds(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """AC-3: when GHAS is active, artifact path is SKIPPED — no double-counting."""
-    artifact_calls: list[Any] = []
-
-    def fake_latest_run() -> Any:
-        artifact_calls.append("called")
-        return _build_run()
-
+    """AC-3 (refined, iterate-2026-07-02-gh-prompt-ghost-fix): with GHAS active the
+    SAST findings.json stays gated (SARIF would double-count) but prompt_risks.json
+    IS fetched — prompt-injection is never in Code Scanning (the gh-prompt ghost)."""
+    sast_calls: list[Any] = []
+    prompt_calls: list[Any] = []
     _patch_api(
-        monkeypatch,
-        cs_alerts=[CS_ALERT_HIGH],
-        db_alerts=[],
-        ss_alerts=[],
-        ci_runs=[],
+        monkeypatch, cs_alerts=[CS_ALERT_HIGH], db_alerts=[], ss_alerts=[],
+        ci_runs=[], artifact_run=_build_run(),
     )
-    # Override the latest-run fetcher to detect any call.
-    monkeypatch.setattr(github_api, "latest_security_workflow_run", fake_latest_run)
     monkeypatch.setattr(
-        github_api, "download_security_findings",
-        lambda run_id: artifact_calls.append("downloaded") or None,
+        github_api, "download_security_findings", lambda rid: sast_calls.append("sast") or None,
     )
-
+    monkeypatch.setattr(
+        github_api, "download_prompt_risks", lambda rid: prompt_calls.append("prompt") or None,
+    )
     github_triage.import_findings(tmp_path)
-    # AC-3: the artifact path must NOT be probed when GHAS Code Scanning works.
-    assert artifact_calls == [], (
-        "artifact path must not be probed when cs_alerts succeeds — would risk "
-        "double-counting SARIF-uploaded findings"
-    )
+    assert sast_calls == [], "SAST findings.json must stay gated on cs_alerts is None (SARIF double-count)"
+    assert prompt_calls == ["prompt"], "prompt_risks.json must be fetched even when Code Scanning is up"
 
 
 def test_artifact_skipped_when_owner_repo_none(

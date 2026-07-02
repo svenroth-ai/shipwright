@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-02T11:47:15.333187+00:00
+Generated: 2026-07-02T16:48:24.926158+00:00
 
 ## Requirements Coverage
 
@@ -19,7 +19,7 @@ Generated: 2026-07-02T11:47:15.333187+00:00
 | [FR-01.11](../../.shipwright/planning/01-adopted/spec.md#fr-0111)<a id="rtm-fr-0111"></a> | Complexity-adaptive SDLC for ongoing changes — auto-detects intent and complexity, scales from quick fix to structured feature with specs, plans, reviews, tests; every feature/change classifies its spec impact (ADD/MODIFY/REMOVE/NONE), enforced at finalization. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-6c637864](#evt-6c637864), [evt-baaf4b0e](#evt-baaf4b0e), [evt-ca7b7d64](#evt-ca7b7d64) +16 | 225/225 → 736/736 | 2026-06-28 ([iter](#evt-1ab9c3af)) | ✅ | COVERED |
 | [FR-01.12](../../.shipwright/planning/01-adopted/spec.md#fr-0112)<a id="rtm-fr-0112"></a> | Local browser preview — start dev server for the target project and show the URL. | May | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7) | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | — | COVERED |
 | [FR-01.13](../../.shipwright/planning/01-adopted/spec.md#fr-0113)<a id="rtm-fr-0113"></a> | Onboard an existing (brownfield) repository into the Shipwright SDLC; analyzes codebase, generates CLAUDE.md, agent_docs, planning specs, compliance artifacts, suggest_iterate hook, and an E2E baseline; scaffolds `.env.local` with the profile's framework keys. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-273bbb54](#evt-273bbb54), [evt-b0b9c422](#evt-b0b9c422), [evt-aab7ddbd](#evt-aab7ddbd) +5 | 225/225 → 304/304 | 2026-05-16 ([iter](#evt-38e36ac6)) | — | COVERED |
-| [FR-01.14](../../.shipwright/planning/01-adopted/spec.md#fr-0114)<a id="rtm-fr-0114"></a> | Pre-backlog triage buffer — findings from local hooks/scans/audits and from GitHub's automated runs (code-scanning, Dependabot, secret-scanning alerts, failed CI runs) land in a per-project `.shipwright/triage.jsonl` store via idempotent producers and surface in the Command Center WebUI Triage tab with operator-driven promote/dismiss, keeping the ExternalTask list curated instead of flooded. | Must | [evt-3f488ddc](#evt-3f488ddc), [evt-32f2f1f4](#evt-32f2f1f4), [evt-84dbdf5e](#evt-84dbdf5e), [evt-e14e5f26](#evt-e14e5f26) +3 | 1642/1649 → 122/122 | 2026-05-20 ([iter](#evt-64f8cd79)) | ✅ | COVERED |
+| [FR-01.14](../../.shipwright/planning/01-adopted/spec.md#fr-0114)<a id="rtm-fr-0114"></a> | Pre-backlog triage buffer — findings from local hooks/scans/audits and from GitHub's automated runs (code-scanning, Dependabot, secret-scanning alerts, failed CI runs) land in a per-project `.shipwright/triage.jsonl` store via idempotent producers and surface in the Command Center WebUI Triage tab with operator-driven promote/dismiss, keeping the ExternalTask list curated instead of flooded. | Must | [evt-3f488ddc](#evt-3f488ddc), [evt-32f2f1f4](#evt-32f2f1f4), [evt-84dbdf5e](#evt-84dbdf5e), [evt-e14e5f26](#evt-e14e5f26) +4 | 1642/1649 → 3627/3639 | 2026-07-02 ([iter](#evt-1f234469)) | ✅ | COVERED |
 
 > **Legend** — *Tests*: `passed/total` of the latest event that ran tests; `first → latest` shows progression across tested runs. *Last tested*: date of that event (`iter` / `build` source); age is informational, **not a penalty**. *Reconciled?*: ✅ behavior-affected FR re-verified since its last change · ⚠️ needs re-verification (behavior changed, not yet re-tested) · — not behavior-touched.
 
@@ -27,6 +27,7 @@ Generated: 2026-07-02T11:47:15.333187+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-1f234469"></a>Fixed a bug where prompt-injection security warnings stopped appearing whenever the repos code scanning was healthy, and made the security scan re-run on every merge so a fixed issue clears right away instead of lingering up to a week. | iterate | bug | [FR-01.14](#rtm-fr-0114) | 3627/3639 | — | 2026-07-02 |
 | <a id="evt-0018a555"></a>Wrote down a step-by-step plan for measuring whether changed code is actually tested, so a future session can pick it up. | iterate | change |  | — | — | 2026-07-02 |
 | <a id="evt-a2c95dc8"></a>The project audit grade no longer drops just because recent work was maintenance instead of new features - only real control gaps affect it now. | iterate | change | [FR-01.10](#rtm-fr-0110) | 4964/4976 | — | 2026-07-01 |
 | <a id="evt-dee1d490"></a>Fixed a bug where one bad leftover note in the background triage buffer silently blocked ALL pending findings from being delivered; the bad note is now set aside and the good findings still get through. | iterate | change |  | 3633/3633 | — | 2026-06-30 |
@@ -273,7 +274,7 @@ Generated: 2026-07-02T11:47:15.333187+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 239 |
+| Iterate changes | 240 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

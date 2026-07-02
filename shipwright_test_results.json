@@ -1,20 +1,77 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-01-diff-coverage-plan",
-    "date": "2026-07-01",
-    "unit": { "status": "not_run", "passed": 0, "total": 0 },
-    "integration": { "status": "not_run", "passed": 0, "total": 0 },
-    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
-    "e2e": { "status": "not_run", "passed": 0, "total": 0 },
-    "design_fidelity": { "status": "not_run", "passed": 0, "total": 0 },
-    "smoke": { "status": "not_run" },
+    "run_id": "iterate-2026-07-02-gh-prompt-ghost-fix",
+    "date": "2026-07-02",
+    "unit": {
+      "status": "passed",
+      "passed": 3627,
+      "total": 3639
+    },
+    "integration": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "skipped"
+    },
     "surface_verification": {
       "surface": "none",
-      "justification": "Planning-doc only (diff-coverage roadmap for trg-8fdebda3); no runtime/app surface. Verification = artifact-path-canon lint (4 passed) + leak-guard + ruff clean."
+      "justification": "Backend triage-producer gating + a CI-workflow trigger line; no UI surface. Producer behavior verified by the full shared unit suite (3627 passed); the push:[main] trigger's effect (main scanned on merge, artifact tracks HEAD) is only observable in live GitHub Actions.",
+      "tests_run": 3627,
+      "exit_code": 0
     },
     "test_completeness": {
-      "status": "n/a",
-      "justification": "Trivial planning-doc-only iterate (one new .shipwright/planning/*.md roadmap; zero .py diff). No executable behavior introduced or changed; authoritative check is the artifact-path-canon lint."
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "prompt-injection source is evaluated/emits when GitHub Code Scanning is available (cs_alerts non-None) — defect A regression",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_github_triage_prompt_artifact.py::test_prompt_source_fires_when_code_scanning_available PASSED"
+        },
+        {
+          "behavior": "a clean prompt scan ([] findings) opens auto-resolve for gh-prompt even when Code Scanning is available",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_github_triage_prompt_artifact.py::test_clean_prompt_scan_resolves_when_code_scanning_available PASSED"
+        },
+        {
+          "behavior": "prompt_risks.json is fetched on every run while the SAST findings.json stays gated on cs_alerts is None (double-count guard preserved)",
+          "disposition": "tested",
+          "evidence": "test_github_triage_prompt_artifact.py::test_sast_findings_stay_gated_when_code_scanning_available + test_github_triage_artifact_fallback.py::test_sast_gated_but_prompt_fetched_when_cs_alerts_succeeds PASSED"
+        },
+        {
+          "behavior": "existing prompt-source behavior preserved when Code Scanning unavailable (emit / clean-resolve / fetch-failed-None)",
+          "disposition": "tested",
+          "evidence": "test_github_triage_prompt_artifact.py::test_prompt_findings_emit_gh_prompt_item / test_clean_prompt_scan_emits_nothing / test_prompt_fetch_failed_is_none PASSED"
+        },
+        {
+          "behavior": "security.yml scans main on every push so the scan artifact tracks HEAD (staleness fix B)",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "the effect (main re-scanned on merge, artifact refreshed to HEAD) only manifests when GitHub Actions runs the workflow; the declarative trigger was verified manually (YAML parse: push.branches=[main]; push routes to --full; SARIF/critical-gate/artifact-upload steps are push-safe)."
+        }
+      ],
+      "counts": {
+        "testable": 4,
+        "tested": 4,
+        "untestable": 1,
+        "untested_testable": 0
+      }
     },
     "degraded": []
   }
