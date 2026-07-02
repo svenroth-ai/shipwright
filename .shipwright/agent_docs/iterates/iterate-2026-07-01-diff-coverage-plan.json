@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-01-diff-coverage-plan",
+  "date": "2026-07-02T11:47:31.023538Z",
+  "type": "change",
+  "complexity": "trivial",
+  "branch": "iterate/diff-coverage-plan",
+  "spec": ".shipwright/planning/diff-coverage-roadmap.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-01-diff-coverage-plan"
+}

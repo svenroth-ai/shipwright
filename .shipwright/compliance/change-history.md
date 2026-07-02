@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-07-01T07:04:50.416749+00:00
-Total commits: 1069
+Generated: 2026-07-02T11:47:15.333187+00:00
+Total commits: 1070
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 305
+    "fix" : 306
     "feat" : 283
     "chore" : 234
     "docs" : 142
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 305 commits
+### Fixes (fix) — 306 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-01 | compliance | make the Control Grade composition-neutral (drop the FR-tag-decline gate) (#304) | 9597c9b8ba80 |
 | 2026-07-01 | triage | drop inline-suppressed SARIF results at the ingest layer (#302) | d2be654546c0 |
 | 2026-06-30 | triage | quarantine orphan-status in the outbox sweep instead of hard-blocking (#303) | 33234ef43c90 |
 | 2026-06-30 | security | strip zero-width Unicode (U+200B) from a planning note flagged by the prompt-injection scan (#300) | e04991c66e81 |
@@ -622,7 +623,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-01 | triage | sweep 2 outbox append(s) into branch | aa2e4d4826db |
+| 2026-07-02 | triage | sweep 3 outbox append(s) into branch | 8dd796156bcc |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
 | 2026-06-30 | ci | remove native OpenSSF Scorecard workflow (wrong anchor for AI-first) (#298) | 0962051d7704 |
 | 2026-06-29 | bloat | tighten baseline floors to on-disk LOC (Group H2) (#293) | 4594948315b5 |
@@ -1138,7 +1139,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1069 |
+| Total commits | 1070 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1069 |
+| Human-authored commits | 1070 |
 

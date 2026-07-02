@@ -1,38 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-01-grade-composition-neutral"
+run_id: "iterate-2026-07-01-diff-coverage-plan"
 phase: "iterate"
-reason: "iterate: make the Control Grade composition-neutral"
-timestamp: "2026-07-01T07:04:50.416749+00:00"
+reason: "iterate: diff-coverage roadmap (planning)"
+timestamp: "2026-07-02T11:47:15.333187+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-01 07:04:50 UTC
+> Auto-generated 2026-07-02 11:47:15 UTC
 
 ## Session Info
 
 - **Session ID**: a93268fc-73cb-47be-baab-2209bc730d47
-- **Timestamp**: 2026-07-01 07:04:50 UTC
-- **Reason**: iterate: make the Control Grade composition-neutral
+- **Timestamp**: 2026-07-02 11:47:15 UTC
+- **Reason**: iterate: diff-coverage roadmap (planning)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-30-sweep-outbox-quarantine-orphans
-- **Date**: 2026-06-30T21:51:01.051639Z
+- **Run ID**: iterate-2026-07-01-grade-composition-neutral
+- **Date**: 2026-07-01T07:05:16.307526Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/sweep-outbox-quarantine-orphans
-- **ADR**: iterate-2026-06-30-sweep-outbox-quarantine-orphans
+- **Branch**: iterate/grade-composition-neutral
+- **ADR**: iterate-2026-07-01-grade-composition-neutral
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-30-sweep-outbox-quarantine-orphans.md
+- **Spec**: .shipwright/planning/iterate/2026-07-01-grade-composition-neutral.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/grade-composition-neutral
-- **Run ID**: `iterate-2026-07-01-grade-composition-neutral`
-- **Spec**: .shipwright/planning/iterate/2026-07-01-grade-composition-neutral.md
-- **Complexity**: medium (core metric — compliance grading logic)
+- **Branch**: iterate/diff-coverage-plan
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -51,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/grade-composition-neutral
-- **Last Commit**: aa2e4d48 chore(triage): sweep 2 outbox append(s) into branch
+- **Branch**: iterate/diff-coverage-plan
+- **Last Commit**: 8dd79615 chore(triage): sweep 3 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-0018a555 | work_completed | iterate (Persist the phased diff/patch-coverage roadmap (trg-8fdebda3) as a planning doc) | 2026-07-02 |
 | evt-a2c95dc8 | work_completed | iterate (Make the Control Grade composition-neutral: remove the FR-tag-decline penalty + verdict cap so the feature-vs-maintenance work mix no longer affects the grade) | 2026-07-01 |
 | evt-f90c7126 | work_completed | iterate (Re-tag mis-filed compliance/security FEATURE work to FR-01.10/FR-01.07 via event_amended overlays; clears the honesty-gate FR-tag decline (Control Grade B->A)) | 2026-06-30 |
 | evt-0b72de69 | event_amended | — | 2026-06-30 |
 | evt-2cf2540c | event_amended | — | 2026-06-30 |
-| evt-e13851a3 | event_amended | — | 2026-06-30 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 238
-- **Last iterate**: change — Make the Control Grade composition-neutral: remove the FR-tag-decline penalty + verdict cap so the feature-vs-maintenance work mix no longer affects the grade (2026-07-01)
+- **Total work events**: 239
+- **Last iterate**: change — Persist the phased diff/patch-coverage roadmap (trg-8fdebda3) as a planning doc (2026-07-02)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
