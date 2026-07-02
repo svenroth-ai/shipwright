@@ -1,66 +1,21 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-01-grade-composition-neutral",
+    "run_id": "iterate-2026-07-01-diff-coverage-plan",
     "date": "2026-07-01",
-    "unit": {
-      "status": "passed",
-      "passed": 4790,
-      "total": 4802
-    },
-    "integration": {
-      "status": "passed",
-      "passed": 174,
-      "total": 174
-    },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "smoke": {
-      "status": "not_run"
-    },
+    "unit": { "status": "not_run", "passed": 0, "total": 0 },
+    "integration": { "status": "not_run", "passed": 0, "total": 0 },
+    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
+    "e2e": { "status": "not_run", "passed": 0, "total": 0 },
+    "design_fidelity": { "status": "not_run", "passed": 0, "total": 0 },
+    "smoke": { "status": "not_run" },
     "surface_verification": {
       "surface": "none",
-      "justification": "Compliance grading-logic change; the affected surface is the Control-Grade markdown producer, not a runnable web/cli/api app. End-to-end verification = real adapter+scorer probe (baseline A; a 25-event honest maintenance sprint dropping recent FR-tag to 3% vs 19% keeps grade A) plus a 4964-test regression sweep."
+      "justification": "Planning-doc only (diff-coverage roadmap for trg-8fdebda3); no runtime/app surface. Verification = artifact-path-canon lint (4 passed) + leak-guard + ruff clean."
     },
     "test_completeness": {
-      "status": "complete",
-      "behaviors": [
-        { "behavior": "Workload composition (FR-tag decline) no longer penalises the requirement-traceability dimension",
-          "disposition": "tested",
-          "evidence": "end-to-end producer probe (maintenance sprint -> grade A); test_grade_gate.py::TestPerfectRepoIsA + test_low_requirement_traceability_is_a_gap_not_an_F PASSED" },
-        { "behavior": "Composition no longer caps the headline verdict below A",
-          "disposition": "tested",
-          "evidence": "probe: recent FR-tag 3% < all 19% -> still A (100/100), composition-neutral=True; test_grade_gate perfect repo has no 'Capped' in verdict" },
-        { "behavior": "Dark-expected-control cap still fires (B + 'verification incomplete')",
-          "disposition": "tested",
-          "evidence": "test_grade_gate.py::TestVerdictGateDarkExpected PASSED" },
-        { "behavior": "Broken-pillar cap still fires (F)",
-          "disposition": "tested",
-          "evidence": "test_grade_gate.py::TestVerdictGateBrokenPillar::test_broken_load_bearing_pillar_caps_to_F PASSED" },
-        { "behavior": "Dashboard 'Recent changes traced' row is INFO, never WARN/frozen",
-          "disposition": "tested",
-          "evidence": "test_traceability.py::TestRenderTracedRow (lower-rate, 0%-recent, high-rate, all-no-FR) all assert INFO + no WARN" },
-        { "behavior": "No dead code / no stale reader of the removed functions/fields; docs + spec reflect the new behavior",
-          "disposition": "tested",
-          "evidence": "repo-wide ruff clean; F0 4964 passed; fresh-context adversarial opus review found zero remaining references + no blocking issues" }
-      ],
-      "counts": { "testable": 6, "tested": 6, "untestable": 0, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 6, "covered_acs": 6 }
+      "status": "n/a",
+      "justification": "Trivial planning-doc-only iterate (one new .shipwright/planning/*.md roadmap; zero .py diff). No executable behavior introduced or changed; authoritative check is the artifact-path-canon lint."
     },
-    "degraded": [
-      "F0 scope: ran every suite that consumes the compliance/grade machinery (compliance plugin 909 + 3 shared dirs 3881 + integration 174 = 4964). The other 12 plugin suites test untouched code. This is a plugin-SOURCE change (plugins/shipwright-compliance/scripts/lib/*), so `bash scripts/update-marketplace.sh` is required post-merge for the runtime plugin cache to pick it up; a WebUI re-grade (separate repo iterate) then lifts the WebUI B->A."
-    ]
+    "degraded": []
   }
 }

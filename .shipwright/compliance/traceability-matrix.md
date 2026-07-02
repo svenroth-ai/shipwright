@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-01T07:04:50.416749+00:00
+Generated: 2026-07-02T11:47:15.333187+00:00
 
 ## Requirements Coverage
 
@@ -27,6 +27,7 @@ Generated: 2026-07-01T07:04:50.416749+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-0018a555"></a>Wrote down a step-by-step plan for measuring whether changed code is actually tested, so a future session can pick it up. | iterate | change |  | — | — | 2026-07-02 |
 | <a id="evt-a2c95dc8"></a>The project audit grade no longer drops just because recent work was maintenance instead of new features - only real control gaps affect it now. | iterate | change | [FR-01.10](#rtm-fr-0110) | 4964/4976 | — | 2026-07-01 |
 | <a id="evt-dee1d490"></a>Fixed a bug where one bad leftover note in the background triage buffer silently blocked ALL pending findings from being delivered; the bad note is now set aside and the good findings still get through. | iterate | change |  | 3633/3633 | — | 2026-06-30 |
 | <a id="evt-20169b3e"></a>Security scan results that a developer marked as false positives with an inline ignore comment are no longer counted as real problems, so a fully-cleared scan shows zero and stops re-appearing in the triage inbox. | iterate | bug |  | 3604/3604 | — | 2026-06-30 |
@@ -272,7 +273,7 @@ Generated: 2026-07-01T07:04:50.416749+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 238 |
+| Iterate changes | 239 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
