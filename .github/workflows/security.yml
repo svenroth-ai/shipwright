@@ -110,6 +110,21 @@ jobs:
           # pre-commit hook + review. trg-190ff3b9 tracks a finer-grained
           # per-secret allowlist as a possible future refinement.
           SHIPWRIGHT_SCAN_EXCLUDES: tests
+          # Accepted-risk Semgrep rules for THIS repo's posture — suppressed at
+          # the normalizer (robust across semgrep versions), NOT via a CLI flag.
+          # Both channels are opt-in and default-off in the plugin, so adopted
+          # repos get neither and decide their own posture. Register + rationale:
+          # docs/security-ci-setup.md (§ Accepted-risk rule tailoring)
+          #
+          # dependabot-missing-cooldown (14 low): .github/dependabot.yml is
+          # inert (open-pull-requests-limit: 0 on every ecosystem) — a cooldown
+          # on a config that opens zero PRs is meaningless. Exact (doubled) id.
+          SHIPWRIGHT_SEMGREP_EXCLUDE_RULES: package_managers.dependabot.dependabot-missing-cooldown.dependabot-missing-cooldown
+          # mutable-action-tag on GitHub-owned actions (actions/*, github/*)
+          # (12 medium): declined SHA-pin (decision 2026-06-30 — Scorecard
+          # weights pinned-deps 8:2 + tag-rot). Owner-scoped: an unpinned
+          # THIRD-PARTY action is still flagged (the supply-chain guard).
+          SHIPWRIGHT_SEMGREP_ACCEPT_GH_OWNED_ACTION_TAGS: "1"
         run: |
           uv run scripts/tools/scan.py \
             --path ../.. \

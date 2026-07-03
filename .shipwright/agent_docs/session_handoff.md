@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-03-diff-coverage-measure-one-tier"
+run_id: "iterate-2026-07-03-semgrep-noise-tailoring"
 phase: "iterate"
-reason: "iterate: diff-coverage measurement (Phase 1)"
-timestamp: "2026-07-03T21:56:46.817090+00:00"
+reason: "Producer-side accepted-risk Semgrep rule tailoring"
+timestamp: "2026-07-03T21:10:12.977509+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-03 21:56:46 UTC
+> Auto-generated 2026-07-03 21:10:12 UTC
 
 ## Session Info
 
-- **Session ID**: d6ce5fc1-f421-4efb-8fb5-a04215b1284a
-- **Timestamp**: 2026-07-03 21:56:46 UTC
-- **Reason**: iterate: diff-coverage measurement (Phase 1)
+- **Session ID**: d7e33bc6-605c-426f-9b84-431aa70ac4c7
+- **Timestamp**: 2026-07-03 21:10:12 UTC
+- **Reason**: Producer-side accepted-risk Semgrep rule tailoring
 
 ## Last Iterate
 
@@ -28,7 +28,7 @@ timestamp: "2026-07-03T21:56:46.817090+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/diff-coverage-measure-one-tier
+- **Branch**: iterate/semgrep-noise-tailoring
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -47,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/diff-coverage-measure-one-tier
-- **Last Commit**: 40d195e3 chore(triage): sweep 2 outbox append(s) into branch
+- **Branch**: iterate/semgrep-noise-tailoring
+- **Last Commit**: ecffa743 chore(triage): sweep 1 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,7 +64,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-76c97ce2 | work_completed | iterate (diff-coverage Phase 1: shared-tier measurement chain (measure_diff_coverage.py + non-gating CI diff-cover) + gitignored transient + grade-neutral dashboard INFO line) | 2026-07-03 |
+| evt-9d089d93 | work_completed | iterate (Producer-side accepted-risk Semgrep rule tailoring: two opt-in default-off env channels (wholesale exact check_id; owner-scoped mutable-tag via file-read) stop the weekly self-scan re-surfacing 14 dependabot-cooldown + 12 GitHub-owned mutable-tag findings; unpinned third-party actions stay flagged.) | 2026-07-03 |
 | evt-5755f932 | work_completed | iterate (Route github_triage background appends to the gitignored outbox on idle main (should_route_to_outbox) so they reach origin instead of stranding as main-tree drift — closes the delivery gap behind the recurring gh-prompt ghost.) | 2026-07-03 |
 | evt-1f234469 | work_completed | iterate (Decouple the prompt-injection triage source from Code Scanning availability (github_triage consumer) + add push:[main] to security.yml so the scan artifact tracks HEAD — fixes the recurring gh-prompt ghost.) | 2026-07-02 |
 | evt-0018a555 | work_completed | iterate (Persist the phased diff/patch-coverage roadmap (trg-8fdebda3) as a planning doc) | 2026-07-02 |
@@ -74,7 +74,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 242
-- **Last iterate**: feature — diff-coverage Phase 1: shared-tier measurement chain (measure_diff_coverage.py + non-gating CI diff-cover) + gitignored transient + grade-neutral dashboard INFO line (2026-07-03)
+- **Last iterate**: change — Producer-side accepted-risk Semgrep rule tailoring: two opt-in default-off env channels (wholesale exact check_id; owner-scoped mutable-tag via file-read) stop the weekly self-scan re-surfacing 14 dependabot-cooldown + 12 GitHub-owned mutable-tag findings; unpinned third-party actions stay flagged. (2026-07-03)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

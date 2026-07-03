@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-03T21:56:46.817090Z. Items waiting for triage decision.
+> Auto-generated 2026-07-03T21:10:12.977509Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 258
-- Triage: 5 | Promoted: 1 | Dismissed: 251 | Snoozed: 1
+- Total: 257
+- Triage: 4 | Promoted: 1 | Dismissed: 251 | Snoozed: 1
 
-## Top 5 items (severity-sorted)
+## Top 4 items (severity-sorted)
 
 ### Source: compliance (1 item)
 
@@ -48,13 +48,6 @@
     Source: triage item gh-security:svenroth-ai/shipwright
     ```
   - Promote: `triage_promote.py --id trg-544fa61e --task-ref EXT:<ref>`
-
-### Source: grader-campaign (1 item)
-
-<a id="trg-e68e9901"></a>
-- **Build shipwright-grade: repo-agnostic Control Grade grader (lead magnet)** `id=trg-e68e9901 | severity=high | kind=improvement → P1/engineering`
-  - New standalone read-only plugin that grades ANY git repo (incl. non-Shipwright) with the same Control Grade rubric by p…
-  - Promote: `triage_promote.py --id trg-e68e9901 --task-ref EXT:<ref>`
 
 ### Source: manual (1 item)
 

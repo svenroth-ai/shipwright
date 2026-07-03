@@ -1,0 +1,9 @@
+{
+  "run_id": "iterate-2026-07-03-semgrep-noise-tailoring",
+  "date": "2026-07-03T21:10:31.113988Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/semgrep-noise-tailoring",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-03-semgrep-noise-tailoring"
+}
