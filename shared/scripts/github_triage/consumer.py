@@ -19,7 +19,7 @@ from __future__ import annotations
 import sys
 
 import github_api
-from triage import append_triage_item_idempotent
+from triage import append_triage_item_idempotent, should_route_to_outbox
 
 from .mappers import ci_action_unit, latest_failed_ci_runs, secrets_action_unit
 from .pr_ci import import_pr_ci_findings
@@ -183,6 +183,9 @@ def import_findings(project_root) -> dict:
     current_keys: set[str] = set()
     by_source: dict = {}
 
+    # Background producer → gitignored outbox on idle main (else main-tree drift +
+    # orphan-quarantined dismisses); mirrors check_drift.py. Worktree → tracked.
+    to_outbox = should_route_to_outbox(project_root)
     def _maybe_append(unit):
         if unit is None:
             return None
@@ -199,6 +202,7 @@ def import_findings(project_root) -> dict:
                 match_commit=False,
                 window_seconds=None,
                 launch_payload=unit["launch_payload"],
+                to_outbox=to_outbox,
             )
         except Exception as exc:  # noqa: BLE001 — best-effort
             sys.stderr.write(

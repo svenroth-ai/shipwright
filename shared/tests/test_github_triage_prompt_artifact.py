@@ -8,6 +8,7 @@ artifact path). Same ADR-052 None-vs-``[]`` + hygiene contract.
 
 from __future__ import annotations
 
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -177,3 +178,40 @@ def test_sast_findings_stay_gated_when_code_scanning_available(tmp_path, monkeyp
     github_triage.import_findings(tmp_path)
     assert calls["prompt_risks"] == 1, "prompt_risks.json must be fetched even when Code Scanning is up"
     assert calls["security_findings"] == 0, "SAST findings.json must stay gated on cs_alerts is None"
+
+
+# --------------------------------------------------------------------------- #
+# Idle-main outbox routing (iterate-2026-07-03-github-triage-outbox-routing)
+# --------------------------------------------------------------------------- #
+# On idle main (default branch + origin) the producer's appends must land in the
+# gitignored OUTBOX, not the tracked triage.jsonl. Otherwise they strand as
+# main-tree drift that never reaches origin (PR-only), and later dismisses
+# orphan-quarantine — the delivery gap behind the recurring gh-prompt ghost.
+def _idle_main_repo(tmp_path: Path) -> Path:
+    """A real git repo on default branch `main` WITH an `origin` remote — the
+    condition under which triage.should_route_to_outbox() returns True."""
+    def g(*args: str) -> None:
+        subprocess.run(
+            ["git", "-C", str(tmp_path), *args], check=True, capture_output=True, text=True
+        )
+    g("init")
+    g("config", "user.email", "t@t.t")
+    g("config", "user.name", "t")
+    g("commit", "--allow-empty", "-m", "init")
+    g("branch", "-M", "main")
+    g("remote", "add", "origin", str(tmp_path.parent / "origin-throwaway"))
+    return tmp_path
+
+
+def test_github_triage_appends_route_to_outbox_on_idle_main(tmp_path, monkeypatch) -> None:
+    proj = _idle_main_repo(tmp_path)
+    _patch(monkeypatch, prompt_findings=[{"severity": "high"}])
+    result = github_triage.import_findings(proj)
+    assert result["by_source"][github_triage.PREFIX_PROMPT] == 1
+
+    outbox = proj / ".shipwright" / "triage.outbox.jsonl"
+    tracked = proj / ".shipwright" / "triage.jsonl"
+    assert outbox.exists(), "idle-main append must create the gitignored outbox buffer"
+    assert "gh-prompt:" in outbox.read_text(encoding="utf-8"), "gh-prompt append must land in the outbox"
+    tracked_text = tracked.read_text(encoding="utf-8") if tracked.exists() else ""
+    assert "gh-prompt:" not in tracked_text, "gh-prompt append must NOT hit the tracked log on idle main (drift)"

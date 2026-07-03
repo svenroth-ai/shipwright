@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-03-github-triage-outbox-routing",
+  "date": "2026-07-03T14:12:33.677360Z",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/github-triage-outbox-routing",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-07-03-github-triage-outbox-routing"
+}
