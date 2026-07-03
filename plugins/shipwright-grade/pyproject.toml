@@ -1,0 +1,34 @@
+[project]
+name = "shipwright-grade"
+version = "0.1.0"
+description = "Read-only Control Grade grader for any git repository (cold-repo signal projector)"
+requires-python = ">=3.11"
+readme = "../../README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Sven Roth"}
+]
+keywords = ["claude-code", "plugin", "grade", "control-grade", "repo-grader"]
+dependencies = [
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-mock>=3.12.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+# The empirical suite (real-OSS, network) is opt-in and excluded from the
+# default/hermetic run. Run it explicitly with `pytest -m empirical` (a CLI
+# `-m` replaces this default marker expression). See tests/empirical/.
+addopts = "-v --tb=short -m 'not empirical'"
+pythonpath = ["."]
+markers = [
+    "empirical: real-OSS network calibration suite (opt-in; run with `pytest -m empirical`)",
+    "slow: long-running tests that spawn real subprocesses or perform long I/O",
+]
