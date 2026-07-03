@@ -18,7 +18,7 @@ import tempfile
 from typing import Any
 
 from scanner_backend import ScannerBackend, classify_finding, register_backend
-from normalizers.semgrep import normalize as normalize_semgrep
+from semgrep_tailoring import normalize_tailored as normalize_semgrep
 from normalizers.trivy import normalize as normalize_trivy
 from normalizers.gitleaks import normalize as normalize_gitleaks
 

@@ -1,0 +1,1 @@
+Security scanner: suppress accepted-risk Semgrep rules (dormant-dependabot cooldown; GitHub-owned mutable action tags) at the producer via two opt-in, default-off env channels — unpinned third-party actions stay flagged.

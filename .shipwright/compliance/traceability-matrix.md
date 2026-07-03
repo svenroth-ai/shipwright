@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-03T14:12:16.917807+00:00
+Generated: 2026-07-03T21:10:12.977509+00:00
 
 ## Requirements Coverage
 
@@ -27,6 +27,7 @@ Generated: 2026-07-03T14:12:16.917807+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-9d089d93"></a>Producer-side accepted-risk Semgrep rule tailoring: two opt-in default-off env channels (wholesale exact check_id; owner-scoped mutable-tag via file-read) stop the weekly self-scan re-surfacing 14 dependabot-cooldown + 12 GitHub-owned mutable-tag findings; unpinned third-party actions stay flagged. | iterate | change |  | — | — | 2026-07-03 |
 | <a id="evt-5755f932"></a>Fixed a delivery bug where GitHub security findings raised while on the main branch were written to a local-only file that never reached the server, so their dismissals did not stick. | iterate | bug | [FR-01.14](#rtm-fr-0114) | 3629/3641 | — | 2026-07-03 |
 | <a id="evt-1f234469"></a>Fixed a bug where prompt-injection security warnings stopped appearing whenever the repos code scanning was healthy, and made the security scan re-run on every merge so a fixed issue clears right away instead of lingering up to a week. | iterate | bug | [FR-01.14](#rtm-fr-0114) | 3627/3639 | — | 2026-07-02 |
 | <a id="evt-0018a555"></a>Wrote down a step-by-step plan for measuring whether changed code is actually tested, so a future session can pick it up. | iterate | change |  | — | — | 2026-07-02 |
@@ -275,7 +276,7 @@ Generated: 2026-07-03T14:12:16.917807+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 241 |
+| Iterate changes | 242 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

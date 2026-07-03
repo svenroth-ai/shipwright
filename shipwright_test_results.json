@@ -1,11 +1,13 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-03-github-triage-outbox-routing",
+    "run_id": "iterate-2026-07-03-semgrep-noise-tailoring",
     "date": "2026-07-03",
+    "intent": "change",
+    "complexity": "small",
     "unit": {
       "status": "passed",
-      "passed": 3629,
-      "total": 3641
+      "passed": 4068,
+      "total": 4083
     },
     "integration": {
       "status": "skipped",
@@ -32,41 +34,66 @@
     },
     "surface_verification": {
       "surface": "none",
-      "justification": "Backend triage-producer routing change (append lane on idle main); no UI surface. Verified by the full shared unit suite (3629 passed) incl. a new idle-main-with-origin outbox-routing test; delivery-to-origin is via the existing sweep pipeline.",
-      "tests_run": 3629,
-      "exit_code": 0
+      "justification": "Internal CI security-scanner producer (no web/CLI user surface). Verified end-to-end with live semgrep: a baseline --config auto scan of .github/ reproduced the exact 14 dependabot-missing-cooldown + 12 github-actions-mutable-action-tag findings; with the two accept env vars set both classes drop to 0 while an unpinned third-party action (evilcorp/thing@v1) stays flagged. Confirmed the owner is read from the file, not extra.lines (redacted to 'requires login' unauthenticated)."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "on idle main (default branch + origin) github_triage action-unit appends route to the gitignored outbox, not the tracked log",
+          "behavior": "Wholesale channel: an exact check_id in SHIPWRIGHT_SEMGREP_EXCLUDE_RULES is dropped from normalized findings",
           "disposition": "tested",
-          "evidence": "shared/tests/test_github_triage_prompt_artifact.py::test_github_triage_appends_route_to_outbox_on_idle_main PASSED"
+          "evidence": "tests/test_semgrep_rule_tailoring.py::TestNormalizeTailored::test_wholesale_exclude_only PASSED"
         },
         {
-          "behavior": "github_triage is covered by the static background-producer routing guard (regression fence)",
+          "behavior": "Owner-scoped channel: mutable-action-tag on GitHub-owned actions (actions/*, github/*) is dropped when the accept env is on",
           "disposition": "tested",
-          "evidence": "shared/tests/test_sweep_outbox_review_cascade2.py::test_background_producer_routes_to_outbox[github_triage] PASSED"
+          "evidence": "tests/test_semgrep_rule_tailoring.py::TestNormalizeTailored::test_real_scan_shape_third_party_survives PASSED (actions/ + github/ dropped)"
         },
         {
-          "behavior": "non-idle context (worktree/iterate branch, no origin, non-git) still routes to the tracked log (fail-safe)",
-          "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "reason": "should_route_to_outbox failure modes are pinned by test_triage_outbox.py::test_should_route_* (iterate-branch/no-origin/non-git → False); this change only consumes that function."
+          "behavior": "Supply-chain guard: an unpinned THIRD-PARTY mutable-action-tag stays flagged even with accepts on",
+          "disposition": "tested",
+          "evidence": "tests/test_semgrep_rule_tailoring.py::test_real_scan_shape_third_party_survives (line 7 kept) + live semgrep probe kept evilcorp/thing@v1"
         },
         {
-          "behavior": "cross-lane dedup + auto-resolve symmetry preserved (tracked ∪ outbox union)",
-          "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "reason": "test_triage_outbox.py dedup tests (tracked suppresses outbox dup and vice-versa) + the full green suite cover the union invariant this change relies on."
+          "behavior": "Owner is read from the workflow FILE at path:line, not semgrep extra.lines (redacted to 'requires login' when unauthenticated as CI runs it)",
+          "disposition": "tested",
+          "evidence": "tests/test_semgrep_rule_tailoring.py::TestActionOwnerFromFile::test_reads_owner_from_file_line PASSED + live e2e: baseline 14+12 -> tailored 0 despite requires-login snippets"
+        },
+        {
+          "behavior": "Both channels default OFF -> normalize_tailored is a pure passthrough so adopted repos are unaffected",
+          "disposition": "tested",
+          "evidence": "tests/test_semgrep_rule_tailoring.py::test_default_env_is_passthrough + TestEnvResolution::test_accept_gh_tags_default_off + test_exclude_rules_empty_by_default PASSED"
+        },
+        {
+          "behavior": "Invalid rule ids (path separator, glob, .., whitespace) are rejected from the exclude list",
+          "disposition": "tested",
+          "evidence": "tests/test_semgrep_rule_tailoring.py::TestEnvResolution::test_exclude_rules_parsed_and_validated PASSED"
+        },
+        {
+          "behavior": "Fail-safe: unreadable/out-of-range file or no parseable uses line -> finding KEPT (never over-suppress)",
+          "disposition": "tested",
+          "evidence": "tests/test_semgrep_rule_tailoring.py::TestIsGithubOwnedActionTag::test_unreadable_kept + TestActionOwnerFromFile::test_none_on_bad_inputs PASSED"
+        },
+        {
+          "behavior": "Finding ids are renumbered contiguously after drops",
+          "disposition": "tested",
+          "evidence": "tests/test_semgrep_rule_tailoring.py::test_real_scan_shape_third_party_survives asserts id==semgrep-0001 PASSED"
+        },
+        {
+          "behavior": "oss_backend routes semgrep output through normalize_tailored so the CI self-scan honors the accepts",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_oss_backend.py suite PASSED (439) + live _run_semgrep e2e on .github/ dropped both targeted classes to 0"
         }
       ],
       "counts": {
-        "testable": 2,
-        "tested": 2,
-        "untestable": 2,
+        "testable": 9,
+        "tested": 9,
+        "untestable": 0,
         "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 2,
+        "covered_acs": 2
       }
     },
     "degraded": []

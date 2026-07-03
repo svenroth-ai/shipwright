@@ -213,6 +213,37 @@ canonical id `shipwright-critical-gate` so `/shipwright-compliance`
 Group A5 can verify the gate is wired without parsing free-form step
 names.
 
+#### Accepted-risk rule tailoring (Semgrep)
+
+Two Semgrep rules fire on this repo every scan but map to **accepted-risk /
+by-design** postures, not actionable findings. Rather than dismiss them in
+Triage every week (they re-surface from each fresh scan), they are suppressed
+at the **producer** — filtered in the Semgrep normalizer, keyed off two opt-in
+env vars set in the scan step of `.github/workflows/security.yml`. Both default
+**off** in the plugin, so adopted repos are unaffected and decide their own
+posture.
+
+| Rule (`check_id`) | Count | Why accepted | Channel |
+|---|---|---|---|
+| `…dependabot-missing-cooldown…` | 14 low | `.github/dependabot.yml` is DORMANT (`open-pull-requests-limit: 0` on every ecosystem) — a cooldown on a config that opens zero PRs is meaningless. | `SHIPWRIGHT_SEMGREP_EXCLUDE_RULES` (exact `check_id`, wholesale drop) |
+| `…github-actions-mutable-action-tag…` | 12 medium | GitHub-owned actions (`actions/*`, `github/*`) are deliberately not SHA-pinned (decision 2026-06-30 — Scorecard weights pinned-deps 8:2 and pinning GitHub-owned actions needs Dependabot to avoid tag-rot). | `SHIPWRIGHT_SEMGREP_ACCEPT_GH_OWNED_ACTION_TAGS` (owner-scoped) |
+
+**The mutable-tag channel is owner-scoped, not wholesale.** It suppresses the
+finding *only* when the matched `uses:` line points at a GitHub-owned owner
+(`actions`, `github`). An unpinned **third-party** action still gets flagged —
+that is the supply-chain guard the rule exists for. When the owner can't be
+parsed from the matched line, the finding is kept (fail toward the signal).
+
+Suppression happens in the normalizer (`normalizers/semgrep.py::normalize`),
+not via a `semgrep --exclude-rule` flag, so it is robust across semgrep
+versions and mirrors the SARIF-suppression parser. SCA acceptances live in the
+parallel Trivy register at repo-root `.trivyignore.yaml`.
+
+**Verify / revert.** Unset either env var in `security.yml` to see the rule
+resurface. The pure `normalize()` (no kwargs) and the two resolver helpers are
+covered by `tests/test_semgrep_rule_tailoring.py`, including the third-party
+still-flagged guard.
+
 #### Local parity
 
 `run_scan_and_report.py` (the local interactive flow) produces the same
