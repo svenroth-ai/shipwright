@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-03-github-triage-outbox-routing",
+    "run_id": "iterate-2026-07-03-diff-coverage-measure-one-tier",
     "date": "2026-07-03",
     "unit": {
       "status": "passed",
-      "passed": 3629,
-      "total": 3641
+      "passed": 3905,
+      "total": 3917
     },
     "integration": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 23,
+      "total": 23
     },
     "pgtap": {
       "status": "skipped",
@@ -32,40 +32,89 @@
     },
     "surface_verification": {
       "surface": "none",
-      "justification": "Backend triage-producer routing change (append lane on idle main); no UI surface. Verified by the full shared unit suite (3629 passed) incl. a new idle-main-with-origin outbox-routing test; delivery-to-origin is via the existing sweep pipeline.",
-      "tests_run": 3629,
+      "justification": "Framework tooling + CI + compliance-dashboard change (diff-coverage roadmap Phase 1); no UI surface. The 'E2E' is the diff-coverage measurement chain, verified end-to-end locally: the full shared suite (3905 passed, 12 skipped) ran with --cov=shared and produced a combined coverage.xml (79.5% total, repo-relative paths), diff-cover computed a real 92% diff-coverage baseline vs origin/main, measure_diff_coverage.py wrote the gitignored transient, and the compliance dashboard INFO line rendered it. Full compliance suite (921) and at-risk integration tests (23) also green.",
+      "tests_run": 3905,
       "exit_code": 0
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "on idle main (default branch + origin) github_triage action-unit appends route to the gitignored outbox, not the tracked log",
+          "behavior": "measure_diff_coverage parses coverage.xml root line-rate into a total percent (missing/malformed/absent -> None)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_github_triage_prompt_artifact.py::test_github_triage_appends_route_to_outbox_on_idle_main PASSED"
+          "evidence": "shared/scripts/tools/tests/test_measure_diff_coverage.py::TestLineRatePercent (4 cases) PASSED"
         },
         {
-          "behavior": "github_triage is covered by the static background-producer routing guard (regression fence)",
+          "behavior": "measure_diff_coverage parses diff-cover report into a diff percent; zero changed lines -> None (not a misleading 100%)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_sweep_outbox_review_cascade2.py::test_background_producer_routes_to_outbox[github_triage] PASSED"
+          "evidence": "TestDiffPercentFromReport (4 cases) PASSED"
         },
         {
-          "behavior": "non-idle context (worktree/iterate branch, no origin, non-git) still routes to the tracked log (fail-safe)",
-          "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "reason": "should_route_to_outbox failure modes are pinned by test_triage_outbox.py::test_should_route_* (iterate-branch/no-origin/non-git → False); this change only consumes that function."
+          "behavior": "the tool writes the gitignored transient .shipwright/coverage/diff_coverage.json atomically, creating parents",
+          "disposition": "tested",
+          "evidence": "TestWriteTransient::test_roundtrip_creates_parent PASSED"
         },
         {
-          "behavior": "cross-lane dedup + auto-resolve symmetry preserved (tracked ∪ outbox union)",
+          "behavior": "the tool NEVER creates or mutates the tracked shipwright_test_results.json (boundary probe)",
+          "disposition": "tested",
+          "evidence": "TestMainCLI::test_never_creates_results_json + test_never_mutates_existing_results_json PASSED"
+        },
+        {
+          "behavior": "absent-input safe: missing coverage.xml / no changed lines -> status n/a, exit 0",
+          "disposition": "tested",
+          "evidence": "test_absent_coverage_xml_writes_na_exit0 + test_zero_changed_lines_reports_na PASSED"
+        },
+        {
+          "behavior": "relative --coverage-xml / --diff-cover-json resolve against --project-root, not the process CWD",
+          "disposition": "tested",
+          "evidence": "test_relative_paths_resolve_against_project_root PASSED (Codex review SHOULD-FIX)"
+        },
+        {
+          "behavior": "run_diff_cover subprocess path: parses the report; binary-absent -> None; missing coverage.xml -> None",
+          "disposition": "tested",
+          "evidence": "TestRunDiffCover (4 cases, subprocess mocked) PASSED"
+        },
+        {
+          "behavior": "the CI-gate guard recognizes diff-cover as a gate command and flags a continue-on-error diff-cover step as loose",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_check_ci_gate_coverage.py::test_diff_cover_run_is_gate + test_diff_cover_continue_on_error_is_loose PASSED"
+        },
+        {
+          "behavior": "the informational ci.yml diff-cover step is allowlisted (tracked-debt) so the guard stays green; the live repo passes the guard",
+          "disposition": "tested",
+          "evidence": "test_diff_cover_step_is_allowlisted PASSED + `check_ci_gate_coverage.py --project-root .` -> OK (17 dirs)"
+        },
+        {
+          "behavior": "dashboard loads the transient (absent / malformed / non-dict all -> None safely)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_diff_coverage_block.py::TestLoadDiffCoverage (5 cases) PASSED"
+        },
+        {
+          "behavior": "dashboard INFO line renders ok (percent + tier) / n/a (surfacing the producer note) / absent",
+          "disposition": "tested",
+          "evidence": "TestInfoLine + test_na_surfaces_producer_note + test_na_without_note_has_generic_reason PASSED (2nd is Codex review SHOULD-FIX)"
+        },
+        {
+          "behavior": "the INFO line is grade-neutral: the Control-Grade rendering is byte-identical regardless of the coverage value, and GradeInputs has no coverage field",
+          "disposition": "tested",
+          "evidence": "TestGradeNeutrality::test_grade_lines_identical_regardless_of_coverage + test_grade_inputs_has_no_coverage_field PASSED"
+        },
+        {
+          "behavior": "the full measurement chain works end-to-end and shows a real baseline (--cov=shared -> combined coverage.xml with repo-relative paths -> diff-cover -> transient -> dashboard)",
+          "disposition": "tested",
+          "evidence": "Empirical baseline run: shared suite 3905 passed, coverage.xml line-rate 0.7943, diff-cover 92.0% of changed lines, transient written, INFO line rendered."
+        },
+        {
+          "behavior": "the ci.yml 'Diff coverage' step runs correctly on a real GitHub PR runner (fetch-depth:0 + git fetch origin main + --compare-branch=origin/main)",
           "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "reason": "test_triage_outbox.py dedup tests (tracked suppresses outbox dup and vice-versa) + the full green suite cover the union invariant this change relies on."
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "The GitHub Actions runner + PR merge-base ref cannot be reproduced locally; the local run validated the exact diff-cover invocation against origin/main. The F11 Delivery-Watch observes the real CI run on the PR."
         }
       ],
       "counts": {
-        "testable": 2,
-        "tested": 2,
-        "untestable": 2,
+        "testable": 13,
+        "tested": 13,
+        "untestable": 1,
         "untested_testable": 0
       }
     },

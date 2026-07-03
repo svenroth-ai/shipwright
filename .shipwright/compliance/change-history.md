@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-07-03T14:12:16.917807+00:00
-Total commits: 1073
+Generated: 2026-07-03T21:56:46.817090+00:00
+Total commits: 1074
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 307
+    "fix" : 308
     "feat" : 283
     "chore" : 235
     "docs" : 143
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 307 commits
+### Fixes (fix) — 308 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-03 | triage | route GitHub-triage appends to the outbox on idle main (#308) | e04a61d2a5d6 |
 | 2026-07-02 | triage | surface prompt-injection regardless of Code Scanning + scan main on push (#306) | 01f43bfcbcfd |
 | 2026-07-01 | compliance | make the Control Grade composition-neutral (drop the FR-tag-decline gate) (#304) | 9597c9b8ba80 |
 | 2026-07-01 | triage | drop inline-suppressed SARIF results at the ingest layer (#302) | d2be654546c0 |
@@ -624,7 +625,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-03 | triage | sweep 1 outbox append(s) into branch | 60ef8f7ba2e6 |
+| 2026-07-03 | triage | sweep 2 outbox append(s) into branch | 40d195e36660 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
 | 2026-06-30 | ci | remove native OpenSSF Scorecard workflow (wrong anchor for AI-first) (#298) | 0962051d7704 |
@@ -1142,7 +1143,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1073 |
+| Total commits | 1074 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1073 |
+| Human-authored commits | 1074 |
 

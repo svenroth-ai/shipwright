@@ -77,6 +77,18 @@ class TestClassification:
             _step(name="Upload scan artifacts", uses="actions/upload-artifact@v4")
         )
 
+    def test_diff_cover_run_is_gate(self):
+        # diff-cover is the diff-coverage roadmap's gate tool — the guard must
+        # recognize it so a future silent-loosening (Phase 4 --fail-under) is
+        # caught.
+        assert is_gate_step(_step(run="uvx diff-cover coverage.xml --compare-branch=origin/main"))
+
+    def test_diff_cover_continue_on_error_is_loose(self):
+        assert is_loose(
+            _step(name="Diff coverage (informational)",
+                  run="uvx diff-cover coverage.xml --compare-branch=origin/main", coe=True)
+        )
+
 
 # --------------------------------------------------------------------------- #
 # AC1 — test-dir coverage
@@ -212,3 +224,25 @@ class TestLaunchGates:
     def test_every_launch_gate_has_a_reason(self):
         for e in launch_gates(LOOSE_GATE_ALLOWLIST):
             assert e.reason.strip(), f"launch gate {e.step!r} has no reason"
+
+
+# --------------------------------------------------------------------------- #
+# Diff-coverage roadmap Phase 1 — the informational diff-cover step is
+# allowlisted (tracked-debt: Phase 4 makes it gating and removes the entry).
+# --------------------------------------------------------------------------- #
+class TestDiffCoverageAllowlist:
+    def test_diff_cover_step_is_allowlisted(self):
+        entry = next(
+            (e for e in LOOSE_GATE_ALLOWLIST
+             if e.workflow == "ci.yml" and e.step == "Diff coverage (informational)"),
+            None,
+        )
+        assert entry is not None, (
+            "the informational ci.yml 'Diff coverage (informational)' step must "
+            "be allowlisted — it is intentionally continue-on-error in Phase 1."
+        )
+        assert entry.category == "tracked-debt", (
+            "Phase 4 turns diff-cover into a --fail-under gate and drops this "
+            "entry, so it is tracked-debt, not by-design."
+        )
+        assert entry.reason.strip()

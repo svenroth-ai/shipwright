@@ -19,6 +19,13 @@ dependencies = [
 dev = [
     "pytest>=8.0.0",
     "pytest-mock>=3.12.0",
+    # Diff-coverage measurement chain (roadmap Phase 1). pytest-cov produces
+    # coverage.xml; diff-cover computes % of CHANGED lines covered vs the
+    # merge-base. See shared/scripts/tools/measure_diff_coverage.py. CI
+    # provisions pytest-cov via `uv run --with pytest-cov` (dev extras are not
+    # auto-synced), and runs diff-cover via `uvx`.
+    "pytest-cov>=5.0.0",
+    "diff-cover>=9.0.0",
 ]
 
 [tool.pytest.ini_options]
@@ -65,6 +72,23 @@ select = [
 # (not in `select` above): E401/E402 import placement, E701-E704 one-liners,
 # E731 lambda-assign, E741 ambiguous single-char names. They fire heavily on
 # this repo's bootstrapping scripts without catching bugs.
+
+# ---------------------------------------------------------------------------
+# Coverage (diff-coverage roadmap Phase 1). Only used when pytest runs with
+# --cov (CI's "Run shared tests" step); a plain `pytest` run is unaffected.
+# ---------------------------------------------------------------------------
+[tool.coverage.run]
+# Repo-relative paths so diff-cover can match coverage.xml entries against git
+# paths regardless of the checkout's absolute location (CI ubuntu vs local
+# Windows). Without this, coverage.xml records absolute paths and diff-cover
+# finds "no lines with coverage information".
+relative_files = true
+# The tier's own test files are not product code — exclude them so the line-rate
+# reflects source coverage, not tests-covering-themselves.
+omit = [
+    "*/tests/*",
+    "*/tests/fixtures/*",
+]
 
 [tool.setuptools.packages.find]
 where = ["."]

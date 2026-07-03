@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-03 14:12 UTC | Session: 25acbbdd-b8f4-43f8-b655-892cb636b579 | Run: iterate-2026-07-03-github-triage-outbox-routing
+> Updated: 2026-07-03 21:56 UTC | Session: d6ce5fc1-f421-4efb-8fb5-a04215b1284a | Run: iterate-2026-07-03-diff-coverage-measure-one-tier
 
-## Recent Changes (241 iterations)
+## Recent Changes (242 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | diff-coverage Phase 1: shared-tier measurement chain (measure_diff_coverage.py + non-gating CI diff-cover) + gitignored transient + grade-neutral dashboard INFO line | 3905/3917 |  | tooling | 2026-07-03 |
 | bug | Route github_triage background appends to the gitignored outbox on idle main (should_route_to_outbox) so they reach origin instead of stranding as main-tree drift — closes the delivery gap behind the recurring gh-prompt ghost. | 3629/3641 |  | FR-01.14 | 2026-07-03 |
 | bug | Decouple the prompt-injection triage source from Code Scanning availability (github_triage consumer) + add push:[main] to security.yml so the scan artifact tracks HEAD — fixes the recurring gh-prompt ghost. | 3627/3639 |  | FR-01.14 | 2026-07-02 |
 | change | Persist the phased diff/patch-coverage roadmap (trg-8fdebda3) as a planning doc | 0/0 |  | docs | 2026-07-02 |
@@ -248,7 +249,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-03 | Unit: 3629/3641 | Smoke: skipped | (iterate)
+Last run: 2026-07-03 | Unit: 3905/3917 | Integration: 23/23 | Smoke: skipped | (iterate)
 
 ## Pipeline
 
