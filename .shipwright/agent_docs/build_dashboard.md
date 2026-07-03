@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-03 14:12 UTC | Session: 25acbbdd-b8f4-43f8-b655-892cb636b579 | Run: iterate-2026-07-03-github-triage-outbox-routing
+> Updated: 2026-07-03 21:10 UTC | Session: d7e33bc6-605c-426f-9b84-431aa70ac4c7 | Run: iterate-2026-07-03-semgrep-noise-tailoring
 
-## Recent Changes (241 iterations)
+## Recent Changes (242 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Producer-side accepted-risk Semgrep rule tailoring: two opt-in default-off env channels (wholesale exact check_id; owner-scoped mutable-tag via file-read) stop the weekly self-scan re-surfacing 14 dependabot-cooldown + 12 GitHub-owned mutable-tag findings; unpinned third-party actions stay flagged. | 0/0 |  | tooling | 2026-07-03 |
 | bug | Route github_triage background appends to the gitignored outbox on idle main (should_route_to_outbox) so they reach origin instead of stranding as main-tree drift — closes the delivery gap behind the recurring gh-prompt ghost. | 3629/3641 |  | FR-01.14 | 2026-07-03 |
 | bug | Decouple the prompt-injection triage source from Code Scanning availability (github_triage consumer) + add push:[main] to security.yml so the scan artifact tracks HEAD — fixes the recurring gh-prompt ghost. | 3627/3639 |  | FR-01.14 | 2026-07-02 |
 | change | Persist the phased diff/patch-coverage roadmap (trg-8fdebda3) as a planning doc | 0/0 |  | docs | 2026-07-02 |
@@ -248,7 +249,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-03 | Unit: 3629/3641 | Smoke: skipped | (iterate)
+Last run: 2026-07-03 | Unit: 4068/4083 | Smoke: skipped | (iterate)
 
 ## Pipeline
 
