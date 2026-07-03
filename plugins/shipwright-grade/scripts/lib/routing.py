@@ -59,9 +59,11 @@ def _classify_shipwright(sw_dir: Path) -> tuple[str, str]:
 
     events = sw_dir / "events.jsonl"
     events_text = _read(events) if events.is_file() else ""
+    # These reference the GRADED TARGET repo's .shipwright/, not this project's
+    # canonical compliance dir — the canon lint can't tell them apart.
     rtm_candidates = [
-        sw_dir / "compliance" / "rtm.md",
-        sw_dir / "compliance" / "traceability_matrix.md",
+        sw_dir / "compliance" / "rtm.md",  # artifact-path-canon: legacy
+        sw_dir / "compliance" / "traceability_matrix.md",  # artifact-path-canon: legacy
     ]
     has_rtm = any(p.is_file() for p in rtm_candidates)
     has_events = bool(events_text.strip())

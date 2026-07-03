@@ -20,7 +20,7 @@ def _mk_shipwright(root: Path, *, events: str | None = None, rtm: bool = False) 
     if events is not None:
         (sw / "events.jsonl").write_text(events, encoding="utf-8")
     if rtm:
-        comp = sw / "compliance"
+        comp = sw / "compliance"  # artifact-path-canon: legacy
         comp.mkdir(parents=True, exist_ok=True)
         (comp / "rtm.md").write_text("# RTM\n", encoding="utf-8")
 
