@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-07-03T21:10:12.977509+00:00
+Generated: 2026-07-03T22:42:27.621632+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -12,28 +12,28 @@ Scope: library
 
 | | Dimension | Signal | Anchor |
 |---|-----------|--------|--------|
-| ✅ | Requirement traceability | 14/14 FRs covered; 242/242 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
+| ✅ | Requirement traceability | 14/14 FRs covered; 243/243 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
 | ✅ | Test health | latest full suite 3629/3641 (2026-07-03) | automated tests pass (OpenSSF Scorecard) |
-| ✅ | Change traceability | 242/242 changes linked to a commit, ADR or test run | change provenance (SLSA) |
+| ✅ | Change traceability | 243/243 changes linked to a commit, ADR or test run | change provenance (SLSA) |
 | ✅ | Change reconciliation | 0/5 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
 | ✅ | Security | 0 open high/critical | no open high/critical vulns (NIST SSDF) |
 | ✅ | Size / maintainability discipline | ratchet delta -9 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
-| ✅ | Dependency hygiene | 0 unresolved / 7 licenses; 0 copyleft | dependency license & risk (OWASP) |
+| ✅ | Dependency hygiene | 0 unresolved / 8 licenses; 0 copyleft | dependency license & risk (OWASP) |
 
-Verified from: `shipwright_events.jsonl (242 events, 2026-05-02 → 2026-07-03)`
+Verified from: `shipwright_events.jsonl (243 events, 2026-05-02 → 2026-07-03)`
 
 _Grade = importance-weighted average over the measurable dimensions (n/a excluded from the denominator), modeled on OpenSSF Scorecard. Age is neutral; only unreconciled change and net growth are control failures. Each Anchor names the open standard the dimension follows — see the guide's Control-Grade dimensions table._
 
 ## 🛡️ CI Security (fail-closed gate)
 
-Latest scan: **2026-07-03** · source `security.yml#28666243321` · critical-gate **✅ PASS**
+Latest scan: **2026-07-03** · source `security.yml#28683869920` · critical-gate **✅ PASS**
 
 | Severity | Count |
 |----------|-------|
 | Critical | 0 |
 | High | 0 |
-| Medium | 12 |
-| Low | 14 |
+| Medium | 0 |
+| Low | 0 |
 
 Prompt-injection findings: **0**
 
@@ -50,12 +50,12 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Metric | Value | Status | Why warn? |
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
-| Work events (iterate) | 242 changes | INFO |  |
+| Work events (iterate) | 243 changes | INFO |  |
 | Recent changes traced to an FR | 13/30 (43%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
-| All unit tests passing | 3629/3641 | WARN | 12/3641 not green in last full suite — see test-evidence.md; +1 change(s) since last full suite |
+| All unit tests passing | 3629/3641 | WARN | 12/3641 not green in last full suite — see test-evidence.md; +2 change(s) since last full suite |
 | Architecture decisions | 235 ADRs | INFO |  |
 | Iterate tests passing | 45/53 testable changes tested | WARN | 8 testable change(s) without tests — see test-evidence.md |
-| Dependencies | 7 packages | INFO |  |
+| Dependencies | 8 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
 | Triage open | 4 open | WARN | 4 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit (grandfathered) | 127 | INFO |  |
@@ -64,7 +64,7 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 
 ## Project Velocity
 
-- Iterate: 242 changes (2026-05-02 → 2026-07-03)
+- Iterate: 243 changes (2026-05-02 → 2026-07-03)
 - Last activity: 2026-07-03
 
 ## External LLM Review Evidence

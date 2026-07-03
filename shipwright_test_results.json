@@ -1,101 +1,51 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-03-semgrep-noise-tailoring",
+    "run_id": "iterate-2026-07-03-grade-g1-projector",
     "date": "2026-07-03",
-    "intent": "change",
-    "complexity": "small",
-    "unit": {
-      "status": "passed",
-      "passed": 4068,
-      "total": 4083
-    },
-    "integration": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "pgtap": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "e2e": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "design_fidelity": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "smoke": {
-      "status": "skipped"
-    },
+    "intent": "feature",
+    "complexity": "medium",
+    "unit": { "status": "passed", "passed": 91, "total": 91 },
+    "integration": { "status": "skipped", "passed": 0, "total": 0 },
+    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
+    "e2e": { "status": "skipped", "passed": 0, "total": 0 },
+    "design_fidelity": { "status": "skipped", "passed": 0, "total": 0 },
+    "smoke": { "status": "skipped" },
+    "degraded": [
+      "classify_complexity flagged touches_auth from the prose word 'authoritative' (message-keyword false positive); the diff touches no auth path (src/middleware.ts, **/auth/**) — overridden.",
+      "external plan review not re-run for this sub-iterate: the campaign plan (Spec/shipwright-grade-plan.md section 14) already folds in the Gemini 3.1 Pro + GPT-5.4 dispositions at planning time; a fresh-context adversarial code review WAS run for G1 and its findings fixed."
+    ],
     "surface_verification": {
-      "surface": "none",
-      "justification": "Internal CI security-scanner producer (no web/CLI user surface). Verified end-to-end with live semgrep: a baseline --config auto scan of .github/ reproduced the exact 14 dependabot-missing-cooldown + 12 github-actions-mutable-action-tag findings; with the two accept env vars set both classes drop to 0 while an unpinned third-party action (evilcorp/thing@v1) stays flagged. Confirmed the owner is read from the file, not extra.lines (redacted to 'requires login' unauthenticated)."
+      "surface": "cli",
+      "runner": "uv run --directory plugins/shipwright-grade --with pytest --with pytest-mock --with pyyaml pytest tests/ -q",
+      "exit_code": 0,
+      "tests_run": 91,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-03-grade-g1-projector/surface_verification.log",
+      "timestamp": "2026-07-03T22:35:54.029Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        {
-          "behavior": "Wholesale channel: an exact check_id in SHIPWRIGHT_SEMGREP_EXCLUDE_RULES is dropped from normalized findings",
-          "disposition": "tested",
-          "evidence": "tests/test_semgrep_rule_tailoring.py::TestNormalizeTailored::test_wholesale_exclude_only PASSED"
-        },
-        {
-          "behavior": "Owner-scoped channel: mutable-action-tag on GitHub-owned actions (actions/*, github/*) is dropped when the accept env is on",
-          "disposition": "tested",
-          "evidence": "tests/test_semgrep_rule_tailoring.py::TestNormalizeTailored::test_real_scan_shape_third_party_survives PASSED (actions/ + github/ dropped)"
-        },
-        {
-          "behavior": "Supply-chain guard: an unpinned THIRD-PARTY mutable-action-tag stays flagged even with accepts on",
-          "disposition": "tested",
-          "evidence": "tests/test_semgrep_rule_tailoring.py::test_real_scan_shape_third_party_survives (line 7 kept) + live semgrep probe kept evilcorp/thing@v1"
-        },
-        {
-          "behavior": "Owner is read from the workflow FILE at path:line, not semgrep extra.lines (redacted to 'requires login' when unauthenticated as CI runs it)",
-          "disposition": "tested",
-          "evidence": "tests/test_semgrep_rule_tailoring.py::TestActionOwnerFromFile::test_reads_owner_from_file_line PASSED + live e2e: baseline 14+12 -> tailored 0 despite requires-login snippets"
-        },
-        {
-          "behavior": "Both channels default OFF -> normalize_tailored is a pure passthrough so adopted repos are unaffected",
-          "disposition": "tested",
-          "evidence": "tests/test_semgrep_rule_tailoring.py::test_default_env_is_passthrough + TestEnvResolution::test_accept_gh_tags_default_off + test_exclude_rules_empty_by_default PASSED"
-        },
-        {
-          "behavior": "Invalid rule ids (path separator, glob, .., whitespace) are rejected from the exclude list",
-          "disposition": "tested",
-          "evidence": "tests/test_semgrep_rule_tailoring.py::TestEnvResolution::test_exclude_rules_parsed_and_validated PASSED"
-        },
-        {
-          "behavior": "Fail-safe: unreadable/out-of-range file or no parseable uses line -> finding KEPT (never over-suppress)",
-          "disposition": "tested",
-          "evidence": "tests/test_semgrep_rule_tailoring.py::TestIsGithubOwnedActionTag::test_unreadable_kept + TestActionOwnerFromFile::test_none_on_bad_inputs PASSED"
-        },
-        {
-          "behavior": "Finding ids are renumbered contiguously after drops",
-          "disposition": "tested",
-          "evidence": "tests/test_semgrep_rule_tailoring.py::test_real_scan_shape_third_party_survives asserts id==semgrep-0001 PASSED"
-        },
-        {
-          "behavior": "oss_backend routes semgrep output through normalize_tailored so the CI self-scan honors the accepts",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-security/tests/test_oss_backend.py suite PASSED (439) + live _run_semgrep e2e on .github/ dropped both targeted classes to 0"
-        }
+        { "behavior": "resolve_target accepts a local git repo (+bare/shallow/remote flags) and rejects URL/missing/file/non-git", "disposition": "tested", "evidence": "test_resolve_target.py (9 passed)" },
+        { "behavior": "synthetic_projection maps commits to conventional-type + PR/issue ref + is_traced/has_provenance; files_changed deferred; newline-safe records", "disposition": "tested", "evidence": "test_synthetic_projection.py (9 passed)" },
+        { "behavior": "RepoContext is a memoized, bounded (caps), lexicographic, within-root snapshot with a byte-capped read_text", "disposition": "tested", "evidence": "test_repo_context.py (9 passed)" },
+        { "behavior": "detectors_bridge reuses adopt detectors read-only, degrades safely, writes nothing", "disposition": "tested", "evidence": "test_reused_collector_audit.py (4 passed)" },
+        { "behavior": "engine_bridge loads compute_grade UNCHANGED, cached, and coexists with grade's bare modules without a scripts.lib collision", "disposition": "tested", "evidence": "test_engine_bridge.py (5 passed)" },
+        { "behavior": "grade_inputs_projector maps events+context onto GradeInputs; lights requirement/change traceability; leaves security/deps/maint/reconciliation n/a; surfaces static inventory without scoring test-health", "disposition": "tested", "evidence": "test_projector_fixtures.py (9 passed)" },
+        { "behavior": "report_model n/a semantics (N/A, excluded, would-light, never 0), per-dimension provenance, detail override", "disposition": "tested", "evidence": "test_report_model.py (6 passed)" },
+        { "behavior": "routing decides authoritative vs heuristic incl absent/partial/stale/malformed/mixed .shipwright/", "disposition": "tested", "evidence": "test_routing.py (5 passed)" },
+        { "behavior": "sanitize strips CSI/OSC/ESC/control/bidi and collapses to one line", "disposition": "tested", "evidence": "test_sanitize.py (9 passed)" },
+        { "behavior": "renderers deterministic; hostile repo strings neutralised end-to-end; headline carries N-of-M controls measured", "disposition": "tested", "evidence": "test_negative_fixtures.py + test_grade_cli.py" },
+        { "behavior": "CLI emits terminal/markdown/json with exit codes 0/2/3 and UTF-8-encodable output", "disposition": "tested", "evidence": "test_grade_cli.py (8 passed)" },
+        { "behavior": "negative fixtures (bare/empty/shallow/huge+binary) degrade to n/a or Not Gradeable, never a crash", "disposition": "tested", "evidence": "test_negative_fixtures.py (6 passed)" },
+        { "behavior": "git_exec is a hardened (safe.directory/fsmonitor/pager/hooks), bounded, read-only git runner", "disposition": "tested", "evidence": "test_git_exec.py (4 passed)" },
+        { "behavior": "coverage heuristic is route-specific (a bare module import does not mark every route covered)", "disposition": "tested", "evidence": "test_coverage_heuristic.py (5 passed)" },
+        { "behavior": "feature-inference truncation on oversized repos is labelled sampled/truncated in requirement-traceability provenance", "disposition": "tested", "evidence": "test_repo_context.py::test_features_truncated_flag_when_file_walk_truncates + test_report_model.py::test_features_truncated_labels_requirement_traceability_sampled" },
+        { "behavior": "empirical record/replay cache round-trips and the manifest is well-formed (fields + descending bands)", "disposition": "tested", "evidence": "tests/empirical/test_replay_mechanism.py (7 passed)" },
+        { "behavior": "same repo state yields the same grade (determinism)", "disposition": "tested", "evidence": "test_projector_fixtures.py::test_same_repo_state_same_grade" },
+        { "behavior": "empirical real-OSS band + relative-ordering assertion against pinned SHAs", "disposition": "untestable", "reason_code": "requires-external-nondeterministic-service", "reason": "needs network + gh against real GitHub repos; opt-in -m empirical suite, SHAs PENDING-G5, loud skip; the launch gate is G5" }
       ],
-      "counts": {
-        "testable": 9,
-        "tested": 9,
-        "untestable": 0,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 2,
-        "covered_acs": 2
-      }
-    },
-    "degraded": []
+      "counts": { "testable": 17, "tested": 17, "untestable": 1, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 13, "covered_acs": 13 }
+    }
   }
 }

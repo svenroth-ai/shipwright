@@ -1,0 +1,29 @@
+# Empirical calibration manifest — real OSS repos, pinned to a commit SHA so the
+# grade is reproducible (assert bands + relative ordering, not exact scores).
+#
+# G1 SEEDS this manifest + the record/replay harness (replay.py) + the fixtures
+# cache dir. The real commit SHAs, the cached payloads, the full curated spread
+# and the launch gate are finalized in G5 (the calibration phase) — so entries
+# here carry a `pinned_sha: PENDING-G5` placeholder and the empirical test skips
+# them (loudly) until G5 pins real SHAs. Expected bands reflect informed human
+# judgement of each repo's control posture and encode the intended ordering
+# exemplary > average > poor.
+repos:
+  - name: pallets/flask
+    url: https://github.com/pallets/flask
+    pinned_sha: PENDING-G5
+    expected_band: A
+    rationale: mature, CI-heavy, strong test discipline, PR-linked history
+    tags: [exemplary, python, library]
+  - name: expressjs/express
+    url: https://github.com/expressjs/express
+    pinned_sha: PENDING-G5
+    expected_band: B
+    rationale: solid tests + CI, but changes not traced to requirements
+    tags: [average, javascript, library]
+  - name: sindresorhus/slugify
+    url: https://github.com/sindresorhus/slugify
+    pinned_sha: PENDING-G5
+    expected_band: C
+    rationale: small, few linked commits, light process — the funnel gap
+    tags: [poor, javascript, micro-library]
