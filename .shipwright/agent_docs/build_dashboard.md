@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-02 16:48 UTC | Session: 25acbbdd-b8f4-43f8-b655-892cb636b579 | Run: iterate-2026-07-02-gh-prompt-ghost-fix
+> Updated: 2026-07-03 14:12 UTC | Session: 25acbbdd-b8f4-43f8-b655-892cb636b579 | Run: iterate-2026-07-03-github-triage-outbox-routing
 
-## Recent Changes (240 iterations)
+## Recent Changes (241 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | Route github_triage background appends to the gitignored outbox on idle main (should_route_to_outbox) so they reach origin instead of stranding as main-tree drift — closes the delivery gap behind the recurring gh-prompt ghost. | 3629/3641 |  | FR-01.14 | 2026-07-03 |
 | bug | Decouple the prompt-injection triage source from Code Scanning availability (github_triage consumer) + add push:[main] to security.yml so the scan artifact tracks HEAD — fixes the recurring gh-prompt ghost. | 3627/3639 |  | FR-01.14 | 2026-07-02 |
 | change | Persist the phased diff/patch-coverage roadmap (trg-8fdebda3) as a planning doc | 0/0 |  | docs | 2026-07-02 |
 | change | Make the Control Grade composition-neutral: remove the FR-tag-decline penalty + verdict cap so the feature-vs-maintenance work mix no longer affects the grade | 4964/4976 |  | FR-01.10 | 2026-07-01 |
@@ -247,7 +248,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-02 | Unit: 3627/3639 | Smoke: skipped | (iterate)
+Last run: 2026-07-03 | Unit: 3629/3641 | Smoke: skipped | (iterate)
 
 ## Pipeline
 

@@ -180,6 +180,9 @@ _BACKGROUND_PRODUCERS = {
     "phase_quality_triage_bundle": "shared/scripts/lib/phase_quality/_triage_bundle.py",
     "compliance_triage_bundle": "plugins/shipwright-compliance/scripts/audit/triage_bundle.py",
     "triage_add": "shared/scripts/tools/triage_add.py",
+    # SessionStart GitHub findings importer (iterate-2026-07-03-github-triage-outbox-routing):
+    # its action-unit appends route via should_route_to_outbox in _maybe_append.
+    "github_triage": "shared/scripts/github_triage/consumer.py",
 }
 
 # Either a literal hardcoded ``to_outbox=True`` OR a routing computation that

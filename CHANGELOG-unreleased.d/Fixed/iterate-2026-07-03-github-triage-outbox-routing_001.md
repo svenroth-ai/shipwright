@@ -1,0 +1,1 @@
+GitHub-derived triage findings (code-scanning / Dependabot / secrets / prompt-injection / CI) raised on idle `main` now route to the per-tree delivery outbox and reach the remote via the next change's PR, instead of stranding as local-only drift whose dismissals never stuck.

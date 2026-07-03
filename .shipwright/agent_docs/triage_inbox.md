@@ -1,12 +1,12 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-02T11:47:15.333187Z. Items waiting for triage decision.
+> Auto-generated 2026-07-02T16:48:24.926158Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 254
-- Triage: 3 | Promoted: 1 | Dismissed: 249 | Snoozed: 1
+- Total: 256
+- Triage: 3 | Promoted: 1 | Dismissed: 251 | Snoozed: 1
 
 ## Top 3 items (severity-sorted)
 

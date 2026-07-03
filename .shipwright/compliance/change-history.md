@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-07-02T16:48:24.926158+00:00
-Total commits: 1070
+Generated: 2026-07-03T14:12:16.917807+00:00
+Total commits: 1073
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 306
+    "fix" : 307
     "feat" : 283
-    "chore" : 233
+    "chore" : 235
     "docs" : 143
     "refactor" : 64
     "test" : 25
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 306 commits
+### Fixes (fix) — 307 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-02 | triage | surface prompt-injection regardless of Code Scanning + scan main on push (#306) | 01f43bfcbcfd |
 | 2026-07-01 | compliance | make the Control Grade composition-neutral (drop the FR-tag-decline gate) (#304) | 9597c9b8ba80 |
 | 2026-07-01 | triage | drop inline-suppressed SARIF results at the ingest layer (#302) | d2be654546c0 |
 | 2026-06-30 | triage | quarantine orphan-status in the outbox sweep instead of hard-blocking (#303) | 33234ef43c90 |
@@ -619,10 +620,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 233 commits
+### Chores (chore) — 235 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-03 | triage | sweep 1 outbox append(s) into branch | 60ef8f7ba2e6 |
+| 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
 | 2026-06-30 | ci | remove native OpenSSF Scorecard workflow (wrong anchor for AI-first) (#298) | 0962051d7704 |
 | 2026-06-29 | bloat | tighten baseline floors to on-disk LOC (Group H2) (#293) | 4594948315b5 |
@@ -1139,7 +1142,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1070 |
+| Total commits | 1073 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1070 |
+| Human-authored commits | 1073 |
 
