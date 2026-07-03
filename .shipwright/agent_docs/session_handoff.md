@@ -1,34 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-03-semgrep-noise-tailoring"
+run_id: "iterate-2026-07-03-diff-coverage-measure-one-tier"
 phase: "iterate"
-reason: "Producer-side accepted-risk Semgrep rule tailoring"
-timestamp: "2026-07-03T21:10:12.977509+00:00"
+reason: "post-merge regen: iterate-2026-07-03-diff-coverage-measure-one-tier"
+timestamp: "2026-07-03T21:56:46.817090+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-03 21:10:12 UTC
+> Auto-generated 2026-07-03 21:56:46 UTC
 
 ## Session Info
 
-- **Session ID**: d7e33bc6-605c-426f-9b84-431aa70ac4c7
-- **Timestamp**: 2026-07-03 21:10:12 UTC
-- **Reason**: Producer-side accepted-risk Semgrep rule tailoring
+- **Session ID**: d6ce5fc1-f421-4efb-8fb5-a04215b1284a
+- **Timestamp**: 2026-07-03 21:56:46 UTC
+- **Reason**: post-merge regen: iterate-2026-07-03-diff-coverage-measure-one-tier
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-03-github-triage-outbox-routing
-- **Date**: 2026-07-03T14:12:33.677360Z
-- **Type**: bug
-- **Complexity**: small
-- **Branch**: iterate/github-triage-outbox-routing
-- **ADR**: iterate-2026-07-03-github-triage-outbox-routing
+- **Run ID**: iterate-2026-07-03-diff-coverage-measure-one-tier
+- **Date**: 2026-07-03T21:57:26.401773Z
+- **Type**: feature
+- **Complexity**: medium
+- **Branch**: iterate/diff-coverage-measure-one-tier
+- **ADR**: iterate-2026-07-03-diff-coverage-measure-one-tier
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/diff-coverage-roadmap.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/semgrep-noise-tailoring
+- **Branch**: iterate/diff-coverage-measure-one-tier
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -47,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/semgrep-noise-tailoring
-- **Last Commit**: ecffa743 chore(triage): sweep 1 outbox append(s) into branch
+- **Branch**: iterate/diff-coverage-measure-one-tier
+- **Last Commit**: 9d3568fa Merge remote-tracking branch 'origin/main' into iterate/diff-coverage-measure-one-tier
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,15 +66,15 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 | Event | Type | Source | Date |
 |-------|------|--------|------|
 | evt-9d089d93 | work_completed | iterate (Producer-side accepted-risk Semgrep rule tailoring: two opt-in default-off env channels (wholesale exact check_id; owner-scoped mutable-tag via file-read) stop the weekly self-scan re-surfacing 14 dependabot-cooldown + 12 GitHub-owned mutable-tag findings; unpinned third-party actions stay flagged.) | 2026-07-03 |
+| evt-76c97ce2 | work_completed | iterate (diff-coverage Phase 1: shared-tier measurement chain (measure_diff_coverage.py + non-gating CI diff-cover) + gitignored transient + grade-neutral dashboard INFO line) | 2026-07-03 |
 | evt-5755f932 | work_completed | iterate (Route github_triage background appends to the gitignored outbox on idle main (should_route_to_outbox) so they reach origin instead of stranding as main-tree drift — closes the delivery gap behind the recurring gh-prompt ghost.) | 2026-07-03 |
 | evt-1f234469 | work_completed | iterate (Decouple the prompt-injection triage source from Code Scanning availability (github_triage consumer) + add push:[main] to security.yml so the scan artifact tracks HEAD — fixes the recurring gh-prompt ghost.) | 2026-07-02 |
 | evt-0018a555 | work_completed | iterate (Persist the phased diff/patch-coverage roadmap (trg-8fdebda3) as a planning doc) | 2026-07-02 |
-| evt-a2c95dc8 | work_completed | iterate (Make the Control Grade composition-neutral: remove the FR-tag-decline penalty + verdict cap so the feature-vs-maintenance work mix no longer affects the grade) | 2026-07-01 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 242
+- **Total work events**: 243
 - **Last iterate**: change — Producer-side accepted-risk Semgrep rule tailoring: two opt-in default-off env channels (wholesale exact check_id; owner-scoped mutable-tag via file-read) stop the weekly self-scan re-surfacing 14 dependabot-cooldown + 12 GitHub-owned mutable-tag findings; unpinned third-party actions stay flagged. (2026-07-03)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
