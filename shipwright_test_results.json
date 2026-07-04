@@ -1,95 +1,38 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-04-prompt-scan-literal-fp",
+    "run_id": "iterate-2026-07-04-grade-cta-adopt",
     "date": "2026-07-04",
-    "intent": "bug",
+    "intent": "change",
     "complexity": "small",
-    "unit": {
-      "status": "passed",
-      "passed": 470,
-      "skipped": 3,
-      "total": 473
-    },
-    "integration": null,
-    "pgtap": null,
-    "e2e": null,
-    "design_fidelity": null,
-    "smoke": null,
-    "degraded": [],
+    "unit": { "status": "passed", "passed": 216, "total": 216 },
+    "integration": { "status": "skipped", "passed": 0, "total": 0 },
+    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
+    "e2e": { "status": "passed", "passed": 35, "total": 35 },
+    "design_fidelity": { "status": "skipped", "passed": 0, "total": 0 },
+    "smoke": { "status": "skipped" },
+    "degraded": [
+      "Small standalone follow-up to G3 (CTA copy + one static link). Internal opus code review = NO blocking issues; of its 2 low advisories, #1 (uniform attribute-value seam: route _attrs through the same strip_terminal+escape as text nodes) was applied + pinned by a test, #2 (double-quote-coupled regex) is redundant with the authoritative parser-based test. External LLM review skipped (advisory at small complexity)."
+    ],
     "surface_verification": {
-      "surface": "none",
-      "justification": "Small bug fix to the prompt-injection scanner's internal token matching (scan_python -> blank_noncode_spans). No UI and no io-boundary: the input file set and the prompt_risks.json output schema are unchanged. Verified by the plugin unit suite (470 passed, 3 pre-existing CI-guarded skips) plus an empirical re-scan of the real trigger file plugins/shipwright-grade/tests/test_reused_collector_audit.py: 4 -> 0 findings, with real dangerous calls still flagged.",
-      "tests_run": 0
+      "surface": "cli",
+      "runner": "uv run --project plugins/shipwright-grade pytest plugins/shipwright-grade/tests/test_grade_cli.py plugins/shipwright-grade/tests/test_html_report.py plugins/shipwright-grade/tests/test_html_security.py plugins/shipwright-grade/tests/test_render_snapshots.py -q",
+      "exit_code": 0,
+      "tests_run": 35,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-04-grade-cta-adopt/surface_verification.json",
+      "timestamp": "2026-07-04T00:00:00.000Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        {
-          "behavior": "Dangerous-pattern tokens appearing only as string literals are not flagged",
-          "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestPythonScannerIgnoresStringsAndComments::test_string_literal_tokens_not_flagged"
-        },
-        {
-          "behavior": "Dangerous-pattern tokens inside a docstring are not flagged",
-          "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestPythonScannerIgnoresStringsAndComments::test_docstring_tokens_not_flagged"
-        },
-        {
-          "behavior": "Dangerous-pattern tokens inside an inline/trailing comment are not flagged",
-          "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestPythonScannerIgnoresStringsAndComments::test_inline_trailing_comment_not_flagged"
-        },
-        {
-          "behavior": "Real eval()/exec()/os.system() calls are still flagged (no regression)",
-          "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestPythonScannerIgnoresStringsAndComments::test_real_calls_still_flagged"
-        },
-        {
-          "behavior": "subprocess.run(<str>, shell=True) still flags after the string arg is blanked (multi-token pattern integrity)",
-          "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestPythonScannerIgnoresStringsAndComments::test_subprocess_shell_true_with_string_arg_still_flagged"
-        },
-        {
-          "behavior": "affected_line stays accurate when a multiline string precedes the real call",
-          "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestPythonScannerIgnoresStringsAndComments::test_affected_line_survives_preceding_multiline_string"
-        },
-        {
-          "behavior": "Invalid Python falls back to the line scan so a real dangerous call is still seen",
-          "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestPythonScannerIgnoresStringsAndComments::test_invalid_python_falls_back_to_line_scan"
-        },
-        {
-          "behavior": "blank_noncode_spans blanks string content but keeps executable code verbatim",
-          "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestBlankNoncodeSpans::test_blanks_string_content_but_keeps_code"
-        },
-        {
-          "behavior": "blank_noncode_spans preserves newline count (line-number fidelity)",
-          "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestBlankNoncodeSpans::test_preserves_newline_count"
-        },
-        {
-          "behavior": "blank_noncode_spans returns the original text verbatim on non-tokenizable source",
-          "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestBlankNoncodeSpans::test_invalid_python_returns_original_verbatim"
-        },
-        {
-          "behavior": "Scanner self-reference files no longer self-flag yet remain excluded (belt-and-suspenders)",
-          "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_diff.py::TestDiffModeExclusion::test_self_reference_files_no_longer_self_flag_but_stay_excluded"
-        }
+        { "behavior": "CTA explains what /shipwright-adopt does (3 steps) + the concrete next step; 'certify' removed from the CTA (stays only in the honest-ceiling disclaimer)", "disposition": "tested", "evidence": "test_html_report.py::TestSections::test_cta_explains_adopt_and_next_step (assertion scoped to the <section class=cta>)" },
+        { "behavior": "The CTA is a single static, trusted, hardened link to svenroth.ai/shipwright (target=_blank, rel=noopener noreferrer) — the only <a> in the document", "disposition": "tested", "evidence": "test_html_report.py::TestSelfContained::test_only_link_is_the_trusted_cta" },
+        { "behavior": "Security invariant TIGHTENED not loosened: no auto-fetch surface; exactly one href = the CTA even under hostile input; a repo-derived string never becomes an <a> or href", "disposition": "tested", "evidence": "test_html_report.py::test_no_external_request_surface + test_html_security.py::test_hostile_payload_contributes_zero_live_nodes (parser-based: 1 anchor, hrefs == [CTA])" },
+        { "behavior": "Attribute values share the text-node cleaning seam (control/ANSI/bidi stripped, quotes/brackets escaped) so an attribute is never a weaker context than a text node", "disposition": "tested", "evidence": "test_html_security.py::test_attribute_values_are_control_stripped_and_escaped" },
+        { "behavior": "The CLI --format html path emits only the CTA link (no other external reference)", "disposition": "tested", "evidence": "test_grade_cli.py::test_html_format_emits_self_contained_document" },
+        { "behavior": "HTML golden snapshot regenerated for the new CTA and byte-exact enforced; render stays deterministic", "disposition": "tested", "evidence": "test_render_snapshots.py::test_html_snapshot_matches_golden" }
       ],
-      "counts": {
-        "testable": 11,
-        "tested": 11,
-        "untestable": 0,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 11,
-        "covered_acs": 11
-      }
+      "counts": { "testable": 6, "tested": 6, "untestable": 0, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 4, "covered_acs": 4 }
     }
   }
 }
