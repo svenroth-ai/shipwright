@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-03T22:42:27.621632+00:00
+Generated: 2026-07-04T07:05:27.029835+00:00
 
 ## Requirements Coverage
 
@@ -27,6 +27,7 @@ Generated: 2026-07-03T22:42:27.621632+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-cb7cb6b8"></a>The repo grader now scores more Control-Grade dimensions on a cold repo: maintainability and dependency hygiene locally, plus test-health and security via an opt-in --allow-network path; the scoring engine gains one additive, byte-identical field. | iterate | feature |  | 182/182 | — | 2026-07-04 |
 | <a id="evt-feb2ef5e"></a>Added a tool that grades any local git repository A-F with the same rubric as the dashboard, reusing the scoring engine unchanged; dimensions it cannot derive show an honest N/A. | iterate | feature |  | 91/91 | — | 2026-07-03 |
 | <a id="evt-76c97ce2"></a>Added a way to measure how much of the code CHANGED in a pull request is actually run by tests ("diff coverage") for the shared code, shown as an informational note; it does not affect any grade or block anything yet. | iterate | feature |  | 3905/3917 | — | 2026-07-03 |
 | <a id="evt-9d089d93"></a>Producer-side accepted-risk Semgrep rule tailoring: two opt-in default-off env channels (wholesale exact check_id; owner-scoped mutable-tag via file-read) stop the weekly self-scan re-surfacing 14 dependabot-cooldown + 12 GitHub-owned mutable-tag findings; unpinned third-party actions stay flagged. | iterate | change |  | — | — | 2026-07-03 |
@@ -278,7 +279,7 @@ Generated: 2026-07-03T22:42:27.621632+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 244 |
+| Iterate changes | 245 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

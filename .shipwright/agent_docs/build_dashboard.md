@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-03 22:42 UTC | Session: d6ce5fc1-f421-4efb-8fb5-a04215b1284a | Run: iterate-2026-07-03-diff-coverage-measure-one-tier
+> Updated: 2026-07-04 07:05 UTC | Session: baa08540-7f73-453f-8f8e-b105ec4a53c2 | Run: iterate-2026-07-04-grade-g2-signals
 
-## Recent Changes (244 iterations)
+## Recent Changes (245 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | shipwright-grade G2: light security, dependency, maintainability and network-gated test-health signals for cold repos | 182/182 |  | tooling | 2026-07-04 |
 | feature | shipwright-grade G1: cold-repo signal projector (new read-only plugin) | 91/91 |  | tooling | 2026-07-03 |
 | change | Producer-side accepted-risk Semgrep rule tailoring: two opt-in default-off env channels (wholesale exact check_id; owner-scoped mutable-tag via file-read) stop the weekly self-scan re-surfacing 14 dependabot-cooldown + 12 GitHub-owned mutable-tag findings; unpinned third-party actions stay flagged. | 0/0 |  | tooling | 2026-07-03 |
 | feature | diff-coverage Phase 1: shared-tier measurement chain (measure_diff_coverage.py + non-gating CI diff-cover) + gitignored transient + grade-neutral dashboard INFO line | 3905/3917 |  | tooling | 2026-07-03 |
@@ -251,7 +252,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-03 | Unit: 3905/3917 | Integration: 23/23 | Smoke: skipped | (iterate)
+Last run: 2026-07-04 | Unit: 182/182 | Smoke: skipped | (iterate)
 
 ## Pipeline
 
