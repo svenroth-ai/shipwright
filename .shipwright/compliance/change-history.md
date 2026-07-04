@@ -1,13 +1,13 @@
 # Commit Change Log
 
 Generated: 2026-07-04T13:09:10.541223+00:00
-Total commits: 1081
+Total commits: 1083
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 310
+    "fix" : 312
     "feat" : 287
     "chore" : 236
     "docs" : 143
@@ -20,10 +20,12 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 310 commits
+### Fixes (fix) — 312 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-04 | grade | CTA explains adopt + next step, one hardened link (drop "certify") | 9f4388acd408 |
+| 2026-07-04 | security | prompt-scan matches code, not string/comment token text (#316) | 354cca7e0669 |
 | 2026-07-04 | security | pr_review excludes generated artifacts from the diff before truncation (#314) | 913261ff68cd |
 | 2026-07-04 | grade | tighten test-health tier-2 + URL-encode ref + stronger golden (G2 review follow-up) (#313) | fbc9bdce9e8f |
 | 2026-07-03 | triage | route GitHub-triage appends to the outbox on idle main (#308) | e04a61d2a5d6 |
@@ -1150,7 +1152,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1081 |
+| Total commits | 1083 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1081 |
+| Human-authored commits | 1083 |
 
