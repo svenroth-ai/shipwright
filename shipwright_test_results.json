@@ -1,36 +1,103 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-04-grade-g2-review-followup",
+    "run_id": "iterate-2026-07-04-pr-review-exclude-generated-diff",
     "date": "2026-07-04",
-    "intent": "bug",
-    "complexity": "small",
-    "unit": { "status": "passed", "passed": 187, "total": 187 },
-    "integration": { "status": "skipped", "passed": 0, "total": 0 },
-    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
-    "e2e": { "status": "skipped", "passed": 0, "total": 0 },
-    "design_fidelity": { "status": "skipped", "passed": 0, "total": 0 },
-    "smoke": { "status": "skipped" },
-    "degraded": [
-      "External-review follow-up to the merged G2 (PR #312): closes GPT/Gemini findings via the NORMAL external_review.py process (GPT-5.4 + Gemini 3.1 Pro / OpenRouter). Re-ran external review on THIS fix diff → no real new defects (persistent %-vs-N/M is a documented design choice; 2 GPT false positives — `test` subsumes `pytest`, `spec` matches `RSpec`; the golden isolation is already covered). Gemini returned an incomplete response both times (model-side cutoff)."
-    ],
+    "unit": {
+      "status": "passed",
+      "passed": 460,
+      "total": 463
+    },
+    "integration": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "skipped"
+    },
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --directory plugins/shipwright-grade --extra dev pytest tests/ -q",
-      "exit_code": 0,
-      "tests_run": 187,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-04-grade-g2-review-followup/surface_verification.json",
-      "timestamp": "2026-07-04T00:00:00.000Z"
+      "surface": "none",
+      "justification": "Framework tooling change (Tier-3 pr_review gate) with no UI surface. The change is isolated to plugins/shipwright-security (verified: no cross-plugin importers of pr_review_lib / pr_review_diff_filter), so the owning plugin's full suite is the authoritative coverage: 460 passed, 3 skipped. The 'E2E' is the filter chain, dogfooded empirically on the real PR #310 diff (295,497 -> 54,211 chars, no longer truncated, 15 generated files excluded, 0 real source dropped). The pr-review.yml workflow that invokes the tool is pinned by test_pr_review_workflow_shape.py (green).",
+      "tests_run": 460,
+      "exit_code": 0
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "Tier-2 test-check regex narrowed to test-specific tokens: a green build/ci/lint check no longer counts as a passing test check (no inflated test-health); common runners (jest/rspec/cypress/tox) still count", "disposition": "tested", "evidence": "test_test_health_signal.py::test_real_tier2_build_and_ci_checks_are_not_tests + test_real_tier2_common_test_runners_count" },
-        { "behavior": "security_signal URL-encodes the default-branch ref so a name with #/?/&/space can't break or inject into the code-scanning query; path-style branch slashes preserved", "disposition": "tested", "evidence": "test_security_signal.py::test_ref_is_url_encoded + test_ref_keeps_slash_for_path_style_branch" },
-        { "behavior": "SARIF path (JSON, XXE-safe by construction) treats XML-lookalike strings (<!DOCTYPE>/<script>/&xxe;) as inert opaque content — no XML parsing, no crash, findings still counted", "disposition": "tested", "evidence": "test_security_signal.py::test_sarif_with_xml_lookalike_strings_is_inert" },
-        { "behavior": "Golden regression strengthened to a full-report byte-identical snapshot for a canonical dashboard-like fixture (oversize_file_ratio=None) — any drift in score/precision/detail/anchor/reason/verdict fails", "disposition": "tested", "evidence": "test_grade_oversize_additive.py::test_full_report_byte_identical_snapshot (+ test_ratchet_report_unchanged_when_oversize_also_set proves the field is inert)" }
+        {
+          "behavior": "is_generated_path matches the generated prefixes/basenames (compliance, agent_docs, changelog drops, lockfiles, state logs) and rejects real source + prefix-collisions (.shipwright/compliance-notes/)",
+          "disposition": "tested",
+          "evidence": "test_pr_review_filter.py::TestIsGeneratedPath (6 cases) PASSED"
+        },
+        {
+          "behavior": "filter_generated_paths drops generated file-sections, keeps source, and returns a sorted+deduped excluded list; a diff with no diff --git header passes through unchanged",
+          "disposition": "tested",
+          "evidence": "TestFilterGeneratedPaths::test_drops_generated_keeps_source + test_all_source_unchanged + test_no_headers_returned_unchanged + test_excluded_is_sorted_and_deduped PASSED"
+        },
+        {
+          "behavior": "section-path resolution handles deletions (+++ /dev/null) and additions (--- /dev/null) via the correct side",
+          "disposition": "tested",
+          "evidence": "test_deleted_generated_file_excluded + test_new_generated_file_excluded PASSED"
+        },
+        {
+          "behavior": "a rename that moves real source INTO a generated dir is kept (not silently dropped); a rename where BOTH ends are generated is still excluded (Codex review SHOULD-FIX)",
+          "disposition": "tested",
+          "evidence": "test_rename_real_source_into_generated_dir_is_kept + test_rename_generated_to_generated_still_excluded PASSED"
+        },
+        {
+          "behavior": "filtering lets a diff that WOULD truncate fit under MAX_DIFF_CHARS so the review runs instead of failing closed",
+          "disposition": "tested",
+          "evidence": "test_filtering_lets_a_big_diff_fit_under_cap PASSED"
+        },
+        {
+          "behavior": "build_pr_meta discloses the excluded list to the model (capped at 30 + a '+N more' marker); empty when nothing excluded",
+          "disposition": "tested",
+          "evidence": "test_pr_review_lib.py::TestBuildPrMeta (3 cases) PASSED"
+        },
+        {
+          "behavior": "render_comment discloses the exclusion to humans; no note when nothing excluded",
+          "disposition": "tested",
+          "evidence": "TestRenderCommentExclusion (2 cases) PASSED"
+        },
+        {
+          "behavior": "main() end-to-end: a big generated-dominated diff is no longer truncated, the review runs (exit 0 on approve), and the comment discloses the exclusion",
+          "disposition": "tested",
+          "evidence": "test_pr_review_script.py::test_generated_files_excluded_lets_review_run PASSED"
+        },
+        {
+          "behavior": "the fail-closed-on-truncation behavior is preserved for a genuinely large CODE diff (after filtering)",
+          "disposition": "tested",
+          "evidence": "existing test_truncation_fails_closed_needs_human still PASSED (unchanged); filter runs before truncate, so a large code diff still truncates -> block"
+        },
+        {
+          "behavior": "the OpenRouter API key is never logged on any path",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "evidence": "test_api_key_never_logged (pre-existing) covers the redaction invariant this change does not touch."
+        }
       ],
-      "counts": { "testable": 4, "tested": 4, "untestable": 0, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 4, "covered_acs": 4 }
-    }
+      "counts": {
+        "testable": 9,
+        "tested": 9,
+        "untestable": 1,
+        "untested_testable": 0
+      }
+    },
+    "degraded": []
   }
 }

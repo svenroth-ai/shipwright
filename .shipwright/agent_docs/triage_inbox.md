@@ -1,14 +1,21 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-04T07:05:27.029835Z. Items waiting for triage decision.
+> Auto-generated 2026-07-04T08:48:55.047991Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 260
-- Triage: 6 | Promoted: 1 | Dismissed: 252 | Snoozed: 1
+- Total: 262
+- Triage: 7 | Promoted: 1 | Dismissed: 253 | Snoozed: 1
 
-## Top 6 items (severity-sorted)
+## Top 7 items (severity-sorted)
+
+### Source: codeReview (1 item)
+
+<a id="trg-e1c554d9"></a>
+- **pr_review Tier-3 truncates on medium+ iterates: exclude generated artifacts from the review diff (82% of tokens are der…** `id=trg-e1c554d9 | severity=medium | kind=improvement → P2/engineering`
+  - pr_review.py Tier-3 review truncates + fails-closed on medium+ iterates because it sends the FULL gh-pr-diff (no path f…
+  - Promote: `triage_promote.py --id trg-e1c554d9 --task-ref EXT:<ref>`
 
 ### Source: compliance (1 item)
 

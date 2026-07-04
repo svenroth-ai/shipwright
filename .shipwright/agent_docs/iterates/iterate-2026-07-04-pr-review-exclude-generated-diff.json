@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-04-pr-review-exclude-generated-diff",
+  "date": "2026-07-04T08:49:08.239297Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/pr-review-exclude-generated-diff",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-07-04-pr-review-exclude-generated-diff"
+}
