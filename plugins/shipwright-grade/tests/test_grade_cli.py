@@ -85,8 +85,12 @@ class TestGradeCli:
         import sys
 
         class _NoStdin:
-            def __getattr__(self, _name):
-                raise AssertionError("standalone CLI must never read stdin")
+            def __getattr__(self, name):
+                # Raise AttributeError (the __getattr__ contract — satisfies
+                # CodeQL py/unexpected-raise-in-special-method); any real stdin
+                # access still propagates out of run() and errors the test.
+                raise AttributeError(
+                    f"standalone CLI must never read stdin (touched sys.stdin.{name})")
 
         monkeypatch.setattr(sys, "stdin", _NoStdin())
         assert run([str(well_run_repo), "--format", "json"]) == 0
