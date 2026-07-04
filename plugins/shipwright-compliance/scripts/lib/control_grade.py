@@ -168,8 +168,12 @@ def _score_dimensions(inp: GradeInputs) -> list[DimensionResult]:
         mt_detail = f"ratchet delta {delta:+d} lines (net growth)"
     elif inp.oversize_file_ratio is not None:
         # Static proxy: score = fraction of source files WITHIN the size
-        # threshold. The honest, distinct detail ("N/M files over threshold")
-        # is layered in by the cold-repo projector, which has the raw counts.
+        # threshold. The engine gets only the float ratio, so it renders an
+        # honest, distinct **percentage** detail here; the raw "N/M files over
+        # threshold" count string is layered in by the cold-repo projector (the
+        # only caller that sets this field — it holds the counts). Adding N/M
+        # count fields to GradeInputs was rejected as engine-surface bloat for a
+        # single consumer (external review GPT #3/#4).
         ratio = max(0.0, min(1.0, inp.oversize_file_ratio))
         mt_score = round(1.0 - ratio, 4)
         mt_detail = f"{ratio:.0%} of source files over the size threshold"

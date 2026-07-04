@@ -1,0 +1,1 @@
+shipwright-grade: the network test-health tier-2 (OpenSSF-Scorecard-style check-runs) now counts only genuine test checks — a green build/CI/lint status no longer inflates the score — and the code-scanning branch ref is URL-encoded so unusual branch names can't break the query. Hardened per an external GPT+Gemini review of the G2 signals.

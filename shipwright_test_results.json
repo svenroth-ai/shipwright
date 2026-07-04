@@ -1,49 +1,36 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-04-grade-g2-signals",
+    "run_id": "iterate-2026-07-04-grade-g2-review-followup",
     "date": "2026-07-04",
-    "intent": "feature",
-    "complexity": "medium",
-    "unit": { "status": "passed", "passed": 182, "total": 182 },
+    "intent": "bug",
+    "complexity": "small",
+    "unit": { "status": "passed", "passed": 187, "total": 187 },
     "integration": { "status": "skipped", "passed": 0, "total": 0 },
     "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
     "e2e": { "status": "skipped", "passed": 0, "total": 0 },
     "design_fidelity": { "status": "skipped", "passed": 0, "total": 0 },
     "smoke": { "status": "skipped" },
     "degraded": [
-      "External plan review not re-run for this sub-iterate: the campaign plan (Spec/shipwright-grade-plan.md section 14) already folds in the Gemini 3.1 Pro + GPT-5.4 dispositions at planning time. A fresh-context adversarial CODE review (Opus) WAS run for G2 and its 4 findings (2 MEDIUM false-clean vectors + 2 low hardening) were fixed and pinned with regression tests.",
-      "Engine change verified byte-identical against the FULL compliance suite (916 passed) + 8 golden-regression asserts; the grade plugin's own suite reports 182 (the surface_verification count).",
-      "Worktree base (origin/main 6b4b60d3) is behind current origin/main (635c2119, diff-coverage merge); origin/main did NOT touch the engine or grade files I edited, so F11 ensure_current integrates cleanly. The unrelated session-start triage.jsonl appends are excluded from this commit (explicit per-path git add)."
+      "External-review follow-up to the merged G2 (PR #312): closes GPT/Gemini findings via the NORMAL external_review.py process (GPT-5.4 + Gemini 3.1 Pro / OpenRouter). Re-ran external review on THIS fix diff → no real new defects (persistent %-vs-N/M is a documented design choice; 2 GPT false positives — `test` subsumes `pytest`, `spec` matches `RSpec`; the golden isolation is already covered). Gemini returned an incomplete response both times (model-side cutoff)."
     ],
     "surface_verification": {
       "surface": "cli",
       "runner": "uv run --directory plugins/shipwright-grade --extra dev pytest tests/ -q",
       "exit_code": 0,
-      "tests_run": 182,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-04-grade-g2-signals/surface_verification.json",
-      "timestamp": "2026-07-04T07:00:26.438Z"
+      "tests_run": 187,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-04-grade-g2-review-followup/surface_verification.json",
+      "timestamp": "2026-07-04T00:00:00.000Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "Engine: additive oversize_file_ratio field + dim-6 elif is byte-identical for existing inputs (ratchet set, or both size signals None) and lights only when bloat_ratchet_delta is None with an honest distinct detail+anchor", "disposition": "tested", "evidence": "test_grade_oversize_additive.py (8 passed) + full compliance suite (916 passed)" },
-        { "behavior": "Size proxy: oversize-file ratio over source files, strict > threshold, capped/deterministic, n/a when no source files", "disposition": "tested", "evidence": "test_size_signal.py (6 passed)" },
-        { "behavior": "Dependency hygiene: lockfile->license via reused SBOM collectors; NOT_INSTALLED excluded from the graded set (honest); copyleft/unknown counted; n/a when nothing inspectable", "disposition": "tested", "evidence": "test_dependency_signal.py (7 passed)" },
-        { "behavior": "JUnit hardened parse: DTD/XXE/billion-laughs rejected (defusedxml forbid_dtd), skipped excluded, leaf-suites not double-counted, tests=inf/huge degrades to 0 without aborting aggregation", "disposition": "tested", "evidence": "test_junit_xml.py (13 passed)" },
-        { "behavior": "gh runner: list-arg subprocess, 403/rate-limit/auth/not-found/timeout classification, GitHub owner/repo parse with slug validation (rejects ../odd chars)", "disposition": "tested", "evidence": "test_gh_bridge.py (20 passed)" },
-        { "behavior": "Network policy: local-only default; --allow-network enriches a public remote; private/unverifiable auto-disabled unless --allow-network-private; provenance records what left the machine", "disposition": "tested", "evidence": "test_network_policy.py (9 passed)" },
-        { "behavior": "Security signal: code-scanning SARIF (default-branch-filtered) -> open high/critical via reused suppression-aware parser + grade guard; invalid/non-list-runs/no-analyses/403/auth/local-only -> n/a, never a false clean", "disposition": "tested", "evidence": "test_security_signal.py (15 passed)" },
-        { "behavior": "Test-health: 3 tiers (CI JUnit -> Scorecard statusCheckRollup -> static-inventory floor), best-available wins, tier stamped; 403/no-network degrades deterministically", "disposition": "tested", "evidence": "test_test_health_signal.py (10 passed)" },
-        { "behavior": "signal_bundle maps the four signals onto GradeInputs kwargs + detail overrides + per-dimension provenance; n/a signals set nothing", "disposition": "tested", "evidence": "test_signal_bundle.py (6 passed)" },
-        { "behavior": "report_model: provenance-override replaces source/disabled; network provenance fields carried; top-reasons rewritten to overridden detail (no two-wordings-for-one-control)", "disposition": "tested", "evidence": "test_report_model.py (TestG2Provenance + test_top_reasons_use_overridden_detail)" },
-        { "behavior": "Renderers surface the network provenance line in both terminal + markdown, for enabled (enrichments) and local-only (note) states", "disposition": "tested", "evidence": "test_render_network.py (2 passed)" },
-        { "behavior": "CLI --allow-network / --allow-network-private flags; JSON carries network + maintainability; --allow-network without a remote stays local-only (no network attempted)", "disposition": "tested", "evidence": "test_grade_cli.py (8 passed, +2 new)" },
-        { "behavior": "Reused compliance license collectors are read-only (no package-manager exec / writes) and the dependency signal writes nothing to the target", "disposition": "tested", "evidence": "test_reused_collector_audit.py (6 passed, +2 new)" },
-        { "behavior": "Projector wiring: network_enabled stamps verified_from; local-only default policy; G1 fixtures re-grade with maintainability now lit (no-tests D->C)", "disposition": "tested", "evidence": "test_projector_fixtures.py (10 passed)" },
-        { "behavior": "Live gh network round-trip against real GitHub repos (code-scanning analyses download, gh run download JUnit, GraphQL rollup)", "disposition": "untestable", "reason_code": "requires-external-nondeterministic-service", "reason": "needs network + gh auth against live GitHub; all parsing/logic is hermetically injected here, the live path is the opt-in G5 empirical suite (the launch gate)" }
+        { "behavior": "Tier-2 test-check regex narrowed to test-specific tokens: a green build/ci/lint check no longer counts as a passing test check (no inflated test-health); common runners (jest/rspec/cypress/tox) still count", "disposition": "tested", "evidence": "test_test_health_signal.py::test_real_tier2_build_and_ci_checks_are_not_tests + test_real_tier2_common_test_runners_count" },
+        { "behavior": "security_signal URL-encodes the default-branch ref so a name with #/?/&/space can't break or inject into the code-scanning query; path-style branch slashes preserved", "disposition": "tested", "evidence": "test_security_signal.py::test_ref_is_url_encoded + test_ref_keeps_slash_for_path_style_branch" },
+        { "behavior": "SARIF path (JSON, XXE-safe by construction) treats XML-lookalike strings (<!DOCTYPE>/<script>/&xxe;) as inert opaque content — no XML parsing, no crash, findings still counted", "disposition": "tested", "evidence": "test_security_signal.py::test_sarif_with_xml_lookalike_strings_is_inert" },
+        { "behavior": "Golden regression strengthened to a full-report byte-identical snapshot for a canonical dashboard-like fixture (oversize_file_ratio=None) — any drift in score/precision/detail/anchor/reason/verdict fails", "disposition": "tested", "evidence": "test_grade_oversize_additive.py::test_full_report_byte_identical_snapshot (+ test_ratchet_report_unchanged_when_oversize_also_set proves the field is inert)" }
       ],
-      "counts": { "testable": 14, "tested": 14, "untestable": 1, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 11, "covered_acs": 11 }
+      "counts": { "testable": 4, "tested": 4, "untestable": 0, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 4, "covered_acs": 4 }
     }
   }
 }
