@@ -100,18 +100,38 @@ p { margin: 0; overflow-wrap: anywhere; }
 .weight { font-size: 12px; color: var(--muted); }
 .dim-score { margin-left: auto; font-variant-numeric: tabular-nums;
   font-weight: 700; }
-.dim-label { font-size: 15px; margin-bottom: 4px; }
-.anchor { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
-.detail { font-size: 13.5px; white-space: pre-wrap; overflow-wrap: anywhere; }
-.prov { margin-top: 10px; font-size: 11.5px; color: var(--muted);
+.dim-label { font-size: 15px; margin-bottom: 2px; }
+.dim-q { font-size: 12.5px; font-weight: 600; color: var(--accent);
+  margin-bottom: 8px; overflow-wrap: anywhere; }
+.dim-visible { font-size: 13.5px; overflow-wrap: anywhere; }
+.dim-measured { margin-top: 8px; font-size: 12.5px; color: var(--muted);
+  white-space: pre-wrap; overflow-wrap: anywhere; }
+.dim-measured .measured-k { font-weight: 600; }
+.dim-na { margin-top: 8px; font-size: 12.5px; font-style: italic;
+  color: var(--muted); overflow-wrap: anywhere; }
+/* Expandable "Why it matters" — native <details>, no JS. */
+.why { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
+.why summary { cursor: pointer; font-size: 12.5px; font-weight: 650;
+  color: var(--accent); list-style: none; }
+.why summary::-webkit-details-marker { display: none; }
+.why summary::before { content: "\\25B8  "; }
+.why[open] summary::before { content: "\\25BE  "; }
+.why-body { margin-top: 8px; }
+.why-p, .why-improves, .why-limit { font-size: 13px; margin: 6px 0;
   overflow-wrap: anywhere; }
-.disabled-enrich { margin-top: 6px; font-size: 11.5px; color: var(--accent);
+.why-improves { padding: 8px 12px; border-left: 3px solid var(--accent);
+  background: var(--na-bg); border-radius: 0 8px 8px 0; }
+.why-limit { color: var(--muted); font-style: italic; }
+.backed-by { margin-top: 8px; font-size: 11.5px; color: var(--muted);
   overflow-wrap: anywhere; }
+.prov-note { margin-top: 4px; font-size: 11px; color: var(--muted);
+  overflow-wrap: anywhere; }
+.prov-note .prov-k { font-weight: 600; }
 
 /* Panels */
 .funnel, .cta { background: var(--panel); border: 1px solid var(--line);
   border-radius: 14px; padding: 18px 20px; box-shadow: var(--shadow); }
-.panel-lede, .cta-copy { color: var(--muted); font-size: 14px; margin-bottom: 10px;
+.panel-lede, .cta-lede { color: var(--muted); font-size: 14px; margin-bottom: 12px;
   overflow-wrap: anywhere; }
 .light-list { margin: 0; padding-left: 20px; }
 .light-list li { margin: 4px 0; }
@@ -126,14 +146,20 @@ p { margin: 0; overflow-wrap: anywhere; }
 .prov-row .v { overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 .cta { margin-top: 24px; border-color: color-mix(in srgb, var(--accent) 45%,
   var(--line)); }
-.cta-title { font-size: 18px; margin-bottom: 6px; }
-.cta-steps { margin: 10px 0 4px; padding-left: 20px; }
-.cta-steps li { margin: 7px 0; font-size: 13.5px; overflow-wrap: anywhere; }
-.cta-step-lead { color: var(--ink); }
-.cta-next { font-size: 13.5px; margin-top: 8px; overflow-wrap: anywhere; }
-.cta-link { display: inline-block; margin-top: 14px; padding: 9px 18px;
-  border-radius: 999px; background: var(--accent); color: #fff; font-weight: 650;
-  font-size: 13px; text-decoration: none; }
+.cta-title { font-size: 19px; margin-bottom: 6px; }
+.cta-actions { display: grid; grid-template-columns: repeat(auto-fit,
+  minmax(240px, 1fr)); gap: 14px; margin-top: 4px; }
+.cta-card { border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px;
+  display: flex; flex-direction: column; }
+.cta-card-title { font-size: 15px; margin-bottom: 6px; }
+.cta-card-body { font-size: 13px; color: var(--muted); overflow-wrap: anywhere;
+  flex: 1 1 auto; }
+.cta-link { display: inline-block; align-self: flex-start; margin-top: 14px;
+  padding: 9px 18px; border-radius: 999px; font-weight: 650; font-size: 13px;
+  text-decoration: none; }
+.cta-primary { background: var(--accent); color: #fff; }
+.cta-secondary { background: var(--na-bg); color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line)); }
 .page-footer { margin-top: 30px; text-align: center; font-size: 12px;
   color: var(--muted); }
 @media (max-width: 560px) {

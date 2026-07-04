@@ -83,8 +83,8 @@ class TestEscapeOnly:
         for forbidden in ("script", "img", "iframe", "svg", "form",
                           "object", "embed", "link"):
             assert forbidden not in seen, f"hostile input produced a <{forbidden}>"
-        assert collector.tags.count("a") == 1        # exactly one anchor…
-        assert collector.hrefs == [_CTA_URL]         # …the trusted CTA, nothing else
+        assert collector.tags.count("a") == 2            # exactly the 2 CTA anchors…
+        assert set(collector.hrefs) == {_CTA_URL}        # …all the trusted CTA
         # Sanity: the document really was parsed (structural tags are present).
         assert {"html", "head", "body", "main", "a"} <= seen
 
