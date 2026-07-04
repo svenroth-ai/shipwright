@@ -1,6 +1,6 @@
 # Test Evidence Report
 
-Generated: 2026-07-04T15:12:41.862170+00:00
+Generated: 2026-07-04T13:09:10.541223+00:00
 
 ## Summary
 
@@ -14,8 +14,8 @@ Generated: 2026-07-04T15:12:41.862170+00:00
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | diff-coverage Phase 2: monorepo coverage combine + W4 activation | [iterate](traceability-matrix.md#evt-9771cc88) | — | +0 | — | — | 2026-07-04 |
-| 2 | Prompt-injection scanner blanks string/comment/f-string token spans before matching so dangerous-pattern literals in security-audit tests are no longer false positives; real calls still flag. | [iterate](traceability-matrix.md#evt-6d440ca1) | — | +0 | — | — | 2026-07-04 |
+| 1 | Prompt-injection scanner blanks string/comment/f-string token spans before matching so dangerous-pattern literals in security-audit tests are no longer false positives; real calls still flag. | [iterate](traceability-matrix.md#evt-6d440ca1) | — | +0 | — | — | 2026-07-04 |
+| 2 | Rewrote the grade report's call-to-action to explain how to adopt Shipwright and what the next step is, with one hardened link and 'certify' removed. | [iterate](traceability-matrix.md#evt-8d01bee7) | mixed | +0 | 216/216 | PASS | 2026-07-04 |
 | 3 | Fixed the automated pull-request reviewer so it no longer gets stuck on ordinary larger changes: it now ignores the auto-generated bookkeeping files (which are ~82% of a typical diff) and reviews only the real code, telling you which files it skipped. | [iterate](traceability-matrix.md#evt-f166acab) | unit | +0 | 460/463 | PASS (3 skipped) | 2026-07-04 |
 | 4 | Added a self-contained, escape-safe HTML report (and hardened the terminal card) to the repo grader so it can produce a shareable Control Grade page. | [iterate](traceability-matrix.md#evt-a5ef23cc) | mixed | +0 | 215/215 | PASS | 2026-07-04 |
 | 5 | Closed the external GPT+Gemini review findings on the merged G2 grade signals: the network test-health tier no longer counts a green build/CI check as a test, the code-scanning branch ref is URL-encoded, and the additive-engine golden test is now a full byte-identical report snapshot. | [iterate](traceability-matrix.md#evt-443a5258) | mixed | +0 | 187/187 | PASS | 2026-07-04 |
@@ -271,36 +271,36 @@ _Synthesized from per-iterate **unit** results — Integration / pgTAP / E2E / S
 
 | Run | Trigger | Unit | Integration | pgTAP | E2E | Smoke | Date |
 |-----|---------|------|-------------|-------|-----|-------|------|
-| 1 | iterate | 420/423 | — | — | — | — | 2026-06-17 |
-| 2 | iterate | 139/139 | — | — | — | — | 2026-06-17 |
-| 3 | iterate | 720/720 | — | — | — | — | 2026-06-27 |
-| 4 | iterate | 736/736 | — | — | — | — | 2026-06-28 |
-| 5 | iterate | 3560/3560 | — | — | — | — | 2026-06-27 |
-| 6 | iterate | 4720/4720 | — | — | — | — | 2026-06-28 |
-| 7 | iterate | 4719/4719 | — | — | — | — | 2026-06-28 |
-| 8 | iterate | 492/492 | — | — | — | — | 2026-06-28 |
-| 9 | iterate | 794/794 | — | — | — | — | 2026-06-28 |
-| 10 | iterate | 3853/3853 | — | — | — | — | 2026-06-28 |
-| 11 | iterate | 4812/4812 | — | — | — | — | 2026-06-28 |
-| 12 | iterate | 850/850 | — | — | — | — | 2026-06-28 |
-| 13 | iterate | 851/851 | — | — | — | — | 2026-06-28 |
-| 14 | iterate | 868/868 | — | — | — | — | 2026-06-29 |
-| 15 | iterate | 3618/3618 | — | — | — | — | 2026-06-29 |
-| 16 | iterate | 894/894 | — | — | — | — | 2026-06-30 |
-| 17 | iterate | 897/897 | — | — | — | — | 2026-06-30 |
-| 18 | iterate | 3610/3610 | — | — | — | — | 2026-06-30 |
-| 19 | iterate | 3604/3604 | — | — | — | — | 2026-06-30 |
-| 20 | iterate | 3633/3633 | — | — | — | — | 2026-06-30 |
-| 21 | iterate | 4955/4967 | — | — | — | — | 2026-06-30 |
-| 22 | iterate | 4964/4976 | — | — | — | — | 2026-07-01 |
-| 23 | iterate | 3627/3639 | — | — | — | — | 2026-07-02 |
-| 24 | iterate | 3629/3641 | — | — | — | — | 2026-07-03 |
-| 25 | iterate | 3905/3917 | — | — | — | — | 2026-07-03 |
-| 26 | iterate | 91/91 | — | — | — | — | 2026-07-03 |
-| 27 | iterate | 182/182 | — | — | — | — | 2026-07-04 |
-| 28 | iterate | 187/187 | — | — | — | — | 2026-07-04 |
-| 29 | iterate | 215/215 | — | — | — | — | 2026-07-04 |
-| 30 | iterate | 460/463 | — | — | — | — | 2026-07-04 |
+| 1 | iterate | 139/139 | — | — | — | — | 2026-06-17 |
+| 2 | iterate | 720/720 | — | — | — | — | 2026-06-27 |
+| 3 | iterate | 736/736 | — | — | — | — | 2026-06-28 |
+| 4 | iterate | 3560/3560 | — | — | — | — | 2026-06-27 |
+| 5 | iterate | 4720/4720 | — | — | — | — | 2026-06-28 |
+| 6 | iterate | 4719/4719 | — | — | — | — | 2026-06-28 |
+| 7 | iterate | 492/492 | — | — | — | — | 2026-06-28 |
+| 8 | iterate | 794/794 | — | — | — | — | 2026-06-28 |
+| 9 | iterate | 3853/3853 | — | — | — | — | 2026-06-28 |
+| 10 | iterate | 4812/4812 | — | — | — | — | 2026-06-28 |
+| 11 | iterate | 850/850 | — | — | — | — | 2026-06-28 |
+| 12 | iterate | 851/851 | — | — | — | — | 2026-06-28 |
+| 13 | iterate | 868/868 | — | — | — | — | 2026-06-29 |
+| 14 | iterate | 3618/3618 | — | — | — | — | 2026-06-29 |
+| 15 | iterate | 894/894 | — | — | — | — | 2026-06-30 |
+| 16 | iterate | 897/897 | — | — | — | — | 2026-06-30 |
+| 17 | iterate | 3610/3610 | — | — | — | — | 2026-06-30 |
+| 18 | iterate | 3604/3604 | — | — | — | — | 2026-06-30 |
+| 19 | iterate | 3633/3633 | — | — | — | — | 2026-06-30 |
+| 20 | iterate | 4955/4967 | — | — | — | — | 2026-06-30 |
+| 21 | iterate | 4964/4976 | — | — | — | — | 2026-07-01 |
+| 22 | iterate | 3627/3639 | — | — | — | — | 2026-07-02 |
+| 23 | iterate | 3629/3641 | — | — | — | — | 2026-07-03 |
+| 24 | iterate | 3905/3917 | — | — | — | — | 2026-07-03 |
+| 25 | iterate | 91/91 | — | — | — | — | 2026-07-03 |
+| 26 | iterate | 182/182 | — | — | — | — | 2026-07-04 |
+| 27 | iterate | 187/187 | — | — | — | — | 2026-07-04 |
+| 28 | iterate | 215/215 | — | — | — | — | 2026-07-04 |
+| 29 | iterate | 460/463 | — | — | — | — | 2026-07-04 |
+| 30 | iterate | 216/216 | — | — | — | — | 2026-07-04 |
 
 ## Code Review Evidence
 

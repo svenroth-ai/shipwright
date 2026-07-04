@@ -40,9 +40,12 @@ class TestGradeCli:
         assert out.lstrip().lower().startswith("<!doctype html>")
         assert "Content-Security-Policy" in out
         assert "Control Grade" in out
-        # No external-request surface leaked through the CLI path.
+        # No external-request surface leaked through the CLI path: zero scripts,
+        # no auto-fetch src, and the only link is the static CTA.
         assert "<script" not in out.lower()
-        assert 'src="http' not in out.lower() and 'href="http' not in out.lower()
+        assert 'src="http' not in out.lower()
+        import re as _re
+        assert _re.findall(r'href="([^"]*)"', out) == ["https://svenroth.ai/shipwright"]
 
     def test_output_is_utf8_encodable(self, well_run_repo: Path, capsys):
         # The card carries em dashes / ellipses; every format must be UTF-8

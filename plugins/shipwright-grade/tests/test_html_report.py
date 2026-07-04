@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import re
 
-from html_report import render_html
+from html_report import _CTA_URL, render_html
 from report_model import build_report_model
 from support import GEN_A, GEN_B, mixed_dims, mixed_model
 from types import SimpleNamespace
@@ -36,12 +36,14 @@ class TestSelfContained:
         assert "style-src 'unsafe-inline'" in out
 
     def test_no_external_request_surface(self):
+        # The ONLY external reference allowed is the single static CTA link (a
+        # user-initiated navigation, not an auto-fetch). Everything else — even
+        # under hostile input — must be absent.
         out = _html(hostile=True)
         low = out.lower()
         assert "<script" not in low          # zero inline/loaded JS
         assert "<iframe" not in low
-        assert not re.search(r'src\s*=\s*["\']https?:', low)
-        assert not re.search(r'href\s*=\s*["\']https?:', low)
+        assert not re.search(r'src\s*=\s*["\']https?:', low)   # no auto-fetch src
         assert not re.search(r'href\s*=\s*["\']javascript:', low)
         assert "srcset=" not in low
         assert "@import" not in low
@@ -49,14 +51,19 @@ class TestSelfContained:
         assert "ping=" not in low
         assert not re.search(r'\baction\s*=', low)
         assert "http-equiv=\"refresh\"" not in low
+        # Exactly one href in the whole document, and it is the trusted CTA URL.
+        assert re.findall(r'href="([^"]*)"', out) == [_CTA_URL]
 
-    def test_no_model_driven_href_anchor_is_text(self):
-        # The open-standard anchor is rendered as text, never as a link target.
+    def test_only_link_is_the_trusted_cta(self):
+        # The open-standard anchor (a model field) renders as TEXT, never a link;
+        # the sole <a> element is the hardcoded CTA, hardened with rel=noopener.
         out = _html()
         low = out.lower()
-        assert "OpenSSF Scorecard" in out          # anchor text present
-        assert "<a " not in low and "<a>" not in low   # zero anchor elements
-        assert "href=" not in low                       # zero link targets
+        assert "OpenSSF Scorecard" in out                  # anchor text present
+        assert len(re.findall(r"<a\s", low)) == 1          # exactly one anchor
+        assert f'href="{_CTA_URL}"' in out
+        assert 'rel="noopener noreferrer"' in low
+        assert 'target="_blank"' in low
 
 
 # --------------------------------------------------------------------------- #
@@ -159,5 +166,19 @@ class TestSections:
         assert "does not verify behaviour" in out
         assert "shipwright-grade heuristic @ deadbeefcafe1234" in out
 
-    def test_cta_placeholder_present(self):
-        assert "grade" in _html().lower()             # CTA copy present
+    def test_cta_explains_adopt_and_next_step(self):
+        out = _html()
+        cta = re.search(r'<section class="cta">.*?</section>', out, re.S)
+        assert cta, "CTA section present"
+        cta = cta.group(0)
+        # Explains HOW to adopt + the concrete next step (not a dead button).
+        assert "adopt Shipwright" in cta
+        assert "/shipwright-adopt" in cta
+        assert "no rewrite" in cta.lower()
+        # "certify" was removed from the CTA — it's not the next step for a cold
+        # repo. (It legitimately stays in the honest-ceiling disclaimer, which is
+        # a different section: "cannot certify correctness".)
+        assert "certify" not in cta.lower()
+        # The real learn-more link is present.
+        assert f'href="{_CTA_URL}"' in cta
+        assert "svenroth.ai/shipwright" in cta
