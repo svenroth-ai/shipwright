@@ -187,6 +187,14 @@ jobs:
         # plugin-CWD-relative data files (see the tool docstring). Absent-safe;
         # never gates. This produces the coverage.xml the Diff coverage step and
         # the coverage.total recorder consume.
+        #
+        # always(): still combine whatever tiers succeeded even when an earlier
+        # test tier failed the job, so the coverage artifact is available for
+        # debugging (matches the Upload step below). The failing test step keeps
+        # the job red on its own — this never masks a failure, it only preserves
+        # the diagnostic. combine_coverage is absent-safe (n/a, exit 0) with no
+        # data, so a job that failed before any tier ran stays clean here.
+        if: always()
         shell: bash
         run: |
           uv run --with coverage shared/scripts/tools/combine_coverage.py \

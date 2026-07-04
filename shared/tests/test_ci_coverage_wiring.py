@@ -58,10 +58,15 @@ def test_integration_step_measures_coverage():
 
 
 def test_combine_step_invokes_the_tool():
-    run = _run("Combine coverage")
+    step = _step("Combine coverage")
+    run = step.get("run", "")
     assert "combine_coverage.py" in run
     assert "--data-dir .cov-data" in run
     assert "--output coverage.xml" in run
+    # always(): produce the coverage artifact even when an earlier test tier
+    # failed the job (combine is absent-safe), so a red run still leaves the
+    # diagnostic — without masking the failing step.
+    assert step.get("if") == "always()"
 
 
 def test_diff_coverage_step_stays_nongating():
