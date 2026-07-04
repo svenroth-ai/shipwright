@@ -47,13 +47,18 @@ score, never faked) and are surfaced as *controls Shipwright would light up*.
 
 ```bash
 # From the plugin directory (thin CLI wrapper over the core library):
-uv run scripts/tools/grade.py <path-to-repo> [--format terminal|markdown|json]
+uv run scripts/tools/grade.py <path-to-repo> [--format terminal|markdown|json|html]
                                               [--allow-network] [--allow-network-private]
 ```
 
 - `--format terminal` (default) prints a compact A–F card with the top reasons.
 - `--format markdown` emits the same view-model as Markdown.
 - `--format json` emits the typed report view-model (stable schema) for tooling.
+- `--format html` emits a single **self-contained** report (inline CSS, zero
+  external requests, restrictive meta CSP, theme-aware) to stdout — the
+  lead-magnet artifact. Redirect it: `… --format html > report.html`. Every
+  repo-derived string is HTML-escaped and control/bidi-stripped (it renders
+  untrusted input), so the report is inert by construction.
 - `--allow-network` opts into GitHub enrichment for the target's remote. It
   **auto-disables on a private / unverifiable remote** unless you also pass
   `--allow-network-private`. The report stamps exactly which enrichments ran
@@ -79,7 +84,9 @@ exceed the reused detectors' internal scan caps, feature inference is a
    map them + detector outputs onto `GradeInputs`.
 5. **Grade** with the shared engine, unchanged (the size proxy uses one additive
    optional field, byte-identical for every existing caller).
-6. **Render** the typed report view-model to a terminal / markdown / json card.
+6. **Render** the typed report view-model to a terminal / markdown / json / html
+   card — each renderer consumes the view-model directly (no markdown-as-IR) and
+   escapes/strips every repo-derived string for its output context.
 
 ## Safety
 

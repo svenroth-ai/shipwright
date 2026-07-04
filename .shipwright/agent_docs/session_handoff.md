@@ -1,37 +1,36 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-04-grade-g2-signals"
+run_id: "iterate-2026-07-04-grade-g3-html-report"
 phase: "iterate"
-reason: "F11 refresh before PR"
-timestamp: "2026-07-04T07:05:27.029835+00:00"
+reason: "iterate: shipwright-grade G3 HTML report"
+timestamp: "2026-07-04T09:09:16.263100+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-04 07:05:27 UTC
+> Auto-generated 2026-07-04 09:09:16 UTC
 
 ## Session Info
 
-- **Session ID**: baa08540-7f73-453f-8f8e-b105ec4a53c2
-- **Timestamp**: 2026-07-04 07:05:27 UTC
-- **Reason**: F11 refresh before PR
+- **Session ID**: 8e84d52f-c16d-4863-a2a4-cdef78f9b4d9
+- **Timestamp**: 2026-07-04 09:09:16 UTC
+- **Reason**: iterate: shipwright-grade G3 HTML report
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-04-grade-g2-signals
-- **Date**: 2026-07-04T07:06:07.957018Z
-- **Type**: feature
-- **Complexity**: medium
-- **Branch**: iterate/grade-g2-signals
-- **ADR**: iterate-2026-07-04-grade-g2-signals
+- **Run ID**: iterate-2026-07-04-grade-g2-review-followup
+- **Date**: 2026-07-04T08:03:21.905911Z
+- **Type**: bug
+- **Complexity**: small
+- **Branch**: iterate/grade-g2-review-followup
+- **ADR**: iterate-2026-07-04-grade-g2-review-followup
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-04-grade-g2-signals.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/grade-g2-signals
-- **Run ID**: iterate-2026-07-04-grade-g2-signals
-- **Spec**: .shipwright/planning/iterate/2026-07-04-grade-g2-signals.md
+- **Branch**: iterate/grade-g3-html-report
+- **Run ID**: iterate-2026-07-04-grade-g3-html-report
+- **Spec**: .shipwright/planning/iterate/2026-07-04-grade-g3-html-report.md
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -50,8 +49,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/grade-g2-signals
-- **Last Commit**: cd36adc7 Merge remote-tracking branch 'origin/main' into iterate/grade-g2-signals
+- **Branch**: iterate/grade-g3-html-report
+- **Last Commit**: 3a298fc3 chore(triage): sweep 3 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -67,17 +66,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-a5ef23cc | work_completed | iterate (grade-g3-html-report) | 2026-07-04 |
+| evt-443a5258 | work_completed | iterate (shipwright-grade G2 external-review follow-up: tier-2 test-check precision (drop build/ci false positives) + code-scanning ref URL-encoding + full-report byte-identical golden + SARIF-JSON clarification) | 2026-07-04 |
 | evt-cb7cb6b8 | work_completed | iterate (shipwright-grade G2: light security, dependency, maintainability and network-gated test-health signals for cold repos) | 2026-07-04 |
 | evt-feb2ef5e | work_completed | iterate (shipwright-grade G1: cold-repo signal projector (new read-only plugin)) | 2026-07-03 |
 | evt-9d089d93 | work_completed | iterate (Producer-side accepted-risk Semgrep rule tailoring: two opt-in default-off env channels (wholesale exact check_id; owner-scoped mutable-tag via file-read) stop the weekly self-scan re-surfacing 14 dependabot-cooldown + 12 GitHub-owned mutable-tag findings; unpinned third-party actions stay flagged.) | 2026-07-03 |
-| evt-76c97ce2 | work_completed | iterate (diff-coverage Phase 1: shared-tier measurement chain (measure_diff_coverage.py + non-gating CI diff-cover) + gitignored transient + grade-neutral dashboard INFO line) | 2026-07-03 |
-| evt-5755f932 | work_completed | iterate (Route github_triage background appends to the gitignored outbox on idle main (should_route_to_outbox) so they reach origin instead of stranding as main-tree drift — closes the delivery gap behind the recurring gh-prompt ghost.) | 2026-07-03 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 245
-- **Last iterate**: feature — shipwright-grade G2: light security, dependency, maintainability and network-gated test-health signals for cold repos (2026-07-04)
+- **Total work events**: 247
+- **Last iterate**: feature — grade-g3-html-report (2026-07-04)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

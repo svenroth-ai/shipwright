@@ -33,10 +33,21 @@ class TestGradeCli:
         na = [d for d in payload["dimensions"] if d["score"] is None]
         assert na and na[0]["provenance"]["mode"] == "unavailable"
 
+    def test_html_format_emits_self_contained_document(self, well_run_repo: Path, capsys):
+        rc = run([str(well_run_repo), "--format", "html"])
+        assert rc == 0
+        out = capsys.readouterr().out
+        assert out.lstrip().lower().startswith("<!doctype html>")
+        assert "Content-Security-Policy" in out
+        assert "Control Grade" in out
+        # No external-request surface leaked through the CLI path.
+        assert "<script" not in out.lower()
+        assert 'src="http' not in out.lower() and 'href="http' not in out.lower()
+
     def test_output_is_utf8_encodable(self, well_run_repo: Path, capsys):
         # The card carries em dashes / ellipses; every format must be UTF-8
         # encodable (the CLI forces UTF-8 stdio so a cp1252 console can't crash).
-        for fmt in ("terminal", "markdown", "json"):
+        for fmt in ("terminal", "markdown", "json", "html"):
             run([str(well_run_repo), "--format", fmt])
             out = capsys.readouterr().out
             out.encode("utf-8")  # raises if any surrogate/unencodable char

@@ -1,36 +1,41 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-04-grade-g2-review-followup",
+    "run_id": "iterate-2026-07-04-grade-g3-html-report",
     "date": "2026-07-04",
-    "intent": "bug",
-    "complexity": "small",
-    "unit": { "status": "passed", "passed": 187, "total": 187 },
+    "intent": "feature",
+    "complexity": "medium",
+    "unit": { "status": "passed", "passed": 215, "total": 215 },
     "integration": { "status": "skipped", "passed": 0, "total": 0 },
     "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
-    "e2e": { "status": "skipped", "passed": 0, "total": 0 },
+    "e2e": { "status": "passed", "passed": 36, "total": 36 },
     "design_fidelity": { "status": "skipped", "passed": 0, "total": 0 },
     "smoke": { "status": "skipped" },
     "degraded": [
-      "External-review follow-up to the merged G2 (PR #312): closes GPT/Gemini findings via the NORMAL external_review.py process (GPT-5.4 + Gemini 3.1 Pro / OpenRouter). Re-ran external review on THIS fix diff → no real new defects (persistent %-vs-N/M is a documented design choice; 2 GPT false positives — `test` subsumes `pytest`, `spec` matches `RSpec`; the golden isolation is already covered). Gemini returned an incomplete response both times (model-side cutoff)."
+      "External code review (external_review.py — GPT-5.4 + Gemini 3.1 Pro via OpenRouter): GPT-5.4 returned 3 actionable findings, all fixed (reasons capped at 3 in the renderer; the n/a-vs-zero test strengthened to count N/A score cells; the anchor/href test tightened from a tautological OR to concrete assertions). Gemini 3.1 Pro returned an incomplete/mangled response (file-list echo, no findings) — model-side cutoff. Coverage was not degraded: the internal opus code-reviewer traced the full security seam and found no blocking issues; its 6 low-severity items were applied.",
+      "The campaign sub-iterate spec (.shipwright/planning/iterate/campaigns/2026-07-03-shipwright-grade/sub-iterates/G3-html-report.md) exists only in the main working tree (untracked), so the external plan review + code review pointed at the main-tree copy."
     ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --directory plugins/shipwright-grade --extra dev pytest tests/ -q",
+      "runner": "uv run --project plugins/shipwright-grade pytest plugins/shipwright-grade/tests/test_grade_cli.py plugins/shipwright-grade/tests/test_html_report.py plugins/shipwright-grade/tests/test_html_security.py plugins/shipwright-grade/tests/test_render_snapshots.py plugins/shipwright-grade/tests/test_render_terminal.py -q",
       "exit_code": 0,
-      "tests_run": 187,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-04-grade-g2-review-followup/surface_verification.json",
+      "tests_run": 36,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-04-grade-g3-html-report/surface_verification.json",
       "timestamp": "2026-07-04T00:00:00.000Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "Tier-2 test-check regex narrowed to test-specific tokens: a green build/ci/lint check no longer counts as a passing test check (no inflated test-health); common runners (jest/rspec/cypress/tox) still count", "disposition": "tested", "evidence": "test_test_health_signal.py::test_real_tier2_build_and_ci_checks_are_not_tests + test_real_tier2_common_test_runners_count" },
-        { "behavior": "security_signal URL-encodes the default-branch ref so a name with #/?/&/space can't break or inject into the code-scanning query; path-style branch slashes preserved", "disposition": "tested", "evidence": "test_security_signal.py::test_ref_is_url_encoded + test_ref_keeps_slash_for_path_style_branch" },
-        { "behavior": "SARIF path (JSON, XXE-safe by construction) treats XML-lookalike strings (<!DOCTYPE>/<script>/&xxe;) as inert opaque content — no XML parsing, no crash, findings still counted", "disposition": "tested", "evidence": "test_security_signal.py::test_sarif_with_xml_lookalike_strings_is_inert" },
-        { "behavior": "Golden regression strengthened to a full-report byte-identical snapshot for a canonical dashboard-like fixture (oversize_file_ratio=None) — any drift in score/precision/detail/anchor/reason/verdict fails", "disposition": "tested", "evidence": "test_grade_oversize_additive.py::test_full_report_byte_identical_snapshot (+ test_ratchet_report_unchanged_when_oversize_also_set proves the field is inert)" }
+        { "behavior": "AC1 — single self-contained HTML document: no external-request surface (no <script>/external src|href/@import/url(http)/srcset/action/ping/meta-refresh), restrictive meta CSP, full <!doctype> document", "disposition": "tested", "evidence": "test_html_report.py::TestSelfContained::{test_is_a_full_html_document,test_restrictive_meta_csp,test_no_external_request_surface,test_no_model_driven_href_anchor_is_text} + test_grade_cli.py::test_html_format_emits_self_contained_document" },
+        { "behavior": "AC2 — all sections render from the model: hero (grade+score+verdict+mode badge+measured count), dimension cards (anchor+provenance), funnel panel, top reasons, disclaimer, provenance stamp, CTA", "disposition": "tested", "evidence": "test_html_report.py::TestSections::* + TestNaSemantics::test_would_light_panel_lists_na_dims" },
+        { "behavior": "AC3 — theme-aware (prefers-color-scheme dark) + responsive (viewport) + wide content scrolls in its own overflow-x container; long hostile tokens can't overflow (overflow-wrap)", "disposition": "tested", "evidence": "test_html_report.py::TestThemeAndResponsive::{test_dark_mode_media_query_present,test_responsive_viewport_and_scroll_container}" },
+        { "behavior": "AC4 — deterministic: same model → byte-identical scored content; the wall-clock appears exactly once, only in the footer", "disposition": "tested", "evidence": "test_html_report.py::TestDeterminism::{test_idempotent,test_scored_content_byte_identical_across_timestamps,test_generated_at_is_the_only_variable}" },
+        { "behavior": "AC5 — escape-only: <script>/onerror/javascript:/bidi/ANSI/OSC-8 payloads fed through every text-bearing model field are rendered inert (HTML-escaped + control-stripped), proven both by substring checks AND a parser-based zero-live-DOM-node assertion; the terminal card is control-stripped", "disposition": "tested", "evidence": "test_html_security.py::TestEscapeOnly::* (incl. test_hostile_payload_contributes_zero_live_nodes, test_every_text_field_routes_through_escaper) + test_render_terminal.py::TestTerminalControlStripping::*" },
+        { "behavior": "AC6 — snapshot tests for HTML + terminal card are stable across runs (byte-exact golden compare from one shared canonical model; UPDATE_GOLDEN to refresh intentionally)", "disposition": "tested", "evidence": "test_render_snapshots.py::{test_html_snapshot_matches_golden,test_terminal_snapshot_matches_golden}" },
+        { "behavior": "AC7 — n/a dims render 'N/A' in their score cell (never a failing 0 or 0/denominator), are excluded from the score, and are listed in the 'controls Shipwright would light up' funnel; top reasons capped at 3", "disposition": "tested", "evidence": "test_html_report.py::TestNaSemantics::{test_na_dimension_shows_na_not_zero,test_reasons_capped_at_three,test_would_light_panel_lists_na_dims}" },
+        { "behavior": "AC8 — ruff clean; both new modules ≤300 LOC", "disposition": "tested", "evidence": "uvx ruff@0.15.15 check plugins/shipwright-grade/ → All checks passed; html_report.py=250 LOC, _html_styles.py=139 LOC (both ≤300)" }
       ],
-      "counts": { "testable": 4, "tested": 4, "untestable": 0, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 4, "covered_acs": 4 }
+      "counts": { "testable": 8, "tested": 8, "untestable": 0, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 8, "covered_acs": 8 }
     }
   }
 }

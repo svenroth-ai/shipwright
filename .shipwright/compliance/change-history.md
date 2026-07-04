@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-07-04T07:05:27.029835+00:00
-Total commits: 1078
+Generated: 2026-07-04T09:09:16.263100+00:00
+Total commits: 1079
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 308
+    "fix" : 309
     "feat" : 286
     "chore" : 236
     "docs" : 143
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 308 commits
+### Fixes (fix) — 309 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-04 | grade | tighten test-health tier-2 + URL-encode ref + stronger golden (G2 review follow-up) (#313) | fbc9bdce9e8f |
 | 2026-07-03 | triage | route GitHub-triage appends to the outbox on idle main (#308) | e04a61d2a5d6 |
 | 2026-07-02 | triage | surface prompt-injection regardless of Code Scanning + scan main on push (#306) | 01f43bfcbcfd |
 | 2026-07-01 | compliance | make the Control Grade composition-neutral (drop the FR-tag-decline gate) (#304) | 9597c9b8ba80 |
@@ -337,7 +338,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-04 | grade | light security, deps, size + gh test-health signals (G2) | f53b36e0b7f5 |
+| 2026-07-04 | grade | security, deps, size + gh test-health signals (G2) (#312) | 440bfd1776f6 |
 | 2026-07-04 | compliance | measure diff-coverage on the shared tier (roadmap Phase 1) (#310) | 635c2119f9c3 |
 | 2026-07-04 | grade | cold-repo signal projector - shipwright-grade plugin (G1) (#311) | 6b4b60d32e6c |
 | 2026-06-30 | compliance | honesty gate for the Control Grade + native Scorecard (#296) | 09b5a59f324a |
@@ -628,7 +629,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-04 | triage | sweep 2 outbox append(s) into branch | aab62b8bd7d6 |
+| 2026-07-04 | triage | sweep 3 outbox append(s) into branch | 3a298fc364da |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
@@ -1147,7 +1148,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1078 |
+| Total commits | 1079 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1078 |
+| Human-authored commits | 1079 |
 
