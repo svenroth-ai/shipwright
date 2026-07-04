@@ -5,6 +5,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import clone
+import grade
+from clone import _run_clone
 from grade import run
 
 
@@ -56,8 +59,39 @@ class TestGradeCli:
         assert run([str(non_git_dir)]) == 2
         assert "not a git repository" in capsys.readouterr().err
 
-    def test_url_exits_2(self, capsys):
-        assert run(["https://github.com/x/y"]) == 2
+    def test_url_with_no_clone_exits_2_without_network(self, capsys):
+        # Hermetic: --no-clone rejects a URL with a clean error, no network.
+        assert run(["https://github.com/x/y", "--no-clone"]) == 2
+        assert "requires cloning" in capsys.readouterr().err
+
+    def test_url_is_cloned_and_graded(self, well_run_repo: Path, monkeypatch, capsys):
+        # Clone-by-default: a URL grades. Cloning is redirected to a local repo
+        # (allow_local) so the test stays offline.
+        def fake_clone(raw, dest, **kwargs):
+            _run_clone(str(well_run_repo), dest, allow_local=True)
+            return dest
+        monkeypatch.setattr(clone, "clone_repo", fake_clone)
+        rc = run(["https://github.com/o/r", "--format", "json"])
+        assert rc == 0
+        assert json.loads(capsys.readouterr().out)["grade"] == "A"
+
+    def test_standalone_never_blocks_on_input(self, well_run_repo: Path, monkeypatch):
+        # AC4: the standalone CLI is non-interactive — prove it at RUNTIME by
+        # replacing stdin with a guard that raises on ANY read; a real grade run
+        # must complete without ever touching it.
+        import sys
+
+        class _NoStdin:
+            def __getattr__(self, _name):
+                raise AssertionError("standalone CLI must never read stdin")
+
+        monkeypatch.setattr(sys, "stdin", _NoStdin())
+        assert run([str(well_run_repo), "--format", "json"]) == 0
+
+    def test_grade_module_has_no_input_call(self):
+        # Belt-and-suspenders: no interactive prompt in the CLI source either.
+        src = Path(grade.__file__).read_text(encoding="utf-8")
+        assert "input(" not in src and "stdin.read" not in src
 
     def test_json_carries_g2_network_and_maintainability(self, well_run_repo: Path, capsys):
         rc = run([str(well_run_repo), "--format", "json"])

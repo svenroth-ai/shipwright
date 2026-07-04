@@ -34,7 +34,7 @@ PLUGIN_NAMES = (
     "shipwright-iterate", "shipwright-plan", "shipwright-build",
     "shipwright-test", "shipwright-deploy", "shipwright-changelog",
     "shipwright-compliance", "shipwright-security", "shipwright-preview",
-    "shipwright-adopt",
+    "shipwright-adopt", "shipwright-grade",
 )
 
 
@@ -128,9 +128,9 @@ def test_f34_uv_install_exports_local_bin():
 
 
 # --------------------------------------------------------------------------- #
-# F35 — alias lists all 13 plugins incl. adopt; refresh is not blocked
+# F35 — alias lists every plugin (incl. adopt + grade); refresh is not blocked
 # --------------------------------------------------------------------------- #
-def test_f35_alias_lists_all_thirteen_plugins():
+def test_f35_alias_lists_all_plugins():
     block = _alias_block(_read(INSTALL_SH))
     for name in PLUGIN_NAMES:
         assert f"plugins/{name}" in block, f"alias block omits {name}"

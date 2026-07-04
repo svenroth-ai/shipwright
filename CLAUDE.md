@@ -21,6 +21,7 @@ plugins/                    # Claude Code plugins (one per SDLC phase)
   shipwright-iterate/       # Daily iteration (complexity-adaptive)
   shipwright-preview/       # Local browser preview
   shipwright-adopt/         # Brownfield onboarding (analyze an existing repo)
+  shipwright-grade/         # Read-only Control Grade (A–F) for any repo (lead magnet)
 # Command Center WebUI lives at github.com/svenroth-ai/shipwright-webui since v0.4.0
 shared/                     # Shared across all plugins
   contracts/                # Cross-plugin public API (B8): compliance.py, iterate.py

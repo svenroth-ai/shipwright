@@ -1405,6 +1405,18 @@ Phase-Quality integration: registered as phase `adopt` in `PLUGIN_TO_PHASE`, `C4
 | Stop | — | `audit_phase_quality_on_stop.py` (shared) | Runs A1–A8 canon via `adopt_compliance.run()` |
 | Stop | — | `generate_handoff_on_stop.py` (shared) | Session handoff |
 
+### shipwright-grade
+
+> **Out-of-band, read-only tool — not part of `PIPELINE_STEPS`, and it registers
+> **no hooks** (no `hooks/` dir, like `shipwright-preview`).** It reads **nothing**
+> of *this* project at startup — it inspects a **target** repository (a local path
+> or a shallow-cloned URL) and prints/writes a Control Grade report. It never writes
+> any Shipwright artifact, so it appears in neither the context-loading matrix nor
+> the artifact-write matrix. It reuses the compliance `compute_grade` engine +
+> `collect_all`/`build_grade_inputs` adapter cross-plugin (via `engine_bridge` /
+> `reuse_bridge`, lazy + cached, ADR-045 mitigations) so a grader-grade of a
+> Shipwright repo equals its dashboard grade by construction.
+
 ### Plugin-registered (shipwright-iterate)
 
 `shared/scripts/hooks/suggest_iterate.py` is registered in

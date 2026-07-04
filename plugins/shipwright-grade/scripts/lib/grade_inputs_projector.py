@@ -24,6 +24,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from authoritative import try_authoritative_grade
 from engine_bridge import Engine, load_engine
 from gh_bridge import GhRunner, run_gh
 from network_policy import NetworkPolicy
@@ -161,11 +162,21 @@ def grade_context(
     engine = load_engine()
     policy = policy or _local_only_policy()
     gh = gh or run_gh
+
+    # Authoritative-vs-heuristic routing (plan §4 C-R4). A healthy, current
+    # `.shipwright/` event log + RTM is graded from the target's OWN records; any
+    # corrupt / partial / stale / degenerate case falls back to the heuristic
+    # projection below, labelled. ``head_sha`` enables the staleness check.
+    routing = decide_routing(context.root, head_sha=context.head_sha)
+    if routing.detected_mode == "authoritative":
+        authoritative = try_authoritative_grade(context, engine, routing)
+        if authoritative is not None:
+            return authoritative
+
     bundle = compute_signals(context, policy, gh)
     inputs, extras = project_inputs(
         context, engine, bundle, network_enabled=policy.enabled)
     report = engine.compute_grade(inputs)
-    routing = decide_routing(context.root)
     return build_report_model(
         grade_report=report,
         routing=routing,

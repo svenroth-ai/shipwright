@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-04T12:50:30.749429Z. Items waiting for triage decision.
+> Auto-generated 2026-07-04T15:29:21.251771Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 263
-- Triage: 6 | Promoted: 1 | Dismissed: 255 | Snoozed: 1
+- Total: 264
+- Triage: 5 | Promoted: 1 | Dismissed: 257 | Snoozed: 1
 
-## Top 6 items (severity-sorted)
+## Top 5 items (severity-sorted)
 
 ### Source: compliance (1 item)
 
@@ -32,35 +32,12 @@
   - Reviewer comment B: '3618/3618 green' is pass-rate, not coverage — it says nothing about whether AI-added code is even…
   - Promote: `triage_promote.py --id trg-8fdebda3 --task-ref EXT:<ref>`
 
-### Source: github (2 items)
+### Source: drift (1 item)
 
-<a id="trg-672c8e25"></a>
-- **[pr-ci] PR #310 has 1 failing check(s) on iterate/diff-coverage-measure-one-tier** `id=trg-672c8e25 | severity=high | kind=bug → P1/engineering`
-  - PR #310 "feat(compliance): measure diff-coverage on the shared tier (roadmap Phase 1)" on iterate/diff-coverage-measure…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-iterate --type bug
-    
-    Context: open PR #310 (https://github.com/svenroth-ai/shipwright/pull/310) has 1 failing required check(s) on branch 'iterate/diff-coverage-measure-one-tier': PR Review.
-    This blocks auto-merge — the PR sits armed-but-waiting until fixed.
-    Source: triage item gh-pr-ci:310
-    ```
-  - Promote: `triage_promote.py --id trg-672c8e25 --task-ref EXT:<ref>`
-
-<a id="trg-b5a4e13e"></a>
-- **GitHub prompt-injection: 3 finding(s) (high)** `id=trg-b5a4e13e | severity=high | kind=bug → P1/engineering`
-  - Repo svenroth-ai/shipwright \| prompt-injection (prompt_risks.json): 3 high \| run: https://github.com/svenroth-ai/ship…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-security
-    
-    Context: the shipwright-security prompt-injection scan reports 3 open finding(s) for svenroth-ai/shipwright.
-    Severity breakdown — prompt-injection: 3 high.
-    Workflow run: https://github.com/svenroth-ai/shipwright/actions/runs/28686996368
-    Re-scan locally: see docs/security-ci-setup.md
-    Source: triage item gh-prompt:svenroth-ai/shipwright
-    ```
-  - Promote: `triage_promote.py --id trg-b5a4e13e --task-ref EXT:<ref>`
+<a id="trg-4c6dedc1"></a>
+- **Drift: C:\01_Development\shipwright\CLAUDE.md: 'plugins/shipwright-grade/' exists on disk but not listed in Structure** `id=trg-4c6dedc1 | severity=medium | kind=maintenance → P2/engineering`
+  - C:\01_Development\shipwright\CLAUDE.md: 'plugins/shipwright-grade/' exists on disk but not listed in Structure
+  - Promote: `triage_promote.py --id trg-4c6dedc1 --task-ref EXT:<ref>`
 
 ### Source: grader-campaign (1 item)
 

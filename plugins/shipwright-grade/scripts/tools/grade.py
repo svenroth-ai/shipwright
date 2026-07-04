@@ -33,7 +33,7 @@ from network_policy import resolve_network_policy  # noqa: E402
 from render_markdown import render_markdown  # noqa: E402
 from render_terminal import render_terminal  # noqa: E402
 from repo_context import RepoContext  # noqa: E402
-from resolve_target import TargetError, resolve_target  # noqa: E402
+from resolve_target import TargetError, open_target  # noqa: E402
 
 
 def _force_utf8_stdio() -> None:
@@ -75,27 +75,33 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         help="Also enrich when the remote is private/unverifiable (implies the "
              "repo identity is sent to GitHub). Requires --allow-network.",
     )
+    parser.add_argument(
+        "--no-clone", action="store_true",
+        help="Forbid cloning: a URL / owner/repo target then errors instead of "
+             "being shallow-cloned. Local paths are unaffected.",
+    )
     return parser.parse_args(argv)
 
 
 def run(argv: list[str]) -> int:
     _force_utf8_stdio()
     args = _parse_args(argv)
+    # A remote target is shallow-cloned into a throwaway tempdir that is purged
+    # when the `with` block exits — the model is fully materialised inside it, so
+    # rendering below is safe after the clone is gone.
     try:
-        target = resolve_target(args.path)
+        with open_target(args.path, allow_clone=not args.no_clone) as target:
+            context = RepoContext(target)
+            policy = resolve_network_policy(
+                allow_network=args.allow_network,
+                allow_private=args.allow_network_private,
+                remote_url=remote_url(target.local_path),
+                gh=run_gh,
+            )
+            model = grade_context(context, policy=policy, gh=run_gh)
     except TargetError as exc:
         print(f"shipwright-grade: {exc}", file=sys.stderr)
         return 2
-
-    try:
-        context = RepoContext(target)
-        policy = resolve_network_policy(
-            allow_network=args.allow_network,
-            allow_private=args.allow_network_private,
-            remote_url=remote_url(target.local_path),
-            gh=run_gh,
-        )
-        model = grade_context(context, policy=policy, gh=run_gh)
     except EngineUnavailableError as exc:
         print(f"shipwright-grade: engine unavailable: {exc}", file=sys.stderr)
         return 3

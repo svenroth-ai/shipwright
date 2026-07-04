@@ -1,94 +1,117 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-04-prompt-scan-literal-fp",
+    "run_id": "iterate-2026-07-04-grade-g4-plugin-polish",
     "date": "2026-07-04",
-    "intent": "bug",
-    "complexity": "small",
+    "intent": "feature",
+    "complexity": "medium",
     "unit": {
       "status": "passed",
-      "passed": 470,
-      "skipped": 3,
-      "total": 473
+      "passed": 264,
+      "skipped": 1,
+      "total": 265
     },
     "integration": null,
     "pgtap": null,
     "e2e": null,
     "design_fidelity": null,
     "smoke": null,
-    "degraded": [],
+    "degraded": [
+      {
+        "condition": "classifier_risk_flag_prose_false_positive",
+        "detail": "classify_complexity flagged touches_auth + touches_rls from the words 'authoritative'/'URL' in the description; the diff touches no **/auth/**, src/lib/supabase/, or RLS files. Overridden; F11 recomputes risk flags from the diff. The real diff-derived flag is touches_io_boundary (handled: Boundary Probe + round-trip)."
+      }
+    ],
     "surface_verification": {
-      "surface": "none",
-      "justification": "Small bug fix to the prompt-injection scanner's internal token matching (scan_python -> blank_noncode_spans). No UI and no io-boundary: the input file set and the prompt_risks.json output schema are unchanged. Verified by the plugin unit suite (470 passed, 3 pre-existing CI-guarded skips) plus an empirical re-scan of the real trigger file plugins/shipwright-grade/tests/test_reused_collector_audit.py: 4 -> 0 findings, with real dangerous calls still flagged.",
-      "tests_run": 0
+      "surface": "cli",
+      "runner": "uv run --directory plugins/shipwright-grade pytest tests -q",
+      "tests_run": 264,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-04-grade-g4-plugin-polish/surface_verification.json"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "Dangerous-pattern tokens appearing only as string literals are not flagged",
+          "behavior": "AC1: a canonical .shipwright/ layout (root shipwright_events.jsonl + traceability-matrix.md) routes + grades authoritatively",
           "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestPythonScannerIgnoresStringsAndComments::test_string_literal_tokens_not_flagged"
+          "evidence": "test_routing.py::TestCanonicalLayout; test_authoritative.py::TestAuthoritativeEndToEnd::test_canonical_records_grade_authoritatively"
         },
         {
-          "behavior": "Dangerous-pattern tokens inside a docstring are not flagged",
+          "behavior": "AC1: staleness fires when the newest work_completed commit != HEAD; commit-less (worktree-model) logs are never false-flagged; large-log tail read",
           "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestPythonScannerIgnoresStringsAndComments::test_docstring_tokens_not_flagged"
+          "evidence": "test_routing.py::TestStaleness (5 cases incl. test_large_log_reads_the_tail_not_the_head)"
         },
         {
-          "behavior": "Dangerous-pattern tokens inside an inline/trailing comment are not flagged",
+          "behavior": "AC1: corrupt/partial/mixed/empty/exception .shipwright/ falls back to labelled heuristic",
           "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestPythonScannerIgnoresStringsAndComments::test_inline_trailing_comment_not_flagged"
+          "evidence": "test_routing.py (malformed/partial/mixed); test_authoritative.py::{TestAuthoritativeEndToEnd,TestFailSafe}"
         },
         {
-          "behavior": "Real eval()/exec()/os.system() calls are still flagged (no regression)",
+          "behavior": "AC1: a grader-grade of a real Shipwright repo equals its dashboard grade (authoritative == dashboard)",
           "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestPythonScannerIgnoresStringsAndComments::test_real_calls_still_flagged"
+          "evidence": "live probe: grade.py on the worktree -> mode=authoritative, A 99.9, verified_from shipwright_events.jsonl (249 events)"
         },
         {
-          "behavior": "subprocess.run(<str>, shell=True) still flags after the string arg is blanked (multi-token pattern integrity)",
+          "behavior": "AC2: URL scheme allowlist accepts https/git@/ssh/owner-repo and rejects http/git/file/ext/traversal/leading-dash-host",
           "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestPythonScannerIgnoresStringsAndComments::test_subprocess_shell_true_with_string_arg_still_flagged"
+          "evidence": "test_clone.py::TestNormalizeUrl (accept + reject incl. CVE-2017-1000117 dash hosts)"
         },
         {
-          "behavior": "affected_line stays accurate when a multiline string precedes the real call",
+          "behavior": "AC2: real shallow clone + post-clone size cap + tempdir purged even when the clone crashes mid-flight",
           "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestPythonScannerIgnoresStringsAndComments::test_affected_line_survives_preceding_multiline_string"
+          "evidence": "test_clone.py::{TestRealClone,TestOpenTarget::test_tempdir_purged_even_when_clone_crashes}; live probe: real clone of octocat/Hello-World"
         },
         {
-          "behavior": "Invalid Python falls back to the line scan so a real dangerous call is still seen",
+          "behavior": "AC3: grade.py <url> clones and grades; --no-clone rejects a URL cleanly (exit 2) with no network",
           "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestPythonScannerIgnoresStringsAndComments::test_invalid_python_falls_back_to_line_scan"
+          "evidence": "test_grade_cli.py::{test_url_is_cloned_and_graded,test_url_with_no_clone_exits_2_without_network}"
         },
         {
-          "behavior": "blank_noncode_spans blanks string content but keeps executable code verbatim",
+          "behavior": "AC3/AC4: the standalone CLI is non-interactive and never reads stdin",
           "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestBlankNoncodeSpans::test_blanks_string_content_but_keeps_code"
+          "evidence": "test_grade_cli.py::test_standalone_never_blocks_on_input (runtime stdin guard)"
         },
         {
-          "behavior": "blank_noncode_spans preserves newline count (line-number fidelity)",
-          "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestBlankNoncodeSpans::test_preserves_newline_count"
+          "behavior": "AC4: interactive mode asks <=2 provenance-stamped enrichment questions that never change the base deterministic grade unless a documented override is chosen",
+          "disposition": "untestable",
+          "reason_code": "requires-interactive-tty",
+          "evidence": "SKILL.md 'Interactive vs standalone' — a runtime protocol of the Claude Code session, not a CLI code path; the standalone determinism half IS tested (above)"
         },
         {
-          "behavior": "blank_noncode_spans returns the original text verbatim on non-tokenizable source",
+          "behavior": "AC5/AC6: the shipwright-grade plugin is registered (marketplace/install/README/CLAUDE/update-marketplace) with version parity",
           "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestBlankNoncodeSpans::test_invalid_python_returns_original_verbatim"
+          "evidence": "shared/scripts/sync_check.py all-green (14 plugins); shared/tests/test_installer_shell_scripts.py (16)"
         },
         {
-          "behavior": "Scanner self-reference files no longer self-flag yet remain excluded (belt-and-suspenders)",
+          "behavior": "AC7: ruff clean; all changed modules <=300 LOC",
           "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_diff.py::TestDiffModeExclusion::test_self_reference_files_no_longer_self_flag_but_stay_excluded"
+          "evidence": "uvx ruff@0.15.15 check . -> All checks passed; wc -l max 237 (routing.py)"
+        },
+        {
+          "behavior": "Hardening: a private/404/auth-required URL clone fails fast (non-interactive git), never hanging on a credential prompt",
+          "disposition": "tested",
+          "evidence": "test_clone.py::TestNonInteractive; live probe: auth-required clone fails in ~1s (not the 60s timeout)"
+        },
+        {
+          "behavior": "Hardening: an oversize target event log (>10MB) is refused by the authoritative path (hostile-clone OOM guard) -> heuristic fallback",
+          "disposition": "tested",
+          "evidence": "test_authoritative.py::TestEventLogSizeGuard"
+        },
+        {
+          "behavior": "Hardening: a symlinked .shipwright event log/RTM escaping the repo root is ignored (untrusted-clone guard)",
+          "disposition": "tested",
+          "evidence": "test_routing.py::test_symlinked_eventlog_escaping_root_is_ignored (POSIX; skipped on Windows)"
         }
       ],
       "counts": {
-        "testable": 11,
-        "tested": 11,
-        "untestable": 0,
+        "testable": 13,
+        "tested": 13,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 11,
-        "covered_acs": 11
+        "acs": 7,
+        "covered_acs": 7
       }
     }
   }
