@@ -91,3 +91,55 @@ class TestNaSemantics:
         prov = model.dimensions[0].provenance
         assert prov.sampled is True
         assert prov.truncated is True
+
+
+class TestG2Provenance:
+    def test_provenance_override_replaces_source_and_disabled(self):
+        dims = [_dim("security", "Security", 0.10, 0.9)]
+        model = build_report_model(
+            grade_report=_report(dims), routing=_routing(),
+            target_display="repo", head_sha="abc", events_truncated=False,
+            provenance_overrides={"security": {
+                "source": "GitHub code-scanning SARIF (github-code-scanning)",
+                "disabled": ()}},
+        )
+        prov = model.dimensions[0].provenance
+        assert prov.source == "GitHub code-scanning SARIF (github-code-scanning)"
+        assert prov.disabled_enrichments == ()
+
+    def test_network_provenance_fields_carried(self):
+        model = build_report_model(
+            grade_report=_report([_dim("security", "Security", 0.10, 1.0)]),
+            routing=_routing(), target_display="repo", head_sha="abc",
+            events_truncated=False, network_enabled=True,
+            network_note="network enrichment enabled for o/r (public)",
+            network_enrichments=("code-scanning SARIF (o/r)", "CI JUnit (o/r)"),
+        )
+        assert model.network_enabled is True
+        assert "code-scanning SARIF (o/r)" in model.network_enrichments
+        assert "public" in model.network_note
+
+    def test_network_defaults_are_local_only(self):
+        model = _build([_dim("security", "Security", 0.10, None)])
+        assert model.network_enabled is False
+        assert model.network_enrichments == ()
+
+    def test_top_reasons_use_overridden_detail(self):
+        # The engine reason quotes its own detail; an overridden dimension detail
+        # must be reflected in the reason too (no two-wordings-for-one-control).
+        dims = [_dim("maintainability", "Size / maintainability discipline",
+                     0.10, 0.85, detail="15% of source files over the size threshold")]
+        report = SimpleNamespace(
+            grade="B", score=82.5, gradeable=True, verdict="v",
+            band_label="b", dimensions=dims,
+            reasons=["Size / maintainability discipline: "
+                     "15% of source files over the size threshold"],
+            verified_from="x",
+        )
+        model = build_report_model(
+            grade_report=report, routing=_routing(), target_display="r",
+            head_sha="abc", events_truncated=False,
+            detail_overrides={"maintainability": "153/1003 source files over 300 LOC"},
+        )
+        assert model.reasons == (
+            "Size / maintainability discipline: 153/1003 source files over 300 LOC",)

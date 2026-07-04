@@ -1,51 +1,49 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-03-grade-g1-projector",
-    "date": "2026-07-03",
+    "run_id": "iterate-2026-07-04-grade-g2-signals",
+    "date": "2026-07-04",
     "intent": "feature",
     "complexity": "medium",
-    "unit": { "status": "passed", "passed": 91, "total": 91 },
+    "unit": { "status": "passed", "passed": 182, "total": 182 },
     "integration": { "status": "skipped", "passed": 0, "total": 0 },
     "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
     "e2e": { "status": "skipped", "passed": 0, "total": 0 },
     "design_fidelity": { "status": "skipped", "passed": 0, "total": 0 },
     "smoke": { "status": "skipped" },
     "degraded": [
-      "classify_complexity flagged touches_auth from the prose word 'authoritative' (message-keyword false positive); the diff touches no auth path (src/middleware.ts, **/auth/**) — overridden.",
-      "external plan review not re-run for this sub-iterate: the campaign plan (Spec/shipwright-grade-plan.md section 14) already folds in the Gemini 3.1 Pro + GPT-5.4 dispositions at planning time; a fresh-context adversarial code review WAS run for G1 and its findings fixed."
+      "External plan review not re-run for this sub-iterate: the campaign plan (Spec/shipwright-grade-plan.md section 14) already folds in the Gemini 3.1 Pro + GPT-5.4 dispositions at planning time. A fresh-context adversarial CODE review (Opus) WAS run for G2 and its 4 findings (2 MEDIUM false-clean vectors + 2 low hardening) were fixed and pinned with regression tests.",
+      "Engine change verified byte-identical against the FULL compliance suite (916 passed) + 8 golden-regression asserts; the grade plugin's own suite reports 182 (the surface_verification count).",
+      "Worktree base (origin/main 6b4b60d3) is behind current origin/main (635c2119, diff-coverage merge); origin/main did NOT touch the engine or grade files I edited, so F11 ensure_current integrates cleanly. The unrelated session-start triage.jsonl appends are excluded from this commit (explicit per-path git add)."
     ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --directory plugins/shipwright-grade --with pytest --with pytest-mock --with pyyaml pytest tests/ -q",
+      "runner": "uv run --directory plugins/shipwright-grade --extra dev pytest tests/ -q",
       "exit_code": 0,
-      "tests_run": 91,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-03-grade-g1-projector/surface_verification.log",
-      "timestamp": "2026-07-03T22:35:54.029Z"
+      "tests_run": 182,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-04-grade-g2-signals/surface_verification.json",
+      "timestamp": "2026-07-04T07:00:26.438Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "resolve_target accepts a local git repo (+bare/shallow/remote flags) and rejects URL/missing/file/non-git", "disposition": "tested", "evidence": "test_resolve_target.py (9 passed)" },
-        { "behavior": "synthetic_projection maps commits to conventional-type + PR/issue ref + is_traced/has_provenance; files_changed deferred; newline-safe records", "disposition": "tested", "evidence": "test_synthetic_projection.py (9 passed)" },
-        { "behavior": "RepoContext is a memoized, bounded (caps), lexicographic, within-root snapshot with a byte-capped read_text", "disposition": "tested", "evidence": "test_repo_context.py (9 passed)" },
-        { "behavior": "detectors_bridge reuses adopt detectors read-only, degrades safely, writes nothing", "disposition": "tested", "evidence": "test_reused_collector_audit.py (4 passed)" },
-        { "behavior": "engine_bridge loads compute_grade UNCHANGED, cached, and coexists with grade's bare modules without a scripts.lib collision", "disposition": "tested", "evidence": "test_engine_bridge.py (5 passed)" },
-        { "behavior": "grade_inputs_projector maps events+context onto GradeInputs; lights requirement/change traceability; leaves security/deps/maint/reconciliation n/a; surfaces static inventory without scoring test-health", "disposition": "tested", "evidence": "test_projector_fixtures.py (9 passed)" },
-        { "behavior": "report_model n/a semantics (N/A, excluded, would-light, never 0), per-dimension provenance, detail override", "disposition": "tested", "evidence": "test_report_model.py (6 passed)" },
-        { "behavior": "routing decides authoritative vs heuristic incl absent/partial/stale/malformed/mixed .shipwright/", "disposition": "tested", "evidence": "test_routing.py (5 passed)" },
-        { "behavior": "sanitize strips CSI/OSC/ESC/control/bidi and collapses to one line", "disposition": "tested", "evidence": "test_sanitize.py (9 passed)" },
-        { "behavior": "renderers deterministic; hostile repo strings neutralised end-to-end; headline carries N-of-M controls measured", "disposition": "tested", "evidence": "test_negative_fixtures.py + test_grade_cli.py" },
-        { "behavior": "CLI emits terminal/markdown/json with exit codes 0/2/3 and UTF-8-encodable output", "disposition": "tested", "evidence": "test_grade_cli.py (8 passed)" },
-        { "behavior": "negative fixtures (bare/empty/shallow/huge+binary) degrade to n/a or Not Gradeable, never a crash", "disposition": "tested", "evidence": "test_negative_fixtures.py (6 passed)" },
-        { "behavior": "git_exec is a hardened (safe.directory/fsmonitor/pager/hooks), bounded, read-only git runner", "disposition": "tested", "evidence": "test_git_exec.py (4 passed)" },
-        { "behavior": "coverage heuristic is route-specific (a bare module import does not mark every route covered)", "disposition": "tested", "evidence": "test_coverage_heuristic.py (5 passed)" },
-        { "behavior": "feature-inference truncation on oversized repos is labelled sampled/truncated in requirement-traceability provenance", "disposition": "tested", "evidence": "test_repo_context.py::test_features_truncated_flag_when_file_walk_truncates + test_report_model.py::test_features_truncated_labels_requirement_traceability_sampled" },
-        { "behavior": "empirical record/replay cache round-trips and the manifest is well-formed (fields + descending bands)", "disposition": "tested", "evidence": "tests/empirical/test_replay_mechanism.py (7 passed)" },
-        { "behavior": "same repo state yields the same grade (determinism)", "disposition": "tested", "evidence": "test_projector_fixtures.py::test_same_repo_state_same_grade" },
-        { "behavior": "empirical real-OSS band + relative-ordering assertion against pinned SHAs", "disposition": "untestable", "reason_code": "requires-external-nondeterministic-service", "reason": "needs network + gh against real GitHub repos; opt-in -m empirical suite, SHAs PENDING-G5, loud skip; the launch gate is G5" }
+        { "behavior": "Engine: additive oversize_file_ratio field + dim-6 elif is byte-identical for existing inputs (ratchet set, or both size signals None) and lights only when bloat_ratchet_delta is None with an honest distinct detail+anchor", "disposition": "tested", "evidence": "test_grade_oversize_additive.py (8 passed) + full compliance suite (916 passed)" },
+        { "behavior": "Size proxy: oversize-file ratio over source files, strict > threshold, capped/deterministic, n/a when no source files", "disposition": "tested", "evidence": "test_size_signal.py (6 passed)" },
+        { "behavior": "Dependency hygiene: lockfile->license via reused SBOM collectors; NOT_INSTALLED excluded from the graded set (honest); copyleft/unknown counted; n/a when nothing inspectable", "disposition": "tested", "evidence": "test_dependency_signal.py (7 passed)" },
+        { "behavior": "JUnit hardened parse: DTD/XXE/billion-laughs rejected (defusedxml forbid_dtd), skipped excluded, leaf-suites not double-counted, tests=inf/huge degrades to 0 without aborting aggregation", "disposition": "tested", "evidence": "test_junit_xml.py (13 passed)" },
+        { "behavior": "gh runner: list-arg subprocess, 403/rate-limit/auth/not-found/timeout classification, GitHub owner/repo parse with slug validation (rejects ../odd chars)", "disposition": "tested", "evidence": "test_gh_bridge.py (20 passed)" },
+        { "behavior": "Network policy: local-only default; --allow-network enriches a public remote; private/unverifiable auto-disabled unless --allow-network-private; provenance records what left the machine", "disposition": "tested", "evidence": "test_network_policy.py (9 passed)" },
+        { "behavior": "Security signal: code-scanning SARIF (default-branch-filtered) -> open high/critical via reused suppression-aware parser + grade guard; invalid/non-list-runs/no-analyses/403/auth/local-only -> n/a, never a false clean", "disposition": "tested", "evidence": "test_security_signal.py (15 passed)" },
+        { "behavior": "Test-health: 3 tiers (CI JUnit -> Scorecard statusCheckRollup -> static-inventory floor), best-available wins, tier stamped; 403/no-network degrades deterministically", "disposition": "tested", "evidence": "test_test_health_signal.py (10 passed)" },
+        { "behavior": "signal_bundle maps the four signals onto GradeInputs kwargs + detail overrides + per-dimension provenance; n/a signals set nothing", "disposition": "tested", "evidence": "test_signal_bundle.py (6 passed)" },
+        { "behavior": "report_model: provenance-override replaces source/disabled; network provenance fields carried; top-reasons rewritten to overridden detail (no two-wordings-for-one-control)", "disposition": "tested", "evidence": "test_report_model.py (TestG2Provenance + test_top_reasons_use_overridden_detail)" },
+        { "behavior": "Renderers surface the network provenance line in both terminal + markdown, for enabled (enrichments) and local-only (note) states", "disposition": "tested", "evidence": "test_render_network.py (2 passed)" },
+        { "behavior": "CLI --allow-network / --allow-network-private flags; JSON carries network + maintainability; --allow-network without a remote stays local-only (no network attempted)", "disposition": "tested", "evidence": "test_grade_cli.py (8 passed, +2 new)" },
+        { "behavior": "Reused compliance license collectors are read-only (no package-manager exec / writes) and the dependency signal writes nothing to the target", "disposition": "tested", "evidence": "test_reused_collector_audit.py (6 passed, +2 new)" },
+        { "behavior": "Projector wiring: network_enabled stamps verified_from; local-only default policy; G1 fixtures re-grade with maintainability now lit (no-tests D->C)", "disposition": "tested", "evidence": "test_projector_fixtures.py (10 passed)" },
+        { "behavior": "Live gh network round-trip against real GitHub repos (code-scanning analyses download, gh run download JUnit, GraphQL rollup)", "disposition": "untestable", "reason_code": "requires-external-nondeterministic-service", "reason": "needs network + gh auth against live GitHub; all parsing/logic is hermetically injected here, the live path is the opt-in G5 empirical suite (the launch gate)" }
       ],
-      "counts": { "testable": 17, "tested": 17, "untestable": 1, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 13, "covered_acs": 13 }
+      "counts": { "testable": 14, "tested": 14, "untestable": 1, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 11, "covered_acs": 11 }
     }
   }
 }

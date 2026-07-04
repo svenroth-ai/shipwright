@@ -11,6 +11,9 @@ authors = [
 keywords = ["claude-code", "plugin", "grade", "control-grade", "repo-grader"]
 dependencies = [
     "pyyaml>=6.0",
+    # Hardened XML parsing for untrusted CI JUnit results (XXE / billion-laughs
+    # safe) — the grader treats all repo/CI-derived input as hostile (plan §14 A).
+    "defusedxml>=0.7.1",
 ]
 
 [project.optional-dependencies]

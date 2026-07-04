@@ -99,25 +99,39 @@ class ReportModel:
     controls_shipwright_would_light: tuple[str, ...]
     honest_ceiling_note: str
     static_test_inventory: str
+    # Network provenance (G2) — exactly what left the machine (§14 D).
+    network_enabled: bool = False
+    network_note: str = ""
+    network_enrichments: tuple[str, ...] = ()
 
 
 def _provenance(
     key: str, *, score: float | None, effective_mode: str,
     freshness: str, events_truncated: bool, features_truncated: bool,
+    override: dict | None = None,
 ) -> DimensionProvenance:
     meta = _DIM_META.get(key, {"source": "unknown", "disabled": ()})
+    source = str(meta["source"])
+    disabled = tuple(meta["disabled"])
+    # A dimension lit/moved by a G2 signal supplies its real source + the
+    # enrichments still dark, replacing the static G1 placeholder.
+    if override:
+        if override.get("source"):
+            source = str(override["source"])
+        if "disabled" in override:
+            disabled = tuple(override["disabled"])
     mode = "unavailable" if score is None else effective_mode
     # Requirement-traceability samples when the repo exceeds the detector caps
     # (order-dependent feature truncation); labelled honestly rather than hidden.
     sampled = features_truncated and key == "requirement_traceability"
     truncated = (events_truncated and key in _GIT_DERIVED) or sampled
     return DimensionProvenance(
-        source=str(meta["source"]),
+        source=source,
         mode=mode,
         freshness=freshness if score is not None else "n/a",
         sampled=sampled,
         truncated=truncated,
-        disabled_enrichments=tuple(meta["disabled"]),
+        disabled_enrichments=disabled,
     )
 
 
@@ -131,9 +145,14 @@ def build_report_model(
     features_truncated: bool = False,
     detail_overrides: dict[str, str] | None = None,
     static_test_inventory: str = "",
+    provenance_overrides: dict[str, dict] | None = None,
+    network_enabled: bool = False,
+    network_note: str = "",
+    network_enrichments: tuple[str, ...] = (),
 ) -> ReportModel:
     """Assemble a :class:`ReportModel` from the engine report + provenance."""
     detail_overrides = detail_overrides or {}
+    provenance_overrides = provenance_overrides or {}
     freshness = head_sha[:12] if head_sha else "n/a"
 
     views: list[DimensionView] = []
@@ -144,6 +163,7 @@ def build_report_model(
             dim.key, score=dim.score, effective_mode=routing.effective_mode,
             freshness=freshness, events_truncated=events_truncated,
             features_truncated=features_truncated,
+            override=provenance_overrides.get(dim.key),
         )
         would_light = dim.score is None
         if would_light:
@@ -157,6 +177,15 @@ def build_report_model(
     measurable = sum(1 for d in views if d.score is not None)
     na = sum(1 for d in views if d.score is None)
 
+    # Consistency: the engine builds its top-reasons from its own dimension
+    # details, so a reason that quotes a detail we overrode would disagree with
+    # the dimension table. Rewrite those reasons to the overridden phrasing.
+    fixups = {
+        f"{d.label}: {d.detail}": f"{d.label}: {detail_overrides[d.key]}"
+        for d in grade_report.dimensions if d.key in detail_overrides
+    }
+    reasons = tuple(fixups.get(r, r) for r in grade_report.reasons)
+
     return ReportModel(
         target_display=target_display,
         grade=grade_report.grade,
@@ -169,10 +198,13 @@ def build_report_model(
         routing_reason=routing.reason,
         verified_from=grade_report.verified_from,
         dimensions=tuple(views),
-        reasons=tuple(grade_report.reasons),
+        reasons=reasons,
         measurable_count=measurable,
         na_count=na,
         controls_shipwright_would_light=tuple(na_labels),
         honest_ceiling_note=HONEST_CEILING_NOTE,
         static_test_inventory=static_test_inventory,
+        network_enabled=network_enabled,
+        network_note=network_note,
+        network_enrichments=tuple(network_enrichments),
     )

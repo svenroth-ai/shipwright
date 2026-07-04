@@ -47,6 +47,12 @@ class GradeInputs:
     security_open_high_critical: int | None = None
     # Size / maintainability (net ratchet growth; None → no baseline)
     bloat_ratchet_delta: int | None = None
+    # Cold-repo static size proxy — fraction of source files over the size
+    # threshold [0, 1]. Scored (dim 6) ONLY when ``bloat_ratchet_delta is None``
+    # (additive, G2 — the dashboard's ratchet baseline path is untouched). None →
+    # not measured. Kept a distinct field so the honest "N/M files over threshold"
+    # detail is never smuggled into the ratchet-delta field.
+    oversize_file_ratio: float | None = None
     # Dependency hygiene
     deps_total: int = 0
     deps_unknown_license: int = 0

@@ -59,6 +59,11 @@ def _compliance_root() -> Path | None:
     return None
 
 
+def compliance_plugin_root() -> Path | None:
+    """Public accessor for the compliance plugin root (used by reuse_bridge)."""
+    return _compliance_root()
+
+
 def load_engine() -> Engine:
     """Return the shared engine handle (cached). Raises on unavailability."""
     global _CACHED

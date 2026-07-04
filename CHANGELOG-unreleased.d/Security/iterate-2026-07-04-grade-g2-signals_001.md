@@ -1,0 +1,1 @@
+shipwright-grade treats all repo/CI-derived input as hostile: untrusted CI JUnit XML is parsed with a hardened parser (defusedxml, DTDs rejected -> XXE / billion-laughs safe), and every network signal degrades deterministically to `n/a` on 403 / rate-limit / auth-failure / malformed payload rather than ever reporting a false-clean grade.

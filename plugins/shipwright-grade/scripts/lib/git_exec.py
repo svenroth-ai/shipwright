@@ -48,6 +48,12 @@ def run_git(
         return 1, ""
 
 
+def remote_url(cwd: Path, remote: str = "origin") -> str:
+    """The configured URL of ``remote`` (``""`` when absent). Read-only."""
+    rc, out = run_git(["remote", "get-url", remote], cwd, timeout=10)
+    return out.strip() if rc == 0 else ""
+
+
 def _run_bounded(
     cmd: list[str], cwd: Path, *, timeout: int, max_bytes: int,
 ) -> tuple[int, str]:

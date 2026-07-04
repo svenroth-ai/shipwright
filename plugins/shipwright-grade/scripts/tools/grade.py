@@ -24,7 +24,10 @@ if str(_LIB) not in sys.path:
     sys.path.insert(0, str(_LIB))
 
 from engine_bridge import EngineUnavailableError  # noqa: E402
+from gh_bridge import run_gh  # noqa: E402
+from git_exec import remote_url  # noqa: E402
 from grade_inputs_projector import grade_context  # noqa: E402
+from network_policy import resolve_network_policy  # noqa: E402
 from render_markdown import render_markdown  # noqa: E402
 from render_terminal import render_terminal  # noqa: E402
 from repo_context import RepoContext  # noqa: E402
@@ -57,6 +60,16 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         "--format", choices=("terminal", "markdown", "json"),
         default="terminal", help="Output format (default: terminal)",
     )
+    parser.add_argument(
+        "--allow-network", action="store_true",
+        help="Opt into GitHub enrichment (CI test tiers + code-scanning). "
+             "Default OFF — private repos never leave the machine.",
+    )
+    parser.add_argument(
+        "--allow-network-private", action="store_true",
+        help="Also enrich when the remote is private/unverifiable (implies the "
+             "repo identity is sent to GitHub). Requires --allow-network.",
+    )
     return parser.parse_args(argv)
 
 
@@ -71,7 +84,13 @@ def run(argv: list[str]) -> int:
 
     try:
         context = RepoContext(target)
-        model = grade_context(context)
+        policy = resolve_network_policy(
+            allow_network=args.allow_network,
+            allow_private=args.allow_network_private,
+            remote_url=remote_url(target.local_path),
+            gh=run_gh,
+        )
+        model = grade_context(context, policy=policy, gh=run_gh)
     except EngineUnavailableError as exc:
         print(f"shipwright-grade: engine unavailable: {exc}", file=sys.stderr)
         return 3
