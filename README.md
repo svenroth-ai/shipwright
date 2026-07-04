@@ -166,6 +166,7 @@ Multi-project kanban across every Shipwright task you touch. Click a task for it
 | `shipwright-compliance` | Compliance: IREB traceability, RTM, SBOM, test evidence, change history, dashboard |
 | `shipwright-preview` | Preview: local dev server, browser URL, profile-driven (available after first build split) |
 | `shipwright-adopt` | Brownfield onboarding: analyze existing repo, generate CLAUDE.md + .shipwright/agent_docs + configs + E2E baseline |
+| `shipwright-grade` | Repo grader: read-only Control Grade (A–F) for any local path or URL, reusing the compliance scoring engine — the public lead magnet |
 
 ## Stack Profiles
 
@@ -204,7 +205,7 @@ claude plugin marketplace add svenroth-ai/shipwright
 for p in shipwright-run shipwright-project shipwright-design shipwright-plan \
          shipwright-build shipwright-test shipwright-deploy shipwright-changelog \
          shipwright-compliance shipwright-security shipwright-iterate \
-         shipwright-preview shipwright-adopt; do
+         shipwright-preview shipwright-adopt shipwright-grade; do
   claude plugin install "${p}@shipwright"
 done
 ```
@@ -217,7 +218,7 @@ foreach ($p in @('shipwright-run','shipwright-project','shipwright-design',
                  'shipwright-plan','shipwright-build','shipwright-test',
                  'shipwright-deploy','shipwright-changelog','shipwright-compliance',
                  'shipwright-security','shipwright-iterate','shipwright-preview',
-                 'shipwright-adopt')) {
+                 'shipwright-adopt','shipwright-grade')) {
   claude plugin install "$($p)@shipwright"
 }
 ```
@@ -302,7 +303,8 @@ shipwright/
 │   ├── shipwright-compliance/        # Traceability, RTM, SBOM, dashboard
 │   ├── shipwright-iterate/           # Daily iteration (complexity-adaptive)
 │   ├── shipwright-preview/           # Local browser preview
-│   └── shipwright-adopt/             # Brownfield onboarding (analyze existing repos)
+│   ├── shipwright-adopt/             # Brownfield onboarding (analyze existing repos)
+│   └── shipwright-grade/             # Read-only repo grader (A–F lead magnet)
 # Command Center WebUI: github.com/svenroth-ai/shipwright-webui (separate repo)
 ├── shared/                           # Shared across plugins
 │   ├── contracts/                    # Cross-plugin public API (compliance.py, iterate.py)

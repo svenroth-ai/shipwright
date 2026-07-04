@@ -16,14 +16,19 @@ explicitly named).
 from __future__ import annotations
 
 import re
+import tempfile
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Iterator
 
 from git_exec import run_git
 
-# A conservative URL/scheme sniff. Anything matching is a *deferred* URL input
-# in G1 (not an error in the traversal sense — a clear, typed deferral).
+# A conservative URL/scheme sniff. Anything matching is treated as a *remote*
+# input handled by ``open_target`` (clone-and-grade), never a local path.
 _URL_RE = re.compile(r"^(?:https?|git|ssh|git\+ssh)://|^git@[\w.-]+:", re.IGNORECASE)
+# GitHub ``owner/repo`` shorthand — remote ONLY when it isn't an existing local path.
+_SHORTHAND_RE = re.compile(r"^[A-Za-z0-9][\w.-]*/[A-Za-z0-9][\w.-]*?(?:\.git)?$")
 
 
 class TargetError(ValueError):
@@ -83,8 +88,8 @@ def resolve_target(raw: str) -> ResolvedTarget:
 
     if _URL_RE.match(raw):
         raise TargetError(
-            "URL targets are not supported yet (clone-and-grade lands in G4); "
-            "pass a local path"
+            "URL targets are cloned via open_target(); resolve_target() takes a "
+            "local path"
         )
 
     path = Path(raw).expanduser()
@@ -111,3 +116,46 @@ def resolve_target(raw: str) -> ResolvedTarget:
         input_kind="local_path",
         note="bare repository" if is_bare else "",
     )
+
+
+def is_remote_target(raw: str) -> bool:
+    """True when ``raw`` should be cloned (a URL / SCP remote / GitHub shorthand).
+
+    A bare ``owner/repo`` is remote ONLY when no local path of that name exists —
+    an existing local directory always wins, so a relative path is never
+    mis-cloned.
+    """
+    if not isinstance(raw, str):
+        return False
+    raw = raw.strip()
+    if not raw:
+        return False
+    if _URL_RE.match(raw):
+        return True
+    if _SHORTHAND_RE.match(raw) and not Path(raw).expanduser().exists():
+        return True
+    return False
+
+
+@contextmanager
+def open_target(raw: str, *, allow_clone: bool = True) -> Iterator[ResolvedTarget]:
+    """Yield a :class:`ResolvedTarget` for a local path OR a cloned remote.
+
+    This is the input seam the grader drives. A local path resolves in place
+    (no cleanup). A remote (URL / ``owner/repo``) is shallow-cloned into a
+    ``tempfile.TemporaryDirectory`` that is **purged on exit — even on a crash**
+    (the ``with`` block runs its cleanup during exception unwinding). Set
+    ``allow_clone=False`` to forbid network cloning (a remote input then errors).
+    """
+    if is_remote_target(raw):
+        if not allow_clone:
+            raise TargetError(
+                f"remote target requires cloning, which is disabled: {raw}")
+        # Lazy import: a local-path run never pays the clone module's cost.
+        from clone import clone_repo
+        with tempfile.TemporaryDirectory(prefix="shipwright-grade-") as tmp:
+            dest = Path(tmp) / "repo"
+            clone_repo(raw, dest)
+            yield resolve_target(str(dest))
+        return
+    yield resolve_target(raw)

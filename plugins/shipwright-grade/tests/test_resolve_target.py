@@ -39,12 +39,13 @@ class TestResolveTarget:
         with pytest.raises(TargetError, match="not a directory"):
             resolve_target(str(f))
 
-    def test_url_is_deferred_to_g4(self):
-        with pytest.raises(TargetError, match="URL targets are not supported"):
+    def test_url_rejected_by_low_level_resolver(self):
+        # resolve_target() is the local validator; URLs go through open_target().
+        with pytest.raises(TargetError, match="cloned via open_target"):
             resolve_target("https://github.com/x/y")
 
-    def test_ssh_url_is_deferred(self):
-        with pytest.raises(TargetError, match="URL targets are not supported"):
+    def test_ssh_url_rejected_by_low_level_resolver(self):
+        with pytest.raises(TargetError, match="cloned via open_target"):
             resolve_target("git@github.com:x/y.git")
 
     def test_empty_input_rejected(self):

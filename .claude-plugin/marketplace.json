@@ -111,6 +111,14 @@
       "source": "./plugins/shipwright-adopt",
       "category": "development",
       "tags": ["adoption", "onboarding", "brownfield", "legacy", "documentation"]
+    },
+    {
+      "name": "shipwright-grade",
+      "description": "Grade any git repository against the Control Grade rubric (A–F) — a read-only, deterministic cold-repo grader that reuses the same scoring engine as the compliance dashboard. Grades a local path or clones a URL; underivable dimensions render honest n/a.",
+      "version": "0.29.1",
+      "source": "./plugins/shipwright-grade",
+      "category": "development",
+      "tags": ["grade", "control-grade", "repo-grader", "read-only", "openssf-scorecard", "lead-magnet"]
     }
   ]
 }
