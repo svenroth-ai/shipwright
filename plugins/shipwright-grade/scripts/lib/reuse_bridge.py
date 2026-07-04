@@ -93,6 +93,25 @@ def load_security_grade() -> tuple[Callable, Callable]:
     return _cached("security_grade", _factory)
 
 
+def load_compliance_ingest() -> tuple[Callable, Callable]:
+    """``(collect_all, build_grade_inputs)`` — the authoritative-read adapter.
+
+    G4 authoritative path: a target with a healthy ``.shipwright/`` event log +
+    RTM is graded from its OWN records (not a heuristic projection). ``collect_all``
+    (the compliance data collector, repo-agnostic) walks the target's event log,
+    requirements, deps + config; ``build_grade_inputs`` maps that ``ComplianceData``
+    onto the same ``GradeInputs`` the dashboard uses — so an authoritative
+    grader-grade equals the dashboard grade by construction (one adapter, one
+    engine). Both import via absolute ``scripts.lib.*`` (compliance root on path).
+    """
+    def _factory():
+        _ensure_compliance_on_path()
+        from scripts.lib._control_block import build_grade_inputs  # type: ignore
+        from scripts.lib.data_collector import collect_all  # type: ignore
+        return (collect_all, build_grade_inputs)
+    return _cached("compliance_ingest", _factory)
+
+
 def load_findings_from_sarif() -> Callable[[Path], list | None]:
     """``security_findings._findings_from_sarif`` — suppression-aware SARIF parse."""
     def _factory():

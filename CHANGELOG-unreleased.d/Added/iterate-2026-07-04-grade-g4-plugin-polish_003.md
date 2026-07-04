@@ -1,0 +1,1 @@
+The **shipwright-grade** plugin is now registered in the marketplace (`/shipwright-grade`) with a completed SKILL.md and a guide command-reference entry — the read-only, deterministic A–F repo grader (lead magnet).

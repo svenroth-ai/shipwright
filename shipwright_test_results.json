@@ -1,38 +1,118 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-04-grade-cta-adopt",
+    "run_id": "iterate-2026-07-04-grade-g4-plugin-polish",
     "date": "2026-07-04",
-    "intent": "change",
-    "complexity": "small",
-    "unit": { "status": "passed", "passed": 216, "total": 216 },
-    "integration": { "status": "skipped", "passed": 0, "total": 0 },
-    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
-    "e2e": { "status": "passed", "passed": 35, "total": 35 },
-    "design_fidelity": { "status": "skipped", "passed": 0, "total": 0 },
-    "smoke": { "status": "skipped" },
+    "intent": "feature",
+    "complexity": "medium",
+    "unit": {
+      "status": "passed",
+      "passed": 264,
+      "skipped": 1,
+      "total": 265
+    },
+    "integration": null,
+    "pgtap": null,
+    "e2e": null,
+    "design_fidelity": null,
+    "smoke": null,
     "degraded": [
-      "Small standalone follow-up to G3 (CTA copy + one static link). Internal opus code review = NO blocking issues; of its 2 low advisories, #1 (uniform attribute-value seam: route _attrs through the same strip_terminal+escape as text nodes) was applied + pinned by a test, #2 (double-quote-coupled regex) is redundant with the authoritative parser-based test. External LLM review skipped (advisory at small complexity)."
+      {
+        "condition": "classifier_risk_flag_prose_false_positive",
+        "detail": "classify_complexity flagged touches_auth + touches_rls from the words 'authoritative'/'URL' in the description; the diff touches no **/auth/**, src/lib/supabase/, or RLS files. Overridden; F11 recomputes risk flags from the diff. The real diff-derived flag is touches_io_boundary (handled: Boundary Probe + round-trip)."
+      }
     ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --project plugins/shipwright-grade pytest plugins/shipwright-grade/tests/test_grade_cli.py plugins/shipwright-grade/tests/test_html_report.py plugins/shipwright-grade/tests/test_html_security.py plugins/shipwright-grade/tests/test_render_snapshots.py -q",
+      "runner": "uv run --directory plugins/shipwright-grade pytest tests -q",
+      "tests_run": 264,
       "exit_code": 0,
-      "tests_run": 35,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-04-grade-cta-adopt/surface_verification.json",
-      "timestamp": "2026-07-04T00:00:00.000Z"
+      "evidence_path": ".shipwright/runs/iterate-2026-07-04-grade-g4-plugin-polish/surface_verification.json"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "CTA explains what /shipwright-adopt does (3 steps) + the concrete next step; 'certify' removed from the CTA (stays only in the honest-ceiling disclaimer)", "disposition": "tested", "evidence": "test_html_report.py::TestSections::test_cta_explains_adopt_and_next_step (assertion scoped to the <section class=cta>)" },
-        { "behavior": "The CTA is a single static, trusted, hardened link to svenroth.ai/shipwright (target=_blank, rel=noopener noreferrer) — the only <a> in the document", "disposition": "tested", "evidence": "test_html_report.py::TestSelfContained::test_only_link_is_the_trusted_cta" },
-        { "behavior": "Security invariant TIGHTENED not loosened: no auto-fetch surface; exactly one href = the CTA even under hostile input; a repo-derived string never becomes an <a> or href", "disposition": "tested", "evidence": "test_html_report.py::test_no_external_request_surface + test_html_security.py::test_hostile_payload_contributes_zero_live_nodes (parser-based: 1 anchor, hrefs == [CTA])" },
-        { "behavior": "Attribute values share the text-node cleaning seam (control/ANSI/bidi stripped, quotes/brackets escaped) so an attribute is never a weaker context than a text node", "disposition": "tested", "evidence": "test_html_security.py::test_attribute_values_are_control_stripped_and_escaped" },
-        { "behavior": "The CLI --format html path emits only the CTA link (no other external reference)", "disposition": "tested", "evidence": "test_grade_cli.py::test_html_format_emits_self_contained_document" },
-        { "behavior": "HTML golden snapshot regenerated for the new CTA and byte-exact enforced; render stays deterministic", "disposition": "tested", "evidence": "test_render_snapshots.py::test_html_snapshot_matches_golden" }
+        {
+          "behavior": "AC1: a canonical .shipwright/ layout (root shipwright_events.jsonl + traceability-matrix.md) routes + grades authoritatively",
+          "disposition": "tested",
+          "evidence": "test_routing.py::TestCanonicalLayout; test_authoritative.py::TestAuthoritativeEndToEnd::test_canonical_records_grade_authoritatively"
+        },
+        {
+          "behavior": "AC1: staleness fires when the newest work_completed commit != HEAD; commit-less (worktree-model) logs are never false-flagged; large-log tail read",
+          "disposition": "tested",
+          "evidence": "test_routing.py::TestStaleness (5 cases incl. test_large_log_reads_the_tail_not_the_head)"
+        },
+        {
+          "behavior": "AC1: corrupt/partial/mixed/empty/exception .shipwright/ falls back to labelled heuristic",
+          "disposition": "tested",
+          "evidence": "test_routing.py (malformed/partial/mixed); test_authoritative.py::{TestAuthoritativeEndToEnd,TestFailSafe}"
+        },
+        {
+          "behavior": "AC1: a grader-grade of a real Shipwright repo equals its dashboard grade (authoritative == dashboard)",
+          "disposition": "tested",
+          "evidence": "live probe: grade.py on the worktree -> mode=authoritative, A 99.9, verified_from shipwright_events.jsonl (249 events)"
+        },
+        {
+          "behavior": "AC2: URL scheme allowlist accepts https/git@/ssh/owner-repo and rejects http/git/file/ext/traversal/leading-dash-host",
+          "disposition": "tested",
+          "evidence": "test_clone.py::TestNormalizeUrl (accept + reject incl. CVE-2017-1000117 dash hosts)"
+        },
+        {
+          "behavior": "AC2: real shallow clone + post-clone size cap + tempdir purged even when the clone crashes mid-flight",
+          "disposition": "tested",
+          "evidence": "test_clone.py::{TestRealClone,TestOpenTarget::test_tempdir_purged_even_when_clone_crashes}; live probe: real clone of octocat/Hello-World"
+        },
+        {
+          "behavior": "AC3: grade.py <url> clones and grades; --no-clone rejects a URL cleanly (exit 2) with no network",
+          "disposition": "tested",
+          "evidence": "test_grade_cli.py::{test_url_is_cloned_and_graded,test_url_with_no_clone_exits_2_without_network}"
+        },
+        {
+          "behavior": "AC3/AC4: the standalone CLI is non-interactive and never reads stdin",
+          "disposition": "tested",
+          "evidence": "test_grade_cli.py::test_standalone_never_blocks_on_input (runtime stdin guard)"
+        },
+        {
+          "behavior": "AC4: interactive mode asks <=2 provenance-stamped enrichment questions that never change the base deterministic grade unless a documented override is chosen",
+          "disposition": "untestable",
+          "reason_code": "requires-interactive-tty",
+          "evidence": "SKILL.md 'Interactive vs standalone' — a runtime protocol of the Claude Code session, not a CLI code path; the standalone determinism half IS tested (above)"
+        },
+        {
+          "behavior": "AC5/AC6: the shipwright-grade plugin is registered (marketplace/install/README/CLAUDE/update-marketplace) with version parity",
+          "disposition": "tested",
+          "evidence": "shared/scripts/sync_check.py all-green (14 plugins); shared/tests/test_installer_shell_scripts.py (16)"
+        },
+        {
+          "behavior": "AC7: ruff clean; all changed modules <=300 LOC",
+          "disposition": "tested",
+          "evidence": "uvx ruff@0.15.15 check . -> All checks passed; wc -l max 237 (routing.py)"
+        },
+        {
+          "behavior": "Hardening: a private/404/auth-required URL clone fails fast (non-interactive git), never hanging on a credential prompt",
+          "disposition": "tested",
+          "evidence": "test_clone.py::TestNonInteractive; live probe: auth-required clone fails in ~1s (not the 60s timeout)"
+        },
+        {
+          "behavior": "Hardening: an oversize target event log (>10MB) is refused by the authoritative path (hostile-clone OOM guard) -> heuristic fallback",
+          "disposition": "tested",
+          "evidence": "test_authoritative.py::TestEventLogSizeGuard"
+        },
+        {
+          "behavior": "Hardening: a symlinked .shipwright event log/RTM escaping the repo root is ignored (untrusted-clone guard)",
+          "disposition": "tested",
+          "evidence": "test_routing.py::test_symlinked_eventlog_escaping_root_is_ignored (POSIX; skipped on Windows)"
+        }
       ],
-      "counts": { "testable": 6, "tested": 6, "untestable": 0, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 4, "covered_acs": 4 }
+      "counts": {
+        "testable": 13,
+        "tested": 13,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 7,
+        "covered_acs": 7
+      }
     }
   }
 }

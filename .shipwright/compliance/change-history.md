@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-07-04T13:09:10.541223+00:00
+Generated: 2026-07-04T15:29:21.251771+00:00
 Total commits: 1083
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 312
-    "feat" : 287
+    "fix" : 311
+    "feat" : 288
     "chore" : 236
     "docs" : 143
     "refactor" : 64
@@ -20,11 +20,10 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 312 commits
+### Fixes (fix) — 311 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-04 | grade | CTA explains adopt + next step, one hardened link (drop "certify") | 9f4388acd408 |
 | 2026-07-04 | security | prompt-scan matches code, not string/comment token text (#316) | 354cca7e0669 |
 | 2026-07-04 | security | pr_review excludes generated artifacts from the diff before truncation (#314) | 913261ff68cd |
 | 2026-07-04 | grade | tighten test-health tier-2 + URL-encode ref + stronger golden (G2 review follow-up) (#313) | fbc9bdce9e8f |
@@ -337,10 +336,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 287 commits
+### Features (feat) — 288 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-04 | grade | authoritative wiring + URL clone-and-grade + plugin registration (G4) | 1315b6221919 |
 | 2026-07-04 | grade | self-contained HTML report + hardened terminal card (G3) (#315) | 37374361d7d0 |
 | 2026-07-04 | grade | security, deps, size + gh test-health signals (G2) (#312) | 440bfd1776f6 |
 | 2026-07-04 | compliance | measure diff-coverage on the shared tier (roadmap Phase 1) (#310) | 635c2119f9c3 |
@@ -633,7 +633,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-04 | triage | sweep 4 outbox append(s) into branch | f1b210e28532 |
+| 2026-07-04 | triage | sweep 3 outbox append(s) into branch | cfb36a93c9ef |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
