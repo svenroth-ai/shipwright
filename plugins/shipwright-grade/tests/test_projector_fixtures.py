@@ -11,17 +11,26 @@ from pathlib import Path
 
 from engine_bridge import load_engine
 from grade_inputs_projector import grade_context, project_inputs
+from network_policy import NetworkPolicy
 from repo_context import RepoContext
 from resolve_target import resolve_target
+from signal_bundle import compute_signals
 
 
 def _context(repo: Path) -> RepoContext:
     return RepoContext(resolve_target(str(repo)))
 
 
+def _local_only() -> NetworkPolicy:
+    return NetworkPolicy(enabled=False, requested=False, owner=None, repo=None,
+                         visibility="local-only", note="local-only")
+
+
 def _inputs(repo: Path):
     ctx = _context(repo)
-    inputs, extras = project_inputs(ctx, load_engine())
+    # Local-only policy → compute_signals never touches the network (gh unused).
+    bundle = compute_signals(ctx, _local_only(), lambda *a, **k: None)
+    inputs, extras = project_inputs(ctx, load_engine(), bundle, network_enabled=False)
     return inputs, extras, ctx
 
 
@@ -57,9 +66,15 @@ class TestNoTests:
         assert inputs.frs_covered == 0
         assert inputs.events_fr_tagged == 2
 
-    def test_grades_d(self, no_tests_repo: Path):
+    def test_grades_c_maintainability_lit(self, no_tests_repo: Path):
+        # G2: the local oversize-file ratio now lights maintainability (small,
+        # tidy files score ~1.0), lifting the no-tests repo D -> C. Test health,
+        # security + deps stay n/a (local-only), so the funnel story is intact.
         model = grade_context(_context(no_tests_repo))
-        assert model.grade == "D"
+        assert model.grade == "C"
+        maint = [d for d in model.dimensions if d.key == "maintainability"][0]
+        assert maint.status == "ok"
+        assert "source files over 300 LOC" in maint.detail
 
 
 class TestMessy:

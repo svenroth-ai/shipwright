@@ -56,6 +56,12 @@ def render_terminal(model: ReportModel) -> str:
         for reason in model.reasons:
             lines.append(f"  - {one_line(reason, limit=120)}")
 
+    if model.network_enabled and model.network_enrichments:
+        left = ", ".join(one_line(e, limit=48) for e in model.network_enrichments)
+        lines.append(f"Network: enriched via {left}")
+    elif model.network_note:
+        lines.append(f"Network: {one_line(model.network_note, limit=120)}")
+
     lines.append("")
     lines.append(f"Note: {model.honest_ceiling_note}")
     if model.verified_from:

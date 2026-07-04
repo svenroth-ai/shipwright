@@ -69,6 +69,14 @@ def render_markdown(model: ReportModel) -> str:
             out.append(f"- {one_line(reason, limit=160)}")
         out.append("")
 
+    if model.network_enabled and model.network_enrichments:
+        left = ", ".join(one_line(e, limit=60) for e in model.network_enrichments)
+        out.append(f"**Network:** enriched via {left}")
+        out.append("")
+    elif model.network_note:
+        out.append(f"**Network:** {one_line(model.network_note, limit=140)}")
+        out.append("")
+
     out.append(f"> {model.honest_ceiling_note}")
     if model.verified_from:
         out.append("")

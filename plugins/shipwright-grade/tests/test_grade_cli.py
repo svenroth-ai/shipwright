@@ -47,3 +47,20 @@ class TestGradeCli:
 
     def test_url_exits_2(self, capsys):
         assert run(["https://github.com/x/y"]) == 2
+
+    def test_json_carries_g2_network_and_maintainability(self, well_run_repo: Path, capsys):
+        rc = run([str(well_run_repo), "--format", "json"])
+        assert rc == 0
+        payload = json.loads(capsys.readouterr().out)
+        assert payload["network_enabled"] is False
+        assert payload["network_enrichments"] == []
+        maint = [d for d in payload["dimensions"] if d["key"] == "maintainability"][0]
+        assert maint["score"] is not None            # G2 lights it locally
+        assert "source files over 300 LOC" in maint["detail"]
+
+    def test_allow_network_without_remote_stays_local_only(self, well_run_repo: Path, capsys):
+        # The fixture has no remote, so --allow-network cannot enrich and must
+        # NOT attempt any network call — it degrades to local-only, no crash.
+        rc = run([str(well_run_repo), "--allow-network"])
+        assert rc == 0
+        assert "no GitHub remote" in capsys.readouterr().out

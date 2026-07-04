@@ -27,28 +27,37 @@ score, never faked) and are surfaced as *controls Shipwright would light up*.
 > outside* — it inspects history and structure, it does not verify behaviour.
 > Every heuristic grade is labelled as such.
 
-## Scope in this version (G1 — core projector)
+## Scope in this version (G2 — signals)
 
 - **Local path only.** `resolve_target()` is a seam so URL clone-and-grade slots
   in later; today it grades a local directory that is a git repository.
-- **Local-only, no network.** Private repos never leave the machine. The
-  network-only dimensions (CI JUnit pass-ratio, code-scanning SARIF) render
-  `n/a`; `--allow-network` enrichment arrives in a later phase.
-- **Scored today:** requirement traceability (heuristic) + change traceability.
-  **Surfaced but unscored:** the static test inventory ("N tests across M
-  frameworks — present, not executed"). **n/a today:** test-health score,
-  security, dependency hygiene, size/maintainability, change reconciliation.
+- **Local by default; network is opt-in.** Private repos never leave the machine.
+  Without `--allow-network` the network-only dimensions (CI-JUnit pass-ratio,
+  Scorecard check-runs, code-scanning SARIF) render `n/a`.
+- **Scored locally (no network):** requirement traceability + change traceability
+  (git history); **size / maintainability** (static oversize-file ratio);
+  **dependency hygiene** (lockfile → resolved licenses, when installed metadata is
+  present). **Surfaced but unscored:** the static test inventory.
+- **Scored with `--allow-network`:** **test health** (best-available: CI JUnit →
+  Scorecard check-runs → static inventory floor) and **security** (GitHub
+  code-scanning SARIF, suppression-aware). **Always n/a:** change reconciliation —
+  the Shipwright-only dimension (the funnel hook).
 
 ## Usage
 
 ```bash
 # From the plugin directory (thin CLI wrapper over the core library):
 uv run scripts/tools/grade.py <path-to-repo> [--format terminal|markdown|json]
+                                              [--allow-network] [--allow-network-private]
 ```
 
 - `--format terminal` (default) prints a compact A–F card with the top reasons.
 - `--format markdown` emits the same view-model as Markdown.
 - `--format json` emits the typed report view-model (stable schema) for tooling.
+- `--allow-network` opts into GitHub enrichment for the target's remote. It
+  **auto-disables on a private / unverifiable remote** unless you also pass
+  `--allow-network-private`. The report stamps exactly which enrichments ran
+  (what left the machine).
 
 The grade is **deterministic** for a given repository snapshot: nothing outside
 a footer depends on wall-clock time or randomness. For very large repos that
@@ -65,9 +74,11 @@ exceed the reused detectors' internal scan caps, feature inference is a
 3. **Route** authoritative-vs-heuristic: a real `.shipwright/` event log/RTM
    would be an authoritative source (wired in a later phase); everything else is
    a labelled heuristic projection.
-4. **Project** the git history into synthetic work-events and map them +
-   detector outputs onto `GradeInputs`.
-5. **Grade** with the shared engine, unchanged.
+4. **Project** the git history into synthetic work-events; compute the G2 signals
+   (size, deps, and — with `--allow-network` — test-health tiers + security) and
+   map them + detector outputs onto `GradeInputs`.
+5. **Grade** with the shared engine, unchanged (the size proxy uses one additive
+   optional field, byte-identical for every existing caller).
 6. **Render** the typed report view-model to a terminal / markdown / json card.
 
 ## Safety
@@ -75,8 +86,11 @@ exceed the reused detectors' internal scan caps, feature inference is a
 Read-only. All `git` calls go through one hardened runner: list-argument
 (`shell=False`, never string-concatenated), with the target repo's fsmonitor,
 pager and hooks disabled and `safe.directory=*` so grading another user's repo
-can't fail on "dubious ownership". Every repo-derived string (commit subject,
-author, filename) is treated as hostile: the terminal card strips ANSI/control
-characters before printing. Deterministic caps bound the grader's own traversal
-and git output (max commits, files, bytes-per-file, log bytes); the reused
-detectors are bounded by their own internal scan caps.
+can't fail on "dubious ownership". Every `gh` call is likewise list-argument and
+gated behind `--allow-network`. **Untrusted input is first-class:** repo-derived
+strings are ANSI/control-stripped before printing, and untrusted **CI JUnit XML
+is parsed with a hardened parser** (`defusedxml`, DTDs rejected → XXE /
+billion-laughs safe). A `403`/rate-limit/auth-failure/absent-`gh` degrades
+deterministically to the next tier or `n/a`, never a crash and never a false
+clean. Deterministic caps bound the grader's own traversal and git output (max
+commits, files, bytes-per-file, log bytes).

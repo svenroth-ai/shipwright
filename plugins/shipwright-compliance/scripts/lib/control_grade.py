@@ -156,17 +156,29 @@ def _score_dimensions(inp: GradeInputs) -> list[DimensionResult]:
         sec_score, "no open high/critical vulns (NIST SSDF)", sec_detail,
     ))
 
-    # 6. Size / maintainability (10%) — net ratchet growth (delta <= 0 good).
+    # 6. Size / maintainability (10%). Net ratchet growth is the primary signal
+    # (the dashboard baseline path); a cold repo with no baseline instead scores
+    # the static oversize-file ratio (additive — G2). Existing inputs (delta set,
+    # or both size signals None) are byte-identical: same score, detail AND anchor.
+    mt_anchor = "no unchecked code-size growth (ISO/IEC 25010)"
     if inp.bloat_ratchet_delta is not None:
         delta = inp.bloat_ratchet_delta
         mt_score: float | None = (
             1.0 if delta <= 0 else max(0.0, 1.0 - delta / 100.0))
         mt_detail = f"ratchet delta {delta:+d} lines (net growth)"
+    elif inp.oversize_file_ratio is not None:
+        # Static proxy: score = fraction of source files WITHIN the size
+        # threshold. The honest, distinct detail ("N/M files over threshold")
+        # is layered in by the cold-repo projector, which has the raw counts.
+        ratio = max(0.0, min(1.0, inp.oversize_file_ratio))
+        mt_score = round(1.0 - ratio, 4)
+        mt_detail = f"{ratio:.0%} of source files over the size threshold"
+        mt_anchor = "bounded module size (ISO/IEC 25010)"
     else:
         mt_score, mt_detail = None, "no size baseline"
     dims.append(DimensionResult(
         "maintainability", "Size / maintainability discipline", 0.10,
-        mt_score, "no unchecked code-size growth (ISO/IEC 25010)", mt_detail,
+        mt_score, mt_anchor, mt_detail,
     ))
 
     # 7. Dependency hygiene (5%) — resolved licenses, 0 copyleft surprises.

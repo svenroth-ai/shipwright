@@ -1,123 +1,49 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-03-diff-coverage-measure-one-tier",
-    "date": "2026-07-03",
-    "unit": {
-      "status": "passed",
-      "passed": 3905,
-      "total": 3917
-    },
-    "integration": {
-      "status": "passed",
-      "passed": 23,
-      "total": 23
-    },
-    "pgtap": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "e2e": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "design_fidelity": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "smoke": {
-      "status": "skipped"
-    },
+    "run_id": "iterate-2026-07-04-grade-g2-signals",
+    "date": "2026-07-04",
+    "intent": "feature",
+    "complexity": "medium",
+    "unit": { "status": "passed", "passed": 182, "total": 182 },
+    "integration": { "status": "skipped", "passed": 0, "total": 0 },
+    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
+    "e2e": { "status": "skipped", "passed": 0, "total": 0 },
+    "design_fidelity": { "status": "skipped", "passed": 0, "total": 0 },
+    "smoke": { "status": "skipped" },
+    "degraded": [
+      "External plan review not re-run for this sub-iterate: the campaign plan (Spec/shipwright-grade-plan.md section 14) already folds in the Gemini 3.1 Pro + GPT-5.4 dispositions at planning time. A fresh-context adversarial CODE review (Opus) WAS run for G2 and its 4 findings (2 MEDIUM false-clean vectors + 2 low hardening) were fixed and pinned with regression tests.",
+      "Engine change verified byte-identical against the FULL compliance suite (916 passed) + 8 golden-regression asserts; the grade plugin's own suite reports 182 (the surface_verification count).",
+      "Worktree base (origin/main 6b4b60d3) is behind current origin/main (635c2119, diff-coverage merge); origin/main did NOT touch the engine or grade files I edited, so F11 ensure_current integrates cleanly. The unrelated session-start triage.jsonl appends are excluded from this commit (explicit per-path git add)."
+    ],
     "surface_verification": {
-      "surface": "none",
-      "justification": "Framework tooling + CI + compliance-dashboard change (diff-coverage roadmap Phase 1); no UI surface. The 'E2E' is the diff-coverage measurement chain, verified end-to-end locally: the full shared suite (3905 passed, 12 skipped) ran with --cov=shared and produced a combined coverage.xml (79.5% total, repo-relative paths), diff-cover computed a real 92% diff-coverage baseline vs origin/main, measure_diff_coverage.py wrote the gitignored transient, and the compliance dashboard INFO line rendered it. Full compliance suite (921) and at-risk integration tests (23) also green.",
-      "tests_run": 3905,
-      "exit_code": 0
+      "surface": "cli",
+      "runner": "uv run --directory plugins/shipwright-grade --extra dev pytest tests/ -q",
+      "exit_code": 0,
+      "tests_run": 182,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-04-grade-g2-signals/surface_verification.json",
+      "timestamp": "2026-07-04T07:00:26.438Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        {
-          "behavior": "measure_diff_coverage parses coverage.xml root line-rate into a total percent (missing/malformed/absent -> None)",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tools/tests/test_measure_diff_coverage.py::TestLineRatePercent (4 cases) PASSED"
-        },
-        {
-          "behavior": "measure_diff_coverage parses diff-cover report into a diff percent; zero changed lines -> None (not a misleading 100%)",
-          "disposition": "tested",
-          "evidence": "TestDiffPercentFromReport (4 cases) PASSED"
-        },
-        {
-          "behavior": "the tool writes the gitignored transient .shipwright/coverage/diff_coverage.json atomically, creating parents",
-          "disposition": "tested",
-          "evidence": "TestWriteTransient::test_roundtrip_creates_parent PASSED"
-        },
-        {
-          "behavior": "the tool NEVER creates or mutates the tracked shipwright_test_results.json (boundary probe)",
-          "disposition": "tested",
-          "evidence": "TestMainCLI::test_never_creates_results_json + test_never_mutates_existing_results_json PASSED"
-        },
-        {
-          "behavior": "absent-input safe: missing coverage.xml / no changed lines -> status n/a, exit 0",
-          "disposition": "tested",
-          "evidence": "test_absent_coverage_xml_writes_na_exit0 + test_zero_changed_lines_reports_na PASSED"
-        },
-        {
-          "behavior": "relative --coverage-xml / --diff-cover-json resolve against --project-root, not the process CWD",
-          "disposition": "tested",
-          "evidence": "test_relative_paths_resolve_against_project_root PASSED (Codex review SHOULD-FIX)"
-        },
-        {
-          "behavior": "run_diff_cover subprocess path: parses the report; binary-absent -> None; missing coverage.xml -> None",
-          "disposition": "tested",
-          "evidence": "TestRunDiffCover (4 cases, subprocess mocked) PASSED"
-        },
-        {
-          "behavior": "the CI-gate guard recognizes diff-cover as a gate command and flags a continue-on-error diff-cover step as loose",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_check_ci_gate_coverage.py::test_diff_cover_run_is_gate + test_diff_cover_continue_on_error_is_loose PASSED"
-        },
-        {
-          "behavior": "the informational ci.yml diff-cover step is allowlisted (tracked-debt) so the guard stays green; the live repo passes the guard",
-          "disposition": "tested",
-          "evidence": "test_diff_cover_step_is_allowlisted PASSED + `check_ci_gate_coverage.py --project-root .` -> OK (17 dirs)"
-        },
-        {
-          "behavior": "dashboard loads the transient (absent / malformed / non-dict all -> None safely)",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_diff_coverage_block.py::TestLoadDiffCoverage (5 cases) PASSED"
-        },
-        {
-          "behavior": "dashboard INFO line renders ok (percent + tier) / n/a (surfacing the producer note) / absent",
-          "disposition": "tested",
-          "evidence": "TestInfoLine + test_na_surfaces_producer_note + test_na_without_note_has_generic_reason PASSED (2nd is Codex review SHOULD-FIX)"
-        },
-        {
-          "behavior": "the INFO line is grade-neutral: the Control-Grade rendering is byte-identical regardless of the coverage value, and GradeInputs has no coverage field",
-          "disposition": "tested",
-          "evidence": "TestGradeNeutrality::test_grade_lines_identical_regardless_of_coverage + test_grade_inputs_has_no_coverage_field PASSED"
-        },
-        {
-          "behavior": "the full measurement chain works end-to-end and shows a real baseline (--cov=shared -> combined coverage.xml with repo-relative paths -> diff-cover -> transient -> dashboard)",
-          "disposition": "tested",
-          "evidence": "Empirical baseline run: shared suite 3905 passed, coverage.xml line-rate 0.7943, diff-cover 92.0% of changed lines, transient written, INFO line rendered."
-        },
-        {
-          "behavior": "the ci.yml 'Diff coverage' step runs correctly on a real GitHub PR runner (fetch-depth:0 + git fetch origin main + --compare-branch=origin/main)",
-          "disposition": "untestable",
-          "reason_code": "requires-external-nondeterministic-service",
-          "reason": "The GitHub Actions runner + PR merge-base ref cannot be reproduced locally; the local run validated the exact diff-cover invocation against origin/main. The F11 Delivery-Watch observes the real CI run on the PR."
-        }
+        { "behavior": "Engine: additive oversize_file_ratio field + dim-6 elif is byte-identical for existing inputs (ratchet set, or both size signals None) and lights only when bloat_ratchet_delta is None with an honest distinct detail+anchor", "disposition": "tested", "evidence": "test_grade_oversize_additive.py (8 passed) + full compliance suite (916 passed)" },
+        { "behavior": "Size proxy: oversize-file ratio over source files, strict > threshold, capped/deterministic, n/a when no source files", "disposition": "tested", "evidence": "test_size_signal.py (6 passed)" },
+        { "behavior": "Dependency hygiene: lockfile->license via reused SBOM collectors; NOT_INSTALLED excluded from the graded set (honest); copyleft/unknown counted; n/a when nothing inspectable", "disposition": "tested", "evidence": "test_dependency_signal.py (7 passed)" },
+        { "behavior": "JUnit hardened parse: DTD/XXE/billion-laughs rejected (defusedxml forbid_dtd), skipped excluded, leaf-suites not double-counted, tests=inf/huge degrades to 0 without aborting aggregation", "disposition": "tested", "evidence": "test_junit_xml.py (13 passed)" },
+        { "behavior": "gh runner: list-arg subprocess, 403/rate-limit/auth/not-found/timeout classification, GitHub owner/repo parse with slug validation (rejects ../odd chars)", "disposition": "tested", "evidence": "test_gh_bridge.py (20 passed)" },
+        { "behavior": "Network policy: local-only default; --allow-network enriches a public remote; private/unverifiable auto-disabled unless --allow-network-private; provenance records what left the machine", "disposition": "tested", "evidence": "test_network_policy.py (9 passed)" },
+        { "behavior": "Security signal: code-scanning SARIF (default-branch-filtered) -> open high/critical via reused suppression-aware parser + grade guard; invalid/non-list-runs/no-analyses/403/auth/local-only -> n/a, never a false clean", "disposition": "tested", "evidence": "test_security_signal.py (15 passed)" },
+        { "behavior": "Test-health: 3 tiers (CI JUnit -> Scorecard statusCheckRollup -> static-inventory floor), best-available wins, tier stamped; 403/no-network degrades deterministically", "disposition": "tested", "evidence": "test_test_health_signal.py (10 passed)" },
+        { "behavior": "signal_bundle maps the four signals onto GradeInputs kwargs + detail overrides + per-dimension provenance; n/a signals set nothing", "disposition": "tested", "evidence": "test_signal_bundle.py (6 passed)" },
+        { "behavior": "report_model: provenance-override replaces source/disabled; network provenance fields carried; top-reasons rewritten to overridden detail (no two-wordings-for-one-control)", "disposition": "tested", "evidence": "test_report_model.py (TestG2Provenance + test_top_reasons_use_overridden_detail)" },
+        { "behavior": "Renderers surface the network provenance line in both terminal + markdown, for enabled (enrichments) and local-only (note) states", "disposition": "tested", "evidence": "test_render_network.py (2 passed)" },
+        { "behavior": "CLI --allow-network / --allow-network-private flags; JSON carries network + maintainability; --allow-network without a remote stays local-only (no network attempted)", "disposition": "tested", "evidence": "test_grade_cli.py (8 passed, +2 new)" },
+        { "behavior": "Reused compliance license collectors are read-only (no package-manager exec / writes) and the dependency signal writes nothing to the target", "disposition": "tested", "evidence": "test_reused_collector_audit.py (6 passed, +2 new)" },
+        { "behavior": "Projector wiring: network_enabled stamps verified_from; local-only default policy; G1 fixtures re-grade with maintainability now lit (no-tests D->C)", "disposition": "tested", "evidence": "test_projector_fixtures.py (10 passed)" },
+        { "behavior": "Live gh network round-trip against real GitHub repos (code-scanning analyses download, gh run download JUnit, GraphQL rollup)", "disposition": "untestable", "reason_code": "requires-external-nondeterministic-service", "reason": "needs network + gh auth against live GitHub; all parsing/logic is hermetically injected here, the live path is the opt-in G5 empirical suite (the launch gate)" }
       ],
-      "counts": {
-        "testable": 13,
-        "tested": 13,
-        "untestable": 1,
-        "untested_testable": 0
-      }
-    },
-    "degraded": []
+      "counts": { "testable": 14, "tested": 14, "untestable": 1, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 11, "covered_acs": 11 }
+    }
   }
 }

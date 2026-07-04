@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-04-grade-g2-signals",
+  "date": "2026-07-04T07:06:07.957018Z",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/grade-g2-signals",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/2026-07-04-grade-g2-signals.md",
+  "adr": "iterate-2026-07-04-grade-g2-signals"
+}
