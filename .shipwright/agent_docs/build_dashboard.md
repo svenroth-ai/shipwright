@@ -1,7 +1,7 @@
 # Project Activity Dashboard
-> Updated: 2026-07-03 22:42 UTC | Session: b7cc4b8a-109b-4b02-8adf-f984be1dc350 | Run: iterate-2026-07-03-grade-g1-projector
+> Updated: 2026-07-03 22:42 UTC | Session: d6ce5fc1-f421-4efb-8fb5-a04215b1284a | Run: iterate-2026-07-03-diff-coverage-measure-one-tier
 
-## Recent Changes (243 iterations)
+## Recent Changes (244 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
@@ -251,7 +251,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-03 | Unit: 91/91 | Smoke: skipped | (iterate)
+Last run: 2026-07-03 | Unit: 3905/3917 | Integration: 23/23 | Smoke: skipped | (iterate)
 
 ## Pipeline
 

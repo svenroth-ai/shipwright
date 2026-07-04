@@ -8,7 +8,7 @@
 - Total: 258
 - Triage: 4 | Promoted: 1 | Dismissed: 252 | Snoozed: 1
 
-## Top 5 items (severity-sorted)
+## Top 4 items (severity-sorted)
 
 ### Source: compliance (1 item)
 
@@ -31,13 +31,6 @@
 - **Measure patch/diff coverage (were the CHANGED lines tested?), not just pass-rate** `id=trg-8fdebda3 | severity=high | kind=improvement → P1/engineering`
   - Reviewer comment B: '3618/3618 green' is pass-rate, not coverage — it says nothing about whether AI-added code is even…
   - Promote: `triage_promote.py --id trg-8fdebda3 --task-ref EXT:<ref>`
-
-### Source: grader-campaign (1 item)
-
-<a id="trg-e68e9901"></a>
-- **Build shipwright-grade: repo-agnostic Control Grade grader (lead magnet)** `id=trg-e68e9901 | severity=high | kind=improvement → P1/engineering`
-  - New standalone read-only plugin that grades ANY git repo (incl. non-Shipwright) with the same Control Grade rubric by p…
-  - Promote: `triage_promote.py --id trg-e68e9901 --task-ref EXT:<ref>`
 
 ### Source: grader-campaign (1 item)
 

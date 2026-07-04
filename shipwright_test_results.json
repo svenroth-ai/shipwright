@@ -1,51 +1,123 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-03-grade-g1-projector",
+    "run_id": "iterate-2026-07-03-diff-coverage-measure-one-tier",
     "date": "2026-07-03",
-    "intent": "feature",
-    "complexity": "medium",
-    "unit": { "status": "passed", "passed": 91, "total": 91 },
-    "integration": { "status": "skipped", "passed": 0, "total": 0 },
-    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
-    "e2e": { "status": "skipped", "passed": 0, "total": 0 },
-    "design_fidelity": { "status": "skipped", "passed": 0, "total": 0 },
-    "smoke": { "status": "skipped" },
-    "degraded": [
-      "classify_complexity flagged touches_auth from the prose word 'authoritative' (message-keyword false positive); the diff touches no auth path (src/middleware.ts, **/auth/**) — overridden.",
-      "external plan review not re-run for this sub-iterate: the campaign plan (Spec/shipwright-grade-plan.md section 14) already folds in the Gemini 3.1 Pro + GPT-5.4 dispositions at planning time; a fresh-context adversarial code review WAS run for G1 and its findings fixed."
-    ],
+    "unit": {
+      "status": "passed",
+      "passed": 3905,
+      "total": 3917
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 23,
+      "total": 23
+    },
+    "pgtap": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "skipped"
+    },
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --directory plugins/shipwright-grade --with pytest --with pytest-mock --with pyyaml pytest tests/ -q",
-      "exit_code": 0,
-      "tests_run": 91,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-03-grade-g1-projector/surface_verification.log",
-      "timestamp": "2026-07-03T22:35:54.029Z"
+      "surface": "none",
+      "justification": "Framework tooling + CI + compliance-dashboard change (diff-coverage roadmap Phase 1); no UI surface. The 'E2E' is the diff-coverage measurement chain, verified end-to-end locally: the full shared suite (3905 passed, 12 skipped) ran with --cov=shared and produced a combined coverage.xml (79.5% total, repo-relative paths), diff-cover computed a real 92% diff-coverage baseline vs origin/main, measure_diff_coverage.py wrote the gitignored transient, and the compliance dashboard INFO line rendered it. Full compliance suite (921) and at-risk integration tests (23) also green.",
+      "tests_run": 3905,
+      "exit_code": 0
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "resolve_target accepts a local git repo (+bare/shallow/remote flags) and rejects URL/missing/file/non-git", "disposition": "tested", "evidence": "test_resolve_target.py (9 passed)" },
-        { "behavior": "synthetic_projection maps commits to conventional-type + PR/issue ref + is_traced/has_provenance; files_changed deferred; newline-safe records", "disposition": "tested", "evidence": "test_synthetic_projection.py (9 passed)" },
-        { "behavior": "RepoContext is a memoized, bounded (caps), lexicographic, within-root snapshot with a byte-capped read_text", "disposition": "tested", "evidence": "test_repo_context.py (9 passed)" },
-        { "behavior": "detectors_bridge reuses adopt detectors read-only, degrades safely, writes nothing", "disposition": "tested", "evidence": "test_reused_collector_audit.py (4 passed)" },
-        { "behavior": "engine_bridge loads compute_grade UNCHANGED, cached, and coexists with grade's bare modules without a scripts.lib collision", "disposition": "tested", "evidence": "test_engine_bridge.py (5 passed)" },
-        { "behavior": "grade_inputs_projector maps events+context onto GradeInputs; lights requirement/change traceability; leaves security/deps/maint/reconciliation n/a; surfaces static inventory without scoring test-health", "disposition": "tested", "evidence": "test_projector_fixtures.py (9 passed)" },
-        { "behavior": "report_model n/a semantics (N/A, excluded, would-light, never 0), per-dimension provenance, detail override", "disposition": "tested", "evidence": "test_report_model.py (6 passed)" },
-        { "behavior": "routing decides authoritative vs heuristic incl absent/partial/stale/malformed/mixed .shipwright/", "disposition": "tested", "evidence": "test_routing.py (5 passed)" },
-        { "behavior": "sanitize strips CSI/OSC/ESC/control/bidi and collapses to one line", "disposition": "tested", "evidence": "test_sanitize.py (9 passed)" },
-        { "behavior": "renderers deterministic; hostile repo strings neutralised end-to-end; headline carries N-of-M controls measured", "disposition": "tested", "evidence": "test_negative_fixtures.py + test_grade_cli.py" },
-        { "behavior": "CLI emits terminal/markdown/json with exit codes 0/2/3 and UTF-8-encodable output", "disposition": "tested", "evidence": "test_grade_cli.py (8 passed)" },
-        { "behavior": "negative fixtures (bare/empty/shallow/huge+binary) degrade to n/a or Not Gradeable, never a crash", "disposition": "tested", "evidence": "test_negative_fixtures.py (6 passed)" },
-        { "behavior": "git_exec is a hardened (safe.directory/fsmonitor/pager/hooks), bounded, read-only git runner", "disposition": "tested", "evidence": "test_git_exec.py (4 passed)" },
-        { "behavior": "coverage heuristic is route-specific (a bare module import does not mark every route covered)", "disposition": "tested", "evidence": "test_coverage_heuristic.py (5 passed)" },
-        { "behavior": "feature-inference truncation on oversized repos is labelled sampled/truncated in requirement-traceability provenance", "disposition": "tested", "evidence": "test_repo_context.py::test_features_truncated_flag_when_file_walk_truncates + test_report_model.py::test_features_truncated_labels_requirement_traceability_sampled" },
-        { "behavior": "empirical record/replay cache round-trips and the manifest is well-formed (fields + descending bands)", "disposition": "tested", "evidence": "tests/empirical/test_replay_mechanism.py (7 passed)" },
-        { "behavior": "same repo state yields the same grade (determinism)", "disposition": "tested", "evidence": "test_projector_fixtures.py::test_same_repo_state_same_grade" },
-        { "behavior": "empirical real-OSS band + relative-ordering assertion against pinned SHAs", "disposition": "untestable", "reason_code": "requires-external-nondeterministic-service", "reason": "needs network + gh against real GitHub repos; opt-in -m empirical suite, SHAs PENDING-G5, loud skip; the launch gate is G5" }
+        {
+          "behavior": "measure_diff_coverage parses coverage.xml root line-rate into a total percent (missing/malformed/absent -> None)",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_measure_diff_coverage.py::TestLineRatePercent (4 cases) PASSED"
+        },
+        {
+          "behavior": "measure_diff_coverage parses diff-cover report into a diff percent; zero changed lines -> None (not a misleading 100%)",
+          "disposition": "tested",
+          "evidence": "TestDiffPercentFromReport (4 cases) PASSED"
+        },
+        {
+          "behavior": "the tool writes the gitignored transient .shipwright/coverage/diff_coverage.json atomically, creating parents",
+          "disposition": "tested",
+          "evidence": "TestWriteTransient::test_roundtrip_creates_parent PASSED"
+        },
+        {
+          "behavior": "the tool NEVER creates or mutates the tracked shipwright_test_results.json (boundary probe)",
+          "disposition": "tested",
+          "evidence": "TestMainCLI::test_never_creates_results_json + test_never_mutates_existing_results_json PASSED"
+        },
+        {
+          "behavior": "absent-input safe: missing coverage.xml / no changed lines -> status n/a, exit 0",
+          "disposition": "tested",
+          "evidence": "test_absent_coverage_xml_writes_na_exit0 + test_zero_changed_lines_reports_na PASSED"
+        },
+        {
+          "behavior": "relative --coverage-xml / --diff-cover-json resolve against --project-root, not the process CWD",
+          "disposition": "tested",
+          "evidence": "test_relative_paths_resolve_against_project_root PASSED (Codex review SHOULD-FIX)"
+        },
+        {
+          "behavior": "run_diff_cover subprocess path: parses the report; binary-absent -> None; missing coverage.xml -> None",
+          "disposition": "tested",
+          "evidence": "TestRunDiffCover (4 cases, subprocess mocked) PASSED"
+        },
+        {
+          "behavior": "the CI-gate guard recognizes diff-cover as a gate command and flags a continue-on-error diff-cover step as loose",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_check_ci_gate_coverage.py::test_diff_cover_run_is_gate + test_diff_cover_continue_on_error_is_loose PASSED"
+        },
+        {
+          "behavior": "the informational ci.yml diff-cover step is allowlisted (tracked-debt) so the guard stays green; the live repo passes the guard",
+          "disposition": "tested",
+          "evidence": "test_diff_cover_step_is_allowlisted PASSED + `check_ci_gate_coverage.py --project-root .` -> OK (17 dirs)"
+        },
+        {
+          "behavior": "dashboard loads the transient (absent / malformed / non-dict all -> None safely)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_diff_coverage_block.py::TestLoadDiffCoverage (5 cases) PASSED"
+        },
+        {
+          "behavior": "dashboard INFO line renders ok (percent + tier) / n/a (surfacing the producer note) / absent",
+          "disposition": "tested",
+          "evidence": "TestInfoLine + test_na_surfaces_producer_note + test_na_without_note_has_generic_reason PASSED (2nd is Codex review SHOULD-FIX)"
+        },
+        {
+          "behavior": "the INFO line is grade-neutral: the Control-Grade rendering is byte-identical regardless of the coverage value, and GradeInputs has no coverage field",
+          "disposition": "tested",
+          "evidence": "TestGradeNeutrality::test_grade_lines_identical_regardless_of_coverage + test_grade_inputs_has_no_coverage_field PASSED"
+        },
+        {
+          "behavior": "the full measurement chain works end-to-end and shows a real baseline (--cov=shared -> combined coverage.xml with repo-relative paths -> diff-cover -> transient -> dashboard)",
+          "disposition": "tested",
+          "evidence": "Empirical baseline run: shared suite 3905 passed, coverage.xml line-rate 0.7943, diff-cover 92.0% of changed lines, transient written, INFO line rendered."
+        },
+        {
+          "behavior": "the ci.yml 'Diff coverage' step runs correctly on a real GitHub PR runner (fetch-depth:0 + git fetch origin main + --compare-branch=origin/main)",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "The GitHub Actions runner + PR merge-base ref cannot be reproduced locally; the local run validated the exact diff-cover invocation against origin/main. The F11 Delivery-Watch observes the real CI run on the PR."
+        }
       ],
-      "counts": { "testable": 17, "tested": 17, "untestable": 1, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 13, "covered_acs": 13 }
-    }
+      "counts": {
+        "testable": 13,
+        "tested": 13,
+        "untestable": 1,
+        "untested_testable": 0
+      }
+    },
+    "degraded": []
   }
 }
