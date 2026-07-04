@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-07-04T09:09:16.263100+00:00
+Generated: 2026-07-04T13:09:10.541223+00:00
 Total commits: 1081
 
 ## Commit Distribution
@@ -339,7 +339,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-04 | grade | self-contained HTML report + hardened terminal card (G3) | 40aff1b8fc83 |
+| 2026-07-04 | grade | self-contained HTML report + hardened terminal card (G3) (#315) | 37374361d7d0 |
 | 2026-07-04 | grade | security, deps, size + gh test-health signals (G2) (#312) | 440bfd1776f6 |
 | 2026-07-04 | compliance | measure diff-coverage on the shared tier (roadmap Phase 1) (#310) | 635c2119f9c3 |
 | 2026-07-04 | grade | cold-repo signal projector - shipwright-grade plugin (G1) (#311) | 6b4b60d32e6c |
@@ -631,7 +631,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-04 | triage | sweep 3 outbox append(s) into branch | 3a298fc364da |
+| 2026-07-04 | triage | sweep 4 outbox append(s) into branch | f1b210e28532 |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |

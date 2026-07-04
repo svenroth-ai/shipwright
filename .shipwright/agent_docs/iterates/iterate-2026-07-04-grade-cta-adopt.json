@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-04-grade-cta-adopt",
+  "date": "2026-07-04T13:09:14.901989Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/grade-cta-adopt",
+  "tests_passed": true,
+  "spec": "",
+  "adr": "iterate-2026-07-04-grade-cta-adopt"
+}

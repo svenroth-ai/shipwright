@@ -1,41 +1,38 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-04-grade-g3-html-report",
+    "run_id": "iterate-2026-07-04-grade-cta-adopt",
     "date": "2026-07-04",
-    "intent": "feature",
-    "complexity": "medium",
-    "unit": { "status": "passed", "passed": 215, "total": 215 },
+    "intent": "change",
+    "complexity": "small",
+    "unit": { "status": "passed", "passed": 216, "total": 216 },
     "integration": { "status": "skipped", "passed": 0, "total": 0 },
     "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
-    "e2e": { "status": "passed", "passed": 36, "total": 36 },
+    "e2e": { "status": "passed", "passed": 35, "total": 35 },
     "design_fidelity": { "status": "skipped", "passed": 0, "total": 0 },
     "smoke": { "status": "skipped" },
     "degraded": [
-      "External code review (external_review.py — GPT-5.4 + Gemini 3.1 Pro via OpenRouter): GPT-5.4 returned 3 actionable findings, all fixed (reasons capped at 3 in the renderer; the n/a-vs-zero test strengthened to count N/A score cells; the anchor/href test tightened from a tautological OR to concrete assertions). Gemini 3.1 Pro returned an incomplete/mangled response (file-list echo, no findings) — model-side cutoff. Coverage was not degraded: the internal opus code-reviewer traced the full security seam and found no blocking issues; its 6 low-severity items were applied.",
-      "The campaign sub-iterate spec (.shipwright/planning/iterate/campaigns/2026-07-03-shipwright-grade/sub-iterates/G3-html-report.md) exists only in the main working tree (untracked), so the external plan review + code review pointed at the main-tree copy."
+      "Small standalone follow-up to G3 (CTA copy + one static link). Internal opus code review = NO blocking issues; of its 2 low advisories, #1 (uniform attribute-value seam: route _attrs through the same strip_terminal+escape as text nodes) was applied + pinned by a test, #2 (double-quote-coupled regex) is redundant with the authoritative parser-based test. External LLM review skipped (advisory at small complexity)."
     ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --project plugins/shipwright-grade pytest plugins/shipwright-grade/tests/test_grade_cli.py plugins/shipwright-grade/tests/test_html_report.py plugins/shipwright-grade/tests/test_html_security.py plugins/shipwright-grade/tests/test_render_snapshots.py plugins/shipwright-grade/tests/test_render_terminal.py -q",
+      "runner": "uv run --project plugins/shipwright-grade pytest plugins/shipwright-grade/tests/test_grade_cli.py plugins/shipwright-grade/tests/test_html_report.py plugins/shipwright-grade/tests/test_html_security.py plugins/shipwright-grade/tests/test_render_snapshots.py -q",
       "exit_code": 0,
-      "tests_run": 36,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-04-grade-g3-html-report/surface_verification.json",
+      "tests_run": 35,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-04-grade-cta-adopt/surface_verification.json",
       "timestamp": "2026-07-04T00:00:00.000Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "AC1 — single self-contained HTML document: no external-request surface (no <script>/external src|href/@import/url(http)/srcset/action/ping/meta-refresh), restrictive meta CSP, full <!doctype> document", "disposition": "tested", "evidence": "test_html_report.py::TestSelfContained::{test_is_a_full_html_document,test_restrictive_meta_csp,test_no_external_request_surface,test_no_model_driven_href_anchor_is_text} + test_grade_cli.py::test_html_format_emits_self_contained_document" },
-        { "behavior": "AC2 — all sections render from the model: hero (grade+score+verdict+mode badge+measured count), dimension cards (anchor+provenance), funnel panel, top reasons, disclaimer, provenance stamp, CTA", "disposition": "tested", "evidence": "test_html_report.py::TestSections::* + TestNaSemantics::test_would_light_panel_lists_na_dims" },
-        { "behavior": "AC3 — theme-aware (prefers-color-scheme dark) + responsive (viewport) + wide content scrolls in its own overflow-x container; long hostile tokens can't overflow (overflow-wrap)", "disposition": "tested", "evidence": "test_html_report.py::TestThemeAndResponsive::{test_dark_mode_media_query_present,test_responsive_viewport_and_scroll_container}" },
-        { "behavior": "AC4 — deterministic: same model → byte-identical scored content; the wall-clock appears exactly once, only in the footer", "disposition": "tested", "evidence": "test_html_report.py::TestDeterminism::{test_idempotent,test_scored_content_byte_identical_across_timestamps,test_generated_at_is_the_only_variable}" },
-        { "behavior": "AC5 — escape-only: <script>/onerror/javascript:/bidi/ANSI/OSC-8 payloads fed through every text-bearing model field are rendered inert (HTML-escaped + control-stripped), proven both by substring checks AND a parser-based zero-live-DOM-node assertion; the terminal card is control-stripped", "disposition": "tested", "evidence": "test_html_security.py::TestEscapeOnly::* (incl. test_hostile_payload_contributes_zero_live_nodes, test_every_text_field_routes_through_escaper) + test_render_terminal.py::TestTerminalControlStripping::*" },
-        { "behavior": "AC6 — snapshot tests for HTML + terminal card are stable across runs (byte-exact golden compare from one shared canonical model; UPDATE_GOLDEN to refresh intentionally)", "disposition": "tested", "evidence": "test_render_snapshots.py::{test_html_snapshot_matches_golden,test_terminal_snapshot_matches_golden}" },
-        { "behavior": "AC7 — n/a dims render 'N/A' in their score cell (never a failing 0 or 0/denominator), are excluded from the score, and are listed in the 'controls Shipwright would light up' funnel; top reasons capped at 3", "disposition": "tested", "evidence": "test_html_report.py::TestNaSemantics::{test_na_dimension_shows_na_not_zero,test_reasons_capped_at_three,test_would_light_panel_lists_na_dims}" },
-        { "behavior": "AC8 — ruff clean; both new modules ≤300 LOC", "disposition": "tested", "evidence": "uvx ruff@0.15.15 check plugins/shipwright-grade/ → All checks passed; html_report.py=250 LOC, _html_styles.py=139 LOC (both ≤300)" }
+        { "behavior": "CTA explains what /shipwright-adopt does (3 steps) + the concrete next step; 'certify' removed from the CTA (stays only in the honest-ceiling disclaimer)", "disposition": "tested", "evidence": "test_html_report.py::TestSections::test_cta_explains_adopt_and_next_step (assertion scoped to the <section class=cta>)" },
+        { "behavior": "The CTA is a single static, trusted, hardened link to svenroth.ai/shipwright (target=_blank, rel=noopener noreferrer) — the only <a> in the document", "disposition": "tested", "evidence": "test_html_report.py::TestSelfContained::test_only_link_is_the_trusted_cta" },
+        { "behavior": "Security invariant TIGHTENED not loosened: no auto-fetch surface; exactly one href = the CTA even under hostile input; a repo-derived string never becomes an <a> or href", "disposition": "tested", "evidence": "test_html_report.py::test_no_external_request_surface + test_html_security.py::test_hostile_payload_contributes_zero_live_nodes (parser-based: 1 anchor, hrefs == [CTA])" },
+        { "behavior": "Attribute values share the text-node cleaning seam (control/ANSI/bidi stripped, quotes/brackets escaped) so an attribute is never a weaker context than a text node", "disposition": "tested", "evidence": "test_html_security.py::test_attribute_values_are_control_stripped_and_escaped" },
+        { "behavior": "The CLI --format html path emits only the CTA link (no other external reference)", "disposition": "tested", "evidence": "test_grade_cli.py::test_html_format_emits_self_contained_document" },
+        { "behavior": "HTML golden snapshot regenerated for the new CTA and byte-exact enforced; render stays deterministic", "disposition": "tested", "evidence": "test_render_snapshots.py::test_html_snapshot_matches_golden" }
       ],
-      "counts": { "testable": 8, "tested": 8, "untestable": 0, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 8, "covered_acs": 8 }
+      "counts": { "testable": 6, "tested": 6, "untestable": 0, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 4, "covered_acs": 4 }
     }
   }
 }

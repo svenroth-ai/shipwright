@@ -127,9 +127,13 @@ p { margin: 0; overflow-wrap: anywhere; }
 .cta { margin-top: 24px; border-color: color-mix(in srgb, var(--accent) 45%,
   var(--line)); }
 .cta-title { font-size: 18px; margin-bottom: 6px; }
-.cta-chip { display: inline-block; margin-top: 6px; padding: 8px 16px;
+.cta-steps { margin: 10px 0 4px; padding-left: 20px; }
+.cta-steps li { margin: 7px 0; font-size: 13.5px; overflow-wrap: anywhere; }
+.cta-step-lead { color: var(--ink); }
+.cta-next { font-size: 13.5px; margin-top: 8px; overflow-wrap: anywhere; }
+.cta-link { display: inline-block; margin-top: 14px; padding: 9px 18px;
   border-radius: 999px; background: var(--accent); color: #fff; font-weight: 650;
-  font-size: 13px; }
+  font-size: 13px; text-decoration: none; }
 .page-footer { margin-top: 30px; text-align: center; font-size: 12px;
   color: var(--muted); }
 @media (max-width: 560px) {
