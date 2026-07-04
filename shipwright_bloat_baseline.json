@@ -417,7 +417,7 @@
     {
       "path": "plugins/shipwright-security/scripts/tools/prompt_injection_scan.py",
       "limit": 300,
-      "current": 728,
+      "current": 730,
       "state": "grandfathered",
       "adr": null
     },
