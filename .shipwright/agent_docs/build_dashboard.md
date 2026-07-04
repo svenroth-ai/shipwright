@@ -1,12 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-07-04 15:29 UTC | Session: 3dc8fe82-6aac-4933-ae63-a499d2ed1abb | Run: iterate-2026-07-04-grade-g4-plugin-polish
+> Updated: 2026-07-04 13:09 UTC | Session: 8e84d52f-c16d-4863-a2a4-cdef78f9b4d9 | Run: iterate-2026-07-04-grade-cta-adopt
 
 ## Recent Changes (250 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| feature | G4 plugin-polish: authoritative-vs-heuristic wiring, URL clone-and-grade, standalone CLI, plugin registration | 0/0 |  | tooling | 2026-07-04 |
 | bug | Prompt-injection scanner blanks string/comment/f-string token spans before matching so dangerous-pattern literals in security-audit tests are no longer false positives; real calls still flag. | 0/0 |  | tooling | 2026-07-04 |
+| change | grade-cta-adopt | 216/216 |  | tooling | 2026-07-04 |
 | change | Tier-3 pr_review filters producer-generated file-sections (compliance/agent-docs/lockfiles/state-logs) out of the diff before the truncation check, with the excluded list disclosed in PR meta + comment | 460/463 |  | tooling | 2026-07-04 |
 | feature | grade-g3-html-report | 215/215 |  | tooling | 2026-07-04 |
 | bug | shipwright-grade G2 external-review follow-up: tier-2 test-check precision (drop build/ci false positives) + code-scanning ref URL-encoding + full-report byte-identical golden + SARIF-JSON clarification | 187/187 |  | tooling | 2026-07-04 |
@@ -257,7 +257,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-04 | Unit: 264/265 | (iterate)
+Last run: 2026-07-04 | Unit: 216/216 | E2E: 35/35 | Smoke: skipped | (iterate)
 
 ## Pipeline
 

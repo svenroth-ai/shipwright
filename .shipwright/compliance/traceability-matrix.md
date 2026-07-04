@@ -28,6 +28,7 @@ Generated: 2026-07-04T15:29:21.251771+00:00
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
 | <a id="evt-916192e5"></a>G4 plugin-polish: authoritative-vs-heuristic wiring, URL clone-and-grade, standalone CLI, plugin registration | iterate | feature |  | — | — | 2026-07-04 |
+| <a id="evt-8d01bee7"></a>Rewrote the grade report's call-to-action to explain how to adopt Shipwright and what the next step is, with one hardened link and 'certify' removed. | iterate | change |  | 216/216 | — | 2026-07-04 |
 | <a id="evt-6d440ca1"></a>Prompt-injection scanner blanks string/comment/f-string token spans before matching so dangerous-pattern literals in security-audit tests are no longer false positives; real calls still flag. | iterate | bug |  | — | — | 2026-07-04 |
 | <a id="evt-a5ef23cc"></a>Added a self-contained, escape-safe HTML report (and hardened the terminal card) to the repo grader so it can produce a shareable Control Grade page. | iterate | feature |  | 215/215 | — | 2026-07-04 |
 | <a id="evt-f166acab"></a>Fixed the automated pull-request reviewer so it no longer gets stuck on ordinary larger changes: it now ignores the auto-generated bookkeeping files (which are ~82% of a typical diff) and reviews only the real code, telling you which files it skipped. | iterate | change |  | 460/463 | — | 2026-07-04 |
@@ -284,7 +285,7 @@ Generated: 2026-07-04T15:29:21.251771+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 250 |
+| Iterate changes | 251 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

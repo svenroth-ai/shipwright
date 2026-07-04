@@ -1,14 +1,14 @@
 # Commit Change Log
 
 Generated: 2026-07-04T15:29:21.251771+00:00
-Total commits: 1082
+Total commits: 1083
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 311
-    "feat" : 287
+    "feat" : 288
     "chore" : 236
     "docs" : 143
     "refactor" : 64
@@ -336,10 +336,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 287 commits
+### Features (feat) — 288 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-04 | grade | authoritative wiring + URL clone-and-grade + plugin registration (G4) | 1315b6221919 |
 | 2026-07-04 | grade | self-contained HTML report + hardened terminal card (G3) (#315) | 37374361d7d0 |
 | 2026-07-04 | grade | security, deps, size + gh test-health signals (G2) (#312) | 440bfd1776f6 |
 | 2026-07-04 | compliance | measure diff-coverage on the shared tier (roadmap Phase 1) (#310) | 635c2119f9c3 |
@@ -1151,7 +1152,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1082 |
+| Total commits | 1083 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1082 |
+| Human-authored commits | 1083 |
 

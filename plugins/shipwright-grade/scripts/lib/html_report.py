@@ -46,7 +46,10 @@ def _attrs(attrs: dict[str, object]) -> str:
         if val is None:
             continue
         name = key.rstrip("_").replace("_", "-")
-        out.append(f' {name}="{_htmllib.escape(str(val), quote=True)}"')
+        # Same cleaning seam as text nodes (strip control/ANSI/bidi, then escape)
+        # so an attribute value is never a weaker context than a text node — even
+        # though every attribute value today is a trusted literal.
+        out.append(f' {name}="{_text(val)}"')
     return "".join(out)
 
 
@@ -63,11 +66,36 @@ _GRADE_CLASS = {"A": "grade-a", "B": "grade-b", "C": "grade-c",
 _STATUS = {"ok": ("status-ok", "OK"), "gap": ("status-gap", "GAP"),
            "n/a": ("status-na", "N/A")}
 
-_CTA_COPY = (
-    "These N/A controls aren't failures — they're the controls a cold repo "
-    "can't prove from the outside. Adopting Shipwright lights them up, so you "
-    "can raise your grade and certify it."
+# The ONE trusted, static CTA destination. It is a hardcoded constant — never
+# built from model/repo data — so the report keeps its "no untrusted string ever
+# becomes a URL" invariant while offering a single user-initiated link (a
+# navigation is not an automatic external request; the strict CSP still blocks
+# every auto-fetch class).
+_CTA_URL = "https://svenroth.ai/shipwright"
+
+_CTA_INTRO = (
+    "The controls greyed out as N/A above aren't things you're doing wrong — "
+    "they're controls a repo can't prove from the outside: a CI test signal, a "
+    "security scan, and a change log that ties each change back to a requirement. "
+    "Shipwright adds exactly that to your existing repo — no rewrite."
 )
+# Each step: (lead-in, body). "How adopt works" — the concrete next move.
+_CTA_STEPS = (
+    ("Reads first, doesn't touch.",
+     "/shipwright-adopt analyses your stack, routes, conventions and git history "
+     "and proposes the setup as a reviewable PR — it never rewrites your code."),
+    ("Scaffolds the missing controls.",
+     "It generates the traceability, CI, security-scan and dependency setup the "
+     "N/A dimensions measure — so they become measured, not unknown from outside."),
+    ("Every future change stays controlled.",
+     "From then on /shipwright-iterate runs each change through tests, review and "
+     "a security gate, and records it in a traceable event log."),
+)
+_CTA_NEXT = (
+    "Your next step: open your repo in Claude Code and run /shipwright-adopt. "
+    "It's incremental and reversible."
+)
+_CTA_LINK_TEXT = "New to Shipwright? Learn how it works → svenroth.ai/shipwright"
 _FUNNEL_LEDE = (
     "N/A on a cold repo — excluded from the score, never counted as a failed 0. "
     "These are the controls Shipwright would light up once adopted."
@@ -198,11 +226,21 @@ def _disclaimer(m: ReportModel) -> _Raw:
 
 
 def _cta() -> _Raw:
+    steps = [
+        el("li", el("strong", lead, class_="cta-step-lead"), " " + body)
+        for lead, body in _CTA_STEPS
+    ]
     return el(
         "section",
-        el("h2", "Raise your grade", class_="cta-title"),
-        el("p", _CTA_COPY, class_="cta-copy"),
-        el("div", "Grade your repo → adopt → certify", class_="cta-chip"),
+        el("h2", "Raise your grade — adopt Shipwright", class_="cta-title"),
+        el("p", _CTA_INTRO, class_="cta-copy"),
+        el("ul", *steps, class_="cta-steps"),
+        el("p", _CTA_NEXT, class_="cta-next"),
+        # The single static, trusted CTA link. href is a hardcoded constant; the
+        # `el` builder escapes it (harmless for a clean URL) and no repo data can
+        # reach it. rel/target harden the user-initiated navigation.
+        el("a", _CTA_LINK_TEXT, href=_CTA_URL, target="_blank",
+           rel="noopener noreferrer", class_="cta-link"),
         class_="cta",
     )
 

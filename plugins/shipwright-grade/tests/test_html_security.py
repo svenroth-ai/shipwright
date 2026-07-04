@@ -13,20 +13,34 @@ import re
 from html.parser import HTMLParser
 from types import SimpleNamespace
 
-from html_report import render_html
+from html_report import _CTA_URL, el, render_html
 from report_model import build_report_model
 from support import GEN_A, dim, mixed_model
 
 
+def test_attribute_values_are_control_stripped_and_escaped():
+    # The attribute seam is as strong as the text seam: control/ANSI/bidi are
+    # stripped and quotes/brackets escaped, so an attribute can never be a weaker
+    # context than a text node (defense-in-depth for any future attribute value).
+    out = str(el("a", "x", href='"><svg/onload=alert(1)>\x1b[31m' + chr(0x202E)))
+    assert '"><svg' not in out          # quote/bracket breakout escaped
+    assert "&quot;&gt;&lt;svg" in out
+    assert "\x1b" not in out and chr(0x202E) not in out   # control/bidi stripped
+
+
 class _TagCollector(HTMLParser):
-    """Collects every start-tag name so a test can prove which elements exist."""
+    """Collects every start-tag name (and any <a> hrefs) so a test can prove
+    which elements — and which link targets — the document actually contains."""
 
     def __init__(self):
         super().__init__()
         self.tags: list[str] = []
+        self.hrefs: list[str] = []
 
     def handle_starttag(self, tag, attrs):
         self.tags.append(tag)
+        if tag == "a":
+            self.hrefs += [v for k, v in attrs if k == "href"]
 
     handle_startendtag = handle_starttag
 
@@ -60,17 +74,19 @@ class TestEscapeOnly:
         assert "evil.example" not in out  # OSC-8 target gone
 
     def test_hostile_payload_contributes_zero_live_nodes(self):
-        # Parser-based inertness: the whole document must contain only the small
-        # set of elements the renderer itself emits — the hostile payloads
-        # (script/img/iframe/svg/a/form) must not have created any DOM node.
+        # Parser-based inertness: with hostile input the document must contain no
+        # fetch/script element at all, and the ONLY <a> must be the renderer's
+        # static CTA link — hostile strings never become an element or a URL.
         collector = _TagCollector()
         collector.feed(_hostile_html())
         seen = set(collector.tags)
-        for forbidden in ("script", "img", "iframe", "svg", "a", "form",
+        for forbidden in ("script", "img", "iframe", "svg", "form",
                           "object", "embed", "link"):
             assert forbidden not in seen, f"hostile input produced a <{forbidden}>"
+        assert collector.tags.count("a") == 1        # exactly one anchor…
+        assert collector.hrefs == [_CTA_URL]         # …the trusted CTA, nothing else
         # Sanity: the document really was parsed (structural tags are present).
-        assert {"html", "head", "body", "main"} <= seen
+        assert {"html", "head", "body", "main", "a"} <= seen
 
     def test_every_text_field_routes_through_escaper(self):
         # Feed a raw HTML sentinel through each text-bearing model field and
