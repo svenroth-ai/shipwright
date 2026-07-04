@@ -1,8 +1,12 @@
 # Roadmap — Diff/Patch Coverage ("were the CHANGED lines tested?")
 
 - **Triage anchor:** `trg-8fdebda3` (high / P1, `source=diff-coverage-followup`, opened 2026-06-30)
-- **Status:** Phase 1 in flight (`iterate-2026-07-03-diff-coverage-measure-one-tier`).
-  Phased so each stage is its own shippable iterate.
+- **Status:** Phase 1 DONE (`iterate-2026-07-03-diff-coverage-measure-one-tier`,
+  PR #310); **Phase 2 DONE** (`iterate-2026-07-04-diff-coverage-rollout-combine`)
+  — combined repo-wide `coverage.xml` across all plugins + shared + integration
+  via `combine_coverage.py`; tracked `coverage.total = 80.2%` (25068/31274 lines)
+  lights W4 green against a calibrated `coverage.min = 70` floor. Next: Phase 3
+  (grade input, WARN). Phased so each stage is its own shippable iterate.
 - **Thesis:** pass-rate (`3618/3618 green`) says nothing about whether AI-added code is
   even executed. The killer AI case: the model writes code + a trivial test that misses
   the risky branch → pass-rate stays green, new code untested. Diff-coverage

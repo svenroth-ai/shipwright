@@ -974,20 +974,33 @@ evidence (plan § 4.5).
 | D1 | design | FAIL | 1 | ≥1 artifact: `.shipwright/designs/mockups/*.html` OR `.shipwright/agent_docs/screens.md` OR `.shipwright/agent_docs/user-flow.md` |
 | D2 | design | WARN | 2 | Both `.shipwright/agent_docs/screens.md` and `.shipwright/agent_docs/user-flow.md` present + non-empty |
 
-> **Diff-coverage data flow (roadmap Phase 1, `iterate-2026-07-03-diff-coverage-measure-one-tier`).**
-> W4 reads `shipwright_test_results.json.coverage.total`; that field is **still
-> unpopulated → W4 SKIPs**. Phase 1 measures *diff*-coverage (% of the lines
-> CHANGED vs `origin/main` that tests execute) on the `shared/` tier only: CI's
-> "Run shared tests" step emits `coverage.xml` (`--cov=shared`), the non-gating
-> **"Diff coverage (informational)"** step runs `diff-cover`, and
-> `shared/scripts/tools/measure_diff_coverage.py` writes the **gitignored
-> transient** `.shipwright/coverage/diff_coverage.json`. The compliance dashboard
-> renders it as a grade-neutral INFO line under Test-Health
-> (`_diff_coverage_block.py` → `_control_block.format_control_block`) — it never
-> enters the Control Grade. Populating the tracked `coverage.total` (which lights
-> W4) is **Phase 2** (combined repo-wide total); feeding the grade is Phase 3; the
-> CI `--fail-under` gate is Phase 4. Full design:
-> `.shipwright/planning/diff-coverage-roadmap.md`.
+> **Diff-coverage data flow (roadmap Phase 1–2).**
+> Two distinct numbers, two homes:
+> - **`coverage.total`** (repo-stable, tracked) — **Phase 2**
+>   (`iterate-2026-07-04-diff-coverage-rollout-combine`) now populates
+>   `shipwright_test_results.json.coverage.total` with the **combined repo-wide**
+>   line-rate, which lights the previously-dormant **W4** verifier (SKIP → PASS
+>   against `shipwright_test_config.json.coverage.min`). Every tier is measured
+>   into its own `.cov-data/.coverage.<label>` file (plugins run `cd plugins/<name>
+>   && --cov=scripts`; `shared`/`integration` run from the repo root), then
+>   `shared/scripts/tools/combine_coverage.py` remaps each plugin's
+>   CWD-relative `scripts/...` data to `plugins/<name>/scripts/...` and folds all
+>   tiers into ONE repo-relative `coverage.xml`.
+>   `shared/scripts/tools/record_coverage_total.py` writes the tracked
+>   `coverage.total` (preserving `iterate_latest`). W4's `coverage.min` is a
+>   documented, calibrated anti-ratchet floor **below** the measured total, not a
+>   fudged number.
+> - **`coverage.diff`** (PR-local, transient) — **Phase 1**
+>   (`iterate-2026-07-03-diff-coverage-measure-one-tier`). CI's non-gating
+>   **"Diff coverage (informational)"** step runs `diff-cover` over the combined
+>   `coverage.xml`, and `shared/scripts/tools/measure_diff_coverage.py` writes the
+>   **gitignored transient** `.shipwright/coverage/diff_coverage.json` (never
+>   tracked — it is PR-local). The compliance dashboard renders it as a
+>   grade-neutral INFO line under Test-Health (`_diff_coverage_block.py` →
+>   `_control_block.format_control_block`) — it never enters the Control Grade.
+>
+> Feeding the grade is Phase 3; the CI `--fail-under` gate is Phase 4. Full
+> design: `.shipwright/planning/diff-coverage-roadmap.md`.
 
 **Infrastructure category (PR 3):** `shared/scripts/tools/verifiers/infrastructure_checks.py`
 

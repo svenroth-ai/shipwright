@@ -108,7 +108,8 @@ class TestBuildPayload:
         p = build_payload(total=83.5, diff=90.0, compare_branch="origin/main",
                           coverage_xml="coverage.xml")
         assert p["schema"] == "diff_coverage/v1"
-        assert p["measured_tier"] == "shared"
+        # Phase 2: default tier is the combined repo-wide report.
+        assert p["measured_tier"] == "repo"
         assert p["compare_branch"] == "origin/main"
         assert p["total"] == 83.5
         assert p["diff"] == 90.0

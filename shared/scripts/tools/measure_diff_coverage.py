@@ -50,7 +50,10 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 from lib.atomic_write import durable_atomic_write  # noqa: E402
 
 SCHEMA = "diff_coverage/v1"
-DEFAULT_TIER = "shared"
+# Phase 2 (roadmap): the coverage.xml this tool reads is now the COMBINED
+# repo-wide report (all plugins + shared + integration), so the default tier
+# label is "repo". A caller measuring only one tier can still override it.
+DEFAULT_TIER = "repo"
 DEFAULT_COMPARE_BRANCH = "origin/main"
 DEFAULT_OUTPUT_REL = Path(".shipwright") / "coverage" / "diff_coverage.json"
 _NA_NOTE = (

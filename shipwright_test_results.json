@@ -1,118 +1,107 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-04-grade-g4-plugin-polish",
+    "run_id": "iterate-2026-07-04-diff-coverage-rollout-combine",
     "date": "2026-07-04",
     "intent": "feature",
     "complexity": "medium",
     "unit": {
       "status": "passed",
-      "passed": 264,
-      "skipped": 1,
-      "total": 265
+      "passed": 71,
+      "total": 71
     },
-    "integration": null,
-    "pgtap": null,
-    "e2e": null,
-    "design_fidelity": null,
-    "smoke": null,
+    "integration": {
+      "status": "passed",
+      "passed": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "skipped"
+    },
     "degraded": [
-      {
-        "condition": "classifier_risk_flag_prose_false_positive",
-        "detail": "classify_complexity flagged touches_auth + touches_rls from the words 'authoritative'/'URL' in the description; the diff touches no **/auth/**, src/lib/supabase/, or RLS files. Overridden; F11 recomputes risk flags from the diff. The real diff-derived flag is touches_io_boundary (handled: Boundary Probe + round-trip)."
-      }
+      "External review (external_review.py \u2014 GPT-5.4 + Gemini 3.1 Pro via OpenRouter): the review diff was generated after origin/main advanced past the worktree base (the grade-cta-adopt PR merged mid-run), so GPT-5.4's 6 findings about plugins/shipwright-grade/scripts/lib/html_report.py + grade tests are ARTIFACTS of the stale base (that delta reversed in the diff), NOT this change \u2014 dismissed after verifying those files are untouched vs origin/main. GPT-5.4's one on-target finding (combine_coverage.py label parsing brittle to pytest-cov xdist worker suffixes) was FIXED (resolve_plugin_label longest-prefix + test). Gemini 3.1 Pro returned a null/empty feedback body (model-side) \u2014 no findings; coverage was preserved by the internal Opus code-reviewer, which cleared the core mechanic and raised 4 findings (1 medium partial-combine fail-open FIXED + tested; 3 low: scope documented, AC3 wording fixed, W4 dual-format heuristic left as pre-existing intentional contract)."
     ],
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --directory plugins/shipwright-grade pytest tests -q",
-      "tests_run": 264,
+      "surface": "none",
+      "justification": "No user-facing web/CLI application surface \u2014 this iterate is framework CI + coverage instrumentation (a new combine tool, a tracked coverage.total, and the W4 verifier gate). Executable end-to-end proof was still run: the full combine->record->W4 chain executed against real suites (all 13 plugins + shared + integration, all green) producing a combined repo-wide 80.2% line-rate, which lit W4 SKIP->PASS on the committed files; plus 71 hermetic coverage tests. The surface_verification.py runner has no app to drive.",
       "exit_code": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-04-grade-g4-plugin-polish/surface_verification.json"
+      "tests_run": 0,
+      "timestamp": "2026-07-04T00:00:00.000Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1: a canonical .shipwright/ layout (root shipwright_events.jsonl + traceability-matrix.md) routes + grades authoritatively",
+          "behavior": "AC1 \u2014 per-plugin --cov + per-tier COVERAGE_FILE in ci.yml (plugins with scripts/, shared, integration); preview (no scripts/) runs tests without coverage",
           "disposition": "tested",
-          "evidence": "test_routing.py::TestCanonicalLayout; test_authoritative.py::TestAuthoritativeEndToEnd::test_canonical_records_grade_authoritatively"
+          "evidence": "test_ci_coverage_wiring.py::{test_plugin_step_measures_per_plugin_coverage,test_shared_step_writes_shared_tier_datafile,test_integration_step_measures_coverage}"
         },
         {
-          "behavior": "AC1: staleness fires when the newest work_completed commit != HEAD; commit-less (worktree-model) logs are never false-flagged; large-log tail read",
+          "behavior": "AC2 \u2014 combine_coverage.py folds per-tier data into ONE repo-relative coverage.xml (per-plugin [paths] remap), absent-safe, idempotent, xdist-worker-suffix safe, partial-combine fails loud",
           "disposition": "tested",
-          "evidence": "test_routing.py::TestStaleness (5 cases incl. test_large_log_reads_the_tail_not_the_head)"
+          "evidence": "test_combine_coverage.py::{TestCombineRealFixture::test_combined_xml_is_repo_relative,TestDiscovery::*,TestAbsentSafe::*,TestWorkerSuffix::*,test_two_worker_files_per_plugin_both_contribute,TestPartialCombine::*}"
         },
         {
-          "behavior": "AC1: corrupt/partial/mixed/empty/exception .shipwright/ falls back to labelled heuristic",
+          "behavior": "AC3 \u2014 diff-cover runs over the combined coverage.xml AFTER all tiers; repo tier label via measure_diff_coverage DEFAULT_TIER=repo; step stays non-gating",
           "disposition": "tested",
-          "evidence": "test_routing.py (malformed/partial/mixed); test_authoritative.py::{TestAuthoritativeEndToEnd,TestFailSafe}"
+          "evidence": "test_ci_coverage_wiring.py::{test_combine_step_invokes_the_tool,test_diff_coverage_step_stays_nongating,test_combine_runs_before_diff_after_all_tiers} + test_measure_diff_coverage.py::TestBuildPayload::test_ok_shape"
         },
         {
-          "behavior": "AC1: a grader-grade of a real Shipwright repo equals its dashboard grade (authoritative == dashboard)",
+          "behavior": "AC4 \u2014 record_coverage_total.py writes tracked top-level coverage.total, preserves iterate_latest, atomic, refuses fabricated total on bad input",
           "disposition": "tested",
-          "evidence": "live probe: grade.py on the worktree -> mode=authoritative, A 99.9, verified_from shipwright_events.jsonl (249 events)"
+          "evidence": "test_record_coverage_total.py::{TestMainCLI::*,TestMerge::test_preserves_iterate_latest}"
         },
         {
-          "behavior": "AC2: URL scheme allowlist accepts https/git@/ssh/owner-repo and rejects http/git/file/ext/traversal/leading-dash-host",
+          "behavior": "AC5 \u2014 W4 lit green: recorder total + calibrated coverage.min => PASS (was SKIP); round-trip + min-below-total on committed files",
           "disposition": "tested",
-          "evidence": "test_clone.py::TestNormalizeUrl (accept + reject incl. CVE-2017-1000117 dash hosts)"
+          "evidence": "test_record_coverage_total.py::TestW4RoundTrip::* + test_coverage_baseline_lit.py::{test_w4_is_green_on_committed_files,test_baseline_min_sits_below_measured_total}"
         },
         {
-          "behavior": "AC2: real shallow clone + post-clone size cap + tempdir purged even when the clone crashes mid-flight",
+          "behavior": "AC6 \u2014 coverage.diff stays transient (never mutates tracked results); grade byte-identical with/without coverage; dashboard tier label defaults to repo",
           "disposition": "tested",
-          "evidence": "test_clone.py::{TestRealClone,TestOpenTarget::test_tempdir_purged_even_when_clone_crashes}; live probe: real clone of octocat/Hello-World"
+          "evidence": "test_diff_coverage_block.py::{TestGradeNeutrality::*,TestInfoLine::test_tier_defaults_to_repo_when_absent} + test_measure_diff_coverage.py::TestMainCLI::test_never_mutates_existing_results_json"
         },
         {
-          "behavior": "AC3: grade.py <url> clones and grades; --no-clone rejects a URL cleanly (exit 2) with no network",
+          "behavior": "AC7 \u2014 .gitignore covers .coverage* + .cov-data/ (per-tier data + combine dir never tracked)",
           "disposition": "tested",
-          "evidence": "test_grade_cli.py::{test_url_is_cloned_and_graded,test_url_with_no_clone_exits_2_without_network}"
+          "evidence": "test_coverage_baseline_lit.py::test_gitignore_covers_coverage_transients (+ git check-ignore verified)"
         },
         {
-          "behavior": "AC3/AC4: the standalone CLI is non-interactive and never reads stdin",
+          "behavior": "AC8 \u2014 CI-gate guard stays green on the rewired ci.yml (no test dir silently uncovered; diff-cover allowlist entry intact)",
           "disposition": "tested",
-          "evidence": "test_grade_cli.py::test_standalone_never_blocks_on_input (runtime stdin guard)"
-        },
-        {
-          "behavior": "AC4: interactive mode asks <=2 provenance-stamped enrichment questions that never change the base deterministic grade unless a documented override is chosen",
-          "disposition": "untestable",
-          "reason_code": "requires-interactive-tty",
-          "evidence": "SKILL.md 'Interactive vs standalone' — a runtime protocol of the Claude Code session, not a CLI code path; the standalone determinism half IS tested (above)"
-        },
-        {
-          "behavior": "AC5/AC6: the shipwright-grade plugin is registered (marketplace/install/README/CLAUDE/update-marketplace) with version parity",
-          "disposition": "tested",
-          "evidence": "shared/scripts/sync_check.py all-green (14 plugins); shared/tests/test_installer_shell_scripts.py (16)"
-        },
-        {
-          "behavior": "AC7: ruff clean; all changed modules <=300 LOC",
-          "disposition": "tested",
-          "evidence": "uvx ruff@0.15.15 check . -> All checks passed; wc -l max 237 (routing.py)"
-        },
-        {
-          "behavior": "Hardening: a private/404/auth-required URL clone fails fast (non-interactive git), never hanging on a credential prompt",
-          "disposition": "tested",
-          "evidence": "test_clone.py::TestNonInteractive; live probe: auth-required clone fails in ~1s (not the 60s timeout)"
-        },
-        {
-          "behavior": "Hardening: an oversize target event log (>10MB) is refused by the authoritative path (hostile-clone OOM guard) -> heuristic fallback",
-          "disposition": "tested",
-          "evidence": "test_authoritative.py::TestEventLogSizeGuard"
-        },
-        {
-          "behavior": "Hardening: a symlinked .shipwright event log/RTM escaping the repo root is ignored (untrusted-clone guard)",
-          "disposition": "tested",
-          "evidence": "test_routing.py::test_symlinked_eventlog_escaping_root_is_ignored (POSIX; skipped on Windows)"
+          "evidence": "check_ci_gate_coverage.py --project-root . => OK (18 test dirs); enforced as the 'Run CI-gate guard' CI step"
         }
       ],
       "counts": {
-        "testable": 13,
-        "tested": 13,
-        "untestable": 1,
+        "testable": 8,
+        "tested": 8,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 7,
-        "covered_acs": 7
+        "acs": 8,
+        "covered_acs": 8
       }
     }
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
   }
 }
