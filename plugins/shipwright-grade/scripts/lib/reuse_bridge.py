@@ -32,7 +32,7 @@ _CACHE: dict[str, Any] = {}
 
 
 class ReuseUnavailableError(RuntimeError):
-    """A reused compliance/shared helper could not be located/imported."""
+    """A reused compliance or shared helper could not be located/imported."""
 
 
 def _shared_scripts_root() -> Path | None:
