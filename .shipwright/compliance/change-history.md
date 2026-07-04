@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-07-04T12:50:30.749429+00:00
-Total commits: 1081
+Generated: 2026-07-04T15:12:41.862170+00:00
+Total commits: 1082
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 310
+    "fix" : 311
     "feat" : 287
     "chore" : 236
     "docs" : 143
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 310 commits
+### Fixes (fix) — 311 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-04 | security | prompt-scan matches code, not string/comment token text (#316) | 354cca7e0669 |
 | 2026-07-04 | security | pr_review excludes generated artifacts from the diff before truncation (#314) | 913261ff68cd |
 | 2026-07-04 | grade | tighten test-health tier-2 + URL-encode ref + stronger golden (G2 review follow-up) (#313) | fbc9bdce9e8f |
 | 2026-07-03 | triage | route GitHub-triage appends to the outbox on idle main (#308) | e04a61d2a5d6 |
@@ -631,7 +632,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-04 | triage | sweep 2 outbox append(s) into branch | cad4add118b1 |
+| 2026-07-04 | triage | sweep 2 outbox append(s) into branch | 5a80606b15c5 |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
@@ -1150,7 +1151,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1081 |
+| Total commits | 1082 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1081 |
+| Human-authored commits | 1082 |
 

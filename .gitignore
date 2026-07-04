@@ -43,7 +43,11 @@ Thumbs.db
 desktop.ini
 
 # Test / Coverage
-.coverage
+# diff-coverage roadmap Phase 2: `.coverage*` covers the bare `.coverage` AND the
+# per-tier data files (`.coverage.shared`, `.coverage.<plugin>`, ...); `.cov-data/`
+# is the transient dir combine_coverage.py folds into coverage.xml. None tracked.
+.coverage*
+.cov-data/
 htmlcov/
 .pytest_cache/
 coverage/

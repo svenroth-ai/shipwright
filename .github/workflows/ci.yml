@@ -89,13 +89,36 @@ jobs:
         shell: bash
         run: |
           set -e
+          # Diff-coverage roadmap Phase 2: this is the FIRST coverage-producing
+          # tier, so clear stale coverage state once here (a later per-tier `rm`
+          # would wipe earlier tiers' data). Each plugin's scripts/ source is
+          # measured into its own .cov-data/.coverage.<name> file; combine_coverage
+          # folds them into one repo-relative coverage.xml after all tiers run.
+          rm -rf .cov-data coverage.xml
+          mkdir -p .cov-data
+          ROOT="$PWD"
           for plugin in plugins/*/; do
             if [ -f "$plugin/pyproject.toml" ] && [ -d "$plugin/tests" ]; then
+              name=$(basename "$plugin")
               echo "--- Running tests in $plugin ---"
               # Plugins declare pytest as an optional `dev` extra (or not at
               # all), so a plain `uv sync` does not install it. `uv run --with`
               # provisions pytest + pytest-mock on top of the plugin's own env.
-              (cd "$plugin" && uv run --with pytest --with pytest-mock pytest tests/ -v)
+              if [ -d "$plugin/scripts" ]; then
+                # Plugin suites run `cd "$plugin"` in their own uv env, so
+                # coverage records plugin-CWD-relative `scripts/...` paths.
+                # --cov-config pins the root pyproject so relative_files is
+                # honoured (coverage does NOT search parent dirs for config);
+                # combine_coverage.py later remaps `scripts/...` ->
+                # `plugins/<name>/scripts/...`. Additive; never gates this step.
+                (cd "$plugin" && COVERAGE_FILE="$ROOT/.cov-data/.coverage.$name" \
+                  uv run --with pytest --with pytest-mock --with pytest-cov \
+                  pytest tests/ -v \
+                  --cov=scripts --cov-config="$ROOT/pyproject.toml" --cov-report=)
+              else
+                # No scripts/ dir (e.g. shipwright-preview) — run tests, no cov.
+                (cd "$plugin" && uv run --with pytest --with pytest-mock pytest tests/ -v)
+              fi
             fi
           done
 
@@ -123,31 +146,60 @@ jobs:
           # session via the per-plugin loop above. A command-line `-m` replaces
           # the pyproject `-m 'not slow'`, so restate `not slow` here.
           #
-          # Diff-coverage roadmap Phase 1: measure line coverage of the shared/
-          # tier while the suite runs (--cov=shared). --cov-append accumulates
-          # across the three separate pytest processes into one .coverage; a
-          # stale file from a cached runner would poison the union, so clear it
-          # (and any prior coverage.xml) first. `coverage xml` then emits the
-          # combined coverage.xml (repo-relative paths via
-          # [tool.coverage.run] relative_files) that the informational
-          # "Diff coverage" step below consumes. Coverage is additive and never
-          # gates this step; --cov-report= silences the per-run terminal table.
-          rm -f .coverage coverage.xml
+          # Diff-coverage roadmap Phase 2: measure the shared/ tier into its own
+          # per-tier data file (.cov-data/.coverage.shared). Run from the repo
+          # root, so coverage records repo-relative `shared/...` paths (no remap
+          # needed at combine time). --cov-append accumulates across the three
+          # separate pytest processes; --cov-config pins the root pyproject
+          # (relative_files + test omit). The stale-state clear + the combined
+          # `coverage xml` now live in the plugin-tests and Combine steps
+          # respectively. Coverage is additive and never gates this step;
+          # --cov-report= silences the per-run terminal table.
+          export COVERAGE_FILE="$PWD/.cov-data/.coverage.shared"
           for dir in shared/tests shared/scripts/tests shared/scripts/tools/tests; do
             echo "--- Running tests in $dir ---"
             uv run --with pytest --with pytest-mock --with pytest-cov \
               pytest "$dir" -v -m "not slow and not cross_plugin" \
-              --cov=shared --cov-append --cov-report=
+              --cov=shared --cov-append --cov-config="$PWD/pyproject.toml" --cov-report=
           done
-          uv run --with coverage coverage xml -o coverage.xml
+
+      - name: Run integration tests
+        # Diff-coverage roadmap Phase 2: integration-tests exercise the shared/
+        # cross-plugin machinery from the repo root (repo-relative `shared/...`
+        # paths -> no remap). Measured into its own per-tier data file so it
+        # contributes to the combined coverage.xml below. Must run BEFORE the
+        # Combine step. Coverage additive; never gates.
+        shell: bash
+        run: |
+          if [ -d integration-tests ]; then
+            COVERAGE_FILE="$PWD/.cov-data/.coverage.integration" \
+              uv run --with pytest --with pytest-mock --with pytest-cov \
+              pytest integration-tests/ -v \
+              --cov=shared --cov-config="$PWD/pyproject.toml" --cov-report=
+          fi
+
+      - name: Combine coverage
+        # Diff-coverage roadmap Phase 2: fold every per-tier data file in
+        # .cov-data/ (shared + integration + each plugin) into ONE repo-relative
+        # coverage.xml. combine_coverage.py remaps each plugin's scripts/-relative
+        # data to plugins/<name>/scripts/ — a single global `coverage combine`
+        # [paths] mapping cannot, because the plugin identity is lost in the
+        # plugin-CWD-relative data files (see the tool docstring). Absent-safe;
+        # never gates. This produces the coverage.xml the Diff coverage step and
+        # the coverage.total recorder consume.
+        shell: bash
+        run: |
+          uv run --with coverage shared/scripts/tools/combine_coverage.py \
+            --project-root . --data-dir .cov-data --output coverage.xml
 
       - name: Diff coverage (informational)
-        # Diff-coverage roadmap Phase 1 — surface % of CHANGED lines (vs
-        # origin/main) that tests execute. INFORMATIONAL ONLY: continue-on-error
-        # + no --fail-under, so it never gates (Phase 4 makes it gating). The
+        # Diff-coverage roadmap Phase 1/2 — surface % of CHANGED lines (vs
+        # origin/main) that tests execute, now over the COMBINED repo-wide report
+        # from the Combine step. INFORMATIONAL ONLY: continue-on-error + no
+        # --fail-under, so it never gates (Phase 4 makes it gating). The
         # intentional continue-on-error is documented in
         # shared/scripts/lib/ci_gate_allowlist.py so the CI-gate guard tolerates
-        # it. Skipped when the shared step produced no coverage.xml.
+        # it. Skipped when the Combine step produced no coverage.xml.
         if: hashFiles('coverage.xml') != ''
         continue-on-error: true
         shell: bash
@@ -167,18 +219,12 @@ jobs:
         if: always() && hashFiles('coverage.xml') != ''
         uses: actions/upload-artifact@v4
         with:
-          name: shared-diff-coverage
+          name: repo-diff-coverage
           path: |
             coverage.xml
             diff-cover.json
             diff-cover.md
           if-no-files-found: ignore
-
-      - name: Run integration tests
-        run: |
-          if [ -d integration-tests ]; then
-            uv run --with pytest --with pytest-mock pytest integration-tests/ -v
-          fi
 
       - name: Run CI-gate guard
         # Fails if a test dir is silently uncovered, a quality gate goes loose

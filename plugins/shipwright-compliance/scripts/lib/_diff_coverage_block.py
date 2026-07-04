@@ -48,7 +48,7 @@ def diff_coverage_info_line(cov: dict | None) -> str:
         return (_INFO_PREFIX + "not measured this session — per-PR signal; see "
                 'the CI "Diff coverage" artifact.')
     if cov.get("status") == "ok" and isinstance(cov.get("diff"), (int, float)):
-        tier = cov.get("measured_tier", "shared")
+        tier = cov.get("measured_tier", "repo")
         base = cov.get("compare_branch", "origin/main")
         return (_INFO_PREFIX + f"{float(cov['diff']):.1f}% of changed lines "
                 f"covered ({tier} tier, vs {base}).")

@@ -87,6 +87,13 @@ class TestInfoLine:
         assert "shared tier" in line
         assert "origin/main" in line
 
+    def test_tier_defaults_to_repo_when_absent(self):
+        # Phase 2: the combined report is the norm, so a payload with no
+        # measured_tier renders "repo tier" (not the Phase-1 "shared").
+        line = diff_coverage_info_line(
+            {"status": "ok", "diff": 88.0, "compare_branch": "origin/main"})
+        assert "repo tier" in line
+
     def test_na_says_na(self):
         line = diff_coverage_info_line(NA_REPORT)
         assert "n/a" in line

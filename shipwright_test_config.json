@@ -1,0 +1,6 @@
+{
+  "coverage": {
+    "min": 70,
+    "_comment": "Diff-coverage roadmap Phase 2 (iterate-2026-07-04-diff-coverage-rollout-combine). Calibrated anti-ratchet baseline for the W4 verifier (shared/scripts/tools/verifiers/test_compliance.py): W4 FAILs when shipwright_test_results.json.coverage.total < this min. The measured combined repo-wide line-rate at kickoff was 80.2% (25068/31274 lines, all plugins + shared + integration). 70 is a deliberate CONSERVATIVE floor ~10 points below that measured baseline — headroom for local-vs-CI measurement variance (CI additionally runs the security-scanner smoke tests that skip locally) and for normal churn. This is a NEW baseline (W4 has never gated this repo), not a weakened active gate; it is meant to be ratcheted UP in later phases, never a number chosen to hide a bad total. Refresh coverage.total via shared/scripts/tools/record_coverage_total.py against a freshly combined coverage.xml."
+  }
+}

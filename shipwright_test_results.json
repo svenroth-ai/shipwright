@@ -1,95 +1,107 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-04-prompt-scan-literal-fp",
+    "run_id": "iterate-2026-07-04-diff-coverage-rollout-combine",
     "date": "2026-07-04",
-    "intent": "bug",
-    "complexity": "small",
+    "intent": "feature",
+    "complexity": "medium",
     "unit": {
       "status": "passed",
-      "passed": 470,
-      "skipped": 3,
-      "total": 473
+      "passed": 71,
+      "total": 71
     },
-    "integration": null,
-    "pgtap": null,
-    "e2e": null,
-    "design_fidelity": null,
-    "smoke": null,
-    "degraded": [],
+    "integration": {
+      "status": "passed",
+      "passed": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "skipped"
+    },
+    "degraded": [
+      "External review (external_review.py \u2014 GPT-5.4 + Gemini 3.1 Pro via OpenRouter): the review diff was generated after origin/main advanced past the worktree base (the grade-cta-adopt PR merged mid-run), so GPT-5.4's 6 findings about plugins/shipwright-grade/scripts/lib/html_report.py + grade tests are ARTIFACTS of the stale base (that delta reversed in the diff), NOT this change \u2014 dismissed after verifying those files are untouched vs origin/main. GPT-5.4's one on-target finding (combine_coverage.py label parsing brittle to pytest-cov xdist worker suffixes) was FIXED (resolve_plugin_label longest-prefix + test). Gemini 3.1 Pro returned a null/empty feedback body (model-side) \u2014 no findings; coverage was preserved by the internal Opus code-reviewer, which cleared the core mechanic and raised 4 findings (1 medium partial-combine fail-open FIXED + tested; 3 low: scope documented, AC3 wording fixed, W4 dual-format heuristic left as pre-existing intentional contract)."
+    ],
     "surface_verification": {
       "surface": "none",
-      "justification": "Small bug fix to the prompt-injection scanner's internal token matching (scan_python -> blank_noncode_spans). No UI and no io-boundary: the input file set and the prompt_risks.json output schema are unchanged. Verified by the plugin unit suite (470 passed, 3 pre-existing CI-guarded skips) plus an empirical re-scan of the real trigger file plugins/shipwright-grade/tests/test_reused_collector_audit.py: 4 -> 0 findings, with real dangerous calls still flagged.",
-      "tests_run": 0
+      "justification": "No user-facing web/CLI application surface \u2014 this iterate is framework CI + coverage instrumentation (a new combine tool, a tracked coverage.total, and the W4 verifier gate). Executable end-to-end proof was still run: the full combine->record->W4 chain executed against real suites (all 13 plugins + shared + integration, all green) producing a combined repo-wide 80.2% line-rate, which lit W4 SKIP->PASS on the committed files; plus 71 hermetic coverage tests. The surface_verification.py runner has no app to drive.",
+      "exit_code": 0,
+      "tests_run": 0,
+      "timestamp": "2026-07-04T00:00:00.000Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "Dangerous-pattern tokens appearing only as string literals are not flagged",
+          "behavior": "AC1 \u2014 per-plugin --cov + per-tier COVERAGE_FILE in ci.yml (plugins with scripts/, shared, integration); preview (no scripts/) runs tests without coverage",
           "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestPythonScannerIgnoresStringsAndComments::test_string_literal_tokens_not_flagged"
+          "evidence": "test_ci_coverage_wiring.py::{test_plugin_step_measures_per_plugin_coverage,test_shared_step_writes_shared_tier_datafile,test_integration_step_measures_coverage}"
         },
         {
-          "behavior": "Dangerous-pattern tokens inside a docstring are not flagged",
+          "behavior": "AC2 \u2014 combine_coverage.py folds per-tier data into ONE repo-relative coverage.xml (per-plugin [paths] remap), absent-safe, idempotent, xdist-worker-suffix safe, partial-combine fails loud",
           "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestPythonScannerIgnoresStringsAndComments::test_docstring_tokens_not_flagged"
+          "evidence": "test_combine_coverage.py::{TestCombineRealFixture::test_combined_xml_is_repo_relative,TestDiscovery::*,TestAbsentSafe::*,TestWorkerSuffix::*,test_two_worker_files_per_plugin_both_contribute,TestPartialCombine::*}"
         },
         {
-          "behavior": "Dangerous-pattern tokens inside an inline/trailing comment are not flagged",
+          "behavior": "AC3 \u2014 diff-cover runs over the combined coverage.xml AFTER all tiers; repo tier label via measure_diff_coverage DEFAULT_TIER=repo; step stays non-gating",
           "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestPythonScannerIgnoresStringsAndComments::test_inline_trailing_comment_not_flagged"
+          "evidence": "test_ci_coverage_wiring.py::{test_combine_step_invokes_the_tool,test_diff_coverage_step_stays_nongating,test_combine_runs_before_diff_after_all_tiers} + test_measure_diff_coverage.py::TestBuildPayload::test_ok_shape"
         },
         {
-          "behavior": "Real eval()/exec()/os.system() calls are still flagged (no regression)",
+          "behavior": "AC4 \u2014 record_coverage_total.py writes tracked top-level coverage.total, preserves iterate_latest, atomic, refuses fabricated total on bad input",
           "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestPythonScannerIgnoresStringsAndComments::test_real_calls_still_flagged"
+          "evidence": "test_record_coverage_total.py::{TestMainCLI::*,TestMerge::test_preserves_iterate_latest}"
         },
         {
-          "behavior": "subprocess.run(<str>, shell=True) still flags after the string arg is blanked (multi-token pattern integrity)",
+          "behavior": "AC5 \u2014 W4 lit green: recorder total + calibrated coverage.min => PASS (was SKIP); round-trip + min-below-total on committed files",
           "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestPythonScannerIgnoresStringsAndComments::test_subprocess_shell_true_with_string_arg_still_flagged"
+          "evidence": "test_record_coverage_total.py::TestW4RoundTrip::* + test_coverage_baseline_lit.py::{test_w4_is_green_on_committed_files,test_baseline_min_sits_below_measured_total}"
         },
         {
-          "behavior": "affected_line stays accurate when a multiline string precedes the real call",
+          "behavior": "AC6 \u2014 coverage.diff stays transient (never mutates tracked results); grade byte-identical with/without coverage; dashboard tier label defaults to repo",
           "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestPythonScannerIgnoresStringsAndComments::test_affected_line_survives_preceding_multiline_string"
+          "evidence": "test_diff_coverage_block.py::{TestGradeNeutrality::*,TestInfoLine::test_tier_defaults_to_repo_when_absent} + test_measure_diff_coverage.py::TestMainCLI::test_never_mutates_existing_results_json"
         },
         {
-          "behavior": "Invalid Python falls back to the line scan so a real dangerous call is still seen",
+          "behavior": "AC7 \u2014 .gitignore covers .coverage* + .cov-data/ (per-tier data + combine dir never tracked)",
           "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestPythonScannerIgnoresStringsAndComments::test_invalid_python_falls_back_to_line_scan"
+          "evidence": "test_coverage_baseline_lit.py::test_gitignore_covers_coverage_transients (+ git check-ignore verified)"
         },
         {
-          "behavior": "blank_noncode_spans blanks string content but keeps executable code verbatim",
+          "behavior": "AC8 \u2014 CI-gate guard stays green on the rewired ci.yml (no test dir silently uncovered; diff-cover allowlist entry intact)",
           "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestBlankNoncodeSpans::test_blanks_string_content_but_keeps_code"
-        },
-        {
-          "behavior": "blank_noncode_spans preserves newline count (line-number fidelity)",
-          "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestBlankNoncodeSpans::test_preserves_newline_count"
-        },
-        {
-          "behavior": "blank_noncode_spans returns the original text verbatim on non-tokenizable source",
-          "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_literals.py::TestBlankNoncodeSpans::test_invalid_python_returns_original_verbatim"
-        },
-        {
-          "behavior": "Scanner self-reference files no longer self-flag yet remain excluded (belt-and-suspenders)",
-          "disposition": "tested",
-          "evidence": "test_prompt_injection_scan_diff.py::TestDiffModeExclusion::test_self_reference_files_no_longer_self_flag_but_stay_excluded"
+          "evidence": "check_ci_gate_coverage.py --project-root . => OK (18 test dirs); enforced as the 'Run CI-gate guard' CI step"
         }
       ],
       "counts": {
-        "testable": 11,
-        "tested": 11,
+        "testable": 8,
+        "tested": 8,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 11,
-        "covered_acs": 11
+        "acs": 8,
+        "covered_acs": 8
       }
     }
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
   }
 }
