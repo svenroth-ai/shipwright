@@ -974,6 +974,21 @@ evidence (plan § 4.5).
 | D1 | design | FAIL | 1 | ≥1 artifact: `.shipwright/designs/mockups/*.html` OR `.shipwright/agent_docs/screens.md` OR `.shipwright/agent_docs/user-flow.md` |
 | D2 | design | WARN | 2 | Both `.shipwright/agent_docs/screens.md` and `.shipwright/agent_docs/user-flow.md` present + non-empty |
 
+> **Diff-coverage data flow (roadmap Phase 1, `iterate-2026-07-03-diff-coverage-measure-one-tier`).**
+> W4 reads `shipwright_test_results.json.coverage.total`; that field is **still
+> unpopulated → W4 SKIPs**. Phase 1 measures *diff*-coverage (% of the lines
+> CHANGED vs `origin/main` that tests execute) on the `shared/` tier only: CI's
+> "Run shared tests" step emits `coverage.xml` (`--cov=shared`), the non-gating
+> **"Diff coverage (informational)"** step runs `diff-cover`, and
+> `shared/scripts/tools/measure_diff_coverage.py` writes the **gitignored
+> transient** `.shipwright/coverage/diff_coverage.json`. The compliance dashboard
+> renders it as a grade-neutral INFO line under Test-Health
+> (`_diff_coverage_block.py` → `_control_block.format_control_block`) — it never
+> enters the Control Grade. Populating the tracked `coverage.total` (which lights
+> W4) is **Phase 2** (combined repo-wide total); feeding the grade is Phase 3; the
+> CI `--fail-under` gate is Phase 4. Full design:
+> `.shipwright/planning/diff-coverage-roadmap.md`.
+
 **Infrastructure category (PR 3):** `shared/scripts/tools/verifiers/infrastructure_checks.py`
 
 | ID | Phase(s) | Default on Missing | Tier | Evidence Source |
