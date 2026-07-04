@@ -1,14 +1,14 @@
 # Commit Change Log
 
 Generated: 2026-07-04T09:09:16.263100+00:00
-Total commits: 1079
+Total commits: 1081
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 309
-    "feat" : 286
+    "fix" : 310
+    "feat" : 287
     "chore" : 236
     "docs" : 143
     "refactor" : 64
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 309 commits
+### Fixes (fix) — 310 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-04 | security | pr_review excludes generated artifacts from the diff before truncation (#314) | 913261ff68cd |
 | 2026-07-04 | grade | tighten test-health tier-2 + URL-encode ref + stronger golden (G2 review follow-up) (#313) | fbc9bdce9e8f |
 | 2026-07-03 | triage | route GitHub-triage appends to the outbox on idle main (#308) | e04a61d2a5d6 |
 | 2026-07-02 | triage | surface prompt-injection regardless of Code Scanning + scan main on push (#306) | 01f43bfcbcfd |
@@ -334,10 +335,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 286 commits
+### Features (feat) — 287 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-04 | grade | self-contained HTML report + hardened terminal card (G3) | 40aff1b8fc83 |
 | 2026-07-04 | grade | security, deps, size + gh test-health signals (G2) (#312) | 440bfd1776f6 |
 | 2026-07-04 | compliance | measure diff-coverage on the shared tier (roadmap Phase 1) (#310) | 635c2119f9c3 |
 | 2026-07-04 | grade | cold-repo signal projector - shipwright-grade plugin (G1) (#311) | 6b4b60d32e6c |
@@ -1148,7 +1150,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1079 |
+| Total commits | 1081 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1079 |
+| Human-authored commits | 1081 |
 

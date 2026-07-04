@@ -1,10 +1,11 @@
 # Project Activity Dashboard
 > Updated: 2026-07-04 09:09 UTC | Session: 8e84d52f-c16d-4863-a2a4-cdef78f9b4d9 | Run: iterate-2026-07-04-grade-g3-html-report
 
-## Recent Changes (247 iterations)
+## Recent Changes (248 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Tier-3 pr_review filters producer-generated file-sections (compliance/agent-docs/lockfiles/state-logs) out of the diff before the truncation check, with the excluded list disclosed in PR meta + comment | 460/463 |  | tooling | 2026-07-04 |
 | feature | grade-g3-html-report | 215/215 |  | tooling | 2026-07-04 |
 | bug | shipwright-grade G2 external-review follow-up: tier-2 test-check precision (drop build/ci false positives) + code-scanning ref URL-encoding + full-report byte-identical golden + SARIF-JSON clarification | 187/187 |  | tooling | 2026-07-04 |
 | feature | shipwright-grade G2: light security, dependency, maintainability and network-gated test-health signals for cold repos | 182/182 |  | tooling | 2026-07-04 |
