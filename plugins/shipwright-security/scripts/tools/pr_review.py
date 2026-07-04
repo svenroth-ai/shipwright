@@ -55,7 +55,9 @@ from pr_review_lib import (  # noqa: E402
     MAX_DIFF_CHARS,
     _redact,
     build_messages,
+    build_pr_meta,
     decision_to_exit,
+    filter_generated_paths,
     load_prompts,
     parse_review_response,
     render_comment,
@@ -64,8 +66,9 @@ from pr_review_lib import (  # noqa: E402
 
 __all__ = [
     "EXIT_BLOCK", "EXIT_ERROR", "EXIT_OK", "MAX_DIFF_CHARS", "_redact",
-    "build_messages", "decision_to_exit", "load_prompts", "parse_review_response",
-    "render_comment", "truncate_diff", "DEFAULT_MODEL", "OPENROUTER_URL",
+    "build_messages", "build_pr_meta", "decision_to_exit", "filter_generated_paths",
+    "load_prompts", "parse_review_response", "render_comment", "truncate_diff",
+    "DEFAULT_MODEL", "OPENROUTER_URL",
 ]
 
 
@@ -180,10 +183,6 @@ def post_pr_review_state(pr_number: int, repo: str, decision: str, summary: str)
     )
 
 
-def _build_pr_meta(pr_number: int, repo: str, truncated: bool) -> str:
-    return f"Repository: {repo}\nPR number: {pr_number}\nDiff truncated: {truncated}\n"
-
-
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Tier-3 OpenRouter PR reviewer")
     parser.add_argument("--pr-number", type=int, required=True, help="PR number to review")
@@ -214,14 +213,22 @@ def main(argv: list[str] | None = None) -> int:
         print(_redact(f"[pr_review] failed to fetch PR diff: {e}", api_key), file=sys.stderr)
         return EXIT_ERROR
 
+    # Drop producer-generated artifacts (compliance MDs, agent-docs, lockfiles,
+    # state logs) BEFORE the truncation check: they dominate a shipwright PR
+    # diff (~82% of chars on PR #310) but carry no reviewable logic, so keeping
+    # them would trip the size cap and fail the review closed on ordinary
+    # medium+ iterates. The excluded list is surfaced to the model (pr_meta) +
+    # humans (comment) — transparent, never silent. See triage trg-e1c554d9.
+    diff, excluded = filter_generated_paths(diff)
     diff, truncated = truncate_diff(diff)
-    pr_meta = _build_pr_meta(args.pr_number, args.repo, truncated)
+    pr_meta = build_pr_meta(args.pr_number, args.repo, truncated, excluded)
     messages = build_messages(system_prompt, user_prompt, diff, pr_meta)
 
     est_tokens = (len(system_prompt) + len(user_prompt) + len(diff)) // 4
     print(
         f"[pr_review] reviewing PR #{args.pr_number} with {model} "
-        f"(~{est_tokens} input tokens, truncated={truncated})",
+        f"(~{est_tokens} input tokens, truncated={truncated}, "
+        f"generated-excluded={len(excluded)})",
         file=sys.stderr,
     )
 
@@ -251,7 +258,8 @@ def main(argv: list[str] | None = None) -> int:
     # as a tracked follow-up. (Until iterate-2026-06-17-pr-review-truncation-
     # failclosed this returned EXIT_OK — a silent size-bypass of the gate.)
     effective_decision = "block" if truncated else decision
-    body = render_comment(review, model=model, truncated=truncated)
+    body = render_comment(
+        review, model=model, truncated=truncated, excluded_generated=excluded)
 
     # Comment + review state are best-effort: a posting failure must not flip the
     # gate, which reflects the review outcome (the exit code) not the side-effect.

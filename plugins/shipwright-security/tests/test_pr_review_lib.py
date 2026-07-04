@@ -198,3 +198,36 @@ class TestPromptLoadingAndMessages:
         msgs = L.build_messages("SYS", "U {PR_META} :: {DIFF}", "DD", "MM")
         assert msgs[0] == {"role": "system", "content": "SYS"}
         assert "MM" in msgs[1]["content"] and "DD" in msgs[1]["content"]
+
+
+class TestBuildPrMeta:
+    def test_basic_meta_no_excluded(self):
+        meta = L.build_pr_meta(42, "o/r", truncated=False)
+        assert "PR number: 42" in meta and "o/r" in meta
+        assert "excluded" not in meta.lower()
+
+    def test_excluded_disclosed_to_model(self):
+        meta = L.build_pr_meta(1, "o/r", truncated=False, excluded=["uv.lock", ".shipwright/x.md"])
+        assert "excluded from this diff (2)" in meta
+        assert "uv.lock" in meta and ".shipwright/x.md" in meta
+
+    def test_excluded_capped_at_30_with_more_marker(self):
+        excluded = [f"f{i}.lock" for i in range(35)]
+        meta = L.build_pr_meta(1, "o/r", truncated=True, excluded=excluded)
+        assert "excluded from this diff (35)" in meta
+        assert "+5 more" in meta
+
+
+class TestRenderCommentExclusion:
+    def test_excluded_note_present(self):
+        review = {"decision": "approve", "summary": "ok", "blocking": [], "comments": []}
+        body = L.render_comment(
+            review, model="m", truncated=False,
+            excluded_generated=["uv.lock", ".shipwright/compliance/dashboard.md"])
+        assert "2 generated file(s) were excluded" in body
+        assert "`uv.lock`" in body
+
+    def test_no_note_when_nothing_excluded(self):
+        review = {"decision": "approve", "summary": "ok", "blocking": [], "comments": []}
+        body = L.render_comment(review, model="m", truncated=False)
+        assert "generated file(s) were excluded" not in body

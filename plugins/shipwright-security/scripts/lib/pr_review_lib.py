@@ -12,6 +12,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+# Generated-artifact diff filtering lives in its own cohesive module; re-exported
+# here so `pr_review_lib.filter_generated_paths` / `.is_generated_path` keep
+# working for callers and tests. See pr_review_diff_filter for the rationale.
+from pr_review_diff_filter import (  # noqa: F401
+    filter_generated_paths,
+    is_generated_path,
+)
+
 # A diff larger than this is reviewed on a truncated copy. A truncated (partial)
 # review FAILS CLOSED (we never saw the whole change): for a required gate on an
 # untrusted PR the reviewer forces a request-changes state + non-zero exit (needs
@@ -54,6 +62,23 @@ def truncate_diff(diff: str, max_chars: int = MAX_DIFF_CHARS) -> tuple[str, bool
     if len(diff) <= max_chars:
         return diff, False
     return diff[:max_chars], True
+
+
+def build_pr_meta(
+    pr_number: int, repo: str, truncated: bool, excluded: list[str] | None = None
+) -> str:
+    """Model-facing metadata block. When ``excluded`` is non-empty, name the
+    withheld generated files so the reviewer never treats the filtered diff as
+    the whole PR (transparency, not a silent drop)."""
+    meta = f"Repository: {repo}\nPR number: {pr_number}\nDiff truncated: {truncated}\n"
+    if excluded:
+        shown = ", ".join(excluded[:30])
+        more = f" (+{len(excluded) - 30} more)" if len(excluded) > 30 else ""
+        meta += (
+            f"Generated files excluded from this diff ({len(excluded)}): "
+            f"{shown}{more}\n"
+        )
+    return meta
 
 
 def build_messages(system_prompt: str, user_prompt: str, diff: str, pr_meta: str) -> list[dict]:
@@ -128,7 +153,10 @@ def decision_to_exit(decision: str) -> int:
     return EXIT_ERROR
 
 
-def render_comment(review: dict, *, model: str, truncated: bool) -> str:
+def render_comment(
+    review: dict, *, model: str, truncated: bool,
+    excluded_generated: list[str] | None = None,
+) -> str:
     """Render the PR comment Markdown from a parsed review object."""
     decision = str(review.get("decision") or "unknown").strip().lower()
     badge = {"approve": "✅ APPROVE", "comment": "💬 COMMENT", "block": "🔴 BLOCK"}.get(
@@ -142,6 +170,17 @@ def render_comment(review: dict, *, model: str, truncated: bool) -> str:
         str(review.get("summary") or "_No summary provided._"),
         "",
     ]
+    if excluded_generated:
+        # Human-facing transparency: say what the reviewer did NOT look at.
+        n = len(excluded_generated)
+        shown = ", ".join(f"`{p}`" for p in excluded_generated[:10])
+        more = f" _(+{n - 10} more)_" if n > 10 else ""
+        lines += [
+            f"> ℹ️ {n} generated file(s) were excluded from review (regenerated "
+            f"artifacts — compliance/agent-docs/lockfiles/state logs, no reviewable "
+            f"logic): {shown}{more}.",
+            "",
+        ]
     if truncated:
         lines += [
             f"> ⚠️ **Diff truncated** at {MAX_DIFF_CHARS:,} characters — this review is "

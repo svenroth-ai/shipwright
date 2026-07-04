@@ -1,0 +1,1 @@
+Tier-3 PR review no longer fails closed on ordinary medium+ PRs: it now drops producer-generated artifacts (compliance docs, agent-docs, lockfiles, state logs — ~82% of a typical diff) before the truncation check, so the automated review runs on the real code instead of being disabled by the size cap. The excluded files are disclosed in the PR meta and review comment.

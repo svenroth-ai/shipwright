@@ -268,3 +268,24 @@ class TestMainOrchestration:
         captured = capsys.readouterr()
         assert FAKE_KEY not in captured.out
         assert FAKE_KEY not in captured.err
+
+    def test_generated_files_excluded_lets_review_run(self, monkeypatch):
+        # THE root-fix behavior (trg-e1c554d9): a diff that WOULD truncate
+        # (dominated by a regenerated compliance artifact) fits once generated
+        # noise is dropped — so the review RUNS (exit 0 on approve) instead of
+        # failing closed on truncation, and the comment discloses the exclusion.
+        big_generated = (
+            "diff --git a/.shipwright/compliance/test-evidence.md "
+            "b/.shipwright/compliance/test-evidence.md\n"
+            "--- a/.shipwright/compliance/test-evidence.md\n"
+            "+++ b/.shipwright/compliance/test-evidence.md\n"
+            "@@ -1 +1 @@\n" + "+x\n" * 120_000
+        )
+        source = "diff --git a/shared/real.py b/shared/real.py\n--- a/shared/real.py\n+++ b/shared/real.py\n@@ -1 +1 @@\n+code\n"
+        posted = _wire(
+            monkeypatch, diff=big_generated + source,
+            review_json=json.dumps(
+                {"decision": "approve", "summary": "lgtm", "blocking": [], "comments": []}))
+        assert pr_review.main(ARGV) == pr_review.EXIT_OK  # NOT blocked by truncation
+        assert "truncat" not in posted["comment"].lower()
+        assert "excluded" in posted["comment"].lower()
