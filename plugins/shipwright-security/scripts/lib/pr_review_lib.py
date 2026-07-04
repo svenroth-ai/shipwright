@@ -177,8 +177,8 @@ def render_comment(
         more = f" _(+{n - 10} more)_" if n > 10 else ""
         lines += [
             f"> ℹ️ {n} generated file(s) were excluded from review (regenerated "
-            f"artifacts — compliance/agent-docs/lockfiles/state logs, no reviewable "
-            f"logic): {shown}{more}.",
+            f"artifacts — compliance docs, agent-docs, lockfiles, state logs — "
+            f"with no reviewable logic): {shown}{more}.",
             "",
         ]
     if truncated:
