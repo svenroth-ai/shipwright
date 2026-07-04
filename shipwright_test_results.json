@@ -1,103 +1,41 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-04-pr-review-exclude-generated-diff",
+    "run_id": "iterate-2026-07-04-grade-g3-html-report",
     "date": "2026-07-04",
-    "unit": {
-      "status": "passed",
-      "passed": 460,
-      "total": 463
-    },
-    "integration": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "pgtap": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "e2e": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "design_fidelity": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "smoke": {
-      "status": "skipped"
-    },
+    "intent": "feature",
+    "complexity": "medium",
+    "unit": { "status": "passed", "passed": 215, "total": 215 },
+    "integration": { "status": "skipped", "passed": 0, "total": 0 },
+    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
+    "e2e": { "status": "passed", "passed": 36, "total": 36 },
+    "design_fidelity": { "status": "skipped", "passed": 0, "total": 0 },
+    "smoke": { "status": "skipped" },
+    "degraded": [
+      "External code review (external_review.py — GPT-5.4 + Gemini 3.1 Pro via OpenRouter): GPT-5.4 returned 3 actionable findings, all fixed (reasons capped at 3 in the renderer; the n/a-vs-zero test strengthened to count N/A score cells; the anchor/href test tightened from a tautological OR to concrete assertions). Gemini 3.1 Pro returned an incomplete/mangled response (file-list echo, no findings) — model-side cutoff. Coverage was not degraded: the internal opus code-reviewer traced the full security seam and found no blocking issues; its 6 low-severity items were applied.",
+      "The campaign sub-iterate spec (.shipwright/planning/iterate/campaigns/2026-07-03-shipwright-grade/sub-iterates/G3-html-report.md) exists only in the main working tree (untracked), so the external plan review + code review pointed at the main-tree copy."
+    ],
     "surface_verification": {
-      "surface": "none",
-      "justification": "Framework tooling change (Tier-3 pr_review gate) with no UI surface. The change is isolated to plugins/shipwright-security (verified: no cross-plugin importers of pr_review_lib / pr_review_diff_filter), so the owning plugin's full suite is the authoritative coverage: 460 passed, 3 skipped. The 'E2E' is the filter chain, dogfooded empirically on the real PR #310 diff (295,497 -> 54,211 chars, no longer truncated, 15 generated files excluded, 0 real source dropped). The pr-review.yml workflow that invokes the tool is pinned by test_pr_review_workflow_shape.py (green).",
-      "tests_run": 460,
-      "exit_code": 0
+      "surface": "cli",
+      "runner": "uv run --project plugins/shipwright-grade pytest plugins/shipwright-grade/tests/test_grade_cli.py plugins/shipwright-grade/tests/test_html_report.py plugins/shipwright-grade/tests/test_html_security.py plugins/shipwright-grade/tests/test_render_snapshots.py plugins/shipwright-grade/tests/test_render_terminal.py -q",
+      "exit_code": 0,
+      "tests_run": 36,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-04-grade-g3-html-report/surface_verification.json",
+      "timestamp": "2026-07-04T00:00:00.000Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        {
-          "behavior": "is_generated_path matches the generated prefixes/basenames (compliance, agent_docs, changelog drops, lockfiles, state logs) and rejects real source + prefix-collisions (.shipwright/compliance-notes/)",
-          "disposition": "tested",
-          "evidence": "test_pr_review_filter.py::TestIsGeneratedPath (6 cases) PASSED"
-        },
-        {
-          "behavior": "filter_generated_paths drops generated file-sections, keeps source, and returns a sorted+deduped excluded list; a diff with no diff --git header passes through unchanged",
-          "disposition": "tested",
-          "evidence": "TestFilterGeneratedPaths::test_drops_generated_keeps_source + test_all_source_unchanged + test_no_headers_returned_unchanged + test_excluded_is_sorted_and_deduped PASSED"
-        },
-        {
-          "behavior": "section-path resolution handles deletions (+++ /dev/null) and additions (--- /dev/null) via the correct side",
-          "disposition": "tested",
-          "evidence": "test_deleted_generated_file_excluded + test_new_generated_file_excluded PASSED"
-        },
-        {
-          "behavior": "a rename that moves real source INTO a generated dir is kept (not silently dropped); a rename where BOTH ends are generated is still excluded (Codex review SHOULD-FIX)",
-          "disposition": "tested",
-          "evidence": "test_rename_real_source_into_generated_dir_is_kept + test_rename_generated_to_generated_still_excluded PASSED"
-        },
-        {
-          "behavior": "filtering lets a diff that WOULD truncate fit under MAX_DIFF_CHARS so the review runs instead of failing closed",
-          "disposition": "tested",
-          "evidence": "test_filtering_lets_a_big_diff_fit_under_cap PASSED"
-        },
-        {
-          "behavior": "build_pr_meta discloses the excluded list to the model (capped at 30 + a '+N more' marker); empty when nothing excluded",
-          "disposition": "tested",
-          "evidence": "test_pr_review_lib.py::TestBuildPrMeta (3 cases) PASSED"
-        },
-        {
-          "behavior": "render_comment discloses the exclusion to humans; no note when nothing excluded",
-          "disposition": "tested",
-          "evidence": "TestRenderCommentExclusion (2 cases) PASSED"
-        },
-        {
-          "behavior": "main() end-to-end: a big generated-dominated diff is no longer truncated, the review runs (exit 0 on approve), and the comment discloses the exclusion",
-          "disposition": "tested",
-          "evidence": "test_pr_review_script.py::test_generated_files_excluded_lets_review_run PASSED"
-        },
-        {
-          "behavior": "the fail-closed-on-truncation behavior is preserved for a genuinely large CODE diff (after filtering)",
-          "disposition": "tested",
-          "evidence": "existing test_truncation_fails_closed_needs_human still PASSED (unchanged); filter runs before truncate, so a large code diff still truncates -> block"
-        },
-        {
-          "behavior": "the OpenRouter API key is never logged on any path",
-          "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "evidence": "test_api_key_never_logged (pre-existing) covers the redaction invariant this change does not touch."
-        }
+        { "behavior": "AC1 — single self-contained HTML document: no external-request surface (no <script>/external src|href/@import/url(http)/srcset/action/ping/meta-refresh), restrictive meta CSP, full <!doctype> document", "disposition": "tested", "evidence": "test_html_report.py::TestSelfContained::{test_is_a_full_html_document,test_restrictive_meta_csp,test_no_external_request_surface,test_no_model_driven_href_anchor_is_text} + test_grade_cli.py::test_html_format_emits_self_contained_document" },
+        { "behavior": "AC2 — all sections render from the model: hero (grade+score+verdict+mode badge+measured count), dimension cards (anchor+provenance), funnel panel, top reasons, disclaimer, provenance stamp, CTA", "disposition": "tested", "evidence": "test_html_report.py::TestSections::* + TestNaSemantics::test_would_light_panel_lists_na_dims" },
+        { "behavior": "AC3 — theme-aware (prefers-color-scheme dark) + responsive (viewport) + wide content scrolls in its own overflow-x container; long hostile tokens can't overflow (overflow-wrap)", "disposition": "tested", "evidence": "test_html_report.py::TestThemeAndResponsive::{test_dark_mode_media_query_present,test_responsive_viewport_and_scroll_container}" },
+        { "behavior": "AC4 — deterministic: same model → byte-identical scored content; the wall-clock appears exactly once, only in the footer", "disposition": "tested", "evidence": "test_html_report.py::TestDeterminism::{test_idempotent,test_scored_content_byte_identical_across_timestamps,test_generated_at_is_the_only_variable}" },
+        { "behavior": "AC5 — escape-only: <script>/onerror/javascript:/bidi/ANSI/OSC-8 payloads fed through every text-bearing model field are rendered inert (HTML-escaped + control-stripped), proven both by substring checks AND a parser-based zero-live-DOM-node assertion; the terminal card is control-stripped", "disposition": "tested", "evidence": "test_html_security.py::TestEscapeOnly::* (incl. test_hostile_payload_contributes_zero_live_nodes, test_every_text_field_routes_through_escaper) + test_render_terminal.py::TestTerminalControlStripping::*" },
+        { "behavior": "AC6 — snapshot tests for HTML + terminal card are stable across runs (byte-exact golden compare from one shared canonical model; UPDATE_GOLDEN to refresh intentionally)", "disposition": "tested", "evidence": "test_render_snapshots.py::{test_html_snapshot_matches_golden,test_terminal_snapshot_matches_golden}" },
+        { "behavior": "AC7 — n/a dims render 'N/A' in their score cell (never a failing 0 or 0/denominator), are excluded from the score, and are listed in the 'controls Shipwright would light up' funnel; top reasons capped at 3", "disposition": "tested", "evidence": "test_html_report.py::TestNaSemantics::{test_na_dimension_shows_na_not_zero,test_reasons_capped_at_three,test_would_light_panel_lists_na_dims}" },
+        { "behavior": "AC8 — ruff clean; both new modules ≤300 LOC", "disposition": "tested", "evidence": "uvx ruff@0.15.15 check plugins/shipwright-grade/ → All checks passed; html_report.py=250 LOC, _html_styles.py=139 LOC (both ≤300)" }
       ],
-      "counts": {
-        "testable": 9,
-        "tested": 9,
-        "untestable": 1,
-        "untested_testable": 0
-      }
-    },
-    "degraded": []
+      "counts": { "testable": 8, "tested": 8, "untestable": 0, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 8, "covered_acs": 8 }
+    }
   }
 }

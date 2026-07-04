@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-04T08:48:55.047991Z. Items waiting for triage decision.
+> Auto-generated 2026-07-04T09:09:16.263100Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 262
-- Triage: 7 | Promoted: 1 | Dismissed: 253 | Snoozed: 1
+- Total: 263
+- Triage: 8 | Promoted: 1 | Dismissed: 253 | Snoozed: 1
 
-## Top 7 items (severity-sorted)
+## Top 8 items (severity-sorted)
 
 ### Source: codeReview (1 item)
 
@@ -38,6 +38,13 @@
 - **Measure patch/diff coverage (were the CHANGED lines tested?), not just pass-rate** `id=trg-8fdebda3 | severity=high | kind=improvement → P1/engineering`
   - Reviewer comment B: '3618/3618 green' is pass-rate, not coverage — it says nothing about whether AI-added code is even…
   - Promote: `triage_promote.py --id trg-8fdebda3 --task-ref EXT:<ref>`
+
+### Source: drift (1 item)
+
+<a id="trg-218571a8"></a>
+- **Drift: C:\01_Development\shipwright\CLAUDE.md: 'plugins/shipwright-grade/' exists on disk but not listed in Structure** `id=trg-218571a8 | severity=medium | kind=maintenance → P2/engineering`
+  - C:\01_Development\shipwright\CLAUDE.md: 'plugins/shipwright-grade/' exists on disk but not listed in Structure
+  - Promote: `triage_promote.py --id trg-218571a8 --task-ref EXT:<ref>`
 
 ### Source: github (2 items)
 

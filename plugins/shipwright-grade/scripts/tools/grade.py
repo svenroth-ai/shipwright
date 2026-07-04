@@ -16,6 +16,7 @@ import argparse
 import dataclasses
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 # Make the core library importable bare (see scripts/lib/__init__.py).
@@ -27,6 +28,7 @@ from engine_bridge import EngineUnavailableError  # noqa: E402
 from gh_bridge import run_gh  # noqa: E402
 from git_exec import remote_url  # noqa: E402
 from grade_inputs_projector import grade_context  # noqa: E402
+from html_report import render_html  # noqa: E402
 from network_policy import resolve_network_policy  # noqa: E402
 from render_markdown import render_markdown  # noqa: E402
 from render_terminal import render_terminal  # noqa: E402
@@ -57,8 +59,11 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     )
     parser.add_argument("path", help="Path to a local git repository")
     parser.add_argument(
-        "--format", choices=("terminal", "markdown", "json"),
-        default="terminal", help="Output format (default: terminal)",
+        "--format", choices=("terminal", "markdown", "json", "html"),
+        default="terminal",
+        help="Output format (default: terminal). 'html' emits a single "
+             "self-contained report to stdout — redirect it: "
+             "grade.py <path> --format html > report.html",
     )
     parser.add_argument(
         "--allow-network", action="store_true",
@@ -99,6 +104,13 @@ def run(argv: list[str]) -> int:
         print(json.dumps(dataclasses.asdict(model), indent=2, ensure_ascii=False))
     elif args.format == "markdown":
         print(render_markdown(model))
+    elif args.format == "html":
+        # The wall-clock lands ONLY in the footer; scored content stays
+        # deterministic (see html_report.render_html). Write (not print) so a
+        # redirected `> report.html` is exactly the document — the rendered
+        # string already ends with a single trailing newline.
+        stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+        sys.stdout.write(render_html(model, generated_at=stamp))
     else:
         print(render_terminal(model))
     return 0

@@ -31,8 +31,13 @@ def render_terminal(model: ReportModel) -> str:
     score = "N/A" if model.score is None else f"{model.score:.1f}/100"
     total = len(model.dimensions)
     measured = f"{model.measurable_count} of {total} controls measured"
+    # grade/mode are trusted engine enums (A–F / heuristic|authoritative|
+    # unavailable), but route them through the sanitizer anyway so the card has
+    # ONE uniform "every displayed field is control-stripped" seam.
+    grade = one_line(model.grade, limit=4)
+    mode = one_line(model.mode, limit=24)
     lines.append("=" * 72)
-    lines.append(f"Control Grade: {model.grade}  ({score})  — {model.mode}, {measured}")
+    lines.append(f"Control Grade: {grade}  ({score})  — {mode}, {measured}")
     lines.append(f"Repository: {one_line(model.target_display, limit=60)}")
     lines.append(one_line(model.verdict, limit=200))
     lines.append("=" * 72)

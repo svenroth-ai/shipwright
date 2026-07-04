@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-04T08:48:55.047991+00:00
+Generated: 2026-07-04T09:09:16.263100+00:00
 
 ## Requirements Coverage
 
@@ -27,6 +27,7 @@ Generated: 2026-07-04T08:48:55.047991+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-a5ef23cc"></a>Added a self-contained, escape-safe HTML report (and hardened the terminal card) to the repo grader so it can produce a shareable Control Grade page. | iterate | feature |  | 215/215 | — | 2026-07-04 |
 | <a id="evt-f166acab"></a>Fixed the automated pull-request reviewer so it no longer gets stuck on ordinary larger changes: it now ignores the auto-generated bookkeeping files (which are ~82% of a typical diff) and reviews only the real code, telling you which files it skipped. | iterate | change |  | 460/463 | — | 2026-07-04 |
 | <a id="evt-443a5258"></a>Closed the external GPT+Gemini review findings on the merged G2 grade signals: the network test-health tier no longer counts a green build/CI check as a test, the code-scanning branch ref is URL-encoded, and the additive-engine golden test is now a full byte-identical report snapshot. | iterate | bug |  | 187/187 | — | 2026-07-04 |
 | <a id="evt-cb7cb6b8"></a>The repo grader now scores more Control-Grade dimensions on a cold repo: maintainability and dependency hygiene locally, plus test-health and security via an opt-in --allow-network path; the scoring engine gains one additive, byte-identical field. | iterate | feature |  | 182/182 | — | 2026-07-04 |
@@ -281,7 +282,7 @@ Generated: 2026-07-04T08:48:55.047991+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 247 |
+| Iterate changes | 248 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

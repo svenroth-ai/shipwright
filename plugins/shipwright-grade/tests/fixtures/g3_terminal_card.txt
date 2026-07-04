@@ -1,0 +1,23 @@
+========================================================================
+Control Grade: B  (82.5/100)  — heuristic, 3 of 7 controls measured
+Repository: sample-repo
+Controlled, minor gaps. Primarily capped by change traceability.
+========================================================================
+Dimensions (3 of 7 measurable):
+  [ok]  Requirement traceability         1.00  1/1 FRs covered; 2/2 changes traced (FR-linked or classified no-FR)
+  [N/A] Test health                        N/A  3 test files across 1 framework (pytest) — present, not executed
+  [gap] Change traceability              0.50  1/2 changes linked to a commit, ADR or test run
+  [N/A] Change reconciliation              N/A  not measurable — needs per-change behavior-impact (BP-2)
+  [N/A] Security                           N/A  no code-scanning ingested (local-only)
+  [gap] Size / maintainability discipli… 0.85  2/13 source files over 300 LOC
+  [N/A] Dependency hygiene                 N/A  no dependency manifest
+
+Controls Shipwright would light up: Test health, Change reconciliation, Security, Dependency hygiene
+Test inventory: 3 test files across 1 framework (pytest) — present, not executed; CI workflow present
+
+Top reasons:
+  - Change traceability: 1/2 changes linked to a commit, ADR or test run
+Network: local-only (default) — pass --allow-network to enrich via GitHub
+
+Note: Heuristic estimate from the outside — it inspects history and structure, it does not verify behaviour. A cold-repo grade cannot certify correctness.
+verified_from: shipwright-grade heuristic @ deadbeefcafe1234 (local-only)
