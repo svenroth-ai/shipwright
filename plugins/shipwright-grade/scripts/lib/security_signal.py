@@ -19,6 +19,7 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
+from urllib.parse import quote
 
 from gh_bridge import GhRunner, default_branch, gh_json
 from network_policy import NetworkPolicy
@@ -48,7 +49,10 @@ def _latest_analysis_id(gh: GhRunner, owner: str, repo: str) -> tuple[int | None
     path = f"/repos/{owner}/{repo}/code-scanning/analyses?per_page=1"
     branch = default_branch(gh, owner, repo)
     if branch:
-        path += f"&ref=refs/heads/{branch}"
+        # URL-encode the branch (a name may contain #/?/&/space) so it can't
+        # break or inject into the query string; keep '/' for path-style branch
+        # names like feature/x (external review GPT #6 / Gemini).
+        path += f"&ref=refs/heads/{quote(branch, safe='/')}"
     result, data = gh_json(gh, ["api", path])
     if not result.ok:
         if result.error in ("rate_limited", "http_error"):
@@ -91,8 +95,11 @@ def compute_security_signal(
     if not sarif_text:
         return _na("code-scanning SARIF could not be downloaded")
 
-    # Validate BEFORE parsing: a malformed payload must be n/a, never read as a
-    # clean empty scan (the invalid-SARIF negative fixture).
+    # SARIF is a JSON format, so json.loads is the correct parser and is XXE-safe
+    # by construction (JSON has no DTDs/entities) — the spec's "defusedxml for
+    # SARIF" wording is about XML and applies to the JUnit path only. Validate
+    # BEFORE handing off: a malformed payload must be n/a, never read as a clean
+    # empty scan (the invalid-SARIF negative fixture).
     try:
         doc = json.loads(sarif_text)
     except (json.JSONDecodeError, ValueError):

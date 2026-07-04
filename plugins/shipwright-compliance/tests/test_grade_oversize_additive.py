@@ -68,12 +68,48 @@ class TestNoBaselineByteIdentity:
         assert m.detail == "no size baseline"
         assert m.anchor == "no unchecked code-size growth (ISO/IEC 25010)"
 
-    def test_full_report_snapshot_stable(self):
-        """Guard the composed headline for a canonical all-else-green fixture."""
-        r = compute_grade(_measurable_base())  # dim 6 n/a, excluded from denom
-        assert (r.grade, r.gradeable) == ("A", True)
-        # 90/10/15/... weighted average of the measurable dims, dim 6 excluded.
-        assert r.score is not None and 90.0 <= r.score <= 100.0
+    def test_full_report_byte_identical_snapshot(self):
+        """True golden (external review GPT #2): the ENTIRE serialized GradeReport
+        for a canonical dashboard-like fixture (``oversize_file_ratio=None``) is
+        pinned byte-for-byte, so ANY drift in a score, precision, detail, anchor,
+        reason or verdict — not just the maintainability dim — fails the gate."""
+        expected = {
+            "gradeable": True, "score": 97.3, "grade": "A",
+            "verdict": "Under full control. Primarily capped by requirement traceability.",
+            "band_label": "Under full control.",
+            "dimensions": [
+                {"key": "requirement_traceability", "label": "Requirement traceability",
+                 "weight": 0.25, "score": 0.92,
+                 "anchor": "requirement-to-work traceability (ISO/IEC/IEEE 29148)",
+                 "detail": "9/10 FRs covered; 95/100 changes traced "
+                           "(FR-linked or classified no-FR)"},
+                {"key": "test_health", "label": "Test health", "weight": 0.2,
+                 "score": 1.0, "anchor": "automated tests pass (OpenSSF Scorecard)",
+                 "detail": "latest full suite 200/200 (2026-07-01)"},
+                {"key": "change_traceability", "label": "Change traceability",
+                 "weight": 0.15, "score": 1.0, "anchor": "change provenance (SLSA)",
+                 "detail": "100/100 changes linked to a commit, ADR or test run"},
+                {"key": "change_reconciliation", "label": "Change reconciliation",
+                 "weight": 0.15, "score": None,
+                 "anchor": "re-verify changed requirements (ISO/IEC/IEEE 12207)",
+                 "detail": "not measurable — needs per-change behavior-impact (BP-2)"},
+                {"key": "security", "label": "Security", "weight": 0.1, "score": 1.0,
+                 "anchor": "no open high/critical vulns (NIST SSDF)",
+                 "detail": "0 open high/critical"},
+                {"key": "maintainability", "label": "Size / maintainability discipline",
+                 "weight": 0.1, "score": None,
+                 "anchor": "no unchecked code-size growth (ISO/IEC 25010)",
+                 "detail": "no size baseline"},
+                {"key": "dependency_hygiene", "label": "Dependency hygiene",
+                 "weight": 0.05, "score": 1.0,
+                 "anchor": "dependency license & risk (OWASP)",
+                 "detail": "0 unresolved / 20 licenses; 0 copyleft"},
+            ],
+            "reasons": ["Requirement traceability: 9/10 FRs covered; "
+                        "95/100 changes traced (FR-linked or classified no-FR)"],
+            "verified_from": "test",
+        }
+        assert dataclasses.asdict(compute_grade(_measurable_base())) == expected
 
 
 class TestNewOversizeBranch:

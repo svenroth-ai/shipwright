@@ -28,8 +28,13 @@ from gh_bridge import GhRunner, default_branch, gh_json
 from junit_xml import JUnitResult, parse_junit_files
 from network_policy import NetworkPolicy
 
+# TEST-specific check names only. Deliberately EXCLUDES bare "build"/"ci": a
+# green build or generic CI status is not evidence that TESTS ran, so counting
+# it would inflate the Scorecard-style "tests-run-on-merged-PRs" ratio (external
+# review, GPT #5). "test" already subsumes pytest/vitest/unittest/testsuite/go-test.
 _TEST_CHECK_RE = re.compile(
-    r"(test|spec|pytest|jest|vitest|unit|e2e|integration|\bci\b|build)", re.IGNORECASE)
+    r"(test|spec|jest|vitest|mocha|cypress|playwright|e2e|integration|unit|tox)",
+    re.IGNORECASE)
 _MERGED_PR_QUERY = (
     "query($owner:String!,$repo:String!){repository(owner:$owner,name:$repo){"
     "pullRequests(states:MERGED,first:20,orderBy:{field:UPDATED_AT,direction:DESC})"

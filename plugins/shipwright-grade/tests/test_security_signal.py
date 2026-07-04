@@ -141,3 +141,39 @@ def test_analyses_filtered_by_default_branch():
         _gh(sarif=json.dumps(_CLEAN), default_branch="main", calls=calls))
     analyses_calls = [c for c in calls if "code-scanning/analyses?" in c]
     assert analyses_calls and "ref=refs/heads/main" in analyses_calls[0]
+
+
+def test_ref_is_url_encoded():
+    # External review GPT #6 / Gemini: a branch with query-breaking chars must be
+    # percent-encoded so it can't break or inject into the REST query string.
+    calls: list[str] = []
+    compute_security_signal(
+        _enabled_policy(),
+        _gh(sarif=json.dumps(_CLEAN), default_branch="feat#x?y&z", calls=calls))
+    analyses = [c for c in calls if "code-scanning/analyses?" in c][0]
+    assert "ref=refs/heads/feat%23x%3Fy%26z" in analyses
+    assert "feat#x" not in analyses  # the raw '#' never reaches the query
+
+
+def test_ref_keeps_slash_for_path_style_branch():
+    calls: list[str] = []
+    compute_security_signal(
+        _enabled_policy(),
+        _gh(sarif=json.dumps(_CLEAN), default_branch="release/1.0", calls=calls))
+    analyses = [c for c in calls if "code-scanning/analyses?" in c][0]
+    assert "ref=refs/heads/release/1.0" in analyses  # '/' preserved
+
+
+def test_sarif_with_xml_lookalike_strings_is_inert():
+    # SARIF is JSON (not XML), so json.loads is XXE-safe by construction: a
+    # rule message containing <!DOCTYPE>/<script>/&xxe; is an opaque string,
+    # never parsed as XML (external review GPT #1/#8 — closes the concern
+    # honestly: the SARIF path has no XML attack surface; defusedxml guards JUnit).
+    hostile = {"runs": [{"tool": {"driver": {"name": "CodeQL", "rules": [
+        {"id": "R1", "properties": {"security-severity": "9.5"}}]}},
+        "results": [{"ruleId": "R1", "message": {
+            "text": '<!DOCTYPE x [<!ENTITY e SYSTEM "file:///etc/passwd">]>'
+                    '<script>alert(1)</script>&e;'}}]}]}
+    sig = compute_security_signal(_enabled_policy(), _gh(sarif=json.dumps(hostile)))
+    assert sig.measurable is True          # parsed fine, no crash, no expansion
+    assert sig.open_high_critical == 1     # the critical finding is counted

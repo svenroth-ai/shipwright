@@ -125,3 +125,37 @@ def test_real_tier2_none_on_empty_prs():
     def fake(args, *, timeout=30):
         return GhResult(ok=True, stdout=json.dumps(empty))
     assert _tier2_scorecard(fake, "o", "r") is None
+
+
+def _pr(name, conclusion, kind="CheckRun"):
+    key = "name" if kind == "CheckRun" else "context"
+    concl_key = "conclusion" if kind == "CheckRun" else "state"
+    return {"mergeCommit": {"statusCheckRollup": {"contexts": {"nodes": [
+        {"__typename": kind, key: name, concl_key: conclusion}]}}}}
+
+
+def test_real_tier2_build_and_ci_checks_are_not_tests():
+    # External review GPT #5: a green "build"/"ci"/"lint" check is NOT evidence
+    # that tests ran — it must not count toward the test-health ratio.
+    graphql = {"data": {"repository": {"pullRequests": {"nodes": [
+        _pr("build", "SUCCESS"),
+        _pr("ci", "SUCCESS"),
+        _pr("lint", "SUCCESS", kind="StatusContext"),
+        _pr("unit-tests", "SUCCESS"),  # the only real test check
+    ]}}}}
+
+    def fake(args, *, timeout=30):
+        return GhResult(ok=True, stdout=json.dumps(graphql))
+    # 4 PRs examined, only the unit-tests PR counts.
+    assert _tier2_scorecard(fake, "octo", "repo") == (1, 4)
+
+
+def test_real_tier2_common_test_runners_count():
+    graphql = {"data": {"repository": {"pullRequests": {"nodes": [
+        _pr("jest", "SUCCESS"), _pr("cypress e2e", "SUCCESS"),
+        _pr("RSpec", "SUCCESS", kind="StatusContext"), _pr("tox", "SUCCESS"),
+    ]}}}}
+
+    def fake(args, *, timeout=30):
+        return GhResult(ok=True, stdout=json.dumps(graphql))
+    assert _tier2_scorecard(fake, "octo", "repo") == (4, 4)
