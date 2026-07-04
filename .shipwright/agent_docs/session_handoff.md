@@ -1,35 +1,36 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-03-diff-coverage-measure-one-tier"
+run_id: "iterate-2026-07-03-grade-g1-projector"
 phase: "iterate"
-reason: "post-merge regen: iterate-2026-07-03-diff-coverage-measure-one-tier"
-timestamp: "2026-07-03T21:56:46.817090+00:00"
+reason: "iterate: shipwright-grade G1 cold-repo signal projector"
+timestamp: "2026-07-03T22:42:27.621632+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-03 21:56:46 UTC
+> Auto-generated 2026-07-03 22:42:27 UTC
 
 ## Session Info
 
-- **Session ID**: d6ce5fc1-f421-4efb-8fb5-a04215b1284a
-- **Timestamp**: 2026-07-03 21:56:46 UTC
-- **Reason**: post-merge regen: iterate-2026-07-03-diff-coverage-measure-one-tier
+- **Session ID**: b7cc4b8a-109b-4b02-8adf-f984be1dc350
+- **Timestamp**: 2026-07-03 22:42:27 UTC
+- **Reason**: iterate: shipwright-grade G1 cold-repo signal projector
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-03-diff-coverage-measure-one-tier
-- **Date**: 2026-07-03T21:57:26.401773Z
-- **Type**: feature
-- **Complexity**: medium
-- **Branch**: iterate/diff-coverage-measure-one-tier
-- **ADR**: iterate-2026-07-03-diff-coverage-measure-one-tier
+- **Run ID**: iterate-2026-07-03-semgrep-noise-tailoring
+- **Date**: 2026-07-03T21:10:31.113988Z
+- **Type**: change
+- **Complexity**: small
+- **Branch**: iterate/semgrep-noise-tailoring
+- **ADR**: iterate-2026-07-03-semgrep-noise-tailoring
 - **Tests passed**: True
 - **Spec**: .shipwright/planning/diff-coverage-roadmap.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/diff-coverage-measure-one-tier
+- **Branch**: iterate/grade-g1-projector
+- **Spec**: .shipwright/planning/iterate/2026-07-03-grade-g1-projector.md
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +49,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/diff-coverage-measure-one-tier
-- **Last Commit**: 9d3568fa Merge remote-tracking branch 'origin/main' into iterate/diff-coverage-measure-one-tier
+- **Branch**: iterate/grade-g1-projector
+- **Last Commit**: 8162be16 chore(triage): sweep 2 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,6 +66,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-feb2ef5e | work_completed | iterate (shipwright-grade G1: cold-repo signal projector (new read-only plugin)) | 2026-07-03 |
 | evt-9d089d93 | work_completed | iterate (Producer-side accepted-risk Semgrep rule tailoring: two opt-in default-off env channels (wholesale exact check_id; owner-scoped mutable-tag via file-read) stop the weekly self-scan re-surfacing 14 dependabot-cooldown + 12 GitHub-owned mutable-tag findings; unpinned third-party actions stay flagged.) | 2026-07-03 |
 | evt-76c97ce2 | work_completed | iterate (diff-coverage Phase 1: shared-tier measurement chain (measure_diff_coverage.py + non-gating CI diff-cover) + gitignored transient + grade-neutral dashboard INFO line) | 2026-07-03 |
 | evt-5755f932 | work_completed | iterate (Route github_triage background appends to the gitignored outbox on idle main (should_route_to_outbox) so they reach origin instead of stranding as main-tree drift — closes the delivery gap behind the recurring gh-prompt ghost.) | 2026-07-03 |
@@ -75,7 +77,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 243
-- **Last iterate**: change — Producer-side accepted-risk Semgrep rule tailoring: two opt-in default-off env channels (wholesale exact check_id; owner-scoped mutable-tag via file-read) stop the weekly self-scan re-surfacing 14 dependabot-cooldown + 12 GitHub-owned mutable-tag findings; unpinned third-party actions stay flagged. (2026-07-03)
+- **Last iterate**: feature — shipwright-grade G1: cold-repo signal projector (new read-only plugin) (2026-07-03)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

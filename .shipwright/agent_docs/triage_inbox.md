@@ -1,12 +1,12 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-03T21:56:46.817090Z. Items waiting for triage decision.
+> Auto-generated 2026-07-03T22:42:27.621632Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
 - Total: 258
-- Triage: 5 | Promoted: 1 | Dismissed: 251 | Snoozed: 1
+- Triage: 4 | Promoted: 1 | Dismissed: 252 | Snoozed: 1
 
 ## Top 5 items (severity-sorted)
 
@@ -32,22 +32,12 @@
   - Reviewer comment B: '3618/3618 green' is pass-rate, not coverage — it says nothing about whether AI-added code is even…
   - Promote: `triage_promote.py --id trg-8fdebda3 --task-ref EXT:<ref>`
 
-### Source: github (1 item)
+### Source: grader-campaign (1 item)
 
-<a id="trg-544fa61e"></a>
-- **GitHub security: 26 shipwright-security finding(s) (medium)** `id=trg-544fa61e | severity=medium | kind=improvement → P2/engineering`
-  - Repo svenroth-ai/shipwright \| code-scanning: (unavailable) \| dependabot: (unavailable) \| shipwright-security: 12 med…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-security
-    
-    Context: the shipwright-security CI workflow reports 26 open finding(s) for svenroth-ai/shipwright (GHAS Code Scanning is not configured).
-    Severity breakdown — shipwright-security: 12 medium, 14 low.
-    Workflow run: https://github.com/svenroth-ai/shipwright/actions/runs/28666243321
-    Re-scan locally: see docs/security-ci-setup.md
-    Source: triage item gh-security:svenroth-ai/shipwright
-    ```
-  - Promote: `triage_promote.py --id trg-544fa61e --task-ref EXT:<ref>`
+<a id="trg-e68e9901"></a>
+- **Build shipwright-grade: repo-agnostic Control Grade grader (lead magnet)** `id=trg-e68e9901 | severity=high | kind=improvement → P1/engineering`
+  - New standalone read-only plugin that grades ANY git repo (incl. non-Shipwright) with the same Control Grade rubric by p…
+  - Promote: `triage_promote.py --id trg-e68e9901 --task-ref EXT:<ref>`
 
 ### Source: grader-campaign (1 item)
 

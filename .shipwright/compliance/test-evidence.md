@@ -1,21 +1,21 @@
 # Test Evidence Report
 
-Generated: 2026-07-03T21:56:46.817090+00:00
+Generated: 2026-07-03T22:42:27.621632+00:00
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 243 |
-| Total unit tests (latest full suite) | 3905/3917 (2026-07-03) |
+| Total unit tests (latest full suite) | 3629/3641 (2026-07-03) |
 | New tests from iterations | +220 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | Producer-side accepted-risk Semgrep rule tailoring: two opt-in default-off env channels (wholesale exact check_id; owner-scoped mutable-tag via file-read) stop the weekly self-scan re-surfacing 14 dependabot-cooldown + 12 GitHub-owned mutable-tag findings; unpinned third-party actions stay flagged. | [iterate](traceability-matrix.md#evt-9d089d93) | — | +0 | — | — | 2026-07-03 |
-| 2 | Added a way to measure how much of the code CHANGED in a pull request is actually run by tests ("diff coverage") for the shared code, shown as an informational note; it does not affect any grade or block anything yet. | [iterate](traceability-matrix.md#evt-76c97ce2) | unit | +0 | 3905/3917 | PASS (12 skipped) | 2026-07-03 |
+| 1 | Added a tool that grades any local git repository A-F with the same rubric as the dashboard, reusing the scoring engine unchanged; dimensions it cannot derive show an honest N/A. | [iterate](traceability-matrix.md#evt-feb2ef5e) | mixed | +0 | 91/91 | PASS | 2026-07-03 |
+| 2 | Producer-side accepted-risk Semgrep rule tailoring: two opt-in default-off env channels (wholesale exact check_id; owner-scoped mutable-tag via file-read) stop the weekly self-scan re-surfacing 14 dependabot-cooldown + 12 GitHub-owned mutable-tag findings; unpinned third-party actions stay flagged. | [iterate](traceability-matrix.md#evt-9d089d93) | — | +0 | — | — | 2026-07-03 |
 | 3 | Fixed a delivery bug where GitHub security findings raised while on the main branch were written to a local-only file that never reached the server, so their dismissals did not stick. | [iterate](traceability-matrix.md#evt-5755f932) | unit | +0 | 3629/3641 | PASS (12 skipped) | 2026-07-03 |
 | 4 | Fixed a bug where prompt-injection security warnings stopped appearing whenever the repos code scanning was healthy, and made the security scan re-run on every merge so a fixed issue clears right away instead of lingering up to a week. | [iterate](traceability-matrix.md#evt-1f234469) | unit | +0 | 3627/3639 | PASS (12 skipped) | 2026-07-02 |
 | 5 | Wrote down a step-by-step plan for measuring whether changed code is actually tested, so a future session can pick it up. | [iterate](traceability-matrix.md#evt-0018a555) | — | +0 | — | — | 2026-07-02 |
@@ -293,7 +293,7 @@ _Synthesized from per-iterate **unit** results — Integration / pgTAP / E2E / S
 | 27 | iterate | 4964/4976 | — | — | — | — | 2026-07-01 |
 | 28 | iterate | 3627/3639 | — | — | — | — | 2026-07-02 |
 | 29 | iterate | 3629/3641 | — | — | — | — | 2026-07-03 |
-| 30 | iterate | 3905/3917 | — | — | — | — | 2026-07-03 |
+| 30 | iterate | 91/91 | — | — | — | — | 2026-07-03 |
 
 ## Code Review Evidence
 

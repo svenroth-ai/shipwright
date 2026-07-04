@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-03 21:56 UTC | Session: d6ce5fc1-f421-4efb-8fb5-a04215b1284a | Run: iterate-2026-07-03-diff-coverage-measure-one-tier
+> Updated: 2026-07-03 22:42 UTC | Session: b7cc4b8a-109b-4b02-8adf-f984be1dc350 | Run: iterate-2026-07-03-grade-g1-projector
 
 ## Recent Changes (243 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | shipwright-grade G1: cold-repo signal projector (new read-only plugin) | 91/91 |  | tooling | 2026-07-03 |
 | change | Producer-side accepted-risk Semgrep rule tailoring: two opt-in default-off env channels (wholesale exact check_id; owner-scoped mutable-tag via file-read) stop the weekly self-scan re-surfacing 14 dependabot-cooldown + 12 GitHub-owned mutable-tag findings; unpinned third-party actions stay flagged. | 0/0 |  | tooling | 2026-07-03 |
 | feature | diff-coverage Phase 1: shared-tier measurement chain (measure_diff_coverage.py + non-gating CI diff-cover) + gitignored transient + grade-neutral dashboard INFO line | 3905/3917 |  | tooling | 2026-07-03 |
 | bug | Route github_triage background appends to the gitignored outbox on idle main (should_route_to_outbox) so they reach origin instead of stranding as main-tree drift — closes the delivery gap behind the recurring gh-prompt ghost. | 3629/3641 |  | FR-01.14 | 2026-07-03 |
@@ -250,7 +251,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-03 | Unit: 3905/3917 | Integration: 23/23 | Smoke: skipped | (iterate)
+Last run: 2026-07-03 | Unit: 91/91 | Smoke: skipped | (iterate)
 
 ## Pipeline
 
