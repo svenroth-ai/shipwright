@@ -1,0 +1,9 @@
+{
+  "run_id": "iterate-2026-07-04-prompt-scan-literal-fp",
+  "date": "2026-07-04T12:50:07.006306Z",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/prompt-scan-literal-fp",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-04-prompt-scan-literal-fp"
+}

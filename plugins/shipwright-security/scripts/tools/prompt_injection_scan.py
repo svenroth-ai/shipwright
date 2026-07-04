@@ -52,6 +52,8 @@ PLUGIN_ROOT = SCRIPT_DIR.parent.parent
 SHARED_ROOT = PLUGIN_ROOT.parent.parent / "shared"
 
 sys.path.insert(0, str(SHARED_ROOT / "scripts"))
+sys.path.insert(0, str(SCRIPT_DIR))
+from py_token_filter import blank_noncode_spans  # noqa: E402  (SCRIPT_DIR on path)
 
 try:
     from lib.errors import structured_error, structured_success  # type: ignore
@@ -376,10 +378,10 @@ def scan_python(path: Path, rel_path: str) -> list[dict[str, Any]]:
         return []
 
     findings: list[dict[str, Any]] = []
-    lines = text.split("\n")
+    lines = blank_noncode_spans(text).split("\n")  # strings/comments blanked out
 
     for i, line in enumerate(lines, 1):
-        # Skip obvious comments
+        # Guard only bites on the invalid-Python fallback (blanked otherwise).
         stripped = line.strip()
         if stripped.startswith("#"):
             continue

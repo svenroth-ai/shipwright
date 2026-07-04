@@ -1,10 +1,12 @@
 """Regression for PR #125: the ``--diff`` scan path must apply the same
 ``SKIP_DIRS`` / ``SELF_REFERENCE_PATHS`` exclusion as the full-tree walk.
 
-Without it, a PR whose diff touches the scanner's own source/tests — which
-carry dynamic-execution pattern literals by design — yields false-positive
-PY_EVAL / PY_EXEC findings (the noise seen on PR #125). Kept in its own file so
-the heavily-baselined ``test_prompt_injection_scan.py`` is not grown.
+Since ``scan_python`` became string-literal aware (it blanks STRING / COMMENT
+token spans before matching), the scanner's own source/tests — which carry
+dynamic-execution pattern literals by design — no longer self-flag on a raw
+scan. The ``SELF_REFERENCE_PATHS`` exclusion is retained as belt-and-suspenders
+for the ``--diff`` path. Kept in its own file so the heavily-baselined
+``test_prompt_injection_scan.py`` is not grown.
 """
 
 from __future__ import annotations
@@ -33,9 +35,12 @@ class TestDiffModeExclusion:
         p = REPO_ROOT / "plugins/shipwright-security/scripts/tools/scan.py"
         assert not scanner._is_excluded(p, REPO_ROOT)
 
-    def test_self_reference_test_file_would_flag_but_is_excluded(self):
-        # scan_file DOES flag this file's dynamic-exec fixtures; the exclusion
-        # is precisely what keeps diff-mode from reporting them.
-        target = REPO_ROOT / "plugins/shipwright-security/tests/test_prompt_injection_scan.py"
-        assert scanner.scan_file(target, REPO_ROOT), "raw scan_file should flag the fixtures"
-        assert scanner._is_excluded(target, REPO_ROOT)
+    def test_self_reference_files_no_longer_self_flag_but_stay_excluded(self):
+        # The literal-aware scan_python means the scanner's own source/tests —
+        # whose dynamic-exec patterns are all STRING LITERALS — no longer
+        # self-flag on a raw scan (a revert of that fix would re-break this).
+        # The SELF_REFERENCE exclusion is kept as belt-and-suspenders anyway.
+        for rel in scanner.SELF_REFERENCE_PATHS:
+            target = REPO_ROOT / rel
+            assert scanner.scan_file(target, REPO_ROOT) == [], f"{rel} should not self-flag"
+            assert scanner._is_excluded(target, REPO_ROOT), rel

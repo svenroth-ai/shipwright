@@ -1,37 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-04-grade-g3-html-report"
+run_id: "iterate-2026-07-04-prompt-scan-literal-fp"
 phase: "iterate"
-reason: "F11: regenerate compliance after origin/main merge (G3)"
-timestamp: "2026-07-04T09:09:16.263100+00:00"
+reason: "prompt-scan literal false-positive fix"
+timestamp: "2026-07-04T12:50:30.749429+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-04 09:09:16 UTC
+> Auto-generated 2026-07-04 12:50:30 UTC
 
 ## Session Info
 
-- **Session ID**: 8e84d52f-c16d-4863-a2a4-cdef78f9b4d9
-- **Timestamp**: 2026-07-04 09:09:16 UTC
-- **Reason**: F11: regenerate compliance after origin/main merge (G3)
+- **Session ID**: 747398fc-2d62-4a9a-a5f3-5a69600889cc
+- **Timestamp**: 2026-07-04 12:50:30 UTC
+- **Reason**: prompt-scan literal false-positive fix
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-04-grade-g3-html-report
-- **Date**: 2026-07-04T09:10:12.876538Z
-- **Type**: feature
-- **Complexity**: medium
-- **Branch**: iterate/grade-g3-html-report
-- **ADR**: iterate-2026-07-04-grade-g3-html-report
+- **Run ID**: iterate-2026-07-04-prompt-scan-literal-fp
+- **Date**: 2026-07-04T12:50:07.006306Z
+- **Type**: bug
+- **Complexity**: small
+- **Branch**: iterate/prompt-scan-literal-fp
+- **ADR**: iterate-2026-07-04-prompt-scan-literal-fp
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-04-grade-g3-html-report.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/grade-g3-html-report
-- **Run ID**: iterate-2026-07-04-grade-g3-html-report
-- **Spec**: .shipwright/planning/iterate/2026-07-04-grade-g3-html-report.md
+- **Branch**: iterate/prompt-scan-literal-fp
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -50,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/grade-g3-html-report
-- **Last Commit**: 4e06bd4c Merge remote-tracking branch 'origin/main' into iterate/grade-g3-html-report
+- **Branch**: iterate/prompt-scan-literal-fp
+- **Last Commit**: cad4add1 chore(triage): sweep 2 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -67,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-6d440ca1 | work_completed | iterate (Prompt-injection scanner blanks string/comment/f-string token spans before matching so dangerous-pattern literals in security-audit tests are no longer false positives; real calls still flag.) | 2026-07-04 |
 | evt-f166acab | work_completed | iterate (Tier-3 pr_review filters producer-generated file-sections (compliance/agent-docs/lockfiles/state-logs) out of the diff before the truncation check, with the excluded list disclosed in PR meta + comment) | 2026-07-04 |
 | evt-a5ef23cc | work_completed | iterate (grade-g3-html-report) | 2026-07-04 |
 | evt-443a5258 | work_completed | iterate (shipwright-grade G2 external-review follow-up: tier-2 test-check precision (drop build/ci false positives) + code-scanning ref URL-encoding + full-report byte-identical golden + SARIF-JSON clarification) | 2026-07-04 |
 | evt-cb7cb6b8 | work_completed | iterate (shipwright-grade G2: light security, dependency, maintainability and network-gated test-health signals for cold repos) | 2026-07-04 |
-| evt-feb2ef5e | work_completed | iterate (shipwright-grade G1: cold-repo signal projector (new read-only plugin)) | 2026-07-03 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 248
-- **Last iterate**: change — Tier-3 pr_review filters producer-generated file-sections (compliance/agent-docs/lockfiles/state-logs) out of the diff before the truncation check, with the excluded list disclosed in PR meta + comment (2026-07-04)
+- **Total work events**: 249
+- **Last iterate**: bug — Prompt-injection scanner blanks string/comment/f-string token spans before matching so dangerous-pattern literals in security-audit tests are no longer false positives; real calls still flag. (2026-07-04)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
