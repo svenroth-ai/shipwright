@@ -28,6 +28,7 @@ Generated: 2026-07-03T22:42:27.621632+00:00
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
 | <a id="evt-feb2ef5e"></a>Added a tool that grades any local git repository A-F with the same rubric as the dashboard, reusing the scoring engine unchanged; dimensions it cannot derive show an honest N/A. | iterate | feature |  | 91/91 | — | 2026-07-03 |
+| <a id="evt-76c97ce2"></a>Added a way to measure how much of the code CHANGED in a pull request is actually run by tests ("diff coverage") for the shared code, shown as an informational note; it does not affect any grade or block anything yet. | iterate | feature |  | 3905/3917 | — | 2026-07-03 |
 | <a id="evt-9d089d93"></a>Producer-side accepted-risk Semgrep rule tailoring: two opt-in default-off env channels (wholesale exact check_id; owner-scoped mutable-tag via file-read) stop the weekly self-scan re-surfacing 14 dependabot-cooldown + 12 GitHub-owned mutable-tag findings; unpinned third-party actions stay flagged. | iterate | change |  | — | — | 2026-07-03 |
 | <a id="evt-5755f932"></a>Fixed a delivery bug where GitHub security findings raised while on the main branch were written to a local-only file that never reached the server, so their dismissals did not stick. | iterate | bug | [FR-01.14](#rtm-fr-0114) | 3629/3641 | — | 2026-07-03 |
 | <a id="evt-1f234469"></a>Fixed a bug where prompt-injection security warnings stopped appearing whenever the repos code scanning was healthy, and made the security scan re-run on every merge so a fixed issue clears right away instead of lingering up to a week. | iterate | bug | [FR-01.14](#rtm-fr-0114) | 3627/3639 | — | 2026-07-02 |
@@ -277,7 +278,7 @@ Generated: 2026-07-03T22:42:27.621632+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 243 |
+| Iterate changes | 244 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

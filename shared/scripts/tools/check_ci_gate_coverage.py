@@ -43,6 +43,13 @@ from lib.ci_gate_scan import (  # noqa: E402  (re-exported for callers/tests)
 GATE_COMMANDS = (
     "pytest", "ruff", "mypy", "pyright", "tsc", "eslint", "flake8",
     "vitest", "jest", "semgrep", "trivy", "gitleaks",
+    # diff-cover: the diff-coverage roadmap's gate tool. In Phase 1 its ci.yml
+    # step is intentionally non-gating (allowlisted); Phase 4 upgrades it to
+    # `--fail-under` and drops the allowlist entry, at which point the guard
+    # enforces that it stays gating. Recognizing it here means a future
+    # silent-loosening of that gate is caught. (`diff-cover`, hyphen — the tool
+    # module `measure_diff_coverage.py` uses an underscore and never matches.)
+    "diff-cover",
 )
 GATE_NAME_KEYWORDS = (
     "lint", "type-check", "typecheck", "type check", "test", "scan",

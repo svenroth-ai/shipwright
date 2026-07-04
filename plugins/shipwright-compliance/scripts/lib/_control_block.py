@@ -13,6 +13,10 @@ import json
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from scripts.lib._diff_coverage_block import (
+    diff_coverage_info_line,
+    load_diff_coverage,
+)
 from scripts.lib._latest_suite import resolve_latest_full_suite
 from scripts.lib._reconciliation import compute_reconciliation
 from scripts.lib._traceability import count_traced
@@ -171,12 +175,21 @@ def _verdict_emoji(report: GradeReport) -> str:
 def render_control_block(data: ComplianceData) -> list[str]:
     """The Control Verdict + Control Grade block (AR-01), rendered atop the
     dashboard's Quality Indicators."""
-    return format_control_block(compute_grade(build_grade_inputs(data)))
+    return format_control_block(
+        compute_grade(build_grade_inputs(data)),
+        diff_coverage=load_diff_coverage(data.project_root),
+    )
 
 
-def format_control_block(report: GradeReport) -> list[str]:
+def format_control_block(
+    report: GradeReport, diff_coverage: dict | None = None
+) -> list[str]:
     """Render a computed grade to markdown (split from compute so the
-    band/display agreement is unit-testable with a synthetic report)."""
+    band/display agreement is unit-testable with a synthetic report).
+
+    ``diff_coverage`` (the transient diff-coverage report, or ``None``) is
+    rendered as a single grade-neutral INFO line below the dimensions table —
+    it never touches ``report`` or the score."""
     lines = [
         f"## {_verdict_emoji(report)} Control Verdict",
         "",
@@ -203,6 +216,10 @@ def format_control_block(report: GradeReport) -> list[str]:
         mark = _STATUS_MARK.get(d.status, d.status)
         lines.append(f"| {mark} | {d.label} | {d.detail} | {d.anchor} |")
     lines.extend([
+        "",
+        # Grade-neutral INFO line (diff-coverage roadmap Phase 1): rendered from
+        # the explicit ``diff_coverage`` arg, never from ``report`` / the score.
+        diff_coverage_info_line(diff_coverage),
         "",
         f"Verified from: `{report.verified_from}`",
         "",

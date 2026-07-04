@@ -71,4 +71,14 @@ LOOSE_GATE_ALLOWLIST: list[AllowEntry] = [
         "analysis failures gate again.",
         "by-design", launch_gate=True,
     ),
+    AllowEntry(
+        "ci.yml", "Diff coverage (informational)",
+        "By design (diff-coverage roadmap Phase 1): the step surfaces % of "
+        "CHANGED lines covered vs origin/main as an INFORMATIONAL signal + "
+        "artifact only — it must not gate. Phase 4 upgrades it to "
+        "`diff-cover --fail-under=<threshold>` and REMOVES this entry, at which "
+        "point the guard's stale-entry + reverse-drift checks enforce that it "
+        "stays gating.",
+        "tracked-debt",
+    ),
 ]
