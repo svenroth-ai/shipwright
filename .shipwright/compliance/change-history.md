@@ -1,7 +1,7 @@
 # Commit Change Log
 
 Generated: 2026-07-05T21:23:50.271946+00:00
-Total commits: 1088
+Total commits: 1089
 
 ## Commit Distribution
 
@@ -13,7 +13,7 @@ pie title Commit Types
     "docs" : 143
     "refactor" : 64
     "test" : 26
-    "ci" : 8
+    "ci" : 9
     "other" : 7
     "build" : 1
 ```
@@ -1122,10 +1122,11 @@ pie title Commit Types
 | 2026-04-11 | — | complete test phase — 299 unit tests, 5 E2E tests, smoke PASS | e843d458942d |
 | 2026-04-11 | e2e | set up Playwright with E2E specs and smoke test results | cba0fd6e9012 |
 
-### CI/CD (ci) — 8 commits
+### CI/CD (ci) — 9 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-05 | coverage | diff-coverage warn-only --fail-under=80 gate (Phase 4) | 0fad7d8bd728 |
 | 2026-07-01 | security | least-privilege GITHUB_TOKEN permissions per workflow (#299) | be0d1e7774c0 |
 | 2026-06-05 | security | scope self-scan to shipped code (exclude tests/) | b49fa41db2ae |
 | 2026-06-05 | security-template | checkout at fetch-depth 1 (no scanner reads git history) | f6dd93918acf |
@@ -1157,7 +1158,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1088 |
+| Total commits | 1089 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1088 |
+| Human-authored commits | 1089 |
 

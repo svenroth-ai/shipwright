@@ -1,10 +1,11 @@
 # Project Activity Dashboard
 > Updated: 2026-07-05 21:23 UTC | Session: 0348bc60-3406-4474-a711-c58b3c276418 | Run: iterate-2026-07-05-diff-coverage-ci-gate
 
-## Recent Changes (256 iterations)
+## Recent Changes (257 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | grade-authoritative-disclaimer | 273/273 |  | tooling | 2026-07-05 |
 | change | diff-coverage CI gate Phase 4 (warn-only): diff-cover --fail-under=80 over the combined coverage.xml, continue-on-error retained (settling window) | 3643/3643 |  | tooling | 2026-07-05 |
 | change | grade-report-audience-copy | 271/271 |  | tooling | 2026-07-04 |
 | change | Replace __import__("engine_bridge") with a normal import in shipwright-grade authoritative tests | 265/265 |  | tooling | 2026-07-05 |
