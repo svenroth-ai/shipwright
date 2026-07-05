@@ -77,9 +77,30 @@ class TestNaSemantics:
         assert th.detail == "12 tests — present, not executed"
         assert model.static_test_inventory == "12 tests across 1 framework"
 
-    def test_honest_ceiling_note_present(self):
+    def test_heuristic_ceiling_note_says_estimate_from_outside(self):
         model = _build([_dim("change_traceability", "Change traceability", 0.15, 1.0)])
         assert "does not verify behaviour" in model.honest_ceiling_note
+        assert "estimate from the outside" in model.honest_ceiling_note
+
+    def test_authoritative_ceiling_note_drops_the_heuristic_claim(self):
+        # An authoritative grade is computed from the repo's OWN records, so it
+        # must NOT claim to be a "heuristic estimate from the outside" — that would
+        # be the exact over-claim the honest ceiling exists to prevent.
+        dims = [_dim("change_traceability", "Change traceability", 0.15, 1.0)]
+        model = build_report_model(
+            grade_report=_report(dims), routing=_routing(mode="authoritative"),
+            target_display="repo", head_sha="abc", events_truncated=False)
+        assert "estimate from the outside" not in model.honest_ceiling_note
+        assert "control discipline" in model.honest_ceiling_note
+        assert "own Shipwright records" in model.honest_ceiling_note
+
+    def test_reconciliation_provenance_has_no_internal_codename(self):
+        # The "(BP-2)" internal codename is meaningless to a report reader; the
+        # provenance source must stay jargon-free.
+        model = _build([_dim("change_reconciliation", "Change reconciliation",
+                             0.15, None)])
+        assert "BP-2" not in model.dimensions[0].provenance.source
+        assert "re-verification" in model.dimensions[0].provenance.source
 
     def test_features_truncated_labels_requirement_traceability_sampled(self):
         dims = [_dim("requirement_traceability", "Requirement traceability", 0.25, 0.9)]

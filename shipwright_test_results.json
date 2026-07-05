@@ -1,100 +1,35 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-04-diff-coverage-grade-input-warn",
-    "date": "2026-07-04",
+    "run_id": "iterate-2026-07-05-grade-authoritative-disclaimer",
+    "date": "2026-07-05",
     "intent": "change",
-    "complexity": "medium",
-    "unit": {
-      "status": "passed",
-      "passed": 951,
-      "total": 951
-    },
-    "integration": {
-      "status": "passed",
-      "passed": 174,
-      "total": 174
-    },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "e2e": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "design_fidelity": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "smoke": {
-      "status": "skipped"
-    },
+    "complexity": "small",
+    "unit": { "status": "passed", "passed": 273, "total": 273 },
+    "integration": { "status": "skipped", "passed": 0, "total": 0 },
+    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
+    "e2e": { "status": "passed", "passed": 36, "total": 36 },
+    "design_fidelity": { "status": "skipped", "passed": 0, "total": 0 },
+    "smoke": { "status": "skipped" },
     "degraded": [],
     "surface_verification": {
       "surface": "cli",
-      "justification": "",
+      "runner": "uv run --project plugins/shipwright-grade pytest plugins/shipwright-grade/tests/test_report_model.py plugins/shipwright-grade/tests/test_html_report.py plugins/shipwright-grade/tests/test_render_snapshots.py -q",
       "exit_code": 0,
-      "tests_run": 3,
-      "timestamp": "2026-07-05T19:24:33.497Z"
+      "tests_run": 36,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-05-grade-authoritative-disclaimer/surface_verification.json",
+      "timestamp": "2026-07-05T00:00:00.000Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        {
-          "behavior": "AC1 - GradeInputs.diff_coverage_percent optional, default None => Test-Health byte-identical (repo-agnostic neutral default)",
-          "disposition": "tested",
-          "evidence": "test_diff_coverage_block.py::TestGradeNeutrality::test_grade_inputs_coverage_field_defaults_neutral"
-        },
-        {
-          "behavior": "AC2 - Test-Health blend: below 80% => x0.85 floored; at/above threshold or None => unchanged; documented constants",
-          "disposition": "tested",
-          "evidence": "test_control_grade_diff_coverage.py::TestDiffCoverageBlend::{test_below_threshold_moderate_penalty_and_warn,test_above_threshold_no_penalty,test_exactly_at_threshold_is_not_below,test_none_is_grade_neutral}"
-        },
-        {
-          "behavior": "AC3 - floor invariant: never collapses a >=0.5 suite, no extra penalty on an already-collapsed one; not a _grade_gate collapse pillar / no headline F-cap",
-          "disposition": "tested",
-          "evidence": "test_control_grade_diff_coverage.py::TestDiffCoverageBlend::{test_floor_never_collapses_a_passing_suite,test_already_collapsed_suite_gets_no_extra_penalty,test_diff_coverage_is_not_a_collapse_pillar}"
-        },
-        {
-          "behavior": "AC4 - WARN detail text below threshold (.1f, no boundary contradiction) + existing gap marker renders on the dashboard",
-          "disposition": "tested",
-          "evidence": "test_control_grade_diff_coverage.py::TestDiffCoverageBlend::{test_boundary_formatting_never_contradicts_the_check,test_dashboard_renders_warn_text}"
-        },
-        {
-          "behavior": "AC5 - adapter gradeable_diff_percent strict-validates (ok->float, n/a/None/bool/str/NaN/inf/oob/huge-int->None) and build_grade_inputs wires the transient onto the field",
-          "disposition": "tested",
-          "evidence": "test_diff_coverage_block.py::{TestGradeableDiffPercent::*,TestBuildGradeInputsWiring::*}"
-        },
-        {
-          "behavior": "AC6 - repo-agnostic grader never sets diff_coverage_percent => GradeReport identical to pre-Phase-3 (grade-neutral)",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-grade/tests/test_signal_bundle.py::TestGradeInputKwargs::test_grader_never_feeds_diff_coverage + test_control_grade_diff_coverage.py::test_none_is_grade_neutral"
-        },
-        {
-          "behavior": "AC7 - TDD tests present and green (dedicated engine + adapter + grader modules)",
-          "disposition": "tested",
-          "evidence": "test_control_grade_diff_coverage.py (10) + test_diff_coverage_block.py additions + test_signal_bundle.py addition; full compliance 951 + grade 266 green"
-        },
-        {
-          "behavior": "AC8 - finalization preserves the tracked coverage.total (W4 signal) verbatim across the F5 rewrite",
-          "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "evidence": "guarded by shared/tests/test_coverage_baseline_lit.py::test_w4_is_green_on_committed_files (W4 CI gate FAILs if coverage.total is dropped)"
-        }
+        { "behavior": "In authoritative mode the honest-ceiling note is the authoritative one — it no longer falsely claims to be a 'heuristic estimate from the outside' and states it measures control discipline, not behaviour-correctness", "disposition": "tested", "evidence": "test_report_model.py::TestNaSemantics::test_authoritative_ceiling_note_drops_the_heuristic_claim + empirically verified on the shipwright repo (--allow-network → authoritative A/99.9, corrected footer)" },
+        { "behavior": "In heuristic (cold-repo) mode the honest-ceiling note keeps the outside-estimate wording", "disposition": "tested", "evidence": "test_report_model.py::TestNaSemantics::test_heuristic_ceiling_note_says_estimate_from_outside" },
+        { "behavior": "The change-reconciliation provenance source no longer leaks the internal 'BP-2' codename (source stays jargon-free)", "disposition": "tested", "evidence": "test_report_model.py::TestNaSemantics::test_reconciliation_provenance_has_no_internal_codename" },
+        { "behavior": "The whole HTML report is codename-free (no 'BP-2' anywhere), including the reconciliation card's expandable provenance", "disposition": "tested", "evidence": "test_html_report.py::TestSections::test_na_card_shows_reframe_not_engine_jargon (asserts 'BP-2' not in out)" },
+        { "behavior": "The mode-appropriate note flows through the view-model to every renderer; HTML golden regenerated & byte-exact; ruff clean", "disposition": "tested", "evidence": "test_render_snapshots.py + ruff@0.15.15 (report_model.py the only src change)" }
       ],
-      "counts": {
-        "testable": 7,
-        "tested": 7,
-        "untestable": 1,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 8,
-        "covered_acs": 8
-      }
+      "counts": { "testable": 5, "tested": 5, "untestable": 0, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 2, "covered_acs": 2 }
     }
   },
   "coverage": {

@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-07-05T19:40:34.721218+00:00
-Total commits: 1088
+Generated: 2026-07-05T19:50:40.886577+00:00
+Total commits: 1089
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 312
+    "fix" : 313
     "feat" : 291
     "chore" : 236
     "docs" : 143
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 312 commits
+### Fixes (fix) — 313 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-05 | grade | mode-aware honest-ceiling note; drop BP-2 codename from report | 585c2441627d |
 | 2026-07-04 | grade | CTA explains adopt + next step, one hardened link (drop "certify") (#317) | 17afe47ffa25 |
 | 2026-07-04 | security | prompt-scan matches code, not string/comment token text (#316) | 354cca7e0669 |
 | 2026-07-04 | security | pr_review excludes generated artifacts from the diff before truncation (#314) | 913261ff68cd |
@@ -341,7 +342,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-05 | coverage | diff-coverage feeds Control-Grade Test-Health (WARN, Phase 3) | fb3f79d1e5a8 |
+| 2026-07-05 | coverage | diff-coverage feeds Control-Grade Test-Health (WARN, Phase 3) (#322) | 0532d4db632f |
 | 2026-07-05 | grade | audience-facing plain-language report redesign (#320) | dba3daf56f28 |
 | 2026-07-04 | coverage | monorepo diff-coverage combine + light W4 (Phase 2) (#318) | 5e9e502b223e |
 | 2026-07-04 | grade | authoritative wiring + URL clone-and-grade + plugin registration (G4) (#319) | 04ae79af8ac5 |
@@ -637,7 +638,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-05 | triage | sweep 7 outbox append(s) into branch | b87e529d5dc6 |
+| 2026-07-05 | triage | sweep 1 outbox append(s) into branch | bb522aabc592 |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
@@ -1157,7 +1158,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1088 |
+| Total commits | 1089 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1088 |
+| Human-authored commits | 1089 |
 

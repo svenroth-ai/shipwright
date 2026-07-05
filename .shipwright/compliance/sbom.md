@@ -1,6 +1,6 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-07-05T19:40:34.721218+00:00 (dependency versions resolved from uv.lock)
+Generated: 2026-07-05T19:50:40.886577+00:00 (dependency versions resolved from uv.lock)
 
 ## Summary
 
@@ -17,8 +17,8 @@ Generated: 2026-07-05T19:40:34.721218+00:00 (dependency versions resolved from u
 
 ```mermaid
 pie title License Distribution (all 11 packages)
-    "MIT" : 5
-    "Apache-2.0" : 3
+    "MIT" : 6
+    "Apache-2.0" : 2
     "PSFL" : 1
     "unknown" : 2
 ```
@@ -28,20 +28,20 @@ pie title License Distribution (all 11 packages)
 | Package | Version | License |
 |---------|---------|---------|
 | defusedxml | 0.7.1 | PSFL |
-| google-genai | 1.68.0 | Apache-2.0 |
+| google-genai | 1.68.0 | - |
 | jsonschema | 4.26.0 | MIT |
 | openai | 2.30.0 | Apache-2.0 |
 | pyyaml | 6.0.3 | MIT |
-| requests | 2.33.0 | Apache-2.0 |
+| requests | 2.33.0 | - |
 
 ## Dev Dependencies
 
 | Package | Version | License |
 |---------|---------|---------|
-| diff-cover | 10.3.0 | - |
+| diff-cover | 10.3.0 | Apache-2.0 |
 | pytest | 9.0.3 | MIT |
 | pytest | 9.1.1 | MIT |
-| pytest-cov | 7.1.0 | - |
+| pytest-cov | 7.1.0 | MIT |
 | pytest-mock | 3.15.1 | MIT |
 
 ## License Compliance
