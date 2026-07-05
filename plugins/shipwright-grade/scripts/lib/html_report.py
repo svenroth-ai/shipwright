@@ -22,83 +22,37 @@ the footer. Same repo state → byte-identical scored content (AC).
 
 from __future__ import annotations
 
-import html as _htmllib
-
+from _html_dom import _Raw, _text, el  # re-exported for tests
 from _html_styles import META_CSP, STYLES
+from report_copy import (
+    CTA_FIX_BODY,
+    CTA_FIX_LINK,
+    CTA_FIX_TITLE,
+    CTA_HEADING,
+    CTA_LEARN_BODY,
+    CTA_LEARN_LINK,
+    CTA_LEARN_TITLE,
+    CTA_LEDE,
+    CTA_URL,
+    DIMENSION_COPY,
+    NA_REFRAME,
+)
 from report_model import DimensionView, ReportModel
 from sanitize import strip_terminal
 
-
-class _Raw(str):
-    """Marks a string as trusted, already-escaped HTML (never re-escaped)."""
-
-    __slots__ = ()
-
-
-def _text(value: object) -> str:
-    """Untrusted → safe text node: strip control/ANSI/bidi, then HTML-escape."""
-    return _htmllib.escape(strip_terminal(str(value)), quote=True)
-
-
-def _attrs(attrs: dict[str, object]) -> str:
-    out = []
-    for key, val in attrs.items():
-        if val is None:
-            continue
-        name = key.rstrip("_").replace("_", "-")
-        # Same cleaning seam as text nodes (strip control/ANSI/bidi, then escape)
-        # so an attribute value is never a weaker context than a text node — even
-        # though every attribute value today is a trusted literal.
-        out.append(f' {name}="{_text(val)}"')
-    return "".join(out)
-
-
-def el(tag: str, *children: object, **attrs: object) -> _Raw:
-    """Build an element; ``_Raw`` children pass through, all others are escaped."""
-    inner = "".join(
-        str(c) if isinstance(c, _Raw) else _text(c) for c in children
-    )
-    return _Raw(f"<{tag}{_attrs(attrs)}>{inner}</{tag}>")
-
+# NB: the CTA links are the report's ONLY hrefs — `CTA_URL` is a hardcoded
+# constant (from report_copy), never built from repo data, so no untrusted string
+# ever reaches a URL context; a user-initiated navigation is not an auto-fetch, so
+# the strict CSP is unaffected. (Tests import CTA_URL from report_copy directly.)
 
 _GRADE_CLASS = {"A": "grade-a", "B": "grade-b", "C": "grade-c",
                 "D": "grade-d", "F": "grade-f"}
 _STATUS = {"ok": ("status-ok", "OK"), "gap": ("status-gap", "GAP"),
            "n/a": ("status-na", "N/A")}
 
-# The ONE trusted, static CTA destination. It is a hardcoded constant — never
-# built from model/repo data — so the report keeps its "no untrusted string ever
-# becomes a URL" invariant while offering a single user-initiated link (a
-# navigation is not an automatic external request; the strict CSP still blocks
-# every auto-fetch class).
-_CTA_URL = "https://svenroth.ai/shipwright"
-
-_CTA_INTRO = (
-    "The controls greyed out as N/A above aren't things you're doing wrong — "
-    "they're controls a repo can't prove from the outside: a CI test signal, a "
-    "security scan, and a change log that ties each change back to a requirement. "
-    "Shipwright adds exactly that to your existing repo — no rewrite."
-)
-# Each step: (lead-in, body). "How adopt works" — the concrete next move.
-_CTA_STEPS = (
-    ("Reads first, doesn't touch.",
-     "/shipwright-adopt analyses your stack, routes, conventions and git history "
-     "and proposes the setup as a reviewable PR — it never rewrites your code."),
-    ("Scaffolds the missing controls.",
-     "It generates the traceability, CI, security-scan and dependency setup the "
-     "N/A dimensions measure — so they become measured, not unknown from outside."),
-    ("Every future change stays controlled.",
-     "From then on /shipwright-iterate runs each change through tests, review and "
-     "a security gate, and records it in a traceable event log."),
-)
-_CTA_NEXT = (
-    "Your next step: open your repo in Claude Code and run /shipwright-adopt. "
-    "It's incremental and reversible."
-)
-_CTA_LINK_TEXT = "New to Shipwright? Learn how it works → svenroth.ai/shipwright"
 _FUNNEL_LEDE = (
-    "N/A on a cold repo — excluded from the score, never counted as a failed 0. "
-    "These are the controls Shipwright would light up once adopted."
+    "These controls couldn't be measured from the outside — they're exactly what "
+    "Shipwright adds. That's why your grade goes up the moment you adopt."
 )
 
 
@@ -132,16 +86,55 @@ def _hero(m: ReportModel) -> _Raw:
     )
 
 
-def _dim_card(d: DimensionView) -> _Raw:
-    cls, label = _STATUS.get(d.status, ("status-na", d.status.upper()))
+def _prov_note(d: DimensionView) -> _Raw:
+    """The engine's open-standard anchor + provenance (source/mode/freshness/
+    sampled) — surfaced per the spec, but tucked inside the expandable so the
+    jargon never clutters the audience-facing card face."""
     prov = d.provenance
     bits = [prov.source, prov.mode]
     if prov.freshness and prov.freshness != "n/a":
-        bits.append(f"@ {prov.freshness}")
+        bits.append("@ " + prov.freshness)
     if prov.sampled:
         bits.append("sampled")
     if prov.truncated:
         bits.append("truncated")
+    return el("p",
+              el("span", "How this was measured: ", class_="prov-k"),
+              " · ".join(bits) + " · maps to the standard: " + d.anchor,
+              class_="prov-note")
+
+
+def _why_details(copy: dict, d: DimensionView) -> _Raw:
+    """The expandable 'Why it matters' — concrete scenario → honest upside, then
+    the standards anchor + provenance for the skeptical reader.
+
+    A native ``<details>`` (no JS, CSP-safe, deterministic: always starts
+    closed). The teaching copy is trusted static text; the provenance/anchor are
+    view-model fields, escaped like every other node.
+    """
+    if not copy:
+        return _Raw("")
+    body = [el("p", copy["scenario"], class_="why-p"),
+            el("p", copy["improves"], class_="why-improves")]
+    if copy.get("limit"):
+        body.append(el("p", copy["limit"], class_="why-limit"))
+    body.append(el("p", "Backed by: " + copy["backed_by"], class_="backed-by"))
+    body.append(_prov_note(d))
+    return el("details",
+              el("summary", "Why it matters"),
+              el("div", *body, class_="why-body"),
+              class_="why")
+
+
+def _dim_card(d: DimensionView) -> _Raw:
+    """A dimension tile: score + plain-language guidance + expandable why.
+
+    The engine ``detail`` (jargon-y for some dims) is shown ONLY for a measured
+    dimension as a concrete "in your repo" line; an n/a dimension shows the
+    jargon-free reframe instead. The teaching copy comes from ``report_copy``.
+    """
+    cls, label = _STATUS.get(d.status, ("status-na", d.status.upper()))
+    copy = DIMENSION_COPY.get(d.key, {})
     children = [
         el("div",
            el("span", label, class_=f"pill {cls}"),
@@ -149,14 +142,15 @@ def _dim_card(d: DimensionView) -> _Raw:
            el("span", _fmt_score(d.score), class_="dim-score"),
            class_="dim-head"),
         el("h3", d.label, class_="dim-label"),
-        el("div", d.anchor, class_="anchor"),
-        el("p", d.detail, class_="detail"),
-        el("div", " · ".join(bits), class_="prov"),
+        el("p", copy.get("q", ""), class_="dim-q"),
+        el("p", copy.get("visible", d.detail), class_="dim-visible"),
     ]
-    if d.would_light_up and prov.disabled_enrichments:
-        children.append(
-            el("div", "Would light: " + ", ".join(prov.disabled_enrichments),
-               class_="disabled-enrich"))
+    if d.score is not None:
+        children.append(el("p", el("span", "In your repo: ", class_="measured-k"),
+                           d.detail, class_="dim-measured"))
+    else:
+        children.append(el("p", NA_REFRAME, class_="dim-na"))
+    children.append(_why_details(copy, d))
     return el("article", *children, class_=f"dim-card {cls}")
 
 
@@ -177,7 +171,7 @@ def _would_light(m: ReportModel) -> _Raw:
     items = (el("li", label) for label in m.controls_shipwright_would_light)
     return el(
         "section",
-        el("h2", "Controls Shipwright would light up", class_="section-title"),
+        el("h2", "What your repo is missing", class_="section-title"),
         el("div",
            el("p", _FUNNEL_LEDE, class_="panel-lede"),
            el("ul", *items, class_="light-list"),
@@ -225,22 +219,28 @@ def _disclaimer(m: ReportModel) -> _Raw:
               class_="disclaimer")
 
 
+def _cta_card(title: str, body: str, link_text: str, primary: bool) -> _Raw:
+    # Every href is the hardcoded CTA constant — never repo data; rel/target
+    # harden the user-initiated navigation. Both cards point at the landing page
+    # for now (a dedicated Masterclass URL slots in behind CTA_URL later).
+    kind = "cta-primary" if primary else "cta-secondary"
+    return el("div",
+              el("h3", title, class_="cta-card-title"),
+              el("p", body, class_="cta-card-body"),
+              el("a", link_text, href=CTA_URL, target="_blank",
+                 rel="noopener noreferrer", class_=f"cta-link {kind}"),
+              class_="cta-card")
+
+
 def _cta() -> _Raw:
-    steps = [
-        el("li", el("strong", lead, class_="cta-step-lead"), " " + body)
-        for lead, body in _CTA_STEPS
-    ]
     return el(
         "section",
-        el("h2", "Raise your grade — adopt Shipwright", class_="cta-title"),
-        el("p", _CTA_INTRO, class_="cta-copy"),
-        el("ul", *steps, class_="cta-steps"),
-        el("p", _CTA_NEXT, class_="cta-next"),
-        # The single static, trusted CTA link. href is a hardcoded constant; the
-        # `el` builder escapes it (harmless for a clean URL) and no repo data can
-        # reach it. rel/target harden the user-initiated navigation.
-        el("a", _CTA_LINK_TEXT, href=_CTA_URL, target="_blank",
-           rel="noopener noreferrer", class_="cta-link"),
+        el("h2", CTA_HEADING, class_="cta-title"),
+        el("p", CTA_LEDE, class_="cta-lede"),
+        el("div",
+           _cta_card(CTA_LEARN_TITLE, CTA_LEARN_BODY, CTA_LEARN_LINK, True),
+           _cta_card(CTA_FIX_TITLE, CTA_FIX_BODY, CTA_FIX_LINK, False),
+           class_="cta-actions"),
         class_="cta",
     )
 

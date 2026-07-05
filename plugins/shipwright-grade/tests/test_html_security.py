@@ -13,7 +13,8 @@ import re
 from html.parser import HTMLParser
 from types import SimpleNamespace
 
-from html_report import _CTA_URL, el, render_html
+from html_report import el, render_html
+from report_copy import CTA_URL as _CTA_URL
 from report_model import build_report_model
 from support import GEN_A, dim, mixed_model
 
@@ -83,8 +84,8 @@ class TestEscapeOnly:
         for forbidden in ("script", "img", "iframe", "svg", "form",
                           "object", "embed", "link"):
             assert forbidden not in seen, f"hostile input produced a <{forbidden}>"
-        assert collector.tags.count("a") == 1        # exactly one anchor…
-        assert collector.hrefs == [_CTA_URL]         # …the trusted CTA, nothing else
+        assert collector.tags.count("a") == 2            # exactly the 2 CTA anchors…
+        assert set(collector.hrefs) == {_CTA_URL}        # …all the trusted CTA
         # Sanity: the document really was parsed (structural tags are present).
         assert {"html", "head", "body", "main", "a"} <= seen
 

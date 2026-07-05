@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-04-grade-report-audience-copy",
+  "date": "2026-07-04T21:44:42.676287Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/grade-report-audience-copy",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/2026-07-04-grade-report-audience-copy.md",
+  "adr": "iterate-2026-07-04-grade-report-audience-copy"
+}

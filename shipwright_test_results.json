@@ -1,101 +1,41 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-04-diff-coverage-rollout-combine",
+    "run_id": "iterate-2026-07-04-grade-report-audience-copy",
     "date": "2026-07-04",
-    "intent": "feature",
+    "intent": "change",
     "complexity": "medium",
-    "unit": {
-      "status": "passed",
-      "passed": 71,
-      "total": 71
-    },
-    "integration": {
-      "status": "passed",
-      "passed": 0,
-      "total": 0
-    },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "e2e": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "design_fidelity": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "smoke": {
-      "status": "skipped"
-    },
+    "unit": { "status": "passed", "passed": 271, "total": 271 },
+    "integration": { "status": "skipped", "passed": 0, "total": 0 },
+    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
+    "e2e": { "status": "passed", "passed": 44, "total": 44 },
+    "design_fidelity": { "status": "skipped", "passed": 0, "total": 0 },
+    "smoke": { "status": "skipped" },
     "degraded": [
-      "External review (external_review.py \u2014 GPT-5.4 + Gemini 3.1 Pro via OpenRouter): the review diff was generated after origin/main advanced past the worktree base (the grade-cta-adopt PR merged mid-run), so GPT-5.4's 6 findings about plugins/shipwright-grade/scripts/lib/html_report.py + grade tests are ARTIFACTS of the stale base (that delta reversed in the diff), NOT this change \u2014 dismissed after verifying those files are untouched vs origin/main. GPT-5.4's one on-target finding (combine_coverage.py label parsing brittle to pytest-cov xdist worker suffixes) was FIXED (resolve_plugin_label longest-prefix + test). Gemini 3.1 Pro returned a null/empty feedback body (model-side) \u2014 no findings; coverage was preserved by the internal Opus code-reviewer, which cleared the core mechanic and raised 4 findings (1 medium partial-combine fail-open FIXED + tested; 3 low: scope documented, AC3 wording fixed, W4 dual-format heuristic left as pre-existing intentional contract)."
+      "External code review (external_review.py — GPT-5.4 + Gemini 3.1 Pro): both returned ship-with-fixes; their shared HIGH finding (the redesign had dropped the spec-required open-standard anchor + per-dimension provenance from the card) was fixed by re-surfacing them inside the expandable <details> (spec satisfied, jargon off the face); their test-loosening findings fixed (exact anchor count, no anchors in dimension cards, set-equality href assertions).",
+      "Internal opus code review = NO blocking issues (security PASS, jargon-suppression CORRECT, honesty PASS). All 4 low advisories applied: removed a leftover duplicate _CTA_URL + stale 'single link' comment; added a guard test that every engine dimension has plain copy; reworded the report_copy docstring (backed_by cites external standards, not the dashboard); pinned the load-bearing honesty hedges with tests."
     ],
     "surface_verification": {
-      "surface": "none",
-      "justification": "No user-facing web/CLI application surface \u2014 this iterate is framework CI + coverage instrumentation (a new combine tool, a tracked coverage.total, and the W4 verifier gate). Executable end-to-end proof was still run: the full combine->record->W4 chain executed against real suites (all 13 plugins + shared + integration, all green) producing a combined repo-wide 80.2% line-rate, which lit W4 SKIP->PASS on the committed files; plus 71 hermetic coverage tests. The surface_verification.py runner has no app to drive.",
+      "surface": "cli",
+      "runner": "uv run --project plugins/shipwright-grade pytest plugins/shipwright-grade/tests/test_html_report.py plugins/shipwright-grade/tests/test_html_security.py plugins/shipwright-grade/tests/test_render_snapshots.py plugins/shipwright-grade/tests/test_grade_cli.py -q",
       "exit_code": 0,
-      "tests_run": 0,
+      "tests_run": 44,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-04-grade-report-audience-copy/surface_verification.json",
       "timestamp": "2026-07-04T00:00:00.000Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        {
-          "behavior": "AC1 \u2014 per-plugin --cov + per-tier COVERAGE_FILE in ci.yml (plugins with scripts/, shared, integration); preview (no scripts/) runs tests without coverage",
-          "disposition": "tested",
-          "evidence": "test_ci_coverage_wiring.py::{test_plugin_step_measures_per_plugin_coverage,test_shared_step_writes_shared_tier_datafile,test_integration_step_measures_coverage}"
-        },
-        {
-          "behavior": "AC2 \u2014 combine_coverage.py folds per-tier data into ONE repo-relative coverage.xml (per-plugin [paths] remap), absent-safe, idempotent, xdist-worker-suffix safe, partial-combine fails loud",
-          "disposition": "tested",
-          "evidence": "test_combine_coverage.py::{TestCombineRealFixture::test_combined_xml_is_repo_relative,TestDiscovery::*,TestAbsentSafe::*,TestWorkerSuffix::*,test_two_worker_files_per_plugin_both_contribute,TestPartialCombine::*}"
-        },
-        {
-          "behavior": "AC3 \u2014 diff-cover runs over the combined coverage.xml AFTER all tiers; repo tier label via measure_diff_coverage DEFAULT_TIER=repo; step stays non-gating",
-          "disposition": "tested",
-          "evidence": "test_ci_coverage_wiring.py::{test_combine_step_invokes_the_tool,test_diff_coverage_step_stays_nongating,test_combine_runs_before_diff_after_all_tiers} + test_measure_diff_coverage.py::TestBuildPayload::test_ok_shape"
-        },
-        {
-          "behavior": "AC4 \u2014 record_coverage_total.py writes tracked top-level coverage.total, preserves iterate_latest, atomic, refuses fabricated total on bad input",
-          "disposition": "tested",
-          "evidence": "test_record_coverage_total.py::{TestMainCLI::*,TestMerge::test_preserves_iterate_latest}"
-        },
-        {
-          "behavior": "AC5 \u2014 W4 lit green: recorder total + calibrated coverage.min => PASS (was SKIP); round-trip + min-below-total on committed files",
-          "disposition": "tested",
-          "evidence": "test_record_coverage_total.py::TestW4RoundTrip::* + test_coverage_baseline_lit.py::{test_w4_is_green_on_committed_files,test_baseline_min_sits_below_measured_total}"
-        },
-        {
-          "behavior": "AC6 \u2014 coverage.diff stays transient (never mutates tracked results); grade byte-identical with/without coverage; dashboard tier label defaults to repo",
-          "disposition": "tested",
-          "evidence": "test_diff_coverage_block.py::{TestGradeNeutrality::*,TestInfoLine::test_tier_defaults_to_repo_when_absent} + test_measure_diff_coverage.py::TestMainCLI::test_never_mutates_existing_results_json"
-        },
-        {
-          "behavior": "AC7 \u2014 .gitignore covers .coverage* + .cov-data/ (per-tier data + combine dir never tracked)",
-          "disposition": "tested",
-          "evidence": "test_coverage_baseline_lit.py::test_gitignore_covers_coverage_transients (+ git check-ignore verified)"
-        },
-        {
-          "behavior": "AC8 \u2014 CI-gate guard stays green on the rewired ci.yml (no test dir silently uncovered; diff-cover allowlist entry intact)",
-          "disposition": "tested",
-          "evidence": "check_ci_gate_coverage.py --project-root . => OK (18 test dirs); enforced as the 'Run CI-gate guard' CI step"
-        }
+        { "behavior": "Each dimension card teaches a non-expert: plain question + always-visible one-line 'what this checks' + expandable <details> 'why it matters' with a concrete everyday scenario", "disposition": "tested", "evidence": "test_html_report.py::TestSections::test_dimension_cards_teach_in_plain_language" },
+        { "behavior": "n/a dimensions are reframed jargon-free on the card face; the raw engine detail ('needs per-change behavior-impact (BP-2)') is suppressed there", "disposition": "tested", "evidence": "test_html_report.py::TestSections::test_na_card_shows_reframe_not_engine_jargon" },
+        { "behavior": "measured dimensions surface their concrete finding under 'In your repo:'", "disposition": "tested", "evidence": "test_html_report.py::TestSections::test_measured_card_shows_in_your_repo_detail" },
+        { "behavior": "The spec-required open-standard anchor + provenance (source/mode/freshness) are surfaced, but INSIDE the expandable (after <summary>), not on the plain face", "disposition": "tested", "evidence": "test_html_report.py::TestSections::test_anchor_and_provenance_surfaced_but_off_the_face" },
+        { "behavior": "Two-CTA funnel: Understand (the Masterclass) + Fix (/shipwright-adopt); 'certify' removed from the CTA; both links the trusted URL", "disposition": "tested", "evidence": "test_html_report.py::TestSections::test_cta_has_two_steps_understand_and_fix" },
+        { "behavior": "Security preserved through the multi-link relaxation: exactly two anchors, ALL the trusted CTA; zero anchors inside dimension cards; hostile input yields zero extra links / zero fetch-or-script nodes", "disposition": "tested", "evidence": "test_html_report.py::{test_all_links_are_the_trusted_cta,test_no_anchors_in_dimension_cards,test_no_external_request_surface} + test_html_security.py::test_hostile_payload_contributes_zero_live_nodes" },
+        { "behavior": "Marketing honesty is load-bearing: the enforced-mechanism hedges (traceability 'or explicitly classified', reconciliation 'flags…until…proven' not 'won't let through', test-health coverage-depth limit, size 'no unchecked growth') and full per-dimension copy coverage are pinned so a future over-claim fails CI", "disposition": "tested", "evidence": "test_html_report.py::TestCopyIntegrity::{test_every_engine_dimension_has_plain_copy,test_load_bearing_honest_hedges_are_present}" },
+        { "behavior": "Determinism + escape-only intact after the copy overlay + DOM-builder extraction; HTML golden regenerated & byte-exact; modules ≤300 LOC; ruff clean", "disposition": "tested", "evidence": "test_html_report.py::TestDeterminism::* + test_html_security.py::TestEscapeOnly::* + test_render_snapshots.py + ruff@0.15.15 (html_report 291 / report_copy 175 / _html_dom 51 / _html_styles 168)" }
       ],
-      "counts": {
-        "testable": 8,
-        "tested": 8,
-        "untestable": 0,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 8,
-        "covered_acs": 8
-      }
+      "counts": { "testable": 8, "tested": 8, "untestable": 0, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 6, "covered_acs": 6 }
     }
   },
   "coverage": {
