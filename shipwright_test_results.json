@@ -1,18 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-04-diff-coverage-grade-input-warn",
-    "date": "2026-07-04",
+    "run_id": "iterate-2026-07-05-diff-coverage-ci-gate",
+    "date": "2026-07-05",
     "intent": "change",
-    "complexity": "medium",
+    "complexity": "small",
     "unit": {
       "status": "passed",
-      "passed": 951,
-      "total": 951
+      "passed": 3643,
+      "total": 3643
     },
     "integration": {
-      "status": "passed",
-      "passed": 174,
-      "total": 174
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -34,66 +34,61 @@
     },
     "degraded": [],
     "surface_verification": {
-      "surface": "cli",
-      "justification": "",
+      "surface": "none",
+      "justification": "CI-workflow + allowlist + docs change only; no application runtime surface to exercise. The behavior is verified by the CI-gate guard tests (incl. the live-repo TestRealRepo checks) and by this PR's own CI run of the warn-only diff-cover step.",
       "exit_code": 0,
-      "tests_run": 3,
-      "timestamp": "2026-07-05T19:24:33.497Z"
+      "tests_run": 0,
+      "timestamp": "2026-07-05T22:00:00Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 - GradeInputs.diff_coverage_percent optional, default None => Test-Health byte-identical (repo-agnostic neutral default)",
+          "behavior": "AC1 - the ci.yml diff-cover step gates changed-line coverage at --fail-under=80 over the combined coverage.xml",
           "disposition": "tested",
-          "evidence": "test_diff_coverage_block.py::TestGradeNeutrality::test_grade_inputs_coverage_field_defaults_neutral"
+          "evidence": "shared/tests/test_ci_coverage_wiring.py::test_diff_coverage_step_is_warn_only_gate (asserts --fail-under=80 + coverage.xml over the combined report)"
         },
         {
-          "behavior": "AC2 - Test-Health blend: below 80% => x0.85 floored; at/above threshold or None => unchanged; documented constants",
+          "behavior": "AC2 - the step keeps continue-on-error:true (warn-only settling window) so it WARNS without blocking merge",
           "disposition": "tested",
-          "evidence": "test_control_grade_diff_coverage.py::TestDiffCoverageBlend::{test_below_threshold_moderate_penalty_and_warn,test_above_threshold_no_penalty,test_exactly_at_threshold_is_not_below,test_none_is_grade_neutral}"
+          "evidence": "test_ci_coverage_wiring.py::test_diff_coverage_step_is_warn_only_gate (continue-on-error is True) + test_check_ci_gate_coverage.py::test_diff_cover_continue_on_error_is_loose"
         },
         {
-          "behavior": "AC3 - floor invariant: never collapses a >=0.5 suite, no extra penalty on an already-collapsed one; not a _grade_gate collapse pillar / no headline F-cap",
+          "behavior": "AC3 - the step is renamed 'Diff coverage (warn-only gate)' and stays ordered after the Combine step",
           "disposition": "tested",
-          "evidence": "test_control_grade_diff_coverage.py::TestDiffCoverageBlend::{test_floor_never_collapses_a_passing_suite,test_already_collapsed_suite_gets_no_extra_penalty,test_diff_coverage_is_not_a_collapse_pillar}"
+          "evidence": "test_ci_coverage_wiring.py::{test_diff_coverage_step_is_warn_only_gate name lookup, test_combine_runs_before_diff_after_all_tiers ordering with the new name}"
         },
         {
-          "behavior": "AC4 - WARN detail text below threshold (.1f, no boundary contradiction) + existing gap marker renders on the dashboard",
+          "behavior": "AC4 - the ci_gate_allowlist entry is renamed + kept tracked-debt; the live-repo CI-gate guard stays green (renamed loose step allowlisted, no stale entry, no non-allowlisted loose gate)",
           "disposition": "tested",
-          "evidence": "test_control_grade_diff_coverage.py::TestDiffCoverageBlend::{test_boundary_formatting_never_contradicts_the_check,test_dashboard_renders_warn_text}"
+          "evidence": "test_check_ci_gate_coverage.py::TestDiffCoverageAllowlist::test_diff_cover_step_is_allowlisted + test_check_ci_gate_coverage_io.py::TestRealRepo::{test_live_workflows_pass_the_guard,test_live_allowlist_has_no_stale_entries}"
         },
         {
-          "behavior": "AC5 - adapter gradeable_diff_percent strict-validates (ok->float, n/a/None/bool/str/NaN/inf/oob/huge-int->None) and build_grade_inputs wires the transient onto the field",
+          "behavior": "AC5a - the run body captures diff-cover's exit code (|| rc=$?) and re-raises it (exit \"$rc\") after printing the report, so the markdown report shows even when --fail-under trips",
           "disposition": "tested",
-          "evidence": "test_diff_coverage_block.py::{TestGradeableDiffPercent::*,TestBuildGradeInputsWiring::*}"
+          "evidence": "test_ci_coverage_wiring.py::test_diff_coverage_step_is_warn_only_gate (asserts rc=$?, exit \"$rc\", cat diff-cover.md in the run body)"
         },
         {
-          "behavior": "AC6 - repo-agnostic grader never sets diff_coverage_percent => GradeReport identical to pre-Phase-3 (grade-neutral)",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-grade/tests/test_signal_bundle.py::TestGradeInputKwargs::test_grader_never_feeds_diff_coverage + test_control_grade_diff_coverage.py::test_none_is_grade_neutral"
-        },
-        {
-          "behavior": "AC7 - TDD tests present and green (dedicated engine + adapter + grader modules)",
-          "disposition": "tested",
-          "evidence": "test_control_grade_diff_coverage.py (10) + test_diff_coverage_block.py additions + test_signal_bundle.py addition; full compliance 951 + grade 266 green"
-        },
-        {
-          "behavior": "AC8 - finalization preserves the tracked coverage.total (W4 signal) verbatim across the F5 rewrite",
+          "behavior": "AC5b - the GitHub Actions runner surfaces the tripped gate as a step FAILURE annotation while continue-on-error keeps the job green (warn-not-block)",
           "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "evidence": "guarded by shared/tests/test_coverage_baseline_lit.py::test_w4_is_green_on_committed_files (W4 CI gate FAILs if coverage.total is dropped)"
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "continue-on-error step semantics execute only on the GitHub Actions runner; verified by this PR's own CI run, not by a local unit test"
+        },
+        {
+          "behavior": "AC6 - no stale 'Diff coverage (informational)' references remain across the load-bearing files (ci.yml + allowlist + guard tests) after the rename",
+          "disposition": "tested",
+          "evidence": "test_check_ci_gate_coverage_io.py::TestRealRepo::test_live_allowlist_has_no_stale_entries + the test_ci_coverage_wiring.py step-name lookups fail on any stale ci.yml/allowlist reference; grep-verified no other stale references"
         }
       ],
       "counts": {
-        "testable": 7,
-        "tested": 7,
+        "testable": 6,
+        "tested": 6,
         "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 8,
-        "covered_acs": 8
+        "acs": 6,
+        "covered_acs": 6
       }
     }
   },

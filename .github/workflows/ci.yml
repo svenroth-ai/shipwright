@@ -200,14 +200,20 @@ jobs:
           uv run --with coverage shared/scripts/tools/combine_coverage.py \
             --project-root . --data-dir .cov-data --output coverage.xml
 
-      - name: Diff coverage (informational)
-        # Diff-coverage roadmap Phase 1/2 — surface % of CHANGED lines (vs
-        # origin/main) that tests execute, now over the COMBINED repo-wide report
-        # from the Combine step. INFORMATIONAL ONLY: continue-on-error + no
-        # --fail-under, so it never gates (Phase 4 makes it gating). The
-        # intentional continue-on-error is documented in
-        # shared/scripts/lib/ci_gate_allowlist.py so the CI-gate guard tolerates
-        # it. Skipped when the Combine step produced no coverage.xml.
+      - name: Diff coverage (warn-only gate)
+        # Diff-coverage roadmap Phase 4 (warn-only) — gate the % of CHANGED lines
+        # (vs origin/main) that tests execute, over the COMBINED repo-wide report
+        # from the Combine step. `--fail-under=80` makes diff-cover EXIT NON-ZERO
+        # when the changed lines are under-tested, so an under-covered PR shows a
+        # visible FAILURE annotation on this step. It stays continue-on-error for
+        # the ~1-2 week settling window (anti-ratchet discipline), so it WARNS but
+        # does NOT block merge yet; the hard flip is a follow-up that drops
+        # continue-on-error AND the ci_gate_allowlist entry below. The 80
+        # threshold matches control_grade._DIFF_COV_WARN_THRESHOLD (the Phase-3
+        # grade WARN threshold) and the roadmap's conservative start (the
+        # Phase-1/2 baseline was 92%). The intentional continue-on-error is
+        # documented in shared/scripts/lib/ci_gate_allowlist.py so the CI-gate
+        # guard tolerates it. Skipped when Combine produced no coverage.xml.
         if: hashFiles('coverage.xml') != ''
         continue-on-error: true
         shell: bash
@@ -215,11 +221,18 @@ jobs:
           # origin/main is needed as the diff base; fetch it explicitly (the
           # fetch-depth:0 checkout has history but not necessarily the ref).
           git fetch --no-tags origin main
+          # Capture diff-cover's exit code without aborting under `bash -eo
+          # pipefail`, so the markdown report still prints below even when
+          # --fail-under trips; re-raise it as the step's result at the end
+          # (continue-on-error turns that into a warning, not a job failure).
+          rc=0
           uvx diff-cover coverage.xml --compare-branch=origin/main \
-            --json-report diff-cover.json --markdown-report diff-cover.md
-          echo "::group::Diff coverage (informational)"
+            --fail-under=80 \
+            --json-report diff-cover.json --markdown-report diff-cover.md || rc=$?
+          echo "::group::Diff coverage (warn-only gate, --fail-under=80)"
           cat diff-cover.md || true
           echo "::endgroup::"
+          exit "$rc"
 
       - name: Upload coverage artifacts
         # Non-gating housekeeping: keep coverage.xml + the diff-cover reports for

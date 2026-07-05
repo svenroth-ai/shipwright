@@ -991,16 +991,22 @@ evidence (plan § 4.5).
 >   documented, calibrated anti-ratchet floor **below** the measured total, not a
 >   fudged number.
 > - **`coverage.diff`** (PR-local, transient) — **Phase 1**
->   (`iterate-2026-07-03-diff-coverage-measure-one-tier`). CI's non-gating
->   **"Diff coverage (informational)"** step runs `diff-cover` over the combined
+>   (`iterate-2026-07-03-diff-coverage-measure-one-tier`). CI's
+>   **"Diff coverage (warn-only gate)"** step runs `diff-cover` over the combined
 >   `coverage.xml`, and `shared/scripts/tools/measure_diff_coverage.py` writes the
 >   **gitignored transient** `.shipwright/coverage/diff_coverage.json` (never
 >   tracked — it is PR-local). The compliance dashboard renders it as a
 >   grade-neutral INFO line under Test-Health (`_diff_coverage_block.py` →
 >   `_control_block.format_control_block`) — it never enters the Control Grade.
 >
-> Feeding the grade is Phase 3; the CI `--fail-under` gate is Phase 4. Full
-> design: `.shipwright/planning/diff-coverage-roadmap.md`.
+> Feeding the grade is Phase 3; the CI `--fail-under` gate is Phase 4. **Phase 4
+> (warn-only) is live** (`iterate-2026-07-05-diff-coverage-ci-gate`): the step
+> runs `diff-cover --fail-under=80` (== `control_grade._DIFF_COV_WARN_THRESHOLD`),
+> so an under-tested PR shows a visible FAILURE annotation, but `continue-on-error`
+> stays on for the ~1-2 week settling window (allowlisted in
+> `shared/scripts/lib/ci_gate_allowlist.py`, tracked-debt) so it WARNS without
+> blocking merge. The remaining hard flip drops `continue-on-error` + the
+> allowlist entry. Full design: `.shipwright/planning/diff-coverage-roadmap.md`.
 
 **Infrastructure category (PR 3):** `shared/scripts/tools/verifiers/infrastructure_checks.py`
 

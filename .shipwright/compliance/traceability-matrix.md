@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-05T19:40:34.721218+00:00
+Generated: 2026-07-05T21:23:50.271946+00:00
 
 ## Requirements Coverage
 
@@ -27,6 +27,7 @@ Generated: 2026-07-05T19:40:34.721218+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-17d141eb"></a>CI now warns (without blocking merge yet) when a pull request does not test enough of the lines it changed. | iterate | change |  | 3643/3643 | — | 2026-07-05 |
 | <a id="evt-cb38a992"></a>Diff-coverage now moderates the Control-Grade Test-Health dimension: below 80% of changed lines covered => WARN + x0.85 floored penalty (never F-collapse; hard gate is Phase 4). New optional GradeInputs.diff_coverage_percent (default None = grade-neutral for the repo-agnostic grader); the monorepo compliance adapter populates it strict-validated from the gitignored transient. | iterate | change |  | — | — | 2026-07-05 |
 | <a id="evt-668ccaca"></a>Cleaned up how two grade tests load a helper module so the security scanner stops false-flagging them. | iterate | change |  | 265/265 | — | 2026-07-05 |
 | <a id="evt-4f205233"></a>Rewrote the repo-grade report into a plain-language, guided walkthrough for non-experts, so they understand what each control means, what they're missing, and what improves — funnelling to adopt and the Masterclass. | iterate | change |  | 271/271 | — | 2026-07-04 |
@@ -289,7 +290,7 @@ Generated: 2026-07-05T19:40:34.721218+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 255 |
+| Iterate changes | 256 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

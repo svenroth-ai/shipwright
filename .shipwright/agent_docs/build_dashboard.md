@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-05 19:40 UTC | Session: 1d21bb31-7ecc-4ece-8379-7e834335e2a7 | Run: iterate-2026-07-04-diff-coverage-grade-input-warn
+> Updated: 2026-07-05 21:23 UTC | Session: 0348bc60-3406-4474-a711-c58b3c276418 | Run: iterate-2026-07-05-diff-coverage-ci-gate
 
-## Recent Changes (255 iterations)
+## Recent Changes (256 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | diff-coverage CI gate Phase 4 (warn-only): diff-cover --fail-under=80 over the combined coverage.xml, continue-on-error retained (settling window) | 3643/3643 |  | tooling | 2026-07-05 |
 | change | grade-report-audience-copy | 271/271 |  | tooling | 2026-07-04 |
 | change | Replace __import__("engine_bridge") with a normal import in shipwright-grade authoritative tests | 265/265 |  | tooling | 2026-07-05 |
 | change | Diff-coverage now moderates the Control-Grade Test-Health dimension: below 80% of changed lines covered => WARN + x0.85 floored penalty (never F-collapse; hard gate is Phase 4). New optional GradeInputs.diff_coverage_percent (default None = grade-neutral for the repo-agnostic grader); the monorepo compliance adapter populates it strict-validated from the gitignored transient. | 0/0 |  | tooling | 2026-07-05 |
@@ -262,7 +263,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-04 | Unit: 951/951 | Integration: 174/174 | Smoke: skipped | (iterate)
+Last run: 2026-07-05 | Unit: 3643/3643 | Smoke: skipped | (iterate)
 
 ## Pipeline
 

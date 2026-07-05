@@ -1,10 +1,12 @@
-"""Guards the Phase-2 diff-coverage CI wiring in .github/workflows/ci.yml.
+"""Guards the Phase-2/4 diff-coverage CI wiring in .github/workflows/ci.yml.
 
 The combine mechanic is fiddly (per-plugin [paths] remap), so the CI steps that
 feed it are pinned here: per-plugin ``--cov`` into per-tier data files, a Combine
 step, integration coverage, and the diff-cover step running AFTER combine over the
 combined ``coverage.xml``. A future edit that drops one of these silently would
-otherwise leave the combined report empty / mis-attributed.
+otherwise leave the combined report empty / mis-attributed. Phase 4 upgraded the
+diff-cover step to a warn-only ``--fail-under=80`` gate (still continue-on-error
+during the settling window) — pinned by ``test_diff_coverage_step_is_warn_only_gate``.
 """
 
 from __future__ import annotations
@@ -69,11 +71,25 @@ def test_combine_step_invokes_the_tool():
     assert step.get("if") == "always()"
 
 
-def test_diff_coverage_step_stays_nongating():
-    step = _step("Diff coverage (informational)")
+def test_diff_coverage_step_is_warn_only_gate():
+    # Diff-coverage roadmap Phase 4 (warn-only). The step now runs
+    # `diff-cover --fail-under=80`, so an under-tested PR emits a visible
+    # FAILURE annotation on the step — but continue-on-error stays True for the
+    # ~1-2 week settling window, so it does NOT block merge yet. The hard flip
+    # (drop continue-on-error + drop the ci_gate_allowlist entry) is the
+    # deferred last step. 80 == control_grade._DIFF_COV_WARN_THRESHOLD.
+    step = _step("Diff coverage (warn-only gate)")
+    run = step.get("run", "")
     assert step.get("continue-on-error") is True
-    assert "--fail-under" not in step.get("run", "")  # Phase 4 adds the gate
-    assert "coverage.xml" in step.get("run", "")
+    assert "--fail-under=80" in run
+    assert "coverage.xml" in run
+    # The report must still print and the gate result must be re-raised even
+    # when --fail-under trips: capture diff-cover's exit under `bash -eo
+    # pipefail` (|| rc=$?), print the markdown report, then `exit "$rc"` so the
+    # step goes red (continue-on-error downgrades that to a warning).
+    assert "rc=$?" in run
+    assert 'exit "$rc"' in run
+    assert "cat diff-cover.md" in run
 
 
 def test_combine_runs_before_diff_after_all_tiers():
@@ -83,4 +99,4 @@ def test_combine_runs_before_diff_after_all_tiers():
     assert order["Run plugin tests"] < order["Combine coverage"]
     assert order["Run shared tests"] < order["Combine coverage"]
     assert order["Run integration tests"] < order["Combine coverage"]
-    assert order["Combine coverage"] < order["Diff coverage (informational)"]
+    assert order["Combine coverage"] < order["Diff coverage (warn-only gate)"]

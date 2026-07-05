@@ -84,9 +84,12 @@ class TestClassification:
         assert is_gate_step(_step(run="uvx diff-cover coverage.xml --compare-branch=origin/main"))
 
     def test_diff_cover_continue_on_error_is_loose(self):
+        # Phase 4 warn-only: --fail-under present but continue-on-error still
+        # marks the step loose (so it must stay allowlisted until the hard flip).
         assert is_loose(
-            _step(name="Diff coverage (informational)",
-                  run="uvx diff-cover coverage.xml --compare-branch=origin/main", coe=True)
+            _step(name="Diff coverage (warn-only gate)",
+                  run="uvx diff-cover coverage.xml --compare-branch=origin/main "
+                      "--fail-under=80", coe=True)
         )
 
 
@@ -227,22 +230,25 @@ class TestLaunchGates:
 
 
 # --------------------------------------------------------------------------- #
-# Diff-coverage roadmap Phase 1 — the informational diff-cover step is
-# allowlisted (tracked-debt: Phase 4 makes it gating and removes the entry).
+# Diff-coverage roadmap Phase 4 (warn-only) — the diff-cover step now runs
+# `--fail-under=80` but stays continue-on-error for the settling window, so it
+# remains allowlisted (tracked-debt: the hard flip drops continue-on-error and
+# removes the entry).
 # --------------------------------------------------------------------------- #
 class TestDiffCoverageAllowlist:
     def test_diff_cover_step_is_allowlisted(self):
         entry = next(
             (e for e in LOOSE_GATE_ALLOWLIST
-             if e.workflow == "ci.yml" and e.step == "Diff coverage (informational)"),
+             if e.workflow == "ci.yml" and e.step == "Diff coverage (warn-only gate)"),
             None,
         )
         assert entry is not None, (
-            "the informational ci.yml 'Diff coverage (informational)' step must "
-            "be allowlisted — it is intentionally continue-on-error in Phase 1."
+            "the ci.yml 'Diff coverage (warn-only gate)' step must be "
+            "allowlisted — it is intentionally continue-on-error during the "
+            "Phase 4 warn-only settling window."
         )
         assert entry.category == "tracked-debt", (
-            "Phase 4 turns diff-cover into a --fail-under gate and drops this "
-            "entry, so it is tracked-debt, not by-design."
+            "the hard flip drops continue-on-error and removes this entry, so it "
+            "is tracked-debt, not by-design."
         )
         assert entry.reason.strip()
