@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-07-05T19:25:27.201738+00:00
+Generated: 2026-07-05T19:50:40.886577+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -12,9 +12,9 @@ Scope: library
 
 | | Dimension | Signal | Anchor |
 |---|-----------|--------|--------|
-| ✅ | Requirement traceability | 14/14 FRs covered; 254/254 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
+| ✅ | Requirement traceability | 14/14 FRs covered; 255/255 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
 | ✅ | Test health | latest full suite 3905/3917 (2026-07-03) | automated tests pass (OpenSSF Scorecard) |
-| ✅ | Change traceability | 254/254 changes linked to a commit, ADR or test run | change provenance (SLSA) |
+| ✅ | Change traceability | 255/255 changes linked to a commit, ADR or test run | change provenance (SLSA) |
 | ✅ | Change reconciliation | 0/5 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
 | ✅ | Security | 0 open high/critical | no open high/critical vulns (NIST SSDF) |
 | ✅ | Size / maintainability discipline | ratchet delta -9 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
@@ -22,13 +22,13 @@ Scope: library
 
 > ℹ️ **Test-Health · diff-coverage (informational, not yet graded):** not measured this session — per-PR signal; see the CI "Diff coverage" artifact.
 
-Verified from: `shipwright_events.jsonl (254 events, 2026-05-02 → 2026-07-04)`
+Verified from: `shipwright_events.jsonl (255 events, 2026-05-02 → 2026-07-05)`
 
 _Grade = importance-weighted average over the measurable dimensions (n/a excluded from the denominator), modeled on OpenSSF Scorecard. Age is neutral; only unreconciled change and net growth are control failures. Each Anchor names the open standard the dimension follows — see the guide's Control-Grade dimensions table._
 
 ## 🛡️ CI Security (fail-closed gate)
 
-Latest scan: **2026-07-05** · source `security.yml#28752153476` · critical-gate **✅ PASS**
+Latest scan: **2026-07-05** · source `security.yml#28752366821` · critical-gate **✅ PASS**
 
 | Severity | Count |
 |----------|-------|
@@ -37,7 +37,7 @@ Latest scan: **2026-07-05** · source `security.yml#28752153476` · critical-gat
 | Medium | 0 |
 | Low | 0 |
 
-Prompt-injection findings: **2**
+Prompt-injection findings: **0**
 
 **Accepted risks** (`.trivyignore.yaml` register):
 
@@ -52,22 +52,22 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Metric | Value | Status | Why warn? |
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
-| Work events (iterate) | 254 changes | INFO |  |
-| Recent changes traced to an FR | 8/30 (27%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
-| All unit tests passing | 3905/3917 | WARN | 12/3917 not green in last full suite — see test-evidence.md; +11 change(s) since last full suite |
+| Work events (iterate) | 255 changes | INFO |  |
+| Recent changes traced to an FR | 7/30 (23%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
+| All unit tests passing | 3905/3917 | WARN | 12/3917 not green in last full suite — see test-evidence.md; +12 change(s) since last full suite |
 | Architecture decisions | 235 ADRs | INFO |  |
 | Iterate tests passing | 45/53 testable changes tested | WARN | 8 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 11 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 6 open | WARN | 6 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Triage open | 5 open | WARN | 5 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit (grandfathered) | 127 | INFO |  |
 | Bloat in allowlist | 158 entries | INFO |  |
 | Bloat ratchet delta | -9 lines | PASS |  |
 
 ## Project Velocity
 
-- Iterate: 254 changes (2026-05-02 → 2026-07-04)
-- Last activity: 2026-07-04
+- Iterate: 255 changes (2026-05-02 → 2026-07-05)
+- Last activity: 2026-07-05
 
 ## External LLM Review Evidence
 

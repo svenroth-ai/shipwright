@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-07-05T19:25:27.201738+00:00
+Generated: 2026-07-05T19:50:40.886577+00:00
 Total commits: 1087
 
 ## Commit Distribution
@@ -636,7 +636,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-05 | triage | sweep 7 outbox append(s) into branch | 50ca8fb18cc9 |
+| 2026-07-05 | triage | sweep 1 outbox append(s) into branch | bb522aabc592 |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
@@ -1094,7 +1094,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-05 | grade | import engine_bridge normally in authoritative tests | e6a51b3e6ec8 |
+| 2026-07-05 | grade | import engine_bridge normally in authoritative tests (#321) | 4d21fdc9ba1a |
 | 2026-06-22 | security | enforce scoped + time-bounded accept-discipline for .trivyignore.yaml (#274) | 5f16590eb98d |
 | 2026-06-12 | merge | end-to-end parallel-merge cascade integration test (#215) | 5321dfaf2b46 |
 | 2026-06-11 | campaign | drop tracked-campaign guard now that campaigns are local-only | a8abe956570e |

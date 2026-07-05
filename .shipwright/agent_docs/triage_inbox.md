@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-05T19:25:27.201738Z. Items waiting for triage decision.
+> Auto-generated 2026-07-05T19:50:40.886577Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
 - Total: 268
-- Triage: 6 | Promoted: 1 | Dismissed: 260 | Snoozed: 1
+- Triage: 5 | Promoted: 1 | Dismissed: 261 | Snoozed: 1
 
-## Top 6 items (severity-sorted)
+## Top 5 items (severity-sorted)
 
 ### Source: compliance (1 item)
 
@@ -32,7 +32,7 @@
   - Reviewer comment B: '3618/3618 green' is pass-rate, not coverage — it says nothing about whether AI-added code is even…
   - Promote: `triage_promote.py --id trg-8fdebda3 --task-ref EXT:<ref>`
 
-### Source: github (2 items)
+### Source: github (1 item)
 
 <a id="trg-7dbad194"></a>
 - **[pr-ci] PR #320 has 1 failing check(s) on iterate/grade-report-audience-copy** `id=trg-7dbad194 | severity=high | kind=bug → P1/engineering`
@@ -46,21 +46,6 @@
     Source: triage item gh-pr-ci:320
     ```
   - Promote: `triage_promote.py --id trg-7dbad194 --task-ref EXT:<ref>`
-
-<a id="trg-ba2b3f98"></a>
-- **GitHub prompt-injection: 2 finding(s) (medium)** `id=trg-ba2b3f98 | severity=medium | kind=improvement → P2/engineering`
-  - Repo svenroth-ai/shipwright \| prompt-injection (prompt_risks.json): 2 medium \| run: https://github.com/svenroth-ai/sh…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-security
-    
-    Context: the shipwright-security prompt-injection scan reports 2 open finding(s) for svenroth-ai/shipwright.
-    Severity breakdown — prompt-injection: 2 medium.
-    Workflow run: https://github.com/svenroth-ai/shipwright/actions/runs/28719714629
-    Re-scan locally: see docs/security-ci-setup.md
-    Source: triage item gh-prompt:svenroth-ai/shipwright
-    ```
-  - Promote: `triage_promote.py --id trg-ba2b3f98 --task-ref EXT:<ref>`
 
 ### Source: grader-campaign (1 item)
 

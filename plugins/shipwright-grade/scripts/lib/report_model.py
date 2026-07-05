@@ -32,7 +32,7 @@ _DIM_META: dict[str, dict[str, Any]] = {
         "disabled": ("ci-run-per-sha",),
     },
     "change_reconciliation": {
-        "source": "Shipwright-only: per-change behaviour re-verification (BP-2)",
+        "source": "Shipwright-only: per-change behaviour re-verification",
         "disabled": ("behavior-impact-ledger",),
     },
     "security": {
@@ -51,10 +51,26 @@ _DIM_META: dict[str, dict[str, Any]] = {
 
 _GIT_DERIVED = frozenset({"requirement_traceability", "change_traceability"})
 
-HONEST_CEILING_NOTE = (
+# The honest-ceiling note is mode-dependent: an authoritative grade is NOT an
+# "estimate from the outside" — it is computed from the repo's own Shipwright
+# records — so claiming it is would itself be dishonest (the exact over-claim the
+# ceiling exists to prevent).
+HONEST_CEILING_NOTE = (  # heuristic / cold-repo projection
     "Heuristic estimate from the outside — it inspects history and structure, "
     "it does not verify behaviour. A cold-repo grade cannot certify correctness."
 )
+AUTHORITATIVE_CEILING_NOTE = (
+    "Computed from this repo's own Shipwright records (event log + RTM) — the same "
+    "rubric the dashboard and certification use. A grade measures control "
+    "discipline, not behaviour-correctness; it is not a security audit or a guarantee."
+)
+
+
+def ceiling_note_for(effective_mode: str) -> str:
+    """The honest-ceiling note matching the grade's mode (authoritative vs cold)."""
+    if effective_mode == "authoritative":
+        return AUTHORITATIVE_CEILING_NOTE
+    return HONEST_CEILING_NOTE
 
 
 @dataclass(frozen=True)
@@ -202,7 +218,7 @@ def build_report_model(
         measurable_count=measurable,
         na_count=na,
         controls_shipwright_would_light=tuple(na_labels),
-        honest_ceiling_note=HONEST_CEILING_NOTE,
+        honest_ceiling_note=ceiling_note_for(routing.effective_mode),
         static_test_inventory=static_test_inventory,
         network_enabled=network_enabled,
         network_note=network_note,

@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-05T19:25:27.201738+00:00
+Generated: 2026-07-05T19:50:40.886577+00:00
 
 ## Requirements Coverage
 
@@ -27,6 +27,7 @@ Generated: 2026-07-05T19:25:27.201738+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-4d586bd2"></a>Fixed the grade report so an authoritative grade no longer falsely calls itself an outside estimate, and removed an internal codename from the report. | iterate | change |  | 273/273 | — | 2026-07-05 |
 | <a id="evt-668ccaca"></a>Cleaned up how two grade tests load a helper module so the security scanner stops false-flagging them. | iterate | change |  | 265/265 | — | 2026-07-05 |
 | <a id="evt-4f205233"></a>Rewrote the repo-grade report into a plain-language, guided walkthrough for non-experts, so they understand what each control means, what they're missing, and what improves — funnelling to adopt and the Masterclass. | iterate | change |  | 271/271 | — | 2026-07-04 |
 | <a id="evt-916192e5"></a>G4 plugin-polish: authoritative-vs-heuristic wiring, URL clone-and-grade, standalone CLI, plugin registration | iterate | feature |  | — | — | 2026-07-04 |
@@ -288,7 +289,7 @@ Generated: 2026-07-05T19:25:27.201738+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 254 |
+| Iterate changes | 255 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

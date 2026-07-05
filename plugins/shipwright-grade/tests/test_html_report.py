@@ -208,9 +208,10 @@ class TestSections:
         # The n/a reconciliation card shows the jargon-free reframe, and the raw
         # engine DETAIL ("not measurable — needs per-change behavior-impact") is
         # suppressed on the face. (Apostrophe-free fragment — ' HTML-escapes.)
-        # NB the technical provenance ("…re-verification (BP-2)") is still
-        # surfaced deep inside the expandable — that's the honest audit trail.
+        # The provenance ("…re-verification") is surfaced in the expandable, now
+        # without the internal "BP-2" codename (whole report is codename-free).
         assert "measure this from the outside" in out
+        assert "BP-2" not in out
         rec = _card(out, "Change reconciliation")
         assert "needs per-change behavior-impact" not in rec   # engine detail gone
         # The reframe is on the face (before the expandable summary).
