@@ -1148,7 +1148,7 @@ Together with preventive Canon and reactive Phase-Quality, it's a three-layer qu
   | Dimension (weight) | What it checks — in plain words | Open standard it follows |
   |---|---|---|
   | Requirement traceability (25%) | Every requirement is linked to the work and tests that implement & verify it | **ISO/IEC/IEEE 29148** — the requirements-engineering standard that mandates bidirectional requirement→verification traceability |
-  | Test health (20%) | The latest *full* test suite is green (high pass-rate) | **OpenSSF Scorecard** — the Linux-Foundation open project-health scorer this whole grade is modeled on (its automated-tests check) |
+  | Test health (20%) | The latest *full* test suite is green (high pass-rate), moderated by **diff-coverage** — when the *changed* lines are under-tested (below the 80% threshold) the dimension takes a WARN and a moderate score reduction, so a green-but-untested change still counts against you (it never hard-caps the grade to F — that stays a suite collapse) | **OpenSSF Scorecard** — the Linux-Foundation open project-health scorer this whole grade is modeled on (its automated-tests check) |
   | Change traceability (15%) | Every change links back to a commit, ADR or test run — you can see where it came from | **SLSA** — tamper-evident build & change provenance |
   | Change reconciliation (15%) | When a requirement's behaviour changes, it gets re-verified — *age is never penalised* | **ISO/IEC/IEEE 12207** — the software-life-cycle standard that requires changed items to be re-verified |
   | Security (10%) | No open high/critical vulnerabilities (read from the CI security gate) | **NIST SSDF** (SP 800-218) — secure-development practices, incl. addressing known vulnerabilities |

@@ -17,9 +17,14 @@ would show stale data on ``main``).
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 
-__all__ = ["load_diff_coverage", "diff_coverage_info_line"]
+__all__ = [
+    "load_diff_coverage",
+    "diff_coverage_info_line",
+    "gradeable_diff_percent",
+]
 
 _DIFF_COVERAGE_REL = Path(".shipwright") / "coverage" / "diff_coverage.json"
 
@@ -38,6 +43,32 @@ def load_diff_coverage(project_root: Path | None) -> dict | None:
     except (OSError, json.JSONDecodeError):
         return None
     return data if isinstance(data, dict) else None
+
+
+def gradeable_diff_percent(cov: dict | None) -> float | None:
+    """Strict extraction of the diff-coverage % that may feed the grade, or None.
+
+    Diff-coverage roadmap **Phase 3**: only a finite, in-range ``[0, 100]``
+    ``diff`` with ``status == "ok"`` is gradeable. The transient is untrusted
+    local input, so every other shape — n/a status, missing/None ``diff``, a
+    bool/string, ``NaN``/``inf``, or an out-of-range percent — degrades to
+    ``None`` (no Test-Health effect), never a crash or a nonsensical penalty. On
+    ``main`` (no transient → ``cov is None``) this is always ``None``, so the
+    monorepo grade is unchanged."""
+    if not cov or cov.get("status") != "ok":
+        return None
+    diff = cov.get("diff")
+    # bool is an int subclass — reject it explicitly (True/False are not a %).
+    if isinstance(diff, bool) or not isinstance(diff, (int, float)):
+        return None
+    # Range check FIRST: int↔float comparison is exact and overflow-safe, so a
+    # huge arbitrary-precision JSON int (e.g. 10**400) is rejected here without
+    # ever reaching math.isfinite (which would raise OverflowError on it). The
+    # range also rejects NaN/±inf (out-of-range); isfinite is a belt-and-braces
+    # guard reached only for an already-bounded value.
+    if not (0.0 <= diff <= 100.0) or not math.isfinite(diff):
+        return None
+    return float(diff)
 
 
 def diff_coverage_info_line(cov: dict | None) -> str:

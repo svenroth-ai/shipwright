@@ -1,0 +1,9 @@
+{
+  "run_id": "iterate-2026-07-04-diff-coverage-grade-input-warn",
+  "date": "2026-07-05T19:41:44.452796Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/diff-coverage-grade-input-warn",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-04-diff-coverage-grade-input-warn"
+}

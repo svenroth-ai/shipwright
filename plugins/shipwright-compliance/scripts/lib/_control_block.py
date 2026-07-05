@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 
 from scripts.lib._diff_coverage_block import (
     diff_coverage_info_line,
+    gradeable_diff_percent,
     load_diff_coverage,
 )
 from scripts.lib._latest_suite import resolve_latest_full_suite
@@ -117,6 +118,11 @@ def build_grade_inputs(data: ComplianceData) -> GradeInputs:
         latest_full_suite_passed=suite.passed if suite else None,
         latest_full_suite_total=suite.total if suite else None,
         latest_full_suite_date=suite.date if suite else "",
+        # Diff-coverage roadmap Phase 3 (dogfood): moderate Test-Health with a
+        # WARN when the CHANGED lines are under-tested. Read from the gitignored
+        # transient; strict-validated to None on `main`/n/a → grade unchanged.
+        diff_coverage_percent=gradeable_diff_percent(
+            load_diff_coverage(data.project_root)),
         # provenance = linked to an ADR, a commit, or a recorded test run.
         events_with_provenance=sum(
             1 for we in events if we.adr_id or we.commit or we.tests_total > 0),

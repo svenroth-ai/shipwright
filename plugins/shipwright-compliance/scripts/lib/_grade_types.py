@@ -36,6 +36,13 @@ class GradeInputs:
     latest_full_suite_passed: int | None = None
     latest_full_suite_total: int | None = None
     latest_full_suite_date: str = ""
+    # Diff-coverage (% of the CHANGED lines vs merge-base that tests execute),
+    # PR-local. None → not measurable → NO effect on Test-Health. This is the
+    # repo-agnostic default: the generic grader supplies nothing, so an arbitrary
+    # repo's grade is unchanged; only the monorepo compliance adapter populates
+    # it from the gitignored transient (diff-coverage roadmap Phase 3 — below the
+    # threshold it moderates Test-Health with a WARN + a non-collapsing penalty).
+    diff_coverage_percent: float | None = None
     # Change → commit/ADR/test provenance
     events_with_provenance: int = 0
     # Change reconciliation (BP-2 — behavior-affecting impact persisted)
