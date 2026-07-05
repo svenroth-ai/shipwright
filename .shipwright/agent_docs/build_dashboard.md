@@ -1,11 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-07-05 19:40 UTC | Session: 1d21bb31-7ecc-4ece-8379-7e834335e2a7 | Run: iterate-2026-07-04-diff-coverage-grade-input-warn
+> Updated: 2026-07-05 19:25 UTC | Session: 3b1d1aea-e750-4aef-99b9-8ae48cb4e15a | Run: iterate-2026-07-05-grade-test-import-cleanup
 
-## Recent Changes (253 iterations)
+## Recent Changes (254 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| change | Diff-coverage now moderates the Control-Grade Test-Health dimension: below 80% of changed lines covered => WARN + x0.85 floored penalty (never F-collapse; hard gate is Phase 4). New optional GradeInputs.diff_coverage_percent (default None = grade-neutral for the repo-agnostic grader); the monorepo compliance adapter populates it strict-validated from the gitignored transient. | 0/0 |  | tooling | 2026-07-05 |
+| change | grade-report-audience-copy | 271/271 |  | tooling | 2026-07-04 |
+| change | Replace __import__("engine_bridge") with a normal import in shipwright-grade authoritative tests | 265/265 |  | tooling | 2026-07-05 |
 | feature | G4 plugin-polish: authoritative-vs-heuristic wiring, URL clone-and-grade, standalone CLI, plugin registration | 0/0 |  | tooling | 2026-07-04 |
 | change | diff-coverage Phase 2: monorepo coverage combine + W4 activation | 0/0 |  | tooling | 2026-07-04 |
 | bug | Prompt-injection scanner blanks string/comment/f-string token spans before matching so dangerous-pattern literals in security-audit tests are no longer false positives; real calls still flag. | 0/0 |  | tooling | 2026-07-04 |
@@ -260,7 +261,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-04 | Unit: 951/951 | Integration: 174/174 | Smoke: skipped | (iterate)
+Last run: 2026-07-05 | Unit: 265/265 | Smoke: skipped | (iterate)
 
 ## Pipeline
 
