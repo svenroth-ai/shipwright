@@ -32,7 +32,7 @@ the score.
 
 from __future__ import annotations
 
-from scripts.lib._grade_gate import apply_verdict_gate
+from scripts.lib._grade_gate import _BROKEN_BELOW, apply_verdict_gate
 from scripts.lib._grade_types import DimensionResult, GradeInputs, GradeReport
 
 # Re-export the value model so external callers keep importing it from here.
@@ -52,6 +52,19 @@ _BANDS: list[tuple[float, str, str]] = [
 _NOT_GRADEABLE_VERDICT = (
     "Not gradeable — no control dimension could be measured for this repository."
 )
+
+# --- Diff-coverage → Test-Health blend (diff-coverage roadmap Phase 3) -------
+# Below this diff-coverage % (of the CHANGED lines vs merge-base that tests run),
+# Test-Health takes a moderate, non-collapsing penalty + a WARN in its detail.
+# Conservative start (roadmap "WARN < 80%"); WARN-only — the hard CI gate is
+# Phase 4. None (not measurable) is grade-neutral, so any repo that supplies no
+# diff-coverage (the generic grader, or this repo on `main`) is unaffected.
+_DIFF_COV_WARN_THRESHOLD = 80.0
+_DIFF_COV_PENALTY_FACTOR = 0.85  # ×0.85 = −15% (≈3 headline pts on a green suite)
+# Floor sourced from the gate's collapse threshold so the two cannot drift: the
+# penalty can never push an otherwise-non-collapsed suite into the F-collapse
+# band — diff-coverage stays a WARN, never a hard block.
+_DIFF_COV_FLOOR = _BROKEN_BELOW
 
 
 def _ratio(num: int, den: int) -> float:
@@ -89,7 +102,9 @@ def _score_dimensions(inp: GradeInputs) -> list[DimensionResult]:
         req_detail,
     ))
 
-    # 2. Test health (20%) — latest *full* suite pass-ratio.
+    # 2. Test health (20%) — latest *full* suite pass-ratio, moderated by
+    # diff-coverage (Phase 3): were the CHANGED lines actually tested, or just
+    # the suite green? Below the threshold, a moderate non-collapsing WARN.
     if inp.latest_full_suite_total:
         th_score: float | None = _ratio(
             inp.latest_full_suite_passed or 0, inp.latest_full_suite_total)
@@ -99,6 +114,18 @@ def _score_dimensions(inp: GradeInputs) -> list[DimensionResult]:
             + (f" ({inp.latest_full_suite_date})"
                if inp.latest_full_suite_date else "")
         )
+        dc = inp.diff_coverage_percent
+        if dc is not None and dc < _DIFF_COV_WARN_THRESHOLD:
+            # Floor: never create OR deepen a collapse via diff-coverage. When the
+            # raw suite is already below the floor its own failure dominates
+            # (min keeps it); when above, the penalty can't cross the floor.
+            th_score = max(th_score * _DIFF_COV_PENALTY_FACTOR,
+                           min(th_score, _DIFF_COV_FLOOR))
+            th_detail += (f"; WARN diff-coverage {dc:.1f}% < "
+                          f"{_DIFF_COV_WARN_THRESHOLD:.0f}% — changed lines "
+                          "under-tested")
+        elif dc is not None:
+            th_detail += f"; diff-coverage {dc:.1f}% >= {_DIFF_COV_WARN_THRESHOLD:.0f}%"
     else:
         th_score, th_detail = None, "no full suite run recorded"
     dims.append(DimensionResult(

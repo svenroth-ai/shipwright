@@ -42,6 +42,14 @@ class TestGradeInputKwargs:
         # Every n/a signal keeps the engine's own n/a default (empty kwargs).
         assert _na_bundle().grade_input_kwargs() == {}
 
+    def test_grader_never_feeds_diff_coverage(self):
+        # Roadmap Phase 3 is monorepo-dogfood only: the repo-agnostic grader has
+        # no diff-coverage transient, so it never sets diff_coverage_percent →
+        # the engine leaves it None → Test-Health is byte-identical to
+        # pre-Phase-3 for any repo the grader scores (grade-neutral).
+        assert "diff_coverage_percent" not in _lit_bundle().grade_input_kwargs()
+        assert "diff_coverage_percent" not in _na_bundle().grade_input_kwargs()
+
 
 class TestDetailOverrides:
     def test_lit_bundle_labels_scored_test_health(self):

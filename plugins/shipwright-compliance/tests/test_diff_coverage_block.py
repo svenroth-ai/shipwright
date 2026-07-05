@@ -1,13 +1,18 @@
 """Tests for the grade-neutral diff-coverage INFO line (roadmap Phase 1).
 
-Two guarantees:
+Guarantees:
   1. ``_diff_coverage_block`` loads the gitignored transient report and renders
      an informational line (ok / n/a / absent).
-  2. **Grade-neutrality** — the Control-Grade rendering (letter, score,
-     dimensions, methodology note) is byte-identical whether diff-coverage is
-     present, n/a, or absent; only the single INFO line varies. And
-     :class:`GradeInputs` carries no coverage field, so the number structurally
-     cannot enter the score (feeding the grade is Phase 3).
+  2. **Display grade-neutrality** — the *rendered* Control-Grade block (letter,
+     score, dimension rows, methodology note) is byte-identical for the INFO-line
+     ``diff_coverage`` display arg whether present, n/a, or absent; only the
+     single INFO line varies.
+  3. **``gradeable_diff_percent``** — the strict extraction that feeds the score
+     (roadmap **Phase 3**): only a finite, in-range [0, 100] ``diff`` with status
+     ``ok`` yields a float; every other shape (n/a, NaN/inf, out-of-range, wrong
+     type, missing) degrades to ``None`` → no Test-Health effect. Phase 3
+     REPLACES the Phase-1 "GradeInputs carries no coverage field" guarantee: the
+     field now exists but defaults ``None`` (grade-neutral unless supplied).
 """
 
 from __future__ import annotations
@@ -18,6 +23,7 @@ import json
 from scripts.lib._control_block import format_control_block
 from scripts.lib._diff_coverage_block import (
     diff_coverage_info_line,
+    gradeable_diff_percent,
     load_diff_coverage,
 )
 from scripts.lib.control_grade import DimensionResult, GradeInputs, GradeReport
@@ -137,9 +143,83 @@ class TestGradeNeutrality:
         assert _INFO_MARKER in block
         assert "not measured" in block
 
-    def test_grade_inputs_has_no_coverage_field(self):
-        # Structural guarantee: the number cannot reach the score because
-        # GradeInputs has nowhere to hold it.
-        names = {f.name for f in dataclasses.fields(GradeInputs)}
-        assert not any("coverage" in n for n in names)
-        assert not any("diff" in n for n in names)
+    def test_grade_inputs_coverage_field_defaults_neutral(self):
+        # Phase 3 REPLACES the Phase-1 "no coverage field" guarantee: the field
+        # now EXISTS (diff-coverage feeds Test-Health) but DEFAULTS to None →
+        # grade-neutral unless a repo explicitly supplies it. That default is the
+        # repo-agnostic guarantee that arbitrary repos see no grade change.
+        fields = {f.name: f for f in dataclasses.fields(GradeInputs)}
+        assert "diff_coverage_percent" in fields
+        assert fields["diff_coverage_percent"].default is None
+
+
+class TestGradeableDiffPercent:
+    """Strict extraction that feeds the score (Phase 3). Untrusted local
+    transient → only a finite, in-range [0, 100] ok-status number gets through."""
+
+    def test_ok_finite_in_range(self):
+        assert gradeable_diff_percent(OK_REPORT) == 90.0
+        assert gradeable_diff_percent(
+            {"status": "ok", "diff": 0}) == 0.0
+        assert gradeable_diff_percent(
+            {"status": "ok", "diff": 100}) == 100.0
+
+    def test_na_status_is_none(self):
+        assert gradeable_diff_percent(NA_REPORT) is None
+
+    def test_absent_or_none_is_none(self):
+        assert gradeable_diff_percent(None) is None
+        assert gradeable_diff_percent({}) is None
+        assert gradeable_diff_percent({"status": "ok"}) is None
+        assert gradeable_diff_percent({"status": "ok", "diff": None}) is None
+
+    def test_non_numeric_is_none(self):
+        assert gradeable_diff_percent({"status": "ok", "diff": "90"}) is None
+        assert gradeable_diff_percent({"status": "ok", "diff": True}) is None
+
+    def test_non_finite_is_none(self):
+        assert gradeable_diff_percent(
+            {"status": "ok", "diff": float("nan")}) is None
+        assert gradeable_diff_percent(
+            {"status": "ok", "diff": float("inf")}) is None
+
+    def test_out_of_range_is_none(self):
+        assert gradeable_diff_percent({"status": "ok", "diff": -1.0}) is None
+        assert gradeable_diff_percent({"status": "ok", "diff": 101.0}) is None
+
+    def test_huge_int_does_not_overflow(self):
+        # json.loads parses a giant integer token as an arbitrary-precision int;
+        # it must be rejected by the range check WITHOUT reaching math.isfinite
+        # (which would raise OverflowError). Untrusted transient → never a crash.
+        assert gradeable_diff_percent({"status": "ok", "diff": 10 ** 400}) is None
+
+    def test_composes_from_a_written_transient(self, tmp_path):
+        # The exact chain build_grade_inputs runs: load the gitignored transient
+        # file → strict-extract the gradeable percent.
+        p = tmp_path / ".shipwright" / "coverage" / "diff_coverage.json"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps({"status": "ok", "diff": 62.5}), encoding="utf-8")
+        assert gradeable_diff_percent(load_diff_coverage(tmp_path)) == 62.5
+        # Absent transient (this repo on `main`) → None → grade unchanged.
+        assert gradeable_diff_percent(load_diff_coverage(tmp_path / "empty")) is None
+
+
+class TestBuildGradeInputsWiring:
+    """End-to-end adapter seam: the transient file flows through
+    build_grade_inputs onto GradeInputs.diff_coverage_percent."""
+
+    def _data(self, root):
+        from scripts.lib.data_collector import ComplianceData
+        return ComplianceData(project_root=root)
+
+    def test_transient_reaches_grade_inputs(self, tmp_path):
+        from scripts.lib._control_block import build_grade_inputs
+        p = tmp_path / ".shipwright" / "coverage" / "diff_coverage.json"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps({"status": "ok", "diff": 55.0}), encoding="utf-8")
+        assert build_grade_inputs(self._data(tmp_path)).diff_coverage_percent == 55.0
+
+    def test_absent_transient_is_none(self, tmp_path):
+        from scripts.lib._control_block import build_grade_inputs
+        # No transient (the steady state on `main`) → None → grade unchanged.
+        assert build_grade_inputs(self._data(tmp_path)).diff_coverage_percent is None
