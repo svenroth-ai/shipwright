@@ -1,35 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-05-grade-test-import-cleanup"
+run_id: "iterate-2026-07-04-diff-coverage-grade-input-warn"
 phase: "iterate"
-reason: "F11 pre-merge refresh: iterate-2026-07-05-grade-test-import-cleanup"
-timestamp: "2026-07-05T19:25:27.201738+00:00"
+reason: "F11 refresh-if-behind before PR (integrate #320/#321)"
+timestamp: "2026-07-05T19:40:34.721218+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-05 19:25:27 UTC
+> Auto-generated 2026-07-05 19:40:34 UTC
 
 ## Session Info
 
-- **Session ID**: 3b1d1aea-e750-4aef-99b9-8ae48cb4e15a
-- **Timestamp**: 2026-07-05 19:25:27 UTC
-- **Reason**: F11 pre-merge refresh: iterate-2026-07-05-grade-test-import-cleanup
+- **Session ID**: 1d21bb31-7ecc-4ece-8379-7e834335e2a7
+- **Timestamp**: 2026-07-05 19:40:34 UTC
+- **Reason**: F11 refresh-if-behind before PR (integrate #320/#321)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-05-grade-test-import-cleanup
-- **Date**: 2026-07-05T19:25:55.991819Z
+- **Run ID**: iterate-2026-07-04-diff-coverage-grade-input-warn
+- **Date**: 2026-07-05T19:41:44.452796Z
 - **Type**: change
-- **Complexity**: trivial
-- **Branch**: iterate/grade-test-import-cleanup
-- **ADR**: iterate-2026-07-05-grade-test-import-cleanup
+- **Complexity**: medium
+- **Branch**: iterate/diff-coverage-grade-input-warn
+- **ADR**: iterate-2026-07-04-diff-coverage-grade-input-warn
 - **Tests passed**: True
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/grade-test-import-cleanup
-- **External Review Marker**: missing
+- **Branch**: iterate/diff-coverage-grade-input-warn
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-05T19:02:02)
 
 ### Mandatory replay on Resume
 
@@ -47,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/grade-test-import-cleanup
-- **Last Commit**: 4598a3f6 Merge remote-tracking branch 'origin/main' into iterate/grade-test-import-cleanup
+- **Branch**: iterate/diff-coverage-grade-input-warn
+- **Last Commit**: a80a3a7a Merge remote-tracking branch 'origin/main' into iterate/diff-coverage-grade-input-warn
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -66,14 +66,14 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 |-------|------|--------|------|
 | evt-4f205233 | work_completed | iterate (grade-report-audience-copy) | 2026-07-04 |
 | evt-668ccaca | work_completed | iterate (Replace __import__("engine_bridge") with a normal import in shipwright-grade authoritative tests) | 2026-07-05 |
+| evt-cb38a992 | work_completed | iterate (Diff-coverage now moderates the Control-Grade Test-Health dimension: below 80% of changed lines covered => WARN + x0.85 floored penalty (never F-collapse; hard gate is Phase 4). New optional GradeInputs.diff_coverage_percent (default None = grade-neutral for the repo-agnostic grader); the monorepo compliance adapter populates it strict-validated from the gitignored transient.) | 2026-07-05 |
 | evt-916192e5 | work_completed | iterate (G4 plugin-polish: authoritative-vs-heuristic wiring, URL clone-and-grade, standalone CLI, plugin registration) | 2026-07-04 |
 | evt-9771cc88 | work_completed | iterate (diff-coverage Phase 2: monorepo coverage combine + W4 activation) | 2026-07-04 |
-| evt-6d440ca1 | work_completed | iterate (Prompt-injection scanner blanks string/comment/f-string token spans before matching so dangerous-pattern literals in security-audit tests are no longer false positives; real calls still flag.) | 2026-07-04 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 254
+- **Total work events**: 255
 - **Last iterate**: change — grade-report-audience-copy (2026-07-04)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

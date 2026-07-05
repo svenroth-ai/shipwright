@@ -1,18 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-05-grade-test-import-cleanup",
-    "date": "2026-07-05",
+    "run_id": "iterate-2026-07-04-diff-coverage-grade-input-warn",
+    "date": "2026-07-04",
     "intent": "change",
-    "complexity": "trivial",
+    "complexity": "medium",
     "unit": {
       "status": "passed",
-      "passed": 265,
-      "total": 265
+      "passed": 951,
+      "total": 951
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 174,
+      "total": 174
     },
     "pgtap": {
       "status": "not_run",
@@ -34,15 +34,67 @@
     },
     "degraded": [],
     "surface_verification": {
-      "surface": "none",
-      "justification": "Test-only import refactor in shipwright-grade (test_authoritative.py); no user-facing web/CLI surface. Executable proof: full shipwright-grade suite 265 passed + a full prompt-injection scan (1751 files) now reports 0 findings, down from 2.",
+      "surface": "cli",
+      "justification": "",
       "exit_code": 0,
-      "tests_run": 0,
-      "timestamp": "2026-07-05T00:00:00.000Z"
+      "tests_run": 3,
+      "timestamp": "2026-07-05T19:24:33.497Z"
     },
     "test_completeness": {
-      "status": "n/a",
-      "justification": "Trivial behavior-preserving test-import refactor (__import__ -> normal import); the two affected tests stay green before/after (8 passed each), coverage unchanged, no new behavior introduced."
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC1 - GradeInputs.diff_coverage_percent optional, default None => Test-Health byte-identical (repo-agnostic neutral default)",
+          "disposition": "tested",
+          "evidence": "test_diff_coverage_block.py::TestGradeNeutrality::test_grade_inputs_coverage_field_defaults_neutral"
+        },
+        {
+          "behavior": "AC2 - Test-Health blend: below 80% => x0.85 floored; at/above threshold or None => unchanged; documented constants",
+          "disposition": "tested",
+          "evidence": "test_control_grade_diff_coverage.py::TestDiffCoverageBlend::{test_below_threshold_moderate_penalty_and_warn,test_above_threshold_no_penalty,test_exactly_at_threshold_is_not_below,test_none_is_grade_neutral}"
+        },
+        {
+          "behavior": "AC3 - floor invariant: never collapses a >=0.5 suite, no extra penalty on an already-collapsed one; not a _grade_gate collapse pillar / no headline F-cap",
+          "disposition": "tested",
+          "evidence": "test_control_grade_diff_coverage.py::TestDiffCoverageBlend::{test_floor_never_collapses_a_passing_suite,test_already_collapsed_suite_gets_no_extra_penalty,test_diff_coverage_is_not_a_collapse_pillar}"
+        },
+        {
+          "behavior": "AC4 - WARN detail text below threshold (.1f, no boundary contradiction) + existing gap marker renders on the dashboard",
+          "disposition": "tested",
+          "evidence": "test_control_grade_diff_coverage.py::TestDiffCoverageBlend::{test_boundary_formatting_never_contradicts_the_check,test_dashboard_renders_warn_text}"
+        },
+        {
+          "behavior": "AC5 - adapter gradeable_diff_percent strict-validates (ok->float, n/a/None/bool/str/NaN/inf/oob/huge-int->None) and build_grade_inputs wires the transient onto the field",
+          "disposition": "tested",
+          "evidence": "test_diff_coverage_block.py::{TestGradeableDiffPercent::*,TestBuildGradeInputsWiring::*}"
+        },
+        {
+          "behavior": "AC6 - repo-agnostic grader never sets diff_coverage_percent => GradeReport identical to pre-Phase-3 (grade-neutral)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-grade/tests/test_signal_bundle.py::TestGradeInputKwargs::test_grader_never_feeds_diff_coverage + test_control_grade_diff_coverage.py::test_none_is_grade_neutral"
+        },
+        {
+          "behavior": "AC7 - TDD tests present and green (dedicated engine + adapter + grader modules)",
+          "disposition": "tested",
+          "evidence": "test_control_grade_diff_coverage.py (10) + test_diff_coverage_block.py additions + test_signal_bundle.py addition; full compliance 951 + grade 266 green"
+        },
+        {
+          "behavior": "AC8 - finalization preserves the tracked coverage.total (W4 signal) verbatim across the F5 rewrite",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "evidence": "guarded by shared/tests/test_coverage_baseline_lit.py::test_w4_is_green_on_committed_files (W4 CI gate FAILs if coverage.total is dropped)"
+        }
+      ],
+      "counts": {
+        "testable": 7,
+        "tested": 7,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 8,
+        "covered_acs": 8
+      }
     }
   },
   "coverage": {
