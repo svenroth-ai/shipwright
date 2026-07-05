@@ -37,5 +37,11 @@
       "counts": { "testable": 8, "tested": 8, "untestable": 0, "untested_testable": 0 },
       "enumeration_basis": { "acs": 6, "covered_acs": 6 }
     }
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
   }
 }
