@@ -15,6 +15,7 @@ from types import SimpleNamespace
 import authoritative
 import grade_inputs_projector
 from conftest import build_repo
+from engine_bridge import load_engine
 from grade_inputs_projector import grade_context
 from repo_context import RepoContext
 from resolve_target import resolve_target
@@ -96,7 +97,7 @@ class TestFailSafe:
         monkeypatch.setattr(
             authoritative, "load_compliance_ingest",
             lambda: (boom, lambda data: None))
-        engine = __import__("engine_bridge").load_engine()
+        engine = load_engine()
         assert authoritative.try_authoritative_grade(
             self._ctx(tmp_path), engine, self._ROUTING) is None
 
@@ -105,7 +106,7 @@ class TestFailSafe:
         monkeypatch.setattr(
             authoritative, "load_compliance_ingest",
             lambda: (lambda _root: empty, lambda data: None))
-        engine = __import__("engine_bridge").load_engine()
+        engine = load_engine()
         assert authoritative.try_authoritative_grade(
             self._ctx(tmp_path), engine, self._ROUTING) is None
 

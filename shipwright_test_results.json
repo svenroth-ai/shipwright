@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-04-diff-coverage-rollout-combine",
-    "date": "2026-07-04",
-    "intent": "feature",
-    "complexity": "medium",
+    "run_id": "iterate-2026-07-05-grade-test-import-cleanup",
+    "date": "2026-07-05",
+    "intent": "change",
+    "complexity": "trivial",
     "unit": {
       "status": "passed",
-      "passed": 71,
-      "total": 71
+      "passed": 265,
+      "total": 265
     },
     "integration": {
-      "status": "passed",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
@@ -32,70 +32,17 @@
     "smoke": {
       "status": "skipped"
     },
-    "degraded": [
-      "External review (external_review.py \u2014 GPT-5.4 + Gemini 3.1 Pro via OpenRouter): the review diff was generated after origin/main advanced past the worktree base (the grade-cta-adopt PR merged mid-run), so GPT-5.4's 6 findings about plugins/shipwright-grade/scripts/lib/html_report.py + grade tests are ARTIFACTS of the stale base (that delta reversed in the diff), NOT this change \u2014 dismissed after verifying those files are untouched vs origin/main. GPT-5.4's one on-target finding (combine_coverage.py label parsing brittle to pytest-cov xdist worker suffixes) was FIXED (resolve_plugin_label longest-prefix + test). Gemini 3.1 Pro returned a null/empty feedback body (model-side) \u2014 no findings; coverage was preserved by the internal Opus code-reviewer, which cleared the core mechanic and raised 4 findings (1 medium partial-combine fail-open FIXED + tested; 3 low: scope documented, AC3 wording fixed, W4 dual-format heuristic left as pre-existing intentional contract)."
-    ],
+    "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "justification": "No user-facing web/CLI application surface \u2014 this iterate is framework CI + coverage instrumentation (a new combine tool, a tracked coverage.total, and the W4 verifier gate). Executable end-to-end proof was still run: the full combine->record->W4 chain executed against real suites (all 13 plugins + shared + integration, all green) producing a combined repo-wide 80.2% line-rate, which lit W4 SKIP->PASS on the committed files; plus 71 hermetic coverage tests. The surface_verification.py runner has no app to drive.",
+      "justification": "Test-only import refactor in shipwright-grade (test_authoritative.py); no user-facing web/CLI surface. Executable proof: full shipwright-grade suite 265 passed + a full prompt-injection scan (1751 files) now reports 0 findings, down from 2.",
       "exit_code": 0,
       "tests_run": 0,
-      "timestamp": "2026-07-04T00:00:00.000Z"
+      "timestamp": "2026-07-05T00:00:00.000Z"
     },
     "test_completeness": {
-      "status": "complete",
-      "behaviors": [
-        {
-          "behavior": "AC1 \u2014 per-plugin --cov + per-tier COVERAGE_FILE in ci.yml (plugins with scripts/, shared, integration); preview (no scripts/) runs tests without coverage",
-          "disposition": "tested",
-          "evidence": "test_ci_coverage_wiring.py::{test_plugin_step_measures_per_plugin_coverage,test_shared_step_writes_shared_tier_datafile,test_integration_step_measures_coverage}"
-        },
-        {
-          "behavior": "AC2 \u2014 combine_coverage.py folds per-tier data into ONE repo-relative coverage.xml (per-plugin [paths] remap), absent-safe, idempotent, xdist-worker-suffix safe, partial-combine fails loud",
-          "disposition": "tested",
-          "evidence": "test_combine_coverage.py::{TestCombineRealFixture::test_combined_xml_is_repo_relative,TestDiscovery::*,TestAbsentSafe::*,TestWorkerSuffix::*,test_two_worker_files_per_plugin_both_contribute,TestPartialCombine::*}"
-        },
-        {
-          "behavior": "AC3 \u2014 diff-cover runs over the combined coverage.xml AFTER all tiers; repo tier label via measure_diff_coverage DEFAULT_TIER=repo; step stays non-gating",
-          "disposition": "tested",
-          "evidence": "test_ci_coverage_wiring.py::{test_combine_step_invokes_the_tool,test_diff_coverage_step_stays_nongating,test_combine_runs_before_diff_after_all_tiers} + test_measure_diff_coverage.py::TestBuildPayload::test_ok_shape"
-        },
-        {
-          "behavior": "AC4 \u2014 record_coverage_total.py writes tracked top-level coverage.total, preserves iterate_latest, atomic, refuses fabricated total on bad input",
-          "disposition": "tested",
-          "evidence": "test_record_coverage_total.py::{TestMainCLI::*,TestMerge::test_preserves_iterate_latest}"
-        },
-        {
-          "behavior": "AC5 \u2014 W4 lit green: recorder total + calibrated coverage.min => PASS (was SKIP); round-trip + min-below-total on committed files",
-          "disposition": "tested",
-          "evidence": "test_record_coverage_total.py::TestW4RoundTrip::* + test_coverage_baseline_lit.py::{test_w4_is_green_on_committed_files,test_baseline_min_sits_below_measured_total}"
-        },
-        {
-          "behavior": "AC6 \u2014 coverage.diff stays transient (never mutates tracked results); grade byte-identical with/without coverage; dashboard tier label defaults to repo",
-          "disposition": "tested",
-          "evidence": "test_diff_coverage_block.py::{TestGradeNeutrality::*,TestInfoLine::test_tier_defaults_to_repo_when_absent} + test_measure_diff_coverage.py::TestMainCLI::test_never_mutates_existing_results_json"
-        },
-        {
-          "behavior": "AC7 \u2014 .gitignore covers .coverage* + .cov-data/ (per-tier data + combine dir never tracked)",
-          "disposition": "tested",
-          "evidence": "test_coverage_baseline_lit.py::test_gitignore_covers_coverage_transients (+ git check-ignore verified)"
-        },
-        {
-          "behavior": "AC8 \u2014 CI-gate guard stays green on the rewired ci.yml (no test dir silently uncovered; diff-cover allowlist entry intact)",
-          "disposition": "tested",
-          "evidence": "check_ci_gate_coverage.py --project-root . => OK (18 test dirs); enforced as the 'Run CI-gate guard' CI step"
-        }
-      ],
-      "counts": {
-        "testable": 8,
-        "tested": 8,
-        "untestable": 0,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 8,
-        "covered_acs": 8
-      }
+      "status": "n/a",
+      "justification": "Trivial behavior-preserving test-import refactor (__import__ -> normal import); the two affected tests stay green before/after (8 passed each), coverage unchanged, no new behavior introduced."
     }
   },
   "coverage": {

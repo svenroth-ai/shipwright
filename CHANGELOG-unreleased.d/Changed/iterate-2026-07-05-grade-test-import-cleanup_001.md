@@ -1,0 +1,1 @@
+shipwright-grade authoritative tests now import `engine_bridge` normally instead of via `__import__()`, clearing two false-positive `PY_DYNAMIC_IMPORT` prompt-scan findings at the source (no scanner suppression).
