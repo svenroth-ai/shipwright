@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-07-05T19:25:27.201738+00:00
+Generated: 2026-07-04T21:44:37.320360+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -22,7 +22,7 @@ Scope: library
 
 > ℹ️ **Test-Health · diff-coverage (informational, not yet graded):** not measured this session — per-PR signal; see the CI "Diff coverage" artifact.
 
-Verified from: `shipwright_events.jsonl (253 events, 2026-05-02 → 2026-07-05)`
+Verified from: `shipwright_events.jsonl (253 events, 2026-05-02 → 2026-07-04)`
 
 _Grade = importance-weighted average over the measurable dimensions (n/a excluded from the denominator), modeled on OpenSSF Scorecard. Age is neutral; only unreconciled change and net growth are control failures. Each Anchor names the open standard the dimension follows — see the guide's Control-Grade dimensions table._
 
@@ -59,15 +59,15 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Iterate tests passing | 45/53 testable changes tested | WARN | 8 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 11 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 6 open | WARN | 6 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Triage open | 5 open | WARN | 5 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit (grandfathered) | 127 | INFO |  |
 | Bloat in allowlist | 158 entries | INFO |  |
 | Bloat ratchet delta | -9 lines | PASS |  |
 
 ## Project Velocity
 
-- Iterate: 253 changes (2026-05-02 → 2026-07-05)
-- Last activity: 2026-07-05
+- Iterate: 253 changes (2026-05-02 → 2026-07-04)
+- Last activity: 2026-07-04
 
 ## External LLM Review Evidence
 

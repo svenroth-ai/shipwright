@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-05T19:25:27.201738+00:00
+Generated: 2026-07-04T21:44:37.320360+00:00
 
 ## Requirements Coverage
 
@@ -27,7 +27,7 @@ Generated: 2026-07-05T19:25:27.201738+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
-| <a id="evt-668ccaca"></a>Cleaned up how two grade tests load a helper module so the security scanner stops false-flagging them. | iterate | change |  | 265/265 | — | 2026-07-05 |
+| <a id="evt-4f205233"></a>Rewrote the repo-grade report into a plain-language, guided walkthrough for non-experts, so they understand what each control means, what they're missing, and what improves — funnelling to adopt and the Masterclass. | iterate | change |  | 271/271 | — | 2026-07-04 |
 | <a id="evt-916192e5"></a>G4 plugin-polish: authoritative-vs-heuristic wiring, URL clone-and-grade, standalone CLI, plugin registration | iterate | feature |  | — | — | 2026-07-04 |
 | <a id="evt-9771cc88"></a>diff-coverage Phase 2: monorepo coverage combine + W4 activation | iterate | change |  | — | — | 2026-07-04 |
 | <a id="evt-8d01bee7"></a>Rewrote the grade report's call-to-action to explain how to adopt Shipwright and what the next step is, with one hardened link and 'certify' removed. | iterate | change |  | 216/216 | — | 2026-07-04 |

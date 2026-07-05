@@ -1,6 +1,6 @@
 # Test Evidence Report
 
-Generated: 2026-07-05T19:25:27.201738+00:00
+Generated: 2026-07-04T21:44:37.320360+00:00
 
 ## Summary
 
@@ -14,7 +14,7 @@ Generated: 2026-07-05T19:25:27.201738+00:00
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | Cleaned up how two grade tests load a helper module so the security scanner stops false-flagging them. | [iterate](traceability-matrix.md#evt-668ccaca) | unit | +0 | 265/265 | PASS | 2026-07-05 |
+| 1 | Rewrote the repo-grade report into a plain-language, guided walkthrough for non-experts, so they understand what each control means, what they're missing, and what improves — funnelling to adopt and the Masterclass. | [iterate](traceability-matrix.md#evt-4f205233) | mixed | +0 | 271/271 | PASS | 2026-07-04 |
 | 2 | G4 plugin-polish: authoritative-vs-heuristic wiring, URL clone-and-grade, standalone CLI, plugin registration | [iterate](traceability-matrix.md#evt-916192e5) | — | +0 | — | — | 2026-07-04 |
 | 3 | diff-coverage Phase 2: monorepo coverage combine + W4 activation | [iterate](traceability-matrix.md#evt-9771cc88) | — | +0 | — | — | 2026-07-04 |
 | 4 | Prompt-injection scanner blanks string/comment/f-string token spans before matching so dangerous-pattern literals in security-audit tests are no longer false positives; real calls still flag. | [iterate](traceability-matrix.md#evt-6d440ca1) | — | +0 | — | — | 2026-07-04 |
@@ -303,7 +303,7 @@ _Synthesized from per-iterate **unit** results — Integration / pgTAP / E2E / S
 | 27 | iterate | 215/215 | — | — | — | — | 2026-07-04 |
 | 28 | iterate | 460/463 | — | — | — | — | 2026-07-04 |
 | 29 | iterate | 216/216 | — | — | — | — | 2026-07-04 |
-| 30 | iterate | 265/265 | — | — | — | — | 2026-07-05 |
+| 30 | iterate | 271/271 | — | — | — | — | 2026-07-04 |
 
 ## Code Review Evidence
 

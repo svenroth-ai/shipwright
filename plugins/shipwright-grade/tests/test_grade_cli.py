@@ -48,7 +48,7 @@ class TestGradeCli:
         assert "<script" not in out.lower()
         assert 'src="http' not in out.lower()
         import re as _re
-        assert _re.findall(r'href="([^"]*)"', out) == ["https://svenroth.ai/shipwright"]
+        assert set(_re.findall(r'href="([^"]*)"', out)) == {"https://svenroth.ai/shipwright"}
 
     def test_output_is_utf8_encodable(self, well_run_repo: Path, capsys):
         # The card carries em dashes / ellipses; every format must be UTF-8
