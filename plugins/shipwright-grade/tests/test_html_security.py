@@ -13,7 +13,8 @@ import re
 from html.parser import HTMLParser
 from types import SimpleNamespace
 
-from html_report import _CTA_URL, el, render_html
+from html_report import el, render_html
+from report_copy import CTA_URL as _CTA_URL
 from report_model import build_report_model
 from support import GEN_A, dim, mixed_model
 

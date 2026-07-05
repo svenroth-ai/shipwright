@@ -10,7 +10,8 @@ from __future__ import annotations
 
 import re
 
-from html_report import _CTA_URL, render_html
+from html_report import render_html
+from report_copy import CTA_URL as _CTA_URL
 from report_copy import DIMENSION_COPY
 from report_model import _DIM_META, build_report_model
 from support import GEN_A, GEN_B, mixed_dims, mixed_model

@@ -40,13 +40,10 @@ from report_copy import (
 from report_model import DimensionView, ReportModel
 from sanitize import strip_terminal
 
-# Back-compat alias (single source of truth: report_copy.CTA_URL). The CTA links
-# are the report's ONLY hrefs — each a hardcoded constant, never built from repo
-# data — so no untrusted string ever reaches a URL context; a user-initiated
-# navigation is not an auto-fetch, so the strict CSP is unaffected. Tests import
-# this name.
-_CTA_URL = CTA_URL
-
+# NB: the CTA links are the report's ONLY hrefs — `CTA_URL` is a hardcoded
+# constant (from report_copy), never built from repo data, so no untrusted string
+# ever reaches a URL context; a user-initiated navigation is not an auto-fetch, so
+# the strict CSP is unaffected. (Tests import CTA_URL from report_copy directly.)
 
 _GRADE_CLASS = {"A": "grade-a", "B": "grade-b", "C": "grade-c",
                 "D": "grade-d", "F": "grade-f"}
