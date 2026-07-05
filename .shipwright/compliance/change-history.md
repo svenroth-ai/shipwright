@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-07-05T19:25:27.201738+00:00
-Total commits: 1087
+Generated: 2026-07-05T19:40:34.721218+00:00
+Total commits: 1088
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 312
-    "feat" : 290
+    "feat" : 291
     "chore" : 236
     "docs" : 143
     "refactor" : 64
@@ -337,10 +337,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 290 commits
+### Features (feat) — 291 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-05 | coverage | diff-coverage feeds Control-Grade Test-Health (WARN, Phase 3) | fb3f79d1e5a8 |
 | 2026-07-05 | grade | audience-facing plain-language report redesign (#320) | dba3daf56f28 |
 | 2026-07-04 | coverage | monorepo diff-coverage combine + light W4 (Phase 2) (#318) | 5e9e502b223e |
 | 2026-07-04 | grade | authoritative wiring + URL clone-and-grade + plugin registration (G4) (#319) | 04ae79af8ac5 |
@@ -636,7 +637,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-05 | triage | sweep 7 outbox append(s) into branch | 50ca8fb18cc9 |
+| 2026-07-05 | triage | sweep 7 outbox append(s) into branch | b87e529d5dc6 |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
@@ -1094,7 +1095,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-05 | grade | import engine_bridge normally in authoritative tests | e6a51b3e6ec8 |
+| 2026-07-05 | grade | import engine_bridge normally in authoritative tests (#321) | 4d21fdc9ba1a |
 | 2026-06-22 | security | enforce scoped + time-bounded accept-discipline for .trivyignore.yaml (#274) | 5f16590eb98d |
 | 2026-06-12 | merge | end-to-end parallel-merge cascade integration test (#215) | 5321dfaf2b46 |
 | 2026-06-11 | campaign | drop tracked-campaign guard now that campaigns are local-only | a8abe956570e |
@@ -1156,7 +1157,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1087 |
+| Total commits | 1088 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1087 |
+| Human-authored commits | 1088 |
 
