@@ -1,37 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-04-grade-report-audience-copy"
+run_id: "iterate-2026-07-05-grade-test-import-cleanup"
 phase: "iterate"
-reason: "iterate: grade report audience-copy redesign"
-timestamp: "2026-07-04T21:44:37.320360+00:00"
+reason: "F11 pre-merge refresh: iterate-2026-07-05-grade-test-import-cleanup"
+timestamp: "2026-07-05T19:25:27.201738+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-04 21:44:37 UTC
+> Auto-generated 2026-07-05 19:25:27 UTC
 
 ## Session Info
 
-- **Session ID**: 8e84d52f-c16d-4863-a2a4-cdef78f9b4d9
-- **Timestamp**: 2026-07-04 21:44:37 UTC
-- **Reason**: iterate: grade report audience-copy redesign
+- **Session ID**: 3b1d1aea-e750-4aef-99b9-8ae48cb4e15a
+- **Timestamp**: 2026-07-05 19:25:27 UTC
+- **Reason**: F11 pre-merge refresh: iterate-2026-07-05-grade-test-import-cleanup
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-04-grade-g4-plugin-polish
-- **Date**: 2026-07-04T15:30:23.679897Z
-- **Type**: feature
-- **Complexity**: medium
-- **Branch**: iterate/grade-g4-plugin-polish
-- **ADR**: iterate-2026-07-04-grade-g4-plugin-polish
+- **Run ID**: iterate-2026-07-05-grade-test-import-cleanup
+- **Date**: 2026-07-05T19:25:55.991819Z
+- **Type**: change
+- **Complexity**: trivial
+- **Branch**: iterate/grade-test-import-cleanup
+- **ADR**: iterate-2026-07-05-grade-test-import-cleanup
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-04-grade-g4-plugin-polish.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/grade-report-audience-copy
-- **Run ID**: iterate-2026-07-04-grade-report-audience-copy
-- **Spec**: .shipwright/planning/iterate/2026-07-04-grade-report-audience-copy.md
+- **Branch**: iterate/grade-test-import-cleanup
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -50,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/grade-report-audience-copy
-- **Last Commit**: 042c4966 chore(triage): sweep 6 outbox append(s) into branch
+- **Branch**: iterate/grade-test-import-cleanup
+- **Last Commit**: 4598a3f6 Merge remote-tracking branch 'origin/main' into iterate/grade-test-import-cleanup
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,15 +65,15 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 | Event | Type | Source | Date |
 |-------|------|--------|------|
 | evt-4f205233 | work_completed | iterate (grade-report-audience-copy) | 2026-07-04 |
+| evt-668ccaca | work_completed | iterate (Replace __import__("engine_bridge") with a normal import in shipwright-grade authoritative tests) | 2026-07-05 |
 | evt-916192e5 | work_completed | iterate (G4 plugin-polish: authoritative-vs-heuristic wiring, URL clone-and-grade, standalone CLI, plugin registration) | 2026-07-04 |
 | evt-9771cc88 | work_completed | iterate (diff-coverage Phase 2: monorepo coverage combine + W4 activation) | 2026-07-04 |
 | evt-6d440ca1 | work_completed | iterate (Prompt-injection scanner blanks string/comment/f-string token spans before matching so dangerous-pattern literals in security-audit tests are no longer false positives; real calls still flag.) | 2026-07-04 |
-| evt-8d01bee7 | work_completed | iterate (grade-cta-adopt) | 2026-07-04 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 253
+- **Total work events**: 254
 - **Last iterate**: change — grade-report-audience-copy (2026-07-04)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

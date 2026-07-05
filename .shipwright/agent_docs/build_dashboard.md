@@ -1,11 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-07-04 21:44 UTC | Session: 8e84d52f-c16d-4863-a2a4-cdef78f9b4d9 | Run: iterate-2026-07-04-grade-report-audience-copy
+> Updated: 2026-07-05 19:25 UTC | Session: 3b1d1aea-e750-4aef-99b9-8ae48cb4e15a | Run: iterate-2026-07-05-grade-test-import-cleanup
 
-## Recent Changes (253 iterations)
+## Recent Changes (254 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
 | change | grade-report-audience-copy | 271/271 |  | tooling | 2026-07-04 |
+| change | Replace __import__("engine_bridge") with a normal import in shipwright-grade authoritative tests | 265/265 |  | tooling | 2026-07-05 |
 | feature | G4 plugin-polish: authoritative-vs-heuristic wiring, URL clone-and-grade, standalone CLI, plugin registration | 0/0 |  | tooling | 2026-07-04 |
 | change | diff-coverage Phase 2: monorepo coverage combine + W4 activation | 0/0 |  | tooling | 2026-07-04 |
 | bug | Prompt-injection scanner blanks string/comment/f-string token spans before matching so dangerous-pattern literals in security-audit tests are no longer false positives; real calls still flag. | 0/0 |  | tooling | 2026-07-04 |
@@ -260,7 +261,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-04 | Unit: 271/271 | E2E: 44/44 | Smoke: skipped | (iterate)
+Last run: 2026-07-05 | Unit: 265/265 | Smoke: skipped | (iterate)
 
 ## Pipeline
 
