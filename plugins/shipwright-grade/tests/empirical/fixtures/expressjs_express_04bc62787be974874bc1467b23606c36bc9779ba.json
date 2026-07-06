@@ -1,0 +1,175 @@
+{
+  "gh_audit": [
+    {
+      "args": [
+        "repo",
+        "view",
+        "expressjs/express",
+        "--json",
+        "visibility"
+      ],
+      "error": "",
+      "ok": true,
+      "returncode": 0,
+      "stdout_len": 24
+    },
+    {
+      "args": [
+        "repo",
+        "view",
+        "expressjs/express",
+        "--json",
+        "defaultBranchRef"
+      ],
+      "error": "",
+      "ok": true,
+      "returncode": 0,
+      "stdout_len": 39
+    },
+    {
+      "args": [
+        "run",
+        "list",
+        "-R",
+        "expressjs/express",
+        "-b",
+        "master",
+        "-s",
+        "completed",
+        "-L",
+        "1",
+        "--json",
+        "databaseId"
+      ],
+      "error": "",
+      "ok": true,
+      "returncode": 0,
+      "stdout_len": 29
+    },
+    {
+      "args": [
+        "run",
+        "download",
+        "28761117807",
+        "-R",
+        "expressjs/express",
+        "-D",
+        "C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\grade-junit-of9z6skd"
+      ],
+      "error": "http_error",
+      "ok": false,
+      "returncode": 1,
+      "stdout_len": 0
+    },
+    {
+      "args": [
+        "api",
+        "graphql",
+        "-f",
+        "query=query($owner:String!,$repo:String!){repository(owner:$owner,name:$repo){pullRequests(states:MERGED,first:20,orderBy:{field:UPDATED_AT,direction:DESC}){nodes{mergeCommit{statusCheckRollup{contexts(first:30){nodes{__typename ... on CheckRun{name conclusion} ... on StatusContext{context state}}}}}}}}}",
+        "-f",
+        "owner=expressjs",
+        "-f",
+        "repo=express"
+      ],
+      "error": "",
+      "ok": true,
+      "returncode": 0,
+      "stdout_len": 43084
+    },
+    {
+      "args": [
+        "repo",
+        "view",
+        "expressjs/express",
+        "--json",
+        "defaultBranchRef"
+      ],
+      "error": "",
+      "ok": true,
+      "returncode": 0,
+      "stdout_len": 39
+    },
+    {
+      "args": [
+        "api",
+        "/repos/expressjs/express/code-scanning/analyses?per_page=1&ref=refs/heads/master"
+      ],
+      "error": "rate_limited",
+      "ok": false,
+      "returncode": 1,
+      "stdout_len": 205
+    }
+  ],
+  "grade_inputs": {
+    "bloat_ratchet_delta": null,
+    "deps_copyleft": 0,
+    "deps_total": 0,
+    "deps_unknown_license": 0,
+    "diff_coverage_percent": null,
+    "events_fr_tagged": 324,
+    "events_total": 500,
+    "events_with_provenance": 165,
+    "expected_dimensions": [],
+    "frs_behavior_touched": 0,
+    "frs_covered": 0,
+    "frs_total": 0,
+    "frs_unreconciled": 0,
+    "latest_full_suite_date": "",
+    "latest_full_suite_passed": 17,
+    "latest_full_suite_total": 19,
+    "oversize_file_ratio": 0.13815789473684212,
+    "reconciliation_measurable": false,
+    "security_measurable": false,
+    "security_open_high_critical": null,
+    "verified_from": "shipwright-grade heuristic @ 04bc62787be9 (network-enriched)"
+  },
+  "repo": "expressjs/express",
+  "report_extras": {
+    "detail_overrides": {
+      "dependency_hygiene": "47 dependencies declared; licenses not resolved without install",
+      "maintainability": "21/152 source files over 300 LOC",
+      "security": "code-scanning unavailable (disabled / 403 / rate-limited)",
+      "test_health": "17/19 recent merged PRs ran a passing test check in CI (Scorecard CI-Tests)"
+    },
+    "events_truncated": true,
+    "features_truncated": false,
+    "head_sha": "04bc62787be974874bc1467b23606c36bc9779ba",
+    "network_enabled": true,
+    "network_enrichments": [
+      "PR check-runs (expressjs/express)"
+    ],
+    "network_note": "network enrichment enabled for expressjs/express (public)",
+    "provenance_overrides": {
+      "dependency_hygiene": {
+        "disabled": [
+          "lockfile-sbom"
+        ],
+        "source": "47 dependencies declared; licenses not resolved without install"
+      },
+      "maintainability": {
+        "disabled": [],
+        "source": "static oversize-file ratio (local)"
+      },
+      "security": {
+        "disabled": [
+          "code-scanning-sarif"
+        ],
+        "source": "code-scanning unavailable (disabled / 403 / rate-limited)"
+      },
+      "test_health": {
+        "disabled": [],
+        "source": "CI test signal — scorecard-checks"
+      }
+    },
+    "routing": {
+      "effective_mode": "heuristic",
+      "reason": "no .shipwright/ directory",
+      "state": "absent"
+    },
+    "static_test_inventory": "117 test files across 1 framework (mocha) — present, not executed; CI workflow present",
+    "target_display": "expressjs/express"
+  },
+  "schema_version": 1,
+  "sha": "04bc62787be974874bc1467b23606c36bc9779ba"
+}

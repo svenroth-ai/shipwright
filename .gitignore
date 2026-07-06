@@ -57,6 +57,10 @@ coverage/
 coverage.xml
 diff-cover.json
 diff-cover.md
+# shipwright-grade empirical calibration gallery (G5): the rendered HTML report
+# gallery is a transient CI artifact (uploaded, never committed); only the
+# record/replay fixtures under tests/empirical/fixtures/ are tracked.
+plugins/shipwright-grade/tests/empirical/.gallery/
 /.shipwright/coverage/
 playwright-report/
 test-results/

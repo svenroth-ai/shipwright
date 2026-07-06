@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-07-06T09:55:04.412665+00:00
+Generated: 2026-07-06T11:14:04.882235+00:00
 Total commits: 1090
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 313
+    "fix" : 314
     "feat" : 291
-    "chore" : 236
+    "chore" : 235
     "docs" : 143
     "refactor" : 64
     "test" : 26
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 313 commits
+### Fixes (fix) — 314 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-06 | grade,adopt | strip surrounding quotes from path/URL input seams (#325) | c1280089588f |
 | 2026-07-05 | grade | mode-aware honest-ceiling note; drop BP-2 codename (#323) | 79819b0afc30 |
 | 2026-07-04 | grade | CTA explains adopt + next step, one hardened link (drop "certify") (#317) | 17afe47ffa25 |
 | 2026-07-04 | security | prompt-scan matches code, not string/comment token text (#316) | 354cca7e0669 |
@@ -634,11 +635,10 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 236 commits
+### Chores (chore) — 235 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-06 | triage | sweep 2 outbox append(s) into branch | 8f597beb63a5 |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |

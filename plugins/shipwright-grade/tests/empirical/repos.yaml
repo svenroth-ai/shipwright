@@ -1,29 +1,87 @@
 # Empirical calibration manifest — real OSS repos, pinned to a commit SHA so the
-# grade is reproducible (assert bands + relative ordering, not exact scores).
+# grade is reproducible. The suite asserts grade BANDS + relative ORDERING
+# (exemplary > average > poor), never exact scores (robust to engine tweaks).
 #
-# G1 SEEDS this manifest + the record/replay harness (replay.py) + the fixtures
-# cache dir. The real commit SHAs, the cached payloads, the full curated spread
-# and the launch gate are finalized in G5 (the calibration phase) — so entries
-# here carry a `pinned_sha: PENDING-G5` placeholder and the empirical test skips
-# them (loudly) until G5 pins real SHAs. Expected bands reflect informed human
-# judgement of each repo's control posture and encode the intended ordering
-# exemplary > average > poor.
+# Determinism = SHA-pin + record/replay (Gemini #1): the projected result for each
+# pinned SHA is cached under fixtures/ and the suite REPLAYS from cache — fully
+# offline + deterministic, and it does NOT rot when GitHub expires run logs (~90d).
+# Network is only needed to `--refresh` a fixture (the opt-in CI launch gate).
+#
+# expected_band is informed human judgement of each repo's cold-repo control
+# posture, as a tolerant range (e.g. "B/C"). A cold-repo grade is systematically
+# pulled down by the funnel gap (no FR tags → requirement/change traceability is
+# thin; change-reconciliation is n/a), so these encode the *relative* ordering the
+# grader must preserve, not the band the software "deserves". Contradictions tune
+# the projection heuristics (§4/§5), NEVER the shared scorer. Edge-case entries
+# carry `expected_band: null` and assert only ROBUSTNESS (graded, no crash, ~60s
+# budget), not a band.
+#
+# tags: one calibration tier (exemplary|average|poor) drives the ordering check;
+# `edge` marks a robustness-only entry; `ci-only` marks a huge/expensive target
+# recorded solely by the CI launch-gate job (not the in-repo proof subset).
 repos:
+  # --- Calibration tier (assert band + ordering) ---------------------------- #
   - name: pallets/flask
     url: https://github.com/pallets/flask
-    pinned_sha: PENDING-G5
-    expected_band: A
-    rationale: mature, CI-heavy, strong test discipline, PR-linked history
+    ref: "3.0.3"
+    pinned_sha: c12a5d874c5a014495eb2db8a73f40037bc813ac
+    expected_band: A/B
+    rationale: mature, CI-heavy, strong test discipline, lockfile, PR-linked history
     tags: [exemplary, python, library]
+  - name: sindresorhus/ky
+    url: https://github.com/sindresorhus/ky
+    ref: "v1.2.4"
+    pinned_sha: 5e48ed41dcd17b82907961ce94ea2ce6927bd0b8
+    expected_band: A/B
+    rationale: exemplary micro-library — CI, lockfile, tests, tight PR process
+    tags: [exemplary, typescript, library, ci-only]
   - name: expressjs/express
     url: https://github.com/expressjs/express
-    pinned_sha: PENDING-G5
-    expected_band: B
-    rationale: solid tests + CI, but changes not traced to requirements
+    ref: "4.19.2"
+    pinned_sha: 04bc62787be974874bc1467b23606c36bc9779ba
+    expected_band: B/C
+    rationale: solid tests + CI, but changes not traced to requirements (funnel gap)
     tags: [average, javascript, library]
-  - name: sindresorhus/slugify
-    url: https://github.com/sindresorhus/slugify
-    pinned_sha: PENDING-G5
-    expected_band: C
-    rationale: small, few linked commits, light process — the funnel gap
-    tags: [poor, javascript, micro-library]
+  - name: request/request
+    url: https://github.com/request/request
+    ref: "v2.88.1"
+    pinned_sha: 8162961dfdb73dc35a5a4bfeefb858c2ed2ccbb7
+    expected_band: D/F
+    rationale: officially deprecated + wound down — thinning CI/test/process signal
+    tags: [poor, javascript, deprecated]
+  # --- Edge cases (assert ROBUSTNESS + budget only; expected_band: null) ----- #
+  - name: babel/babel
+    url: https://github.com/babel/babel
+    ref: "v7.24.5"
+    pinned_sha: ddbea7d4e6314f799eb371cc10e16f96ac2c96b2
+    expected_band: null
+    rationale: monorepo — many packages; grade must not crash on the shape
+    tags: [edge, monorepo, javascript, ci-only]
+  - name: sindresorhus/awesome
+    url: https://github.com/sindresorhus/awesome
+    ref: "main@2024"
+    pinned_sha: 7cb5c8371c0fe73e5444a42d5542f6280c38b1a6
+    expected_band: null
+    rationale: no tests, no CI, no code — pure README list; must degrade to honest n/a
+    tags: [edge, no-tests, no-ci]
+  - name: apache/arrow
+    url: https://github.com/apache/arrow
+    ref: "apache-arrow-15.0.0"
+    pinned_sha: a61f4af724cd06c3a9b4abd20491345997e532c0
+    expected_band: null
+    rationale: polyglot (C++/Python/Rust/Java/Go) — language detection robustness
+    tags: [edge, polyglot, ci-only]
+  - name: doocs/advanced-java
+    url: https://github.com/doocs/advanced-java
+    ref: "main@2024"
+    pinned_sha: 1659850d7de4739ac9394dddd6c68466a8c38761
+    expected_band: null
+    rationale: predominantly non-English (Chinese) commit messages — encoding robustness
+    tags: [edge, non-english]
+  - name: torvalds/linux
+    url: https://github.com/torvalds/linux
+    ref: "v6.6"
+    pinned_sha: ffc253263a1375a65fa6c9f62a893e9767fbebfa
+    expected_band: null
+    rationale: huge repo — verifies the ~60s budget + sampling caps hold; CI-only
+    tags: [edge, huge, ci-only]

@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-06 09:55 UTC | Session: 7fe703e6-8b14-4ddc-a9ca-a46c6209404c | Run: iterate-2026-07-06-grade-adopt-path-quotes
+> Updated: 2026-07-06 11:14 UTC | Session: a5163991-fcb0-464a-8063-97ae1a1059ee | Run: iterate-2026-07-06-grade-g5-empirical-suite
 
-## Recent Changes (258 iterations)
+## Recent Changes (259 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | G5: shipwright-grade empirical calibration suite (SHA-pinned real-OSS record/replay launch gate) + additive grade_context capture seam. Gate correctly RED (surfaced a projector miscalibration -> G6). | 0/0 |  | tooling | 2026-07-06 |
 | change | grade+adopt input path/URL surrounding-quote stripping (WebUI #195 analog) | 0/0 |  | tooling | 2026-07-06 |
 | change | grade-authoritative-disclaimer | 273/273 |  | tooling | 2026-07-05 |
 | change | diff-coverage CI gate Phase 4 (warn-only): diff-cover --fail-under=80 over the combined coverage.xml, continue-on-error retained (settling window) | 3643/3643 |  | tooling | 2026-07-05 |
@@ -265,7 +266,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-06 | Unit: 640/640 | Smoke: skipped | (iterate)
+Last run: 2026-07-06 | Unit: 313/314 | Smoke: skipped | (iterate)
 
 ## Pipeline
 

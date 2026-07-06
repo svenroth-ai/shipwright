@@ -1,0 +1,161 @@
+{
+  "gh_audit": [
+    {
+      "args": [
+        "repo",
+        "view",
+        "request/request",
+        "--json",
+        "visibility"
+      ],
+      "error": "",
+      "ok": true,
+      "returncode": 0,
+      "stdout_len": 24
+    },
+    {
+      "args": [
+        "repo",
+        "view",
+        "request/request",
+        "--json",
+        "defaultBranchRef"
+      ],
+      "error": "",
+      "ok": true,
+      "returncode": 0,
+      "stdout_len": 39
+    },
+    {
+      "args": [
+        "run",
+        "list",
+        "-R",
+        "request/request",
+        "-b",
+        "master",
+        "-s",
+        "completed",
+        "-L",
+        "1",
+        "--json",
+        "databaseId"
+      ],
+      "error": "",
+      "ok": true,
+      "returncode": 0,
+      "stdout_len": 3
+    },
+    {
+      "args": [
+        "api",
+        "graphql",
+        "-f",
+        "query=query($owner:String!,$repo:String!){repository(owner:$owner,name:$repo){pullRequests(states:MERGED,first:20,orderBy:{field:UPDATED_AT,direction:DESC}){nodes{mergeCommit{statusCheckRollup{contexts(first:30){nodes{__typename ... on CheckRun{name conclusion} ... on StatusContext{context state}}}}}}}}}",
+        "-f",
+        "owner=request",
+        "-f",
+        "repo=request"
+      ],
+      "error": "",
+      "ok": true,
+      "returncode": 0,
+      "stdout_len": 912
+    },
+    {
+      "args": [
+        "repo",
+        "view",
+        "request/request",
+        "--json",
+        "defaultBranchRef"
+      ],
+      "error": "",
+      "ok": true,
+      "returncode": 0,
+      "stdout_len": 39
+    },
+    {
+      "args": [
+        "api",
+        "/repos/request/request/code-scanning/analyses?per_page=1&ref=refs/heads/master"
+      ],
+      "error": "rate_limited",
+      "ok": false,
+      "returncode": 1,
+      "stdout_len": 205
+    }
+  ],
+  "grade_inputs": {
+    "bloat_ratchet_delta": null,
+    "deps_copyleft": 0,
+    "deps_total": 0,
+    "deps_unknown_license": 0,
+    "diff_coverage_percent": null,
+    "events_fr_tagged": 100,
+    "events_total": 500,
+    "events_with_provenance": 46,
+    "expected_dimensions": [],
+    "frs_behavior_touched": 0,
+    "frs_covered": 0,
+    "frs_total": 0,
+    "frs_unreconciled": 0,
+    "latest_full_suite_date": "",
+    "latest_full_suite_passed": null,
+    "latest_full_suite_total": null,
+    "oversize_file_ratio": 0.10810810810810811,
+    "reconciliation_measurable": false,
+    "security_measurable": false,
+    "security_open_high_critical": null,
+    "verified_from": "shipwright-grade heuristic @ 8162961dfdb7 (network-enriched)"
+  },
+  "repo": "request/request",
+  "report_extras": {
+    "detail_overrides": {
+      "dependency_hygiene": "40 dependencies declared; licenses not resolved without install",
+      "maintainability": "8/74 source files over 300 LOC",
+      "security": "code-scanning unavailable (disabled / 403 / rate-limited)",
+      "test_health": "93 test files across 1 framework (unknown framework) — present, not executed; CI workflow present"
+    },
+    "events_truncated": true,
+    "features_truncated": false,
+    "head_sha": "8162961dfdb73dc35a5a4bfeefb858c2ed2ccbb7",
+    "network_enabled": true,
+    "network_enrichments": [],
+    "network_note": "network enrichment enabled for request/request (public)",
+    "provenance_overrides": {
+      "dependency_hygiene": {
+        "disabled": [
+          "lockfile-sbom"
+        ],
+        "source": "40 dependencies declared; licenses not resolved without install"
+      },
+      "maintainability": {
+        "disabled": [],
+        "source": "static oversize-file ratio (local)"
+      },
+      "security": {
+        "disabled": [
+          "code-scanning-sarif"
+        ],
+        "source": "code-scanning unavailable (disabled / 403 / rate-limited)"
+      },
+      "test_health": {
+        "disabled": [
+          "ci-junit-pass-ratio",
+          "scorecard-check-runs"
+        ],
+        "source": "static test inventory — present, not executed"
+      }
+    },
+    "routing": {
+      "effective_mode": "heuristic",
+      "reason": "no .shipwright/ directory",
+      "state": "absent"
+    },
+    "static_test_inventory": "93 test files across 1 framework (unknown framework) — present, not executed; CI workflow present",
+    "target_display": "request/request"
+  },
+  "schema_version": 1,
+  "sha": "8162961dfdb73dc35a5a4bfeefb858c2ed2ccbb7"
+}
