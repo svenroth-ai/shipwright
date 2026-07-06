@@ -57,17 +57,17 @@ def project_fixture(
             "the empirical calibration set expects external, cold OSS repos")
 
     # The target lives in a throwaway `.../repo` checkout, so the projector's
-    # target_display is the temp-dir name — override it with the canonical
-    # owner/repo so the gallery report is titled correctly.
-    computation.report_extras["target_display"] = name
-
+    # target_display is the temp-dir name — stamp the canonical owner/repo over it
+    # so the gallery report is titled correctly. Build a COPY (never mutate the
+    # frozen GradeComputation's dict — respect the immutability contract).
+    report_extras = {**computation.report_extras, "target_display": name}
     audit = list(getattr(gh, "log", []))
     return {
         "schema_version": SCHEMA_VERSION,
         "repo": name,
         "sha": sha,
         "grade_inputs": dataclasses.asdict(computation.grade_inputs),
-        "report_extras": computation.report_extras,
+        "report_extras": report_extras,
         "gh_audit": audit,
     }
 
