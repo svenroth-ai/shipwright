@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-07-06T20:44:43.547322+00:00
+Generated: 2026-07-06T20:38:41.414224+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -20,7 +20,7 @@ Scope: library
 | ✅ | Size / maintainability discipline | ratchet delta -9 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
 | ✅ | Dependency hygiene | 0 unresolved / 11 licenses; 0 copyleft | dependency license & risk (OWASP) |
 
-> ℹ️ **Test-Health · diff-coverage (informational, not yet graded):** not measured this session — per-PR signal; see the CI "Diff coverage" artifact.
+> 📊 **Test-Health · diff-coverage (Control-Grade input · target ≥80%):** not measured this session — per-PR signal; see the CI "Diff coverage" artifact.
 
 Verified from: `shipwright_events.jsonl (265 events, 2026-05-02 → 2026-07-06)`
 

@@ -1,17 +1,18 @@
-"""Grade-neutral diff-coverage rendering for the Control Verdict block.
+"""Diff-coverage rendering for the Control Verdict block (Test-Health signal).
 
-Diff-coverage roadmap **Phase 1** (``iterate-2026-07-03-diff-coverage-measure-
-one-tier``). The number is surfaced as an INFORMATIONAL INFO line under
-Test-Health only — it is deliberately kept out of :class:`GradeInputs` /
-:class:`GradeReport`, so it can never enter the Control Grade score (feeding the
-grade is Phase 3). Split out of ``_control_block.py`` to keep that module ≤300
-lines and to isolate the display-only concern.
+Diff-coverage — the % of the CHANGED lines (vs the merge-base) that tests
+execute — is a first-class Test-Health quality signal, NOT merely informational.
+Since diff-coverage roadmap **Phase 3** it feeds the Control-Grade Test-Health
+dimension (a WARN penalty below 80%); on any repo that adopts the CI gate,
+**Phase 4** enforces it — a PR whose changed lines are < 80% covered blocks
+merge. Split out of ``_control_block.py`` to keep that module ≤300 lines.
 
 The value comes from the **gitignored transient**
 ``.shipwright/coverage/diff_coverage.json`` written by
 ``shared/scripts/tools/measure_diff_coverage.py`` — never from the tracked
 ``shipwright_test_results.json`` (``coverage.diff`` is PR-local, so committing it
-would show stale data on ``main``).
+would show stale data on ``main``). This renderer is repo-agnostic: it lights up
+on ANY managed repo whose CI writes that transient, not just the monorepo.
 """
 
 from __future__ import annotations
@@ -28,13 +29,13 @@ __all__ = [
 
 _DIFF_COVERAGE_REL = Path(".shipwright") / "coverage" / "diff_coverage.json"
 
-_INFO_PREFIX = "> ℹ️ **Test-Health · diff-coverage (informational, not yet graded):** "
+_INFO_PREFIX = "> 📊 **Test-Health · diff-coverage (Control-Grade input · target ≥80%):** "
 
 
 def load_diff_coverage(project_root: Path | None) -> dict | None:
     """Read the gitignored transient diff-coverage report, or ``None`` when
-    absent/unreadable. Passed to the renderer as an EXPLICIT display-only value
-    (never through the grade)."""
+    absent/unreadable. Feeds both the display line and (via
+    ``gradeable_diff_percent``) the Test-Health grade input."""
     if project_root is None:
         return None
     path = Path(project_root) / _DIFF_COVERAGE_REL
@@ -72,9 +73,9 @@ def gradeable_diff_percent(cov: dict | None) -> float | None:
 
 
 def diff_coverage_info_line(cov: dict | None) -> str:
-    """One grade-neutral INFO line tying diff-coverage to Test-Health.
-
-    Purely informational — the number does NOT affect the Control Grade."""
+    """One Test-Health line for diff-coverage. Since Phase 3 the value feeds the
+    Control-Grade Test-Health dimension (WARN below 80%), so it is a graded
+    quality signal — not merely informational."""
     if not cov:
         return (_INFO_PREFIX + "not measured this session — per-PR signal; see "
                 'the CI "Diff coverage" artifact.')

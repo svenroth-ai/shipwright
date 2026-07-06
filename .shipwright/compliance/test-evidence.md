@@ -1,6 +1,6 @@
 # Test Evidence Report
 
-Generated: 2026-07-06T20:44:43.547322+00:00
+Generated: 2026-07-06T20:38:41.414224+00:00
 
 ## Summary
 
@@ -14,7 +14,7 @@ Generated: 2026-07-06T20:44:43.547322+00:00
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | Cold-repo Control Grade caps at B (A is authoritative-only): the projector declares change_reconciliation the one expected_dimensions entry so the honesty gate caps a cold headline at B. Heuristic-only; dogfood stays A. | [iterate](traceability-matrix.md#evt-0e47577b) | — | +0 | — | — | 2026-07-06 |
+| 1 | The compliance dashboard no longer calls diff-coverage 'informational' — it is now shown as the graded, enforced quality control it actually is. | [iterate](traceability-matrix.md#evt-b56b6097) | unit | +0 | 951/951 | PASS | 2026-07-06 |
 | 2 | The diff-coverage check now hard-blocks: a change that doesn't test at least 80% of its own changed lines will fail CI and can't be merged. | [iterate](traceability-matrix.md#evt-19078fb5) | unit | +0 | 3666/3666 | PASS | 2026-07-06 |
 | 3 | G6: calibrate the cold-repo projector so well-run OSS repos no longer grade F (CI-system-app test-health + PR-head fallback, network PR-association provenance, self-referential-route suppression); empirical gate asserts well-run > deprecated. | [iterate](traceability-matrix.md#evt-9153208e) | — | +0 | — | — | 2026-07-06 |
 | 4 | Added a test that runs the diff-coverage check against the last 5 real project PRs to show how a strict version would decide (4 pass, 1 correctly blocked). | [iterate](traceability-matrix.md#evt-fffb776d) | unit | +0 | 137/137 | PASS | 2026-07-06 |
@@ -286,36 +286,36 @@ _Synthesized from per-iterate **unit** results — Integration / pgTAP / E2E / S
 
 | Run | Trigger | Unit | Integration | pgTAP | E2E | Smoke | Date |
 |-----|---------|------|-------------|-------|-----|-------|------|
-| 1 | iterate | 794/794 | — | — | — | — | 2026-06-28 |
-| 2 | iterate | 3853/3853 | — | — | — | — | 2026-06-28 |
-| 3 | iterate | 4812/4812 | — | — | — | — | 2026-06-28 |
-| 4 | iterate | 850/850 | — | — | — | — | 2026-06-28 |
-| 5 | iterate | 851/851 | — | — | — | — | 2026-06-28 |
-| 6 | iterate | 868/868 | — | — | — | — | 2026-06-29 |
-| 7 | iterate | 3618/3618 | — | — | — | — | 2026-06-29 |
-| 8 | iterate | 894/894 | — | — | — | — | 2026-06-30 |
-| 9 | iterate | 897/897 | — | — | — | — | 2026-06-30 |
-| 10 | iterate | 3610/3610 | — | — | — | — | 2026-06-30 |
-| 11 | iterate | 3604/3604 | — | — | — | — | 2026-06-30 |
-| 12 | iterate | 3633/3633 | — | — | — | — | 2026-06-30 |
-| 13 | iterate | 4955/4967 | — | — | — | — | 2026-06-30 |
-| 14 | iterate | 4964/4976 | — | — | — | — | 2026-07-01 |
-| 15 | iterate | 3627/3639 | — | — | — | — | 2026-07-02 |
-| 16 | iterate | 3629/3641 | — | — | — | — | 2026-07-03 |
-| 17 | iterate | 3905/3917 | — | — | — | — | 2026-07-03 |
-| 18 | iterate | 91/91 | — | — | — | — | 2026-07-03 |
-| 19 | iterate | 182/182 | — | — | — | — | 2026-07-04 |
-| 20 | iterate | 187/187 | — | — | — | — | 2026-07-04 |
-| 21 | iterate | 215/215 | — | — | — | — | 2026-07-04 |
-| 22 | iterate | 460/463 | — | — | — | — | 2026-07-04 |
-| 23 | iterate | 216/216 | — | — | — | — | 2026-07-04 |
-| 24 | iterate | 265/265 | — | — | — | — | 2026-07-05 |
-| 25 | iterate | 271/271 | — | — | — | — | 2026-07-04 |
-| 26 | iterate | 3643/3643 | — | — | — | — | 2026-07-05 |
-| 27 | iterate | 273/273 | — | — | — | — | 2026-07-05 |
-| 28 | iterate | 3978/3978 | — | — | — | — | 2026-07-06 |
-| 29 | iterate | 137/137 | — | — | — | — | 2026-07-06 |
-| 30 | iterate | 3666/3666 | — | — | — | — | 2026-07-06 |
+| 1 | iterate | 3853/3853 | — | — | — | — | 2026-06-28 |
+| 2 | iterate | 4812/4812 | — | — | — | — | 2026-06-28 |
+| 3 | iterate | 850/850 | — | — | — | — | 2026-06-28 |
+| 4 | iterate | 851/851 | — | — | — | — | 2026-06-28 |
+| 5 | iterate | 868/868 | — | — | — | — | 2026-06-29 |
+| 6 | iterate | 3618/3618 | — | — | — | — | 2026-06-29 |
+| 7 | iterate | 894/894 | — | — | — | — | 2026-06-30 |
+| 8 | iterate | 897/897 | — | — | — | — | 2026-06-30 |
+| 9 | iterate | 3610/3610 | — | — | — | — | 2026-06-30 |
+| 10 | iterate | 3604/3604 | — | — | — | — | 2026-06-30 |
+| 11 | iterate | 3633/3633 | — | — | — | — | 2026-06-30 |
+| 12 | iterate | 4955/4967 | — | — | — | — | 2026-06-30 |
+| 13 | iterate | 4964/4976 | — | — | — | — | 2026-07-01 |
+| 14 | iterate | 3627/3639 | — | — | — | — | 2026-07-02 |
+| 15 | iterate | 3629/3641 | — | — | — | — | 2026-07-03 |
+| 16 | iterate | 3905/3917 | — | — | — | — | 2026-07-03 |
+| 17 | iterate | 91/91 | — | — | — | — | 2026-07-03 |
+| 18 | iterate | 182/182 | — | — | — | — | 2026-07-04 |
+| 19 | iterate | 187/187 | — | — | — | — | 2026-07-04 |
+| 20 | iterate | 215/215 | — | — | — | — | 2026-07-04 |
+| 21 | iterate | 460/463 | — | — | — | — | 2026-07-04 |
+| 22 | iterate | 216/216 | — | — | — | — | 2026-07-04 |
+| 23 | iterate | 265/265 | — | — | — | — | 2026-07-05 |
+| 24 | iterate | 271/271 | — | — | — | — | 2026-07-04 |
+| 25 | iterate | 3643/3643 | — | — | — | — | 2026-07-05 |
+| 26 | iterate | 273/273 | — | — | — | — | 2026-07-05 |
+| 27 | iterate | 3978/3978 | — | — | — | — | 2026-07-06 |
+| 28 | iterate | 137/137 | — | — | — | — | 2026-07-06 |
+| 29 | iterate | 3666/3666 | — | — | — | — | 2026-07-06 |
+| 30 | iterate | 951/951 | — | — | — | — | 2026-07-06 |
 
 ## Code Review Evidence
 
