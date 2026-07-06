@@ -1,14 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-06-run-board-handoff-banner",
-    "date": "2026-07-06",
+    "run_id": "iterate-2026-07-07-diff-coverage-adopt-templates",
+    "date": "2026-07-07",
+    "intent": "change",
+    "complexity": "small",
     "unit": {
       "status": "passed",
-      "passed": 169,
-      "total": 169
+      "passed": 3667,
+      "total": 3667
     },
     "integration": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
@@ -28,42 +30,53 @@
       "total": 0
     },
     "smoke": {
-      "status": "not_run"
+      "status": "skipped"
     },
     "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "justification": "Adds a diff-coverage job to two adopt CI templates (shared/templates/github-actions/) + a convention-test update. No target-app runtime surface. The templates are validated by shared/tests/test_ci_workflow_convention.py + the adopt scaffolder test; the runtime pattern itself was proven end-to-end on WebUI PR #205 (identical client/server vitest+diff-cover, merged green in real CI).",
+      "exit_code": 0,
+      "tests_run": 53,
+      "timestamp": "2026-07-07T00:30:00Z"
+    },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "Step 5 hand-off banner detects the launch surface via CLAUDE_CODE_ENTRYPOINT",
+          "behavior": "the nextjs (flat) template ships a warn-only diff-coverage job running pinned diff-cover@10.3.0 --fail-under=80",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-run/tests/test_run_skill_handoff_banner.py::test_step5_detects_launch_surface PASSED"
+          "evidence": "shared/tests/test_ci_workflow_convention.py::TestCITemplatesDiffCoverageGate::test_vitest_templates_carry_a_warn_only_diff_coverage_job PASSED"
         },
         {
-          "behavior": "Chat surface (VS Code extension / desktop) gets an honest cannot-launch warning and is redirected to a terminal or the Command Center",
+          "behavior": "the vite (client/server) template ships the same warn-only diff-coverage job feeding both packages' cobertura reports",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-run/tests/test_run_skill_handoff_banner.py::test_step5_chat_surface_warns_and_redirects PASSED"
+          "evidence": "same test (iterates all vitest templates); both templates parse + carry the job"
         },
         {
-          "behavior": "Terminal surface keeps both the board Continue and the paste card so the plugin works without the WebUI",
+          "behavior": "the diff-coverage job is Linux-only (ubuntu-latest, excluded from the cross-platform OS-matrix convention)",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-run/tests/test_run_skill_handoff_banner.py::test_step5_terminal_branch_keeps_board_and_paste PASSED"
+          "evidence": "TestCITemplatesDiffCoverageGate asserts runs-on==ubuntu-latest + PLATFORM_AGNOSTIC_JOB_PATTERNS includes diff-coverage so TestCITemplatesCrossPlatformMatrix skips it; both PASSED"
         },
         {
-          "behavior": "Resume Support banner is surface-aware (branches on CLAUDE_CODE_ENTRYPOINT)",
+          "behavior": "both templates remain valid YAML, keep their matrix/dormant/permissions invariants, and the adopt scaffolder still copies them",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-run/tests/test_run_skill_handoff_banner.py::test_resume_support_is_surface_aware PASSED"
+          "evidence": "test_ci_workflow_convention.py (35) + test_ci_template_registry_completeness.py + plugins/shipwright-adopt/tests/test_ci_workflow_scaffold.py (18) PASSED"
+        },
+        {
+          "behavior": "the scaffolded pattern actually reports real diff-coverage end-to-end on a real client/server repo",
+          "disposition": "tested",
+          "evidence": "WebUI PR #205 (b449fbe) — the identical client/server vitest+diff-cover pattern merged green in WebUI's real CI (Diff coverage job SUCCESS; locally 100% over a real 6-commit range, both packages resolved)"
         }
       ],
       "counts": {
-        "testable": 4,
-        "tested": 4,
+        "tested": 5,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 4,
-        "covered_acs": 4
+        "acs": 2,
+        "covered_acs": 2
       }
     }
   },
