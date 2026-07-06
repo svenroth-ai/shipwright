@@ -1,9 +1,9 @@
-"""Tests for the grade-neutral diff-coverage INFO line (roadmap Phase 1).
+"""Tests for the diff-coverage Test-Health line + strict grade extraction.
 
 Guarantees:
   1. ``_diff_coverage_block`` loads the gitignored transient report and renders
-     an informational line (ok / n/a / absent).
-  2. **Display grade-neutrality** — the *rendered* Control-Grade block (letter,
+     a Test-Health line (ok / n/a / absent).
+  2. **Display/score decoupling** — the *rendered* Control-Grade block (letter,
      score, dimension rows, methodology note) is byte-identical for the INFO-line
      ``diff_coverage`` display arg whether present, n/a, or absent; only the
      single INFO line varies.
@@ -28,7 +28,7 @@ from scripts.lib._diff_coverage_block import (
 )
 from scripts.lib.control_grade import DimensionResult, GradeInputs, GradeReport
 
-_INFO_MARKER = "diff-coverage (informational"
+_INFO_MARKER = "diff-coverage (Control-Grade input"
 
 OK_REPORT = {"status": "ok", "diff": 90.0, "total": 83.5,
              "measured_tier": "shared", "compare_branch": "origin/main"}
@@ -103,7 +103,9 @@ class TestInfoLine:
     def test_na_says_na(self):
         line = diff_coverage_info_line(NA_REPORT)
         assert "n/a" in line
-        assert "%" not in line  # never a misleading number
+        # Never a misleading coverage MEASUREMENT on n/a (the "≥80%" target in the
+        # prefix is a threshold, not a measured number).
+        assert "of changed lines covered" not in line
 
     def test_na_surfaces_producer_note(self):
         # Codex review SHOULD-FIX: n/a has several causes — the line must show

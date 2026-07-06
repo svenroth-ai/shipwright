@@ -51,11 +51,25 @@ class TestWellRun:
         assert ctx.has_ci is True
         assert extras.static_test_inventory  # surfaced
 
-    def test_grades_a(self, well_run_repo: Path):
+    def test_heuristic_grade_caps_at_b_not_a(self, well_run_repo: Path):
+        # A cold (heuristic) grade can never read A: change-reconciliation is a
+        # load-bearing control a cold repo can't demonstrate, so the honesty gate
+        # caps the headline at B ("full control" would be a lie). A is
+        # authoritative-only. The raw weighted average is still A-level (every
+        # measurable dim ~1.0) — only the headline letter is gated honestly.
         model = grade_context(_context(well_run_repo))
-        assert model.grade == "A"
-        assert model.score == 100.0
+        assert model.grade == "B"
+        assert model.score == 89.0  # NON_A_CEILING — top of B
         assert model.mode == "heuristic"
+        assert "reconciliation" in model.verdict.lower()  # factual cap reason
+
+    def test_cold_projection_declares_reconciliation_expected(self, well_run_repo: Path):
+        # The cap mechanism: the COLD projection marks change-reconciliation as the
+        # one expected-but-dark control, so the honesty gate (unchanged) caps at B.
+        # Heuristic-only — the authoritative path builds its own GradeInputs (guarded
+        # by test_authoritative.py::test_authoritative_grade_never_runs_the_projection).
+        inputs, _extras, _ctx = _inputs(well_run_repo)
+        assert inputs.expected_dimensions == ("change_reconciliation",)
 
     def test_test_health_is_na_but_inventory_surfaced(self, well_run_repo: Path):
         model = grade_context(_context(well_run_repo))

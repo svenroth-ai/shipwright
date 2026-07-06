@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-06-grade-cold-repo-b-cap",
+  "date": "2026-07-06T20:45:07.486669Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/grade-cold-repo-b-cap",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-06-grade-cold-repo-b-cap",
+  "summary": "Cold-repo Control Grade caps at B (A is authoritative-only): the grade projector declares change_reconciliation the one expected_dimensions entry so the unchanged honesty gate caps a cold headline at B. Heuristic-only \u2014 the dogfood monorepo stays A 100 (authoritative, reconciliation measured 1.0). Post-G6 honesty follow-up."
+}

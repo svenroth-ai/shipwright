@@ -15,6 +15,13 @@
 # preserve, not the band the software "deserves". Contradictions tune the
 # projection heuristics (§4/§5), NEVER the shared scorer.
 #
+# A IS AUTHORITATIVE-ONLY (2026-07-06): change-reconciliation is a load-bearing
+# control a cold repo can't demonstrate, so the honesty gate caps EVERY cold grade
+# at B ("Controlled, minor gaps") — the headline can't claim "full control" over a
+# control it can't see. Cold repos therefore span C..B; A is reserved for an
+# adopted Shipwright repo (which measures reconciliation). This is a projection
+# tweak (`expected_dimensions`), not a scorer change.
+#
 # G6 calibration (2026-07-06): on the MEASURABLE cold-repo signals, control posture
 # != reputation. The old flask>express>request ordering was NOT supported —
 # git-log provenance anti-correlates with quality (a disciplined squash-merge repo
@@ -39,19 +46,21 @@ repos:
     url: https://github.com/expressjs/express
     ref: "4.19.2"
     pinned_sha: 04bc62787be974874bc1467b23606c36bc9779ba
-    expected_band: A/B
+    expected_band: B/C
     rationale: >-
       green CI test-health + ~all changes land through reviewed PRs (tight change
-      provenance) + bounded file sizes — under control on every measurable axis (A).
+      provenance) + bounded file sizes — A on every MEASURABLE axis, but capped to B
+      (a cold repo can't demonstrate change-reconciliation; A is authoritative-only).
     tags: [exemplary, javascript, library]
   - name: addyosmani/agent-skills
     url: https://github.com/addyosmani/agent-skills
     ref: "main@2026-07"
     pinned_sha: 8c6530305396f341b5da7201cf1f7e390fdb863f
-    expected_band: A/B
+    expected_band: B/C
     rationale: >-
-      green CI test-health, PR-reviewed changes, tiny well-bounded files — under
-      control on every measurable axis (A).
+      green CI test-health, PR-reviewed changes, tiny well-bounded files — A on every
+      MEASURABLE axis, but capped to B (a cold repo can't demonstrate
+      change-reconciliation; A is authoritative-only).
     tags: [exemplary, skills, markdown]
   - name: pallets/flask
     url: https://github.com/pallets/flask

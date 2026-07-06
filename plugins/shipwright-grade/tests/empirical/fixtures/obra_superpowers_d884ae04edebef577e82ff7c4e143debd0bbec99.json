@@ -54,7 +54,7 @@
         "-R",
         "obra/superpowers",
         "-D",
-        "C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\grade-junit-f4pcjwoc"
+        "C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\grade-junit-o6jrheka"
       ],
       "error": "http_error",
       "ok": false,
@@ -141,7 +141,9 @@
     "events_fr_tagged": 224,
     "events_total": 500,
     "events_with_provenance": 500,
-    "expected_dimensions": [],
+    "expected_dimensions": [
+      "change_reconciliation"
+    ],
     "frs_behavior_touched": 0,
     "frs_covered": 0,
     "frs_total": 0,

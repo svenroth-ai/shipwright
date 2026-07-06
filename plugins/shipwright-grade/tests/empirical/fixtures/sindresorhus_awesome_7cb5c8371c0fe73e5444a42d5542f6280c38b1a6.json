@@ -50,11 +50,11 @@
       "args": [
         "run",
         "download",
-        "28751298351",
+        "28821644403",
         "-R",
         "sindresorhus/awesome",
         "-D",
-        "C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\grade-junit-5jv76x7y"
+        "C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\grade-junit-opgdaylr"
       ],
       "error": "http_error",
       "ok": false,
@@ -141,7 +141,9 @@
     "events_fr_tagged": 406,
     "events_total": 500,
     "events_with_provenance": 360,
-    "expected_dimensions": [],
+    "expected_dimensions": [
+      "change_reconciliation"
+    ],
     "frs_behavior_touched": 0,
     "frs_covered": 0,
     "frs_total": 0,

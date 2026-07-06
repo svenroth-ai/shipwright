@@ -82,11 +82,11 @@ On the MEASURABLE cold-repo signals, **control posture ≠ reputation**. express
 direct releases), so "flask exemplary > express average" cannot hold without a
 Goodhart fudge. The honest, defensible ordering is **well-run > deprecated**.
 
-### Calibrated grades (live, at the pinned SHAs)
+### Calibrated grades (live, at the pinned SHAs) — cold grades cap at B
 | repo | tier | grade | why |
 |---|---|---|---|
-| `addyosmani/agent-skills` | exemplary | **A** 98.7 | green CI, PR-reviewed, tiny files |
-| `expressjs/express` | exemplary | **A** 94.0 | green CI, 98% PR provenance |
+| `expressjs/express` | exemplary | **B** 89.0 | A on every measurable axis (green CI, 98% PR provenance) → capped to B |
+| `addyosmani/agent-skills` | exemplary | **B** 89.0 | A on every measurable axis (green CI, tiny files) → capped to B |
 | `obra/superpowers` | exemplary | **B** 87.5 | full PR provenance; no CI → test-health n/a (living repo → not F) |
 | `pallets/flask` | exemplary | **C** 78.8 | green CI, but 51% PR provenance (squash + direct releases) |
 | `request/request` | poor | **F** 43.8 | deprecated; CI config remains but 0 passing on recent merges |
@@ -98,11 +98,21 @@ ordering; each band defensible.
 self-EOL) grades F. A *living* repo without a CI gate scores test-health n/a → lands
 in B/C, never a public F (see `obra/superpowers`).
 
-**A is still reachable for a cold repo** (express/agent-skills) — it means "under
-control on every *measurable* axis"; the Shipwright-only dimension (change
-reconciliation) stays n/a and is shown as a "control Shipwright would light up".
-(Open follow-up: whether a cold grade should cap at B so A is authoritative-only —
-an "adopt-to-unlock-A" narrative. Not implemented in G6; flagged for the owner.)
+### A is authoritative-only — a cold grade caps at B (2026-07-06 follow-up)
+Change-reconciliation (are changed requirements re-verified?) is a load-bearing
+control the Control Grade's own thesis rests on, and it is **structurally
+unmeasurable for a cold external repo** — no RTM, no per-change behavior impact. So
+the projector declares it the ONE `expected_dimensions` entry, and the honesty gate
+(unchanged) caps every cold grade at **B** ("Controlled, minor gaps"): the headline
+can't read "Under full control" over a control it cannot even see. The verdict says
+so factually — *"verification incomplete — change reconciliation not measured"*; the
+per-dimension table still shows the full A-level detail on the measurable axes.
+
+This is **heuristic-only**: the authoritative path sets its own `expected_dimensions`
+from real records, and reconciliation IS measured there (the dogfood monorepo scores
+it **1.0**), so an adopted Shipwright repo can still reach A. The result is an honest
+upgrade path — *free grader → at best B; adopt → A becomes reachable* — not a dark
+pattern. A cold repo now spans **C..B**; **A is authoritative-only.**
 
 ### Dogfood
 The monorepo (+ WebUI) grade **authoritatively** (own `.shipwright/` records via the
