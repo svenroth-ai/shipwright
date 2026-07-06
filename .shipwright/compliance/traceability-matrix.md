@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-05T21:23:50.271946+00:00
+Generated: 2026-07-06T09:55:04.412665+00:00
 
 ## Requirements Coverage
 
@@ -27,6 +27,7 @@ Generated: 2026-07-05T21:23:50.271946+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-24bc2f3a"></a>grade+adopt input path/URL surrounding-quote stripping (WebUI #195 analog) | iterate | change |  | — | — | 2026-07-06 |
 | <a id="evt-17d141eb"></a>CI now warns (without blocking merge yet) when a pull request does not test enough of the lines it changed. | iterate | change |  | 3643/3643 | — | 2026-07-05 |
 | <a id="evt-4d586bd2"></a>Fixed the grade report so an authoritative grade no longer falsely calls itself an outside estimate, and removed an internal codename from the report. | iterate | change |  | 273/273 | — | 2026-07-05 |
 | <a id="evt-cb38a992"></a>Diff-coverage now moderates the Control-Grade Test-Health dimension: below 80% of changed lines covered => WARN + x0.85 floored penalty (never F-collapse; hard gate is Phase 4). New optional GradeInputs.diff_coverage_percent (default None = grade-neutral for the repo-agnostic grader); the monorepo compliance adapter populates it strict-validated from the gitignored transient. | iterate | change |  | — | — | 2026-07-05 |
@@ -291,7 +292,7 @@ Generated: 2026-07-05T21:23:50.271946+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 257 |
+| Iterate changes | 258 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

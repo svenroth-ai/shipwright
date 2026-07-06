@@ -44,8 +44,10 @@ def _load_lib() -> None:
 
 
 def main() -> int:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
+    from cli_paths import unquoted_path
     parser = argparse.ArgumentParser(description="Seed compliance for /shipwright-adopt")
-    parser.add_argument("--project-root", required=True, type=Path)
+    parser.add_argument("--project-root", required=True, type=unquoted_path)
     parser.add_argument(
         "--phases", nargs="*",
         default=["project", "plan", "build", "test", "adopt"],

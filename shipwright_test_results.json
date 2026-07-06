@@ -1,13 +1,13 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-05-diff-coverage-ci-gate",
-    "date": "2026-07-05",
+    "run_id": "iterate-2026-07-06-grade-adopt-path-quotes",
+    "date": "2026-07-06",
     "intent": "change",
     "complexity": "small",
     "unit": {
       "status": "passed",
-      "passed": 3643,
-      "total": 3643
+      "passed": 640,
+      "total": 640
     },
     "integration": {
       "status": "not_run",
@@ -35,60 +35,78 @@
     "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "justification": "CI-workflow + allowlist + docs change only; no application runtime surface to exercise. The behavior is verified by the CI-gate guard tests (incl. the live-repo TestRealRepo checks) and by this PR's own CI run of the warn-only diff-cover step.",
+      "justification": "Library/CLI input-sanitisation change (grade open_target seam + adopt --project-root argparse type); no application runtime surface. Verified by new unit tests and the full grade (291) + adopt (349) suites green. E2E is Advisory at small without touches_io_boundary.",
       "exit_code": 0,
       "tests_run": 0,
-      "timestamp": "2026-07-05T22:00:00Z"
+      "timestamp": "2026-07-06T12:00:00Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 - the ci.yml diff-cover step gates changed-line coverage at --fail-under=80 over the combined coverage.xml",
+          "behavior": "strip_surrounding_quotes removes a balanced surrounding double OR single quote pair",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ci_coverage_wiring.py::test_diff_coverage_step_is_warn_only_gate (asserts --fail-under=80 + coverage.xml over the combined report)"
+          "evidence": "grade tests/test_normalize_input.py (17) + tests/test_resolve_target.py regression; adopt tests/test_cli_paths.py (15)"
         },
         {
-          "behavior": "AC2 - the step keeps continue-on-error:true (warn-only settling window) so it WARNS without blocking merge",
+          "behavior": "an inner apostrophe (o'brien) is preserved; only the surrounding pair is stripped",
           "disposition": "tested",
-          "evidence": "test_ci_coverage_wiring.py::test_diff_coverage_step_is_warn_only_gate (continue-on-error is True) + test_check_ci_gate_coverage.py::test_diff_cover_continue_on_error_is_loose"
+          "evidence": "grade tests/test_normalize_input.py (17) + tests/test_resolve_target.py regression; adopt tests/test_cli_paths.py (15)"
         },
         {
-          "behavior": "AC3 - the step is renamed 'Diff coverage (warn-only gate)' and stays ordered after the Combine step",
+          "behavior": "a lone or mismatched surrounding quote is left untouched",
           "disposition": "tested",
-          "evidence": "test_ci_coverage_wiring.py::{test_diff_coverage_step_is_warn_only_gate name lookup, test_combine_runs_before_diff_after_all_tiers ordering with the new name}"
+          "evidence": "grade tests/test_normalize_input.py (17) + tests/test_resolve_target.py regression; adopt tests/test_cli_paths.py (15)"
         },
         {
-          "behavior": "AC4 - the ci_gate_allowlist entry is renamed + kept tracked-debt; the live-repo CI-gate guard stays green (renamed loose step allowlisted, no stale entry, no non-allowlisted loose gate)",
+          "behavior": "whitespace is trimmed both outside and inside the quote pair",
           "disposition": "tested",
-          "evidence": "test_check_ci_gate_coverage.py::TestDiffCoverageAllowlist::test_diff_cover_step_is_allowlisted + test_check_ci_gate_coverage_io.py::TestRealRepo::{test_live_workflows_pass_the_guard,test_live_allowlist_has_no_stale_entries}"
+          "evidence": "grade tests/test_normalize_input.py (17) + tests/test_resolve_target.py regression; adopt tests/test_cli_paths.py (15)"
         },
         {
-          "behavior": "AC5a - the run body captures diff-cover's exit code (|| rc=$?) and re-raises it (exit \"$rc\") after printing the report, so the markdown report shows even when --fail-under trips",
+          "behavior": "empty / whitespace-only / empty-quote-pair collapse to empty string",
           "disposition": "tested",
-          "evidence": "test_ci_coverage_wiring.py::test_diff_coverage_step_is_warn_only_gate (asserts rc=$?, exit \"$rc\", cat diff-cover.md in the run body)"
+          "evidence": "grade tests/test_normalize_input.py (17) + tests/test_resolve_target.py regression; adopt tests/test_cli_paths.py (15)"
         },
         {
-          "behavior": "AC5b - the GitHub Actions runner surfaces the tripped gate as a step FAILURE annotation while continue-on-error keeps the job green (warn-not-block)",
-          "disposition": "untestable",
-          "reason_code": "requires-external-nondeterministic-service",
-          "reason": "continue-on-error step semantics execute only on the GitHub Actions runner; verified by this PR's own CI run, not by a local unit test"
+          "behavior": "non-str input is returned unchanged (defensive)",
+          "disposition": "tested",
+          "evidence": "grade test_normalize_input::test_non_string_returned_unchanged"
         },
         {
-          "behavior": "AC6 - no stale 'Diff coverage (informational)' references remain across the load-bearing files (ci.yml + allowlist + guard tests) after the rename",
+          "behavior": "only ONE balanced pair is stripped (nested quotes keep the inner pair)",
           "disposition": "tested",
-          "evidence": "test_check_ci_gate_coverage_io.py::TestRealRepo::test_live_allowlist_has_no_stale_entries + the test_ci_coverage_wiring.py step-name lookups fail on any stale ci.yml/allowlist reference; grep-verified no other stale references"
+          "evidence": "grade test_normalize_input::test_only_one_pair_stripped"
+        },
+        {
+          "behavior": "grade open_target resolves a double/single-quoted local path identically to the plain path",
+          "disposition": "tested",
+          "evidence": "grade test_normalize_input::TestOpenTargetSanitisesInput (3 cases)"
+        },
+        {
+          "behavior": "adopt unquoted_path returns a clean pathlib.Path from a quoted string",
+          "disposition": "tested",
+          "evidence": "adopt test_cli_paths::TestUnquotedPath (5 cases)"
+        },
+        {
+          "behavior": "argparse type=unquoted_path strips a quoted --project-root end-to-end",
+          "disposition": "tested",
+          "evidence": "adopt test_cli_paths::TestArgparseIntegration (quoted + plain)"
+        },
+        {
+          "behavior": "the 4 adopt CLIs (setup_adopt, analyze_codebase, validate_adoption, seed_adopt_compliance) wire type=unquoted_path",
+          "disposition": "tested",
+          "evidence": "covered by TestArgparseIntegration which exercises the identical one-token argparse mechanism wired into all 4 CLIs; no per-CLI branching logic exists to test"
         }
       ],
       "counts": {
-        "testable": 6,
-        "tested": 6,
-        "untestable": 1,
+        "tested": 11,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 6,
-        "covered_acs": 6
+        "acs": 2,
+        "covered_acs": 2
       }
     }
   },

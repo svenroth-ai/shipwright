@@ -1,0 +1,9 @@
+{
+  "run_id": "iterate-2026-07-06-grade-adopt-path-quotes",
+  "date": "2026-07-06T09:55:28.451735Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/grade-adopt-path-quotes",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-06-grade-adopt-path-quotes"
+}

@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-07-05T21:23:50.271946+00:00
-Total commits: 1089
+Generated: 2026-07-06T09:55:04.412665+00:00
+Total commits: 1090
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 312
+    "fix" : 313
     "feat" : 291
     "chore" : 236
     "docs" : 143
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 312 commits
+### Fixes (fix) — 313 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-05 | grade | mode-aware honest-ceiling note; drop BP-2 codename (#323) | 79819b0afc30 |
 | 2026-07-04 | grade | CTA explains adopt + next step, one hardened link (drop "certify") (#317) | 17afe47ffa25 |
 | 2026-07-04 | security | prompt-scan matches code, not string/comment token text (#316) | 354cca7e0669 |
 | 2026-07-04 | security | pr_review excludes generated artifacts from the diff before truncation (#314) | 913261ff68cd |
@@ -637,7 +638,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-05 | triage | sweep 2 outbox append(s) into branch | 51ec312364a6 |
+| 2026-07-06 | triage | sweep 2 outbox append(s) into branch | 8f597beb63a5 |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
@@ -1126,7 +1127,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-05 | coverage | diff-coverage warn-only --fail-under=80 gate (Phase 4) | 0fad7d8bd728 |
+| 2026-07-06 | coverage | diff-coverage warn-only --fail-under=80 gate (Phase 4) (#324) | 881b1281e866 |
 | 2026-07-01 | security | least-privilege GITHUB_TOKEN permissions per workflow (#299) | be0d1e7774c0 |
 | 2026-06-05 | security | scope self-scan to shipped code (exclude tests/) | b49fa41db2ae |
 | 2026-06-05 | security-template | checkout at fetch-depth 1 (no scanner reads git history) | f6dd93918acf |
@@ -1158,7 +1159,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1089 |
+| Total commits | 1090 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1089 |
+| Human-authored commits | 1090 |
 

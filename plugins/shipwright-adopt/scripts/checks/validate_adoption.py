@@ -174,8 +174,10 @@ def validate(project_root: Path) -> dict:
 
 
 def main() -> int:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
+    from cli_paths import unquoted_path
     parser = argparse.ArgumentParser(description="Post-generation validation for /shipwright-adopt")
-    parser.add_argument("--project-root", required=True, type=Path)
+    parser.add_argument("--project-root", required=True, type=unquoted_path)
     args = parser.parse_args()
     project_root = args.project_root.resolve()
     result = validate(project_root)

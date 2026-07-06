@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Iterator
 
 from git_exec import run_git
+from normalize_input import strip_surrounding_quotes
 
 # A conservative URL/scheme sniff. Anything matching is treated as a *remote*
 # input handled by ``open_target`` (clone-and-grade), never a local path.
@@ -146,7 +147,14 @@ def open_target(raw: str, *, allow_clone: bool = True) -> Iterator[ResolvedTarge
     ``tempfile.TemporaryDirectory`` that is **purged on exit — even on a crash**
     (the ``with`` block runs its cleanup during exception unwinding). Set
     ``allow_clone=False`` to forbid network cloning (a remote input then errors).
+
+    As the boundary, this is also where a user-supplied target is *sanitised*:
+    a balanced pair of surrounding quotes (a copy/paste artifact — Explorer
+    "Copy as path", a quoted README URL) is stripped before classification so a
+    stray quote never turns a valid target into a hard error. Downstream
+    validation and escaping are unchanged.
     """
+    raw = strip_surrounding_quotes(raw)
     if is_remote_target(raw):
         if not allow_clone:
             raise TargetError(
