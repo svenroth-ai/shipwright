@@ -1,97 +1,100 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-06-diff-coverage-real-pr-replay",
+    "run_id": "iterate-2026-07-06-grade-g6-projector-calibration",
     "date": "2026-07-06",
     "intent": "change",
-    "complexity": "small",
+    "complexity": "medium",
     "unit": {
-      "status": "passed",
-      "passed": 137,
-      "total": 137
+      "passed": 347,
+      "total": 348,
+      "skipped": 1,
+      "framework": "pytest",
+      "note": "grade plugin hermetic suite; 12 empirical deselected"
     },
     "integration": {
-      "status": "passed",
-      "passed": 20,
-      "total": 20
+      "passed": 8,
+      "total": 12,
+      "skipped": 4,
+      "note": "-m empirical launch gate: 5 calibration in band + ordering + 2 edge robust; 4 ci-only skipped"
     },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "e2e": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "design_fidelity": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "smoke": {
-      "status": "skipped"
-    },
+    "pgtap": null,
+    "e2e": null,
+    "design_fidelity": null,
+    "smoke": null,
     "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "justification": "Test-only change: a new offline integration suite (shared/scripts/tools/tests/test_real_pr_gate_replay.py) + pinned real-PR diff-cover fixtures. No production code and no target-app runtime surface. The suite itself IS the end-to-end verification — it replays the real gate entrypoint (measure_diff_coverage --fail-under 80) against 5 real monorepo PR reports.",
+      "justification": "Cold-repo projector calibration (shipwright-grade library + CLI); no web/UI surface. The E2E verification IS the empirical calibration gate: `-m empirical` replays 7 real-OSS fixtures offline (5 calibration in band + ordering, 2 edge robust), a live `--refresh` re-recorded all 7 over the real network+gh, and `grade.py <URL>` graded ky+babel live (also exercising the --depth fix). Dogfood monorepo re-graded A 100 (authoritative).",
       "exit_code": 0,
-      "tests_run": 20,
-      "timestamp": "2026-07-06T15:30:00Z"
+      "tests_run": 347,
+      "timestamp": "2026-07-06T16:30:00Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "gate decides PASS on a real covered PR (#327 100%, #328 95%)",
+          "behavior": "matrix-named github-actions check counts (CI-system app slug)",
           "disposition": "tested",
-          "evidence": "test_real_pr_gate_replay.py::TestRealPrReplay::test_gate_decision_on_real_report[pr327/pr328] PASSED"
+          "evidence": "test_test_health_signal.py::test_matrix_named_github_actions_check_counts, test_tier2_counts_matrix_named_ci_checks PASSED"
         },
         {
-          "behavior": "gate decides PASS on a real no-changed-lines PR (#324, #326)",
+          "behavior": "non-CI app (socket-security) + failing check excluded",
           "disposition": "tested",
-          "evidence": "test_real_pr_gate_replay.py::TestRealPrReplay::test_gate_decision_on_real_report[pr324/pr326] PASSED"
+          "evidence": "test_non_ci_app_check_does_not_count, test_failing_ci_app_check_does_not_count PASSED"
         },
         {
-          "behavior": "gate decides FAIL on a real under-covered PR (#325, 68%)",
+          "behavior": "legacy Travis StatusContext counts by CI-system name",
           "disposition": "tested",
-          "evidence": "test_real_pr_gate_replay.py::TestRealPrReplay::test_gate_decision_on_real_report[pr325] PASSED (rc=GATE_EXIT_FAIL)"
+          "evidence": "test_legacy_travis_status_context_counts_by_ci_system_name PASSED"
         },
         {
-          "behavior": "diff_percent_from_report parses real report shapes correctly, incl. no-lines -> None",
+          "behavior": "denominator = examinable merged PRs; PR-head-commit fallback for on:pull_request CI",
           "disposition": "tested",
-          "evidence": "test_real_pr_gate_replay.py::TestRealPrReplay::test_parser_on_real_report PASSED"
+          "evidence": "test_tier2_no_rollup_prs_count_toward_denominator, test_tier2_counts_pr_head_checks_when_merge_commit_has_none, test_tier2_unmerged_prs_are_not_examinable PASSED"
         },
         {
-          "behavior": "MANIFEST<->fixture registry drift is guarded both directions (forward + reverse)",
+          "behavior": "0-passing scores LOW with test infra, n/a without (has_test_infra=test_files AND has_ci)",
           "disposition": "tested",
-          "evidence": "test_real_pr_gate_replay.py::TestManifestFixtureDrift::test_forward.../test_reverse... PASSED"
+          "evidence": "test_zero_passing_scores_low_when_repo_has_test_infra, test_zero_passing_is_na_without_test_infra, test_some_passing_scores_even_without_test_infra + committed fixtures obra/superpowers(n/a->B) + request/request(LOW->F) PASSED"
         },
         {
-          "behavior": "pinned MANIFEST recorded values match the fixture reports (re-capture drift)",
+          "behavior": "network PR-association ratio parse (+ none paths) + tiering",
           "disposition": "tested",
-          "evidence": "test_real_pr_gate_replay.py::TestRealPrReplay::test_recorded_values_match_the_fixture PASSED"
+          "evidence": "test_provenance_signal.py::test_pr_association_ratio, test_pr_association_none_*, test_compute_measurable_when_network_resolves, test_compute_falls_back_* PASSED"
         },
         {
-          "behavior": "the corpus exercises all three decision branches and every expected FAIL is justified in the MANIFEST",
+          "behavior": "projector maps ratio -> events_with_provenance; round HALF-UP off the 0.5 cap + clamp",
           "disposition": "tested",
-          "evidence": "test_real_pr_gate_replay.py::TestRealPrDistribution::test_distribution_at_threshold PASSED (dist: 2 pass / 2 no-lines / 1 fail)"
+          "evidence": "test_projector_fixtures.py::test_pr_association_ratio_overrides_git_log_count, test_provenance_count_rounds_half_up_and_clamps, test_projector_uses_half_up_count PASSED"
         },
         {
-          "behavior": "each pinned expected_decision is internally consistent with its recorded percent (no false-alarm pinned as a fail)",
+          "behavior": "self-referential feature filter (+ detector-mislabel robustness) suppresses framework-own routes",
           "disposition": "tested",
-          "evidence": "test_real_pr_gate_replay.py::TestRealPrDistribution::test_no_pr_would_be_a_false_alarm_block PASSED"
+          "evidence": "test_framework_own_source_is_self_referential, test_application_route_is_genuine, test_mislabelled_framework_still_suppressed_by_path_package, test_well_run_app_requirement_surface_survives_filter PASSED + committed pallets/flask fixture frs_total=0"
+        },
+        {
+          "behavior": "URL clone fetches >= Caps.max_commits history (not --depth 1)",
+          "disposition": "tested",
+          "evidence": "test_clone.py::test_run_clone_fetches_history_not_depth_one PASSED"
+        },
+        {
+          "behavior": "dogfood: authoritative grade never runs the projection (monorepo A stays)",
+          "disposition": "tested",
+          "evidence": "test_authoritative.py::test_authoritative_grade_never_runs_the_projection PASSED + live monorepo grade A 100 authoritative"
+        },
+        {
+          "behavior": "manifest 2-tier well-run>deprecated, band-ordered; real repos in band + ordering holds",
+          "disposition": "tested",
+          "evidence": "test_replay_mechanism.py::TestManifest + -m empirical (test_real_repo_grade_in_band, test_calibration_ordering) PASSED"
+        },
+        {
+          "behavior": "live fetch@SHA + gh enrichment (record path)",
+          "disposition": "untestable",
+          "evidence": "covered empirically by the live --refresh of all 7 non-ci-only fixtures"
         }
       ],
-      "counts": {
-        "tested": 8,
-        "untestable": 0,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 3,
-        "covered_acs": 3
+      "reason_codes": {
+        "live fetch@SHA + gh enrichment (record path)": "requires-external-nondeterministic-service"
       }
     }
   },

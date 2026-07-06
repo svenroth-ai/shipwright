@@ -1,6 +1,6 @@
 # Empirical calibration manifest — real OSS repos, pinned to a commit SHA so the
 # grade is reproducible. The suite asserts grade BANDS + relative ORDERING
-# (exemplary > average > poor), never exact scores (robust to engine tweaks).
+# (well-run > deprecated), never exact scores (robust to engine tweaks).
 #
 # Determinism = SHA-pin + record/replay (Gemini #1): the projected result for each
 # pinned SHA is cached under fixtures/ and the suite REPLAYS from cache — fully
@@ -8,48 +8,92 @@
 # Network is only needed to `--refresh` a fixture (the opt-in CI launch gate).
 #
 # expected_band is informed human judgement of each repo's cold-repo control
-# posture, as a tolerant range (e.g. "B/C"). A cold-repo grade is systematically
-# pulled down by the funnel gap (no FR tags → requirement/change traceability is
-# thin; change-reconciliation is n/a), so these encode the *relative* ordering the
-# grader must preserve, not the band the software "deserves". Contradictions tune
-# the projection heuristics (§4/§5), NEVER the shared scorer. Edge-case entries
-# carry `expected_band: null` and assert only ROBUSTNESS (graded, no crash, ~60s
-# budget), not a band.
+# posture, as a tolerant range (e.g. "B/C"). A cold-repo grade is measured only on
+# the axes visible without Shipwright's own records (CI test-health, PR-review
+# provenance, file-size discipline); the Shipwright-only dimension (change
+# reconciliation) is n/a. So these encode the *relative* ordering the grader must
+# preserve, not the band the software "deserves". Contradictions tune the
+# projection heuristics (§4/§5), NEVER the shared scorer.
+#
+# G6 calibration (2026-07-06): on the MEASURABLE cold-repo signals, control posture
+# != reputation. The old flask>express>request ordering was NOT supported —
+# git-log provenance anti-correlates with quality (a disciplined squash-merge repo
+# leaves reference-free subjects) and matrix-named CI checks read as 0. After the
+# projector fixes (CI-system-app test-health, network PR-association provenance,
+# self-referential-feature suppression) the honest, defensible ordering is
+# WELL-RUN > DEPRECATED. `exemplary` is the "well-run" ordering bucket (per-repo
+# bands carry the finer A/B/C detail); `average` is unused (kept in the vocabulary).
+#
+# REPUTATIONAL GUARD (G5): a `poor` (D/F) gallery entry must be an archived /
+# self-EOL project (request/request), never a living repo "put on blast". A living
+# repo that lacks a CI test gate scores test-health n/a (not F) and lands in a
+# defensible B/C band — see obra/superpowers.
 #
 # tags: one calibration tier (exemplary|average|poor) drives the ordering check;
 # `edge` marks a robustness-only entry; `ci-only` marks a huge/expensive target
 # recorded solely by the CI launch-gate job (not the in-repo proof subset).
+# Calibration entries are listed best band → worst band.
 repos:
-  # --- Calibration tier (assert band + ordering) ---------------------------- #
-  - name: pallets/flask
-    url: https://github.com/pallets/flask
-    ref: "3.0.3"
-    pinned_sha: c12a5d874c5a014495eb2db8a73f40037bc813ac
-    expected_band: A/B
-    rationale: mature, CI-heavy, strong test discipline, lockfile, PR-linked history
-    tags: [exemplary, python, library]
-  - name: sindresorhus/ky
-    url: https://github.com/sindresorhus/ky
-    ref: "v1.2.4"
-    pinned_sha: 5e48ed41dcd17b82907961ce94ea2ce6927bd0b8
-    expected_band: A/B
-    rationale: exemplary micro-library — CI, lockfile, tests, tight PR process
-    tags: [exemplary, typescript, library, ci-only]
+  # --- Calibration tier (assert band + ordering; well-run > deprecated) ------ #
   - name: expressjs/express
     url: https://github.com/expressjs/express
     ref: "4.19.2"
     pinned_sha: 04bc62787be974874bc1467b23606c36bc9779ba
+    expected_band: A/B
+    rationale: >-
+      green CI test-health + ~all changes land through reviewed PRs (tight change
+      provenance) + bounded file sizes — under control on every measurable axis (A).
+    tags: [exemplary, javascript, library]
+  - name: addyosmani/agent-skills
+    url: https://github.com/addyosmani/agent-skills
+    ref: "main@2026-07"
+    pinned_sha: 8c6530305396f341b5da7201cf1f7e390fdb863f
+    expected_band: A/B
+    rationale: >-
+      green CI test-health, PR-reviewed changes, tiny well-bounded files — under
+      control on every measurable axis (A).
+    tags: [exemplary, skills, markdown]
+  - name: pallets/flask
+    url: https://github.com/pallets/flask
+    ref: "3.0.3"
+    pinned_sha: c12a5d874c5a014495eb2db8a73f40037bc813ac
     expected_band: B/C
-    rationale: solid tests + CI, but changes not traced to requirements (funnel gap)
-    tags: [average, javascript, library]
+    rationale: >-
+      well-run, green CI test-health, but squash-merge + direct release commits
+      leave ~half the changes without reviewed-PR provenance — controlled, with a
+      visible change-traceability gap (C).
+    tags: [exemplary, python, library]
+  - name: obra/superpowers
+    url: https://github.com/obra/superpowers
+    ref: "main@2026-07"
+    pinned_sha: d884ae04edebef577e82ff7c4e143debd0bbec99
+    expected_band: B/C
+    rationale: >-
+      living, actively-maintained skills repo — every change lands through a
+      reviewed PR (full provenance), but no CI test gate on merges, so test-health
+      is honest n/a (NOT F — reputational guard). Controlled, minor gap (B).
+    tags: [exemplary, skills, markdown]
   - name: request/request
     url: https://github.com/request/request
     ref: "v2.88.1"
     pinned_sha: 8162961dfdb73dc35a5a4bfeefb858c2ed2ccbb7
     expected_band: D/F
-    rationale: officially deprecated + wound down — thinning CI/test/process signal
+    rationale: >-
+      officially deprecated + wound down — a CI config remains but recent merged
+      PRs run no passing test check (decayed test gate), so test-health collapses
+      to F. Archived project → safe as the public `poor` example.
     tags: [poor, javascript, deprecated]
   # --- Edge cases (assert ROBUSTNESS + budget only; expected_band: null) ----- #
+  - name: sindresorhus/ky
+    url: https://github.com/sindresorhus/ky
+    ref: "v1.2.4"
+    pinned_sha: 5e48ed41dcd17b82907961ce94ea2ce6927bd0b8
+    expected_band: null
+    rationale: >-
+      well-run TS micro-library, but squash-merge puts its reviewed-PR provenance
+      right at the 0.5 collapse boundary (~50%) — a genuinely borderline C/D/F that
+      a committed band would flake on. Robustness-only: grades without crashing.
+    tags: [edge, typescript, library, ci-only]
   - name: babel/babel
     url: https://github.com/babel/babel
     ref: "v7.24.5"

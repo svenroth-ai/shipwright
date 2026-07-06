@@ -77,6 +77,25 @@ class TestRealClone:
         with pytest.raises(TargetError, match="clone failed"):
             _run_clone(str(tmp_path / "nope"), tmp_path / "d", allow_local=True)
 
+    def test_run_clone_fetches_history_not_depth_one(self, tmp_path: Path, monkeypatch):
+        # A URL grade must fetch enough history for the projector (>= Caps.max_commits),
+        # not `--depth 1` (which starved events_total to 1 and mis-graded every URL).
+        captured: dict = {}
+
+        def fake_run_git(args, *, cwd=None, timeout=None):
+            captured["args"] = list(args)
+            (tmp_path / "d" / ".git").mkdir(parents=True, exist_ok=True)
+            return 0, ""
+        monkeypatch.setattr(clone, "run_git", fake_run_git)
+        _run_clone("https://github.com/o/r", tmp_path / "d")
+        args = captured["args"]
+        assert "1" not in args[args.index("--depth"):args.index("--depth") + 2]
+        depth = int(args[args.index("--depth") + 1])
+        # Couple to the source of truth: the clone must fetch at least the history
+        # window the projector reads, so a URL grade equals a local-clone grade.
+        from repo_context import Caps
+        assert depth >= Caps().max_commits
+
     def test_dir_size_over_short_circuits(self, well_run_repo: Path):
         assert _dir_size_over(well_run_repo, 0) is True          # any content > 0
         assert _dir_size_over(well_run_repo, 10**12) is False    # under a huge cap

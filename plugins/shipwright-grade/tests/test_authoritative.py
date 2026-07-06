@@ -79,6 +79,28 @@ class TestAuthoritativeEndToEnd:
         assert model.mode == "heuristic"
 
 
+class TestDogfoodGuard:
+    """G6 dogfood guard: the monorepo + WebUI grade AUTHORITATIVELY (from their own
+    ``.shipwright/`` records), so the G6 cold-repo projection calibration must not
+    touch them. This pins that the authoritative path never invokes the projection
+    heuristics G6 tuned — if it did, the monorepo's A could silently regress."""
+
+    def test_authoritative_grade_never_runs_the_projection(self, tmp_path: Path, monkeypatch):
+        root = _canonical_repo(tmp_path / "auth")
+        baseline = _model_for(root)
+        assert baseline.mode == "authoritative"
+
+        def boom(*_a, **_k):
+            raise AssertionError(
+                "an authoritative grade must not run the cold-repo projection")
+        # Every G6-tuned signal flows through these two projection entry points;
+        # sabotaging them proves the authoritative path bypasses the projection.
+        monkeypatch.setattr(grade_inputs_projector, "compute_signals", boom)
+        monkeypatch.setattr(grade_inputs_projector, "project_inputs", boom)
+        after = _model_for(root)
+        assert after == baseline  # byte-identical: G6 left the dogfood grade untouched
+
+
 class TestFailSafe:
     """``try_authoritative_grade`` never raises and never grades off degenerate
     data — any failure returns ``None`` so the caller falls back."""
