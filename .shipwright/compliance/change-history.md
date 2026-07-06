@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-07-06T22:19:21.443674+00:00
-Total commits: 1099
+Generated: 2026-07-06T22:00:58.603930+00:00
+Total commits: 1100
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 318
+    "fix" : 319
     "feat" : 292
     "chore" : 236
     "docs" : 143
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 318 commits
+### Fixes (fix) — 319 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-07 | run | surface-aware hand-off banner (CLAUDE_CODE_ENTRYPOINT) | ce0fdec5a7fd |
 | 2026-07-06 | grade | cap cold-repo Control Grade at B — A is authoritative-only (#333) | ea0e58a72ee6 |
 | 2026-07-06 | compliance | diff-coverage is a graded/gated control, not "informational" on the dashboard (#332) | 5ce743a110a5 |
 | 2026-07-06 | grade | calibrate the cold-repo projector so well-run OSS repos no longer grade F (G6) (#331) | 5c20a269b710 |
@@ -644,7 +645,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-07 | triage | sweep 2 outbox append(s) into branch | ba3fd48fad04 |
+| 2026-07-07 | compliance | take origin/main ci-security.json (scan-timestamp conflict, identical posture) | d7e45a83bc8f |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
@@ -1168,7 +1169,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1099 |
+| Total commits | 1100 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1099 |
+| Human-authored commits | 1100 |
 

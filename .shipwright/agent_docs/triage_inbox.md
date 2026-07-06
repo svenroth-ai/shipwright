@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-06T22:19:21.443674Z. Items waiting for triage decision.
+> Auto-generated 2026-07-06T22:00:58.603930Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
 - Total: 271
-- Triage: 2 | Promoted: 1 | Dismissed: 267 | Snoozed: 1
+- Triage: 4 | Promoted: 1 | Dismissed: 265 | Snoozed: 1
 
-## Top 2 items (severity-sorted)
+## Top 4 items (severity-sorted)
 
 ### Source: compliance (1 item)
 
@@ -25,7 +25,20 @@
     ```
   - Promote: `triage_promote.py --id trg-c99d9547 --task-ref EXT:<ref>`
 
-### Source: manual (1 item)
+### Source: grader-campaign (1 item)
+
+<a id="trg-e68e9901"></a>
+- **Build shipwright-grade: repo-agnostic Control Grade grader (lead magnet)** `id=trg-e68e9901 | severity=high | kind=improvement → P1/engineering`
+  - New standalone read-only plugin that grades ANY git repo (incl. non-Shipwright) with the same Control Grade rubric by p…
+  - Promote: `triage_promote.py --id trg-e68e9901 --task-ref EXT:<ref>`
+
+### Source: manual (2 items)
+
+<a id="trg-9beb9669"></a>
+- **shipwright-grade G6: calibrate cold-repo projection heuristics (real repos mis-grade F, ordering inverted)** `id=trg-9beb9669 | severity=high | kind=improvement → P1/engineering`
+  - G5's empirical launch gate is RED: the cold-repo projector mis-grades well-run repos. Evidence (5 real repos): pallets/…
+  - Evidence: `plugins/shipwright-grade/tests/empirical/CALIBRATION.md`
+  - Promote: `triage_promote.py --id trg-9beb9669 --task-ref EXT:<ref>`
 
 <a id="trg-cced399c"></a>
 - **Decompose FR-01.10 / FR-01.07 into sub-FRs for precise feature traceability** `id=trg-cced399c | severity=low | kind=improvement → P3/engineering`

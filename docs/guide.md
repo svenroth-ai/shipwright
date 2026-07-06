@@ -681,7 +681,7 @@ Shipwright's orchestrator pipeline consists of **7 phases** (project, design, pl
 **What it produces**
 
 - `shipwright_run_config.json` (schema v2): `runId`, frozen `runConditions`, `splits_frozen[]`, and the authoritative `phase_tasks[]` array (one entry per phase, each with a pre-bound `sessionUuid` and a `status` of `awaiting_launch | in_progress | done | failed | skipped`).
-- A launch-card banner with the exact `claude --session-id <uuid> --add-dir <path> --name '...' '/shipwright-<phase>'` command to paste into a new terminal.
+- A **surface-aware** hand-off banner. In a terminal (CLI, or the WebUI Command Center's embedded terminal) it points you to continue the pipeline — the board's **Continue** or the exact `claude --session-id <uuid> --add-dir <path> --name '...' '/shipwright-<phase>'` paste command. In the **VS Code extension or desktop app** it warns that this chat can't launch a bound phase session and redirects you to a terminal or the Command Center (`/shipwright-iterate` works in the chat for single changes). The master detects the surface via `CLAUDE_CODE_ENTRYPOINT`.
 - Orchestration is delegated: phase Stop hooks (`phase_session_stop.py`) call `complete-phase-task`, which materialises the next `phase_tasks[]` entry. The final phase's Stop hook flips `run.status = "complete"`.
 
 **How it works**
@@ -689,12 +689,12 @@ Shipwright's orchestrator pipeline consists of **7 phases** (project, design, pl
 - Detects your input (file, inline text, or interactive chat) and asks 1-3 clarifying questions if the description is vague.
 - Infers settings automatically: scope (new project vs. extension), technology profile (e.g., `supabase-nextjs`), and autonomy level (guided or autonomous).
 - Presents inferred settings for your confirmation before starting.
-- Writes `shipwright_run_config.json` with `phase_tasks[0]` for the project phase, prints the launch card, and ends the master session. (The `suggest_iterate.py` post-pipeline router needs no install step; it is registered in shipwright-iterate's own `hooks.json`.)
+- Writes `shipwright_run_config.json` with `phase_tasks[0]` for the project phase, prints the hand-off banner (board **Continue** under the WebUI, else a paste card), and ends the master session. (The `suggest_iterate.py` post-pipeline router needs no install step; it is registered in shipwright-iterate's own `hooks.json`.)
 - Each phase session you launch externally runs SessionStart → UserPromptSubmit → Stop hooks that handle ownership claim, validation, and next-phase planning. Within a phase session, `guided` vs `autonomous` autonomy controls whether destructive actions ask for confirmation.
 
 **Standalone usage.** `/shipwright-run` is the top-level coordinator. Individual phase commands (`/shipwright-project`, `/shipwright-build`, …) still run standalone if no `phase_tasks[]` match, useful for re-running or debugging a single phase without an active pipeline.
 
-**Resume support.** If the pipeline is interrupted, re-invoking `/shipwright-run` on the existing `shipwright_run_config.json` reads `phase_tasks[]`, identifies the next `awaiting_launch` task, and prints its launch card. Stale `in_progress` tasks (likely from crashed sessions) are surfaced with a `recover-phase-task` hint. The master never mutates state during resume; it only points you at what to launch next.
+**Resume support.** If the pipeline is interrupted, re-invoking `/shipwright-run` on the existing `shipwright_run_config.json` reads `phase_tasks[]`, identifies the next `awaiting_launch` task, and hands off to it (board **Continue** under the WebUI, else a paste card). Stale `in_progress` tasks (likely from crashed sessions) are surfaced with a `recover-phase-task` hint. The master never mutates state during resume; it only points you at what to launch next.
 
 ---
 
@@ -1917,7 +1917,7 @@ Exception path: write an ADR using `.shipwright/planning/adr/_template-bloat-exc
 |------|---------|-----------------|
 | `phase_session_start.py` | SessionStart | Multi-session ownership claim for the current phase |
 | `phase_user_prompt_validate.py` | UserPromptSubmit | Validates the prompt belongs to the active phase |
-| `phase_session_stop.py` | Stop | Plans the next phase via `complete-phase-task` and prints its launch card |
+| `phase_session_stop.py` | Stop | Plans the next phase via `complete-phase-task` → `plan_next_phase` (appends the next `awaiting_launch` entry). It prints no launch card — the board's Continue or a `/shipwright-run` resume renders the hand-off. |
 | `capture_session_id.py` | SessionStart | Records the Claude session ID for cross-session correlation |
 
 **Drift, audit & handoff:**
@@ -2363,7 +2363,7 @@ If you encountered an unfamiliar term in this guide, this is the fast way in. Ea
 
 | Command | Arguments | Flags | Purpose |
 |---------|-----------|-------|---------|
-| `/shipwright-run` | `"description"` or `@requirements.md` | -- | Coordinate a multi-session pipeline. Writes `shipwright_run_config.json` (schema v2) with `phase_tasks[]`, prints a launch card for the first phase, and ends. Each phase runs in its own external Claude CLI session; phase Stop hooks plan the next phase. Re-invoke on an existing config to print a resume launch card. |
+| `/shipwright-run` | `"description"` or `@requirements.md` | -- | Coordinate a multi-session pipeline. Writes `shipwright_run_config.json` (schema v2) with `phase_tasks[]`, prints a hand-off banner for the first phase (board **Continue** under the WebUI, else a paste card), and ends. Each phase runs in its own session; phase Stop hooks plan the next phase. Re-invoke on an existing config for a resume hand-off. |
 | `/shipwright-iterate` | `"description"` | `--type feature\|change\|bug`, `--complexity trivial\|small\|medium\|large`, `--review`, `--pause`, `--campaign <slug>`, `--sub-iterate-id <id>`, `--autonomous` | Complexity-adaptive SDLC for ongoing changes. Auto-detects intent and complexity, scales phases from quick fix to structured mini-pipeline with planning, review, and testing. Campaign mode (`--campaign`) groups related sub-iterates; `--autonomous` runs them **interleaved-serial** -- each sub-iterate is its own PR, merged after CI-green before the next builds from a fresh `origin/main` (`branch_strategy: serial`, the default), so shared-file edits compose with no end-stage merge drain. `--campaign <slug> --sub-iterate-id <id>` on a single hand-run sub-iterate stamps `campaign`/`sub_iterate_id` into its `work_completed` event (same self-identification the autonomous runner records). |
 | `/shipwright-project` | `"description"` or `@requirements.md` | -- | Decompose requirements into splits and IREB-aligned specs. Generates `CLAUDE.md`, `.shipwright/agent_docs/`, and project config. Interviews you about requirements. |
 | `/shipwright-design` | -- | -- | Generate HTML mockups from specs. Produces screens with review viewer, feedback loop, and spec backflow. Runs after project, before plan. |

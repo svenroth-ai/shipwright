@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-06T22:19:21.443674+00:00
+Generated: 2026-07-06T22:00:58.603930+00:00
 
 ## Requirements Coverage
 
@@ -27,7 +27,7 @@ Generated: 2026-07-06T22:19:21.443674+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
-| <a id="evt-2bcbc1b9"></a>New brownfield repos onboarded by Shipwright now automatically get a (non-blocking) check that flags PRs which don't test their own changed code. | iterate | change |  | 3667/3667 | — | 2026-07-06 |
+| <a id="evt-59cf16c8"></a>The /shipwright-run start message now adapts to where you are: a terminal or the WebUI board gets a continue-here hand-off, while the VS Code extension or desktop chat is told the pipeline cannot run there and to use a terminal or the Command Center instead. | iterate | change |  | 169/169 | — | 2026-07-06 |
 | <a id="evt-0e47577b"></a>Cold-repo Control Grade caps at B (A is authoritative-only): the projector declares change_reconciliation the one expected_dimensions entry so the honesty gate caps a cold headline at B. Heuristic-only; dogfood stays A. | iterate | change |  | — | — | 2026-07-06 |
 | <a id="evt-b56b6097"></a>The compliance dashboard no longer calls diff-coverage 'informational' — it is now shown as the graded, enforced quality control it actually is. | iterate | change |  | 951/951 | — | 2026-07-06 |
 | <a id="evt-9153208e"></a>G6: calibrate the cold-repo projector so well-run OSS repos no longer grade F (CI-system-app test-health + PR-head fallback, network PR-association provenance, self-referential-route suppression); empirical gate asserts well-run > deprecated. | iterate | change |  | — | — | 2026-07-06 |

@@ -1,22 +1,22 @@
 # Test Evidence Report
 
-Generated: 2026-07-06T22:19:21.443674+00:00
+Generated: 2026-07-06T22:00:58.603930+00:00
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 267 |
-| Total unit tests (latest full suite) | 3667/3667 (2026-07-06) |
+| Total unit tests (latest full suite) | 3666/3666 (2026-07-06) |
 | New tests from iterations | +220 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | New brownfield repos onboarded by Shipwright now automatically get a (non-blocking) check that flags PRs which don't test their own changed code. | [iterate](traceability-matrix.md#evt-2bcbc1b9) | unit | +0 | 3667/3667 | PASS | 2026-07-06 |
-| 2 | The compliance dashboard no longer calls diff-coverage 'informational' — it is now shown as the graded, enforced quality control it actually is. | [iterate](traceability-matrix.md#evt-b56b6097) | unit | +0 | 951/951 | PASS | 2026-07-06 |
-| 3 | Cold-repo Control Grade caps at B (A is authoritative-only): the projector declares change_reconciliation the one expected_dimensions entry so the honesty gate caps a cold headline at B. Heuristic-only; dogfood stays A. | [iterate](traceability-matrix.md#evt-0e47577b) | — | +0 | — | — | 2026-07-06 |
+| 1 | The compliance dashboard no longer calls diff-coverage 'informational' — it is now shown as the graded, enforced quality control it actually is. | [iterate](traceability-matrix.md#evt-b56b6097) | unit | +0 | 951/951 | PASS | 2026-07-06 |
+| 2 | Cold-repo Control Grade caps at B (A is authoritative-only): the projector declares change_reconciliation the one expected_dimensions entry so the honesty gate caps a cold headline at B. Heuristic-only; dogfood stays A. | [iterate](traceability-matrix.md#evt-0e47577b) | — | +0 | — | — | 2026-07-06 |
+| 3 | The /shipwright-run start message now adapts to where you are: a terminal or the WebUI board gets a continue-here hand-off, while the VS Code extension or desktop chat is told the pipeline cannot run there and to use a terminal or the Command Center instead. | [iterate](traceability-matrix.md#evt-59cf16c8) | unit | +0 | 169/169 | PASS | 2026-07-06 |
 | 4 | The diff-coverage check now hard-blocks: a change that doesn't test at least 80% of its own changed lines will fail CI and can't be merged. | [iterate](traceability-matrix.md#evt-19078fb5) | unit | +0 | 3666/3666 | PASS | 2026-07-06 |
 | 5 | G6: calibrate the cold-repo projector so well-run OSS repos no longer grade F (CI-system-app test-health + PR-head fallback, network PR-association provenance, self-referential-route suppression); empirical gate asserts well-run > deprecated. | [iterate](traceability-matrix.md#evt-9153208e) | — | +0 | — | — | 2026-07-06 |
 | 6 | Added a test that runs the diff-coverage check against the last 5 real project PRs to show how a strict version would decide (4 pass, 1 correctly blocked). | [iterate](traceability-matrix.md#evt-fffb776d) | unit | +0 | 137/137 | PASS | 2026-07-06 |
@@ -316,8 +316,8 @@ _Synthesized from per-iterate **unit** results — Integration / pgTAP / E2E / S
 | 26 | iterate | 3978/3978 | — | — | — | — | 2026-07-06 |
 | 27 | iterate | 137/137 | — | — | — | — | 2026-07-06 |
 | 28 | iterate | 3666/3666 | — | — | — | — | 2026-07-06 |
-| 29 | iterate | 951/951 | — | — | — | — | 2026-07-06 |
-| 30 | iterate | 3667/3667 | — | — | — | — | 2026-07-06 |
+| 29 | iterate | 169/169 | — | — | — | — | 2026-07-06 |
+| 30 | iterate | 951/951 | — | — | — | — | 2026-07-06 |
 
 ## Code Review Evidence
 

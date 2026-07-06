@@ -382,9 +382,18 @@ After build completes: shows split summary table. After test completes: shows te
 > single-session pipeline driver — it is a *coordinator*. Each phase
 > (`project`, `design`, `plan`, `build`, `test`, `changelog`, `deploy` —
 > 7 phases since the security decouple) runs in its own external Claude
-> CLI session. The master writes the spec, prints a launch card, and
-> ends. Phase Stop hooks plan the next phase via `complete-phase-task`
+> CLI session. The master writes the spec, prints a **surface-aware**
+> hand-off banner (branched on `CLAUDE_CODE_ENTRYPOINT`: a terminal gets
+> the board **Continue** / paste card; the VS Code extension or desktop
+> app gets a warning that this chat can't launch a bound phase session),
+> and ends. Phase Stop hooks plan the next phase via `complete-phase-task`
 > → `plan_next_phase`.
+>
+> **Surface limitation (honest limits).** The multi-session pipeline needs
+> a launcher that can spawn `claude --session-id <uuid>` — i.e. a terminal
+> (CLI) or the WebUI Command Center. The Claude Code VS Code extension /
+> desktop **chat** cannot, so `/shipwright-run` cannot advance from there
+> (`/shipwright-iterate`, single-session, works everywhere).
 
 ### Run-Config Schema v2
 
@@ -468,7 +477,8 @@ is terminal:** any `failed` task immediately flips `run.status = failed`.
 ### Phase-Session Lifecycle
 
 ```
-USER: paste 'claude --session-id <uuid> --add-dir <root> --name <...> /<phase>'
+USER: board Continue (WebUI) — or, in a plain terminal, paste
+      'claude --session-id <uuid> --add-dir <root> --name <...> /<phase>'
    |
    v
 SessionStart hooks (in order):
