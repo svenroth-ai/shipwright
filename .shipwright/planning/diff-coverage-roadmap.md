@@ -1,12 +1,14 @@
 # Roadmap — Diff/Patch Coverage ("were the CHANGED lines tested?")
 
 - **Triage anchor:** `trg-8fdebda3` (high / P1, `source=diff-coverage-followup`, opened 2026-06-30)
-- **Status:** Phase 1 DONE (`iterate-2026-07-03-diff-coverage-measure-one-tier`,
-  PR #310); **Phase 2 DONE** (`iterate-2026-07-04-diff-coverage-rollout-combine`)
-  — combined repo-wide `coverage.xml` across all plugins + shared + integration
-  via `combine_coverage.py`; tracked `coverage.total = 80.2%` (25068/31274 lines)
-  lights W4 green against a calibrated `coverage.min = 70` floor. Next: Phase 3
-  (grade input, WARN). Phased so each stage is its own shippable iterate.
+- **Status:** Phases 1–3 DONE (P1 #310 measure-one-tier · P2 #318 rollout-combine,
+  tracked `coverage.total = 80.2%` [25068/31274 lines] lights W4 green vs a
+  calibrated `coverage.min = 70` floor · P3 #322 grade-input WARN). **Phase 4
+  warn-only DONE** (`iterate-2026-07-05-diff-coverage-ci-gate`): the ci.yml diff-cover
+  step runs `diff-cover --fail-under=80` with `continue-on-error` retained. Only the
+  Phase-4 **hard flip** (drop continue-on-error + the allowlist entry) remains,
+  deferred a ~1–2 week settling window. Phased so each stage is its own shippable
+  iterate.
 - **Thesis:** pass-rate (`3618/3618 green`) says nothing about whether AI-added code is
   even executed. The killer AI case: the model writes code + a trivial test that misses
   the risky branch → pass-rate stays green, new code untested. Diff-coverage
@@ -92,10 +94,18 @@ The signal grows teeth only in 3/4, after the number is stable and calibrated.
 - The grade now reflects "was the changed AI code tested", not just "is the suite green".
 
 ### Phase 4 — CI gate (warn → fail) · small
-- Upgrade Phase 1's already-present non-gating `diff-cover` step to
-  `diff-cover --fail-under=<threshold>`, first `continue-on-error: true`
-  (warn-only, ~1–2 weeks to settle), then hard.
-- PRs that add untested code get flagged/blocked.
+- **Warn-only DONE** (`iterate-2026-07-05-diff-coverage-ci-gate`): the ci.yml
+  "Diff coverage (warn-only gate)" step runs `diff-cover --fail-under=80`
+  (== `control_grade._DIFF_COV_WARN_THRESHOLD`, and the roadmap's conservative
+  "WARN < 80%" start; baseline was 92%) with `continue-on-error: true` retained —
+  an under-tested PR shows a visible FAILURE annotation but merge is NOT blocked.
+  The step stays allowlisted (`ci_gate_allowlist`, tracked-debt); the report is
+  captured + printed even when the threshold trips, and re-raised so the step goes
+  red under continue-on-error.
+- **Remaining — the hard flip** (deferred a ~1–2 week settling window): drop
+  `continue-on-error: true` from the step AND remove its `ci_gate_allowlist`
+  entry, at which point the CI-gate guard's stale-entry + reverse-drift checks
+  enforce that it stays gating. Then PRs below 80% diff-coverage are blocked.
 
 ## Threshold strategy
 Do not guess a number. Take the real baseline from Phases 1–2, start conservative

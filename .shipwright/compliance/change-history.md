@@ -1,30 +1,29 @@
 # Commit Change Log
 
-Generated: 2026-07-05T19:50:40.886577+00:00
+Generated: 2026-07-05T21:23:50.271946+00:00
 Total commits: 1089
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 313
+    "fix" : 312
     "feat" : 291
     "chore" : 236
     "docs" : 143
     "refactor" : 64
     "test" : 26
-    "ci" : 8
+    "ci" : 9
     "other" : 7
     "build" : 1
 ```
 
 ## Changes by Type
 
-### Fixes (fix) — 313 commits
+### Fixes (fix) — 312 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-05 | grade | mode-aware honest-ceiling note; drop BP-2 codename from report | 585c2441627d |
 | 2026-07-04 | grade | CTA explains adopt + next step, one hardened link (drop "certify") (#317) | 17afe47ffa25 |
 | 2026-07-04 | security | prompt-scan matches code, not string/comment token text (#316) | 354cca7e0669 |
 | 2026-07-04 | security | pr_review excludes generated artifacts from the diff before truncation (#314) | 913261ff68cd |
@@ -638,7 +637,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-05 | triage | sweep 1 outbox append(s) into branch | bb522aabc592 |
+| 2026-07-05 | triage | sweep 2 outbox append(s) into branch | 51ec312364a6 |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
@@ -1123,10 +1122,11 @@ pie title Commit Types
 | 2026-04-11 | — | complete test phase — 299 unit tests, 5 E2E tests, smoke PASS | e843d458942d |
 | 2026-04-11 | e2e | set up Playwright with E2E specs and smoke test results | cba0fd6e9012 |
 
-### CI/CD (ci) — 8 commits
+### CI/CD (ci) — 9 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-05 | coverage | diff-coverage warn-only --fail-under=80 gate (Phase 4) | 0fad7d8bd728 |
 | 2026-07-01 | security | least-privilege GITHUB_TOKEN permissions per workflow (#299) | be0d1e7774c0 |
 | 2026-06-05 | security | scope self-scan to shipped code (exclude tests/) | b49fa41db2ae |
 | 2026-06-05 | security-template | checkout at fetch-depth 1 (no scanner reads git history) | f6dd93918acf |

@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-05-diff-coverage-ci-gate",
+  "date": "2026-07-05T21:24:26.737051Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/diff-coverage-ci-gate",
+  "spec": ".shipwright/planning/iterate/campaigns/diff-coverage/sub-iterates/4-ci-gate.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-05-diff-coverage-ci-gate"
+}

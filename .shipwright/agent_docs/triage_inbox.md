@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-05T19:50:40.886577Z. Items waiting for triage decision.
+> Auto-generated 2026-07-05T21:23:50.271946Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
 - Total: 268
-- Triage: 5 | Promoted: 1 | Dismissed: 261 | Snoozed: 1
+- Triage: 4 | Promoted: 1 | Dismissed: 262 | Snoozed: 1
 
-## Top 5 items (severity-sorted)
+## Top 4 items (severity-sorted)
 
 ### Source: compliance (1 item)
 
@@ -31,21 +31,6 @@
 - **Measure patch/diff coverage (were the CHANGED lines tested?), not just pass-rate** `id=trg-8fdebda3 | severity=high | kind=improvement → P1/engineering`
   - Reviewer comment B: '3618/3618 green' is pass-rate, not coverage — it says nothing about whether AI-added code is even…
   - Promote: `triage_promote.py --id trg-8fdebda3 --task-ref EXT:<ref>`
-
-### Source: github (1 item)
-
-<a id="trg-7dbad194"></a>
-- **[pr-ci] PR #320 has 1 failing check(s) on iterate/grade-report-audience-copy** `id=trg-7dbad194 | severity=high | kind=bug → P1/engineering`
-  - PR #320 "feat(grade): audience-facing plain-language report redesign" on iterate/grade-report-audience-copy \| failing…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-iterate --type bug
-    
-    Context: open PR #320 (https://github.com/svenroth-ai/shipwright/pull/320) has 1 failing required check(s) on branch 'iterate/grade-report-audience-copy': Python (lint + test).
-    This blocks auto-merge — the PR sits armed-but-waiting until fixed.
-    Source: triage item gh-pr-ci:320
-    ```
-  - Promote: `triage_promote.py --id trg-7dbad194 --task-ref EXT:<ref>`
 
 ### Source: grader-campaign (1 item)
 
