@@ -1,82 +1,71 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-06-diff-coverage-dashboard-honesty",
+    "run_id": "iterate-2026-07-06-grade-cold-repo-b-cap",
     "date": "2026-07-06",
     "intent": "change",
     "complexity": "small",
     "unit": {
-      "status": "passed",
-      "passed": 951,
-      "total": 951
+      "passed": 348,
+      "total": 349,
+      "skipped": 1,
+      "framework": "pytest"
     },
     "integration": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
+      "passed": 8,
+      "total": 12,
+      "skipped": 4,
+      "note": "-m empirical gate green"
     },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "e2e": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "design_fidelity": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "smoke": {
-      "status": "skipped"
-    },
+    "pgtap": null,
+    "e2e": null,
+    "design_fidelity": null,
+    "smoke": null,
     "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "justification": "Display-wording fix in the compliance dashboard renderer (_diff_coverage_block.py) — no runtime app surface. The rendered output is verified by the shipwright-compliance test suite (951 tests, incl. test_diff_coverage_block.py which asserts the new Test-Health wording and the display/score decoupling).",
+      "justification": "Single-field cold-repo projection change (expected_dimensions) + fixture re-refresh; no web/UI surface. E2E = the -m empirical gate (7 real-OSS fixtures, offline replay + live --refresh) + live grade.py of 5 repos + monorepo. Cold grades now cap at B; dogfood monorepo re-graded A 100 (authoritative, reconciliation measured 1.0).",
       "exit_code": 0,
-      "tests_run": 951,
-      "timestamp": "2026-07-06T17:30:00Z"
+      "tests_run": 348,
+      "timestamp": "2026-07-06T18:15:00Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "the diff-coverage line no longer labels itself 'informational, not yet graded' — it renders as a graded Control-Grade Test-Health input",
+          "behavior": "cold projection declares change_reconciliation as the one expected-but-dark control",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_diff_coverage_block.py::TestInfoLine (via updated _INFO_MARKER 'diff-coverage (Control-Grade input') PASSED"
+          "evidence": "test_projector_fixtures.py::test_cold_projection_declares_reconciliation_expected PASSED"
         },
         {
-          "behavior": "the n/a line shows no misleading coverage MEASUREMENT (the '>=80%' target in the prefix is a threshold, not a number)",
+          "behavior": "cold heuristic grade caps at B (89, not A) with a factual verdict",
           "disposition": "tested",
-          "evidence": "test_diff_coverage_block.py::TestInfoLine::test_na_says_na PASSED (asserts 'of changed lines covered' absent)"
+          "evidence": "test_projector_fixtures.py::test_heuristic_grade_caps_at_b_not_a PASSED (grade B, score 89.0, verdict cites reconciliation)"
         },
         {
-          "behavior": "the ok line still renders the measured 'X% of changed lines covered'",
+          "behavior": "CLI terminal/markdown/json/URL output shows B for a cold well-run repo",
           "disposition": "tested",
-          "evidence": "test_diff_coverage_block.py::TestInfoLine ok-branch tests PASSED"
+          "evidence": "test_grade_cli.py::{test_terminal_format_default,test_markdown_format,test_json_format_is_valid_and_stable,test_url_is_cloned_and_graded} PASSED"
         },
         {
-          "behavior": "display/score decoupling — the rendered Control-Grade block (letter/score/rows) is byte-identical regardless of the display arg; only the one line varies",
+          "behavior": "cap is heuristic-only — authoritative grade unaffected (monorepo stays A)",
           "disposition": "tested",
-          "evidence": "test_diff_coverage_block.py display-decoupling tests PASSED"
+          "evidence": "test_authoritative.py::test_authoritative_grade_never_runs_the_projection PASSED + live monorepo A 100 authoritative (reconciliation measured 1.0)"
         },
         {
-          "behavior": "gradeable_diff_percent strict extraction (finite [0,100] ok-status only) is unchanged",
+          "behavior": "empirical fixtures reflect the B-cap; gate green (well-run C..B > deprecated F)",
           "disposition": "tested",
-          "evidence": "test_diff_coverage_block.py::TestGradeablePercent + test_control_grade_diff_coverage.py PASSED"
+          "evidence": "-m empirical (test_real_repo_grade_in_band, test_calibration_ordering) PASSED; express/agent-skills B, superpowers B, flask C, request F"
         }
       ],
       "counts": {
+        "total": 5,
         "tested": 5,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 1,
-        "covered_acs": 1
+        "acs": 5,
+        "covered_acs": 5
       }
     }
   },

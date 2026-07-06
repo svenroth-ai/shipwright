@@ -50,11 +50,11 @@
       "args": [
         "run",
         "download",
-        "28624528496",
+        "28820706617",
         "-R",
         "addyosmani/agent-skills",
         "-D",
-        "C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\grade-junit-naamb1s9"
+        "C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\grade-junit-d_q3a4tt"
       ],
       "error": "http_error",
       "ok": false,
@@ -129,7 +129,7 @@
       "error": "",
       "ok": true,
       "returncode": 0,
-      "stdout_len": 5506
+      "stdout_len": 5491
     }
   ],
   "grade_inputs": {
@@ -140,8 +140,10 @@
     "diff_coverage_percent": null,
     "events_fr_tagged": 112,
     "events_total": 209,
-    "events_with_provenance": 201,
-    "expected_dimensions": [],
+    "events_with_provenance": 199,
+    "expected_dimensions": [
+      "change_reconciliation"
+    ],
     "frs_behavior_touched": 0,
     "frs_covered": 0,
     "frs_total": 0,
@@ -158,7 +160,7 @@
   "repo": "addyosmani/agent-skills",
   "report_extras": {
     "detail_overrides": {
-      "change_traceability": "96% of recent commits introduced by a reviewed, merged PR (SLSA code-review provenance)",
+      "change_traceability": "95% of recent commits introduced by a reviewed, merged PR (SLSA code-review provenance)",
       "dependency_hygiene": "no dependency manifest",
       "maintainability": "0/2 source files over 300 LOC",
       "security": "code-scanning unavailable (disabled / 403 / rate-limited)",
