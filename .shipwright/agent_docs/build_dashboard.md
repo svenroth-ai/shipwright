@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-06 10:21 UTC | Session: 7fe703e6-8b14-4ddc-a9ca-a46c6209404c | Run: iterate-2026-07-06-shared-cache-selfheal
+> Updated: 2026-07-06 11:28 UTC | Session: 5c5ef9ef-c7b0-4d18-b2ca-e17a75470a7b | Run: iterate-2026-07-06-diff-coverage-gate-hardening
 
-## Recent Changes (259 iterations)
+## Recent Changes (260 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | diff-coverage gate hardening: move the warn-only --fail-under decision into a tested measure_diff_coverage.py entrypoint (pure decide_gate), pin diff-cover==10.3.0, migrate to non-deprecated --format flags, and prove the fail-path with a real synthetic-repo integration test; a diff-cover failure now fails closed | 3978/3978 |  | tooling | 2026-07-06 |
 | change | self-heal the shared/ plugin cache on marketplace installs (vendored SessionStart hook, all 12 plugins) | 0/0 |  | infra | 2026-07-06 |
 | change | grade+adopt input path/URL surrounding-quote stripping (WebUI #195 analog) | 0/0 |  | tooling | 2026-07-06 |
 | change | grade-authoritative-disclaimer | 273/273 |  | tooling | 2026-07-05 |
@@ -266,7 +267,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-06 | Unit: 3684/3684 | Integration: 52/52 | Smoke: skipped | (iterate)
+Last run: 2026-07-06 | Unit: 3978/3978 | Smoke: skipped | (iterate)
 
 ## Pipeline
 

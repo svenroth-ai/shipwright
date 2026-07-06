@@ -1,18 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-06-shared-cache-selfheal",
+    "run_id": "iterate-2026-07-06-diff-coverage-gate-hardening",
     "date": "2026-07-06",
     "intent": "change",
-    "complexity": "medium",
+    "complexity": "small",
     "unit": {
       "status": "passed",
-      "passed": 3684,
-      "total": 3684
+      "passed": 3978,
+      "total": 3978
     },
     "integration": {
-      "status": "passed",
-      "passed": 52,
-      "total": 52
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -35,77 +35,94 @@
     "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "justification": "Framework-internal change: a plugin-cache delivery self-heal SessionStart hook (ensure_shared_cache) vendored across 12 plugins. There is no target-app runtime surface to exercise; the fs boundary (read marketplace clone -> write cache shared/) is exercised end-to-end by the integration test which runs the actual hook as a subprocess against a simulated cache+clone layout.",
+      "justification": "Framework CI tooling: hardens the warn-only diff-coverage CI gate (measure_diff_coverage.py --fail-under wrapper + ci.yml). There is no target-app runtime UI/web/CLI surface to exercise. The gate's fail-path IS exercised end-to-end against the real diff-cover by shared/scripts/tools/tests/test_measure_diff_coverage_gate.py::TestGateRealDiffCover (synthetic git repo -> under-covered line -> exit != 0 + report). The only truly-external bit (does GitHub's continue-on-error keep the JOB green while the STEP is red) is untestable locally and was observed live in PR #324.",
       "exit_code": 0,
       "tests_run": 0,
-      "timestamp": "2026-07-06T13:00:00Z"
+      "timestamp": "2026-07-06T14:00:00Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "bootstrap heals a missing cache shared/ by mirroring the marketplace full-clone",
-          "category": "integration",
+          "behavior": "decide_gate returns FAIL when diff% < threshold",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ensure_shared_cache_integration.py::test_heals_missing_shared_from_marketplace_clone"
+          "evidence": "shared/scripts/tools/tests/test_measure_diff_coverage_gate.py::TestDecideGate::test_below_threshold_fails PASSED"
         },
         {
-          "behavior": "bootstrap is an idempotent no-op when shared/ is already present",
-          "category": "integration",
+          "behavior": "decide_gate returns PASS at and above threshold",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ensure_shared_cache_integration.py::test_idempotent_noop_when_shared_already_present"
+          "evidence": "test_measure_diff_coverage_gate.py::TestDecideGate::test_at_threshold_passes / test_above_threshold_passes PASSED"
         },
         {
-          "behavior": "bootstrap is fail-open (exit 0) with an actionable message when no marketplace clone exists",
-          "category": "integration",
+          "behavior": "decide_gate returns PASS on an empty (measured) diff (None)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ensure_shared_cache_integration.py::test_fail_open_when_no_marketplace_clone"
+          "evidence": "test_measure_diff_coverage_gate.py::TestDecideGate::test_empty_diff_passes PASSED"
         },
         {
-          "behavior": "bootstrap is a no-op in the --plugin-dir dev model (shared/ is the real repo dir)",
-          "category": "integration",
+          "behavior": "gate entrypoint: under-covered changed line -> exit != 0 (FAIL) + report printed (real diff-cover)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ensure_shared_cache_integration.py::test_dev_plugin_dir_model_is_noop"
+          "evidence": "test_measure_diff_coverage_gate.py::TestGateRealDiffCover::test_fail_path_undercovered_line + TestGatePrecomputed::test_undercovered_exits_nonzero_and_prints_report PASSED"
         },
         {
-          "behavior": "the mirror excludes __pycache__/.pyc/.venv/.git",
+          "behavior": "gate entrypoint: covered changed line -> exit 0 + report printed (real diff-cover)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ensure_shared_cache_integration.py::test_heals_... asserts no __pycache__ in the healed tree"
+          "evidence": "test_measure_diff_coverage_gate.py::TestGateRealDiffCover::test_happy_path_covered_line + TestGatePrecomputed::test_covered_exits_zero_and_prints_report PASSED"
         },
         {
-          "behavior": "the canonical bootstrap is vendored byte-identically into every hook-bearing plugin (forward drift)",
+          "behavior": "gate entrypoint: produced report shows no changed lines under coverage -> exit 0 (parity with diff-cover)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ensure_shared_cache_vendored.py::test_forward_every_hook_bearing_plugin_has_identical_copy"
+          "evidence": "test_measure_diff_coverage_gate.py::TestGatePrecomputed::test_empty_diff_exits_zero PASSED"
         },
         {
-          "behavior": "the bootstrap is registered as the FIRST SessionStart hook in every hook-bearing plugin",
+          "behavior": "gate fails CLOSED (distinct ERROR exit) when diff-cover produces no report (crash/unavailable)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ensure_shared_cache_vendored.py::test_forward_registered_as_first_session_start_hook"
+          "evidence": "test_measure_diff_coverage_gate.py::TestGateMeasurementFailure::test_no_report_produced_fails_closed PASSED (also validated at the real ci.yml invocation layer: bad compare-branch -> rc=3)"
         },
         {
-          "behavior": "no orphan vendored copy exists in a non-hook-bearing plugin (reverse drift)",
+          "behavior": "gate fails CLOSED on an unreadable --diff-cover-json report",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ensure_shared_cache_vendored.py::test_reverse_no_orphan_vendored_copies"
+          "evidence": "test_measure_diff_coverage_gate.py::TestGateMeasurementFailure::test_unreadable_precomputed_report_fails_closed PASSED"
         },
         {
-          "behavior": "the hook-bearing plugin set is discovered from disk (>=10)",
+          "behavior": "run_diff_cover uses the non-deprecated comma-combined --format json:...,markdown:... flag (no --json-report/--markdown-report)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ensure_shared_cache_vendored.py::test_hook_bearing_set_is_discovered"
+          "evidence": "test_measure_diff_coverage.py::TestRunDiffCover::test_parses_report_from_subprocess (stub asserts --format) + real diff-cover produces both files in TestGateRealDiffCover PASSED"
         },
         {
-          "behavior": "the canonical source exists and is non-trivial",
+          "behavior": "run_diff_cover clears a stale persistent report so a failed run is not mistaken for success",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ensure_shared_cache_vendored.py::test_canonical_source_exists"
+          "evidence": "test_measure_diff_coverage.py::TestRunDiffCover::test_stale_persistent_report_not_reused_on_failure PASSED"
+        },
+        {
+          "behavior": "ci.yml gate step calls the wrapper, stays warn-only (continue-on-error), pins diff-cover, re-raises the exit",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ci_coverage_wiring.py::test_diff_coverage_step_is_warn_only_gate PASSED"
+        },
+        {
+          "behavior": "CI-gate guard still classifies the wrapper step as a gate; live workflows + allowlist stay consistent (no stale entry)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_check_ci_gate_coverage.py::test_measure_diff_coverage_wrapper_run_is_gate/_is_loose + test_check_ci_gate_coverage_io.py::TestRealRepo::test_live_workflows_pass_the_guard / test_live_allowlist_has_no_stale_entries PASSED"
+        },
+        {
+          "behavior": "diff-cover is version-pinned (10.3.0) in the ci.yml gate + shared-tests provisioning",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ci_coverage_wiring.py::test_diff_coverage_step_is_warn_only_gate asserts 'diff-cover==10.3.0' PASSED"
+        },
+        {
+          "behavior": "GitHub Actions continue-on-error keeps the JOB green while the STEP shows a red FAILURE annotation",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "requires a live GitHub Actions runner; cannot be reproduced locally. Observed live in PR #324's CI run."
         }
       ],
       "counts": {
-        "tested": 10,
-        "untestable": 0,
+        "tested": 13,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 3,
-        "covered_acs": 3
+        "acs": 6,
+        "covered_acs": 6
       }
     }
   },

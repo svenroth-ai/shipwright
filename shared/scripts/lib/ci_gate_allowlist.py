@@ -73,11 +73,12 @@ LOOSE_GATE_ALLOWLIST: list[AllowEntry] = [
     ),
     AllowEntry(
         "ci.yml", "Diff coverage (warn-only gate)",
-        "Tracked-debt (diff-coverage roadmap Phase 4, warn-only): the step now "
-        "runs `diff-cover --fail-under=80`, so an under-tested PR shows a visible "
-        "FAILURE on this step — but continue-on-error stays TRUE for the ~1-2 "
-        "week settling window, so it WARNS without blocking merge. The hard flip "
-        "(drop continue-on-error) REMOVES this entry, at which point the guard's "
+        "Tracked-debt (diff-coverage roadmap Phase 4, warn-only): the step runs "
+        "the tested `measure_diff_coverage.py --fail-under 80` wrapper (which runs "
+        "diff-cover internally), so an under-tested PR shows a visible FAILURE on "
+        "this step — but continue-on-error stays TRUE for the ~1-2 week settling "
+        "window, so it WARNS without blocking merge. The hard flip (drop "
+        "continue-on-error) REMOVES this entry, at which point the guard's "
         "stale-entry + reverse-drift checks enforce that it stays gating.",
         "tracked-debt",
     ),

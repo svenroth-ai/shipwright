@@ -155,10 +155,16 @@ jobs:
           # `coverage xml` now live in the plugin-tests and Combine steps
           # respectively. Coverage is additive and never gates this step;
           # --cov-report= silences the per-run terminal table.
+          # --with diff-cover: the diff-coverage GATE fail-path integration test
+          # (shared/scripts/tools/tests/test_measure_diff_coverage_gate.py, Phase-4
+          # hardening) drives the real diff-cover against a synthetic repo to prove
+          # the gate bites. Pinned so a release can't change flags/exit codes; the
+          # test HARD-FAILS in CI if diff-cover is absent (silent-skip discipline).
           export COVERAGE_FILE="$PWD/.cov-data/.coverage.shared"
           for dir in shared/tests shared/scripts/tests shared/scripts/tools/tests; do
             echo "--- Running tests in $dir ---"
             uv run --with pytest --with pytest-mock --with pytest-cov \
+              --with "diff-cover==10.3.0" \
               pytest "$dir" -v -m "not slow and not cross_plugin" \
               --cov=shared --cov-append --cov-config="$PWD/pyproject.toml" --cov-report=
           done
@@ -201,36 +207,41 @@ jobs:
             --project-root . --data-dir .cov-data --output coverage.xml
 
       - name: Diff coverage (warn-only gate)
-        # Diff-coverage roadmap Phase 4 (warn-only) — gate the % of CHANGED lines
-        # (vs origin/main) that tests execute, over the COMBINED repo-wide report
-        # from the Combine step. `--fail-under=80` makes diff-cover EXIT NON-ZERO
-        # when the changed lines are under-tested, so an under-covered PR shows a
-        # visible FAILURE annotation on this step. It stays continue-on-error for
-        # the ~1-2 week settling window (anti-ratchet discipline), so it WARNS but
-        # does NOT block merge yet; the hard flip is a follow-up that drops
-        # continue-on-error AND the ci_gate_allowlist entry below. The 80
-        # threshold matches control_grade._DIFF_COV_WARN_THRESHOLD (the Phase-3
-        # grade WARN threshold) and the roadmap's conservative start (the
-        # Phase-1/2 baseline was 92%). The intentional continue-on-error is
-        # documented in shared/scripts/lib/ci_gate_allowlist.py so the CI-gate
-        # guard tolerates it. Skipped when Combine produced no coverage.xml.
+        # Diff-coverage roadmap Phase 4 (warn-only), hardened
+        # (iterate-2026-07-06-diff-coverage-gate-hardening): the gate DECISION —
+        # measure the % of CHANGED lines (vs origin/main) that tests execute over
+        # the COMBINED coverage.xml, print the markdown report, and exit non-zero
+        # iff diff% < 80 — now lives in a unit/integration-TESTED Python
+        # entrypoint (measure_diff_coverage.py --fail-under), NOT inline shell, so
+        # the fail-path is provable (test_measure_diff_coverage_gate.py drives the
+        # real diff-cover). The wrapper runs diff-cover internally with the
+        # non-deprecated --format flags. continue-on-error stays TRUE for the
+        # ~1-2 week settling window (anti-ratchet discipline), so an under-tested
+        # PR shows a visible FAILURE on this step but does NOT block merge yet; the
+        # hard flip drops continue-on-error AND the ci_gate_allowlist entry below.
+        # 80 == control_grade._DIFF_COV_WARN_THRESHOLD (Phase-3 grade WARN). The
+        # CI-gate guard still classifies this as a gate: `measure_diff_coverage` is
+        # in GATE_COMMANDS (and `diff-cover` is named below). Skipped when Combine
+        # produced no coverage.xml.
         if: hashFiles('coverage.xml') != ''
         continue-on-error: true
         shell: bash
         run: |
-          # origin/main is needed as the diff base; fetch it explicitly (the
-          # fetch-depth:0 checkout has history but not necessarily the ref).
+          # origin/main is the diff base; fetch it explicitly (fetch-depth:0 has
+          # history but not necessarily the ref).
           git fetch --no-tags origin main
-          # Capture diff-cover's exit code without aborting under `bash -eo
-          # pipefail`, so the markdown report still prints below even when
-          # --fail-under trips; re-raise it as the step's result at the end
-          # (continue-on-error turns that into a warning, not a job failure).
-          rc=0
-          uvx diff-cover coverage.xml --compare-branch=origin/main \
-            --fail-under=80 \
-            --json-report diff-cover.json --markdown-report diff-cover.md || rc=$?
+          # The wrapper prints the markdown report and returns non-zero iff
+          # diff% < 80. Capture that under `bash -eo pipefail` (|| rc=$?) and
+          # re-raise it as the step result (continue-on-error downgrades it to a
+          # warning). diff-cover is PINNED so a release can't silently change its
+          # flags/exit codes.
           echo "::group::Diff coverage (warn-only gate, --fail-under=80)"
-          cat diff-cover.md || true
+          rc=0
+          uv run --with "diff-cover==10.3.0" \
+            shared/scripts/tools/measure_diff_coverage.py \
+            --project-root . --coverage-xml coverage.xml \
+            --compare-branch origin/main --fail-under 80 \
+            --json-out diff-cover.json --markdown-out diff-cover.md || rc=$?
           echo "::endgroup::"
           exit "$rc"
 

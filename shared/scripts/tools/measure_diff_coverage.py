@@ -1,35 +1,25 @@
 #!/usr/bin/env python3
-"""Diff-coverage measurement tool — Phase 1 of the diff-coverage roadmap.
+"""Diff-coverage measurement + gate tool (diff-coverage roadmap).
 
 Reads a ``coverage.xml`` (overall line-rate -> ``total``) and a ``diff-cover``
-JSON report (``diff`` = % of the lines changed vs the compare-branch that tests
-execute), and writes a **gitignored transient** ``.shipwright/coverage/
-diff_coverage.json`` that the compliance dashboard renders as an informational
-INFO sub-line under Test-Health.
+JSON report (``diff`` = % of changed lines vs the compare-branch that tests
+execute) and writes a **gitignored transient**
+``.shipwright/coverage/diff_coverage.json`` — a grade-neutral Test-Health INFO
+line in the compliance dashboard.
 
-Deliberate boundaries (see ``.shipwright/planning/diff-coverage-roadmap.md``,
-Phase-1 "Design correction"):
+Boundary: ``diff`` is PR-local (changed lines vs merge-base), so it lives ONLY
+in the transient — **never** the tracked ``shipwright_test_results.json`` (this
+tool never opens that file).
 
-  * ``coverage.diff`` is **PR-local** (changed lines vs merge-base), so it is
-    written only to the transient file — **never** to the tracked
-    ``shipwright_test_results.json``. This tool never opens that file.
-  * Populating the tracked ``coverage.total`` (which lights the W4 verifier /
-    gate) is **Phase 2** work, once a *combined repo-wide* total exists. Phase 1
-    measures a single tier (``shared/``), so its ``total`` is informational only
-    and lives in the transient too.
+Absent-input safe: a missing ``coverage.xml`` / unavailable ``diff-cover`` / "no
+changed lines under coverage" all produce ``status: "n/a"`` and exit 0.
 
-Absent-input safe: a missing ``coverage.xml`` / unavailable ``diff-cover`` /
-"no changed lines under coverage" all produce a well-formed ``status: "n/a"``
-report and exit 0 — the measurement chain never blocks a run.
-
-Usage::
-
-    measure_diff_coverage.py --coverage-xml coverage.xml \
-        [--compare-branch origin/main] [--diff-cover-json report.json] \
-        [--project-root .] [--output <path>] [--measured-tier shared]
-
-When ``--diff-cover-json`` is given, ``diff`` is parsed from it (no subprocess);
-otherwise ``diff-cover`` is invoked against ``coverage.xml``.
+Gate mode (Phase-4 hardening): with ``--fail-under N`` the tool ALSO prints the
+diff report and exits non-zero iff ``diff% < N`` (``decide_gate``). ci.yml's
+warn-only step calls this instead of raw ``diff-cover`` so the fail-path is
+unit/integration-testable. Without ``--fail-under`` it stays informational
+(exit 0). ``--diff-cover-json`` parses a pre-computed report (no subprocess);
+otherwise ``diff-cover`` is invoked (non-deprecated ``--format`` flags).
 """
 
 from __future__ import annotations
@@ -48,6 +38,11 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.atomic_write import durable_atomic_write  # noqa: E402
+from lib.diff_coverage_gate import (  # noqa: E402
+    GATE_EXIT_ERROR,
+    decide_gate,
+    print_gate_report,
+)
 
 SCHEMA = "diff_coverage/v1"
 # Phase 2 (roadmap): the coverage.xml this tool reads is now the COMBINED
@@ -89,7 +84,7 @@ def line_rate_percent(coverage_xml: Path | str) -> float | None:
 
 
 def diff_percent_from_report(report: Any) -> float | None:
-    """``total_percent_covered`` from a ``diff-cover --json-report`` payload.
+    """``total_percent_covered`` from a ``diff-cover`` JSON report payload.
 
     Returns ``None`` when there are no changed lines under coverage
     (``total_num_lines == 0`` — diff-cover reports a misleading 100% there) or
@@ -144,21 +139,38 @@ def run_diff_cover(
     coverage_xml: Path | str,
     compare_branch: str,
     project_root: Path | str,
+    *,
+    json_out: Path | str | None = None,
+    markdown_out: Path | str | None = None,
 ) -> dict[str, Any] | None:
     """Run ``diff-cover`` and return its parsed JSON report, or ``None`` on any
-    failure (binary absent, git/coverage error, unreadable report). Never
-    raises — the tool degrades to ``status: "n/a"`` instead of blocking."""
+    failure (binary absent, git/coverage error, unreadable report) — never
+    raises. ``json_out`` / ``markdown_out`` persist the reports at caller-chosen
+    paths (gate mode); ``None`` json_out -> tempdir (informational). Uses ONE
+    non-deprecated ``--format json:…,markdown:…`` flag (diff-cover keeps only
+    the last of repeated ``--format`` flags)."""
     cov = Path(coverage_xml)
     if not cov.exists():
         return None
     with tempfile.TemporaryDirectory() as td:
-        report_path = Path(td) / "diff-cover.json"
+        json_path = Path(json_out) if json_out is not None else Path(td) / "diff-cover.json"
+        json_path.parent.mkdir(parents=True, exist_ok=True)
+        fmts = [f"json:{json_path}"]
+        if markdown_out is not None:
+            Path(markdown_out).parent.mkdir(parents=True, exist_ok=True)
+            fmts.append(f"markdown:{markdown_out}")
+        # Clear any stale report at the PERSISTENT outputs (a repeated local gate
+        # run) so "file exists after the run" reliably means THIS run produced it
+        # — else a diff-cover failure could inherit a prior run's report.
+        for stale in (json_path, Path(markdown_out) if markdown_out else None):
+            if stale is not None and stale.exists():
+                stale.unlink()
         base_args = [
             str(cov),
             "--compare-branch", compare_branch,
-            "--json-report", str(report_path),
-            # Phase 1 is informational: never let a low number make the tool exit
-            # non-zero (the CI --fail-under gate is Phase 4).
+            "--format", ",".join(fmts),
+            # OUR wrapper owns the gate decision (decide_gate); diff-cover itself
+            # must never exit non-zero, so it always runs at --fail-under 0.
             "--fail-under", "0",
         ]
         for cmd in (
@@ -172,9 +184,9 @@ def run_diff_cover(
                 )
             except (FileNotFoundError, OSError, subprocess.SubprocessError):
                 continue
-            if report_path.exists():
+            if json_path.exists():
                 try:
-                    return json.loads(report_path.read_text(encoding="utf-8"))
+                    return json.loads(json_path.read_text(encoding="utf-8"))
                 except (OSError, json.JSONDecodeError):
                     return None
         return None
@@ -197,12 +209,22 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap.add_argument("--compare-branch", default=DEFAULT_COMPARE_BRANCH,
                     help=f"diff-cover base (default: {DEFAULT_COMPARE_BRANCH})")
     ap.add_argument("--diff-cover-json", default=None,
-                    help="pre-computed diff-cover --json-report (skips the subprocess)")
+                    help="pre-computed diff-cover JSON report (skips the subprocess)")
     ap.add_argument("--measured-tier", default=DEFAULT_TIER,
                     help=f"tier label recorded in the report (default: {DEFAULT_TIER})")
     ap.add_argument("--output", default=None,
                     help="transient report path (default: "
                          "<project-root>/.shipwright/coverage/diff_coverage.json)")
+    ap.add_argument("--fail-under", type=float, default=None,
+                    help="gate mode: after measuring, print the diff report and "
+                         "exit non-zero iff diff-coverage %% < N (omit for "
+                         "informational mode, which always exits 0)")
+    ap.add_argument("--json-out", default=None,
+                    help="gate mode: persist the diff-cover JSON report here "
+                         "(default: <project-root>/diff-cover.json)")
+    ap.add_argument("--markdown-out", default=None,
+                    help="gate mode: persist the diff-cover markdown report here "
+                         "(default: <project-root>/diff-cover.md)")
     return ap.parse_args(argv)
 
 
@@ -221,9 +243,16 @@ def main(argv: list[str] | None = None) -> int:
 
     total = line_rate_percent(coverage_xml)
 
+    gate_mode = args.fail_under is not None
+    markdown_out: Path | None = None
     report: dict[str, Any] | None = None
     if args.diff_cover_json:
         report = _load_report_json(_resolve(args.diff_cover_json))
+    elif coverage_xml.exists() and gate_mode:
+        markdown_out = _resolve(args.markdown_out or "diff-cover.md")
+        report = run_diff_cover(coverage_xml, args.compare_branch, project_root,
+                                json_out=_resolve(args.json_out or "diff-cover.json"),
+                                markdown_out=markdown_out)
     elif coverage_xml.exists():
         report = run_diff_cover(coverage_xml, args.compare_branch, project_root)
     diff = diff_percent_from_report(report)
@@ -243,7 +272,19 @@ def main(argv: list[str] | None = None) -> int:
               f"[{args.measured_tier}, vs {args.compare_branch}] -> {output}")
     else:
         print(f"diff-coverage: n/a — {payload['note']} -> {output}")
-    return 0
+
+    if not gate_mode:
+        return 0
+    # Fail CLOSED when no report was produced (diff-cover crash / unavailable /
+    # unreadable --diff-cover-json) — distinct from a report that legitimately
+    # shows an empty diff (report present, diff None). Silently passing here
+    # would make the gate strictly more lenient than raw diff-cover.
+    if report is None:
+        print("diff-coverage gate: ERROR — no diff-cover report produced "
+              "(crash / unavailable / unreadable); failing closed.")
+        return GATE_EXIT_ERROR
+    print_gate_report(markdown_out, diff, args.fail_under)
+    return decide_gate(diff, args.fail_under)
 
 
 if __name__ == "__main__":
