@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-06 11:14 UTC | Session: a5163991-fcb0-464a-8063-97ae1a1059ee | Run: iterate-2026-07-06-grade-g5-empirical-suite
+> Updated: 2026-07-06 11:28 UTC | Session: 5c5ef9ef-c7b0-4d18-b2ca-e17a75470a7b | Run: iterate-2026-07-06-diff-coverage-gate-hardening
 
-## Recent Changes (260 iterations)
+## Recent Changes (261 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | diff-coverage gate hardening: move the warn-only --fail-under decision into a tested measure_diff_coverage.py entrypoint (pure decide_gate), pin diff-cover==10.3.0, migrate to non-deprecated --format flags, and prove the fail-path with a real synthetic-repo integration test; a diff-cover failure now fails closed | 3978/3978 |  | tooling | 2026-07-06 |
 | change | self-heal the shared/ plugin cache on marketplace installs (vendored SessionStart hook, all 12 plugins) | 0/0 |  | infra | 2026-07-06 |
 | feature | G5: shipwright-grade empirical calibration suite (SHA-pinned real-OSS record/replay launch gate) + additive grade_context capture seam. Gate correctly RED (surfaced a projector miscalibration -> G6). | 0/0 |  | tooling | 2026-07-06 |
 | change | grade+adopt input path/URL surrounding-quote stripping (WebUI #195 analog) | 0/0 |  | tooling | 2026-07-06 |
@@ -267,7 +268,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-06 | Unit: 313/314 | Smoke: skipped | (iterate)
+Last run: 2026-07-06 | Unit: 3978/3978 | Smoke: skipped | (iterate)
 
 ## Pipeline
 
