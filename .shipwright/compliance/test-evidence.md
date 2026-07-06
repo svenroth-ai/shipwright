@@ -1,6 +1,6 @@
 # Test Evidence Report
 
-Generated: 2026-07-06T11:14:04.882235+00:00
+Generated: 2026-07-06T10:21:36.704684+00:00
 
 ## Summary
 
@@ -14,7 +14,7 @@ Generated: 2026-07-06T11:14:04.882235+00:00
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | G5: shipwright-grade empirical calibration suite (SHA-pinned real-OSS record/replay launch gate) + additive grade_context capture seam. Gate correctly RED (surfaced a projector miscalibration -> G6). | [iterate](traceability-matrix.md#evt-70be807d) | — | +0 | — | — | 2026-07-06 |
+| 1 | self-heal the shared/ plugin cache on marketplace installs (vendored SessionStart hook, all 12 plugins) | [iterate](traceability-matrix.md#evt-ead61d69) | — | +0 | — | — | 2026-07-06 |
 | 2 | grade+adopt input path/URL surrounding-quote stripping (WebUI #195 analog) | [iterate](traceability-matrix.md#evt-24bc2f3a) | — | +0 | — | — | 2026-07-06 |
 | 3 | Fixed the grade report so an authoritative grade no longer falsely calls itself an outside estimate, and removed an internal codename from the report. | [iterate](traceability-matrix.md#evt-4d586bd2) | mixed | +0 | 273/273 | PASS | 2026-07-05 |
 | 4 | CI now warns (without blocking merge yet) when a pull request does not test enough of the lines it changed. | [iterate](traceability-matrix.md#evt-17d141eb) | unit | +0 | 3643/3643 | PASS | 2026-07-05 |

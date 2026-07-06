@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-06-grade-g5-empirical-suite"
+run_id: "iterate-2026-07-06-shared-cache-selfheal"
 phase: "iterate"
-reason: "G5 empirical calibration suite delivered; -m empirical gate RED (projector miscalibration -> G6)"
-timestamp: "2026-07-06T11:14:04.882235+00:00"
+reason: "self-heal shared/ plugin cache on marketplace installs (vendored SessionStart hook, all 12)"
+timestamp: "2026-07-06T10:21:36.704684+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-06 11:14:04 UTC
+> Auto-generated 2026-07-06 10:21:36 UTC
 
 ## Session Info
 
-- **Session ID**: a5163991-fcb0-464a-8063-97ae1a1059ee
-- **Timestamp**: 2026-07-06 11:14:04 UTC
-- **Reason**: G5 empirical calibration suite delivered; -m empirical gate RED (projector miscalibration -> G6)
+- **Session ID**: 7fe703e6-8b14-4ddc-a9ca-a46c6209404c
+- **Timestamp**: 2026-07-06 10:21:36 UTC
+- **Reason**: self-heal shared/ plugin cache on marketplace installs (vendored SessionStart hook, all 12)
 
 ## Last Iterate
 
@@ -28,9 +28,7 @@ timestamp: "2026-07-06T11:14:04.882235+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/grade-g5-empirical-suite
-- **Spec**: .shipwright/planning/iterate/2026-07-06-grade-g5-empirical-suite.md
-- **Complexity**: medium (overrides classifier `small`; new runner + multi-module harness + ci gate + docs + engine-adjacent capture refactor)
+- **Branch**: iterate/shared-cache-selfheal
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -49,7 +47,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/grade-g5-empirical-suite
+- **Branch**: iterate/shared-cache-selfheal
 - **Last Commit**: c1280089 fix(grade,adopt): strip surrounding quotes from path/URL input seams (#325)
 - **Uncommitted Changes**: Yes
 
@@ -66,7 +64,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-70be807d | work_completed | iterate (G5: shipwright-grade empirical calibration suite (SHA-pinned real-OSS record/replay launch gate) + additive grade_context capture seam. Gate correctly RED (surfaced a projector miscalibration -> G6).) | 2026-07-06 |
+| evt-ead61d69 | work_completed | iterate (self-heal the shared/ plugin cache on marketplace installs (vendored SessionStart hook, all 12 plugins)) | 2026-07-06 |
 | evt-24bc2f3a | work_completed | iterate (grade+adopt input path/URL surrounding-quote stripping (WebUI #195 analog)) | 2026-07-06 |
 | evt-4d586bd2 | work_completed | iterate (grade-authoritative-disclaimer) | 2026-07-05 |
 | evt-17d141eb | work_completed | iterate (diff-coverage CI gate Phase 4 (warn-only): diff-cover --fail-under=80 over the combined coverage.xml, continue-on-error retained (settling window)) | 2026-07-05 |
@@ -76,7 +74,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 259
-- **Last iterate**: feature — G5: shipwright-grade empirical calibration suite (SHA-pinned real-OSS record/replay launch gate) + additive grade_context capture seam. Gate correctly RED (surfaced a projector miscalibration -> G6). (2026-07-06)
+- **Last iterate**: change — self-heal the shared/ plugin cache on marketplace installs (vendored SessionStart hook, all 12 plugins) (2026-07-06)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
