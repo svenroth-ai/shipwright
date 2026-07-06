@@ -71,15 +71,10 @@ LOOSE_GATE_ALLOWLIST: list[AllowEntry] = [
         "analysis failures gate again.",
         "by-design", launch_gate=True,
     ),
-    AllowEntry(
-        "ci.yml", "Diff coverage (warn-only gate)",
-        "Tracked-debt (diff-coverage roadmap Phase 4, warn-only): the step runs "
-        "the tested `measure_diff_coverage.py --fail-under 80` wrapper (which runs "
-        "diff-cover internally), so an under-tested PR shows a visible FAILURE on "
-        "this step — but continue-on-error stays TRUE for the ~1-2 week settling "
-        "window, so it WARNS without blocking merge. The hard flip (drop "
-        "continue-on-error) REMOVES this entry, at which point the guard's "
-        "stale-entry + reverse-drift checks enforce that it stays gating.",
-        "tracked-debt",
-    ),
+    # NOTE: the ci.yml "Diff coverage (warn-only gate)" tracked-debt entry was
+    # REMOVED by the diff-coverage hard flip (iterate-2026-07-06-diff-coverage-
+    # hard-flip): the step is now "Diff coverage (gate)" WITHOUT continue-on-error,
+    # so it hard-blocks an under-tested PR. A gate step that is not loose must NOT
+    # be allowlisted (a stale entry would fail the guard's own stale-entry check),
+    # and the guard's reverse-drift check now enforces the step stays gating.
 ]

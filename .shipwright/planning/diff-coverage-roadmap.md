@@ -93,19 +93,21 @@ The signal grows teeth only in 3/4, after the number is stable and calibrated.
   reduction. **No hard CI block yet.**
 - The grade now reflects "was the changed AI code tested", not just "is the suite green".
 
-### Phase 4 — CI gate (warn → fail) · small
-- **Warn-only DONE** (`iterate-2026-07-05-diff-coverage-ci-gate`): the ci.yml
-  "Diff coverage (warn-only gate)" step runs `diff-cover --fail-under=80`
-  (== `control_grade._DIFF_COV_WARN_THRESHOLD`, and the roadmap's conservative
-  "WARN < 80%" start; baseline was 92%) with `continue-on-error: true` retained —
-  an under-tested PR shows a visible FAILURE annotation but merge is NOT blocked.
-  The step stays allowlisted (`ci_gate_allowlist`, tracked-debt); the report is
-  captured + printed even when the threshold trips, and re-raised so the step goes
-  red under continue-on-error.
-- **Remaining — the hard flip** (deferred a ~1–2 week settling window): drop
-  `continue-on-error: true` from the step AND remove its `ci_gate_allowlist`
-  entry, at which point the CI-gate guard's stale-entry + reverse-drift checks
-  enforce that it stays gating. Then PRs below 80% diff-coverage are blocked.
+### Phase 4 — CI gate (warn → fail) · small · **DONE (HARD GATE)**
+- **Warn-only** (`iterate-2026-07-05-diff-coverage-ci-gate`): the ci.yml step ran
+  `diff-cover --fail-under=80` (== `control_grade._DIFF_COV_WARN_THRESHOLD`, the
+  conservative "WARN < 80%" start; baseline was 92%) with `continue-on-error: true`.
+- **Gate hardening** (`iterate-2026-07-06-diff-coverage-gate-hardening`): moved the
+  gate decision into the tested `measure_diff_coverage.py --fail-under` entrypoint
+  (pinned diff-cover, `--format` flags, fail-closed on a diff-cover crash), and
+  (`iterate-2026-07-06-diff-coverage-real-pr-replay`) added a real-PR replay corpus
+  as settling-window evidence (last 5 PRs: 4 pass / 1 legitimate fail).
+- **Hard flip DONE** (`iterate-2026-07-06-diff-coverage-hard-flip`): dropped
+  `continue-on-error: true` from the "Diff coverage (gate)" step AND removed its
+  `ci_gate_allowlist` entry, so the CI-gate guard's stale-entry + reverse-drift
+  checks now enforce it stays gating. **A PR whose changed lines are < 80% covered
+  now BLOCKS merge** (and a diff-cover crash/absence fails closed). Threshold
+  stays 80; revisit upward once the corpus of green PRs grows.
 
 ## Threshold strategy
 Do not guess a number. Take the real baseline from Phases 1–2, start conservative

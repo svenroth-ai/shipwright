@@ -245,25 +245,22 @@ class TestLaunchGates:
 
 
 # --------------------------------------------------------------------------- #
-# Diff-coverage roadmap Phase 4 (warn-only) — the diff-cover step now runs
-# `--fail-under=80` but stays continue-on-error for the settling window, so it
-# remains allowlisted (tracked-debt: the hard flip drops continue-on-error and
-# removes the entry).
+# Diff-coverage roadmap Phase 4 — HARD FLIP: the diff-coverage step dropped
+# continue-on-error and its ci_gate_allowlist entry, so it now HARD-blocks an
+# under-tested PR. The step must NOT be allowlisted any more (a stale entry would
+# fail the guard's own stale-entry check), and the guard's reverse-drift check
+# now enforces it stays gating.
 # --------------------------------------------------------------------------- #
-class TestDiffCoverageAllowlist:
-    def test_diff_cover_step_is_allowlisted(self):
-        entry = next(
-            (e for e in LOOSE_GATE_ALLOWLIST
-             if e.workflow == "ci.yml" and e.step == "Diff coverage (warn-only gate)"),
-            None,
-        )
-        assert entry is not None, (
-            "the ci.yml 'Diff coverage (warn-only gate)' step must be "
-            "allowlisted — it is intentionally continue-on-error during the "
-            "Phase 4 warn-only settling window."
-        )
-        assert entry.category == "tracked-debt", (
-            "the hard flip drops continue-on-error and removes this entry, so it "
-            "is tracked-debt, not by-design."
-        )
-        assert entry.reason.strip()
+class TestDiffCoverageHardGate:
+    def test_diff_cover_step_is_NOT_allowlisted(self):
+        # Regression guard for the hard flip: re-adding a warn-only allowlist
+        # entry here (without also re-adding continue-on-error to a now-hardened
+        # step) would be a stale entry — and re-introducing warn-only silently is
+        # exactly what the flip forbids.
+        entries = [
+            e for e in LOOSE_GATE_ALLOWLIST
+            if e.workflow == "ci.yml" and "diff coverage" in e.step.lower()
+        ]
+        assert entries == [], (
+            "the diff-coverage step is a HARD gate now — it must carry NO "
+            f"ci_gate_allowlist entry, found: {[e.step for e in entries]}")

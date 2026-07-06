@@ -38,14 +38,9 @@
           "evidence": "test_test_health_signal.py::test_matrix_named_github_actions_check_counts, test_tier2_counts_matrix_named_ci_checks PASSED"
         },
         {
-          "behavior": "non-CI app (socket-security) + failing check excluded",
+          "behavior": "non-CI app + failing check + legacy Travis StatusContext handling",
           "disposition": "tested",
-          "evidence": "test_non_ci_app_check_does_not_count, test_failing_ci_app_check_does_not_count PASSED"
-        },
-        {
-          "behavior": "legacy Travis StatusContext counts by CI-system name",
-          "disposition": "tested",
-          "evidence": "test_legacy_travis_status_context_counts_by_ci_system_name PASSED"
+          "evidence": "test_non_ci_app_check_does_not_count, test_failing_ci_app_check_does_not_count, test_legacy_travis_status_context_counts_by_ci_system_name PASSED"
         },
         {
           "behavior": "denominator = examinable merged PRs; PR-head-commit fallback for on:pull_request CI",
@@ -53,24 +48,19 @@
           "evidence": "test_tier2_no_rollup_prs_count_toward_denominator, test_tier2_counts_pr_head_checks_when_merge_commit_has_none, test_tier2_unmerged_prs_are_not_examinable PASSED"
         },
         {
-          "behavior": "0-passing scores LOW with test infra, n/a without (has_test_infra=test_files AND has_ci)",
+          "behavior": "0-passing LOW with test infra, n/a without (has_test_infra=test_files AND has_ci)",
           "disposition": "tested",
-          "evidence": "test_zero_passing_scores_low_when_repo_has_test_infra, test_zero_passing_is_na_without_test_infra, test_some_passing_scores_even_without_test_infra + committed fixtures obra/superpowers(n/a->B) + request/request(LOW->F) PASSED"
+          "evidence": "test_zero_passing_scores_low_when_repo_has_test_infra, test_zero_passing_is_na_without_test_infra + committed fixtures superpowers(n/a->B)+request(LOW->F)"
         },
         {
-          "behavior": "network PR-association ratio parse (+ none paths) + tiering",
+          "behavior": "network PR-association parse/tiering + projector override + round-half-up/clamp",
           "disposition": "tested",
-          "evidence": "test_provenance_signal.py::test_pr_association_ratio, test_pr_association_none_*, test_compute_measurable_when_network_resolves, test_compute_falls_back_* PASSED"
+          "evidence": "test_provenance_signal.py::* , test_projector_fixtures.py::test_pr_association_ratio_overrides_git_log_count, test_provenance_count_rounds_half_up_and_clamps PASSED"
         },
         {
-          "behavior": "projector maps ratio -> events_with_provenance; round HALF-UP off the 0.5 cap + clamp",
+          "behavior": "self-referential feature filter (+ detector-mislabel robustness)",
           "disposition": "tested",
-          "evidence": "test_projector_fixtures.py::test_pr_association_ratio_overrides_git_log_count, test_provenance_count_rounds_half_up_and_clamps, test_projector_uses_half_up_count PASSED"
-        },
-        {
-          "behavior": "self-referential feature filter (+ detector-mislabel robustness) suppresses framework-own routes",
-          "disposition": "tested",
-          "evidence": "test_framework_own_source_is_self_referential, test_application_route_is_genuine, test_mislabelled_framework_still_suppressed_by_path_package, test_well_run_app_requirement_surface_survives_filter PASSED + committed pallets/flask fixture frs_total=0"
+          "evidence": "test_framework_own_source_is_self_referential, test_mislabelled_framework_still_suppressed_by_path_package, test_well_run_app_requirement_surface_survives_filter PASSED + flask fixture frs_total=0"
         },
         {
           "behavior": "URL clone fetches >= Caps.max_commits history (not --depth 1)",
@@ -78,12 +68,12 @@
           "evidence": "test_clone.py::test_run_clone_fetches_history_not_depth_one PASSED"
         },
         {
-          "behavior": "dogfood: authoritative grade never runs the projection (monorepo A stays)",
+          "behavior": "dogfood: authoritative grade never runs the projection (monorepo A)",
           "disposition": "tested",
-          "evidence": "test_authoritative.py::test_authoritative_grade_never_runs_the_projection PASSED + live monorepo grade A 100 authoritative"
+          "evidence": "test_authoritative.py::test_authoritative_grade_never_runs_the_projection PASSED + live monorepo A 100 authoritative"
         },
         {
-          "behavior": "manifest 2-tier well-run>deprecated, band-ordered; real repos in band + ordering holds",
+          "behavior": "manifest well-run>deprecated ordering; real repos in band",
           "disposition": "tested",
           "evidence": "test_replay_mechanism.py::TestManifest + -m empirical (test_real_repo_grade_in_band, test_calibration_ordering) PASSED"
         },

@@ -1,0 +1,1 @@
+Diff-coverage CI gate is now HARD-blocking: a PR whose changed lines are under 80% covered by tests fails CI and blocks merge (continue-on-error dropped, ci_gate_allowlist entry removed; a diff-cover crash also fails closed). Ends the warn-only settling window, empirically justified by a real-PR replay corpus.
