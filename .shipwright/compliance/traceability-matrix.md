@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-06T22:19:21.443674+00:00
+Generated: 2026-07-06T22:34:30.015905+00:00
 
 ## Requirements Coverage
 
@@ -27,6 +27,7 @@ Generated: 2026-07-06T22:19:21.443674+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-aebeb6f0"></a>Security triage no longer raises a recurring false low-severity alarm for GitHub-owned actions an adopted repo has deliberately accepted; genuinely risky unpinned third-party actions are still reported. | iterate | bug |  | 5598/5625 | — | 2026-07-06 |
 | <a id="evt-2bcbc1b9"></a>New brownfield repos onboarded by Shipwright now automatically get a (non-blocking) check that flags PRs which don't test their own changed code. | iterate | change |  | 3667/3667 | — | 2026-07-06 |
 | <a id="evt-59cf16c8"></a>The /shipwright-run start message now adapts to where you are: a terminal or the WebUI board gets a continue-here hand-off, while the VS Code extension or desktop chat is told the pipeline cannot run there and to use a terminal or the Command Center instead. | iterate | change |  | 169/169 | — | 2026-07-06 |
 | <a id="evt-0e47577b"></a>Cold-repo Control Grade caps at B (A is authoritative-only): the projector declares change_reconciliation the one expected_dimensions entry so the honesty gate caps a cold headline at B. Heuristic-only; dogfood stays A. | iterate | change |  | — | — | 2026-07-06 |
@@ -302,7 +303,7 @@ Generated: 2026-07-06T22:19:21.443674+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 268 |
+| Iterate changes | 269 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

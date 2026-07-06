@@ -239,10 +239,29 @@ not via a `semgrep --exclude-rule` flag, so it is robust across semgrep
 versions and mirrors the SARIF-suppression parser. SCA acceptances live in the
 parallel Trivy register at repo-root `.trivyignore.yaml`.
 
+**Where the GH-owned drop applies (two paths).** The owner-scoped predicate lives
+in the shared leaf module `shared/scripts/gh_action_tag_owner.py` so both
+application points stay in lockstep:
+
+- **Plugin scan** (`semgrep_tailoring.py::normalize_tailored`) — the monorepo's
+  own `security.yml` runs the shipwright-security scanner, so its `findings.json`
+  is already tailored at scan time.
+- **Artifact ingest** (`shared/scripts/security_findings.py::_findings_from_sarif`)
+  — every `/shipwright-adopt` repo's `security.yml` runs **raw** `semgrep scan
+  --sarif` and uploads un-tailored SARIF (no `findings.json`). So the GH-owned
+  mutable-tags used to reach the `gh-security` Triage producer *and* the
+  Control-Grade Security dimension even after the repo formally accepted them —
+  a recurring false "N low" alarm. With the env var set they are now dropped at
+  ingest too (owner read from the checked-out workflow file at the finding's
+  line, via the repo root the producer passes as `workflow_base`; unresolvable →
+  kept). Third-party tags stay counted on both paths. inSource `# nosemgrep`
+  suppressions were already honoured at ingest.
+
 **Verify / revert.** Unset either env var in `security.yml` to see the rule
 resurface. The pure `normalize()` (no kwargs) and the two resolver helpers are
-covered by `tests/test_semgrep_rule_tailoring.py`, including the third-party
-still-flagged guard.
+covered by `tests/test_semgrep_rule_tailoring.py` (plugin scan) and
+`shared/tests/test_security_findings_gh_tag_drop.py` (artifact ingest), both
+including the third-party still-flagged guard.
 
 #### Local parity
 

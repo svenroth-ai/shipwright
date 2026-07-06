@@ -31,6 +31,13 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from gh_action_tag_owner import (
+    accept_github_owned_action_tags,
+    action_owner_from_file,
+    is_github_owned_owner,
+    is_mutable_action_tag_rule,
+)
+
 # Name of the artifact both the monorepo and the adopt-template security.yml
 # upload (``actions/upload-artifact`` step).
 _SECURITY_ARTIFACT_NAME = "security-scan-results"
@@ -46,7 +53,9 @@ _SARIF_HIGH = 7.0
 _SARIF_MEDIUM = 4.0
 
 
-def download_security_findings(run_id: int) -> list[dict] | None:
+def download_security_findings(
+    run_id: int, workflow_base: Any = None
+) -> list[dict] | None:
     """SAST/SCA findings from the ``security-scan-results`` artifact.
 
     Primary source is scan.py's normalized ``findings.json``. When that file is
@@ -54,6 +63,15 @@ def download_security_findings(run_id: int) -> list[dict] | None:
     uploads ``sarif/*.sarif`` but no ``findings.json`` — the SARIF in the *same*
     artifact is parsed as a fallback, so AR-10 lights the Security dimension for
     adopted repos too.
+
+    ``workflow_base`` is the checked-out repo root. When set (and the repo has
+    opted in via ``SHIPWRIGHT_SEMGREP_ACCEPT_GH_OWNED_ACTION_TAGS``), the SARIF
+    fallback drops accepted-risk GH-owned mutable-action-tag findings — the same
+    tailoring the plugin local scan applies, so the ``gh-security`` producer no
+    longer over-counts them. The workflow files live in the repo, not the
+    downloaded artifact, hence a base separate from the SARIF ``root``. Left
+    ``None`` (or on the ``findings.json`` path, which is already tailored at scan
+    time), nothing extra is dropped.
     """
     def _extract(root: Path) -> list[dict] | None:
         json_findings = _findings_from_json(root, "findings.json")
@@ -61,7 +79,7 @@ def download_security_findings(run_id: int) -> list[dict] | None:
         # only fall back to SARIF when scan.py's file is genuinely absent.
         if json_findings is not None:
             return json_findings
-        return _findings_from_sarif(root)
+        return _findings_from_sarif(root, workflow_base=workflow_base)
 
     return _with_downloaded_artifact(run_id, _extract)
 
@@ -171,7 +189,37 @@ def _result_is_suppressed(res: dict) -> bool:
     )
 
 
-def _findings_from_sarif(root: Path) -> list[dict] | None:
+def _sarif_result_ref(res: dict) -> tuple[Any, Any, Any]:
+    """``(ruleId, workflow-uri, startLine)`` for a SARIF result — the fields the
+    owner-scoped GH-owned-action-tag drop needs. Any missing/ill-typed piece
+    comes back ``None`` so the owner resolves to KEEP."""
+    locs = res.get("locations")
+    loc0 = locs[0] if isinstance(locs, list) and locs else None
+    phys = loc0.get("physicalLocation") if isinstance(loc0, dict) else None
+    phys = phys if isinstance(phys, dict) else {}
+    art = phys.get("artifactLocation")
+    region = phys.get("region")
+    uri = art.get("uri") if isinstance(art, dict) else None
+    line = region.get("startLine") if isinstance(region, dict) else None
+    return res.get("ruleId"), uri, line
+
+
+def _is_accepted_gh_owned_tag(res: dict, workflow_base: Any) -> bool:
+    """True iff ``res`` is a mutable-action-tag finding on a GitHub-owned action
+    (``actions/*`` / ``github/*``) — the declined-SHA-pin accepted risk. Owner is
+    read from the workflow file at the finding's line under ``workflow_base``; an
+    unresolvable owner returns ``False`` so the finding is KEPT (third-party tags
+    and any owner we can't confirm stay counted)."""
+    rule_id, uri, line = _sarif_result_ref(res)
+    if not is_mutable_action_tag_rule(rule_id):
+        return False
+    owner = action_owner_from_file(uri, line, base_dir=workflow_base)
+    return is_github_owned_owner(owner)
+
+
+def _findings_from_sarif(
+    root: Path, workflow_base: Any = None
+) -> list[dict] | None:
     """Parse every ``*.sarif`` under ``root`` into severity-only findings (the
     minimal shape ``ci_security.summarize`` needs). ``None`` when no SARIF file
     exists at all, so the caller distinguishes "no scan output" from a clean
@@ -179,12 +227,22 @@ def _findings_from_sarif(root: Path) -> list[dict] | None:
     is resolved to its rule by ``ruleId`` (``ruleIndex`` as a fallback) — reading
     it off the result directly is the bug the CI critical-gate documents.
 
-    Inline-suppressed results (``# nosemgrep`` → ``suppressions:[{kind:inSource}]``)
-    are dropped via :func:`_result_is_suppressed`, so a fully-suppressed scan
-    yields ``[]`` (clean) rather than a wall of phantom live findings."""
+    Two accepted-noise filters run before a result is counted, so ingest matches
+    the plugin's local-scan tailoring:
+
+    - Inline-suppressed results (``# nosemgrep`` → ``suppressions:[{kind:inSource}]``)
+      are dropped via :func:`_result_is_suppressed`.
+    - When the repo opts in (``SHIPWRIGHT_SEMGREP_ACCEPT_GH_OWNED_ACTION_TAGS``)
+      AND ``workflow_base`` is given, accepted-risk GH-owned mutable-action-tag
+      findings are dropped via :func:`_is_accepted_gh_owned_tag` — third-party
+      tags stay counted.
+
+    A fully-filtered scan yields ``[]`` (clean) rather than a wall of phantom
+    live findings."""
     sarifs = list(root.rglob("*.sarif"))
     if not sarifs:
         return None
+    accept_gh_tags = accept_github_owned_action_tags()
     findings: list[dict] = []
     for path in sarifs:
         try:
@@ -209,6 +267,8 @@ def _findings_from_sarif(root: Path) -> list[dict] | None:
                     continue
                 if _result_is_suppressed(res):
                     continue  # inline-suppressed FP — not a live finding
+                if accept_gh_tags and _is_accepted_gh_owned_tag(res, workflow_base):
+                    continue  # accepted-risk GH-owned mutable tag — not counted
                 score = (res.get("properties") or {}).get("security-severity")
                 if score is None:
                     score = by_id.get(res.get("ruleId"))

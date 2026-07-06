@@ -53,7 +53,10 @@ def refresh_ci_security(project_root: Path | str, *, api=None) -> dict:
         if not run:
             return {"status": "skipped", "reason": "no-fresh-run"}
         run_id = run.get("id") or 0
-        findings = api.download_security_findings(run_id)
+        # Pass the repo root so the SARIF fallback can drop opted-in accepted-risk
+        # GH-owned mutable-action-tags — keeps the grade's Security dimension in
+        # step with the triage producer instead of a split-brain count.
+        findings = api.download_security_findings(run_id, workflow_base=project_root)
         if findings is None:  # fetch failed (≠ empty); ADR-052 None-vs-[]
             return {"status": "skipped", "reason": "findings-fetch-failed"}
         prompt_risks = api.download_prompt_risks(run_id)  # may be None → treated as []

@@ -148,7 +148,7 @@ def _patch_api(
         github_api, "latest_security_workflow_run", lambda: None,
     )
     monkeypatch.setattr(
-        github_api, "download_security_findings", lambda run_id: None,
+        github_api, "download_security_findings", lambda run_id, workflow_base=None: None,
     )
 
 

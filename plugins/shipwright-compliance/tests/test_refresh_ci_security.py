@@ -27,6 +27,7 @@ class _FakeApi:
         self._run = run
         self._findings = findings
         self._prompt = prompt
+        self.workflow_base_seen = "unset"
 
     def gh_available(self):
         return self._available
@@ -34,7 +35,8 @@ class _FakeApi:
     def latest_security_workflow_run(self):
         return self._run
 
-    def download_security_findings(self, run_id):  # noqa: ARG002
+    def download_security_findings(self, run_id, workflow_base=None):  # noqa: ARG002
+        self.workflow_base_seen = workflow_base
         return self._findings
 
     def download_prompt_risks(self, run_id):  # noqa: ARG002
@@ -107,3 +109,11 @@ def test_prompt_none_treated_as_empty(tmp_path):
     result = refresh_ci_security(tmp_path, api=api)
     assert result["status"] == "written"
     assert load_ci_security(tmp_path)["prompt_injection"] == 0
+
+
+def test_passes_project_root_as_workflow_base(tmp_path):
+    # The grade path must forward the repo root so the SARIF fallback can drop
+    # opted-in accepted GH-owned mutable-action-tags (same posture as triage).
+    api = _FakeApi(run=_RUN, findings=[], prompt=[])
+    refresh_ci_security(tmp_path, api=api)
+    assert api.workflow_base_seen == tmp_path
