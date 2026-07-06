@@ -119,10 +119,10 @@ class TestCITemplatesCrossPlatformMatrix:
 
     Convention (external-review #O6): job-name suffixes ``-checks`` and
     ``-test``/``-tests`` mark cross-platform jobs. Jobs named ``security``,
-    ``deploy``, ``deploy-*`` are explicitly Linux-only by design.
+    ``deploy``, ``diff-coverage`` are explicitly Linux-only by design.
     """
 
-    PLATFORM_AGNOSTIC_JOB_PATTERNS = ("security", "deploy", "release", "publish")
+    PLATFORM_AGNOSTIC_JOB_PATTERNS = ("security", "deploy", "release", "publish", "diff-coverage")
 
     def _is_matrixed_job(self, job_name: str) -> bool:
         """Return True if this job is expected to use the OS matrix."""

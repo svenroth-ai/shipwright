@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-07-diff-coverage-adopt-templates",
+  "date": "2026-07-06T22:19:25.628329Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/diff-coverage-adopt-templates",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-07-07-diff-coverage-adopt-templates"
+}

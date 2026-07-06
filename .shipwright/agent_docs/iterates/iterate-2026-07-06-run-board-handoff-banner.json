@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-06-run-board-handoff-banner",
+  "date": "2026-07-06T22:01:15.265115Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/run-board-handoff-banner",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-07-06-run-board-handoff-banner"
+}

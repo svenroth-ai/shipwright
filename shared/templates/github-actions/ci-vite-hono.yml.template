@@ -96,3 +96,59 @@ jobs:
 
       - name: Run tests
         run: npm test -- --run
+
+  diff-coverage:
+    name: Diff coverage (warn-only gate)
+    # Diff-coverage gate for the client/server monorepo — the % of the CHANGED
+    # lines (vs origin/main) that tests execute. WARN-ONLY: continue-on-error
+    # keeps it non-blocking during the settling window, so an under-tested PR
+    # shows a FAILURE annotation but does NOT block merge yet; flip to hard-block
+    # later (drop continue-on-error) once the real-PR numbers look sane. 80
+    # matches the shipwright reference threshold. Requires `@vitest/coverage-v8`
+    # as a devDependency in BOTH client + server (the coverage provider matching
+    # your vitest major). diff-cover resolves each package's paths natively via
+    # its cobertura <source> root — no combine/reroot needed. Linux-only single
+    # run (diff-coverage is OS-agnostic). Dormant with the rest of this workflow —
+    # only fires once the pull_request trigger above is activated.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Diff base: compare the PR against origin/main — needs full history.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Client tests with coverage
+        working-directory: client
+        run: |
+          npm ci
+          npm test -- --run --coverage --coverage.provider=v8 \
+            --coverage.reporter=cobertura --coverage.reportsDirectory=./coverage
+
+      - name: Server tests with coverage
+        working-directory: server
+        run: |
+          npm ci
+          npm test -- --run --coverage --coverage.provider=v8 \
+            --coverage.reporter=cobertura --coverage.reportsDirectory=./coverage
+
+      - name: Install uv
+        # Third-party action pinned to a full commit SHA (supply-chain hardening).
+        uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39  # v3
+
+      - name: Diff coverage
+        shell: bash
+        run: |
+          git fetch --no-tags origin main
+          # diff-cover is PINNED (a release can't silently change flags/exit
+          # codes); it exits non-zero iff combined diff-coverage < 80%
+          # (continue-on-error downgrades that to a warning for now).
+          uvx diff-cover@10.3.0 \
+            client/coverage/cobertura-coverage.xml \
+            server/coverage/cobertura-coverage.xml \
+            --compare-branch=origin/main --fail-under=80

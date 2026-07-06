@@ -60,6 +60,53 @@ jobs:
       - name: Unit tests
         run: npx vitest run
 
+  diff-coverage:
+    name: Diff coverage (warn-only gate)
+    # Diff-coverage gate — the % of the CHANGED lines (vs origin/main) that tests
+    # execute. WARN-ONLY: continue-on-error keeps it non-blocking during the
+    # settling window, so an under-tested PR shows a FAILURE annotation but does
+    # NOT block merge yet; flip to hard-block later (drop continue-on-error) once
+    # the real-PR numbers look sane. 80 matches the shipwright reference
+    # threshold. Requires `@vitest/coverage-v8` as a devDependency (the coverage
+    # provider matching your vitest major). Linux-only single run (diff-coverage
+    # is OS-agnostic). Dormant with the rest of this workflow — only fires once
+    # the pull_request trigger above is activated.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Diff base: compare the PR against origin/main — needs full history.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Tests with coverage
+        run: |
+          npx vitest run --coverage --coverage.provider=v8 \
+            --coverage.reporter=cobertura --coverage.reportsDirectory=./coverage
+
+      - name: Install uv
+        # Third-party action pinned to a full commit SHA (supply-chain hardening).
+        uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39  # v3
+
+      - name: Diff coverage
+        shell: bash
+        run: |
+          git fetch --no-tags origin main
+          # diff-cover is PINNED (a release can't silently change flags/exit
+          # codes); it exits non-zero iff diff-coverage < 80% (continue-on-error
+          # downgrades that to a warning during the settling window).
+          uvx diff-cover@10.3.0 coverage/cobertura-coverage.xml \
+            --compare-branch=origin/main --fail-under=80
+
   # Security and deployment jobs run only on Linux:
   #   - Trivy / Gitleaks install via Debian apt-get (Linux-only)
   #   - Deployment runners are Linux-pinned by infrastructure
