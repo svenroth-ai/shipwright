@@ -1,98 +1,82 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-06-grade-g6-projector-calibration",
+    "run_id": "iterate-2026-07-06-diff-coverage-dashboard-honesty",
     "date": "2026-07-06",
     "intent": "change",
-    "complexity": "medium",
+    "complexity": "small",
     "unit": {
-      "passed": 347,
-      "total": 348,
-      "skipped": 1,
-      "framework": "pytest",
-      "note": "grade plugin hermetic suite; 12 empirical deselected"
+      "status": "passed",
+      "passed": 951,
+      "total": 951
     },
     "integration": {
-      "passed": 8,
-      "total": 12,
-      "skipped": 4,
-      "note": "-m empirical launch gate: 5 calibration in band + ordering + 2 edge robust; 4 ci-only skipped"
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
     },
-    "pgtap": null,
-    "e2e": null,
-    "design_fidelity": null,
-    "smoke": null,
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "skipped"
+    },
     "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "justification": "Cold-repo projector calibration (shipwright-grade library + CLI); no web/UI surface. The E2E verification IS the empirical calibration gate: `-m empirical` replays 7 real-OSS fixtures offline (5 calibration in band + ordering, 2 edge robust), a live `--refresh` re-recorded all 7 over the real network+gh, and `grade.py <URL>` graded ky+babel live (also exercising the --depth fix). Dogfood monorepo re-graded A 100 (authoritative).",
+      "justification": "Display-wording fix in the compliance dashboard renderer (_diff_coverage_block.py) — no runtime app surface. The rendered output is verified by the shipwright-compliance test suite (951 tests, incl. test_diff_coverage_block.py which asserts the new Test-Health wording and the display/score decoupling).",
       "exit_code": 0,
-      "tests_run": 347,
-      "timestamp": "2026-07-06T16:30:00Z"
+      "tests_run": 951,
+      "timestamp": "2026-07-06T17:30:00Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "matrix-named github-actions check counts (CI-system app slug)",
+          "behavior": "the diff-coverage line no longer labels itself 'informational, not yet graded' — it renders as a graded Control-Grade Test-Health input",
           "disposition": "tested",
-          "evidence": "test_test_health_signal.py::test_matrix_named_github_actions_check_counts, test_tier2_counts_matrix_named_ci_checks PASSED"
+          "evidence": "plugins/shipwright-compliance/tests/test_diff_coverage_block.py::TestInfoLine (via updated _INFO_MARKER 'diff-coverage (Control-Grade input') PASSED"
         },
         {
-          "behavior": "non-CI app + failing check + legacy Travis StatusContext handling",
+          "behavior": "the n/a line shows no misleading coverage MEASUREMENT (the '>=80%' target in the prefix is a threshold, not a number)",
           "disposition": "tested",
-          "evidence": "test_non_ci_app_check_does_not_count, test_failing_ci_app_check_does_not_count, test_legacy_travis_status_context_counts_by_ci_system_name PASSED"
+          "evidence": "test_diff_coverage_block.py::TestInfoLine::test_na_says_na PASSED (asserts 'of changed lines covered' absent)"
         },
         {
-          "behavior": "denominator = examinable merged PRs; PR-head-commit fallback for on:pull_request CI",
+          "behavior": "the ok line still renders the measured 'X% of changed lines covered'",
           "disposition": "tested",
-          "evidence": "test_tier2_no_rollup_prs_count_toward_denominator, test_tier2_counts_pr_head_checks_when_merge_commit_has_none, test_tier2_unmerged_prs_are_not_examinable PASSED"
+          "evidence": "test_diff_coverage_block.py::TestInfoLine ok-branch tests PASSED"
         },
         {
-          "behavior": "0-passing LOW with test infra, n/a without (has_test_infra=test_files AND has_ci)",
+          "behavior": "display/score decoupling — the rendered Control-Grade block (letter/score/rows) is byte-identical regardless of the display arg; only the one line varies",
           "disposition": "tested",
-          "evidence": "test_zero_passing_scores_low_when_repo_has_test_infra, test_zero_passing_is_na_without_test_infra + committed fixtures superpowers(n/a->B)+request(LOW->F)"
+          "evidence": "test_diff_coverage_block.py display-decoupling tests PASSED"
         },
         {
-          "behavior": "network PR-association parse/tiering + projector override + round-half-up/clamp",
+          "behavior": "gradeable_diff_percent strict extraction (finite [0,100] ok-status only) is unchanged",
           "disposition": "tested",
-          "evidence": "test_provenance_signal.py::* , test_projector_fixtures.py::test_pr_association_ratio_overrides_git_log_count, test_provenance_count_rounds_half_up_and_clamps PASSED"
-        },
-        {
-          "behavior": "self-referential feature filter (+ detector-mislabel robustness)",
-          "disposition": "tested",
-          "evidence": "test_framework_own_source_is_self_referential, test_mislabelled_framework_still_suppressed_by_path_package, test_well_run_app_requirement_surface_survives_filter PASSED + flask fixture frs_total=0"
-        },
-        {
-          "behavior": "URL clone fetches >= Caps.max_commits history (not --depth 1)",
-          "disposition": "tested",
-          "evidence": "test_clone.py::test_run_clone_fetches_history_not_depth_one PASSED"
-        },
-        {
-          "behavior": "dogfood: authoritative grade never runs the projection (monorepo A)",
-          "disposition": "tested",
-          "evidence": "test_authoritative.py::test_authoritative_grade_never_runs_the_projection PASSED + live monorepo A 100 authoritative"
-        },
-        {
-          "behavior": "manifest well-run>deprecated ordering; real repos in band",
-          "disposition": "tested",
-          "evidence": "test_replay_mechanism.py::TestManifest + -m empirical (test_real_repo_grade_in_band, test_calibration_ordering) PASSED"
-        },
-        {
-          "behavior": "live fetch@SHA + gh enrichment (record path)",
-          "disposition": "untestable",
-          "evidence": "covered empirically by the live --refresh of all 7 non-ci-only fixtures",
-          "reason_code": "requires-external-nondeterministic-service"
+          "evidence": "test_diff_coverage_block.py::TestGradeablePercent + test_control_grade_diff_coverage.py PASSED"
         }
       ],
       "counts": {
-        "total": 10,
-        "tested": 9,
-        "untestable": 1,
+        "tested": 5,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 8,
-        "covered_acs": 8
+        "acs": 1,
+        "covered_acs": 1
       }
     }
   },
