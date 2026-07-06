@@ -164,8 +164,10 @@ def run_preflight(project_root: Path, excludes: list[str]) -> dict:
 
 
 def main() -> int:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
+    from cli_paths import unquoted_path
     parser = argparse.ArgumentParser(description="Pre-flight check for /shipwright-adopt")
-    parser.add_argument("--project-root", required=True, type=Path)
+    parser.add_argument("--project-root", required=True, type=unquoted_path)
     parser.add_argument("--exclude-path", action="append", default=[])
     parser.add_argument("--json", action="store_true", help="Output JSON only")
     args = parser.parse_args()

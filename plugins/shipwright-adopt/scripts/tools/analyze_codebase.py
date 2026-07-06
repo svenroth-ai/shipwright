@@ -103,8 +103,10 @@ def analyze(
 
 
 def main() -> int:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
+    from cli_paths import unquoted_path
     parser = argparse.ArgumentParser(description="Analyze a codebase for /shipwright-adopt")
-    parser.add_argument("--project-root", required=True, type=Path)
+    parser.add_argument("--project-root", required=True, type=unquoted_path)
     parser.add_argument("--exclude-path", action="append", default=[])
     parser.add_argument("--profile-hint", type=str, default=None)
     parser.add_argument("--output", type=Path, default=None, help="Write snapshot to file (also prints to stdout)")

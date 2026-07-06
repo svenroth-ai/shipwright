@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-05-diff-coverage-ci-gate"
+run_id: "iterate-2026-07-06-grade-adopt-path-quotes"
 phase: "iterate"
-reason: "iterate: diff-coverage CI gate (Phase 4, warn-only) — post-merge regen"
-timestamp: "2026-07-05T21:23:50.271946+00:00"
+reason: "grade+adopt path input quote-stripping (WebUI #195 analog)"
+timestamp: "2026-07-06T09:55:04.412665+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-05 21:23:50 UTC
+> Auto-generated 2026-07-06 09:55:04 UTC
 
 ## Session Info
 
-- **Session ID**: 0348bc60-3406-4474-a711-c58b3c276418
-- **Timestamp**: 2026-07-05 21:23:50 UTC
-- **Reason**: iterate: diff-coverage CI gate (Phase 4, warn-only) — post-merge regen
+- **Session ID**: 7fe703e6-8b14-4ddc-a9ca-a46c6209404c
+- **Timestamp**: 2026-07-06 09:55:04 UTC
+- **Reason**: grade+adopt path input quote-stripping (WebUI #195 analog)
 
 ## Last Iterate
 
@@ -29,7 +29,7 @@ timestamp: "2026-07-05T21:23:50.271946+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/diff-coverage-ci-gate
+- **Branch**: iterate/grade-adopt-path-quotes
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/diff-coverage-ci-gate
-- **Last Commit**: 0fad7d8b ci(coverage): diff-coverage warn-only --fail-under=80 gate (Phase 4)
+- **Branch**: iterate/grade-adopt-path-quotes
+- **Last Commit**: 8f597beb chore(triage): sweep 2 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-24bc2f3a | work_completed | iterate (grade+adopt input path/URL surrounding-quote stripping (WebUI #195 analog)) | 2026-07-06 |
 | evt-4d586bd2 | work_completed | iterate (grade-authoritative-disclaimer) | 2026-07-05 |
 | evt-17d141eb | work_completed | iterate (diff-coverage CI gate Phase 4 (warn-only): diff-cover --fail-under=80 over the combined coverage.xml, continue-on-error retained (settling window)) | 2026-07-05 |
 | evt-4f205233 | work_completed | iterate (grade-report-audience-copy) | 2026-07-04 |
 | evt-668ccaca | work_completed | iterate (Replace __import__("engine_bridge") with a normal import in shipwright-grade authoritative tests) | 2026-07-05 |
-| evt-cb38a992 | work_completed | iterate (Diff-coverage now moderates the Control-Grade Test-Health dimension: below 80% of changed lines covered => WARN + x0.85 floored penalty (never F-collapse; hard gate is Phase 4). New optional GradeInputs.diff_coverage_percent (default None = grade-neutral for the repo-agnostic grader); the monorepo compliance adapter populates it strict-validated from the gitignored transient.) | 2026-07-05 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 257
-- **Last iterate**: change — grade-authoritative-disclaimer (2026-07-05)
+- **Total work events**: 258
+- **Last iterate**: change — grade+adopt input path/URL surrounding-quote stripping (WebUI #195 analog) (2026-07-06)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
