@@ -1,71 +1,82 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-06-grade-cold-repo-b-cap",
-    "date": "2026-07-06",
+    "run_id": "iterate-2026-07-07-diff-coverage-adopt-templates",
+    "date": "2026-07-07",
     "intent": "change",
     "complexity": "small",
     "unit": {
-      "passed": 348,
-      "total": 349,
-      "skipped": 1,
-      "framework": "pytest"
+      "status": "passed",
+      "passed": 3667,
+      "total": 3667
     },
     "integration": {
-      "passed": 8,
-      "total": 12,
-      "skipped": 4,
-      "note": "-m empirical gate green"
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
     },
-    "pgtap": null,
-    "e2e": null,
-    "design_fidelity": null,
-    "smoke": null,
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "skipped"
+    },
     "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "justification": "Single-field cold-repo projection change (expected_dimensions) + fixture re-refresh; no web/UI surface. E2E = the -m empirical gate (7 real-OSS fixtures, offline replay + live --refresh) + live grade.py of 5 repos + monorepo. Cold grades now cap at B; dogfood monorepo re-graded A 100 (authoritative, reconciliation measured 1.0).",
+      "justification": "Adds a diff-coverage job to two adopt CI templates (shared/templates/github-actions/) + a convention-test update. No target-app runtime surface. The templates are validated by shared/tests/test_ci_workflow_convention.py + the adopt scaffolder test; the runtime pattern itself was proven end-to-end on WebUI PR #205 (identical client/server vitest+diff-cover, merged green in real CI).",
       "exit_code": 0,
-      "tests_run": 348,
-      "timestamp": "2026-07-06T18:15:00Z"
+      "tests_run": 53,
+      "timestamp": "2026-07-07T00:30:00Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "cold projection declares change_reconciliation as the one expected-but-dark control",
+          "behavior": "the nextjs (flat) template ships a warn-only diff-coverage job running pinned diff-cover@10.3.0 --fail-under=80",
           "disposition": "tested",
-          "evidence": "test_projector_fixtures.py::test_cold_projection_declares_reconciliation_expected PASSED"
+          "evidence": "shared/tests/test_ci_workflow_convention.py::TestCITemplatesDiffCoverageGate::test_vitest_templates_carry_a_warn_only_diff_coverage_job PASSED"
         },
         {
-          "behavior": "cold heuristic grade caps at B (89, not A) with a factual verdict",
+          "behavior": "the vite (client/server) template ships the same warn-only diff-coverage job feeding both packages' cobertura reports",
           "disposition": "tested",
-          "evidence": "test_projector_fixtures.py::test_heuristic_grade_caps_at_b_not_a PASSED (grade B, score 89.0, verdict cites reconciliation)"
+          "evidence": "same test (iterates all vitest templates); both templates parse + carry the job"
         },
         {
-          "behavior": "CLI terminal/markdown/json/URL output shows B for a cold well-run repo",
+          "behavior": "the diff-coverage job is Linux-only (ubuntu-latest, excluded from the cross-platform OS-matrix convention)",
           "disposition": "tested",
-          "evidence": "test_grade_cli.py::{test_terminal_format_default,test_markdown_format,test_json_format_is_valid_and_stable,test_url_is_cloned_and_graded} PASSED"
+          "evidence": "TestCITemplatesDiffCoverageGate asserts runs-on==ubuntu-latest + PLATFORM_AGNOSTIC_JOB_PATTERNS includes diff-coverage so TestCITemplatesCrossPlatformMatrix skips it; both PASSED"
         },
         {
-          "behavior": "cap is heuristic-only — authoritative grade unaffected (monorepo stays A)",
+          "behavior": "both templates remain valid YAML, keep their matrix/dormant/permissions invariants, and the adopt scaffolder still copies them",
           "disposition": "tested",
-          "evidence": "test_authoritative.py::test_authoritative_grade_never_runs_the_projection PASSED + live monorepo A 100 authoritative (reconciliation measured 1.0)"
+          "evidence": "test_ci_workflow_convention.py (35) + test_ci_template_registry_completeness.py + plugins/shipwright-adopt/tests/test_ci_workflow_scaffold.py (18) PASSED"
         },
         {
-          "behavior": "empirical fixtures reflect the B-cap; gate green (well-run C..B > deprecated F)",
+          "behavior": "the scaffolded pattern actually reports real diff-coverage end-to-end on a real client/server repo",
           "disposition": "tested",
-          "evidence": "-m empirical (test_real_repo_grade_in_band, test_calibration_ordering) PASSED; express/agent-skills B, superpowers B, flask C, request F"
+          "evidence": "WebUI PR #205 (b449fbe) — the identical client/server vitest+diff-cover pattern merged green in WebUI's real CI (Diff coverage job SUCCESS; locally 100% over a real 6-commit range, both packages resolved)"
         }
       ],
       "counts": {
-        "total": 5,
         "tested": 5,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 5,
-        "covered_acs": 5
+        "acs": 2,
+        "covered_acs": 2
       }
     }
   },
