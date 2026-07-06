@@ -22,6 +22,7 @@ from dataclasses import dataclass
 from dependency_signal import DependencySignal, compute_dependency_signal
 from gh_bridge import GhRunner
 from network_policy import NetworkPolicy
+from provenance_signal import ProvenanceSignal, compute_provenance_signal
 from repo_context import RepoContext
 from security_signal import SecuritySignal, compute_security_signal
 from size_signal import SizeSignal, compute_size_signal
@@ -34,6 +35,7 @@ class SignalBundle:
     security: SecuritySignal
     dependency: DependencySignal
     size: SizeSignal
+    change_provenance: ProvenanceSignal
 
     def grade_input_kwargs(self) -> dict:
         kwargs: dict = {}
@@ -62,6 +64,10 @@ class SignalBundle:
         # static-inventory line (G1 behaviour) is kept.
         if self.test_health.measurable:
             overrides["test_health"] = self.test_health.detail
+        # change_traceability: the network PR-association tier labels its own
+        # provenance source (the git-log fallback keeps the engine's count detail).
+        if self.change_provenance.measurable:
+            overrides["change_traceability"] = self.change_provenance.detail
         return overrides
 
     def provenance(self) -> dict[str, dict]:
@@ -69,7 +75,13 @@ class SignalBundle:
         sec = self.security
         mt = self.size
         dep = self.dependency
+        cp = self.change_provenance
         return {
+            "change_traceability": (
+                {"source": "PR-association (SLSA code-review, network)", "disabled": ()}
+                if cp.measurable else
+                {"source": "git-log PR/issue references (local)",
+                 "disabled": ("pr-association",)}),
             "test_health": (
                 {"source": f"CI test signal — {th.tier}", "disabled": ()}
                 if th.measurable else
@@ -109,11 +121,17 @@ def compute_signals(
         lambda: compute_dependency_signal(context.root),
         DependencySignal(False, 0, 0, 0, "dependency scan unavailable", 0))
     test_health = _safe(
-        lambda: compute_test_health_signal(policy, gh),
+        lambda: compute_test_health_signal(
+            policy, gh,
+            has_test_infra=context.test_file_count > 0 and context.has_ci),
         TestHealthSignal(False, None, None, "static-inventory",
                          "test-health signal unavailable"))
     security = _safe(
         lambda: compute_security_signal(policy, gh),
         SecuritySignal(False, None, "security signal unavailable", ""))
+    change_provenance = _safe(
+        lambda: compute_provenance_signal(policy, gh),
+        ProvenanceSignal(False, None, "git-log", "provenance signal unavailable"))
     return SignalBundle(test_health=test_health, security=security,
-                        dependency=dependency, size=size)
+                        dependency=dependency, size=size,
+                        change_provenance=change_provenance)

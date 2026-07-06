@@ -18,9 +18,10 @@ surface, so every clone is:
 **Residual, accepted for v1 (plan §6 defers sandboxed execution):** the size cap is
 enforced *post*-checkout, so a crafted tree-bomb (few-byte pack, enormous working
 tree) can materialise large on-disk data *during* checkout before the cap measures
-it; the clone **timeout is the only active bound during checkout**. ``--depth 1
---single-branch`` limits it to one commit's tree. This is a bounded disk-DoS on the
-standalone CLI, not code execution or data exfiltration. The caller
+it; the clone **timeout is the only active bound during checkout**. The shallow
+``--depth`` (bounded history) + ``--single-branch`` keep it to one branch's newest
+N commits and a single working tree. This is a bounded disk-DoS on the standalone
+CLI, not code execution or data exfiltration. The caller
 (:func:`resolve_target.open_target`) always clones into a
 ``tempfile.TemporaryDirectory`` that is purged on exit — even on a crash.
 """
@@ -41,6 +42,14 @@ from resolve_target import _SHORTHAND_RE, TargetError  # shared owner/repo patte
 # post-clone byte cap trips. Kept at the budget's order of magnitude.
 CLONE_TIMEOUT_SECONDS = 60
 MAX_CLONE_BYTES = 500_000_000  # 500 MB checkout ceiling (shallow keeps .git small)
+
+# The history projector grades from `git log` (capped at repo_context.Caps.
+# max_commits = 500). A `--depth 1` clone would starve it to a single event and
+# mis-grade every URL target (G5 CLI follow-up) — so a URL grade must fetch the
+# newest N commits, matching the projector's cap, so it equals a local-clone
+# grade. Mirrors tests/empirical/fetch.py `_HISTORY_DEPTH`. Still single-branch /
+# no-blobs-beyond-the-checkout / size- + time-capped.
+_HISTORY_DEPTH = 500
 
 # Scheme allowlist. https:// and an ssh/git@ SCP remote are accepted verbatim; a
 # bare ``owner/repo`` (``_SHORTHAND_RE``, shared from resolve_target) is expanded
@@ -100,7 +109,7 @@ def _run_clone(
     args = [
         "-c", "protocol.ext.allow=never",
         "-c", f"protocol.file.allow={file_policy}",
-        "clone", "--depth", "1", "--no-tags", "--single-branch",
+        "clone", "--depth", str(_HISTORY_DEPTH), "--no-tags", "--single-branch",
         "--no-recurse-submodules", "--", url, str(dest),
     ]
     rc, _out = run_git(args, cwd=dest.parent, timeout=timeout)

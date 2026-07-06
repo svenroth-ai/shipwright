@@ -28,6 +28,7 @@ from authoritative import try_authoritative_grade
 from engine_bridge import Engine, load_engine
 from gh_bridge import GhRunner, run_gh
 from network_policy import NetworkPolicy
+from provenance_signal import provenance_event_count
 from report_model import ReportModel, build_report_model
 from repo_context import RepoContext
 from routing import decide_routing
@@ -109,12 +110,50 @@ def _feature_covered(feature: dict[str, Any], test_texts: list[str]) -> bool:
     return any(any(n in text for n in needles) for text in test_texts)
 
 
-def _count_covered(context: RepoContext) -> int:
-    if not context.features:
+# Web-framework package names the reused route detectors know. A route detected
+# inside a package with one of these names is the framework's OWN source, not an
+# application's requirement — keyed on the PATH, not the detected `framework`
+# LABEL, because the detector mislabels a framework's own shortcut decorators
+# (flask's `@app.get(...)` matches the FastAPI regex → labelled "fastapi"), so a
+# label-only check would let a phantom route in `src/flask/app.py` survive.
+_FRAMEWORK_PACKAGE_NAMES = frozenset({
+    "flask", "fastapi", "django", "starlette", "sanic", "tornado", "aiohttp",
+    "express", "koa", "hapi", "fastify",
+})
+
+
+def _is_self_referential(feature: dict[str, Any]) -> bool:
+    """True when a route was detected inside a web framework's OWN package source.
+
+    A repo that *is* the framework (e.g. flask's `src/flask/*.py`) carries
+    ``@app.route('/')`` / ``@app.get('/')`` in its docstrings and examples — the
+    route regex matches those, inflating the requirement surface with phantom
+    routes that are not the repo's application requirements (G6 root cause 4). The
+    tell is structural: the route's ``source_file`` lives under a package named
+    after a known framework — either the route's own detected ``framework`` label
+    or any known-framework package on the path (robust to detector mislabels). An
+    application that *uses* a framework keeps its routes in its own modules
+    (``app/api.py``), so its requirement surface is never suppressed.
+    """
+    source = str(feature.get("source_file", "")).replace("\\", "/").lower()
+    segments = source.split("/")
+    framework = str(feature.get("framework", "")).strip().lower()
+    if framework and framework in segments:
+        return True
+    return bool(_FRAMEWORK_PACKAGE_NAMES.intersection(segments))
+
+
+def _requirement_features(context: RepoContext) -> list[dict[str, Any]]:
+    """The genuine application requirement surface (self-referential routes dropped)."""
+    return [f for f in context.features if not _is_self_referential(f)]
+
+
+def _count_covered(context: RepoContext, features: list[dict[str, Any]]) -> int:
+    if not features:
         return 0
     scanned = context.test_files[:_MAX_TEST_FILES_SCANNED]
     test_texts = [context.read_text(f, max_bytes=_COVERAGE_READ_BYTES) for f in scanned]
-    return sum(1 for f in context.features if _feature_covered(f, test_texts))
+    return sum(1 for f in features if _feature_covered(f, test_texts))
 
 
 def _local_only_policy() -> NetworkPolicy:
@@ -131,10 +170,19 @@ def project_inputs(
     events = context.events
     events_total = len(events)
     fr_tagged = sum(1 for e in events if e.is_traced)
+    # Change-traceability provenance: the git-log PR/issue-ref count is the offline
+    # fallback, but it anti-correlates with quality (a disciplined squash-merge repo
+    # leaves reference-free subjects — G6 root cause 3). When the network resolves
+    # the faithful PR-association ratio, scale it onto the event count so the engine's
+    # events_with_provenance / events_total dimension gets a truthful input.
     with_provenance = sum(1 for e in events if e.has_provenance)
+    cp = bundle.change_provenance
+    if cp.measurable and cp.ratio is not None and events_total:
+        with_provenance = provenance_event_count(cp.ratio, events_total)
 
-    frs_total = len(context.features)
-    frs_covered = _count_covered(context)
+    requirement_features = _requirement_features(context)
+    frs_total = len(requirement_features)
+    frs_covered = _count_covered(context, requirement_features)
 
     head = context.head_sha[:12] if context.head_sha else "unknown"
     mode = "network-enriched" if network_enabled else "local-only"

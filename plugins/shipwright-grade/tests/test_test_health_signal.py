@@ -8,6 +8,7 @@ from gh_bridge import GhResult
 from junit_xml import JUnitResult
 from network_policy import NetworkPolicy
 from test_health_signal import (
+    _is_successful_test_check,
     _tier1_ci_junit,
     _tier2_scorecard,
     compute_test_health_signal,
@@ -159,3 +160,139 @@ def test_real_tier2_common_test_runners_count():
     def fake(args, *, timeout=30):
         return GhResult(ok=True, stdout=json.dumps(graphql))
     assert _tier2_scorecard(fake, "octo", "repo") == (4, 4)
+
+
+# --- CI-system app-slug recognition (root cause 2: matrix-named checks) ----- #
+
+def _app_pr(name, conclusion, slug):
+    """A merged PR whose merge-commit rollup carries one CheckRun with an app slug."""
+    return {"mergeCommit": {"statusCheckRollup": {"contexts": {"nodes": [
+        {"__typename": "CheckRun", "name": name, "conclusion": conclusion,
+         "checkSuite": {"app": {"slug": slug}}}]}}}}
+
+
+def test_matrix_named_github_actions_check_counts():
+    # flask's real shape: a test leg named "3.12" (no test-word) posted by the
+    # github-actions app, green. OpenSSF Scorecard keys on the CI-system app slug.
+    assert _is_successful_test_check(
+        {"name": "3.12", "conclusion": "SUCCESS",
+         "checkSuite": {"app": {"slug": "github-actions"}}}) is True
+
+
+def test_non_ci_app_check_does_not_count():
+    # socket-security (a security bot, its own app slug) is NOT a CI test system.
+    assert _is_successful_test_check(
+        {"name": "Socket Security", "conclusion": "SUCCESS",
+         "checkSuite": {"app": {"slug": "socket-security"}}}) is False
+
+
+def test_failing_ci_app_check_does_not_count():
+    assert _is_successful_test_check(
+        {"name": "3.12", "conclusion": "FAILURE",
+         "checkSuite": {"app": {"slug": "github-actions"}}}) is False
+
+
+def test_legacy_travis_status_context_counts_by_ci_system_name():
+    # A StatusContext (legacy commit-status API, no checkSuite app) is recognized by
+    # the CI-system name in its `context`; its success field is `state`, not
+    # `conclusion`. Both GitHub enums use "SUCCESS", normalized via .upper().
+    assert _is_successful_test_check(
+        {"context": "continuous-integration/travis-ci/pr", "state": "SUCCESS"}) is True
+    assert _is_successful_test_check(
+        {"context": "continuous-integration/travis-ci/pr", "state": "FAILURE"}) is False
+
+
+def test_tier2_counts_matrix_named_ci_checks():
+    graphql = {"data": {"repository": {"pullRequests": {"nodes": [
+        _app_pr("3.12", "SUCCESS", "github-actions"),
+        _app_pr("Windows", "SUCCESS", "github-actions"),
+        _app_pr("Socket Security", "SUCCESS", "socket-security"),  # not CI
+    ]}}}}
+
+    def fake(args, *, timeout=30):
+        return GhResult(ok=True, stdout=json.dumps(graphql))
+    # 3 examinable merged PRs; the two github-actions legs count, socket-security does not.
+    assert _tier2_scorecard(fake, "octo", "repo") == (2, 3)
+
+
+# --- examinable-merged-PR denominator + low-vs-n/a (decision 2) ------------- #
+
+def _merged_no_checks():
+    """A merged PR with a merge commit but NO CI rollup (deprecated / ungated)."""
+    return {"mergeCommit": {"oid": "abc", "statusCheckRollup": None}}
+
+
+def test_tier2_no_rollup_prs_count_toward_denominator():
+    # request/superpowers: merged PRs exist but nothing gated them → 0/N, not None.
+    graphql = {"data": {"repository": {"pullRequests": {"nodes": [
+        _merged_no_checks(), _merged_no_checks(), _merged_no_checks(),
+    ]}}}}
+
+    def fake(args, *, timeout=30):
+        return GhResult(ok=True, stdout=json.dumps(graphql))
+    assert _tier2_scorecard(fake, "o", "r") == (0, 3)
+
+
+def _pr_head_only(name, conclusion, slug="github-actions"):
+    """A merged PR whose MERGE commit has no rollup but whose PR HEAD commit does
+    (the `on: pull_request`-only CI shape)."""
+    head_check = {"__typename": "CheckRun", "name": name, "conclusion": conclusion,
+                  "checkSuite": {"app": {"slug": slug}}}
+    head_rollup = {"contexts": {"nodes": [head_check]}}
+    return {
+        "mergeCommit": {"oid": "m", "statusCheckRollup": None},
+        "commits": {"nodes": [{"commit": {"statusCheckRollup": head_rollup}}]},
+    }
+
+
+def test_tier2_counts_pr_head_checks_when_merge_commit_has_none():
+    # A well-run repo that runs CI only on the PR head (no push CI on the merge
+    # commit) must NOT read 0 → F. The PR-head rollup is the fallback.
+    graphql = {"data": {"repository": {"pullRequests": {"nodes": [
+        _pr_head_only("3.12", "SUCCESS"),
+        _pr_head_only("3.12", "FAILURE"),  # head ran but failed → not passing
+    ]}}}}
+
+    def fake(args, *, timeout=30):
+        return GhResult(ok=True, stdout=json.dumps(graphql))
+    assert _tier2_scorecard(fake, "octo", "repo") == (1, 2)
+
+
+def test_tier2_unmerged_prs_are_not_examinable():
+    graphql = {"data": {"repository": {"pullRequests": {"nodes": [
+        {"mergeCommit": None},  # no merge commit → not examinable
+        _app_pr("3.12", "SUCCESS", "github-actions"),
+    ]}}}}
+
+    def fake(args, *, timeout=30):
+        return GhResult(ok=True, stdout=json.dumps(graphql))
+    assert _tier2_scorecard(fake, "o", "r") == (1, 1)
+
+
+def test_zero_passing_scores_low_when_repo_has_test_infra():
+    # A repo WITH test infra whose merges show no passing CI test check → LOW (decayed),
+    # not n/a — the honest control-gap signal that ranks deprecated repos below well-run.
+    sig = compute_test_health_signal(
+        _enabled(), lambda *a, **k: None, has_test_infra=True,
+        tier1=lambda *_: None, tier2=lambda *_: (0, 20))
+    assert sig.measurable is True
+    assert (sig.passed, sig.total) == (0, 20)
+    assert sig.tier == "scorecard-checks"
+
+
+def test_zero_passing_is_na_without_test_infra():
+    # A test-less repo (e.g. a README list) must degrade to honest n/a, never F.
+    sig = compute_test_health_signal(
+        _enabled(), lambda *a, **k: None, has_test_infra=False,
+        tier1=lambda *_: None, tier2=lambda *_: (0, 20))
+    assert sig.measurable is False
+    assert sig.tier == "static-inventory"
+
+
+def test_some_passing_scores_even_without_test_infra():
+    # If any CI test check passed, score it regardless of the local inventory read.
+    sig = compute_test_health_signal(
+        _enabled(), lambda *a, **k: None, has_test_infra=False,
+        tier1=lambda *_: None, tier2=lambda *_: (5, 20))
+    assert sig.measurable is True
+    assert (sig.passed, sig.total) == (5, 20)

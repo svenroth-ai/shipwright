@@ -54,7 +54,7 @@
         "-R",
         "pallets/flask",
         "-D",
-        "C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\grade-junit-9233at3g"
+        "C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\grade-junit-b2xmua80"
       ],
       "error": "http_error",
       "ok": false,
@@ -66,7 +66,7 @@
         "api",
         "graphql",
         "-f",
-        "query=query($owner:String!,$repo:String!){repository(owner:$owner,name:$repo){pullRequests(states:MERGED,first:20,orderBy:{field:UPDATED_AT,direction:DESC}){nodes{mergeCommit{statusCheckRollup{contexts(first:30){nodes{__typename ... on CheckRun{name conclusion} ... on StatusContext{context state}}}}}}}}}",
+        "query=query($owner:String!,$repo:String!){repository(owner:$owner,name:$repo){pullRequests(states:MERGED,first:20,orderBy:{field:UPDATED_AT,direction:DESC}){nodes{mergeCommit{statusCheckRollup{contexts(first:30){nodes{__typename ... on CheckRun{name conclusion checkSuite{app{slug}}} ... on StatusContext{context state}}}}}commits(last:1){nodes{commit{statusCheckRollup{contexts(first:30){nodes{__typename ... on CheckRun{name conclusion checkSuite{app{slug}}} ... on StatusContext{context state}}}}}}}}}}}",
         "-f",
         "owner=pallets",
         "-f",
@@ -75,7 +75,7 @@
       "error": "",
       "ok": true,
       "returncode": 0,
-      "stdout_len": 15911
+      "stdout_len": 54961
     },
     {
       "args": [
@@ -99,6 +99,37 @@
       "ok": false,
       "returncode": 1,
       "stdout_len": 205
+    },
+    {
+      "args": [
+        "repo",
+        "view",
+        "pallets/flask",
+        "--json",
+        "defaultBranchRef"
+      ],
+      "error": "",
+      "ok": true,
+      "returncode": 0,
+      "stdout_len": 37
+    },
+    {
+      "args": [
+        "api",
+        "graphql",
+        "-f",
+        "query=query($owner:String!,$repo:String!,$branch:String!){repository(owner:$owner,name:$repo){ref(qualifiedName:$branch){target{... on Commit{history(first:100){nodes{associatedPullRequests(first:1){nodes{merged}}}}}}}}}",
+        "-f",
+        "owner=pallets",
+        "-f",
+        "repo=flask",
+        "-f",
+        "branch=main"
+      ],
+      "error": "",
+      "ok": true,
+      "returncode": 0,
+      "stdout_len": 4831
     }
   ],
   "grade_inputs": {
@@ -109,14 +140,14 @@
     "diff_coverage_percent": null,
     "events_fr_tagged": 24,
     "events_total": 500,
-    "events_with_provenance": 22,
+    "events_with_provenance": 255,
     "expected_dimensions": [],
     "frs_behavior_touched": 0,
-    "frs_covered": 1,
-    "frs_total": 3,
+    "frs_covered": 0,
+    "frs_total": 0,
     "frs_unreconciled": 0,
     "latest_full_suite_date": "",
-    "latest_full_suite_passed": 0,
+    "latest_full_suite_passed": 20,
     "latest_full_suite_total": 20,
     "oversize_file_ratio": 0.21951219512195122,
     "reconciliation_measurable": false,
@@ -127,20 +158,26 @@
   "repo": "pallets/flask",
   "report_extras": {
     "detail_overrides": {
+      "change_traceability": "51% of recent commits introduced by a reviewed, merged PR (SLSA code-review provenance)",
       "dependency_hygiene": "7 dependencies declared; licenses not resolved without install",
       "maintainability": "18/82 source files over 300 LOC",
       "security": "code-scanning unavailable (disabled / 403 / rate-limited)",
-      "test_health": "0/20 recent merged PRs ran a passing test check in CI (Scorecard CI-Tests)"
+      "test_health": "20/20 recent merged PRs ran a passing test check in CI (Scorecard CI-Tests)"
     },
     "events_truncated": true,
     "features_truncated": false,
     "head_sha": "c12a5d874c5a014495eb2db8a73f40037bc813ac",
     "network_enabled": true,
     "network_enrichments": [
-      "PR check-runs (pallets/flask)"
+      "PR check-runs (pallets/flask)",
+      "PR-association (pallets/flask)"
     ],
     "network_note": "network enrichment enabled for pallets/flask (public)",
     "provenance_overrides": {
+      "change_traceability": {
+        "disabled": [],
+        "source": "PR-association (SLSA code-review, network)"
+      },
       "dependency_hygiene": {
         "disabled": [
           "lockfile-sbom"

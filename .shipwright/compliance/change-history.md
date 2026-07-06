@@ -1,29 +1,30 @@
 # Commit Change Log
 
-Generated: 2026-07-06T15:15:57.696094+00:00
-Total commits: 1095
+Generated: 2026-07-06T17:15:35.088015+00:00
+Total commits: 1097
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 315
+    "fix" : 316
     "feat" : 292
     "chore" : 236
     "docs" : 143
     "refactor" : 64
     "test" : 27
-    "ci" : 10
+    "ci" : 11
     "other" : 7
     "build" : 1
 ```
 
 ## Changes by Type
 
-### Fixes (fix) — 315 commits
+### Fixes (fix) — 316 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-06 | grade | calibrate the cold-repo projector so well-run OSS repos no longer grade F (G6) | 5e89da2dd972 |
 | 2026-07-06 | hooks | self-heal the shared/ plugin cache on marketplace installs (#326) | 130df1e1922d |
 | 2026-07-06 | grade,adopt | strip surrounding quotes from path/URL input seams (#325) | c1280089588f |
 | 2026-07-05 | grade | mode-aware honest-ceiling note; drop BP-2 codename (#323) | 79819b0afc30 |
@@ -641,7 +642,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-06 | triage | sweep 1 outbox append(s) into branch | c7e8c868e626 |
+| 2026-07-06 | triage | sweep 1 outbox append(s) into branch | fe144fc03b65 |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
@@ -1127,10 +1128,11 @@ pie title Commit Types
 | 2026-04-11 | — | complete test phase — 299 unit tests, 5 E2E tests, smoke PASS | e843d458942d |
 | 2026-04-11 | e2e | set up Playwright with E2E specs and smoke test results | cba0fd6e9012 |
 
-### CI/CD (ci) — 10 commits
+### CI/CD (ci) — 11 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-06 | coverage | flip the diff-coverage gate to hard-block (< 80% changed-line coverage blocks merge) (#330) | d22111eac8c6 |
 | 2026-07-06 | coverage | prove the diff-coverage gate bites via a tested --fail-under entrypoint (Phase-4 hardening) (#328) | ec73bfffb9de |
 | 2026-07-06 | coverage | diff-coverage warn-only --fail-under=80 gate (Phase 4) (#324) | 881b1281e866 |
 | 2026-07-01 | security | least-privilege GITHUB_TOKEN permissions per workflow (#299) | be0d1e7774c0 |
@@ -1164,7 +1166,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1095 |
+| Total commits | 1097 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1095 |
+| Human-authored commits | 1097 |
 

@@ -4,7 +4,7 @@
       "args": [
         "repo",
         "view",
-        "expressjs/express",
+        "obra/superpowers",
         "--json",
         "visibility"
       ],
@@ -17,23 +17,23 @@
       "args": [
         "repo",
         "view",
-        "expressjs/express",
+        "obra/superpowers",
         "--json",
         "defaultBranchRef"
       ],
       "error": "",
       "ok": true,
       "returncode": 0,
-      "stdout_len": 39
+      "stdout_len": 37
     },
     {
       "args": [
         "run",
         "list",
         "-R",
-        "expressjs/express",
+        "obra/superpowers",
         "-b",
-        "master",
+        "main",
         "-s",
         "completed",
         "-L",
@@ -50,15 +50,15 @@
       "args": [
         "run",
         "download",
-        "28801487963",
+        "28524537954",
         "-R",
-        "expressjs/express",
+        "obra/superpowers",
         "-D",
-        "C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\grade-junit-nt1gtjxg"
+        "C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\grade-junit-f4pcjwoc"
       ],
-      "error": "",
-      "ok": true,
-      "returncode": 0,
+      "error": "http_error",
+      "ok": false,
+      "returncode": 1,
       "stdout_len": 0
     },
     {
@@ -68,32 +68,32 @@
         "-f",
         "query=query($owner:String!,$repo:String!){repository(owner:$owner,name:$repo){pullRequests(states:MERGED,first:20,orderBy:{field:UPDATED_AT,direction:DESC}){nodes{mergeCommit{statusCheckRollup{contexts(first:30){nodes{__typename ... on CheckRun{name conclusion checkSuite{app{slug}}} ... on StatusContext{context state}}}}}commits(last:1){nodes{commit{statusCheckRollup{contexts(first:30){nodes{__typename ... on CheckRun{name conclusion checkSuite{app{slug}}} ... on StatusContext{context state}}}}}}}}}}}",
         "-f",
-        "owner=expressjs",
+        "owner=obra",
         "-f",
-        "repo=express"
+        "repo=superpowers"
       ],
       "error": "",
       "ok": true,
       "returncode": 0,
-      "stdout_len": 144162
+      "stdout_len": 2112
     },
     {
       "args": [
         "repo",
         "view",
-        "expressjs/express",
+        "obra/superpowers",
         "--json",
         "defaultBranchRef"
       ],
       "error": "",
       "ok": true,
       "returncode": 0,
-      "stdout_len": 39
+      "stdout_len": 37
     },
     {
       "args": [
         "api",
-        "/repos/expressjs/express/code-scanning/analyses?per_page=1&ref=refs/heads/master"
+        "/repos/obra/superpowers/code-scanning/analyses?per_page=1&ref=refs/heads/main"
       ],
       "error": "rate_limited",
       "ok": false,
@@ -104,14 +104,14 @@
       "args": [
         "repo",
         "view",
-        "expressjs/express",
+        "obra/superpowers",
         "--json",
         "defaultBranchRef"
       ],
       "error": "",
       "ok": true,
       "returncode": 0,
-      "stdout_len": 39
+      "stdout_len": 37
     },
     {
       "args": [
@@ -120,69 +120,66 @@
         "-f",
         "query=query($owner:String!,$repo:String!,$branch:String!){repository(owner:$owner,name:$repo){ref(qualifiedName:$branch){target{... on Commit{history(first:100){nodes{associatedPullRequests(first:1){nodes{merged}}}}}}}}}",
         "-f",
-        "owner=expressjs",
+        "owner=obra",
         "-f",
-        "repo=express",
+        "repo=superpowers",
         "-f",
-        "branch=master"
+        "branch=main"
       ],
       "error": "",
       "ok": true,
       "returncode": 0,
-      "stdout_len": 5536
+      "stdout_len": 5566
     }
   ],
   "grade_inputs": {
     "bloat_ratchet_delta": null,
     "deps_copyleft": 0,
-    "deps_total": 0,
+    "deps_total": 1,
     "deps_unknown_license": 0,
     "diff_coverage_percent": null,
-    "events_fr_tagged": 324,
+    "events_fr_tagged": 224,
     "events_total": 500,
-    "events_with_provenance": 490,
+    "events_with_provenance": 500,
     "expected_dimensions": [],
     "frs_behavior_touched": 0,
     "frs_covered": 0,
     "frs_total": 0,
     "frs_unreconciled": 0,
     "latest_full_suite_date": "",
-    "latest_full_suite_passed": 19,
-    "latest_full_suite_total": 20,
-    "oversize_file_ratio": 0.13815789473684212,
+    "latest_full_suite_passed": null,
+    "latest_full_suite_total": null,
+    "oversize_file_ratio": 0.375,
     "reconciliation_measurable": false,
     "security_measurable": false,
     "security_open_high_critical": null,
-    "verified_from": "shipwright-grade heuristic @ 04bc62787be9 (network-enriched)"
+    "verified_from": "shipwright-grade heuristic @ d884ae04edeb (network-enriched)"
   },
-  "repo": "expressjs/express",
+  "repo": "obra/superpowers",
   "report_extras": {
     "detail_overrides": {
-      "change_traceability": "98% of recent commits introduced by a reviewed, merged PR (SLSA code-review provenance)",
-      "dependency_hygiene": "47 dependencies declared; licenses not resolved without install",
-      "maintainability": "21/152 source files over 300 LOC",
+      "change_traceability": "100% of recent commits introduced by a reviewed, merged PR (SLSA code-review provenance)",
+      "dependency_hygiene": "0/1 inspected deps without a declared license; 0 copyleft",
+      "maintainability": "6/16 source files over 300 LOC",
       "security": "code-scanning unavailable (disabled / 403 / rate-limited)",
-      "test_health": "19/20 recent merged PRs ran a passing test check in CI (Scorecard CI-Tests)"
+      "test_health": "52 test files across 1 framework (unknown framework) — present, not executed"
     },
     "events_truncated": true,
     "features_truncated": false,
-    "head_sha": "04bc62787be974874bc1467b23606c36bc9779ba",
+    "head_sha": "d884ae04edebef577e82ff7c4e143debd0bbec99",
     "network_enabled": true,
     "network_enrichments": [
-      "PR check-runs (expressjs/express)",
-      "PR-association (expressjs/express)"
+      "PR-association (obra/superpowers)"
     ],
-    "network_note": "network enrichment enabled for expressjs/express (public)",
+    "network_note": "network enrichment enabled for obra/superpowers (public)",
     "provenance_overrides": {
       "change_traceability": {
         "disabled": [],
         "source": "PR-association (SLSA code-review, network)"
       },
       "dependency_hygiene": {
-        "disabled": [
-          "lockfile-sbom"
-        ],
-        "source": "47 dependencies declared; licenses not resolved without install"
+        "disabled": [],
+        "source": "lockfile → SBOM license resolution (local)"
       },
       "maintainability": {
         "disabled": [],
@@ -195,8 +192,11 @@
         "source": "code-scanning unavailable (disabled / 403 / rate-limited)"
       },
       "test_health": {
-        "disabled": [],
-        "source": "CI test signal — scorecard-checks"
+        "disabled": [
+          "ci-junit-pass-ratio",
+          "scorecard-check-runs"
+        ],
+        "source": "static test inventory — present, not executed"
       }
     },
     "routing": {
@@ -204,9 +204,9 @@
       "reason": "no .shipwright/ directory",
       "state": "absent"
     },
-    "static_test_inventory": "117 test files across 1 framework (mocha) — present, not executed; CI workflow present",
-    "target_display": "expressjs/express"
+    "static_test_inventory": "52 test files across 1 framework (unknown framework) — present, not executed",
+    "target_display": "obra/superpowers"
   },
   "schema_version": 1,
-  "sha": "04bc62787be974874bc1467b23606c36bc9779ba"
+  "sha": "d884ae04edebef577e82ff7c4e143debd0bbec99"
 }

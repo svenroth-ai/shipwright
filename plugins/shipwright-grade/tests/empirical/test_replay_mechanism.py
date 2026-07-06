@@ -67,10 +67,15 @@ class TestManifest:
                 assert bands == frozenset()
 
     def test_calibration_entries_span_the_range(self):
+        # G6 calibration: cold-repo signals order WELL-RUN > DEPRECATED, so the
+        # required spread is exemplary (well-run) + poor (deprecated); the middle
+        # `average` tier stays in the vocabulary but is optional (the fixes make the
+        # A-vs-B/C split a per-repo band, not a separate tier). The ordering gate
+        # (assert_ordering) still needs both ends present to bite.
         data = yaml.safe_load(_MANIFEST.read_text(encoding="utf-8"))
         tiers = {t for e in data["repos"] for t in (e.get("tags") or [])
                  if t in ("exemplary", "average", "poor")}
-        assert {"exemplary", "average", "poor"} <= tiers, "need the full calibration spread"
+        assert {"exemplary", "poor"} <= tiers, "need both ends of the calibration spread"
 
     def test_calibration_bands_listed_best_to_worst(self):
         """Calibration entries are ordered exemplary → poor by their best band."""

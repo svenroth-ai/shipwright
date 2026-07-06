@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dependency_signal import DependencySignal
+from provenance_signal import ProvenanceSignal
 from security_signal import SecuritySignal
 from signal_bundle import SignalBundle
 from size_signal import SizeSignal
@@ -16,6 +17,9 @@ def _lit_bundle() -> SignalBundle:
                                 "github-code-scanning"),
         dependency=DependencySignal(True, 10, 1, 0, "1/10 undeclared; 0 copyleft", 3),
         size=SizeSignal(True, 0.2, 2, 10, "2/10 source files over 300 LOC", False),
+        change_provenance=ProvenanceSignal(
+            True, 0.6, "pr-association", "60% of recent commits introduced by a "
+            "reviewed, merged PR (SLSA code-review provenance)"),
     )
 
 
@@ -25,6 +29,8 @@ def _na_bundle() -> SignalBundle:
         security=SecuritySignal(False, None, "no code-scanning ingested (local-only)", ""),
         dependency=DependencySignal(False, 0, 0, 0, "no dependency manifest", 0),
         size=SizeSignal(False, None, 0, 0, "no source files to size", False),
+        change_provenance=ProvenanceSignal(
+            False, None, "git-log", "git-log PR/issue references only"),
     )
 
 
@@ -63,6 +69,14 @@ class TestDetailOverrides:
         # A static-inventory (n/a) test-health leaves the projector's line intact.
         assert "test_health" not in _na_bundle().detail_overrides()
 
+    def test_network_change_provenance_labels_source(self):
+        ov = _lit_bundle().detail_overrides()
+        assert "reviewed, merged PR" in ov["change_traceability"]
+
+    def test_git_log_fallback_leaves_change_traceability_to_engine(self):
+        # The git-log fallback keeps the engine's own "N/M changes linked" detail.
+        assert "change_traceability" not in _na_bundle().detail_overrides()
+
 
 class TestProvenance:
     def test_lit_dims_clear_disabled_enrichments(self):
@@ -76,3 +90,8 @@ class TestProvenance:
         assert prov["security"]["disabled"] == ("code-scanning-sarif",)
         assert prov["dependency_hygiene"]["disabled"] == ("lockfile-sbom",)
         assert prov["test_health"]["disabled"]  # non-empty
+
+    def test_change_traceability_provenance_tiers(self):
+        assert "PR-association" in _lit_bundle().provenance()["change_traceability"]["source"]
+        na = _na_bundle().provenance()["change_traceability"]
+        assert na["disabled"] == ("pr-association",)
