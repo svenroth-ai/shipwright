@@ -44,6 +44,24 @@ class ProjectionExtras:
     detail_overrides: dict[str, str]
 
 
+@dataclass(frozen=True)
+class GradeComputation:
+    """A grade result plus the pre-engine intermediates the empirical harness
+    (G5) records for offline record/replay.
+
+    ``grade_inputs`` / ``report_extras`` are ``None`` for an **authoritative**
+    grade (built from the target's own records, not a projected ``GradeInputs``);
+    the empirical set is external OSS, so it is always heuristic and both are
+    populated. ``report_extras`` holds exactly the ``build_report_model``
+    side-inputs, so a cached ``GradeInputs`` re-grades to the identical model
+    offline.
+    """
+
+    report: ReportModel
+    grade_inputs: Any | None
+    report_extras: dict[str, Any] | None
+
+
 def _frameworks(context: RepoContext) -> list[str]:
     seen: list[str] = []
     for layer in ("unit", "integration", "e2e", "db"):
@@ -157,7 +175,26 @@ def grade_context(
     """Full pipeline: signals → project → grade (engine unchanged) → view-model.
 
     ``policy`` defaults to **local-only** (no network); ``grade.py`` passes a
-    resolved policy when ``--allow-network`` is set.
+    resolved policy when ``--allow-network`` is set. Thin wrapper over
+    :func:`grade_context_captured` — the public return is the ``.report`` field,
+    byte-identical to the pre-G5 behaviour (see ``test_projector_capture``).
+    """
+    return grade_context_captured(context, policy=policy, gh=gh).report
+
+
+def grade_context_captured(
+    context: RepoContext,
+    *,
+    policy: NetworkPolicy | None = None,
+    gh: GhRunner | None = None,
+) -> GradeComputation:
+    """Grade ``context`` and also expose the pre-engine ``GradeInputs`` + the
+    ``build_report_model`` side-inputs, so the empirical harness (G5) can record
+    a repo's projection once and re-grade it **offline** on replay.
+
+    An authoritative grade returns ``grade_inputs=None`` / ``report_extras=None``
+    (it is not a projected ``GradeInputs``); the recorder rejects that case
+    explicitly rather than caching a divergent shape.
     """
     engine = load_engine()
     policy = policy or _local_only_policy()
@@ -171,23 +208,43 @@ def grade_context(
     if routing.detected_mode == "authoritative":
         authoritative = try_authoritative_grade(context, engine, routing)
         if authoritative is not None:
-            return authoritative
+            return GradeComputation(
+                report=authoritative, grade_inputs=None, report_extras=None)
 
     bundle = compute_signals(context, policy, gh)
     inputs, extras = project_inputs(
         context, engine, bundle, network_enabled=policy.enabled)
     report = engine.compute_grade(inputs)
-    return build_report_model(
+    report_extras: dict[str, Any] = {
+        "target_display": context.root.name or "repository",
+        "head_sha": context.head_sha or "",
+        "events_truncated": context.events_truncated,
+        "features_truncated": context.features_truncated,
+        "detail_overrides": extras.detail_overrides,
+        "static_test_inventory": extras.static_test_inventory,
+        "provenance_overrides": bundle.provenance(),
+        "network_enabled": policy.enabled,
+        "network_note": policy.note,
+        "network_enrichments": list(policy.enrichments),
+        "routing": {
+            "effective_mode": routing.effective_mode,
+            "state": routing.state,
+            "reason": routing.reason,
+        },
+    }
+    model = build_report_model(
         grade_report=report,
         routing=routing,
-        target_display=context.root.name or "repository",
-        head_sha=context.head_sha,
-        events_truncated=context.events_truncated,
-        features_truncated=context.features_truncated,
-        detail_overrides=extras.detail_overrides,
-        static_test_inventory=extras.static_test_inventory,
-        provenance_overrides=bundle.provenance(),
-        network_enabled=policy.enabled,
-        network_note=policy.note,
-        network_enrichments=tuple(policy.enrichments),
+        target_display=report_extras["target_display"],
+        head_sha=report_extras["head_sha"],
+        events_truncated=report_extras["events_truncated"],
+        features_truncated=report_extras["features_truncated"],
+        detail_overrides=report_extras["detail_overrides"],
+        static_test_inventory=report_extras["static_test_inventory"],
+        provenance_overrides=report_extras["provenance_overrides"],
+        network_enabled=report_extras["network_enabled"],
+        network_note=report_extras["network_note"],
+        network_enrichments=tuple(report_extras["network_enrichments"]),
     )
+    return GradeComputation(
+        report=model, grade_inputs=inputs, report_extras=report_extras)

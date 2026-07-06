@@ -1,0 +1,175 @@
+{
+  "gh_audit": [
+    {
+      "args": [
+        "repo",
+        "view",
+        "pallets/flask",
+        "--json",
+        "visibility"
+      ],
+      "error": "",
+      "ok": true,
+      "returncode": 0,
+      "stdout_len": 24
+    },
+    {
+      "args": [
+        "repo",
+        "view",
+        "pallets/flask",
+        "--json",
+        "defaultBranchRef"
+      ],
+      "error": "",
+      "ok": true,
+      "returncode": 0,
+      "stdout_len": 37
+    },
+    {
+      "args": [
+        "run",
+        "list",
+        "-R",
+        "pallets/flask",
+        "-b",
+        "main",
+        "-s",
+        "completed",
+        "-L",
+        "1",
+        "--json",
+        "databaseId"
+      ],
+      "error": "",
+      "ok": true,
+      "returncode": 0,
+      "stdout_len": 29
+    },
+    {
+      "args": [
+        "run",
+        "download",
+        "28760262889",
+        "-R",
+        "pallets/flask",
+        "-D",
+        "C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\grade-junit-9233at3g"
+      ],
+      "error": "http_error",
+      "ok": false,
+      "returncode": 1,
+      "stdout_len": 0
+    },
+    {
+      "args": [
+        "api",
+        "graphql",
+        "-f",
+        "query=query($owner:String!,$repo:String!){repository(owner:$owner,name:$repo){pullRequests(states:MERGED,first:20,orderBy:{field:UPDATED_AT,direction:DESC}){nodes{mergeCommit{statusCheckRollup{contexts(first:30){nodes{__typename ... on CheckRun{name conclusion} ... on StatusContext{context state}}}}}}}}}",
+        "-f",
+        "owner=pallets",
+        "-f",
+        "repo=flask"
+      ],
+      "error": "",
+      "ok": true,
+      "returncode": 0,
+      "stdout_len": 15911
+    },
+    {
+      "args": [
+        "repo",
+        "view",
+        "pallets/flask",
+        "--json",
+        "defaultBranchRef"
+      ],
+      "error": "",
+      "ok": true,
+      "returncode": 0,
+      "stdout_len": 37
+    },
+    {
+      "args": [
+        "api",
+        "/repos/pallets/flask/code-scanning/analyses?per_page=1&ref=refs/heads/main"
+      ],
+      "error": "rate_limited",
+      "ok": false,
+      "returncode": 1,
+      "stdout_len": 205
+    }
+  ],
+  "grade_inputs": {
+    "bloat_ratchet_delta": null,
+    "deps_copyleft": 0,
+    "deps_total": 0,
+    "deps_unknown_license": 0,
+    "diff_coverage_percent": null,
+    "events_fr_tagged": 24,
+    "events_total": 500,
+    "events_with_provenance": 22,
+    "expected_dimensions": [],
+    "frs_behavior_touched": 0,
+    "frs_covered": 1,
+    "frs_total": 3,
+    "frs_unreconciled": 0,
+    "latest_full_suite_date": "",
+    "latest_full_suite_passed": 0,
+    "latest_full_suite_total": 20,
+    "oversize_file_ratio": 0.21951219512195122,
+    "reconciliation_measurable": false,
+    "security_measurable": false,
+    "security_open_high_critical": null,
+    "verified_from": "shipwright-grade heuristic @ c12a5d874c5a (network-enriched)"
+  },
+  "repo": "pallets/flask",
+  "report_extras": {
+    "detail_overrides": {
+      "dependency_hygiene": "7 dependencies declared; licenses not resolved without install",
+      "maintainability": "18/82 source files over 300 LOC",
+      "security": "code-scanning unavailable (disabled / 403 / rate-limited)",
+      "test_health": "0/20 recent merged PRs ran a passing test check in CI (Scorecard CI-Tests)"
+    },
+    "events_truncated": true,
+    "features_truncated": false,
+    "head_sha": "c12a5d874c5a014495eb2db8a73f40037bc813ac",
+    "network_enabled": true,
+    "network_enrichments": [
+      "PR check-runs (pallets/flask)"
+    ],
+    "network_note": "network enrichment enabled for pallets/flask (public)",
+    "provenance_overrides": {
+      "dependency_hygiene": {
+        "disabled": [
+          "lockfile-sbom"
+        ],
+        "source": "7 dependencies declared; licenses not resolved without install"
+      },
+      "maintainability": {
+        "disabled": [],
+        "source": "static oversize-file ratio (local)"
+      },
+      "security": {
+        "disabled": [
+          "code-scanning-sarif"
+        ],
+        "source": "code-scanning unavailable (disabled / 403 / rate-limited)"
+      },
+      "test_health": {
+        "disabled": [],
+        "source": "CI test signal — scorecard-checks"
+      }
+    },
+    "routing": {
+      "effective_mode": "heuristic",
+      "reason": "no .shipwright/ directory",
+      "state": "absent"
+    },
+    "static_test_inventory": "68 test files across 1 framework (pytest) — present, not executed; CI workflow present",
+    "target_display": "pallets/flask"
+  },
+  "schema_version": 1,
+  "sha": "c12a5d874c5a014495eb2db8a73f40037bc813ac"
+}

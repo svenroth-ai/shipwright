@@ -1,18 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-06-shared-cache-selfheal",
+    "run_id": "iterate-2026-07-06-grade-g5-empirical-suite",
     "date": "2026-07-06",
-    "intent": "change",
+    "intent": "feature",
     "complexity": "medium",
     "unit": {
       "status": "passed",
-      "passed": 3684,
-      "total": 3684
+      "passed": 313,
+      "total": 314
     },
     "integration": {
-      "status": "passed",
-      "passed": 52,
-      "total": 52
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -35,7 +35,7 @@
     "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "justification": "Framework-internal change: a plugin-cache delivery self-heal SessionStart hook (ensure_shared_cache) vendored across 12 plugins. There is no target-app runtime surface to exercise; the fs boundary (read marketplace clone -> write cache shared/) is exercised end-to-end by the integration test which runs the actual hook as a subprocess against a simulated cache+clone layout.",
+      "justification": "Test-harness (empirical calibration suite) + an opt-in CI workflow + an additive library capture seam (grade_context_captured). No application runtime surface (the grader is a read-only CLI/library, no UI/API/store/SSE). Verified by the full grade plugin suite (313 passed) AND an end-to-end LIVE empirical record of the proof subset (flask/express/request) over the real network + gh, which exercised fetch@SHA + projection + gh enrichment + record/replay + gallery. E2E has no application surface to drive.",
       "exit_code": 0,
       "tests_run": 0,
       "timestamp": "2026-07-06T13:00:00Z"
@@ -44,68 +44,108 @@
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "bootstrap heals a missing cache shared/ by mirroring the marketplace full-clone",
-          "category": "integration",
+          "behavior": "grade_context returns a ReportModel byte-identical to grade_context_captured(...).report after the additive capture refactor",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ensure_shared_cache_integration.py::test_heals_missing_shared_from_marketplace_clone"
+          "evidence": "test_projector_capture::test_grade_context_delegates_to_capture_identically"
         },
         {
-          "behavior": "bootstrap is an idempotent no-op when shared/ is already present",
-          "category": "integration",
+          "behavior": "captured GradeInputs round-trips through JSON and re-grades to the same grade/score",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ensure_shared_cache_integration.py::test_idempotent_noop_when_shared_already_present"
+          "evidence": "test_projector_capture::test_grade_inputs_round_trip_through_json_reproduces_grade; test_run_empirical::test_fixture_json_round_trips_byte_stable"
         },
         {
-          "behavior": "bootstrap is fail-open (exit 0) with an actionable message when no marketplace clone exists",
-          "category": "integration",
+          "behavior": "grade_from_fixture replays a recorded fixture OFFLINE to the identical live ReportModel",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ensure_shared_cache_integration.py::test_fail_open_when_no_marketplace_clone"
+          "evidence": "test_run_empirical::test_project_fixture_replays_to_identical_report"
         },
         {
-          "behavior": "bootstrap is a no-op in the --plugin-dir dev model (shared/ is the real repo dir)",
-          "category": "integration",
+          "behavior": "a fixture schema_version mismatch raises an actionable FixtureVersionError (refresh required)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ensure_shared_cache_integration.py::test_dev_plugin_dir_model_is_noop"
+          "evidence": "test_run_empirical::test_schema_version_mismatch_is_actionable"
         },
         {
-          "behavior": "the mirror excludes __pycache__/.pyc/.venv/.git",
+          "behavior": "parse_band_set parses single bands and ranges (A/B) and empty (edge)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ensure_shared_cache_integration.py::test_heals_... asserts no __pycache__ in the healed tree"
+          "evidence": "test_run_empirical::test_parse_band_set_ranges"
         },
         {
-          "behavior": "the canonical bootstrap is vendored byte-identically into every hook-bearing plugin (forward drift)",
+          "behavior": "assert_ordering enforces exemplary > average > poor across tiers (n/a-safe, tie-safe within tier)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ensure_shared_cache_vendored.py::test_forward_every_hook_bearing_plugin_has_identical_copy"
+          "evidence": "test_run_empirical::test_ordering_holds_exemplary_over_poor, test_run_offline_pass_path_and_gallery"
         },
         {
-          "behavior": "the bootstrap is registered as the FIRST SessionStart hook in every hook-bearing plugin",
+          "behavior": "the recorded gh audit log is redacted (no raw stdout body) and RecordingGh passes input_text through",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ensure_shared_cache_vendored.py::test_forward_registered_as_first_session_start_hook"
+          "evidence": "test_run_empirical::test_gh_audit_log_is_redacted, test_recording_gh_passes_through_input_and_redacts"
         },
         {
-          "behavior": "no orphan vendored copy exists in a non-hook-bearing plugin (reverse drift)",
+          "behavior": "a no-signal repo (no tests/CI) grades without crashing; unmeasurable dims stay honest n/a",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ensure_shared_cache_vendored.py::test_reverse_no_orphan_vendored_copies"
+          "evidence": "test_run_empirical::test_no_signal_repo_grades_with_honest_na"
         },
         {
-          "behavior": "the hook-bearing plugin set is discovered from disk (>=10)",
+          "behavior": "the runner replays a tmp cache, asserts bands + ordering, writes the gallery index + per-repo report",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ensure_shared_cache_vendored.py::test_hook_bearing_set_is_discovered"
+          "evidence": "test_run_empirical::test_run_offline_pass_path_and_gallery, test_main_offline_smoke_renders_selected_report"
         },
         {
-          "behavior": "the canonical source exists and is non-trivial",
+          "behavior": "a pinned entry with no fixture FAILS in strict/CI (no green-but-empty gate) and loud-skips locally",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ensure_shared_cache_vendored.py::test_canonical_source_exists"
+          "evidence": "test_run_empirical::test_run_strict_missing_fixture_fails"
+        },
+        {
+          "behavior": "record_repo/project_fixture rejects an authoritative target (grade_inputs None) with a clear error",
+          "disposition": "tested",
+          "evidence": "test_run_empirical::test_record_rejects_authoritative_target"
+        },
+        {
+          "behavior": "open_target_at_sha rejects a non-40-hex SHA before any network call",
+          "disposition": "tested",
+          "evidence": "test_run_empirical::test_fetch_rejects_non_sha_before_network"
+        },
+        {
+          "behavior": "preflight_network flags missing git, unauthenticated gh, and returns ready when both present",
+          "disposition": "tested",
+          "evidence": "test_run_empirical::test_preflight_network_* (3 cases)"
+        },
+        {
+          "behavior": "repos.yaml manifest is well-formed, pins real SHAs, spans the calibration spread, lists best-to-worst",
+          "disposition": "tested",
+          "evidence": "test_replay_mechanism::TestManifest (4 tests)"
+        },
+        {
+          "behavior": "fetch@SHA (depth-500 shallow + treeless-clone fallback) fetches a real repo at a pinned commit",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "evidence": "covered empirically by the live proof-subset record (flask/express/request fetched + graded successfully this session)"
+        },
+        {
+          "behavior": "record_repo remote fetch + gh enrichment against a real public repo",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "evidence": "covered empirically by the live proof-subset record"
+        },
+        {
+          "behavior": "the opt-in CI launch-gate workflow (grade-empirical.yml) records + asserts + uploads the gallery",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "evidence": "GitHub Actions runner; validated on workflow_dispatch. Shell hardened against input injection; least-privilege token."
+        },
+        {
+          "behavior": "the per-repo HTML report render (render_html) content",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "evidence": "G3 tests/test_html_report.py + test_html_security.py cover render_html; gallery only wraps it"
         }
       ],
       "counts": {
-        "tested": 10,
-        "untestable": 0,
+        "tested": 14,
+        "untestable": 4,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 3,
-        "covered_acs": 3
+        "acs": 7,
+        "covered_acs": 7
       }
     }
   },

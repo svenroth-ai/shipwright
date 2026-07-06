@@ -13,9 +13,10 @@ import pytest
 yaml = pytest.importorskip("yaml")
 
 import replay  # noqa: E402
+from calibration import BAND_ORDER, parse_band_set  # noqa: E402
 
 _MANIFEST = Path(__file__).resolve().parent / "repos.yaml"
-_VALID_BANDS = {"A", "B", "C", "D", "F"}
+_VALID_BANDS = set(BAND_ORDER)
 
 
 class TestReplayCache:
@@ -53,17 +54,36 @@ class TestManifest:
     def test_manifest_parses_with_required_fields(self):
         data = yaml.safe_load(_MANIFEST.read_text(encoding="utf-8"))
         repos = data["repos"]
-        assert 2 <= len(repos) <= 5
+        assert 4 <= len(repos) <= 20  # calibration spread + edge cases
         for entry in repos:
             for field in ("name", "url", "pinned_sha", "expected_band", "rationale", "tags"):
                 assert field in entry, f"{entry.get('name')} missing {field}"
-            assert entry["expected_band"] in _VALID_BANDS
+            # A calibration entry names a band (or range like "A/B"); an edge
+            # entry carries `expected_band: null` (robustness only, no band).
+            bands = parse_band_set(entry["expected_band"])
+            if entry["expected_band"]:
+                assert bands and bands <= _VALID_BANDS, entry["name"]
+            else:
+                assert bands == frozenset()
 
-    def test_expected_bands_encode_descending_ordering(self):
+    def test_calibration_entries_span_the_range(self):
         data = yaml.safe_load(_MANIFEST.read_text(encoding="utf-8"))
-        order = {b: i for i, b in enumerate(["A", "B", "C", "D", "F"])}
-        bands = [order[e["expected_band"]] for e in data["repos"]]
-        assert bands == sorted(bands), "manifest should list exemplary → poor"
+        tiers = {t for e in data["repos"] for t in (e.get("tags") or [])
+                 if t in ("exemplary", "average", "poor")}
+        assert {"exemplary", "average", "poor"} <= tiers, "need the full calibration spread"
+
+    def test_calibration_bands_listed_best_to_worst(self):
+        """Calibration entries are ordered exemplary → poor by their best band."""
+        data = yaml.safe_load(_MANIFEST.read_text(encoding="utf-8"))
+        ranks = [min(BAND_ORDER[b] for b in parse_band_set(e["expected_band"]))
+                 for e in data["repos"] if e.get("expected_band")]
+        assert ranks == sorted(ranks), "list calibration repos exemplary → poor"
+
+    def test_pinned_shas_are_real(self):
+        """Every entry pins a real 40-hex SHA (no leftover G5 placeholder)."""
+        data = yaml.safe_load(_MANIFEST.read_text(encoding="utf-8"))
+        for entry in data["repos"]:
+            assert replay.is_pinned_sha(str(entry["pinned_sha"])), entry["name"]
 
     def test_fixtures_dir_exists(self):
         assert (Path(__file__).resolve().parent / "fixtures").is_dir()

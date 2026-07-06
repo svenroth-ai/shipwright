@@ -1,0 +1,80 @@
+name: grade-empirical (launch gate)
+
+# Opt-in, manual-only. The empirical calibration suite grades REAL OSS repos
+# pinned to a commit SHA and asserts grade bands + relative ordering. It needs
+# network + a gh token, so it is NEVER part of the hermetic PR gate (the grade
+# plugin's pytest `addopts = -m 'not empirical'` already excludes it from the
+# per-plugin CI loop). This job is the documented **public-launch gate**: a lead
+# magnet that mis-grades real repos is worse than none, so launch waits on green.
+on:
+  workflow_dispatch:
+    inputs:
+      refresh:
+        description: "Re-record fixtures from the network (off = replay committed)"
+        type: boolean
+        default: true
+      repos:
+        description: "Comma-separated name substrings to select (blank = all)"
+        type: string
+        default: ""
+
+# Least-privilege GITHUB_TOKEN (OpenSSF Scorecard Token-Permissions): this job
+# only reads — checkout + public GitHub metadata/CI for the graded repos. The gh
+# token reads THIS repo's contents and public data of the external targets;
+# external code-scanning is not readable and degrades to an honest n/a.
+permissions:
+  contents: read
+
+concurrency:
+  group: grade-empirical-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  empirical:
+    name: Empirical calibration (real OSS repos)
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        # Third-party action pinned to a full commit SHA (supply-chain
+        # hardening); the trailing comment records the human-readable tag.
+        uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39  # v3
+        with:
+          enable-cache: true
+
+      - name: Install Python
+        run: uv python install 3.11
+
+      - name: Run empirical calibration gate
+        working-directory: plugins/shipwright-grade
+        env:
+          # `--strict` is auto-on under CI: a pinned entry with no fixture is a
+          # FAILURE (a green-but-empty launch gate is a false pass).
+          CI: "true"
+          SHIPWRIGHT_GRADE_ALLOW_NETWORK: "1"
+          # Dispatch inputs go through the environment (never interpolated into
+          # the shell), so a crafted input cannot inject a command.
+          IN_REFRESH: ${{ inputs.refresh }}
+          IN_REPOS: ${{ inputs.repos }}
+        run: |
+          set -e
+          # Gallery writes to the gitignored default (tests/empirical/.gallery).
+          args=(--include-ci-only)
+          if [ "$IN_REFRESH" = "true" ]; then args+=(--refresh); fi
+          if [ -n "$IN_REPOS" ]; then args+=(--repos "$IN_REPOS"); fi
+          uv run --with pytest --with pytest-mock \
+            tests/empirical/run_empirical.py "${args[@]}"
+
+      - name: Upload report gallery
+        # Always upload (even on a red gate) so the mis-grade is inspectable. The
+        # gallery holds only the index + curated/failure reports (size-capped).
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: grade-empirical-gallery
+          path: plugins/shipwright-grade/tests/empirical/.gallery
+          retention-days: 30
+          if-no-files-found: warn
