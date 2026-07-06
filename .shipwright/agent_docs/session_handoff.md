@@ -1,35 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-06-grade-adopt-path-quotes"
+run_id: "iterate-2026-07-06-shared-cache-selfheal"
 phase: "iterate"
-reason: "grade+adopt path input quote-stripping (WebUI #195 analog)"
-timestamp: "2026-07-06T09:55:04.412665+00:00"
+reason: "self-heal shared/ plugin cache on marketplace installs (vendored SessionStart hook, all 12)"
+timestamp: "2026-07-06T10:21:36.704684+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-06 09:55:04 UTC
+> Auto-generated 2026-07-06 10:21:36 UTC
 
 ## Session Info
 
 - **Session ID**: 7fe703e6-8b14-4ddc-a9ca-a46c6209404c
-- **Timestamp**: 2026-07-06 09:55:04 UTC
-- **Reason**: grade+adopt path input quote-stripping (WebUI #195 analog)
+- **Timestamp**: 2026-07-06 10:21:36 UTC
+- **Reason**: self-heal shared/ plugin cache on marketplace installs (vendored SessionStart hook, all 12)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-05-diff-coverage-ci-gate
-- **Date**: 2026-07-05T21:24:26.737051Z
+- **Run ID**: iterate-2026-07-06-grade-adopt-path-quotes
+- **Date**: 2026-07-06T09:55:28.451735Z
 - **Type**: change
 - **Complexity**: small
-- **Branch**: iterate/diff-coverage-ci-gate
-- **ADR**: iterate-2026-07-05-diff-coverage-ci-gate
+- **Branch**: iterate/grade-adopt-path-quotes
+- **ADR**: iterate-2026-07-06-grade-adopt-path-quotes
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/campaigns/diff-coverage/sub-iterates/4-ci-gate.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/grade-adopt-path-quotes
+- **Branch**: iterate/shared-cache-selfheal
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/grade-adopt-path-quotes
-- **Last Commit**: 8f597beb chore(triage): sweep 2 outbox append(s) into branch
+- **Branch**: iterate/shared-cache-selfheal
+- **Last Commit**: c1280089 fix(grade,adopt): strip surrounding quotes from path/URL input seams (#325)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-ead61d69 | work_completed | iterate (self-heal the shared/ plugin cache on marketplace installs (vendored SessionStart hook, all 12 plugins)) | 2026-07-06 |
 | evt-24bc2f3a | work_completed | iterate (grade+adopt input path/URL surrounding-quote stripping (WebUI #195 analog)) | 2026-07-06 |
 | evt-4d586bd2 | work_completed | iterate (grade-authoritative-disclaimer) | 2026-07-05 |
 | evt-17d141eb | work_completed | iterate (diff-coverage CI gate Phase 4 (warn-only): diff-cover --fail-under=80 over the combined coverage.xml, continue-on-error retained (settling window)) | 2026-07-05 |
 | evt-4f205233 | work_completed | iterate (grade-report-audience-copy) | 2026-07-04 |
-| evt-668ccaca | work_completed | iterate (Replace __import__("engine_bridge") with a normal import in shipwright-grade authoritative tests) | 2026-07-05 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 258
-- **Last iterate**: change — grade+adopt input path/URL surrounding-quote stripping (WebUI #195 analog) (2026-07-06)
+- **Total work events**: 259
+- **Last iterate**: change — self-heal the shared/ plugin cache on marketplace installs (vendored SessionStart hook, all 12 plugins) (2026-07-06)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

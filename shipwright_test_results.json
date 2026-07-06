@@ -1,18 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-06-grade-adopt-path-quotes",
+    "run_id": "iterate-2026-07-06-shared-cache-selfheal",
     "date": "2026-07-06",
     "intent": "change",
-    "complexity": "small",
+    "complexity": "medium",
     "unit": {
       "status": "passed",
-      "passed": 640,
-      "total": 640
+      "passed": 3684,
+      "total": 3684
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 52,
+      "total": 52
     },
     "pgtap": {
       "status": "not_run",
@@ -35,78 +35,77 @@
     "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "justification": "Library/CLI input-sanitisation change (grade open_target seam + adopt --project-root argparse type); no application runtime surface. Verified by new unit tests and the full grade (291) + adopt (349) suites green. E2E is Advisory at small without touches_io_boundary.",
+      "justification": "Framework-internal change: a plugin-cache delivery self-heal SessionStart hook (ensure_shared_cache) vendored across 12 plugins. There is no target-app runtime surface to exercise; the fs boundary (read marketplace clone -> write cache shared/) is exercised end-to-end by the integration test which runs the actual hook as a subprocess against a simulated cache+clone layout.",
       "exit_code": 0,
       "tests_run": 0,
-      "timestamp": "2026-07-06T12:00:00Z"
+      "timestamp": "2026-07-06T13:00:00Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "strip_surrounding_quotes removes a balanced surrounding double OR single quote pair",
+          "behavior": "bootstrap heals a missing cache shared/ by mirroring the marketplace full-clone",
+          "category": "integration",
           "disposition": "tested",
-          "evidence": "grade tests/test_normalize_input.py (17) + tests/test_resolve_target.py regression; adopt tests/test_cli_paths.py (15)"
+          "evidence": "shared/tests/test_ensure_shared_cache_integration.py::test_heals_missing_shared_from_marketplace_clone"
         },
         {
-          "behavior": "an inner apostrophe (o'brien) is preserved; only the surrounding pair is stripped",
+          "behavior": "bootstrap is an idempotent no-op when shared/ is already present",
+          "category": "integration",
           "disposition": "tested",
-          "evidence": "grade tests/test_normalize_input.py (17) + tests/test_resolve_target.py regression; adopt tests/test_cli_paths.py (15)"
+          "evidence": "shared/tests/test_ensure_shared_cache_integration.py::test_idempotent_noop_when_shared_already_present"
         },
         {
-          "behavior": "a lone or mismatched surrounding quote is left untouched",
+          "behavior": "bootstrap is fail-open (exit 0) with an actionable message when no marketplace clone exists",
+          "category": "integration",
           "disposition": "tested",
-          "evidence": "grade tests/test_normalize_input.py (17) + tests/test_resolve_target.py regression; adopt tests/test_cli_paths.py (15)"
+          "evidence": "shared/tests/test_ensure_shared_cache_integration.py::test_fail_open_when_no_marketplace_clone"
         },
         {
-          "behavior": "whitespace is trimmed both outside and inside the quote pair",
+          "behavior": "bootstrap is a no-op in the --plugin-dir dev model (shared/ is the real repo dir)",
+          "category": "integration",
           "disposition": "tested",
-          "evidence": "grade tests/test_normalize_input.py (17) + tests/test_resolve_target.py regression; adopt tests/test_cli_paths.py (15)"
+          "evidence": "shared/tests/test_ensure_shared_cache_integration.py::test_dev_plugin_dir_model_is_noop"
         },
         {
-          "behavior": "empty / whitespace-only / empty-quote-pair collapse to empty string",
+          "behavior": "the mirror excludes __pycache__/.pyc/.venv/.git",
           "disposition": "tested",
-          "evidence": "grade tests/test_normalize_input.py (17) + tests/test_resolve_target.py regression; adopt tests/test_cli_paths.py (15)"
+          "evidence": "shared/tests/test_ensure_shared_cache_integration.py::test_heals_... asserts no __pycache__ in the healed tree"
         },
         {
-          "behavior": "non-str input is returned unchanged (defensive)",
+          "behavior": "the canonical bootstrap is vendored byte-identically into every hook-bearing plugin (forward drift)",
           "disposition": "tested",
-          "evidence": "grade test_normalize_input::test_non_string_returned_unchanged"
+          "evidence": "shared/tests/test_ensure_shared_cache_vendored.py::test_forward_every_hook_bearing_plugin_has_identical_copy"
         },
         {
-          "behavior": "only ONE balanced pair is stripped (nested quotes keep the inner pair)",
+          "behavior": "the bootstrap is registered as the FIRST SessionStart hook in every hook-bearing plugin",
           "disposition": "tested",
-          "evidence": "grade test_normalize_input::test_only_one_pair_stripped"
+          "evidence": "shared/tests/test_ensure_shared_cache_vendored.py::test_forward_registered_as_first_session_start_hook"
         },
         {
-          "behavior": "grade open_target resolves a double/single-quoted local path identically to the plain path",
+          "behavior": "no orphan vendored copy exists in a non-hook-bearing plugin (reverse drift)",
           "disposition": "tested",
-          "evidence": "grade test_normalize_input::TestOpenTargetSanitisesInput (3 cases)"
+          "evidence": "shared/tests/test_ensure_shared_cache_vendored.py::test_reverse_no_orphan_vendored_copies"
         },
         {
-          "behavior": "adopt unquoted_path returns a clean pathlib.Path from a quoted string",
+          "behavior": "the hook-bearing plugin set is discovered from disk (>=10)",
           "disposition": "tested",
-          "evidence": "adopt test_cli_paths::TestUnquotedPath (5 cases)"
+          "evidence": "shared/tests/test_ensure_shared_cache_vendored.py::test_hook_bearing_set_is_discovered"
         },
         {
-          "behavior": "argparse type=unquoted_path strips a quoted --project-root end-to-end",
+          "behavior": "the canonical source exists and is non-trivial",
           "disposition": "tested",
-          "evidence": "adopt test_cli_paths::TestArgparseIntegration (quoted + plain)"
-        },
-        {
-          "behavior": "the 4 adopt CLIs (setup_adopt, analyze_codebase, validate_adoption, seed_adopt_compliance) wire type=unquoted_path",
-          "disposition": "tested",
-          "evidence": "covered by TestArgparseIntegration which exercises the identical one-token argparse mechanism wired into all 4 CLIs; no per-CLI branching logic exists to test"
+          "evidence": "shared/tests/test_ensure_shared_cache_vendored.py::test_canonical_source_exists"
         }
       ],
       "counts": {
-        "tested": 11,
+        "tested": 10,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 2,
-        "covered_acs": 2
+        "acs": 3,
+        "covered_acs": 3
       }
     }
   },

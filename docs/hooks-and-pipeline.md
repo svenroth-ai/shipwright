@@ -472,6 +472,14 @@ USER: paste 'claude --session-id <uuid> --add-dir <root> --name <...> /<phase>'
    |
    v
 SessionStart hooks (in order):
+   0. ensure_shared_cache.py       (marketplace-install self-heal: if the
+                                    ${CLAUDE_PLUGIN_ROOT}/../../shared cache dir
+                                    is missing, mirror it from the marketplace
+                                    full-clone. stdlib-only + fail-open +
+                                    idempotent; plugin-local + vendored so a
+                                    plain `claude plugin install` still delivers
+                                    it, and runs FIRST so every later
+                                    ../../shared/* hook resolves)
    1. capture_session_id.py        (sets SHIPWRIGHT_SESSION_ID, ROOT)
    2. phase_session_start.py       (Discovery via sessionUuid match;
                                     on match: claim-phase-task CAS,
@@ -634,6 +642,43 @@ parallel-fan-out atomicity, marker convergence) + `integration-tests/test_bloat_
 (one block across the 12-plugin fan-out, sequential + parallel, per-session isolation)
 + `integration-tests/test_aggregate_triage_fanout.py` (one regen + 11 dedup-skips
 across the fan-out, sequential + parallel, per-session isolation).
+
+### Shared Hook: ensure_shared_cache.py (marketplace-install self-heal)
+
+**Canonical:** `shared/templates/hooks/ensure_shared_cache.py`, **vendored**
+byte-identically into every hook-bearing plugin's `scripts/hooks/` and invoked as
+the **first** `SessionStart` hook via
+`${CLAUDE_PLUGIN_ROOT}/scripts/hooks/ensure_shared_cache.py`.
+
+**Why it exists.** Every other plugin hook reaches shared code through
+`${CLAUDE_PLUGIN_ROOT}/../../shared/...`, i.e. a sibling `shared/` two levels
+above the plugin root (`.../plugins/cache/shipwright/shared`). But `shared/` is
+not a plugin — `.claude-plugin/marketplace.json` lists only the 14 plugins — so a
+plain `claude plugin install` never copies it into the cache; only the dev script
+`scripts/update-marketplace.sh` creates it. On a fresh end-user install every
+`../../shared/*` hook therefore 404s (fail-open, but noisy — the symptom that
+prompted this hook was `track_tool_calls.py` "can't find its own path" on a fresh
+macOS install).
+
+**What it does.** When the expected `shared/` cache dir is missing, it mirrors it
+from the marketplace **full-clone** (`~/.claude/plugins/marketplaces/<name>/shared`,
+which a marketplace install *does* carry) into the cache. Properties:
+
+- **plugin-local + vendored** — a plugin-local file is the only thing a
+  marketplace install reliably delivers, so the self-heal must not itself live in
+  `shared/`. Drift between the canonical and the 12 copies (and their SessionStart
+  registration) is gated by `shared/tests/test_ensure_shared_cache_vendored.py`
+  (forward + reverse);
+- **stdlib-only** — it can never depend on the very `shared/` it repairs;
+- **fail-open** — any error (incl. no marketplace clone found → an actionable
+  "run `update-marketplace.sh`" stderr note) exits 0, so a session is never blocked;
+- **idempotent** — a sentinel check (`shared/scripts/lib/project_root.py`) makes it
+  a no-op once healed, and in the `--plugin-dir` dev model (where `shared/` is the
+  real repo dir) always.
+
+Composition is pinned by `shared/tests/test_ensure_shared_cache_integration.py`
+(heals a simulated marketplace layout; idempotent no-op; fail-open with no clone;
+dev-model no-op).
 
 ### Shared Hook: capture_session_id.py
 

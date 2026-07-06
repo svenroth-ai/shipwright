@@ -1,0 +1,1 @@
+Fresh marketplace installs now self-heal the shared/ plugin cache on session start: a new vendored ensure_shared_cache SessionStart hook mirrors shared/ from the marketplace clone when it is missing, so plugin hooks no longer fail to find `../../shared/...` on installs where only the plugins (not shared/) were delivered.
