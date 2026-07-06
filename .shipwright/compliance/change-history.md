@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-07-06T11:28:13.761510+00:00
-Total commits: 1094
+Generated: 2026-07-06T14:45:09.096106+00:00
+Total commits: 1093
 
 ## Commit Distribution
 
@@ -9,7 +9,7 @@ Total commits: 1094
 pie title Commit Types
     "fix" : 315
     "feat" : 292
-    "chore" : 236
+    "chore" : 235
     "docs" : 143
     "refactor" : 64
     "test" : 26
@@ -637,11 +637,10 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 236 commits
+### Chores (chore) — 235 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-06 | triage | sweep 1 outbox append(s) into branch | fe2ca7fbf9a1 |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
@@ -1130,7 +1129,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-06 | coverage | prove the diff-coverage gate bites via a tested --fail-under entrypoint (Phase-4 hardening) | 2870a23b1b63 |
+| 2026-07-06 | coverage | prove the diff-coverage gate bites via a tested --fail-under entrypoint (Phase-4 hardening) (#328) | ec73bfffb9de |
 | 2026-07-06 | coverage | diff-coverage warn-only --fail-under=80 gate (Phase 4) (#324) | 881b1281e866 |
 | 2026-07-01 | security | least-privilege GITHUB_TOKEN permissions per workflow (#299) | be0d1e7774c0 |
 | 2026-06-05 | security | scope self-scan to shipped code (exclude tests/) | b49fa41db2ae |
@@ -1163,7 +1162,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1094 |
+| Total commits | 1093 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1094 |
+| Human-authored commits | 1093 |
 

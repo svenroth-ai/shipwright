@@ -1,18 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-06-diff-coverage-gate-hardening",
+    "run_id": "iterate-2026-07-06-diff-coverage-real-pr-replay",
     "date": "2026-07-06",
     "intent": "change",
     "complexity": "small",
     "unit": {
       "status": "passed",
-      "passed": 3978,
-      "total": 3978
+      "passed": 137,
+      "total": 137
     },
     "integration": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 20,
+      "total": 20
     },
     "pgtap": {
       "status": "not_run",
@@ -35,94 +35,63 @@
     "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "justification": "Framework CI tooling: hardens the warn-only diff-coverage CI gate (measure_diff_coverage.py --fail-under wrapper + ci.yml). There is no target-app runtime UI/web/CLI surface to exercise. The gate's fail-path IS exercised end-to-end against the real diff-cover by shared/scripts/tools/tests/test_measure_diff_coverage_gate.py::TestGateRealDiffCover (synthetic git repo -> under-covered line -> exit != 0 + report). The only truly-external bit (does GitHub's continue-on-error keep the JOB green while the STEP is red) is untestable locally and was observed live in PR #324.",
+      "justification": "Test-only change: a new offline integration suite (shared/scripts/tools/tests/test_real_pr_gate_replay.py) + pinned real-PR diff-cover fixtures. No production code and no target-app runtime surface. The suite itself IS the end-to-end verification — it replays the real gate entrypoint (measure_diff_coverage --fail-under 80) against 5 real monorepo PR reports.",
       "exit_code": 0,
-      "tests_run": 0,
-      "timestamp": "2026-07-06T14:00:00Z"
+      "tests_run": 20,
+      "timestamp": "2026-07-06T15:30:00Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "decide_gate returns FAIL when diff% < threshold",
+          "behavior": "gate decides PASS on a real covered PR (#327 100%, #328 95%)",
           "disposition": "tested",
-          "evidence": "shared/scripts/tools/tests/test_measure_diff_coverage_gate.py::TestDecideGate::test_below_threshold_fails PASSED"
+          "evidence": "test_real_pr_gate_replay.py::TestRealPrReplay::test_gate_decision_on_real_report[pr327/pr328] PASSED"
         },
         {
-          "behavior": "decide_gate returns PASS at and above threshold",
+          "behavior": "gate decides PASS on a real no-changed-lines PR (#324, #326)",
           "disposition": "tested",
-          "evidence": "test_measure_diff_coverage_gate.py::TestDecideGate::test_at_threshold_passes / test_above_threshold_passes PASSED"
+          "evidence": "test_real_pr_gate_replay.py::TestRealPrReplay::test_gate_decision_on_real_report[pr324/pr326] PASSED"
         },
         {
-          "behavior": "decide_gate returns PASS on an empty (measured) diff (None)",
+          "behavior": "gate decides FAIL on a real under-covered PR (#325, 68%)",
           "disposition": "tested",
-          "evidence": "test_measure_diff_coverage_gate.py::TestDecideGate::test_empty_diff_passes PASSED"
+          "evidence": "test_real_pr_gate_replay.py::TestRealPrReplay::test_gate_decision_on_real_report[pr325] PASSED (rc=GATE_EXIT_FAIL)"
         },
         {
-          "behavior": "gate entrypoint: under-covered changed line -> exit != 0 (FAIL) + report printed (real diff-cover)",
+          "behavior": "diff_percent_from_report parses real report shapes correctly, incl. no-lines -> None",
           "disposition": "tested",
-          "evidence": "test_measure_diff_coverage_gate.py::TestGateRealDiffCover::test_fail_path_undercovered_line + TestGatePrecomputed::test_undercovered_exits_nonzero_and_prints_report PASSED"
+          "evidence": "test_real_pr_gate_replay.py::TestRealPrReplay::test_parser_on_real_report PASSED"
         },
         {
-          "behavior": "gate entrypoint: covered changed line -> exit 0 + report printed (real diff-cover)",
+          "behavior": "MANIFEST<->fixture registry drift is guarded both directions (forward + reverse)",
           "disposition": "tested",
-          "evidence": "test_measure_diff_coverage_gate.py::TestGateRealDiffCover::test_happy_path_covered_line + TestGatePrecomputed::test_covered_exits_zero_and_prints_report PASSED"
+          "evidence": "test_real_pr_gate_replay.py::TestManifestFixtureDrift::test_forward.../test_reverse... PASSED"
         },
         {
-          "behavior": "gate entrypoint: produced report shows no changed lines under coverage -> exit 0 (parity with diff-cover)",
+          "behavior": "pinned MANIFEST recorded values match the fixture reports (re-capture drift)",
           "disposition": "tested",
-          "evidence": "test_measure_diff_coverage_gate.py::TestGatePrecomputed::test_empty_diff_exits_zero PASSED"
+          "evidence": "test_real_pr_gate_replay.py::TestRealPrReplay::test_recorded_values_match_the_fixture PASSED"
         },
         {
-          "behavior": "gate fails CLOSED (distinct ERROR exit) when diff-cover produces no report (crash/unavailable)",
+          "behavior": "the corpus exercises all three decision branches and every expected FAIL is justified in the MANIFEST",
           "disposition": "tested",
-          "evidence": "test_measure_diff_coverage_gate.py::TestGateMeasurementFailure::test_no_report_produced_fails_closed PASSED (also validated at the real ci.yml invocation layer: bad compare-branch -> rc=3)"
+          "evidence": "test_real_pr_gate_replay.py::TestRealPrDistribution::test_distribution_at_threshold PASSED (dist: 2 pass / 2 no-lines / 1 fail)"
         },
         {
-          "behavior": "gate fails CLOSED on an unreadable --diff-cover-json report",
+          "behavior": "each pinned expected_decision is internally consistent with its recorded percent (no false-alarm pinned as a fail)",
           "disposition": "tested",
-          "evidence": "test_measure_diff_coverage_gate.py::TestGateMeasurementFailure::test_unreadable_precomputed_report_fails_closed PASSED"
-        },
-        {
-          "behavior": "run_diff_cover uses the non-deprecated comma-combined --format json:...,markdown:... flag (no --json-report/--markdown-report)",
-          "disposition": "tested",
-          "evidence": "test_measure_diff_coverage.py::TestRunDiffCover::test_parses_report_from_subprocess (stub asserts --format) + real diff-cover produces both files in TestGateRealDiffCover PASSED"
-        },
-        {
-          "behavior": "run_diff_cover clears a stale persistent report so a failed run is not mistaken for success",
-          "disposition": "tested",
-          "evidence": "test_measure_diff_coverage.py::TestRunDiffCover::test_stale_persistent_report_not_reused_on_failure PASSED"
-        },
-        {
-          "behavior": "ci.yml gate step calls the wrapper, stays warn-only (continue-on-error), pins diff-cover, re-raises the exit",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_ci_coverage_wiring.py::test_diff_coverage_step_is_warn_only_gate PASSED"
-        },
-        {
-          "behavior": "CI-gate guard still classifies the wrapper step as a gate; live workflows + allowlist stay consistent (no stale entry)",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_check_ci_gate_coverage.py::test_measure_diff_coverage_wrapper_run_is_gate/_is_loose + test_check_ci_gate_coverage_io.py::TestRealRepo::test_live_workflows_pass_the_guard / test_live_allowlist_has_no_stale_entries PASSED"
-        },
-        {
-          "behavior": "diff-cover is version-pinned (10.3.0) in the ci.yml gate + shared-tests provisioning",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_ci_coverage_wiring.py::test_diff_coverage_step_is_warn_only_gate asserts 'diff-cover==10.3.0' PASSED"
-        },
-        {
-          "behavior": "GitHub Actions continue-on-error keeps the JOB green while the STEP shows a red FAILURE annotation",
-          "disposition": "untestable",
-          "reason_code": "requires-external-nondeterministic-service",
-          "reason": "requires a live GitHub Actions runner; cannot be reproduced locally. Observed live in PR #324's CI run."
+          "evidence": "test_real_pr_gate_replay.py::TestRealPrDistribution::test_no_pr_would_be_a_false_alarm_block PASSED"
         }
       ],
       "counts": {
-        "tested": 13,
-        "untestable": 1,
+        "tested": 8,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 6,
-        "covered_acs": 6
+        "acs": 3,
+        "covered_acs": 3
       }
     }
   },

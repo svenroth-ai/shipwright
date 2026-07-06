@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-06-diff-coverage-real-pr-replay",
+  "date": "2026-07-06T14:45:15.363993Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/diff-coverage-real-pr-replay",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-07-06-diff-coverage-real-pr-replay"
+}
