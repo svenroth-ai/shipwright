@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-07-06T20:44:43.547322+00:00
-Total commits: 1098
+Generated: 2026-07-06T22:00:58.603930+00:00
+Total commits: 1100
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 318
+    "fix" : 319
     "feat" : 292
-    "chore" : 235
+    "chore" : 236
     "docs" : 143
     "refactor" : 64
     "test" : 27
@@ -20,11 +20,12 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 318 commits
+### Fixes (fix) — 319 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-06 | grade | cap cold-repo Control Grade at B — A is authoritative-only | 8c942d166607 |
+| 2026-07-07 | run | surface-aware hand-off banner (CLAUDE_CODE_ENTRYPOINT) | ce0fdec5a7fd |
+| 2026-07-06 | grade | cap cold-repo Control Grade at B — A is authoritative-only (#333) | ea0e58a72ee6 |
 | 2026-07-06 | compliance | diff-coverage is a graded/gated control, not "informational" on the dashboard (#332) | 5ce743a110a5 |
 | 2026-07-06 | grade | calibrate the cold-repo projector so well-run OSS repos no longer grade F (G6) (#331) | 5c20a269b710 |
 | 2026-07-06 | hooks | self-heal the shared/ plugin cache on marketplace installs (#326) | 130df1e1922d |
@@ -640,10 +641,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 235 commits
+### Chores (chore) — 236 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-07 | compliance | take origin/main ci-security.json (scan-timestamp conflict, identical posture) | d7e45a83bc8f |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
@@ -1167,7 +1169,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1098 |
+| Total commits | 1100 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1098 |
+| Human-authored commits | 1100 |
 
