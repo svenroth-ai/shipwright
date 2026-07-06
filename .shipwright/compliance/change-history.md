@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-07-06T14:45:09.096106+00:00
-Total commits: 1093
+Generated: 2026-07-06T15:15:57.696094+00:00
+Total commits: 1095
 
 ## Commit Distribution
 
@@ -9,10 +9,10 @@ Total commits: 1093
 pie title Commit Types
     "fix" : 315
     "feat" : 292
-    "chore" : 235
+    "chore" : 236
     "docs" : 143
     "refactor" : 64
-    "test" : 26
+    "test" : 27
     "ci" : 10
     "other" : 7
     "build" : 1
@@ -637,10 +637,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 235 commits
+### Chores (chore) — 236 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-06 | triage | sweep 1 outbox append(s) into branch | c7e8c868e626 |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
@@ -1094,10 +1095,11 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 26 commits
+### Tests (test) — 27 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-06 | coverage | replay the diff-coverage gate against the last 5 real monorepo PRs (#329) | ccb22388bb9b |
 | 2026-07-05 | grade | import engine_bridge normally in authoritative tests (#321) | 4d21fdc9ba1a |
 | 2026-06-22 | security | enforce scoped + time-bounded accept-discipline for .trivyignore.yaml (#274) | 5f16590eb98d |
 | 2026-06-12 | merge | end-to-end parallel-merge cascade integration test (#215) | 5321dfaf2b46 |
@@ -1162,7 +1164,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1093 |
+| Total commits | 1095 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1093 |
+| Human-authored commits | 1095 |
 

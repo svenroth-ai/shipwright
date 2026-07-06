@@ -43,17 +43,16 @@ from lib.ci_gate_scan import (  # noqa: E402  (re-exported for callers/tests)
 GATE_COMMANDS = (
     "pytest", "ruff", "mypy", "pyright", "tsc", "eslint", "flake8",
     "vitest", "jest", "semgrep", "trivy", "gitleaks",
-    # diff-cover: the diff-coverage roadmap's gate tool. In Phase 1 its ci.yml
-    # step is intentionally non-gating (allowlisted); Phase 4 upgrades it to
-    # `--fail-under` and drops the allowlist entry, at which point the guard
-    # enforces that it stays gating. Recognizing it here means a future
-    # silent-loosening of that gate is caught.
+    # diff-cover: the diff-coverage roadmap's gate tool. Phase 4's HARD FLIP made
+    # the ci.yml step a gating `--fail-under 80` gate and REMOVED its allowlist
+    # entry, so the guard's reverse-drift + stale-entry checks now enforce it
+    # stays gating — a future silent-loosening (re-adding continue-on-error) is
+    # caught as a loose gate with no allowlist entry.
     "diff-cover",
-    # measure_diff_coverage: the Phase-4-hardened wrapper the ci.yml gate step
-    # now invokes instead of raw `diff-cover` (the gate DECISION moved into this
-    # tested Python entrypoint). `diff-cover` (hyphen) would NOT match this
-    # underscore token, so register it explicitly — else the step would stop
-    # being classified as a gate and its allowlist entry would go stale.
+    # measure_diff_coverage: the tested wrapper the ci.yml gate step invokes
+    # instead of raw `diff-cover` (the gate DECISION lives in this Python
+    # entrypoint). `diff-cover` (hyphen) would NOT match this underscore token, so
+    # register it explicitly — else the step would stop being classified as a gate.
     "measure_diff_coverage",
 )
 GATE_NAME_KEYWORDS = (

@@ -1,18 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-06-diff-coverage-real-pr-replay",
+    "run_id": "iterate-2026-07-06-diff-coverage-hard-flip",
     "date": "2026-07-06",
     "intent": "change",
     "complexity": "small",
     "unit": {
       "status": "passed",
-      "passed": 137,
-      "total": 137
+      "passed": 3666,
+      "total": 3666
     },
     "integration": {
       "status": "passed",
-      "passed": 20,
-      "total": 20
+      "passed": 31,
+      "total": 31
     },
     "pgtap": {
       "status": "not_run",
@@ -35,63 +35,59 @@
     "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "justification": "Test-only change: a new offline integration suite (shared/scripts/tools/tests/test_real_pr_gate_replay.py) + pinned real-PR diff-cover fixtures. No production code and no target-app runtime surface. The suite itself IS the end-to-end verification — it replays the real gate entrypoint (measure_diff_coverage --fail-under 80) against 5 real monorepo PR reports.",
+      "justification": "Framework CI-policy change: the diff-coverage gate flips from warn-only to hard-blocking (drop continue-on-error + remove the ci_gate_allowlist entry). No target-app runtime surface. The consistency of the flipped ci.yml + removed allowlist entry is verified end-to-end by the live-repo guard (test_check_ci_gate_coverage_io.py::TestRealRepo) which recomputes the guard against the real .github/workflows.",
       "exit_code": 0,
-      "tests_run": 20,
-      "timestamp": "2026-07-06T15:30:00Z"
+      "tests_run": 51,
+      "timestamp": "2026-07-06T16:30:00Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "gate decides PASS on a real covered PR (#327 100%, #328 95%)",
+          "behavior": "ci.yml 'Diff coverage (gate)' step has NO continue-on-error (hard gate) yet still invokes the tested --fail-under 80 wrapper with pinned diff-cover",
           "disposition": "tested",
-          "evidence": "test_real_pr_gate_replay.py::TestRealPrReplay::test_gate_decision_on_real_report[pr327/pr328] PASSED"
+          "evidence": "shared/tests/test_ci_coverage_wiring.py::test_diff_coverage_step_is_hard_gate PASSED"
         },
         {
-          "behavior": "gate decides PASS on a real no-changed-lines PR (#324, #326)",
+          "behavior": "no ci_gate_allowlist entry remains for the diff-coverage step (the flip removed it)",
           "disposition": "tested",
-          "evidence": "test_real_pr_gate_replay.py::TestRealPrReplay::test_gate_decision_on_real_report[pr324/pr326] PASSED"
+          "evidence": "shared/tests/test_check_ci_gate_coverage.py::TestDiffCoverageHardGate::test_diff_cover_step_is_NOT_allowlisted PASSED"
         },
         {
-          "behavior": "gate decides FAIL on a real under-covered PR (#325, 68%)",
+          "behavior": "the LIVE workflows still pass the CI-gate guard with the now-non-loose step and no stale allowlist entry",
           "disposition": "tested",
-          "evidence": "test_real_pr_gate_replay.py::TestRealPrReplay::test_gate_decision_on_real_report[pr325] PASSED (rc=GATE_EXIT_FAIL)"
+          "evidence": "shared/tests/test_check_ci_gate_coverage_io.py::TestRealRepo::test_live_workflows_pass_the_guard / test_live_allowlist_has_no_stale_entries PASSED"
         },
         {
-          "behavior": "diff_percent_from_report parses real report shapes correctly, incl. no-lines -> None",
+          "behavior": "a continue-on-error diff-coverage gate step WOULD be flagged loose (regression guard against silently re-adding warn-only)",
           "disposition": "tested",
-          "evidence": "test_real_pr_gate_replay.py::TestRealPrReplay::test_parser_on_real_report PASSED"
+          "evidence": "shared/tests/test_check_ci_gate_coverage.py::test_diff_cover_continue_on_error_is_loose / test_measure_diff_coverage_wrapper_continue_on_error_is_loose PASSED"
         },
         {
-          "behavior": "MANIFEST<->fixture registry drift is guarded both directions (forward + reverse)",
+          "behavior": "Combine coverage still runs before the renamed 'Diff coverage (gate)' step",
           "disposition": "tested",
-          "evidence": "test_real_pr_gate_replay.py::TestManifestFixtureDrift::test_forward.../test_reverse... PASSED"
+          "evidence": "shared/tests/test_ci_coverage_wiring.py::test_combine_runs_before_diff_after_all_tiers PASSED"
         },
         {
-          "behavior": "pinned MANIFEST recorded values match the fixture reports (re-capture drift)",
+          "behavior": "the gate decision itself (fail on <80, pass otherwise, fail-closed on crash) is unchanged and still correct",
           "disposition": "tested",
-          "evidence": "test_real_pr_gate_replay.py::TestRealPrReplay::test_recorded_values_match_the_fixture PASSED"
+          "evidence": "shared/scripts/tools/tests/test_measure_diff_coverage_gate.py (11) + test_real_pr_gate_replay.py (20) still green after the flip"
         },
         {
-          "behavior": "the corpus exercises all three decision branches and every expected FAIL is justified in the MANIFEST",
-          "disposition": "tested",
-          "evidence": "test_real_pr_gate_replay.py::TestRealPrDistribution::test_distribution_at_threshold PASSED (dist: 2 pass / 2 no-lines / 1 fail)"
-        },
-        {
-          "behavior": "each pinned expected_decision is internally consistent with its recorded percent (no false-alarm pinned as a fail)",
-          "disposition": "tested",
-          "evidence": "test_real_pr_gate_replay.py::TestRealPrDistribution::test_no_pr_would_be_a_false_alarm_block PASSED"
+          "behavior": "GitHub actually blocks a merge when the hard gate's required check goes red",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "requires a live GitHub Actions runner + branch-protection required-check enforcement; cannot be reproduced locally."
         }
       ],
       "counts": {
-        "tested": 8,
-        "untestable": 0,
+        "tested": 6,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 3,
-        "covered_acs": 3
+        "acs": 2,
+        "covered_acs": 2
       }
     }
   },
