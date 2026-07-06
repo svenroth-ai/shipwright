@@ -1,0 +1,64 @@
+{
+  "description": "Real diff-cover reports captured from the last 5 monorepo PR CI runs, replayed through the diff-coverage gate (measure_diff_coverage --fail-under 80). This is empirical settling-window evidence for the deferred Phase-4 hard-flip: it shows how an 80% hard gate would decide on real traffic. Each fixture is the exact diff-cover.json that diff-cover produced in that PR's CI (against the combined repo-wide coverage.xml vs origin/main) — NOT synthetic. The suite replays the gate DECISION against it; diff-cover's own line-counting already ran authoritatively in real CI (re-running it would need each PR's full repo state + coverage run). coverage.xml is intentionally NOT pinned (~1.2 MB each); the diff-cover.json IS the gate's diff input.",
+  "threshold": 80,
+  "captured_at": "2026-07-06",
+  "source_repo": "svenroth-ai/shipwright",
+  "refresh": "For each recent merged PR, find its 'Python (lint + test)' CI run, then: gh run download <run-id> -R svenroth-ai/shipwright -n repo-diff-coverage -D <tmp>; cp <tmp>/diff-cover.json pr<NNN>.diff-cover.json; update this MANIFEST (sha, run_id, recorded_* from the new report). Fixtures are a stable pinned corpus, not auto-refreshed.",
+  "prs": [
+    {
+      "pr": 324,
+      "merge_sha": "881b1281",
+      "run_id": "28755573976",
+      "title": "ci(coverage): diff-coverage warn-only --fail-under=80 gate (Phase 4)",
+      "fixture": "pr324.diff-cover.json",
+      "recorded_num_lines": 0,
+      "recorded_percent": 100,
+      "expected_decision": "pass_no_lines",
+      "notes": "CI/tests/docs diff — no changed lines under coverage. Passes (parity with raw diff-cover)."
+    },
+    {
+      "pr": 325,
+      "merge_sha": "c1280089",
+      "run_id": "28783465471",
+      "title": "fix(grade,adopt): strip surrounding quotes from path/URL input seams",
+      "fixture": "pr325.diff-cover.json",
+      "recorded_num_lines": 32,
+      "recorded_percent": 68,
+      "expected_decision": "fail",
+      "notes": "LEGITIMATE fail, not a false alarm: the quote-strip was tested on the grade seam but the 3 adopt seams (setup_adopt.py, validate_adoption.py, analyze_codebase.py) shipped the same change with 0% coverage on the changed lines. A hard 80% gate would have correctly demanded tests for the adopt side."
+    },
+    {
+      "pr": 326,
+      "merge_sha": "130df1e1",
+      "run_id": "28784711058",
+      "title": "fix(hooks): self-heal the shared/ plugin cache on marketplace installs",
+      "fixture": "pr326.diff-cover.json",
+      "recorded_num_lines": 0,
+      "recorded_percent": 100,
+      "expected_decision": "pass_no_lines",
+      "notes": "Changed lines were not measured in the combined coverage tiers (hook/vendored code) — no changed lines under coverage. Passes."
+    },
+    {
+      "pr": 327,
+      "merge_sha": "b8d1b9a2",
+      "run_id": "28788233101",
+      "title": "feat(grade): empirical calibration suite — SHA-pinned real-OSS record/replay launch gate (G5)",
+      "fixture": "pr327.diff-cover.json",
+      "recorded_num_lines": 11,
+      "recorded_percent": 100,
+      "expected_decision": "pass",
+      "notes": "Plugin-path change (plugins/shipwright-grade/scripts/lib/) — the per-plugin [paths] remap aligned with the git diff (100% of changed lines covered). Proves plugin-tier path alignment on real data."
+    },
+    {
+      "pr": 328,
+      "merge_sha": "ec73bfff",
+      "run_id": "28788609310",
+      "title": "ci(coverage): prove the diff-coverage gate bites via a tested --fail-under entrypoint (Phase-4 hardening)",
+      "fixture": "pr328.diff-cover.json",
+      "recorded_num_lines": 48,
+      "recorded_percent": 95,
+      "expected_decision": "pass",
+      "notes": "shared/ change (95%); the 2 missing lines are the print_gate_report OSError fallback. Proves shared-tier path alignment on real data."
+    }
+  ]
+}

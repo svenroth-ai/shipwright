@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-06T11:28:13.761510+00:00
+Generated: 2026-07-06T14:45:09.096106+00:00
 
 ## Requirements Coverage
 
@@ -27,6 +27,7 @@ Generated: 2026-07-06T11:28:13.761510+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-fffb776d"></a>Added a test that runs the diff-coverage check against the last 5 real project PRs to show how a strict version would decide (4 pass, 1 correctly blocked). | iterate | change |  | 137/137 | — | 2026-07-06 |
 | <a id="evt-f75d11f6"></a>The warn-only diff-coverage CI check now runs through a tested tool that actually proves it flags an under-tested change, instead of unproven inline shell. | iterate | change |  | 3978/3978 | — | 2026-07-06 |
 | <a id="evt-70be807d"></a>G5: shipwright-grade empirical calibration suite (SHA-pinned real-OSS record/replay launch gate) + additive grade_context capture seam. Gate correctly RED (surfaced a projector miscalibration -> G6). | iterate | feature |  | — | — | 2026-07-06 |
 | <a id="evt-ead61d69"></a>self-heal the shared/ plugin cache on marketplace installs (vendored SessionStart hook, all 12 plugins) | iterate | change |  | — | — | 2026-07-06 |
@@ -295,7 +296,7 @@ Generated: 2026-07-06T11:28:13.761510+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 261 |
+| Iterate changes | 262 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
