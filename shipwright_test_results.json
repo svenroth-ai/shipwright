@@ -80,11 +80,19 @@
         {
           "behavior": "live fetch@SHA + gh enrichment (record path)",
           "disposition": "untestable",
-          "evidence": "covered empirically by the live --refresh of all 7 non-ci-only fixtures"
+          "evidence": "covered empirically by the live --refresh of all 7 non-ci-only fixtures",
+          "reason_code": "requires-external-nondeterministic-service"
         }
       ],
-      "reason_codes": {
-        "live fetch@SHA + gh enrichment (record path)": "requires-external-nondeterministic-service"
+      "counts": {
+        "total": 10,
+        "tested": 9,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 8,
+        "covered_acs": 8
       }
     }
   },
