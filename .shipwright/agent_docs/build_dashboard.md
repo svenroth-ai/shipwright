@@ -1,11 +1,13 @@
 # Project Activity Dashboard
-> Updated: 2026-07-06 15:15 UTC | Session: 5c5ef9ef-c7b0-4d18-b2ca-e17a75470a7b | Run: iterate-2026-07-06-diff-coverage-hard-flip
+> Updated: 2026-07-06 20:38 UTC | Session: 5c5ef9ef-c7b0-4d18-b2ca-e17a75470a7b | Run: iterate-2026-07-06-diff-coverage-dashboard-honesty
 
-## Recent Changes (263 iterations)
+## Recent Changes (265 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Compliance dashboard honesty: rewrite the _diff_coverage_block.py wording so diff-coverage reads as a graded Control-Grade Test-Health input (target >=80%), not '(informational, not yet graded)'. Both prior claims became false after Phase 3 (graded) + the Phase-7 hard flip (enforced CI gate). Kept generic (no hardcoded 'blocks merge') since the renderer is repo-agnostic and lights up on any managed repo that produces the transient. | 951/951 |  | tooling | 2026-07-06 |
 | change | Diff-coverage hard flip: drop continue-on-error from the ci.yml 'Diff coverage (gate)' step and remove its ci_gate_allowlist entry so a PR whose changed lines are < 80% covered blocks merge; the CI-gate guard's reverse-drift + stale-entry checks now enforce it stays gating. Ends the warn-only settling window; also dismisses the campaign triage anchors trg-8fdebda3 + trg-76202789. | 3666/3666 |  | tooling | 2026-07-06 |
+| change | G6: calibrate the cold-repo projector so well-run OSS repos no longer grade F (CI-system-app test-health + PR-head fallback, network PR-association provenance, self-referential-route suppression); empirical gate asserts well-run > deprecated. | 0/0 |  | tooling | 2026-07-06 |
 | change | Add a real-PR replay integration suite: pin the actual diff-cover.json from the last 5 monorepo PRs (#324-#328) + a provenance MANIFEST, and replay them through measure_diff_coverage --fail-under 80 as deterministic offline settling-window evidence for the deferred diff-coverage hard-flip. | 137/137 |  | tooling | 2026-07-06 |
 | change | diff-coverage gate hardening: move the warn-only --fail-under decision into a tested measure_diff_coverage.py entrypoint (pure decide_gate), pin diff-cover==10.3.0, migrate to non-deprecated --format flags, and prove the fail-path with a real synthetic-repo integration test; a diff-cover failure now fails closed | 3978/3978 |  | tooling | 2026-07-06 |
 | change | self-heal the shared/ plugin cache on marketplace installs (vendored SessionStart hook, all 12 plugins) | 0/0 |  | infra | 2026-07-06 |
@@ -270,7 +272,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-06 | Unit: 3666/3666 | Integration: 31/31 | Smoke: skipped | (iterate)
+Last run: 2026-07-06 | Unit: 951/951 | Smoke: skipped | (iterate)
 
 ## Pipeline
 
