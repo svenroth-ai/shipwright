@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-06T11:28:13.761510Z. Items waiting for triage decision.
+> Auto-generated 2026-07-06T11:14:04.882235Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 270
-- Triage: 5 | Promoted: 1 | Dismissed: 263 | Snoozed: 1
+- Total: 269
+- Triage: 4 | Promoted: 1 | Dismissed: 263 | Snoozed: 1
 
-## Top 5 items (severity-sorted)
+## Top 4 items (severity-sorted)
 
 ### Source: compliance (1 item)
 
@@ -25,17 +25,12 @@
     ```
   - Promote: `triage_promote.py --id trg-c99d9547 --task-ref EXT:<ref>`
 
-### Source: diff-coverage-followup (2 items)
+### Source: diff-coverage-followup (1 item)
 
 <a id="trg-8fdebda3"></a>
 - **Measure patch/diff coverage (were the CHANGED lines tested?), not just pass-rate** `id=trg-8fdebda3 | severity=high | kind=improvement → P1/engineering`
   - Reviewer comment B: '3618/3618 green' is pass-rate, not coverage — it says nothing about whether AI-added code is even…
   - Promote: `triage_promote.py --id trg-8fdebda3 --task-ref EXT:<ref>`
-
-<a id="trg-76202789"></a>
-- **Harden diff-coverage CI gate: prove the fail-path (integration test) before the hard-flip** `id=trg-76202789 | severity=medium | kind=improvement → P2/engineering`
-  - Phase 4 (#324) shipped the warn-only diff-cover --fail-under=80 CI gate, but its FAIL-path has never actually run: PR #…
-  - Promote: `triage_promote.py --id trg-76202789 --task-ref EXT:<ref>`
 
 ### Source: grader-campaign (1 item)
 

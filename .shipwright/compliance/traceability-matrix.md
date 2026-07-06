@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-06T11:28:13.761510+00:00
+Generated: 2026-07-06T11:14:04.882235+00:00
 
 ## Requirements Coverage
 
@@ -27,7 +27,7 @@ Generated: 2026-07-06T11:28:13.761510+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
-| <a id="evt-f75d11f6"></a>The warn-only diff-coverage CI check now runs through a tested tool that actually proves it flags an under-tested change, instead of unproven inline shell. | iterate | change |  | 3978/3978 | — | 2026-07-06 |
+| <a id="evt-70be807d"></a>G5: shipwright-grade empirical calibration suite (SHA-pinned real-OSS record/replay launch gate) + additive grade_context capture seam. Gate correctly RED (surfaced a projector miscalibration -> G6). | iterate | feature |  | — | — | 2026-07-06 |
 | <a id="evt-ead61d69"></a>self-heal the shared/ plugin cache on marketplace installs (vendored SessionStart hook, all 12 plugins) | iterate | change |  | — | — | 2026-07-06 |
 | <a id="evt-24bc2f3a"></a>grade+adopt input path/URL surrounding-quote stripping (WebUI #195 analog) | iterate | change |  | — | — | 2026-07-06 |
 | <a id="evt-17d141eb"></a>CI now warns (without blocking merge yet) when a pull request does not test enough of the lines it changed. | iterate | change |  | 3643/3643 | — | 2026-07-05 |

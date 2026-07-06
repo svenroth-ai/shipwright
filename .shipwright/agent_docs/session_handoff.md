@@ -1,34 +1,37 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-06-diff-coverage-gate-hardening"
+run_id: "iterate-2026-07-06-grade-g5-empirical-suite"
 phase: "iterate"
-reason: "iterate: diff-coverage gate hardening"
-timestamp: "2026-07-06T11:28:13.761510+00:00"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-07-06T11:14:04.882235+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-06 11:28:13 UTC
+> Auto-generated 2026-07-06 11:14:04 UTC
 
 ## Session Info
 
-- **Session ID**: 5c5ef9ef-c7b0-4d18-b2ca-e17a75470a7b
-- **Timestamp**: 2026-07-06 11:28:13 UTC
-- **Reason**: iterate: diff-coverage gate hardening
+- **Session ID**: a5163991-fcb0-464a-8063-97ae1a1059ee
+- **Timestamp**: 2026-07-06 11:14:04 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-06-shared-cache-selfheal
-- **Date**: 2026-07-06T10:21:55.019556Z
-- **Type**: change
+- **Run ID**: iterate-2026-07-06-grade-g5-empirical-suite
+- **Date**: 2026-07-06T11:15:21.602345Z
+- **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/shared-cache-selfheal
-- **ADR**: iterate-2026-07-06-shared-cache-selfheal
+- **Branch**: iterate/grade-g5-empirical-suite
+- **ADR**: iterate-2026-07-06-grade-g5-empirical-suite
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/2026-07-06-grade-g5-empirical-suite.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/diff-coverage-gate-hardening
+- **Branch**: iterate/grade-g5-empirical-suite
+- **Spec**: .shipwright/planning/iterate/2026-07-06-grade-g5-empirical-suite.md
+- **Complexity**: medium (overrides classifier `small`; new runner + multi-module harness + ci gate + docs + engine-adjacent capture refactor)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -47,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/diff-coverage-gate-hardening
-- **Last Commit**: fe2ca7fb chore(triage): sweep 1 outbox append(s) into branch
+- **Branch**: iterate/grade-g5-empirical-suite
+- **Last Commit**: d81e2cbe Merge remote-tracking branch 'origin/main' into iterate/grade-g5-empirical-suite
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,8 +67,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-f75d11f6 | work_completed | iterate (diff-coverage gate hardening: move the warn-only --fail-under decision into a tested measure_diff_coverage.py entrypoint (pure decide_gate), pin diff-cover==10.3.0, migrate to non-deprecated --format flags, and prove the fail-path with a real synthetic-repo integration test; a diff-cover failure now fails closed) | 2026-07-06 |
 | evt-ead61d69 | work_completed | iterate (self-heal the shared/ plugin cache on marketplace installs (vendored SessionStart hook, all 12 plugins)) | 2026-07-06 |
+| evt-70be807d | work_completed | iterate (G5: shipwright-grade empirical calibration suite (SHA-pinned real-OSS record/replay launch gate) + additive grade_context capture seam. Gate correctly RED (surfaced a projector miscalibration -> G6).) | 2026-07-06 |
 | evt-24bc2f3a | work_completed | iterate (grade+adopt input path/URL surrounding-quote stripping (WebUI #195 analog)) | 2026-07-06 |
 | evt-4d586bd2 | work_completed | iterate (grade-authoritative-disclaimer) | 2026-07-05 |
 | evt-17d141eb | work_completed | iterate (diff-coverage CI gate Phase 4 (warn-only): diff-cover --fail-under=80 over the combined coverage.xml, continue-on-error retained (settling window)) | 2026-07-05 |
@@ -74,7 +77,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 260
-- **Last iterate**: change — diff-coverage gate hardening: move the warn-only --fail-under decision into a tested measure_diff_coverage.py entrypoint (pure decide_gate), pin diff-cover==10.3.0, migrate to non-deprecated --format flags, and prove the fail-path with a real synthetic-repo integration test; a diff-cover failure now fails closed (2026-07-06)
+- **Last iterate**: change — self-heal the shared/ plugin cache on marketplace installs (vendored SessionStart hook, all 12 plugins) (2026-07-06)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

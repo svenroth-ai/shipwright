@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-07-06T11:28:13.761510+00:00
+Generated: 2026-07-06T11:14:04.882235+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -13,7 +13,7 @@ Scope: library
 | | Dimension | Signal | Anchor |
 |---|-----------|--------|--------|
 | ✅ | Requirement traceability | 14/14 FRs covered; 260/260 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
-| ✅ | Test health | latest full suite 3978/3978 (2026-07-06) | automated tests pass (OpenSSF Scorecard) |
+| ✅ | Test health | latest full suite 3643/3643 (2026-07-05) | automated tests pass (OpenSSF Scorecard) |
 | ✅ | Change traceability | 260/260 changes linked to a commit, ADR or test run | change provenance (SLSA) |
 | ✅ | Change reconciliation | 0/5 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
 | ✅ | Security | 0 open high/critical | no open high/critical vulns (NIST SSDF) |
@@ -54,12 +54,12 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Pipeline phases completed | n/a (adopted) | INFO |  |
 | Work events (iterate) | 260 changes | INFO |  |
 | Recent changes traced to an FR | 4/30 (13%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
-| All unit tests passing | 3978/3978 | PASS |  |
+| All unit tests passing | 3643/3643 | PASS | +3 change(s) since last full suite |
 | Architecture decisions | 235 ADRs | INFO |  |
 | Iterate tests passing | 45/53 testable changes tested | WARN | 8 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 11 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 5 open | WARN | 5 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Triage open | 4 open | WARN | 4 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit (grandfathered) | 127 | INFO |  |
 | Bloat in allowlist | 158 entries | INFO |  |
 | Bloat ratchet delta | -9 lines | PASS |  |

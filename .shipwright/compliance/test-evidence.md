@@ -1,21 +1,21 @@
 # Test Evidence Report
 
-Generated: 2026-07-06T11:28:13.761510+00:00
+Generated: 2026-07-06T11:14:04.882235+00:00
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 260 |
-| Total unit tests (latest full suite) | 3978/3978 (2026-07-06) |
+| Total unit tests (latest full suite) | 3643/3643 (2026-07-05) |
 | New tests from iterations | +220 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | The warn-only diff-coverage CI check now runs through a tested tool that actually proves it flags an under-tested change, instead of unproven inline shell. | [iterate](traceability-matrix.md#evt-f75d11f6) | unit | +0 | 3978/3978 | PASS | 2026-07-06 |
-| 2 | self-heal the shared/ plugin cache on marketplace installs (vendored SessionStart hook, all 12 plugins) | [iterate](traceability-matrix.md#evt-ead61d69) | — | +0 | — | — | 2026-07-06 |
+| 1 | self-heal the shared/ plugin cache on marketplace installs (vendored SessionStart hook, all 12 plugins) | [iterate](traceability-matrix.md#evt-ead61d69) | — | +0 | — | — | 2026-07-06 |
+| 2 | G5: shipwright-grade empirical calibration suite (SHA-pinned real-OSS record/replay launch gate) + additive grade_context capture seam. Gate correctly RED (surfaced a projector miscalibration -> G6). | [iterate](traceability-matrix.md#evt-70be807d) | — | +0 | — | — | 2026-07-06 |
 | 3 | grade+adopt input path/URL surrounding-quote stripping (WebUI #195 analog) | [iterate](traceability-matrix.md#evt-24bc2f3a) | — | +0 | — | — | 2026-07-06 |
 | 4 | Fixed the grade report so an authoritative grade no longer falsely calls itself an outside estimate, and removed an internal codename from the report. | [iterate](traceability-matrix.md#evt-4d586bd2) | mixed | +0 | 273/273 | PASS | 2026-07-05 |
 | 5 | CI now warns (without blocking merge yet) when a pull request does not test enough of the lines it changed. | [iterate](traceability-matrix.md#evt-17d141eb) | unit | +0 | 3643/3643 | PASS | 2026-07-05 |
@@ -281,36 +281,36 @@ _Synthesized from per-iterate **unit** results — Integration / pgTAP / E2E / S
 
 | Run | Trigger | Unit | Integration | pgTAP | E2E | Smoke | Date |
 |-----|---------|------|-------------|-------|-----|-------|------|
-| 1 | iterate | 4719/4719 | — | — | — | — | 2026-06-28 |
-| 2 | iterate | 492/492 | — | — | — | — | 2026-06-28 |
-| 3 | iterate | 794/794 | — | — | — | — | 2026-06-28 |
-| 4 | iterate | 3853/3853 | — | — | — | — | 2026-06-28 |
-| 5 | iterate | 4812/4812 | — | — | — | — | 2026-06-28 |
-| 6 | iterate | 850/850 | — | — | — | — | 2026-06-28 |
-| 7 | iterate | 851/851 | — | — | — | — | 2026-06-28 |
-| 8 | iterate | 868/868 | — | — | — | — | 2026-06-29 |
-| 9 | iterate | 3618/3618 | — | — | — | — | 2026-06-29 |
-| 10 | iterate | 894/894 | — | — | — | — | 2026-06-30 |
-| 11 | iterate | 897/897 | — | — | — | — | 2026-06-30 |
-| 12 | iterate | 3610/3610 | — | — | — | — | 2026-06-30 |
-| 13 | iterate | 3604/3604 | — | — | — | — | 2026-06-30 |
-| 14 | iterate | 3633/3633 | — | — | — | — | 2026-06-30 |
-| 15 | iterate | 4955/4967 | — | — | — | — | 2026-06-30 |
-| 16 | iterate | 4964/4976 | — | — | — | — | 2026-07-01 |
-| 17 | iterate | 3627/3639 | — | — | — | — | 2026-07-02 |
-| 18 | iterate | 3629/3641 | — | — | — | — | 2026-07-03 |
-| 19 | iterate | 3905/3917 | — | — | — | — | 2026-07-03 |
-| 20 | iterate | 91/91 | — | — | — | — | 2026-07-03 |
-| 21 | iterate | 182/182 | — | — | — | — | 2026-07-04 |
-| 22 | iterate | 187/187 | — | — | — | — | 2026-07-04 |
-| 23 | iterate | 215/215 | — | — | — | — | 2026-07-04 |
-| 24 | iterate | 460/463 | — | — | — | — | 2026-07-04 |
-| 25 | iterate | 216/216 | — | — | — | — | 2026-07-04 |
-| 26 | iterate | 265/265 | — | — | — | — | 2026-07-05 |
-| 27 | iterate | 271/271 | — | — | — | — | 2026-07-04 |
-| 28 | iterate | 3643/3643 | — | — | — | — | 2026-07-05 |
-| 29 | iterate | 273/273 | — | — | — | — | 2026-07-05 |
-| 30 | iterate | 3978/3978 | — | — | — | — | 2026-07-06 |
+| 1 | iterate | 4720/4720 | — | — | — | — | 2026-06-28 |
+| 2 | iterate | 4719/4719 | — | — | — | — | 2026-06-28 |
+| 3 | iterate | 492/492 | — | — | — | — | 2026-06-28 |
+| 4 | iterate | 794/794 | — | — | — | — | 2026-06-28 |
+| 5 | iterate | 3853/3853 | — | — | — | — | 2026-06-28 |
+| 6 | iterate | 4812/4812 | — | — | — | — | 2026-06-28 |
+| 7 | iterate | 850/850 | — | — | — | — | 2026-06-28 |
+| 8 | iterate | 851/851 | — | — | — | — | 2026-06-28 |
+| 9 | iterate | 868/868 | — | — | — | — | 2026-06-29 |
+| 10 | iterate | 3618/3618 | — | — | — | — | 2026-06-29 |
+| 11 | iterate | 894/894 | — | — | — | — | 2026-06-30 |
+| 12 | iterate | 897/897 | — | — | — | — | 2026-06-30 |
+| 13 | iterate | 3610/3610 | — | — | — | — | 2026-06-30 |
+| 14 | iterate | 3604/3604 | — | — | — | — | 2026-06-30 |
+| 15 | iterate | 3633/3633 | — | — | — | — | 2026-06-30 |
+| 16 | iterate | 4955/4967 | — | — | — | — | 2026-06-30 |
+| 17 | iterate | 4964/4976 | — | — | — | — | 2026-07-01 |
+| 18 | iterate | 3627/3639 | — | — | — | — | 2026-07-02 |
+| 19 | iterate | 3629/3641 | — | — | — | — | 2026-07-03 |
+| 20 | iterate | 3905/3917 | — | — | — | — | 2026-07-03 |
+| 21 | iterate | 91/91 | — | — | — | — | 2026-07-03 |
+| 22 | iterate | 182/182 | — | — | — | — | 2026-07-04 |
+| 23 | iterate | 187/187 | — | — | — | — | 2026-07-04 |
+| 24 | iterate | 215/215 | — | — | — | — | 2026-07-04 |
+| 25 | iterate | 460/463 | — | — | — | — | 2026-07-04 |
+| 26 | iterate | 216/216 | — | — | — | — | 2026-07-04 |
+| 27 | iterate | 265/265 | — | — | — | — | 2026-07-05 |
+| 28 | iterate | 271/271 | — | — | — | — | 2026-07-04 |
+| 29 | iterate | 3643/3643 | — | — | — | — | 2026-07-05 |
+| 30 | iterate | 273/273 | — | — | — | — | 2026-07-05 |
 
 ## Code Review Evidence
 

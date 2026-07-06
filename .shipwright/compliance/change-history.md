@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-07-06T11:28:13.761510+00:00
-Total commits: 1092
+Generated: 2026-07-06T11:14:04.882235+00:00
+Total commits: 1093
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 315
-    "feat" : 291
+    "feat" : 292
     "chore" : 236
     "docs" : 143
     "refactor" : 64
@@ -340,10 +340,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 291 commits
+### Features (feat) — 292 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-06 | grade | empirical calibration suite — SHA-pinned real-OSS record/replay launch gate (G5) | ef6052f3e472 |
 | 2026-07-05 | coverage | diff-coverage feeds Control-Grade Test-Health (WARN, Phase 3) (#322) | 0532d4db632f |
 | 2026-07-05 | grade | audience-facing plain-language report redesign (#320) | dba3daf56f28 |
 | 2026-07-04 | coverage | monorepo diff-coverage combine + light W4 (Phase 2) (#318) | 5e9e502b223e |
@@ -640,7 +641,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-06 | triage | sweep 1 outbox append(s) into branch | fe2ca7fbf9a1 |
+| 2026-07-06 | grade | align ci-security.json snapshot with origin/main (CI-managed AR-10 scan state, 0 findings both sides) | 36284fcb4dfd |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
@@ -1161,7 +1162,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1092 |
+| Total commits | 1093 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1092 |
+| Human-authored commits | 1093 |
 
