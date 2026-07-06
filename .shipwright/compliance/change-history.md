@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-07-06T17:15:35.088015+00:00
-Total commits: 1097
+Generated: 2026-07-06T22:00:58.603930+00:00
+Total commits: 1096
 
 ## Commit Distribution
 
@@ -9,7 +9,7 @@ Total commits: 1097
 pie title Commit Types
     "fix" : 316
     "feat" : 292
-    "chore" : 236
+    "chore" : 235
     "docs" : 143
     "refactor" : 64
     "test" : 27
@@ -24,7 +24,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-06 | grade | calibrate the cold-repo projector so well-run OSS repos no longer grade F (G6) | 5e89da2dd972 |
+| 2026-07-06 | grade | calibrate the cold-repo projector so well-run OSS repos no longer grade F (G6) (#331) | 5c20a269b710 |
 | 2026-07-06 | hooks | self-heal the shared/ plugin cache on marketplace installs (#326) | 130df1e1922d |
 | 2026-07-06 | grade,adopt | strip surrounding quotes from path/URL input seams (#325) | c1280089588f |
 | 2026-07-05 | grade | mode-aware honest-ceiling note; drop BP-2 codename (#323) | 79819b0afc30 |
@@ -638,11 +638,10 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 236 commits
+### Chores (chore) — 235 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-06 | triage | sweep 1 outbox append(s) into branch | fe144fc03b65 |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
@@ -1166,7 +1165,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1097 |
+| Total commits | 1096 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1097 |
+| Human-authored commits | 1096 |
 

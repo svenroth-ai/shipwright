@@ -185,7 +185,9 @@ intact. The plugin-registered hook still fires.
 ## Step 5: Print Launch Card and End
 
 The master is done. Read `phase_tasks[0]` from the config you just wrote and
-render the launch card for the user to paste into a fresh terminal.
+render the **hand-off banner**, branched on the **launch surface**. A pipeline
+phase launches as its own `claude --session-id …` session, so the hand-off
+depends on whether this surface can start one.
 
 **Compute these values:**
 
@@ -198,26 +200,56 @@ render the launch card for the user to paste into a fresh terminal.
 - `projectRoot` → `$(pwd)` (the cwd you passed to `write-config`).
 - `pipelineLength` → `len(config.pipeline)` (always 7 post-decouple — security is no longer an orchestrator phase).
 - `nameSuffix` → `splitId ? f"{phase} / {splitId}" : phase` (here just `"project"`).
+- `surface` → read `CLAUDE_CODE_ENTRYPOINT` (POSIX `printenv CLAUDE_CODE_ENTRYPOINT`;
+  PowerShell `$env:CLAUDE_CODE_ENTRYPOINT`). `cli` (a plain shell OR the WebUI's
+  embedded terminal, which re-sets `cli`) → `surface = terminal`. `claude-vscode`,
+  a desktop-app value, or any GUI chat surface → `surface = chat` — it CANNOT
+  start a bound `claude --session-id` phase session.
 
-**Render the banner:**
+**Render the banner — branch on `surface`:**
+
+**(a) `surface` is chat — VS Code extension or desktop app.** This chat surface
+can't start a bound phase session, so the pipeline can't advance here. Tell the
+truth and point at a surface that can.
 
 ```
 ================================================================================
 PIPELINE PLANNED — {runId}
 ================================================================================
-Phase 1 of {pipelineLength} ({phase}) is ready to launch.
+Phase 1 of {pipelineLength} ({phase}) is registered — but this surface can't
+launch it. The pipeline runs each phase as its own bound session
+(claude --session-id …), which the VS Code extension / desktop chat can't start.
 
-Open a NEW terminal and paste this command:
+Run it from a surface that can:
+  • Terminal (CLI) — paste:
+      claude --session-id {sessionUuid} --add-dir "{projectRoot}" --name 'Run-{shortRunId} / {nameSuffix}' '{slashCommand}'
+  • WebUI Command Center — open the Task Board and Continue each phase.
 
-  claude --session-id {sessionUuid} --add-dir "{projectRoot}" --name 'Run-{shortRunId} / {nameSuffix}' '{slashCommand}'
+For a single change without the full pipeline, /shipwright-iterate runs here.
+================================================================================
+```
+
+**(b) `surface` is terminal — CLI or the WebUI's embedded terminal.** Offer both
+continue paths (board or paste); `cli` covers both.
+
+```
+================================================================================
+PIPELINE PLANNED — {runId}
+================================================================================
+Phase 1 of {pipelineLength} ({phase}) is registered and ready.
+
+▸ In the WebUI Command Center? The pipeline is on the Task Board as a Run
+  lane — use Continue on Phase 1 ({phase}) there. You can close this session.
+
+▸ In a plain terminal? Open a NEW terminal and paste this command:
+
+    claude --session-id {sessionUuid} --add-dir "{projectRoot}" --name 'Run-{shortRunId} / {nameSuffix}' '{slashCommand}'
 
 This master session can be closed — pipeline state lives in
-shipwright_run_config.json. Each phase will plan the next on its
-own Stop hook.
+shipwright_run_config.json. Each phase plans the next on its own Stop hook.
 
 When all phases complete, the final phase's Stop hook flips
-run.status = "complete" — you do NOT need to reopen this master
-session for the pipeline to finish.
+run.status = "complete" — you do NOT need to reopen this master session.
 ================================================================================
 ```
 
@@ -314,6 +346,10 @@ If `shipwright_run_config.json` exists at `schemaVersion: 2`:
 3. Detect **stale tasks** — entries with `status == "in_progress"` whose
    `claimAttemptedAt` is older than ~1 hour. These typically indicate a
    crashed phase session that never ran the Stop hook.
+4. Determine `surface` — read `CLAUDE_CODE_ENTRYPOINT` (same as Step 5).
+   `terminal` continues via the board's **Continue** (WebUI) or the paste card
+   (CLI); `chat` (VS Code extension / desktop) can't launch a bound phase — send
+   the user to a terminal or the Command Center.
 
 **Render a resume banner:**
 
@@ -326,9 +362,11 @@ Terminal: {N_terminal} / {N_total} phase tasks
 Splits frozen: {len(splits_frozen)}
 
 {if next_launchable:}
-Next phase ready to launch:
-
-  claude --session-id {sessionUuid} --add-dir "{projectRoot}" --name 'Run-{shortRunId} / {nameSuffix}' '{slashCommand}'
+Next phase ready ({phase}{/splitId}):
+  • Command Center — Continue it on the Task Board.
+  • Terminal — paste:
+      claude --session-id {sessionUuid} --add-dir "{projectRoot}" --name 'Run-{shortRunId} / {nameSuffix}' '{slashCommand}'
+{if surface == chat:} This chat (VS Code extension / desktop) can't launch it — use a terminal or the Command Center.
 
 {if stale_tasks:}
 Stale (likely crashed) phase tasks:
