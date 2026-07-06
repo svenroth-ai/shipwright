@@ -1,0 +1,1 @@
+Security triage no longer over-counts accepted-risk GitHub-owned mutable-action-tag findings for adopted repos: the owner-scoped SHIPWRIGHT_SEMGREP_ACCEPT_GH_OWNED_ACTION_TAGS tailoring now also applies at the SARIF artifact-ingest path (and the Control-Grade Security dimension), not just the plugin's local scan. Unpinned third-party actions stay flagged.

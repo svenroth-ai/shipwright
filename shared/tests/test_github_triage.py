@@ -126,7 +126,7 @@ def _patch_api(
     # None cases hit the REAL gh artifact download (non-hermetic: flakes once the
     # repo has fresh successful security.yml runs).
     monkeypatch.setattr(github_api, "latest_security_workflow_run", lambda: None)
-    monkeypatch.setattr(github_api, "download_security_findings", lambda rid: None)
+    monkeypatch.setattr(github_api, "download_security_findings", lambda rid, workflow_base=None: None)
     monkeypatch.setattr(github_api, "download_prompt_risks", lambda rid: None)
 
 

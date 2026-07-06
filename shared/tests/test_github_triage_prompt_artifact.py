@@ -84,7 +84,7 @@ def _patch(monkeypatch, *, prompt_findings: Any, findings: Any = None) -> None:
         github_api, "latest_security_workflow_run",
         lambda: {"id": 900, "html_url": "https://github.com/acme/foo/actions/runs/900"},
     )
-    monkeypatch.setattr(github_api, "download_security_findings", lambda rid: findings)
+    monkeypatch.setattr(github_api, "download_security_findings", lambda rid, workflow_base=None: findings)
     monkeypatch.setattr(github_api, "download_prompt_risks", lambda rid: prompt_findings)
 
 
@@ -128,7 +128,7 @@ def _patch_cs_available(
     """
     calls = {"security_findings": 0, "prompt_risks": 0}
 
-    def _dl_security(rid: Any) -> Any:
+    def _dl_security(rid: Any, workflow_base: Any = None) -> Any:
         calls["security_findings"] += 1
         return sast_findings
 

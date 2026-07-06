@@ -26,6 +26,13 @@ reliable owner source. When the owner can't be determined (file unreadable,
 line out of range, no ``uses:`` value) the finding is KEPT — fail toward the
 signal, never silently over-suppress.
 
+The owner-scoped predicate itself lives in the shared leaf module
+``gh_action_tag_owner`` so the triage / Control-Grade artifact-ingest path
+(``shared/scripts/security_findings.py``) applies the IDENTICAL accepted-risk
+drop to the raw SARIF adopted repos upload — the plugin local scan was the only
+place it fired before. The helpers below stay as thin wrappers over that module
+so callers importing them are unaffected.
+
 Accept register: docs/security-ci-setup.md (§ Accepted-risk rule tailoring).
 """
 
@@ -33,22 +40,31 @@ from __future__ import annotations
 
 import os
 import re
+import sys
+from pathlib import Path
 from typing import Any
 
 from normalizers.semgrep import normalize
 
+# Shared leaf util (unique top-level name, never ``lib.*`` — ADR-045). Bootstrap
+# ``shared/scripts`` onto sys.path the same way the plugin's tools reach shared.
+_SHARED_SCRIPTS = Path(__file__).resolve().parents[2].parent.parent / "shared" / "scripts"
+if str(_SHARED_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SHARED_SCRIPTS))
+
+from gh_action_tag_owner import (  # noqa: E402
+    accept_github_owned_action_tags,
+    action_owner_from_file,
+    is_github_owned_owner,
+    is_mutable_action_tag_rule,
+)
+
 _EXCLUDE_RULES_ENV = "SHIPWRIGHT_SEMGREP_EXCLUDE_RULES"
-_ACCEPT_GH_ACTION_TAGS_ENV = "SHIPWRIGHT_SEMGREP_ACCEPT_GH_OWNED_ACTION_TAGS"
-_TRUE_VALUES = frozenset({"1", "true", "yes", "on"})
 # Registry rule IDs are dot-separated slugs (letters/digits/dot/underscore/
 # hyphen). This allowlist rejects path separators, globs and whitespace so a
 # CI-config value can never smuggle anything unexpected into the filter.
 _RULE_ID_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 _FORBIDDEN_RULE_IDS = frozenset({".", ".."})
-
-_MUTABLE_TAG_RULE_SUFFIX = "github-actions-mutable-action-tag"
-_GITHUB_OWNED_ACTION_OWNERS = frozenset({"actions", "github"})
-_USES_RE = re.compile(r"\buses\s*:\s*['\"]?\s*([A-Za-z0-9._@/-]+)")
 
 
 def normalize_tailored(raw: dict[str, Any]) -> list[dict[str, Any]]:
@@ -96,8 +112,11 @@ def _resolve_exclude_rule_ids() -> frozenset[str]:
 
 
 def _accept_github_owned_action_tags() -> bool:
-    """Whether SHIPWRIGHT_SEMGREP_ACCEPT_GH_OWNED_ACTION_TAGS opts in. Default OFF."""
-    return os.environ.get(_ACCEPT_GH_ACTION_TAGS_ENV, "").strip().lower() in _TRUE_VALUES
+    """Whether SHIPWRIGHT_SEMGREP_ACCEPT_GH_OWNED_ACTION_TAGS opts in. Default OFF.
+
+    Thin wrapper over ``gh_action_tag_owner.accept_github_owned_action_tags``.
+    """
+    return accept_github_owned_action_tags()
 
 
 def _is_github_owned_action_tag(finding: dict[str, Any]) -> bool:
@@ -106,31 +125,16 @@ def _is_github_owned_action_tag(finding: dict[str, Any]) -> bool:
     Owner comes from the workflow file at the finding's line (see module
     docstring); an unresolvable owner returns False so the finding is KEPT.
     """
-    if not str(finding.get("rule", "")).endswith(_MUTABLE_TAG_RULE_SUFFIX):
+    if not is_mutable_action_tag_rule(finding.get("rule")):
         return False
     owner = _action_owner_from_file(
         finding.get("affected_file"), finding.get("affected_line")
     )
-    return owner in _GITHUB_OWNED_ACTION_OWNERS
+    return is_github_owned_owner(owner)
 
 
 def _action_owner_from_file(path: Any, line: Any) -> str | None:
-    """Owner segment (before the first ``/``) of the ``uses:`` ref on ``line``
-    of workflow ``path``. None on any read/parse failure (fail-safe KEEP).
-
-    ``path`` is semgrep's cwd-relative path; this runs in the same process (and
-    cwd) as the scan, so a plain ``open`` resolves it.
-    """
-    if not path or not isinstance(line, int) or line < 1:
-        return None
-    try:
-        with open(path, encoding="utf-8", errors="replace") as handle:
-            rows = handle.readlines()
-    except OSError:
-        return None
-    if line > len(rows):
-        return None
-    match = _USES_RE.search(rows[line - 1])
-    if not match:
-        return None
-    return match.group(1).split("@", 1)[0].split("/", 1)[0] or None
+    """Owner of the ``uses:`` ref on ``line`` of workflow ``path`` — cwd-relative,
+    because the local scan runs in the scan's own cwd. Thin wrapper over
+    ``gh_action_tag_owner.action_owner_from_file``; None on any failure (KEEP)."""
+    return action_owner_from_file(path, line)

@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-06T20:44:43.547322+00:00
+Generated: 2026-07-06T22:34:30.015905+00:00
 
 ## Requirements Coverage
 
@@ -27,6 +27,7 @@ Generated: 2026-07-06T20:44:43.547322+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-aebeb6f0"></a>Security triage no longer raises a recurring false low-severity alarm for GitHub-owned actions an adopted repo has deliberately accepted; genuinely risky unpinned third-party actions are still reported. | iterate | bug |  | 5598/5625 | — | 2026-07-06 |
 | <a id="evt-0e47577b"></a>Cold-repo Control Grade caps at B (A is authoritative-only): the projector declares change_reconciliation the one expected_dimensions entry so the honesty gate caps a cold headline at B. Heuristic-only; dogfood stays A. | iterate | change |  | — | — | 2026-07-06 |
 | <a id="evt-b56b6097"></a>The compliance dashboard no longer calls diff-coverage 'informational' — it is now shown as the graded, enforced quality control it actually is. | iterate | change |  | 951/951 | — | 2026-07-06 |
 | <a id="evt-9153208e"></a>G6: calibrate the cold-repo projector so well-run OSS repos no longer grade F (CI-system-app test-health + PR-head fallback, network PR-association provenance, self-referential-route suppression); empirical gate asserts well-run > deprecated. | iterate | change |  | — | — | 2026-07-06 |
@@ -300,7 +301,7 @@ Generated: 2026-07-06T20:44:43.547322+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 266 |
+| Iterate changes | 267 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

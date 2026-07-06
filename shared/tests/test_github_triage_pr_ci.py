@@ -88,7 +88,7 @@ def _patch_pr_api(monkeypatch, *, open_prs, check_runs_by_sha, pr_state=None):
     monkeypatch.setattr(github_api, "fetch_secret_scanning_alerts", lambda: [])
     monkeypatch.setattr(github_api, "fetch_workflow_runs", lambda b: [])
     monkeypatch.setattr(github_api, "latest_security_workflow_run", lambda: None)
-    monkeypatch.setattr(github_api, "download_security_findings", lambda rid: None)
+    monkeypatch.setattr(github_api, "download_security_findings", lambda rid, workflow_base=None: None)
     monkeypatch.setattr(github_pr_api, "fetch_open_prs", lambda: open_prs)
     monkeypatch.setattr(
         github_pr_api, "fetch_pr_check_runs",

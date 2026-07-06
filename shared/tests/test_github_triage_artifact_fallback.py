@@ -127,7 +127,8 @@ def _patch_api(
         github_api, "latest_security_workflow_run", lambda: artifact_run,
     )
     monkeypatch.setattr(
-        github_api, "download_security_findings", lambda run_id: artifact_findings,
+        github_api, "download_security_findings",
+        lambda run_id, workflow_base=None: artifact_findings,
     )
     monkeypatch.setattr(
         github_api, "download_prompt_risks", lambda run_id: prompt_findings,
@@ -196,7 +197,8 @@ def test_sast_gated_but_prompt_fetched_when_cs_alerts_succeeds(
         ci_runs=[], artifact_run=_build_run(),
     )
     monkeypatch.setattr(
-        github_api, "download_security_findings", lambda rid: sast_calls.append("sast") or None,
+        github_api, "download_security_findings",
+        lambda rid, workflow_base=None: sast_calls.append("sast") or None,
     )
     monkeypatch.setattr(
         github_api, "download_prompt_risks", lambda rid: prompt_calls.append("prompt") or None,

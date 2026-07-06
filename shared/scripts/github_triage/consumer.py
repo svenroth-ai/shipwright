@@ -92,9 +92,9 @@ def import_findings(project_root) -> dict:
             run_id = artifact_run.get("id") or 0
             # prompt_risks.json — always (orthogonal to Code Scanning).
             prompt_findings = github_api.download_prompt_risks(run_id)
-            # findings.json (SAST) — only when Code Scanning is unavailable.
+            # SAST findings.json — only when Code Scanning is down. workflow_base drops an opted-in repo's accepted GH-owned mutable-tags (third-party stays flagged; see architecture.md).
             if cs_alerts is None:
-                artifact_findings = github_api.download_security_findings(run_id)
+                artifact_findings = github_api.download_security_findings(run_id, workflow_base=project_root)
     except Exception as exc:  # noqa: BLE001 — fail-soft, never block
         sys.stderr.write(
             f"[github-triage] artifact fetch failed: "

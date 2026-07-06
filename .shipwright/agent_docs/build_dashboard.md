@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-06 20:44 UTC | Session: fdc9aece-9faa-408e-af7a-7b6e8dbcaa27 | Run: iterate-2026-07-06-grade-cold-repo-b-cap
+> Updated: 2026-07-06 22:34 UTC | Session: 5f961e7b-133b-440e-b3b1-0a699abb66cb | Run: iterate-2026-07-06-semgrep-accept-producer
 
-## Recent Changes (266 iterations)
+## Recent Changes (267 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | Lift the owner-scoped GH-owned-action-tag Semgrep tailoring predicate into a shared util and apply the opt-in drop at the SARIF artifact-ingest path (security_findings._findings_from_sarif) so the gh-security triage producer and Control-Grade Security dimension stop over-counting accepted-risk GH-owned mutable-action-tags for adopted repos; third-party stays flagged. | 5598/5625 |  | tooling | 2026-07-06 |
 | change | Compliance dashboard honesty: rewrite the _diff_coverage_block.py wording so diff-coverage reads as a graded Control-Grade Test-Health input (target >=80%), not '(informational, not yet graded)'. Both prior claims became false after Phase 3 (graded) + the Phase-7 hard flip (enforced CI gate). Kept generic (no hardcoded 'blocks merge') since the renderer is repo-agnostic and lights up on any managed repo that produces the transient. | 951/951 |  | tooling | 2026-07-06 |
 | change | Cold-repo Control Grade caps at B (A is authoritative-only): the projector declares change_reconciliation the one expected_dimensions entry so the honesty gate caps a cold headline at B. Heuristic-only; dogfood stays A. | 0/0 |  | tooling | 2026-07-06 |
 | change | Diff-coverage hard flip: drop continue-on-error from the ci.yml 'Diff coverage (gate)' step and remove its ci_gate_allowlist entry so a PR whose changed lines are < 80% covered blocks merge; the CI-gate guard's reverse-drift + stale-entry checks now enforce it stays gating. Ends the warn-only settling window; also dismisses the campaign triage anchors trg-8fdebda3 + trg-76202789. | 3666/3666 |  | tooling | 2026-07-06 |
@@ -273,7 +274,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-06 | Unit: 348/349 | Integration: 8/12 | (iterate)
+Last run: 2026-07-06 | Unit: 5424/5451 | Integration: 174/174 | (iterate)
 
 ## Pipeline
 

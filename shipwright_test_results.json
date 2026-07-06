@@ -1,20 +1,21 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-06-grade-cold-repo-b-cap",
+    "run_id": "iterate-2026-07-06-semgrep-accept-producer",
     "date": "2026-07-06",
-    "intent": "change",
+    "intent": "bug",
     "complexity": "small",
     "unit": {
-      "passed": 348,
-      "total": 349,
-      "skipped": 1,
-      "framework": "pytest"
+      "passed": 5424,
+      "total": 5451,
+      "skipped": 27,
+      "framework": "pytest",
+      "note": "touched-surface suites: shared/tests 3677 + shared/scripts/tests 196 + shared/scripts/tools/tests 129 + shipwright-security 470 + shipwright-compliance 952"
     },
     "integration": {
-      "passed": 8,
-      "total": 12,
-      "skipped": 4,
-      "note": "-m empirical gate green"
+      "passed": 174,
+      "total": 174,
+      "skipped": 0,
+      "note": "integration-tests (-m 'not slow'); no cross_component machinery touched"
     },
     "pgtap": null,
     "e2e": null,
@@ -23,49 +24,84 @@
     "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "justification": "Single-field cold-repo projection change (expected_dimensions) + fixture re-refresh; no web/UI surface. E2E = the -m empirical gate (7 real-OSS fixtures, offline replay + live --refresh) + live grade.py of 5 repos + monorepo. Cold grades now cap at B; dogfood monorepo re-graded A 100 (authoritative, reconciliation measured 1.0).",
+      "justification": "Framework Python change to the shared security-scan-findings ingest + Semgrep tailoring; no web/UI surface exists. The touches_io_boundary round-trip IS the verification: a SARIF-ingest boundary test (build SARIF + workflow file, assert GH-owned tags drop, third-party kept, fail-safe KEEP incl. abs/.. traversal) plus an end-to-end import_findings integration test proving the recurring gh-security triage alarm is silenced for an opted-in adopted repo, with a causality guard. All touched-surface suites green (5598 tests).",
       "exit_code": 0,
-      "tests_run": 348,
-      "timestamp": "2026-07-06T18:15:00Z"
+      "tests_run": 5598,
+      "timestamp": "2026-07-06T22:30:00Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "cold projection declares change_reconciliation as the one expected-but-dark control",
+          "behavior": "Opt-in default OFF: SARIF artifact-ingest unchanged (no drop, no owner I/O, no shape change)",
           "disposition": "tested",
-          "evidence": "test_projector_fixtures.py::test_cold_projection_declares_reconciliation_expected PASSED"
+          "evidence": "test_security_findings_gh_tag_drop.py::{test_default_env_keeps_every_tag,test_download_counts_all_when_not_accepted} PASSED (4 findings kept)"
         },
         {
-          "behavior": "cold heuristic grade caps at B (89, not A) with a factual verdict",
+          "behavior": "Accept env ON + workflow_base: GH-owned (actions/*, github/*) mutable-action-tags dropped at ingest",
           "disposition": "tested",
-          "evidence": "test_projector_fixtures.py::test_heuristic_grade_caps_at_b_not_a PASSED (grade B, score 89.0, verdict cites reconciliation)"
+          "evidence": "test_security_findings_gh_tag_drop.py::{test_accept_drops_gh_owned_keeps_third_party,test_download_counts_zero_gh_owned_when_accepted} PASSED"
         },
         {
-          "behavior": "CLI terminal/markdown/json/URL output shows B for a cold well-run repo",
+          "behavior": "Third-party unpinned mutable-tag stays counted under accept (supply-chain guard preserved)",
           "disposition": "tested",
-          "evidence": "test_grade_cli.py::{test_terminal_format_default,test_markdown_format,test_json_format_is_valid_and_stable,test_url_is_cloned_and_graded} PASSED"
+          "evidence": "test_security_findings_gh_tag_drop.py::test_accept_drops_gh_owned_keeps_third_party PASSED (evilcorp/* low retained)"
         },
         {
-          "behavior": "cap is heuristic-only — authoritative grade unaffected (monorepo stays A)",
+          "behavior": "Unresolvable owner (no workflow_base) leaves the finding KEPT (fail toward the signal)",
           "disposition": "tested",
-          "evidence": "test_authoritative.py::test_authoritative_grade_never_runs_the_projection PASSED + live monorepo A 100 authoritative (reconciliation measured 1.0)"
+          "evidence": "test_security_findings_gh_tag_drop.py::test_accept_without_workflow_base_keeps_all PASSED"
         },
         {
-          "behavior": "empirical fixtures reflect the B-cap; gate green (well-run C..B > deprecated F)",
+          "behavior": "Committed-tree drift (finding line no longer a GH-owned uses:) leaves the finding KEPT",
           "disposition": "tested",
-          "evidence": "-m empirical (test_real_repo_grade_in_band, test_calibration_ordering) PASSED; express/agent-skills B, superpowers B, flask C, request F"
+          "evidence": "test_security_findings_gh_tag_drop.py::test_accept_keeps_tag_when_line_drifted PASSED"
+        },
+        {
+          "behavior": "base_dir enforces the repo-relative uri contract: absolute/.. uri rejected -> KEEP (over-suppression defense-in-depth)",
+          "disposition": "tested",
+          "evidence": "test_security_findings_gh_tag_drop.py::test_owner_base_dir_rejects_absolute_and_traversal PASSED"
+        },
+        {
+          "behavior": "Non-mutable-tag findings are never dropped by the accept channel",
+          "disposition": "tested",
+          "evidence": "py.high survives across every drop test in test_security_findings_gh_tag_drop.py"
+        },
+        {
+          "behavior": "End-to-end via import_findings: accepted GH-owned-only SARIF yields no gh-security triage item (alarm silenced)",
+          "disposition": "tested",
+          "evidence": "test_security_findings_gh_tag_drop.py::test_import_findings_no_alarm_when_gh_owned_accepted PASSED"
+        },
+        {
+          "behavior": "End-to-end causality: the SAME SARIF without the accept env still emits the gh-security item",
+          "disposition": "tested",
+          "evidence": "test_security_findings_gh_tag_drop.py::test_import_findings_alarm_fires_without_accept PASSED"
+        },
+        {
+          "behavior": "Grade path (refresh_ci_security) forwards project_root as workflow_base so the drop reaches the Control-Grade Security dimension too",
+          "disposition": "tested",
+          "evidence": "test_refresh_ci_security.py::test_passes_project_root_as_workflow_base PASSED"
+        },
+        {
+          "behavior": "inSource '# nosemgrep' suppressions are still honoured at ingest (regression guard)",
+          "disposition": "tested",
+          "evidence": "existing test_github_api_sarif_fallback.py::test_sarif_all_inline_suppressed_results_yield_clean_empty PASSED (unchanged)"
+        },
+        {
+          "behavior": "Plugin local-scan predicate parity preserved after lifting the predicate to the shared util",
+          "disposition": "tested",
+          "evidence": "existing test_semgrep_rule_tailoring.py (15 tests) PASSED unchanged"
         }
       ],
       "counts": {
-        "total": 5,
-        "tested": 5,
+        "total": 12,
+        "tested": 12,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 5,
-        "covered_acs": 5
+        "acs": 6,
+        "covered_acs": 6
       }
     }
   },
