@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-07-06T22:19:21.443674+00:00
-Total commits: 1101
+Generated: 2026-07-06T22:34:30.015905+00:00
+Total commits: 1102
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 319
+    "fix" : 320
     "feat" : 293
     "chore" : 236
     "docs" : 143
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 319 commits
+### Fixes (fix) — 320 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-07 | security | drop accepted-risk GH-owned action-tags at the SARIF artifact producer | 12f631730a3f |
 | 2026-07-07 | run | surface-aware hand-off banner (CLAUDE_CODE_ENTRYPOINT) (#334) | 3f81def08667 |
 | 2026-07-06 | grade | cap cold-repo Control Grade at B — A is authoritative-only (#333) | ea0e58a72ee6 |
 | 2026-07-06 | compliance | diff-coverage is a graded/gated control, not "informational" on the dashboard (#332) | 5ce743a110a5 |
@@ -348,7 +349,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-07 | adopt | scaffold a warn-only diff-coverage gate into the vitest CI templates | 559951b3e6e9 |
+| 2026-07-07 | adopt | scaffold a warn-only diff-coverage gate into the vitest CI templates (#335) | 9b06a388e6f5 |
 | 2026-07-06 | grade | empirical calibration suite — SHA-pinned real-OSS record/replay launch gate (G5) (#327) | b8d1b9a2eb74 |
 | 2026-07-05 | coverage | diff-coverage feeds Control-Grade Test-Health (WARN, Phase 3) (#322) | 0532d4db632f |
 | 2026-07-05 | grade | audience-facing plain-language report redesign (#320) | dba3daf56f28 |
@@ -646,7 +647,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-07 | triage | sweep 2 outbox append(s) into branch | ba3fd48fad04 |
+| 2026-07-06 | triage | sweep 2 outbox append(s) into branch | 558637171ea7 |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
@@ -1170,7 +1171,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1101 |
+| Total commits | 1102 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1101 |
+| Human-authored commits | 1102 |
 

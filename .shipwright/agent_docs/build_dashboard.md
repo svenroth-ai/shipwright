@@ -1,11 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-07-06 22:19 UTC | Session: 5c5ef9ef-c7b0-4d18-b2ca-e17a75470a7b | Run: iterate-2026-07-07-diff-coverage-adopt-templates
+> Updated: 2026-07-06 22:34 UTC | Session: 5f961e7b-133b-440e-b3b1-0a699abb66cb | Run: iterate-2026-07-06-semgrep-accept-producer
 
-## Recent Changes (268 iterations)
+## Recent Changes (269 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
 | change | Diff-coverage adopt-template rollout: add a warn-only diff-coverage job to the two vitest CI templates (ci-supabase-nextjs flat + ci-vite-hono client/server) so every future adopted vitest repo gets a changed-line coverage gate (npm cobertura -> pinned uvx diff-cover@10.3.0 --fail-under=80, continue-on-error, ubuntu-only, PR-gated, dormant). diff-cover resolves each package's paths natively via cobertura <source> (no combine). Proven end-to-end on WebUI PR #205. | 3667/3667 |  | tooling | 2026-07-06 |
+| bug | Lift the owner-scoped GH-owned-action-tag Semgrep tailoring predicate into a shared util and apply the opt-in drop at the SARIF artifact-ingest path (security_findings._findings_from_sarif) so the gh-security triage producer and Control-Grade Security dimension stop over-counting accepted-risk GH-owned mutable-action-tags for adopted repos; third-party stays flagged. | 5598/5625 |  | tooling | 2026-07-06 |
 | change | Compliance dashboard honesty: rewrite the _diff_coverage_block.py wording so diff-coverage reads as a graded Control-Grade Test-Health input (target >=80%), not '(informational, not yet graded)'. Both prior claims became false after Phase 3 (graded) + the Phase-7 hard flip (enforced CI gate). Kept generic (no hardcoded 'blocks merge') since the renderer is repo-agnostic and lights up on any managed repo that produces the transient. | 951/951 |  | tooling | 2026-07-06 |
 | change | Cold-repo Control Grade caps at B (A is authoritative-only): the projector declares change_reconciliation the one expected_dimensions entry so the honesty gate caps a cold headline at B. Heuristic-only; dogfood stays A. | 0/0 |  | tooling | 2026-07-06 |
 | change | surface-aware /shipwright-run hand-off banner via CLAUDE_CODE_ENTRYPOINT | 169/169 |  | tooling | 2026-07-06 |
@@ -275,7 +276,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-07 | Unit: 3667/3667 | Smoke: skipped | (iterate)
+Last run: 2026-07-06 | Unit: 5424/5451 | Integration: 174/174 | (iterate)
 
 ## Pipeline
 
