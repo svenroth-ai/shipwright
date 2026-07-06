@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-07-06T20:38:41.414224+00:00
-Total commits: 1096
+Generated: 2026-07-06T20:44:43.547322+00:00
+Total commits: 1098
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 316
+    "fix" : 318
     "feat" : 292
     "chore" : 235
     "docs" : 143
@@ -20,10 +20,12 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 316 commits
+### Fixes (fix) — 318 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-06 | grade | cap cold-repo Control Grade at B — A is authoritative-only | 8c942d166607 |
+| 2026-07-06 | compliance | diff-coverage is a graded/gated control, not "informational" on the dashboard (#332) | 5ce743a110a5 |
 | 2026-07-06 | grade | calibrate the cold-repo projector so well-run OSS repos no longer grade F (G6) (#331) | 5c20a269b710 |
 | 2026-07-06 | hooks | self-heal the shared/ plugin cache on marketplace installs (#326) | 130df1e1922d |
 | 2026-07-06 | grade,adopt | strip surrounding quotes from path/URL input seams (#325) | c1280089588f |
@@ -1165,7 +1167,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1096 |
+| Total commits | 1098 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1096 |
+| Human-authored commits | 1098 |
 
