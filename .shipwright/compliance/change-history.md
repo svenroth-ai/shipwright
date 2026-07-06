@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-07-06T10:21:36.704684+00:00
-Total commits: 1090
+Generated: 2026-07-06T11:14:04.882235+00:00
+Total commits: 1093
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 314
-    "feat" : 291
-    "chore" : 235
+    "fix" : 315
+    "feat" : 292
+    "chore" : 236
     "docs" : 143
     "refactor" : 64
     "test" : 26
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 314 commits
+### Fixes (fix) — 315 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-06 | hooks | self-heal the shared/ plugin cache on marketplace installs (#326) | 130df1e1922d |
 | 2026-07-06 | grade,adopt | strip surrounding quotes from path/URL input seams (#325) | c1280089588f |
 | 2026-07-05 | grade | mode-aware honest-ceiling note; drop BP-2 codename (#323) | 79819b0afc30 |
 | 2026-07-04 | grade | CTA explains adopt + next step, one hardened link (drop "certify") (#317) | 17afe47ffa25 |
@@ -339,10 +340,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 291 commits
+### Features (feat) — 292 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-06 | grade | empirical calibration suite — SHA-pinned real-OSS record/replay launch gate (G5) | ef6052f3e472 |
 | 2026-07-05 | coverage | diff-coverage feeds Control-Grade Test-Health (WARN, Phase 3) (#322) | 0532d4db632f |
 | 2026-07-05 | grade | audience-facing plain-language report redesign (#320) | dba3daf56f28 |
 | 2026-07-04 | coverage | monorepo diff-coverage combine + light W4 (Phase 2) (#318) | 5e9e502b223e |
@@ -635,10 +637,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 235 commits
+### Chores (chore) — 236 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-06 | grade | align ci-security.json snapshot with origin/main (CI-managed AR-10 scan state, 0 findings both sides) | 36284fcb4dfd |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
@@ -1159,7 +1162,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1090 |
+| Total commits | 1093 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1090 |
+| Human-authored commits | 1093 |
 
