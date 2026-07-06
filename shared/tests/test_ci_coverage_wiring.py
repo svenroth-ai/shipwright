@@ -2,11 +2,12 @@
 
 The combine mechanic is fiddly (per-plugin [paths] remap), so the CI steps that
 feed it are pinned here: per-plugin ``--cov`` into per-tier data files, a Combine
-step, integration coverage, and the diff-cover step running AFTER combine over the
-combined ``coverage.xml``. A future edit that drops one of these silently would
-otherwise leave the combined report empty / mis-attributed. Phase 4 upgraded the
-diff-cover step to a warn-only ``--fail-under=80`` gate (still continue-on-error
-during the settling window) — pinned by ``test_diff_coverage_step_is_warn_only_gate``.
+step, integration coverage, and the diff-coverage gate step running AFTER combine
+over the combined ``coverage.xml``. A future edit that drops one of these silently
+would otherwise leave the combined report empty / mis-attributed. Phase 4 (hardened)
+routes the warn-only ``--fail-under 80`` gate through the tested
+``measure_diff_coverage.py`` wrapper (still continue-on-error during the settling
+window) — pinned by ``test_diff_coverage_step_is_warn_only_gate``.
 """
 
 from __future__ import annotations
@@ -72,24 +73,29 @@ def test_combine_step_invokes_the_tool():
 
 
 def test_diff_coverage_step_is_warn_only_gate():
-    # Diff-coverage roadmap Phase 4 (warn-only). The step now runs
-    # `diff-cover --fail-under=80`, so an under-tested PR emits a visible
-    # FAILURE annotation on the step — but continue-on-error stays True for the
-    # ~1-2 week settling window, so it does NOT block merge yet. The hard flip
-    # (drop continue-on-error + drop the ci_gate_allowlist entry) is the
-    # deferred last step. 80 == control_grade._DIFF_COV_WARN_THRESHOLD.
+    # Diff-coverage roadmap Phase 4 (warn-only), hardened: the gate DECISION now
+    # runs through the tested `measure_diff_coverage.py --fail-under 80` wrapper
+    # (which prints the report + exits non-zero iff diff% < 80) instead of inline
+    # `diff-cover` shell, so the fail-path is provable. continue-on-error stays
+    # True for the settling window, so an under-tested PR shows a visible FAILURE
+    # but does NOT block merge yet. The hard flip (drop continue-on-error + drop
+    # the ci_gate_allowlist entry) is the deferred last step. 80 ==
+    # control_grade._DIFF_COV_WARN_THRESHOLD.
     step = _step("Diff coverage (warn-only gate)")
     run = step.get("run", "")
     assert step.get("continue-on-error") is True
-    assert "--fail-under=80" in run
+    # The gate goes through the tested Python entrypoint (not inline diff-cover).
+    assert "measure_diff_coverage.py" in run
+    assert "--fail-under 80" in run
     assert "coverage.xml" in run
-    # The report must still print and the gate result must be re-raised even
-    # when --fail-under trips: capture diff-cover's exit under `bash -eo
-    # pipefail` (|| rc=$?), print the markdown report, then `exit "$rc"` so the
-    # step goes red (continue-on-error downgrades that to a warning).
+    # diff-cover is pinned (a release can't silently change flags/exit codes).
+    assert "diff-cover==10.3.0" in run
+    # The wrapper prints the markdown report; the step captures its exit under
+    # `bash -eo pipefail` (|| rc=$?) and re-raises it (`exit "$rc"`) so the step
+    # goes red on an under-covered diff (continue-on-error downgrades to warning).
+    assert "--markdown-out diff-cover.md" in run
     assert "rc=$?" in run
     assert 'exit "$rc"' in run
-    assert "cat diff-cover.md" in run
 
 
 def test_combine_runs_before_diff_after_all_tiers():

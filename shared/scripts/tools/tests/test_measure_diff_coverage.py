@@ -236,11 +236,17 @@ class TestMainCLI:
 # --------------------------------------------------------------------------- #
 class TestRunDiffCover:
     def _fake_run_writing(self, report: dict):
-        """A subprocess.run stub that writes ``report`` to the --json-report
-        path passed in argv and returns success."""
+        """A subprocess.run stub that parses the ``--format json:…[,markdown:…]``
+        targets (the non-deprecated flags) and writes ``report`` to the json
+        target, returning success."""
         def _run(cmd, **kwargs):
-            idx = cmd.index("--json-report")
-            Path(cmd[idx + 1]).write_text(json.dumps(report), encoding="utf-8")
+            fmt = cmd[cmd.index("--format") + 1]
+            for part in fmt.split(","):
+                kind, _, path = part.partition(":")
+                if kind == "json":
+                    Path(path).write_text(json.dumps(report), encoding="utf-8")
+                elif kind == "markdown":
+                    Path(path).write_text("# Diff Coverage\n", encoding="utf-8")
             return types.SimpleNamespace(returncode=0, stdout="", stderr="")
         return _run
 
@@ -263,6 +269,20 @@ class TestRunDiffCover:
             raise FileNotFoundError("diff-cover not installed")
         monkeypatch.setattr(mod.subprocess, "run", _boom)
         assert run_diff_cover(cov, "origin/main", tmp_path) is None
+
+    def test_stale_persistent_report_not_reused_on_failure(self, tmp_path, monkeypatch):
+        # Gate mode persists json_out; a diff-cover run that writes nothing must
+        # clear the prior report (not inherit it) -> returns None (gate fails closed).
+        cov = tmp_path / "coverage.xml"
+        cov.write_text(COVERAGE_XML, encoding="utf-8")
+        stale = tmp_path / "diff-cover.json"
+        stale.write_text(json.dumps(DIFF_REPORT_OK), encoding="utf-8")
+
+        def _writes_nothing(cmd, **kwargs):  # diff-cover "runs" but produces no report
+            return types.SimpleNamespace(returncode=1, stdout="", stderr="boom")
+        monkeypatch.setattr(mod.subprocess, "run", _writes_nothing)
+        assert run_diff_cover(cov, "origin/main", tmp_path, json_out=stale) is None
+        assert not stale.exists()  # the stale report was cleared, not reused
 
     def test_main_without_json_invokes_diff_cover(self, tmp_path, monkeypatch):
         (tmp_path / "coverage.xml").write_text(COVERAGE_XML, encoding="utf-8")

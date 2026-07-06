@@ -92,6 +92,21 @@ class TestClassification:
                       "--fail-under=80", coe=True)
         )
 
+    def test_measure_diff_coverage_wrapper_run_is_gate(self):
+        # Phase-4 hardening: the gate step now invokes the tested wrapper
+        # (measure_diff_coverage.py, underscore) instead of raw diff-cover, so
+        # the guard must recognize that token too — else the step stops being a
+        # gate and its allowlist entry goes stale.
+        assert is_gate_step(_step(
+            run="uv run shared/scripts/tools/measure_diff_coverage.py "
+                "--coverage-xml coverage.xml --fail-under 80"))
+
+    def test_measure_diff_coverage_wrapper_continue_on_error_is_loose(self):
+        assert is_loose(_step(
+            name="Diff coverage (warn-only gate)",
+            run="uv run shared/scripts/tools/measure_diff_coverage.py "
+                "--fail-under 80", coe=True))
+
 
 # --------------------------------------------------------------------------- #
 # AC1 — test-dir coverage

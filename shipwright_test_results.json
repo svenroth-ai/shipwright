@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-06-grade-g5-empirical-suite",
+    "run_id": "iterate-2026-07-06-diff-coverage-gate-hardening",
     "date": "2026-07-06",
-    "intent": "feature",
-    "complexity": "medium",
+    "intent": "change",
+    "complexity": "small",
     "unit": {
       "status": "passed",
-      "passed": 313,
-      "total": 314
+      "passed": 3978,
+      "total": 3978
     },
     "integration": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
@@ -35,117 +35,94 @@
     "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "justification": "Test-harness (empirical calibration suite) + an opt-in CI workflow + an additive library capture seam (grade_context_captured). No application runtime surface (the grader is a read-only CLI/library, no UI/API/store/SSE). Verified by the full grade plugin suite (313 passed) AND an end-to-end LIVE empirical record of the proof subset (flask/express/request) over the real network + gh, which exercised fetch@SHA + projection + gh enrichment + record/replay + gallery. E2E has no application surface to drive.",
+      "justification": "Framework CI tooling: hardens the warn-only diff-coverage CI gate (measure_diff_coverage.py --fail-under wrapper + ci.yml). There is no target-app runtime UI/web/CLI surface to exercise. The gate's fail-path IS exercised end-to-end against the real diff-cover by shared/scripts/tools/tests/test_measure_diff_coverage_gate.py::TestGateRealDiffCover (synthetic git repo -> under-covered line -> exit != 0 + report). The only truly-external bit (does GitHub's continue-on-error keep the JOB green while the STEP is red) is untestable locally and was observed live in PR #324.",
       "exit_code": 0,
       "tests_run": 0,
-      "timestamp": "2026-07-06T13:00:00Z"
+      "timestamp": "2026-07-06T14:00:00Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "grade_context returns a ReportModel byte-identical to grade_context_captured(...).report after the additive capture refactor",
+          "behavior": "decide_gate returns FAIL when diff% < threshold",
           "disposition": "tested",
-          "evidence": "test_projector_capture::test_grade_context_delegates_to_capture_identically"
+          "evidence": "shared/scripts/tools/tests/test_measure_diff_coverage_gate.py::TestDecideGate::test_below_threshold_fails PASSED"
         },
         {
-          "behavior": "captured GradeInputs round-trips through JSON and re-grades to the same grade/score",
+          "behavior": "decide_gate returns PASS at and above threshold",
           "disposition": "tested",
-          "evidence": "test_projector_capture::test_grade_inputs_round_trip_through_json_reproduces_grade; test_run_empirical::test_fixture_json_round_trips_byte_stable"
+          "evidence": "test_measure_diff_coverage_gate.py::TestDecideGate::test_at_threshold_passes / test_above_threshold_passes PASSED"
         },
         {
-          "behavior": "grade_from_fixture replays a recorded fixture OFFLINE to the identical live ReportModel",
+          "behavior": "decide_gate returns PASS on an empty (measured) diff (None)",
           "disposition": "tested",
-          "evidence": "test_run_empirical::test_project_fixture_replays_to_identical_report"
+          "evidence": "test_measure_diff_coverage_gate.py::TestDecideGate::test_empty_diff_passes PASSED"
         },
         {
-          "behavior": "a fixture schema_version mismatch raises an actionable FixtureVersionError (refresh required)",
+          "behavior": "gate entrypoint: under-covered changed line -> exit != 0 (FAIL) + report printed (real diff-cover)",
           "disposition": "tested",
-          "evidence": "test_run_empirical::test_schema_version_mismatch_is_actionable"
+          "evidence": "test_measure_diff_coverage_gate.py::TestGateRealDiffCover::test_fail_path_undercovered_line + TestGatePrecomputed::test_undercovered_exits_nonzero_and_prints_report PASSED"
         },
         {
-          "behavior": "parse_band_set parses single bands and ranges (A/B) and empty (edge)",
+          "behavior": "gate entrypoint: covered changed line -> exit 0 + report printed (real diff-cover)",
           "disposition": "tested",
-          "evidence": "test_run_empirical::test_parse_band_set_ranges"
+          "evidence": "test_measure_diff_coverage_gate.py::TestGateRealDiffCover::test_happy_path_covered_line + TestGatePrecomputed::test_covered_exits_zero_and_prints_report PASSED"
         },
         {
-          "behavior": "assert_ordering enforces exemplary > average > poor across tiers (n/a-safe, tie-safe within tier)",
+          "behavior": "gate entrypoint: produced report shows no changed lines under coverage -> exit 0 (parity with diff-cover)",
           "disposition": "tested",
-          "evidence": "test_run_empirical::test_ordering_holds_exemplary_over_poor, test_run_offline_pass_path_and_gallery"
+          "evidence": "test_measure_diff_coverage_gate.py::TestGatePrecomputed::test_empty_diff_exits_zero PASSED"
         },
         {
-          "behavior": "the recorded gh audit log is redacted (no raw stdout body) and RecordingGh passes input_text through",
+          "behavior": "gate fails CLOSED (distinct ERROR exit) when diff-cover produces no report (crash/unavailable)",
           "disposition": "tested",
-          "evidence": "test_run_empirical::test_gh_audit_log_is_redacted, test_recording_gh_passes_through_input_and_redacts"
+          "evidence": "test_measure_diff_coverage_gate.py::TestGateMeasurementFailure::test_no_report_produced_fails_closed PASSED (also validated at the real ci.yml invocation layer: bad compare-branch -> rc=3)"
         },
         {
-          "behavior": "a no-signal repo (no tests/CI) grades without crashing; unmeasurable dims stay honest n/a",
+          "behavior": "gate fails CLOSED on an unreadable --diff-cover-json report",
           "disposition": "tested",
-          "evidence": "test_run_empirical::test_no_signal_repo_grades_with_honest_na"
+          "evidence": "test_measure_diff_coverage_gate.py::TestGateMeasurementFailure::test_unreadable_precomputed_report_fails_closed PASSED"
         },
         {
-          "behavior": "the runner replays a tmp cache, asserts bands + ordering, writes the gallery index + per-repo report",
+          "behavior": "run_diff_cover uses the non-deprecated comma-combined --format json:...,markdown:... flag (no --json-report/--markdown-report)",
           "disposition": "tested",
-          "evidence": "test_run_empirical::test_run_offline_pass_path_and_gallery, test_main_offline_smoke_renders_selected_report"
+          "evidence": "test_measure_diff_coverage.py::TestRunDiffCover::test_parses_report_from_subprocess (stub asserts --format) + real diff-cover produces both files in TestGateRealDiffCover PASSED"
         },
         {
-          "behavior": "a pinned entry with no fixture FAILS in strict/CI (no green-but-empty gate) and loud-skips locally",
+          "behavior": "run_diff_cover clears a stale persistent report so a failed run is not mistaken for success",
           "disposition": "tested",
-          "evidence": "test_run_empirical::test_run_strict_missing_fixture_fails"
+          "evidence": "test_measure_diff_coverage.py::TestRunDiffCover::test_stale_persistent_report_not_reused_on_failure PASSED"
         },
         {
-          "behavior": "record_repo/project_fixture rejects an authoritative target (grade_inputs None) with a clear error",
+          "behavior": "ci.yml gate step calls the wrapper, stays warn-only (continue-on-error), pins diff-cover, re-raises the exit",
           "disposition": "tested",
-          "evidence": "test_run_empirical::test_record_rejects_authoritative_target"
+          "evidence": "shared/tests/test_ci_coverage_wiring.py::test_diff_coverage_step_is_warn_only_gate PASSED"
         },
         {
-          "behavior": "open_target_at_sha rejects a non-40-hex SHA before any network call",
+          "behavior": "CI-gate guard still classifies the wrapper step as a gate; live workflows + allowlist stay consistent (no stale entry)",
           "disposition": "tested",
-          "evidence": "test_run_empirical::test_fetch_rejects_non_sha_before_network"
+          "evidence": "shared/tests/test_check_ci_gate_coverage.py::test_measure_diff_coverage_wrapper_run_is_gate/_is_loose + test_check_ci_gate_coverage_io.py::TestRealRepo::test_live_workflows_pass_the_guard / test_live_allowlist_has_no_stale_entries PASSED"
         },
         {
-          "behavior": "preflight_network flags missing git, unauthenticated gh, and returns ready when both present",
+          "behavior": "diff-cover is version-pinned (10.3.0) in the ci.yml gate + shared-tests provisioning",
           "disposition": "tested",
-          "evidence": "test_run_empirical::test_preflight_network_* (3 cases)"
+          "evidence": "shared/tests/test_ci_coverage_wiring.py::test_diff_coverage_step_is_warn_only_gate asserts 'diff-cover==10.3.0' PASSED"
         },
         {
-          "behavior": "repos.yaml manifest is well-formed, pins real SHAs, spans the calibration spread, lists best-to-worst",
-          "disposition": "tested",
-          "evidence": "test_replay_mechanism::TestManifest (4 tests)"
-        },
-        {
-          "behavior": "fetch@SHA (depth-500 shallow + treeless-clone fallback) fetches a real repo at a pinned commit",
+          "behavior": "GitHub Actions continue-on-error keeps the JOB green while the STEP shows a red FAILURE annotation",
           "disposition": "untestable",
           "reason_code": "requires-external-nondeterministic-service",
-          "evidence": "covered empirically by the live proof-subset record (flask/express/request fetched + graded successfully this session)"
-        },
-        {
-          "behavior": "record_repo remote fetch + gh enrichment against a real public repo",
-          "disposition": "untestable",
-          "reason_code": "requires-external-nondeterministic-service",
-          "evidence": "covered empirically by the live proof-subset record"
-        },
-        {
-          "behavior": "the opt-in CI launch-gate workflow (grade-empirical.yml) records + asserts + uploads the gallery",
-          "disposition": "untestable",
-          "reason_code": "requires-external-nondeterministic-service",
-          "evidence": "GitHub Actions runner; validated on workflow_dispatch. Shell hardened against input injection; least-privilege token."
-        },
-        {
-          "behavior": "the per-repo HTML report render (render_html) content",
-          "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "evidence": "G3 tests/test_html_report.py + test_html_security.py cover render_html; gallery only wraps it"
+          "reason": "requires a live GitHub Actions runner; cannot be reproduced locally. Observed live in PR #324's CI run."
         }
       ],
       "counts": {
-        "tested": 14,
-        "untestable": 4,
+        "tested": 13,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 7,
-        "covered_acs": 7
+        "acs": 6,
+        "covered_acs": 6
       }
     }
   },

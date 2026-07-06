@@ -47,9 +47,14 @@ GATE_COMMANDS = (
     # step is intentionally non-gating (allowlisted); Phase 4 upgrades it to
     # `--fail-under` and drops the allowlist entry, at which point the guard
     # enforces that it stays gating. Recognizing it here means a future
-    # silent-loosening of that gate is caught. (`diff-cover`, hyphen — the tool
-    # module `measure_diff_coverage.py` uses an underscore and never matches.)
+    # silent-loosening of that gate is caught.
     "diff-cover",
+    # measure_diff_coverage: the Phase-4-hardened wrapper the ci.yml gate step
+    # now invokes instead of raw `diff-cover` (the gate DECISION moved into this
+    # tested Python entrypoint). `diff-cover` (hyphen) would NOT match this
+    # underscore token, so register it explicitly — else the step would stop
+    # being classified as a gate and its allowlist entry would go stale.
+    "measure_diff_coverage",
 )
 GATE_NAME_KEYWORDS = (
     "lint", "type-check", "typecheck", "type check", "test", "scan",
