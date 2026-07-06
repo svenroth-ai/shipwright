@@ -14,9 +14,11 @@ Dimensions (heuristic, best-available):
 
 The G2 signals come from :mod:`signal_bundle`; the network-only dims (test-health
 tiers 1-2, security) light only when ``--allow-network`` resolves an enrichable
-target (see :mod:`network_policy`). **change reconciliation** stays n/a — the
-Shipwright-only dimension. ``expected_dimensions`` is empty so every n/a dimension
-is a "control Shipwright would light up", never a dark-control cap.
+target (see :mod:`network_policy`). **change reconciliation** stays n/a (the
+Shipwright-only dimension) and is the ONE ``expected_dimensions`` entry, so the
+honesty gate caps a cold grade at B ("minor gaps"), never A ("full control") — a
+cold repo can't demonstrate that changed requirements are re-verified, so A is
+authoritative-only. Every OTHER n/a dim stays a "control Shipwright would light up".
 """
 
 from __future__ import annotations
@@ -194,10 +196,10 @@ def project_inputs(
         events_total=events_total,
         events_fr_tagged=fr_tagged,
         events_with_provenance=with_provenance,
-        # Reconciliation stays n/a (the Shipwright-only dimension); the security,
-        # deps, maintainability + test-health dims are lit by the G2 bundle where
-        # measurable, else keep their honest n/a engine defaults.
-        expected_dimensions=(),
+        # The always-dark Shipwright-only pillar → honesty gate caps a cold grade at
+        # B; A is authoritative-only (module docstring + CALIBRATION.md). Heuristic-
+        # only: the authoritative path sets its own expected_dimensions from real data.
+        expected_dimensions=("change_reconciliation",),
         verified_from=verified_from,
         **bundle.grade_input_kwargs(),
     )

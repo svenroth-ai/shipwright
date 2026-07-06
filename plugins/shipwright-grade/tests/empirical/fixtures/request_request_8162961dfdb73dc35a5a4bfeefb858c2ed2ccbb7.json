@@ -126,7 +126,9 @@
     "events_fr_tagged": 100,
     "events_total": 500,
     "events_with_provenance": 360,
-    "expected_dimensions": [],
+    "expected_dimensions": [
+      "change_reconciliation"
+    ],
     "frs_behavior_touched": 0,
     "frs_covered": 0,
     "frs_total": 0,

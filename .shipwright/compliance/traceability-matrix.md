@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-06T17:15:35.088015+00:00
+Generated: 2026-07-06T20:44:43.547322+00:00
 
 ## Requirements Coverage
 
@@ -27,6 +27,7 @@ Generated: 2026-07-06T17:15:35.088015+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-0e47577b"></a>Cold-repo Control Grade caps at B (A is authoritative-only): the projector declares change_reconciliation the one expected_dimensions entry so the honesty gate caps a cold headline at B. Heuristic-only; dogfood stays A. | iterate | change |  | — | — | 2026-07-06 |
 | <a id="evt-9153208e"></a>G6: calibrate the cold-repo projector so well-run OSS repos no longer grade F (CI-system-app test-health + PR-head fallback, network PR-association provenance, self-referential-route suppression); empirical gate asserts well-run > deprecated. | iterate | change |  | — | — | 2026-07-06 |
 | <a id="evt-19078fb5"></a>The diff-coverage check now hard-blocks: a change that doesn't test at least 80% of its own changed lines will fail CI and can't be merged. | iterate | change |  | 3666/3666 | — | 2026-07-06 |
 | <a id="evt-fffb776d"></a>Added a test that runs the diff-coverage check against the last 5 real project PRs to show how a strict version would decide (4 pass, 1 correctly blocked). | iterate | change |  | 137/137 | — | 2026-07-06 |
@@ -298,7 +299,7 @@ Generated: 2026-07-06T17:15:35.088015+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 264 |
+| Iterate changes | 265 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

@@ -16,20 +16,21 @@ class TestGradeCli:
         rc = run([str(well_run_repo)])
         assert rc == 0
         out = capsys.readouterr().out
-        assert "Control Grade: A" in out
-        assert "controls measured" in out  # A can't be quoted without the caveat
+        # A cold (heuristic) grade caps at B — A is authoritative-only.
+        assert "Control Grade: B" in out
+        assert "controls measured" in out
         assert "Controls Shipwright would light up" in out
 
     def test_markdown_format(self, well_run_repo: Path, capsys):
         rc = run([str(well_run_repo), "--format", "markdown"])
         assert rc == 0
-        assert "# Control Grade: A" in capsys.readouterr().out
+        assert "# Control Grade: B" in capsys.readouterr().out
 
     def test_json_format_is_valid_and_stable(self, well_run_repo: Path, capsys):
         rc = run([str(well_run_repo), "--format", "json"])
         assert rc == 0
         payload = json.loads(capsys.readouterr().out)
-        assert payload["grade"] == "A"
+        assert payload["grade"] == "B"  # cold grade caps at B (authoritative-only A)
         assert payload["mode"] == "heuristic"
         assert isinstance(payload["dimensions"], list)
         # n/a dimension carries provenance + None score in the schema.
@@ -76,7 +77,7 @@ class TestGradeCli:
         monkeypatch.setattr(clone, "clone_repo", fake_clone)
         rc = run(["https://github.com/o/r", "--format", "json"])
         assert rc == 0
-        assert json.loads(capsys.readouterr().out)["grade"] == "A"
+        assert json.loads(capsys.readouterr().out)["grade"] == "B"  # cold caps at B
 
     def test_standalone_never_blocks_on_input(self, well_run_repo: Path, monkeypatch):
         # AC4: the standalone CLI is non-interactive — prove it at RUNTIME by

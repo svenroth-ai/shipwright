@@ -1,21 +1,20 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-06-grade-g6-projector-calibration",
+    "run_id": "iterate-2026-07-06-grade-cold-repo-b-cap",
     "date": "2026-07-06",
     "intent": "change",
-    "complexity": "medium",
+    "complexity": "small",
     "unit": {
-      "passed": 347,
-      "total": 348,
+      "passed": 348,
+      "total": 349,
       "skipped": 1,
-      "framework": "pytest",
-      "note": "grade plugin hermetic suite; 12 empirical deselected"
+      "framework": "pytest"
     },
     "integration": {
       "passed": 8,
       "total": 12,
       "skipped": 4,
-      "note": "-m empirical launch gate: 5 calibration in band + ordering + 2 edge robust; 4 ci-only skipped"
+      "note": "-m empirical gate green"
     },
     "pgtap": null,
     "e2e": null,
@@ -24,75 +23,49 @@
     "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "justification": "Cold-repo projector calibration (shipwright-grade library + CLI); no web/UI surface. The E2E verification IS the empirical calibration gate: `-m empirical` replays 7 real-OSS fixtures offline (5 calibration in band + ordering, 2 edge robust), a live `--refresh` re-recorded all 7 over the real network+gh, and `grade.py <URL>` graded ky+babel live (also exercising the --depth fix). Dogfood monorepo re-graded A 100 (authoritative).",
+      "justification": "Single-field cold-repo projection change (expected_dimensions) + fixture re-refresh; no web/UI surface. E2E = the -m empirical gate (7 real-OSS fixtures, offline replay + live --refresh) + live grade.py of 5 repos + monorepo. Cold grades now cap at B; dogfood monorepo re-graded A 100 (authoritative, reconciliation measured 1.0).",
       "exit_code": 0,
-      "tests_run": 347,
-      "timestamp": "2026-07-06T16:30:00Z"
+      "tests_run": 348,
+      "timestamp": "2026-07-06T18:15:00Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "matrix-named github-actions check counts (CI-system app slug)",
+          "behavior": "cold projection declares change_reconciliation as the one expected-but-dark control",
           "disposition": "tested",
-          "evidence": "test_test_health_signal.py::test_matrix_named_github_actions_check_counts, test_tier2_counts_matrix_named_ci_checks PASSED"
+          "evidence": "test_projector_fixtures.py::test_cold_projection_declares_reconciliation_expected PASSED"
         },
         {
-          "behavior": "non-CI app + failing check + legacy Travis StatusContext handling",
+          "behavior": "cold heuristic grade caps at B (89, not A) with a factual verdict",
           "disposition": "tested",
-          "evidence": "test_non_ci_app_check_does_not_count, test_failing_ci_app_check_does_not_count, test_legacy_travis_status_context_counts_by_ci_system_name PASSED"
+          "evidence": "test_projector_fixtures.py::test_heuristic_grade_caps_at_b_not_a PASSED (grade B, score 89.0, verdict cites reconciliation)"
         },
         {
-          "behavior": "denominator = examinable merged PRs; PR-head-commit fallback for on:pull_request CI",
+          "behavior": "CLI terminal/markdown/json/URL output shows B for a cold well-run repo",
           "disposition": "tested",
-          "evidence": "test_tier2_no_rollup_prs_count_toward_denominator, test_tier2_counts_pr_head_checks_when_merge_commit_has_none, test_tier2_unmerged_prs_are_not_examinable PASSED"
+          "evidence": "test_grade_cli.py::{test_terminal_format_default,test_markdown_format,test_json_format_is_valid_and_stable,test_url_is_cloned_and_graded} PASSED"
         },
         {
-          "behavior": "0-passing LOW with test infra, n/a without (has_test_infra=test_files AND has_ci)",
+          "behavior": "cap is heuristic-only — authoritative grade unaffected (monorepo stays A)",
           "disposition": "tested",
-          "evidence": "test_zero_passing_scores_low_when_repo_has_test_infra, test_zero_passing_is_na_without_test_infra + committed fixtures superpowers(n/a->B)+request(LOW->F)"
+          "evidence": "test_authoritative.py::test_authoritative_grade_never_runs_the_projection PASSED + live monorepo A 100 authoritative (reconciliation measured 1.0)"
         },
         {
-          "behavior": "network PR-association parse/tiering + projector override + round-half-up/clamp",
+          "behavior": "empirical fixtures reflect the B-cap; gate green (well-run C..B > deprecated F)",
           "disposition": "tested",
-          "evidence": "test_provenance_signal.py::* , test_projector_fixtures.py::test_pr_association_ratio_overrides_git_log_count, test_provenance_count_rounds_half_up_and_clamps PASSED"
-        },
-        {
-          "behavior": "self-referential feature filter (+ detector-mislabel robustness)",
-          "disposition": "tested",
-          "evidence": "test_framework_own_source_is_self_referential, test_mislabelled_framework_still_suppressed_by_path_package, test_well_run_app_requirement_surface_survives_filter PASSED + flask fixture frs_total=0"
-        },
-        {
-          "behavior": "URL clone fetches >= Caps.max_commits history (not --depth 1)",
-          "disposition": "tested",
-          "evidence": "test_clone.py::test_run_clone_fetches_history_not_depth_one PASSED"
-        },
-        {
-          "behavior": "dogfood: authoritative grade never runs the projection (monorepo A)",
-          "disposition": "tested",
-          "evidence": "test_authoritative.py::test_authoritative_grade_never_runs_the_projection PASSED + live monorepo A 100 authoritative"
-        },
-        {
-          "behavior": "manifest well-run>deprecated ordering; real repos in band",
-          "disposition": "tested",
-          "evidence": "test_replay_mechanism.py::TestManifest + -m empirical (test_real_repo_grade_in_band, test_calibration_ordering) PASSED"
-        },
-        {
-          "behavior": "live fetch@SHA + gh enrichment (record path)",
-          "disposition": "untestable",
-          "evidence": "covered empirically by the live --refresh of all 7 non-ci-only fixtures",
-          "reason_code": "requires-external-nondeterministic-service"
+          "evidence": "-m empirical (test_real_repo_grade_in_band, test_calibration_ordering) PASSED; express/agent-skills B, superpowers B, flask C, request F"
         }
       ],
       "counts": {
-        "total": 10,
-        "tested": 9,
-        "untestable": 1,
+        "total": 5,
+        "tested": 5,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 8,
-        "covered_acs": 8
+        "acs": 5,
+        "covered_acs": 5
       }
     }
   },
