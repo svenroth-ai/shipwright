@@ -1,71 +1,69 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-06-grade-cold-repo-b-cap",
+    "run_id": "iterate-2026-07-06-run-board-handoff-banner",
     "date": "2026-07-06",
-    "intent": "change",
-    "complexity": "small",
     "unit": {
-      "passed": 348,
-      "total": 349,
-      "skipped": 1,
-      "framework": "pytest"
+      "status": "passed",
+      "passed": 169,
+      "total": 169
     },
     "integration": {
-      "passed": 8,
-      "total": 12,
-      "skipped": 4,
-      "note": "-m empirical gate green"
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
-    "pgtap": null,
-    "e2e": null,
-    "design_fidelity": null,
-    "smoke": null,
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
     "degraded": [],
-    "surface_verification": {
-      "surface": "none",
-      "justification": "Single-field cold-repo projection change (expected_dimensions) + fixture re-refresh; no web/UI surface. E2E = the -m empirical gate (7 real-OSS fixtures, offline replay + live --refresh) + live grade.py of 5 repos + monorepo. Cold grades now cap at B; dogfood monorepo re-graded A 100 (authoritative, reconciliation measured 1.0).",
-      "exit_code": 0,
-      "tests_run": 348,
-      "timestamp": "2026-07-06T18:15:00Z"
-    },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "cold projection declares change_reconciliation as the one expected-but-dark control",
+          "behavior": "Step 5 hand-off banner detects the launch surface via CLAUDE_CODE_ENTRYPOINT",
           "disposition": "tested",
-          "evidence": "test_projector_fixtures.py::test_cold_projection_declares_reconciliation_expected PASSED"
+          "evidence": "plugins/shipwright-run/tests/test_run_skill_handoff_banner.py::test_step5_detects_launch_surface PASSED"
         },
         {
-          "behavior": "cold heuristic grade caps at B (89, not A) with a factual verdict",
+          "behavior": "Chat surface (VS Code extension / desktop) gets an honest cannot-launch warning and is redirected to a terminal or the Command Center",
           "disposition": "tested",
-          "evidence": "test_projector_fixtures.py::test_heuristic_grade_caps_at_b_not_a PASSED (grade B, score 89.0, verdict cites reconciliation)"
+          "evidence": "plugins/shipwright-run/tests/test_run_skill_handoff_banner.py::test_step5_chat_surface_warns_and_redirects PASSED"
         },
         {
-          "behavior": "CLI terminal/markdown/json/URL output shows B for a cold well-run repo",
+          "behavior": "Terminal surface keeps both the board Continue and the paste card so the plugin works without the WebUI",
           "disposition": "tested",
-          "evidence": "test_grade_cli.py::{test_terminal_format_default,test_markdown_format,test_json_format_is_valid_and_stable,test_url_is_cloned_and_graded} PASSED"
+          "evidence": "plugins/shipwright-run/tests/test_run_skill_handoff_banner.py::test_step5_terminal_branch_keeps_board_and_paste PASSED"
         },
         {
-          "behavior": "cap is heuristic-only — authoritative grade unaffected (monorepo stays A)",
+          "behavior": "Resume Support banner is surface-aware (branches on CLAUDE_CODE_ENTRYPOINT)",
           "disposition": "tested",
-          "evidence": "test_authoritative.py::test_authoritative_grade_never_runs_the_projection PASSED + live monorepo A 100 authoritative (reconciliation measured 1.0)"
-        },
-        {
-          "behavior": "empirical fixtures reflect the B-cap; gate green (well-run C..B > deprecated F)",
-          "disposition": "tested",
-          "evidence": "-m empirical (test_real_repo_grade_in_band, test_calibration_ordering) PASSED; express/agent-skills B, superpowers B, flask C, request F"
+          "evidence": "plugins/shipwright-run/tests/test_run_skill_handoff_banner.py::test_resume_support_is_surface_aware PASSED"
         }
       ],
       "counts": {
-        "total": 5,
-        "tested": 5,
+        "testable": 4,
+        "tested": 4,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 5,
-        "covered_acs": 5
+        "acs": 4,
+        "covered_acs": 4
       }
     }
   },
