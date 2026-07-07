@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-06T22:34:30.015905+00:00
+Generated: 2026-07-07T08:35:35.699695+00:00
 
 ## Requirements Coverage
 
@@ -27,6 +27,7 @@ Generated: 2026-07-06T22:34:30.015905+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-fe2d0f53"></a>Removed duplicated code: the check for GitHub-owned action tags now lives in one shared place instead of being copy-pasted in two, with no change to what it does. | iterate | change |  | 4148/4167 | — | 2026-07-07 |
 | <a id="evt-aebeb6f0"></a>Security triage no longer raises a recurring false low-severity alarm for GitHub-owned actions an adopted repo has deliberately accepted; genuinely risky unpinned third-party actions are still reported. | iterate | bug |  | 5598/5625 | — | 2026-07-06 |
 | <a id="evt-2bcbc1b9"></a>New brownfield repos onboarded by Shipwright now automatically get a (non-blocking) check that flags PRs which don't test their own changed code. | iterate | change |  | 3667/3667 | — | 2026-07-06 |
 | <a id="evt-59cf16c8"></a>The /shipwright-run start message now adapts to where you are: a terminal or the WebUI board gets a continue-here hand-off, while the VS Code extension or desktop chat is told the pipeline cannot run there and to use a terminal or the Command Center instead. | iterate | change |  | 169/169 | — | 2026-07-06 |
@@ -303,7 +304,7 @@ Generated: 2026-07-06T22:34:30.015905+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 269 |
+| Iterate changes | 270 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

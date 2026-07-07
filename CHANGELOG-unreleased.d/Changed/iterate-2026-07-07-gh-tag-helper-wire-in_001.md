@@ -1,0 +1,1 @@
+Internal: the accepted-risk GH-owned action-tag check now routes both call-sites (SARIF artifact ingest + plugin scan) through the single shared `gh_action_tag_owner.is_github_owned_action_tag` predicate instead of duplicating the logic inline. Behavior-preserving; no user-facing change.

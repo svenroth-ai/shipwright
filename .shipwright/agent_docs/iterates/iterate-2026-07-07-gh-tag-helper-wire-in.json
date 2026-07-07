@@ -1,0 +1,9 @@
+{
+  "run_id": "iterate-2026-07-07-gh-tag-helper-wire-in",
+  "date": "2026-07-07T08:35:52.720728Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/gh-tag-helper-wire-in",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-07-gh-tag-helper-wire-in"
+}

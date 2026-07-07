@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-07-06T22:34:30.015905+00:00
-Total commits: 1102
+Generated: 2026-07-07T08:35:35.699695+00:00
+Total commits: 1101
 
 ## Commit Distribution
 
@@ -9,7 +9,7 @@ Total commits: 1102
 pie title Commit Types
     "fix" : 320
     "feat" : 293
-    "chore" : 236
+    "chore" : 235
     "docs" : 143
     "refactor" : 64
     "test" : 27
@@ -24,7 +24,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-07 | security | drop accepted-risk GH-owned action-tags at the SARIF artifact producer | 12f631730a3f |
+| 2026-07-07 | security | drop accepted-risk GH-owned action-tags at the SARIF artifact producer (#336) | ab114c8c5cce |
 | 2026-07-07 | run | surface-aware hand-off banner (CLAUDE_CODE_ENTRYPOINT) (#334) | 3f81def08667 |
 | 2026-07-06 | grade | cap cold-repo Control Grade at B — A is authoritative-only (#333) | ea0e58a72ee6 |
 | 2026-07-06 | compliance | diff-coverage is a graded/gated control, not "informational" on the dashboard (#332) | 5ce743a110a5 |
@@ -643,11 +643,10 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 236 commits
+### Chores (chore) — 235 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-06 | triage | sweep 2 outbox append(s) into branch | 558637171ea7 |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
@@ -1171,7 +1170,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1102 |
+| Total commits | 1101 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1102 |
+| Human-authored commits | 1101 |
 

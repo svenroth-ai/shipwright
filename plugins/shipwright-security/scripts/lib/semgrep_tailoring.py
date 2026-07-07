@@ -55,8 +55,7 @@ if str(_SHARED_SCRIPTS) not in sys.path:
 from gh_action_tag_owner import (  # noqa: E402
     accept_github_owned_action_tags,
     action_owner_from_file,
-    is_github_owned_owner,
-    is_mutable_action_tag_rule,
+    is_github_owned_action_tag,
 )
 
 _EXCLUDE_RULES_ENV = "SHIPWRIGHT_SEMGREP_EXCLUDE_RULES"
@@ -123,14 +122,15 @@ def _is_github_owned_action_tag(finding: dict[str, Any]) -> bool:
     """True iff a mutable-action-tag finding points at a GitHub-owned action.
 
     Owner comes from the workflow file at the finding's line (see module
-    docstring); an unresolvable owner returns False so the finding is KEPT.
+    docstring); an unresolvable owner returns False so the finding is KEPT. Thin
+    wrapper over ``gh_action_tag_owner.is_github_owned_action_tag`` — the local
+    scan resolves the owner cwd-relative, so no ``base_dir`` is passed.
     """
-    if not is_mutable_action_tag_rule(finding.get("rule")):
-        return False
-    owner = _action_owner_from_file(
-        finding.get("affected_file"), finding.get("affected_line")
+    return is_github_owned_action_tag(
+        finding.get("rule"),
+        finding.get("affected_file"),
+        finding.get("affected_line"),
     )
-    return is_github_owned_owner(owner)
 
 
 def _action_owner_from_file(path: Any, line: Any) -> str | None:
