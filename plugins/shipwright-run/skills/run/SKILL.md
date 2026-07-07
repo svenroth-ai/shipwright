@@ -35,9 +35,8 @@ Usage:
 
 Pipeline: Project → Design → Plan → Build → Test → Changelog → Deploy
 
-Security scanning is no longer part of the orchestrator pipeline.
-Run /shipwright-security manually after build/test, or activate the
-.github/workflows/security.yml triggers when ready (see CI integration docs).
+Security scanning is no longer part of the pipeline — run /shipwright-security
+manually or activate .github/workflows/security.yml when ready.
 
 Each phase runs in its own external Claude CLI session.
 This master session writes the pipeline spec, prints the first
@@ -163,6 +162,10 @@ default), pass `--profile supabase-nextjs`.
 
 Capture the parsed JSON output — Step 5 reads `phase_tasks[0]` from it.
 
+**Mode branch (SS3).** If `config.mode == "single_session"`, skip Step 5's
+launch-card hand-off and drive the pipeline in THIS conversation via the
+**[Single-Session Orchestrator Loop](references/single-session-loop.md)** (Step 5 + Resume Support are the `multi_session` default path).
+
 ---
 
 ## Step 4.5: Phase-Router Hook (no install step needed)
@@ -171,20 +174,16 @@ The `suggest_iterate.py` UserPromptSubmit hook is registered in
 `shipwright-iterate` plugin's own `hooks/hooks.json`; no project-level
 `.claude/settings.json` install is performed. Once the user enables
 the `shipwright-iterate@shipwright` plugin (default in marketplace
-installs), the hook fires automatically for every prompt in any
-project carrying `shipwright_run_config.json`. ADRs 019/020 (carrier-
-shape Shape B + quoted path + `--no-project`) survive verbatim in the
-plugin registration.
+installs), the hook fires automatically for every prompt in any project
+carrying `shipwright_run_config.json`. ADRs 019/020 (carrier-shape Shape B +
+quoted path + `--no-project`) survive verbatim in the plugin registration.
 
-**If the target project was adopted under a previous Shipwright
-version** and `.claude/settings.json` carries a legacy
-`UserPromptSubmit` entry referencing
-`${CLAUDE_PLUGIN_ROOT}/.../suggest_iterate.py`, Claude Code surfaces a
-"hook is not associated with a plugin" red-banner error because that
-variable only expands in plugin context. One-time manual cleanup:
-open `.claude/settings.json`, drop the `hooks.UserPromptSubmit` entry
-whose command contains `suggest_iterate.py`, leave any other hooks
-intact. The plugin-registered hook still fires.
+**Legacy adopt cleanup:** if `.claude/settings.json` carries an old
+`UserPromptSubmit` entry referencing `${CLAUDE_PLUGIN_ROOT}/.../suggest_iterate.py`,
+Claude Code shows a "hook is not associated with a plugin" error (that variable
+only expands in plugin context). One-time fix: drop that one
+`hooks.UserPromptSubmit` entry from `.claude/settings.json`; the
+plugin-registered hook still fires.
 
 ---
 
@@ -398,3 +397,4 @@ one of the terminal states handled by Step 6.
 - [inference-rules.md](references/inference-rules.md) — Scope + profile inference
 - [autonomy-levels.md](references/autonomy-levels.md) — Guided vs autonomous behavior (within phase sessions)
 - [scope-flows.md](references/scope-flows.md) — Full App and Extension flows
+- [single-session-loop.md](references/single-session-loop.md) — SS3 in-conversation orchestrator loop (`mode: single_session`)

@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-07-07T12:34:00.634683+00:00
-Total commits: 1107
+Generated: 2026-07-07T14:25:18.898523+00:00
+Total commits: 1108
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 321
-    "feat" : 294
+    "feat" : 295
     "chore" : 236
     "docs" : 143
     "refactor" : 67
@@ -24,7 +24,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-07 | hooks | guard phase_session_start + self-heal the plugins/ cross-link cache | 1de07aa915a5 |
+| 2026-07-07 | hooks | guard phase_session_start + self-heal the plugins/ cross-link cache (#341) | 458b4aa78751 |
 | 2026-07-07 | security | drop accepted-risk GH-owned action-tags at the SARIF artifact producer (#336) | ab114c8c5cce |
 | 2026-07-07 | run | surface-aware hand-off banner (CLAUDE_CODE_ENTRYPOINT) (#334) | 3f81def08667 |
 | 2026-07-06 | grade | cap cold-repo Control Grade at B — A is authoritative-only (#333) | ea0e58a72ee6 |
@@ -346,10 +346,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 294 commits
+### Features (feat) — 295 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-07 | run | non-interactive phase-gate mode + gate catalog (SS2) (#342) | 8a7415384b72 |
 | 2026-07-07 | run | scaffold single-session pipeline mode + phase-runner contracts (SS1) (#339) | 1f1ffedfb378 |
 | 2026-07-07 | adopt | scaffold a warn-only diff-coverage gate into the vitest CI templates (#335) | 9b06a388e6f5 |
 | 2026-07-06 | grade | empirical calibration suite — SHA-pinned real-OSS record/replay launch gate (G5) (#327) | b8d1b9a2eb74 |
@@ -649,7 +650,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-07 | compliance | take origin/main ci-security.json regen to unblock churn integrate (#340 collision) | 7069500dc7a5 |
+| 2026-07-07 | triage | sweep 4 outbox append(s) into branch | fa684793bed9 |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
@@ -1176,7 +1177,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1107 |
+| Total commits | 1108 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1107 |
+| Human-authored commits | 1108 |
 
