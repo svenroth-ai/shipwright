@@ -4,10 +4,12 @@ The combine mechanic is fiddly (per-plugin [paths] remap), so the CI steps that
 feed it are pinned here: per-plugin ``--cov`` into per-tier data files, a Combine
 step, integration coverage, and the diff-coverage gate step running AFTER combine
 over the combined ``coverage.xml``. A future edit that drops one of these silently
-would otherwise leave the combined report empty / mis-attributed. Phase 4 (hard
-flip) routes the ``--fail-under 80`` gate through the tested
-``measure_diff_coverage.py`` wrapper and DROPS continue-on-error, so an
-under-tested PR blocks merge — pinned by ``test_diff_coverage_step_is_hard_gate``.
+would otherwise leave the combined report empty / mis-attributed. The
+``--fail-under 80`` HARD gate (continue-on-error dropped, so an under-tested PR
+blocks merge) now runs through the SHARED composite action
+``.github/actions/diff-coverage-gate`` via a local ``./`` path (Stage 3,
+iterate-2026-07-07-diff-coverage-self-consume) — pinned by
+``test_diff_coverage_step_is_hard_gate``.
 """
 
 from __future__ import annotations
@@ -73,30 +75,34 @@ def test_combine_step_invokes_the_tool():
 
 
 def test_diff_coverage_step_is_hard_gate():
-    # Diff-coverage roadmap Phase 4 — HARD GATE (the hard flip): the gate DECISION
-    # runs through the tested `measure_diff_coverage.py --fail-under 80` wrapper
-    # (which prints the report + exits non-zero iff diff% < 80), and
-    # continue-on-error is now DROPPED, so an under-tested PR BLOCKS merge. The
-    # ci_gate_allowlist entry is removed too (asserted in test_check_ci_gate_
-    # coverage.py). 80 == control_grade._DIFF_COV_WARN_THRESHOLD.
+    # Diff-coverage roadmap — HARD GATE, now via the SHARED composite action
+    # (Stage 3, iterate-2026-07-07-diff-coverage-self-consume). The gate DECISION
+    # (pinned diff-cover, --fail-under 80, the base fetch) lives in ONE place —
+    # `.github/actions/diff-coverage-gate` — consumed by adopt templates + WebUI +
+    # (here) the monorepo itself. continue-on-error stays DROPPED, so an
+    # under-tested PR BLOCKS merge. The gate mechanics are pinned by the action's
+    # own contract test (test_diff_coverage_action.py); the guard's reverse-drift
+    # check (test_check_ci_gate_coverage.py) enforces it stays gating.
     step = _step("Diff coverage (gate)")
-    run = step.get("run", "")
-    # HARD gate: continue-on-error must NOT be set (absent or False) — this is the
-    # flip. If it silently comes back, the guard's reverse-drift check also flags
-    # it (a loose gate with no allowlist entry), but pin it here at the source.
+    # HARD gate: continue-on-error must NOT be set (absent or False).
     assert step.get("continue-on-error") is not True
-    # The gate goes through the tested Python entrypoint (not inline diff-cover).
-    assert "measure_diff_coverage.py" in run
-    assert "--fail-under 80" in run
-    assert "coverage.xml" in run
-    # diff-cover is pinned (a release can't silently change flags/exit codes).
-    assert "diff-cover==10.3.0" in run
-    # The wrapper prints the markdown report; the step captures its exit under
-    # `bash -eo pipefail` (|| rc=$?) and re-raises it (`exit "$rc"`) so the step
-    # (and, with no continue-on-error, the job) fails on an under-covered diff.
-    assert "--markdown-out diff-cover.md" in run
-    assert "rc=$?" in run
-    assert 'exit "$rc"' in run
+    # The gate runs through the shared composite action via a LOCAL `./` path —
+    # NOT `@main`: a PR that edits the action is gated by its own checkout (no
+    # bootstrapping wrinkle) and there is no mutable-action-tag finding.
+    uses = step.get("uses", "")
+    assert uses.startswith("./.github/actions/diff-coverage-gate"), (
+        f"gate step must use the local composite action, got uses={uses!r}"
+    )
+    assert "@" not in uses, "self-consume must use the local ./ path, not a @ref"
+    # The combined coverage.xml is what gets gated.
+    with_block = step.get("with") or {}
+    assert with_block.get("coverage-files") == "coverage.xml", (
+        f"gate must pass coverage-files: coverage.xml, got {with_block!r}"
+    )
+    # The inline wrapper is gone from this step (it lives in the action now).
+    assert "measure_diff_coverage.py" not in step.get("run", "")
+    # Skip cleanly when Combine produced no coverage.xml.
+    assert step.get("if") == "hashFiles('coverage.xml') != ''"
 
 
 def test_combine_runs_before_diff_after_all_tiers():

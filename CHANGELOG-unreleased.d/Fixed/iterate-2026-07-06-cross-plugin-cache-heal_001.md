@@ -1,0 +1,1 @@
+Fresh marketplace installs no longer crash the phase-session-start SessionStart hook: cross-plugin imports (e.g. shipwright-run's phase_task_lifecycle) now degrade to standalone instead of raising, and ensure_shared_cache additionally self-heals the `cache/shipwright/plugins/` cross-link tree so those imports resolve.
