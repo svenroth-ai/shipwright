@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-07-gh-tag-helper-wire-in",
+    "run_id": "iterate-2026-07-07-diff-coverage-composite-action",
     "date": "2026-07-07",
     "intent": "change",
-    "mode": "simplify",
-    "complexity": "small",
+    "mode": null,
+    "complexity": "medium",
     "unit": {
-      "passed": 4148,
-      "total": 4167,
-      "skipped": 19,
+      "passed": 4175,
+      "total": 4191,
+      "skipped": 16,
       "framework": "pytest",
-      "note": "touched-surface suites: shared/tests 3678 + shipwright-security 470 (the two importers of the changed files)"
+      "note": "F0 affected-surface suites all green: shared/tests 3689 (+16 skipped) + shared/scripts/tools/tests 137 + shipwright-adopt 349 — the template/action consumers + diff-cover tooling"
     },
     "integration": null,
     "pgtap": null,
@@ -20,34 +20,77 @@
     "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "justification": "Behavior-preserving internal refactor (SIMPLIFY): routed two call-sites through an existing shared predicate; no web/UI surface and no IO-behavior change. Verification is the Behavior-Snapshot: the affected suites (drop suite 9 + plugin tailoring 15) are identical pre/post, so the SARIF-ingest round-trip is unchanged. ruff clean; no coverage removed.",
+      "runner": "",
       "exit_code": 0,
-      "tests_run": 4148,
-      "timestamp": "2026-07-07T00:15:00Z"
+      "tests_run": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-07-diff-coverage-composite-action/surface_verification.json",
+      "timestamp": "2026-07-07T10:08:08.705Z",
+      "justification": "Change is confined to CI infrastructure: a new GitHub Actions composite action (.github/actions/diff-coverage-gate) plus two DORMANT adopt CI templates and their pytest drift-guards. No application runtime surface (web/CLI/API) is touched — no API routes, store mutations, SSE/WS, message contracts, or UI-consumed code (Backend-affects-Frontend N/A). Correctness is proven by 44 pytest contract + runtime-wiring tests (incl. faithful execution of the extracted action run: body against shadowed git/uvx) and an empirical shell-body probe; the composite action only executes inside GitHub Actions CI, not drivable from a local E2E harness."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "The GH-owned action-tag drop/keep decisions are preserved after consolidating both call-sites onto the shared is_github_owned_action_tag predicate (behavior snapshot == verify)",
+          "behavior": "action.yml exposes 4 inputs with documented defaults (coverage-files required; compare-branch=origin/main; fail-under=80; diff-cover-version=10.3.0)",
           "disposition": "tested",
-          "evidence": "test_security_findings_gh_tag_drop.py (9) + test_semgrep_rule_tailoring.py (15) PASSED identically pre- and post-refactor (baseline vs verify)"
+          "evidence": "test_diff_coverage_action.py::TestDiffCoverageActionInputs (5 cases) PASSED"
         },
         {
-          "behavior": "The previously-unused shared helper is_github_owned_action_tag is now exercised in production",
+          "behavior": "action is using: composite",
           "disposition": "tested",
-          "evidence": "called from security_findings.py:212 and semgrep_tailoring.py:129; covered by the two suites above"
+          "evidence": "test_diff_coverage_action.py steps fixture (asserts using==composite) PASSED"
+        },
+        {
+          "behavior": "setup-uv is SHA-pinned (supply-chain)",
+          "disposition": "tested",
+          "evidence": "test_diff_coverage_action.py::test_setup_uv_is_sha_pinned PASSED"
+        },
+        {
+          "behavior": "pinned diff-cover version threaded adjacent to diff-cover@ (no @latest slip) and all gate flags passed",
+          "disposition": "tested",
+          "evidence": "test_diff_coverage_action.py::test_gate_threads_the_pinned_inputs PASSED"
+        },
+        {
+          "behavior": "inputs.*->INPUT_* env seam bound to exactly ${{ inputs.<name> }}, forward + reverse drift",
+          "disposition": "tested",
+          "evidence": "test_diff_coverage_action.py::TestDiffCoverageActionEnvMapping::test_every_input_is_bound_in_env PASSED"
+        },
+        {
+          "behavior": "injection-safe: no ${{ inputs.* }} interpolated into any run body",
+          "disposition": "tested",
+          "evidence": "test_diff_coverage_action.py::test_inputs_are_injection_safe PASSED"
+        },
+        {
+          "behavior": "runtime shell wiring: origin/<branch> fetch-target derivation + space-separated coverage-files split into distinct argv + exact diff-cover argv (single/two/non-default-origin)",
+          "disposition": "tested",
+          "evidence": "test_diff_coverage_action_runtime.py::test_wiring (3 params, executes the extracted action run body) PASSED"
+        },
+        {
+          "behavior": "both vitest templates consume the gate via uses: <action> + coverage-files, keep warn-only continue-on-error, ubuntu-only, fetch-depth:0, if:pull_request, and still produce a cobertura report",
+          "disposition": "tested",
+          "evidence": "test_ci_template_diff_coverage.py (both supabase-nextjs + vite-hono profiles) PASSED"
+        },
+        {
+          "behavior": "no regression in CI convention / coverage-wiring / adopt-scaffold guards",
+          "disposition": "tested",
+          "evidence": "test_ci_workflow_convention.py + full shared 3689 + adopt 349 + tools 137 PASSED"
+        },
+        {
+          "behavior": "diff-cover exits non-zero when changed-line coverage < threshold (the gate DECISION)",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "reason": "proven against REAL diff-cover in shared/scripts/tools/tests/test_measure_diff_coverage_gate.py (same pinned 10.3.0 binary); this diff only wires argv into it (see runtime behavior above)"
         }
       ],
       "counts": {
-        "total": 2,
-        "tested": 2,
-        "untestable": 0,
+        "testable": 9,
+        "tested": 9,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 1,
-        "covered_acs": 1
+        "acs": 5,
+        "covered_acs": 5
       }
     }
   },
