@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 
 SINGLE_SESSION_COMMANDS: frozenset[str] = frozenset(
-    {"single-session-next", "single-session-apply"}
+    {"single-session-next", "single-session-apply", "single-session-reload"}
 )
 
 # CAS-reject reasons that map to a fail-closed apply exit code (mirrors router).
@@ -43,6 +43,19 @@ def dispatch_single_session(args: argparse.Namespace, project_root: Path) -> int
         result = next_dispatch(project_root)
         print(json.dumps(result, indent=2))
         return 0 if result.get("action") in _OK_NEXT_ACTIONS else 1
+
+    if args.command == "single-session-reload":
+        # Rebuild pipeline context from run_config + compact summaries (never a
+        # transcript) so the resuming master reads it verbatim. Lazy import keeps
+        # single_session out of the base orchestrator surface.
+        from single_session.orchestrator_context import reload_orchestrator_context
+
+        context = reload_orchestrator_context(project_root)
+        if context is None:
+            print(json.dumps({"ok": False, "reason": "no_config"}))
+            return 1
+        print(json.dumps({"ok": True, "context": context}, indent=2))
+        return 0
 
     # single-session-apply
     result_path = Path(args.result_json)

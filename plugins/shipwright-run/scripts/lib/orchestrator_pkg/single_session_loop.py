@@ -41,6 +41,7 @@ from single_session.loop_state import (  # noqa: E402
     save_loop_state,
     set_status,
 )
+from single_session.orchestrator_context import verify_artifacts_exist  # noqa: E402
 from single_session.result_contract import validate_phase_runner_result  # noqa: E402
 
 from .config_io import load_run_config  # noqa: E402
@@ -191,15 +192,19 @@ def apply_phase_result(
     expected_version: int,
     result: dict[str, Any],
 ) -> dict[str, Any]:
-    """``single-session-apply`` core: contract-validate, complete, advance.
+    """``single-session-apply`` core: contract-validate, persistence-guard,
+    complete, advance.
 
     (1) Validate the phase-runner RESULT CONTRACT — a malformed result never
-    reaches the lifecycle (no mutation; master fixes + retries). (2) A design
-    phase that completed ok freezes splits BEFORE completion so the design->plan
-    successor sees ``splits_frozen`` (mirrors ``phase_session_stop``). (3) Route
-    through ``complete_phase_task`` — ok=False strict-stops via
+    reaches the lifecycle (no mutation; master fixes + retries). (2) On-disk
+    PERSISTENCE GUARD (SS4): an ``ok`` result may not CLAIM an artifact it did
+    not write to disk — a missing claim is rejected fail-closed BEFORE any
+    mutation, closing the section-writer silent-loss class at the loop level.
+    (3) A design phase that completed ok freezes splits BEFORE completion so the
+    design->plan successor sees ``splits_frozen`` (mirrors ``phase_session_stop``).
+    (4) Route through ``complete_phase_task`` — ok=False strict-stops via
     ``mark_phase_failed`` (NO successor); ok=True marks done + plans the next.
-    (4) Advance the loop pointer / stamp the terminal loop status."""
+    (5) Advance the loop pointer / stamp the terminal loop status."""
     errors = validate_phase_runner_result(result)
     if errors:
         return {"ok": False, "reason": "invalid_result", "errors": errors}
@@ -208,7 +213,27 @@ def apply_phase_result(
     task_res = lc.get_phase_task(project_root, phase_task_id)
     if not task_res.get("ok"):
         return task_res
-    phase = task_res["phase_task"]["phase"]
+    task = task_res["phase_task"]
+    phase = task["phase"]
+
+    # If this apply is already stale (task recovered/advanced by another actor —
+    # version bumped or claim released), the artifact guard must NOT pre-empt the
+    # lifecycle's authoritative CAS reason; let complete_phase_task report
+    # stale_version / stale_session truthfully.
+    cas_current = (
+        int(task.get("version", 1)) == int(expected_version)
+        and task.get("sessionUuid") == session_uuid
+    )
+
+    # A successful, current apply must have PERSISTED every artifact it claims.
+    # Verify on disk before any mutation — a claimed-but-unwritten artifact is
+    # the exact silent-loss failure SS4 exists to prevent. (After task-existence
+    # so a bad phaseTaskId surfaces as not_found; skipped for a stale apply so the
+    # CAS reason wins, and for ok=False strict-stops which needn't produce files.)
+    if result.get("ok") and cas_current:
+        missing = verify_artifacts_exist(project_root, result.get("artifacts", []))
+        if missing:
+            return {"ok": False, "reason": "artifacts_missing", "missing": missing}
 
     if phase == "design" and result.get("ok"):
         try:

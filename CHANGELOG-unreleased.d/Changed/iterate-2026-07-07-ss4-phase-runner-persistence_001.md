@@ -1,0 +1,1 @@
+Single-session `single-session-apply` now verifies on disk that every artifact an `ok` result claims actually exists, rejecting a claimed-but-unwritten artifact fail-closed (`artifacts_missing`) before any pipeline-state change.

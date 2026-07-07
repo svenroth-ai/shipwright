@@ -1,18 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-07-grade-local-honesty",
+    "run_id": "iterate-2026-07-07-ss4-phase-runner-persistence",
     "date": "2026-07-07",
-    "intent": "change",
+    "intent": "feature",
     "complexity": "medium",
     "unit": {
       "status": "passed",
-      "passed": 1311,
-      "total": 1311
+      "passed": 339,
+      "total": 339
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 3,
+      "total": 3
     },
     "pgtap": {
       "status": "not_run",
@@ -34,89 +34,121 @@
     },
     "degraded": [
       {
-        "condition": "F0 scope",
-        "detail": "F0 ran the two affected plugin suites (shipwright-grade 352 passed + shipwright-compliance 958 passed) + ruff@0.15.15 (changed dirs) + leak-guard f0 ALLOW. The change is isolated to the Control-Grade engine (compliance lib) + the grade cold projector/docs; grep confirmed no compute_grade/GradeInputs consumers in shared/, integration-tests/, or scripts/. The full shared/tests + all-plugin + integration suite runs in CI on the PR."
+        "condition": "external-review pre-flight helper missing (SS6 gap)",
+        "detail": "shared/scripts/tools/check-external-review-keys.py (the documented pre-flight key-check wrapper) does not exist — the tooling gap SS6 will fix. external_review.py itself IS functional: --mode code ran GPT-5.4 + Gemini 3.1 Pro via OpenRouter successfully on this diff (OpenAI: ship-with-fixes, 4 findings, all addressed; Gemini: no findings). External review was therefore NOT degraded for this run; only the missing wrapper is."
       },
       {
-        "condition": "network empirical fixtures not re-recorded (by design)",
-        "detail": "The 7 committed network fixtures were NOT re-recorded. This is intentional: change_traceability_measurable defaults True, so the stored GradeInputs replay via GradeInputs(**gi) with the dimension still scored -> network grades byte-identical. The offline calibration suite (test_run_empirical + calibration.grade_from_fixture) is green; the network -m empirical suite (opt-in, needs gh) was not run locally."
+        "condition": "F0 scope",
+        "detail": "F0 ran shipwright-run (282) + shipwright-plan (57) + integration-tests/test_single_session_pipeline.py (3) + shared/tests (3739 passed, 1 pre-fix canon lint now green) + ruff@0.15.15 + leak-guard f0 ALLOW. The full all-plugin suite runs in CI on the PR."
       }
     ],
     "surface_verification": {
       "surface": "none",
-      "justification": "The change is to the deterministic Control-Grade Python engine (compliance lib) + the shipwright-grade cold projector + report copy/docs. There is no web/UI/API/server surface and no served client; the grade HTML report is a static artifact covered by the golden-snapshot test (regenerated, copy-only diff). The CLI grader IS the executable surface and was driven END-TO-END as the behavior proof: (1) the shitstorm case -- a synthetic well-run repo with clean Conventional Commits but no #N refs -- graded F 49.0 'out of control' on HEAD and B 89.0 with change_traceability n/a after the fix; (2) the dogfood monorepo graded A 99.9 authoritative with change_traceability measured (276/276). Verification = F0 pytest (1310) + ruff + leak-guard f0 ALLOW + 2 real-CLI end-to-end grades.",
+      "justification": "SS4 is a Python plugin change: a phase-runner agent def, the single_session on-disk persistence guard + reload module + a new single-session-reload CLI subcommand, the section-writer write-path fix + a non-blocking SubagentStop fallback hook, and docs. No web/UI/API surface, no server, no client code. run_config is only READ by the reload/guard (all mutation stays in phase_task_lifecycle); no message-contract change, so the Backend-affects-Frontend rule does not apply. The CLI surface was exercised END-TO-END: integration-tests/test_single_session_pipeline.py drives single-session-next / single-session-apply through a full pipeline INCLUDING the new persistence guard, plus a cross_component scenario proving a claimed-but-unwritten artifact is rejected fail-closed across the real subprocess CLI. Verification = F0 pytest (339 unit + 3 integration + 3739 shared) + ruff + artifact-path-canon + leak-guard f0 ALLOW.",
       "exit_code": 0,
-      "tests_run": 1311,
-      "timestamp": "2026-07-07T00:00:00Z"
+      "tests_run": 342,
+      "timestamp": "2026-07-07T21:30:00Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 — local-only well-run repo without #N refs grades NOT F / not 'out of control'",
+          "behavior": "AC1 — phase-runner agent has a write path (Write/Edit/Bash)",
           "disposition": "tested",
-          "evidence": "test_projector_fixtures.py::TestLocalOnlyChangeTraceability::test_well_run_without_pr_refs_is_not_f PASSED; real-CLI E2E B 89.0"
+          "evidence": "test_phase_runner_agent.py::test_phase_runner_has_write_path PASSED"
         },
         {
-          "behavior": "AC1 — change_traceability renders n/a in local-only mode",
+          "behavior": "AC1 — phase-runner brief mandates disk persistence, not a Stop hook",
           "disposition": "tested",
-          "evidence": "test_well_run_without_pr_refs_change_trace_is_na + test_change_traceability_na_in_local_mode PASSED"
+          "evidence": "test_phase_runner_briefs_disk_persistence_not_hook PASSED (concrete phrase assertions)"
         },
         {
-          "behavior": "Engine gate: change_traceability_measurable=False -> dimension score is None (n/a)",
+          "behavior": "AC1/AC4 — a claimed-but-unwritten artifact is caught by the on-disk guard",
           "disposition": "tested",
-          "evidence": "test_control_grade_change_traceability.py::TestChangeTraceabilityGate::test_na_when_not_measurable PASSED"
+          "evidence": "test_single_session_artifact_guard.py::test_apply_rejects_missing_artifact_before_lifecycle + test_phase_runner_unpersisted_artifact_is_caught PASSED"
         },
         {
-          "behavior": "Engine gate: measurable=False + 0 provenance never F-collapses (dim is a COLLAPSE_PILLAR only when scored < 0.5)",
+          "behavior": "AC4 — an ok result whose artifacts exist on disk completes; ok=False skips the guard",
           "disposition": "tested",
-          "evidence": "test_not_measurable_never_f_collapses_on_reference_free_repo PASSED (grade stays A)"
+          "evidence": "test_apply_accepts_when_claimed_artifact_on_disk + test_apply_failure_result_skips_artifact_guard PASSED"
         },
         {
-          "behavior": "AC2 — --allow-network / authoritative path still scores change_traceability",
+          "behavior": "AC4 — a stale apply reports stale_version, not artifacts_missing (CAS precedence)",
           "disposition": "tested",
-          "evidence": "test_network_mode_still_scores_change_traceability + test_scored_when_measurable PASSED; dogfood CLI A 99.9 (276/276)"
+          "evidence": "test_apply_stale_version_reports_stale_not_artifacts_missing PASSED"
         },
         {
-          "behavior": "AC5 — engine default True keeps existing callers byte-identical",
+          "behavior": "AC3 — reload rebuilds context from compact summaries, transcript-blind + budget-bounded",
           "disposition": "tested",
-          "evidence": "test_default_is_measurable + test_control_grade.py::test_real_shipwright_case_grades_B (na set unchanged) PASSED"
+          "evidence": "test_orchestrator_context_reload.py::test_phase_summaries_never_carry_transcript, test_context_budget_is_bounded_by_summary_ceiling PASSED"
         },
         {
-          "behavior": "Engine: measurable=True but 0 events -> n/a with distinct 'no change events' detail",
+          "behavior": "AC3 — reload is read-only and returns None on no/corrupt/non-v2 config",
           "disposition": "tested",
-          "evidence": "test_measurable_but_no_events_is_na PASSED"
+          "evidence": "test_reload_does_not_mutate_config, test_reload_none_on_corrupt_config, test_reload_none_on_non_v2_schema PASSED"
         },
         {
-          "behavior": "git-log count retained on GradeInputs but ungraded in local mode",
+          "behavior": "AC3 — the summary ceiling (context-budget guard) is enforced at write-time by the contract",
           "disposition": "tested",
-          "evidence": "test_git_log_count_kept_when_network_absent (count==4 AND measurable is False) PASSED"
+          "evidence": "test_context_budget_ceiling_enforced_at_write_time PASSED (build_phase_runner_result raises on overlong summary)"
         },
         {
-          "behavior": "Calibration: synthetic no_tests fixture drops local C->D (change_traceability n/a)",
+          "behavior": "AC3 — single-session-reload CLI subcommand + cli.main routing wired at runtime",
           "disposition": "tested",
-          "evidence": "test_projector_fixtures.py::TestNoTests::test_grades_d_maintainability_lit PASSED"
+          "evidence": "test_single_session_cli.py::test_reload_exit0_returns_context, test_reload_exit1_on_no_config, test_cli_main_routes_single_session_reload PASSED"
         },
         {
-          "behavior": "AC3/report: HTML n/a copy hint for change_traceability",
+          "behavior": "AC2 — section-writer declares a Write path + a direct-write instruction",
           "disposition": "tested",
-          "evidence": "test_render_snapshots.py::test_html_snapshot_matches_golden (golden regenerated, copy-only 1-line diff) PASSED"
+          "evidence": "test_section_writer_persistence.py::test_section_writer_declares_write_path, test_section_writer_instructs_direct_write PASSED"
         },
         {
-          "behavior": "Drift-guard: authoritative/compliance adapter explicitly sets change_traceability_measurable=True (survives a future engine-default flip)",
+          "behavior": "AC2 — hook is a no-op when the section file already exists (no clobber, no block)",
           "disposition": "tested",
-          "evidence": "test_control_grade_change_traceability.py::TestAuthoritativeAdapterKeepsItMeasurable::test_adapter_sets_change_traceability_measurable_true PASSED (added per internal-review finding #1)"
+          "evidence": "test_hook_noop_when_section_file_exists PASSED (existing content preserved)"
+        },
+        {
+          "behavior": "AC2 — hook salvages from the transcript only when the file is missing (env dir set)",
+          "disposition": "tested",
+          "evidence": "test_hook_salvages_when_file_missing PASSED"
+        },
+        {
+          "behavior": "AC2 — salvage write refuses an untrusted inferred dir outside the project tree",
+          "disposition": "tested",
+          "evidence": "test_hook_refuses_salvage_write_to_untrusted_inferred_dir + salvage_write_dir unit tests PASSED"
+        },
+        {
+          "behavior": "AC2 — salvage refuses content that is not a section document",
+          "disposition": "tested",
+          "evidence": "test_hook_refuses_salvage_of_non_section_document PASSED"
+        },
+        {
+          "behavior": "AC2 — the hook NEVER blocks (bad payload / missing transcript_path / empty / unsalvageable)",
+          "disposition": "tested",
+          "evidence": "test_hook_never_blocks_* (3) + test_hook_empty_transcript_never_blocks PASSED"
+        },
+        {
+          "behavior": "cross_component — hook + loop + result-contract compose end-to-end via the real CLI",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "integration-tests/test_single_session_pipeline.py::TestPersistenceGuardCrossComponent::test_claimed_but_unwritten_artifact_is_rejected PASSED (subprocess CLI, artifacts_missing, run stays in_progress, frontier intact)"
+        },
+        {
+          "behavior": "the live LLM phase-runner/section-writer actually writes its files at runtime",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "A real subagent's file writes cannot be exercised in a unit test; the behavior is enforced fail-closed by the on-disk artifact guard (single-session) and check-sections.py Step 7 (plan), both of which ARE tested."
         }
       ],
       "counts": {
-        "testable": 11,
-        "tested": 11,
-        "untestable": 0,
+        "testable": 16,
+        "tested": 16,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 5,
-        "covered_acs": 5
+        "acs": 4,
+        "covered_acs": 4
       }
     }
   },

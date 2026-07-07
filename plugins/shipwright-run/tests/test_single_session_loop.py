@@ -53,6 +53,16 @@ def _result(phase: str, *, ok: bool = True, split_id: str | None = None):
     )
 
 
+def _persist_claimed_artifacts(project_root: Path, result: dict) -> None:
+    """Play the phase-runner's disk write: create every artifact the result
+    claims so the loop's on-disk persistence guard (SS4) passes. A real
+    phase-runner writes its outputs to disk BEFORE returning the contract."""
+    for rel in result.get("artifacts", []):
+        p = project_root / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(f"# {rel}\n", encoding="utf-8")
+
+
 def _drive(project_root: Path, expected_phase: str, *, ok: bool = True,
            design_splits: list[str] | None = None):
     """next_dispatch -> (write design cfg) -> apply. Returns (dispatch, apply)."""
@@ -67,12 +77,15 @@ def _drive(project_root: Path, expected_phase: str, *, ok: bool = True,
             json.dumps({"splits": design_splits}), encoding="utf-8",
         )
 
+    result = _result(expected_phase, ok=ok, split_id=dispatch["splitId"])
+    if ok:  # a successful phase must have persisted its artifacts on disk
+        _persist_claimed_artifacts(project_root, result)
     applied = loop.apply_phase_result(
         project_root,
         phase_task_id=dispatch["phaseTaskId"],
         session_uuid=dispatch["sessionUuid"],
         expected_version=dispatch["version"],
-        result=_result(expected_phase, ok=ok, split_id=dispatch["splitId"]),
+        result=result,
     )
     return dispatch, applied
 
@@ -225,12 +238,14 @@ def test_apply_stale_version_fail_closed_leaves_loop_state(tmp_project):
     # Another actor recovers the task — bumps version, releases the claim.
     phase_task_lifecycle.recover_phase_task(tmp_project, phase_task_id=seed_id)
 
+    result = _result("project")
+    _persist_claimed_artifacts(tmp_project, result)  # pass the SS4 artifact guard
     applied = loop.apply_phase_result(
         tmp_project,
         phase_task_id=dispatch["phaseTaskId"],
         session_uuid=dispatch["sessionUuid"],
         expected_version=dispatch["version"],  # now stale
-        result=_result("project"),
+        result=result,
     )
     assert applied["ok"] is False
     assert applied["reason"] == "stale_version"

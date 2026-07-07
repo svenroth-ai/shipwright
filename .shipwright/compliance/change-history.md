@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-07-07T19:22:57.136907+00:00
-Total commits: 1108
+Generated: 2026-07-07T19:32:59.063369+00:00
+Total commits: 1110
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 321
-    "feat" : 296
+    "fix" : 322
+    "feat" : 297
     "chore" : 235
     "docs" : 143
     "refactor" : 67
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 321 commits
+### Fixes (fix) — 322 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-07 | grade | change_traceability is n/a in local-only mode (no more false F) (#344) | 5357ad26a74f |
 | 2026-07-07 | hooks | guard phase_session_start + self-heal the plugins/ cross-link cache (#341) | 458b4aa78751 |
 | 2026-07-07 | security | drop accepted-risk GH-owned action-tags at the SARIF artifact producer (#336) | ab114c8c5cce |
 | 2026-07-07 | run | surface-aware hand-off banner (CLAUDE_CODE_ENTRYPOINT) (#334) | 3f81def08667 |
@@ -346,10 +347,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 296 commits
+### Features (feat) — 297 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-07 | run | phase-runner subagent + guaranteed artifact persistence + section-writer fix (SS4) | 16ea0fb8aeb4 |
 | 2026-07-07 | run | single-session orchestrator loop + lifecycle integration + strict-stop (SS3) (#343) | 0e6f5186152d |
 | 2026-07-07 | run | non-interactive phase-gate mode + gate catalog (SS2) (#342) | 8a7415384b72 |
 | 2026-07-07 | run | scaffold single-session pipeline mode + phase-runner contracts (SS1) (#339) | 1f1ffedfb378 |
@@ -1177,7 +1179,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1108 |
+| Total commits | 1110 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1108 |
+| Human-authored commits | 1110 |
 
