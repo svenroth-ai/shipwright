@@ -42,6 +42,25 @@ shell invocations, and resume-step mapping. Do not paraphrase or
 condense — copy verbatim from the reference into your output where
 required.
 
+### Single-Session Gate Discipline
+
+When this phase runs as a phase-runner subagent under the **single-session
+pipeline** (`shipwright_run_config.json` `mode: "single_session"`), interactive
+`AskUserQuestion` gates — incl. **A.1** and **Step 4** — follow a per-gate policy.
+Resolve each before stopping:
+
+```bash
+uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/resolve_gate_policy.py" \
+  --phase project --list --project-root .
+```
+
+Apply the `effective_policy`: `auto-default` → proceed with the `default_answer`
+(no END-TURN; e.g. the interview is answered from the seed, the split manifest is
+auto-approved); `orchestrator-approve` / `hard-stop` → STILL STOP and hand back to
+the orchestrator (never auto-answer — e.g. a missing Supabase secret). Under
+`multi_session`/standalone every gate is `interactive` (unchanged). Full contract:
+`shared/prompts/single-session-gate-discipline.md`.
+
 ---
 
 ## Step 0: Phase Session Context Recovery

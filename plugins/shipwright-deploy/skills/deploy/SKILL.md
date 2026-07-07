@@ -70,6 +70,10 @@ Determine if running within the pipeline or standalone:
 
 Store the detected mode in a variable `invocation_mode` = `"pipeline"` | `"standalone"` for use in later steps.
 
+### Single-Session Gate Discipline
+
+Under single-session pipeline mode (`run_config.mode == "single_session"`), interactive gates follow a per-gate policy — resolve via `${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/resolve_gate_policy.py --phase deploy --list`. PROD / destructive-migration / rollback gates stay **hard-stop** (explicit human confirmation, always, regardless of autonomy). Full contract: `shared/prompts/single-session-gate-discipline.md`.
+
 ### B3. Validate Environment
 
 Check that required deploy environment variables from the stack profile are available.
@@ -291,17 +295,13 @@ uv run "{shared_root}/scripts/tools/record_event.py" \
   --phase deploy \
   --detail "https://{env_name}.jpc.infomaniak.com"
 ```
-Where `{shared_root}` = `{plugin_root}/../../shared`.
 
 **Phase complete — update pipeline state:**
 
-Iterate 12.4 wires the deploy plugin into the Minimum Phase Completion
-Canon at C1/C2/C3 only. **C4 is skipped by policy** — deployment is
-execution, the architectural decision was made in plan. **C5 is also
-skipped** — deployment is operational history (it goes in `events.jsonl`
-+ `phase_history`), not product change. Adding a CHANGELOG
-`[Unreleased]` bullet per deploy would duplicate the changelog plugin's
-version release block and pollute the next version's notes.
+Deploy runs the Minimum Phase Completion Canon at C1/C2/C3 only. **C4 is skipped**
+(decided in plan) and **C5 is skipped** — deployment is operational history
+(`events.jsonl` + `phase_history`), not a product change; a per-deploy CHANGELOG
+`[Unreleased]` bullet would duplicate the changelog plugin's release block.
 
 ```bash
 : "${SHIPWRIGHT_RUN_ID:=deploy-$(date +%Y%m%d-%H%M%S)-{env_name}}"

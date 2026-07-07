@@ -1,102 +1,119 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-06-cross-plugin-cache-heal",
-    "date": "2026-07-06",
-    "intent": "change",
+    "run_id": "iterate-2026-07-07-phase-gate-mode",
+    "date": "2026-07-07",
+    "intent": "feature",
     "complexity": "medium",
     "unit": {
       "status": "passed",
-      "passed": 3709,
-      "total": 3709
+      "passed": 4067,
+      "total": 4087,
+      "skipped": 20,
+      "framework": "pytest",
+      "note": "F0 verification: shared/tests 3732 (12 skipped) + shared/scripts/tools/tests 139 (8 skipped) + shared/scripts/tests 196; 5 edited plugins pass (project 59 / design 19 / plan 43 / build 84 / deploy 26); ruff@0.15.15 clean; leak-guard f0 ALLOW"
     },
     "integration": {
       "status": "passed",
-      "passed": 25,
-      "total": 25
+      "passed": 174,
+      "total": 174,
+      "note": "integration-tests/ (2 slow deselected) — additive shared tooling, unaffected"
     },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "e2e": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "design_fidelity": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "smoke": {
-      "status": "skipped"
-    },
-    "degraded": [],
+    "pgtap": null,
+    "e2e": null,
+    "design_fidelity": null,
+    "smoke": null,
+    "degraded": [
+      {
+        "condition": "classifier prose false-positive",
+        "detail": "classify_complexity flagged touches_auth + touches_rls from message keywords, not the diff. The diff has no auth/RLS code (a Python gate-policy lib + CLI + prompt/doc edits). Overridden; the authoritative diff-driven risk flag is touches_io_boundary (resolver reads run_config + parses gate_catalog.json)."
+      }
+    ],
     "surface_verification": {
       "surface": "none",
-      "justification": "Framework-internal hook change: a SessionStart crash-guard + an extension of the ensure_shared_cache self-heal to cover cache/shipwright/plugins/. No target-app runtime surface; the fs boundary (mirror installed dirs -> cache/plugins) is exercised end-to-end by the integration test running the real hook as a subprocess, and the guard by the degraded-import unit test.",
+      "justification": "SS2 is a Python lib + CLI + config-schema + prompt/doc change (gate catalog, resolver, honoring blocks in 5 phase skills). No web/UI/API surface, no server, no client code. run_config is only READ (mode); no message-contract change, so the Backend-affects-Frontend rule does not apply. The CLI was exercised end-to-end as empirical probes: --render-doc --output produced the committed pure-ASCII/LF docs/gate-catalog.md, and --gate/--phase resolved correctly under single_session/multi_session. Verification is the full F0 pytest suite (55 SS2 tests + 4067 shared/tools/scripts + 174 integration) + ruff + leak-guard f0 ALLOW.",
       "exit_code": 0,
-      "tests_run": 0,
-      "timestamp": "2026-07-06T14:30:00Z"
+      "tests_run": 4067,
+      "timestamp": "2026-07-07T13:30:00Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "ensure_shared_cache heals BOTH shared/ (from the clone) and plugins/ (from installed dirs) on a fresh install",
-          "category": "integration",
+          "behavior": "The catalog self-validates on load and raises GateCatalogError on any corruption (bad policy/phase/fires, auto-default missing a default_answer, a non-auto-default carrying one, a constitution gate marked auto-default, duplicate ids, covered_phases mismatch)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ensure_shared_cache_integration.py::test_heals_shared_and_plugins_on_fresh_install"
+          "evidence": "test_gate_catalog.py::test_shipped_catalog_loads_and_validates, ::test_validate_rejects_* (5), ::test_load_raises_on_corrupt_catalog PASSED"
         },
         {
-          "behavior": "plugins/ heals from the installed versioned dirs even with NO marketplace clone",
-          "category": "integration",
+          "behavior": "The resolver is inert under any non-single-session mode: every gate resolves to 'interactive' with should_stop=True (multi_session and unknown/typo modes)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ensure_shared_cache_integration.py::test_heals_plugins_without_marketplace_clone"
+          "evidence": "test_gate_policy.py::test_multi_session_is_inert_for_every_gate, ::test_unknown_mode_is_inert PASSED"
         },
         {
-          "behavior": "idempotent no-op when shared/ and plugins/ are both present",
-          "category": "integration",
+          "behavior": "Under single_session the resolver returns the catalog policy: auto-default proceeds (should_stop=False + default_answer), orchestrator-approve/hard-stop stop (should_stop=True, no default_answer)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ensure_shared_cache_integration.py::test_idempotent_noop_when_both_present"
+          "evidence": "test_gate_policy.py::test_single_session_auto_default_proceeds, ::test_single_session_orchestrator_approve_stops, ::test_single_session_hard_stop_stops PASSED"
         },
         {
-          "behavior": "fail-open (exit 0) + shared/ guidance when neither a clone nor shipwright-run is available",
-          "category": "integration",
+          "behavior": "Safety clamp: no constitution-locked gate ever resolves to a proceed (validator rejects it at load; the resolver fails closed even on an unvalidated catalog)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ensure_shared_cache_integration.py::test_fail_open_when_no_clone_and_no_run"
+          "evidence": "test_gate_policy.py::test_resolver_never_auto_answers_a_constitution_gate + test_gate_catalog.py::test_no_constitution_gate_is_auto_default, ::test_validate_rejects_constitution_auto_default PASSED"
         },
         {
-          "behavior": "no-op in the --plugin-dir dev model (both dirs are the real repo)",
-          "category": "integration",
+          "behavior": "Defense-in-depth heuristic: any gate reading as a dangerous op (prod-/destructive/rollback/truncate/drop table/apply-fail) is constitution-locked, except a reviewed auto-recovery exception",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ensure_shared_cache_integration.py::test_dev_plugin_dir_model_is_noop"
+          "evidence": "test_gate_catalog.py::test_danger_keyword_gates_are_constitution_locked PASSED"
         },
         {
-          "behavior": "phase_session_start.run() returns 0 (standalone) when the cross-plugin lifecycle import degraded to None — never a NoneType-not-callable crash",
+          "behavior": "Unknown gate id fails loudly for programmatic callers (lib raises KeyError) but SAFE for an LLM subagent (CLI resolves to interactive + stderr warning, exit 0)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_phase_session_start_degraded.py::test_degraded_cross_plugin_import_returns_standalone"
+          "evidence": "test_gate_policy.py::test_resolver_unknown_gate_raises + test_resolve_gate_policy.py::test_unknown_gate_safe_fallback PASSED"
         },
         {
-          "behavior": "the vendored ensure_shared_cache stays byte-identical across all 12 hook-bearing plugins + registered first in SessionStart",
+          "behavior": "Mode resolution precedence (--mode > SHIPWRIGHT_RUN_MODE env > run_config.mode > multi_session) and the run_config mode round-trip (Boundary Probe for touches_io_boundary), incl. missing/mode-less/corrupt config",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ensure_shared_cache_vendored.py (forward+reverse, still green after re-vendor)"
+          "evidence": "test_gate_policy.py::test_mode_precedence_*, ::test_mode_default_when_nothing_set, ::test_run_config_mode_round_trip, ::test_read_run_config_mode_* PASSED"
         },
         {
-          "behavior": "extracting the context-block builders to phase_context_blocks.py preserves the pipeline-context + BLOCKED-variant emission",
+          "behavior": "Per-phase dry-run: every gate of each of the 5 phases honors the contract under single_session",
           "disposition": "tested",
-          "evidence": "shared/tests/test_phase_session_hooks.py (happy-path emits pipeline block; wrong-skill/terminal/duplicate/prereq emit the BLOCKED block) — 18 pass"
+          "evidence": "test_gate_policy.py::test_dry_run_per_phase[project|design|plan|build|deploy] PASSED"
+        },
+        {
+          "behavior": "Sensitive-gate policies match Sven's 2026-07-07 decisions: design mockups orchestrator-approve; the deploy/prod danger family + build destructive-sql/migration-apply-fail hard-stop + constitution",
+          "disposition": "tested",
+          "evidence": "test_gate_catalog.py::test_known_sensitive_gates_have_confirmed_policies PASSED"
+        },
+        {
+          "behavior": "docs/gate-catalog.md is generated from the JSON, deterministic, pure ASCII, and byte-for-byte drift-guarded; the CLI --render-doc --output writer produces UTF-8/LF",
+          "disposition": "tested",
+          "evidence": "test_gate_policy.py::test_render_markdown_mentions_every_gate, ::test_render_markdown_is_deterministic, ::test_render_markdown_is_pure_ascii + test_gate_catalog_doc_sync.py + test_resolve_gate_policy.py::test_render_doc_output_writes_utf8_lf_file PASSED"
+        },
+        {
+          "behavior": "CLI wiring: --gate resolution JSON, --phase --list, --render-doc(/--output), mutually-exclusive-action requirement, env/project-root mode sourcing",
+          "disposition": "tested",
+          "evidence": "test_resolve_gate_policy.py (11 tests) PASSED"
+        },
+        {
+          "behavior": "Each of the 5 phase skills honors the mechanism (a Single-Session Gate Discipline block invoking resolve_gate_policy.py for its phase) and the shared contract exists",
+          "disposition": "tested",
+          "evidence": "test_phase_gate_discipline_present.py (6 tests: 5 phases + shared contract) PASSED"
+        },
+        {
+          "behavior": "deploy/SKILL.md stays at its grandfathered 453-LOC bloat baseline (block added, offset by trimming a duplicate note); the 4 kernel skills stay <=300 LOC",
+          "disposition": "tested",
+          "evidence": "test_bloat_baseline.py + plugins/*/tests/test_skill_references_link.py::test_kern_skill_md_under_300_loc + test_reviewer_orchestration.py::test_build_kern_still_under_300_loc PASSED"
         }
       ],
       "counts": {
-        "tested": 8,
+        "total": 13,
+        "tested": 13,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 2,
-        "covered_acs": 2
+        "acs": 5,
+        "covered_acs": 5,
+        "note": "Runtime honoring by a phase-runner subagent (observing no-END-TURN in a live phase) is introduced by SS3, not this diff; SS2 ships the mechanism + prompt contract + drift guards, all tested."
       }
     }
   },
