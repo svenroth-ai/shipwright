@@ -1,6 +1,6 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-07-06T22:34:30.015905+00:00 (dependency versions resolved from uv.lock)
+Generated: 2026-07-07T08:35:35.699695+00:00 (dependency versions resolved from uv.lock)
 
 ## Summary
 

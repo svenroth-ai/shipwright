@@ -297,3 +297,4 @@ Contribution rules, dev setup, the graduated trust model, and high-sensitivity a
 - **ADR-230** (2026-06-17): Unify all plugin/marketplace versions to 0.29.0; relabel Early Access Beta to Beta
 - **ADR-234** (2026-06-20): Dedup the aggregate_triage Stop regen across the plugin fan-out
 - **ADR-235** (2026-06-20): Dedup the bloat-gate Stop block across the plugin fan-out
+- **iterate-2026-07-07-gh-tag-helper-wire-in** (2026-07-07): SIMPLIFY — route both GH-owned-action-tag call-sites (SARIF ingest + plugin scan) through the single shared `gh_action_tag_owner.is_github_owned_action_tag` predicate; dropped the inline duplication + now-unused primitive imports. Behavior-preserving (snapshot==verify). → decision_log (Run-ID).

@@ -33,9 +33,7 @@ from typing import Any
 
 from gh_action_tag_owner import (
     accept_github_owned_action_tags,
-    action_owner_from_file,
-    is_github_owned_owner,
-    is_mutable_action_tag_rule,
+    is_github_owned_action_tag,
 )
 
 # Name of the artifact both the monorepo and the adopt-template security.yml
@@ -211,10 +209,7 @@ def _is_accepted_gh_owned_tag(res: dict, workflow_base: Any) -> bool:
     unresolvable owner returns ``False`` so the finding is KEPT (third-party tags
     and any owner we can't confirm stay counted)."""
     rule_id, uri, line = _sarif_result_ref(res)
-    if not is_mutable_action_tag_rule(rule_id):
-        return False
-    owner = action_owner_from_file(uri, line, base_dir=workflow_base)
-    return is_github_owned_owner(owner)
+    return is_github_owned_action_tag(rule_id, uri, line, base_dir=workflow_base)
 
 
 def _findings_from_sarif(
