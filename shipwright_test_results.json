@@ -1,93 +1,102 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-07-single-session-mode-scaffold",
-    "date": "2026-07-07",
-    "intent": "feature",
+    "run_id": "iterate-2026-07-06-cross-plugin-cache-heal",
+    "date": "2026-07-06",
+    "intent": "change",
     "complexity": "medium",
     "unit": {
       "status": "passed",
-      "passed": 3907,
-      "total": 3923,
-      "skipped": 16,
-      "framework": "pytest",
-      "note": "F0 verification: shipwright-run 229 + shared/tests 3678 (16 skipped); ruff clean; leak-guard f0 ALLOW"
+      "passed": 3709,
+      "total": 3709
     },
     "integration": {
       "status": "passed",
-      "passed": 174,
-      "total": 174,
-      "note": "integration-tests/ (2 slow deselected)"
+      "passed": 25,
+      "total": 25
     },
-    "pgtap": null,
-    "e2e": null,
-    "design_fidelity": null,
-    "smoke": null,
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "skipped"
+    },
     "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "justification": "SS1 is a Python schema + orchestrator-package scaffold: it adds an optional run_config 'mode' field and a new single_session/ contract package (result contract + loop-state persistence). No web/UI/API surface, no server, no client code. The 'mode' field is additive and ignored by the current WebUI (phase_tasks message contract unchanged), so the Backend-affects-Frontend rule does not apply; WebUI single-session rendering is a separate paired track (per Spec/pipeline-as-campaign-convergence.md). Verification is the full F0 pytest suite (schema round-trip, mode back-compat, contract + loop-state round-trips) + ruff.",
+      "justification": "Framework-internal hook change: a SessionStart crash-guard + an extension of the ensure_shared_cache self-heal to cover cache/shipwright/plugins/. No target-app runtime surface; the fs boundary (mirror installed dirs -> cache/plugins) is exercised end-to-end by the integration test running the real hook as a subprocess, and the guard by the degraded-import unit test.",
       "exit_code": 0,
-      "tests_run": 4081,
-      "timestamp": "2026-07-07T12:00:00Z"
+      "tests_run": 0,
+      "timestamp": "2026-07-06T14:30:00Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "create_config writes an additive run_config 'mode' (multi_session default | single_session) to disk",
+          "behavior": "ensure_shared_cache heals BOTH shared/ (from the clone) and plugins/ (from installed dirs) on a fresh install",
+          "category": "integration",
           "disposition": "tested",
-          "evidence": "test_run_config_mode.py::test_create_config_default_mode_is_multi_session, ::test_create_config_single_session_mode, ::test_create_config_persists_mode_to_disk PASSED"
+          "evidence": "shared/tests/test_ensure_shared_cache_integration.py::test_heals_shared_and_plugins_on_fresh_install"
         },
         {
-          "behavior": "A mode-less legacy config loads unchanged and reads as multi_session; an unknown value coerces to multi_session (back-compat)",
+          "behavior": "plugins/ heals from the installed versioned dirs even with NO marketplace clone",
+          "category": "integration",
           "disposition": "tested",
-          "evidence": "test_run_config_mode.py::test_legacy_config_without_mode_loads_and_reads_multi_session, ::test_run_mode_defaults_missing_to_multi_session, ::test_run_mode_coerces_unknown_to_multi_session PASSED"
+          "evidence": "shared/tests/test_ensure_shared_cache_integration.py::test_heals_plugins_without_marketplace_clone"
         },
         {
-          "behavior": "write-config --mode accepts the two modes, defaults to multi_session, and rejects an unknown value; create_config raises on invalid mode",
+          "behavior": "idempotent no-op when shared/ and plugins/ are both present",
+          "category": "integration",
           "disposition": "tested",
-          "evidence": "test_run_config_mode.py::test_write_config_cli_exposes_mode_choice, ::test_write_config_cli_defaults_mode_multi_session, ::test_write_config_cli_rejects_unknown_mode, ::test_create_config_rejects_invalid_mode PASSED"
+          "evidence": "shared/tests/test_ensure_shared_cache_integration.py::test_idempotent_noop_when_both_present"
         },
         {
-          "behavior": "The schema declares 'mode' as OPTIONAL (not in required) with enum + default multi_session, matching RUN_MODES",
+          "behavior": "fail-open (exit 0) + shared/ guidance when neither a clone nor shipwright-run is available",
+          "category": "integration",
           "disposition": "tested",
-          "evidence": "test_run_config_mode.py::test_schema_declares_optional_mode_with_default, ::test_schema_mode_enum_matches_run_modes PASSED"
+          "evidence": "shared/tests/test_ensure_shared_cache_integration.py::test_fail_open_when_no_clone_and_no_run"
         },
         {
-          "behavior": "/shipwright-run SKILL.md documents both modes, marks multi_session default, threads --mode in Step 4, offers Change mode, and stays within the 400-line runtime-prompt budget",
+          "behavior": "no-op in the --plugin-dir dev model (both dirs are the real repo)",
+          "category": "integration",
           "disposition": "tested",
-          "evidence": "test_run_skill_mode_selection.py (5 tests) PASSED"
+          "evidence": "shared/tests/test_ensure_shared_cache_integration.py::test_dev_plugin_dir_model_is_noop"
         },
         {
-          "behavior": "The phase-runner result contract validates the shape (required keys, ok/reason coupling, phase enum, 2000-char summary ceiling, relative-repo-path artifacts) and the builder refuses invalid results without silent truncation",
+          "behavior": "phase_session_start.run() returns 0 (standalone) when the cross-plugin lifecycle import degraded to None — never a NoneType-not-callable crash",
           "disposition": "tested",
-          "evidence": "test_single_session_result_contract.py (21 tests) PASSED"
+          "evidence": "shared/tests/test_phase_session_start_degraded.py::test_degraded_cross_plugin_import_returns_standalone"
         },
         {
-          "behavior": "VALID_PHASES stays in lockstep with the schema Phase enum (both-direction drift guard)",
+          "behavior": "the vendored ensure_shared_cache stays byte-identical across all 12 hook-bearing plugins + registered first in SessionStart",
           "disposition": "tested",
-          "evidence": "test_single_session_result_contract.py::test_valid_phases_matches_schema_enum_both_directions PASSED"
+          "evidence": "shared/tests/test_ensure_shared_cache_vendored.py (forward+reverse, still green after re-vendor)"
         },
         {
-          "behavior": "Loop-state init/save/load round-trips atomically to .shipwright/run_loop_state.json (distinct from the campaign loop_state.json); the mutators are pure and status is validated",
+          "behavior": "extracting the context-block builders to phase_context_blocks.py preserves the pipeline-context + BLOCKED-variant emission",
           "disposition": "tested",
-          "evidence": "test_single_session_loop_state.py (13 tests) PASSED"
-        },
-        {
-          "behavior": "Lifecycle-reuse contract: every completion entrypoint resolves in phase_task_lifecycle; the single_session package calls no mutator/run_config-writer (code-only AST scan); loop-state ops leave run_config byte-identical and create none",
-          "disposition": "tested",
-          "evidence": "test_single_session_lifecycle_reuse.py (6 tests) PASSED"
+          "evidence": "shared/tests/test_phase_session_hooks.py (happy-path emits pipeline block; wrong-skill/terminal/duplicate/prereq emit the BLOCKED block) — 18 pass"
         }
       ],
       "counts": {
-        "total": 9,
-        "tested": 9,
+        "tested": 8,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 5,
-        "covered_acs": 5
+        "acs": 2,
+        "covered_acs": 2
       }
     }
   },
