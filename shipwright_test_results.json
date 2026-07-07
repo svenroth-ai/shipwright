@@ -1,18 +1,23 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-07-diff-coverage-composite-action",
+    "run_id": "iterate-2026-07-07-single-session-mode-scaffold",
     "date": "2026-07-07",
-    "intent": "change",
-    "mode": null,
+    "intent": "feature",
     "complexity": "medium",
     "unit": {
-      "passed": 4175,
-      "total": 4191,
+      "status": "passed",
+      "passed": 3907,
+      "total": 3923,
       "skipped": 16,
       "framework": "pytest",
-      "note": "F0 affected-surface suites all green: shared/tests 3689 (+16 skipped) + shared/scripts/tools/tests 137 + shipwright-adopt 349 — the template/action consumers + diff-cover tooling"
+      "note": "F0 verification: shipwright-run 229 + shared/tests 3678 (16 skipped); ruff clean; leak-guard f0 ALLOW"
     },
-    "integration": null,
+    "integration": {
+      "status": "passed",
+      "passed": 174,
+      "total": 174,
+      "note": "integration-tests/ (2 slow deselected)"
+    },
     "pgtap": null,
     "e2e": null,
     "design_fidelity": null,
@@ -20,72 +25,64 @@
     "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "runner": "",
+      "justification": "SS1 is a Python schema + orchestrator-package scaffold: it adds an optional run_config 'mode' field and a new single_session/ contract package (result contract + loop-state persistence). No web/UI/API surface, no server, no client code. The 'mode' field is additive and ignored by the current WebUI (phase_tasks message contract unchanged), so the Backend-affects-Frontend rule does not apply; WebUI single-session rendering is a separate paired track (per Spec/pipeline-as-campaign-convergence.md). Verification is the full F0 pytest suite (schema round-trip, mode back-compat, contract + loop-state round-trips) + ruff.",
       "exit_code": 0,
-      "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-07-diff-coverage-composite-action/surface_verification.json",
-      "timestamp": "2026-07-07T10:08:08.705Z",
-      "justification": "Change is confined to CI infrastructure: a new GitHub Actions composite action (.github/actions/diff-coverage-gate) plus two DORMANT adopt CI templates and their pytest drift-guards. No application runtime surface (web/CLI/API) is touched — no API routes, store mutations, SSE/WS, message contracts, or UI-consumed code (Backend-affects-Frontend N/A). Correctness is proven by 44 pytest contract + runtime-wiring tests (incl. faithful execution of the extracted action run: body against shadowed git/uvx) and an empirical shell-body probe; the composite action only executes inside GitHub Actions CI, not drivable from a local E2E harness."
+      "tests_run": 4081,
+      "timestamp": "2026-07-07T12:00:00Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "action.yml exposes 4 inputs with documented defaults (coverage-files required; compare-branch=origin/main; fail-under=80; diff-cover-version=10.3.0)",
+          "behavior": "create_config writes an additive run_config 'mode' (multi_session default | single_session) to disk",
           "disposition": "tested",
-          "evidence": "test_diff_coverage_action.py::TestDiffCoverageActionInputs (5 cases) PASSED"
+          "evidence": "test_run_config_mode.py::test_create_config_default_mode_is_multi_session, ::test_create_config_single_session_mode, ::test_create_config_persists_mode_to_disk PASSED"
         },
         {
-          "behavior": "action is using: composite",
+          "behavior": "A mode-less legacy config loads unchanged and reads as multi_session; an unknown value coerces to multi_session (back-compat)",
           "disposition": "tested",
-          "evidence": "test_diff_coverage_action.py steps fixture (asserts using==composite) PASSED"
+          "evidence": "test_run_config_mode.py::test_legacy_config_without_mode_loads_and_reads_multi_session, ::test_run_mode_defaults_missing_to_multi_session, ::test_run_mode_coerces_unknown_to_multi_session PASSED"
         },
         {
-          "behavior": "setup-uv is SHA-pinned (supply-chain)",
+          "behavior": "write-config --mode accepts the two modes, defaults to multi_session, and rejects an unknown value; create_config raises on invalid mode",
           "disposition": "tested",
-          "evidence": "test_diff_coverage_action.py::test_setup_uv_is_sha_pinned PASSED"
+          "evidence": "test_run_config_mode.py::test_write_config_cli_exposes_mode_choice, ::test_write_config_cli_defaults_mode_multi_session, ::test_write_config_cli_rejects_unknown_mode, ::test_create_config_rejects_invalid_mode PASSED"
         },
         {
-          "behavior": "pinned diff-cover version threaded adjacent to diff-cover@ (no @latest slip) and all gate flags passed",
+          "behavior": "The schema declares 'mode' as OPTIONAL (not in required) with enum + default multi_session, matching RUN_MODES",
           "disposition": "tested",
-          "evidence": "test_diff_coverage_action.py::test_gate_threads_the_pinned_inputs PASSED"
+          "evidence": "test_run_config_mode.py::test_schema_declares_optional_mode_with_default, ::test_schema_mode_enum_matches_run_modes PASSED"
         },
         {
-          "behavior": "inputs.*->INPUT_* env seam bound to exactly ${{ inputs.<name> }}, forward + reverse drift",
+          "behavior": "/shipwright-run SKILL.md documents both modes, marks multi_session default, threads --mode in Step 4, offers Change mode, and stays within the 400-line runtime-prompt budget",
           "disposition": "tested",
-          "evidence": "test_diff_coverage_action.py::TestDiffCoverageActionEnvMapping::test_every_input_is_bound_in_env PASSED"
+          "evidence": "test_run_skill_mode_selection.py (5 tests) PASSED"
         },
         {
-          "behavior": "injection-safe: no ${{ inputs.* }} interpolated into any run body",
+          "behavior": "The phase-runner result contract validates the shape (required keys, ok/reason coupling, phase enum, 2000-char summary ceiling, relative-repo-path artifacts) and the builder refuses invalid results without silent truncation",
           "disposition": "tested",
-          "evidence": "test_diff_coverage_action.py::test_inputs_are_injection_safe PASSED"
+          "evidence": "test_single_session_result_contract.py (21 tests) PASSED"
         },
         {
-          "behavior": "runtime shell wiring: origin/<branch> fetch-target derivation + space-separated coverage-files split into distinct argv + exact diff-cover argv (single/two/non-default-origin)",
+          "behavior": "VALID_PHASES stays in lockstep with the schema Phase enum (both-direction drift guard)",
           "disposition": "tested",
-          "evidence": "test_diff_coverage_action_runtime.py::test_wiring (3 params, executes the extracted action run body) PASSED"
+          "evidence": "test_single_session_result_contract.py::test_valid_phases_matches_schema_enum_both_directions PASSED"
         },
         {
-          "behavior": "both vitest templates consume the gate via uses: <action> + coverage-files, keep warn-only continue-on-error, ubuntu-only, fetch-depth:0, if:pull_request, and still produce a cobertura report",
+          "behavior": "Loop-state init/save/load round-trips atomically to .shipwright/run_loop_state.json (distinct from the campaign loop_state.json); the mutators are pure and status is validated",
           "disposition": "tested",
-          "evidence": "test_ci_template_diff_coverage.py (both supabase-nextjs + vite-hono profiles) PASSED"
+          "evidence": "test_single_session_loop_state.py (13 tests) PASSED"
         },
         {
-          "behavior": "no regression in CI convention / coverage-wiring / adopt-scaffold guards",
+          "behavior": "Lifecycle-reuse contract: every completion entrypoint resolves in phase_task_lifecycle; the single_session package calls no mutator/run_config-writer (code-only AST scan); loop-state ops leave run_config byte-identical and create none",
           "disposition": "tested",
-          "evidence": "test_ci_workflow_convention.py + full shared 3689 + adopt 349 + tools 137 PASSED"
-        },
-        {
-          "behavior": "diff-cover exits non-zero when changed-line coverage < threshold (the gate DECISION)",
-          "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "reason": "proven against REAL diff-cover in shared/scripts/tools/tests/test_measure_diff_coverage_gate.py (same pinned 10.3.0 binary); this diff only wires argv into it (see runtime behavior above)"
+          "evidence": "test_single_session_lifecycle_reuse.py (6 tests) PASSED"
         }
       ],
       "counts": {
-        "testable": 9,
+        "total": 9,
         "tested": 9,
-        "untestable": 1,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {

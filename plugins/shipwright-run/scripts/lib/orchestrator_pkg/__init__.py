@@ -28,10 +28,12 @@ from __future__ import annotations
 from .build_progress import get_build_progress
 from .compliance_runner import run_compliance_update
 from .config_factory import build_pipeline, create_config
-from .config_io import is_v2_config, load_run_config, save_run_config
+from .config_io import is_v2_config, load_run_config, run_mode, save_run_config
 from .constants import (
     CONFIG_NAME,
+    DEFAULT_RUN_MODE,
     PIPELINE_STEPS,
+    RUN_MODES,
     SCHEMA_VERSION,
     _COMPLIANCE_SCRIPT,
     _CRITICAL_GATE_CHECK_IDS,
@@ -52,6 +54,8 @@ __all__ = [
     "CONFIG_NAME",
     "PIPELINE_STEPS",
     "SCHEMA_VERSION",
+    "RUN_MODES",
+    "DEFAULT_RUN_MODE",
     "_COMPLIANCE_SCRIPT",
     "_CRITICAL_GATE_CHECK_IDS",
     "_LEGACY_PIPELINE_ENTRIES",
@@ -61,6 +65,7 @@ __all__ = [
     "get_next_step",
     "is_v2_config",
     "load_run_config",
+    "run_mode",
     "run_compliance_update",
     "save_run_config",
     "update_step",

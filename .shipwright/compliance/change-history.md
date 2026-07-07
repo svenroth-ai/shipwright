@@ -1,17 +1,17 @@
 # Commit Change Log
 
-Generated: 2026-07-07T10:12:39.192379+00:00
-Total commits: 1103
+Generated: 2026-07-07T11:04:17.204564+00:00
+Total commits: 1106
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 320
-    "feat" : 293
-    "chore" : 236
+    "feat" : 294
+    "chore" : 237
     "docs" : 143
-    "refactor" : 65
+    "refactor" : 66
     "test" : 27
     "ci" : 11
     "other" : 7
@@ -345,10 +345,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 293 commits
+### Features (feat) — 294 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-07 | run | scaffold single-session pipeline mode + phase-runner contracts (SS1) | b00d21baf1dd |
 | 2026-07-07 | adopt | scaffold a warn-only diff-coverage gate into the vitest CI templates (#335) | 9b06a388e6f5 |
 | 2026-07-06 | grade | empirical calibration suite — SHA-pinned real-OSS record/replay launch gate (G5) (#327) | b8d1b9a2eb74 |
 | 2026-07-05 | coverage | diff-coverage feeds Control-Grade Test-Health (WARN, Phase 3) (#322) | 0532d4db632f |
@@ -643,11 +644,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 236 commits
+### Chores (chore) — 237 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-07 | triage | sweep 2 outbox append(s) into branch | 29b11267304d |
+| 2026-07-07 | compliance | adopt upstream ci-security snapshot to unblock serial integrate | 835ccf6fd634 |
+| 2026-07-07 | triage | sweep 2 outbox append(s) into branch | a065d1662a8a |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
@@ -1032,10 +1034,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 65 commits
+### Refactoring (refactor) — 66 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-07 | coverage | extract the diff-coverage gate into a shared composite action (Stage 1) (#338) | 546ae678f711 |
 | 2026-07-07 | security | route GH-owned action-tag checks through the shared predicate (#337) | 3b511e0578bc |
 | 2026-06-28 | hooks | drop mtime timestamp-drift detector from check_drift.py (#287) | 9cde2be5e20c |
 | 2026-06-28 | codeql | break 3 import cycles via neutral leaf modules + fix 2 mixed-returns (#281) | 07eb0841c26d |
@@ -1172,7 +1175,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1103 |
+| Total commits | 1106 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1103 |
+| Human-authored commits | 1106 |
 

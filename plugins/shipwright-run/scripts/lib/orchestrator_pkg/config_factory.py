@@ -19,7 +19,7 @@ from typing import Any, Optional
 from phase_state_machine import freeze_run_conditions, initial_phase_spec
 
 from .config_io import load_run_config, save_run_config
-from .constants import PIPELINE_STEPS, SCHEMA_VERSION
+from .constants import DEFAULT_RUN_MODE, PIPELINE_STEPS, RUN_MODES, SCHEMA_VERSION
 
 
 def build_pipeline() -> list[str]:
@@ -80,15 +80,27 @@ def create_config(
     autonomy: str,
     deploy_target: str,
     project_root: Path,
+    mode: str = DEFAULT_RUN_MODE,
 ) -> dict[str, Any]:
-    """Create initial orchestrator config (v2 multi-session schema).
+    """Create initial orchestrator config (v2 schema).
 
     If a standalone config exists (from prior /shipwright-project or similar),
     merges its completed_steps so already-finished phases are not repeated.
     Backwards-compat note: standalone configs use the legacy v1 fields
     (current_step / completed_steps); we still merge those, but the new
     config we write is always v2 (schemaVersion: 2 + phase_tasks[]).
+
+    ``mode`` (Campaign 2026-07-07, SS1) selects the pipeline execution mode
+    (``multi_session`` default | ``single_session``). It is validated against
+    ``RUN_MODES`` and always written to the config so downstream readers never
+    have to guess. The initial phase_tasks[] seed is mode-independent — the
+    single-session orchestrator loop (SS3) consumes the SAME phase_tasks[] via
+    the phase_task_lifecycle helpers, so no parallel seed shape is created here.
     """
+    if mode not in RUN_MODES:
+        raise ValueError(
+            f"invalid mode {mode!r}; expected one of {', '.join(RUN_MODES)}"
+        )
     pipeline = build_pipeline()
     now_iso = datetime.now(timezone.utc).isoformat()
     run_id = _new_run_id()
@@ -124,9 +136,13 @@ def create_config(
     current_step = remaining[0] if remaining else None
 
     config: dict[str, Any] = {
-        # --- v2 multi-session fields ---
+        # --- v2 fields ---
         "schemaVersion": SCHEMA_VERSION,
         "runId": run_id,
+        # Additive dual-mode selector (SS1). Default multi_session preserves the
+        # external UUID-bound phase-session model; single_session is honored by
+        # the SS3 in-conversation orchestrator loop.
+        "mode": mode,
         "runConditions": run_conditions,
         "splits_frozen": [],
         "completed_phase_task_ids": (

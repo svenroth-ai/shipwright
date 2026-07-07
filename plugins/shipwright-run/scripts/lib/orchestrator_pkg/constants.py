@@ -32,6 +32,17 @@ CONFIG_NAME = "shipwright_run_config.json"
 # (claim-phase-task, complete-phase-task, etc.) hard-fail on anything else.
 SCHEMA_VERSION = 2
 
+# Pipeline execution mode (Campaign 2026-07-07, SS1 — additive scaffold).
+#   multi_session  — each phase = its own external UUID-bound Claude session
+#                    (the pre-SS1 behaviour). Default + stable fallback.
+#   single_session — the /shipwright-run master drives every phase via a
+#                    phase-runner subagent in ONE conversation (SS3 wires the
+#                    loop; SS1 only lands the flag + contract scaffold).
+# DEFAULT_RUN_MODE is authoritative for a fresh run and for reading a legacy
+# config that predates the ``mode`` field (see config_io.run_mode).
+RUN_MODES = ("multi_session", "single_session")
+DEFAULT_RUN_MODE = "multi_session"
+
 # Compliance plugin location (sibling plugin)
 _THIS_PLUGIN = Path(__file__).resolve().parents[3]
 _COMPLIANCE_SCRIPT = (
@@ -65,6 +76,8 @@ _CRITICAL_GATE_CHECK_IDS: frozenset[str] = frozenset({"W5", "W6", "W7"})
 __all__ = [
     "CONFIG_NAME",
     "SCHEMA_VERSION",
+    "RUN_MODES",
+    "DEFAULT_RUN_MODE",
     "PIPELINE_STEPS",
     "_LEGACY_PIPELINE_ENTRIES",
     "_CRITICAL_GATE_CHECK_IDS",
