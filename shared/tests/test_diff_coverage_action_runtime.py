@@ -34,17 +34,19 @@ _BASH = shutil.which("bash")
 
 
 def _require_bash() -> str:
-    if _BASH:
-        return _BASH
-    # Silent-skip CI-discipline: the action's shell body is bash; every CI
-    # runner (ubuntu + windows git-bash) has it, so an absent bash in CI is a
-    # provisioning bug, not a reason to quietly skip the wiring proof.
-    if os.environ.get("CI", "").lower() in ("true", "1"):
-        pytest.fail(
-            "bash unavailable in CI — the diff-coverage action's shell body "
-            "cannot be exercised. ubuntu-latest / windows-latest both ship bash."
-        )
-    pytest.skip("bash unavailable; install Git Bash to run this test.")
+    # Single explicit return at the tail (guard-clause style) — the not-bash
+    # branch always raises, so there is no implicit fall-through returning None.
+    if not _BASH:
+        # Silent-skip CI-discipline: the action's shell body is bash; every CI
+        # runner (ubuntu + windows git-bash) has it, so an absent bash in CI is
+        # a provisioning bug, not a reason to quietly skip the wiring proof.
+        if os.environ.get("CI", "").lower() in ("true", "1"):
+            pytest.fail(
+                "bash unavailable in CI — the diff-coverage action's shell body "
+                "cannot be exercised. ubuntu-latest / windows-latest both ship bash."
+            )
+        pytest.skip("bash unavailable; install Git Bash to run this test.")
+    return _BASH
 
 
 def _gate_run_body() -> str:
