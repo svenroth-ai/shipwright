@@ -32,6 +32,11 @@
     "scope": { "enum": ["full_app", "extension"] },
     "profile": { "type": ["string", "null"] },
     "autonomy": { "enum": ["guided", "autonomous"] },
+    "mode": {
+      "enum": ["multi_session", "single_session"],
+      "default": "multi_session",
+      "description": "Pipeline execution mode (Campaign 2026-07-07 SS1, additive). 'multi_session' (default + stable fallback): each phase runs as its own external UUID-bound Claude session (the pre-SS1 behaviour). 'single_session': the /shipwright-run master drives every phase via a phase-runner subagent in ONE conversation (the campaign model). OPTIONAL and NOT in 'required': configs written before SS1 carry no 'mode' and are read as multi_session (back-compat). An unrecognised value is also read as multi_session so a typo can't select an unbuilt path."
+    },
     "deploy_target": { "type": "string" },
     "pipeline": {
       "type": "array",

@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-07-07T08:35:35.699695+00:00
-Total commits: 1101
+Generated: 2026-07-07T11:04:17.204564+00:00
+Total commits: 1103
 
 ## Commit Distribution
 
@@ -9,9 +9,9 @@ Total commits: 1101
 pie title Commit Types
     "fix" : 320
     "feat" : 293
-    "chore" : 235
+    "chore" : 236
     "docs" : 143
-    "refactor" : 64
+    "refactor" : 65
     "test" : 27
     "ci" : 11
     "other" : 7
@@ -643,10 +643,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 235 commits
+### Chores (chore) — 236 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-07 | triage | sweep 2 outbox append(s) into branch | a065d1662a8a |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
@@ -1031,10 +1032,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 64 commits
+### Refactoring (refactor) — 65 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-07 | security | route GH-owned action-tag checks through the shared predicate (#337) | 3b511e0578bc |
 | 2026-06-28 | hooks | drop mtime timestamp-drift detector from check_drift.py (#287) | 9cde2be5e20c |
 | 2026-06-28 | codeql | break 3 import cycles via neutral leaf modules + fix 2 mixed-returns (#281) | 07eb0841c26d |
 | 2026-06-20 | triage | dedup aggregate_triage Stop regen across the plugin fan-out (#270) | 019778a14927 |
@@ -1170,7 +1172,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1101 |
+| Total commits | 1103 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1101 |
+| Human-authored commits | 1103 |
 

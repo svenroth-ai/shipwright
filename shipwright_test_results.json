@@ -1,18 +1,23 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-07-gh-tag-helper-wire-in",
+    "run_id": "iterate-2026-07-07-single-session-mode-scaffold",
     "date": "2026-07-07",
-    "intent": "change",
-    "mode": "simplify",
-    "complexity": "small",
+    "intent": "feature",
+    "complexity": "medium",
     "unit": {
-      "passed": 4148,
-      "total": 4167,
-      "skipped": 19,
+      "status": "passed",
+      "passed": 3907,
+      "total": 3923,
+      "skipped": 16,
       "framework": "pytest",
-      "note": "touched-surface suites: shared/tests 3678 + shipwright-security 470 (the two importers of the changed files)"
+      "note": "F0 verification: shipwright-run 229 + shared/tests 3678 (16 skipped); ruff clean; leak-guard f0 ALLOW"
     },
-    "integration": null,
+    "integration": {
+      "status": "passed",
+      "passed": 174,
+      "total": 174,
+      "note": "integration-tests/ (2 slow deselected)"
+    },
     "pgtap": null,
     "e2e": null,
     "design_fidelity": null,
@@ -20,34 +25,69 @@
     "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "justification": "Behavior-preserving internal refactor (SIMPLIFY): routed two call-sites through an existing shared predicate; no web/UI surface and no IO-behavior change. Verification is the Behavior-Snapshot: the affected suites (drop suite 9 + plugin tailoring 15) are identical pre/post, so the SARIF-ingest round-trip is unchanged. ruff clean; no coverage removed.",
+      "justification": "SS1 is a Python schema + orchestrator-package scaffold: it adds an optional run_config 'mode' field and a new single_session/ contract package (result contract + loop-state persistence). No web/UI/API surface, no server, no client code. The 'mode' field is additive and ignored by the current WebUI (phase_tasks message contract unchanged), so the Backend-affects-Frontend rule does not apply; WebUI single-session rendering is a separate paired track (per Spec/pipeline-as-campaign-convergence.md). Verification is the full F0 pytest suite (schema round-trip, mode back-compat, contract + loop-state round-trips) + ruff.",
       "exit_code": 0,
-      "tests_run": 4148,
-      "timestamp": "2026-07-07T00:15:00Z"
+      "tests_run": 4081,
+      "timestamp": "2026-07-07T12:00:00Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "The GH-owned action-tag drop/keep decisions are preserved after consolidating both call-sites onto the shared is_github_owned_action_tag predicate (behavior snapshot == verify)",
+          "behavior": "create_config writes an additive run_config 'mode' (multi_session default | single_session) to disk",
           "disposition": "tested",
-          "evidence": "test_security_findings_gh_tag_drop.py (9) + test_semgrep_rule_tailoring.py (15) PASSED identically pre- and post-refactor (baseline vs verify)"
+          "evidence": "test_run_config_mode.py::test_create_config_default_mode_is_multi_session, ::test_create_config_single_session_mode, ::test_create_config_persists_mode_to_disk PASSED"
         },
         {
-          "behavior": "The previously-unused shared helper is_github_owned_action_tag is now exercised in production",
+          "behavior": "A mode-less legacy config loads unchanged and reads as multi_session; an unknown value coerces to multi_session (back-compat)",
           "disposition": "tested",
-          "evidence": "called from security_findings.py:212 and semgrep_tailoring.py:129; covered by the two suites above"
+          "evidence": "test_run_config_mode.py::test_legacy_config_without_mode_loads_and_reads_multi_session, ::test_run_mode_defaults_missing_to_multi_session, ::test_run_mode_coerces_unknown_to_multi_session PASSED"
+        },
+        {
+          "behavior": "write-config --mode accepts the two modes, defaults to multi_session, and rejects an unknown value; create_config raises on invalid mode",
+          "disposition": "tested",
+          "evidence": "test_run_config_mode.py::test_write_config_cli_exposes_mode_choice, ::test_write_config_cli_defaults_mode_multi_session, ::test_write_config_cli_rejects_unknown_mode, ::test_create_config_rejects_invalid_mode PASSED"
+        },
+        {
+          "behavior": "The schema declares 'mode' as OPTIONAL (not in required) with enum + default multi_session, matching RUN_MODES",
+          "disposition": "tested",
+          "evidence": "test_run_config_mode.py::test_schema_declares_optional_mode_with_default, ::test_schema_mode_enum_matches_run_modes PASSED"
+        },
+        {
+          "behavior": "/shipwright-run SKILL.md documents both modes, marks multi_session default, threads --mode in Step 4, offers Change mode, and stays within the 400-line runtime-prompt budget",
+          "disposition": "tested",
+          "evidence": "test_run_skill_mode_selection.py (5 tests) PASSED"
+        },
+        {
+          "behavior": "The phase-runner result contract validates the shape (required keys, ok/reason coupling, phase enum, 2000-char summary ceiling, relative-repo-path artifacts) and the builder refuses invalid results without silent truncation",
+          "disposition": "tested",
+          "evidence": "test_single_session_result_contract.py (21 tests) PASSED"
+        },
+        {
+          "behavior": "VALID_PHASES stays in lockstep with the schema Phase enum (both-direction drift guard)",
+          "disposition": "tested",
+          "evidence": "test_single_session_result_contract.py::test_valid_phases_matches_schema_enum_both_directions PASSED"
+        },
+        {
+          "behavior": "Loop-state init/save/load round-trips atomically to .shipwright/run_loop_state.json (distinct from the campaign loop_state.json); the mutators are pure and status is validated",
+          "disposition": "tested",
+          "evidence": "test_single_session_loop_state.py (13 tests) PASSED"
+        },
+        {
+          "behavior": "Lifecycle-reuse contract: every completion entrypoint resolves in phase_task_lifecycle; the single_session package calls no mutator/run_config-writer (code-only AST scan); loop-state ops leave run_config byte-identical and create none",
+          "disposition": "tested",
+          "evidence": "test_single_session_lifecycle_reuse.py (6 tests) PASSED"
         }
       ],
       "counts": {
-        "total": 2,
-        "tested": 2,
+        "total": 9,
+        "tested": 9,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 1,
-        "covered_acs": 1
+        "acs": 5,
+        "covered_acs": 5
       }
     }
   },

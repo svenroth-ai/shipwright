@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .constants import CONFIG_NAME, SCHEMA_VERSION
+from .constants import CONFIG_NAME, DEFAULT_RUN_MODE, RUN_MODES, SCHEMA_VERSION
 
 # ``run_config_store`` is a top-level module in this plugin's scripts/lib;
 # importing ``.constants`` above already put that dir on sys.path.
@@ -71,3 +71,17 @@ def save_run_config(project_root: Path, config: dict[str, Any]) -> None:
 def is_v2_config(config: dict[str, Any]) -> bool:
     """Return True if config carries the multi-session schema (v2)."""
     return config.get("schemaVersion") == SCHEMA_VERSION
+
+
+def run_mode(config: dict[str, Any]) -> str:
+    """Return the pipeline execution mode, defaulting legacy configs safely.
+
+    Back-compat (Campaign 2026-07-07, SS1): the ``mode`` field is additive and
+    optional. A config written before SS1 has no ``mode`` key — it is read as
+    ``multi_session`` (the pre-SS1 behaviour), so old runs keep working
+    unchanged. An unrecognised value is *also* coerced to ``multi_session`` so a
+    hand-edited typo can never silently select an unbuilt execution path; the
+    ``write-config`` CLI ``choices`` already constrain fresh writes.
+    """
+    mode = config.get("mode")
+    return mode if mode in RUN_MODES else DEFAULT_RUN_MODE

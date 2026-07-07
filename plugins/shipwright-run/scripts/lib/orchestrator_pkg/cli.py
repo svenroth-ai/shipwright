@@ -16,7 +16,7 @@ from pathlib import Path
 
 from .build_progress import get_build_progress
 from .config_factory import create_config
-from .constants import PIPELINE_STEPS
+from .constants import DEFAULT_RUN_MODE, PIPELINE_STEPS, RUN_MODES
 from .router import LIFECYCLE_COMMANDS, dispatch_lifecycle
 from .step_planning import get_next_step, update_step
 
@@ -34,6 +34,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--scope", required=True, choices=["full_app", "extension"])
     p.add_argument("--profile", default=None)
     p.add_argument("--autonomy", default="guided", choices=["guided", "autonomous"])
+    p.add_argument(
+        "--mode", default=DEFAULT_RUN_MODE, choices=list(RUN_MODES),
+        help=("Pipeline execution mode (SS1, additive). multi_session (default): "
+              "each phase = its own external session. single_session: master "
+              "drives phases via a phase-runner subagent in one conversation."),
+    )
     p.add_argument("--deploy-target", default="jelastic-dev")
     p.add_argument("--project-root", default=".")
 
@@ -119,7 +125,7 @@ def main() -> int:
     if args.command == "write-config":
         config = create_config(
             args.scope, args.profile, args.autonomy,
-            args.deploy_target, project_root,
+            args.deploy_target, project_root, mode=args.mode,
         )
         print(json.dumps(config, indent=2))
 

@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-06T22:34:30.015905Z. Items waiting for triage decision.
+> Auto-generated 2026-07-07T11:04:17.204564Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 271
-- Triage: 2 | Promoted: 1 | Dismissed: 267 | Snoozed: 1
+- Total: 273
+- Triage: 4 | Promoted: 1 | Dismissed: 267 | Snoozed: 1
 
-## Top 2 items (severity-sorted)
+## Top 3 items (severity-sorted)
 
 ### Source: compliance (1 item)
 
@@ -25,10 +25,26 @@
     ```
   - Promote: `triage_promote.py --id trg-c99d9547 --task-ref EXT:<ref>`
 
+### Source: diff-coverage-followup (1 item)
+
+<a id="trg-5e92114c"></a>
+- **Refactor diff-coverage gate into a consumed composite action (one source of truth for managed repos)** `id=trg-5e92114c | severity=medium | kind=improvement → P2/engineering`
+  - Replace the 3 hand-maintained copies of the diff-coverage gate (monorepo wrapper; WebUI ci.yml #205; adopt templates #3…
+  - Promote: `triage_promote.py --id trg-5e92114c --task-ref EXT:<ref>`
+
 ### Source: manual (1 item)
 
 <a id="trg-cced399c"></a>
 - **Decompose FR-01.10 / FR-01.07 into sub-FRs for precise feature traceability** `id=trg-cced399c | severity=low | kind=improvement → P3/engineering`
   - Follow-up to iterate-2026-06-30-fr-retag-honesty. Introduce sub-FRs (e.g. FR-01.10.x for Control Grade / RTM / SBOM / d…
   - Promote: `triage_promote.py --id trg-cced399c --task-ref EXT:<ref>`
+
+<details><summary>Info-level items (1) — expand to view</summary>
+
+<a id="trg-9d973f4f"></a>
+- **Single-session pipeline mode (/shipwright-run on every surface)** `id=trg-9d973f4f | severity=info | kind=improvement → P3/engineering`
+  - Add a single-session pipeline mode so /shipwright-run runs on CLI, WebUI, VS Code extension and desktop: the master dri…
+  - Promote: `triage_promote.py --id trg-9d973f4f --task-ref EXT:<ref>`
+
+</details>
 

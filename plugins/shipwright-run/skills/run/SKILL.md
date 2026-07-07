@@ -113,6 +113,8 @@ Profile:    {supabase-nextjs | custom}
 Autonomy:   {guided | autonomous}
               Guided:     Phase sessions ask before destructive actions.
               Autonomous: Phase sessions run hands-off (Deploy still asks).
+Mode:       {multi_session (default) | single_session}
+              multi_session = each phase its own external session; single_session = one driven conversation.
 Deploy to:  {Jelastic DEV | none}
 
 Accept or modify:
@@ -126,6 +128,7 @@ AskUserQuestion:
     - "Accept — write pipeline spec"
     - "Change profile"
     - "Change autonomy"
+    - "Change mode"
     - "Skip deploy"
 ```
 
@@ -138,9 +141,12 @@ uv run "{plugin_root}/scripts/lib/orchestrator.py" write-config \
   --scope "{scope}" \
   --profile "{profile}" \
   --autonomy "{autonomy}" \
+  --mode "{mode}" \
   --deploy-target "{target}" \
   --project-root "$(pwd)"
 ```
+
+`--mode` defaults to `multi_session`; pass `single_session` only if chosen in Step 3 (a mode-less legacy config reads as `multi_session`).
 
 This writes `shipwright_run_config.json` at `schemaVersion: 2`. The orchestrator:
 

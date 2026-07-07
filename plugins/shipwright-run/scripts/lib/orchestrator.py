@@ -25,14 +25,14 @@ for _p in (str(_LIB), str(_SHARED_SCRIPTS)):
         sys.path.insert(0, _p)
 
 from orchestrator_pkg import (  # noqa: E402,F401
-    CONFIG_NAME, PIPELINE_STEPS, SCHEMA_VERSION,
+    CONFIG_NAME, DEFAULT_RUN_MODE, PIPELINE_STEPS, RUN_MODES, SCHEMA_VERSION,
     _COMPLIANCE_SCRIPT, _CRITICAL_GATE_CHECK_IDS, _LEGACY_PIPELINE_ENTRIES,
     _collect_critical_gate_issues, _enforce_critical_gates_enabled,
     _read_latest_phase_quality_finding,
     _record_compliance_update_failed, _record_pipeline_migration_event,
     build_pipeline, create_config, get_build_progress, get_next_step,
-    is_v2_config, load_run_config, run_compliance_update, save_run_config,
-    update_step,
+    is_v2_config, load_run_config, run_compliance_update, run_mode,
+    save_run_config, update_step,
 )
 from orchestrator_pkg.cli import main  # noqa: E402
 from orchestrator_pkg.router import dispatch_lifecycle as _dispatch_lifecycle  # noqa: E402,F401
