@@ -107,6 +107,21 @@ class TestClassification:
             run="uv run shared/scripts/tools/measure_diff_coverage.py "
                 "--fail-under 80", coe=True))
 
+    def test_diff_coverage_gate_action_uses_is_gate(self):
+        # Stage 3 self-consume: the monorepo runs the gate via a local `uses:`
+        # of the shared composite action (no `run:` body). The guard must
+        # recognize `diff-coverage-gate` in `uses` as a gate — else the step is
+        # invisible and a future continue-on-error on it would silently loosen
+        # the HARD merge gate with nothing to catch it.
+        assert is_gate_step(_step(uses="./.github/actions/diff-coverage-gate"))
+
+    def test_diff_coverage_gate_action_continue_on_error_is_loose(self):
+        # The reverse-drift protection: adding continue-on-error to the action
+        # gate step marks it loose, so (un-allowlisted) the guard fails.
+        assert is_loose(_step(
+            name="Diff coverage (gate)",
+            uses="./.github/actions/diff-coverage-gate", coe=True))
+
 
 # --------------------------------------------------------------------------- #
 # AC1 — test-dir coverage
