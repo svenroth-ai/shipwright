@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-07-ss3-orchestrator-loop",
+  "date": "2026-07-07T14:26:07.003329Z",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/ss3-orchestrator-loop",
+  "spec": ".shipwright/planning/iterate/2026-07-07-ss3-orchestrator-loop.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-07-ss3-orchestrator-loop"
+}

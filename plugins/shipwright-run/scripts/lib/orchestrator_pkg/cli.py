@@ -18,6 +18,7 @@ from .build_progress import get_build_progress
 from .config_factory import create_config
 from .constants import DEFAULT_RUN_MODE, PIPELINE_STEPS, RUN_MODES
 from .router import LIFECYCLE_COMMANDS, dispatch_lifecycle
+from .single_session_cli import SINGLE_SESSION_COMMANDS, dispatch_single_session
 from .step_planning import get_next_step, update_step
 
 
@@ -114,6 +115,23 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--phase-task-id", required=True,
                    help="phaseTaskId of the COMPLETED predecessor task")
 
+    # ----- SS3 single-session orchestrator-loop subcommands --------------
+    # The /shipwright-run master drives these two in ONE conversation under
+    # `mode: single_session`. Both delegate to single_session_cli (which reuses
+    # phase_task_lifecycle — no bespoke completion path). Exit codes match the
+    # lifecycle map (0 ok, 2 fail-closed CAS reject, 1 guard/error).
+    p = subparsers.add_parser("single-session-next")
+    p.add_argument("--project-root", default=".")
+
+    p = subparsers.add_parser("single-session-apply")
+    p.add_argument("--project-root", default=".")
+    p.add_argument("--phase-task-id", required=True)
+    p.add_argument("--session-uuid", required=True)
+    p.add_argument("--version", type=int, required=True,
+                   help="Expected version (CAS check vs current task.version)")
+    p.add_argument("--result-json", required=True,
+                   help="Path to a JSON file containing the phase-runner result payload")
+
     return parser
 
 
@@ -143,5 +161,8 @@ def main() -> int:
 
     elif args.command in LIFECYCLE_COMMANDS:
         return dispatch_lifecycle(args, project_root)
+
+    elif args.command in SINGLE_SESSION_COMMANDS:
+        return dispatch_single_session(args, project_root)
 
     return 0

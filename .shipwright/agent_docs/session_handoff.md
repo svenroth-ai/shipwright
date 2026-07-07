@@ -1,34 +1,37 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-06-cross-plugin-cache-heal"
+run_id: "iterate-2026-07-07-ss3-orchestrator-loop"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-07T12:34:00.634683+00:00"
+reason: "iterate: ss3-orchestrator-loop"
+timestamp: "2026-07-07T14:25:18.898523+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-07 12:34:00 UTC
+> Auto-generated 2026-07-07 14:25:18 UTC
 
 ## Session Info
 
-- **Session ID**: 7fe703e6-8b14-4ddc-a9ca-a46c6209404c
-- **Timestamp**: 2026-07-07 12:34:00 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: 5c3279b8-b9a9-4de4-b57e-992c6cbdb826
+- **Timestamp**: 2026-07-07 14:25:18 UTC
+- **Reason**: iterate: ss3-orchestrator-loop
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-06-cross-plugin-cache-heal
-- **Date**: 2026-07-07T12:34:16.729743Z
-- **Type**: change
+- **Run ID**: iterate-2026-07-07-phase-gate-mode
+- **Date**: 2026-07-07T13:09:12.517579Z
+- **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/cross-plugin-cache-heal
-- **ADR**: iterate-2026-07-06-cross-plugin-cache-heal
+- **Branch**: iterate/ss2-phase-gate-mode
+- **ADR**: iterate-2026-07-07-phase-gate-mode
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/campaigns/2026-07-07-single-session-pipeline/sub-iterates/SS2-phase-gate-mode.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/cross-plugin-cache-heal
+- **Branch**: iterate/ss3-orchestrator-loop
+- **Run ID**: iterate-2026-07-07-ss3-orchestrator-loop
+- **Spec**: .shipwright/planning/iterate/2026-07-07-ss3-orchestrator-loop.md
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -47,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/cross-plugin-cache-heal
-- **Last Commit**: e317a138 Merge remote-tracking branch 'origin/main' into iterate/cross-plugin-cache-heal
+- **Branch**: iterate/ss3-orchestrator-loop
+- **Last Commit**: fa684793 chore(triage): sweep 4 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +67,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-65e3ec05 | work_completed | iterate (SS3 single-session orchestrator loop: orchestrator_pkg/single_session_loop.py (resolve/begin/next/apply/advance) + single_session_cli.py + two orchestrator CLI subcommands (single-session-next / single-session-apply) that the /shipwright-run master alternates with a phase-runner subagent to drive the whole pipeline in ONE conversation under run_config.mode==single_session. Reuses phase_task_lifecycle end-to-end (claim/freeze-splits/complete/mark-failed) — no bespoke completion path, run_config read-only in the loop; freezes splits after design for serial build fan-out; an ok:false phase result strict-stops the run with no successor. SKILL.md branch + references/single-session-loop.md protocol; docs/hooks-and-pipeline.md SS3 note. Additive/inert for multi_session (default). Loop pointer in .shipwright/run_loop_state.json.) | 2026-07-07 |
 | evt-ef7f1bd0 | work_completed | iterate (monorepo self-consumes the diff-coverage gate composite action via a local ./ path; guard recognizes the uses: gate) | 2026-07-07 |
 | evt-e1377d99 | work_completed | iterate (guard phase_session_start against a degraded cross-plugin import + heal cache/shipwright/plugins/ in ensure_shared_cache) | 2026-07-07 |
+| evt-128fda61 | work_completed | iterate (SS2 single-session phase-gate mode: shared/config/gate_catalog.json (~47 project/design/plan/build/deploy gates -> auto-default/orchestrator-approve/hard-stop) + gate_policy.py resolver/validator/doc-gen + resolve_gate_policy.py CLI + honoring blocks in the 5 phase skills + generated docs/gate-catalog.md; additive/inert unless run_config.mode==single_session; constitution-locked gates never auto-answer; no phase execution yet (SS3).) | 2026-07-07 |
 | evt-77f86714 | work_completed | iterate (diff-coverage gate extracted into a consumed composite action; vitest adopt templates consume it via uses:) | 2026-07-07 |
-| evt-61817595 | work_completed | iterate (SS1 single-session mode scaffold: additive run_config mode field + write-config --mode + selectable in /shipwright-run; new single_session/ package with the phase-runner result contract and .shipwright/run_loop_state.json loop-state persistence; no phase execution yet) | 2026-07-07 |
-| evt-fe2d0f53 | work_completed | iterate (Behavior-preserving simplify: route both GH-owned action-tag call-sites (security_findings._is_accepted_gh_owned_tag + plugin semgrep_tailoring._is_github_owned_action_tag) through the single shared gh_action_tag_owner.is_github_owned_action_tag predicate; drop the now-unused primitive imports. Follow-up to iterate-2026-07-06-semgrep-accept-producer which shipped that helper unused.) | 2026-07-07 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 274
-- **Last iterate**: change — monorepo self-consumes the diff-coverage gate composite action via a local ./ path; guard recognizes the uses: gate (2026-07-07)
+- **Total work events**: 276
+- **Last iterate**: feature — SS3 single-session orchestrator loop: orchestrator_pkg/single_session_loop.py (resolve/begin/next/apply/advance) + single_session_cli.py + two orchestrator CLI subcommands (single-session-next / single-session-apply) that the /shipwright-run master alternates with a phase-runner subagent to drive the whole pipeline in ONE conversation under run_config.mode==single_session. Reuses phase_task_lifecycle end-to-end (claim/freeze-splits/complete/mark-failed) — no bespoke completion path, run_config read-only in the loop; freezes splits after design for serial build fan-out; an ok:false phase result strict-stops the run with no successor. SKILL.md branch + references/single-session-loop.md protocol; docs/hooks-and-pipeline.md SS3 note. Additive/inert for multi_session (default). Loop pointer in .shipwright/run_loop_state.json. (2026-07-07)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

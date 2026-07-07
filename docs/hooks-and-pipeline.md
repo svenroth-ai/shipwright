@@ -408,8 +408,27 @@ After build completes: shows split summary table. After test completes: shows te
 > `shared/prompts/single-session-gate-discipline.md` and the catalog is
 > documented in `docs/gate-catalog.md`. Under `multi_session`/standalone the
 > mechanism is inert (every gate resolves to `interactive` — today's behaviour).
-> SS2 lands the catalog + resolver + honoring blocks; SS3 wires the orchestrator
-> loop that spawns the phase-runner subagents.
+> SS2 lands the catalog + resolver + honoring blocks.
+
+> **Single-session orchestrator loop (Campaign 2026-07-07, SS3).** Under
+> `mode: "single_session"` the master does NOT print a launch card and step
+> aside — it DRIVES the pipeline in ONE conversation, replacing the phase Stop
+> hook's between-phase action with an in-conversation loop. Two orchestrator
+> subcommands (`orchestrator.py single-session-next` / `single-session-apply`,
+> in `orchestrator_pkg/single_session_loop.py` + `single_session_cli.py`)
+> alternate with a phase-runner subagent: **next** resolves the frontier phase
+> task, claims it (`claim_phase_task`), and records a dispatch in
+> `.shipwright/run_loop_state.json`; **apply** validates the phase-runner RESULT
+> CONTRACT, freezes splits when a design phase completes (same ordering as
+> `phase_session_stop`, so build fans out per split), routes the result through
+> `complete_phase_task` (an `ok:false` result strict-stops via
+> `mark_phase_failed`, planning NO successor), and advances the loop pointer. The
+> loop owns NO bespoke completion path — every phase-task mutation goes through
+> `phase_task_lifecycle`, the same helpers the multi-session Stop hook uses;
+> loop-state holds no authoritative phase status. Splits are serial in v1. The
+> master-side protocol is `plugins/shipwright-run/skills/run/references/single-session-loop.md`.
+> Remaining: SS4 (phase-runner subagent + artifact persistence), SS5 (deeper
+> resumability / observability).
 
 ### Run-Config Schema v2
 

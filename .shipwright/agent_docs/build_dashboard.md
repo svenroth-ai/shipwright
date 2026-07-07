@@ -1,12 +1,14 @@
 # Project Activity Dashboard
-> Updated: 2026-07-07 12:34 UTC | Session: 7fe703e6-8b14-4ddc-a9ca-a46c6209404c | Run: iterate-2026-07-06-cross-plugin-cache-heal
+> Updated: 2026-07-07 14:25 UTC | Session: 5c3279b8-b9a9-4de4-b57e-992c6cbdb826 | Run: iterate-2026-07-07-ss3-orchestrator-loop
 
-## Recent Changes (274 iterations)
+## Recent Changes (276 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | SS3 single-session orchestrator loop: orchestrator_pkg/single_session_loop.py (resolve/begin/next/apply/advance) + single_session_cli.py + two orchestrator CLI subcommands (single-session-next / single-session-apply) that the /shipwright-run master alternates with a phase-runner subagent to drive the whole pipeline in ONE conversation under run_config.mode==single_session. Reuses phase_task_lifecycle end-to-end (claim/freeze-splits/complete/mark-failed) — no bespoke completion path, run_config read-only in the loop; freezes splits after design for serial build fan-out; an ok:false phase result strict-stops the run with no successor. SKILL.md branch + references/single-session-loop.md protocol; docs/hooks-and-pipeline.md SS3 note. Additive/inert for multi_session (default). Loop pointer in .shipwright/run_loop_state.json. | 417/417 |  | tooling | 2026-07-07 |
 | change | monorepo self-consumes the diff-coverage gate composite action via a local ./ path; guard recognizes the uses: gate | 3693/3709 |  | infra | 2026-07-07 |
 | change | guard phase_session_start against a degraded cross-plugin import + heal cache/shipwright/plugins/ in ensure_shared_cache | 0/0 |  | infra | 2026-07-07 |
+| feature | SS2 single-session phase-gate mode: shared/config/gate_catalog.json (~47 project/design/plan/build/deploy gates -> auto-default/orchestrator-approve/hard-stop) + gate_policy.py resolver/validator/doc-gen + resolve_gate_policy.py CLI + honoring blocks in the 5 phase skills + generated docs/gate-catalog.md; additive/inert unless run_config.mode==single_session; constitution-locked gates never auto-answer; no phase execution yet (SS3). | 4067/4087 |  | tooling | 2026-07-07 |
 | change | diff-coverage gate extracted into a consumed composite action; vitest adopt templates consume it via uses: | 4175/4191 |  | infra | 2026-07-07 |
 | feature | SS1 single-session mode scaffold: additive run_config mode field + write-config --mode + selectable in /shipwright-run; new single_session/ package with the phase-runner result contract and .shipwright/run_loop_state.json loop-state persistence; no phase execution yet | 4081/4097 |  | tooling | 2026-07-07 |
 | change | Behavior-preserving simplify: route both GH-owned action-tag call-sites (security_findings._is_accepted_gh_owned_tag + plugin semgrep_tailoring._is_github_owned_action_tag) through the single shared gh_action_tag_owner.is_github_owned_action_tag predicate; drop the now-unused primitive imports. Follow-up to iterate-2026-07-06-semgrep-accept-producer which shipped that helper unused. | 4148/4167 |  | tooling | 2026-07-07 |
@@ -281,7 +283,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-06 | Unit: 3709/3709 | Integration: 25/25 | Smoke: skipped | (iterate)
+Last run: 2026-07-07 | Unit: 241/241 | Integration: 176/176 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
