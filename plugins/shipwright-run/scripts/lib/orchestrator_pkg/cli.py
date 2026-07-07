@@ -132,6 +132,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--result-json", required=True,
                    help="Path to a JSON file containing the phase-runner result payload")
 
+    # SS4: rebuild orchestrator context on resume — from run_config + compact
+    # phase_tasks[].result summaries, never a transcript (context-budget bound).
+    p = subparsers.add_parser("single-session-reload")
+    p.add_argument("--project-root", default=".")
+
     return parser
 
 

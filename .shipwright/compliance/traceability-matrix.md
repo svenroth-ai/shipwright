@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-07T14:25:18.898523+00:00
+Generated: 2026-07-07T19:32:59.063369+00:00
 
 ## Requirements Coverage
 
@@ -27,6 +27,7 @@ Generated: 2026-07-07T14:25:18.898523+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-56ec5bf0"></a>SS4: phase-runner subagent + result contract + guaranteed artifact persistence (on-disk apply guard + reload-from-summaries + single-session-reload CLI) + section-writer persistence-bug fix (write path + non-blocking fallback hook, supersedes ADR-042 block-on-failure). | iterate | feature |  | — | — | 2026-07-07 |
 | <a id="evt-65e3ec05"></a>Turns on the one-conversation mode of the build pipeline: instead of each step needing its own separate session, one assistant now runs every step in order from a single chat, stopping cleanly if any step fails. It reuses the existing step-tracking machinery and is off by default, so normal runs are unaffected. | iterate | feature |  | 417/417 | — | 2026-07-07 |
 | <a id="evt-128fda61"></a>Adds the rulebook that lets each build step run without a human when the pipeline is in one-conversation mode: safe steps proceed automatically, while risky ones (production deploys, data-destroying changes, rollbacks) always stop for a person. Off by default, so nothing changes yet. | iterate | feature |  | 4067/4087 | — | 2026-07-07 |
 | <a id="evt-e1377d99"></a>guard phase_session_start against a degraded cross-plugin import + heal cache/shipwright/plugins/ in ensure_shared_cache | iterate | change |  | — | — | 2026-07-07 |
@@ -310,7 +311,7 @@ Generated: 2026-07-07T14:25:18.898523+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 276 |
+| Iterate changes | 277 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

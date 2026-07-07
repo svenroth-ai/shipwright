@@ -1,18 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-07-ss3-orchestrator-loop",
+    "run_id": "iterate-2026-07-07-ss4-phase-runner-persistence",
     "date": "2026-07-07",
     "intent": "feature",
     "complexity": "medium",
     "unit": {
       "status": "passed",
-      "passed": 254,
-      "total": 254
+      "passed": 339,
+      "total": 339
     },
     "integration": {
       "status": "passed",
-      "passed": 176,
-      "total": 176
+      "passed": 3,
+      "total": 3
     },
     "pgtap": {
       "status": "not_run",
@@ -34,96 +34,121 @@
     },
     "degraded": [
       {
-        "condition": "classifier prose false-positive",
-        "detail": "classify_complexity flagged touches_auth from the word 'session' in 'single_session' / 'phase-runner subagent' \u2014 a message-keyword match, not the diff. The diff touches no auth/RLS/middleware code (orchestrator loop lib + CLI + skill prose + tests). Overridden; F11 recomputes risk flags from the real diff."
+        "condition": "external-review pre-flight helper missing (SS6 gap)",
+        "detail": "shared/scripts/tools/check-external-review-keys.py (the documented pre-flight key-check wrapper) does not exist — the tooling gap SS6 will fix. external_review.py itself IS functional: --mode code ran GPT-5.4 + Gemini 3.1 Pro via OpenRouter successfully on this diff (OpenAI: ship-with-fixes, 4 findings, all addressed; Gemini: no findings). External review was therefore NOT degraded for this run; only the missing wrapper is."
       },
       {
         "condition": "F0 scope",
-        "detail": "F0 verification ran the shipwright-run plugin suite (241) + integration-tests (176) + ruff@0.15.15 + leak-guard f0 ALLOW. The change is isolated to plugins/shipwright-run + docs; the full shared/tests + all-plugin suite runs in CI on the PR."
-      },
-      {
-        "condition": "flaky unrelated test",
-        "detail": "tests/test_runconfig_concurrency.py::test_three_process_writers_no_truncation_no_lost_update intermittently fails under full-suite load on Windows (3-process msvcrt file-lock race); passes 3/3 in isolation. Not touched by this diff (no run_config write path). CI (Linux/fcntl) unaffected."
+        "detail": "F0 ran shipwright-run (282) + shipwright-plan (57) + integration-tests/test_single_session_pipeline.py (3) + shared/tests (3739 passed, 1 pre-fix canon lint now green) + ruff@0.15.15 + leak-guard f0 ALLOW. The full all-plugin suite runs in CI on the PR."
       }
     ],
     "surface_verification": {
       "surface": "none",
-      "justification": "SS3 is a Python orchestrator-loop lib (orchestrator_pkg/single_session_loop.py + single_session_cli.py) + two CLI subcommands + SKILL/reference prose + docs. No web/UI/API surface, no server, no client code. run_config is only READ in the loop (all mutation via phase_task_lifecycle); no message-contract change, so the Backend-affects-Frontend rule does not apply. The CLI surface was exercised END-TO-END as the composition proof: integration-tests/test_single_session_pipeline.py drives single-session-next / single-session-apply through a full pipeline (project to the final phase incl. serial build split fan-out) to a complete run, plus the forced-failure strict-stop path. Verification = F0 pytest (241 run-plugin + 176 integration) + ruff + leak-guard f0 ALLOW.",
+      "justification": "SS4 is a Python plugin change: a phase-runner agent def, the single_session on-disk persistence guard + reload module + a new single-session-reload CLI subcommand, the section-writer write-path fix + a non-blocking SubagentStop fallback hook, and docs. No web/UI/API surface, no server, no client code. run_config is only READ by the reload/guard (all mutation stays in phase_task_lifecycle); no message-contract change, so the Backend-affects-Frontend rule does not apply. The CLI surface was exercised END-TO-END: integration-tests/test_single_session_pipeline.py drives single-session-next / single-session-apply through a full pipeline INCLUDING the new persistence guard, plus a cross_component scenario proving a claimed-but-unwritten artifact is rejected fail-closed across the real subprocess CLI. Verification = F0 pytest (339 unit + 3 integration + 3739 shared) + ruff + artifact-path-canon + leak-guard f0 ALLOW.",
       "exit_code": 0,
-      "tests_run": 417,
-      "timestamp": "2026-07-07T00:00:00Z"
+      "tests_run": 342,
+      "timestamp": "2026-07-07T21:30:00Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 \u2014 full pipeline incl. build fan-out advances in ONE loop on a fixture",
+          "behavior": "AC1 — phase-runner agent has a write path (Write/Edit/Bash)",
+          "disposition": "tested",
+          "evidence": "test_phase_runner_agent.py::test_phase_runner_has_write_path PASSED"
+        },
+        {
+          "behavior": "AC1 — phase-runner brief mandates disk persistence, not a Stop hook",
+          "disposition": "tested",
+          "evidence": "test_phase_runner_briefs_disk_persistence_not_hook PASSED (concrete phrase assertions)"
+        },
+        {
+          "behavior": "AC1/AC4 — a claimed-but-unwritten artifact is caught by the on-disk guard",
+          "disposition": "tested",
+          "evidence": "test_single_session_artifact_guard.py::test_apply_rejects_missing_artifact_before_lifecycle + test_phase_runner_unpersisted_artifact_is_caught PASSED"
+        },
+        {
+          "behavior": "AC4 — an ok result whose artifacts exist on disk completes; ok=False skips the guard",
+          "disposition": "tested",
+          "evidence": "test_apply_accepts_when_claimed_artifact_on_disk + test_apply_failure_result_skips_artifact_guard PASSED"
+        },
+        {
+          "behavior": "AC4 — a stale apply reports stale_version, not artifacts_missing (CAS precedence)",
+          "disposition": "tested",
+          "evidence": "test_apply_stale_version_reports_stale_not_artifacts_missing PASSED"
+        },
+        {
+          "behavior": "AC3 — reload rebuilds context from compact summaries, transcript-blind + budget-bounded",
+          "disposition": "tested",
+          "evidence": "test_orchestrator_context_reload.py::test_phase_summaries_never_carry_transcript, test_context_budget_is_bounded_by_summary_ceiling PASSED"
+        },
+        {
+          "behavior": "AC3 — reload is read-only and returns None on no/corrupt/non-v2 config",
+          "disposition": "tested",
+          "evidence": "test_reload_does_not_mutate_config, test_reload_none_on_corrupt_config, test_reload_none_on_non_v2_schema PASSED"
+        },
+        {
+          "behavior": "AC3 — the summary ceiling (context-budget guard) is enforced at write-time by the contract",
+          "disposition": "tested",
+          "evidence": "test_context_budget_ceiling_enforced_at_write_time PASSED (build_phase_runner_result raises on overlong summary)"
+        },
+        {
+          "behavior": "AC3 — single-session-reload CLI subcommand + cli.main routing wired at runtime",
+          "disposition": "tested",
+          "evidence": "test_single_session_cli.py::test_reload_exit0_returns_context, test_reload_exit1_on_no_config, test_cli_main_routes_single_session_reload PASSED"
+        },
+        {
+          "behavior": "AC2 — section-writer declares a Write path + a direct-write instruction",
+          "disposition": "tested",
+          "evidence": "test_section_writer_persistence.py::test_section_writer_declares_write_path, test_section_writer_instructs_direct_write PASSED"
+        },
+        {
+          "behavior": "AC2 — hook is a no-op when the section file already exists (no clobber, no block)",
+          "disposition": "tested",
+          "evidence": "test_hook_noop_when_section_file_exists PASSED (existing content preserved)"
+        },
+        {
+          "behavior": "AC2 — hook salvages from the transcript only when the file is missing (env dir set)",
+          "disposition": "tested",
+          "evidence": "test_hook_salvages_when_file_missing PASSED"
+        },
+        {
+          "behavior": "AC2 — salvage write refuses an untrusted inferred dir outside the project tree",
+          "disposition": "tested",
+          "evidence": "test_hook_refuses_salvage_write_to_untrusted_inferred_dir + salvage_write_dir unit tests PASSED"
+        },
+        {
+          "behavior": "AC2 — salvage refuses content that is not a section document",
+          "disposition": "tested",
+          "evidence": "test_hook_refuses_salvage_of_non_section_document PASSED"
+        },
+        {
+          "behavior": "AC2 — the hook NEVER blocks (bad payload / missing transcript_path / empty / unsalvageable)",
+          "disposition": "tested",
+          "evidence": "test_hook_never_blocks_* (3) + test_hook_empty_transcript_never_blocks PASSED"
+        },
+        {
+          "behavior": "cross_component — hook + loop + result-contract compose end-to-end via the real CLI",
           "disposition": "tested",
           "category": "integration",
-          "evidence": "integration-tests/test_single_session_pipeline.py::TestFullPipelineSingleSession::test_full_pipeline_with_split_fanout_completes PASSED (real CLI subprocess, run.status=complete)"
+          "evidence": "integration-tests/test_single_session_pipeline.py::TestPersistenceGuardCrossComponent::test_claimed_but_unwritten_artifact_is_rejected PASSED (subprocess CLI, artifacts_missing, run stays in_progress, frontier intact)"
         },
         {
-          "behavior": "AC2 \u2014 forced phase failure strict-stops via mark_phase_failed, no successor appended",
-          "disposition": "tested",
-          "evidence": "test_single_session_pipeline.py::TestForcedFailureStrictStop::test_failure_mid_pipeline_halts_with_no_successor + test_single_session_loop.py::test_apply_failure_strict_stops_no_successor PASSED"
-        },
-        {
-          "behavior": "AC3 \u2014 the loop composes with the lifecycle helpers end-to-end",
-          "disposition": "tested",
-          "category": "integration",
-          "evidence": "integration-tests/test_single_session_pipeline.py (drives via the real orchestrator.py CLI, reusing phase_task_lifecycle) PASSED"
-        },
-        {
-          "behavior": "AC4 \u2014 serial split order preserved (plan/01->build/01->plan/02->build/02)",
-          "disposition": "tested",
-          "evidence": "test_full_pipeline_with_split_fanout_completes order assertion PASSED"
-        },
-        {
-          "behavior": "AC4 \u2014 no direct run_config mutation (all writes via the lifecycle)",
-          "disposition": "tested",
-          "evidence": "test_single_session_loop.py::test_loop_modules_never_call_a_direct_run_config_writer (ast guard) PASSED"
-        },
-        {
-          "behavior": "resolve guards mode / no-config / terminal signals (wrong_mode, no_config, complete, failed, needs_validation)",
-          "disposition": "tested",
-          "evidence": "test_single_session_loop.py::test_resolve_* PASSED"
-        },
-        {
-          "behavior": "next claims the frontier + records loop_state; re-dispatch is idempotent",
-          "disposition": "tested",
-          "evidence": "test_next_dispatch_claims_and_records_loop_state, test_next_dispatch_reclaim_is_idempotent PASSED"
-        },
-        {
-          "behavior": "design completion freezes splits BEFORE planning so build fans out per split",
-          "disposition": "tested",
-          "evidence": "test_apply_design_freezes_splits_and_fans_out PASSED (splits_frozen set, next=plan/01-core)"
-        },
-        {
-          "behavior": "a malformed phase-runner result never reaches the lifecycle (no mutation)",
-          "disposition": "tested",
-          "evidence": "test_apply_invalid_result_never_reaches_lifecycle PASSED (task stays in_progress, run stays in_progress)"
-        },
-        {
-          "behavior": "a stale CAS token is rejected fail-closed and leaves the loop pointer untouched",
-          "disposition": "tested",
-          "evidence": "test_apply_stale_version_fail_closed_leaves_loop_state PASSED (reason=stale_version)"
-        },
-        {
-          "behavior": "AC5 \u2014 end-to-end UAT on a real idea",
+          "behavior": "the live LLM phase-runner/section-writer actually writes its files at runtime",
           "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "Human acceptance of a real end-to-end pipeline run on a real idea; also depends on SS4's phase-runner subagent. Tracked as a NEEDS-YOU follow-up in the iterate spec."
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "A real subagent's file writes cannot be exercised in a unit test; the behavior is enforced fail-closed by the on-disk artifact guard (single-session) and check-sections.py Step 7 (plan), both of which ARE tested."
         }
       ],
       "counts": {
-        "testable": 10,
-        "tested": 10,
+        "testable": 16,
+        "tested": 16,
         "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 5,
-        "covered_acs": 5
+        "acs": 4,
+        "covered_acs": 4
       }
     }
   },

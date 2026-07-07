@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-07-07T14:25:18.898523+00:00
+Generated: 2026-07-07T19:32:59.063369+00:00
 Total commits: 1108
 
 ## Commit Distribution
@@ -8,8 +8,8 @@ Total commits: 1108
 ```mermaid
 pie title Commit Types
     "fix" : 321
-    "feat" : 295
-    "chore" : 236
+    "feat" : 296
+    "chore" : 235
     "docs" : 143
     "refactor" : 67
     "test" : 27
@@ -346,10 +346,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 295 commits
+### Features (feat) — 296 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-07 | run | single-session orchestrator loop + lifecycle integration + strict-stop (SS3) (#343) | 0e6f5186152d |
 | 2026-07-07 | run | non-interactive phase-gate mode + gate catalog (SS2) (#342) | 8a7415384b72 |
 | 2026-07-07 | run | scaffold single-session pipeline mode + phase-runner contracts (SS1) (#339) | 1f1ffedfb378 |
 | 2026-07-07 | adopt | scaffold a warn-only diff-coverage gate into the vitest CI templates (#335) | 9b06a388e6f5 |
@@ -646,11 +647,10 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 236 commits
+### Chores (chore) — 235 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-07 | triage | sweep 4 outbox append(s) into branch | fa684793bed9 |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |

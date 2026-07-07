@@ -36,14 +36,16 @@ Repeat until a terminal signal:
    - `needs_validation` → deploy done but tasks non-terminal (`blocked`). Stop.
    - `wrong_mode` / `no_config` → not a single_session run; do not loop.
 
-2. **Dispatch a phase-runner subagent** for `dispatch.slashCommand` (the
-   `phase` / `splitId`). It runs that ONE phase skill and returns a compact
-   phase-runner RESULT CONTRACT (see
+2. **Dispatch the `shipwright-run:phase-runner` subagent** for
+   `dispatch.slashCommand` (the `phase` / `splitId`). Brief it with the phase
+   context; it runs that ONE phase skill, **writes every real output to DISK
+   itself** (it has a Write path — see `plugins/shipwright-run/agents/
+   phase-runner.md`), and returns a compact phase-runner RESULT CONTRACT (see
    `plugins/shipwright-run/scripts/lib/single_session/result_contract.py`):
-   `{ok, phase, summary, artifacts[], reason?, splitId?}` — real outputs go to
-   DISK (`artifacts`), never into the result. *(SS4 formalizes the phase-runner
-   agent + artifact persistence; until then, brief the subagent inline to return
-   this shape and to persist its phase config to disk.)*
+   `{ok, phase, summary, artifacts[], reason?, splitId?}`. The `summary` is
+   capped at `MAX_SUMMARY_CHARS`; real outputs go to DISK (`artifacts`), never
+   into the result. Persistence is the runner's own responsibility — it does NOT
+   rely on a Stop hook (the failure that lost a section-writer's output).
 
 3. **Apply the result.** Write the returned JSON to a file, then:
    ```bash
@@ -53,11 +55,23 @@ Repeat until a terminal signal:
      --version {dispatch.version} --result-json "{path}" \
      --project-root "{project_root}"
    ```
-   This validates the contract, freezes splits when a design phase completes (so
-   build fans out per split), routes the result through `complete_phase_task`
-   (an `ok:false` result strict-stops via `mark_phase_failed`, planning NO
-   successor), and advances the loop pointer. The `next` field carries the
-   resolved next action — loop on it.
+   This validates the contract, **verifies on disk that every artifact an
+   `ok:true` result claims actually exists** (a claimed-but-unwritten artifact is
+   rejected `artifacts_missing`, no completion — the persistence guarantee),
+   freezes splits when a design phase completes (so build fans out per split),
+   routes the result through `complete_phase_task` (an `ok:false` result
+   strict-stops via `mark_phase_failed`, planning NO successor), and advances the
+   loop pointer. The `next` field carries the resolved next action — loop on it.
+
+   On resume, the master rebuilds pipeline context with a third subcommand:
+   ```bash
+   uv run "{plugin_root}/scripts/lib/orchestrator.py" single-session-reload \
+     --project-root "{project_root}"
+   ```
+   It returns `{ok, context:{runId, status, mode, splitsFrozen, phaseSummaries[],
+   summaryCharBudget}}` — built from `shipwright_run_config.json` + the compact
+   `phase_tasks[].result` summaries, never a phase transcript (bounded context
+   regardless of run length).
 
 ## Gates, splits, failures
 
@@ -76,6 +90,7 @@ Repeat until a terminal signal:
 Loop state persists to `.shipwright/run_loop_state.json` (distinct from the
 campaign loop's `loop_state.json`); the authoritative per-phase status stays in
 `shipwright_run_config.json`. If the master conversation dies mid-run, re-invoke
-`/shipwright-run` and resume the loop from `single-session-next` — a task left
+`/shipwright-run`, run `single-session-reload` to rebuild the compact pipeline
+context, then resume the loop from `single-session-next` — a task left
 `in_progress` (claimed but unapplied) is re-dispatched idempotently. (Deeper
 recovery / observability is SS5.)
