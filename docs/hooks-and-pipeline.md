@@ -668,11 +668,21 @@ plain `claude plugin install` never copies it into the cache; only the dev scrip
 `scripts/update-marketplace.sh` creates it. On a fresh end-user install every
 `../../shared/*` hook therefore 404s (fail-open, but noisy — the symptom that
 prompted this hook was `track_tool_calls.py` "can't find its own path" on a fresh
-macOS install).
+macOS install). The same gap hits the sibling **`plugins/`** tree: several hooks
+import a plugin's lib cross-plugin via `${CLAUDE_PLUGIN_ROOT}/../../plugins/shipwright-X/…`
+(e.g. `phase_session_start` → the shipwright-run `phase_task_lifecycle`), and
+`cache/shipwright/plugins/` is likewise created only by `update-marketplace.sh` —
+so on a fresh install those imports degrade to their `None` fallback (which
+`phase_session_start` then called unguarded, crashing SessionStart until its guard
+landed alongside this healer).
 
 **What it does.** When the expected `shared/` cache dir is missing, it mirrors it
 from the marketplace **full-clone** (`~/.claude/plugins/marketplaces/<name>/shared`,
-which a marketplace install *does* carry) into the cache. Properties:
+which a marketplace install *does* carry). When the sibling `plugins/` cross-link
+tree is missing, it mirrors each installed plugin
+(`cache/<name>/shipwright-X/<version>`) into `cache/<name>/plugins/shipwright-X`
+so `../../plugins/shipwright-X` imports resolve — no clone needed for that part.
+Properties:
 
 - **plugin-local + vendored** — a plugin-local file is the only thing a
   marketplace install reliably delivers, so the self-heal must not itself live in
@@ -687,8 +697,11 @@ which a marketplace install *does* carry) into the cache. Properties:
   real repo dir) always.
 
 Composition is pinned by `shared/tests/test_ensure_shared_cache_integration.py`
-(heals a simulated marketplace layout; idempotent no-op; fail-open with no clone;
-dev-model no-op).
+(heals a simulated marketplace layout — both `shared/` from the clone and
+`plugins/` from the installed dirs; `plugins/` heals even with no clone; idempotent
+no-op; fail-open; dev-model no-op). The `phase_session_start` guard that tolerates
+the degraded cross-plugin import is pinned by
+`shared/tests/test_phase_session_hooks.py::test_start_degraded_cross_plugin_import_does_not_crash`.
 
 ### Shared Hook: capture_session_id.py
 

@@ -1,17 +1,17 @@
 # Commit Change Log
 
-Generated: 2026-07-07T12:17:14.813163+00:00
-Total commits: 1104
+Generated: 2026-07-07T12:34:00.634683+00:00
+Total commits: 1107
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 320
+    "fix" : 321
     "feat" : 294
-    "chore" : 235
+    "chore" : 236
     "docs" : 143
-    "refactor" : 66
+    "refactor" : 67
     "test" : 27
     "ci" : 11
     "other" : 7
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 320 commits
+### Fixes (fix) — 321 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-07 | hooks | guard phase_session_start + self-heal the plugins/ cross-link cache | 1de07aa915a5 |
 | 2026-07-07 | security | drop accepted-risk GH-owned action-tags at the SARIF artifact producer (#336) | ab114c8c5cce |
 | 2026-07-07 | run | surface-aware hand-off banner (CLAUDE_CODE_ENTRYPOINT) (#334) | 3f81def08667 |
 | 2026-07-06 | grade | cap cold-repo Control Grade at B — A is authoritative-only (#333) | ea0e58a72ee6 |
@@ -644,10 +645,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 235 commits
+### Chores (chore) — 236 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-07 | compliance | take origin/main ci-security.json regen to unblock churn integrate (#340 collision) | 7069500dc7a5 |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
@@ -1032,10 +1034,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 66 commits
+### Refactoring (refactor) — 67 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-07 | coverage | route the monorepo's own diff-coverage gate through the shared action (Stage 3) (#340) | 863dd8aec9cb |
 | 2026-07-07 | coverage | extract the diff-coverage gate into a shared composite action (Stage 1) (#338) | 546ae678f711 |
 | 2026-07-07 | security | route GH-owned action-tag checks through the shared predicate (#337) | 3b511e0578bc |
 | 2026-06-28 | hooks | drop mtime timestamp-drift detector from check_drift.py (#287) | 9cde2be5e20c |
@@ -1173,7 +1176,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1104 |
+| Total commits | 1107 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1104 |
+| Human-authored commits | 1107 |
 

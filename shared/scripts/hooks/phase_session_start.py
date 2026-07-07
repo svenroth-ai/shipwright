@@ -51,6 +51,8 @@ _RUN_LIB = _THIS.parent.parent.parent.parent / "plugins" / "shipwright-run" / "s
 sys.path.insert(0, str(_RUN_LIB))
 if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
+if str(_THIS.parent) not in sys.path:  # hooks/ — for the phase_context_blocks sibling
+    sys.path.insert(0, str(_THIS.parent))
 
 # Lazy-imported on demand; tests stub these.
 try:
@@ -72,6 +74,11 @@ try:
     from lib.hook_session import resolve_hook_context  # type: ignore[import]
 except ImportError:  # pragma: no cover - import-path safety
     resolve_hook_context = None
+
+from phase_context_blocks import (  # noqa: E402  (hooks/ sibling; ships with shared/)
+    build_block_context_block as _build_block_context_block,
+    build_pipeline_context_block as _build_pipeline_context_block,
+)
 
 
 CONFIG_NAME = "shipwright_run_config.json"
@@ -125,43 +132,6 @@ def _write_block_pending(
     target.write_text(message, encoding="utf-8")
 
 
-def _build_pipeline_context_block(task: dict[str, Any], config: dict[str, Any]) -> str:
-    rc = config.get("runConditions") or {}
-    prereqs = task.get("prerequisites") or []
-    prereqs_str = ",".join(f"{pid}=?" for pid in prereqs) or "(none)"
-    return (
-        "=== SHIPWRIGHT-PIPELINE-CONTEXT ===\n"
-        f"runId: {config.get('runId')}\n"
-        f"phaseTaskId: {task['phaseTaskId']}\n"
-        f"phase: {task['phase']}\n"
-        f"splitId: {task.get('splitId')}\n"
-        f"version: {task.get('version')}\n"
-        f"prerequisites: {prereqs_str}\n"
-        f"runConditions: securityEnabled={rc.get('securityEnabled')} "
-        f"splitMode={rc.get('splitMode')}\n"
-        "\n"
-        "REQUIRED: As your very first action, run:\n"
-        f"  uv run ${{SHIPWRIGHT_PLUGIN_ROOT}}/../../shared/scripts/tools/get_phase_context.py "
-        f"--phase-task-id {task['phaseTaskId']}\n"
-        "\n"
-        "Read the artifacts the tool surfaces (skill_artifacts_to_read) "
-        "before proceeding with normal Step 1.\n"
-        "=== END PIPELINE-CONTEXT ===\n"
-    )
-
-
-def _build_block_context_block(message: str) -> str:
-    return (
-        "=== SHIPWRIGHT-PIPELINE-CONTEXT (BLOCKED) ===\n"
-        f"{message}\n"
-        "\n"
-        "STOP — your launch parameters are inconsistent with the active "
-        "shipwright-run pipeline. Refuse to proceed. The next user prompt "
-        "will be hard-blocked by the UserPromptSubmit hook anyway.\n"
-        "=== END PIPELINE-CONTEXT ===\n"
-    )
-
-
 def run(project_root: Path, session_uuid: Optional[str], plugin_root: Optional[str]) -> int:
     """Pure-callable entry point. Returns the exit code main() will use."""
     if not project_root or not session_uuid:
@@ -178,6 +148,12 @@ def run(project_root: Path, session_uuid: Optional[str], plugin_root: Optional[s
 
     if config.get("schemaVersion") != 2:
         return 0  # standalone (legacy v1 config)
+
+    # Degraded install: cross-plugin phase_task_lifecycle unavailable (None
+    # fallback) -> degrade to standalone like the sibling stop/prompt hooks
+    # already do, never crash SessionStart (ensure_shared_cache heals it next run).
+    if None in (find_phase_task_by_session_uuid, validate_prerequisites, claim_phase_task):
+        return 0
 
     # Discovery
     task = find_phase_task_by_session_uuid(project_root, session_uuid)
