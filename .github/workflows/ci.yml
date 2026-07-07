@@ -207,57 +207,39 @@ jobs:
             --project-root . --data-dir .cov-data --output coverage.xml
 
       - name: Diff coverage (gate)
-        # Diff-coverage roadmap Phase 4 — HARD GATE (the hard flip,
-        # iterate-2026-07-06-diff-coverage-hard-flip). The gate DECISION —
-        # measure the % of CHANGED lines (vs origin/main) that tests execute over
-        # the COMBINED coverage.xml, print the markdown report, and exit non-zero
-        # iff diff% < 80 — lives in a unit/integration-TESTED Python entrypoint
-        # (measure_diff_coverage.py --fail-under), proven against real PRs
-        # (test_measure_diff_coverage_gate.py + test_real_pr_gate_replay.py). The
-        # wrapper runs diff-cover internally with the non-deprecated --format
-        # flags. continue-on-error is now DROPPED, so an under-tested PR (changed
-        # lines < 80% covered) BLOCKS the merge; a diff-cover crash/absence also
-        # fails closed (GATE_EXIT_ERROR). The warn-only settling window is over —
-        # the empirical replay corpus (last 5 PRs: 4 pass / 1 legitimate fail)
-        # showed the 80 bar has real, non-spurious teeth. 80 ==
-        # control_grade._DIFF_COV_WARN_THRESHOLD (Phase-3 grade WARN). The CI-gate
-        # guard classifies this as a gate (`measure_diff_coverage` in
-        # GATE_COMMANDS, `diff-cover` named below) and — now that it is no longer
-        # continue-on-error and carries NO ci_gate_allowlist entry — the guard's
-        # reverse-drift + stale-entry checks ENFORCE that it stays gating.
-        # Skipped when Combine produced no coverage.xml.
+        # HARD GATE via the SHARED composite action (Stage 3 self-consume,
+        # iterate-2026-07-07-diff-coverage-self-consume). The gate DECISION —
+        # % of CHANGED lines (vs origin/main) tests execute over the COMBINED
+        # coverage.xml, pinned diff-cover, exit non-zero iff diff% < 80 — now
+        # lives in ONE place, `.github/actions/diff-coverage-gate`, consumed by
+        # the adopt templates + WebUI + (here) the monorepo itself. Referenced by
+        # a LOCAL `./` path, NOT `@main`: a PR that edits the action is gated by
+        # its OWN checkout (no stale-@main bootstrapping) and there is no
+        # mutable-action-tag finding. No continue-on-error, so an under-tested PR
+        # (changed lines < 80% covered) BLOCKS the merge; the action's `set -e` +
+        # a non-zero diff-cover exit fails closed on a crash too. 80 ==
+        # control_grade._DIFF_COV_WARN_THRESHOLD (the action's fail-under default).
+        # The CI-gate guard recognizes `diff-coverage-gate` in `uses` as a gate
+        # (GATE_USES), so a future continue-on-error on this step is caught as a
+        # loose, un-allowlisted gate. The dashboard number
+        # (.shipwright/coverage/diff_coverage.json) is still produced LOCALLY by
+        # measure_diff_coverage.py during compliance regen — it was never consumed
+        # in CI. Skipped when Combine produced no coverage.xml. The action fetches
+        # origin/main itself (needs the job's fetch-depth: 0 checkout).
         if: hashFiles('coverage.xml') != ''
-        shell: bash
-        run: |
-          # origin/main is the diff base; fetch it explicitly (fetch-depth:0 has
-          # history but not necessarily the ref).
-          git fetch --no-tags origin main
-          # The wrapper prints the markdown report and returns non-zero iff
-          # diff% < 80. Capture that under `bash -eo pipefail` (|| rc=$?) so the
-          # ::endgroup:: still prints, then re-raise it (exit "$rc") to FAIL the
-          # step (and, with no continue-on-error, the job). diff-cover is PINNED
-          # so a release can't silently change its flags/exit codes.
-          echo "::group::Diff coverage (gate, --fail-under=80)"
-          rc=0
-          uv run --with "diff-cover==10.3.0" \
-            shared/scripts/tools/measure_diff_coverage.py \
-            --project-root . --coverage-xml coverage.xml \
-            --compare-branch origin/main --fail-under 80 \
-            --json-out diff-cover.json --markdown-out diff-cover.md || rc=$?
-          echo "::endgroup::"
-          exit "$rc"
+        uses: ./.github/actions/diff-coverage-gate
+        with:
+          coverage-files: coverage.xml
 
       - name: Upload coverage artifacts
-        # Non-gating housekeeping: keep coverage.xml + the diff-cover reports for
-        # inspection. always() so a failed earlier step still publishes them.
+        # Non-gating housekeeping: keep the combined coverage.xml for inspection.
+        # always() so a failed earlier step still publishes it. (The diff-cover
+        # report is printed to the log by the gate action above.)
         if: always() && hashFiles('coverage.xml') != ''
         uses: actions/upload-artifact@v4
         with:
           name: repo-diff-coverage
-          path: |
-            coverage.xml
-            diff-cover.json
-            diff-cover.md
+          path: coverage.xml
           if-no-files-found: ignore
 
       - name: Run CI-gate guard

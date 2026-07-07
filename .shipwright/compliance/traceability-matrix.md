@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-07T12:34:00.634683+00:00
+Generated: 2026-07-07T12:17:14.813163+00:00
 
 ## Requirements Coverage
 
@@ -27,7 +27,7 @@ Generated: 2026-07-07T12:34:00.634683+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
-| <a id="evt-e1377d99"></a>guard phase_session_start against a degraded cross-plugin import + heal cache/shipwright/plugins/ in ensure_shared_cache | iterate | change |  | — | — | 2026-07-07 |
+| <a id="evt-ef7f1bd0"></a>The project now uses its own shared building block to run the tests-coverage merge check, so that check is defined in exactly one place for every project. | iterate | change |  | 3693/3709 | — | 2026-07-07 |
 | <a id="evt-61817595"></a>Adds a switch that will let the whole build pipeline run in one conversation instead of many separate ones, plus the internal scaffolding for it; it is off by default so nothing changes yet. | iterate | feature |  | 4081/4097 | — | 2026-07-07 |
 | <a id="evt-77f86714"></a>The tests-coverage check for adopted projects is now defined in one shared place, so improvements reach every project automatically instead of being copied by hand. | iterate | change |  | 4175/4191 | — | 2026-07-07 |
 | <a id="evt-fe2d0f53"></a>Removed duplicated code: the check for GitHub-owned action tags now lives in one shared place instead of being copy-pasted in two, with no change to what it does. | iterate | change |  | 4148/4167 | — | 2026-07-07 |

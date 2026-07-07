@@ -1,20 +1,20 @@
 # Test Evidence Report
 
-Generated: 2026-07-07T12:34:00.634683+00:00
+Generated: 2026-07-07T12:17:14.813163+00:00
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 273 |
-| Total unit tests (latest full suite) | 4081/4097 (2026-07-07) |
+| Total unit tests (latest full suite) | 3693/3709 (2026-07-07) |
 | New tests from iterations | +220 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | guard phase_session_start against a degraded cross-plugin import + heal cache/shipwright/plugins/ in ensure_shared_cache | [iterate](traceability-matrix.md#evt-e1377d99) | — | +0 | — | — | 2026-07-07 |
+| 1 | The project now uses its own shared building block to run the tests-coverage merge check, so that check is defined in exactly one place for every project. | [iterate](traceability-matrix.md#evt-ef7f1bd0) | unit | +0 | 3693/3709 | PASS (16 skipped) | 2026-07-07 |
 | 2 | The tests-coverage check for adopted projects is now defined in one shared place, so improvements reach every project automatically instead of being copied by hand. | [iterate](traceability-matrix.md#evt-77f86714) | unit | +0 | 4175/4191 | PASS (16 skipped) | 2026-07-07 |
 | 3 | Adds a switch that will let the whole build pipeline run in one conversation instead of many separate ones, plus the internal scaffolding for it; it is off by default so nothing changes yet. | [iterate](traceability-matrix.md#evt-61817595) | unit | +0 | 4081/4097 | PASS (16 skipped) | 2026-07-07 |
 | 4 | Removed duplicated code: the check for GitHub-owned action tags now lives in one shared place instead of being copy-pasted in two, with no change to what it does. | [iterate](traceability-matrix.md#evt-fe2d0f53) | unit | +0 | 4148/4167 | PASS (19 skipped) | 2026-07-07 |
@@ -294,36 +294,36 @@ _Synthesized from per-iterate **unit** results — Integration / pgTAP / E2E / S
 
 | Run | Trigger | Unit | Integration | pgTAP | E2E | Smoke | Date |
 |-----|---------|------|-------------|-------|-----|-------|------|
-| 1 | iterate | 894/894 | — | — | — | — | 2026-06-30 |
-| 2 | iterate | 897/897 | — | — | — | — | 2026-06-30 |
-| 3 | iterate | 3610/3610 | — | — | — | — | 2026-06-30 |
-| 4 | iterate | 3604/3604 | — | — | — | — | 2026-06-30 |
-| 5 | iterate | 3633/3633 | — | — | — | — | 2026-06-30 |
-| 6 | iterate | 4955/4967 | — | — | — | — | 2026-06-30 |
-| 7 | iterate | 4964/4976 | — | — | — | — | 2026-07-01 |
-| 8 | iterate | 3627/3639 | — | — | — | — | 2026-07-02 |
-| 9 | iterate | 3629/3641 | — | — | — | — | 2026-07-03 |
-| 10 | iterate | 3905/3917 | — | — | — | — | 2026-07-03 |
-| 11 | iterate | 91/91 | — | — | — | — | 2026-07-03 |
-| 12 | iterate | 182/182 | — | — | — | — | 2026-07-04 |
-| 13 | iterate | 187/187 | — | — | — | — | 2026-07-04 |
-| 14 | iterate | 215/215 | — | — | — | — | 2026-07-04 |
-| 15 | iterate | 460/463 | — | — | — | — | 2026-07-04 |
-| 16 | iterate | 216/216 | — | — | — | — | 2026-07-04 |
-| 17 | iterate | 265/265 | — | — | — | — | 2026-07-05 |
-| 18 | iterate | 271/271 | — | — | — | — | 2026-07-04 |
-| 19 | iterate | 3643/3643 | — | — | — | — | 2026-07-05 |
-| 20 | iterate | 273/273 | — | — | — | — | 2026-07-05 |
-| 21 | iterate | 3978/3978 | — | — | — | — | 2026-07-06 |
-| 22 | iterate | 137/137 | — | — | — | — | 2026-07-06 |
-| 23 | iterate | 3666/3666 | — | — | — | — | 2026-07-06 |
-| 24 | iterate | 169/169 | — | — | — | — | 2026-07-06 |
-| 25 | iterate | 951/951 | — | — | — | — | 2026-07-06 |
-| 26 | iterate | 5598/5625 | — | — | — | — | 2026-07-06 |
-| 27 | iterate | 3667/3667 | — | — | — | — | 2026-07-06 |
-| 28 | iterate | 4148/4167 | — | — | — | — | 2026-07-07 |
-| 29 | iterate | 4081/4097 | — | — | — | — | 2026-07-07 |
-| 30 | iterate | 4175/4191 | — | — | — | — | 2026-07-07 |
+| 1 | iterate | 897/897 | — | — | — | — | 2026-06-30 |
+| 2 | iterate | 3610/3610 | — | — | — | — | 2026-06-30 |
+| 3 | iterate | 3604/3604 | — | — | — | — | 2026-06-30 |
+| 4 | iterate | 3633/3633 | — | — | — | — | 2026-06-30 |
+| 5 | iterate | 4955/4967 | — | — | — | — | 2026-06-30 |
+| 6 | iterate | 4964/4976 | — | — | — | — | 2026-07-01 |
+| 7 | iterate | 3627/3639 | — | — | — | — | 2026-07-02 |
+| 8 | iterate | 3629/3641 | — | — | — | — | 2026-07-03 |
+| 9 | iterate | 3905/3917 | — | — | — | — | 2026-07-03 |
+| 10 | iterate | 91/91 | — | — | — | — | 2026-07-03 |
+| 11 | iterate | 182/182 | — | — | — | — | 2026-07-04 |
+| 12 | iterate | 187/187 | — | — | — | — | 2026-07-04 |
+| 13 | iterate | 215/215 | — | — | — | — | 2026-07-04 |
+| 14 | iterate | 460/463 | — | — | — | — | 2026-07-04 |
+| 15 | iterate | 216/216 | — | — | — | — | 2026-07-04 |
+| 16 | iterate | 265/265 | — | — | — | — | 2026-07-05 |
+| 17 | iterate | 271/271 | — | — | — | — | 2026-07-04 |
+| 18 | iterate | 3643/3643 | — | — | — | — | 2026-07-05 |
+| 19 | iterate | 273/273 | — | — | — | — | 2026-07-05 |
+| 20 | iterate | 3978/3978 | — | — | — | — | 2026-07-06 |
+| 21 | iterate | 137/137 | — | — | — | — | 2026-07-06 |
+| 22 | iterate | 3666/3666 | — | — | — | — | 2026-07-06 |
+| 23 | iterate | 169/169 | — | — | — | — | 2026-07-06 |
+| 24 | iterate | 951/951 | — | — | — | — | 2026-07-06 |
+| 25 | iterate | 5598/5625 | — | — | — | — | 2026-07-06 |
+| 26 | iterate | 3667/3667 | — | — | — | — | 2026-07-06 |
+| 27 | iterate | 4148/4167 | — | — | — | — | 2026-07-07 |
+| 28 | iterate | 4081/4097 | — | — | — | — | 2026-07-07 |
+| 29 | iterate | 4175/4191 | — | — | — | — | 2026-07-07 |
+| 30 | iterate | 3693/3709 | — | — | — | — | 2026-07-07 |
 
 ## Code Review Evidence
 
