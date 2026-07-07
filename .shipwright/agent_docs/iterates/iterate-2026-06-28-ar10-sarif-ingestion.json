@@ -1,9 +1,0 @@
-{
-  "run_id": "iterate-2026-06-28-ar10-sarif-ingestion",
-  "date": "2026-06-28T20:56:27.850346Z",
-  "type": "change",
-  "complexity": "small",
-  "branch": "iterate/ar10-sarif-ingestion",
-  "tests_passed": true,
-  "adr": "iterate-2026-06-28-ar10-sarif-ingestion"
-}

@@ -1,9 +1,10 @@
 {
   "run_id": "iterate-2026-07-07-phase-gate-mode",
-  "date": "2026-07-07T13:00:54.972086Z",
+  "date": "2026-07-07T13:09:12.517579Z",
   "type": "feature",
   "complexity": "medium",
   "branch": "iterate/ss2-phase-gate-mode",
   "spec": ".shipwright/planning/iterate/campaigns/2026-07-07-single-session-pipeline/sub-iterates/SS2-phase-gate-mode.md",
-  "tests_passed": true
+  "tests_passed": true,
+  "adr": "iterate-2026-07-07-phase-gate-mode"
 }
