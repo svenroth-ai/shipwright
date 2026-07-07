@@ -147,6 +147,21 @@ class TestOpenTarget:
             assert target.is_git is True
             assert (target.local_path / "app" / "api.py").is_file()
 
+    def test_local_path_carries_local_path_kind(self, well_run_repo: Path):
+        with open_target(str(well_run_repo)) as target:
+            assert target.input_kind == "local_path"
+
+    def test_cloned_remote_carries_url_kind(self, well_run_repo: Path, monkeypatch):
+        # The remote-vs-local distinction the network default keys on: a cloned
+        # remote self-describes as input_kind="url" (its identity was already sent
+        # to GitHub to fetch it), a local path stays "local_path" (privacy-first).
+        def fake_clone(raw, dest, **kwargs):
+            _run_clone(str(well_run_repo), dest, allow_local=True)
+            return dest
+        monkeypatch.setattr(clone, "clone_repo", fake_clone)
+        with open_target("https://github.com/o/r") as target:
+            assert target.input_kind == "url"
+
     def test_no_clone_forbids_remote(self):
         with pytest.raises(TargetError, match="requires cloning"):
             with open_target("https://github.com/o/r", allow_clone=False):

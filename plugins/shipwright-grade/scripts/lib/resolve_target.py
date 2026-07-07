@@ -18,7 +18,7 @@ from __future__ import annotations
 import re
 import tempfile
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Iterator
 
@@ -45,7 +45,7 @@ class ResolvedTarget:
     is_bare: bool
     is_shallow: bool
     has_remote: bool
-    input_kind: str  # "local_path" in G1; "url" reserved for G4
+    input_kind: str  # "local_path" (resolved in place) | "url" (cloned remote)
     note: str = ""
 
 
@@ -164,6 +164,11 @@ def open_target(raw: str, *, allow_clone: bool = True) -> Iterator[ResolvedTarge
         with tempfile.TemporaryDirectory(prefix="shipwright-grade-") as tmp:
             dest = Path(tmp) / "repo"
             clone_repo(raw, dest)
-            yield resolve_target(str(dest))
+            # Tag the resolved target as a REMOTE input (populate the reserved
+            # input_kind="url"). The grader keys its network default on this: a
+            # cloned remote's identity was already sent to GitHub to fetch it, so
+            # network enrichment defaults ON for it, while a local path (below)
+            # stays "local_path" → local-only by default (privacy-first).
+            yield replace(resolve_target(str(dest)), input_kind="url", note="cloned remote")
         return
     yield resolve_target(raw)

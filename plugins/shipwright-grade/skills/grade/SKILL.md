@@ -48,10 +48,19 @@ score, never faked) and are surfaced as *controls Shipwright would light up*.
   or `owner/repo` GitHub shorthand) into a throwaway tempdir that is purged even on
   a crash — shallow, single-branch, no-submodule, time- and size-capped, list-arg
   (injection-safe). `--no-clone` forbids cloning.
-- **Local by default; network is opt-in.** Private repos never leave the machine.
-  Without `--allow-network` the network-only dimensions (CI-JUnit pass-ratio,
-  Scorecard check-runs, code-scanning SARIF) render `n/a`. (Cloning a URL target is
-  the one unavoidable network step — separate from `--allow-network` enrichment.)
+- **Local path → local-only by default; a public github.com URL → network-on by default.**
+  A **local path** never leaves the machine without an explicit `--allow-network`
+  (privacy-first — even a local repo with a public GitHub remote stays local-only).
+  A **github.com URL / `owner/repo`** target is fetched from github.com anyway —
+  its identity is already sent there to clone it — so GitHub enrichment (CI-JUnit
+  pass-ratio, Scorecard check-runs, code-scanning SARIF, reviewed-PR provenance)
+  defaults **on** for it. A **GitHub Enterprise / other host** is excluded from the
+  default (enrichment queries github.com, a host that clone never contacted, so its
+  slug must not leak) — pass `--allow-network` for it explicitly. A **private /
+  unverifiable** remote still auto-disables enrichment unless you pass
+  `--allow-network-private`, and when `gh` is unavailable/unauthed the grade falls
+  back to the honest local projection — never a false `F`. Without enrichment the
+  network-only dimensions render `n/a`.
 - **Scored locally (no network):** requirement traceability (git history);
   **size / maintainability** (static oversize-file ratio); **dependency hygiene**
   (lockfile → resolved licenses, when installed metadata is present). **Surfaced
@@ -85,10 +94,11 @@ uv run scripts/tools/grade.py octocat/Hello-World      # GitHub owner/repo short
   lead-magnet artifact. Redirect it: `… --format html > report.html`. Every
   repo-derived string is HTML-escaped and control/bidi-stripped (it renders
   untrusted input), so the report is inert by construction.
-- `--allow-network` opts into GitHub enrichment for the target's remote. It
-  **auto-disables on a private / unverifiable remote** unless you also pass
-  `--allow-network-private`. The report stamps exactly which enrichments ran
-  (what left the machine).
+- `--allow-network` opts into GitHub enrichment for the target's remote — already
+  the **default for a URL / `owner/repo`** target, so the flag is only needed to
+  force enrichment on for a **local path**. It **auto-disables on a private /
+  unverifiable remote** unless you also pass `--allow-network-private`. The report
+  stamps exactly which enrichments ran (what left the machine).
 
 The grade is **deterministic** for a given repository snapshot: nothing outside
 a footer depends on wall-clock time or randomness. For very large repos that

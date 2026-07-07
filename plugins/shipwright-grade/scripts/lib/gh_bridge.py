@@ -76,6 +76,26 @@ def run_gh(args: list[str], *, timeout: int = 30, input_text: str | None = None)
     return GhResult(ok=True, stdout=proc.stdout or "", returncode=0)
 
 
+# The STRICT host predicate the network-on *default* uses (grade.py). It matches
+# ONLY a literal github.com remote — https/ssh/scp forms — never a GHE host.
+# ``owner_repo_from_remote`` deliberately stays broad (any ``github*`` host) for
+# the explicit --allow-network enrichment path; the default is narrower because it
+# fires a github.com query (``gh repo view``) WITHOUT a flag: for a GHE clone that
+# would disclose the org/repo slug to github.com — a host the clone never
+# contacted — and could mis-enrich from a same-slug public repo. ``github.com``
+# must be immediately followed by ``:`` or ``/`` so ``github.com.evil.tld`` and
+# ``github.mycorp.com`` are both rejected.
+_GITHUB_COM_HOST_RE = re.compile(
+    r"^(?:(?:https?|ssh|git)://)?(?:[^@/]+@)?github\.com(?=[:/])", re.IGNORECASE)
+
+
+def is_github_com_remote(url: str) -> bool:
+    """True only when ``url`` is a literal **github.com** remote (not a GHE host)."""
+    if not isinstance(url, str) or not url.strip():
+        return False
+    return bool(_GITHUB_COM_HOST_RE.match(url.strip()))
+
+
 def owner_repo_from_remote(url: str) -> tuple[str, str] | None:
     """Extract ``(owner, repo)`` from a GitHub remote URL, or ``None``."""
     if not url:

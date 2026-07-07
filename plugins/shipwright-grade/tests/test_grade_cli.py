@@ -117,3 +117,76 @@ class TestGradeCli:
         rc = run([str(well_run_repo), "--allow-network"])
         assert rc == 0
         assert "no GitHub remote" in capsys.readouterr().out
+
+
+class TestPublicUrlDefaultsNetworkOn:
+    """Part 3: a **github.com** URL / owner-repo target defaults to network
+    enrichment — its identity is already sent to github.com to clone it — while a
+    LOCAL path stays local-only (privacy-first) and a GitHub Enterprise / other
+    host is excluded from the default (its slug must not leak to github.com without
+    a flag). resolve_network_policy still auto-disables on a private/unverifiable
+    remote (--allow-network-private stays opt-in) and falls back to a local grade
+    when gh is unavailable, so a URL grade is never F."""
+
+    def _spy_policy(self, monkeypatch) -> dict:
+        captured: dict = {}
+        from network_policy import NetworkPolicy
+        def spy(*, allow_network, allow_private, remote_url, gh):
+            captured["allow_network"] = allow_network
+            captured["allow_private"] = allow_private
+            captured["remote_url"] = remote_url
+            return NetworkPolicy(
+                enabled=False, requested=allow_network, owner=None, repo=None,
+                visibility="local-only", note="local-only (spy)")
+        monkeypatch.setattr(grade, "resolve_network_policy", spy)
+        return captured
+
+    def _clone_with_origin(self, monkeypatch, well_run_repo: Path, origin_url: str) -> None:
+        # Model a real clone: the cloned repo's origin is the URL it came from, so
+        # the host predicate (is_github_com_remote) sees the true host.
+        import subprocess
+        from clone import _run_clone
+        def fake_clone(raw, dest, **kwargs):
+            _run_clone(str(well_run_repo), dest, allow_local=True)
+            subprocess.run(["git", "-C", str(dest), "remote", "set-url", "origin",
+                            origin_url], check=True, capture_output=True, text=True)
+            return dest
+        monkeypatch.setattr(clone, "clone_repo", fake_clone)
+
+    def test_public_github_url_defaults_allow_network_true(self, well_run_repo: Path, monkeypatch):
+        self._clone_with_origin(monkeypatch, well_run_repo, "https://github.com/o/r")
+        captured = self._spy_policy(monkeypatch)
+        assert run(["https://github.com/o/r", "--format", "json"]) == 0
+        assert captured["allow_network"] is True     # github.com URL → network on by default
+        assert captured["allow_private"] is False    # --allow-network-private stays opt-in
+
+    def test_github_enterprise_url_does_not_default_network_on(self, well_run_repo: Path, monkeypatch):
+        # A GHE host: gh enrichment would query github.com — a host the clone never
+        # contacted — so the org/repo slug must NOT leak by default. Requires an
+        # explicit --allow-network.
+        self._clone_with_origin(monkeypatch, well_run_repo, "https://github.example.com/o/r")
+        captured = self._spy_policy(monkeypatch)
+        assert run(["https://github.example.com/o/r", "--format", "json"]) == 0
+        assert captured["allow_network"] is False    # GHE host → not defaulted on
+
+    def test_local_path_stays_local_only_by_default(self, well_run_repo: Path, monkeypatch):
+        captured = self._spy_policy(monkeypatch)
+        assert run([str(well_run_repo), "--format", "json"]) == 0
+        assert captured["allow_network"] is False    # local path → privacy-first
+
+    def test_url_clone_without_github_remote_falls_back_to_local_not_f(
+        self, well_run_repo: Path, monkeypatch, capsys
+    ):
+        # A cloned repo whose origin is NOT github.com (here the redirected local
+        # fixture) → the default stays off → honest local grade. Hermetic: with
+        # allow_network False, resolve_network_policy short-circuits before any gh
+        # call. The safety guarantee: a URL grade is never F and never crashes.
+        from clone import _run_clone
+        def fake_clone(raw, dest, **kwargs):
+            _run_clone(str(well_run_repo), dest, allow_local=True)  # origin = local path
+            return dest
+        monkeypatch.setattr(clone, "clone_repo", fake_clone)
+        assert run(["https://github.com/o/r", "--format", "json"]) == 0
+        payload = json.loads(capsys.readouterr().out)
+        assert payload["grade"] != "F"
+        assert payload["network_enabled"] is False   # non-github remote → local fallback

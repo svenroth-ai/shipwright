@@ -1,18 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-07-ss4-phase-runner-persistence",
+    "run_id": "iterate-2026-07-07-grade-public-url-network",
     "date": "2026-07-07",
-    "intent": "feature",
-    "complexity": "medium",
+    "intent": "change",
+    "complexity": "small",
     "unit": {
       "status": "passed",
-      "passed": 339,
-      "total": 339
+      "passed": 373,
+      "total": 373
     },
     "integration": {
-      "status": "passed",
-      "passed": 3,
-      "total": 3
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -34,121 +34,79 @@
     },
     "degraded": [
       {
-        "condition": "external-review pre-flight helper missing (SS6 gap)",
-        "detail": "shared/scripts/tools/check-external-review-keys.py (the documented pre-flight key-check wrapper) does not exist — the tooling gap SS6 will fix. external_review.py itself IS functional: --mode code ran GPT-5.4 + Gemini 3.1 Pro via OpenRouter successfully on this diff (OpenAI: ship-with-fixes, 4 findings, all addressed; Gemini: no findings). External review was therefore NOT degraded for this run; only the missing wrapper is."
+        "condition": "suite scope (grade-plugin-only change)",
+        "detail": "The diff touches only shipwright-grade (resolve_target.py, grade.py, gh_bridge.py) + its tests + docs; grep confirmed no consumers of the changed symbols (input_kind, is_github_com_remote) outside the grade plugin. F0 ran the shipwright-grade suite (373 passed) + ruff@0.15.15 + leak-guard f0 ALLOW. Compliance/shared/integration are unchanged and run in CI on the PR."
       },
       {
-        "condition": "F0 scope",
-        "detail": "F0 ran shipwright-run (282) + shipwright-plan (57) + integration-tests/test_single_session_pipeline.py (3) + shared/tests (3739 passed, 1 pre-fix canon lint now green) + ruff@0.15.15 + leak-guard f0 ALLOW. The full all-plugin suite runs in CI on the PR."
+        "condition": "real-CLI network E2E (live github.com)",
+        "detail": "The network-on default was proven with a live call: grading https://github.com/octocat/Hello-World WITHOUT --allow-network returned network_enabled=True (PR-association enrichment). gh authed as svroch. This is the feature under test (network-on for public github.com URLs); only public-repo identity + slug were sent, to github.com, which the clone already contacted."
       }
     ],
     "surface_verification": {
       "surface": "none",
-      "justification": "SS4 is a Python plugin change: a phase-runner agent def, the single_session on-disk persistence guard + reload module + a new single-session-reload CLI subcommand, the section-writer write-path fix + a non-blocking SubagentStop fallback hook, and docs. No web/UI/API surface, no server, no client code. run_config is only READ by the reload/guard (all mutation stays in phase_task_lifecycle); no message-contract change, so the Backend-affects-Frontend rule does not apply. The CLI surface was exercised END-TO-END: integration-tests/test_single_session_pipeline.py drives single-session-next / single-session-apply through a full pipeline INCLUDING the new persistence guard, plus a cross_component scenario proving a claimed-but-unwritten artifact is rejected fail-closed across the real subprocess CLI. Verification = F0 pytest (339 unit + 3 integration + 3739 shared) + ruff + artifact-path-canon + leak-guard f0 ALLOW.",
+      "justification": "The change is to the shipwright-grade CLI wrapper (grade.py network-policy wiring) + the input seam (resolve_target.open_target tagging) + a gh_bridge host predicate. No web/UI/API/server surface. The CLI grader IS the executable surface and was driven END-TO-END: (1) a public github.com URL (octocat/Hello-World) WITHOUT --allow-network -> network_enabled=True (default flip works); (2) a local path to this monorepo (public remote) -> network_enabled=False (privacy-first intact, graded A authoritative); (3) a URL clone with no github.com remote -> local grade B, network off (honest fallback, never F); (4) a GitHub Enterprise host is excluded from the default (unit-tested -- its slug must not leak to github.com). Verification = F0 pytest (373) + ruff + leak-guard f0 ALLOW + 3 real-CLI grades.",
       "exit_code": 0,
-      "tests_run": 342,
-      "timestamp": "2026-07-07T21:30:00Z"
+      "tests_run": 373,
+      "timestamp": "2026-07-07T00:00:00Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 — phase-runner agent has a write path (Write/Edit/Bash)",
+          "behavior": "AC1 -- a cloned remote self-describes input_kind='url'",
           "disposition": "tested",
-          "evidence": "test_phase_runner_agent.py::test_phase_runner_has_write_path PASSED"
+          "evidence": "test_clone.py::TestOpenTarget::test_cloned_remote_carries_url_kind PASSED"
         },
         {
-          "behavior": "AC1 — phase-runner brief mandates disk persistence, not a Stop hook",
+          "behavior": "AC2 -- a local path stays input_kind='local_path'",
           "disposition": "tested",
-          "evidence": "test_phase_runner_briefs_disk_persistence_not_hook PASSED (concrete phrase assertions)"
+          "evidence": "test_clone.py::TestOpenTarget::test_local_path_carries_local_path_kind PASSED"
         },
         {
-          "behavior": "AC1/AC4 — a claimed-but-unwritten artifact is caught by the on-disk guard",
+          "behavior": "AC1 -- a public github.com URL defaults allow_network=True",
           "disposition": "tested",
-          "evidence": "test_single_session_artifact_guard.py::test_apply_rejects_missing_artifact_before_lifecycle + test_phase_runner_unpersisted_artifact_is_caught PASSED"
+          "evidence": "test_grade_cli.py::TestPublicUrlDefaultsNetworkOn::test_public_github_url_defaults_allow_network_true (policy spy) PASSED; real-CLI octocat/Hello-World network_enabled=True"
         },
         {
-          "behavior": "AC4 — an ok result whose artifacts exist on disk completes; ok=False skips the guard",
+          "behavior": "PRIVACY -- a GitHub Enterprise / non-github.com URL is NOT defaulted network-on (its slug must not leak to github.com)",
           "disposition": "tested",
-          "evidence": "test_apply_accepts_when_claimed_artifact_on_disk + test_apply_failure_result_skips_artifact_guard PASSED"
+          "evidence": "test_github_enterprise_url_does_not_default_network_on (spy) + test_gh_bridge.py::test_is_github_com_remote_false_for_non_github_com PASSED"
         },
         {
-          "behavior": "AC4 — a stale apply reports stale_version, not artifacts_missing (CAS precedence)",
+          "behavior": "is_github_com_remote matches ONLY literal github.com (https/ssh/scp), rejects GHE/spoofed/empty/local-path",
           "disposition": "tested",
-          "evidence": "test_apply_stale_version_reports_stale_not_artifacts_missing PASSED"
+          "evidence": "test_gh_bridge.py::test_is_github_com_remote_true_for_github_com + ..._false_for_non_github_com PASSED"
         },
         {
-          "behavior": "AC3 — reload rebuilds context from compact summaries, transcript-blind + budget-bounded",
+          "behavior": "AC2 -- a local path defaults allow_network=False (privacy-first, even with a public remote)",
           "disposition": "tested",
-          "evidence": "test_orchestrator_context_reload.py::test_phase_summaries_never_carry_transcript, test_context_budget_is_bounded_by_summary_ceiling PASSED"
+          "evidence": "test_local_path_stays_local_only_by_default (spy) PASSED; real-CLI monorepo network_enabled=False"
         },
         {
-          "behavior": "AC3 — reload is read-only and returns None on no/corrupt/non-v2 config",
+          "behavior": "AC3 -- --allow-network-private stays opt-in (allow_private False by default)",
           "disposition": "tested",
-          "evidence": "test_reload_does_not_mutate_config, test_reload_none_on_corrupt_config, test_reload_none_on_non_v2_schema PASSED"
+          "evidence": "the policy spy asserts allow_private is False on the URL path"
         },
         {
-          "behavior": "AC3 — the summary ceiling (context-budget guard) is enforced at write-time by the contract",
+          "behavior": "AC4 -- a URL clone without a github.com remote -> honest local grade, never F (hermetic, no gh call)",
           "disposition": "tested",
-          "evidence": "test_context_budget_ceiling_enforced_at_write_time PASSED (build_phase_runner_result raises on overlong summary)"
+          "evidence": "test_url_clone_without_github_remote_falls_back_to_local_not_f PASSED (grade != F, network_enabled False)"
         },
         {
-          "behavior": "AC3 — single-session-reload CLI subcommand + cli.main routing wired at runtime",
+          "behavior": "Regression -- the existing URL clone-and-grade still grades B and is now hermetic",
           "disposition": "tested",
-          "evidence": "test_single_session_cli.py::test_reload_exit0_returns_context, test_reload_exit1_on_no_config, test_cli_main_routes_single_session_reload PASSED"
-        },
-        {
-          "behavior": "AC2 — section-writer declares a Write path + a direct-write instruction",
-          "disposition": "tested",
-          "evidence": "test_section_writer_persistence.py::test_section_writer_declares_write_path, test_section_writer_instructs_direct_write PASSED"
-        },
-        {
-          "behavior": "AC2 — hook is a no-op when the section file already exists (no clobber, no block)",
-          "disposition": "tested",
-          "evidence": "test_hook_noop_when_section_file_exists PASSED (existing content preserved)"
-        },
-        {
-          "behavior": "AC2 — hook salvages from the transcript only when the file is missing (env dir set)",
-          "disposition": "tested",
-          "evidence": "test_hook_salvages_when_file_missing PASSED"
-        },
-        {
-          "behavior": "AC2 — salvage write refuses an untrusted inferred dir outside the project tree",
-          "disposition": "tested",
-          "evidence": "test_hook_refuses_salvage_write_to_untrusted_inferred_dir + salvage_write_dir unit tests PASSED"
-        },
-        {
-          "behavior": "AC2 — salvage refuses content that is not a section document",
-          "disposition": "tested",
-          "evidence": "test_hook_refuses_salvage_of_non_section_document PASSED"
-        },
-        {
-          "behavior": "AC2 — the hook NEVER blocks (bad payload / missing transcript_path / empty / unsalvageable)",
-          "disposition": "tested",
-          "evidence": "test_hook_never_blocks_* (3) + test_hook_empty_transcript_never_blocks PASSED"
-        },
-        {
-          "behavior": "cross_component — hook + loop + result-contract compose end-to-end via the real CLI",
-          "disposition": "tested",
-          "category": "integration",
-          "evidence": "integration-tests/test_single_session_pipeline.py::TestPersistenceGuardCrossComponent::test_claimed_but_unwritten_artifact_is_rejected PASSED (subprocess CLI, artifacts_missing, run stays in_progress, frontier intact)"
-        },
-        {
-          "behavior": "the live LLM phase-runner/section-writer actually writes its files at runtime",
-          "disposition": "untestable",
-          "reason_code": "requires-external-nondeterministic-service",
-          "reason": "A real subagent's file writes cannot be exercised in a unit test; the behavior is enforced fail-closed by the on-disk artifact guard (single-session) and check-sections.py Step 7 (plan), both of which ARE tested."
+          "evidence": "test_grade_cli.py::TestGradeCli::test_url_is_cloned_and_graded PASSED (allow_network False short-circuits before gh)"
         }
       ],
       "counts": {
-        "testable": 16,
-        "tested": 16,
-        "untestable": 1,
+        "testable": 9,
+        "tested": 9,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 4,
-        "covered_acs": 4
+        "acs": 5,
+        "covered_acs": 5
       }
     }
   },

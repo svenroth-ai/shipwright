@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-07-07T19:32:59.063369+00:00
-Total commits: 1110
+Generated: 2026-07-07T20:01:52.128701+00:00
+Total commits: 1111
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 322
-    "feat" : 297
+    "feat" : 298
     "chore" : 235
     "docs" : 143
     "refactor" : 67
@@ -347,11 +347,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 297 commits
+### Features (feat) — 298 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-07 | run | phase-runner subagent + guaranteed artifact persistence + section-writer fix (SS4) | 16ea0fb8aeb4 |
+| 2026-07-07 | grade | public github.com URL defaults to network enrichment | b6cad134ad1b |
+| 2026-07-07 | run | phase-runner subagent + guaranteed artifact persistence + section-writer fix (SS4) (#345) | 9f06a01f045e |
 | 2026-07-07 | run | single-session orchestrator loop + lifecycle integration + strict-stop (SS3) (#343) | 0e6f5186152d |
 | 2026-07-07 | run | non-interactive phase-gate mode + gate catalog (SS2) (#342) | 8a7415384b72 |
 | 2026-07-07 | run | scaffold single-session pipeline mode + phase-runner contracts (SS1) (#339) | 1f1ffedfb378 |
@@ -1179,7 +1180,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1110 |
+| Total commits | 1111 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1110 |
+| Human-authored commits | 1111 |
 
