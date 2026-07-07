@@ -49,10 +49,10 @@ def test_valid_failure_result_with_reason_passes():
 def test_build_phase_runner_result_constructs_valid_dict():
     res = build_phase_runner_result(
         ok=True, phase="design", summary="2 screens mocked",
-        artifacts=["designs/home.html"], split_id=None,
+        artifacts=[".shipwright/designs/home.html"], split_id=None,
     )
     assert res == {"ok": True, "phase": "design", "summary": "2 screens mocked",
-                   "artifacts": ["designs/home.html"]}
+                   "artifacts": [".shipwright/designs/home.html"]}
 
 
 def test_build_omits_none_optionals_but_keeps_provided():
