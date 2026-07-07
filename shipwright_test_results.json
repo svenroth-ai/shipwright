@@ -1,18 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-07-ss3-orchestrator-loop",
+    "run_id": "iterate-2026-07-07-grade-local-honesty",
     "date": "2026-07-07",
-    "intent": "feature",
+    "intent": "change",
     "complexity": "medium",
     "unit": {
       "status": "passed",
-      "passed": 254,
-      "total": 254
+      "passed": 1311,
+      "total": 1311
     },
     "integration": {
-      "status": "passed",
-      "passed": 176,
-      "total": 176
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -34,91 +34,84 @@
     },
     "degraded": [
       {
-        "condition": "classifier prose false-positive",
-        "detail": "classify_complexity flagged touches_auth from the word 'session' in 'single_session' / 'phase-runner subagent' \u2014 a message-keyword match, not the diff. The diff touches no auth/RLS/middleware code (orchestrator loop lib + CLI + skill prose + tests). Overridden; F11 recomputes risk flags from the real diff."
-      },
-      {
         "condition": "F0 scope",
-        "detail": "F0 verification ran the shipwright-run plugin suite (241) + integration-tests (176) + ruff@0.15.15 + leak-guard f0 ALLOW. The change is isolated to plugins/shipwright-run + docs; the full shared/tests + all-plugin suite runs in CI on the PR."
+        "detail": "F0 ran the two affected plugin suites (shipwright-grade 352 passed + shipwright-compliance 958 passed) + ruff@0.15.15 (changed dirs) + leak-guard f0 ALLOW. The change is isolated to the Control-Grade engine (compliance lib) + the grade cold projector/docs; grep confirmed no compute_grade/GradeInputs consumers in shared/, integration-tests/, or scripts/. The full shared/tests + all-plugin + integration suite runs in CI on the PR."
       },
       {
-        "condition": "flaky unrelated test",
-        "detail": "tests/test_runconfig_concurrency.py::test_three_process_writers_no_truncation_no_lost_update intermittently fails under full-suite load on Windows (3-process msvcrt file-lock race); passes 3/3 in isolation. Not touched by this diff (no run_config write path). CI (Linux/fcntl) unaffected."
+        "condition": "network empirical fixtures not re-recorded (by design)",
+        "detail": "The 7 committed network fixtures were NOT re-recorded. This is intentional: change_traceability_measurable defaults True, so the stored GradeInputs replay via GradeInputs(**gi) with the dimension still scored -> network grades byte-identical. The offline calibration suite (test_run_empirical + calibration.grade_from_fixture) is green; the network -m empirical suite (opt-in, needs gh) was not run locally."
       }
     ],
     "surface_verification": {
       "surface": "none",
-      "justification": "SS3 is a Python orchestrator-loop lib (orchestrator_pkg/single_session_loop.py + single_session_cli.py) + two CLI subcommands + SKILL/reference prose + docs. No web/UI/API surface, no server, no client code. run_config is only READ in the loop (all mutation via phase_task_lifecycle); no message-contract change, so the Backend-affects-Frontend rule does not apply. The CLI surface was exercised END-TO-END as the composition proof: integration-tests/test_single_session_pipeline.py drives single-session-next / single-session-apply through a full pipeline (project to the final phase incl. serial build split fan-out) to a complete run, plus the forced-failure strict-stop path. Verification = F0 pytest (241 run-plugin + 176 integration) + ruff + leak-guard f0 ALLOW.",
+      "justification": "The change is to the deterministic Control-Grade Python engine (compliance lib) + the shipwright-grade cold projector + report copy/docs. There is no web/UI/API/server surface and no served client; the grade HTML report is a static artifact covered by the golden-snapshot test (regenerated, copy-only diff). The CLI grader IS the executable surface and was driven END-TO-END as the behavior proof: (1) the shitstorm case -- a synthetic well-run repo with clean Conventional Commits but no #N refs -- graded F 49.0 'out of control' on HEAD and B 89.0 with change_traceability n/a after the fix; (2) the dogfood monorepo graded A 99.9 authoritative with change_traceability measured (276/276). Verification = F0 pytest (1310) + ruff + leak-guard f0 ALLOW + 2 real-CLI end-to-end grades.",
       "exit_code": 0,
-      "tests_run": 417,
+      "tests_run": 1311,
       "timestamp": "2026-07-07T00:00:00Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 \u2014 full pipeline incl. build fan-out advances in ONE loop on a fixture",
+          "behavior": "AC1 — local-only well-run repo without #N refs grades NOT F / not 'out of control'",
           "disposition": "tested",
-          "category": "integration",
-          "evidence": "integration-tests/test_single_session_pipeline.py::TestFullPipelineSingleSession::test_full_pipeline_with_split_fanout_completes PASSED (real CLI subprocess, run.status=complete)"
+          "evidence": "test_projector_fixtures.py::TestLocalOnlyChangeTraceability::test_well_run_without_pr_refs_is_not_f PASSED; real-CLI E2E B 89.0"
         },
         {
-          "behavior": "AC2 \u2014 forced phase failure strict-stops via mark_phase_failed, no successor appended",
+          "behavior": "AC1 — change_traceability renders n/a in local-only mode",
           "disposition": "tested",
-          "evidence": "test_single_session_pipeline.py::TestForcedFailureStrictStop::test_failure_mid_pipeline_halts_with_no_successor + test_single_session_loop.py::test_apply_failure_strict_stops_no_successor PASSED"
+          "evidence": "test_well_run_without_pr_refs_change_trace_is_na + test_change_traceability_na_in_local_mode PASSED"
         },
         {
-          "behavior": "AC3 \u2014 the loop composes with the lifecycle helpers end-to-end",
+          "behavior": "Engine gate: change_traceability_measurable=False -> dimension score is None (n/a)",
           "disposition": "tested",
-          "category": "integration",
-          "evidence": "integration-tests/test_single_session_pipeline.py (drives via the real orchestrator.py CLI, reusing phase_task_lifecycle) PASSED"
+          "evidence": "test_control_grade_change_traceability.py::TestChangeTraceabilityGate::test_na_when_not_measurable PASSED"
         },
         {
-          "behavior": "AC4 \u2014 serial split order preserved (plan/01->build/01->plan/02->build/02)",
+          "behavior": "Engine gate: measurable=False + 0 provenance never F-collapses (dim is a COLLAPSE_PILLAR only when scored < 0.5)",
           "disposition": "tested",
-          "evidence": "test_full_pipeline_with_split_fanout_completes order assertion PASSED"
+          "evidence": "test_not_measurable_never_f_collapses_on_reference_free_repo PASSED (grade stays A)"
         },
         {
-          "behavior": "AC4 \u2014 no direct run_config mutation (all writes via the lifecycle)",
+          "behavior": "AC2 — --allow-network / authoritative path still scores change_traceability",
           "disposition": "tested",
-          "evidence": "test_single_session_loop.py::test_loop_modules_never_call_a_direct_run_config_writer (ast guard) PASSED"
+          "evidence": "test_network_mode_still_scores_change_traceability + test_scored_when_measurable PASSED; dogfood CLI A 99.9 (276/276)"
         },
         {
-          "behavior": "resolve guards mode / no-config / terminal signals (wrong_mode, no_config, complete, failed, needs_validation)",
+          "behavior": "AC5 — engine default True keeps existing callers byte-identical",
           "disposition": "tested",
-          "evidence": "test_single_session_loop.py::test_resolve_* PASSED"
+          "evidence": "test_default_is_measurable + test_control_grade.py::test_real_shipwright_case_grades_B (na set unchanged) PASSED"
         },
         {
-          "behavior": "next claims the frontier + records loop_state; re-dispatch is idempotent",
+          "behavior": "Engine: measurable=True but 0 events -> n/a with distinct 'no change events' detail",
           "disposition": "tested",
-          "evidence": "test_next_dispatch_claims_and_records_loop_state, test_next_dispatch_reclaim_is_idempotent PASSED"
+          "evidence": "test_measurable_but_no_events_is_na PASSED"
         },
         {
-          "behavior": "design completion freezes splits BEFORE planning so build fans out per split",
+          "behavior": "git-log count retained on GradeInputs but ungraded in local mode",
           "disposition": "tested",
-          "evidence": "test_apply_design_freezes_splits_and_fans_out PASSED (splits_frozen set, next=plan/01-core)"
+          "evidence": "test_git_log_count_kept_when_network_absent (count==4 AND measurable is False) PASSED"
         },
         {
-          "behavior": "a malformed phase-runner result never reaches the lifecycle (no mutation)",
+          "behavior": "Calibration: synthetic no_tests fixture drops local C->D (change_traceability n/a)",
           "disposition": "tested",
-          "evidence": "test_apply_invalid_result_never_reaches_lifecycle PASSED (task stays in_progress, run stays in_progress)"
+          "evidence": "test_projector_fixtures.py::TestNoTests::test_grades_d_maintainability_lit PASSED"
         },
         {
-          "behavior": "a stale CAS token is rejected fail-closed and leaves the loop pointer untouched",
+          "behavior": "AC3/report: HTML n/a copy hint for change_traceability",
           "disposition": "tested",
-          "evidence": "test_apply_stale_version_fail_closed_leaves_loop_state PASSED (reason=stale_version)"
+          "evidence": "test_render_snapshots.py::test_html_snapshot_matches_golden (golden regenerated, copy-only 1-line diff) PASSED"
         },
         {
-          "behavior": "AC5 \u2014 end-to-end UAT on a real idea",
-          "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "Human acceptance of a real end-to-end pipeline run on a real idea; also depends on SS4's phase-runner subagent. Tracked as a NEEDS-YOU follow-up in the iterate spec."
+          "behavior": "Drift-guard: authoritative/compliance adapter explicitly sets change_traceability_measurable=True (survives a future engine-default flip)",
+          "disposition": "tested",
+          "evidence": "test_control_grade_change_traceability.py::TestAuthoritativeAdapterKeepsItMeasurable::test_adapter_sets_change_traceability_measurable_true PASSED (added per internal-review finding #1)"
         }
       ],
       "counts": {
-        "testable": 10,
-        "tested": 10,
-        "untestable": 1,
+        "testable": 11,
+        "tested": 11,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {

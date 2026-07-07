@@ -114,6 +114,25 @@ it **1.0**), so an adopted Shipwright repo can still reach A. The result is an h
 upgrade path — *free grader → at best B; adopt → A becomes reachable* — not a dark
 pattern. A cold repo now spans **C..B**; **A is authoritative-only.**
 
+### Change-traceability is n/a in local-only mode (2026-07-07 follow-up)
+G6 fix #2 replaced the git-log count with the network PR-association ratio *when the
+network resolves* but **kept the git-log count as the local offline fallback** — which
+still scored (and could F-collapse) the dimension. That was the residual shitstorm: a
+well-run repo with clean Conventional Commits but no `#N` refs (0/N git-log provenance)
+graded **F "out of control"** in the default local-only mode. Because git-log
+references *anti-correlate* with quality, the local fallback is worse than useless as a
+graded signal. So change-traceability is now gated on `change_traceability_measurable`
+(engine default True; the cold projector sets it False in local-only): with no
+trustworthy provenance it renders **n/a** ("needs --allow-network"), exactly like
+test-health/security — never scored off git-log, never an F-collapse. A local cold
+grade of a well-run repo now lands **B** (reconciliation cap), never F.
+
+**This does NOT touch the network empirical suite above:** with `--allow-network` the
+PR-association tier still scores change-traceability, so every fixture here re-grades
+identically (the recorded `GradeInputs` replay with the field defaulting True). The
+**authoritative** path (real event-log provenance) sets the flag True, so the dogfood
+grade is unchanged.
+
 ### Dogfood
 The monorepo (+ WebUI) grade **authoritatively** (own `.shipwright/` records via the
 unchanged engine), so the projection calibration does not touch them: the monorepo

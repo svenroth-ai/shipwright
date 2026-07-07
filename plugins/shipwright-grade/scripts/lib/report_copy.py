@@ -78,7 +78,10 @@ DIMENSION_COPY: dict[str, dict[str, str]] = {
                     "a requirement).",
         "improves": "With Shipwright, every change is recorded like a logbook "
                     "entry — what changed, why, which requirement, which test — "
-                    "so your history reads like a story, not a mystery.",
+                    "so your history reads like a story, not a mystery. (N/A here "
+                    "just means we couldn't see reviewed-PR provenance from the "
+                    "outside — run it with network access, or adopt to switch it "
+                    "on.)",
         "limit": "",
         "backed_by": "Software supply-chain provenance (SLSA).",
     },

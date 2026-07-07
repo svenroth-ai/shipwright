@@ -45,6 +45,16 @@ class GradeInputs:
     diff_coverage_percent: float | None = None
     # Change → commit/ADR/test provenance
     events_with_provenance: int = 0
+    # Whether change-traceability provenance is TRUSTWORTHY here (dim 3 gate).
+    # Default True: every authoritative caller (the dashboard adapter, the engine
+    # tests) populates events_with_provenance from real records — an ADR/commit/test
+    # link, or the network PR-association ratio. The cold-repo grader sets this
+    # False in local-only mode, where the ONLY signal is git-log `#N` references,
+    # which ANTI-correlate with quality (a disciplined squash-merge repo leaves
+    # reference-free subjects). False → dim 3 renders n/a ("needs --allow-network"),
+    # mirroring how test-health/security degrade to n/a without a trustworthy signal
+    # instead of scoring a misleading proxy.
+    change_traceability_measurable: bool = True
     # Change reconciliation (BP-2 — behavior-affecting impact persisted)
     reconciliation_measurable: bool = False
     frs_behavior_touched: int = 0
