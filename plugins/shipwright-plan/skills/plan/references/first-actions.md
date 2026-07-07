@@ -158,3 +158,29 @@ E2E test plan:     {enabled | disabled}
 {Resume from:      Step {N} (if resuming)}
 ================================================================================
 ```
+
+---
+
+## Single-Session Gate Discipline
+
+When this phase runs as a phase-runner subagent under the **single-session
+pipeline** (`shipwright_run_config.json` `mode: "single_session"`), interactive
+`AskUserQuestion` gates follow a per-gate policy instead of always stopping.
+Resolve each gate before you stop on it:
+
+```bash
+uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/resolve_gate_policy.py" \
+  --phase plan --list --project-root .
+```
+
+Apply the printed `effective_policy`:
+
+- `auto-default` → proceed with the `default_answer`, **no END-TURN**. (The
+  interview is answered from loaded project context; a missing external-review key
+  falls back to the mandatory self-review. Human plan-review is deferred to the
+  orchestrator's cross-phase gate.)
+- `orchestrator-approve` / `hard-stop` → **STILL STOP** and hand a gate-pending
+  result back to the orchestrator; never auto-answer.
+- `interactive` (any non-single-session run) → behave exactly as documented.
+
+Full contract: `shared/prompts/single-session-gate-discipline.md`.

@@ -183,3 +183,29 @@ Migration safe: {enabled | disabled}
 {Resume from:   Step {N} (if resuming)}
 ================================================================================
 ```
+
+---
+
+## Single-Session Gate Discipline
+
+When this phase runs as a phase-runner subagent under the **single-session
+pipeline** (`shipwright_run_config.json` `mode: "single_session"`), interactive
+`AskUserQuestion` gates follow a per-gate policy instead of always stopping.
+Resolve each gate before you stop on it:
+
+```bash
+uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/resolve_gate_policy.py" \
+  --phase build --list --project-root .
+```
+
+Apply the printed `effective_policy`:
+
+- `auto-default` → proceed with the `default_answer`, **no END-TURN** (e.g.
+  code-review findings auto-fix, as in autonomous mode).
+- `orchestrator-approve` / `hard-stop` → **STILL STOP** and hand a gate-pending
+  result back to the orchestrator; never auto-answer. Note:
+  `build.destructive-sql-confirm` and `build.migration-apply-fail` are
+  **hard-stop** — an explicit human decision, always, regardless of autonomy.
+- `interactive` (any non-single-session run) → behave exactly as documented.
+
+Full contract: `shared/prompts/single-session-gate-discipline.md`.

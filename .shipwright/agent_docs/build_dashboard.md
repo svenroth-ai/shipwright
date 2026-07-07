@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-07 11:04 UTC | Session: 41ad48f7-28ec-42b5-aa20-da9101b8b7a6 | Run: iterate-2026-07-07-single-session-mode-scaffold
+> Updated: 2026-07-07 12:59 UTC | Session: be5797a1-52ed-4b03-97ca-7f8267bd99b5 | Run: iterate-2026-07-07-phase-gate-mode
 
-## Recent Changes (272 iterations)
+## Recent Changes (273 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | SS2 single-session phase-gate mode: shared/config/gate_catalog.json (~47 project/design/plan/build/deploy gates -> auto-default/orchestrator-approve/hard-stop) + gate_policy.py resolver/validator/doc-gen + resolve_gate_policy.py CLI + honoring blocks in the 5 phase skills + generated docs/gate-catalog.md; additive/inert unless run_config.mode==single_session; constitution-locked gates never auto-answer; no phase execution yet (SS3). | 4067/4087 |  | tooling | 2026-07-07 |
 | change | diff-coverage gate extracted into a consumed composite action; vitest adopt templates consume it via uses: | 4175/4191 |  | infra | 2026-07-07 |
 | feature | SS1 single-session mode scaffold: additive run_config mode field + write-config --mode + selectable in /shipwright-run; new single_session/ package with the phase-runner result contract and .shipwright/run_loop_state.json loop-state persistence; no phase execution yet | 4081/4097 |  | tooling | 2026-07-07 |
 | change | Behavior-preserving simplify: route both GH-owned action-tag call-sites (security_findings._is_accepted_gh_owned_tag + plugin semgrep_tailoring._is_github_owned_action_tag) through the single shared gh_action_tag_owner.is_github_owned_action_tag predicate; drop the now-unused primitive imports. Follow-up to iterate-2026-07-06-semgrep-accept-producer which shipped that helper unused. | 4148/4167 |  | tooling | 2026-07-07 |
@@ -279,7 +280,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-07 | Unit: 3907/3923 | Integration: 174/174 | (iterate)
+Last run: 2026-07-07 | Unit: 4067/4087 | Integration: 174/174 | (iterate)
 
 ## Pipeline
 

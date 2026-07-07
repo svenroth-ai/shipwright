@@ -1,93 +1,119 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-07-single-session-mode-scaffold",
+    "run_id": "iterate-2026-07-07-phase-gate-mode",
     "date": "2026-07-07",
     "intent": "feature",
     "complexity": "medium",
     "unit": {
       "status": "passed",
-      "passed": 3907,
-      "total": 3923,
-      "skipped": 16,
+      "passed": 4067,
+      "total": 4087,
+      "skipped": 20,
       "framework": "pytest",
-      "note": "F0 verification: shipwright-run 229 + shared/tests 3678 (16 skipped); ruff clean; leak-guard f0 ALLOW"
+      "note": "F0 verification: shared/tests 3732 (12 skipped) + shared/scripts/tools/tests 139 (8 skipped) + shared/scripts/tests 196; 5 edited plugins pass (project 59 / design 19 / plan 43 / build 84 / deploy 26); ruff@0.15.15 clean; leak-guard f0 ALLOW"
     },
     "integration": {
       "status": "passed",
       "passed": 174,
       "total": 174,
-      "note": "integration-tests/ (2 slow deselected)"
+      "note": "integration-tests/ (2 slow deselected) — additive shared tooling, unaffected"
     },
     "pgtap": null,
     "e2e": null,
     "design_fidelity": null,
     "smoke": null,
-    "degraded": [],
+    "degraded": [
+      {
+        "condition": "classifier prose false-positive",
+        "detail": "classify_complexity flagged touches_auth + touches_rls from message keywords, not the diff. The diff has no auth/RLS code (a Python gate-policy lib + CLI + prompt/doc edits). Overridden; the authoritative diff-driven risk flag is touches_io_boundary (resolver reads run_config + parses gate_catalog.json)."
+      }
+    ],
     "surface_verification": {
       "surface": "none",
-      "justification": "SS1 is a Python schema + orchestrator-package scaffold: it adds an optional run_config 'mode' field and a new single_session/ contract package (result contract + loop-state persistence). No web/UI/API surface, no server, no client code. The 'mode' field is additive and ignored by the current WebUI (phase_tasks message contract unchanged), so the Backend-affects-Frontend rule does not apply; WebUI single-session rendering is a separate paired track (per Spec/pipeline-as-campaign-convergence.md). Verification is the full F0 pytest suite (schema round-trip, mode back-compat, contract + loop-state round-trips) + ruff.",
+      "justification": "SS2 is a Python lib + CLI + config-schema + prompt/doc change (gate catalog, resolver, honoring blocks in 5 phase skills). No web/UI/API surface, no server, no client code. run_config is only READ (mode); no message-contract change, so the Backend-affects-Frontend rule does not apply. The CLI was exercised end-to-end as empirical probes: --render-doc --output produced the committed pure-ASCII/LF docs/gate-catalog.md, and --gate/--phase resolved correctly under single_session/multi_session. Verification is the full F0 pytest suite (55 SS2 tests + 4067 shared/tools/scripts + 174 integration) + ruff + leak-guard f0 ALLOW.",
       "exit_code": 0,
-      "tests_run": 4081,
-      "timestamp": "2026-07-07T12:00:00Z"
+      "tests_run": 4067,
+      "timestamp": "2026-07-07T13:30:00Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "create_config writes an additive run_config 'mode' (multi_session default | single_session) to disk",
+          "behavior": "The catalog self-validates on load and raises GateCatalogError on any corruption (bad policy/phase/fires, auto-default missing a default_answer, a non-auto-default carrying one, a constitution gate marked auto-default, duplicate ids, covered_phases mismatch)",
           "disposition": "tested",
-          "evidence": "test_run_config_mode.py::test_create_config_default_mode_is_multi_session, ::test_create_config_single_session_mode, ::test_create_config_persists_mode_to_disk PASSED"
+          "evidence": "test_gate_catalog.py::test_shipped_catalog_loads_and_validates, ::test_validate_rejects_* (5), ::test_load_raises_on_corrupt_catalog PASSED"
         },
         {
-          "behavior": "A mode-less legacy config loads unchanged and reads as multi_session; an unknown value coerces to multi_session (back-compat)",
+          "behavior": "The resolver is inert under any non-single-session mode: every gate resolves to 'interactive' with should_stop=True (multi_session and unknown/typo modes)",
           "disposition": "tested",
-          "evidence": "test_run_config_mode.py::test_legacy_config_without_mode_loads_and_reads_multi_session, ::test_run_mode_defaults_missing_to_multi_session, ::test_run_mode_coerces_unknown_to_multi_session PASSED"
+          "evidence": "test_gate_policy.py::test_multi_session_is_inert_for_every_gate, ::test_unknown_mode_is_inert PASSED"
         },
         {
-          "behavior": "write-config --mode accepts the two modes, defaults to multi_session, and rejects an unknown value; create_config raises on invalid mode",
+          "behavior": "Under single_session the resolver returns the catalog policy: auto-default proceeds (should_stop=False + default_answer), orchestrator-approve/hard-stop stop (should_stop=True, no default_answer)",
           "disposition": "tested",
-          "evidence": "test_run_config_mode.py::test_write_config_cli_exposes_mode_choice, ::test_write_config_cli_defaults_mode_multi_session, ::test_write_config_cli_rejects_unknown_mode, ::test_create_config_rejects_invalid_mode PASSED"
+          "evidence": "test_gate_policy.py::test_single_session_auto_default_proceeds, ::test_single_session_orchestrator_approve_stops, ::test_single_session_hard_stop_stops PASSED"
         },
         {
-          "behavior": "The schema declares 'mode' as OPTIONAL (not in required) with enum + default multi_session, matching RUN_MODES",
+          "behavior": "Safety clamp: no constitution-locked gate ever resolves to a proceed (validator rejects it at load; the resolver fails closed even on an unvalidated catalog)",
           "disposition": "tested",
-          "evidence": "test_run_config_mode.py::test_schema_declares_optional_mode_with_default, ::test_schema_mode_enum_matches_run_modes PASSED"
+          "evidence": "test_gate_policy.py::test_resolver_never_auto_answers_a_constitution_gate + test_gate_catalog.py::test_no_constitution_gate_is_auto_default, ::test_validate_rejects_constitution_auto_default PASSED"
         },
         {
-          "behavior": "/shipwright-run SKILL.md documents both modes, marks multi_session default, threads --mode in Step 4, offers Change mode, and stays within the 400-line runtime-prompt budget",
+          "behavior": "Defense-in-depth heuristic: any gate reading as a dangerous op (prod-/destructive/rollback/truncate/drop table/apply-fail) is constitution-locked, except a reviewed auto-recovery exception",
           "disposition": "tested",
-          "evidence": "test_run_skill_mode_selection.py (5 tests) PASSED"
+          "evidence": "test_gate_catalog.py::test_danger_keyword_gates_are_constitution_locked PASSED"
         },
         {
-          "behavior": "The phase-runner result contract validates the shape (required keys, ok/reason coupling, phase enum, 2000-char summary ceiling, relative-repo-path artifacts) and the builder refuses invalid results without silent truncation",
+          "behavior": "Unknown gate id fails loudly for programmatic callers (lib raises KeyError) but SAFE for an LLM subagent (CLI resolves to interactive + stderr warning, exit 0)",
           "disposition": "tested",
-          "evidence": "test_single_session_result_contract.py (21 tests) PASSED"
+          "evidence": "test_gate_policy.py::test_resolver_unknown_gate_raises + test_resolve_gate_policy.py::test_unknown_gate_safe_fallback PASSED"
         },
         {
-          "behavior": "VALID_PHASES stays in lockstep with the schema Phase enum (both-direction drift guard)",
+          "behavior": "Mode resolution precedence (--mode > SHIPWRIGHT_RUN_MODE env > run_config.mode > multi_session) and the run_config mode round-trip (Boundary Probe for touches_io_boundary), incl. missing/mode-less/corrupt config",
           "disposition": "tested",
-          "evidence": "test_single_session_result_contract.py::test_valid_phases_matches_schema_enum_both_directions PASSED"
+          "evidence": "test_gate_policy.py::test_mode_precedence_*, ::test_mode_default_when_nothing_set, ::test_run_config_mode_round_trip, ::test_read_run_config_mode_* PASSED"
         },
         {
-          "behavior": "Loop-state init/save/load round-trips atomically to .shipwright/run_loop_state.json (distinct from the campaign loop_state.json); the mutators are pure and status is validated",
+          "behavior": "Per-phase dry-run: every gate of each of the 5 phases honors the contract under single_session",
           "disposition": "tested",
-          "evidence": "test_single_session_loop_state.py (13 tests) PASSED"
+          "evidence": "test_gate_policy.py::test_dry_run_per_phase[project|design|plan|build|deploy] PASSED"
         },
         {
-          "behavior": "Lifecycle-reuse contract: every completion entrypoint resolves in phase_task_lifecycle; the single_session package calls no mutator/run_config-writer (code-only AST scan); loop-state ops leave run_config byte-identical and create none",
+          "behavior": "Sensitive-gate policies match Sven's 2026-07-07 decisions: design mockups orchestrator-approve; the deploy/prod danger family + build destructive-sql/migration-apply-fail hard-stop + constitution",
           "disposition": "tested",
-          "evidence": "test_single_session_lifecycle_reuse.py (6 tests) PASSED"
+          "evidence": "test_gate_catalog.py::test_known_sensitive_gates_have_confirmed_policies PASSED"
+        },
+        {
+          "behavior": "docs/gate-catalog.md is generated from the JSON, deterministic, pure ASCII, and byte-for-byte drift-guarded; the CLI --render-doc --output writer produces UTF-8/LF",
+          "disposition": "tested",
+          "evidence": "test_gate_policy.py::test_render_markdown_mentions_every_gate, ::test_render_markdown_is_deterministic, ::test_render_markdown_is_pure_ascii + test_gate_catalog_doc_sync.py + test_resolve_gate_policy.py::test_render_doc_output_writes_utf8_lf_file PASSED"
+        },
+        {
+          "behavior": "CLI wiring: --gate resolution JSON, --phase --list, --render-doc(/--output), mutually-exclusive-action requirement, env/project-root mode sourcing",
+          "disposition": "tested",
+          "evidence": "test_resolve_gate_policy.py (11 tests) PASSED"
+        },
+        {
+          "behavior": "Each of the 5 phase skills honors the mechanism (a Single-Session Gate Discipline block invoking resolve_gate_policy.py for its phase) and the shared contract exists",
+          "disposition": "tested",
+          "evidence": "test_phase_gate_discipline_present.py (6 tests: 5 phases + shared contract) PASSED"
+        },
+        {
+          "behavior": "deploy/SKILL.md stays at its grandfathered 453-LOC bloat baseline (block added, offset by trimming a duplicate note); the 4 kernel skills stay <=300 LOC",
+          "disposition": "tested",
+          "evidence": "test_bloat_baseline.py + plugins/*/tests/test_skill_references_link.py::test_kern_skill_md_under_300_loc + test_reviewer_orchestration.py::test_build_kern_still_under_300_loc PASSED"
         }
       ],
       "counts": {
-        "total": 9,
-        "tested": 9,
+        "total": 13,
+        "tested": 13,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
         "acs": 5,
-        "covered_acs": 5
+        "covered_acs": 5,
+        "note": "Runtime honoring by a phase-runner subagent (observing no-END-TURN in a live phase) is introduced by SS3, not this diff; SS2 ships the mechanism + prompt contract + drift guards, all tested."
       }
     }
   },

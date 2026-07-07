@@ -395,6 +395,22 @@ After build completes: shows split summary table. After test completes: shows te
 > desktop **chat** cannot, so `/shipwright-run` cannot advance from there
 > (`/shipwright-iterate`, single-session, works everywhere).
 
+> **Single-session gate mode (Campaign 2026-07-07, SS2).** When a run sets
+> `mode: "single_session"` (additive; default is `multi_session`), each phase
+> runs as a phase-runner subagent inside the master's ONE conversation.
+> Interactive `AskUserQuestion` gates then follow a per-gate policy from
+> `shared/config/gate_catalog.json`: `auto-default` (proceed with a documented
+> answer, no END-TURN), `orchestrator-approve` (stop and surface to a human), or
+> `hard-stop` (always require a human — PROD deploy, destructive SQL,
+> migration-apply failure, rollback; constitution-locked). At startup the five
+> phase skills (`project`, `design`, `plan`, `build`, `deploy`) read the policy
+> via `shared/scripts/tools/resolve_gate_policy.py`; the full contract is
+> `shared/prompts/single-session-gate-discipline.md` and the catalog is
+> documented in `docs/gate-catalog.md`. Under `multi_session`/standalone the
+> mechanism is inert (every gate resolves to `interactive` — today's behaviour).
+> SS2 lands the catalog + resolver + honoring blocks; SS3 wires the orchestrator
+> loop that spawns the phase-runner subagents.
+
 ### Run-Config Schema v2
 
 Every `shipwright_run_config.json` written by `orchestrator.py write-config`
