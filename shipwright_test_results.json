@@ -6,8 +6,8 @@
     "complexity": "medium",
     "unit": {
       "status": "passed",
-      "passed": 241,
-      "total": 241
+      "passed": 254,
+      "total": 254
     },
     "integration": {
       "status": "passed",
@@ -40,6 +40,10 @@
       {
         "condition": "F0 scope",
         "detail": "F0 verification ran the shipwright-run plugin suite (241) + integration-tests (176) + ruff@0.15.15 + leak-guard f0 ALLOW. The change is isolated to plugins/shipwright-run + docs; the full shared/tests + all-plugin suite runs in CI on the PR."
+      },
+      {
+        "condition": "flaky unrelated test",
+        "detail": "tests/test_runconfig_concurrency.py::test_three_process_writers_no_truncation_no_lost_update intermittently fails under full-suite load on Windows (3-process msvcrt file-lock race); passes 3/3 in isolation. Not touched by this diff (no run_config write path). CI (Linux/fcntl) unaffected."
       }
     ],
     "surface_verification": {
