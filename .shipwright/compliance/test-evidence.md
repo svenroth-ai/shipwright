@@ -1,6 +1,6 @@
 # Test Evidence Report
 
-Generated: 2026-07-07T19:32:59.063369+00:00
+Generated: 2026-07-07T19:22:57.136907+00:00
 
 ## Summary
 
@@ -14,7 +14,7 @@ Generated: 2026-07-07T19:32:59.063369+00:00
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | SS4: phase-runner subagent + result contract + guaranteed artifact persistence (on-disk apply guard + reload-from-summaries + single-session-reload CLI) + section-writer persistence-bug fix (write path + non-blocking fallback hook, supersedes ADR-042 block-on-failure). | [iterate](traceability-matrix.md#evt-56ec5bf0) | — | +0 | — | — | 2026-07-07 |
+| 1 | change_traceability renders n/a in local-only grade mode (Part 1 + Part 2): new GradeInputs.change_traceability_measurable gates dim 3; cold projector opts out locally, authoritative stays measurable. | [iterate](traceability-matrix.md#evt-9d72bd56) | — | +0 | — | — | 2026-07-07 |
 | 2 | Turns on the one-conversation mode of the build pipeline: instead of each step needing its own separate session, one assistant now runs every step in order from a single chat, stopping cleanly if any step fails. It reuses the existing step-tracking machinery and is off by default, so normal runs are unaffected. | [iterate](traceability-matrix.md#evt-65e3ec05) | unit | +0 | 417/417 | PASS | 2026-07-07 |
 | 3 | The project now uses its own shared building block to run the tests-coverage merge check, so that check is defined in exactly one place for every project. | [iterate](traceability-matrix.md#evt-ef7f1bd0) | unit | +0 | 3693/3709 | PASS (16 skipped) | 2026-07-07 |
 | 4 | guard phase_session_start against a degraded cross-plugin import + heal cache/shipwright/plugins/ in ensure_shared_cache | [iterate](traceability-matrix.md#evt-e1377d99) | — | +0 | — | — | 2026-07-07 |

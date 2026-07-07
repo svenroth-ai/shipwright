@@ -125,6 +125,31 @@ def well_run_repo(tmp_path_factory) -> Path:
 
 
 @pytest.fixture(scope="session")
+def well_run_no_refs_repo(tmp_path_factory) -> Path:
+    """A well-run repo — CI + tests + small files + clean Conventional Commits —
+    whose subjects carry NO PR/issue ``#N`` reference (a disciplined squash-merge
+    history). Byte-for-byte the ``well_run_repo`` minus the ``(#N)`` tokens.
+
+    This is the local-mode honesty regression case: git-log ``#N`` provenance is
+    0/4 here, which used to collapse change-traceability to F ("out of control")
+    even though the repo is exemplary. In local-only mode change-traceability must
+    render n/a (not measurable without --allow-network), so this repo grades on
+    its real controls (B — the cold-repo ceiling), never F.
+    """
+    root = tmp_path_factory.mktemp("well_run_no_refs")
+    return build_repo(root, [
+        {"subject": "feat: scaffold api", "date": "2024-01-01T09:00:00",
+         "files": {"pyproject.toml": _PYPROJECT, "app/api.py": _API_PY}},
+        {"subject": "test: add api tests", "date": "2024-01-02T09:00:00",
+         "files": {"tests/test_api.py": _TEST_API_PY}},
+        {"subject": "ci: add github actions", "date": "2024-01-03T09:00:00",
+         "files": {".github/workflows/ci.yml": _CI_YML}},
+        {"subject": "fix: handle empty orders", "date": "2024-01-04T09:00:00",
+         "files": {"app/api.py": _API_PY + "\n# fixed\n"}},
+    ])
+
+
+@pytest.fixture(scope="session")
 def no_tests_repo(tmp_path_factory) -> Path:
     root = tmp_path_factory.mktemp("no_tests")
     return build_repo(root, [

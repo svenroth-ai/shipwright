@@ -52,14 +52,17 @@ score, never faked) and are surfaced as *controls Shipwright would light up*.
   Without `--allow-network` the network-only dimensions (CI-JUnit pass-ratio,
   Scorecard check-runs, code-scanning SARIF) render `n/a`. (Cloning a URL target is
   the one unavoidable network step — separate from `--allow-network` enrichment.)
-- **Scored locally (no network):** requirement traceability + change traceability
-  (git history); **size / maintainability** (static oversize-file ratio);
-  **dependency hygiene** (lockfile → resolved licenses, when installed metadata is
-  present). **Surfaced but unscored:** the static test inventory.
-- **Scored with `--allow-network`:** **test health** (best-available: CI JUnit →
-  Scorecard check-runs → static inventory floor) and **security** (GitHub
-  code-scanning SARIF, suppression-aware). **Always n/a:** change reconciliation —
-  the Shipwright-only dimension (the funnel hook).
+- **Scored locally (no network):** requirement traceability (git history);
+  **size / maintainability** (static oversize-file ratio); **dependency hygiene**
+  (lockfile → resolved licenses, when installed metadata is present). **Surfaced
+  but unscored:** the static test inventory.
+- **Scored with `--allow-network`:** **change traceability** (GitHub PR-association
+  — the share of recent commits introduced by a reviewed, merged PR; the local
+  git-log `#N` fallback anti-correlates with quality, so it is kept as a raw
+  provenance line but is **n/a**, not scored, without the network); **test health**
+  (best-available: CI JUnit → Scorecard check-runs → static inventory floor); and
+  **security** (GitHub code-scanning SARIF, suppression-aware). **Always n/a:**
+  change reconciliation — the Shipwright-only dimension (the funnel hook).
 
 ## Usage
 

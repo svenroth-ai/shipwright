@@ -132,8 +132,13 @@ class TestNetworkProvenanceOverride:
         assert inputs.events_with_provenance == 2
 
     def test_git_log_count_kept_when_network_absent(self, well_run_repo: Path):
+        # The raw git-log count is still recorded on GradeInputs (report provenance
+        # line), but it is now UNGRADED: change_traceability_measurable is False in
+        # local-only mode, so the dimension renders n/a (asserted in
+        # TestLocalOnlyChangeTraceability), never scored off this count.
         inputs, _extras, _ctx = _inputs(well_run_repo)  # local-only → git-log count
         assert inputs.events_with_provenance == 4
+        assert inputs.change_traceability_measurable is False
 
     def test_provenance_count_rounds_half_up_and_clamps(self):
         from provenance_signal import provenance_event_count
@@ -167,15 +172,19 @@ class TestNoTests:
         assert inputs.frs_covered == 0
         assert inputs.events_fr_tagged == 2
 
-    def test_grades_c_maintainability_lit(self, no_tests_repo: Path):
-        # G2: the local oversize-file ratio now lights maintainability (small,
-        # tidy files score ~1.0), lifting the no-tests repo D -> C. Test health,
-        # security + deps stay n/a (local-only), so the funnel story is intact.
+    def test_grades_d_maintainability_lit(self, no_tests_repo: Path):
+        # Local-only: the oversize-file ratio lights maintainability (small, tidy
+        # files score ~1.0), but change-traceability is now n/a (the anti-correlating
+        # git-log signal no longer inflates it), so a repo with 0 test coverage lands
+        # D ("weak control — untested changes"), not C. Test health, security + deps
+        # stay n/a (local-only), so the funnel story is intact.
         model = grade_context(_context(no_tests_repo))
-        assert model.grade == "C"
+        assert model.grade == "D"
         maint = [d for d in model.dimensions if d.key == "maintainability"][0]
         assert maint.status == "ok"
         assert "source files over 300 LOC" in maint.detail
+        ct = [d for d in model.dimensions if d.key == "change_traceability"][0]
+        assert ct.status == "n/a"
 
 
 class TestMessy:
@@ -204,3 +213,51 @@ class TestOrderingAndDeterminism:
         first = grade_context(_context(well_run_repo))
         second = grade_context(_context(well_run_repo))
         assert first == second  # frozen dataclasses → structural equality
+
+
+class TestLocalOnlyChangeTraceability:
+    """Local-only mode: change-traceability is NOT scored off the anti-correlating
+    git-log ``#N`` signal — it renders n/a (needs --allow-network PR-association).
+
+    Regression guard for the local-mode honesty shitstorm: a well-run repo with
+    reference-free commit subjects must NOT grade F "out of control".
+    """
+
+    def _model(self, repo: Path):
+        return grade_context(_context(repo))
+
+    def test_well_run_without_pr_refs_is_not_f(self, well_run_no_refs_repo: Path):
+        # The shitstorm case: exemplary repo, clean Conventional Commits, but no
+        # `#N` refs → git-log provenance 0/4. Must NOT collapse to F.
+        model = self._model(well_run_no_refs_repo)
+        assert model.grade != "F"
+        assert "out of control" not in model.verdict.lower()
+
+    def test_well_run_without_pr_refs_change_trace_is_na(self, well_run_no_refs_repo: Path):
+        model = self._model(well_run_no_refs_repo)
+        ct = [d for d in model.dimensions if d.key == "change_traceability"][0]
+        assert ct.status == "n/a"
+
+    def test_change_traceability_na_in_local_mode(self, well_run_repo: Path):
+        # Even a repo WITH `#N` refs: the git-log signal anti-correlates with
+        # quality, so local-only never grades change-traceability — it's n/a until
+        # --allow-network resolves the faithful PR-association ratio.
+        inputs, _extras, _ctx = _inputs(well_run_repo)
+        assert inputs.change_traceability_measurable is False
+        model = self._model(well_run_repo)
+        ct = [d for d in model.dimensions if d.key == "change_traceability"][0]
+        assert ct.status == "n/a"
+
+    def test_network_mode_still_scores_change_traceability(self, well_run_repo: Path):
+        # AC2 guard: the --allow-network PR-association path stays measurable+scored.
+        ctx = _context(well_run_repo)
+        bundle = compute_signals(ctx, _local_only(), lambda *a, **k: None)
+        networked = dataclasses.replace(
+            bundle, change_provenance=ProvenanceSignal(
+                True, 1.0, "pr-association", "100% of recent commits reviewed"))
+        inputs, _extras = project_inputs(
+            ctx, load_engine(), networked, network_enabled=True)
+        assert inputs.change_traceability_measurable is True
+        report = load_engine().compute_grade(inputs)
+        ct = [d for d in report.dimensions if d.key == "change_traceability"][0]
+        assert ct.score is not None

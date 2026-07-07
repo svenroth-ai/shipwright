@@ -172,11 +172,8 @@ def project_inputs(
     events = context.events
     events_total = len(events)
     fr_tagged = sum(1 for e in events if e.is_traced)
-    # Change-traceability provenance: the git-log PR/issue-ref count is the offline
-    # fallback, but it anti-correlates with quality (a disciplined squash-merge repo
-    # leaves reference-free subjects — G6 root cause 3). When the network resolves
-    # the faithful PR-association ratio, scale it onto the event count so the engine's
-    # events_with_provenance / events_total dimension gets a truthful input.
+    # git-log #N provenance anti-correlates with quality (a squash-merge repo leaves
+    # reference-free subjects — G6 rc3); network PR-association replaces it faithfully.
     with_provenance = sum(1 for e in events if e.has_provenance)
     cp = bundle.change_provenance
     if cp.measurable and cp.ratio is not None and events_total:
@@ -196,6 +193,9 @@ def project_inputs(
         events_total=events_total,
         events_fr_tagged=fr_tagged,
         events_with_provenance=with_provenance,
+        # Graded ONLY off trustworthy provenance (network PR-association); the local
+        # git-log count above is kept raw + ungraded → n/a here (see GradeInputs).
+        change_traceability_measurable=cp.measurable,
         # The always-dark Shipwright-only pillar → honesty gate caps a cold grade at
         # B; A is authoritative-only (module docstring + CALIBRATION.md). Heuristic-
         # only: the authoritative path sets its own expected_dimensions from real data.
