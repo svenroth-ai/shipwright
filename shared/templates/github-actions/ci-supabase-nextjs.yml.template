@@ -93,19 +93,20 @@ jobs:
           npx vitest run --coverage --coverage.provider=v8 \
             --coverage.reporter=cobertura --coverage.reportsDirectory=./coverage
 
-      - name: Install uv
-        # Third-party action pinned to a full commit SHA (supply-chain hardening).
-        uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39  # v3
-
-      - name: Diff coverage
-        shell: bash
-        run: |
-          git fetch --no-tags origin main
-          # diff-cover is PINNED (a release can't silently change flags/exit
-          # codes); it exits non-zero iff diff-coverage < 80% (continue-on-error
-          # downgrades that to a warning during the settling window).
-          uvx diff-cover@10.3.0 coverage/cobertura-coverage.xml \
-            --compare-branch=origin/main --fail-under=80
+      # Single source of truth: the gate (pinned diff-cover, --fail-under, the
+      # base fetch) lives in the shipwright composite action, so a gate fix
+      # flows here on your next run — no template edit. `@main` is intentional
+      # first-party auto-propagation. WARN-vs-HARD is this job's
+      # `continue-on-error` above (drop it to hard-block after your settling
+      # window) — when you hard-flip, pin the action to a released tag
+      # (…@v1) instead of `@main` so a monorepo push can't break your required
+      # check. The action installs uv itself. The gate diffs against
+      # `origin/main` by default; if your PRs target another base, pass
+      # `compare-branch: origin/${{ github.base_ref }}`.
+      - name: Diff coverage (gate)
+        uses: svenroth-ai/shipwright/.github/actions/diff-coverage-gate@main
+        with:
+          coverage-files: coverage/cobertura-coverage.xml
 
   # Security and deployment jobs run only on Linux:
   #   - Trivy / Gitleaks install via Debian apt-get (Linux-only)
