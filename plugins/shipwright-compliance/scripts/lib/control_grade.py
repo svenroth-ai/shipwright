@@ -133,10 +133,14 @@ def _score_dimensions(inp: GradeInputs) -> list[DimensionResult]:
         th_score, "automated tests pass (OpenSSF Scorecard)", th_detail,
     ))
 
-    # 3. Change traceability (15%) — provenance to commit/ADR/test.
-    if inp.events_total > 0:
-        ct_score: float | None = _ratio(
-            inp.events_with_provenance, inp.events_total)
+    # 3. Change traceability (15%) — provenance to commit/ADR/test. n/a unless the
+    # provenance is trustworthy (real records or --allow-network PR-association);
+    # the cold git-log fallback anti-correlates with quality (see GradeInputs).
+    if not inp.change_traceability_measurable:
+        ct_score: float | None = None
+        ct_detail = "not measurable without --allow-network (reviewed-PR provenance)"
+    elif inp.events_total > 0:
+        ct_score = _ratio(inp.events_with_provenance, inp.events_total)
         ct_detail = (
             f"{inp.events_with_provenance}/{inp.events_total} changes "
             "linked to a commit, ADR or test run"

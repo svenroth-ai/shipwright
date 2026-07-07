@@ -126,6 +126,11 @@ def build_grade_inputs(data: ComplianceData) -> GradeInputs:
         # provenance = linked to an ADR, a commit, or a recorded test run.
         events_with_provenance=sum(
             1 for we in events if we.adr_id or we.commit or we.tests_total > 0),
+        # Authoritative provenance (real event-log records) is trustworthy, so
+        # change-traceability is measurable here — explicit against the engine
+        # default so a future default flip can't silently dark this pillar. The
+        # cold-repo grader is the ONLY caller that sets this False (local-only).
+        change_traceability_measurable=True,
         # Reconciliation lit by BP-2: behavior-touched FRs (per-FR fr_impact /
         # spec_impact fallback) vs those re-verified after the touch.
         reconciliation_measurable=reconciliation_measurable,
