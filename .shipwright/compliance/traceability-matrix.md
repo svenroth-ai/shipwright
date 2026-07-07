@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-07T11:04:17.204564+00:00
+Generated: 2026-07-07T10:12:39.192379+00:00
 
 ## Requirements Coverage
 
@@ -27,7 +27,7 @@ Generated: 2026-07-07T11:04:17.204564+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
-| <a id="evt-61817595"></a>Adds a switch that will let the whole build pipeline run in one conversation instead of many separate ones, plus the internal scaffolding for it; it is off by default so nothing changes yet. | iterate | feature |  | 4081/4097 | — | 2026-07-07 |
+| <a id="evt-77f86714"></a>The tests-coverage check for adopted projects is now defined in one shared place, so improvements reach every project automatically instead of being copied by hand. | iterate | change |  | 4175/4191 | — | 2026-07-07 |
 | <a id="evt-fe2d0f53"></a>Removed duplicated code: the check for GitHub-owned action tags now lives in one shared place instead of being copy-pasted in two, with no change to what it does. | iterate | change |  | 4148/4167 | — | 2026-07-07 |
 | <a id="evt-aebeb6f0"></a>Security triage no longer raises a recurring false low-severity alarm for GitHub-owned actions an adopted repo has deliberately accepted; genuinely risky unpinned third-party actions are still reported. | iterate | bug |  | 5598/5625 | — | 2026-07-06 |
 | <a id="evt-2bcbc1b9"></a>New brownfield repos onboarded by Shipwright now automatically get a (non-blocking) check that flags PRs which don't test their own changed code. | iterate | change |  | 3667/3667 | — | 2026-07-06 |

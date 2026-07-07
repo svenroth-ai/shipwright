@@ -1,0 +1,61 @@
+name: 'Diff coverage gate'
+description: >-
+  Gate the percentage of CHANGED lines (vs a base branch) that tests execute,
+  via a pinned diff-cover. This action is the GATE only — coverage PRODUCTION
+  (running your tests with a cobertura reporter) stays repo-specific and must
+  happen in an earlier step. WARN-vs-HARD is the caller's decision: keep the
+  step non-blocking with `continue-on-error: true`, or drop it to hard-block.
+  The caller MUST checkout with `fetch-depth: 0` so the base branch is diffable.
+
+inputs:
+  coverage-files:
+    description: 'Space-separated cobertura XML path(s) to gate (e.g. "coverage/cobertura-coverage.xml" or "client/coverage/... server/coverage/...").'
+    required: true
+  compare-branch:
+    description: 'Diff base — changed lines are computed against this ref. Must be an `origin/<branch>` remote-tracking ref (diff-cover''s own convention); the `origin/` prefix is stripped to fetch `<branch>` from origin.'
+    required: false
+    default: 'origin/main'
+  fail-under:
+    description: 'Minimum percentage of changed lines that must be covered before diff-cover exits non-zero.'
+    required: false
+    default: '80'
+  diff-cover-version:
+    description: 'Pinned diff-cover release. Pinning means a diff-cover release cannot silently change the gate flags or exit codes.'
+    required: false
+    default: '10.3.0'
+
+runs:
+  using: composite
+  steps:
+    - name: Install uv
+      # Third-party action pinned to a full commit SHA (supply-chain hardening).
+      # Adopted Node repos have no uv otherwise; uvx runs the pinned diff-cover.
+      uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39  # v3
+
+    - name: Diff coverage
+      shell: bash
+      # Inputs reach the shell via env, never `${{ inputs.* }}` interpolated
+      # into the run body — that would let an input execute as shell code
+      # (GitHub-Actions expression injection). $INPUT_* below are plain data.
+      env:
+        INPUT_COVERAGE_FILES: ${{ inputs.coverage-files }}
+        INPUT_COMPARE_BRANCH: ${{ inputs.compare-branch }}
+        INPUT_FAIL_UNDER: ${{ inputs.fail-under }}
+        INPUT_DIFF_COVER_VERSION: ${{ inputs.diff-cover-version }}
+      run: |
+        set -euo pipefail
+        # Diff base: fetch the compare branch so diff-cover has the changed-line
+        # set. compare-branch is an "origin/<branch>" ref (diff-cover's own
+        # convention); strip the "origin/" for the fetch refspec.
+        base="${INPUT_COMPARE_BRANCH#origin/}"
+        git fetch --no-tags origin "$base"
+        # Split the space-separated cobertura paths into an array (word-split on
+        # whitespace only) so each path is passed as its own quoted argument —
+        # no unquoted expansion, so a stray glob/whitespace in the caller's
+        # `with:` value can't reach the shell as multiple/expanded tokens.
+        read -r -a coverage_files <<< "$INPUT_COVERAGE_FILES"
+        # diff-cover exits non-zero iff diff-coverage < --fail-under; the
+        # caller's continue-on-error decides whether that blocks the merge.
+        uvx "diff-cover@${INPUT_DIFF_COVER_VERSION}" "${coverage_files[@]}" \
+          --compare-branch="${INPUT_COMPARE_BRANCH}" \
+          --fail-under="${INPUT_FAIL_UNDER}"

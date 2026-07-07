@@ -1,20 +1,20 @@
 # Test Evidence Report
 
-Generated: 2026-07-07T11:04:17.204564+00:00
+Generated: 2026-07-07T10:12:39.192379+00:00
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 271 |
-| Total unit tests (latest full suite) | 4081/4097 (2026-07-07) |
+| Total unit tests (latest full suite) | 4175/4191 (2026-07-07) |
 | New tests from iterations | +220 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | Adds a switch that will let the whole build pipeline run in one conversation instead of many separate ones, plus the internal scaffolding for it; it is off by default so nothing changes yet. | [iterate](traceability-matrix.md#evt-61817595) | unit | +0 | 4081/4097 | PASS (16 skipped) | 2026-07-07 |
+| 1 | The tests-coverage check for adopted projects is now defined in one shared place, so improvements reach every project automatically instead of being copied by hand. | [iterate](traceability-matrix.md#evt-77f86714) | unit | +0 | 4175/4191 | PASS (16 skipped) | 2026-07-07 |
 | 2 | Removed duplicated code: the check for GitHub-owned action tags now lives in one shared place instead of being copy-pasted in two, with no change to what it does. | [iterate](traceability-matrix.md#evt-fe2d0f53) | unit | +0 | 4148/4167 | PASS (19 skipped) | 2026-07-07 |
 | 3 | New brownfield repos onboarded by Shipwright now automatically get a (non-blocking) check that flags PRs which don't test their own changed code. | [iterate](traceability-matrix.md#evt-2bcbc1b9) | unit | +0 | 3667/3667 | PASS | 2026-07-06 |
 | 4 | Security triage no longer raises a recurring false low-severity alarm for GitHub-owned actions an adopted repo has deliberately accepted; genuinely risky unpinned third-party actions are still reported. | [iterate](traceability-matrix.md#evt-aebeb6f0) | unit | +0 | 5598/5625 | PASS (27 skipped) | 2026-07-06 |
@@ -321,7 +321,7 @@ _Synthesized from per-iterate **unit** results — Integration / pgTAP / E2E / S
 | 27 | iterate | 5598/5625 | — | — | — | — | 2026-07-06 |
 | 28 | iterate | 3667/3667 | — | — | — | — | 2026-07-06 |
 | 29 | iterate | 4148/4167 | — | — | — | — | 2026-07-07 |
-| 30 | iterate | 4081/4097 | — | — | — | — | 2026-07-07 |
+| 30 | iterate | 4175/4191 | — | — | — | — | 2026-07-07 |
 
 ## Code Review Evidence
 

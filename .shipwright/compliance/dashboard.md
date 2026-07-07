@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-07-07T11:04:17.204564+00:00
+Generated: 2026-07-07T10:12:39.192379+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -13,7 +13,7 @@ Scope: library
 | | Dimension | Signal | Anchor |
 |---|-----------|--------|--------|
 | ✅ | Requirement traceability | 14/14 FRs covered; 271/271 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
-| ✅ | Test health | latest full suite 4081/4097 (2026-07-07) | automated tests pass (OpenSSF Scorecard) |
+| ✅ | Test health | latest full suite 4175/4191 (2026-07-07) | automated tests pass (OpenSSF Scorecard) |
 | ✅ | Change traceability | 271/271 changes linked to a commit, ADR or test run | change provenance (SLSA) |
 | ✅ | Change reconciliation | 0/5 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
 | ✅ | Security | 0 open high/critical | no open high/critical vulns (NIST SSDF) |
@@ -28,7 +28,7 @@ _Grade = importance-weighted average over the measurable dimensions (n/a exclude
 
 ## 🛡️ CI Security (fail-closed gate)
 
-Latest scan: **2026-07-07** · source `security.yml#28860602199` · critical-gate **✅ PASS**
+Latest scan: **2026-07-07** · source `security.yml#28853301654` · critical-gate **✅ PASS**
 
 | Severity | Count |
 |----------|-------|
@@ -54,7 +54,7 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Pipeline phases completed | n/a (adopted) | INFO |  |
 | Work events (iterate) | 271 changes | INFO |  |
 | Recent changes traced to an FR | 0/30 (0%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
-| All unit tests passing | 4081/4097 | WARN | 16/4097 not green in last full suite — see test-evidence.md |
+| All unit tests passing | 4175/4191 | WARN | 16/4191 not green in last full suite — see test-evidence.md |
 | Architecture decisions | 235 ADRs | INFO |  |
 | Iterate tests passing | 45/53 testable changes tested | WARN | 8 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 11 packages | INFO |  |
