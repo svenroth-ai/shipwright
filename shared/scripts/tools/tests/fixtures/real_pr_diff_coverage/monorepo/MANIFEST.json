@@ -3,7 +3,7 @@
   "threshold": 80,
   "captured_at": "2026-07-06",
   "source_repo": "svenroth-ai/shipwright",
-  "refresh": "For each recent merged PR, find its 'Python (lint + test)' CI run, then: gh run download <run-id> -R svenroth-ai/shipwright -n repo-diff-coverage -D <tmp>; cp <tmp>/diff-cover.json pr<NNN>.diff-cover.json; update this MANIFEST (sha, run_id, recorded_* from the new report). Fixtures are a stable pinned corpus, not auto-refreshed.",
+  "refresh": "Since Stage 3 (iterate-2026-07-07-diff-coverage-self-consume) the CI gate runs through the .github/actions/diff-coverage-gate composite action, which prints the diff-cover report to the run log but no longer UPLOADS diff-cover.json — the repo-diff-coverage artifact now carries only coverage.xml. To refresh a fixture: find the PR's 'Python (lint + test)' run, then `gh run download <run-id> -R svenroth-ai/shipwright -n repo-diff-coverage -D <tmp>` (gets coverage.xml), `git checkout <merge_sha>`, and regenerate the report locally with the still-maintained wrapper: `uv run --with diff-cover==10.3.0 shared/scripts/tools/measure_diff_coverage.py --coverage-xml <tmp>/coverage.xml --compare-branch origin/main --json-out pr<NNN>.diff-cover.json`; then update this MANIFEST (sha, run_id, recorded_* from the new report). Fixtures are a stable pinned corpus, not auto-refreshed.",
   "prs": [
     {
       "pr": 324,

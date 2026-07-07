@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-07-07T11:04:17.204564+00:00
-Total commits: 1106
+Generated: 2026-07-07T12:17:14.813163+00:00
+Total commits: 1104
 
 ## Commit Distribution
 
@@ -9,7 +9,7 @@ Total commits: 1106
 pie title Commit Types
     "fix" : 320
     "feat" : 294
-    "chore" : 237
+    "chore" : 235
     "docs" : 143
     "refactor" : 66
     "test" : 27
@@ -349,7 +349,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-07 | run | scaffold single-session pipeline mode + phase-runner contracts (SS1) | b00d21baf1dd |
+| 2026-07-07 | run | scaffold single-session pipeline mode + phase-runner contracts (SS1) (#339) | 1f1ffedfb378 |
 | 2026-07-07 | adopt | scaffold a warn-only diff-coverage gate into the vitest CI templates (#335) | 9b06a388e6f5 |
 | 2026-07-06 | grade | empirical calibration suite — SHA-pinned real-OSS record/replay launch gate (G5) (#327) | b8d1b9a2eb74 |
 | 2026-07-05 | coverage | diff-coverage feeds Control-Grade Test-Health (WARN, Phase 3) (#322) | 0532d4db632f |
@@ -644,12 +644,10 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 237 commits
+### Chores (chore) — 235 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-07 | compliance | adopt upstream ci-security snapshot to unblock serial integrate | 835ccf6fd634 |
-| 2026-07-07 | triage | sweep 2 outbox append(s) into branch | a065d1662a8a |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
@@ -1175,7 +1173,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1106 |
+| Total commits | 1104 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1106 |
+| Human-authored commits | 1104 |
 

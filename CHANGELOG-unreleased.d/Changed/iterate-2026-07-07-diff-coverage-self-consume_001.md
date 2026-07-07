@@ -1,0 +1,1 @@
+The monorepo's own diff-coverage merge gate now runs through the shared composite action (via a local path), so the gate decision has a single source of truth across the monorepo, adopt templates, and the WebUI

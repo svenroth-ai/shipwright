@@ -1,23 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-07-single-session-mode-scaffold",
+    "run_id": "iterate-2026-07-07-diff-coverage-self-consume",
     "date": "2026-07-07",
-    "intent": "feature",
+    "intent": "change",
+    "mode": null,
     "complexity": "medium",
     "unit": {
-      "status": "passed",
-      "passed": 3907,
-      "total": 3923,
+      "passed": 3693,
+      "total": 3709,
       "skipped": 16,
       "framework": "pytest",
-      "note": "F0 verification: shipwright-run 229 + shared/tests 3678 (16 skipped); ruff clean; leak-guard f0 ALLOW"
+      "note": "F0 full shared/tests suite green; +66 in the affected guard/wiring/action surface incl. a real-diff-cover gate-bites test"
     },
-    "integration": {
-      "status": "passed",
-      "passed": 174,
-      "total": 174,
-      "note": "integration-tests/ (2 slow deselected)"
-    },
+    "integration": null,
     "pgtap": null,
     "e2e": null,
     "design_fidelity": null,
@@ -25,64 +20,57 @@
     "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "justification": "SS1 is a Python schema + orchestrator-package scaffold: it adds an optional run_config 'mode' field and a new single_session/ contract package (result contract + loop-state persistence). No web/UI/API surface, no server, no client code. The 'mode' field is additive and ignored by the current WebUI (phase_tasks message contract unchanged), so the Backend-affects-Frontend rule does not apply; WebUI single-session rendering is a separate paired track (per Spec/pipeline-as-campaign-convergence.md). Verification is the full F0 pytest suite (schema round-trip, mode back-compat, contract + loop-state round-trips) + ruff.",
+      "runner": "",
       "exit_code": 0,
-      "tests_run": 4081,
-      "timestamp": "2026-07-07T12:00:00Z"
+      "tests_run": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-07-diff-coverage-self-consume/surface_verification.json",
+      "timestamp": "2026-07-07T11:55:00Z",
+      "justification": "CI infrastructure: routes the monorepo's own HARD diff-coverage gate through the shared composite action (local ./ path) + teaches the CI-gate guard to see the action uses: step. No app runtime surface (Backend-affects-Frontend N/A). Verified by 66 guard+wiring+action tests incl. TestRealRepo and a committed real-diff-cover gate-bites test; this PR's own python-checks CI run is the live end-to-end proof."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "create_config writes an additive run_config 'mode' (multi_session default | single_session) to disk",
+          "behavior": "ci.yml gate uses ./.github/actions/diff-coverage-gate + coverage-files: coverage.xml, no continue-on-error, if:hashFiles, no inline measure_diff_coverage.py",
           "disposition": "tested",
-          "evidence": "test_run_config_mode.py::test_create_config_default_mode_is_multi_session, ::test_create_config_single_session_mode, ::test_create_config_persists_mode_to_disk PASSED"
+          "evidence": "test_ci_coverage_wiring.py::test_diff_coverage_step_is_hard_gate"
         },
         {
-          "behavior": "A mode-less legacy config loads unchanged and reads as multi_session; an unknown value coerces to multi_session (back-compat)",
+          "behavior": "Combine still runs before the gate step",
           "disposition": "tested",
-          "evidence": "test_run_config_mode.py::test_legacy_config_without_mode_loads_and_reads_multi_session, ::test_run_mode_defaults_missing_to_multi_session, ::test_run_mode_coerces_unknown_to_multi_session PASSED"
+          "evidence": "test_ci_coverage_wiring.py::test_combine_runs_before_diff_after_all_tiers"
         },
         {
-          "behavior": "write-config --mode accepts the two modes, defaults to multi_session, and rejects an unknown value; create_config raises on invalid mode",
+          "behavior": "guard classifies the action uses: step as a gate (GATE_USES)",
           "disposition": "tested",
-          "evidence": "test_run_config_mode.py::test_write_config_cli_exposes_mode_choice, ::test_write_config_cli_defaults_mode_multi_session, ::test_write_config_cli_rejects_unknown_mode, ::test_create_config_rejects_invalid_mode PASSED"
+          "evidence": "test_check_ci_gate_coverage.py::TestClassification::test_diff_coverage_gate_action_uses_is_gate"
         },
         {
-          "behavior": "The schema declares 'mode' as OPTIONAL (not in required) with enum + default multi_session, matching RUN_MODES",
+          "behavior": "continue-on-error on the action gate -> loose (reverse-drift caught)",
           "disposition": "tested",
-          "evidence": "test_run_config_mode.py::test_schema_declares_optional_mode_with_default, ::test_schema_mode_enum_matches_run_modes PASSED"
+          "evidence": "test_check_ci_gate_coverage.py::...action_continue_on_error_is_loose"
         },
         {
-          "behavior": "/shipwright-run SKILL.md documents both modes, marks multi_session default, threads --mode in Step 4, offers Change mode, and stays within the 400-line runtime-prompt budget",
+          "behavior": "the refactored LIVE ci.yml passes the guard (no loose gates, no stale allowlist)",
           "disposition": "tested",
-          "evidence": "test_run_skill_mode_selection.py (5 tests) PASSED"
+          "evidence": "test_check_ci_gate_coverage_io.py::TestRealRepo (live_workflows_pass_the_guard + no_stale_entries)"
         },
         {
-          "behavior": "The phase-runner result contract validates the shape (required keys, ok/reason coupling, phase enum, 2000-char summary ceiling, relative-repo-path artifacts) and the builder refuses invalid results without silent truncation",
+          "behavior": "the action's real diff-cover@10.3.0 --fail-under=80 gate BITES (covered->exit0, <80%->non-zero) — the decision the hard gate rests on",
           "disposition": "tested",
-          "evidence": "test_single_session_result_contract.py (21 tests) PASSED"
+          "evidence": "test_diff_coverage_action_gate_bites.py (executes extracted run body with REAL diff-cover, 2 params PASSED)"
         },
         {
-          "behavior": "VALID_PHASES stays in lockstep with the schema Phase enum (both-direction drift guard)",
-          "disposition": "tested",
-          "evidence": "test_single_session_result_contract.py::test_valid_phases_matches_schema_enum_both_directions PASSED"
-        },
-        {
-          "behavior": "Loop-state init/save/load round-trips atomically to .shipwright/run_loop_state.json (distinct from the campaign loop_state.json); the mutators are pure and status is validated",
-          "disposition": "tested",
-          "evidence": "test_single_session_loop_state.py (13 tests) PASSED"
-        },
-        {
-          "behavior": "Lifecycle-reuse contract: every completion entrypoint resolves in phase_task_lifecycle; the single_session package calls no mutator/run_config-writer (code-only AST scan); loop-state ops leave run_config byte-identical and create none",
-          "disposition": "tested",
-          "evidence": "test_single_session_lifecycle_reuse.py (6 tests) PASSED"
+          "behavior": "the local ./ action path resolves on the fetch-depth:0 checkout in the python-checks job",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "reason": "local-path resolution is a GitHub-Actions mechanism exercised by THIS PR's own python-checks CI run; the gate logic itself is proven by the gate-bites test above"
         }
       ],
       "counts": {
-        "total": 9,
-        "tested": 9,
-        "untestable": 0,
+        "testable": 6,
+        "tested": 6,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {

@@ -59,7 +59,16 @@ GATE_NAME_KEYWORDS = (
     "lint", "type-check", "typecheck", "type check", "test", "scan",
     "sarif", "codeql", "analy",
 )
-GATE_USES = ("codeql-action/analyze", "codeql-action/upload-sarif")
+GATE_USES = (
+    "codeql-action/analyze", "codeql-action/upload-sarif",
+    # diff-coverage-gate: the shared composite action the monorepo self-consumes
+    # for its HARD diff-coverage gate (Stage 3, self-consume). The gate step is a
+    # `uses:` with no `run:` body, so it matches no GATE_COMMAND and its name
+    # ("Diff coverage (gate)") carries no GATE_NAME_KEYWORD — without this token
+    # the guard would lose sight of the gate and a future continue-on-error on it
+    # would silently loosen the merge gate with nothing to catch it.
+    "diff-coverage-gate",
+)
 
 # Fail-open suppression on a gate command line: ``|| true`` / ``|| :`` /
 # ``|| exit 0``.

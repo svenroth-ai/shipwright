@@ -1,9 +1,0 @@
-{
-  "run_id": "iterate-2026-06-28-ci-security-refresh",
-  "date": "2026-06-28T19:25:29.450446Z",
-  "type": "change",
-  "complexity": "trivial",
-  "branch": "iterate/ci-security-refresh",
-  "tests_passed": true,
-  "adr": "iterate-2026-06-28-ci-security-refresh"
-}
