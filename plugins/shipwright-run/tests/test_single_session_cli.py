@@ -32,8 +32,13 @@ def _ns(**kw) -> argparse.Namespace:
 
 
 def _valid_result(project_root: Path, phase: str = "project", *, ok: bool = True) -> Path:
+    artifact_rel = f"artifacts/{phase}.md"
+    if ok:  # a successful phase-runner has persisted its artifact to disk (SS4 guard)
+        art = project_root / artifact_rel
+        art.parent.mkdir(parents=True, exist_ok=True)
+        art.write_text(f"# {phase}\n", encoding="utf-8")
     payload = {"ok": ok, "phase": phase, "summary": f"{phase} done",
-               "artifacts": [f"artifacts/{phase}.md"]}
+               "artifacts": [artifact_rel]}
     if not ok:
         payload["reason"] = f"{phase} failed"
     p = project_root / "result.json"
@@ -120,6 +125,25 @@ def test_apply_exit1_on_unparseable_result_file(tmp_project):
     assert rc == 1
 
 
+# --- single-session-reload -------------------------------------------------
+
+def test_reload_exit0_returns_context(tmp_project, capsys):
+    _ss_config(tmp_project)
+    rc = dispatch_single_session(_ns(command="single-session-reload"), tmp_project)
+    assert rc == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["ok"] is True
+    assert out["context"]["mode"] == "single_session"
+    assert "phaseSummaries" in out["context"]
+    assert "summaryCharBudget" in out["context"]
+
+
+def test_reload_exit1_on_no_config(tmp_project, capsys):
+    rc = dispatch_single_session(_ns(command="single-session-reload"), tmp_project)
+    assert rc == 1
+    assert json.loads(capsys.readouterr().out)["reason"] == "no_config"
+
+
 # --- cli.main routing (covers the cli.py dispatch branch) ------------------
 
 def test_cli_main_routes_single_session_next(tmp_project, monkeypatch, capsys):
@@ -143,3 +167,13 @@ def test_cli_main_routes_single_session_apply(tmp_project, monkeypatch, capsys):
     ])
     rc = cli_mod.main()
     assert rc == 0
+
+
+def test_cli_main_routes_single_session_reload(tmp_project, monkeypatch, capsys):
+    _ss_config(tmp_project)
+    monkeypatch.setattr(sys, "argv", [
+        "orchestrator.py", "single-session-reload", "--project-root", str(tmp_project),
+    ])
+    rc = cli_mod.main()
+    assert rc == 0
+    assert json.loads(capsys.readouterr().out)["ok"] is True

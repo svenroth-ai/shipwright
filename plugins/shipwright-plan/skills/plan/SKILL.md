@@ -200,13 +200,12 @@ uv run --project {plugin_root} {plugin_root}/scripts/checks/generate-batch-tasks
   --planning-dir "{planning_dir}"
 ```
 
-Each section file is written by the `shipwright-plan:section-writer`
-subagent; the SubagentStop hook captures output to the correct file.
-
-**CRITICAL — JSONL Race Condition Fix (upstream v0.3.1):**
-`write-section-on-stop.py` reads the subagent JSONL transcript, which
-Claude Code may not have flushed when the hook fires. Fix: retry with
-backoff (50ms, 100ms, 200ms) if transcript is empty or incomplete.
+Each section file is written **by the `shipwright-plan:section-writer` subagent
+itself** — it has a Write tool and persists `{planning_dir}/sections/{NN-name}.md`
+directly (SS4). The `write-section-on-stop.py` SubagentStop hook is a
+**non-blocking fallback** only (no-op when the file exists; best-effort salvage
+from the transcript otherwise; never blocks). Step 7 (`check-sections.py`) is the
+gate. See [section-splitting.md](references/section-splitting.md) for details.
 
 **Checkpoint:** All section files exist in `{planning_dir}/sections/`.
 

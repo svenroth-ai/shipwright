@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-07-07T20:01:52.128701+00:00
+Generated: 2026-07-07T19:32:59.063369+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -28,7 +28,7 @@ _Grade = importance-weighted average over the measurable dimensions (n/a exclude
 
 ## 🛡️ CI Security (fail-closed gate)
 
-Latest scan: **2026-07-07** · source `security.yml#28894365723` · critical-gate **✅ PASS**
+Latest scan: **2026-07-07** · source `security.yml#28893202550` · critical-gate **✅ PASS**
 
 | Severity | Count |
 |----------|-------|

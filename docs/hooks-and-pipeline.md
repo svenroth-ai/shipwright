@@ -416,19 +416,28 @@ After build completes: shows split summary table. After test completes: shows te
 > hook's between-phase action with an in-conversation loop. Two orchestrator
 > subcommands (`orchestrator.py single-session-next` / `single-session-apply`,
 > in `orchestrator_pkg/single_session_loop.py` + `single_session_cli.py`)
-> alternate with a phase-runner subagent: **next** resolves the frontier phase
-> task, claims it (`claim_phase_task`), and records a dispatch in
+> alternate with the `shipwright-run:phase-runner` subagent
+> (`plugins/shipwright-run/agents/phase-runner.md`): **next** resolves the
+> frontier phase task, claims it (`claim_phase_task`), and records a dispatch in
 > `.shipwright/run_loop_state.json`; **apply** validates the phase-runner RESULT
-> CONTRACT, freezes splits when a design phase completes (same ordering as
-> `phase_session_stop`, so build fans out per split), routes the result through
-> `complete_phase_task` (an `ok:false` result strict-stops via
-> `mark_phase_failed`, planning NO successor), and advances the loop pointer. The
-> loop owns NO bespoke completion path — every phase-task mutation goes through
-> `phase_task_lifecycle`, the same helpers the multi-session Stop hook uses;
-> loop-state holds no authoritative phase status. Splits are serial in v1. The
-> master-side protocol is `plugins/shipwright-run/skills/run/references/single-session-loop.md`.
-> Remaining: SS4 (phase-runner subagent + artifact persistence), SS5 (deeper
-> resumability / observability).
+> CONTRACT, **verifies on disk that every artifact an `ok:true` result claims
+> exists** (`orchestrator_context.verify_artifacts_exist` — a claimed-but-
+> unwritten artifact is rejected `artifacts_missing`, no completion), freezes
+> splits when a design phase completes (same ordering as `phase_session_stop`, so
+> build fans out per split), routes the result through `complete_phase_task` (an
+> `ok:false` result strict-stops via `mark_phase_failed`, planning NO successor),
+> and advances the loop pointer. The phase-runner has a **write path** and
+> persists its own outputs to disk (it does NOT rely on a Stop hook). On resume
+> the master rebuilds context via the `single-session-reload` subcommand
+> (`orchestrator_context.reload_orchestrator_context`) — from run_config + compact
+> `phase_tasks[].result` summaries, never a transcript (context-budget bound).
+> The loop owns NO bespoke completion path — every phase-task mutation goes
+> through `phase_task_lifecycle`, the same helpers the multi-session Stop hook
+> uses; loop-state holds no authoritative phase status. Splits are serial in v1.
+> The master-side protocol is
+> `plugins/shipwright-run/skills/run/references/single-session-loop.md`.
+> Delivered SS1–SS4; remaining: SS5 (deeper resumability / observability),
+> SS6 (external-review fix), SS7 (E2E parity suite).
 
 ### Run-Config Schema v2
 
@@ -1359,7 +1368,7 @@ phase to load explicitly.
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
-| SubagentStop | `shipwright-plan:section-writer` | `write-section-on-stop.py` | Persists section files from subagent output to disk |
+| SubagentStop | `shipwright-plan:section-writer` | `write-section-on-stop.py` | **Non-blocking fallback** (SS4): the section-writer persists its own file (it has a Write tool); this hook is a no-op when the file exists, best-effort salvages from the transcript when missing, and NEVER blocks (Step-7 `check-sections.py` gates). Supersedes ADR-042 block-on-failure. |
 | Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + W5 external-review marker + Q1 ADR substance, Tier-2) |
 | Stop | — | `generate_handoff_on_stop.py` (shared) | Session handoff |
 
@@ -1651,10 +1660,11 @@ orchestrator
 ### section-writer (Plan Phase)
 
 ```
-section-writer subagent
+section-writer subagent (has a Write tool — SS4)
   → generates section spec content
-  → SubagentStop hook fires write-section-on-stop.py
-  → section .md files written to disk
+  → WRITES {planning_dir}/sections/{NN-name}.md itself (direct persistence)
+  → SubagentStop write-section-on-stop.py fires = non-blocking fallback
+       (no-op if the file exists; salvages from transcript only if missing)
 plan SKILL completes
   → update-step --step plan --status complete
   → validate_plan() fires (checks sections exist in config + files on disk)

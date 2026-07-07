@@ -18,7 +18,8 @@ uv run --project {plugin_root} {plugin_root}/scripts/checks/generate-batch-tasks
 ```
 
 This generates task prompts for each section. The section-writer subagent
-receives the plan + section name and writes the section content.
+receives the plan + section name and **writes the section file to disk itself**
+(it has a Write tool) at `{planning_dir}/sections/{NN-name}.md`.
 
 ## Section File Structure
 
@@ -47,11 +48,21 @@ What this section implements.
 How to verify this section is complete.
 ```
 
-## SubagentStop Hook
+## SubagentStop Hook (non-blocking fallback)
 
-The `write-section-on-stop.py` hook fires when a section-writer stops.
-It reads the subagent's JSONL transcript and extracts the section content.
+The section-writer persists its own file (it has a Write tool). The
+`write-section-on-stop.py` hook is a **defensive fallback** that fires when a
+section-writer stops:
 
-**CRITICAL — JSONL Race Condition (v0.3.1 fix):**
-Claude Code may not flush the JSONL transcript before the hook fires.
-The hook retries with exponential backoff: 50ms → 100ms → 200ms.
+- if the section file already exists on disk (the direct write) → **no-op
+  success**; it never blocks and never clobbers;
+- if the file is missing → it best-effort **salvages** the content from the
+  subagent JSONL transcript and writes it;
+- if it cannot salvage → it logs to stderr and exits 0. **It never blocks** —
+  Step 7 (`check-sections.py`) is the gate for a missing section. (Supersedes
+  the ADR-042 block-on-failure behavior; a blocking fallback would false-block a
+  successful direct write.)
+
+**CRITICAL — JSONL Race Condition (v0.3.1 fix):** the salvage path may fire
+before Claude Code flushes the JSONL transcript, so it retries with exponential
+backoff: 50ms → 100ms → 200ms.

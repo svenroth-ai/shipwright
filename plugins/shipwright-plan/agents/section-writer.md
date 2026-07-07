@@ -1,7 +1,7 @@
 ---
 name: section-writer
-description: Generates self-contained implementation section content from a plan. Used by /shipwright-plan for parallel section generation.
-tools: Read, Grep, Glob
+description: Generates self-contained implementation section content from a plan and writes it to disk. Used by /shipwright-plan for parallel section generation.
+tools: Read, Write, Edit, Grep, Glob
 model: inherit
 ---
 
@@ -19,6 +19,23 @@ You will receive:
 ## Your Task
 
 Read the plan and write a complete, self-contained section that /shipwright-build can execute independently.
+
+## Persisting your output (REQUIRED — do NOT rely on a hook)
+
+**You own persistence.** When the section content is ready, write it to disk
+yourself with the `Write` tool:
+
+```
+{planning_directory}/sections/{NN-name}.md
+```
+
+(e.g. `.shipwright/planning/.../sections/01-auth.md`). The file's first line MUST
+be the `# Section: {NN-name}` header. Do this BEFORE you finish — a
+`SubagentStop` hook exists only as a defensive fallback and must never be your
+primary persistence path. (Historically this agent had no write tool and relied
+solely on that hook; when the hook did not fire, the section was lost. That is
+why you now write the file directly.) After writing, confirm the file exists
+(`Read` it back) and report the path you wrote.
 
 ## Section Structure
 

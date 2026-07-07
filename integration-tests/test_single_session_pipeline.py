@@ -77,18 +77,26 @@ def _next(project: Path) -> dict:
 
 
 def _apply(project: Path, dispatch: dict, *, ok: bool = True) -> dict:
-    """Play the phase-runner: build a RESULT CONTRACT payload + call apply."""
+    """Play the phase-runner: persist artifacts to disk + build a RESULT CONTRACT
+    payload + call apply. A real phase-runner writes its outputs to disk BEFORE
+    returning, so we do too — the SS4 on-disk persistence guard verifies it."""
     phase = dispatch["phase"]
+    artifact_rel = f"artifacts/{phase}.md"
     payload = {
         "ok": ok,
         "phase": phase,
         "summary": f"{phase} completed" if ok else f"{phase} failed",
-        "artifacts": [f"artifacts/{phase}.md"],
+        "artifacts": [artifact_rel],
     }
     if dispatch.get("splitId"):
         payload["splitId"] = dispatch["splitId"]
     if not ok:
         payload["reason"] = f"{phase} blew up in the runner"
+
+    if ok:  # persist the claimed artifact so the loop's SS4 guard passes
+        art = project / artifact_rel
+        art.parent.mkdir(parents=True, exist_ok=True)
+        art.write_text(f"# {phase}\n", encoding="utf-8")
 
     result_path = project / f".result-{dispatch['phaseTaskId']}.json"
     result_path.write_text(json.dumps(payload), encoding="utf-8")
@@ -191,3 +199,48 @@ class TestForcedFailureStrictStop:
         assert terminal["action"] == "failed"
         assert terminal["failed_tasks"] and terminal["failed_tasks"][0]["phase"] == "plan"
         assert _read_loop_state(project)["status"] == "failed"
+
+
+class TestPersistenceGuardCrossComponent:
+    """SS4 (cross_component integration coverage): the phase-runner artifact
+    contract, ``phase_task_lifecycle``, and the on-disk PERSISTENCE GUARD compose
+    across the real subprocess CLI surface — an ``ok`` result that CLAIMS an
+    artifact it never wrote to disk is rejected fail-closed, leaving the frontier
+    intact for a retry (no silent loss, no bespoke completion path)."""
+
+    def test_claimed_but_unwritten_artifact_is_rejected(self, tmp_path):
+        project = tmp_path / "ss-guard"
+        project.mkdir()
+        _write_ss_config(project)
+
+        nxt = _next(project)
+        assert nxt["action"] == "dispatch"
+        dispatch = nxt["dispatch"]
+
+        # ok result claims artifacts/project.md but NOTHING was written to disk.
+        payload = {
+            "ok": True, "phase": "project", "summary": "project completed",
+            "artifacts": ["artifacts/project.md"],
+        }
+        result_path = project / ".result-missing.json"
+        result_path.write_text(json.dumps(payload), encoding="utf-8")
+        res = _run_cli([
+            "single-session-apply",
+            "--phase-task-id", dispatch["phaseTaskId"],
+            "--session-uuid", dispatch["sessionUuid"],
+            "--version", str(dispatch["version"]),
+            "--result-json", str(result_path),
+        ], project, check=False)
+
+        assert res.returncode == 1, res.stderr  # guard reject (not a fail-closed CAS)
+        out = json.loads(res.stdout)
+        assert out["ok"] is False
+        assert out["reason"] == "artifacts_missing"
+        assert out["missing"] == ["artifacts/project.md"]
+
+        # Fail-closed: the task was NOT completed — run still in_progress, and the
+        # frontier still points at project (idempotent re-dispatch after a fix).
+        assert _read_config(project)["status"] == "in_progress"
+        again = _next(project)
+        assert again["action"] == "dispatch"
+        assert again["dispatch"]["phase"] == "project"

@@ -241,36 +241,30 @@ class TestComplianceEnforcementInPipeline:
 
 
 class TestStructuredErrorsInPipeline:
-    """SubagentStop hooks halt the run via top-level `decision: "block"`.
+    """The write-section-on-stop SubagentStop hook is a NON-BLOCKING fallback (SS4).
 
-    Pre-ADR-042 these tests asserted on stdout `hookSpecificOutput.additionalContext`
-    + `structuredError`. The Claude Code SubagentStop schema does not permit
-    those fields, so the hook now emits a top-level decision payload (which
-    DOES halt the subagent run) and writes the structured detail to stderr
-    for the operator.
+    The section-writer now persists its own file (it has a Write tool), so this
+    hook never emits a `decision: "block"` — on any failure (bad payload, missing
+    transcript, nothing salvageable) it writes a diagnostic to stderr and exits 0.
+    A blocking fallback would false-block a successful direct write. The real gate
+    for a genuinely-missing section is /shipwright-plan Step 7 (check-sections.py).
+    Supersedes the ADR-042 block-on-failure behavior these tests used to assert.
     """
 
     def test_write_section_on_stop_invalid_payload(self):
-        """Invalid stdin payload halts the subagent via decision:block."""
+        """An invalid stdin payload never blocks — exit 0, diagnostic on stderr."""
         result = subprocess.run(
             [sys.executable, str(PLAN_PLUGIN / "scripts" / "hooks" / "write-section-on-stop.py")],
             input="not valid json",
             capture_output=True,
             text=True,
         )
-        # Should not crash (exit 0) but output a SubagentStop-valid block.
         assert result.returncode == 0
-        output = json.loads(result.stdout)
-        assert output.get("decision") == "block"
-        assert "Parse hook stdin payload" in output.get("reason", "")
-        # Structured detail surfaces on stderr (post-ADR-042).
-        assert "ERROR [validation]" in result.stderr
-        assert "Parse hook stdin payload" in result.stderr
-        assert '"error_category": "validation"' in result.stderr
+        assert '"decision"' not in result.stdout  # never a block payload
+        assert "could not parse SubagentStop stdin payload" in result.stderr
 
     def test_write_section_on_stop_missing_transcript(self):
-        """Missing transcript halts the subagent via decision:block; structured
-        detail on stderr."""
+        """A missing transcript never blocks — exit 0, diagnostic on stderr."""
         payload = {"transcript_path": "/nonexistent/path/transcript.jsonl"}
         result = subprocess.run(
             [sys.executable, str(PLAN_PLUGIN / "scripts" / "hooks" / "write-section-on-stop.py")],
@@ -279,8 +273,6 @@ class TestStructuredErrorsInPipeline:
             text=True,
         )
         assert result.returncode == 0
-        output = json.loads(result.stdout)
-        assert output.get("decision") == "block"
-        # Stderr carries the structured-detail blob.
-        assert '"error_category": "transient"' in result.stderr
-        assert '"is_retryable": true' in result.stderr
+        assert '"decision"' not in result.stdout
+        # No file on disk + unreadable transcript → diagnostic, no block.
+        assert "transcript empty" in result.stderr or "no section file on disk" in result.stderr

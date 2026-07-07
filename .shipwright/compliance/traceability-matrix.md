@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-07T20:01:52.128701+00:00
+Generated: 2026-07-07T19:32:59.063369+00:00
 
 ## Requirements Coverage
 
@@ -27,7 +27,7 @@ Generated: 2026-07-07T20:01:52.128701+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
-| <a id="evt-5be516a5"></a>Part 3: a public github.com URL / owner-repo grade target defaults to GitHub network enrichment; a local path or GitHub Enterprise host stays local-only unless --allow-network. | iterate | change |  | — | — | 2026-07-07 |
+| <a id="evt-56ec5bf0"></a>SS4: phase-runner subagent + result contract + guaranteed artifact persistence (on-disk apply guard + reload-from-summaries + single-session-reload CLI) + section-writer persistence-bug fix (write path + non-blocking fallback hook, supersedes ADR-042 block-on-failure). | iterate | feature |  | — | — | 2026-07-07 |
 | <a id="evt-9d72bd56"></a>change_traceability renders n/a in local-only grade mode (Part 1 + Part 2): new GradeInputs.change_traceability_measurable gates dim 3; cold projector opts out locally, authoritative stays measurable. | iterate | change |  | — | — | 2026-07-07 |
 | <a id="evt-65e3ec05"></a>Turns on the one-conversation mode of the build pipeline: instead of each step needing its own separate session, one assistant now runs every step in order from a single chat, stopping cleanly if any step fails. It reuses the existing step-tracking machinery and is off by default, so normal runs are unaffected. | iterate | feature |  | 417/417 | — | 2026-07-07 |
 | <a id="evt-128fda61"></a>Adds the rulebook that lets each build step run without a human when the pipeline is in one-conversation mode: safe steps proceed automatically, while risky ones (production deploys, data-destroying changes, rollbacks) always stop for a person. Off by default, so nothing changes yet. | iterate | feature |  | 4067/4087 | — | 2026-07-07 |
