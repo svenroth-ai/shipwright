@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-07 19:22 UTC | Session: 602dc8e6-c258-452f-83a9-ea76b5063d21 | Run: iterate-2026-07-07-grade-local-honesty
+> Updated: 2026-07-07 20:01 UTC | Session: 602dc8e6-c258-452f-83a9-ea76b5063d21 | Run: iterate-2026-07-07-grade-public-url-network
 
-## Recent Changes (277 iterations)
+## Recent Changes (278 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Part 3: a public github.com URL / owner-repo grade target defaults to GitHub network enrichment; a local path or GitHub Enterprise host stays local-only unless --allow-network. | 0/0 |  | tooling | 2026-07-07 |
 | change | change_traceability renders n/a in local-only grade mode (Part 1 + Part 2): new GradeInputs.change_traceability_measurable gates dim 3; cold projector opts out locally, authoritative stays measurable. | 0/0 |  | tooling | 2026-07-07 |
 | feature | SS3 single-session orchestrator loop: orchestrator_pkg/single_session_loop.py (resolve/begin/next/apply/advance) + single_session_cli.py + two orchestrator CLI subcommands (single-session-next / single-session-apply) that the /shipwright-run master alternates with a phase-runner subagent to drive the whole pipeline in ONE conversation under run_config.mode==single_session. Reuses phase_task_lifecycle end-to-end (claim/freeze-splits/complete/mark-failed) — no bespoke completion path, run_config read-only in the loop; freezes splits after design for serial build fan-out; an ok:false phase result strict-stops the run with no successor. SKILL.md branch + references/single-session-loop.md protocol; docs/hooks-and-pipeline.md SS3 note. Additive/inert for multi_session (default). Loop pointer in .shipwright/run_loop_state.json. | 417/417 |  | tooling | 2026-07-07 |
 | change | monorepo self-consumes the diff-coverage gate composite action via a local ./ path; guard recognizes the uses: gate | 3693/3709 |  | infra | 2026-07-07 |
@@ -284,7 +285,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-07 | Unit: 1311/1311 | Smoke: not_run | (iterate)
+Last run: 2026-07-07 | Unit: 373/373 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

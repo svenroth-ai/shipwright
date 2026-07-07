@@ -4,7 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from gh_bridge import GhResult, gh_json, owner_repo_from_remote, run_gh
+from gh_bridge import (
+    GhResult,
+    gh_json,
+    is_github_com_remote,
+    owner_repo_from_remote,
+    run_gh,
+)
 
 
 @pytest.mark.parametrize("url,expected", [
@@ -16,6 +22,38 @@ from gh_bridge import GhResult, gh_json, owner_repo_from_remote, run_gh
 ])
 def test_owner_repo_parsed(url, expected):
     assert owner_repo_from_remote(url) == expected
+
+
+@pytest.mark.parametrize("url", [
+    "https://github.com/octocat/Hello-World.git",
+    "https://github.com/octocat/Hello-World",
+    "http://github.com/o/r",
+    "git@github.com:octocat/Hello-World.git",
+    "ssh://git@github.com/octocat/Hello-World",
+])
+def test_is_github_com_remote_true_for_github_com(url):
+    assert is_github_com_remote(url) is True
+
+
+@pytest.mark.parametrize("url", [
+    "",
+    "   ",
+    None,
+    # GHE / other hosts — owner_repo_from_remote matches these (broad), but the
+    # network-on DEFAULT must not, so their slug never leaks to github.com.
+    "https://github.example.com/org/proj.git",
+    "https://github.mycorp.com/o/r",
+    "git@github.enterprise.io:o/r.git",
+    # Spoofed / lookalike hosts must be rejected (github.com not immediately
+    # followed by ':' or '/').
+    "https://github.com.evil.tld/o/r",
+    "https://notgithub.com/o/r",
+    "https://gitlab.com/o/r",
+    # A local filesystem path (the redirected-clone case) is not a github remote.
+    "/tmp/some/local/repo",
+])
+def test_is_github_com_remote_false_for_non_github_com(url):
+    assert is_github_com_remote(url) is False
 
 
 @pytest.mark.parametrize("url", ["", "https://gitlab.com/o/r.git", "not a url", "/local/path"])

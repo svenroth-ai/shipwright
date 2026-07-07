@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-07-07T19:22:57.136907+00:00
-Total commits: 1108
+Generated: 2026-07-07T20:01:52.128701+00:00
+Total commits: 1109
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 321
+    "fix" : 322
     "feat" : 296
     "chore" : 235
     "docs" : 143
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 321 commits
+### Fixes (fix) — 322 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-07 | grade | change_traceability is n/a in local-only mode (no more false F) (#344) | 5357ad26a74f |
 | 2026-07-07 | hooks | guard phase_session_start + self-heal the plugins/ cross-link cache (#341) | 458b4aa78751 |
 | 2026-07-07 | security | drop accepted-risk GH-owned action-tags at the SARIF artifact producer (#336) | ab114c8c5cce |
 | 2026-07-07 | run | surface-aware hand-off banner (CLAUDE_CODE_ENTRYPOINT) (#334) | 3f81def08667 |
@@ -1177,7 +1178,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1108 |
+| Total commits | 1109 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1108 |
+| Human-authored commits | 1109 |
 

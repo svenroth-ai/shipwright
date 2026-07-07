@@ -1,13 +1,13 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-07-grade-local-honesty",
+    "run_id": "iterate-2026-07-07-grade-public-url-network",
     "date": "2026-07-07",
     "intent": "change",
-    "complexity": "medium",
+    "complexity": "small",
     "unit": {
       "status": "passed",
-      "passed": 1311,
-      "total": 1311
+      "passed": 373,
+      "total": 373
     },
     "integration": {
       "status": "not_run",
@@ -34,83 +34,73 @@
     },
     "degraded": [
       {
-        "condition": "F0 scope",
-        "detail": "F0 ran the two affected plugin suites (shipwright-grade 352 passed + shipwright-compliance 958 passed) + ruff@0.15.15 (changed dirs) + leak-guard f0 ALLOW. The change is isolated to the Control-Grade engine (compliance lib) + the grade cold projector/docs; grep confirmed no compute_grade/GradeInputs consumers in shared/, integration-tests/, or scripts/. The full shared/tests + all-plugin + integration suite runs in CI on the PR."
+        "condition": "suite scope (grade-plugin-only change)",
+        "detail": "The diff touches only shipwright-grade (resolve_target.py, grade.py, gh_bridge.py) + its tests + docs; grep confirmed no consumers of the changed symbols (input_kind, is_github_com_remote) outside the grade plugin. F0 ran the shipwright-grade suite (373 passed) + ruff@0.15.15 + leak-guard f0 ALLOW. Compliance/shared/integration are unchanged and run in CI on the PR."
       },
       {
-        "condition": "network empirical fixtures not re-recorded (by design)",
-        "detail": "The 7 committed network fixtures were NOT re-recorded. This is intentional: change_traceability_measurable defaults True, so the stored GradeInputs replay via GradeInputs(**gi) with the dimension still scored -> network grades byte-identical. The offline calibration suite (test_run_empirical + calibration.grade_from_fixture) is green; the network -m empirical suite (opt-in, needs gh) was not run locally."
+        "condition": "real-CLI network E2E (live github.com)",
+        "detail": "The network-on default was proven with a live call: grading https://github.com/octocat/Hello-World WITHOUT --allow-network returned network_enabled=True (PR-association enrichment). gh authed as svroch. This is the feature under test (network-on for public github.com URLs); only public-repo identity + slug were sent, to github.com, which the clone already contacted."
       }
     ],
     "surface_verification": {
       "surface": "none",
-      "justification": "The change is to the deterministic Control-Grade Python engine (compliance lib) + the shipwright-grade cold projector + report copy/docs. There is no web/UI/API/server surface and no served client; the grade HTML report is a static artifact covered by the golden-snapshot test (regenerated, copy-only diff). The CLI grader IS the executable surface and was driven END-TO-END as the behavior proof: (1) the shitstorm case -- a synthetic well-run repo with clean Conventional Commits but no #N refs -- graded F 49.0 'out of control' on HEAD and B 89.0 with change_traceability n/a after the fix; (2) the dogfood monorepo graded A 99.9 authoritative with change_traceability measured (276/276). Verification = F0 pytest (1310) + ruff + leak-guard f0 ALLOW + 2 real-CLI end-to-end grades.",
+      "justification": "The change is to the shipwright-grade CLI wrapper (grade.py network-policy wiring) + the input seam (resolve_target.open_target tagging) + a gh_bridge host predicate. No web/UI/API/server surface. The CLI grader IS the executable surface and was driven END-TO-END: (1) a public github.com URL (octocat/Hello-World) WITHOUT --allow-network -> network_enabled=True (default flip works); (2) a local path to this monorepo (public remote) -> network_enabled=False (privacy-first intact, graded A authoritative); (3) a URL clone with no github.com remote -> local grade B, network off (honest fallback, never F); (4) a GitHub Enterprise host is excluded from the default (unit-tested -- its slug must not leak to github.com). Verification = F0 pytest (373) + ruff + leak-guard f0 ALLOW + 3 real-CLI grades.",
       "exit_code": 0,
-      "tests_run": 1311,
+      "tests_run": 373,
       "timestamp": "2026-07-07T00:00:00Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 — local-only well-run repo without #N refs grades NOT F / not 'out of control'",
+          "behavior": "AC1 -- a cloned remote self-describes input_kind='url'",
           "disposition": "tested",
-          "evidence": "test_projector_fixtures.py::TestLocalOnlyChangeTraceability::test_well_run_without_pr_refs_is_not_f PASSED; real-CLI E2E B 89.0"
+          "evidence": "test_clone.py::TestOpenTarget::test_cloned_remote_carries_url_kind PASSED"
         },
         {
-          "behavior": "AC1 — change_traceability renders n/a in local-only mode",
+          "behavior": "AC2 -- a local path stays input_kind='local_path'",
           "disposition": "tested",
-          "evidence": "test_well_run_without_pr_refs_change_trace_is_na + test_change_traceability_na_in_local_mode PASSED"
+          "evidence": "test_clone.py::TestOpenTarget::test_local_path_carries_local_path_kind PASSED"
         },
         {
-          "behavior": "Engine gate: change_traceability_measurable=False -> dimension score is None (n/a)",
+          "behavior": "AC1 -- a public github.com URL defaults allow_network=True",
           "disposition": "tested",
-          "evidence": "test_control_grade_change_traceability.py::TestChangeTraceabilityGate::test_na_when_not_measurable PASSED"
+          "evidence": "test_grade_cli.py::TestPublicUrlDefaultsNetworkOn::test_public_github_url_defaults_allow_network_true (policy spy) PASSED; real-CLI octocat/Hello-World network_enabled=True"
         },
         {
-          "behavior": "Engine gate: measurable=False + 0 provenance never F-collapses (dim is a COLLAPSE_PILLAR only when scored < 0.5)",
+          "behavior": "PRIVACY -- a GitHub Enterprise / non-github.com URL is NOT defaulted network-on (its slug must not leak to github.com)",
           "disposition": "tested",
-          "evidence": "test_not_measurable_never_f_collapses_on_reference_free_repo PASSED (grade stays A)"
+          "evidence": "test_github_enterprise_url_does_not_default_network_on (spy) + test_gh_bridge.py::test_is_github_com_remote_false_for_non_github_com PASSED"
         },
         {
-          "behavior": "AC2 — --allow-network / authoritative path still scores change_traceability",
+          "behavior": "is_github_com_remote matches ONLY literal github.com (https/ssh/scp), rejects GHE/spoofed/empty/local-path",
           "disposition": "tested",
-          "evidence": "test_network_mode_still_scores_change_traceability + test_scored_when_measurable PASSED; dogfood CLI A 99.9 (276/276)"
+          "evidence": "test_gh_bridge.py::test_is_github_com_remote_true_for_github_com + ..._false_for_non_github_com PASSED"
         },
         {
-          "behavior": "AC5 — engine default True keeps existing callers byte-identical",
+          "behavior": "AC2 -- a local path defaults allow_network=False (privacy-first, even with a public remote)",
           "disposition": "tested",
-          "evidence": "test_default_is_measurable + test_control_grade.py::test_real_shipwright_case_grades_B (na set unchanged) PASSED"
+          "evidence": "test_local_path_stays_local_only_by_default (spy) PASSED; real-CLI monorepo network_enabled=False"
         },
         {
-          "behavior": "Engine: measurable=True but 0 events -> n/a with distinct 'no change events' detail",
+          "behavior": "AC3 -- --allow-network-private stays opt-in (allow_private False by default)",
           "disposition": "tested",
-          "evidence": "test_measurable_but_no_events_is_na PASSED"
+          "evidence": "the policy spy asserts allow_private is False on the URL path"
         },
         {
-          "behavior": "git-log count retained on GradeInputs but ungraded in local mode",
+          "behavior": "AC4 -- a URL clone without a github.com remote -> honest local grade, never F (hermetic, no gh call)",
           "disposition": "tested",
-          "evidence": "test_git_log_count_kept_when_network_absent (count==4 AND measurable is False) PASSED"
+          "evidence": "test_url_clone_without_github_remote_falls_back_to_local_not_f PASSED (grade != F, network_enabled False)"
         },
         {
-          "behavior": "Calibration: synthetic no_tests fixture drops local C->D (change_traceability n/a)",
+          "behavior": "Regression -- the existing URL clone-and-grade still grades B and is now hermetic",
           "disposition": "tested",
-          "evidence": "test_projector_fixtures.py::TestNoTests::test_grades_d_maintainability_lit PASSED"
-        },
-        {
-          "behavior": "AC3/report: HTML n/a copy hint for change_traceability",
-          "disposition": "tested",
-          "evidence": "test_render_snapshots.py::test_html_snapshot_matches_golden (golden regenerated, copy-only 1-line diff) PASSED"
-        },
-        {
-          "behavior": "Drift-guard: authoritative/compliance adapter explicitly sets change_traceability_measurable=True (survives a future engine-default flip)",
-          "disposition": "tested",
-          "evidence": "test_control_grade_change_traceability.py::TestAuthoritativeAdapterKeepsItMeasurable::test_adapter_sets_change_traceability_measurable_true PASSED (added per internal-review finding #1)"
+          "evidence": "test_grade_cli.py::TestGradeCli::test_url_is_cloned_and_graded PASSED (allow_network False short-circuits before gh)"
         }
       ],
       "counts": {
-        "testable": 11,
-        "tested": 11,
+        "testable": 9,
+        "tested": 9,
         "untestable": 0,
         "untested_testable": 0
       },
