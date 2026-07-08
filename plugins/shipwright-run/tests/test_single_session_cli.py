@@ -19,12 +19,20 @@ import phase_task_lifecycle  # noqa: E402
 from orchestrator import create_config  # noqa: E402
 from orchestrator_pkg import cli as cli_mod  # noqa: E402
 from orchestrator_pkg.single_session_cli import dispatch_single_session  # noqa: E402
+from single_session.loop_state import init_loop_state, save_loop_state  # noqa: E402
 
 
 def _ss_config(project_root: Path, *, mode: str = "single_session"):
     return create_config(
         "full_app", "supabase-nextjs", "guided", "jelastic-dev", project_root, mode=mode,
     )
+
+
+def _ss_config_with_loop_state(project_root: Path):
+    """single_session config + a matching loop_state (a resumable run). Returns cfg."""
+    cfg = _ss_config(project_root)
+    save_loop_state(project_root, init_loop_state(cfg["runId"]))
+    return cfg
 
 
 def _ns(**kw) -> argparse.Namespace:
@@ -144,6 +152,60 @@ def test_reload_exit1_on_no_config(tmp_project, capsys):
     assert json.loads(capsys.readouterr().out)["reason"] == "no_config"
 
 
+# --- SS5 single-session-resume / -gate / -recover (exit-code map) ----------
+
+def test_resume_exit0_on_resumable_run(tmp_project, capsys):
+    _ss_config_with_loop_state(tmp_project)
+    rc = dispatch_single_session(_ns(command="single-session-resume", confirm=False), tmp_project)
+    assert rc == 0
+    assert json.loads(capsys.readouterr().out)["action"] == "resume"
+
+
+def test_resume_exit1_on_wrong_mode(tmp_project, capsys):
+    _ss_config(tmp_project, mode="multi_session")
+    rc = dispatch_single_session(_ns(command="single-session-resume", confirm=False), tmp_project)
+    assert rc == 1
+    assert json.loads(capsys.readouterr().out)["action"] == "wrong_mode"
+
+
+def test_gate_exit0_pauses(tmp_project, capsys):
+    cfg = _ss_config_with_loop_state(tmp_project)
+    ptk = cfg["phase_tasks"][0]["phaseTaskId"]
+    rc = dispatch_single_session(_ns(
+        command="single-session-gate", phase_task_id=ptk, phase="project",
+        split_id=None, state="pause",
+    ), tmp_project)
+    assert rc == 0
+    assert json.loads(capsys.readouterr().out)["status"] == "paused_human_gate"
+
+
+def test_gate_exit1_on_wrong_mode(tmp_project):
+    _ss_config(tmp_project, mode="multi_session")
+    rc = dispatch_single_session(_ns(
+        command="single-session-gate", phase_task_id="ptk", phase="plan",
+        split_id=None, state="pause",
+    ), tmp_project)
+    assert rc == 1
+
+
+def test_recover_exit0_on_valid_task(tmp_project, capsys):
+    cfg = _ss_config_with_loop_state(tmp_project)
+    ptk = cfg["phase_tasks"][0]["phaseTaskId"]
+    rc = dispatch_single_session(_ns(
+        command="single-session-recover", phase_task_id=ptk, force_status="awaiting_launch",
+    ), tmp_project)
+    assert rc == 0
+    assert json.loads(capsys.readouterr().out)["ok"] is True
+
+
+def test_recover_exit1_on_wrong_mode(tmp_project):
+    _ss_config(tmp_project, mode="multi_session")
+    rc = dispatch_single_session(_ns(
+        command="single-session-recover", phase_task_id="ptk", force_status="awaiting_launch",
+    ), tmp_project)
+    assert rc == 1
+
+
 # --- cli.main routing (covers the cli.py dispatch branch) ------------------
 
 def test_cli_main_routes_single_session_next(tmp_project, monkeypatch, capsys):
@@ -177,3 +239,14 @@ def test_cli_main_routes_single_session_reload(tmp_project, monkeypatch, capsys)
     rc = cli_mod.main()
     assert rc == 0
     assert json.loads(capsys.readouterr().out)["ok"] is True
+
+
+def test_cli_main_routes_single_session_resume(tmp_project, monkeypatch, capsys):
+    # Covers the cli.py argparse subparser + SINGLE_SESSION_COMMANDS routing for SS5.
+    _ss_config_with_loop_state(tmp_project)
+    monkeypatch.setattr(sys, "argv", [
+        "orchestrator.py", "single-session-resume", "--project-root", str(tmp_project),
+    ])
+    rc = cli_mod.main()
+    assert rc == 0
+    assert json.loads(capsys.readouterr().out)["action"] == "resume"

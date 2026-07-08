@@ -36,6 +36,18 @@ from .loop_state import (
     save_loop_state,
     set_status,
 )
+from .observability import (
+    EVENTS_REL_PATH,
+    EVENTS_SCHEMA_VERSION,
+    LOOP_EVENT_TYPES,
+    build_event,
+    emit,
+    emit_dispatch,
+    emit_event,
+    emit_phase_result,
+    events_path,
+    load_events,
+)
 from .result_contract import (
     MAX_SUMMARY_CHARS,
     REQUIRED_RESULT_KEYS,
@@ -66,6 +78,17 @@ __all__ = [
     "build_phase_runner_result",
     "is_valid_result",
     "validate_phase_runner_result",
+    # observability (SS5)
+    "EVENTS_REL_PATH",
+    "EVENTS_SCHEMA_VERSION",
+    "LOOP_EVENT_TYPES",
+    "build_event",
+    "emit",
+    "emit_dispatch",
+    "emit_event",
+    "emit_phase_result",
+    "events_path",
+    "load_events",
     # loop state
     "LOOP_STATE_REL_PATH",
     "LOOP_STATE_SCHEMA_VERSION",

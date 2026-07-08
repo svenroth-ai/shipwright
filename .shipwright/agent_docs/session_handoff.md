@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-08-marketplace-autoinstall"
+run_id: "iterate-2026-07-08-ss5-resumability"
 phase: "iterate"
-reason: "marketplace-autoinstall complete: sync installs every registered plugin"
-timestamp: "2026-07-08T08:17:51.348079+00:00"
+reason: "SS5 resumability/recovery + observability complete"
+timestamp: "2026-07-08T09:03:51.316665+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-08 08:17:51 UTC
+> Auto-generated 2026-07-08 09:03:51 UTC
 
 ## Session Info
 
-- **Session ID**: 602dc8e6-c258-452f-83a9-ea76b5063d21
-- **Timestamp**: 2026-07-08 08:17:51 UTC
-- **Reason**: marketplace-autoinstall complete: sync installs every registered plugin
+- **Session ID**: 7652d2c3-169b-4225-beef-2501edb079df
+- **Timestamp**: 2026-07-08 09:03:51 UTC
+- **Reason**: SS5 resumability/recovery + observability complete
 
 ## Last Iterate
 
@@ -29,7 +29,7 @@ timestamp: "2026-07-08T08:17:51.348079+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/marketplace-autoinstall
+- **Branch**: iterate/ss5-resumability-backcompat
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/marketplace-autoinstall
-- **Last Commit**: bcab29f6 chore(triage): sweep 1 outbox append(s) into branch
+- **Branch**: iterate/ss5-resumability-backcompat
+- **Last Commit**: cfbf97ae chore(triage): sweep 1 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,7 +65,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-9b52577c | work_completed | iterate (update-marketplace.sh installs every marketplace-registered plugin not yet in the cache (was: silently skipped), fixing the persistent shipwright-grade not_in_cache warning.) | 2026-07-08 |
+| evt-68552791 | work_completed | iterate (SS5: single-session pipeline resumability (auto-detect + confirm-card resume, idempotent mid-flight re-run), recovery (single-session-recover), structured observability (.shipwright/run_loop_events.jsonl, 7 event types), dual-mode back-compat.) | 2026-07-08 |
 | evt-5be516a5 | work_completed | iterate (Part 3: a public github.com URL / owner-repo grade target defaults to GitHub network enrichment; a local path or GitHub Enterprise host stays local-only unless --allow-network.) | 2026-07-07 |
 | evt-9d72bd56 | work_completed | iterate (change_traceability renders n/a in local-only grade mode (Part 1 + Part 2): new GradeInputs.change_traceability_measurable gates dim 3; cold projector opts out locally, authoritative stays measurable.) | 2026-07-07 |
 | evt-56ec5bf0 | work_completed | iterate (SS4: phase-runner subagent + result contract + guaranteed artifact persistence (on-disk apply guard + reload-from-summaries + single-session-reload CLI) + section-writer persistence-bug fix (write path + non-blocking fallback hook, supersedes ADR-042 block-on-failure).) | 2026-07-07 |
@@ -75,7 +75,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 280
-- **Last iterate**: change — update-marketplace.sh installs every marketplace-registered plugin not yet in the cache (was: silently skipped), fixing the persistent shipwright-grade not_in_cache warning. (2026-07-08)
+- **Last iterate**: feature — SS5: single-session pipeline resumability (auto-detect + confirm-card resume, idempotent mid-flight re-run), recovery (single-session-recover), structured observability (.shipwright/run_loop_events.jsonl, 7 event types), dual-mode back-compat. (2026-07-08)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

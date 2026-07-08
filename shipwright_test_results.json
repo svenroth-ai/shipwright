@@ -1,18 +1,20 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-08-marketplace-autoinstall",
+    "run_id": "iterate-2026-07-08-ss5-resumability",
     "date": "2026-07-08",
-    "intent": "change",
-    "complexity": "small",
+    "intent": "feature",
+    "complexity": "medium",
+    "campaign": "2026-07-07-single-session-pipeline",
+    "sub_iterate_id": "SS5",
     "unit": {
       "status": "passed",
-      "passed": 3741,
-      "total": 3741
+      "passed": 327,
+      "total": 327
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 178,
+      "total": 178
     },
     "pgtap": {
       "status": "not_run",
@@ -20,12 +22,12 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "design_fidelity": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
@@ -34,48 +36,107 @@
     },
     "degraded": [
       {
-        "condition": "suite scope (top-level script + its shared test)",
-        "detail": "The diff touches scripts/update-marketplace.sh + shared/tests/test_installer_shell_scripts.py only (no plugin code). F0 ran the full shared/tests suite (3741 passed, 16 skipped) + ruff@0.15.15 + bash -n syntax check + leak-guard f0 ALLOW. Plugin suites are unaffected; CI runs the full matrix."
-      },
-      {
-        "condition": "shellcheck unavailable locally",
-        "detail": "shellcheck is not installed on this machine, so static shell-lint was limited to `bash -n` (syntax). Compensated by the real end-to-end run of the modified script under `set -euo pipefail` (exit 0) which exercised the new install-if-missing branch."
+        "condition": "risk_flag_override",
+        "detail": "touches_auth is a prose false-positive (matched the 'session' keyword in multi-session/single-session; no auth/middleware/supabase code exists in this monorepo). Overridden; diff-predicate recompute at F11 is authoritative."
       }
     ],
     "surface_verification": {
-      "surface": "none",
-      "justification": "The change is to a top-level developer/install bash script (scripts/update-marketplace.sh) + its shared regression test. No web/UI/API/server surface. The script IS the executable surface and was driven END-TO-END: uninstalled shipwright-grade (recreating the not-installed state), ran the MODIFIED worktree script under set -euo pipefail, and observed it auto-install grade from the marketplace and sync it ('[..] shipwright-grade: not installed - installing from marketplace...' -> '1 installed, 14 synced, 0 skipped, 0 errors'), with grade back in installed_plugins.json @0.29.1 and its cache dir present. Verification = F0 shared/tests (3741) + ruff + bash -n + leak-guard f0 ALLOW + the real-script E2E.",
+      "surface": "cli",
+      "runner": "uv run pytest integration-tests/test_single_session_resume_integration.py -q",
       "exit_code": 0,
-      "tests_run": 3741,
-      "timestamp": "2026-07-08T00:00:00Z"
+      "tests_run": 1,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\ss5-resumability-backcompat\\.shipwright\\runs\\iterate-2026-07-08-ss5-resumability\\surface_verification.log",
+      "timestamp": "2026-07-08T09:00:27.218Z",
+      "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "A registered-but-not-installed plugin is installed from the marketplace, not silently skipped",
+          "behavior": "observability event build + closed-set type validation",
           "disposition": "tested",
-          "evidence": "test_update_marketplace_autoinstall.py::test_installs_missing_registered_plugin_instead_of_skipping (static) + E2E: uninstall grade -> run script -> grade re-installed @0.29.1 ('1 installed')"
+          "evidence": "test_single_session_observability.py::test_build_event_* PASSED"
         },
         {
-          "behavior": "An already-installed plugin is only re-queried + synced, never re-installed (guarded on empty cache path)",
+          "behavior": "durable append emission + round-trip + torn-trailing-line tolerance",
           "disposition": "tested",
-          "evidence": "E2E: the other 13 plugins synced with 0 re-installs ('1 installed, 14 synced'); the install branch runs only when _install_path returns empty"
+          "evidence": "test_single_session_observability.py::test_emit_appends*/test_load_events_* PASSED"
         },
         {
-          "behavior": "F37 parity: the new _install_path helper uses $PYTHON_BIN, never a bare `python -c`",
+          "behavior": "best-effort emit swallows OSError + non-serializable field (stderr diag)",
           "disposition": "tested",
-          "evidence": "test_update_marketplace_autoinstall.py::test_new_helper_keeps_f37_no_bare_python asserts no `$(python -c`; test_installer_shell_scripts.py::test_f37 re-reads the whole src; both pass"
+          "evidence": "test_single_session_observability.py::test_emit_event_swallows_io_error_but_warns / _non_serializable_field PASSED"
         },
         {
-          "behavior": "The install is non-fatal under set -e (offline/headless run just skips, script does not abort)",
+          "behavior": "typed emitters: dispatch + phase_result/strict_stop pairing",
           "disposition": "tested",
-          "evidence": "the install is inside an `if ...; then` (set -e ignores if-condition failures); the full E2E ran the script under `set -euo pipefail` to exit 0"
+          "evidence": "test_single_session_observability.py::test_emit_dispatch* / test_emit_phase_result_* PASSED"
+        },
+        {
+          "behavior": "loop emits dispatch + phase_result/strict_stop at existing points",
+          "disposition": "tested",
+          "evidence": "integration test event-sequence + test_emit_phase_result_* PASSED"
+        },
+        {
+          "behavior": "resume_run read-only detection vs --confirm commitment",
+          "disposition": "tested",
+          "evidence": "test_single_session_resume.py::test_resume_is_read_only* / _confirm_emits* PASSED"
+        },
+        {
+          "behavior": "resume_run guards: no_config/wrong_mode/not_resumable/runid_mismatch",
+          "disposition": "tested",
+          "evidence": "test_single_session_resume.py::test_resume_* (4) PASSED"
+        },
+        {
+          "behavior": "resume_run terminal pass-through emits nothing (review #2)",
+          "disposition": "tested",
+          "evidence": "test_single_session_resume.py::test_resume_terminal_run_passes_through_and_emits_nothing PASSED"
+        },
+        {
+          "behavior": "mark_human_gate status flip + event + mode gating",
+          "disposition": "tested",
+          "evidence": "test_single_session_resume.py::test_human_gate_* PASSED"
+        },
+        {
+          "behavior": "recover_single_session pointer reset + event + lift-gating + guards (review #3)",
+          "disposition": "tested",
+          "evidence": "test_single_session_resume.py::test_recover_* / _unrelated_task_does_not_lift* PASSED"
+        },
+        {
+          "behavior": "begin_dispatch reinits a stale-runId loop-state (review #1)",
+          "disposition": "tested",
+          "evidence": "test_single_session_resume.py::test_next_dispatch_reinits_stale_loop_state_from_prior_run PASSED"
+        },
+        {
+          "behavior": "idempotent double-apply preserves the loop pointer (review #5)",
+          "disposition": "tested",
+          "evidence": "test_single_session_resume.py::test_double_apply_is_idempotent_and_preserves_pointer PASSED"
+        },
+        {
+          "behavior": "CLI dispatch + exit codes for resume/gate/recover subcommands",
+          "disposition": "tested",
+          "evidence": "test_single_session_cli.py::test_resume_exit*/test_gate_exit*/test_recover_exit*/test_cli_main_routes_single_session_resume PASSED"
+        },
+        {
+          "behavior": "kill-and-resume idempotent replay composes loop+lifecycle+loop_state+observability",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_single_session_resume_integration.py PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "dual-mode back-compat: multi_session leaves no run_loop_* files; SS5 entry points refuse it",
+          "disposition": "tested",
+          "evidence": "test_single_session_backcompat.py (7) + test_multi_session_pipeline.py PASSED"
+        },
+        {
+          "behavior": "pre-SS5 single_session loop-state (no events file) resumes cleanly",
+          "disposition": "tested",
+          "evidence": "test_single_session_backcompat.py::test_pre_ss5_single_session_loop_state_resumes_without_events_file PASSED"
         }
       ],
       "counts": {
-        "testable": 4,
-        "tested": 4,
+        "testable": 16,
+        "tested": 16,
         "untestable": 0,
         "untested_testable": 0
       },
