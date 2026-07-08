@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-07-08T09:03:51.316665+00:00
-Total commits: 1112
+Generated: 2026-07-08T09:26:09.661903+00:00
+Total commits: 1116
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 322
-    "feat" : 298
-    "chore" : 236
+    "fix" : 324
+    "feat" : 299
+    "chore" : 237
     "docs" : 143
     "refactor" : 67
     "test" : 27
@@ -20,10 +20,12 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 322 commits
+### Fixes (fix) — 324 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-08 | iterate | remove stale hardcoded version from intro banner | 58350837923c |
+| 2026-07-08 | scripts | update-marketplace.sh installs registered-but-missing plugins (#347) | 9ae9551f16f0 |
 | 2026-07-07 | grade | change_traceability is n/a in local-only mode (no more false F) (#344) | 5357ad26a74f |
 | 2026-07-07 | hooks | guard phase_session_start + self-heal the plugins/ cross-link cache (#341) | 458b4aa78751 |
 | 2026-07-07 | security | drop accepted-risk GH-owned action-tags at the SARIF artifact producer (#336) | ab114c8c5cce |
@@ -347,10 +349,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 298 commits
+### Features (feat) — 299 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-08 | run | single-session resumability, recovery & observability (SS5) (#349) | abfb485bfb75 |
 | 2026-07-07 | grade | public github.com URL defaults to network enrichment (#346) | 53cde056e42c |
 | 2026-07-07 | run | phase-runner subagent + guaranteed artifact persistence + section-writer fix (SS4) (#345) | 9f06a01f045e |
 | 2026-07-07 | run | single-session orchestrator loop + lifecycle integration + strict-stop (SS3) (#343) | 0e6f5186152d |
@@ -650,11 +653,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 236 commits
+### Chores (chore) — 237 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-08 | triage | sweep 1 outbox append(s) into branch | cfbf97aebce8 |
+| 2026-07-08 | iterate | reconcile ci-security.json with upstream (SS5 #349) | 9b85354938df |
+| 2026-07-08 | release | v0.30.0 (#348) | 023701b57bb2 |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
@@ -1181,7 +1185,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1112 |
+| Total commits | 1116 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1112 |
+| Human-authored commits | 1116 |
 
