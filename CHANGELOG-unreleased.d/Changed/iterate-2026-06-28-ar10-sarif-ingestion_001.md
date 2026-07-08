@@ -1,1 +1,0 @@
-Compliance: the Control-Grade Security dimension now lights for /shipwright-adopt repos too — download_security_findings falls back to parsing the SARIF the adopt template uploads when no findings.json is present (previously monorepo-only).

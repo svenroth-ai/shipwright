@@ -307,3 +307,22 @@ Contribution rules, dev setup, the graduated trust model, and high-sensitivity a
 - **ADR-235** (2026-06-20): Dedup the bloat-gate Stop block across the plugin fan-out
 - **iterate-2026-07-07-gh-tag-helper-wire-in** (2026-07-07): SIMPLIFY — route both GH-owned-action-tag call-sites (SARIF ingest + plugin scan) through the single shared `gh_action_tag_owner.is_github_owned_action_tag` predicate; dropped the inline duplication + now-unused primitive imports. Behavior-preserving (snapshot==verify). → decision_log (Run-ID).
 - **iterate-2026-07-07-ss4-phase-runner-persistence** (2026-07-07): Convention — subagents own artifact persistence (write to disk via a Write tool: phase-runner + section-writer); `single-session-apply` fail-closes on a claimed-but-unwritten artifact (`verify_artifacts_exist`); the section-writer SubagentStop hook is a non-blocking fallback (supersedes ADR-042); resume reloads from run_config summaries via `single-session-reload`. Campaign SS4. → decision_log (Run-ID).
+- **ADR-239** (2026-06-27): Tailor CodeQL to this repo; root-fix genuine findings, don't blanket-suppress
+- **ADR-251** (2026-06-28): Grade anchors cite open standards in plain language (no vendor trademark)
+- **ADR-254** (2026-06-28): Fail-open compliance Bash gates + uv run --no-project
+- **ADR-255** (2026-06-29): Compliance producers credit exempt items out of deficit signals
+- **ADR-257** (2026-06-30): Navigable compliance artifacts + plain-language Event labels
+- **ADR-263** (2026-06-30): Render Verification Timeline date in UTC to match the sort
+- **ADR-264** (2026-06-30): Least-privilege top-level workflow token permissions
+- **ADR-271** (2026-07-03): Producer-side accepted-risk Semgrep rule tailoring
+- **ADR-288** (2026-07-06): Diff-coverage gate flipped to hard-block (< 80% changed-line coverage blocks merge)
+- **ADR-291** (2026-07-06): Cold-repo Control Grade caps at B — A is authoritative-only
+- **ADR-292** (2026-07-06): Empirical calibration suite: SHA-pinned real-OSS record/replay launch gate
+- **ADR-297** (2026-07-07): Adopted vitest repos ship a warn-only diff-coverage gate
+- **ADR-298** (2026-07-07): Diff-coverage gate as a consumed composite action
+- **ADR-299** (2026-07-07): Monorepo self-consumes the diff-coverage gate action
+- **ADR-301** (2026-07-07): change_traceability is n/a in local-only grade mode
+- **ADR-302** (2026-07-07): public URL grade defaults to network-on; local path stays local-only
+- **ADR-306** (2026-07-07): Subagents own artifact persistence; the orchestrator guards it on disk
+- **ADR-307** (2026-07-07): SubagentStop write-section hook is a non-blocking fallback (supersedes ADR-042 block-on-failure)
+- **ADR-308** (2026-07-08): update-marketplace.sh auto-installs registered-but-missing plugins

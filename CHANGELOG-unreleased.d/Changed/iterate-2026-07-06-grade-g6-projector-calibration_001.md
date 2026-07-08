@@ -1,1 +1,0 @@
-shipwright-grade: the empirical calibration gate now asserts WELL-RUN > DEPRECATED ordering over real OSS repos (adds obra/superpowers + addyosmani/agent-skills); a living repo without a CI test gate scores test-health n/a (never a public F), and a URL grade now fetches full history so it matches a local-clone grade.

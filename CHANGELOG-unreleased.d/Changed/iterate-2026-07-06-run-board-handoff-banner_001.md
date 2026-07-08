@@ -1,1 +1,0 @@
-`/shipwright-run` hand-off is now surface-aware (via `CLAUDE_CODE_ENTRYPOINT`): a terminal shows the board and paste continue paths, while the VS Code extension or desktop chat is told it cannot launch the multi-session pipeline and is redirected to a terminal or the Command Center.

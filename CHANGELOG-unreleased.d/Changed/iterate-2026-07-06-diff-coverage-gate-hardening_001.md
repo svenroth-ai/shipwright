@@ -1,1 +1,0 @@
-Diff-coverage CI gate hardened: the warn-only --fail-under=80 decision now runs through a tested measure_diff_coverage.py entrypoint (pinned diff-cover 10.3.0, non-deprecated --format flags) with a proven fail-path, and a diff-cover failure now fails closed instead of silently passing. Still warn-only (the hard-flip stays deferred).

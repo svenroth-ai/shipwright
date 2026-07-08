@@ -1,1 +1,0 @@
-Control Grade gates the headline verdict on the weakest load-bearing control: the grade is held below "A — full control" when a load-bearing pillar is configured-but-unmeasured (e.g. the CI security gate isn't running) or collapsed (a failing test suite / open high-critical vulns) — so a green grade can no longer mask a control that has gone dark or broken (Goodhart fix).

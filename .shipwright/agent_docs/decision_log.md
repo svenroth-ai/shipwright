@@ -3160,3 +3160,970 @@ shipwright/
 - **Rationale:** Reuses the established PR #250 dedup primitive and key shape for consistency; placing the claim on the block edge (not the top) keeps the PR #250 ordering rule so no-op invocations never starve a real block.
 - **Consequences:** One Stop event now shows ONE bloat block, not 12. A re-stop within 30s on a still-oversize file is not re-blocked locally (a cleared file re-measures to pass before the claim; CI anti-ratchet is the authoritative gate; the TTL also damps the tight block-loop). docs/hooks-and-pipeline.md corrected.
 - **Rejected:** Per-stop-event discriminator (transcript UUID in the key) would avoid the 30s window but leaks one unbounded .cache claim per stop and diverges from the three sibling hooks; the local gate is an advisory nudge so the window is benign.
+
+---
+
+### ADR-236: Split CVE remediation: 3 HIGH dep bumps now, OTel medium to a risk-accept follow-up
+- **Date:** 2026-06-22
+- **Section:** security / dependencies
+- **Run-ID:** iterate-2026-06-22-security-dep-bumps
+- **Context:** 2026-06-22 scheduled scan (run 27950188761) surfaced 4 Trivy SCA findings (3 HIGH, 1 MEDIUM, 0 critical). cryptography (GHSA-537c-gmf6-5ccf) and ws (CVE-2026-48779 x2) have clean in-range fixes. @opentelemetry/core (CVE-2026-54285, MEDIUM) is hard-pinned at 1.30.1 by resources/sdk-trace-base/instrumentation-http and capped <2.0.0 by @sentry/node, transitive under lighthouse; its only fix (2.8.0) is a major bump the tree refuses.
+- **Decision:** Ship the 3 HIGH dep bumps now (cryptography 48.0.0->49.0.0; ws 8.20.1->8.21.0 + 7.5.10->7.5.11). Defer the OTel MEDIUM to an immediate follow-up that adds a first-class Trivy risk-accept path (oss_backend --ignorefile) + a scoped, time-bounded (expired_at 2026-12-22) accept for CVE-2026-54285.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Urgent HIGH fixes stay in a tiny PR instead of waiting behind a Tier-3 review of a security-plugin change; one fix-category per iterate.
+- **Consequences:** 3 HIGH CVEs cleared in a small, fast PR. The OTel MEDIUM stays visible until the follow-up but is dev-only (Lighthouse perf-runner), Sentry OTel never initializes and there is no untrusted W3C Baggage input -> ~nil real exposure. Follow-up also closes a framework gap: the OSS scanner has no accepted-risk path for SCA findings today.
+- **Rejected:** npm override forcing @opentelemetry/core 2.8.0 (knowingly-inconsistent tree vs the 1.x-pinned packages); full lighthouse/Sentry OTel-2.x migration (out of scope, may need a fork); bare .trivyignore without mechanism/expiry (non-portable band-aid).
+
+---
+
+### ADR-237: Trivy accepted-risk register (.trivyignore.yaml via --ignorefile) + accept the OTel medium
+- **Date:** 2026-06-22
+- **Section:** security / scanner
+- **Run-ID:** iterate-2026-06-22-trivy-risk-accept
+- **Context:** Follow-up to PR #272 (3 HIGH dep CVEs fixed). The OSS scanner had NO accepted-risk path for SCA/Trivy findings (only a Gitleaks TOML allowlist + prompt-injection marker), and the remaining MEDIUM @opentelemetry/core CVE-2026-54285 cannot be bumped — hard-pinned 1.30.1 under lighthouse's Sentry/OTel tree (the 2.8.0 fix is refused).
+- **Decision:** Add _resolve_trivy_ignorefile(target) + wire --ignorefile <target>/.trivyignore.yaml into _run_trivy, keyed to the SCANNED target root (not Trivy's CWD, which differs CI vs local). Add a repo-root .trivyignore.yaml accepting CVE-2026-54285 scoped to the perf package-lock, expired_at 2026-12-22, with a rationale statement.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Keyed to the scanned target so it works identically in CI (cwd=plugins/shipwright-security) and local/adopted runs (cwd=project root); Trivy CWD auto-detect is unreliable. Trivy's expired_at auto-expires accepts into re-review rather than letting them be forgotten.
+- **Consequences:** Findings can be accepted in a documented, scoped, time-bounded way that survives the weekly scan (vs a recurring triage card); adopted repos get the same first-class mechanism. CAVEAT: the register can suppress ANY severity incl. critical — keep it reviewed. Follow-up: add .trivyignore.yaml to CODEOWNERS so accepts need maintainer sign-off; optionally note it in oss-scanners.md.
+- **Rejected:** npm override forcing OTel 2.8.0 (breaks the 1.x-pinned tree); bare classic .trivyignore (no scope/expiry/statement); relying on Trivy CWD auto-detection (CI vs local CWD differ).
+
+---
+
+### ADR-238: Mechanical accept-discipline: a CI guardrail for the .trivyignore.yaml register
+- **Date:** 2026-06-22
+- **Section:** security / scanner
+- **Run-ID:** iterate-2026-06-22-trivyignore-policy-check
+- **Context:** PR #273 added the Trivy accepted-risk register (.trivyignore.yaml). An entry suppresses a finding before findings.json + the critical-gate, so a sloppy/blanket accept could silently hide a real (even critical) vuln. The discipline was documented (file header + ADR) but not enforced.
+- **Decision:** Add shared/tests/test_trivyignore_register.py: every accept MUST have id + a paths|purls scope + expired_at + statement, else CI fails (runs in the Python lint+test required check). The register stays optional (absent file passes). Self-tested: rejects the sloppy shapes, accepts a well-formed entry.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A structural CI check has teeth (a required check) without the friction of required-reviews/CODEOWNERS — which main does not enforce — or Tier-3-gating the workflow file. Catches the realistic failure mode: a lazy accept with no scope/expiry/justification.
+- **Consequences:** Accept-discipline is now mechanical, not convention — a future blanket/undocumented accept fails CI. Purely additive (test-only) -> zero runtime/behavior change. Monorepo-only for now (extending to adopted repos' registers is a future option). Does NOT detect 'accept silences a critical' (needs trivy at scan time).
+- **Rejected:** CODEOWNERS entry (redundant via the * rule, and toothless — main requires no reviews); routing .trivyignore* through pr-review.yml Tier-3 (real teeth, but editing that workflow is itself Tier-3-gated -> admin/label-merge friction).
+
+---
+
+### ADR-239: Tailor CodeQL to this repo; root-fix genuine findings, don't blanket-suppress
+- **Date:** 2026-06-27
+- **Section:** Security / CodeQL code-scanning
+- **Run-ID:** iterate-2026-06-27-codeql-security-hardening
+- **Context:** Going public activated CodeQL (security-and-quality, 175 alerts). The 23 'high' were 11 genuine security + 12 quality-class errors; the 149 low were quality noise. A blanket switch to security-extended would drop the quality half wholesale, losing the net that just caught a real loop-variable late-binding bug.
+- **Decision:** Keep security-and-quality; tailor via .github/codeql/codeql-config.yml query-filters that exclude only ruff-owned (unused-import/local, import-style) and convention-conflicting (empty-except fail-open) queries. Root-fix the genuine findings (5x 0o600 modes, 2x ReDoS de-ambiguation, a loop-capture bug, a rollback else-guard) and remove 13 dead module globals, keeping 8 live/deliberate. Verified false positives are dismissed on GitHub out-of-band.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Fix real issues at the root; only filter checks another gate (ruff) already owns or that contradict a documented convention; never disable a net that catches real bugs.
+- **Consequences:** Security-tab signal restored without blinding any security or high-value-correctness query. The adopt CodeQL template is untouched: the tailoring is monorepo-specific, justified by this repo's ruff gate and documented conventions.
+- **Rejected:** security-extended (drops quality wholesale, would lose loop-capture detection); blanket-dismissing findings without root fixes; deleting the 8 live/deliberate globals.
+
+---
+
+### ADR-240: Control Grade scorer + latest-full-suite + inline audit (AR-01/02/03)
+- **Date:** 2026-06-27
+- **Section:** AR-01/02/03 — compliance dashboard Control Grade
+- **Run-ID:** iterate-2026-06-27-compliance-control-grade
+- **Context:** The compliance dashboard argued against the control thesis: a 0/0 test headline, a dead gitignored audit-report.md link (404 on public GitHub), and no synthesized judgment of control. The grade is also the keystone for a future generic repo-grader and a paid certification gate.
+- **Decision:** New pure, repo-agnostic lib/control_grade.py renders a Control Verdict + Grade A-F atop the dashboard; methodology in Anlehnung an OpenSSF Scorecard (weighted avg, n/a excluded from denominator, all-n/a = Not Gradeable). Each dimension anchors to a standard (SLSA, NIST SSDF, DO-178C/RTM, OWASP, ISO 25010). AR-02: shared resolver reads the latest full suite (>=50% of max), killing 0/0. AR-03: inline the audit summary, drop the dead link.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Research confirmed the design is not bespoke; deterministic + reproducible is required to back a credential.
+- **Consequences:** Honest current grade = B (88/100), capped by the FR-tag freeze. Reconciliation + security render n/a now and light up with ZERO grader changes once BP-2 (per-FR impact) and AR-10 (CI findings.json) land. Displayed score is floored so it can never contradict the letter band.
+- **Rejected:** Forcing the spec's eyeballed C+/B-; scoring unmeasurable dimensions as 0; reading the stale/FP local security report.
+
+---
+
+### ADR-241: AR-10 SARIF-ingestion fallback so adopted repos light the Security dimension
+- **Date:** 2026-06-28
+- **Section:** compliance
+- **Run-ID:** iterate-2026-06-28-ar10-sarif-ingestion
+- **Context:** AR-10's Security dimension ingests findings.json (scan.py). But /shipwright-adopt scaffolds a SARIF-only security.yml (semgrep/trivy/gitleaks to sarif/*.sarif, no findings.json), so every adopted repo's Security dim stayed n/a — the webui being the first to surface it.
+- **Decision:** download_security_findings falls back to parsing sarif/*.sarif when findings.json is absent (security-severity to CVSS bands; gitleaks to critical). findings.json stays authoritative when present (empty list never falls through). Ingestion-side fix, no per-repo CI change.
+- **Commit:** (assigned post-merge)
+- **Rationale:** One shared change lights all adopted repos vs. a sensitive-path security.yml edit per repo; honest posture from existing artifacts.
+- **Consequences:** Adopted repos (incl. the webui) now light the Control-Grade Security dimension from the SARIF they already upload. Real-data probe: the webui's latest scan parses to 135 low / 24 medium / 6 high / 0 critical.
+- **Rejected:** Emit findings.json in the adopt template + every repo's security.yml (sensitive-path Tier-3 per repo; existing repos must re-adopt).
+
+---
+
+### ADR-242: Control-Grade traceability credits satisfied no-FR; behavior-affecting changes must link an FR
+- **Date:** 2026-06-28
+- **Section:** BP-1 (campaign 2026-06-27-compliance-control-coverage, cc1)
+- **Run-ID:** iterate-2026-06-28-cc1-bp1-fr-mapping
+- **Context:** FR-tagging froze 2026-05-23: the requirement-traceability dimension keyed on affected_frs only, capping the public Control Grade at B 87 even though post-gate no-FR work was properly classified. (The 209-FR/coverage premise was wrong: 14 FRs, already 14/14 covered; tag_rate is the only lever. D1 was RED via a staleness watermark.)
+- **Decision:** A change is 'traced' when FR-linked OR a satisfied no-FR change (valid change_type + one-line none_reason, behavior-preserving); events_fr_tagged credits both via a shared SSOT. The FR-gate now blocks a behavior-affecting change (spec_impact add/modify/remove) with no FR, at CLI AND finalize. D1 uses all-time coverage (no watermark) and is re-enabled; the dashboard adds a freeze indicator; 16 legacy-defect events backfilled.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The Spec handoff seam explicitly anticipated revisiting events_fr_tagged for a satisfied no-FR change; the Spec rejects staleness-by-age, validating the D1 refinement. The 4 backfilled FR-01.10 links are genuine /shipwright-compliance behavior changes.
+- **Consequences:** Public Control Grade moves B 87.2 -> A 100.0 (user-confirmed Full-credit). Honesty counterweights: the dashboard freeze WARN + the grade detail 'traced (FR-linked or classified no-FR)'. D4 left as its honest pre-existing fail (not masked).
+- **Rejected:** Keep honest-B cap or partial credit (rejected by user). Aggressive re-tag to force D1 green (rejected: fabricates coverage). FR-linkage inside the repo-agnostic scorer (deferred: dashboard row + detail are the counterweight).
+
+---
+
+### ADR-243: BP-2: per-FR fr_impact map lights the Control-Grade reconciliation dimension
+- **Date:** 2026-06-28
+- **Section:** cc2-bp2-impact-producer
+- **Run-ID:** iterate-2026-06-28-cc2-bp2-impact-producer
+- **Context:** Events persisted event-level spec_impact but no per-FR map, so the Control-Grade 'change reconciliation' dimension stayed n/a. cc3's RTM Reconciled? column needs the same per-FR signal.
+- **Decision:** Add an optional per-FR fr_impact map ({FR-id: add|modify|remove|none}) to work_completed events, written by record_event + finalize (validated via shared fr_classification.normalize_fr_impact; read tolerantly by WorkEvent). New SSoT _reconciliation derives behavior-touched vs re-verified FRs (touched-without-re-verify, age-neutral; spec_impact fallback for pre-BP-2 events). build_grade_inputs flips reconciliation_measurable + populates counts; the scorer is unchanged.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A per-FR map (not a bare flag) because cc3 keys the RTM column per FR. measurable=bool(frs_behavior_touched) follows the grade's n/a-when-no-data rule, not a vacuous 1.0. Malformed fr_impact fails closed in BOTH producers (parity).
+- **Consequences:** Reconciliation dimension goes n/a->live (real repo: 4 behavior-touched FRs, 0 unreconciled, grade holds A 100). The helper is the single source cc3's RTM column reuses, so grade and RTM agree by construction.
+- **Rejected:** Bare behavior_affecting flag (too coarse for cc3 per-FR RTM); no spec_impact fallback (vacuous at first); silently dropping malformed fr_impact in finalize (loses a grade signal). Deferred: a cross-field gate asserting behavior-affecting fr_impact keys subset affected_frs and imply behavior-affecting spec_impact.
+
+---
+
+### ADR-244: RTM reconciliation column reuses the BP-2 grade helper
+- **Date:** 2026-06-28
+- **Section:** Iterate — change: RTM Reconciled? column (AR-05)
+- **Run-ID:** iterate-2026-06-28-cc3-ar05-rtm-reconciled
+- **Context:** The RTM carried an age-based '>14d stale verification' clause (a date threshold, not a control signal) and exposed none of BP-2's per-FR behavior reconciliation, which the Control-Grade dimension already measures.
+- **Decision:** Add a per-FR 'Reconciled?' column and an 'FRs needing re-verification' summary subsection that read the SAME _reconciliation helper the Control-Grade dimension consumes; drop the age-based stale clause; rename 'Last Verified'->'Last tested'; add full FR titles, a column legend, and clickable evt- evidence.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reconciliation keys on touched-without-re-verify; age is neutral (an old re-verified change stays reconciled forever). Reusing the one helper is the only way the column and the grade stay consistent by construction.
+- **Consequences:** The matrix and the grade can never disagree (one SSoT, both age-neutral). Cohesive rendering helpers moved to a new leaf module _rtm_reconciliation_render.py so rtm_generator stays under its anti-ratchet ceiling (765/808).
+- **Rejected:** Re-implementing reconciliation inside the RTM (would drift from the grade); keeping the age-based stale clause (penalizes age, not unreconciled change).
+
+---
+
+### ADR-245: Ingest CI security.yml findings into the compliance dashboard + grader
+- **Date:** 2026-06-28
+- **Section:** Iterate — feature: AR-10 CI-security dashboard ingest
+- **Run-ID:** iterate-2026-06-28-ci-security-dashboard
+- **Context:** security.yml + codeql.yml run fail-closed in CI but results were never rendered, so security looked absent and the Control-Grade Security dimension stayed n/a; the local securityreports/ is stale/FP-laden and would produce a false CRITICAL.
+- **Decision:** A fail-soft producer (refresh_ci_security.py) pulls the latest security.yml findings.json via github_api into a tracked, public-safe ci-security.json; the dashboard reads only that committed summary (deterministic, offline) and lights the grader Security seam from it.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Mirrors the github_triage producer/reader split so generate() stays pure; the purpose-built grader seam needs no scorer change.
+- **Consequences:** Security dimension goes n/a→live; grade honestly reflects open high/critical (shipwright: 3 high → A 90/100). Visible even on repos with no local reports (webui). Never a false CRITICAL when un-ingested.
+- **Rejected:** Live-fetch inside generate() (non-deterministic, breaks offline/CI); read local securityreports/latest.md (stale/FP → false CRITICAL, spec-forbidden).
+- **Details:** [2026-06-28-ci-security-dashboard.md](../planning/iterate/2026-06-28-ci-security-dashboard.md)
+
+---
+
+### ADR-246: Refresh CI-security summary to the post-#272 clean scan
+- **Date:** 2026-06-28
+- **Section:** Iterate — change: CI-security summary refresh
+- **Run-ID:** iterate-2026-06-28-ci-security-refresh
+- **Context:** AR-10's committed ci-security.json ingested the last security.yml run (2026-06-22, pre-#272), showing 3 open high CVEs; #272 bumped cryptography+ws ~23h later, clearing them, but no main scan had run since.
+- **Decision:** Dispatched a fresh security.yml run on main (28333095923, 2026-06-28) and re-ran refresh_ci_security.py to ingest its 0-finding result.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The highs were already remediated; the grade was stale, not wrong-in-code. A re-scan is the honest correction, not another dep bump.
+- **Consequences:** ci-security.json + dashboard regenerate honestly: Security dimension 3-open-high → 0, Control Grade A 90 → A 100/100. No code/dependency change.
+- **Rejected:** Re-bumping cryptography/ws (redundant — #272 already did it); letting it self-heal on the next scan (user chose to correct the flagship grade now).
+
+---
+
+### ADR-247: Exclude test fixtures from CodeQL; make intentional string-concat explicit
+- **Date:** 2026-06-28
+- **Section:** Iterate — change: CodeQL fixture-noise cleanup
+- **Run-ID:** iterate-2026-06-28-codeql-fixture-noise
+- **Context:** CodeQL's security-and-quality suite scanned a bundled test fixture (plugins/shipwright-test/tests/fixtures/bundle/sample-app/main.js), flooding the public dashboard with ~1000 js/assignment-to-constant alerts; 6 intentional implicit string-concatenations also tripped py/implicit-string-concatenation-in-list. None were security-severity.
+- **Decision:** Add paths-ignore '**/tests/fixtures/**' to .github/codeql/codeql-config.yml (mirrors ruff extend-exclude) and refactor the 6 flagged concatenations to explicit '+' form. No query-filter removed.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Fixtures are generated, non-first-party code already excluded from ruff; aligning the two scanners is the durable fix. Explicit '+' makes deliberate continuation obvious and clears the rule without suppression.
+- **Consequences:** The ~1000 fixture alerts auto-close on the next CodeQL run; the 6 quality alerts clear; the dashboard reflects real signal. No application behavior changes — refactors verified byte-identical via a compile-constant equivalence gate.
+- **Rejected:** Dismissing the 1000 alerts on GitHub (reappear each scan); dismissing the 6 as false-positives (leaves dismissed-FP noise); excluding only the bundle dir (narrower but inconsistent with ruff).
+
+---
+
+### ADR-248: Extract shared symbols to neutral leaf modules to break py/cyclic-import
+- **Date:** 2026-06-28
+- **Section:** Iterate — change: break 3 CodeQL import cycles + fix 2 mixed-returns
+- **Run-ID:** iterate-2026-06-28-codeql-import-cycles
+- **Context:** CodeQL py/cyclic-import flagged 3 cycles (worktree_isolation<->events_log<->repo_root; phase_quality._aggregates<->_dashboard_render; scanner_backend<->aikido_client) plus 2 py/mixed-returns in tests. Lazy/function-level imports do NOT clear the alert — CodeQL counts them statically. All note/low; zero security-severity.
+- **Decision:** Extract the symbol each cycle's back-edge needed into a dependency-free leaf: git_base.py (git primitives), phase_quality/_findings_model.py (finding model+loaders), security/finding_classify.py (classify_finding). Both ends import the leaf; the cycle edge is eliminated. Re-exports keep external callers unchanged.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A neutral leaf both sides depend on is the only static-cycle break — lazy imports still register in CodeQL's graph. mixed-returns fixed by ending each function in an explicit return/raise, not a pytest.skip/fail fall-through.
+- **Consequences:** All 6 py/cyclic-import + 2 py/mixed-returns clear on next CodeQL scan. No behavior change (full suite green: shared 3561, security 424, compliance 734; import-identity verified). worktree_isolation shrinks below its bloat baseline.
+- **Rejected:** Lazy imports (CodeQL still flags); dismissing alerts (reappear each scan, leaves dismissed-FP noise); suppressing py/cyclic-import in codeql-config (would blind a real future cycle).
+
+---
+
+### ADR-249: Remove mtime timestamp-drift detector from check_drift.py
+- **Date:** 2026-06-28
+- **Section:** Iterate — change: drop timestamp-drift check
+- **Run-ID:** iterate-2026-06-28-drop-timestamp-drift
+- **Context:** The SessionStart check_drift.py timestamp detector compared CLAUDE.md's filesystem mtime against a hard-coded config-file list. mtime is not a content-staleness signal in git: checkout, branch-switch, worktree-creation, and release version-bumps all reset mtimes, so it fired on noise (every worktree iterate; the v0.29.1 version-bump triggered this run).
+- **Decision:** Remove the timestamp detector (check_timestamp_drift, KEY_FILES, KEY_DIRS, get_mtime, get_newest_in_dir) and its triage emission. Keep the deterministic content-drift detector. The resolve pass still retires pre-existing legacy :timestamp triage items.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Removing the false-positive source is the root fix; the kept content-drift detector already delivers genuine staleness signal without the mtime noise.
+- **Consequences:** No more spurious 'CLAUDE.md may be outdated' warnings; content drift (Structure block + npm-run vs filesystem) is the sole, content-based drift signal. check_drift.py shrinks ~100 LOC (baseline 534->432). Affects every Shipwright project (shared hook).
+- **Rejected:** Commit-time comparison (git log -1 --format=%ct) rejected: needs git in the SessionStart hook, slower, fragile on worktrees/shallow clones, and still flags version-only bumps.
+
+---
+
+### ADR-250: Keep events_log.resolve_main_repo_root import lazy even after the cycle was removed
+- **Date:** 2026-06-28
+- **Section:** Iterate — change: events_log lazy-import rationale (keep lazy, fix comment)
+- **Run-ID:** iterate-2026-06-28-events-log-lazy-rationale
+- **Context:** After #281 broke the events_log<->repo_root<->worktree_isolation cycle, the lazy import's comment in events_log.py still cited that (now-dead) cycle as its reason — misleading a future dev into hoisting it to module scope.
+- **Decision:** Keep the import call-time lazy; rewrite the comment to cite the still-live reason. Also corrected 2 repo_root docstring refs (main_repo_root home -> lib.git_base).
+- **Commit:** (assigned post-merge)
+- **Rationale:** The compliance Group-F detective loads events_log via load_shared_lib (importlib-from-file under a sentinel name) to keep 'lib' OUT of sys.modules (ADR-044). A module-level 'from lib.repo_root import' would run during that exec and pollute sys.modules['lib'], shadowing the compliance plugin's own 'lib' — so lazy is load-bearing for import-context isolation, independent of the removed cycle.
+- **Consequences:** Comment now accurate; a future 'simplify to eager' is pre-empted. No behavior change (docstring/comment-only; load_shared_lib isolation + import smoke + 492 targeted tests green).
+- **Rejected:** Making the import eager (would defeat load_shared_lib's namespace isolation -> Group-F regression); leaving the stale cycle-only comment (invites a future eager 'simplification' that breaks Group-F).
+
+---
+
+### ADR-251: Grade anchors cite open standards in plain language (no vendor trademark)
+- **Date:** 2026-06-28
+- **Section:** Iterate — change: Control-Grade anchor clarity
+- **Run-ID:** iterate-2026-06-28-grade-anchor-clarity
+- **Context:** The 7 Control-Grade dimension Anchors cited cryptic codes (e.g. 'DO-178C $11.9 / ALM RTM') and a COMMERCIAL vendor ('SonarQube / Sonar Way') as if it were a standard. Non-experts couldn't tell what was checked or what to google, and citing a commercial product in a public lead-magnet risks implied endorsement.
+- **Decision:** Reword all 7 anchors as 'plain hint (open standard)'; remove SonarQube/Sonar Way (test-health -> OpenSSF Scorecard, maintainability -> ISO/IEC 25010); translate 'in Anlehnung an' -> 'modeled on'; add a plain-language dimensions table to guide.md; add a regression test guarding both.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Open standards (DO-178C, IEC 62304, ISO/IEC 25010, ISO 26262, NIST SSDF, OWASP, SLSA, OpenSSF Scorecard) are freely referenceable and audience-credible; a commercial vendor is risky (no permission, implied-endorsement) and was also inaccurate (we don't implement Sonar Way).
+- **Consequences:** Public grade output cites only open, googleable standards. test_no_commercial_vendor_trademark_in_anchors prevents re-introduction. Scorer logic and grade value unchanged (probe: same A90, all dims render).
+- **Rejected:** Keep SonarQube + a trademark disclaimer (more legal surface for a public lead-magnet); keep the terse standard codes (non-experts can't act on them).
+
+---
+
+### ADR-252: Maintainability grade anchor describes the check, not the label
+- **Date:** 2026-06-28
+- **Section:** Iterate — change: maintainability anchor wording
+- **Run-ID:** iterate-2026-06-28-grade-anchor-maint-wording
+- **Context:** The Size/maintainability dimension's Anchor repeated the Dimension label verbatim ('size/maintainability discipline'), so that dashboard row said the same thing twice and the Anchor added no information.
+- **Decision:** Reword the anchor to 'no unchecked code-size growth (ISO/IEC 25010)' (describes the bloat-ratchet check the Signal column quantifies); add a test asserting no anchor's plain hint restates its label.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The Anchor column names the standard + what's checked, not an echo of the label; the Signal column already shows the ratchet delta.
+- **Consequences:** Each grade row's Anchor now adds information beyond the label; a regression test prevents recurrence.
+- **Rejected:** Leave it (redundant row); rename the dimension label instead (the label is fine — the anchor was the weak cell).
+
+---
+
+### ADR-253: SBOM dedup by installed version + honest verdict
+- **Date:** 2026-06-28
+- **Section:** Iterate — change: SBOM data quality / honesty (AR-04)
+- **Run-ID:** iterate-2026-06-28-sbom-honesty
+- **Context:** Committed sbom.md listed openai twice and showed '-' (unknown) licenses while the footer claimed 'all permissively licensed'. Versions came from pyproject specifier floors (so duplicates never merged) and licenses resolved only from each manifest's own .venv (a stale venv rendered '-').
+- **Decision:** Resolve Python versions from each manifest's sibling uv.lock plus a project-wide union fallback, dedupe by installed version, and resolve licenses across all venvs. The summary, pie, and verdict count every package and never claim 'all permissive' while any license is unresolved (ASCII-only).
+- **Commit:** (assigned post-merge)
+- **Rationale:** A data-only regen would leave openai duplicated and re-break on the next unsynced-venv regen; AR-04 asks to fix the generator. Version resolution was made as robust as license resolution (code-review finding #1).
+- **Consequences:** openai renders once at 2.30.0; google-genai/requests show real lockfile versions; 7/7 licenses resolved. Triage producer untouched (strict per-manifest semantics). sbom_generator.py shrank 580->522 by extracting sbom_render.py.
+- **Rejected:** Data-only regen (band-aid). npm lockfile version resolution (deferred: no npm deps in this repo; the webui dup is a separate webui-repo data-fix per the spec).
+
+---
+
+### ADR-254: Fail-open compliance Bash gates + uv run --no-project
+- **Date:** 2026-06-28
+- **Section:** Iterate — change: compliance PreToolUse Bash gates fail-open + robust invocation
+- **Run-ID:** iterate-2026-06-28-security-scan-hook-failopen
+- **Context:** The two compliance PreToolUse Bash gates (check_rtm_coverage, check_security_scan) fire on every bash call via plain 'uv run' (full project sync). On Windows the per-call sync intermittently failed ('No stderr output'), exiting non-zero and hard-blocking ALL bash calls — not just commit/deploy — even during findings-reducing work.
+- **Decision:** Invoke both gates with 'uv run --no-project' (no per-call sync) and route their entrypoints through lib/hook_failopen.run_failopen: any internal exception logs to the gitignored runtime/hook_errors.log and returns 0 (ALLOW). The deliberate 'return 2' soft-block and 'Continue anyway' override are unchanged.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A crashing check provides no security signal; the authoritative enforcement is the CI security.yml gate, so failing open on infra flakiness is correct. '--no-project' removes the actual intermittent failure source (project sync), with an in-repo precedent (suggest_iterate.py).
+- **Consequences:** A flaky or crashing gate can no longer hard-block unrelated work; deploy/commit gating is fully preserved (regression-tested, exit 2). New gitignored write-surface runtime/hook_errors.log. Integration coverage in test_compliance_hook_failopen.py.
+- **Rejected:** Switching the soft-block from exit 2 to JSON permissionDecision + '|| exit 0' outer wrap (robust vs a uv launch failure): rejected — bigger blast radius on a security gate, fragile cross-platform shell wrap, and --no-project already removes the intermittent cause. Recorded as a follow-up if flakiness persists.
+
+---
+
+### ADR-255: Compliance producers credit exempt items out of deficit signals
+- **Date:** 2026-06-29
+- **Section:** Iterate — change: compliance exempt ≠ deficit
+- **Run-ID:** iterate-2026-06-29-compliance-exempt-not-deficit
+- **Context:** Compliance producers flagged legitimately-exempt items as deficits → inflated WARNs / alarm-fatigue, the same root flaw BP-1 fixed for the traced-% metric. Surfaced on the shipwright-webui A99 dashboard; the producing logic is in the monorepo compliance plugin.
+- **Decision:** Generalize the BP-1 credit across producers: grandfathered bloat over-limit renders INFO (ratchet delta stays the WARN); the iterate-tests denominator excludes satisfied-no-FR changes; audit _Suggested: lines emit only on status==fail; routine regens stamp a churn-free staleness banner on audit-report.md.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Exemptness is acceptance, not a deficit. The SSOT predicate is_satisfied_no_fr is shared with count_traced so traced/testable can't drift. The staleness banner is keyed to the audit's own Generated ts, so re-stamps are byte-stable and never churn a tracked report.
+- **Consequences:** Monorepo iterate-tests 142/225→35/40 and bloat over-limit WARN→INFO; webui 90/179→70/112, 80 WARN→INFO, ratchet -541 PASS. Residual WARNs are honest (FR-linked/behavior-affecting work without recorded tests); audit suggestions fire only on real FAIL.
+- **Rejected:** Refresh the full detective audit in every routine regen (heavy, can fail mid-iterate); a per-call timestamp banner (churns tracked reports); gating test-exemption on FR-linkage (would re-flag behavior-preserving FR-referencing docs as untested).
+
+---
+
+### ADR-256: Tighten bloat baseline current to on-disk LOC (Group H2)
+- **Date:** 2026-06-29
+- **Section:** Iterate — change: tighten bloat baseline
+- **Run-ID:** iterate-2026-06-29-tighten-bloat-baseline
+- **Context:** Group-H detective audit (H2) flagged 12 baseline entries whose recorded current floor exceeded actual on-disk LOC after upstream shrinks; the stale-high floors let those files creep back up un-flagged.
+- **Decision:** Lower each drifted entry's current to its canonical _file_newlines count via a byte-preserving JSON edit, tightening the anti-ratchet floor to match reality.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The anti-ratchet floor must track files downward so improvements cannot silently erode; the H2 display caps at 5 but all 12 drifted entries were tightened.
+- **Consequences:** H2 returns pass; the shrinks are locked in so any regrowth now trips the anti-ratchet gate. No code or behavior change.
+- **Rejected:** Tightening only the 5 displayed entries (re-fires H2 with the remaining 7); rewriting via json.dumps (flips CRLF to LF, churning all 158 entries).
+
+---
+
+### ADR-257: Navigable compliance artifacts + plain-language Event labels
+- **Date:** 2026-06-30
+- **Section:** Iterate — change: compliance-artifact usability
+- **Run-ID:** iterate-2026-06-30-compliance-artifact-usability
+- **Context:** The test-evidence and traceability-matrix audit artifacts were hard to navigate: plain-text iterate/(iter) tokens, an oldest-first timeline, unlinked FRs and commits, and an Event column showing only the raw technical description.
+- **Decision:** Link the iterate/(iter) tokens to the events Verification-Timeline row; sort the timeline newest-first; link timeline FRs to per-FR coverage-row anchors and commits to the host diff; prefer an authored plain-language summary over the technical description in the Event column; add an honest unit-only note to the synthesized Full Suite Runs table.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Events carry no per-iteration spec path (run_id 0 of 226), so a literal spec link is unreachable; the Verification-Timeline anchor and the commit are the only complete, repo-portable per-event targets.
+- **Consequences:** Operators can hop event to timeline row to FR coverage to spec, and event to commit diff. A new optional summary event field (forward-only) carries non-expert labels. Helpers live in event_display.py and _rtm_links.py so the grandfathered generators stay under their anti-ratchet ceilings.
+- **Rejected:** Backfilling a spec link from event name and date (about 8 percent safe match; most iterates never authored a spec); a test_run-event producer for the real layer breakdown (deferred, larger).
+
+---
+
+### ADR-258: Goodhart-resistant Control-Grade verdict gate + anchor pivot
+- **Date:** 2026-06-30
+- **Section:** Control Grade honesty
+- **Run-ID:** iterate-2026-06-30-control-grade-honesty
+- **Context:** The Control-Grade dashboard could read A/100 'under full control' while genuine FR-tagging decayed (e.g. 3% vs 18% all-time) and an unmeasured control vanished from the score via N/A-exclusion — a Goodhart failure for a lead magnet selling 'control over AI code'.
+- **Decision:** Added an honesty layer (lib/_grade_gate.py): a self-relative FR-tag-decline penalty depresses the requirement dimension, and a weakest-link verdict gate caps the headline below A when a load-bearing pillar is declining, dark-but-expected, or collapsed (F-band). Pivoted anchors off DO-178C/IEC 62304/ISO 26262 to single open SE/NIST standards; added a native OpenSSF scorecard.yml; split the value model to lib/_grade_types.py.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A single aggregate can average or N/A-exclude away any dark pillar — traceability today, security tomorrow. The verdict must reflect the weakest control symmetrically, not special-case traceability.
+- **Consequences:** Dogfood grade drops A100 to B with 'traceability declining' surfaced. Back-compat preserved (new inputs default to no-signal). Diff/patch coverage, webui propagation, the adopt scaffold, and the native-score display are named fast-follows.
+- **Rejected:** A traceability-only score penalty (tunnel-vision; invites tag-theater; leaves the identical N/A gap for security); keeping DO-178C softened to 'inspired by' (still over-regulated certification vocabulary).
+
+---
+
+### ADR-259: Re-tag mis-filed compliance/security features to their FRs (honesty-gate fix)
+- **Date:** 2026-06-30
+- **Section:** Iterate — change: re-tag mis-filed compliance/security work to FR-01.10/FR-01.07
+- **Run-ID:** iterate-2026-06-30-fr-retag-honesty
+- **Context:** Recent /shipwright-compliance + /shipwright-security feature work was filed change_type=compliance/no-FR though it delivers FR-01.10 (and FR-01.07) functionality. Strict FR-tagging dropped to 10% (last 30) vs 18% all-time, so the Control Grade honesty gate capped the headline at B (89/100).
+- **Decision:** Append 7 event_amended overlays re-tagging the genuine features to FR-01.10 (+FR-01.07 on the two AR-10 security-evidence events) with spec_impact=modify; leave real infra (scorecard CI, bloat-baseline, drift-detector removal, data refreshes) as no-FR. This iterate's own F5b event (tested, names both FRs) is the reconciliation verify.
+- **Commit:** (assigned post-merge)
+- **Rationale:** is_fr_tagged keys only on non-empty affected_frs, so accurate FR-linkage (not metric-gaming) lifts the gate. The newest re-tagged event has tests.total=0 and cannot self-reconcile, so a later tested event naming the FRs is required (the CAVEAT).
+- **Consequences:** Recent FR-tag rate 10%->37%, decline clears, Control Grade returns to A honestly; reconciliation stays green (FR-01.10/FR-01.07 reconciled by the verify event). No source code changed.
+- **Rejected:** Sub-FR decomposition first (no sub-FRs exist; separate spec-ADD iterate, filed as follow-up). Tagging affected_frs with spec_impact=none (dodges reconciliation but under-claims the genuine behavior changes).
+
+---
+
+### ADR-260: Drop inline-suppressed SARIF results at the ingest layer
+- **Date:** 2026-06-30
+- **Section:** Iterate — bug: SARIF suppression filter
+- **Run-ID:** iterate-2026-06-30-sarif-suppression-filter
+- **Context:** On a SARIF-only (adopt-template) repo where every Semgrep finding is inline-suppressed (# nosemgrep), the gh-security action-unit count never reached 0, so resolve_stale never auto-dismissed it and the item reappeared after every manual dismiss. The compliance Security dimension was inflated the same way.
+- **Decision:** Filter suppressed results in _findings_from_sarif (security_findings.py): drop any result whose suppressions[] holds an entry that is not status=rejected, so a fully-suppressed scan yields [] (clean) instead of phantom live findings.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Suppression metadata lives only on the SARIF result; normalization to {severity} strips it before findings reach the producer, so a producer-side len() filter is a no-op. The parser is the only layer holding the data — the reported symptom layer is not the fix layer.
+- **Consequences:** Fully-suppressed scan now returns [] -> producer returns None -> auto-resolve gate dismisses the item. Single ingest-point fix covers BOTH consumers (github_triage producer + compliance ci_security). A rejected suppression keeps the finding live.
+- **Rejected:** Filtering in security_action_unit_from_artifact as the report suggested (no-op: suppressions already gone). A literal length(suppressions)>0 filter (would hide a finding whose suppression was rejected = security false-negative).
+
+---
+
+### ADR-261: Scrub U+200B flagged by the prompt-injection scan
+- **Date:** 2026-06-30
+- **Section:** Iterate — change: strip zero-width spaces from a planning note
+- **Run-ID:** iterate-2026-06-30-strip-zwsp-planning-doc
+- **Context:** The scheduled CI Security Scan flagged 2 zero-width-space (U+200B) chars on line 39 of a planning note as a HIGH prompt-injection finding (UNICODE_ZERO_WIDTH_SPACE).
+- **Decision:** Delete the invisible characters; do NOT weaken the scanner or add a per-file suppression.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Invisible Unicode is correctly flagged as high; here the chars were a benign editor artifact with no purpose inside a backtick code-span.
+- **Consequences:** Clears the recurring high finding (prompt-injection scan now returns 0 findings). No runtime or behavior impact.
+- **Rejected:** Allowlisting the file (would mask future real injections); weakening the detector to ignore zero-width chars.
+
+---
+
+### ADR-262: Quarantine orphan-status instead of hard-blocking the outbox sweep
+- **Date:** 2026-06-30
+- **Section:** Iterate — change: quarantine orphan-status in the triage outbox sweep
+- **Run-ID:** iterate-2026-06-30-sweep-outbox-quarantine-orphans
+- **Context:** An orphaned status event (a status whose append never reached origin) failed validate_triage_text, so the whole outbox sweep returned invalid and delivered nothing — 15 real pending findings were stranded for days.
+- **Decision:** Quarantine OUTBOX-originating orphan-status lines to .shipwright/triage.outbox.quarantine.jsonl and deliver the valid remainder; genuine corruption (bad header / dup append / invalid JSON) still fails closed.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Fail-closed on the whole buffer was too coarse: the orphan-status class is recoverable (re-validate after trimming) whereas real corruption is not, so the two are handled differently.
+- **Consequences:** One orphan no longer starves delivery; orphans are preserved for operator review. Logic split into new lib.triage_validate (classifier) + lib.sweep_quarantine to keep churn_merge/sweep_outbox under 300 LOC.
+- **Rejected:** Silently drop orphans (loses the operator trail); fix only the producer side (cannot recover already-orphaned data).
+
+---
+
+### ADR-263: Render Verification Timeline date in UTC to match the sort
+- **Date:** 2026-06-30
+- **Section:** Iterate — bug: timeline UTC date
+- **Run-ID:** iterate-2026-06-30-timeline-utc-date
+- **Context:** The RTM Verification Timeline sorts by absolute UTC instant, but the Date column printed the literal ts[:10] local-offset prefix. A +02:00 event recorded near midnight showed its local date one day ahead of its UTC sort position, a cosmetic date inversion caught empirically on a real webui event.
+- **Decision:** Display the date via _rtm_links.utc_date (parse ts, convert to UTC, %Y-%m-%d) so the Date column is in the same frame the timeline is sorted by; fall back to ts[:10] when the timestamp will not parse.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A UTC-instant sort with a local-date display are two different frames; consistency requires one frame, and UTC matches the sort key.
+- **Consequences:** The Date column reads monotonically descending across mixed-timezone events. Monorepo unaffected (all +00:00); the webui +02:00 event now shows its UTC date 2026-05-12. Behavior-preserving for the requirement.
+- **Rejected:** Sorting by local date (wrong; UTC instant is the correct chronological order); leaving it (undermines the clean-timeline goal).
+
+---
+
+### ADR-264: Least-privilege top-level workflow token permissions
+- **Date:** 2026-06-30
+- **Section:** Iterate — change: workflow token-permissions hardening
+- **Run-ID:** iterate-2026-06-30-workflow-token-permissions
+- **Context:** OpenSSF Scorecard Token-Permissions scored 0: ci/codeql declared no top-level permissions; bloat-check/pr-review/security declared top-level write. The repo default GITHUB_TOKEN is already read-only, so this is defense-in-depth plus an honest score, not a newly-closed hole.
+- **Decision:** Declare read-only top-level (contents: read) on ci, codeql, bloat-check, pr-review and widen per-job only where a write is used (bloat-check + pr-review review job: pull-requests:write; codeql analyze: security-events:write). security.yml is left top-level.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Multi-job pr-review genuinely de-privileges decide/selftest; single-job workflows have top==job effective scope, so the move is mainly defense + score. Moving security.yml buys zero blast-radius (one job) but breaks the A5.3 audit, which reads the top-level block — hence the documented exception.
+- **Consequences:** 4 of 5 workflows read-only at the top level; per-job blocks re-declare contents:read (a job block REPLACES, not merges). New SSoT test test_workflow_token_permissions.py locks the posture.
+- **Rejected:** Moving security.yml writes job-level + reworking the A5.3 effective-permissions audit (cross-component cost, no real gain). Using read-all (less minimal than contents: read).
+
+---
+
+### ADR-265: Phased plan for diff/patch coverage (trg-8fdebda3)
+- **Date:** 2026-07-02
+- **Section:** Iterate — change: diff-coverage roadmap (planning)
+- **Run-ID:** iterate-2026-07-01-diff-coverage-plan
+- **Context:** Reviewer comment B (trg-8fdebda3): pass-rate (3618/3618 green) says nothing about whether AI-added code is executed; the Test Completeness Ledger is an author-claimed checklist, not instrumented, and a dormant coverage.total field already awaits diff-coverage.
+- **Decision:** Persist a 4-phase roadmap to instrument diff/patch coverage (changed-lines-tested vs merge-base) and feed it into the Control-Grade Test-Health dimension: (1) measure+INFO on one tier, (2) roll out+combine across plugins, (3) grade input as WARN, (4) CI gate warn to fail. Monorepo-Python first; defer the generic grader.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Phases 1-2 are pure measurement/INFO so the monorepo coverage-combine risk can never touch the grade; teeth added only in 3-4 after the number is calibrated. Mirrors the composition-neutral principle: a real control signal over a gameable pass-rate.
+- **Consequences:** No code or grade change yet — planning only. A future session executes each phase as its own iterate. Anchored to trg-8fdebda3.
+- **Rejected:** Bundle all four into one iterate (too big: CI in every plugin + combine step + schema field + grade wiring). Rely on the Test Completeness Ledger alone (a claim, not a measurement).
+
+---
+
+### ADR-266: Control Grade composition-neutral (drop the FR-tag-decline gate)
+- **Date:** 2026-07-01
+- **Section:** Iterate — change: make the Control Grade composition-neutral
+- **Run-ID:** iterate-2026-07-01-grade-composition-neutral
+- **Context:** The Control-Grade honesty gate penalised + capped on a self-relative FR-tag decline (recent rate below all-time). Empirically it would fire at 94% of the monorepo's history and capped the WebUI at B despite all 7 dimensions green (57% vs 59% FR-tag). It conflated workload composition (feature vs. maintenance) with control.
+- **Decision:** Remove the decline penalty + verdict branch (a) and the now-dead trace_decline_severity / apply_traceability_penalty / GradeInputs.fr_tag_* fields; keep the dark-expected-control and broken-pillar caps. The 'Recent changes traced to an FR' dashboard row becomes informational (INFO, never WARN).
+- **Commit:** (assigned post-merge)
+- **Rationale:** count_traced credits honestly-classified no-FR work, so tag_rate stays ~1.0 during maintenance; the old gate measured composition, not control. Verified end-to-end: a 25-event maintenance sprint (recent 3% vs 19%) keeps grade A (old gate would cap to B).
+- **Consequences:** Feature-vs-maintenance mix no longer affects the grade. The monorepo stays A through maintenance sprints; the WebUI lifts B->A on re-grade with the updated plugin. Traceability control now rests on coverage + reconciliation + the write-time FR-gate (all composition-independent).
+- **Rejected:** Couple the gate to a mis-classification detector (needs a discriminative FR->code-ownership map + forward-consistent changed_files; changed_files only 52% populated, naive surface flags 68/92 false positives - separate larger design). Trend on reconciliation-currency instead (deferred; coverage+reconciliation already carry it).
+
+---
+
+### ADR-267: Decouple the prompt-injection triage source from Code Scanning availability
+- **Date:** 2026-07-02
+- **Section:** shared/scripts/github_triage/consumer.py
+- **Run-ID:** iterate-2026-07-02-gh-prompt-ghost-fix
+- **Context:** The gh-prompt source (prompt-injection, from prompt_risks.json) only fired under 'if cs_alerts is None' — a gate inherited from the SAST path. But prompt-injection is NEVER in Code Scanning/SARIF (security.yml uploads only OSS SAST SARIF). So the source was OFF whenever Code Scanning was up (the healthy-repo case) and ON only when a code-scanning fetch failed — leaving the repo blind to prompt-injection, and when it fired it read a weekly-stale artifact. Root of a recurring gh-prompt ghost.
+- **Decision:** Evaluate the prompt-injection source on EVERY producer run, independent of cs_alerts: always fetch prompt_risks.json; keep the SAST findings.json fetch gated on 'cs_alerts is None' (it CAN double-count SARIF-streamed alerts; prompt-injection cannot). Also add a 'push: [main]' trigger to security.yml so the artifact tracks HEAD instead of refreshing only weekly.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Prompt-injection is orthogonal to Code Scanning — never in SARIF, so it cannot double-count, which was the sole reason for the cs_alerts gate on the SAST path.
+- **Consequences:** Prompt-injection is surfaced reliably even when Code Scanning is up (coverage improves, no signal lost). The producer makes 2 extra calls/run even when GHAS is up (throttled, acceptable). security.yml runs a full scan on every merge to main (free on this public repo; concurrency cancels superseded runs); NOT propagated to the adopt template (private-repo cost).
+- **Rejected:** Local HEAD re-scan in the producer (rejected: a second truth source that can diverge from CI's gate/SARIF; producer stays a pure CI-artifact reader). Symptom-only dismiss (rejected: doesn't fix recurrence).
+
+---
+
+### ADR-268: Diff-coverage Phase 1: measure, do not commit per-diff state or gate
+- **Date:** 2026-07-03
+- **Section:** Iterate — feature: diff-coverage measurement (Phase 1)
+- **Run-ID:** iterate-2026-07-03-diff-coverage-measure-one-tier
+- **Context:** Phase 1 of the diff-coverage campaign (trg-8fdebda3) must surface whether CHANGED lines are tested, with no grade effect and no gate. The draft plan said to populate the tracked coverage.total + .diff; a Codex plan review flagged both as unsound.
+- **Decision:** Measure diff-coverage on the shared/ tier (new measure_diff_coverage.py + a non-gating CI diff-cover step); write coverage.diff to a gitignored transient .shipwright/coverage/diff_coverage.json (never the tracked results file); render a grade-neutral dashboard INFO line. Defer tracked coverage.total + W4 activation to Phase 2.
+- **Commit:** (assigned post-merge)
+- **Rationale:** coverage.diff is PR-local, so committing it into a file read on the default branch shows stale data; a tracked coverage.total activates the W4 FAIL gate. Both violate informational-no-gate. A shared-only total would also misrepresent whole-repo coverage.
+- **Consequences:** Dashboard shows a real diff-coverage baseline (92% on this PR) with no grade or gate effect; coverage.diff never goes stale in tracked state; W4 stays SKIP until Phase 2 supplies a combined repo-wide total.
+- **Rejected:** Commit coverage.total + .diff per the draft (stale + silent W4 gate); a CI-only annotation with no tracked read (lights neither dashboard nor W4); a calibrated coverage.min floor now (a gate Phase 1 must avoid).
+
+---
+
+### ADR-269: Route GitHub-triage appends to the outbox on idle main
+- **Date:** 2026-07-03
+- **Section:** shared/scripts/github_triage/consumer.py
+- **Run-ID:** iterate-2026-07-03-github-triage-outbox-routing
+- **Context:** github_triage's producer (consumer.py::_maybe_append) called append_triage_item_idempotent WITHOUT to_outbox, so on idle main its gh-* appends wrote the TRACKED triage.jsonl, not the outbox. That stranded them as main-tree drift never reaching origin (PR-only), so later dismisses orphan-quarantined and the finding re-surfaced (the gh-prompt ghost's delivery gap). Every sibling background producer (check_drift, phase-quality, compliance, triage_add) already routes to the outbox.
+- **Decision:** Compute to_outbox = should_route_to_outbox(project_root) in import_findings and pass it through _maybe_append to append_triage_item_idempotent — mirroring check_drift. Idle main -> outbox (swept into the next iterate PR, reaches origin); worktree/iterate branch -> tracked. Resolves already routed correctly via mark_status.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Consistency: github_triage was the only background producer defaulting to tracked; the outbox delivery path already exists and is proven by the siblings.
+- **Consequences:** GitHub-triage background appends now reach origin via the existing outbox->sweep->PR pipeline; no more stranded drift or orphan-quarantined dismisses. No pipeline change — the producer just uses the same lane as its siblings. Added a regression guard (github_triage in the static background-producer routing test).
+- **Rejected:** Leave it tracked (the bug). Modify the sweep/quarantine to tolerate origin-absent appends (wrong layer — the gap is delivery, not classification).
+
+---
+
+### ADR-270: shipwright-grade: cold-repo signal projector (G1)
+- **Date:** 2026-07-04
+- **Section:** Campaign 2026-07-03-shipwright-grade / G1 (projector)
+- **Run-ID:** iterate-2026-07-03-grade-g1-projector
+- **Context:** Workstream C needs a repo-agnostic public grader that scores ANY git repo with the same Control Grade rubric as the dashboard/certification. The scoring engine is already repo-agnostic, so the work is projection + a new plugin, not a new engine.
+- **Decision:** Add a read-only plugin plugins/shipwright-grade that projects a LOCAL git repo into GradeInputs (git history to synthetic events; route/feature coverage + change-classification) and reuses compute_grade UNCHANGED via a lazy cross-plugin engine_bridge. Underivable dimensions render honest n/a; static test inventory is surfaced but NOT scored; local-only in G1.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reuse beats rebuild: engine + adopt detectors + SBOM/security collectors already exist. Cross-plugin import via ADR-045 lazy path (grade imports bare; only the compliance root binds scripts.lib) avoids extracting the engine and breaking compliance/webui vendored copies.
+- **Consequences:** Grade equals the dashboard grade by construction (one engine). Non-web repos grade thin (change-traceability only) until FR-inference broadens (G5). Security/deps/maintainability/test-health scoring + network enrichment land in G2. A hardened git_exec is the single git seam.
+- **Rejected:** Fabricating a test-health pass-ratio from static test presence (dishonest); extracting control_grade to shared (large blast radius); URL-clone-first (deferred to G4 behind resolve_target).
+
+---
+
+### ADR-271: Producer-side accepted-risk Semgrep rule tailoring
+- **Date:** 2026-07-03
+- **Section:** shipwright-security / semgrep normalizer
+- **Run-ID:** iterate-2026-07-03-semgrep-noise-tailoring
+- **Context:** The weekly self-scan re-surfaces 26 Semgrep findings (14 dependabot-missing-cooldown on the inert dependabot.yml; 12 github-actions-mutable-action-tag, all on GitHub-owned actions whose SHA-pin was declined 2026-06-30). Both are accepted-risk/by-design, not actionable.
+- **Decision:** Suppress at the producer via two opt-in, default-off env channels: SHIPWRIGHT_SEMGREP_EXCLUDE_RULES (exact check_id, wholesale) and SHIPWRIGHT_SEMGREP_ACCEPT_GH_OWNED_ACTION_TAGS (owner-scoped). Filtering lives in a new semgrep_tailoring module; the owner is read from the workflow file, not semgrep extra.lines.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Mirrors the CodeQL query-filters and Trivy risk-accept register: root-fix at the producer beats dismissing re-surfacing findings each week.
+- **Consequences:** The self-scan goes quiet on accepted noise without weekly Triage dismissals; adopted repos are unaffected (default-off); unpinned third-party actions stay flagged; owner-detection fails safe (keeps the finding) when the file is unreadable.
+- **Rejected:** Wholesale-excluding mutable-tag (loses future third-party detection); Triage dismissal (re-surfaces from each fresh scan); extra.lines-based owner detection (semgrep redacts it to 'requires login' when unauthenticated, as CI runs it).
+
+---
+
+### ADR-272: Diff-coverage feeds Control-Grade Test-Health as a threshold-gated WARN
+- **Date:** 2026-07-05
+- **Section:** diff-coverage Phase 3 (campaign sub-iterate 3)
+- **Run-ID:** iterate-2026-07-04-diff-coverage-grade-input-warn
+- **Context:** Phase 1/2 measured diff-coverage into a transient + a grade-neutral INFO line only. Pass-rate says nothing about whether the CHANGED lines were tested; the Test-Health dimension needs that signal. compute_grade is repo-agnostic and shared by the compliance dashboard AND the repo-agnostic grader, which has no transient (generic case deferred).
+- **Decision:** Add an optional GradeInputs.diff_coverage_percent (default None = not measurable => byte-identical grade). In Test-Health (dim 2), below 80% apply a moderate x0.85 penalty floored via max(score*0.85, min(score, _BROKEN_BELOW)) so diff-coverage never pushes an otherwise-non-collapsed suite into the F-collapse band (WARN, not a hard block; teeth are Phase 4). Only the monorepo adapter populates it, strict-validated (finite, [0,100]); the grader leaves it None.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Threshold-gated penalty matches the roadmap 'below threshold -> WARN' semantics and is least Goodhart-prone (binary, not a continuously-optimised knob); floor sourced by importing _grade_gate._BROKEN_BELOW so the WARN can never become an F-cap (applies the 2026-06-30 'keep penalty separate from collapse cap' convention).
+- **Consequences:** The monorepo grade now reflects 'were the changed lines tested', shown as a WARN in the Test-Health detail + the existing gap marker; no grade change on main (no transient) or on any repo the generic grader scores. Floor invariant is proven, not point-asserted. Threshold/factor are documented engine constants; Phase 4 upgrades the CI diff-cover step to a fail-gate.
+- **Rejected:** Continuous weighted blend 0.7*pass+0.3*(diff/100): penalises good coverage too, Goodhart-prone, mismatches 'below threshold'. New per-dimension 'warn' status: touches report_model + 4 renderers, over-scoped — the x0.85 drop below the 0.9 ok-threshold already renders the existing gap marker.
+
+---
+
+### ADR-273: Monorepo coverage combine via per-plugin [paths] remap; light W4
+- **Date:** 2026-07-04
+- **Section:** diff-coverage roadmap Phase 2
+- **Run-ID:** iterate-2026-07-04-diff-coverage-rollout-combine
+- **Context:** Phase 1 measured coverage on the shared tier only. Phase 2 must produce an honest repo-wide coverage.total to light the dormant W4 verifier. But each plugin runs 'cd plugins/<name> && pytest --cov=scripts', so coverage's relative_files records CWD-relative 'scripts/...' paths — the plugin identity is lost in the data file.
+- **Decision:** New tool combine_coverage.py remaps ONE per-tier data file at a time with a plugin-specific [paths] ('scripts/' -> 'plugins/<name>/scripts/'), folding all tiers into one repo-relative coverage.xml. record_coverage_total.py writes the tracked top-level coverage.total (measured 80.2%), preserving iterate_latest. New shipwright_test_config.json sets coverage.min=70 (conservative anti-ratchet floor), lighting W4 PASS.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A single global 'coverage combine' [paths] mapping cannot disambiguate N plugins that all recorded 'scripts/...' (empirically confirmed: it leaves them un-remapped -> 'coverage xml' errors). Per-plugin remap is the only mechanic that recovers repo-relative paths.
+- **Consequences:** W4 goes SKIP->PASS. coverage.total is a repo-stable baseline refreshed by re-running record_coverage_total.py; per-PR enforcement is diff-cover (Phase 4). Still no grade effect (Phase 3) and no CI fail-gate. New tracked config-file convention shipwright_test_config.json.
+- **Rejected:** Inline coverage-combine bash in ci.yml (untestable — the combine is the fiddly monorepo risk, so it belongs in unit-tested Python). Running plugins from the repo root to avoid the remap (breaks each plugin's pytest rootdir/config/imports).
+
+---
+
+### ADR-274: One static, allowlisted CTA link in the grade HTML report
+- **Date:** 2026-07-04
+- **Section:** Iterate — change: shipwright-grade CTA (adopt guidance + single trusted link)
+- **Run-ID:** iterate-2026-07-04-grade-cta-adopt
+- **Context:** The G3 report's CTA was a dead 'Grade → adopt → certify' chip: it looked clickable, linked nowhere, and named 'certify' — a later stage, not the next step for a cold repo.
+- **Decision:** Replace it with copy explaining what /shipwright-adopt does (3 steps) + the concrete next step, plus ONE static hardcoded CTA link to svenroth.ai/shipwright (target=_blank, rel=noopener noreferrer). 'certify' removed from the CTA (it stays only in the honest-ceiling disclaimer).
+- **Commit:** (assigned post-merge)
+- **Rationale:** A cold-repo report's most useful CTA is 'here's how to light up the N/A controls', not a certify button. One hardcoded link is safe: a user-initiated navigation is not an auto-fetch and the strict CSP is unchanged; untrusted repo data can never reach a URL context.
+- **Consequences:** The renderer emits exactly one <a>/href; the 'no external-request surface' invariant is TIGHTENED, not loosened — tests prove the sole anchor is the trusted CTA and hostile input still yields zero links. Attribute values now share the text seam (control-stripped + escaped).
+- **Rejected:** A model/repo-derived link (reintroduces the URL-injection surface); keeping the dead chip; a waitlist-form CTA (needs form-action, out of scope).
+
+---
+
+### ADR-275: Close G2 external-review findings: tighter test-check regex, URL-encoded ref, stronger golden
+- **Date:** 2026-07-04
+- **Section:** shipwright-grade G2 external-review follow-up
+- **Run-ID:** iterate-2026-07-04-grade-g2-review-followup
+- **Context:** The normal external LLM review (GPT-5.4 + Gemini 3.1 Pro via OpenRouter) of the merged G2 flagged tier-2 accuracy, a ref-encoding robustness gap, and an incomplete golden test.
+- **Decision:** Narrow the tier-2 test-check regex to test-specific tokens (drop bare build/ci false positives; test still subsumes pytest/vitest); URL-encode the code-scanning ref; strengthen the golden to a full-report byte-identical snapshot; add a SARIF-XML-lookalike-inert test; DOCUMENT (not change) that the engine emits a %-detail while the cold-repo projector supplies the N/M count via the established detail-override pattern.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Honest precision over coverage inflation; defensive query hygiene; a true byte-identity gate is worth more than a score-range check.
+- **Consequences:** Test-health no longer counts a green build/ci check as a passing test (honest ratio); a branch name with #/?/&/space can't break or inject into the query; any GradeReport drift now fails the golden.
+- **Rejected:** Adding N/M count fields to GradeInputs (engine-surface bloat for one consumer; the projector already delivers N/M).
+
+---
+
+### ADR-276: Cold-repo grade signals via reused collectors + additive engine field + network-gated test-health
+- **Date:** 2026-07-04
+- **Section:** shipwright-grade G2 (signals)
+- **Run-ID:** iterate-2026-07-04-grade-g2-signals
+- **Context:** G1 lit only git-history dimensions; G2 must light security, dependency, maintainability and test-health without forking the scoring engine or leaking private repos.
+- **Decision:** Light the remaining dimensions from reused code: maintainability via ONE additive optional GradeInputs.oversize_file_ratio + a dim-6 elif (byte-identical when None); dependency via the compliance SBOM collectors (NOT_INSTALLED excluded); security via code-scanning SARIF through the shared suppression-aware parser; test-health via 3 best-available tiers (CI JUnit, Scorecard rollup, static inventory). All network enrichment is behind --allow-network (default local-only; private auto-disables).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reuse keeps grader-grade == dashboard-grade by construction; the additive field satisfies the reuse-unchanged claim (golden-regression gated); network opt-in honours 'private repos never leave the machine'.
+- **Consequences:** A cold repo now grades on up to 6-7 dimensions; the engine stays a single source of truth (dashboard unchanged); untrusted CI JUnit is defusedxml-hardened; every network signal degrades deterministically to n/a on 403/no-network.
+- **Rejected:** Smuggling the size proxy into bloat_ratchet_delta (dishonest detail); per-PR REST N+1 for test-health (GraphQL rollup instead); counting NOT_INSTALLED deps as a hygiene failure.
+
+---
+
+### ADR-277: Escape-by-default HTML report renderer (shipwright-grade G3)
+- **Date:** 2026-07-04
+- **Section:** Iterate — feature: shipwright-grade G3 HTML report
+- **Run-ID:** iterate-2026-07-04-grade-g3-html-report
+- **Context:** shipwright-grade's public HTML lead-magnet renders UNTRUSTED repo strings (dir name, remote owner/repo, dimension details), so escape-only output is the load-bearing requirement — not the visual polish (plan §14 A).
+- **Decision:** Render FROM the typed report_model view-model through an auto-escaping element builder (el/_Raw): plain-string children are HTML-escaped as text by default. A restrictive meta CSP, zero inline JS, zero external-request surface, and control/bidi/ANSI stripping complete the posture; a compact terminal card renders off the same model.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Both external reviewers flagged manual per-field escaping as the one avoidable High risk; an escape-by-default builder makes the trusted/untrusted boundary one auditable seam a security test can exhaustively pin.
+- **Consequences:** XSS safety is structural, not per-call discipline — a forgotten wrap is escaped, not injected. Scored content is byte-identical (timestamp only in the footer); snapshot + parser-based inertness tests pin it. Adds --format html + two modules ≤300 LOC; no engine/scoring change.
+- **Rejected:** A Jinja2/template-engine dependency (weaker guarantee than one audited seam; adds a dep); flattening every field via one_line (mangles multi-line reasons — use strip_terminal + CSS pre-wrap instead).
+
+---
+
+### ADR-278: shipwright-grade G4: authoritative wiring + URL clone-and-grade + plugin registration
+- **Date:** 2026-07-04
+- **Section:** Spec/shipwright-grade-plan.md §4/§14 C·F (campaign G4)
+- **Run-ID:** iterate-2026-07-04-grade-g4-plugin-polish
+- **Context:** The G1 routing contract detected an authoritative .shipwright/ but always graded heuristically; URL clone-and-grade was deferred to G4; the plugin was unregistered. A real Shipwright repo must grade from its OWN records, and a URL must be gradeable, for the lead magnet.
+- **Decision:** Wire the authoritative path (collect_all -> build_grade_inputs -> the same compute_grade engine, via reuse_bridge); fix routing to the REAL layout (root shipwright_events.jsonl + traceability-matrix.md) + a bounded tail-read staleness check. Add URL clone-and-grade behind open_target() on the resolve_target seam (allowlist, shallow/no-submodule, ext/file off, non-interactive git, time+size caps, crash-safe tempdir). Register the plugin at v0.29.1.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reuse over rebuild: the same compliance adapter + engine the dashboard uses, and existing grader seams, so no projector rework and grade parity by construction.
+- **Consequences:** A grader-grade of a Shipwright repo equals its dashboard grade by construction (dogfood: A 99.9 authoritative). URL/owner-repo targets grade end-to-end (verified vs a live GitHub repo). Any corrupt/partial/stale/oversize/exception .shipwright/ falls back to labelled heuristic. sync_check green (14 plugins).
+- **Rejected:** GitHub-only host allowlist (the lead magnet grades ANY public repo). Mid-flight size cap via partial clone (on-demand blob fetch breaks offline/read-only). Whole-log staleness heuristic (false-flags healthy repos; keyed on the newest work commit only).
+
+---
+
+### ADR-279: Plain-language copy layer for the grade report (marketing instrument)
+- **Date:** 2026-07-04
+- **Section:** Iterate — change: shipwright-grade report audience-copy redesign
+- **Run-ID:** iterate-2026-07-04-grade-report-audience-copy
+- **Context:** The public grade report is a marketing instrument for non-experts, but its cards spoke compliance jargon ('not measurable — needs per-change behavior-impact (BP-2)'), so the target audience understood nothing and bounced.
+- **Decision:** Overlay a render-only per-dimension plain-language copy layer (lib/report_copy.py): each card leads with a plain question + one-liner + a concrete-scenario expandable 'why it matters' + an honest 'With Shipwright' upside; the open-standard anchor + provenance are kept but moved into the expandable. Engine untouched. CTA → two next steps (Understand→Masterclass, Fix→adopt).
+- **Commit:** (assigned post-merge)
+- **Rationale:** The landing audience is pre-Shipwright non-experts; a scorecard they can't read doesn't convert. Every 'With Shipwright' claim states the enforced mechanism (verified vs Shipwright's own live A grade), never perfection.
+- **Consequences:** The report teaches a non-expert what each control means and what improves — funnelling to adopt + the Masterclass. Security model unchanged (escape-only; 2 static trusted CTA links). New lib/_html_dom.py isolates the escape seam. Honesty hedges + full dimension coverage are pinned by tests.
+- **Rejected:** Changing the shared engine's detail strings (breaks the dashboard/cert that share it); dropping anchor/provenance entirely (spec requires them surfaced — kept in the expandable).
+
+---
+
+### ADR-280: Tier-3 PR review filters generated files from the diff before truncation
+- **Date:** 2026-07-04
+- **Section:** Iterate — change: pr_review excludes generated artifacts
+- **Run-ID:** iterate-2026-07-04-pr-review-exclude-generated-diff
+- **Context:** The Tier-3 pr_review gate fetches the full gh-pr-diff and fails CLOSED when it exceeds MAX_DIFF_CHARS=200k. On medium+ iterates ~82% of the diff (measured 241k/295k chars on PR #310) is producer-regenerated artifacts, so ordinary PRs trip truncation and lose their automated review (skip-pr-review then disables it entirely).
+- **Decision:** Add pr_review_diff_filter.filter_generated_paths: split the unified diff at diff --git boundaries and drop sections for generated paths (.shipwright/compliance/, .shipwright/agent_docs/, CHANGELOG-unreleased.d/, lockfiles, append-log state files) BEFORE the truncation check. Disclose the excluded list in the PR meta (model) + comment (human).
+- **Commit:** (assigned post-merge)
+- **Rationale:** The fail-closed itself is correct (iterate-2026-06-17); the fixable part is the INPUT bloat. Filtering is semantically right — reviewing a regenerated dashboard/lockfile line-by-line is meaningless.
+- **Consequences:** PR #310 diff drops 295k->54k chars (no longer truncated) so the review runs on real code only; the fail-closed-on-truncation stays intact for a genuinely large CODE diff. Excluded paths are non-executable + covered by the compliance detective audit.
+- **Rejected:** Bumping MAX_DIFF_CHARS (symptom-only, wastes tokens on lockfiles, next big iterate re-trips it); doing nothing (large PRs keep losing review).
+
+---
+
+### ADR-281: Prompt-scan matches executable code, not string/comment token text
+- **Date:** 2026-07-04
+- **Section:** shipwright-security / prompt_injection_scan.scan_python
+- **Run-ID:** iterate-2026-07-04-prompt-scan-literal-fp
+- **Context:** The prompt-injection scanner matched PY_DANGEROUS_PATTERNS (os.system(/eval(/exec() line-by-line against raw source, skipping only whole-line comments. Token text inside string literals, docstrings, and inline comments therefore matched as if it were a real call. A security-audit test (plugins/shipwright-grade/tests/test_reused_collector_audit.py) that lists those tokens as forbidden string literals produced 3-4 high false positives (CI run 28686996368).
+- **Decision:** Blank STRING/COMMENT/f-string token spans (spaces, positions preserved) before regex matching, extracted into the new py_token_filter.blank_noncode_spans helper; scan_python calls it. Falls back to the raw line scan when the source does not tokenize (invalid Python).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Structural fix over per-file allowlisting: the naive substring match, not any single file, was the root cause; the whole false-positive class is closed.
+- **Consequences:** String/docstring/comment token text is no longer a false positive; real calls still flag; reported line numbers and multi-token patterns (e.g. shell=True) stay accurate; SELF_REFERENCE_PATHS is now belt-and-suspenders; scanner baseline nudged 728->730 (grandfathered).
+- **Rejected:** Per-file allowlist (SELF_REFERENCE_PATHS entry) - does not scale to future audit tests; restructuring the test to hide the literals - degrades the test to appease the scanner.
+
+---
+
+### ADR-282: Diff-coverage CI gate: warn-only --fail-under=80, hard flip deferred
+- **Date:** 2026-07-05
+- **Section:** Iterate — change: diff-coverage CI gate (Phase 4, warn-only)
+- **Run-ID:** iterate-2026-07-05-diff-coverage-ci-gate
+- **Context:** Diff-coverage roadmap Phase 4 adds a CI gate on the % of CHANGED lines tested. The roadmap prescribes an anti-ratchet two-step rollout: warn first, settle ~1-2 weeks, then hard-block.
+- **Decision:** ci.yml runs `diff-cover --fail-under=80` but keeps continue-on-error (warn-only): an under-tested PR shows a red step without blocking merge. 80 == control_grade._DIFF_COV_WARN_THRESHOLD. The hard flip (drop continue-on-error + the ci_gate_allowlist entry) is a deferred follow-up.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Anti-ratchet discipline (like the bloat gate): calibrate on the real baseline (92% diff-coverage) before teeth. 80 aligns the CI gate with the Phase-3 grade WARN threshold so the two signals agree.
+- **Consequences:** PRs that under-test changed lines get a visible warning now; nothing is blocked until the hard flip. The step stays allowlisted (tracked-debt); the CI-gate guard's stale-entry + reverse-drift checks enforce it stays gating once the flip lands.
+- **Rejected:** Hard-block immediately (skips the settling window, risks surprise merge blocks); threshold 90 (too close to the 92% baseline, more churn, diverges from the grade's 80).
+
+---
+
+### ADR-283: Mode-dependent honest-ceiling note; drop BP-2 codename from provenance
+- **Date:** 2026-07-05
+- **Section:** Iterate — change: grade report honest-ceiling note + provenance codename
+- **Run-ID:** iterate-2026-07-05-grade-authoritative-disclaimer
+- **Context:** The grade report's honest-ceiling disclaimer was hardcoded to the heuristic text, so an AUTHORITATIVE grade (from the repo's own .shipwright/ records) falsely called itself a 'heuristic estimate from the outside' — the exact over-claim the ceiling exists to prevent. The reconciliation provenance also leaked the internal 'BP-2' codename.
+- **Decision:** Make honest_ceiling_note mode-dependent (ceiling_note_for): authoritative → 'computed from this repo's own Shipwright records … measures control discipline, not behaviour-correctness'; heuristic keeps the cold-repo note. Drop '(BP-2)' from the reconciliation provenance source. View-model only; scoring engine untouched.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Honesty is the product's whole positioning; an authoritative grade calling itself a heuristic outside-estimate is a self-inflicted debunk.
+- **Consequences:** All renderers (terminal/markdown/html) show the honest note matching the grade's mode; the report is codename-free. Verified on the shipwright repo (authoritative A/99.9). HTML golden regenerated; 273 tests green.
+- **Rejected:** Changing the shared engine's reconciliation detail string (BP-2 also lives there, but it's shared with the dashboard/cert and only shows in the dev terminal card, not the HTML marketing report).
+
+---
+
+### ADR-284: Import engine_bridge normally in authoritative tests
+- **Date:** 2026-07-05
+- **Section:** plugins/shipwright-grade/tests/test_authoritative.py
+- **Run-ID:** iterate-2026-07-05-grade-test-import-cleanup
+- **Context:** The prompt-injection scanner flagged two `__import__("engine_bridge")` calls in test_authoritative.py (lines 99, 108) as PY_DYNAMIC_IMPORT (medium) — CI run 28719714629. Benign (hardcoded local first-party module, no attacker input) but inconsistent with every other engine_bridge importer in the plugin, which use a normal top-level import.
+- **Decision:** Replace both `__import__("engine_bridge").load_engine()` with a top-level `from engine_bridge import load_engine` + `load_engine()`, matching the sibling tests (test_engine_bridge.py, test_projector_fixtures.py). Root-cause removal of the pattern, not a scanner suppression / allowlist entry.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Fix-not-suppress: no real risk existed, only inconsistent style; removing the __import__ token keeps the scanner rule intact and clears the noise permanently.
+- **Consequences:** Both scanner findings cleared at the source (verified: full prompt-scan now reports 0 findings, down from 2); test file consistent with the rest of the package; no behavior change (8/8 tests green before and after; full plugin suite 265 passed).
+
+---
+
+### ADR-285: Guard phase_session_start + self-heal cache/shipwright/plugins/
+- **Date:** 2026-07-07
+- **Section:** phase_session_start guard + cross-plugin cache heal
+- **Run-ID:** iterate-2026-07-06-cross-plugin-cache-heal
+- **Context:** After the shared/ self-heal (#326), a fresh macOS install ran the ../../shared/* hooks but phase_session_start crashed (TypeError: NoneType not callable) at the find_phase_task_by_session_uuid call. It imports that from the shipwright-run plugin via ../../plugins/shipwright-run/scripts/lib; that cache/shipwright/plugins/ tree, like shared/, is not delivered by a plain install, so the import degraded to None and run() called it unguarded (unlike the sibling stop/prompt hooks).
+- **Decision:** 1) Guard: run() returns 0 (standalone) when the cross-plugin lifecycle import is None, never crashing. 2) Heal: ensure_shared_cache now also mirrors installed versioned plugin dirs into cache/<name>/plugins/shipwright-X (no clone needed), re-vendored to all 12. Extracted the two context-block builders to phase_context_blocks.py to keep the hook under 300 LOC.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The guard mirrors the two sibling hooks already carrying it; healing plugins/ from the installed dirs needs no clone. The self-heal cannot live in shared/ (it repairs it) so it stays vendored plugin-local.
+- **Consequences:** Fresh marketplace installs self-heal plugins/ and phase_session_start degrades gracefully instead of crashing. New phase_context_blocks.py sibling module; 12 vendored copies re-synced (drift-tested).
+- **Rejected:** Guarding phase_session_start alone (the plugins/ heal is the systemic fix for all cross-plugin refs); a bloat-exception ADR for the +LOC (a cohesive extraction is cleaner than grandfathering).
+
+---
+
+### ADR-286: Compliance dashboard: diff-coverage is a graded/gated control, not 'informational'
+- **Date:** 2026-07-06
+- **Section:** Iterate — change: diff-coverage dashboard honesty
+- **Run-ID:** iterate-2026-07-06-diff-coverage-dashboard-honesty
+- **Context:** The compliance dashboard's diff-coverage line said '(informational, not yet graded)' and the renderer claimed it 'does NOT affect the Control Grade'. Both became false: Phase 3 (#322) made it feed Test-Health; the Phase-7 hard flip (#330) made it an enforced CI merge gate. A dashboard calling a hard control 'informational' is exactly the drift a compliance surface must not have.
+- **Decision:** Rewrite the _diff_coverage_block.py wording (INFO prefix + docstrings) to present diff-coverage as a Control-Grade Test-Health input with target >=80%. Keep it generic (no hardcoded 'blocks merge' — that is repo-CI-specific), since the same renderer runs on every managed repo.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Compliance dashboards must reflect real control strength. The renderer being repo-agnostic means the fix is a wording correction, not new per-repo code.
+- **Consequences:** The dashboard no longer misrepresents an enforced control as informational. Because the renderer already reads {project_root}/.shipwright/coverage/diff_coverage.json with no monorepo gate, every managed repo that produces the transient (post-rollout) gets the same honest signal automatically.
+- **Rejected:** Hardcoding 'CI hard-gate blocks merge' (false on repos that measure coverage without a gate step). CI-gate-aware wording (parse ci.yml) deferred as a follow-up.
+
+---
+
+### ADR-287: Prove the diff-coverage gate bites before the hard-flip
+- **Date:** 2026-07-06
+- **Section:** Iterate — change: diff-coverage gate hardening
+- **Run-ID:** iterate-2026-07-06-diff-coverage-gate-hardening
+- **Context:** Phase 4 (#324) shipped the warn-only diff-cover --fail-under=80 CI gate, but its FAIL-path never ran: #324's diff was CI/tests/docs, so diff-cover reported 'No lines with coverage information in this diff.' and the threshold was a no-op. The inline shell wrapper, deprecated --json-report/--markdown-report flags, and unpinned diff-cover were all unproven.
+- **Decision:** Move the gate DECISION into a tested measure_diff_coverage.py --fail-under entrypoint (pure decide_gate in new lib/diff_coverage_gate.py) that prints the report and exits FAIL/PASS/ERROR; ci.yml calls it. Pin diff-cover==10.3.0 + migrate to the non-deprecated --format flags. Prove the fail-path with a real synthetic-repo integration test.
+- **Commit:** (assigned post-merge)
+- **Rationale:** You don't flip a gate to hard-block on unproven teeth. Moving the decision into Python makes it unit/integration-testable; a distinct ERROR exit closes the crash-to-false-green hole an adversarial review surfaced.
+- **Consequences:** The gate fail-path is now provable and CI-enforced (the shared-tests step provisions diff-cover). A diff-cover crash/absence fails CLOSED (distinct ERROR exit) instead of silently greening the gate. Still warn-only (continue-on-error kept); the hard-flip remains deferred — this iterate is its prerequisite.
+- **Rejected:** Leaving a cosmetic diff-cover token in ci.yml to keep guard classification (fragile) — instead registered measure_diff_coverage in GATE_COMMANDS (honest). Keeping the inline shell wrapper (untestable).
+
+---
+
+### ADR-288: Diff-coverage gate flipped to hard-block (< 80% changed-line coverage blocks merge)
+- **Date:** 2026-07-06
+- **Section:** Iterate — change: diff-coverage hard flip
+- **Run-ID:** iterate-2026-07-06-diff-coverage-hard-flip
+- **Context:** The warn-only diff-coverage gate proved its teeth: the tested wrapper (#328) + real-PR replay corpus (#329) showed 4 pass / 1 legitimate fail at 80% on real traffic, with path alignment verified on shared/ and plugin tiers. The settling window is over.
+- **Decision:** Drop continue-on-error from the ci.yml 'Diff coverage (gate)' step and remove its ci_gate_allowlist entry, so a PR with < 80% changed-line coverage BLOCKS merge. The CI-gate guard's reverse-drift + stale-entry checks then enforce the step stays gating.
+- **Commit:** (assigned post-merge)
+- **Rationale:** You don't hard-block on unproven teeth — but the teeth are now proven by a real-PR corpus. The one real fail (#325, 68%) was a legitimate coverage gap, not a false alarm, so 80% is not spurious.
+- **Consequences:** Under-tested PRs are blocked (fix = add tests, the intended action; a diff-cover crash fails closed too). WebUI is unaffected (no gate there). Threshold stays 80; revisit upward as green-PR history grows.
+- **Rejected:** Waiting a longer calendar window (the replay corpus already provided the settling-window signal). Raising the threshold now (premature without more green-PR history).
+
+---
+
+### ADR-289: Empirical flip-justification via a pinned real-PR replay corpus
+- **Date:** 2026-07-06
+- **Section:** Iterate — change: diff-coverage real-PR replay corpus
+- **Run-ID:** iterate-2026-07-06-diff-coverage-real-pr-replay
+- **Context:** The Phase-4 hard-flip needs settling-window evidence: how would an 80% hard gate decide on real traffic? Synthetic tests prove the mechanism but not the real-world distribution or path alignment across tiers.
+- **Decision:** Pin the exact diff-cover.json each of the last 5 monorepo PRs (#324-#328) produced in CI as fixtures + a provenance MANIFEST, and replay them through measure_diff_coverage --fail-under 80 in a deterministic offline integration suite (record/replay, like G5). WebUI is out of scope (no coverage.xml there).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Real PR reports beat synthetic corpora for a go/no-go decision; pinning them (vs live GH fetch) keeps the suite deterministic + CI-safe. Replaying the DECISION on the real report is honest: diff-cover's line-counting already ran authoritatively in each PR's CI.
+- **Consequences:** Real-data evidence for the flip is frozen + regression-guarded: distribution @80 = 4 pass / 1 legit fail (#325 68%, adopt seams shipped untested). Proves shared- AND plugin-tier path alignment on real reports. Future gate-logic regressions on real shapes are caught.
+- **Rejected:** Live-fetching PRs in the test (flaky, needs gh auth). Re-running diff-cover against reconstructed repo states (expensive, non-deterministic). A WebUI 5+5 corpus (WebUI has no coverage.xml — every PR would be no-lines).
+
+---
+
+### ADR-290: Surrounding-quote stripping at path/URL input seams
+- **Date:** 2026-07-06
+- **Section:** shipwright-grade + shipwright-adopt input seams
+- **Run-ID:** iterate-2026-07-06-grade-adopt-path-quotes
+- **Context:** macOS-reported class (WebUI #195): a user-supplied path or repo URL wrapped in a balanced quote pair (Explorer 'Copy as path' yields "C:\..."; a pasted quoted README URL) was only whitespace-stripped, so the stray quote made grade's resolve_target/clone allowlist and adopt's --project-root Path probe reject a valid target.
+- **Decision:** Strip one balanced surrounding quote pair (single/double) + trim at the input boundary: grade at the open_target seam (covers CLI/plugin/npx), adopt via a new unquoted_path argparse type on 4 --project-root seams. Downstream validation/escaping unchanged.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Mirrors the WebUI normalize-fs-path fix; boundary-sanitise keeps the core validators unchanged; a real path never both begins and ends with the same quote character.
+- **Consequences:** Quoted paths/URLs resolve instead of erroring; no FR changed. Two small self-contained helpers (grade normalize_input, adopt cli_paths) since grade ships standalone. generate_adoption_artifacts.py left unwired (grandfathered-oversize; late seam with an already-resolved root).
+- **Rejected:** One shared helper in shared/scripts/lib -- rejected: grade is standalone and the ../../shared cache delivery is itself unreliable (a sibling iterate hardens it).
+
+---
+
+### ADR-291: Cold-repo Control Grade caps at B — A is authoritative-only
+- **Date:** 2026-07-06
+- **Section:** shipwright-grade / cold-repo projector (post-G6 honesty follow-up)
+- **Run-ID:** iterate-2026-07-06-grade-cold-repo-b-cap
+- **Context:** After G6, a cold external repo excellent on every MEASURABLE axis (CI test-health, PR provenance, file size) could still read A (Under full control) via Scorecard n/a-exclusion — while change-reconciliation (are changed requirements re-verified?), a load-bearing control the grade's thesis rests on, is STRUCTURALLY unmeasurable cold (no RTM / behavior-impact).
+- **Decision:** Declare change_reconciliation the one expected_dimensions entry in the cold projector, so the unchanged honesty gate caps a cold grade at B (NON_A_CEILING=89) with a factual verdict ('verification incomplete — change reconciliation not measured'). A cold repo now spans C..B; A is authoritative-only.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The Control Grade's thesis is 'can you verify the changes'; reconciliation is central to it, so A should require it. n/a-exclusion let the headline claim more certainty than exists — B ('minor gaps') is the truer headline for a cold repo. Per-dimension table still shows full A-level measurable detail.
+- **Consequences:** express/agent-skills A->B (89), superpowers B, flask C, request F; ordering (well-run>deprecated) holds. Heuristic-only: the authoritative path sets its own expected_dimensions from real records (monorepo reconciliation measured 1.0) → dogfood stays A 100. Honest upgrade path: free grader -> at best B; adopt -> A reachable.
+- **Rejected:** Keep A reachable cold (the pre-cap G6 state) — over-claims 'full control' over an unmeasurable control. Cap via the scorer — rejected: scorer stays untouched; the cap is a projection tweak reusing the existing dark-expected gate.
+
+---
+
+### ADR-292: Empirical calibration suite: SHA-pinned real-OSS record/replay launch gate
+- **Date:** 2026-07-06
+- **Section:** shipwright-grade / G5 empirical suite
+- **Run-ID:** iterate-2026-07-06-grade-g5-empirical-suite
+- **Context:** Unit fixtures prove the code does what we coded, not that the rubric grades reality sensibly. G5 grows G1's seeded harness into a curated real-OSS verification suite that gates the public launch (Spec/shipwright-grade-plan.md §13/§14).
+- **Decision:** Grade real repos pinned to a commit SHA; cache the projected GradeInputs + report-extras (NOT the final grade) so compute_grade re-runs on every offline replay and catches rubric regressions. Assert bands + relative ordering, never exact scores. Opt-in workflow_dispatch launch gate (network+gh), excluded from the hermetic PR gate. Calibration contradictions tune the projection heuristics, NEVER the shared scorer.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A lead magnet that mis-grades real repos is worse than none; a red launch gate that surfaces the miscalibration IS the gate working. Caching pre-engine inputs keeps replay offline+deterministic yet still exercises the rubric.
+- **Consequences:** The suite immediately surfaced a real projector miscalibration (flask F 19.9 below deprecated request 41.2; ordering inverted) via two heuristics (traceability classifier 24/500; network test-health 0/20). The -m empirical gate is correctly RED and blocks launch until a follow-up calibration iterate (G6); a fixture --refresh diff is the calibration review signal.
+- **Rejected:** Caching the final grade (would not catch rubric regressions on replay); pure-pytest with no runner (the AC names run_empirical.py and the gallery is the grader's own render_html, not a pytest report); fudging expected_bands to F to green the gate (hides the finding).
+
+---
+
+### ADR-293: Cold-repo projector calibrated to well-run > deprecated (G6)
+- **Date:** 2026-07-06
+- **Section:** shipwright-grade / cold-repo projector (campaign 2026-07-03-shipwright-grade G6)
+- **Run-ID:** iterate-2026-07-06-grade-g6-projector-calibration
+- **Context:** G5's empirical launch gate was RED: every real OSS repo graded F, ordering inverted. The honesty gate caps any cold repo whose change-traceability < 0.5, and git-log PR-ref provenance is < 0.5 for all (squash-merge strips refs).
+- **Decision:** Tune the PROJECTION heuristics only (scorer + honesty gate unchanged): test-health keys on the CI-system app slug with a merge-OR-PR-head rollup + a has_test_infra low-vs-n/a gate; change-traceability uses the network PR-association ratio (new provenance_signal.py; git-log fallback offline); requirement-traceability drops self-referential routes. Calibration asserts WELL-RUN > DEPRECATED.
+- **Commit:** (assigned post-merge)
+- **Rationale:** On measurable cold signals control posture != reputation: express is more traceable than flask (98% vs 51%). Git-log provenance anti-correlates with quality; the faithful signal is the network PR-association (SLSA code-review).
+- **Consequences:** flask C, express/agent-skills A, superpowers B, request F; ordering holds. Only deprecated request grades F (reputational guard). Cold repos can still reach A; the monorepo stays A via the untouched authoritative path.
+- **Rejected:** Broadening the git-log classifier (spec fix 1) — empirically insufficient (flask 0.14 < request 0.20). Forcing flask>express — a Goodhart fudge.
+- **Details:** [2026-07-06-grade-g6-projector-calibration.md](../planning/iterate/2026-07-06-grade-g6-projector-calibration.md)
+
+---
+
+### ADR-294: Surface-aware /shipwright-run hand-off (CLAUDE_CODE_ENTRYPOINT)
+- **Date:** 2026-07-06
+- **Section:** Iterate — change: surface-aware run hand-off banner
+- **Run-ID:** iterate-2026-07-06-run-board-handoff-banner
+- **Context:** The /shipwright-run master printed a pre-embedded-terminal open-a-new-terminal-and-paste launch card. It misled WebUI users and dead-ended in the VS Code extension and desktop chat, which cannot spawn a bound claude --session-id phase session.
+- **Decision:** Branch the Step 5 and Resume banners on CLAUDE_CODE_ENTRYPOINT: a terminal (cli or WebUI embedded) gets the board Continue plus paste card; a chat surface (claude-vscode or desktop) gets an honest warning that this surface cannot launch the pipeline, pointing to a terminal or the Command Center.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Native CLAUDE_CODE_ENTRYPOINT needs no WebUI marker, keeps the fix plugin-only, and stays forward-compatible with a future single-session pipeline mode.
+- **Consequences:** The misleading paste-only card is fixed and the plugin still works without the WebUI. Extension and desktop users are told the truth instead of a silent stall. Multi-session board polish was deliberately deferred.
+- **Rejected:** A SHIPWRIGHT_WEBUI marker needing a coupled WebUI change, and building the multi-session board Continue-auto-launch now which a single-session pipeline would throw away.
+
+---
+
+### ADR-295: Accepted-risk GH-owned action-tag drop reaches the artifact-ingest path, not just the plugin scan
+- **Date:** 2026-07-07
+- **Section:** iterate-2026-07-06-semgrep-accept-producer
+- **Run-ID:** iterate-2026-07-06-semgrep-accept-producer
+- **Context:** The owner-scoped SHIPWRIGHT_SEMGREP_ACCEPT_GH_OWNED_ACTION_TAGS drop only fired in the plugin local scan (normalize_tailored). Adopted repos run raw 'semgrep scan --sarif', so the un-tailored SARIF reached the gh-security triage producer AND the Control-Grade Security dimension, recurring a false 'N low' alarm for formally-accepted GH-owned mutable-action-tags in every adopted repo (webui run 28784266061: 18 open, all GH-owned).
+- **Decision:** Lift the owner-scoped predicate into the shared leaf module shared/scripts/gh_action_tag_owner.py and apply the same opt-in drop in security_findings._findings_from_sarif, beside the inSource-suppression filter. The triage consumer and refresh_ci_security pass the repo root as workflow_base so the owner is read from the checked-out workflow file at the finding's line. Third-party tags stay flagged; an unresolvable owner keeps the finding.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Placing the drop at the ingest boundary next to the SARIF-suppression filter keeps both accepted-noise classes cohesive; owner read from the file (not the redacted scanner snippet) mirrors the plugin. base_dir enforces the repo-relative uri contract (absolute/.. rejected -> KEEP) as over-suppression defense-in-depth.
+- **Consequences:** An opted-in adopted repo no longer over-counts accepted GH-owned mutable-tags in triage or the grade; plugin scan and both ingest consumers share one predicate. download_security_findings gains a workflow_base kwarg (6 test doubles updated). Default OFF, so non-opted repos are unchanged; inSource suppressions were already honoured.
+- **Rejected:** Lever B (env-gated post-scan normalize in security.yml.template): deferred - needs a per-repo workflow-edit PR and targets the CI Security tab, not the reported triage/grade over-count. cwd-relative owner resolution instead of an explicit workflow_base: rejected - the import hook does not chdir to project_root, so cwd resolution would silently fail-KEEP and the drop would never fire.
+
+---
+
+### ADR-296: Self-heal the shared/ cache on marketplace installs (vendored SessionStart hook)
+- **Date:** 2026-07-06
+- **Section:** shared/ plugin-cache delivery
+- **Run-ID:** iterate-2026-07-06-shared-cache-selfheal
+- **Context:** Every plugin hook reaches shared code via ${CLAUDE_PLUGIN_ROOT}/../../shared/...; but shared/ is not a plugin, so a plain 'claude plugin install' never delivers cache/shipwright/shared (only scripts/update-marketplace.sh creates it). On a fresh install every ../../shared/* hook 404s (fail-open, noisy -- track_tool_calls.py 'cannot find its own path' on macOS).
+- **Decision:** New ensure_shared_cache.py SessionStart hook: when shared/ is missing, mirror it from the marketplace full-clone. Stdlib-only, fail-open, idempotent, runs first. Vendored byte-identically into all 12 hook-bearing plugins (a plugin-local file is the only reliable marketplace delivery); drift + registration gated by a bidirectional meta-test.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The self-heal cannot live in shared/ (it repairs shared/); a plugin-local vendored hook is the only marketplace-delivered artifact. Fail-open never blocks a session.
+- **Consequences:** Fresh marketplace installs self-heal shared/ on first session; the dev --plugin-dir model is a no-op. 12 vendored copies kept in sync by the drift test. grade + preview (no hooks.json) are excluded.
+- **Rejected:** shipwright-run-only (misses standalone single-plugin installs); one shared helper (undeliverable); documenting update-marketplace.sh as required (fragile -- relies on user action).
+
+---
+
+### ADR-297: Adopted vitest repos ship a warn-only diff-coverage gate
+- **Date:** 2026-07-07
+- **Section:** Iterate — change: diff-coverage adopt-template rollout
+- **Run-ID:** iterate-2026-07-07-diff-coverage-adopt-templates
+- **Context:** diff-coverage was monorepo-only self-hosting; adopted repos + WebUI got nothing. The pattern was proven end-to-end on WebUI (PR #205, client/server, merged green): vitest cobertura + diff-cover resolving each package's paths natively via <source> (no combine script).
+- **Decision:** Add a warn-only diff-coverage job to the vitest adopt CI templates (ci-supabase-nextjs flat + ci-vite-hono client/server): npm coverage (cobertura) -> pinned uvx diff-cover@10.3.0 --fail-under=80, continue-on-error, ubuntu-only, PR-gated, dormant with the template. The adopter flips to hard-block later.
+- **Commit:** (assigned post-merge)
+- **Rationale:** diff-cover's native <source> path resolution makes the client/server monorepo case trivial (proven on WebUI). Warn-only mirrors the monorepo's proven safe rollout.
+- **Consequences:** Every future vitest adoptee gets the changed-line coverage gate for free (dashboard + grade already repo-agnostic; the CI gate was the missing piece). Requires the repo to add @vitest/coverage-v8 (documented in the job comment). Python-monorepo template deferred (combine-complex, no adoptee).
+- **Rejected:** A custom cobertura combine/reroot script (diff-cover handles it natively). Hard-block at rollout (would block an adopter's first PRs — no settling window). SHA-pinning GitHub-owned actions (accepted-risk per the documented decision; third-party setup-uv IS pinned).
+
+---
+
+### ADR-298: Diff-coverage gate as a consumed composite action
+- **Date:** 2026-07-07
+- **Section:** Iterate — change: diff-coverage composite action
+- **Run-ID:** iterate-2026-07-07-diff-coverage-composite-action
+- **Context:** The diff-coverage gate was duplicated inline in three places (monorepo measure wrapper, WebUI ci.yml, both vitest adopt templates); copies drift and framework fixes never reach consumers.
+- **Decision:** Extract the gate into ONE monorepo composite action .github/actions/diff-coverage-gate; the vitest adopt templates now consume it via 'uses: svenroth-ai/shipwright/.github/actions/diff-coverage-gate@main' instead of inlining 'uvx diff-cover'. Stage 1 of 3 (WebUI + monorepo-self deferred).
+- **Commit:** (assigned post-merge)
+- **Rationale:** A composite action (not a reusable workflow) runs as steps inside the caller job, so it reads the caller's already-produced cobertura files. One source of truth ends the copy drift.
+- **Consequences:** A gate fix in the monorepo flows to every adopter on their next run. Templates stay dormant + warn-only (non-breaking). Inputs are injection-safe (env, not expression-interpolated); setup-uv SHA-pinned; @main = intentional first-party auto-propagation.
+- **Rejected:** Reusable workflow (cannot read the caller's coverage artifacts without extra upload/download plumbing); keeping the inline copies (the drift problem being solved).
+
+---
+
+### ADR-299: Monorepo self-consumes the diff-coverage gate action
+- **Date:** 2026-07-07
+- **Section:** Iterate — change: diff-coverage self-consume (Stage 3)
+- **Run-ID:** iterate-2026-07-07-diff-coverage-self-consume
+- **Context:** After Stages 1-2 the monorepo's own ci.yml still defined the diff-coverage HARD gate inline via measure_diff_coverage.py --fail-under, duplicating the gate DECISION that now lives in the shared composite action.
+- **Decision:** Route the monorepo's 'Diff coverage (gate)' step through the shared action via a LOCAL './.github/actions/diff-coverage-gate' path. Stage 3 of 3: the gate DECISION now has ONE source consumed by adopt templates + WebUI + the monorepo. measure_diff_coverage.py stays as the local dashboard producer + tested reference, no longer the CI gate.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A local path ref self-consumes the action without the @main bootstrapping wrinkle; the new guard token keeps the merge gate protected.
+- **Consequences:** The CI-gate guard gains 'diff-coverage-gate' in GATE_USES so the uses: gate step stays visible to reverse-drift (a future continue-on-error is caught). Local './' (not @main): a PR editing the action is gated by its own checkout, no mutable-tag finding. diff-cover.json/md dropped from the artifact upload (report stays in the log).
+- **Rejected:** @main self-reference (a PR editing the action would be gated by the OLD action); deleting measure_diff_coverage.py (it produces the dashboard json + the replay corpus).
+
+---
+
+### ADR-300: Route both GH-owned action-tag call-sites through the shared combined predicate
+- **Date:** 2026-07-07
+- **Section:** iterate-2026-07-07-gh-tag-helper-wire-in
+- **Run-ID:** iterate-2026-07-07-gh-tag-helper-wire-in
+- **Context:** iterate-2026-07-06-semgrep-accept-producer added the combined helper gh_action_tag_owner.is_github_owned_action_tag but shipped it UNUSED: security_findings._is_accepted_gh_owned_tag and the plugin's semgrep_tailoring._is_github_owned_action_tag each re-implemented the same 'mutable-tag AND GitHub-owned owner' logic inline via the primitives. Dead-weight + duplicated logic.
+- **Decision:** Behavior-preserving simplify (SIMPLIFY sub-mode, Spec Impact NONE): route both call-sites through is_github_owned_action_tag and drop the now-unused primitive imports (is_mutable_action_tag_rule, is_github_owned_owner). The plugin's _action_owner_from_file compatibility wrapper stays (still exercised by the plugin's own tests). No behavior change; the combined predicate is now the single source and is exercised.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The leaf module already exposed the combined predicate as the natural entry point; both consumers duplicating it inline was the smell the helper existed to remove. Behavior-preserving because is_github_owned_action_tag is definitionally is_mutable_action_tag_rule AND is_github_owned_owner(action_owner_from_file(...)).
+- **Consequences:** One predicate implementation instead of three; the previously-dead helper is now covered. No public API or behavior change (Behavior-Snapshot == Verify: drop suite 9 + plugin tailoring 15 identical pre/post). ruff-clean (unused imports removed).
+
+---
+
+### ADR-301: change_traceability is n/a in local-only grade mode
+- **Date:** 2026-07-07
+- **Section:** shipwright-grade / shipwright-compliance (Control-Grade engine)
+- **Run-ID:** iterate-2026-07-07-grade-local-honesty
+- **Context:** Local-only grade scored change_traceability off git-log #N references, which anti-correlate with quality (squash-merge repos leave reference-free subjects). It is also a hard F-collapse pillar, so a well-run repo with clean Conventional Commits but no #N refs graded F 'out of control' (reproduced: F 49.0).
+- **Decision:** Gate change_traceability on a new GradeInputs.change_traceability_measurable flag (mirrors reconciliation_measurable/security_measurable). The cold projector sets it to cp.measurable (True only when the network PR-association tier resolved); local-only -> n/a. The authoritative/compliance adapter sets it True (real provenance).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Defaults True (not False): the empirical suite replays stored GradeInputs via GradeInputs(**gi), so a False default would flip the 7 committed network fixtures to n/a on replay -- changing their grades and forcing a network re-record. Default True keeps existing callers byte-identical; only the cold LOCAL projector opts out. Honest: change_traceability is measurable from any real provenance -- only the cold git-log fallback is not.
+- **Consequences:** Local cold grade of a well-run repo now lands B (reconciliation cap), never F (verified via CLI: B 89.0, change_traceability n/a). Network fixtures + dogfood unchanged (A 99.9 authoritative, 276/276). Synthetic no_tests fixture drops local C->D (git-log provenance was the C-lifter; 0% coverage is honestly D).
+- **Rejected:** Default False + update all engine tests + both adapters + re-record 7 network fixtures (needs network). Larger blast radius, higher regression risk.
+- **Details:** [2026-07-07-grade-local-honesty.md](../planning/iterate/2026-07-07-grade-local-honesty.md)
+
+---
+
+### ADR-302: public URL grade defaults to network-on; local path stays local-only
+- **Date:** 2026-07-07
+- **Section:** shipwright-grade (grader CLI / input seam)
+- **Run-ID:** iterate-2026-07-07-grade-public-url-network
+- **Context:** After the local-honesty fix, a local cold grade measures ~only size-discipline (thin). For the lead-magnet flow on a PUBLIC repo there is no privacy reason to stay local — cloning already sends the repo identity to GitHub.
+- **Decision:** open_target tags a cloned remote input_kind='url' (the reserved field, now live). grade.py: allow_network = args.allow_network or (input_kind=='url' AND is_github_com_remote(origin)). A github.com URL/owner-repo target defaults network-on; a local path OR a GitHub Enterprise host stays local-only unless --allow-network. resolve_network_policy is unchanged.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A github.com URL's identity is already sent to github.com to clone it, so enrichment adds no privacy cost — but a local path might reference a private repo, and a GHE clone never contacted github.com, so both stay local-only without --allow-network (else the org/repo slug would leak to github.com, a host the clone never touched — internal-review finding). is_remote_target already lets an existing local dir win over owner/repo shorthand.
+- **Consequences:** A public URL grades richer by default (real-CLI: octocat/Hello-World network_enabled True without any flag). A private/unverifiable remote still auto-disables enrichment (--allow-network-private stays opt-in); gh unavailable / no remote -> honest local grade, never F. A local path with a public remote stays local-only (verified: monorepo grades A authoritative, network off).
+- **Rejected:** Default network-on for ALL targets incl. local paths (leaks a private local repo's identity). A new --no-network flag (YAGNI — no privacy cost for a public URL).
+- **Details:** [2026-07-07-grade-public-url-network.md](../planning/iterate/2026-07-07-grade-public-url-network.md)
+
+---
+
+### ADR-303: Single-session phase-gate mode (per-gate policy)
+- **Date:** 2026-07-07
+- **Section:** campaign 2026-07-07-single-session-pipeline / SS2
+- **Run-ID:** iterate-2026-07-07-phase-gate-mode
+- **Context:** The single-session pipeline runs each phase as a subagent with no human present, so interactive AskUserQuestion gates across project/design/plan/build/deploy must follow a machine-readable policy instead of always stopping.
+- **Decision:** Catalog ~47 gates in shared/config/gate_catalog.json with a per-gate policy (auto-default / orchestrator-approve / hard-stop). A resolver keys on run_config.mode==single_session, inert otherwise; constitution-locked gates never auto-answer (validator + runtime clamp + danger-keyword heuristic). The 5 phase skills honor it via a discipline block; docs/gate-catalog.md is generated. Sensitive gates (Sven): design mockups orchestrator-approve, plan sign-off auto-run, deploy/prod danger hard-stop.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Additive and back-compat: multi_session is unaffected. Fail-closed on constitution gates. JSON SSoT plus a generated doc means no drift.
+- **Consequences:** SS2 ships the mechanism + prompt contract only; runtime enforcement is SS3. An unknown gate falls back safely to interactive. test/changelog/security gates and a WebUI review-mockups button are deferred follow-ups.
+- **Rejected:** Per-gate inline SKILL.md markers (deferred to SS3; kernel LOC budget). Reclassifying constitution-true orchestrator-approve gates to hard-stop (kept the nuance; documented the constitution-lock invariant instead).
+- **Details:** [2026-07-07-phase-gate-mode.md](../planning/iterate/2026-07-07-phase-gate-mode.md)
+
+---
+
+### ADR-304: Single-session pipeline mode scaffold + phase-runner contracts
+- **Date:** 2026-07-07
+- **Section:** Campaign 2026-07-07-single-session-pipeline / SS1
+- **Run-ID:** iterate-2026-07-07-single-session-mode-scaffold
+- **Context:** The pipeline runs multi_session (external UUID-bound phase sessions), which stalls on VS Code/desktop chat surfaces. Campaign 2026-07-07 adds an additive single-session mode (master drives phases via a phase-runner subagent in ONE conversation), multi_session preserved as default + stable fallback. SS1 lands the foundation before any phase execution.
+- **Decision:** Add an additive optional run_config 'mode' (multi_session default | single_session) + 'write-config --mode'; a mode-less legacy config reads as multi_session. New single_session/ package defines the phase-runner result contract (compact result -> complete_phase_task; summary<=2000 chars; artifacts to disk) and loop-state (.shipwright/run_loop_state.json, pointers-only, never mutates run_config). Sven signed off the loop-state shape, result contract, and gate-policy taxonomy.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reconciled target (Spec/pipeline-as-campaign-convergence.md, Codex-reviewed): resumability, lifecycle-reuse, and compact-result-to-disk are design foundations to land BEFORE build. Additive + default-multi_session preserves back-compat for in-flight runs.
+- **Consequences:** SS2 builds the per-gate mechanism on the ratified taxonomy (auto-default | orchestrator-approve | hard-stop; sensitive gates confirmed in SS2); SS3 the loop; SS4 the phase-runner persistence. No parallel completion path (AST + behavioral test proves phase_task_lifecycle reuse). No loop wiring or phase execution yet; guide.md + hooks-and-pipeline.md deferred to when the loop is live (SS3).
+- **Rejected:** Fold loop-state into run_config (breaks the no-mutation contract); make single_session the v1 default/replacement (multi_session stays the fallback); runtime-import the phase enum for validation (chose a literal + a both-direction drift test to avoid import coupling).
+- **Details:** [pipeline-as-campaign-convergence.md](Spec/pipeline-as-campaign-convergence.md)
+
+---
+
+### ADR-305: Single-session orchestrator loop (in-conversation pipeline driver)
+- **Date:** 2026-07-07
+- **Section:** campaign 2026-07-07-single-session-pipeline / SS3
+- **Run-ID:** iterate-2026-07-07-ss3-orchestrator-loop
+- **Context:** The single-session pipeline (mode==single_session) must advance every phase from ONE master conversation, unlike multi_session which advances each phase from its own external bound session (so VS Code / desktop chat stall at phase 1). SS1 landed the mode + contracts; SS2 the gate policy; SS3 wires the loop.
+- **Decision:** Two orchestrator subcommands — single-session-next (resolve frontier + claim + record loop_state) and single-session-apply (validate the phase-runner result contract, freeze splits after design, route through complete_phase_task, advance the pointer) — that the master alternates with a phase-runner subagent. Both REUSE phase_task_lifecycle: no bespoke completion path, no direct run_config mutation. Serial splits only in v1.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reuse over reinvention: the loop drives the SAME lifecycle helpers the multi_session Stop hook uses, so there is exactly one completion path. multi_session stays the default and is untouched (additive).
+- **Consequences:** single_session now advances the full pipeline in one conversation on every surface; an ok:false result strict-stops via mark_phase_failed with no successor. The phase-runner subagent + artifact persistence (SS4) and deeper resumability/observability (SS5) remain; guide.md docs deferred to the SS7 capstone.
+- **Rejected:** Placing the loop in the single_session/ package (the SS1 lifecycle-reuse contract test ast-forbids that package from calling a mutator; the loop lives in orchestrator_pkg where router already calls the lifecycle). Parallel split fan-out (deferred; serial in v1).
+- **Details:** [2026-07-07-ss3-orchestrator-loop.md](../planning/iterate/2026-07-07-ss3-orchestrator-loop.md)
+
+---
+
+### ADR-306: Subagents own artifact persistence; the orchestrator guards it on disk
+- **Date:** 2026-07-07
+- **Section:** SS4 (campaign 2026-07-07-single-session-pipeline)
+- **Run-ID:** iterate-2026-07-07-ss4-phase-runner-persistence
+- **Context:** The single-session phase-runner and the plan section-writer both produced outputs needing persistence. The section-writer had no Write tool and relied on a SubagentStop hook that scraped its transcript; in a live run the hook did not fire and the output was lost.
+- **Decision:** Subagents persist their own outputs to disk via a Write tool (phase-runner gets Write/Edit/Bash; section-writer gains Write/Edit) and return only a compact result. single-session-apply verifies every artifact an ok result claims exists on disk, rejecting a claimed-but-unwritten one fail-closed (artifacts_missing) before any mutation. The orchestrator reloads from run_config + compact result summaries, never transcripts.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Transcript-scraping in a Stop hook is a fragile multi-link chain; making the producer own persistence plus a fail-closed disk guard removes the whole silent-loss class.
+- **Consequences:** Persistence is guaranteed and deterministic, independent of hook-firing quirks; silent output loss is caught at the loop level. Resume context is bounded by MAX_SUMMARY_CHARS per phase.
+- **Rejected:** Keep the hook as the sole persistence path and only make it fire reliably (still fragile, least aligned with the reconciled-target design).
+
+---
+
+### ADR-307: SubagentStop write-section hook is a non-blocking fallback (supersedes ADR-042 block-on-failure)
+- **Date:** 2026-07-07
+- **Section:** SS4 (campaign 2026-07-07-single-session-pipeline)
+- **Run-ID:** iterate-2026-07-07-ss4-phase-runner-persistence
+- **Context:** ADR-042 had the section-writer SubagentStop hook return decision:block on any extraction failure. Now that the section-writer writes its own file, a blocking fallback would false-block a successful direct write when the hook cannot scrape the (already-persisted) content.
+- **Decision:** The hook never blocks: it is a no-op when the section file already exists (never clobbers), best-effort salvages from the transcript only when the file is missing, and validates the salvaged content is a real section document written to a project-tree-contained dir; on any failure it logs to stderr and exits 0. Step 7 (check-sections.py) remains the gate for a missing section.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A fallback that gates is self-contradictory once the producer owns persistence; blocking on a scrape-miss punishes a run that already succeeded.
+- **Consequences:** A successful direct write is never false-blocked. The gate for a genuinely-missing section moves to check-sections.py where it belongs. Salvage writes cannot land outside the project tree.
+- **Rejected:** Keep ADR-042 block-on-failure (false-blocks direct writes).
+
+---
+
+### ADR-308: update-marketplace.sh auto-installs registered-but-missing plugins
+- **Date:** 2026-07-08
+- **Section:** scripts/update-marketplace.sh (marketplace sync)
+- **Run-ID:** iterate-2026-07-08-marketplace-autoinstall
+- **Context:** The sync was install-only: it refreshed plugins already in installed_plugins.json and SKIPPED any registered-but-not-installed one. The opt-in shipwright-grade lead magnet was therefore left not_in_cache forever, and check_plugin_cache_sync warned on every run.
+- **Decision:** In Step 2, when a marketplace-registered plugin has no installed cache path, run 'claude plugin install <plugin>@shipwright' (non-fatal under set -e), then re-query and sync it — so the script brings EVERY registered plugin into the cache. A shared _install_path helper (uses PYTHON_BIN, F37-safe) replaces the 2 duplicated lookups. Summary now reports an installed count.
+- **Commit:** (assigned post-merge)
+- **Rationale:** User intent: the sync should always update EVERYTHING, not silently skip a not-yet-installed plugin. Install is guarded (only when the cache path is empty) so an already-installed plugin is never re-installed, and non-fatal (inside an if) so an offline/headless run just skips. Cross-platform: claude plugin install + PYTHON_BIN work identically on Windows/Mac/Linux.
+- **Consequences:** A fresh machine (Win/Mac) running the sync now installs all registered plugins incl. shipwright-grade -> no more persistent not_in_cache warning. E2E verified: uninstall grade -> run script -> auto-reinstalled+synced (1 installed, 14 synced). ACCEPTED: a plugin a user DELIBERATELY uninstalled gets re-installed (matches update everything).
+- **Rejected:** Leave sync-only + document the one-time claude plugin install (recurs on every fresh machine). Auto-install via a check_plugin_cache_sync change (wrong layer — that tool is read-only drift detection).
+
+---
+
+### ADR-309: Single-session pipeline resumability, recovery & observability (SS5)
+- **Date:** 2026-07-08
+- **Section:** SS5 resumability/recovery + observability
+- **Run-ID:** iterate-2026-07-08-ss5-resumability
+- **Context:** Single-session runs (mode==single_session) drive the whole pipeline in ONE master conversation (SS3/SS4). If it dies mid-run there was no first-class resume, and no structured observability into the loop's transitions. Multi-session runs must stay on the old path untouched.
+- **Decision:** Add resumability confined to single-session code paths: re-invoking /shipwright-run auto-detects a live loop-state on a non-terminal run and resumes via a confirm card (single-session-resume read-only; --confirm commits). A mid-flight in_progress task re-dispatches idempotently. New append-only telemetry .shipwright/run_loop_events.jsonl (7 event types) + single-session-gate/-recover; every entry point is mode+runId gated.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Idempotent re-dispatch is safe because the phase-runner is a subagent of the master, so master death = runner death (no orphaned worker; a multi_session-only risk). Reuses recover-phase-task + phase_task_lifecycle verbatim (no bespoke path); observability isolated so multi_session never grows an events file; append-log is O(1) single-writer + best-effort.
+- **Consequences:** Multi-session lifecycle + generic recover-phase-task untouched (dual-mode back-compat suite proves no run_loop_* files appear for multi_session). New gitignored write surface run_loop_events.jsonl. begin_dispatch now reinits a stale-runId pointer so a re-run in the same dir never attaches to an old run.
+- **Rejected:** Emitting telemetry from the master_stop_check Stop hook + folding events into the tracked shipwright_events.jsonl: re-couples persistence to a Stop hook (the failure SS4 removed), touches hooks/*.py, and pollutes the tracked pipeline log with per-run orchestrator telemetry.

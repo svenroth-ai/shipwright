@@ -1,1 +1,0 @@
-shipwright-security self-scan: a CI guardrail now enforces that every `.trivyignore.yaml` accepted-risk entry is scoped (paths/purls), time-bounded (`expired_at`), and justified (`statement`) — a sloppy or blanket suppression fails CI. Makes the accept-discipline mechanical, not just convention.

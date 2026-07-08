@@ -1,1 +1,0 @@
-CI diff-coverage: the `diff-cover` step is now a warn-only gate (`--fail-under=80`) — an under-tested PR shows a visible failure annotation on changed-line coverage, but continue-on-error keeps it non-blocking during the ~1-2 week settling window (diff-coverage roadmap Phase 4).

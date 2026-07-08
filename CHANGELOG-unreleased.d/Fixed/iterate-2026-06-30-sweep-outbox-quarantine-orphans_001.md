@@ -1,1 +1,0 @@
-Triage outbox sweep no longer hard-blocks delivery when one orphan-status line (a status whose append never reached origin) fails validation; such lines are quarantined to .shipwright/triage.outbox.quarantine.jsonl and the valid pending findings still deliver (genuine corruption still fails closed)
