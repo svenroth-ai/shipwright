@@ -2,8 +2,9 @@
 pipeline ``mode`` selection (Campaign 2026-07-07, SS1).
 
 Locks the invariant that Step 3 offers the mode choice and Step 4 threads it
-into ``write-config --mode`` with ``multi_session`` as the documented default, so
-a future edit can't silently drop the single-session selection.
+into ``write-config --mode``. SS8 (2026-07-08): ``single_session`` is now the
+documented default and ``multi_session`` is deprecated — this guards that a
+future edit can't silently drop either the selection or the new default.
 """
 from pathlib import Path
 
@@ -19,10 +20,13 @@ def test_skill_documents_both_modes(plugin_root):
     )
 
 
-def test_skill_marks_multi_session_default(plugin_root):
+def test_skill_marks_single_session_default(plugin_root):
     text = _skill_text(plugin_root)
-    assert "multi_session (default)" in text, (
-        "SKILL.md must mark multi_session as the default"
+    assert "single_session (default)" in text, (
+        "SKILL.md must mark single_session as the default (SS8)"
+    )
+    assert "multi_session (deprecated)" in text, (
+        "SKILL.md must mark multi_session as deprecated (SS8)"
     )
 
 

@@ -5,10 +5,10 @@
 
 ## Status summary
 
-- Total: 276
-- Triage: 4 | Promoted: 1 | Dismissed: 270 | Snoozed: 1
+- Total: 277
+- Triage: 5 | Promoted: 1 | Dismissed: 270 | Snoozed: 1
 
-## Top 3 items (severity-sorted)
+## Top 4 items (severity-sorted)
 
 ### Source: compliance (1 item)
 
@@ -25,7 +25,12 @@
     ```
   - Promote: `triage_promote.py --id trg-b7b361da --task-ref EXT:<ref>`
 
-### Source: manual (2 items)
+### Source: manual (3 items)
+
+<a id="trg-0e8e7f90"></a>
+- **Remove the deprecated multi-session pipeline engine (single-session is now the sole mode)** `id=trg-0e8e7f90 | severity=low | kind=improvement → P3/engineering`
+  - Decision 2026-07-08 (Sven): single-session is the sole pipeline mode; multi-session no longer needed (one user, no back…
+  - Promote: `triage_promote.py --id trg-0e8e7f90 --task-ref EXT:<ref>`
 
 <a id="trg-ff0b2049"></a>
 - **WebUI single-session design-review mockup loop (convergence S5)** `id=trg-ff0b2049 | severity=low | kind=improvement → P3/engineering`

@@ -32,8 +32,11 @@ from single_session.loop_state import (  # noqa: E402
 
 
 def _multi_config(project_root: Path):
+    # SS8: single_session is the default now — request multi_session explicitly
+    # (this suite proves the DEPRECATED multi_session path stays untouched).
     return create_config(
         "full_app", "supabase-nextjs", "guided", "jelastic-dev", project_root,
+        mode="multi_session",
     )
 
 

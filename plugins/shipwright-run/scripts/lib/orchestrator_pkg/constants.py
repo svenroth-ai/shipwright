@@ -33,15 +33,23 @@ CONFIG_NAME = "shipwright_run_config.json"
 SCHEMA_VERSION = 2
 
 # Pipeline execution mode (Campaign 2026-07-07, SS1 — additive scaffold).
-#   multi_session  — each phase = its own external UUID-bound Claude session
-#                    (the pre-SS1 behaviour). Default + stable fallback.
 #   single_session — the /shipwright-run master drives every phase via a
-#                    phase-runner subagent in ONE conversation (SS3 wires the
-#                    loop; SS1 only lands the flag + contract scaffold).
-# DEFAULT_RUN_MODE is authoritative for a fresh run and for reading a legacy
-# config that predates the ``mode`` field (see config_io.run_mode).
+#                    phase-runner subagent in ONE conversation (SS3). SS8: the
+#                    DEFAULT and sole supported mode.
+#   multi_session  — each phase = its own external UUID-bound Claude session
+#                    (the pre-SS1 behaviour). DEPRECATED; now only the legacy
+#                    read-fallback (LEGACY_FALLBACK_MODE), no longer the default.
+# DEFAULT_RUN_MODE is what a FRESH run gets. SS8 (2026-07-08): single_session is
+# now the SOLE mode — a fresh /shipwright-run with no explicit --mode selects it.
+# LEGACY_FALLBACK_MODE is the SEPARATE fallback for READING a mode-less /
+# unrecognized config (config_io.run_mode): kept at multi_session so an existing
+# pre-flip run is NOT silently reinterpreted mid-flight — the one user migrates
+# EXPLICITLY (set mode: single_session + resume; see
+# docs/migrations/multi-session-to-single-session.md).
+# Multi-session is DEPRECATED; code-path removal is deferred (triage trg-0e8e7f90).
 RUN_MODES = ("multi_session", "single_session")
-DEFAULT_RUN_MODE = "multi_session"
+DEFAULT_RUN_MODE = "single_session"
+LEGACY_FALLBACK_MODE = "multi_session"
 
 # Compliance plugin location (sibling plugin)
 _THIS_PLUGIN = Path(__file__).resolve().parents[3]
@@ -78,6 +86,7 @@ __all__ = [
     "SCHEMA_VERSION",
     "RUN_MODES",
     "DEFAULT_RUN_MODE",
+    "LEGACY_FALLBACK_MODE",
     "PIPELINE_STEPS",
     "_LEGACY_PIPELINE_ENTRIES",
     "_CRITICAL_GATE_CHECK_IDS",

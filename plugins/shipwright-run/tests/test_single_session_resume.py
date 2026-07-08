@@ -34,8 +34,10 @@ def _ss_config(project_root: Path):
 
 
 def _multi_config(project_root: Path):
+    # SS8: single_session is the default now — request multi_session explicitly.
     return create_config(
         "full_app", "supabase-nextjs", "guided", "jelastic-dev", project_root,
+        mode="multi_session",
     )
 
 

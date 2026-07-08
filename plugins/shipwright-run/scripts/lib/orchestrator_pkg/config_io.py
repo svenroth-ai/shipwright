@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .constants import CONFIG_NAME, DEFAULT_RUN_MODE, RUN_MODES, SCHEMA_VERSION
+from .constants import CONFIG_NAME, LEGACY_FALLBACK_MODE, RUN_MODES, SCHEMA_VERSION
 
 # ``run_config_store`` is a top-level module in this plugin's scripts/lib;
 # importing ``.constants`` above already put that dir on sys.path.
@@ -78,10 +78,15 @@ def run_mode(config: dict[str, Any]) -> str:
 
     Back-compat (Campaign 2026-07-07, SS1): the ``mode`` field is additive and
     optional. A config written before SS1 has no ``mode`` key — it is read as
-    ``multi_session`` (the pre-SS1 behaviour), so old runs keep working
-    unchanged. An unrecognised value is *also* coerced to ``multi_session`` so a
-    hand-edited typo can never silently select an unbuilt execution path; the
-    ``write-config`` CLI ``choices`` already constrain fresh writes.
+    ``multi_session`` (``LEGACY_FALLBACK_MODE``, the pre-SS1 behaviour), so old
+    runs keep working unchanged. An unrecognised value is *also* coerced to it so
+    a hand-edited typo can never silently select an unbuilt execution path.
+
+    SS8 (2026-07-08): a FRESH run now defaults to ``single_session``
+    (``DEFAULT_RUN_MODE``), but this READ path deliberately keeps the legacy
+    fallback at ``multi_session`` — flipping the fresh default must NOT silently
+    reinterpret an existing mode-less run; that run migrates EXPLICITLY (set
+    ``mode: single_session`` + resume; docs/migrations/multi-session-to-single-session.md).
     """
     mode = config.get("mode")
-    return mode if mode in RUN_MODES else DEFAULT_RUN_MODE
+    return mode if mode in RUN_MODES else LEGACY_FALLBACK_MODE

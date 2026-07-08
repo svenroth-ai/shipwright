@@ -46,7 +46,7 @@ from single_session.orchestrator_context import verify_artifacts_exist  # noqa: 
 from single_session.result_contract import validate_phase_runner_result  # noqa: E402
 
 from .config_io import load_run_config  # noqa: E402
-from .constants import DEFAULT_RUN_MODE, SCHEMA_VERSION  # noqa: E402
+from .constants import LEGACY_FALLBACK_MODE, SCHEMA_VERSION  # noqa: E402
 
 SINGLE_SESSION = "single_session"
 
@@ -108,7 +108,7 @@ def resolve_next_dispatch(project_root: Path) -> dict[str, Any]:
 
     mode = config.get("mode")
     if mode != SINGLE_SESSION:
-        return {"action": "wrong_mode", "mode": mode or DEFAULT_RUN_MODE}
+        return {"action": "wrong_mode", "mode": mode or LEGACY_FALLBACK_MODE}
 
     status = config.get("status")
     tasks = config.get("phase_tasks", [])
