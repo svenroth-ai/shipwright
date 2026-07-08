@@ -1,34 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-08-remove-iterate-banner-version"
+run_id: "iterate-2026-07-08-ss5-resumability"
 phase: "iterate"
-reason: "iterate: remove hardcoded version from iterate intro banner"
-timestamp: "2026-07-08T09:26:09.661903+00:00"
+reason: "SS5 resumability/recovery + observability complete"
+timestamp: "2026-07-08T09:03:51.316665+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-08 09:26:09 UTC
+> Auto-generated 2026-07-08 09:03:51 UTC
 
 ## Session Info
 
-- **Session ID**: de5203a9-95b7-41f7-ae0d-be434eaf9802
-- **Timestamp**: 2026-07-08 09:26:09 UTC
-- **Reason**: iterate: remove hardcoded version from iterate intro banner
+- **Session ID**: 7652d2c3-169b-4225-beef-2501edb079df
+- **Timestamp**: 2026-07-08 09:03:51 UTC
+- **Reason**: SS5 resumability/recovery + observability complete
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-08-marketplace-autoinstall
-- **Date**: 2026-07-08T08:18:05.927938Z
+- **Run ID**: iterate-2026-07-07-grade-public-url-network
+- **Date**: 2026-07-07T20:02:12.390164Z
 - **Type**: change
 - **Complexity**: small
-- **Branch**: iterate/marketplace-autoinstall
-- **ADR**: iterate-2026-07-08-marketplace-autoinstall
+- **Branch**: iterate/grade-public-url-network
+- **ADR**: iterate-2026-07-07-grade-public-url-network
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/2026-07-07-grade-public-url-network.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/remove-iterate-banner-version
+- **Branch**: iterate/ss5-resumability-backcompat
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -47,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/remove-iterate-banner-version
-- **Last Commit**: 023701b5 chore(release): v0.30.0 (#348)
+- **Branch**: iterate/ss5-resumability-backcompat
+- **Last Commit**: cfbf97ae chore(triage): sweep 1 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,24 +65,23 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-81fbc0b9 | work_completed | iterate (Remove stale hardcoded version (v0.3.0) from the shipwright-iterate intro banner (SKILL.md H1 + banner title) and add a drift-guard test) | 2026-07-08 |
-| evt-9b52577c | work_completed | iterate (update-marketplace.sh installs every marketplace-registered plugin not yet in the cache (was: silently skipped), fixing the persistent shipwright-grade not_in_cache warning.) | 2026-07-08 |
+| evt-68552791 | work_completed | iterate (SS5: single-session pipeline resumability (auto-detect + confirm-card resume, idempotent mid-flight re-run), recovery (single-session-recover), structured observability (.shipwright/run_loop_events.jsonl, 7 event types), dual-mode back-compat.) | 2026-07-08 |
 | evt-5be516a5 | work_completed | iterate (Part 3: a public github.com URL / owner-repo grade target defaults to GitHub network enrichment; a local path or GitHub Enterprise host stays local-only unless --allow-network.) | 2026-07-07 |
 | evt-9d72bd56 | work_completed | iterate (change_traceability renders n/a in local-only grade mode (Part 1 + Part 2): new GradeInputs.change_traceability_measurable gates dim 3; cold projector opts out locally, authoritative stays measurable.) | 2026-07-07 |
 | evt-56ec5bf0 | work_completed | iterate (SS4: phase-runner subagent + result contract + guaranteed artifact persistence (on-disk apply guard + reload-from-summaries + single-session-reload CLI) + section-writer persistence-bug fix (write path + non-blocking fallback hook, supersedes ADR-042 block-on-failure).) | 2026-07-07 |
+| evt-65e3ec05 | work_completed | iterate (SS3 single-session orchestrator loop: orchestrator_pkg/single_session_loop.py (resolve/begin/next/apply/advance) + single_session_cli.py + two orchestrator CLI subcommands (single-session-next / single-session-apply) that the /shipwright-run master alternates with a phase-runner subagent to drive the whole pipeline in ONE conversation under run_config.mode==single_session. Reuses phase_task_lifecycle end-to-end (claim/freeze-splits/complete/mark-failed) — no bespoke completion path, run_config read-only in the loop; freezes splits after design for serial build fan-out; an ok:false phase result strict-stops the run with no successor. SKILL.md branch + references/single-session-loop.md protocol; docs/hooks-and-pipeline.md SS3 note. Additive/inert for multi_session (default). Loop pointer in .shipwright/run_loop_state.json.) | 2026-07-07 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 281
-- **Last iterate**: change — Remove stale hardcoded version (v0.3.0) from the shipwright-iterate intro banner (SKILL.md H1 + banner title) and add a drift-guard test (2026-07-08)
+- **Total work events**: 280
+- **Last iterate**: feature — SS5: single-session pipeline resumability (auto-detect + confirm-card resume, idempotent mid-flight re-run), recovery (single-session-recover), structured observability (.shipwright/run_loop_events.jsonl, 7 event types), dual-mode back-compat. (2026-07-08)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
 
-### ADR-309: Single-session pipeline resumability, recovery & observability (SS5)
-- **Date:** 2026-07-08
-- **Section:** SS5 resumability/recovery + observability
-- **Run-ID:** iterate-2026-07-08-ss5-resumability
-- **Context:** Single-session runs (mode==single_session) drive the whole pipeline in ONE master conversation (SS3/SS4). If it dies mid-run there was no first-class resume, and no structured observability into the loop's transitions. Multi-session runs must stay on the old path untouched.
-- **De
+### ADR-235: Dedup the bloat-gate Stop block across the plugin fan-out
+- **Date:** 2026-06-20
+- **Section:** shared/scripts/hooks/bloat_gate_on_stop.py
+- **Run-ID:** iterate-2026-06-20-bloat-gate-stop-fanout-dedup
+- **Context:** The bloat gate is registered in all 12 plugins, so one Stop event fires it 12x. PR #250 (hook-fanout-dedup) guarded audit/handoff/drift but listed bloat_gate_on_stop as 'already convergent' — wrong: its empty pass path is invisible, masking that the BLOCK path re-emits the full 

@@ -436,8 +436,28 @@ After build completes: shows split summary table. After test completes: shows te
 > uses; loop-state holds no authoritative phase status. Splits are serial in v1.
 > The master-side protocol is
 > `plugins/shipwright-run/skills/run/references/single-session-loop.md`.
-> Delivered SS1–SS4; remaining: SS5 (deeper resumability / observability),
-> SS6 (external-review fix), SS7 (E2E parity suite).
+
+> **Resumability / recovery + observability (Campaign 2026-07-07, SS5).** If the
+> master conversation dies mid-run, re-invoking `/shipwright-run` auto-detects the
+> live loop-state on a non-terminal `single_session` run and resumes via a confirm
+> card. Three orchestrator subcommands back it, all in
+> `orchestrator_pkg/single_session_recovery.py` and **mode- + run-identity-gated** (a
+> `multi_session` or stale-`runId` run is a no-op rejection — no file written):
+> `single-session-resume` (read-only resume decision for the card; `--confirm` records
+> the commitment), `single-session-gate --state pause|resume` (human-gate state +
+> event), `single-session-recover` (in-loop `recover-phase-task` + loop-pointer realign
+> + event). A task left `in_progress` is re-dispatched idempotently by
+> `single-session-next` (the phase-runner is a subagent of the master, so master death =
+> runner death — no orphaned worker to race). The loop appends structured telemetry to
+> **`.shipwright/run_loop_events.jsonl`** (append-only JSONL, gitignored by the
+> `/.shipwright/*` wildcard, distinct from the tracked `shipwright_events.jsonl`; event
+> types `dispatch` / `phase_result` / `strict_stop` / `human_gate_pause` /
+> `human_gate_resume` / `resume` / `recovery`), emitted ONLY on single-session paths and
+> best-effort (a write failure warns to stderr, never crashes the loop). The generic
+> `recover-phase-task` CLI and the whole `multi_session` lifecycle are untouched (the
+> dual-mode back-compat guarantee, proven by
+> `plugins/shipwright-run/tests/test_single_session_backcompat.py`).
+> Delivered SS1–SS5; remaining: SS6 (external-review fix), SS7 (E2E parity suite).
 
 ### Run-Config Schema v2
 

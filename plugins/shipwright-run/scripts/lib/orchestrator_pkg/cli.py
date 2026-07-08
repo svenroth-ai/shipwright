@@ -137,6 +137,30 @@ def build_parser() -> argparse.ArgumentParser:
     p = subparsers.add_parser("single-session-reload")
     p.add_argument("--project-root", default=".")
 
+    # ----- SS5 resumability / recovery / human-gate observability ---------
+    # Each is mode- and run-identity-gated (a multi_session run is a no-op
+    # rejection, no file written) — the dual-mode back-compat guarantee.
+    p = subparsers.add_parser("single-session-resume")
+    p.add_argument("--project-root", default=".")
+    p.add_argument("--confirm", action="store_true",
+                   help="Commit the resume (emit the resume event). Omit for a "
+                        "read-only confirm-card decision.")
+
+    p = subparsers.add_parser("single-session-gate")
+    p.add_argument("--project-root", default=".")
+    p.add_argument("--phase-task-id", required=True)
+    p.add_argument("--phase", required=True)
+    p.add_argument("--split-id", default=None)
+    p.add_argument("--state", required=True, choices=["pause", "resume"],
+                   help="pause at an orchestrator-approve/hard-stop gate, or resume "
+                        "after the human releases it.")
+
+    p = subparsers.add_parser("single-session-recover")
+    p.add_argument("--project-root", default=".")
+    p.add_argument("--phase-task-id", required=True)
+    p.add_argument("--force-status", default="awaiting_launch",
+                   choices=["awaiting_launch", "failed", "skipped"])
+
     return parser
 
 

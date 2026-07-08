@@ -41,6 +41,7 @@ from single_session.loop_state import (  # noqa: E402
     save_loop_state,
     set_status,
 )
+from single_session import observability as obs  # noqa: E402
 from single_session.orchestrator_context import verify_artifacts_exist  # noqa: E402
 from single_session.result_contract import validate_phase_runner_result  # noqa: E402
 
@@ -144,27 +145,27 @@ def begin_dispatch(project_root: Path, *, phase_task_id: str) -> dict[str, Any]:
     task = task_res["phase_task"]
 
     claim = lc.claim_phase_task(
-        project_root,
-        phase_task_id=phase_task_id,
-        session_uuid=task["sessionUuid"],
-        expected_phase=task["phase"],
+        project_root, phase_task_id=phase_task_id,
+        session_uuid=task["sessionUuid"], expected_phase=task["phase"],
     )
     if not claim.get("ok"):
         return claim
 
     config = load_run_config(project_root, migrate=False)
-    state = load_loop_state(project_root) or init_loop_state(
-        config.get("runId", "unknown-run"), current_phase_task_id=phase_task_id
-    )
+    run_id = config.get("runId", "unknown-run")
+    state = load_loop_state(project_root)
+    if state is None or state.get("runId") != run_id:
+        # Fresh run, or a stale loop-state from a PRIOR run in this dir — never attach a
+        # new run to an old pointer (mirrors the recovery-path runId guard).
+        state = init_loop_state(run_id, current_phase_task_id=phase_task_id)
     state = record_dispatch(state)
     save_loop_state(project_root, state)
 
-    return {
-        "ok": True,
-        "dispatch": _dispatch_descriptor(claim["phase_task"]),
-        "attempt": state["attempt"],
-        "idempotent": claim.get("idempotent", False),
-    }
+    dispatch = _dispatch_descriptor(claim["phase_task"])
+    obs.emit_dispatch(project_root, run_id=state["runId"], dispatch=dispatch,
+                      attempt=state["attempt"], idempotent=claim.get("idempotent", False))
+    return {"ok": True, "dispatch": dispatch, "attempt": state["attempt"],
+            "idempotent": claim.get("idempotent", False)}
 
 
 def next_dispatch(project_root: Path) -> dict[str, Any]:
@@ -270,17 +271,19 @@ def _advance_loop_state(
     state = load_loop_state(project_root)
     if state is None:
         return
+    if completion.get("idempotent"):
+        # Double-apply of an already-done task changed nothing — don't null the pointer.
+        return
     next_task = completion.get("next_phase_task")
     next_id = next_task.get("phaseTaskId") if isinstance(next_task, dict) else None
     state = advance_pointer(
-        state,
-        completed_phase_task_id=completed_phase_task_id,
-        next_phase_task_id=next_id,
+        state, completed_phase_task_id=completed_phase_task_id, next_phase_task_id=next_id,
     )
 
     run_status = completion.get("run_status")
-    final_task_status = completion.get("phase_task", {}).get("status")
-    if run_status == "failed" or final_task_status == "failed":
+    pt = completion.get("phase_task", {})
+    failed = run_status == "failed" or pt.get("status") == "failed"
+    if failed:
         state = set_status(state, "failed")
     elif run_status == "complete":
         state = set_status(state, "complete")
@@ -288,3 +291,9 @@ def _advance_loop_state(
         state = set_status(state, "stopped")
     # else: the loop is still running — keep "running".
     save_loop_state(project_root, state)
+
+    obs.emit_phase_result(
+        project_root, run_id=state["runId"], phase_task_id=completed_phase_task_id,
+        phase=pt.get("phase"), run_status=run_status, failed=failed,
+        reason=(pt.get("errors") or [None])[-1],
+    )
