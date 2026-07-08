@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-08-marketplace-autoinstall",
+  "date": "2026-07-08T08:18:05.927938Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/marketplace-autoinstall",
+  "spec": "",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-08-marketplace-autoinstall"
+}

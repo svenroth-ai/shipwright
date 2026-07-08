@@ -57,6 +57,22 @@ if [ -z "$PYTHON_BIN" ]; then
     exit 1
 fi
 
+# Resolve a plugin's installed cache path from installed_plugins.json (empty
+# when the plugin is not installed). Single source of truth for the three
+# lookups below. Uses $PYTHON_BIN (never a bare `python` — F37).
+_install_path() {
+    "$PYTHON_BIN" -c "
+import json, sys, os
+try:
+    ip = os.path.expanduser('~/.claude/plugins/installed_plugins.json')
+    data = json.load(open(ip))
+    entries = data.get('plugins', {}).get(sys.argv[1], [])
+    print(entries[0]['installPath'].replace(chr(92), '/') if entries else '')
+except Exception:
+    print('')
+" "$1" 2>/dev/null
+}
+
 # Step 1: Update marketplace clone from GitHub
 # Try the built-in command first; fall back to manual git pull if SSH fails
 echo ""
@@ -83,6 +99,7 @@ fi
 echo ""
 echo "Full sync: marketplace → plugin caches..."
 
+installed=0
 synced=0
 skipped=0
 errors=0
@@ -98,25 +115,24 @@ for plugin in "${PLUGINS[@]}"; do
         continue
     fi
 
-    # Get the installed cache path from installed_plugins.json
-    cache_target=$("$PYTHON_BIN" -c "
-import json, sys, os
-try:
-    ip = os.path.expanduser('~/.claude/plugins/installed_plugins.json')
-    data = json.load(open(ip))
-    key = sys.argv[1]
-    entries = data.get('plugins', {}).get(key, [])
-    if entries:
-        print(entries[0]['installPath'].replace(chr(92), '/'))
-    else:
-        print('')
-except Exception as e:
-    print('', file=sys.stderr)
-    print('')
-" "$plugin_key" 2>/dev/null)
+    # Resolve the installed cache path; INSTALL the plugin first when it is
+    # registered in the marketplace but not yet installed, so this script brings
+    # EVERY registered plugin into the cache instead of silently skipping a
+    # not-yet-installed one (the opt-in shipwright-grade lead magnet was left
+    # `not_in_cache` forever otherwise). Install is non-fatal under `set -e`: an
+    # offline / headless run that can't install just skips that plugin.
+    cache_target=$(_install_path "$plugin_key")
 
     if [ -z "$cache_target" ] || [ ! -d "$cache_target" ]; then
-        echo "  [--] ${plugin}: not installed, skipping"
+        echo "  [..] ${plugin}: not installed — installing from marketplace..."
+        if claude plugin install "$plugin_key" >/dev/null 2>&1; then
+            cache_target=$(_install_path "$plugin_key")
+            ((installed++)) || true
+        fi
+    fi
+
+    if [ -z "$cache_target" ] || [ ! -d "$cache_target" ]; then
+        echo "  [--] ${plugin}: install unavailable (offline/CLI), skipping"
         ((skipped++)) || true
         continue
     fi
@@ -271,21 +287,8 @@ sync_dir_from_to() {
 for plugin in "${PLUGINS[@]}"; do
     plugin_key="${plugin}@${MARKETPLACE_NAME}"
 
-    # Get the installed cache path
-    cache_target=$("$PYTHON_BIN" -c "
-import json, sys, os
-try:
-    ip = os.path.expanduser('~/.claude/plugins/installed_plugins.json')
-    data = json.load(open(ip))
-    key = sys.argv[1]
-    entries = data.get('plugins', {}).get(key, [])
-    if entries:
-        print(entries[0]['installPath'].replace(chr(92), '/'))
-    else:
-        print('')
-except Exception:
-    print('')
-" "$plugin_key" 2>/dev/null)
+    # Get the installed cache path (Step 2 installed any missing ones already).
+    cache_target=$(_install_path "$plugin_key")
 
     if [ -z "$cache_target" ] || [ ! -d "$cache_target" ]; then
         continue
@@ -368,5 +371,5 @@ if [ "$cleaned" -eq 0 ]; then
 fi
 
 echo ""
-echo "=== Done. ${synced} synced, ${skipped} skipped, ${errors} errors ==="
+echo "=== Done. ${installed} installed, ${synced} synced, ${skipped} skipped, ${errors} errors ==="
 echo "=== Restart Claude Code session to activate changes ==="

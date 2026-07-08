@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-07T20:01:52.128701Z. Items waiting for triage decision.
+> Auto-generated 2026-07-08T08:17:51.348079Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
 - Total: 276
-- Triage: 5 | Promoted: 1 | Dismissed: 269 | Snoozed: 1
+- Triage: 4 | Promoted: 1 | Dismissed: 270 | Snoozed: 1
 
-## Top 4 items (severity-sorted)
+## Top 3 items (severity-sorted)
 
 ### Source: compliance (1 item)
 
@@ -24,13 +24,6 @@
     Each finding + hint is listed in this item's detail.
     ```
   - Promote: `triage_promote.py --id trg-b7b361da --task-ref EXT:<ref>`
-
-### Source: diff-coverage-followup (1 item)
-
-<a id="trg-5e92114c"></a>
-- **Refactor diff-coverage gate into a consumed composite action (one source of truth for managed repos)** `id=trg-5e92114c | severity=medium | kind=improvement → P2/engineering`
-  - Replace the 3 hand-maintained copies of the diff-coverage gate (monorepo wrapper; WebUI ci.yml #205; adopt templates #3…
-  - Promote: `triage_promote.py --id trg-5e92114c --task-ref EXT:<ref>`
 
 ### Source: manual (2 items)
 
