@@ -1,20 +1,20 @@
 # Test Evidence Report
 
-Generated: 2026-07-08T10:02:26.492543+00:00
+Generated: 2026-07-08T09:26:09.661903+00:00
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 282 |
-| Total unit tests (latest full suite) | 3749/3749 (2026-07-08) |
+| Total unit tests (latest full suite) | 4067/4087 (2026-07-07) |
 | New tests from iterations | +220 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | The external LLM review step no longer errors on newer OpenAI models, and no longer quietly skips itself when it cannot run — it now reports clearly when a review could not happen. | [iterate](traceability-matrix.md#evt-5496b0a6) | unit | +0 | 3749/3749 | PASS | 2026-07-08 |
+| 1 | The shipwright-iterate start banner no longer shows an old, wrong version number; it now shows no version at all, matching every other plugin. | [iterate](traceability-matrix.md#evt-81fbc0b9) | unit | +0 | 438/438 | PASS | 2026-07-08 |
 | 2 | update-marketplace.sh installs every marketplace-registered plugin not yet in the cache (was: silently skipped), fixing the persistent shipwright-grade not_in_cache warning. | [iterate](traceability-matrix.md#evt-9b52577c) | — | +0 | — | — | 2026-07-08 |
 | 3 | SS5: single-session pipeline resumability (auto-detect + confirm-card resume, idempotent mid-flight re-run), recovery (single-session-recover), structured observability (.shipwright/run_loop_events.jsonl, 7 event types), dual-mode back-compat. | [iterate](traceability-matrix.md#evt-68552791) | — | +0 | — | — | 2026-07-08 |
 | 4 | Part 3: a public github.com URL / owner-repo grade target defaults to GitHub network enrichment; a local path or GitHub Enterprise host stays local-only unless --allow-network. | [iterate](traceability-matrix.md#evt-5be516a5) | — | +0 | — | — | 2026-07-07 |
@@ -332,7 +332,7 @@ _Synthesized from per-iterate **unit** results — Integration / pgTAP / E2E / S
 | 27 | iterate | 4067/4087 | — | — | — | — | 2026-07-07 |
 | 28 | iterate | 3693/3709 | — | — | — | — | 2026-07-07 |
 | 29 | iterate | 417/417 | — | — | — | — | 2026-07-07 |
-| 30 | iterate | 3749/3749 | — | — | — | — | 2026-07-08 |
+| 30 | iterate | 438/438 | — | — | — | — | 2026-07-08 |
 
 ## Code Review Evidence
 

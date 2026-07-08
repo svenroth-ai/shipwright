@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-08-remove-iterate-banner-version",
+  "date": "2026-07-08T09:26:54.454888Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/remove-iterate-banner-version",
+  "spec": "",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-08-remove-iterate-banner-version"
+}

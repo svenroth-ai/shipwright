@@ -1,11 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-08 10:02 UTC | Session: 89d59797-af32-411a-9735-8feede806ab5 | Run: iterate-2026-07-08-ss6-external-review-fix
+> Updated: 2026-07-08 09:26 UTC | Session: de5203a9-95b7-41f7-ae0d-be434eaf9802 | Run: iterate-2026-07-08-remove-iterate-banner-version
 
 ## Recent Changes (282 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| bug | SS6: fix external-review gate — direct-OpenAI max_completion_tokens param + fail-loud degraded gate (no silent self-review fallback) | 3749/3749 |  | tooling | 2026-07-08 |
+| change | Remove stale hardcoded version (v0.3.0) from the shipwright-iterate intro banner (SKILL.md H1 + banner title) and add a drift-guard test | 438/438 |  | docs | 2026-07-08 |
 | change | update-marketplace.sh installs every marketplace-registered plugin not yet in the cache (was: silently skipped), fixing the persistent shipwright-grade not_in_cache warning. | 0/0 |  | tooling | 2026-07-08 |
 | feature | SS5: single-session pipeline resumability (auto-detect + confirm-card resume, idempotent mid-flight re-run), recovery (single-session-recover), structured observability (.shipwright/run_loop_events.jsonl, 7 event types), dual-mode back-compat. | 0/0 |  | tooling | 2026-07-08 |
 | change | Part 3: a public github.com URL / owner-repo grade target defaults to GitHub network enrichment; a local path or GitHub Enterprise host stays local-only unless --allow-network. | 0/0 |  | tooling | 2026-07-07 |
@@ -289,7 +289,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-08 | Unit: 3749/3749 | Smoke: not_run | (iterate)
+Last run: 2026-07-08 | Unit: 438/438 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
