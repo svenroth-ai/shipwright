@@ -1,1 +1,0 @@
-Hardened lock/marker/changelog/decision state files to owner-only permissions (0o600), and de-ambiguated two regexes flagged as ReDoS (the git-remote and RTM-table parsers) so a crafted input can no longer trigger exponential backtracking — same accepted input, linear time.

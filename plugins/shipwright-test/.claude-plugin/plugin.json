@@ -1,7 +1,7 @@
 {
   "name": "shipwright-test",
   "description": "Run unit tests, E2E tests, smoke tests, and security scans for Shipwright projects",
-  "version": "0.29.1",
+  "version": "0.30.0",
   "author": {
     "name": "Sven Roth",
     "url": "https://github.com/svenroth-ai"

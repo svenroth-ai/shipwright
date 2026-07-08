@@ -1,1 +1,0 @@
-Gate-policy mechanism: shared/config/gate_catalog.json (SSoT for ~47 gates), the resolve_gate_policy.py resolver/CLI, a generated docs/gate-catalog.md, and a shared honoring contract read by each phase skill.

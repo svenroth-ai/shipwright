@@ -1,1 +1,0 @@
-Adopt CI templates (Next.js, Vite/Hono) now consume the diff-coverage gate from a shared composite action (.github/actions/diff-coverage-gate) instead of inlining diff-cover, so framework gate fixes reach adopters on their next run

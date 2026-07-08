@@ -187,3 +187,25 @@ _Existing user-facing documentation discovered by /shipwright-adopt._
 - **ADR-212** (2026-06-13): Behavior-preserving SIMPLIFY sub-mode + snapshot/verify gate
 - **ADR-217** (2026-06-13): Unify simplify <-> reducibility around one shared tool + one catalog
 - **ADR-221** (2026-06-14): Repo-agnostic agent-doc entry-budget gate + cleanup
+- **ADR-242** (2026-06-28): Control-Grade traceability credits satisfied no-FR; behavior-affecting changes must link an FR
+- **ADR-243** (2026-06-28): BP-2: per-FR fr_impact map lights the Control-Grade reconciliation dimension
+- **ADR-245** (2026-06-28): Ingest CI security.yml findings into the compliance dashboard + grader
+- **ADR-253** (2026-06-28): SBOM dedup by installed version + honest verdict
+- **ADR-258** (2026-06-30): Goodhart-resistant Control-Grade verdict gate + anchor pivot
+- **ADR-266** (2026-07-01): Control Grade composition-neutral (drop the FR-tag-decline gate)
+- **ADR-268** (2026-07-03): Diff-coverage Phase 1: measure, do not commit per-diff state or gate
+- **ADR-270** (2026-07-04): shipwright-grade: cold-repo signal projector (G1)
+- **ADR-272** (2026-07-05): Diff-coverage feeds Control-Grade Test-Health as a threshold-gated WARN
+- **ADR-273** (2026-07-04): Monorepo coverage combine via per-plugin [paths] remap; light W4
+- **ADR-276** (2026-07-04): Cold-repo grade signals via reused collectors + additive engine field + network-gated test-health
+- **ADR-277** (2026-07-04): Escape-by-default HTML report renderer (shipwright-grade G3)
+- **ADR-278** (2026-07-04): shipwright-grade G4: authoritative wiring + URL clone-and-grade + plugin registration
+- **ADR-279** (2026-07-04): Plain-language copy layer for the grade report (marketing instrument)
+- **ADR-280** (2026-07-04): Tier-3 PR review filters generated files from the diff before truncation
+- **ADR-287** (2026-07-06): Prove the diff-coverage gate bites before the hard-flip
+- **ADR-293** (2026-07-06): Cold-repo projector calibrated to well-run > deprecated (G6)
+- **ADR-295** (2026-07-07): Accepted-risk GH-owned action-tag drop reaches the artifact-ingest path, not just the plugin scan
+- **ADR-303** (2026-07-07): Single-session phase-gate mode (per-gate policy)
+- **ADR-304** (2026-07-07): Single-session pipeline mode scaffold + phase-runner contracts
+- **ADR-305** (2026-07-07): Single-session orchestrator loop (in-conversation pipeline driver)
+- **ADR-309** (2026-07-08): Single-session pipeline resumability, recovery & observability (SS5)

@@ -1,1 +1,0 @@
-Compliance RTM Verification Timeline Date column is UTC-normalized so it reads monotonically descending even for events recorded in a non-UTC timezone (previously showed the local date, one day off its sort position near midnight).

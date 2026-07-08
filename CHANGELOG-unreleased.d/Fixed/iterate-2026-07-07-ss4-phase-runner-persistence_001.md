@@ -1,1 +1,0 @@
-Plan section generation no longer loses output when the SubagentStop hook doesn't fire: the section-writer now writes its section file directly (it has a Write tool) and the hook is a non-blocking, project-tree-scoped fallback.

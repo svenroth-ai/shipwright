@@ -1,1 +1,0 @@
-Broke three internal import cycles (py/cyclic-import) by extracting shared symbols into dependency-free leaf modules (git_base, phase_quality/_findings_model, security/finding_classify) — behavior-identical, re-exports keep callers unchanged

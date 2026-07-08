@@ -1,1 +1,0 @@
-Bump cryptography to 49.0.0 (shipwright-plan) and ws to 8.21.0/7.5.11 (shipwright-test perf runner) to clear 3 high-severity dependency CVEs (GHSA-537c-gmf6-5ccf, CVE-2026-48779) flagged by the weekly security scan.

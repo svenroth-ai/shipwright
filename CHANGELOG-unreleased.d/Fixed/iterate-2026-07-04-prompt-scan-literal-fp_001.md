@@ -1,1 +1,0 @@
-Prompt-injection scanner no longer false-positives on dangerous-pattern tokens (os.system/eval/exec) that appear only inside string literals, docstrings, or comments; it now matches executable code via token-aware blanking, preserving accurate line numbers and real-call detection.

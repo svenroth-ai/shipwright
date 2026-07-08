@@ -1,1 +1,0 @@
-Compliance dashboard: the "Iterate tests passing" row excludes behavior-preserving no-FR changes (docs/tooling/compliance/infra) from its denominator, so legitimately test-free work is no longer counted as a deficit.

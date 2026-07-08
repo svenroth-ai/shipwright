@@ -1,1 +1,0 @@
-Single-session pipeline: a `phase-runner` subagent that persists its phase outputs to disk and returns a compact result contract, plus a `single-session-reload` orchestrator subcommand that rebuilds pipeline context from run-config summaries (never transcripts).
