@@ -1,1 +1,0 @@
-Iterate finalization now blocks a behavior-affecting change (spec_impact add/modify/remove) that names no FR — the no-FR classification path is reserved for behavior-preserving work, and the rule is enforced at finalize, not just the CLI.

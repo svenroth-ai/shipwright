@@ -1,1 +1,0 @@
-Traceability matrix: a reconciliation-driven "FRs needing re-verification" summary subsection replaces the age-based "> 14 days stale verification" clause — staleness now means a behavior change without a later test run, never elapsed time

@@ -1,1 +1,0 @@
-shipwright-grade: grade a **remote** repository directly — `grade.py <https-url | git@… | owner/repo>` shallow-clones it into a purged temp dir (scheme-allowlisted, no submodules, ext/file transports disabled, non-interactive, time/size-capped) and grades it; `--no-clone` forbids network cloning.

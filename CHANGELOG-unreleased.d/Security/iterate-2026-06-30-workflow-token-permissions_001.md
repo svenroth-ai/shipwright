@@ -1,1 +1,0 @@
-Hardened GitHub Actions GITHUB_TOKEN permissions to least-privilege: ci, codeql, bloat-check and pr-review now declare a read-only top-level permissions block and widen per-job only where a write scope is genuinely used (OpenSSF Scorecard Token-Permissions). security.yml stays top-level by design (compliance A5.3 convention lock).

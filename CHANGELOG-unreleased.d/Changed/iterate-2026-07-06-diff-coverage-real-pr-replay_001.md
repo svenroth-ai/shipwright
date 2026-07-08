@@ -1,1 +1,0 @@
-Diff-coverage gate: added a real-PR replay integration suite that pins the actual diff-cover reports from the last 5 monorepo PRs and replays them through the gate at the 80% threshold, providing empirical settling-window evidence (4 pass / 1 legitimate fail) and a regression corpus of real-world report shapes ahead of the deferred hard-flip.

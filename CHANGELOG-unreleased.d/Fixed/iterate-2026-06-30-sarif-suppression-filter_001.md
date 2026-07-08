@@ -1,1 +1,0 @@
-Security triage: inline-suppressed (`# nosemgrep`) SARIF results are no longer counted as live findings, so a fully-suppressed scan correctly auto-resolves its gh-security inbox item instead of re-appearing after every manual dismiss (also de-inflates the compliance Security dimension).

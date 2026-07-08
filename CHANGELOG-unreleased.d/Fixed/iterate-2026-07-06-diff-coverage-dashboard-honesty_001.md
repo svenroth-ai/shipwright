@@ -1,1 +1,0 @@
-Compliance dashboard: the diff-coverage Test-Health line no longer mislabels itself '(informational, not yet graded)' — since Phase 3 it feeds the Control Grade and since the hard flip it is an enforced CI gate. The renderer is repo-agnostic, so every managed repo gets the honest signal once its CI produces coverage.

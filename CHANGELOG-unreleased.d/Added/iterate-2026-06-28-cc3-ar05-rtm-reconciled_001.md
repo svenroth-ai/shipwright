@@ -1,1 +1,0 @@
-Traceability matrix: per-FR "Reconciled?" column (re-verified / needs re-verification / not behavior-touched) driven by the BP-2 reconciliation helper shared with the Control-Grade dimension, so the matrix and the grade can never disagree

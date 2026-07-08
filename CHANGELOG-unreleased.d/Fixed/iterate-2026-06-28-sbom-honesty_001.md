@@ -1,1 +1,0 @@
-SBOM (/shipwright-compliance): dedupe dependencies by installed version from uv.lock (the duplicate openai row is gone) and resolve licenses from package metadata across all venvs; the License Compliance verdict now counts every package and never claims 'all permissively licensed' while a license is unresolved (AR-04).

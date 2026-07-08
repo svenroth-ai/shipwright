@@ -1,1 +1,0 @@
-shipwright-grade: repos with a healthy `.shipwright/` (event log + RTM) now grade **authoritatively** from their own records — a grader-grade equals the compliance dashboard grade by construction; every other repo (and any corrupt/partial/stale records) grades by the labelled heuristic projection.

@@ -1,1 +1,0 @@
-shipwright-grade: the cold-repo grader no longer mis-grades well-run OSS repos as F. Test-health now recognizes CI checks by their CI-system (matrix legs like `3.12`/`PyPy`, and `on: pull_request` CI), and change-traceability uses GitHub PR-review provenance instead of git-log refs (which a disciplined squash-merge repo lacks).
