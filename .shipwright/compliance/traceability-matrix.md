@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-08T10:02:26.492543+00:00
+Generated: 2026-07-08T13:53:28.403052+00:00
 
 ## Requirements Coverage
 
@@ -27,6 +27,7 @@ Generated: 2026-07-08T10:02:26.492543+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-24b6350d"></a>SS7 CLI E2E capstone finalization | iterate | change |  | — | — | 2026-07-08 |
 | <a id="evt-5496b0a6"></a>The external LLM review step no longer errors on newer OpenAI models, and no longer quietly skips itself when it cannot run — it now reports clearly when a review could not happen. | iterate | bug |  | 3749/3749 | — | 2026-07-08 |
 | <a id="evt-81fbc0b9"></a>The shipwright-iterate start banner no longer shows an old, wrong version number; it now shows no version at all, matching every other plugin. | iterate | change |  | 438/438 | — | 2026-07-08 |
 | <a id="evt-68552791"></a>SS5: single-session pipeline resumability (auto-detect + confirm-card resume, idempotent mid-flight re-run), recovery (single-session-recover), structured observability (.shipwright/run_loop_events.jsonl, 7 event types), dual-mode back-compat. | iterate | feature |  | — | — | 2026-07-08 |
@@ -317,7 +318,7 @@ Generated: 2026-07-08T10:02:26.492543+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 283 |
+| Iterate changes | 284 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

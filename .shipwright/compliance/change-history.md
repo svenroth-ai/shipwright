@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-07-08T10:02:26.492543+00:00
+Generated: 2026-07-08T13:53:28.403052+00:00
 Total commits: 1116
 
 ## Commit Distribution
@@ -24,7 +24,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-08 | review | external-review gate fails loud on degradation + gpt-5.x param | 673068a35d81 |
+| 2026-07-08 | review | external-review gate fails loud on degradation + gpt-5.x param (#351) | 515d65086ccc |
 | 2026-07-08 | iterate | remove stale hardcoded version from intro banner (#350) | f36a656208b5 |
 | 2026-07-08 | scripts | update-marketplace.sh installs registered-but-missing plugins (#347) | 9ae9551f16f0 |
 | 2026-07-07 | grade | change_traceability is n/a in local-only mode (no more false F) (#344) | 5357ad26a74f |

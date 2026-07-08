@@ -1,20 +1,20 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-08-ss6-external-review-fix",
+    "run_id": "iterate-2026-07-08-ss7-e2e-integration-suite",
     "date": "2026-07-08",
-    "intent": "bug",
-    "complexity": "small",
+    "intent": "feature",
+    "complexity": "medium",
     "campaign": "2026-07-07-single-session-pipeline",
-    "sub_iterate_id": "SS6",
+    "sub_iterate_id": "SS7",
     "unit": {
       "status": "passed",
-      "passed": 3749,
-      "total": 3749
+      "passed": 3751,
+      "total": 3751
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 184,
+      "total": 184
     },
     "pgtap": {
       "status": "not_run",
@@ -34,58 +34,71 @@
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [],
+    "degraded": [
+      {
+        "condition": "risk_flag_false_positive",
+        "detail": "classify_complexity flagged touches_auth from the prose word 'author' in the description; this is a test-only diff touching no auth paths (F11 risk_detectors recompute from the diff). Overridden."
+      },
+      {
+        "condition": "ac_migrated",
+        "detail": "AC2 (green Playwright WebUI pipeline flow) requires the separate shipwright-webui repo (SHIPWRIGHT_WEBUI unimplemented in the monorepo) + the S1b track; migrated to campaign SS8 per Sven's both-surfaces requirement."
+      },
+      {
+        "condition": "human_gate_pending",
+        "detail": "AC5 (Sven final UAT) is a human sign-off, pending after PR merge; not a testable behavior."
+      }
+    ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --extra dev pytest shared/tests/test_external_review_degraded.py shared/tests/test_external_review_openai_param.py shared/tests/test_llm_review.py",
+      "runner": "uv run --extra dev pytest integration-tests/test_single_session_capstone.py integration-tests/test_cross_surface_backcompat.py -q",
       "exit_code": 0,
-      "tests_run": 8,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\ss6-external-review-fix\\.shipwright\\runs\\iterate-2026-07-08-ss6-external-review-fix\\surface_verification.log",
-      "timestamp": "2026-07-08T09:57:03.466Z",
+      "tests_run": 6,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\ss7-e2e-integration-suite\\.shipwright\\runs\\iterate-2026-07-08-ss7-e2e-integration-suite\\surface_verification.log",
+      "timestamp": "2026-07-08T13:43:40.083Z",
       "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "direct-OpenAI review sends max_completion_tokens, never the gpt-5.x-incompatible max_tokens (external_review.py)",
+          "behavior": "full single-session pipeline (all phases + build fan-out) advances to complete THROUGH a single-session-gate human pause/resume; observability event story is correct",
           "disposition": "tested",
-          "evidence": "test_external_review_openai_param.py::test_review_with_openai_uses_max_completion_tokens PASSED"
+          "evidence": "test_single_session_capstone.py::TestFullPipelineThroughHumanGate::test_gate_walk_with_section_writer_regression PASSED"
         },
         {
-          "behavior": "direct-OpenAI review sends max_completion_tokens (lib/llm_review.py, the other live review script)",
+          "behavior": "section-writer persistence regression: an ok result claiming an unwritten artifact is rejected (artifacts_missing) mid-pipeline, frontier intact, then the fixed retry completes",
           "disposition": "tested",
-          "evidence": "test_llm_review.py::test_llm_review_openai_uses_max_completion_tokens PASSED"
+          "evidence": "same test (threaded into the plan phase of the gate-walk)"
         },
         {
-          "behavior": "degraded gate: provider attempted + 0 reviews succeed -> success:false, degraded:true, exit 1, degraded_reason, stderr banner",
+          "behavior": "strict-stop DURING the serial split fan-out halts the run and plans NO successor split (02-ui never becomes a task; strict_stop emitted)",
           "disposition": "tested",
-          "evidence": "test_external_review_degraded.py::test_gate_degraded_when_keys_present_but_no_review_succeeds PASSED + subprocess probe (exit 1, 401 not max_tokens 400)"
+          "evidence": "test_single_session_capstone.py::TestStrictStopMidFanout::test_build_failure_mid_fanout_halts_and_plans_no_next_split PASSED"
         },
         {
-          "behavior": "partial success (1 of 2 reviewers) is a functioning gate -> not degraded, exit 0",
+          "behavior": "cross-surface parity: the loop dispatch sequence is the CORRECT pipeline AND identical across cli / webui (SHIPWRIGHT_WEBUI=1) / chat surfaces",
           "disposition": "tested",
-          "evidence": "test_external_review_degraded.py::test_gate_not_degraded_on_partial_success PASSED"
+          "evidence": "test_single_session_capstone.py::TestCrossSurfaceParity::test_pipeline_identical_across_surfaces PASSED"
         },
         {
-          "behavior": "no keys (provider none) is the explicit missing-keys state, not degraded -> success:true, exit 0",
+          "behavior": "chat surface honestly declines: the banner drift-guard exists and the run SKILL.md chat branch states the pipeline can't launch there",
           "disposition": "tested",
-          "evidence": "test_external_review_degraded.py::test_no_keys_is_not_degraded PASSED"
+          "evidence": "test_cross_surface_backcompat.py::TestChatSurfaceHonestDecline::test_run_skill_declines_on_chat_surface PASSED"
         },
         {
-          "behavior": "empty-diff short-circuit stays exit 0, not degraded, schema carries degraded:false",
+          "behavior": "in-flight multi_session run remains resumable: crash -> recover-phase-task -> re-claim on bumped version -> complete -> pipeline advances to design (stale attempt fenced out)",
           "disposition": "tested",
-          "evidence": "test_external_review_degraded.py::test_empty_diff_short_circuit_is_not_degraded PASSED"
+          "evidence": "test_cross_surface_backcompat.py::TestMultiSessionRemainsResumable::test_crash_recover_reclaim_complete_advances PASSED"
         },
         {
-          "behavior": "finalize_review_output helper contract: attempted-no-success / attempted-partial / none",
+          "behavior": "back-compat: a multi_session run creates NO single-session files (run_loop_state.json / run_loop_events.jsonl)",
           "disposition": "tested",
-          "evidence": "test_external_review_degraded.py::test_finalize_review_output_helper_contract PASSED"
+          "evidence": "same test (step 6: _no_single_session_files)"
         },
         {
-          "behavior": "llm_review.run_review reports success:false honestly when no leg succeeds (no silent no-op there)",
+          "behavior": "external_review gate cannot silently no-op: degraded (attempted + 0 success) -> exit 1, success:false, degraded:true; partial success -> exit 0",
           "disposition": "tested",
-          "evidence": "test_llm_review.py::test_run_review_success_is_false_when_no_leg_succeeds PASSED"
+          "evidence": "test_cross_surface_backcompat.py::TestExternalReviewGateCannotSilentlyNoop::test_degraded_gate_is_loud PASSED"
         }
       ],
       "counts": {

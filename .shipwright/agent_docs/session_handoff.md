@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-08-ss6-external-review-fix"
+run_id: "iterate-2026-07-08-ss7-e2e-integration-suite"
 phase: "iterate"
-reason: "F11 pre-merge refresh: iterate-2026-07-08-ss6-external-review-fix"
-timestamp: "2026-07-08T10:02:26.492543+00:00"
+reason: "SS7 CLI E2E capstone finalization"
+timestamp: "2026-07-08T13:53:28.403052+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-08 10:02:26 UTC
+> Auto-generated 2026-07-08 13:53:28 UTC
 
 ## Session Info
 
-- **Session ID**: 89d59797-af32-411a-9735-8feede806ab5
-- **Timestamp**: 2026-07-08 10:02:26 UTC
-- **Reason**: F11 pre-merge refresh: iterate-2026-07-08-ss6-external-review-fix
+- **Session ID**: 47fe33c7-a7a9-46d0-bb55-1a7ab515c694
+- **Timestamp**: 2026-07-08 13:53:28 UTC
+- **Reason**: SS7 CLI E2E capstone finalization
 
 ## Last Iterate
 
@@ -28,7 +28,10 @@ timestamp: "2026-07-08T10:02:26.492543+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/ss6-external-review-fix
+- **Branch**: iterate/ss7-e2e-integration-suite
+- **Run ID**: `iterate-2026-07-08-ss7-e2e-integration-suite`
+- **Spec**: .shipwright/planning/iterate/2026-07-08-ss7-e2e-integration-suite.md
+- **Complexity**: medium · **spec impact:** none (behavior-preserving — adds test
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -47,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/ss6-external-review-fix
-- **Last Commit**: 17403e64 Merge remote-tracking branch 'origin/main' into iterate/ss6-external-review-fix
+- **Branch**: iterate/ss7-e2e-integration-suite
+- **Last Commit**: 515d6508 fix(review): external-review gate fails loud on degradation + gpt-5.x param (#351)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +67,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-24b6350d | work_completed | iterate (SS7 CLI E2E capstone finalization) | 2026-07-08 |
 | evt-81fbc0b9 | work_completed | iterate (Remove stale hardcoded version (v0.3.0) from the shipwright-iterate intro banner (SKILL.md H1 + banner title) and add a drift-guard test) | 2026-07-08 |
 | evt-5496b0a6 | work_completed | iterate (SS6: fix external-review gate — direct-OpenAI max_completion_tokens param + fail-loud degraded gate (no silent self-review fallback)) | 2026-07-08 |
 | evt-9b52577c | work_completed | iterate (update-marketplace.sh installs every marketplace-registered plugin not yet in the cache (was: silently skipped), fixing the persistent shipwright-grade not_in_cache warning.) | 2026-07-08 |
 | evt-68552791 | work_completed | iterate (SS5: single-session pipeline resumability (auto-detect + confirm-card resume, idempotent mid-flight re-run), recovery (single-session-recover), structured observability (.shipwright/run_loop_events.jsonl, 7 event types), dual-mode back-compat.) | 2026-07-08 |
-| evt-5be516a5 | work_completed | iterate (Part 3: a public github.com URL / owner-repo grade target defaults to GitHub network enrichment; a local path or GitHub Enterprise host stays local-only unless --allow-network.) | 2026-07-07 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 283
-- **Last iterate**: change — Remove stale hardcoded version (v0.3.0) from the shipwright-iterate intro banner (SKILL.md H1 + banner title) and add a drift-guard test (2026-07-08)
+- **Total work events**: 284
+- **Last iterate**: change — SS7 CLI E2E capstone finalization (2026-07-08)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
