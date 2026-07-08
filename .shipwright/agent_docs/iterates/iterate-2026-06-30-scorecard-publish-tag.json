@@ -1,9 +1,0 @@
-{
-  "run_id": "iterate-2026-06-30-scorecard-publish-tag",
-  "date": "2026-06-30T14:51:18.980033Z",
-  "type": "change",
-  "complexity": "trivial",
-  "branch": "iterate/scorecard-publish-tag",
-  "tests_passed": true,
-  "adr": "iterate-2026-06-30-scorecard-publish-tag"
-}

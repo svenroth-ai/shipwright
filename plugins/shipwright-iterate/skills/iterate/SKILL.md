@@ -5,7 +5,7 @@ license: MIT
 compatibility: Requires uv (Python 3.11+), git repository required, completed Shipwright project
 ---
 
-# Shipwright Iterate Skill v0.3.0
+# Shipwright Iterate Skill
 
 Complexity-adaptive change lifecycle for completed Shipwright projects. Detects intent (feature, change, bug), assesses complexity, runs the right amount of process.
 
@@ -37,7 +37,7 @@ Complexity-adaptive change lifecycle for completed Shipwright projects. Detects 
 
 ```
 ================================================================================
-SHIPWRIGHT-ITERATE v0.3.0: Adaptive Change Lifecycle
+SHIPWRIGHT-ITERATE: Adaptive Change Lifecycle
 ================================================================================
 Usage: /shipwright-iterate --type feature|change|bug "description"
    or: Auto-detected from your prompt (via hook context)

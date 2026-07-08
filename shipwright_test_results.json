@@ -1,20 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-08-ss5-resumability",
+    "run_id": "iterate-2026-07-08-remove-iterate-banner-version",
     "date": "2026-07-08",
-    "intent": "feature",
-    "complexity": "medium",
-    "campaign": "2026-07-07-single-session-pipeline",
-    "sub_iterate_id": "SS5",
+    "intent": "change",
+    "complexity": "small",
     "unit": {
       "status": "passed",
-      "passed": 327,
-      "total": 327
+      "passed": 438,
+      "total": 438
     },
     "integration": {
-      "status": "passed",
-      "passed": 178,
-      "total": 178
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -22,12 +20,12 @@
       "total": 0
     },
     "e2e": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "design_fidelity": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
@@ -36,113 +34,40 @@
     },
     "degraded": [
       {
-        "condition": "risk_flag_override",
-        "detail": "touches_auth is a prose false-positive (matched the 'session' keyword in multi-session/single-session; no auth/middleware/supabase code exists in this monorepo). Overridden; diff-predicate recompute at F11 is authoritative."
+        "condition": "suite scope (single-plugin display-string + guard-test change)",
+        "detail": "The diff touches only plugins/shipwright-iterate/skills/iterate/SKILL.md (2 display lines) + one new drift-guard test file. F0 ran the full shipwright-iterate suite (438 passed, not-slow) + ruff@0.15.15 (clean) + leak-guard f0 ALLOW. No other plugin's code is touched; CI runs the full matrix."
       }
     ],
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run pytest integration-tests/test_single_session_resume_integration.py -q",
+      "surface": "none",
+      "justification": "Display-only change: removed a stale hardcoded version string (v0.3.0) from the iterate intro banner (Markdown SKILL.md prose) + added a pytest drift-guard. No web/UI/API/server/runtime surface exists to drive. Verified by (a) the diff rendering exactly the 2 intended lines, (b) red-green proof the guard regex bites the old 'v0.3.0' banner and passes the new one, (c) the full iterate plugin suite (438 passed) which includes the SKILL.md drift + phase-matrix drift tests.",
       "exit_code": 0,
-      "tests_run": 1,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\ss5-resumability-backcompat\\.shipwright\\runs\\iterate-2026-07-08-ss5-resumability\\surface_verification.log",
-      "timestamp": "2026-07-08T09:00:27.218Z",
-      "attempts": 1
+      "tests_run": 438,
+      "timestamp": "2026-07-08T00:00:00Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "observability event build + closed-set type validation",
+          "behavior": "The iterate intro banner (H1 heading + SHIPWRIGHT-ITERATE title line) carries no hardcoded version token",
           "disposition": "tested",
-          "evidence": "test_single_session_observability.py::test_build_event_* PASSED"
+          "evidence": "test_skill_banner_no_version.py::test_h1_heading_has_no_version + ::test_intro_banner_title_has_no_version (2 passed); red-green verified the guard regex matches the removed 'v0.3.0' and not the new banner"
         },
         {
-          "behavior": "durable append emission + round-trip + torn-trailing-line tolerance",
+          "behavior": "Removing the version does not break any SKILL.md structural drift / phase-matrix / step-rules test",
           "disposition": "tested",
-          "evidence": "test_single_session_observability.py::test_emit_appends*/test_load_events_* PASSED"
-        },
-        {
-          "behavior": "best-effort emit swallows OSError + non-serializable field (stderr diag)",
-          "disposition": "tested",
-          "evidence": "test_single_session_observability.py::test_emit_event_swallows_io_error_but_warns / _non_serializable_field PASSED"
-        },
-        {
-          "behavior": "typed emitters: dispatch + phase_result/strict_stop pairing",
-          "disposition": "tested",
-          "evidence": "test_single_session_observability.py::test_emit_dispatch* / test_emit_phase_result_* PASSED"
-        },
-        {
-          "behavior": "loop emits dispatch + phase_result/strict_stop at existing points",
-          "disposition": "tested",
-          "evidence": "integration test event-sequence + test_emit_phase_result_* PASSED"
-        },
-        {
-          "behavior": "resume_run read-only detection vs --confirm commitment",
-          "disposition": "tested",
-          "evidence": "test_single_session_resume.py::test_resume_is_read_only* / _confirm_emits* PASSED"
-        },
-        {
-          "behavior": "resume_run guards: no_config/wrong_mode/not_resumable/runid_mismatch",
-          "disposition": "tested",
-          "evidence": "test_single_session_resume.py::test_resume_* (4) PASSED"
-        },
-        {
-          "behavior": "resume_run terminal pass-through emits nothing (review #2)",
-          "disposition": "tested",
-          "evidence": "test_single_session_resume.py::test_resume_terminal_run_passes_through_and_emits_nothing PASSED"
-        },
-        {
-          "behavior": "mark_human_gate status flip + event + mode gating",
-          "disposition": "tested",
-          "evidence": "test_single_session_resume.py::test_human_gate_* PASSED"
-        },
-        {
-          "behavior": "recover_single_session pointer reset + event + lift-gating + guards (review #3)",
-          "disposition": "tested",
-          "evidence": "test_single_session_resume.py::test_recover_* / _unrelated_task_does_not_lift* PASSED"
-        },
-        {
-          "behavior": "begin_dispatch reinits a stale-runId loop-state (review #1)",
-          "disposition": "tested",
-          "evidence": "test_single_session_resume.py::test_next_dispatch_reinits_stale_loop_state_from_prior_run PASSED"
-        },
-        {
-          "behavior": "idempotent double-apply preserves the loop pointer (review #5)",
-          "disposition": "tested",
-          "evidence": "test_single_session_resume.py::test_double_apply_is_idempotent_and_preserves_pointer PASSED"
-        },
-        {
-          "behavior": "CLI dispatch + exit codes for resume/gate/recover subcommands",
-          "disposition": "tested",
-          "evidence": "test_single_session_cli.py::test_resume_exit*/test_gate_exit*/test_recover_exit*/test_cli_main_routes_single_session_resume PASSED"
-        },
-        {
-          "behavior": "kill-and-resume idempotent replay composes loop+lifecycle+loop_state+observability",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_single_session_resume_integration.py PASSED",
-          "category": "integration"
-        },
-        {
-          "behavior": "dual-mode back-compat: multi_session leaves no run_loop_* files; SS5 entry points refuse it",
-          "disposition": "tested",
-          "evidence": "test_single_session_backcompat.py (7) + test_multi_session_pipeline.py PASSED"
-        },
-        {
-          "behavior": "pre-SS5 single_session loop-state (no events file) resumes cleanly",
-          "disposition": "tested",
-          "evidence": "test_single_session_backcompat.py::test_pre_ss5_single_session_loop_state_resumes_without_events_file PASSED"
+          "evidence": "full shipwright-iterate suite 438 passed (436 pre-change + 2 new guard tests), incl. test_skill_phase_matrix / test_skill_step_6_rules_present / test_skill_e2e_gate_consistency"
         }
       ],
       "counts": {
-        "testable": 16,
-        "tested": 16,
+        "testable": 2,
+        "tested": 2,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 4,
-        "covered_acs": 4
+        "acs": 2,
+        "covered_acs": 2
       }
     }
   },
