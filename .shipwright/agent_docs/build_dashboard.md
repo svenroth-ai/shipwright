@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-07 20:01 UTC | Session: 602dc8e6-c258-452f-83a9-ea76b5063d21 | Run: iterate-2026-07-07-grade-public-url-network
+> Updated: 2026-07-08 09:03 UTC | Session: 7652d2c3-169b-4225-beef-2501edb079df | Run: iterate-2026-07-08-ss5-resumability
 
-## Recent Changes (279 iterations)
+## Recent Changes (280 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | SS5: single-session pipeline resumability (auto-detect + confirm-card resume, idempotent mid-flight re-run), recovery (single-session-recover), structured observability (.shipwright/run_loop_events.jsonl, 7 event types), dual-mode back-compat. | 0/0 |  | tooling | 2026-07-08 |
 | change | Part 3: a public github.com URL / owner-repo grade target defaults to GitHub network enrichment; a local path or GitHub Enterprise host stays local-only unless --allow-network. | 0/0 |  | tooling | 2026-07-07 |
 | change | change_traceability renders n/a in local-only grade mode (Part 1 + Part 2): new GradeInputs.change_traceability_measurable gates dim 3; cold projector opts out locally, authoritative stays measurable. | 0/0 |  | tooling | 2026-07-07 |
 | feature | SS4: phase-runner subagent + result contract + guaranteed artifact persistence (on-disk apply guard + reload-from-summaries + single-session-reload CLI) + section-writer persistence-bug fix (write path + non-blocking fallback hook, supersedes ADR-042 block-on-failure). | 0/0 |  | tooling | 2026-07-07 |
@@ -286,7 +287,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-07 | Unit: 373/373 | Smoke: not_run | (iterate)
+Last run: 2026-07-08 | Unit: 327/327 | Integration: 178/178 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

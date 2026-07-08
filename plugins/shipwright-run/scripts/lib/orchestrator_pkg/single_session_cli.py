@@ -21,7 +21,11 @@ import sys
 from pathlib import Path
 
 SINGLE_SESSION_COMMANDS: frozenset[str] = frozenset(
-    {"single-session-next", "single-session-apply", "single-session-reload"}
+    {
+        "single-session-next", "single-session-apply", "single-session-reload",
+        # SS5 resumability / recovery / human-gate observability.
+        "single-session-resume", "single-session-gate", "single-session-recover",
+    }
 )
 
 # CAS-reject reasons that map to a fail-closed apply exit code (mirrors router).
@@ -56,6 +60,33 @@ def dispatch_single_session(args: argparse.Namespace, project_root: Path) -> int
             return 1
         print(json.dumps({"ok": True, "context": context}, indent=2))
         return 0
+
+    # ----- SS5 resumability / recovery / human-gate -----------------------
+    # Lazy import (recovery drags in the lifecycle mutators). Each function is
+    # mode- and run-identity-gated, so a multi_session run is a no-op rejection.
+    if args.command in ("single-session-resume", "single-session-gate",
+                        "single-session-recover"):
+        from .single_session_recovery import (
+            mark_human_gate, recover_single_session, resume_run,
+        )
+
+        if args.command == "single-session-resume":
+            result = resume_run(project_root, confirm=args.confirm)
+            print(json.dumps(result, indent=2))
+            return 0 if result.get("action") == "resume" else 1
+
+        if args.command == "single-session-gate":
+            result = mark_human_gate(
+                project_root, phase_task_id=args.phase_task_id, phase=args.phase,
+                paused=(args.state == "pause"), split_id=args.split_id,
+            )
+        else:  # single-session-recover
+            result = recover_single_session(
+                project_root, phase_task_id=args.phase_task_id,
+                force_status=args.force_status,
+            )
+        print(json.dumps(result, indent=2))
+        return 0 if result.get("ok") else 1
 
     # single-session-apply
     result_path = Path(args.result_json)
