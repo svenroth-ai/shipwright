@@ -69,6 +69,7 @@ from env import load_shipwright_env  # type: ignore[import-not-found]
 load_shipwright_env()
 
 from external_review_config import load_review_config, resolve_model  # noqa: E402
+from external_review_degraded import finalize_review_output  # noqa: E402
 from external_review_prompts import (  # noqa: E402
     load_code_review_prompts,
     load_iterate_review_prompts,
@@ -211,7 +212,8 @@ def review_with_openai(
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt},
             ],
-            max_tokens=4096,
+            # gpt-5.x rejects `max_tokens`; `max_completion_tokens` is required.
+            max_completion_tokens=4096,
         )
 
         return {"status": "success", "feedback": response.choices[0].message.content, "via": "direct"}
@@ -324,6 +326,7 @@ def main() -> int:
             "success": True,
             "skipped": "empty_diff",
             "provider": "none",
+            "degraded": False,
             "reviews": {
                 "gemini": {"status": "skipped", "reason": "empty diff"},
                 "openai": {"status": "skipped", "reason": "empty diff"},
@@ -417,14 +420,10 @@ def main() -> int:
             "openai": {"status": "skipped", "reason": "No OPENAI_API_KEY or OPENROUTER_API_KEY set"},
         }
 
-    output = {
-        "success": True,
-        "provider": provider,
-        "reviews": reviews,
-    }
-
+    # Degraded-gate: keys present but 0 reviews succeeded → fail loud (never a silent no-op).
+    output, exit_code = finalize_review_output(provider, reviews)
     print(json.dumps(output, indent=2))
-    return 0
+    return exit_code
 
 
 if __name__ == "__main__":

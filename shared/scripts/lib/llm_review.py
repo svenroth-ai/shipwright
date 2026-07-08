@@ -125,7 +125,9 @@ def _review_openai(
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt},
             ],
-            max_tokens=4096,
+            # gpt-5.x rejects `max_tokens` on the direct Chat Completions API;
+            # `max_completion_tokens` is the supported replacement.
+            max_completion_tokens=4096,
         )
         return {"status": "success", "feedback": response.choices[0].message.content, "via": "direct"}
 
