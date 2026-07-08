@@ -3,8 +3,9 @@
 > Reached from Step 4 when the run config carries `mode: single_session`
 > (Campaign 2026-07-07, SS3). In this mode the master does NOT print a launch
 > card and step aside — it DRIVES every phase from this one conversation, the
-> way a campaign drives sub-iterates. `multi_session` (the default) is
-> unchanged: use Step 5's surface-aware hand-off.
+> way a campaign drives sub-iterates. This is now the DEFAULT and sole mode
+> (SS8). `multi_session` (deprecated, back-compat only) is unchanged: use Step
+> 5's surface-aware hand-off.
 
 ## Why single_session
 

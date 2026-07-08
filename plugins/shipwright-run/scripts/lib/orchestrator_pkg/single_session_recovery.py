@@ -43,7 +43,7 @@ from single_session.loop_state import (  # noqa: E402
 from single_session.orchestrator_context import reload_orchestrator_context  # noqa: E402
 
 from .config_io import load_run_config  # noqa: E402
-from .constants import SCHEMA_VERSION  # noqa: E402
+from .constants import LEGACY_FALLBACK_MODE, SCHEMA_VERSION  # noqa: E402
 from .single_session_loop import SINGLE_SESSION, resolve_next_dispatch  # noqa: E402
 
 
@@ -67,7 +67,9 @@ def _guard(project_root: Path) -> dict[str, Any]:
         return {"ok": False, "action": "no_config"}
     mode = config.get("mode")
     if mode != SINGLE_SESSION:
-        return {"ok": False, "action": "wrong_mode", "mode": mode}
+        # Mode-less/legacy config → report the effective legacy mode, matching
+        # single_session_loop's wrong_mode payload (a mode-less run is multi_session).
+        return {"ok": False, "action": "wrong_mode", "mode": mode or LEGACY_FALLBACK_MODE}
     loop_state = load_loop_state(project_root)
     if loop_state is None:
         return {"ok": False, "action": "not_resumable", "reason": "no_loop_state"}

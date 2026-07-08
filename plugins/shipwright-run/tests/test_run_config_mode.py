@@ -2,14 +2,16 @@
 
 Campaign 2026-07-07-single-session-pipeline / SS1 mode-scaffold.
 
-Scope:
-    - schema carries an OPTIONAL ``mode`` (enum + default multi_session; NOT in
+Scope (SS8, 2026-07-08 — single_session is now the sole/default mode):
+    - schema carries an OPTIONAL ``mode`` (enum + default SINGLE_session; NOT in
       ``required`` so pre-SS1 configs still validate).
-    - create_config writes ``mode`` (default multi_session; --mode single_session).
-    - run_mode() reads it back-compat: missing/unknown -> multi_session.
-    - the write-config CLI exposes --mode with constrained choices.
+    - create_config writes ``mode`` (fresh default single_session; --mode overrides).
+    - run_mode() reads back-compat: a mode-less/unknown config is STILL read as
+      multi_session (the legacy fallback is deliberately separate from the fresh
+      default, so flipping the default doesn't silently reinterpret old runs).
+    - the write-config CLI exposes --mode with constrained choices (default single).
 
-Out of scope (SS3+): the single-session orchestrator loop that HONORS the mode.
+Out of scope: the single-session orchestrator loop that HONORS the mode (SS3).
 """
 from __future__ import annotations
 
@@ -33,10 +35,21 @@ from orchestrator import (  # noqa: E402
 # ---- create_config writes mode ----
 
 
-def test_create_config_default_mode_is_multi_session(tmp_project):
+def test_create_config_default_mode_is_single_session(tmp_project):
+    # SS8: a fresh run with no explicit --mode now defaults to single_session.
     cfg = create_config("full_app", "supabase-nextjs", "guided", "jelastic-dev", tmp_project)
-    assert cfg["mode"] == "multi_session"
-    assert DEFAULT_RUN_MODE == "multi_session"
+    assert cfg["mode"] == "single_session"
+    assert DEFAULT_RUN_MODE == "single_session"
+
+
+def test_fresh_default_and_legacy_fallback_deliberately_diverge(tmp_project):
+    """SS8 invariant: the FRESH-run default (single_session) is separate from the
+    mode-less READ fallback (multi_session) — flipping the default must NOT
+    silently reinterpret an existing mode-less run."""
+    fresh = create_config("full_app", "supabase-nextjs", "guided", "jelastic-dev", tmp_project)
+    assert fresh["mode"] == "single_session"
+    # A config predating the mode field is still read as multi_session.
+    assert run_mode({"schemaVersion": 2, "runId": "run-legacy00"}) == "multi_session"
 
 
 def test_create_config_single_session_mode(tmp_project):
@@ -137,6 +150,10 @@ def test_schema_declares_optional_mode_with_default():
     schema = _schema()
     mode = schema["properties"]["mode"]
     assert mode["enum"] == ["multi_session", "single_session"]
+    # The JSON-Schema `default` is the ASSUME-WHEN-ABSENT value and MUST match the
+    # code's absent-read fallback (run_mode -> multi_session), so a schema-default
+    # consumer never reinterprets a mode-less legacy config. The fresh-WRITE default
+    # (single_session) is code behaviour, asserted by the create_config tests above.
     assert mode["default"] == "multi_session"
     # OPTIONAL — back-compat: pre-SS1 configs (no mode) must still validate.
     assert "mode" not in schema["required"]
@@ -160,12 +177,12 @@ def test_write_config_cli_exposes_mode_choice():
     assert args.mode == "single_session"
 
 
-def test_write_config_cli_defaults_mode_multi_session():
+def test_write_config_cli_defaults_mode_single_session():
     from orchestrator_pkg.cli import build_parser
 
     parser = build_parser()
     args = parser.parse_args(["write-config", "--scope", "full_app"])
-    assert args.mode == "multi_session"
+    assert args.mode == "single_session"
 
 
 def test_write_config_cli_rejects_unknown_mode():

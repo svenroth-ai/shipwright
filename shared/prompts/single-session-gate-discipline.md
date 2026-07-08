@@ -4,7 +4,7 @@
 deploy) running under the **single-session pipeline**
 (`shipwright_run_config.json` `mode: "single_session"`, Campaign 2026-07-07).
 
-**Additive & inert otherwise.** Under `multi_session` (the default), standalone,
+**Additive & inert otherwise.** Under `multi_session` (deprecated), standalone,
 or any unrecognised mode, this contract does nothing — every gate resolves to
 `interactive` and you behave exactly as your phase already documents.
 

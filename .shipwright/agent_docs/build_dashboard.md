@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-08 13:53 UTC | Session: 47fe33c7-a7a9-46d0-bb55-1a7ab515c694 | Run: iterate-2026-07-08-ss7-e2e-integration-suite
+> Updated: 2026-07-08 20:31 UTC | Session: 47fe33c7-a7a9-46d0-bb55-1a7ab515c694 | Run: iterate-2026-07-08-ss8-default-single-session
 
-## Recent Changes (284 iterations)
+## Recent Changes (285 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | SS8 default-flip to single-session finalization | 0/0 |  | infra | 2026-07-08 |
 | change | SS7 CLI E2E capstone finalization | 0/0 |  | tooling | 2026-07-08 |
 | change | Remove stale hardcoded version (v0.3.0) from the shipwright-iterate intro banner (SKILL.md H1 + banner title) and add a drift-guard test | 438/438 |  | docs | 2026-07-08 |
 | bug | SS6: fix external-review gate — direct-OpenAI max_completion_tokens param + fail-loud degraded gate (no silent self-review fallback) | 3749/3749 |  | tooling | 2026-07-08 |

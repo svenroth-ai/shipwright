@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://shipwright.local/schemas/run_config.v2.schema.json",
   "title": "Shipwright Run Config (schemaVersion 2)",
-  "description": "Authoritative shape of shipwright_run_config.json for the multi-session pipeline orchestrator. Vertragsschicht for the shipwright-webui repo (schema v3 of sdk-sessions.json mirrors phase_tasks[]).",
+  "description": "Authoritative shape of shipwright_run_config.json for the shipwright-run pipeline orchestrator (single-session is the default and sole supported mode; multi-session is deprecated). Vertragsschicht for the shipwright-webui repo (schema v3 of sdk-sessions.json mirrors phase_tasks[]).",
   "type": "object",
   "required": [
     "schemaVersion",
@@ -35,7 +35,7 @@
     "mode": {
       "enum": ["multi_session", "single_session"],
       "default": "multi_session",
-      "description": "Pipeline execution mode (Campaign 2026-07-07 SS1, additive). 'multi_session' (default + stable fallback): each phase runs as its own external UUID-bound Claude session (the pre-SS1 behaviour). 'single_session': the /shipwright-run master drives every phase via a phase-runner subagent in ONE conversation (the campaign model). OPTIONAL and NOT in 'required': configs written before SS1 carry no 'mode' and are read as multi_session (back-compat). An unrecognised value is also read as multi_session so a typo can't select an unbuilt path."
+      "description": "Pipeline execution mode. NOTE the two distinct 'defaults': this JSON-Schema `default` is the ASSUME-WHEN-ABSENT value and is 'multi_session' — it MUST match the code's absent-read fallback (config_io.run_mode) so a consumer applying schema defaults never silently reinterprets a mode-less legacy run. SEPARATELY, a FRESH write by /shipwright-run (SS8, 2026-07-08) produces 'single_session' — the sole supported mode: the master drives every phase via a phase-runner subagent in ONE conversation (runs on every surface). 'multi_session' (each phase its own external UUID-bound Claude session, the pre-SS1 behaviour) is DEPRECATED, retained only for back-compat; removal is deferred. OPTIONAL and NOT in 'required': a mode-less config migrates explicitly (set mode: single_session + resume). An unrecognised value is also read as multi_session so a typo can't select an unbuilt path."
     },
     "deploy_target": { "type": "string" },
     "pipeline": {

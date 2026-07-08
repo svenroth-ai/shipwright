@@ -112,8 +112,8 @@ Profile:    {supabase-nextjs | custom}
 Autonomy:   {guided | autonomous}
               Guided:     Phase sessions ask before destructive actions.
               Autonomous: Phase sessions run hands-off (Deploy still asks).
-Mode:       {multi_session (default) | single_session}
-              multi_session = each phase its own external session; single_session = one driven conversation.
+Mode:       {single_session (default) | multi_session (deprecated)}
+              single_session = one driven conversation (runs on every surface); multi_session = each phase its own external session (deprecated, back-compat only).
 Deploy to:  {Jelastic DEV | none}
 
 Accept or modify:
@@ -145,7 +145,7 @@ uv run "{plugin_root}/scripts/lib/orchestrator.py" write-config \
   --project-root "$(pwd)"
 ```
 
-`--mode` defaults to `multi_session`; pass `single_session` only if chosen in Step 3 (a mode-less legacy config reads as `multi_session`).
+`--mode` defaults to `single_session` (the sole supported mode). `multi_session` is DEPRECATED — pass it only for a legacy/back-compat run (removal deferred). A mode-less legacy config still reads as `multi_session`; migrate it explicitly (set `mode: single_session` + resume).
 
 This writes `shipwright_run_config.json` at `schemaVersion: 2`. The orchestrator:
 
@@ -164,7 +164,7 @@ Capture the parsed JSON output — Step 5 reads `phase_tasks[0]` from it.
 
 **Mode branch (SS3).** If `config.mode == "single_session"`, skip Step 5's
 launch-card hand-off and drive the pipeline in THIS conversation via the
-**[Single-Session Orchestrator Loop](references/single-session-loop.md)** (Step 5 + Resume Support are the `multi_session` default path).
+**[Single-Session Orchestrator Loop](references/single-session-loop.md)** (Step 5 + Resume Support are the `multi_session` legacy/back-compat path).
 
 ---
 

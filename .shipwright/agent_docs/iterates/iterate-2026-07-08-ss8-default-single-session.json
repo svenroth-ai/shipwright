@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-08-ss8-default-single-session",
+  "date": "2026-07-08T20:31:54.816173Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/ss8-default-single-session",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/2026-07-08-ss8-default-single-session.md",
+  "adr": "iterate-2026-07-08-ss8-default-single-session"
+}

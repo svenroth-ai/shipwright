@@ -37,9 +37,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--autonomy", default="guided", choices=["guided", "autonomous"])
     p.add_argument(
         "--mode", default=DEFAULT_RUN_MODE, choices=list(RUN_MODES),
-        help=("Pipeline execution mode (SS1, additive). multi_session (default): "
-              "each phase = its own external session. single_session: master "
-              "drives phases via a phase-runner subagent in one conversation."),
+        help=("Pipeline execution mode. single_session (default, SS8): master "
+              "drives phases via a phase-runner subagent in one conversation. "
+              "multi_session (DEPRECATED, back-compat only): each phase = its "
+              "own external session."),
     )
     p.add_argument("--deploy-target", default="jelastic-dev")
     p.add_argument("--project-root", default=".")

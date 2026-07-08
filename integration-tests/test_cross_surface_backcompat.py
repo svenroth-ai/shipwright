@@ -50,10 +50,12 @@ def _run_cli(args: list[str], project_root: Path) -> subprocess.CompletedProcess
 
 
 def _write_multi_config(project: Path) -> dict:
-    # NO --mode -> multi_session default (the legacy / fallback path).
+    # SS8: single_session is the default now — request the DEPRECATED multi_session
+    # path explicitly (this suite proves that legacy path stays resumable).
     res = _run_cli([
         "write-config", "--scope", "full_app", "--profile", "supabase-nextjs",
         "--autonomy", "guided", "--deploy-target", "jelastic-dev",
+        "--mode", "multi_session",
     ], project)
     assert res.returncode == 0, res.stderr
     return json.loads(res.stdout)

@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-08-ss7-e2e-integration-suite",
+    "run_id": "iterate-2026-07-08-ss8-default-single-session",
     "date": "2026-07-08",
-    "intent": "feature",
+    "intent": "change",
     "complexity": "medium",
     "campaign": "2026-07-07-single-session-pipeline",
-    "sub_iterate_id": "SS7",
+    "sub_iterate_id": "SS8",
     "unit": {
       "status": "passed",
       "passed": 3751,
@@ -37,79 +37,80 @@
     "degraded": [
       {
         "condition": "risk_flag_false_positive",
-        "detail": "classify_complexity flagged touches_auth from the prose word 'author' in the description; this is a test-only diff touching no auth paths (F11 risk_detectors recompute from the diff). Overridden."
-      },
-      {
-        "condition": "ac_migrated",
-        "detail": "AC2 (green Playwright WebUI pipeline flow) requires the separate shipwright-webui repo (SHIPWRIGHT_WEBUI unimplemented in the monorepo) + the S1b track; migrated to campaign SS8 per Sven's both-surfaces requirement."
+        "detail": "classify_complexity flagged touches_auth + touches_migrations and estimated 'large' from prose ('migration guide', multi-verb scope) not the diff; the actual diff touches no auth paths and no DB migrations (F11 risk_detectors recompute from the diff). Overridden to medium; no down.sql needed."
       },
       {
         "condition": "human_gate_pending",
-        "detail": "AC5 (Sven final UAT) is a human sign-off, pending after PR merge; not a testable behavior."
+        "detail": "AC5 (Sven UAT) is satisfied by running the first single-session-by-default pipeline; pending after merge (this iterate makes single-session the default = the UAT enabler)."
       }
     ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --extra dev pytest integration-tests/test_single_session_capstone.py integration-tests/test_cross_surface_backcompat.py -q",
+      "runner": "uv run --extra dev pytest plugins/shipwright-run/tests/test_run_config_mode.py plugins/shipwright-run/tests/test_run_skill_mode_selection.py",
       "exit_code": 0,
-      "tests_run": 6,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\ss7-e2e-integration-suite\\.shipwright\\runs\\iterate-2026-07-08-ss7-e2e-integration-suite\\surface_verification.log",
-      "timestamp": "2026-07-08T13:43:40.083Z",
+      "tests_run": 21,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\ss8-default-single-session\\.shipwright\\runs\\iterate-2026-07-08-ss8-default-single-session\\surface_verification.log",
+      "timestamp": "2026-07-08T20:28:37Z",
       "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "full single-session pipeline (all phases + build fan-out) advances to complete THROUGH a single-session-gate human pause/resume; observability event story is correct",
+          "behavior": "A fresh config / write-config with no --mode defaults to single_session",
           "disposition": "tested",
-          "evidence": "test_single_session_capstone.py::TestFullPipelineThroughHumanGate::test_gate_walk_with_section_writer_regression PASSED"
+          "evidence": "test_create_config_default_mode_is_single_session + test_write_config_cli_defaults_mode_single_session PASSED"
         },
         {
-          "behavior": "section-writer persistence regression: an ok result claiming an unwritten artifact is rejected (artifacts_missing) mid-pipeline, frontier intact, then the fixed retry completes",
+          "behavior": "Fresh-write default (single_session) and mode-less READ fallback (multi_session) deliberately diverge",
           "disposition": "tested",
-          "evidence": "same test (threaded into the plan phase of the gate-walk)"
+          "evidence": "test_fresh_default_and_legacy_fallback_deliberately_diverge PASSED"
         },
         {
-          "behavior": "strict-stop DURING the serial split fan-out halts the run and plans NO successor split (02-ui never becomes a task; strict_stop emitted)",
+          "behavior": "A mode-less/unrecognized config is STILL read as multi_session (LEGACY_FALLBACK_MODE)",
           "disposition": "tested",
-          "evidence": "test_single_session_capstone.py::TestStrictStopMidFanout::test_build_failure_mid_fanout_halts_and_plans_no_next_split PASSED"
+          "evidence": "test_run_mode_defaults_missing_to_multi_session, test_run_mode_coerces_unknown_to_multi_session PASSED"
         },
         {
-          "behavior": "cross-surface parity: the loop dispatch sequence is the CORRECT pipeline AND identical across cli / webui (SHIPWRIGHT_WEBUI=1) / chat surfaces",
+          "behavior": "Schema mode.default is multi_session (absent-fallback, matches run_mode) — a schema-default consumer never reinterprets a legacy config",
           "disposition": "tested",
-          "evidence": "test_single_session_capstone.py::TestCrossSurfaceParity::test_pipeline_identical_across_surfaces PASSED"
+          "evidence": "test_schema_declares_optional_mode_with_default PASSED (default == multi_session)"
         },
         {
-          "behavior": "chat surface honestly declines: the banner drift-guard exists and the run SKILL.md chat branch states the pipeline can't launch there",
+          "behavior": "The single-session loop reports wrong_mode for a multi_session AND a mode-less config, coercing the absent mode to multi_session",
           "disposition": "tested",
-          "evidence": "test_cross_surface_backcompat.py::TestChatSurfaceHonestDecline::test_run_skill_declines_on_chat_surface PASSED"
+          "evidence": "test_resolve_wrong_mode_on_multi_session PASSED (both explicit-multi and mode-less halves)"
         },
         {
-          "behavior": "in-flight multi_session run remains resumable: crash -> recover-phase-task -> re-claim on bumped version -> complete -> pipeline advances to design (stale attempt fenced out)",
+          "behavior": "Deprecated multi_session lifecycle untouched (no single-session leak); recovery guard consistent",
           "disposition": "tested",
-          "evidence": "test_cross_surface_backcompat.py::TestMultiSessionRemainsResumable::test_crash_recover_reclaim_complete_advances PASSED"
+          "evidence": "test_single_session_backcompat.py suite + test_single_session_resume.py PASSED"
         },
         {
-          "behavior": "back-compat: a multi_session run creates NO single-session files (run_loop_state.json / run_loop_events.jsonl)",
+          "behavior": "SKILL Step-3 marks single_session default + multi_session deprecated",
           "disposition": "tested",
-          "evidence": "same test (step 6: _no_single_session_files)"
+          "evidence": "test_skill_marks_single_session_default PASSED"
         },
         {
-          "behavior": "external_review gate cannot silently no-op: degraded (attempted + 0 success) -> exit 1, success:false, degraded:true; partial success -> exit 0",
+          "behavior": "In-flight multi_session run still resumable (migration substrate) under the flipped default",
           "disposition": "tested",
-          "evidence": "test_cross_surface_backcompat.py::TestExternalReviewGateCannotSilentlyNoop::test_degraded_gate_is_loud PASSED"
+          "evidence": "integration-tests/test_cross_surface_backcompat.py + test_multi_session_pipeline.py PASSED"
+        },
+        {
+          "behavior": "Migration guide exists at the referenced path",
+          "disposition": "tested",
+          "evidence": "docs/migrations/multi-session-to-single-session.md present; constants.py/config_io.py breadcrumbs point to it"
         }
       ],
       "counts": {
-        "testable": 8,
-        "tested": 8,
+        "testable": 9,
+        "tested": 9,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 3,
-        "covered_acs": 3
+        "acs": 5,
+        "covered_acs": 5
       }
     }
   },

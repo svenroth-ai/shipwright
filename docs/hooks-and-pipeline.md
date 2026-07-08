@@ -396,7 +396,10 @@ After build completes: shows split summary table. After test completes: shows te
 > (`/shipwright-iterate`, single-session, works everywhere).
 
 > **Single-session gate mode (Campaign 2026-07-07, SS2).** When a run sets
-> `mode: "single_session"` (additive; default is `multi_session`), each phase
+> `mode: "single_session"` (SS8, 2026-07-08: now the DEFAULT and sole supported
+> mode; `multi_session` is deprecated/back-compat only — a mode-less legacy config
+> still reads as `multi_session` and migrates explicitly, see
+> `docs/migrations/multi-session-to-single-session.md`), each phase
 > runs as a phase-runner subagent inside the master's ONE conversation.
 > Interactive `AskUserQuestion` gates then follow a per-gate policy from
 > `shared/config/gate_catalog.json`: `auto-default` (proceed with a documented

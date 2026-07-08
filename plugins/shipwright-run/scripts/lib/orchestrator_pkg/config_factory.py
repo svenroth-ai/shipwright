@@ -90,8 +90,9 @@ def create_config(
     (current_step / completed_steps); we still merge those, but the new
     config we write is always v2 (schemaVersion: 2 + phase_tasks[]).
 
-    ``mode`` (Campaign 2026-07-07, SS1) selects the pipeline execution mode
-    (``multi_session`` default | ``single_session``). It is validated against
+    ``mode`` (Campaign 2026-07-07, SS1) selects the pipeline execution mode.
+    SS8 (2026-07-08): the fresh default is ``single_session`` (the sole mode);
+    ``multi_session`` is deprecated/back-compat only. It is validated against
     ``RUN_MODES`` and always written to the config so downstream readers never
     have to guess. The initial phase_tasks[] seed is mode-independent — the
     single-session orchestrator loop (SS3) consumes the SAME phase_tasks[] via
@@ -139,9 +140,9 @@ def create_config(
         # --- v2 fields ---
         "schemaVersion": SCHEMA_VERSION,
         "runId": run_id,
-        # Additive dual-mode selector (SS1). Default multi_session preserves the
-        # external UUID-bound phase-session model; single_session is honored by
-        # the SS3 in-conversation orchestrator loop.
+        # Pipeline execution mode (SS1). SS8: fresh default is single_session
+        # (honored by the SS3 in-conversation orchestrator loop); multi_session
+        # (external UUID-bound phase-session model) is the deprecated legacy value.
         "mode": mode,
         "runConditions": run_conditions,
         "splits_frozen": [],

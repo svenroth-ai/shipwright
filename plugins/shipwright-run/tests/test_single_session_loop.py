@@ -18,6 +18,7 @@ The end-to-end pipeline walk (incl. multi-split fan-out) lives in
 from __future__ import annotations
 
 import ast
+import json
 import sys
 from pathlib import Path
 
@@ -99,10 +100,19 @@ def test_resolve_no_config_on_empty_dir(tmp_project):
 
 
 def test_resolve_wrong_mode_on_multi_session(tmp_project):
-    create_config("full_app", "supabase-nextjs", "guided", "jelastic-dev", tmp_project)
+    # SS8: single_session is the default now → request multi_session explicitly (wrong_mode).
+    create_config("full_app", "supabase-nextjs", "guided", "jelastic-dev", tmp_project,
+                  mode="multi_session")
     res = loop.resolve_next_dispatch(tmp_project)
-    assert res["action"] == "wrong_mode"
-    assert res["mode"] == "multi_session"
+    assert res["action"] == "wrong_mode" and res["mode"] == "multi_session"
+
+    # A mode-less (pre-SS1/legacy) config is ALSO wrong_mode; the payload coerces the
+    # absent mode to the legacy fallback (single_session_loop's `mode or LEGACY_FALLBACK_MODE`).
+    p = tmp_project / "shipwright_run_config.json"
+    p.write_text(json.dumps({k: v for k, v in json.loads(p.read_text("utf-8")).items()
+                             if k != "mode"}), encoding="utf-8")
+    res = loop.resolve_next_dispatch(tmp_project)
+    assert res["action"] == "wrong_mode" and res["mode"] == "multi_session"
 
 
 def test_resolve_dispatches_project_on_fresh_single_session(tmp_project):
