@@ -1,0 +1,1 @@
+Single-session pipeline: end-to-end integration + cross-surface regression capstone — a full pipeline walked through a human-gate pause/resume with strict-stop, cross-surface parity (CLI/WebUI/chat), in-flight multi-session resumability, and a known-bug regression roster.

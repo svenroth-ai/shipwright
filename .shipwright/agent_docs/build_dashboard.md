@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-08 10:02 UTC | Session: 89d59797-af32-411a-9735-8feede806ab5 | Run: iterate-2026-07-08-ss6-external-review-fix
+> Updated: 2026-07-08 13:53 UTC | Session: 47fe33c7-a7a9-46d0-bb55-1a7ab515c694 | Run: iterate-2026-07-08-ss7-e2e-integration-suite
 
-## Recent Changes (283 iterations)
+## Recent Changes (284 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | SS7 CLI E2E capstone finalization | 0/0 |  | tooling | 2026-07-08 |
 | change | Remove stale hardcoded version (v0.3.0) from the shipwright-iterate intro banner (SKILL.md H1 + banner title) and add a drift-guard test | 438/438 |  | docs | 2026-07-08 |
 | bug | SS6: fix external-review gate — direct-OpenAI max_completion_tokens param + fail-loud degraded gate (no silent self-review fallback) | 3749/3749 |  | tooling | 2026-07-08 |
 | change | update-marketplace.sh installs every marketplace-registered plugin not yet in the cache (was: silently skipped), fixing the persistent shipwright-grade not_in_cache warning. | 0/0 |  | tooling | 2026-07-08 |
@@ -290,7 +291,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-08 | Unit: 3749/3749 | Smoke: not_run | (iterate)
+Last run: 2026-07-08 | Unit: 3751/3751 | Integration: 184/184 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
