@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-07-08T08:17:51.348079+00:00
-Total commits: 1112
+Generated: 2026-07-08T09:26:09.661903+00:00
+Total commits: 1113
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 322
+    "fix" : 323
     "feat" : 298
     "chore" : 236
     "docs" : 143
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 322 commits
+### Fixes (fix) — 323 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-08 | scripts | update-marketplace.sh installs registered-but-missing plugins (#347) | 9ae9551f16f0 |
 | 2026-07-07 | grade | change_traceability is n/a in local-only mode (no more false F) (#344) | 5357ad26a74f |
 | 2026-07-07 | hooks | guard phase_session_start + self-heal the plugins/ cross-link cache (#341) | 458b4aa78751 |
 | 2026-07-07 | security | drop accepted-risk GH-owned action-tags at the SARIF artifact producer (#336) | ab114c8c5cce |
@@ -654,7 +655,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-08 | triage | sweep 1 outbox append(s) into branch | bcab29f6fff4 |
+| 2026-07-08 | release | v0.30.0 (#348) | 023701b57bb2 |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
 | 2026-06-30 | compliance | re-tag mis-filed compliance/security work to FR-01.10/FR-01.07 (honesty-gate fix) (#301) | 636fcc435dbf |
@@ -1181,7 +1182,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1112 |
+| Total commits | 1113 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1112 |
+| Human-authored commits | 1113 |
 

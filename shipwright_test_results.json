@@ -1,13 +1,13 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-08-marketplace-autoinstall",
+    "run_id": "iterate-2026-07-08-remove-iterate-banner-version",
     "date": "2026-07-08",
     "intent": "change",
     "complexity": "small",
     "unit": {
       "status": "passed",
-      "passed": 3741,
-      "total": 3741
+      "passed": 438,
+      "total": 438
     },
     "integration": {
       "status": "not_run",
@@ -34,54 +34,40 @@
     },
     "degraded": [
       {
-        "condition": "suite scope (top-level script + its shared test)",
-        "detail": "The diff touches scripts/update-marketplace.sh + shared/tests/test_installer_shell_scripts.py only (no plugin code). F0 ran the full shared/tests suite (3741 passed, 16 skipped) + ruff@0.15.15 + bash -n syntax check + leak-guard f0 ALLOW. Plugin suites are unaffected; CI runs the full matrix."
-      },
-      {
-        "condition": "shellcheck unavailable locally",
-        "detail": "shellcheck is not installed on this machine, so static shell-lint was limited to `bash -n` (syntax). Compensated by the real end-to-end run of the modified script under `set -euo pipefail` (exit 0) which exercised the new install-if-missing branch."
+        "condition": "suite scope (single-plugin display-string + guard-test change)",
+        "detail": "The diff touches only plugins/shipwright-iterate/skills/iterate/SKILL.md (2 display lines) + one new drift-guard test file. F0 ran the full shipwright-iterate suite (438 passed, not-slow) + ruff@0.15.15 (clean) + leak-guard f0 ALLOW. No other plugin's code is touched; CI runs the full matrix."
       }
     ],
     "surface_verification": {
       "surface": "none",
-      "justification": "The change is to a top-level developer/install bash script (scripts/update-marketplace.sh) + its shared regression test. No web/UI/API/server surface. The script IS the executable surface and was driven END-TO-END: uninstalled shipwright-grade (recreating the not-installed state), ran the MODIFIED worktree script under set -euo pipefail, and observed it auto-install grade from the marketplace and sync it ('[..] shipwright-grade: not installed - installing from marketplace...' -> '1 installed, 14 synced, 0 skipped, 0 errors'), with grade back in installed_plugins.json @0.29.1 and its cache dir present. Verification = F0 shared/tests (3741) + ruff + bash -n + leak-guard f0 ALLOW + the real-script E2E.",
+      "justification": "Display-only change: removed a stale hardcoded version string (v0.3.0) from the iterate intro banner (Markdown SKILL.md prose) + added a pytest drift-guard. No web/UI/API/server/runtime surface exists to drive. Verified by (a) the diff rendering exactly the 2 intended lines, (b) red-green proof the guard regex bites the old 'v0.3.0' banner and passes the new one, (c) the full iterate plugin suite (438 passed) which includes the SKILL.md drift + phase-matrix drift tests.",
       "exit_code": 0,
-      "tests_run": 3741,
+      "tests_run": 438,
       "timestamp": "2026-07-08T00:00:00Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "A registered-but-not-installed plugin is installed from the marketplace, not silently skipped",
+          "behavior": "The iterate intro banner (H1 heading + SHIPWRIGHT-ITERATE title line) carries no hardcoded version token",
           "disposition": "tested",
-          "evidence": "test_update_marketplace_autoinstall.py::test_installs_missing_registered_plugin_instead_of_skipping (static) + E2E: uninstall grade -> run script -> grade re-installed @0.29.1 ('1 installed')"
+          "evidence": "test_skill_banner_no_version.py::test_h1_heading_has_no_version + ::test_intro_banner_title_has_no_version (2 passed); red-green verified the guard regex matches the removed 'v0.3.0' and not the new banner"
         },
         {
-          "behavior": "An already-installed plugin is only re-queried + synced, never re-installed (guarded on empty cache path)",
+          "behavior": "Removing the version does not break any SKILL.md structural drift / phase-matrix / step-rules test",
           "disposition": "tested",
-          "evidence": "E2E: the other 13 plugins synced with 0 re-installs ('1 installed, 14 synced'); the install branch runs only when _install_path returns empty"
-        },
-        {
-          "behavior": "F37 parity: the new _install_path helper uses $PYTHON_BIN, never a bare `python -c`",
-          "disposition": "tested",
-          "evidence": "test_update_marketplace_autoinstall.py::test_new_helper_keeps_f37_no_bare_python asserts no `$(python -c`; test_installer_shell_scripts.py::test_f37 re-reads the whole src; both pass"
-        },
-        {
-          "behavior": "The install is non-fatal under set -e (offline/headless run just skips, script does not abort)",
-          "disposition": "tested",
-          "evidence": "the install is inside an `if ...; then` (set -e ignores if-condition failures); the full E2E ran the script under `set -euo pipefail` to exit 0"
+          "evidence": "full shipwright-iterate suite 438 passed (436 pre-change + 2 new guard tests), incl. test_skill_phase_matrix / test_skill_step_6_rules_present / test_skill_e2e_gate_consistency"
         }
       ],
       "counts": {
-        "testable": 4,
-        "tested": 4,
+        "testable": 2,
+        "tested": 2,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 4,
-        "covered_acs": 4
+        "acs": 2,
+        "covered_acs": 2
       }
     }
   },
