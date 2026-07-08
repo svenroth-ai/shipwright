@@ -210,6 +210,13 @@ If the CLI returns `skipped: "empty_diff"` (which happens when the diff
 file is empty or whitespace-only), the cascade is recorded as
 `skipped_user_opt_out` with reason `empty_diff` and the run continues.
 
+If the CLI exits **non-zero** or the JSON has `"degraded": true` (keys were
+present but every review leg failed — bad key, API param error, timeout), the
+external review **did not run**. Do NOT mark the cascade `completed`: surface
+the `degraded_reason`, then treat it exactly like Branch B `missing_keys` —
+re-check keys (Option 1) or fall back to self-review and record the opt-out
+(Option 2). A degraded gate must never be recorded as a passing review.
+
 ### Branch B — `missing_keys`
 
 STOP and ask the user verbatim:

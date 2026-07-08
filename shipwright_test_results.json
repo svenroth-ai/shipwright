@@ -1,20 +1,20 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-08-ss5-resumability",
+    "run_id": "iterate-2026-07-08-ss6-external-review-fix",
     "date": "2026-07-08",
-    "intent": "feature",
-    "complexity": "medium",
+    "intent": "bug",
+    "complexity": "small",
     "campaign": "2026-07-07-single-session-pipeline",
-    "sub_iterate_id": "SS5",
+    "sub_iterate_id": "SS6",
     "unit": {
       "status": "passed",
-      "passed": 327,
-      "total": 327
+      "passed": 3749,
+      "total": 3749
     },
     "integration": {
-      "status": "passed",
-      "passed": 178,
-      "total": 178
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -34,115 +34,69 @@
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [
-      {
-        "condition": "risk_flag_override",
-        "detail": "touches_auth is a prose false-positive (matched the 'session' keyword in multi-session/single-session; no auth/middleware/supabase code exists in this monorepo). Overridden; diff-predicate recompute at F11 is authoritative."
-      }
-    ],
+    "degraded": [],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest integration-tests/test_single_session_resume_integration.py -q",
+      "runner": "uv run --extra dev pytest shared/tests/test_external_review_degraded.py shared/tests/test_external_review_openai_param.py shared/tests/test_llm_review.py",
       "exit_code": 0,
-      "tests_run": 1,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\ss5-resumability-backcompat\\.shipwright\\runs\\iterate-2026-07-08-ss5-resumability\\surface_verification.log",
-      "timestamp": "2026-07-08T09:00:27.218Z",
+      "tests_run": 8,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\ss6-external-review-fix\\.shipwright\\runs\\iterate-2026-07-08-ss6-external-review-fix\\surface_verification.log",
+      "timestamp": "2026-07-08T09:57:03.466Z",
       "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "observability event build + closed-set type validation",
+          "behavior": "direct-OpenAI review sends max_completion_tokens, never the gpt-5.x-incompatible max_tokens (external_review.py)",
           "disposition": "tested",
-          "evidence": "test_single_session_observability.py::test_build_event_* PASSED"
+          "evidence": "test_external_review_openai_param.py::test_review_with_openai_uses_max_completion_tokens PASSED"
         },
         {
-          "behavior": "durable append emission + round-trip + torn-trailing-line tolerance",
+          "behavior": "direct-OpenAI review sends max_completion_tokens (lib/llm_review.py, the other live review script)",
           "disposition": "tested",
-          "evidence": "test_single_session_observability.py::test_emit_appends*/test_load_events_* PASSED"
+          "evidence": "test_llm_review.py::test_llm_review_openai_uses_max_completion_tokens PASSED"
         },
         {
-          "behavior": "best-effort emit swallows OSError + non-serializable field (stderr diag)",
+          "behavior": "degraded gate: provider attempted + 0 reviews succeed -> success:false, degraded:true, exit 1, degraded_reason, stderr banner",
           "disposition": "tested",
-          "evidence": "test_single_session_observability.py::test_emit_event_swallows_io_error_but_warns / _non_serializable_field PASSED"
+          "evidence": "test_external_review_degraded.py::test_gate_degraded_when_keys_present_but_no_review_succeeds PASSED + subprocess probe (exit 1, 401 not max_tokens 400)"
         },
         {
-          "behavior": "typed emitters: dispatch + phase_result/strict_stop pairing",
+          "behavior": "partial success (1 of 2 reviewers) is a functioning gate -> not degraded, exit 0",
           "disposition": "tested",
-          "evidence": "test_single_session_observability.py::test_emit_dispatch* / test_emit_phase_result_* PASSED"
+          "evidence": "test_external_review_degraded.py::test_gate_not_degraded_on_partial_success PASSED"
         },
         {
-          "behavior": "loop emits dispatch + phase_result/strict_stop at existing points",
+          "behavior": "no keys (provider none) is the explicit missing-keys state, not degraded -> success:true, exit 0",
           "disposition": "tested",
-          "evidence": "integration test event-sequence + test_emit_phase_result_* PASSED"
+          "evidence": "test_external_review_degraded.py::test_no_keys_is_not_degraded PASSED"
         },
         {
-          "behavior": "resume_run read-only detection vs --confirm commitment",
+          "behavior": "empty-diff short-circuit stays exit 0, not degraded, schema carries degraded:false",
           "disposition": "tested",
-          "evidence": "test_single_session_resume.py::test_resume_is_read_only* / _confirm_emits* PASSED"
+          "evidence": "test_external_review_degraded.py::test_empty_diff_short_circuit_is_not_degraded PASSED"
         },
         {
-          "behavior": "resume_run guards: no_config/wrong_mode/not_resumable/runid_mismatch",
+          "behavior": "finalize_review_output helper contract: attempted-no-success / attempted-partial / none",
           "disposition": "tested",
-          "evidence": "test_single_session_resume.py::test_resume_* (4) PASSED"
+          "evidence": "test_external_review_degraded.py::test_finalize_review_output_helper_contract PASSED"
         },
         {
-          "behavior": "resume_run terminal pass-through emits nothing (review #2)",
+          "behavior": "llm_review.run_review reports success:false honestly when no leg succeeds (no silent no-op there)",
           "disposition": "tested",
-          "evidence": "test_single_session_resume.py::test_resume_terminal_run_passes_through_and_emits_nothing PASSED"
-        },
-        {
-          "behavior": "mark_human_gate status flip + event + mode gating",
-          "disposition": "tested",
-          "evidence": "test_single_session_resume.py::test_human_gate_* PASSED"
-        },
-        {
-          "behavior": "recover_single_session pointer reset + event + lift-gating + guards (review #3)",
-          "disposition": "tested",
-          "evidence": "test_single_session_resume.py::test_recover_* / _unrelated_task_does_not_lift* PASSED"
-        },
-        {
-          "behavior": "begin_dispatch reinits a stale-runId loop-state (review #1)",
-          "disposition": "tested",
-          "evidence": "test_single_session_resume.py::test_next_dispatch_reinits_stale_loop_state_from_prior_run PASSED"
-        },
-        {
-          "behavior": "idempotent double-apply preserves the loop pointer (review #5)",
-          "disposition": "tested",
-          "evidence": "test_single_session_resume.py::test_double_apply_is_idempotent_and_preserves_pointer PASSED"
-        },
-        {
-          "behavior": "CLI dispatch + exit codes for resume/gate/recover subcommands",
-          "disposition": "tested",
-          "evidence": "test_single_session_cli.py::test_resume_exit*/test_gate_exit*/test_recover_exit*/test_cli_main_routes_single_session_resume PASSED"
-        },
-        {
-          "behavior": "kill-and-resume idempotent replay composes loop+lifecycle+loop_state+observability",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_single_session_resume_integration.py PASSED",
-          "category": "integration"
-        },
-        {
-          "behavior": "dual-mode back-compat: multi_session leaves no run_loop_* files; SS5 entry points refuse it",
-          "disposition": "tested",
-          "evidence": "test_single_session_backcompat.py (7) + test_multi_session_pipeline.py PASSED"
-        },
-        {
-          "behavior": "pre-SS5 single_session loop-state (no events file) resumes cleanly",
-          "disposition": "tested",
-          "evidence": "test_single_session_backcompat.py::test_pre_ss5_single_session_loop_state_resumes_without_events_file PASSED"
+          "evidence": "test_llm_review.py::test_run_review_success_is_false_when_no_leg_succeeds PASSED"
         }
       ],
       "counts": {
-        "testable": 16,
-        "tested": 16,
+        "testable": 8,
+        "tested": 8,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 4,
-        "covered_acs": 4
+        "acs": 3,
+        "covered_acs": 3
       }
     }
   },

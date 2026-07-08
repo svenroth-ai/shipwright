@@ -41,6 +41,12 @@ This runs Gemini and OpenAI reviews **in parallel** via ThreadPoolExecutor
 2. Integrate accepted suggestions into `plan.md`
 3. Mark each finding as addressed or declined (with reason)
 
+**If the CLI exits non-zero or the JSON has `"degraded": true`** (keys were
+present but every review leg failed), the external review did NOT run. Do not
+record Step 5b as `completed`: surface the `degraded_reason` and treat it like
+Branch B `missing_keys` — re-check keys or run the Self-Review Fallback and
+mark the state accordingly. A degraded gate is not a passing review.
+
 **Write each finding to decision_log.md** via:
 ```bash
 uv run "{plugin_root}/../../shared/scripts/tools/write_decision_log.py" \

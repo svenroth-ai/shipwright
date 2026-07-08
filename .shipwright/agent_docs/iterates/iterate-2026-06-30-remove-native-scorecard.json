@@ -1,9 +1,0 @@
-{
-  "run_id": "iterate-2026-06-30-remove-native-scorecard",
-  "date": "2026-06-30T19:21:21.850964Z",
-  "type": "change",
-  "complexity": "trivial",
-  "branch": "iterate/remove-native-scorecard",
-  "tests_passed": true,
-  "adr": "iterate-2026-06-30-remove-native-scorecard"
-}
