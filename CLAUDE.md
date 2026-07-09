@@ -164,3 +164,28 @@ The hook only blocks commits that ratchet an existing entry in
 `shipwright_bloat_baseline.json` — new crossings are surfaced by the
 Group H detective audit post-merge. See `shared/glossary.md` for the
 terminology and `shared/scripts/lib/anti_ratchet.py` for the rule.
+
+## Asking the user questions (plain language)
+
+When you ask the user a question — a clarification, a choice between options,
+or a confirmation — phrase it so a **non-senior developer or a normal user**
+can understand, from a functional standpoint, what is actually being decided.
+The person answering may not know the internals; do not make them decode
+jargon to reply.
+
+- **Lead with the functional meaning:** say what the choice changes about how
+  the app behaves or what the user gets — not the implementation detail. Ask
+  "Should a deleted item be recoverable, or gone for good?" rather than "Soft
+  delete with a tombstone flag or hard delete?".
+- **Avoid unexplained jargon.** If a technical term is genuinely unavoidable,
+  add a short plain-language gloss in parentheses (e.g. "idempotent — safe to
+  run twice without doubling the effect").
+- **Make options concrete and comparable.** Give each option in plain words
+  with its real-world trade-off ("Option A is simpler but slower to load;
+  Option B is faster but adds a setup step"), not a raw technical menu.
+- **Rule of thumb:** a product owner reading the question should be able to
+  answer it without asking "what does that mean?". If they couldn't, rewrite it.
+
+This applies to every interactive question — clarifications, plan approvals,
+design feedback, and remediation choices alike. It governs *phrasing only*;
+the underlying rigor of the work is unchanged.
