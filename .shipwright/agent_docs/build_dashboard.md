@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-08 20:31 UTC | Session: 47fe33c7-a7a9-46d0-bb55-1a7ab515c694 | Run: iterate-2026-07-08-ss8-default-single-session
+> Updated: 2026-07-09 16:23 UTC | Session: 27c65b0a-7db3-44c1-a749-6776c4232220 | Run: iterate-2026-07-09-plain-language-questions
 
-## Recent Changes (285 iterations)
+## Recent Changes (286 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Anchor plain-language question rule in constitution + both CLAUDE.md producers (template + adopt render) + guide, with mirror/pin tests | 3751/3763 |  | docs | 2026-07-09 |
 | change | SS8 default-flip to single-session finalization | 0/0 |  | infra | 2026-07-08 |
 | change | SS7 CLI E2E capstone finalization | 0/0 |  | tooling | 2026-07-08 |
 | change | Remove stale hardcoded version (v0.3.0) from the shipwright-iterate intro banner (SKILL.md H1 + banner title) and add a drift-guard test | 438/438 |  | docs | 2026-07-08 |
@@ -292,7 +293,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-08 | Unit: 3751/3751 | Integration: 184/184 | Smoke: not_run | (iterate)
+Last run: 2026-07-09 | Unit: 3751/3763 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

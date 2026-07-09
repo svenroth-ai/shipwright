@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import re
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +29,8 @@ from lib.preserve_existing import (  # noqa: E402
     preserve_if_exists,
     record_preservation_action,
 )
+from lib.render_helpers import _fmt_stack_line, _utc_today  # noqa: E402
+from lib.claude_md_renderer import _render_claude_md  # noqa: E402,F401
 
 
 # Adopt's output canon: ADR ids are 3-digit zero-padded. We refuse to
@@ -103,83 +104,6 @@ def _next_adr_start_number(project_root: Path) -> int:
         return 1
     max_id = parse_max_adr_id(body)
     return max_id + 1 if max_id > 0 else 1
-
-
-def _utc_today() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
-
-
-def _fmt_stack_line(stack_group: dict[str, str]) -> str:
-    if not stack_group:
-        return "—"
-    return ", ".join(sorted(stack_group.keys()))
-
-
-def _render_claude_md(
-    *,
-    project_name: str,
-    profile: str,
-    stack: dict[str, Any],
-    commands: dict[str, str | None],
-    product_description: str,
-) -> str:
-    runtime = _fmt_stack_line(stack.get("runtime", {}))
-    frontend = _fmt_stack_line(stack.get("frontend", {}))
-    backend = _fmt_stack_line(stack.get("backend", {}))
-    database = _fmt_stack_line(stack.get("database", {}))
-    auth = _fmt_stack_line(stack.get("auth", {}))
-    build_cmd = commands.get("build") or "—"
-    test_cmd = commands.get("test") or "—"
-    dev_cmd = commands.get("dev") or "—"
-    return f"""# {project_name}
-
-## WHAT
-{product_description}
-
-## Stack
-- **Runtime**: {runtime}
-- **Frontend**: {frontend}
-- **Backend**: {backend}
-- **Database**: {database}
-- **Auth**: {auth}
-- **Profile**: `{profile}`
-
-## HOW
-
-### Development
-```bash
-{dev_cmd}
-```
-
-### Build
-```bash
-{build_cmd}
-```
-
-### Test
-```bash
-{test_cmd}
-```
-
-## Ongoing Changes
-This project was adopted into Shipwright on {_utc_today()}. Prior code history is preserved.
-
-**Use `/shipwright-iterate` for code changes — Do NOT edit code directly.**
-The skill keeps specs, tests, ADRs, and the CHANGELOG in sync.
-
-What `/shipwright-iterate` automates:
-- ADR entry in `{AGENT_DOCS_DIR}/decision_log.md`
-- CHANGELOG fragment under `CHANGELOG-unreleased.d/<category>/`
-- Conventional Commits on an `iterate/<slug>` branch, merged to main on green tests
-- FR / acceptance-criteria sync in `.shipwright/planning/`
-- Compliance + dashboard refresh
-
-Do NOT invoke `/shipwright-project`, `/shipwright-plan`, or `/shipwright-build` directly — those are pre-onboarding phases.
-
-See `{AGENT_DOCS_DIR}/decision_log.md` for the adoption ADR (the topmost
-`Adopt this repository into the Shipwright SDLC` entry — its id is the
-next-free 3-digit number after any pre-existing ADRs).
-"""
 
 
 def _render_architecture_md(

@@ -1,20 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-08-ss8-default-single-session",
-    "date": "2026-07-08",
+    "run_id": "iterate-2026-07-09-plain-language-questions",
+    "date": "2026-07-09",
     "intent": "change",
-    "complexity": "medium",
-    "campaign": "2026-07-07-single-session-pipeline",
-    "sub_iterate_id": "SS8",
+    "complexity": "small",
     "unit": {
       "status": "passed",
       "passed": 3751,
-      "total": 3751
+      "total": 3763
     },
     "integration": {
-      "status": "passed",
-      "passed": 184,
-      "total": 184
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -22,95 +20,54 @@
       "total": 0
     },
     "e2e": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "design_fidelity": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [
-      {
-        "condition": "risk_flag_false_positive",
-        "detail": "classify_complexity flagged touches_auth + touches_migrations and estimated 'large' from prose ('migration guide', multi-verb scope) not the diff; the actual diff touches no auth paths and no DB migrations (F11 risk_detectors recompute from the diff). Overridden to medium; no down.sql needed."
-      },
-      {
-        "condition": "human_gate_pending",
-        "detail": "AC5 (Sven UAT) is satisfied by running the first single-session-by-default pipeline; pending after merge (this iterate makes single-session the default = the UAT enabler)."
-      }
-    ],
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --extra dev pytest plugins/shipwright-run/tests/test_run_config_mode.py plugins/shipwright-run/tests/test_run_skill_mode_selection.py",
+      "surface": "none",
+      "tests_run": 0,
       "exit_code": 0,
-      "tests_run": 21,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\ss8-default-single-session\\.shipwright\\runs\\iterate-2026-07-08-ss8-default-single-session\\surface_verification.log",
-      "timestamp": "2026-07-08T20:28:37Z",
+      "justification": "No runtime surface: the change is limited to governance docs (constitution), the two CLAUDE.md generators (greenfield template + adopt _render_claude_md f-string), a user-guide line, and their pinning tests. No API/UI/CLI/IO path is exercised; verified via unit tests (test_claude_md_template.py 5 passed; adopt artifact_writer 23 passed) and the full shared/tests suite (3751 passed).",
       "attempts": 1
     },
+    "degraded": [],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "A fresh config / write-config with no --mode defaults to single_session",
+          "behavior": "Greenfield-generated CLAUDE.md (template) surfaces the plain-language question rule",
           "disposition": "tested",
-          "evidence": "test_create_config_default_mode_is_single_session + test_write_config_cli_defaults_mode_single_session PASSED"
+          "evidence": "shared/tests/test_claude_md_template.py::test_template_carries_plain_language_question_rule PASSED"
         },
         {
-          "behavior": "Fresh-write default (single_session) and mode-less READ fallback (multi_session) deliberately diverge",
+          "behavior": "Brownfield-generated CLAUDE.md (adopt _render_claude_md) surfaces the same rule, mirrored with the template",
           "disposition": "tested",
-          "evidence": "test_fresh_default_and_legacy_fallback_deliberately_diverge PASSED"
+          "evidence": "shared/tests/test_claude_md_template.py::test_adopt_rendered_claude_md_mirrors_template_iterate_bullets PASSED"
         },
         {
-          "behavior": "A mode-less/unrecognized config is STILL read as multi_session (LEGACY_FALLBACK_MODE)",
+          "behavior": "The canonical constitution carries the plain-language question rule (guards silent deletion that would orphan the templates)",
           "disposition": "tested",
-          "evidence": "test_run_mode_defaults_missing_to_multi_session, test_run_mode_coerces_unknown_to_multi_session PASSED"
-        },
-        {
-          "behavior": "Schema mode.default is multi_session (absent-fallback, matches run_mode) — a schema-default consumer never reinterprets a legacy config",
-          "disposition": "tested",
-          "evidence": "test_schema_declares_optional_mode_with_default PASSED (default == multi_session)"
-        },
-        {
-          "behavior": "The single-session loop reports wrong_mode for a multi_session AND a mode-less config, coercing the absent mode to multi_session",
-          "disposition": "tested",
-          "evidence": "test_resolve_wrong_mode_on_multi_session PASSED (both explicit-multi and mode-less halves)"
-        },
-        {
-          "behavior": "Deprecated multi_session lifecycle untouched (no single-session leak); recovery guard consistent",
-          "disposition": "tested",
-          "evidence": "test_single_session_backcompat.py suite + test_single_session_resume.py PASSED"
-        },
-        {
-          "behavior": "SKILL Step-3 marks single_session default + multi_session deprecated",
-          "disposition": "tested",
-          "evidence": "test_skill_marks_single_session_default PASSED"
-        },
-        {
-          "behavior": "In-flight multi_session run still resumable (migration substrate) under the flipped default",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_cross_surface_backcompat.py + test_multi_session_pipeline.py PASSED"
-        },
-        {
-          "behavior": "Migration guide exists at the referenced path",
-          "disposition": "tested",
-          "evidence": "docs/migrations/multi-session-to-single-session.md present; constants.py/config_io.py breadcrumbs point to it"
+          "evidence": "shared/tests/test_claude_md_template.py::test_constitution_carries_plain_language_question_rule PASSED"
         }
       ],
       "counts": {
-        "testable": 9,
-        "tested": 9,
+        "testable": 3,
+        "tested": 3,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 5,
-        "covered_acs": 5
+        "acs": 3,
+        "covered_acs": 3
       }
     }
   },

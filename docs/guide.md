@@ -1568,6 +1568,7 @@ The **constitution** (`shared/constitution.md`) defines behavioral boundaries fo
 - Skipping test layers (must provide a valid reason).
 - Overriding phase validation gates (`--force`).
 - Continuing after 3 failed fix attempts.
+- Phrase questions to the user in plain, functional language a non-senior developer understands -- no unexplained jargon.
 
 **NEVER (hard stops):**
 - `rm -rf` on root or home directories.
