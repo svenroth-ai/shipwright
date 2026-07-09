@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-07-08T20:31:38.746270+00:00
-Total commits: 1118
+Generated: 2026-07-09T16:23:26.300586+00:00
+Total commits: 1120
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 325
-    "feat" : 299
+    "feat" : 300
     "chore" : 237
-    "docs" : 143
+    "docs" : 144
     "refactor" : 67
     "test" : 28
     "ci" : 11
@@ -350,10 +350,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 299 commits
+### Features (feat) — 300 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-08 | run | single-session is the default + sole pipeline mode; deprecate multi-session (SS8) (#353) | 78603ae28f50 |
 | 2026-07-08 | run | single-session resumability, recovery & observability (SS5) (#349) | abfb485bfb75 |
 | 2026-07-07 | grade | public github.com URL defaults to network enrichment (#346) | 53cde056e42c |
 | 2026-07-07 | run | phase-runner subagent + guaranteed artifact persistence + section-writer fix (SS4) (#345) | 9f06a01f045e |
@@ -658,7 +659,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-08 | triage | sweep 1 outbox append(s) into branch | aa52f742c56f |
+| 2026-07-09 | triage | sweep 1 outbox append(s) into branch | c27296f5583d |
 | 2026-07-08 | release | v0.30.0 (#348) | 023701b57bb2 |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
@@ -896,10 +897,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 143 commits
+### Documentation (docs) — 144 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-09 | claude-md | guide plain-language phrasing for questions to the user | 4daaa7d44b49 |
 | 2026-07-02 | planning | phased diff/patch-coverage roadmap (trg-8fdebda3) (#305) | 892001e73858 |
 | 2026-06-28 | lib | fix events_log lazy-import rationale (load_shared_lib isolation, not removed cycle) (#282) | faa96b699135 |
 | 2026-06-24 | images | update command-center board screenshot (#275) | 4cfb9d2dc9e3 |
@@ -1187,7 +1189,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1118 |
+| Total commits | 1120 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1118 |
+| Human-authored commits | 1120 |
 

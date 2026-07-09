@@ -1,12 +1,12 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-08T13:53:28.403052Z. Items waiting for triage decision.
+> Auto-generated 2026-07-09T16:23:26.300586Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
 - Total: 277
-- Triage: 5 | Promoted: 1 | Dismissed: 270 | Snoozed: 1
+- Triage: 4 | Promoted: 1 | Dismissed: 271 | Snoozed: 1
 
 ## Top 4 items (severity-sorted)
 
@@ -41,13 +41,4 @@
 - **Decompose FR-01.10 / FR-01.07 into sub-FRs for precise feature traceability** `id=trg-cced399c | severity=low | kind=improvement → P3/engineering`
   - Follow-up to iterate-2026-06-30-fr-retag-honesty. Introduce sub-FRs (e.g. FR-01.10.x for Control Grade / RTM / SBOM / d…
   - Promote: `triage_promote.py --id trg-cced399c --task-ref EXT:<ref>`
-
-<details><summary>Info-level items (1) — expand to view</summary>
-
-<a id="trg-9d973f4f"></a>
-- **Single-session pipeline mode (/shipwright-run on every surface)** `id=trg-9d973f4f | severity=info | kind=improvement → P3/engineering`
-  - Add a single-session pipeline mode so /shipwright-run runs on CLI, WebUI, VS Code extension and desktop: the master dri…
-  - Promote: `triage_promote.py --id trg-9d973f4f --task-ref EXT:<ref>`
-
-</details>
 

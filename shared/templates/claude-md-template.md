@@ -64,3 +64,24 @@ should live under `.shipwright/` (e.g. legacy `planning/`, `designs/`,
 remediation commands — follow them, do not skip or delete it. The file
 auto-clears when the next SessionStart runs cleanly. Per-artefact migration
 guides live in the Shipwright repo under `docs/migrations/`.
+
+## Asking the user questions (plain language)
+
+When you ask the user a question — a clarification, a choice between options,
+or a confirmation — phrase it so a **non-senior developer or a normal user**
+can understand, from a functional standpoint, what is actually being decided.
+The person answering may not know the internals; do not make them decode
+jargon to reply.
+
+- **Lead with the functional meaning:** say what the choice changes about how
+  the app behaves or what the user gets — not the implementation detail.
+- **Avoid unexplained jargon.** If a technical term is unavoidable, add a short
+  plain-language gloss in parentheses (e.g. "idempotent — safe to run twice
+  without doubling the effect").
+- **Make options concrete and comparable.** Give each option in plain words
+  with its real-world trade-off ("Option A is simpler but slower; Option B is
+  faster but adds a setup step"), not a raw technical menu.
+- **Rule of thumb:** a product owner should be able to answer without asking
+  "what does that mean?". If they couldn't, rewrite it.
+
+This governs *phrasing only* — the rigor of the work is unchanged.

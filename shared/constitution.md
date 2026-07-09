@@ -73,6 +73,7 @@
 - Overriding phase validation gates (`--force`)
 - Changing stack profile settings
 - Continuing after 3 failed fix attempts (or 2 with same root cause)
+- When you put a question to the user (confirmation, decision, or clarification), phrase it in plain, functional language a non-senior developer or normal user understands: lead with what changes for the user, avoid unexplained jargon (add a short gloss if a term is unavoidable), and give concrete, comparable options with their real-world trade-offs. This governs phrasing only — it never lowers the rigor of the work. (See "Tool Call Discipline — AskUserQuestion" below.)
 
 ## NEVER (hard stops)
 

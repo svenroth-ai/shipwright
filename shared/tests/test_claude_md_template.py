@@ -25,6 +25,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 TEMPLATE_PATH = REPO_ROOT / "shared" / "templates" / "claude-md-template.md"
+CONSTITUTION_PATH = REPO_ROOT / "shared" / "constitution.md"
 
 
 # Bullets that must appear in BOTH the template and adopt's rendered
@@ -36,6 +37,15 @@ REQUIRED_ITERATE_BULLETS = (
     "CHANGELOG",
     "Conventional Commits",
     "iterate/",
+)
+
+
+# Both CLAUDE.md producers must also carry the plain-language question-asking
+# rule, so every generated project (greenfield AND brownfield) inherits it.
+# Marker = the section heading; a distinctive phrase pins the substance too.
+REQUIRED_PLAIN_LANGUAGE_MARKERS = (
+    "Asking the user questions (plain language)",
+    "non-senior developer",
 )
 
 
@@ -56,6 +66,29 @@ def test_template_warns_against_other_skills() -> None:
     assert "shipwright-project" in body
     assert "shipwright-plan" in body
     assert "shipwright-build" in body
+
+
+def test_template_carries_plain_language_question_rule() -> None:
+    """Greenfield path: the template surfaces the plain-language rule so the
+    generated CLAUDE.md tells the agent to phrase questions to the user in
+    functional, non-jargon terms (mirrors shared/constitution.md)."""
+    body = TEMPLATE_PATH.read_text(encoding="utf-8")
+    for marker in REQUIRED_PLAIN_LANGUAGE_MARKERS:
+        assert marker in body, (
+            f"claude-md-template.md missing plain-language marker {marker!r} — "
+            f"greenfield CLAUDE.md will not surface the question-phrasing rule."
+        )
+
+
+def test_constitution_carries_plain_language_question_rule() -> None:
+    """The constitution is the canonical source of the plain-language
+    question-asking rule that both CLAUDE.md producers mirror. Pin it so the
+    governance rule can't be silently deleted, leaving the templates orphaned."""
+    body = CONSTITUTION_PATH.read_text(encoding="utf-8")
+    assert "non-senior developer" in body, (
+        "shared/constitution.md missing the plain-language question rule — "
+        "the CLAUDE.md templates would mirror a rule that no longer exists."
+    )
 
 
 def test_adopt_rendered_claude_md_mirrors_template_iterate_bullets() -> None:
@@ -88,4 +121,10 @@ def test_adopt_rendered_claude_md_mirrors_template_iterate_bullets() -> None:
         assert bullet in body, (
             f"adopt's rendered CLAUDE.md missing required bullet {bullet!r} — "
             f"brownfield CLAUDE.md drifted from claude-md-template.md."
+        )
+    for marker in REQUIRED_PLAIN_LANGUAGE_MARKERS:
+        assert marker in body, (
+            f"adopt's rendered CLAUDE.md missing plain-language marker "
+            f"{marker!r} — brownfield CLAUDE.md drifted from "
+            f"claude-md-template.md."
         )

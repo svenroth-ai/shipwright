@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-08T20:31:38.746270+00:00
+Generated: 2026-07-09T16:23:26.300586+00:00
 
 ## Requirements Coverage
 
@@ -27,6 +27,7 @@ Generated: 2026-07-08T20:31:38.746270+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-ce826fca"></a>Shipwright now tells its agents to ask the user questions in plain, everyday language so a non-technical person can understand and answer them. | iterate | change |  | 3751/3763 | — | 2026-07-09 |
 | <a id="evt-d4739959"></a>SS8 default-flip to single-session finalization | iterate | change |  | — | — | 2026-07-08 |
 | <a id="evt-24b6350d"></a>SS7 CLI E2E capstone finalization | iterate | change |  | — | — | 2026-07-08 |
 | <a id="evt-5496b0a6"></a>The external LLM review step no longer errors on newer OpenAI models, and no longer quietly skips itself when it cannot run — it now reports clearly when a review could not happen. | iterate | bug |  | 3749/3749 | — | 2026-07-08 |
@@ -319,7 +320,7 @@ Generated: 2026-07-08T20:31:38.746270+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 285 |
+| Iterate changes | 286 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
