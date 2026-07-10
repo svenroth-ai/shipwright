@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-09 16:23 UTC | Session: 27c65b0a-7db3-44c1-a749-6776c4232220 | Run: iterate-2026-07-09-plain-language-questions
+> Updated: 2026-07-10 06:39 UTC | Session: f369d1d6-6a8d-4cb9-b4e2-8c8979a7af14 | Run: iterate-2026-07-10-design-gate-feedback-gitignore
 
-## Recent Changes (286 iterations)
+## Recent Changes (287 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | gitignore transient design-feedback rounds + document single-session review-viewer hosting | 69/69 |  | infra | 2026-07-10 |
 | change | Anchor plain-language question rule in constitution + both CLAUDE.md producers (template + adopt render) + guide, with mirror/pin tests | 3751/3763 |  | docs | 2026-07-09 |
 | change | SS8 default-flip to single-session finalization | 0/0 |  | infra | 2026-07-08 |
 | change | SS7 CLI E2E capstone finalization | 0/0 |  | tooling | 2026-07-08 |
@@ -293,7 +294,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-09 | Unit: 3751/3763 | Smoke: not_run | (iterate)
+Last run: 2026-07-10 | Unit: 69/69 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
