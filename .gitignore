@@ -184,6 +184,12 @@ Spec/
 # variants are produced only by iterate-finalize as the single producer.
 # See iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox.
 /.shipwright/agent_docs/runtime/
+# Iterate session-plan snapshots (<run_id>.plan.json) — written at classify time
+# by classify_complexity.py --run-id so the WebUI scoped Plan-Card reads the live
+# working copy's phases/skips/risk_flags. Transient run-scoped state (regenerated
+# each classify, superseded by the durable <run_id>.json at finalize), not a
+# tracked product artifact. iterate-2026-07-10-persist-session-plan.
+/.shipwright/agent_docs/iterates/*.plan.json
 /.shipwright/compliance/skill-compliance/
 # Detective-audit report (run_audit.py / /shipwright-compliance) — transient,
 # regenerated each run, not in audit_staleness.DOC_REGISTRY. The .json was

@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-10 22:06 UTC | Session: c6d96e6a-09ff-4e6f-b168-766dfb9d4fa0 | Run: iterate-2026-07-10-emit-phase-started
+> Updated: 2026-07-10 23:48 UTC | Session: c6d96e6a-09ff-4e6f-b168-766dfb9d4fa0 | Run: iterate-2026-07-10-persist-session-plan
 
-## Recent Changes (289 iterations)
+## Recent Changes (290 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | Persist the iterate session plan (phases/skips/risk_flags/complexity) as a gitignored <run_id>.plan.json for the WebUI scoped Plan-Card (M-Pre-2) | 17/17 |  | tooling | 2026-07-10 |
 | feature | Emit phase_started at pipeline phase entry (M-Pre-1) | 7/7 |  | infra | 2026-07-10 |
 | change | CLAUDE.md keep-it-lean writing rule in both producers + forward-only 30-line net-growth gate in the agent-doc budget machinery (lib/CLI/F11 verifier) | 4749/4749 |  | tooling | 2026-07-10 |
 | change | gitignore transient design-feedback rounds + document single-session review-viewer hosting | 69/69 |  | infra | 2026-07-10 |
@@ -296,7 +297,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-10 | Unit: 4565/4565 | Integration: 184/184 | E2E: 25/25 | Smoke: not_run | (iterate)
+Last run: 2026-07-10T23:46:20.508759Z | Unit: 38/38 | Smoke: n/a | (iterate)
 
 ## Pipeline
 
