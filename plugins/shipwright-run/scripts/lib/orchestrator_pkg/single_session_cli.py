@@ -45,6 +45,15 @@ def dispatch_single_session(args: argparse.Namespace, project_root: Path) -> int
 
     if args.command == "single-session-next":
         result = next_dispatch(project_root)
+        # Durable phase_started at phase entry (B1/M-Pre-1). A fresh dispatch
+        # begins a phase; an idempotent re-dispatch (crash-resume) must not
+        # re-emit. Best-effort — never affects the loop's exit code.
+        if result.get("action") == "dispatch" and not result.get("idempotent"):
+            from .events import record_phase_started
+            d = result.get("dispatch") or {}
+            record_phase_started(project_root, phase=d.get("phase"),
+                                 phase_task_id=d.get("phaseTaskId"),
+                                 split_id=d.get("splitId"))
         print(json.dumps(result, indent=2))
         return 0 if result.get("action") in _OK_NEXT_ACTIONS else 1
 
@@ -112,6 +121,17 @@ def dispatch_single_session(args: argparse.Namespace, project_root: Path) -> int
         expected_version=args.version,
         result=payload,
     )
+    # Durable phase-END at the apply boundary (B1/M-Pre-1) — pairs with the
+    # phase_started emitted by single-session-next so the tracked
+    # shipwright_events.jsonl holds complete start+end pairs (durations don't
+    # depend on the gitignored/transient run_loop_events.jsonl). Only on a fresh
+    # (non-idempotent) completion; best-effort, never affects the exit code.
+    completion = result.get("completion") or {}
+    pt = completion.get("phase_task") or {}
+    if result.get("ok") and not completion.get("idempotent") and pt.get("status") in ("done", "failed"):
+        from .events import record_phase_end
+        record_phase_end(project_root, phase=pt.get("phase"), status=pt.get("status"),
+                         phase_task_id=pt.get("phaseTaskId"), split_id=pt.get("splitId"))
     print(json.dumps(result, indent=2))
     if result.get("ok"):
         return 0
