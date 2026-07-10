@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-10 09:34 UTC | Session: 068394d9-9942-4262-a400-b2dd2d36531a | Run: iterate-2026-07-10-claude-md-invariant-index
+> Updated: 2026-07-10 22:06 UTC | Session: c6d96e6a-09ff-4e6f-b168-766dfb9d4fa0 | Run: iterate-2026-07-10-emit-phase-started
 
-## Recent Changes (288 iterations)
+## Recent Changes (289 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | Emit phase_started at pipeline phase entry (M-Pre-1) | 7/7 |  | infra | 2026-07-10 |
 | change | CLAUDE.md keep-it-lean writing rule in both producers + forward-only 30-line net-growth gate in the agent-doc budget machinery (lib/CLI/F11 verifier) | 4749/4749 |  | tooling | 2026-07-10 |
 | change | gitignore transient design-feedback rounds + document single-session review-viewer hosting | 69/69 |  | infra | 2026-07-10 |
 | change | Anchor plain-language question rule in constitution + both CLAUDE.md producers (template + adopt render) + guide, with mirror/pin tests | 3751/3763 |  | docs | 2026-07-09 |

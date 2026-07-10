@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-10T09:34:20.841627+00:00
+Generated: 2026-07-10T22:06:35.593529+00:00
 
 ## Requirements Coverage
 
@@ -27,6 +27,7 @@ Generated: 2026-07-10T09:34:20.841627+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-8045591b"></a>The pipeline now records the moment each phase begins, so the dashboard can show how long each phase took. | iterate | feature |  | 7/7 | — | 2026-07-10 |
 | <a id="evt-63a35662"></a>Generated project instruction files now tell future sessions to keep rules short (one line plus a pointer to the decision record), and a new check blocks any single change that grows that file by more than 30 lines. | iterate | change |  | 4749/4749 | — | 2026-07-10 |
 | <a id="evt-b2a0eebf"></a>Design mockup-review feedback files are now treated as throwaway scratch (kept out of the project history), and the design docs explain how the new single-session UI shows the mockups and captures feedback. | iterate | change |  | 69/69 | — | 2026-07-10 |
 | <a id="evt-ce826fca"></a>Shipwright now tells its agents to ask the user questions in plain, everyday language so a non-technical person can understand and answer them. | iterate | change |  | 3751/3763 | — | 2026-07-09 |
@@ -322,7 +323,7 @@ Generated: 2026-07-10T09:34:20.841627+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 288 |
+| Iterate changes | 289 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

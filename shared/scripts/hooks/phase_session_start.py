@@ -75,6 +75,12 @@ try:
 except ImportError:  # pragma: no cover - import-path safety
     resolve_hook_context = None
 
+# Durable phase_started emit (B1/M-Pre-1). Guarded like the above.
+try:
+    from lib.phase_event_emit import emit_phase_event  # type: ignore[import]
+except ImportError:  # pragma: no cover - import-path safety
+    emit_phase_event = None
+
 from phase_context_blocks import (  # noqa: E402  (hooks/ sibling; ships with shared/)
     build_block_context_block as _build_block_context_block,
     build_pipeline_context_block as _build_pipeline_context_block,
@@ -258,6 +264,18 @@ def run(project_root: Path, session_uuid: Optional[str], plugin_root: Optional[s
         "claimedBySessionUuid": claimed_task["claimedBySessionUuid"],
         "idempotent": claim.get("idempotent", False),
     })
+    # Durable phase-ENTRY event — the counterpart of phase_session_stop's
+    # phase_completed. multi_session ONLY: single_session emits both start+end
+    # at the CLI (single-session-next / -apply), so gating on mode keeps the two
+    # emit sites provably exclusive, not exclusive-by-convention. Skip idempotent
+    # re-entry (reconnect) so a phase emits exactly one phase_started.
+    if (emit_phase_event is not None and not claim.get("idempotent", False)
+            and config.get("mode") != "single_session"):
+        emit_phase_event(project_root, "phase_started", claimed_task["phase"], {
+            "phaseTaskId": phase_task_id,
+            "splitId": claimed_task.get("splitId"),
+            "runId": run_id,
+        })
     _emit_additional_context(_build_pipeline_context_block(claimed_task, config))
     return 0
 

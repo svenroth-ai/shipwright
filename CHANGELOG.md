@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Pipeline event log now records a `phase_started` at each **pipeline phase's** entry and a paired `phase_completed`/`phase_failed` at its exit, in both run modes — multi-session via the SessionStart/Stop hooks, single-session (the default) via the `single-session-next`/`single-session-apply` boundaries — so per-phase durations are computable from the tracked `shipwright_events.jsonl` alone (WebUI PhaseRail, M-Pre-1). Additive and best-effort. Per-phase timing for the iterate flow (F0–F12) is tracked separately as a follow-up.
+
 ## [0.30.0] - 2026-07-08
 
 **Highlights** — the largest release since v0.29: a month of parallel campaigns, now consolidated.
