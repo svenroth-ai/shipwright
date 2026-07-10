@@ -144,6 +144,29 @@ def test_single_session_apply_emits_paired_phase_completed(tmp_project, capsys):
     assert s["ts"] <= c["ts"]  # start precedes end
 
 
+def test_single_session_apply_ok_false_emits_phase_failed(tmp_project, capsys):
+    """An ok=False phase result strict-stops via mark_phase_failed; the durable
+    END event is phase_failed (not phase_completed), mirroring phase_session_stop."""
+    _ss_config(tmp_project)
+    _next(tmp_project)
+    dispatch = json.loads(capsys.readouterr().out)["dispatch"]
+
+    result = {"ok": False, "phase": dispatch["phase"], "summary": "boom",
+              "artifacts": [], "reason": "project blew up", "splitId": dispatch["splitId"]}
+    result_path = tmp_project / "result.json"
+    result_path.write_text(json.dumps(result), encoding="utf-8")
+
+    dispatch_single_session(SimpleNamespace(
+        command="single-session-apply", result_json=str(result_path),
+        phase_task_id=dispatch["phaseTaskId"], session_uuid=dispatch["sessionUuid"],
+        version=dispatch["version"],
+    ), tmp_project)
+
+    assert len(_events_of_type(tmp_project, "phase_failed")) == 1
+    assert _events_of_type(tmp_project, "phase_completed") == []
+    assert _events_of_type(tmp_project, "phase_started")[0]["phase"] == dispatch["phase"]
+
+
 def test_single_session_full_walk_one_started_per_phase(tmp_project, capsys):
     """A full single-session walk emits exactly one phase_started per phase
     (AC1/AC2 — one per phase across a run, no cross-phase double-emit)."""

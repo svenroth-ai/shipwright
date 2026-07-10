@@ -1,18 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-10-claude-md-invariant-index",
+    "run_id": "iterate-2026-07-10-emit-phase-started",
     "date": "2026-07-10",
-    "intent": "change",
+    "intent": "feature",
     "complexity": "medium",
     "unit": {
       "status": "passed",
-      "passed": 4565,
-      "total": 4565
+      "passed": 442,
+      "total": 442
     },
     "integration": {
       "status": "passed",
-      "passed": 184,
-      "total": 184
+      "passed": 3,
+      "total": 3
     },
     "pgtap": {
       "status": "not_run",
@@ -20,9 +20,9 @@
       "total": 0
     },
     "e2e": {
-      "status": "passed",
-      "passed": 25,
-      "total": 25
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "design_fidelity": {
       "status": "not_run",
@@ -34,11 +34,11 @@
     },
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest shared/tests/test_check_agent_doc_budget.py shared/tests/test_agent_doc_budget_check_wiring.py shared/tests/test_claude_md_template.py -q",
-      "tests_run": 25,
+      "runner": "uv run pytest plugins/shipwright-run/tests/test_single_session_phase_started.py -q",
+      "tests_run": 6,
       "exit_code": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-10-claude-md-invariant-index/surface_verification.json",
-      "timestamp": "2026-07-10T09:30:00.682Z",
+      "evidence_path": ".shipwright/runs/iterate-2026-07-10-emit-phase-started/surface_verification.json",
+      "timestamp": "2026-07-10T23:05:02.173087Z",
       "attempts": 1
     },
     "degraded": [],
@@ -46,107 +46,86 @@
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "Lib: CLAUDE.md growth over cap flags (+N in message)",
+          "behavior": "AC1/multi: SessionStart hook emits exactly one phase_started on a fresh claim (phase + runId + ts)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_agent_doc_budget.py::test_claude_md_growth_over_cap_flags PASSED"
+          "evidence": "shared/tests/test_phase_started_emit.py::test_start_happy_path_emits_phase_started PASSED"
         },
         {
-          "behavior": "Lib: at-cap / under / shrink / equal never flags",
+          "behavior": "AC1/multi: idempotent SessionStart re-entry (reconnect) does NOT double-emit",
           "disposition": "tested",
-          "evidence": "test_claude_md_growth_exactly_at_cap_clean + test_claude_md_growth_shrink_and_equal_clean PASSED"
+          "evidence": "test_start_idempotent_reentry_emits_single_phase_started PASSED"
         },
         {
-          "behavior": "Lib: CRLF + trailing-newline parity (no phantom growth)",
+          "behavior": "AC1/multi: a blocked SessionStart (wrong skill) never claims, so emits no phase_started",
           "disposition": "tested",
-          "evidence": "test_claude_md_growth_crlf_parity + test_claude_md_growth_trailing_newline_only_clean PASSED"
+          "evidence": "test_start_block_path_emits_no_phase_started PASSED"
         },
         {
-          "behavior": "Lib: custom cap respected",
+          "behavior": "AC2/multi: phase_started pairs with the existing phase_completed for the same phase",
           "disposition": "tested",
-          "evidence": "test_claude_md_growth_custom_cap PASSED"
+          "evidence": "test_phase_started_pairs_with_phase_completed PASSED"
         },
         {
-          "behavior": "CLI forward-only: over-cap growth yields ('CLAUDE.md','(net growth)',msg) violation",
+          "behavior": "Shared emitter never raises on a subprocess spawn failure (best-effort contract)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_check_agent_doc_budget.py::test_claude_md_growth_over_cap_flagged PASSED"
+          "evidence": "test_emit_phase_event_never_raises_on_subprocess_failure PASSED"
         },
         {
-          "behavior": "CLI forward-only: within-cap growth clean",
+          "behavior": "Shared emitter decodes child output utf-8/replace (Windows cp1252 landmine)",
           "disposition": "tested",
-          "evidence": "test_claude_md_growth_within_cap_clean PASSED"
+          "evidence": "test_emit_phase_event_decodes_child_output_with_replace PASSED"
         },
         {
-          "behavior": "CLI: CLAUDE.md absent at base (creation) skipped",
+          "behavior": "AC1/single: single-session-next emits one phase_started with runId in detail",
           "disposition": "tested",
-          "evidence": "test_claude_md_new_file_at_worktree_skipped PASSED"
+          "evidence": "plugins/shipwright-run/tests/test_single_session_phase_started.py::test_single_session_next_emits_phase_started PASSED"
         },
         {
-          "behavior": "CLI: CLAUDE.md deleted or replaced-by-directory in worktree skipped, never crashes",
+          "behavior": "AC1/single: idempotent re-dispatch (crash-resume) does NOT double-emit",
           "disposition": "tested",
-          "evidence": "test_claude_md_deleted_in_worktree_skipped + test_claude_md_replaced_by_directory_skipped PASSED"
+          "evidence": "test_single_session_reclaim_does_not_double_emit PASSED"
         },
         {
-          "behavior": "CLI: check_claude_md=False skips ONLY growth; entry budgets still enforced",
+          "behavior": "Run-plugin emitters never raise on a subprocess spawn failure",
           "disposition": "tested",
-          "evidence": "test_claude_md_growth_opt_out_param PASSED"
+          "evidence": "test_run_plugin_emitters_never_raise_on_subprocess_failure PASSED"
         },
         {
-          "behavior": "CLI: full-corpus --all never evaluates growth",
+          "behavior": "AC2/single: single-session-apply emits paired phase_completed (same runId/phase, start.ts <= end.ts)",
           "disposition": "tested",
-          "evidence": "test_full_corpus_mode_never_checks_claude_md_growth PASSED"
+          "evidence": "test_single_session_apply_emits_paired_phase_completed PASSED"
         },
         {
-          "behavior": "CLI stdout: --all prints 'not evaluated' note",
+          "behavior": "AC2/single: an ok=False result emits phase_failed (mirror of phase_session_stop), not phase_completed",
           "disposition": "tested",
-          "evidence": "test_cli_all_mode_prints_growth_not_evaluated_note PASSED"
+          "evidence": "test_single_session_apply_ok_false_emits_phase_failed PASSED"
         },
         {
-          "behavior": "CLI stdout: env override prints visible skip note",
+          "behavior": "AC2/single: a full pipeline walk yields exactly one phase_started per phase",
           "disposition": "tested",
-          "evidence": "test_cli_env_override_prints_skip_note PASSED"
+          "evidence": "test_single_session_full_walk_one_started_per_phase PASSED"
         },
         {
-          "behavior": "F11 verifier blocks over-growth end-to-end (ok=False, CLAUDE.md in detail)",
+          "behavior": "AC3: no event-schema regression; existing consumers (compliance change_history collector + freshness verifiers) tolerate phase_started/phase_completed",
           "disposition": "tested",
-          "evidence": "shared/tests/test_agent_doc_budget_check_wiring.py::test_verifier_blocks_claude_md_over_growth PASSED"
+          "evidence": "shared/tests/test_record_event.py + test_infrastructure_checks.py + test_verifiers_runtime.py + test_events_log_ssot.py PASSED (108 shared affected green)"
         },
         {
-          "behavior": "F11 verifier: env override stays green with note in SUCCESS detail",
-          "disposition": "tested",
-          "evidence": "test_verifier_env_override_skips_growth_but_stays_green PASSED"
-        },
-        {
-          "behavior": "Verifier fail-soft SKIP without git base",
+          "behavior": "AC4: footprint stays within the emit sites; bloat baseline not ratcheted",
           "disposition": "untestable",
           "reason_code": "covered-by-existing-test",
-          "reason": "pre-existing test_check_fail_soft_skips_without_git_base pins it; re-ran green in this run"
-        },
-        {
-          "behavior": "Greenfield template carries keep-it-lean markers (heading, 'one line + a pointer', 'Growth is gated', env var)",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_claude_md_template.py::test_template_carries_keep_it_lean_rule PASSED"
-        },
-        {
-          "behavior": "Brownfield adopt renderer mirrors the same keep-it-lean markers",
-          "disposition": "tested",
-          "evidence": "test_adopt_rendered_claude_md_mirrors_template_iterate_bullets PASSED"
-        },
-        {
-          "behavior": "Docs prose accuracy (guide.md CLAUDE.md section, hooks-and-pipeline.md agent-docs section)",
-          "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "prose documentation accuracy has no mechanical oracle; reviewed in code review"
+          "reason": "all 6 touched files <=300 LOC (max phase_session_start.py=292); shipwright_bloat_baseline.json unmodified (git status clean); the anti-ratchet gate (test_bloat_gate_anti_ratchet_clear.py + pre-commit hook) enforces no ratchet mechanically"
         }
       ],
       "counts": {
-        "testable": 16,
-        "tested": 16,
-        "untestable": 2,
+        "testable": 13,
+        "tested": 13,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 6,
-        "covered_acs": 6
+        "acs": 4,
+        "covered_acs": 4
       }
     }
   },
