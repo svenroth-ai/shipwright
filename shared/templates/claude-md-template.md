@@ -33,6 +33,23 @@ Do NOT invoke `/shipwright-project`, `/shipwright-plan`, or `/shipwright-build` 
 ## Gotchas
 {GOTCHAS}
 
+## Editing this file (keep it lean)
+
+CLAUDE.md is **orientation + a terse invariant index** — it is loaded into
+every session, so every line here costs context on every future change.
+
+- **New invariant / DO-NOT rule:** add **one line + a pointer** to the ADR or
+  conventions entry that carries the rationale (e.g. `- Never bypass X — see
+  ADR-012`). The full reasoning lives in
+  `.shipwright/agent_docs/decision_log.md` or `conventions.md`, **not here**.
+- **No inline rationale:** if a rule needs more than ~2 lines to state, the
+  extra lines belong in the ADR it cites. Keep lines short — a long paragraph
+  on one line is still rationale.
+- **Prefer updating an existing line** over adding a new one.
+- **Growth is gated:** iterate finalization flags a change that net-grows this
+  file by more than 30 lines (deliberate exception:
+  `SHIPWRIGHT_CLAUDE_MD_GROWTH_OK=1`).
+
 ## Context
 
 **Read first** (stable, always relevant):

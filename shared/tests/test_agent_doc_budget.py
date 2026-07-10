@@ -20,7 +20,9 @@ if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 
 from lib.agent_doc_budget import (  # noqa: E402
+    CLAUDE_MD_MAX_NEW_LINES,
     ENTRY_MAX_CHARS,
+    claude_md_over_growth,
     entry_anchor,
     entry_date,
     iter_entries,
@@ -144,3 +146,47 @@ def test_new_over_budget_ignores_new_but_compliant():
     base = f"{header}\n- **old** (2026-06-01): short\n"
     current = base + "- **new** (2026-06-13): a tidy one-line pointer\n"
     assert new_over_budget(current, base, header) == []
+
+
+# --- claude_md_over_growth (CLAUDE.md net-growth rule) -----------------------
+
+
+def _lines(n: int) -> str:
+    return "".join(f"line {i}\n" for i in range(n))
+
+
+def test_claude_md_growth_over_cap_flags():
+    base = _lines(10)
+    current = _lines(10 + CLAUDE_MD_MAX_NEW_LINES + 1)
+    bad = claude_md_over_growth(current, base)
+    assert len(bad) == 1
+    assert f"+{CLAUDE_MD_MAX_NEW_LINES + 1}" in bad[0]
+
+
+def test_claude_md_growth_exactly_at_cap_clean():
+    base = _lines(10)
+    current = _lines(10 + CLAUDE_MD_MAX_NEW_LINES)
+    assert claude_md_over_growth(current, base) == []
+
+
+def test_claude_md_growth_shrink_and_equal_clean():
+    assert claude_md_over_growth(_lines(5), _lines(50)) == []
+    assert claude_md_over_growth(_lines(50), _lines(50)) == []
+
+
+def test_claude_md_growth_crlf_parity():
+    # Same logical content with CRLF endings must not count as growth.
+    base = _lines(40)
+    current = base.replace("\n", "\r\n")
+    assert claude_md_over_growth(current, base) == []
+
+
+def test_claude_md_growth_trailing_newline_only_clean():
+    base = _lines(40).rstrip("\n")
+    current = base + "\n"
+    assert claude_md_over_growth(current, base) == []
+
+
+def test_claude_md_growth_custom_cap():
+    assert claude_md_over_growth(_lines(6), _lines(1), max_new_lines=4)
+    assert claude_md_over_growth(_lines(5), _lines(1), max_new_lines=4) == []

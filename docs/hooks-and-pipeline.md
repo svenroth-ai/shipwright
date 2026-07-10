@@ -1849,6 +1849,21 @@ is forward-budget-capped at 600 chars by
 `decision_log.md` per-field budget); the detail lives in the ADR /
 `.shipwright/planning/adr/` spec folder, not the bullet.
 
+**CLAUDE.md is budget-gated too (iterate-2026-07-10-claude-md-invariant-index).**
+CLAUDE.md is the most-loaded context file of all, but it has no stable entry
+grammar to parse, so the F11 verifier `check_agent_doc_budget` (via
+`tools/check_agent_doc_budget.py::find_violations`, SSoT
+`lib/agent_doc_budget.py`) enforces a **net-growth cap** instead: an iterate
+that grows CLAUDE.md by more than `CLAUDE_MD_MAX_NEW_LINES` (30) lines vs the
+git base fails the gate. Forward-only and accretion-scoped — checked only when
+CLAUDE.md exists both at base and in the worktree (creation/deletion never
+blocks); legacy bloat never blocks an iterate that doesn't touch it. Deliberate
+exception: `SHIPWRIGHT_CLAUDE_MD_GROWTH_OK=1` skips only the growth rule and is
+surfaced as a note on the check's SUCCESS message. Both CLAUDE.md producers
+(`shared/templates/claude-md-template.md` greenfield,
+`claude_md_renderer.py` brownfield) carry the matching writing rule: one line
+per invariant + ADR pointer; rationale lives in the ADR.
+
 ### Reflection Protocol
 
 In addition to ADR-driven architecture impact, the **reflection protocol** (`references/reflection.md` in each plugin) updates `conventions.md` at the end of build (Step 10a), test, deploy, and iterate (F3a) phases. Two mechanisms:

@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-10 06:39 UTC | Session: f369d1d6-6a8d-4cb9-b4e2-8c8979a7af14 | Run: iterate-2026-07-10-design-gate-feedback-gitignore
+> Updated: 2026-07-10 09:34 UTC | Session: 068394d9-9942-4262-a400-b2dd2d36531a | Run: iterate-2026-07-10-claude-md-invariant-index
 
-## Recent Changes (287 iterations)
+## Recent Changes (288 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | CLAUDE.md keep-it-lean writing rule in both producers + forward-only 30-line net-growth gate in the agent-doc budget machinery (lib/CLI/F11 verifier) | 4749/4749 |  | tooling | 2026-07-10 |
 | change | gitignore transient design-feedback rounds + document single-session review-viewer hosting | 69/69 |  | infra | 2026-07-10 |
 | change | Anchor plain-language question rule in constitution + both CLAUDE.md producers (template + adopt render) + guide, with mirror/pin tests | 3751/3763 |  | docs | 2026-07-09 |
 | change | SS8 default-flip to single-session finalization | 0/0 |  | infra | 2026-07-08 |
@@ -294,7 +295,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-10 | Unit: 69/69 | Smoke: not_run | (iterate)
+Last run: 2026-07-10 | Unit: 4565/4565 | Integration: 184/184 | E2E: 25/25 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

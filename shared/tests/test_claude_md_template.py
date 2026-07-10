@@ -49,6 +49,18 @@ REQUIRED_PLAIN_LANGUAGE_MARKERS = (
 )
 
 
+# Both producers must carry the keep-it-lean writing rule: CLAUDE.md is
+# orientation + a terse invariant index; a new invariant is ONE line + an ADR
+# pointer, rationale lives in the ADR (iterate-2026-07-10-claude-md-invariant-
+# index). Without this, adopted repos accrete multi-hundred-line DO-NOT blocks.
+REQUIRED_LEAN_MARKERS = (
+    "Editing this file (keep it lean)",
+    "one line + a pointer",
+    "Growth is gated",
+    "SHIPWRIGHT_CLAUDE_MD_GROWTH_OK",
+)
+
+
 def test_template_file_lists_what_iterate_handles() -> None:
     """Greenfield path: the template file itself surfaces the bullets."""
     body = TEMPLATE_PATH.read_text(encoding="utf-8")
@@ -77,6 +89,18 @@ def test_template_carries_plain_language_question_rule() -> None:
         assert marker in body, (
             f"claude-md-template.md missing plain-language marker {marker!r} — "
             f"greenfield CLAUDE.md will not surface the question-phrasing rule."
+        )
+
+
+def test_template_carries_keep_it_lean_rule() -> None:
+    """Greenfield path: the template tells future agents WHERE invariants
+    belong (one line here + rationale in the ADR), so generated CLAUDE.md
+    files don't accrete inline-rationale DO-NOT blocks."""
+    body = TEMPLATE_PATH.read_text(encoding="utf-8")
+    for marker in REQUIRED_LEAN_MARKERS:
+        assert marker in body, (
+            f"claude-md-template.md missing keep-it-lean marker {marker!r} — "
+            f"greenfield CLAUDE.md will not surface the invariant-index rule."
         )
 
 
@@ -125,6 +149,12 @@ def test_adopt_rendered_claude_md_mirrors_template_iterate_bullets() -> None:
     for marker in REQUIRED_PLAIN_LANGUAGE_MARKERS:
         assert marker in body, (
             f"adopt's rendered CLAUDE.md missing plain-language marker "
+            f"{marker!r} — brownfield CLAUDE.md drifted from "
+            f"claude-md-template.md."
+        )
+    for marker in REQUIRED_LEAN_MARKERS:
+        assert marker in body, (
+            f"adopt's rendered CLAUDE.md missing keep-it-lean marker "
             f"{marker!r} — brownfield CLAUDE.md drifted from "
             f"claude-md-template.md."
         )

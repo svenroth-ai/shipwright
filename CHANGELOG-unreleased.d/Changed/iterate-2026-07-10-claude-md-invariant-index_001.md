@@ -1,0 +1,1 @@
+Both CLAUDE.md producers (greenfield template and /shipwright-adopt renderer) now seed an 'Editing this file (keep it lean)' rule — one line + ADR pointer per invariant, rationale in the ADR — so generated projects stop accreting inline-rationale DO-NOT blocks
