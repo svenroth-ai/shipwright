@@ -1,18 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-10-design-gate-feedback-gitignore",
+    "run_id": "iterate-2026-07-10-claude-md-invariant-index",
     "date": "2026-07-10",
     "intent": "change",
-    "complexity": "small",
+    "complexity": "medium",
     "unit": {
       "status": "passed",
-      "passed": 69,
-      "total": 69
+      "passed": 4565,
+      "total": 4565
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 184,
+      "total": 184
     },
     "pgtap": {
       "status": "not_run",
@@ -20,9 +20,9 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 25,
+      "total": 25
     },
     "design_fidelity": {
       "status": "not_run",
@@ -33,10 +33,12 @@
       "status": "not_run"
     },
     "surface_verification": {
-      "surface": "none",
-      "tests_run": 0,
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_check_agent_doc_budget.py shared/tests/test_agent_doc_budget_check_wiring.py shared/tests/test_claude_md_template.py -q",
+      "tests_run": 25,
       "exit_code": 0,
-      "justification": "No runtime surface: the change gitignores a transient scratch file (design-feedback-round*.md) in the canonical .shipwright/ ignore block (template + framework .gitignore, kept congruent) and adds a documentation note to the design review-loop reference. No API/UI/CLI/IO code path is exercised. Verified via the gitignore drift + propagation suites (69 related tests passed) and an empirical git check-ignore probe.",
+      "evidence_path": ".shipwright/runs/iterate-2026-07-10-claude-md-invariant-index/surface_verification.json",
+      "timestamp": "2026-07-10T09:30:00.682Z",
       "attempts": 1
     },
     "degraded": [],
@@ -44,36 +46,107 @@
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "design-feedback-round*.md is gitignored as transient scratch while durable design artifacts (screens/*.html, design-manifest.md, visual-guidelines.md) stay tracked",
+          "behavior": "Lib: CLAUDE.md growth over cap flags (+N in message)",
           "disposition": "tested",
-          "evidence": "empirical `git check-ignore -v` probe: design-feedback-round1.md AND design-feedback-round12.md matched .gitignore rule (line 181); screens/03-dashboard.html and design-manifest.md did NOT match (still tracked)"
+          "evidence": "shared/tests/test_agent_doc_budget.py::test_claude_md_growth_over_cap_flags PASSED"
         },
         {
-          "behavior": "The SSoT gitignore template and the framework's own .gitignore managed block stay congruent so the rule propagates to consuming projects",
+          "behavior": "Lib: at-cap / under / shrink / equal never flags",
           "disposition": "tested",
-          "evidence": "shared/tests/test_gitignore_template_congruent.py (4 passed, incl. test_template_and_framework_block_are_congruent) + full gitignore suite 56 passed"
+          "evidence": "test_claude_md_growth_exactly_at_cap_clean + test_claude_md_growth_shrink_and_equal_clean PASSED"
         },
         {
-          "behavior": "The review-loop.md doc note is well-formed and its cross-reference link resolves",
+          "behavior": "Lib: CRLF + trailing-newline parity (no phantom growth)",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-design/tests/test_skill_references_link.py (7 passed) + shared/tests/test_artifact_path_canon.py (4 passed)"
+          "evidence": "test_claude_md_growth_crlf_parity + test_claude_md_growth_trailing_newline_only_clean PASSED"
         },
         {
-          "behavior": "The doc-note prose accurately describes the single-session WebUI review-viewer hosting flow",
+          "behavior": "Lib: custom cap respected",
+          "disposition": "tested",
+          "evidence": "test_claude_md_growth_custom_cap PASSED"
+        },
+        {
+          "behavior": "CLI forward-only: over-cap growth yields ('CLAUDE.md','(net growth)',msg) violation",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_check_agent_doc_budget.py::test_claude_md_growth_over_cap_flagged PASSED"
+        },
+        {
+          "behavior": "CLI forward-only: within-cap growth clean",
+          "disposition": "tested",
+          "evidence": "test_claude_md_growth_within_cap_clean PASSED"
+        },
+        {
+          "behavior": "CLI: CLAUDE.md absent at base (creation) skipped",
+          "disposition": "tested",
+          "evidence": "test_claude_md_new_file_at_worktree_skipped PASSED"
+        },
+        {
+          "behavior": "CLI: CLAUDE.md deleted or replaced-by-directory in worktree skipped, never crashes",
+          "disposition": "tested",
+          "evidence": "test_claude_md_deleted_in_worktree_skipped + test_claude_md_replaced_by_directory_skipped PASSED"
+        },
+        {
+          "behavior": "CLI: check_claude_md=False skips ONLY growth; entry budgets still enforced",
+          "disposition": "tested",
+          "evidence": "test_claude_md_growth_opt_out_param PASSED"
+        },
+        {
+          "behavior": "CLI: full-corpus --all never evaluates growth",
+          "disposition": "tested",
+          "evidence": "test_full_corpus_mode_never_checks_claude_md_growth PASSED"
+        },
+        {
+          "behavior": "CLI stdout: --all prints 'not evaluated' note",
+          "disposition": "tested",
+          "evidence": "test_cli_all_mode_prints_growth_not_evaluated_note PASSED"
+        },
+        {
+          "behavior": "CLI stdout: env override prints visible skip note",
+          "disposition": "tested",
+          "evidence": "test_cli_env_override_prints_skip_note PASSED"
+        },
+        {
+          "behavior": "F11 verifier blocks over-growth end-to-end (ok=False, CLAUDE.md in detail)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_agent_doc_budget_check_wiring.py::test_verifier_blocks_claude_md_over_growth PASSED"
+        },
+        {
+          "behavior": "F11 verifier: env override stays green with note in SUCCESS detail",
+          "disposition": "tested",
+          "evidence": "test_verifier_env_override_skips_growth_but_stays_green PASSED"
+        },
+        {
+          "behavior": "Verifier fail-soft SKIP without git base",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "reason": "pre-existing test_check_fail_soft_skips_without_git_base pins it; re-ran green in this run"
+        },
+        {
+          "behavior": "Greenfield template carries keep-it-lean markers (heading, 'one line + a pointer', 'Growth is gated', env var)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_claude_md_template.py::test_template_carries_keep_it_lean_rule PASSED"
+        },
+        {
+          "behavior": "Brownfield adopt renderer mirrors the same keep-it-lean markers",
+          "disposition": "tested",
+          "evidence": "test_adopt_rendered_claude_md_mirrors_template_iterate_bullets PASSED"
+        },
+        {
+          "behavior": "Docs prose accuracy (guide.md CLAUDE.md section, hooks-and-pipeline.md agent-docs section)",
           "disposition": "untestable",
           "reason_code": "requires-manual-visual-judgment",
-          "reason": "prose correctness is a human review judgment; there is no runtime behavior in this monorepo to assert (the WebUI behavior lives in the shipwright-webui repo)"
+          "reason": "prose documentation accuracy has no mechanical oracle; reviewed in code review"
         }
       ],
       "counts": {
-        "testable": 3,
-        "tested": 3,
-        "untestable": 1,
+        "testable": 16,
+        "tested": 16,
+        "untestable": 2,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 3,
-        "covered_acs": 3
+        "acs": 6,
+        "covered_acs": 6
       }
     }
   },

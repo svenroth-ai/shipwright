@@ -31,6 +31,13 @@ from datetime import date
 # compact entry, tight enough to forbid the multi-hundred-word paragraphs.
 ENTRY_MAX_CHARS = 600
 
+# CLAUDE.md net-growth cap per iterate. CLAUDE.md has no stable entry grammar
+# to parse (DO-NOT blocks are free-form prose), so whole-file net growth is the
+# enforceable proxy: 30 lines admits a legitimate new section (~20-26 lines,
+# e.g. the plain-language-questions rule) but blocks the multi-hundred-line
+# inline-rationale dumps that bloated adopted repos' CLAUDE.md files.
+CLAUDE_MD_MAX_NEW_LINES = 30
+
 # (filename, section header) for the three always-loaded append sections.
 SECTIONS: tuple[tuple[str, str], ...] = (
     ("architecture.md", "## Architecture Updates"),
@@ -136,6 +143,28 @@ def over_budget(
         if len(e) > max_chars:
             bad.append(_fmt(e, max_chars))
     return bad
+
+
+def claude_md_over_growth(
+    current_text: str,
+    base_text: str,
+    max_new_lines: int = CLAUDE_MD_MAX_NEW_LINES,
+) -> list[str]:
+    """Net CLAUDE.md line growth above ``max_new_lines`` (forward-only).
+
+    Pure text comparison — the caller owns git resolution, existence checks
+    (creation/deletion is not accretion → don't call), and any env override.
+    ``splitlines()`` on both sides keeps CRLF/LF and trailing-newline-only
+    differences from counting as growth. Shrink or equal never flags.
+    """
+    growth = len(current_text.splitlines()) - len(base_text.splitlines())
+    if growth <= max_new_lines:
+        return []
+    return [
+        f"+{growth} lines net growth (> {max_new_lines}) — CLAUDE.md is "
+        f"always-loaded orientation; state each invariant as one line + an ADR "
+        f"pointer and move the rationale into the ADR it cites"
+    ]
 
 
 def new_over_budget(

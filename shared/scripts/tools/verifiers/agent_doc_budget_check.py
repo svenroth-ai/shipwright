@@ -20,34 +20,50 @@ def check_agent_doc_budget(
 ) -> CheckResult:
     """No NEW/changed entry under the three always-loaded agent-doc append
     sections (``## Architecture Updates`` / ``## Convention Updates`` /
-    ``## Learnings``) may exceed ``ENTRY_MAX_CHARS``. Only NEW/anchor-changed
-    entries block (forward-only vs the git base), so a legacy over-budget entry
-    the author didn't touch never fails a later iterate. Fail-soft SKIP when no
-    git base is resolvable (clone without a remote, detached state).
+    ``## Learnings``) may exceed ``ENTRY_MAX_CHARS``, and CLAUDE.md may not
+    net-grow by more than ``CLAUDE_MD_MAX_NEW_LINES`` (only when it exists both
+    at base and worktree; ``SHIPWRIGHT_CLAUDE_MD_GROWTH_OK=1`` skips just the
+    growth rule, surfaced as a note on the SUCCESS message — never a
+    violation). Only NEW/anchor-changed entries block (forward-only vs the git
+    base), so a legacy over-budget entry the author didn't touch never fails a
+    later iterate. Fail-soft SKIP when no git base is resolvable (clone without
+    a remote, detached state).
     """
     name = "agent-doc entry budget (one-line pointers)"
     try:
         from lib.agent_doc_budget import ENTRY_MAX_CHARS
-        from tools.check_agent_doc_budget import find_violations
+        from tools.check_agent_doc_budget import (
+            GROWTH_OK_ENV,
+            claude_md_growth_overridden,
+            find_violations,
+        )
     except Exception as exc:  # noqa: BLE001 — never crash finalize on an import slip
         return CheckResult(
             name, True, f"skipped (import error: {exc})", severity=Severity.SKIPPED.value,
         )
 
-    violations, base = find_violations(project_root)
+    growth_overridden = claude_md_growth_overridden()
+    violations, base = find_violations(project_root, check_claude_md=not growth_overridden)
     if base is None:
         return CheckResult(
             name, True, "skipped (no git base resolvable)", severity=Severity.SKIPPED.value,
         )
     if not violations:
-        return CheckResult(name, True, f"all new entries <= {ENTRY_MAX_CHARS} chars")
+        growth_part = (
+            f"CLAUDE.md growth check skipped ({GROWTH_OK_ENV}=1)"
+            if growth_overridden else "CLAUDE.md growth ok"
+        )
+        return CheckResult(
+            name, True, f"all new entries <= {ENTRY_MAX_CHARS} chars; {growth_part}",
+        )
 
     shown = "; ".join(f"{f} '{h}': {m}" for f, h, m in violations[:5])
     more = "" if len(violations) <= 5 else f" (+{len(violations) - 5} more)"
-    plural = "y" if len(violations) == 1 else "ies"
+    plural = "" if len(violations) == 1 else "s"
     return CheckResult(
         name, False,
-        f"{len(violations)} over-budget NEW entr{plural} — keep each a one-line "
-        f"'what + ADR pointer'; move detail to the ADR / .shipwright/planning/adr/ "
+        f"{len(violations)} agent-doc budget violation{plural} — keep each entry "
+        f"a one-line 'what + ADR pointer' and CLAUDE.md a terse invariant index; "
+        f"move detail to the ADR / .shipwright/planning/adr/ "
         f"(references/F2.md, reflection.md): {shown}{more}",
     )

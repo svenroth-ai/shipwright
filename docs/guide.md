@@ -2096,6 +2096,8 @@ The project master document, generated during `/shipwright-project`. It stays le
 - **Gotchas** -- Project-specific pitfalls.
 - **Context** -- References to `@.shipwright/agent_docs/` files, loaded on demand.
 
+**Keep-it-lean rule (enforced).** CLAUDE.md is orientation plus a terse invariant index -- it is loaded into every session, so every line costs context on every future change. A new invariant or DO-NOT rule is **one line + a pointer** to the ADR or conventions entry that carries the rationale; the full reasoning lives there, not in CLAUDE.md. Both producers (the greenfield template and `/shipwright-adopt`'s renderer) seed this rule into the generated file, and iterate finalization enforces it: a change that net-grows CLAUDE.md by more than **30 lines** fails the `check_agent_doc_budget` gate (deliberate exception: set `SHIPWRIGHT_CLAUDE_MD_GROWTH_OK=1` for that run -- the skip is reported visibly). The gate is forward-only: existing long files never block an iterate that does not grow them further.
+
 ### Decision Log (ADR Format)
 
 Each decision record follows the ADR template: Status, Context, Decision, Consequences (including rejected alternatives). Profile-level decisions (stack, auth pattern, folder structure) are implicit in the stack profile. Only project-specific decisions go in the log.

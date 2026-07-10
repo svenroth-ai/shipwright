@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-10-claude-md-invariant-index",
+  "date": "2026-07-10T09:35:16.646748Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/claude-md-invariant-index",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/2026-07-10-claude-md-invariant-index.md",
+  "adr": "iterate-2026-07-10-claude-md-invariant-index"
+}
