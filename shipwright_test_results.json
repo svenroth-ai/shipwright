@@ -1,13 +1,13 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-09-plain-language-questions",
-    "date": "2026-07-09",
+    "run_id": "iterate-2026-07-10-design-gate-feedback-gitignore",
+    "date": "2026-07-10",
     "intent": "change",
     "complexity": "small",
     "unit": {
       "status": "passed",
-      "passed": 3751,
-      "total": 3763
+      "passed": 69,
+      "total": 69
     },
     "integration": {
       "status": "not_run",
@@ -36,7 +36,7 @@
       "surface": "none",
       "tests_run": 0,
       "exit_code": 0,
-      "justification": "No runtime surface: the change is limited to governance docs (constitution), the two CLAUDE.md generators (greenfield template + adopt _render_claude_md f-string), a user-guide line, and their pinning tests. No API/UI/CLI/IO path is exercised; verified via unit tests (test_claude_md_template.py 5 passed; adopt artifact_writer 23 passed) and the full shared/tests suite (3751 passed).",
+      "justification": "No runtime surface: the change gitignores a transient scratch file (design-feedback-round*.md) in the canonical .shipwright/ ignore block (template + framework .gitignore, kept congruent) and adds a documentation note to the design review-loop reference. No API/UI/CLI/IO code path is exercised. Verified via the gitignore drift + propagation suites (69 related tests passed) and an empirical git check-ignore probe.",
       "attempts": 1
     },
     "degraded": [],
@@ -44,25 +44,31 @@
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "Greenfield-generated CLAUDE.md (template) surfaces the plain-language question rule",
+          "behavior": "design-feedback-round*.md is gitignored as transient scratch while durable design artifacts (screens/*.html, design-manifest.md, visual-guidelines.md) stay tracked",
           "disposition": "tested",
-          "evidence": "shared/tests/test_claude_md_template.py::test_template_carries_plain_language_question_rule PASSED"
+          "evidence": "empirical `git check-ignore -v` probe: design-feedback-round1.md AND design-feedback-round12.md matched .gitignore rule (line 181); screens/03-dashboard.html and design-manifest.md did NOT match (still tracked)"
         },
         {
-          "behavior": "Brownfield-generated CLAUDE.md (adopt _render_claude_md) surfaces the same rule, mirrored with the template",
+          "behavior": "The SSoT gitignore template and the framework's own .gitignore managed block stay congruent so the rule propagates to consuming projects",
           "disposition": "tested",
-          "evidence": "shared/tests/test_claude_md_template.py::test_adopt_rendered_claude_md_mirrors_template_iterate_bullets PASSED"
+          "evidence": "shared/tests/test_gitignore_template_congruent.py (4 passed, incl. test_template_and_framework_block_are_congruent) + full gitignore suite 56 passed"
         },
         {
-          "behavior": "The canonical constitution carries the plain-language question rule (guards silent deletion that would orphan the templates)",
+          "behavior": "The review-loop.md doc note is well-formed and its cross-reference link resolves",
           "disposition": "tested",
-          "evidence": "shared/tests/test_claude_md_template.py::test_constitution_carries_plain_language_question_rule PASSED"
+          "evidence": "plugins/shipwright-design/tests/test_skill_references_link.py (7 passed) + shared/tests/test_artifact_path_canon.py (4 passed)"
+        },
+        {
+          "behavior": "The doc-note prose accurately describes the single-session WebUI review-viewer hosting flow",
+          "disposition": "untestable",
+          "reason_code": "requires-manual-visual-judgment",
+          "reason": "prose correctness is a human review judgment; there is no runtime behavior in this monorepo to assert (the WebUI behavior lives in the shipwright-webui repo)"
         }
       ],
       "counts": {
         "testable": 3,
         "tested": 3,
-        "untestable": 0,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {

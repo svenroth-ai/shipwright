@@ -1,35 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-09-plain-language-questions"
+run_id: "iterate-2026-07-10-design-gate-feedback-gitignore"
 phase: "iterate"
-reason: "iterate: plain-language questions rule"
-timestamp: "2026-07-09T16:23:26.300586+00:00"
+reason: "iterate: single-session design gate feedback (gitignore + docs)"
+timestamp: "2026-07-10T06:39:25.542491+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-09 16:23:26 UTC
+> Auto-generated 2026-07-10 06:39:25 UTC
 
 ## Session Info
 
-- **Session ID**: 27c65b0a-7db3-44c1-a749-6776c4232220
-- **Timestamp**: 2026-07-09 16:23:26 UTC
-- **Reason**: iterate: plain-language questions rule
+- **Session ID**: f369d1d6-6a8d-4cb9-b4e2-8c8979a7af14
+- **Timestamp**: 2026-07-10 06:39:25 UTC
+- **Reason**: iterate: single-session design gate feedback (gitignore + docs)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-08-ss8-default-single-session
-- **Date**: 2026-07-08T20:31:54.816173Z
+- **Run ID**: iterate-2026-07-09-plain-language-questions
+- **Date**: 2026-07-09T16:23:47.485747Z
 - **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/ss8-default-single-session
-- **ADR**: iterate-2026-07-08-ss8-default-single-session
+- **Complexity**: small
+- **Branch**: iterate/plain-language-questions
+- **ADR**: iterate-2026-07-09-plain-language-questions
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-08-ss8-default-single-session.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/plain-language-questions
+- **Branch**: iterate/design-gate-feedback
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/plain-language-questions
-- **Last Commit**: c27296f5 chore(triage): sweep 1 outbox append(s) into branch
+- **Branch**: iterate/design-gate-feedback
+- **Last Commit**: f879a73a docs(constitution): require plain-language questions to the user (#354)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-b2a0eebf | work_completed | iterate (gitignore transient design-feedback rounds + document single-session review-viewer hosting) | 2026-07-10 |
 | evt-ce826fca | work_completed | iterate (Anchor plain-language question rule in constitution + both CLAUDE.md producers (template + adopt render) + guide, with mirror/pin tests) | 2026-07-09 |
 | evt-d4739959 | work_completed | iterate (SS8 default-flip to single-session finalization) | 2026-07-08 |
 | evt-24b6350d | work_completed | iterate (SS7 CLI E2E capstone finalization) | 2026-07-08 |
 | evt-81fbc0b9 | work_completed | iterate (Remove stale hardcoded version (v0.3.0) from the shipwright-iterate intro banner (SKILL.md H1 + banner title) and add a drift-guard test) | 2026-07-08 |
-| evt-5496b0a6 | work_completed | iterate (SS6: fix external-review gate — direct-OpenAI max_completion_tokens param + fail-loud degraded gate (no silent self-review fallback)) | 2026-07-08 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 286
-- **Last iterate**: change — Anchor plain-language question rule in constitution + both CLAUDE.md producers (template + adopt render) + guide, with mirror/pin tests (2026-07-09)
+- **Total work events**: 287
+- **Last iterate**: change — gitignore transient design-feedback rounds + document single-session review-viewer hosting (2026-07-10)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

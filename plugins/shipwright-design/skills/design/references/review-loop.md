@@ -17,6 +17,31 @@ AskUserQuestion:
        → State is saved, continue later with /shipwright-design
 ```
 
+## The feedback file — transient scratch, two ways it arrives
+
+`design-feedback-round{N}.md` is **transient review scratch**: the human's
+per-round critique, consumed by Option B and superseded by the next round. It is
+**gitignored** (canonical `.shipwright/` ignore block →
+`/.shipwright/designs/design-feedback-round*.md`), so it never ships in a PR. The
+*durable* design artifacts are the mockups (`screens/*.html`, `flows/*.html`), the
+manifest, and `visual-guidelines.md` — those stay tracked.
+
+The file always has the same per-screen / per-split shape (the review viewer's
+`index.html` generates it — see [step-6a-review-viewer.md](step-6a-review-viewer.md)),
+so Option B parses it identically regardless of how it was produced:
+
+- **Standalone (`/shipwright-design` in a terminal):** the human opens `index.html`
+  in a browser and exports the round file from the viewer's feedback panel (File
+  System Access save dialog / download), then picks Option B.
+- **Single-session pipeline (`mode: single_session`):** the design gate is
+  `orchestrator-approve` — the phase-runner emits the mockups + the `index.html`
+  review viewer and **stops** (the phase pauses). The Command Center WebUI hosts
+  that emitted viewer in an isolated full-fidelity surface and, on submit, writes
+  `design-feedback-round{N}.md` **straight into the worktree** (no manual export);
+  a Resume action then clears the gate and this same Option-B reader applies the
+  feedback. (WebUI behavior is tracked in `shipwright-webui`; the monorepo side is
+  just this reader + the file convention.)
+
 ## Option A — Finalize
 
 **FR-Coverage Gate** (verify before finalizing):

@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-07-09T16:23:26.300586+00:00
+Generated: 2026-07-10T06:39:25.542491+00:00
 Total commits: 1120
 
 ## Commit Distribution
@@ -9,8 +9,8 @@ Total commits: 1120
 pie title Commit Types
     "fix" : 325
     "feat" : 300
-    "chore" : 237
-    "docs" : 144
+    "chore" : 236
+    "docs" : 145
     "refactor" : 67
     "test" : 28
     "ci" : 11
@@ -655,11 +655,10 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 237 commits
+### Chores (chore) — 236 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-09 | triage | sweep 1 outbox append(s) into branch | c27296f5583d |
 | 2026-07-08 | release | v0.30.0 (#348) | 023701b57bb2 |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
 | 2026-07-02 | triage | reconcile + dismiss stranded gh-prompt items (#307) | 49502d056de7 |
@@ -897,10 +896,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 144 commits
+### Documentation (docs) — 145 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-09 | constitution | require plain-language questions to the user (#354) | f879a73a4903 |
 | 2026-07-09 | claude-md | guide plain-language phrasing for questions to the user | 4daaa7d44b49 |
 | 2026-07-02 | planning | phased diff/patch-coverage roadmap (trg-8fdebda3) (#305) | 892001e73858 |
 | 2026-06-28 | lib | fix events_log lazy-import rationale (load_shared_lib isolation, not removed cycle) (#282) | faa96b699135 |

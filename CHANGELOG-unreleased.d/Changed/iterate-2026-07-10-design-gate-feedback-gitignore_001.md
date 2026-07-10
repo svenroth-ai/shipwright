@@ -1,0 +1,1 @@
+Design feedback rounds (design-feedback-round*.md) are now gitignored transient scratch; the design review-loop documents how the single-session WebUI hosts the emitted review viewer (isolated, not the Smart Viewer) and writes feedback straight into the worktree

@@ -172,6 +172,13 @@ Spec/
 /.shipwright/adopt/screenshots/
 /.shipwright/agent_docs/decision-drops/
 /.shipwright/agent_docs/visual/
+# Design feedback rounds (design-feedback-roundN.md) are transient review scratch:
+# the human's per-round critique, consumed by the design Option-B reader and
+# superseded by the next round — not a durable product artifact (the mockups,
+# manifest and visual-guidelines are). Under the single-session pipeline the WebUI
+# writes them straight into the worktree and clears the design gate; keep them out
+# of git. iterate-2026-07-10-design-gate-feedback-gitignore.
+/.shipwright/designs/design-feedback-round*.md
 # Stop-hook live state (session_handoff.md, build_dashboard.md,
 # triage_inbox.md) — written every Stop event in every plugin; tracked
 # variants are produced only by iterate-finalize as the single producer.
