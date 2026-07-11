@@ -69,20 +69,21 @@ The SessionStart hook injects `SHIPWRIGHT_PLUGIN_ROOT=<path>`. Use it directly.
 **Goal:** Figure out what the user wants to build.
 
 **Input sources (in priority order):**
+0. **Brief** (WebUI Intent Wizard): a pre-delivered file/payload with the four
+   wizard answers → run [brief-intake.md](references/brief-intake.md), ask ONLY what's missing.
 1. **File**: `@requirements.md` → read and summarize
 2. **Inline**: `"Build a SaaS time tracker..."` → use as starting context
 3. **Chat**: No input → ask: "What do you want to build?"
 
-Ask 1-3 clarifying questions if the description is vague:
-- What's the core feature?
-- Who are the users?
-- Any specific technology preferences?
+Ask 1-3 clarifying questions if the description is vague (skip any the brief
+already answered): core feature · who are the users · tech preferences.
 
 ---
 
 ## Step 2: Infer Settings
 
-See [inference-rules.md](references/inference-rules.md) for logic.
+See [inference-rules.md](references/inference-rules.md). If Step 1 ran a brief,
+[brief-intake.md](references/brief-intake.md) already fixed profile + deploy — reuse them; infer only fields left null.
 
 ```bash
 uv run "{plugin_root}/scripts/lib/inference.py" \
@@ -154,11 +155,9 @@ This writes `shipwright_run_config.json` at `schemaVersion: 2`. The orchestrator
 - Subsequent phase tasks are appended by phase Stop hooks via `complete-phase-task` → `plan-next-phase`. **The master never plans phases directly.**
 
 **Important — always pass `--profile`:** the WebUI Preview button keys off
-`shipwright_run_config.json.profile` + the matching `shared/profiles/{name}.json`
-to decide whether the project can launch a dev server. Omitting `--profile`
-leaves the field null and Preview never appears. When Step 2 returns a
-non-null profile, ALWAYS include it. For Next.js + Supabase (or Next.js as
-default), pass `--profile supabase-nextjs`.
+`shipwright_run_config.json.profile` + `shared/profiles/{name}.json` to decide
+whether Preview can launch a dev server. Omitting it leaves the field null and
+Preview never appears — always include the Step 2 profile (Next.js/Supabase → `supabase-nextjs`; local-only default → `vite-hono`).
 
 Capture the parsed JSON output — Step 5 reads `phase_tasks[0]` from it.
 
@@ -395,6 +394,7 @@ one of the terminal states handled by Step 6.
 ## Reference Documents
 
 - [inference-rules.md](references/inference-rules.md) — Scope + profile inference
+- [brief-intake.md](references/brief-intake.md) — WebUI-wizard brief → profile/env, ask only what's missing (K2c)
 - [autonomy-levels.md](references/autonomy-levels.md) — Guided vs autonomous behavior (within phase sessions)
 - [scope-flows.md](references/scope-flows.md) — Full App and Extension flows
 - [single-session-loop.md](references/single-session-loop.md) — SS3 in-conversation orchestrator loop (`mode: single_session`)

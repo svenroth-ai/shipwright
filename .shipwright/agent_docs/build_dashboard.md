@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-11 01:12 UTC | Session: c6d96e6a-09ff-4e6f-b168-766dfb9d4fa0 | Run: iterate-2026-07-10-grade-snapshot-events
+> Updated: 2026-07-11 02:20 UTC | Session: c6d96e6a-09ff-4e6f-b168-766dfb9d4fa0 | Run: iterate-2026-07-10-run-brief-intake
 
-## Recent Changes (291 iterations)
+## Recent Changes (292 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | Brief-intake in /shipwright-run: accept a pre-filled WebUI-wizard brief (file or payload), map the four answers to profile + deploy-target/env, and ask only the still-missing questions; no brief -> legacy interview unchanged (K2c). | 28/28 |  | tooling | 2026-07-11 |
 | feature | iterate finalization | 0/0 |  | compliance | 2026-07-11 |
 | feature | Persist the iterate session plan (phases/skips/risk_flags/complexity) as a gitignored <run_id>.plan.json for the WebUI scoped Plan-Card (M-Pre-2) | 17/17 |  | tooling | 2026-07-10 |
 | feature | Emit phase_started at pipeline phase entry (M-Pre-1) | 7/7 |  | infra | 2026-07-10 |
@@ -298,7 +299,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-11T01:09:35.413091+00:00 | Unit: 13/13 | Integration: 1/1 | Smoke: n/a | (iterate)
+Last run: 2026-07-11T02:00:00+00:00 | Unit: 28/28 | Smoke: n/a | (iterate)
 
 ## Pipeline
 

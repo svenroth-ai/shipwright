@@ -214,3 +214,4 @@ _Existing user-facing documentation discovered by /shipwright-adopt._
 - **ADR-305** (2026-07-07): Single-session orchestrator loop (in-conversation pipeline driver)
 - **ADR-309** (2026-07-08): Single-session pipeline resumability, recovery & observability (SS5)
 - **iterate-2026-07-10-grade-snapshot-events** (2026-07-11): Data-flow — grade_snapshot appended to the durable tracked shipwright_events.jsonl at each compliance grade regen (record_event new --type + emit_grade_snapshot), giving the WebUI Ship's-Log grade trend + per-run delta (M-Pre-3). → decision_log (Run-ID).
+- **iterate-2026-07-10-run-brief-intake** (2026-07-11): Data-flow — /shipwright-run accepts a WebUI-wizard brief (file/payload) via a tested brief_intake helper that maps persistence→profile + run-location→deploy/env and asks only the still-missing questions; no brief → legacy interview unchanged (K2c). → decision_log (Run-ID).
