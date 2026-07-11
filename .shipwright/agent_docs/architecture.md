@@ -213,3 +213,4 @@ _Existing user-facing documentation discovered by /shipwright-adopt._
 - **ADR-304** (2026-07-07): Single-session pipeline mode scaffold + phase-runner contracts
 - **ADR-305** (2026-07-07): Single-session orchestrator loop (in-conversation pipeline driver)
 - **ADR-309** (2026-07-08): Single-session pipeline resumability, recovery & observability (SS5)
+- **ADR-310** (2026-07-11): grade_snapshot event per compliance regen (M-Pre-3 grade trend)

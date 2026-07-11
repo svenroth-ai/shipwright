@@ -23,6 +23,7 @@ from scripts.lib.test_evidence import (
 )
 from scripts.lib.change_history import generate_file as generate_change_history
 from scripts.lib.compliance_report import generate_file as generate_dashboard
+from scripts.lib._grade_snapshot import emit_grade_snapshot
 from scripts.lib.sbom_generator import (
     emit_undeclared_triage,
     generate_file as generate_sbom,
@@ -114,6 +115,7 @@ def main() -> int:
     updated = []
     sbom_triage_result: dict | None = None
     test_evidence_triage_result: dict | None = None
+    grade_snapshot_result: dict | None = None
     for report_name in reports_to_update:
         gen_fn = GENERATORS.get(report_name)
         if gen_fn:
@@ -144,6 +146,15 @@ def main() -> int:
                     test_evidence_triage_result = {
                         "appended": 0, "dismissed": 0, "error": str(exc),
                     }
+            # M-Pre-3: when the dashboard (Control Grade) is regenerated, append
+            # one grade_snapshot event to the durable event log so the WebUI
+            # Ship's-Log can trend the grade. Same best-effort contract — a
+            # failure here never aborts the compliance regen.
+            elif report_name == "dashboard":
+                try:
+                    grade_snapshot_result = emit_grade_snapshot(data)
+                except Exception as exc:  # noqa: BLE001
+                    grade_snapshot_result = {"appended": 0, "error": str(exc)}
 
     # Update compliance config
     config_path = project_root / "shipwright_compliance_config.json"
@@ -183,6 +194,8 @@ def main() -> int:
         output["sbom_triage"] = sbom_triage_result
     if test_evidence_triage_result is not None:
         output["test_evidence_triage"] = test_evidence_triage_result
+    if grade_snapshot_result is not None:
+        output["grade_snapshot"] = grade_snapshot_result
     if ci_security_result is not None:
         output["ci_security"] = ci_security_result
     print(json.dumps(output, indent=2))

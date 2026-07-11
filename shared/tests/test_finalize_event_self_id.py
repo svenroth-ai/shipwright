@@ -64,7 +64,7 @@ def test_event_carries_campaign_and_sub_iterate_id(project, monkeypatch):
                     event_extras=dict(_STAMPED_EXTRAS))
     assert result["steps"]["event"].get("id") is not None
 
-    [event] = _events(project)
+    [event] = [e for e in _events(project) if e["type"] == "work_completed"]
     assert event["type"] == "work_completed"
     assert event["source"] == "iterate"
     assert event["campaign"] == _CAMPAIGN
@@ -106,7 +106,7 @@ def test_cli_manual_flag_path_stamps_event(project, monkeypatch):
     ])
     assert rc == 0
 
-    [event] = _events(project)
+    [event] = [e for e in _events(project) if e["type"] == "work_completed"]
     assert event["campaign"] == _CAMPAIGN
     assert event["sub_iterate_id"] == "S1"
     assert event["adr_id"] == "iterate-s1-stamp-cli-001"

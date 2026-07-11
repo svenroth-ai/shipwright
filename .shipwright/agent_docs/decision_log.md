@@ -4127,3 +4127,16 @@ shipwright/
 - **Rationale:** Idempotent re-dispatch is safe because the phase-runner is a subagent of the master, so master death = runner death (no orphaned worker; a multi_session-only risk). Reuses recover-phase-task + phase_task_lifecycle verbatim (no bespoke path); observability isolated so multi_session never grows an events file; append-log is O(1) single-writer + best-effort.
 - **Consequences:** Multi-session lifecycle + generic recover-phase-task untouched (dual-mode back-compat suite proves no run_loop_* files appear for multi_session). New gitignored write surface run_loop_events.jsonl. begin_dispatch now reinits a stale-runId pointer so a re-run in the same dir never attaches to an old run.
 - **Rejected:** Emitting telemetry from the master_stop_check Stop hook + folding events into the tracked shipwright_events.jsonl: re-couples persistence to a Stop hook (the failure SS4 removed), touches hooks/*.py, and pollutes the tracked pipeline log with per-run orchestrator telemetry.
+
+---
+
+### ADR-310: grade_snapshot event per compliance regen (M-Pre-3 grade trend)
+- **Date:** 2026-07-11
+- **Section:** Compliance — Control Grade / event log (campaign monorepo-wow-usability-2026-07-10, sub-iterate B3)
+- **Run-ID:** iterate-2026-07-10-grade-snapshot-events
+- **Context:** The WebUI Ship's-Log Grade-Trend needs grade HISTORY, but the Control Grade is a repo aggregate the compliance dashboard overwrites on every regen — no history survived (M-Pre-3). No producer emitted a durable per-run grade record for the WebUI to trend.
+- **Decision:** At each compliance dashboard regen, update_compliance.py appends ONE grade_snapshot{grade,score,ts} event to the durable, tracked shipwright_events.jsonl via record_event.append_event (new emit_grade_snapshot in a dedicated compliance lib module, mirroring the SBOM/test-evidence triage emitters). grade_snapshot is now a first-class record_event --type: argparse choices + build_event branch + --grade/--score args.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Idempotency (AC1): the SIMPLER contract — one snapshot per regen, appended UNCONDITIONALLY, no producer-side dedup; the WebUI dedupes consecutive identical (grade,score) points. commit omitted (finalize regen runs pre-F6 so HEAD would be stale; correlate by ts). Emit + dashboard render both call the deterministic compute_grade on the SAME collected data, so the snapshot cannot diverge from the dashboard — pinned by a real-flow parity test reading dashboard.md.
+- **Consequences:** Additive: event-log consumers (change_history/infrastructure/runtime checks) filter by known type and ignore grade_snapshot; dashboard.md output unchanged. finalize_iterate's regen now also emits a snapshot (per-run delta) — over-specified finalize tests updated to filter type==work_completed (net-zero LOC in bloat-frozen files). record_event.py kept at 784 (offset a stale docstring list) — no bloat ratchet.
+- **Rejected:** Plumb the computed GradeReport from the dashboard render into the emitter (render returns markdown, and _control_block.py is at its 296/300 ceiling; determinism on shared frozen data + a parity test give the same guarantee). Emit from control_grade.py (it is the repo-agnostic scorer — no Shipwright collectors). Producer-side no-op dedup (needs a read-back scan for no functional gain).
