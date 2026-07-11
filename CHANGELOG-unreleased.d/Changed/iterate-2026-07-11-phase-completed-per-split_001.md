@@ -1,0 +1,1 @@
+Phase events in shipwright_events.jsonl now carry a top-level splitId and phase_completed is deduplicated on (phase, splitId), enabling per-split duration bars in the WebUI PhaseRail. Single-split phases are unchanged.

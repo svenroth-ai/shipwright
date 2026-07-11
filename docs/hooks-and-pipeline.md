@@ -1793,8 +1793,8 @@ The unified event log (`shipwright_events.jsonl`) is written to by these compone
 | Project SKILL.md (Step 8) | `phase_completed` (phase=project) | Scaffolding + specs validated | Split count via `--detail` |
 | Design review-loop.md (finalize) | `phase_completed` (phase=design) | Design finalized | Screen/flow count via `--detail` |
 | Plan SKILL.md (Step 9) | `phase_completed` (phase=plan) | Sections validated | Section count via `--detail` |
-| Orchestrator (between phases) | `phase_started` | Phase begins | — |
-| Orchestrator (between phases) | `phase_completed` | Phase validated + complete | — (deduplicated by record_event.py) |
+| Orchestrator (between phases) | `phase_started` | Phase begins | `splitId` (top-level) per split |
+| Orchestrator (between phases) | `phase_completed` | Phase validated + complete | `splitId` (top-level); **deduplicated by record_event.py on `(phase, splitId)`** — a multi-split phase records one end per split; the per-phase span derives as min(`phase_started`)..max(`phase_completed`). Single-split phases carry `splitId=null` and dedup by phase alone, as before. (iterate-2026-07-11-phase-completed-per-split) |
 | Orchestrator (split loop) | `split_completed` | All sections of a split done | — |
 | Build SKILL.md (Step 10) | `work_completed` (source=build) | Section committed | — |
 | Iterate SKILL.md (F3.5) | `work_completed` (source=iterate) | Iterate change committed | — |

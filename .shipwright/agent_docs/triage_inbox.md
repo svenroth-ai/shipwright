@@ -1,12 +1,12 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-11T03:31:16.405620Z. Items waiting for triage decision.
+> Auto-generated 2026-07-11T08:01:19.386096Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 284
-- Triage: 5 | Promoted: 1 | Dismissed: 277 | Snoozed: 1
+- Total: 285
+- Triage: 5 | Promoted: 1 | Dismissed: 278 | Snoozed: 1
 
 ## Top 5 items (severity-sorted)
 
@@ -25,13 +25,6 @@
     ```
   - Promote: `triage_promote.py --id trg-d263a2bc --task-ref EXT:<ref>`
 
-### Source: iterate-B1-review-nit (1 item)
-
-<a id="trg-14d6ba20"></a>
-- **Per-split phase-duration accuracy: multi-split pipeline phases (build/plan) undercount in the tracked log** `id=trg-14d6ba20 | severity=low | kind=improvement → P3/engineering`
-  - B1 emits N phase_started (one per split phase_task, not deduped) but record_event dedups phase_completed by phase (firs…
-  - Promote: `triage_promote.py --id trg-14d6ba20 --task-ref EXT:<ref>`
-
 ### Source: iterate-B1-scope-deferral (1 item)
 
 <a id="trg-8efeb3d7"></a>
@@ -39,7 +32,12 @@
   - B1 emitted phase_started + paired phase_completed for the 7 PIPELINE phases (both run modes). The iterate flow (F0-F12)…
   - Promote: `triage_promote.py --id trg-8efeb3d7 --task-ref EXT:<ref>`
 
-### Source: manual (2 items)
+### Source: manual (3 items)
+
+<a id="trg-941d870b"></a>
+- **WebUI PhaseRail: consume per-split phase_completed events (splitId) for per-split duration bars** `id=trg-941d870b | severity=medium | kind=improvement → P2/engineering`
+  - Framework iterate-2026-07-11-phase-completed-per-split makes the tracked shipwright_events.jsonl record one phase_start…
+  - Promote: `triage_promote.py --id trg-941d870b --task-ref EXT:<ref>`
 
 <a id="trg-0e8e7f90"></a>
 - **Remove the deprecated multi-session pipeline engine (single-session is now the sole mode)** `id=trg-0e8e7f90 | severity=low | kind=improvement → P3/engineering`

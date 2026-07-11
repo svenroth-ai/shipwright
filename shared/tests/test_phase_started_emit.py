@@ -135,6 +135,52 @@ def test_emit_phase_event_decodes_child_output_with_replace(monkeypatch, tmp_pat
     assert captured.get("errors") == "replace"
 
 
+def test_emit_phase_event_forwards_split_id_from_detail(monkeypatch, tmp_path):
+    """AC3 — the emit wrapper promotes detail.splitId to a top-level --split-id
+    arg so record_event can dedup phase_completed by (phase, splitId)."""
+    import subprocess
+
+    captured: dict = {}
+
+    class _Proc:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    def fake_run(args, **_kwargs):
+        captured["args"] = args
+        return _Proc()
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    emit_phase_event(tmp_path, "phase_completed", "build",
+                     {"phaseTaskId": "ptk-x", "splitId": "02-ui", "runId": "r"})
+    args = captured["args"]
+    assert "--split-id" in args
+    assert args[args.index("--split-id") + 1] == "02-ui"
+
+
+def test_emit_phase_event_no_split_id_when_detail_split_none(monkeypatch, tmp_path):
+    """A single-split (splitId=None) phase must NOT pass --split-id — it dedups by
+    (phase, None), identical to the historical phase-only behavior."""
+    import subprocess
+
+    captured: dict = {}
+
+    class _Proc:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    def fake_run(args, **_kwargs):
+        captured["args"] = args
+        return _Proc()
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    emit_phase_event(tmp_path, "phase_completed", "project",
+                     {"phaseTaskId": "ptk-y", "splitId": None, "runId": "r"})
+    assert "--split-id" not in captured["args"]
+
+
 def test_phase_started_pairs_with_phase_completed(v2_project):
     """A full phase (SessionStart -> Stop) yields exactly one phase_started
     paired with the existing phase_completed for the same phase (AC2)."""

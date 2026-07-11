@@ -163,6 +163,24 @@ class TestAdoptedModeIndicators:
         assert "All sections reviewed" in result
         assert "n/a (adopted)" not in result
 
+    def test_multi_split_phase_counted_once(self, tmp_path: Path):
+        """AC4 — per-split phase_completed events (build fans out into splits) are
+        counted by DISTINCT phase name, so a multi-split build never overcounts
+        the '{n}/7 pipeline phases completed' indicator."""
+        phases = ["project", "design", "plan", "build", "test", "changelog", "deploy"]
+        phase_events = [{"type": "phase_completed", "phase": p} for p in phases]
+        # build fanned out into three splits → three phase_completed for "build".
+        phase_events += [
+            {"type": "phase_completed", "phase": "build", "splitId": s}
+            for s in ("02-ui", "03-api")
+        ]
+        data = _build_event_data(
+            project_root=tmp_path, adopted=False, phase_events=phase_events,
+        )
+        result = generate(data)
+        assert "| Pipeline phases completed | 7/7 |" in result
+        assert "9/7" not in result  # would be the raw list length pre-fix
+
 
 class TestWhyWarnColumn:
     """B.1 — every quality-indicator table has a 'Why warn?' 4th column;

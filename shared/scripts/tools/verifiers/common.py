@@ -204,13 +204,20 @@ def get_latest_phase_completed_event(
     Iterate 12 standardises on the ``phase`` field going forward; the
     ``source`` fallback is kept so historical event logs still match.
     """
+    def _ts(e: dict[str, Any]) -> str:
+        # Events stamp `ts` (record_event); `timestamp` is a legacy fallback. The
+        # per-split change (iterate-2026-07-11-phase-completed-per-split) makes a
+        # phase carry multiple phase_completed ends, so "latest" is now meaningful —
+        # read the real field so the max is correct, not a first-match no-op.
+        return e.get("ts") or e.get("timestamp") or ""
+
     latest: dict[str, Any] | None = None
     for event in events:
         if event.get("type") != "phase_completed":
             continue
         if event.get("phase") != phase and event.get("source") != phase:
             continue
-        if latest is None or event.get("timestamp", "") > latest.get("timestamp", ""):
+        if latest is None or _ts(event) > _ts(latest):
             latest = event
     return latest
 

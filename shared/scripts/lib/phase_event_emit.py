@@ -45,6 +45,13 @@ def emit_phase_event(
     ]
     if detail:
         args.extend(["--detail", json.dumps(detail)])
+        # Promote the splitId the caller already carries in `detail` to a
+        # top-level --split-id so record_event dedups phase_completed by
+        # (phase, splitId) — one end per split for a multi-split phase, instead
+        # of collapsing to the first (iterate-2026-07-11-phase-completed-per-split).
+        split_id = detail.get("splitId")
+        if split_id is not None:  # forward any explicit splitId (None = single-pass phase)
+            args.extend(["--split-id", str(split_id)])
     try:
         # errors="replace" guards the Windows cp1252 child-output decode
         # landmine: an undecodable byte would otherwise raise UnicodeDecodeError,
