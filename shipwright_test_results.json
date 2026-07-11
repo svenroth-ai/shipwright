@@ -39,7 +39,15 @@
     "degraded": [],
     "test_completeness": {
       "status": "complete",
-      "testable_untested": 0,
+      "counts": {
+        "untested_testable": 0,
+        "tested": 9,
+        "untestable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      },
       "behaviors": [
         {
           "behavior": "AC2/AC1: emit_grade_snapshot appends exactly ONE grade_snapshot{grade,score,ts} on a gradeable compliance regen",
