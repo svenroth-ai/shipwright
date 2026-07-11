@@ -1,44 +1,36 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-10-emit-phase-started",
-    "date": "2026-07-10",
+    "run_id": "iterate-2026-07-10-persist-session-plan",
+    "date": "2026-07-10T23:46:20.508759Z",
     "intent": "feature",
     "complexity": "medium",
     "unit": {
-      "status": "passed",
-      "passed": 442,
-      "total": 442
+      "passed": 38,
+      "total": 38,
+      "status": "pass"
     },
     "integration": {
-      "status": "passed",
-      "passed": 3,
-      "total": 3
+      "status": "n/a"
     },
     "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "n/a"
     },
     "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "n/a"
     },
     "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "n/a"
     },
     "smoke": {
-      "status": "not_run"
+      "status": "n/a"
     },
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest plugins/shipwright-run/tests/test_single_session_phase_started.py -q",
-      "tests_run": 6,
+      "runner": "uv run pytest plugins/shipwright-iterate/tests/test_session_plan.py plugins/shipwright-iterate/tests/test_session_plan_matrix.py -q",
+      "tests_run": 38,
       "exit_code": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-10-emit-phase-started/surface_verification.json",
-      "timestamp": "2026-07-10T23:05:02.173087Z",
+      "evidence_path": ".shipwright/runs/iterate-2026-07-10-persist-session-plan/surface_verification.json",
+      "timestamp": "2026-07-10T23:46:20.508759Z",
       "attempts": 1
     },
     "degraded": [],
@@ -46,82 +38,126 @@
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1/multi: SessionStart hook emits exactly one phase_started on a fresh claim (phase + runId + ts)",
+          "behavior": "AC1: classify_complexity STDOUT is byte-identical with vs without --run-id (same project-root)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_phase_started_emit.py::test_start_happy_path_emits_phase_started PASSED"
+          "evidence": "test_session_plan.py::TestStdoutUnchanged::test_run_id_does_not_change_stdout PASSED"
         },
         {
-          "behavior": "AC1/multi: idempotent SessionStart re-entry (reconnect) does NOT double-emit",
+          "behavior": "AC1: --run-id persists <run_id>.plan.json under .shipwright/agent_docs/iterates/ with the 5-key shape",
           "disposition": "tested",
-          "evidence": "test_start_idempotent_reentry_emits_single_phase_started PASSED"
+          "evidence": "TestStdoutUnchanged::test_run_id_persists_plan_file PASSED"
         },
         {
-          "behavior": "AC1/multi: a blocked SessionStart (wrong skill) never claims, so emits no phase_started",
+          "behavior": "AC1: no --run-id writes no plan file (graceful degradation / write-on-touch)",
           "disposition": "tested",
-          "evidence": "test_start_block_path_emits_no_phase_started PASSED"
+          "evidence": "TestStdoutUnchanged::test_no_run_id_writes_no_file PASSED"
         },
         {
-          "behavior": "AC2/multi: phase_started pairs with the existing phase_completed for the same phase",
+          "behavior": "AC1: persisted complexity/risk_flags equal the stdout JSON estimate/risk_flags (projection is stdout-derived)",
           "disposition": "tested",
-          "evidence": "test_phase_started_pairs_with_phase_completed PASSED"
+          "evidence": "TestStdoutUnchanged::test_persisted_fields_derive_from_stdout PASSED"
         },
         {
-          "behavior": "Shared emitter never raises on a subprocess spawn failure (best-effort contract)",
+          "behavior": "AC2: build_session_plan returns {run_id,complexity,risk_flags,phases,skips}; phases/skips disjoint & well-shaped",
           "disposition": "tested",
-          "evidence": "test_emit_phase_event_never_raises_on_subprocess_failure PASSED"
+          "evidence": "TestBuildSessionPlan::test_shape_keys + test_phases_and_skips_are_disjoint_and_shaped PASSED"
         },
         {
-          "behavior": "Shared emitter decodes child output utf-8/replace (Windows cp1252 landmine)",
+          "behavior": "Projection: medium + risk flag plans all reviews (external_plan_review/code_review/confidence_calibration)",
           "disposition": "tested",
-          "evidence": "test_emit_phase_event_decodes_child_output_with_replace PASSED"
+          "evidence": "TestBuildSessionPlan::test_medium_with_risk_plans_all_reviews PASSED"
         },
         {
-          "behavior": "AC1/single: single-session-next emits one phase_started with runId in detail",
+          "behavior": "Projection: trivial + no risk skips interview/iterate_spec/reviews with non-empty reasons",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-run/tests/test_single_session_phase_started.py::test_single_session_next_emits_phase_started PASSED"
+          "evidence": "TestBuildSessionPlan::test_trivial_no_risk_skips_reviews PASSED"
         },
         {
-          "behavior": "AC1/single: idempotent re-dispatch (crash-resume) does NOT double-emit",
+          "behavior": "Projection: small + touches_io_boundary keeps confidence_calibration + code_review planned",
           "disposition": "tested",
-          "evidence": "test_single_session_reclaim_does_not_double_emit PASSED"
+          "evidence": "TestBuildSessionPlan::test_small_io_boundary_keeps_calibration PASSED"
         },
         {
-          "behavior": "Run-plugin emitters never raise on a subprocess spawn failure",
+          "behavior": "Projection: small + non-io risk (touches_auth) keeps code_review but SKIPS calibration (io-boundary-specific rule)",
           "disposition": "tested",
-          "evidence": "test_run_plugin_emitters_never_raise_on_subprocess_failure PASSED"
+          "evidence": "TestBuildSessionPlan::test_small_non_io_risk_skips_only_calibration PASSED"
         },
         {
-          "behavior": "AC2/single: single-session-apply emits paired phase_completed (same runId/phase, start.ts <= end.ts)",
+          "behavior": "Round-trip (producer->file->consumer): json.loads readback equals build_session_plan output",
           "disposition": "tested",
-          "evidence": "test_single_session_apply_emits_paired_phase_completed PASSED"
+          "evidence": "TestPersistRoundTrip::test_round_trip_shape_matches_producer PASSED"
         },
         {
-          "behavior": "AC2/single: an ok=False result emits phase_failed (mirror of phase_session_stop), not phase_completed",
+          "behavior": "Plan file lands at .shipwright/agent_docs/iterates/<run_id>.plan.json",
           "disposition": "tested",
-          "evidence": "test_single_session_apply_ok_false_emits_phase_failed PASSED"
+          "evidence": "TestPersistRoundTrip::test_writes_expected_location PASSED"
         },
         {
-          "behavior": "AC2/single: a full pipeline walk yields exactly one phase_started per phase",
+          "behavior": "Boundary co-tenancy: plan files alone yield no history prior (never counted as finalized entries)",
           "disposition": "tested",
-          "evidence": "test_single_session_full_walk_one_started_per_phase PASSED"
+          "evidence": "TestPlanFilesExcludedFromHistory::test_plan_files_alone_yield_no_prior PASSED"
         },
         {
-          "behavior": "AC3: no event-schema regression; existing consumers (compliance change_history collector + freshness verifiers) tolerate phase_started/phase_completed",
+          "behavior": "Boundary co-tenancy: adding plan files never shifts an existing history prior",
           "disposition": "tested",
-          "evidence": "shared/tests/test_record_event.py + test_infrastructure_checks.py + test_verifiers_runtime.py + test_events_log_ssot.py PASSED (108 shared affected green)"
+          "evidence": "TestPlanFilesExcludedFromHistory::test_plan_files_do_not_shift_prior PASSED"
         },
         {
-          "behavior": "AC4: footprint stays within the emit sites; bloat baseline not ratcheted",
-          "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "reason": "all 6 touched files <=300 LOC (max phase_session_start.py=292); shipwright_bloat_baseline.json unmodified (git status clean); the anti-ratchet gate (test_bloat_gate_anti_ratchet_clear.py + pre-commit hook) enforces no ratchet mechanically"
+          "behavior": "Security: a crafted run_id (../../evil) stays contained under the iterates dir",
+          "disposition": "tested",
+          "evidence": "TestPersistRoundTrip::test_run_id_traversal_stays_contained PASSED"
+        },
+        {
+          "behavior": "Fail-soft: persist_session_plan_safe swallows OSError (returns None, never aborts the session)",
+          "disposition": "tested",
+          "evidence": "TestPersistRoundTrip::test_safe_wrapper_swallows_io_error PASSED"
+        },
+        {
+          "behavior": "Robustness: a partial result (missing estimate) defaults complexity=trivial, risk_flags=[]",
+          "disposition": "tested",
+          "evidence": "TestPersistRoundTrip::test_missing_estimate_defaults_trivial PASSED"
+        },
+        {
+          "behavior": "FIX 1: external PLAN review is §6 medium+ (auto) only — SKIPPED at trivial/small even WITH a risk flag (io/auth), which floor to small",
+          "disposition": "tested",
+          "evidence": "test_session_plan.py::TestBuildSessionPlan::test_external_plan_review_is_medium_plus_only + test_small_io_boundary_keeps_calibration/test_small_non_io_risk_skips_only_calibration PASSED"
+        },
+        {
+          "behavior": "FIX 2: the projection matches the NORMATIVE §6 Phase Matrix across trivial/small/medium x {no-risk, generic-risk, touches_io_boundary} (drift guard)",
+          "disposition": "tested",
+          "evidence": "test_session_plan_matrix.py::TestSixPhaseMatrixPinning::test_gated_phases_match_phase_matrix[9 cases] PASSED"
+        },
+        {
+          "behavior": "confidence_calibration is §6-exact: skipped at trivial (any risk), planned at small only for touches_io_boundary, planned at medium+",
+          "disposition": "tested",
+          "evidence": "test_session_plan_matrix.py::TestSixPhaseMatrixPinning parametrized cells PASSED"
+        },
+        {
+          "behavior": "FIX 3: persist_session_plan validates run_id against RUN_ID_STRICT and raises ValueError on a malformed run_id (traversal/NUL/non-canonical)",
+          "disposition": "tested",
+          "evidence": "test_session_plan_matrix.py::TestRunIdValidation::test_persist_raises_on_bad_run_id PASSED"
+        },
+        {
+          "behavior": "FIX 3: persist_session_plan_safe is fail-soft for OSError/ValueError/TypeError (malformed run_id, NUL, None project_root) — returns None, writes nothing",
+          "disposition": "tested",
+          "evidence": "TestRunIdValidation::test_safe_returns_none_and_writes_nothing_for_bad_run_id[7 cases] + test_safe_returns_none_for_none_project_root PASSED"
+        },
+        {
+          "behavior": "FIX 4: plan_path keeps crafted run_ids (../.., absolute, C:\\ drive-letter, a/b/c) contained under the iterates dir",
+          "disposition": "tested",
+          "evidence": "TestRunIdValidation::test_plan_path_crafted_run_ids_stay_under_iterates PASSED"
+        },
+        {
+          "behavior": "FIX 4: the .gitignore carries the /.shipwright/agent_docs/iterates/*.plan.json rule (plan file stays gitignored)",
+          "disposition": "tested",
+          "evidence": "TestRunIdValidation::test_gitignore_ignores_plan_files PASSED"
         }
       ],
       "counts": {
-        "testable": 13,
-        "tested": 13,
-        "untestable": 1,
-        "untested_testable": 0
+        "tested": 23,
+        "untestable": 0,
+        "untested_testable": 0,
+        "total": 23
       },
       "enumeration_basis": {
         "acs": 4,

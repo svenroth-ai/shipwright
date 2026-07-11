@@ -117,17 +117,11 @@ RISK_TAXONOMY = {
         # serialized format on disk drifts (motivating example: env
         # iterate's BOM + inline-comment bugs that survived 47 unit tests
         # AND two external reviews). Diff-driven detection uses
-        # IO_BOUNDARY_FILE_PATTERNS via is_io_boundary_change().
-        #
-        # E spec MEDIUM-A1: anchored / specific patterns only. The original
-        # bare verb prefixes (`parse_`, `load_`, `write_`, `\bdump\b`,
-        # `serialize`, `write_text`, `read_text`) fired on unrelated
-        # prompts ("rewrite the load_user route", "improve dump utility",
-        # "add parse_query helper", "rewrite the page header"). Replaced
-        # with anchored function names + stdlib calls + concrete file
-        # patterns. The diff-driven `is_io_boundary_change()` path-match
-        # remains the primary detection — these patterns only cover
-        # prompt-text classification.
+        # IO_BOUNDARY_FILE_PATTERNS via is_io_boundary_change() (the primary
+        # detection). E spec MEDIUM-A1: prompt patterns are anchored function
+        # names + stdlib calls + concrete file names only — the original loose
+        # verb prefixes (`parse_`, `load_`, `write_`, `serialize`, …) fired on
+        # unrelated prompts ("rewrite the page header", "add parse_query").
         "patterns": [
             # Concrete file patterns (still tight).
             r"\.env\b",
@@ -320,10 +314,16 @@ def main():
         "--project-root",
         help="Enables the history prior from .shipwright/agent_docs/iterates/",
     )
+    parser.add_argument("--run-id", help="Persist the session plan under .shipwright/ (requires --project-root; no-ops otherwise)")
     args = parser.parse_args()
 
     result = classify(args.message, args.sync_config, args.project_root)
     print(json.dumps(result, indent=2))
+    # Additive, opt-in: persist the WebUI session plan (never perturbs stdout;
+    # fail-soft so a persist error can't abort the iterate session).
+    if args.run_id and args.project_root:
+        from session_plan import persist_session_plan_safe
+        persist_session_plan_safe(result, args.run_id, args.project_root)
 
 
 if __name__ == "__main__":

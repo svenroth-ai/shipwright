@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-10T22:06:35.593529+00:00
+Generated: 2026-07-10T23:48:15.171077+00:00
 
 ## Requirements Coverage
 
@@ -27,6 +27,7 @@ Generated: 2026-07-10T22:06:35.593529+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-b769510b"></a>When the pipeline sizes up a change, it now saves a small plan file listing which steps it will run and which it will skip, so the web dashboard can show that plan for the change. | iterate | feature |  | 17/17 | — | 2026-07-10 |
 | <a id="evt-8045591b"></a>The pipeline now records the moment each phase begins, so the dashboard can show how long each phase took. | iterate | feature |  | 7/7 | — | 2026-07-10 |
 | <a id="evt-63a35662"></a>Generated project instruction files now tell future sessions to keep rules short (one line plus a pointer to the decision record), and a new check blocks any single change that grows that file by more than 30 lines. | iterate | change |  | 4749/4749 | — | 2026-07-10 |
 | <a id="evt-b2a0eebf"></a>Design mockup-review feedback files are now treated as throwaway scratch (kept out of the project history), and the design docs explain how the new single-session UI shows the mockups and captures feedback. | iterate | change |  | 69/69 | — | 2026-07-10 |
@@ -323,7 +324,7 @@ Generated: 2026-07-10T22:06:35.593529+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 289 |
+| Iterate changes | 290 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

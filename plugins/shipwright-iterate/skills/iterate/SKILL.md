@@ -81,10 +81,10 @@ Priority: `--type` flag → `[Shipwright] Detected: ...` hook context → `class
 ```bash
 uv run "{plugin_root}/scripts/lib/classify_complexity.py" \
   --message "{user_message}" --sync-config "{project_root}/shipwright_sync_config.json" \
-  --project-root "{project_root}"
+  --project-root "{project_root}" --run-id "{run_id}"
 ```
 
-Parse: `estimate`, `confidence`, `risk_flags`, `enforcements`, `signals` (incl. `signals.prior_source`). User override: `--complexity`. Safety floor: risk flags enforce minimums. **Fall-through default is history-calibrated:** when no scope keyword matches, the estimate is the median final complexity of the last finalized runs (`.shipwright/agent_docs/iterates/`, `prior_source: history`, capped at medium) instead of bare `trivial`; a keyword match always wins (`prior_source: keyword`); cold start keeps `trivial` (`prior_source: default`). **Stage 2: Repo Scout** — Quick (trivial/small) or Thorough (medium); see `references/iteration-planning.md`. After Stage 2 complexity is **locked** (unless mid-flight escalation).
+Parse: `estimate`, `confidence`, `risk_flags`, `enforcements`, `signals` (incl. `signals.prior_source`). Passing `--run-id` additively persists the session plan (phases/skips/risk_flags/complexity) to `.shipwright/agent_docs/iterates/{run_id}.plan.json` for the WebUI scoped Plan-Card — stdout is byte-unchanged. User override: `--complexity`. Safety floor: risk flags enforce minimums. **Fall-through default is history-calibrated:** when no scope keyword matches, the estimate is the median final complexity of the last finalized runs (`.shipwright/agent_docs/iterates/`, `prior_source: history`, capped at medium) instead of bare `trivial`; a keyword match always wins (`prior_source: keyword`); cold start keeps `trivial` (`prior_source: default`). **Stage 2: Repo Scout** — Quick (trivial/small) or Thorough (medium); see `references/iteration-planning.md`. After Stage 2 complexity is **locked** (unless mid-flight escalation).
 
 ### F. Print Planned Run Summary
 

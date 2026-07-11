@@ -55,6 +55,10 @@
 # every Stop event in every plugin; the tracked variants are produced only by
 # iterate-finalize as the single producer (ADR-089, 2026-05-27).
 /.shipwright/agent_docs/runtime/
+# Iterate session-plan snapshots (<run_id>.plan.json) — transient run-scoped
+# state written at classify time for the WebUI scoped Plan-Card; superseded by
+# the durable <run_id>.json at finalize. iterate-2026-07-10-persist-session-plan.
+/.shipwright/agent_docs/iterates/*.plan.json
 /.shipwright/compliance/skill-compliance/
 # Detective-audit report (run_audit.py / /shipwright-compliance) — transient,
 # regenerated each run, not in audit_staleness.DOC_REGISTRY. The .json was

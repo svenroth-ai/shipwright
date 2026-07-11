@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-07-10T22:06:35.593529+00:00
-Total commits: 1122
+Generated: 2026-07-10T23:48:15.171077+00:00
+Total commits: 1124
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 325
-    "feat" : 301
+    "feat" : 303
     "chore" : 237
     "docs" : 145
     "refactor" : 67
@@ -350,10 +350,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 301 commits
+### Features (feat) — 303 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-11 | iterate | persist session plan as gitignored <run_id>.plan.json for the WebUI Plan-Card | e12cc506555b |
+| 2026-07-11 | run | emit phase_started + paired phase_completed at pipeline phase entry/exit (M-Pre-1) (#357) | a087173639e5 |
 | 2026-07-10 | iterate | CLAUDE.md keep-it-lean rule + 30-line net-growth gate (#356) | 5b4bd3002805 |
 | 2026-07-08 | run | single-session is the default + sole pipeline mode; deprecate multi-session (SS8) (#353) | 78603ae28f50 |
 | 2026-07-08 | run | single-session resumability, recovery & observability (SS5) (#349) | abfb485bfb75 |
@@ -1191,7 +1193,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1122 |
+| Total commits | 1124 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1122 |
+| Human-authored commits | 1124 |
 

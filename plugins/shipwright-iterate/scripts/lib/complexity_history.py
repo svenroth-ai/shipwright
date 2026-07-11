@@ -64,6 +64,12 @@ def load_history_prior(project_root) -> dict | None:
 
     valid: list[tuple[datetime, str, int]] = []
     for path in store.glob("*.json"):
+        # `<run_id>.plan.json` is the transient session-plan sibling written by
+        # session_plan.persist_session_plan — NOT a finalized history entry.
+        # (It lacks `date` so it is skipped below anyway; this is the explicit,
+        # forward-safe guard so a shape change can't silently pollute the prior.)
+        if path.name.endswith(".plan.json"):
+            continue
         try:
             if not path.is_file() or path.stat().st_size > MAX_ENTRY_BYTES:
                 continue
