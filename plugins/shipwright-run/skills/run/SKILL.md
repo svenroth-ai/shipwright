@@ -35,14 +35,16 @@ Usage:
 
 Pipeline: Project → Design → Plan → Build → Test → Changelog → Deploy
 
-Security scanning is no longer part of the pipeline — run /shipwright-security
-manually or activate .github/workflows/security.yml when ready.
+Security scanning is out-of-band — run /shipwright-security or activate .github/workflows/security.yml.
 
-Each phase runs in its own external Claude CLI session.
-This master session writes the pipeline spec, prints the first
-launch card, then ends — phase Stop hooks plan the next phase.
+Each phase runs in its own external Claude CLI session. This master session
+writes the pipeline spec, prints the first launch card, then ends.
 
 For ongoing changes to existing projects, use /shipwright-iterate instead.
+
+In plain words (shared index → docs/guide.md Appendix A):
+  IREB-Spec: Description of what the app should do, who it's for, and what it must not do
+  ADR: Log of architectural decisions with rationale (why this database, why this pattern)
 ================================================================================
 ```
 
@@ -55,8 +57,6 @@ For ongoing changes to existing projects, use /shipwright-iterate instead.
 If `shipwright_run_config.json` already exists at `schemaVersion: 2`, this is a
 **resume** — jump to [Resume Support](#resume-support) below before continuing
 the new-pipeline flow.
-
-> **Note:** For ongoing changes to existing projects (quick features, bug fixes, small changes), use `/shipwright-iterate` instead of `/shipwright-run`.
 
 ### C. Discover Plugin Root
 

@@ -35,11 +35,11 @@ suffix, the helper does NOT fail the run — it degrades to the legacy interview
 ## Run the intake
 
 ```bash
-uv run "{plugin_root}/scripts/lib/brief_intake.py" --brief "{brief_path_or_payload}"
+uv run "{plugin_root}/../../shared/scripts/lib/brief_intake.py" --brief "{brief_path_or_payload}"
 ```
 
-The helper (`scripts/lib/brief_intake.py`, unit-tested in
-`tests/test_brief_intake.py`) returns:
+The helper (`shared/scripts/lib/brief_intake.py`, shared by `run` + `adopt`,
+unit-tested in `shared/tests/test_brief_intake.py`) returns:
 
 ```json
 {

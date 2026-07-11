@@ -1,0 +1,1 @@
+The /shipwright-run and /shipwright-iterate intro banners now surface plain-language explanations of jargon (IREB-Spec, ADR, Conventional Commits) drawn verbatim from the shared Plain-Language Index in docs/guide.md, with a copy-parity test guarding against drift.

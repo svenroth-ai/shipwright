@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-11T02:20:22.384564+00:00
+Generated: 2026-07-11T03:31:12.413208+00:00
 
 ## Requirements Coverage
 
@@ -27,6 +27,7 @@ Generated: 2026-07-11T02:20:22.384564+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-1ed6cf81"></a>B5: /shipwright-adopt accepts a WebUI brief via the shared brief_intake helper (promoted to shared/scripts/lib) + a thin adopt_brief_intake adapter; run + iterate banners surface the shared plain-language index with a copy-parity test. | iterate | feature |  | — | — | 2026-07-11 |
 | <a id="evt-4d080aae"></a>The Shipwright starter now remembers the answers you gave the setup wizard, so it does not ask them again. | iterate | feature |  | 28/28 | — | 2026-07-11 |
 | <a id="evt-9806da2f"></a>grade_snapshot event per compliance regen for the WebUI Control-Grade trend | iterate | feature |  | — | — | 2026-07-11 |
 | <a id="evt-b769510b"></a>When the pipeline sizes up a change, it now saves a small plan file listing which steps it will run and which it will skip, so the web dashboard can show that plan for the change. | iterate | feature |  | 17/17 | — | 2026-07-10 |
@@ -326,7 +327,7 @@ Generated: 2026-07-11T02:20:22.384564+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 292 |
+| Iterate changes | 293 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
