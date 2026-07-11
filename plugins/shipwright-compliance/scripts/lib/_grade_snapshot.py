@@ -14,11 +14,14 @@ full regen cadence for the trend, while the WebUI dedupes consecutive identical
 unchanged-grade no-op regen — would need a read-back-last-snapshot scan here for
 no functional gain, so the simpler contract wins.
 
-Additive + best-effort: consumers that don't know ``grade_snapshot`` skip it
-(``change_history.collect_events`` filters by known type), and any failure here
-returns ``{"appended": 0, ...}`` without aborting the compliance regen — the
-same fail-soft contract as the SBOM / test-evidence triage emitters in
-``update_compliance``.
+Additive: consumers that don't know ``grade_snapshot`` skip it
+(``change_history.collect_events`` filters by known type) and the dashboard
+output is unchanged. Fail-soft is SPLIT across two layers: this emitter only
+*skips* (returns ``{"appended": 0, "reason": "not_gradeable"}``) when there is
+no gradeable score; a real append failure RAISES and is caught by
+``update_compliance``'s best-effort wrapper (which records
+``{"appended": 0, "error": ...}``), so the compliance regen is never aborted —
+the same contract as the SBOM / test-evidence triage emitters.
 """
 
 from __future__ import annotations
@@ -39,8 +42,16 @@ if TYPE_CHECKING:
 def emit_grade_snapshot(data: ComplianceData) -> dict:
     """Append one ``grade_snapshot`` event for the just-regenerated grade.
 
+    The grade is RECOMPUTED here via ``compute_grade(build_grade_inputs(data))``
+    rather than reusing the dashboard's ``GradeReport``. That is deliberate: it
+    is the SAME deterministic function on the SAME frozen ``data`` the dashboard
+    render consumed, so the two cannot diverge — this independent recompute IS
+    the parity guarantee (pinned by a real-flow test). Do NOT refactor to cache
+    or thread the report through the render path.
+
     Returns a small result dict (``appended`` count + grade/score, or a skip
-    ``reason``) for the ``update_compliance`` output payload.
+    ``reason``) for the ``update_compliance`` output payload. Raises on a real
+    append failure (the caller's best-effort wrapper catches it).
     """
     report = compute_grade(build_grade_inputs(data))
     if not report.gradeable or report.score is None:

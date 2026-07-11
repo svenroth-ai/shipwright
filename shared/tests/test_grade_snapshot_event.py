@@ -18,6 +18,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 _TOOLS = Path(__file__).resolve().parents[1] / "scripts" / "tools"
 if str(_TOOLS) not in sys.path:
     sys.path.insert(0, str(_TOOLS))
@@ -81,6 +83,36 @@ class TestGradeSnapshotBuildEvent:
         ])
         event = build_event(args)
         assert isinstance(event["score"], float)
+
+
+class TestGradeSnapshotValidation:
+    """grade_snapshot lands on the DURABLE log — the manual CLI must not be able
+    to write a null/malformed snapshot (the auto-emitter is already safe)."""
+
+    def test_missing_score_rejected(self):
+        args = parse_args(["--project-root", ".", "--type", "grade_snapshot",
+                           "--grade", "A"])
+        with pytest.raises(ValueError, match="requires --grade and --score"):
+            build_event(args)
+
+    def test_missing_grade_rejected(self):
+        args = parse_args(["--project-root", ".", "--type", "grade_snapshot",
+                           "--score", "90"])
+        with pytest.raises(ValueError, match="requires --grade and --score"):
+            build_event(args)
+
+    def test_score_out_of_range_rejected(self):
+        args = parse_args(["--project-root", ".", "--type", "grade_snapshot",
+                           "--grade", "A", "--score", "150"])
+        with pytest.raises(ValueError, match=r"in \[0, 100\]"):
+            build_event(args)
+
+    def test_score_zero_boundary_accepted(self):
+        # grade F / score 0 is a valid (worst) grade — must NOT be rejected.
+        args = parse_args(["--project-root", ".", "--type", "grade_snapshot",
+                           "--grade", "F", "--score", "0"])
+        event = build_event(args)
+        assert event["score"] == 0.0
 
 
 class TestGradeSnapshotRoundTrip:

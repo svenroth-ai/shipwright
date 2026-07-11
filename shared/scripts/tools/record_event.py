@@ -73,11 +73,8 @@ def generate_event_id() -> str:
 def _non_negative_int(value: str) -> int:
     """argparse type guard — reject negatives + non-integer strings.
 
-    Iterate B.3 (ADR-057) — reviewer-flagged H3: layer counts must be
-    non-negative or the downstream FAIL-triage producer renders
-    nonsense (`-2/0 failing`). Argparse's default ``type=int`` accepts
-    negatives; this wrapper raises ``ArgumentTypeError`` so invalid
-    inputs surface at the CLI boundary, not deep in the producer.
+    Iterate B.3 (ADR-057): layer counts must be non-negative or the FAIL-triage
+    producer renders nonsense; raise ``ArgumentTypeError`` at the CLI boundary.
     """
     try:
         n = int(value)
@@ -319,12 +316,15 @@ def build_event(args: argparse.Namespace) -> dict:
             event["detail"] = args.detail
 
     elif args.type == "grade_snapshot":
-        # Control Grade snapshot appended once per compliance dashboard regen
-        # (M-Pre-3) so the WebUI Ship's-Log can trend the grade. ``commit`` is
-        # optional — the finalize-time regen runs BEFORE F6, so no SHA yet.
+        # grade_snapshot lands on the DURABLE log — require a valid grade + a
+        # 0-100 score (the auto-emitter guarantees this; harden the manual CLI).
+        if not args.grade or args.score is None:
+            raise ValueError("grade_snapshot requires --grade and --score")
+        if not 0.0 <= args.score <= 100.0:
+            raise ValueError(f"grade_snapshot --score must be in [0, 100], got {args.score}")
         event["grade"] = args.grade
         event["score"] = args.score
-        if args.commit:
+        if args.commit:  # optional — the finalize-time regen runs BEFORE F6
             event["commit"] = args.commit
 
     return event

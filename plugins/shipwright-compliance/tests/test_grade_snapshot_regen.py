@@ -100,7 +100,9 @@ class TestEmitGradeSnapshot:
         data = _gradeable_data(tmp_path)
         result = emit_grade_snapshot(data)
         dashboard_md = generate(data)
+        # Both the grade LETTER and the (int score)/100 the dashboard renders.
         assert f"Control Grade: **{result['grade']}**" in dashboard_md
+        assert f"({int(result['score'])}/100)" in dashboard_md
 
 
 class TestAdditiveConsumer:
@@ -165,4 +167,6 @@ class TestComplianceRegenComposition:
         # collects `data` once and feeds the SAME object to both the dashboard
         # render and the emitter, so the logged grade cannot diverge from what
         # the dashboard shows for that regen.
-        assert f"Control Grade: **{snaps[0]['grade']}**" in dashboard_md.read_text(encoding="utf-8")
+        md_text = dashboard_md.read_text(encoding="utf-8")
+        assert f"Control Grade: **{snaps[0]['grade']}**" in md_text
+        assert f"({int(snaps[0]['score'])}/100)" in md_text

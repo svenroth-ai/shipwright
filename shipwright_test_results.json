@@ -1,7 +1,7 @@
 {
   "iterate_latest": {
     "run_id": "iterate-2026-07-10-grade-snapshot-events",
-    "date": "2026-07-11T01:09:35.413091+00:00",
+    "date": "2026-07-11T01:41:04.304459+00:00",
     "intent": "feature",
     "complexity": "medium",
     "unit": {
@@ -30,10 +30,10 @@
     "surface_verification": {
       "surface": "cli",
       "runner": "uv run pytest shared/tests/test_grade_snapshot_event.py -q",
-      "tests_run": 4,
+      "tests_run": 8,
       "exit_code": 0,
       "evidence_path": ".shipwright/runs/iterate-2026-07-10-grade-snapshot-events/surface_verification.json",
-      "timestamp": "2026-07-11T01:09:35.413091+00:00",
+      "timestamp": "2026-07-11T01:41:04.304459+00:00",
       "attempts": 1
     },
     "degraded": [],
@@ -41,7 +41,7 @@
       "status": "complete",
       "counts": {
         "untested_testable": 0,
-        "tested": 9,
+        "tested": 10,
         "untestable": 0
       },
       "enumeration_basis": {
@@ -68,7 +68,7 @@
           "evidence": "TestEmitGradeSnapshot::test_not_gradeable_repo_emits_nothing PASSED"
         },
         {
-          "behavior": "No divergence: emitted snapshot grade == deterministic dashboard-rendered grade (same compute_grade on same data)",
+          "behavior": "No divergence: emitted snapshot grade AND (int score)/100 == the deterministic dashboard-rendered grade/score (same compute_grade on same data)",
           "category": "unit",
           "disposition": "tested",
           "evidence": "TestEmitGradeSnapshot::test_snapshot_grade_matches_dashboard PASSED"
@@ -102,6 +102,12 @@
           "category": "unit",
           "disposition": "tested",
           "evidence": "TestGradeSnapshotRoundTrip::test_append_then_read PASSED"
+        },
+        {
+          "behavior": "record_event grade_snapshot CLI hardening: build_event rejects a missing grade/score or an out-of-range (not 0-100) score so a manual CLI cannot write a malformed snapshot to the durable log",
+          "category": "unit",
+          "disposition": "tested",
+          "evidence": "test_grade_snapshot_event.py::TestGradeSnapshotValidation (missing_score/missing_grade/out_of_range/zero_boundary) PASSED"
         }
       ]
     }
