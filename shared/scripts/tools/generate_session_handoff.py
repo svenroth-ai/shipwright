@@ -543,13 +543,16 @@ def generate_handoff(
         # Summary
         work_events = [e for e in events if e.get("type") == "work_completed"]
         iterate_events = [e for e in work_events if e.get("source") == "iterate"]
-        phase_completed = [e for e in events if e.get("type") == "phase_completed"]
+        # Count DISTINCT phase names: a multi-split phase now records one
+        # phase_completed PER split (iterate-2026-07-11-phase-completed-per-split),
+        # so a raw list length would overcount "N phases completed".
+        completed_phases = {e.get("phase") for e in events if e.get("type") == "phase_completed"}
 
         lines += [
             "",
             "## Recovery",
             "",
-            f"- **Pipeline**: {len(phase_completed)} phases completed",
+            f"- **Pipeline**: {len(completed_phases)} phases completed",
             f"- **Total work events**: {len(work_events)}",
         ]
         if iterate_events:

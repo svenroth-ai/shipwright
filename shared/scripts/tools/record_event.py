@@ -138,10 +138,24 @@ def has_commit(project_root: Path, commit: str, section: str | None = None) -> b
     return False
 
 
-def has_phase_event(project_root: Path, phase: str) -> bool:
-    """Check if a phase_completed event for this phase already exists."""
+def has_phase_event(project_root: Path, phase: str, split_id: str | None = None) -> bool:
+    """Check if a phase_completed event for this ``(phase, splitId)`` already exists.
+
+    The dedup identity is the ``(phase, splitId)`` PAIR, not ``phase`` alone. A
+    multi-split pipeline phase (build/plan fan out one phase_task per split, all
+    sharing the same ``phase``) records ONE phase_completed per split, so the
+    tracked log keeps every split's end — the LAST split's end, which bounds the
+    true per-phase span, is no longer discarded by first-wins dedup. Per-split
+    duration bars derive from these; the per-phase span is min(start)..max(end).
+
+    A single-split phase carries ``splitId=None`` → dedups by ``(phase, None)``,
+    identical to the historical phase-only behavior (zero back-compat drift).
+    Origin: iterate-2026-07-11-phase-completed-per-split (per-split accuracy).
+    """
     for event in read_events(project_root):
-        if event.get("type") == "phase_completed" and event.get("phase") == phase:
+        if (event.get("type") == "phase_completed"
+                and event.get("phase") == phase
+                and event.get("splitId") == split_id):
             return True
     return False
 
@@ -242,6 +256,16 @@ def build_event(args: argparse.Namespace) -> dict:
         # emits these for a failed phase / an owner-CAS-rejected stale stop. They
         # carry phase + (JSON) detail like phase_completed but are NOT phase-deduped.
         event["phase"] = args.phase
+        # splitId is a first-class top-level field (not only inside `detail`) so
+        # phase_completed can dedup by (phase, splitId) and consumers can pair /
+        # bar per split without parsing the detail blob. Absent for single-split
+        # phases → phase-only dedup, unchanged.
+        # (iterate-2026-07-11-phase-completed-per-split)
+        # `is not None` (not truthiness): forward any explicitly-supplied splitId
+        # so the (phase, splitId) identity is exact — mirrors has_phase_event's
+        # `== split_id` comparison, which distinguishes None from a value.
+        if args.split_id is not None:
+            event["splitId"] = args.split_id
         if args.detail:
             event["detail"] = args.detail
 
@@ -388,8 +412,14 @@ def append_event_idempotent(
                 return None, {"reason": "duplicate_commit",
                               "commit": event["commit"], "section": section}
         if event.get("type") == "phase_completed" and event.get("phase"):
-            if has_phase_event(project_root, event["phase"]):
-                return None, {"reason": "duplicate_phase", "phase": event["phase"]}
+            split_id = event.get("splitId")
+            if has_phase_event(project_root, event["phase"], split_id):
+                skip = {"reason": "duplicate_phase", "phase": event["phase"]}
+                # Only surface splitId when present so a single-split (phase-only)
+                # skip payload stays byte-identical to the historical shape.
+                if split_id is not None:
+                    skip["splitId"] = split_id
+                return None, skip
         with open(path, "a", encoding="utf-8") as fp:
             fp.write(line)
             fp.flush()
@@ -551,6 +581,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     # phase_started / phase_completed
     p.add_argument("--phase", help="Phase name (project, plan, build, ...)")
     p.add_argument("--detail", help="Phase detail (e.g. deploy URL, PR URL)")
+    p.add_argument("--split-id",
+                   help="Split identifier for a per-split phase event (e.g. "
+                        "01-foundation). Promoted to a top-level `splitId` field; "
+                        "widens the phase_completed dedup key to (phase, splitId) "
+                        "so a multi-split phase records one end per split. Omit for "
+                        "single-pass phases (dedup by phase alone, unchanged).")
 
     # grade_snapshot
     p.add_argument("--grade", help="Control Grade letter, e.g. A (grade_snapshot)")

@@ -111,6 +111,23 @@ def test_get_latest_phase_completed_matches_source_fallback():
     assert get_latest_phase_completed_event(events, "build") is not None
 
 
+def test_get_latest_phase_completed_event_picks_newest_by_ts():
+    """Real events stamp ``ts`` (not ``timestamp``). With per-split multiplicity
+    (iterate-2026-07-11-phase-completed-per-split) 'latest' is meaningful — the
+    helper must order by the real ``ts`` field, not return the first match."""
+    events = [
+        {"type": "phase_completed", "phase": "build", "splitId": "01",
+         "ts": "2026-04-14T10:00:00Z"},
+        {"type": "phase_completed", "phase": "build", "splitId": "03",
+         "ts": "2026-04-14T18:00:00Z"},
+        {"type": "phase_completed", "phase": "build", "splitId": "02",
+         "ts": "2026-04-14T12:00:00Z"},
+    ]
+    latest = get_latest_phase_completed_event(events, "build")
+    assert latest is not None
+    assert latest["ts"] == "2026-04-14T18:00:00Z"  # last split's end, not the first
+
+
 # ---------------------------------------------------------------------------
 # C1-C5 generic canon
 # ---------------------------------------------------------------------------

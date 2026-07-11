@@ -241,6 +241,16 @@ def _is_entry_file(path: Path) -> bool:
         return False
     if not path.name.endswith(ITERATE_FILE_SUFFIX):
         return False
+    # Reject secondary-extension sidecars like ``<run_id>.plan.json`` — the
+    # gitignored WebUI session-plan card (#358) lives in THIS same dir and would
+    # otherwise be mistaken for an entry: it carries no ``date``, so it sorts as
+    # the retention "oldest" and its ``unlink(entry_file_for(run_id))`` deletes
+    # the REAL ``<run_id>.json`` entry, and it shadows ``find_entry_by_run_id``.
+    # A canonical entry stem carries no ``.`` (``sanitize_run_id_for_filename``
+    # maps ``.`` → ``-``), so a dot in the stem marks a non-entry sidecar.
+    # (iterate-2026-07-11-phase-completed-per-split)
+    if "." in path.name[: -len(ITERATE_FILE_SUFFIX)]:
+        return False
     try:
         if path.stat().st_size > MAX_ENTRY_FILE_BYTES:
             return False

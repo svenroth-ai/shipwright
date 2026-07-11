@@ -341,6 +341,32 @@ class TestReadEntries:
         assert len(entries) == 1
         assert entries[0]["run_id"] == "iterate-2026-04-23-valid"
 
+    def test_skips_plan_json_sidecar(self, tmp_path):
+        """The gitignored WebUI session-plan card `<run_id>.plan.json` (#358) lives
+        in this same dir and matches `iterate-*.json`. It carries no `date`, so if
+        the reader accepted it, it would sort as the retention 'oldest' and its
+        unlink(entry_file_for(run_id)) would delete the REAL `<run_id>.json` entry,
+        and it would shadow find_entry_by_run_id. It must be excluded."""
+        d = iterates_dir(tmp_path)
+        d.mkdir(parents=True)
+        rid = "iterate-2026-04-23-valid"
+        # The dateless plan sidecar for the SAME run_id (distinct complexity so a
+        # wrong resolution would be caught).
+        (d / f"{rid}.plan.json").write_text(
+            json.dumps({"run_id": rid, "phases": [], "complexity": "large"}),
+            encoding="utf-8",
+        )
+        _write_entry_file(tmp_path, _valid_entry(run_id=rid))
+
+        entries = read_iterate_entries(tmp_path)
+        # Only the canonical entry, and it carries the real date (not the sidecar).
+        assert len(entries) == 1
+        assert entries[0]["run_id"] == rid
+        assert entries[0].get("date")  # the real entry, not the dateless sidecar
+        # find_entry_by_run_id resolves to the real entry, not the plan sidecar.
+        found = find_entry_by_run_id(tmp_path, rid)
+        assert found is not None and found.get("complexity") == "medium" and found.get("date")
+
     def test_skips_oversized_file(self, tmp_path, capsys):
         d = iterates_dir(tmp_path)
         d.mkdir(parents=True)

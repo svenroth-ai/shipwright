@@ -1,26 +1,33 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-10-adopt-brief-plainbank",
-    "date": "2026-07-11T03:30:00+00:00",
-    "intent": "feature",
-    "complexity": "small",
-    "campaign": "monorepo-wow-usability-2026-07-10",
-    "sub_iterate_id": "B5",
+    "run_id": "iterate-2026-07-11-phase-completed-per-split",
+    "date": "2026-07-11",
+    "intent": "change",
+    "complexity": "medium",
+    "campaign": null,
+    "sub_iterate_id": null,
     "unit": {
-      "passed": 23,
-      "total": 23,
+      "passed": 16,
+      "total": 16,
       "status": "pass",
-      "note": "17 adopt intake (test_brief_intake_adopt.py, incl. in-process main() + loader poison-free/fail-closed) + 6 banner parity (test_banner_plain_language_parity.py); 37 moved shared brief_intake tests also green"
+      "note": "16 new unit/CLI tests for (phase,splitId) dedup, top-level splitId, 3-emitter --split-id pass-through (incl. is-not-None empty-string edge), and the 4 consumer de-dups (record_event, lifecycle-integrity, phase_started_emit, run single-session, compliance report, build dashboard, verifiers common, session handoff). Full affected suites green: shared/tests 3835, shared/scripts/tests 197, shared/scripts/tools/tests 145, run 335, compliance 966, plan 57."
     },
     "integration": {
-      "status": "n/a",
-      "note": "adopt/run/iterate SKILLs are prompts; the deterministic seams are the brief-intake helper (shared) + adopt_brief_intake adapter (unit + CLI tested) and the banner copy-parity test"
+      "passed": 2,
+      "total": 2,
+      "status": "pass",
+      "note": "test_phase_completed_per_split_integration.py — real 3-split build emit->dedup->consume composition (category:integration) + single-split back-compat; integration-tests dir 184 green."
     },
     "pgtap": {
+      "passed": 0,
+      "total": 0,
       "status": "n/a"
     },
     "e2e": {
-      "status": "n/a"
+      "passed": 0,
+      "total": 0,
+      "status": "n/a",
+      "note": "library monorepo — no app E2E surface"
     },
     "design_fidelity": {
       "status": "n/a"
@@ -29,21 +36,27 @@
       "status": "n/a"
     },
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run pytest plugins/shipwright-adopt/tests/test_brief_intake_adopt.py -q",
-      "tests_run": 17,
+      "surface": "none",
+      "justification": "Python plugin monorepo (scope=library); no in-tree app/web surface to drive. The tracked event-log change is exercised end-to-end by an in-process integration test (test_phase_completed_per_split_integration.py, real 3-split build) plus the full affected unit suites; the cross-repo WebUI PhaseRail consumer lives in shipwright-webui and is tracked via follow-up triage trg-941d870b.",
+      "runner": "uv run --with pytest --with pytest-mock pytest (shared/tests + shared/scripts/{tests,tools/tests} + run + compliance + plan + integration-tests)",
+      "tests_run": 5719,
       "exit_code": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-10-adopt-brief-plainbank/surface_verification.json",
-      "timestamp": "2026-07-11T03:30:00+00:00",
+      "evidence_path": ".shipwright/runs/iterate-2026-07-11-phase-completed-per-split/surface_verification.json",
+      "timestamp": "2026-07-11T07:20:03+00:00",
       "attempts": 1
     },
-    "degraded": [],
+    "degraded": [
+      {
+        "condition": "classifier_risk_flag_false_positive",
+        "detail": "classify_complexity flagged touches_auth from message prose; the diff touches no auth paths (src/middleware, src/lib/supabase, **/auth/**) — overridden. Authoritative diff-driven flags: cross_component (phase_session_stop hook under **/hooks/*.py) + touches_io_boundary (record_event JSON producer)."
+      }
+    ],
     "test_completeness": {
       "status": "complete",
       "counts": {
         "untested_testable": 0,
-        "tested": 15,
-        "untestable": 0
+        "tested": 14,
+        "untestable": 1
       },
       "enumeration_basis": {
         "acs": 4,
@@ -51,94 +64,95 @@
       },
       "behaviors": [
         {
-          "behavior": "AC1: adopt full brief with a description -> product_description pre-filled and brief_prefilled==['product_description'] (that Step-C question removed)",
+          "behavior": "AC1: multi-split phase records one phase_completed PER split (same phase, different splitId NOT deduped)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_brief_intake_adopt.py::test_full_brief_prefills_product_description PASSED"
+          "evidence": "test_record_event.py::TestDeduplication::test_phase_completed_different_splits_not_deduped + test_record_event_lifecycle_integrity.py::test_different_split_ids_not_deduped PASSED"
         },
         {
-          "behavior": "AC1: profile + scope stay scan-gated even with a full brief (detection over questions -- a brief never pre-answers them)",
+          "behavior": "AC2: same (phase, splitId) is deduped (crash-resume backstop, per split)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_full_brief_keeps_profile_and_scope_scan_gated PASSED"
+          "evidence": "test_record_event.py::test_phase_completed_same_split_deduped + test_record_event_lifecycle_integrity.py::test_same_split_id_deduped_with_split_in_skip PASSED"
         },
         {
-          "behavior": "AC1: run + iterate banners surface plain-language glosses that EQUAL the shared index (docs/guide.md Appendix A) verbatim",
+          "behavior": "AC2: single-split (splitId=None) back-compat — dedup by (phase, None); skip payload byte-identical; no splitId key emitted",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_banner_plain_language_parity.py::test_run_banner_matches_index + test_iterate_banner_matches_index + test_*_has_glosses PASSED"
+          "evidence": "unchanged test_skips_duplicate_phase + test_single_split_phase_unchanged + test_phase_completed_no_split_id_omits_field PASSED"
         },
         {
-          "behavior": "AC1/AC2: a brief yields FEWER questions than no-brief (adopt intake removes exactly the product-description prompt, nothing more)",
+          "behavior": "AC2: a split-tagged end and a phase-only (None) end are distinct keys (don't collide)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_full_brief_asks_fewer_questions_than_no_brief PASSED"
+          "evidence": "test_record_event_lifecycle_integrity.py::test_split_tagged_and_untagged_are_distinct PASSED"
         },
         {
-          "behavior": "AC2: the banner copy-parity test is drift-detecting -- a term surfaced on BOTH banners (ADR) must be identical, and any un-mirrored edit FAILS",
+          "behavior": "AC3: --split-id promotes splitId to a top-level field on phase_started/phase_completed/phase_failed",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_shared_terms_identical_across_surfaces PASSED; RED-verified: corrupting the iterate ADR gloss produced 2 failures, then reverted"
+          "evidence": "test_record_event.py::test_phase_event_split_id_top_level PASSED"
         },
         {
-          "behavior": "AC3 (regression): no brief -> has_brief False, brief_prefilled empty, profile/scope scan-gated -> adopt Step C unchanged",
+          "behavior": "AC3: has_phase_event keys on (phase, splitId) — matches same split, not a different split or None",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_no_brief_leaves_step_c_unchanged + test_cli_no_brief_is_legacy PASSED"
+          "evidence": "test_record_event.py::test_has_phase_event_split_id_matched PASSED"
         },
         {
-          "behavior": "AC3 (regression): run + iterate + adopt behave as today without a brief -- full suites green",
-          "category": "regression",
-          "disposition": "tested",
-          "evidence": "shipwright-run 334, shipwright-adopt 373, shipwright-iterate 476, shared 3836 PASSED (1 pre-existing unrelated campaign-backfill fail)"
-        },
-        {
-          "behavior": "Partial brief: coded answers but no description -> nothing pre-filled (product-description prompt still fires); blank/whitespace description not pre-filled",
+          "behavior": "AC3: explicit falsey (empty-string) splitId is forwarded on an `is not None` basis, not dropped (external-review hardening)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_coded_only_brief_prefills_nothing + test_blank_description_is_not_prefilled PASSED"
+          "evidence": "test_record_event.py::test_phase_event_explicit_empty_split_id_preserved + test_emit_phase_event_no_split_id_when_detail_split_none PASSED"
         },
         {
-          "behavior": "io-boundary round-trip: brief JSON producer -> file -> adopt intake consumer -> product_description recovered",
+          "behavior": "AC3: all 3 emitter wrappers forward --split-id from the splitId they carry (shared phase_event_emit, run single-session events, stop hook)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_brief_file_path_is_read + test_inline_json_payload_prefills_description PASSED; round-trip probe PASS"
+          "evidence": "test_phase_started_emit.py::test_emit_phase_event_forwards_split_id_from_detail + test_single_session_phase_started.py::test_run_plugin_emitters_forward_split_id + integration (stop hook) PASSED"
         },
         {
-          "behavior": "io-boundary human/Windows-edited: utf-8-sig BOM + CRLF + non-ASCII (umlaut/emoji) brief parses to the right product_description",
+          "behavior": "AC4: compliance phase-count counts DISTINCT phase names (multi-split build renders 7/7, not 9/7)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "boundary probes (BOM json, CRLF md, non-ASCII json) all PASS -- asymptote reached (2 clean batches, 0 findings)"
+          "evidence": "test_compliance_report.py::TestAdoptedModeIndicators::test_multi_split_phase_counted_once PASSED"
         },
         {
-          "behavior": "Robustness: malformed inline JSON falls back to free text (no crash); a non-dict JSON FILE degrades to brief-present-but-nothing-prefilled (no mis-prefill)",
+          "behavior": "Consumer: session-handoff Recovery counts distinct phases (not the raw per-split event count)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_malformed_inline_json_does_not_crash + test_non_dict_json_file_prefills_nothing PASSED"
+          "evidence": "test_generate_session_handoff.py::test_recovery_counts_distinct_phases_not_per_split_events PASSED"
         },
         {
-          "behavior": "Security: an explicit-but-missing brief file degrades to no-brief (never a half-read/path-string description); --brief is data, disallowed-suffix path never slurped",
+          "behavior": "Consumer: build-dashboard Pipeline 'Completed' shows the LATEST split's ts (not the first)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_missing_brief_file_degrades_to_no_brief PASSED + shared test_load_brief_disallowed_suffix_not_read_as_file PASSED"
+          "evidence": "test_build_dashboard.py::TestPipelineTable::test_pipeline_multi_split_shows_latest_end_ts PASSED"
         },
         {
-          "behavior": "ADR-045-safe reuse: adopt_brief_intake loads shared brief_intake via spec_from_file_location (no cross-plugin lib-namespace shadow); CLI emits the adopt intake JSON (in-process main() + subprocess)",
+          "behavior": "Consumer: get_latest_phase_completed_event orders by the real `ts` field (latest of N per-split ends)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_cli_emits_adopt_intake_json + test_main_with_brief_prints_json + test_main_no_brief_prints_legacy PASSED + full cross-plugin adopt suite green (no lib shadow)"
+          "evidence": "test_verifiers_common.py::test_get_latest_phase_completed_event_picks_newest_by_ts PASSED"
         },
         {
-          "behavior": "Loader hardening (PR-review fix): a raising exec_module leaves NO poisoned sentinel in sys.modules (register-after-exec), and a None spec fails closed with ImportError; a fresh load still works after a failure",
-          "category": "unit",
+          "behavior": "Integration composition (cross_component): real 3-split build emit (shared start wrapper + stop-hook end wrapper -> real record_event CLI) -> per-split dedup -> consumer reduction",
+          "category": "integration",
           "disposition": "tested",
-          "evidence": "test_failed_exec_leaves_no_poisoned_sentinel + test_loader_raises_when_spec_is_none PASSED"
+          "evidence": "test_phase_completed_per_split_integration.py::test_multi_split_build_records_every_split_end + test_single_split_phase_unchanged PASSED"
         },
         {
-          "behavior": "AC4: footprint bounded -- run/SKILL.md net-zero at 400, iterate 299, adopt 300 (all pass their <=300/<=400 gates); helpers/tests <300; bloat baseline not ratcheted; adopt_brief_intake changed-line diff-coverage 97.5% (>=80 gate)",
+          "behavior": "Plan SKILL step-9 emits --split-id \"{split_name}\" per plan split (runtime-prompt edit)",
+          "category": "producer",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "evidence": "Markdown runtime-prompt edit; the downstream per-split dedup path it exercises is covered by record_event's --split-id unit tests. Not a separately executable code behavior."
+        },
+        {
+          "behavior": "Finalization-integrity fix: the iterate-entry reader excludes secondary-extension sidecars (<run_id>.plan.json), so retention cannot delete the real entry and find_entry_by_run_id resolves it (not the date-less plan card)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "adopt+iterate test_kern_skill_md_under_300_loc PASSED; wc: run 400 / iterate 299 / adopt 300 / helper 120 / test 245; diff-cover@10.3.0 vs origin/main = 97.5% PASS"
+          "evidence": "test_iterate_entry_schema.py::TestReadEntries::test_skips_plan_json_sidecar PASSED"
         }
       ]
     }

@@ -400,7 +400,11 @@ def _generate_from_events(project_root: Path, session_id: str | None = None,
         lines.extend(["## Pipeline", "", "| Phase | Status | Completed |", "|-------|--------|-----------|"])
         for phase in PIPELINE_PHASES:
             if phase in completed_phases:
-                ts = next((e.get("ts", "")[:10] for e in phase_events if e["phase"] == phase), "—")
+                # LATEST end across the phase's splits (a multi-split phase records
+                # one phase_completed per split; the last bounds the phase span) —
+                # not the first (iterate-2026-07-11-phase-completed-per-split).
+                phase_tss = [e.get("ts", "") for e in phase_events if e["phase"] == phase]
+                ts = max(phase_tss)[:10] if phase_tss else "—"
                 lines.append(f"| {phase} | complete | {ts} |")
             else:
                 lines.append(f"| {phase} | — | — |")

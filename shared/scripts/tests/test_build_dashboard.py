@@ -157,6 +157,22 @@ class TestPipelineTable:
         )
         assert "## Pipeline" in content
 
+    def test_pipeline_multi_split_shows_latest_end_ts(self, tmp_project):
+        """A multi-split phase records one phase_completed per split; the Pipeline
+        'Completed' column must show the LATEST split's date (the phase's true
+        end), not the first (iterate-2026-07-11-phase-completed-per-split)."""
+        _write_events(tmp_project, [
+            {"v": 1, "type": "phase_completed", "phase": "build",
+             "splitId": "01-foundation", "ts": "2026-04-01T09:00:00Z"},
+            {"v": 1, "type": "phase_completed", "phase": "build",
+             "splitId": "03-api", "ts": "2026-04-03T18:00:00Z"},
+            {"v": 1, "type": "phase_completed", "phase": "build",
+             "splitId": "02-ui", "ts": "2026-04-02T12:00:00Z"},
+        ])
+        content = generate_dashboard(tmp_project, session_id="test")
+        assert "| build | complete | 2026-04-03 |" in content
+        assert "2026-04-01" not in content  # not the first split's ts
+
 
 class TestMultiSplit:
     def test_dashboard_multi_split_pipeline_shows_total(self, tmp_project):

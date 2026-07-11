@@ -143,6 +143,17 @@ class TestDeduplication:
     def test_has_phase_event_false(self, project):
         assert has_phase_event(project, "project") is False
 
+    def test_has_phase_event_split_id_matched(self, project):
+        """has_phase_event keys on (phase, splitId): matches only the same split."""
+        append_event(project, {"v": 1, "id": "evt-split001", "ts": "T",
+                               "type": "phase_completed", "phase": "build",
+                               "splitId": "01-foundation"})
+        assert has_phase_event(project, "build", "01-foundation") is True
+        # Different split → not a duplicate.
+        assert has_phase_event(project, "build", "02-ui") is False
+        # phase-only lookup (splitId=None) does not match a split-tagged event.
+        assert has_phase_event(project, "build") is False
+
     def test_phase_completed_dedup(self, project):
         """Second phase_completed for same phase is automatically skipped."""
         # First write
@@ -175,6 +186,36 @@ class TestDeduplication:
             "--type", "phase_completed", "--phase", "plan",
         ])
         assert len(read_events(project)) == 2
+
+    def test_phase_completed_different_splits_not_deduped(self, project):
+        """AC1 — same phase, different splitId: ALL ends persist (per-split).
+
+        A multi-split build phase records one phase_completed per split, so the
+        WebUI PhaseRail can show per-split bars and derive the full phase span.
+        """
+        for split in ("01-foundation", "02-ui", "03-api"):
+            record_main([
+                "--project-root", str(project),
+                "--type", "phase_completed", "--phase", "build",
+                "--split-id", split,
+            ])
+        events = read_events(project)
+        assert len(events) == 3
+        assert {e.get("splitId") for e in events} == {"01-foundation", "02-ui", "03-api"}
+
+    def test_phase_completed_same_split_deduped(self, project):
+        """AC2 — same (phase, splitId): the second is skipped (crash-resume backstop)."""
+        record_main([
+            "--project-root", str(project),
+            "--type", "phase_completed", "--phase", "build",
+            "--split-id", "01-foundation",
+        ])
+        record_main([
+            "--project-root", str(project),
+            "--type", "phase_completed", "--phase", "build",
+            "--split-id", "01-foundation",
+        ])
+        assert len(read_events(project)) == 1  # second (same split) skipped
 
 
 # ---------------------------------------------------------------------------
@@ -307,6 +348,38 @@ class TestBuildEvent:
         assert event["type"] == "phase_completed"
         assert event["phase"] == "deploy"
         assert event["detail"] == "https://dev-app.jpc.infomaniak.com"
+
+    def test_phase_completed_no_split_id_omits_field(self):
+        """AC2 back-compat — no --split-id → no top-level splitId key."""
+        args = parse_args([
+            "--project-root", "/tmp",
+            "--type", "phase_completed", "--phase", "build",
+        ])
+        event = build_event(args)
+        assert "splitId" not in event
+
+    def test_phase_event_split_id_top_level(self):
+        """AC3 — --split-id promotes splitId to a first-class phase-event field."""
+        for event_type in ("phase_started", "phase_completed", "phase_failed"):
+            args = parse_args([
+                "--project-root", "/tmp",
+                "--type", event_type, "--phase", "build",
+                "--split-id", "02-ui",
+            ])
+            event = build_event(args)
+            assert event["splitId"] == "02-ui", event_type
+
+    def test_phase_event_explicit_empty_split_id_preserved(self):
+        """An explicitly-supplied splitId is forwarded on an `is not None` basis
+        (not truthiness), so a falsey-but-explicit value is not silently dropped
+        into phase-only dedup (external-review hardening)."""
+        args = parse_args([
+            "--project-root", "/tmp",
+            "--type", "phase_completed", "--phase", "build",
+            "--split-id", "",
+        ])
+        event = build_event(args)
+        assert event["splitId"] == ""  # kept as a distinct key, not omitted
 
     def test_test_run(self):
         args = parse_args([
