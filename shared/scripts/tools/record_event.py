@@ -7,14 +7,9 @@ Orchestrator, and Test phases to record work into the unified event log.
 Usage:
     uv run record_event.py --project-root <path> --type <event_type> [options]
 
-Event types:
-    task_created     -- A new task/issue was created (user or pipeline)
-    work_completed   -- A build section or iterate change finished
-    phase_started    -- Pipeline phase began
-    phase_completed  -- Pipeline phase validated and complete
-    split_completed  -- All sections of a split are done
-    test_run         -- Full test suite execution
-    event_amended    -- Correction of a previous event
+The authoritative, closed list of event types is the ``--type`` argparse
+``choices`` in :func:`parse_args`; each has a handling branch in
+:func:`build_event`.
 
 Never CLI/smoke-verify against a live project: ``--project-root .`` appends
 real events that surface as phantom work in the RTM (the 2026-05-21 campaign
@@ -78,11 +73,8 @@ def generate_event_id() -> str:
 def _non_negative_int(value: str) -> int:
     """argparse type guard — reject negatives + non-integer strings.
 
-    Iterate B.3 (ADR-057) — reviewer-flagged H3: layer counts must be
-    non-negative or the downstream FAIL-triage producer renders
-    nonsense (`-2/0 failing`). Argparse's default ``type=int`` accepts
-    negatives; this wrapper raises ``ArgumentTypeError`` so invalid
-    inputs surface at the CLI boundary, not deep in the producer.
+    Iterate B.3 (ADR-057): layer counts must be non-negative or the FAIL-triage
+    producer renders nonsense; raise ``ArgumentTypeError`` at the CLI boundary.
     """
     try:
         n = int(value)
@@ -323,6 +315,18 @@ def build_event(args: argparse.Namespace) -> dict:
         if args.detail:
             event["detail"] = args.detail
 
+    elif args.type == "grade_snapshot":
+        # grade_snapshot lands on the DURABLE log — require a valid grade + a
+        # 0-100 score (the auto-emitter guarantees this; harden the manual CLI).
+        if not args.grade or args.score is None:
+            raise ValueError("grade_snapshot requires --grade and --score")
+        if not 0.0 <= args.score <= 100.0:
+            raise ValueError(f"grade_snapshot --score must be in [0, 100], got {args.score}")
+        event["grade"] = args.grade
+        event["score"] = args.score
+        if args.commit:  # optional — the finalize-time regen runs BEFORE F6
+            event["commit"] = args.commit
+
     return event
 
 
@@ -489,7 +493,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                             "split_completed", "test_run",
                             "event_amended",
                             "compliance_update_failed", "pipeline_migration",
-                            "adopted"],
+                            "adopted", "grade_snapshot"],
                    help="Event type")
 
     # work_completed
@@ -548,6 +552,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--phase", help="Phase name (project, plan, build, ...)")
     p.add_argument("--detail", help="Phase detail (e.g. deploy URL, PR URL)")
 
+    # grade_snapshot
+    p.add_argument("--grade", help="Control Grade letter, e.g. A (grade_snapshot)")
+    p.add_argument("--score", type=float, help="Control Grade score 0-100 (grade_snapshot)")
+
     # test_run
     p.add_argument("--trigger", help="What triggered the test run")
     p.add_argument("--unit-passed",        type=_non_negative_int, help="Unit tests passed")
@@ -593,27 +601,18 @@ def _fr_or_change_type_gate_error(event) -> dict | None:
     changes. Unlike the CLI-only, intent-gated ``_spec_impact_gate_error``,
     this rule runs at finalize too (F5b parity) and is intent-independent.
 
-    Additional consistency check (reviewer-flagged Gemini-M2 /
-    OpenAI-L4): if ``change_type`` is present at all (even alongside
-    valid FRs), it must be a recognized value. A malformed
-    ``change_type`` value is invalid input regardless of FR presence
-    — cleaner data on disk.
+    Additional consistency check: if ``change_type`` is present at all
+    (even alongside valid FRs) it must be a recognized value — a malformed
+    value is invalid input regardless of FR presence.
 
-    Hard-rejects otherwise (returns an error dict; ``main`` exits 1
-    and writes nothing to the log).
+    Hard-rejects otherwise (error dict; ``main`` exits 1, writes nothing).
+    Defensive ``.get()`` lookups mean a directly-constructed event dict
+    missing ``type``/``source`` cleanly bypasses rather than crashing, and
+    pre-gate events still parse (``change_type``/``none_reason`` = None).
 
-    Defensive ``.get()`` lookups throughout: a directly-constructed
-    event dict missing ``type`` or ``source`` doesn't crash — it
-    cleanly bypasses (deterministic behavior for malformed input).
-
-    Read-side stays tolerant: events written before this gate
-    landed continue to parse as ``change_type=None`` and
-    ``none_reason=None`` (no schema break).
-
-    Build events (``source != "iterate"``) and non-work_completed
-    events bypass the gate entirely. Phase 0 of the artifact-polish
-    plan retroactively classified every pre-existing iterate event
-    so this hard-enforcement is risk-free in the monorepo + webui.
+    Build events (``source != "iterate"``) and non-work_completed events
+    bypass entirely; Phase 0 pre-classified every existing iterate event so
+    this hard-enforcement is risk-free.
 
     Scope: the gate runs at the CLI boundary (``record_event.main``)
     AND, since iterate-2026-06-05-fr-linkage-lifecycle, inside

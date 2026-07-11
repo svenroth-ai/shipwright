@@ -160,7 +160,7 @@ def test_run_records_event_pre_commit_with_empty_commit(project, monkeypatch):
     assert event_step.get("id") is not None
     assert "skipped" not in event_step
 
-    events = _read_events_jsonl(project)
+    events = [e for e in _read_events_jsonl(project) if e.get("type") == "work_completed"]
     assert len(events) == 1
     assert events[0]["id"] == event_step["id"]
     assert events[0]["type"] == "work_completed"
@@ -208,7 +208,7 @@ def test_attach_commit_after_finalize_patches_event(project, monkeypatch):
     ok = attach_commit_after_finalize(project, event_id, "deadbeef0001")
     assert ok is True
 
-    events = _read_events_jsonl(project)
+    events = [e for e in _read_events_jsonl(project) if e.get("type") == "work_completed"]
     assert len(events) == 1
     assert events[0]["commit"] == "deadbeef0001"
 
@@ -228,7 +228,7 @@ def test_run_no_longer_requires_commit_arg(project, monkeypatch):
                  event_extras=_VALID_EXTRAS)
     assert result["steps"]["event"].get("id") is not None
 
-    events = _read_events_jsonl(project)
+    events = [e for e in _read_events_jsonl(project) if e.get("type") == "work_completed"]
     assert len(events) == 1
     # When the caller passes a commit SHA, it's stored directly (no need
     # for a follow-up attach call).
@@ -258,7 +258,7 @@ def test_run_merges_event_extras_into_event(project, monkeypatch):
     result = run(project, run_id="test-extras-001", event_extras=extras)
     assert result["steps"]["event"].get("id") is not None
 
-    [event] = _read_events_jsonl(project)
+    [event] = [e for e in _read_events_jsonl(project) if e.get("type") == "work_completed"]
     for key, val in extras.items():
         assert event[key] == val, f"{key!r} not merged: got {event.get(key)!r}"
     # System-owned fields preserved.
@@ -286,7 +286,7 @@ def test_event_extras_cannot_spoof_system_fields(project, monkeypatch):
     }
     run(project, run_id="test-spoof-001", event_extras=extras)
 
-    [event] = _read_events_jsonl(project)
+    [event] = [e for e in _read_events_jsonl(project) if e.get("type") == "work_completed"]
     assert event["type"] == "work_completed"
     assert event["source"] == "iterate"
     assert event["adr_id"] == "test-spoof-001"
@@ -314,7 +314,7 @@ def test_cli_attach_commit_subcommand(project, monkeypatch):
     ])
     assert rc == 0
 
-    [event] = _read_events_jsonl(project)
+    [event] = [e for e in _read_events_jsonl(project) if e.get("type") == "work_completed"]
     assert event["commit"] == "abc123sha"
 
 
@@ -366,7 +366,7 @@ def test_finalize_allows_feature_event_with_affected_frs(project, monkeypatch):
     result = fi.run(project, run_id="test-gate-allow-001", event_extras=extras)
     assert result["steps"]["event"].get("id") is not None
 
-    [event] = _read_events_jsonl(project)
+    [event] = [e for e in _read_events_jsonl(project) if e.get("type") == "work_completed"]
     assert event["affected_frs"] == ["FR-01.01"]
 
 
@@ -380,7 +380,7 @@ def test_finalize_allows_event_with_change_type_pair(project, monkeypatch):
               "none_reason": "internal tooling — no FR touched"}
     result = fi.run(project, run_id="test-gate-allow-002", event_extras=extras)
     assert result["steps"]["event"].get("id") is not None
-    [event] = _read_events_jsonl(project)
+    [event] = [e for e in _read_events_jsonl(project) if e.get("type") == "work_completed"]
     assert event["change_type"] == "tooling"
 
 

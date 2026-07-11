@@ -1,16 +1,19 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-10-persist-session-plan",
-    "date": "2026-07-10T23:46:20.508759Z",
+    "run_id": "iterate-2026-07-10-grade-snapshot-events",
+    "date": "2026-07-11T01:41:04.304459+00:00",
     "intent": "feature",
     "complexity": "medium",
     "unit": {
-      "passed": 38,
-      "total": 38,
+      "passed": 13,
+      "total": 13,
       "status": "pass"
     },
     "integration": {
-      "status": "n/a"
+      "status": "pass",
+      "passed": 1,
+      "total": 1,
+      "note": "cross_component composition: compliance regen -> grade_snapshot event"
     },
     "pgtap": {
       "status": "n/a"
@@ -26,143 +29,87 @@
     },
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest plugins/shipwright-iterate/tests/test_session_plan.py plugins/shipwright-iterate/tests/test_session_plan_matrix.py -q",
-      "tests_run": 38,
+      "runner": "uv run pytest shared/tests/test_grade_snapshot_event.py -q",
+      "tests_run": 8,
       "exit_code": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-10-persist-session-plan/surface_verification.json",
-      "timestamp": "2026-07-10T23:46:20.508759Z",
+      "evidence_path": ".shipwright/runs/iterate-2026-07-10-grade-snapshot-events/surface_verification.json",
+      "timestamp": "2026-07-11T01:41:04.304459+00:00",
       "attempts": 1
     },
     "degraded": [],
     "test_completeness": {
       "status": "complete",
-      "behaviors": [
-        {
-          "behavior": "AC1: classify_complexity STDOUT is byte-identical with vs without --run-id (same project-root)",
-          "disposition": "tested",
-          "evidence": "test_session_plan.py::TestStdoutUnchanged::test_run_id_does_not_change_stdout PASSED"
-        },
-        {
-          "behavior": "AC1: --run-id persists <run_id>.plan.json under .shipwright/agent_docs/iterates/ with the 5-key shape",
-          "disposition": "tested",
-          "evidence": "TestStdoutUnchanged::test_run_id_persists_plan_file PASSED"
-        },
-        {
-          "behavior": "AC1: no --run-id writes no plan file (graceful degradation / write-on-touch)",
-          "disposition": "tested",
-          "evidence": "TestStdoutUnchanged::test_no_run_id_writes_no_file PASSED"
-        },
-        {
-          "behavior": "AC1: persisted complexity/risk_flags equal the stdout JSON estimate/risk_flags (projection is stdout-derived)",
-          "disposition": "tested",
-          "evidence": "TestStdoutUnchanged::test_persisted_fields_derive_from_stdout PASSED"
-        },
-        {
-          "behavior": "AC2: build_session_plan returns {run_id,complexity,risk_flags,phases,skips}; phases/skips disjoint & well-shaped",
-          "disposition": "tested",
-          "evidence": "TestBuildSessionPlan::test_shape_keys + test_phases_and_skips_are_disjoint_and_shaped PASSED"
-        },
-        {
-          "behavior": "Projection: medium + risk flag plans all reviews (external_plan_review/code_review/confidence_calibration)",
-          "disposition": "tested",
-          "evidence": "TestBuildSessionPlan::test_medium_with_risk_plans_all_reviews PASSED"
-        },
-        {
-          "behavior": "Projection: trivial + no risk skips interview/iterate_spec/reviews with non-empty reasons",
-          "disposition": "tested",
-          "evidence": "TestBuildSessionPlan::test_trivial_no_risk_skips_reviews PASSED"
-        },
-        {
-          "behavior": "Projection: small + touches_io_boundary keeps confidence_calibration + code_review planned",
-          "disposition": "tested",
-          "evidence": "TestBuildSessionPlan::test_small_io_boundary_keeps_calibration PASSED"
-        },
-        {
-          "behavior": "Projection: small + non-io risk (touches_auth) keeps code_review but SKIPS calibration (io-boundary-specific rule)",
-          "disposition": "tested",
-          "evidence": "TestBuildSessionPlan::test_small_non_io_risk_skips_only_calibration PASSED"
-        },
-        {
-          "behavior": "Round-trip (producer->file->consumer): json.loads readback equals build_session_plan output",
-          "disposition": "tested",
-          "evidence": "TestPersistRoundTrip::test_round_trip_shape_matches_producer PASSED"
-        },
-        {
-          "behavior": "Plan file lands at .shipwright/agent_docs/iterates/<run_id>.plan.json",
-          "disposition": "tested",
-          "evidence": "TestPersistRoundTrip::test_writes_expected_location PASSED"
-        },
-        {
-          "behavior": "Boundary co-tenancy: plan files alone yield no history prior (never counted as finalized entries)",
-          "disposition": "tested",
-          "evidence": "TestPlanFilesExcludedFromHistory::test_plan_files_alone_yield_no_prior PASSED"
-        },
-        {
-          "behavior": "Boundary co-tenancy: adding plan files never shifts an existing history prior",
-          "disposition": "tested",
-          "evidence": "TestPlanFilesExcludedFromHistory::test_plan_files_do_not_shift_prior PASSED"
-        },
-        {
-          "behavior": "Security: a crafted run_id (../../evil) stays contained under the iterates dir",
-          "disposition": "tested",
-          "evidence": "TestPersistRoundTrip::test_run_id_traversal_stays_contained PASSED"
-        },
-        {
-          "behavior": "Fail-soft: persist_session_plan_safe swallows OSError (returns None, never aborts the session)",
-          "disposition": "tested",
-          "evidence": "TestPersistRoundTrip::test_safe_wrapper_swallows_io_error PASSED"
-        },
-        {
-          "behavior": "Robustness: a partial result (missing estimate) defaults complexity=trivial, risk_flags=[]",
-          "disposition": "tested",
-          "evidence": "TestPersistRoundTrip::test_missing_estimate_defaults_trivial PASSED"
-        },
-        {
-          "behavior": "FIX 1: external PLAN review is §6 medium+ (auto) only — SKIPPED at trivial/small even WITH a risk flag (io/auth), which floor to small",
-          "disposition": "tested",
-          "evidence": "test_session_plan.py::TestBuildSessionPlan::test_external_plan_review_is_medium_plus_only + test_small_io_boundary_keeps_calibration/test_small_non_io_risk_skips_only_calibration PASSED"
-        },
-        {
-          "behavior": "FIX 2: the projection matches the NORMATIVE §6 Phase Matrix across trivial/small/medium x {no-risk, generic-risk, touches_io_boundary} (drift guard)",
-          "disposition": "tested",
-          "evidence": "test_session_plan_matrix.py::TestSixPhaseMatrixPinning::test_gated_phases_match_phase_matrix[9 cases] PASSED"
-        },
-        {
-          "behavior": "confidence_calibration is §6-exact: skipped at trivial (any risk), planned at small only for touches_io_boundary, planned at medium+",
-          "disposition": "tested",
-          "evidence": "test_session_plan_matrix.py::TestSixPhaseMatrixPinning parametrized cells PASSED"
-        },
-        {
-          "behavior": "FIX 3: persist_session_plan validates run_id against RUN_ID_STRICT and raises ValueError on a malformed run_id (traversal/NUL/non-canonical)",
-          "disposition": "tested",
-          "evidence": "test_session_plan_matrix.py::TestRunIdValidation::test_persist_raises_on_bad_run_id PASSED"
-        },
-        {
-          "behavior": "FIX 3: persist_session_plan_safe is fail-soft for OSError/ValueError/TypeError (malformed run_id, NUL, None project_root) — returns None, writes nothing",
-          "disposition": "tested",
-          "evidence": "TestRunIdValidation::test_safe_returns_none_and_writes_nothing_for_bad_run_id[7 cases] + test_safe_returns_none_for_none_project_root PASSED"
-        },
-        {
-          "behavior": "FIX 4: plan_path keeps crafted run_ids (../.., absolute, C:\\ drive-letter, a/b/c) contained under the iterates dir",
-          "disposition": "tested",
-          "evidence": "TestRunIdValidation::test_plan_path_crafted_run_ids_stay_under_iterates PASSED"
-        },
-        {
-          "behavior": "FIX 4: the .gitignore carries the /.shipwright/agent_docs/iterates/*.plan.json rule (plan file stays gitignored)",
-          "disposition": "tested",
-          "evidence": "TestRunIdValidation::test_gitignore_ignores_plan_files PASSED"
-        }
-      ],
       "counts": {
-        "tested": 23,
-        "untestable": 0,
         "untested_testable": 0,
-        "total": 23
+        "tested": 10,
+        "untestable": 0
       },
       "enumeration_basis": {
         "acs": 4,
         "covered_acs": 4
-      }
+      },
+      "behaviors": [
+        {
+          "behavior": "AC2/AC1: emit_grade_snapshot appends exactly ONE grade_snapshot{grade,score,ts} on a gradeable compliance regen",
+          "category": "unit",
+          "disposition": "tested",
+          "evidence": "test_grade_snapshot_regen.py::TestEmitGradeSnapshot::test_appends_exactly_one_event PASSED"
+        },
+        {
+          "behavior": "AC1 idempotency contract: one snapshot PER regen, appended unconditionally (two regens -> two snapshots; WebUI dedupes)",
+          "category": "unit",
+          "disposition": "tested",
+          "evidence": "TestEmitGradeSnapshot::test_each_regen_appends_another_snapshot PASSED"
+        },
+        {
+          "behavior": "Not-gradeable repo (no measurable dimension) emits nothing (skip branch, appended=0)",
+          "category": "unit",
+          "disposition": "tested",
+          "evidence": "TestEmitGradeSnapshot::test_not_gradeable_repo_emits_nothing PASSED"
+        },
+        {
+          "behavior": "No divergence: emitted snapshot grade AND (int score)/100 == the deterministic dashboard-rendered grade/score (same compute_grade on same data)",
+          "category": "unit",
+          "disposition": "tested",
+          "evidence": "TestEmitGradeSnapshot::test_snapshot_grade_matches_dashboard PASSED"
+        },
+        {
+          "behavior": "Additive drift-protection: change_history collector ignores unknown grade_snapshot type; only work_completed collected",
+          "category": "unit",
+          "disposition": "tested",
+          "evidence": "TestAdditiveConsumer::test_change_history_collector_ignores_grade_snapshot PASSED"
+        },
+        {
+          "behavior": "Composition: real update_compliance dashboard regen appends exactly one grade_snapshot to durable log AND its grade matches the written dashboard.md artifact",
+          "category": "integration",
+          "disposition": "tested",
+          "evidence": "TestComplianceRegenComposition::test_dashboard_regen_emits_snapshot PASSED"
+        },
+        {
+          "behavior": "record_event registry: grade_snapshot is an accepted --type; CLI lands it with grade/score/ts (drift protection, forward direction)",
+          "category": "unit",
+          "disposition": "tested",
+          "evidence": "test_grade_snapshot_event.py::TestGradeSnapshotTypeAccepted::test_cli_accepts_and_lands PASSED"
+        },
+        {
+          "behavior": "record_event build_event serialises grade + score(float) + optional commit for grade_snapshot",
+          "category": "unit",
+          "disposition": "tested",
+          "evidence": "TestGradeSnapshotBuildEvent::test_shape_with_commit + test_score_is_float PASSED"
+        },
+        {
+          "behavior": "io-boundary round-trip: append_event -> shipwright_events.jsonl -> read_events preserves the grade_snapshot payload",
+          "category": "unit",
+          "disposition": "tested",
+          "evidence": "TestGradeSnapshotRoundTrip::test_append_then_read PASSED"
+        },
+        {
+          "behavior": "record_event grade_snapshot CLI hardening: build_event rejects a missing grade/score or an out-of-range (not 0-100) score so a manual CLI cannot write a malformed snapshot to the durable log",
+          "category": "unit",
+          "disposition": "tested",
+          "evidence": "test_grade_snapshot_event.py::TestGradeSnapshotValidation (missing_score/missing_grade/out_of_range/zero_boundary) PASSED"
+        }
+      ]
     }
   },
   "coverage": {
