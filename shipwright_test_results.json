@@ -1,33 +1,24 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-11-phase-completed-per-split",
-    "date": "2026-07-11",
-    "intent": "change",
+    "run_id": "iterate-2026-07-11-iterate-phase-timing",
+    "date": "2026-07-11T07:45:50+00:00",
+    "intent": "feature",
     "complexity": "medium",
-    "campaign": null,
-    "sub_iterate_id": null,
     "unit": {
-      "passed": 16,
-      "total": 16,
+      "passed": 22,
+      "total": 22,
       "status": "pass",
-      "note": "16 new unit/CLI tests for (phase,splitId) dedup, top-level splitId, 3-emitter --split-id pass-through (incl. is-not-None empty-string edge), and the 4 consumer de-dups (record_event, lifecycle-integrity, phase_started_emit, run single-session, compliance report, build dashboard, verifiers common, session handoff). Full affected suites green: shared/tests 3835, shared/scripts/tests 197, shared/scripts/tools/tests 145, run 335, compliance 966, plan 57."
+      "note": "test_iterate_phase_timing.py (SSoT+pin, mark sidecar, compute/normalize, CLI, finalize fold, gitignore congruence). Full suites green: shared 3848, shipwright-iterate 476."
     },
     "integration": {
-      "passed": 2,
-      "total": 2,
-      "status": "pass",
-      "note": "test_phase_completed_per_split_integration.py — real 3-split build emit->dedup->consume composition (category:integration) + single-split back-compat; integration-tests dir 184 green."
+      "status": "n/a",
+      "note": "framework tooling, not cross_component (no merge/hook/phase-validator machinery); deterministic seams are lib/iterate_phase_groups.py + the iterate_phase_timing CLI + the finalize fold, all unit-tested"
     },
     "pgtap": {
-      "passed": 0,
-      "total": 0,
       "status": "n/a"
     },
     "e2e": {
-      "passed": 0,
-      "total": 0,
-      "status": "n/a",
-      "note": "library monorepo — no app E2E surface"
+      "status": "n/a"
     },
     "design_fidelity": {
       "status": "n/a"
@@ -36,123 +27,135 @@
       "status": "n/a"
     },
     "surface_verification": {
-      "surface": "none",
-      "justification": "Python plugin monorepo (scope=library); no in-tree app/web surface to drive. The tracked event-log change is exercised end-to-end by an in-process integration test (test_phase_completed_per_split_integration.py, real 3-split build) plus the full affected unit suites; the cross-repo WebUI PhaseRail consumer lives in shipwright-webui and is tracked via follow-up triage trg-941d870b.",
-      "runner": "uv run --with pytest --with pytest-mock pytest (shared/tests + shared/scripts/{tests,tools/tests} + run + compliance + plan + integration-tests)",
-      "tests_run": 5719,
+      "surface": "cli",
+      "runner": "uv run --extra dev pytest shared/tests/test_iterate_phase_timing.py -q",
+      "tests_run": 22,
       "exit_code": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-11-phase-completed-per-split/surface_verification.json",
-      "timestamp": "2026-07-11T07:20:03+00:00",
+      "evidence_path": ".shipwright/runs/iterate-2026-07-11-iterate-phase-timing/surface_verification.json",
+      "timestamp": "2026-07-11T07:45:50+00:00",
       "attempts": 1
     },
-    "degraded": [
-      {
-        "condition": "classifier_risk_flag_false_positive",
-        "detail": "classify_complexity flagged touches_auth from message prose; the diff touches no auth paths (src/middleware, src/lib/supabase, **/auth/**) — overridden. Authoritative diff-driven flags: cross_component (phase_session_stop hook under **/hooks/*.py) + touches_io_boundary (record_event JSON producer)."
-      }
-    ],
+    "degraded": [],
     "test_completeness": {
       "status": "complete",
       "counts": {
-        "untested_testable": 0,
-        "tested": 14,
-        "untestable": 1
+        "testable": 18,
+        "tested": 18,
+        "untestable": 0,
+        "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 4,
-        "covered_acs": 4
+        "acs": 6,
+        "covered_acs": 6
       },
       "behaviors": [
         {
-          "behavior": "AC1: multi-split phase records one phase_completed PER split (same phase, different splitId NOT deduped)",
+          "behavior": "AC1: ITERATE_PHASE_GROUPS SSoT == the 5 rail nodes (scope build review test finalize)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_record_event.py::TestDeduplication::test_phase_completed_different_splits_not_deduped + test_record_event_lifecycle_integrity.py::test_different_split_ids_not_deduped PASSED"
+          "evidence": "test_iterate_phase_timing.py::test_groups_are_the_five_rail_nodes PASSED"
         },
         {
-          "behavior": "AC2: same (phase, splitId) is deduped (crash-resume backstop, per split)",
+          "behavior": "AC1: SSoT drift-pins to session_plan._PHASE_CATALOG's group order (loaded by file-path to avoid the lib package collision)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_record_event.py::test_phase_completed_same_split_deduped + test_record_event_lifecycle_integrity.py::test_same_split_id_deduped_with_split_in_skip PASSED"
+          "evidence": "test_groups_pin_to_session_plan_catalog PASSED"
         },
         {
-          "behavior": "AC2: single-split (splitId=None) back-compat — dedup by (phase, None); skip payload byte-identical; no splitId key emitted",
+          "behavior": "AC2: append_mark writes {phase,ts} to the <run_id>.phase_timings.jsonl sidecar",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "unchanged test_skips_duplicate_phase + test_single_split_phase_unchanged + test_phase_completed_no_split_id_omits_field PASSED"
+          "evidence": "test_append_mark_writes_sidecar PASSED + end-to-end CLI probe (mark scope/build/finalize)"
         },
         {
-          "behavior": "AC2: a split-tagged end and a phase-only (None) end are distinct keys (don't collide)",
+          "behavior": "AC2: append_mark is first-wins per group (a re-cross is a no-op, earliest ts kept)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_record_event_lifecycle_integrity.py::test_split_tagged_and_untagged_are_distinct PASSED"
+          "evidence": "test_append_mark_is_first_wins_per_group PASSED"
         },
         {
-          "behavior": "AC3: --split-id promotes splitId to a top-level field on phase_started/phase_completed/phase_failed",
+          "behavior": "AC2: append_mark rejects an unknown group id (ValueError)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_record_event.py::test_phase_event_split_id_top_level PASSED"
+          "evidence": "test_append_mark_rejects_unknown_group PASSED"
         },
         {
-          "behavior": "AC3: has_phase_event keys on (phase, splitId) — matches same split, not a different split or None",
+          "behavior": "AC2: read_marks skips malformed/off-vocab lines (partial sidecar still yields its groups)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_record_event.py::test_has_phase_event_split_id_matched PASSED"
+          "evidence": "test_read_marks_skips_malformed_lines PASSED"
         },
         {
-          "behavior": "AC3: explicit falsey (empty-string) splitId is forwarded on an `is not None` basis, not dropped (external-review hardening)",
+          "behavior": "AC2 (security): sidecar_path contains a crafted run_id (../.. cannot escape iterates/)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_record_event.py::test_phase_event_explicit_empty_split_id_preserved + test_emit_phase_event_no_split_id_when_detail_split_none PASSED"
+          "evidence": "test_sidecar_path_contains_crafted_run_id PASSED"
         },
         {
-          "behavior": "AC3: all 3 emitter wrappers forward --split-id from the splitId they carry (shared phase_event_emit, run single-session events, stop hook)",
+          "behavior": "AC3: compute_phase_timings yields chronological {phase,started,duration_ms}; last group's end = end_ts",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_phase_started_emit.py::test_emit_phase_event_forwards_split_id_from_detail + test_single_session_phase_started.py::test_run_plugin_emitters_forward_split_id + integration (stop hook) PASSED"
+          "evidence": "test_compute_durations_chronological_with_end_ts PASSED"
         },
         {
-          "behavior": "AC4: compliance phase-count counts DISTINCT phase names (multi-split build renders 7/7, not 9/7)",
+          "behavior": "AC3: empty marks -> [] (finalize then omits the field)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_compliance_report.py::TestAdoptedModeIndicators::test_multi_split_phase_counted_once PASSED"
+          "evidence": "test_compute_empty_marks_is_empty PASSED"
         },
         {
-          "behavior": "Consumer: session-handoff Recovery counts distinct phases (not the raw per-split event count)",
+          "behavior": "AC3: durations are non-negative ints (clock-skew / out-of-order clamps to 0)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_generate_session_handoff.py::test_recovery_counts_distinct_phases_not_per_split_events PASSED"
+          "evidence": "test_compute_durations_non_negative_and_int PASSED"
         },
         {
-          "behavior": "Consumer: build-dashboard Pipeline 'Completed' shows the LATEST split's ts (not the first)",
+          "behavior": "normalize_phase_timings accepts a valid [{phase,started,duration_ms}] block",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_build_dashboard.py::TestPipelineTable::test_pipeline_multi_split_shows_latest_end_ts PASSED"
+          "evidence": "test_normalize_accepts_valid_block PASSED"
         },
         {
-          "behavior": "Consumer: get_latest_phase_completed_event orders by the real `ts` field (latest of N per-split ends)",
+          "behavior": "normalize_phase_timings rejects malformed blocks (unknown group, negative/non-int duration, missing keys, non-list, non-dict entry)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_verifiers_common.py::test_get_latest_phase_completed_event_picks_newest_by_ts PASSED"
+          "evidence": "test_normalize_rejects_malformed (6 parametrized classes) PASSED"
         },
         {
-          "behavior": "Integration composition (cross_component): real 3-split build emit (shared start wrapper + stop-hook end wrapper -> real record_event CLI) -> per-split dedup -> consumer reduction",
-          "category": "integration",
-          "disposition": "tested",
-          "evidence": "test_phase_completed_per_split_integration.py::test_multi_split_build_records_every_split_end + test_single_split_phase_unchanged PASSED"
-        },
-        {
-          "behavior": "Plan SKILL step-9 emits --split-id \"{split_name}\" per plan split (runtime-prompt edit)",
-          "category": "producer",
-          "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "evidence": "Markdown runtime-prompt edit; the downstream per-split dedup path it exercises is covered by record_event's --split-id unit tests. Not a separately executable code behavior."
-        },
-        {
-          "behavior": "Finalization-integrity fix: the iterate-entry reader excludes secondary-extension sidecars (<run_id>.plan.json), so retention cannot delete the real entry and find_entry_by_run_id resolves it (not the date-less plan card)",
+          "behavior": "AC2: the mark/summarize CLI works end-to-end and summarize prints computed timings",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_iterate_entry_schema.py::TestReadEntries::test_skips_plan_json_sidecar PASSED"
+          "evidence": "test_cli_mark_and_summarize PASSED + real-subprocess probe (scope 1113ms / build 1106ms matched 1s sleeps)"
+        },
+        {
+          "behavior": "AC2: the CLI rejects a non-canonical run_id (exit != 0)",
+          "category": "unit",
+          "disposition": "tested",
+          "evidence": "test_cli_mark_rejects_noncanonical_run_id PASSED + probe (exit 2 on 'bad')"
+        },
+        {
+          "behavior": "AC4: finalize_iterate folds phase_timings into the work_completed event",
+          "category": "unit",
+          "disposition": "tested",
+          "evidence": "test_finalize_folds_phase_timings PASSED"
+        },
+        {
+          "behavior": "AC4 (backward-compat): finalize with no sidecar leaves work_completed unchanged (no phase_timings)",
+          "category": "unit",
+          "disposition": "tested",
+          "evidence": "test_finalize_without_sidecar_omits_phase_timings PASSED"
+        },
+        {
+          "behavior": "AC4: fold_into_event is additive + best-effort + preserves a pre-existing phase_timings",
+          "category": "unit",
+          "disposition": "tested",
+          "evidence": "test_fold_into_event_is_additive_and_validated PASSED"
+        },
+        {
+          "behavior": "AC6: the sidecar is gitignored and the template SSoT stays congruent with the framework block; durable <run_id>.json is tracked",
+          "category": "unit",
+          "disposition": "tested",
+          "evidence": "test_gitignore_template_congruent.py PASSED (F0 caught the missing template mirror; fixed) + git check-ignore probe"
         }
       ]
     }

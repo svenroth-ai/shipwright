@@ -102,6 +102,18 @@ function rather than adding a second copy, so no net algorithmic bloat was
 introduced. C4 (webui repo: `g2_stoplist` + reopen-event FR reconcile) is out of
 scope here.
 
+### Amendment (2026-07-11, iterate-2026-07-11-iterate-phase-timing)
+
+`finalize_iterate.py` had since shrunk and its baseline watermark ratcheted down
+to 519. The Iterate-Rail per-phase-timing fold (M-Pre-1 iterate half, trg-8efeb3d7)
+adds +5 lines (one import + a 3-line best-effort `_fold_phase_timings(event, …)`
+call in `_record_event`), re-raising the watermark **519 → 524**. This stays
+**within the 532 ceiling this ADR already granted** — no new crossing, just
+reclaimed headroom — and the heavy logic lives in the new deep module
+`shared/scripts/lib/iterate_phase_groups.py`, not here. The gate INSIDE
+`_record_event` remains the right home for a per-event enrichment, same rationale
+as the Ousterhout argument above.
+
 ## Rejected alternatives
 
 - **Split `finalize_iterate` / `group_d` now** — disproportionate: pre-existing

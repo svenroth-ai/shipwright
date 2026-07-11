@@ -1,11 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-07-11 07:32 UTC | Session: 688842d2-b290-4b50-b21c-ebd4f6107fc2 | Run: iterate-2026-07-11-phase-completed-per-split
+> Updated: 2026-07-11 08:01 UTC | Session: e63898b6-731a-4116-92f3-e4b9dfac8870 | Run: iterate-2026-07-11-iterate-phase-timing
 
-## Recent Changes (294 iterations)
+## Recent Changes (295 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
 | change | Widen phase_completed dedup to (phase, splitId) so multi-split phases record per-split ends; promote splitId to a top-level field; de-dup 4 phase-count/latest-ts consumers; plan SKILL emits --split-id. | 0/0 |  | infra | 2026-07-11 |
+| feature | Iterate-Rail per-phase durations (M-Pre-1 iterate half): mark 5 group boundaries -> fold phase_timings into the work_completed event | 22/22 |  | tooling | 2026-07-11 |
 | feature | B5: /shipwright-adopt accepts a WebUI brief via the shared brief_intake helper (promoted to shared/scripts/lib) + a thin adopt_brief_intake adapter; run + iterate banners surface the shared plain-language index with a copy-parity test. | 0/0 |  | tooling | 2026-07-11 |
 | feature | Brief-intake in /shipwright-run: accept a pre-filled WebUI-wizard brief (file or payload), map the four answers to profile + deploy-target/env, and ask only the still-missing questions; no brief -> legacy interview unchanged (K2c). | 28/28 |  | tooling | 2026-07-11 |
 | feature | iterate finalization | 0/0 |  | compliance | 2026-07-11 |
@@ -301,7 +302,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-11 | Unit: 16/16 | Integration: 2/2 | Smoke: n/a | (iterate)
+Last run: 2026-07-11T07:45:50+00:00 | Unit: 22/22 | Smoke: n/a | (iterate)
 
 ## Pipeline
 

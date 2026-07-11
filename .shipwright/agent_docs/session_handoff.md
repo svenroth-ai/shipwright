@@ -1,37 +1,37 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-11-phase-completed-per-split"
+run_id: "iterate-2026-07-11-iterate-phase-timing"
 phase: "iterate"
-reason: "iterate finalization (re-run: post gate-fix + ledger update)"
-timestamp: "2026-07-11T07:32:40.141913+00:00"
+reason: "iterate: Iterate-Rail per-phase durations (M-Pre-1 iterate half)"
+timestamp: "2026-07-11T08:01:19.386096+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-11 07:32:40 UTC
+> Auto-generated 2026-07-11 08:01:19 UTC
 
 ## Session Info
 
-- **Session ID**: 688842d2-b290-4b50-b21c-ebd4f6107fc2
-- **Timestamp**: 2026-07-11 07:32:40 UTC
-- **Reason**: iterate finalization (re-run: post gate-fix + ledger update)
+- **Session ID**: e63898b6-731a-4116-92f3-e4b9dfac8870
+- **Timestamp**: 2026-07-11 08:01:19 UTC
+- **Reason**: iterate: Iterate-Rail per-phase durations (M-Pre-1 iterate half)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-11-phase-completed-per-split
-- **Date**: 2026-07-11T07:30:21.813098Z
-- **Type**: change
+- **Run ID**: iterate-2026-07-11-iterate-phase-timing
+- **Date**: 2026-07-11T07:53:01.966058Z
+- **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/phase-completed-per-split
-- **ADR**: iterate-2026-07-11-phase-completed-per-split
+- **Branch**: iterate/iterate-phase-timing
+- **ADR**: iterate-2026-07-11-iterate-phase-timing
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-11-phase-completed-per-split.md
+- **Spec**: .shipwright/planning/iterate/2026-07-11-iterate-phase-timing.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/phase-completed-per-split
-- **Run ID**: `iterate-2026-07-11-phase-completed-per-split`
-- **Spec**: .shipwright/planning/iterate/2026-07-11-phase-completed-per-split.md
+- **Branch**: iterate/iterate-phase-timing
+- **Run ID**: iterate-2026-07-11-iterate-phase-timing
+- **Spec**: .shipwright/planning/iterate/2026-07-11-iterate-phase-timing.md
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -50,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/phase-completed-per-split
-- **Last Commit**: ebdce47d chore(triage): sweep 2 outbox append(s) into branch
+- **Branch**: iterate/iterate-phase-timing
+- **Last Commit**: 6ee8dae2 feat(iterate): fold per-phase durations into work_completed for the WebUI Iterate-Rail (M-Pre-1 iterate half)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -67,16 +67,16 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-da02439d | grade_snapshot | — | 2026-07-11 |
+| evt-95a4c491 | grade_snapshot | — | 2026-07-11 |
 | evt-e5552bd3 | grade_snapshot | — | 2026-07-11 |
 | evt-cd1e596b | grade_snapshot | — | 2026-07-11 |
 | evt-0a7b22e5 | work_completed | iterate (Widen phase_completed dedup to (phase, splitId) so multi-split phases record per-split ends; promote splitId to a top-level field; de-dup 4 phase-count/latest-ts consumers; plan SKILL emits --split-id.) | 2026-07-11 |
-| evt-cc19d476 | grade_snapshot | — | 2026-07-11 |
-| evt-1ed6cf81 | work_completed | iterate (B5: /shipwright-adopt accepts a WebUI brief via the shared brief_intake helper (promoted to shared/scripts/lib) + a thin adopt_brief_intake adapter; run + iterate banners surface the shared plain-language index with a copy-parity test.) | 2026-07-11 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 294
+- **Total work events**: 295
 - **Last iterate**: change — Widen phase_completed dedup to (phase, splitId) so multi-split phases record per-split ends; promote splitId to a top-level field; de-dup 4 phase-count/latest-ts consumers; plan SKILL emits --split-id. (2026-07-11)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

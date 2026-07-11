@@ -2008,6 +2008,24 @@ Group-D **D1** coverage check dropped its spec-update watermark: an FR is covere
 when **any** event has ever named it ("a requirement untouched for months is
 under control" — re-verification under change is D4/reconciliation, not a D1 gap).
 
+**Iterate-Rail per-phase durations (M-Pre-1 iterate half, trg-8efeb3d7).**
+`work_completed` events carry an optional `phase_timings` array
+(`[{phase, started, duration_ms}]`, groups `scope build review test finalize` —
+the SSoT in `shared/scripts/lib/iterate_phase_groups.py`, pinned to
+`session_plan._PHASE_CATALOG`). Producer chain: the iterate SKILL (§6a) calls
+`shared/scripts/tools/iterate_phase_timing.py mark <group>` at each of the 5
+Iterate-Rail group boundaries, appending a first-wins mark to the **gitignored**
+per-run sidecar `.shipwright/agent_docs/iterates/<run_id>.phase_timings.jsonl`
+(sibling of `<run_id>.plan.json`). At F5b, `finalize_iterate._record_event`
+reads the sidecar, computes per-group durations, and folds `phase_timings`
+into the `work_completed` event (via `lib.iterate_phase_groups.fold_into_event`,
+validated by the shared `normalize_phase_timings`) — **additive + best-effort**:
+no sidecar (or an empty one) leaves the event unchanged, so pre-M-Pre-1 and
+partial-mark runs are fine and the WebUI reads the field only when present. This
+is the iterate counterpart of the pipeline's paired
+`phase_started`/`phase_completed` (B1): the framework produces the timing, the
+WebUI Iterate-Rail renders it. Origin: iterate-2026-07-11-iterate-phase-timing.
+
 ### Scripts Supporting Self-Healing
 
 | Script | Self-Healing | Details |

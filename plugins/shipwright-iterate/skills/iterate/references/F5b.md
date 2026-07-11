@@ -88,6 +88,17 @@ heuristics against branch names.
 > Best-effort + no-op for a non-campaign iterate. Reads back at
 > `result["steps"]["campaign_status"]`.
 
+**Iterate-Rail per-phase durations (M-Pre-1 iterate half, §6a).**
+`finalize_iterate` also reads this run's boundary-mark sidecar
+(`.shipwright/agent_docs/iterates/<run_id>.phase_timings.jsonl`, written by the
+§6a `mark` calls) and folds the computed per-group durations into the
+`work_completed` event as `phase_timings`
+(`[{phase, started, duration_ms}]`, groups `scope build review test finalize`).
+Additive + best-effort: a run with **no** sidecar (or an empty one) leaves the
+event unchanged, so partial history and pre-M-Pre-1 runs are fine — the WebUI
+Iterate-Rail reads the field only when present. You do **not** pass timings on the
+CLI; the fold is automatic (`lib.iterate_phase_groups.fold_into_event`).
+
 Reads back: `result["steps"]["event"]["id"]` — capture it so F6 can confirm
 the event is present before staging `shipwright_events.jsonl` (and for the
 legacy F6.5 SHA patch, used only by non-worktree callers).

@@ -24,6 +24,7 @@ Complexity-adaptive change lifecycle for completed Shipwright projects. Detects 
 | Path A / B / C body (+ SIMPLIFY sub-mode) | [path-a-feature](references/path-a-feature.md) · [path-b-change](references/path-b-change.md) · [path-c-bug](references/path-c-bug.md) · [F-debug](references/F-debug.md) (BUG systematic-debugging) · [F-simplify](references/F-simplify.md) (SIMPLIFY behavior-preserving) |
 | Campaign Mode, Escalation, Degraded, Errors | [campaign-mode](references/campaign-mode.md) · [mid-flight-escalation](references/mid-flight-escalation.md) · [degraded-mode](references/degraded-mode.md) · [error-handling](references/error-handling.md) |
 | Artifact Ownership | [artifact-ownership](references/artifact-ownership.md) |
+| Phase Timing (Iterate-Rail durations, M-Pre-1) | [phase-timing](references/phase-timing.md) |
 | Finalization F-phases | [F0](references/F0.md) · [F0.5](references/F0.5.md) · [F1](references/F1.md) · [F2](references/F2.md) · [F3](references/F3.md) · [F3a](references/F3a.md) · [F4](references/F4.md) · [F5](references/F5.md) · [F5b](references/F5b.md) · [F5c](references/F5c.md) · [F6](references/F6.md) · [F6.5](references/F6.5.md) · [F7](references/F7.md) · [F7b](references/F7b.md) · [F11](references/F11.md) · [F12](references/F12.md) |
 | Risk Taxonomy, Override Classes, Phase Matrix | this file (inline — NORMATIVE) |
 
@@ -73,7 +74,7 @@ Read **all Layer 1** of `references/context-loading.md` — `CLAUDE.md`, `conven
 
 ### C. Generate Run ID
 
-`run_id = iterate-{YYYY-MM-DD}-{short-description}` (canonical `RUN_ID_STRICT` form). Propagate through all artifacts.
+`run_id = iterate-{YYYY-MM-DD}-{short-description}` (canonical `RUN_ID_STRICT` form). Propagate through all artifacts. → **Phase Timing:** emit `mark scope` here — right after the run_id exists and **before** Repo Scout (§E), so the scope node captures it (see [phase-timing](references/phase-timing.md)).
 
 ### D. Determine Intent Type
 
@@ -156,7 +157,7 @@ Create `.shipwright/planning/iterate/{date}-{short-description}.md`. Full templa
 
 ### Step 6: Build (TDD — Red-Green-Refactor)
 
-Tests first (outcomes, not internal state; one happy + one error path per AC). Implementation, verify wiring, Boundary Probe sub-step when `touches_io_boundary`. Full body in `references/path-a-feature.md`. The three governance-rule anchors stay inline so `tests/test_skill_step_6_rules_present.py` continues to fire:
+Tests first (outcomes, not internal state; one happy + one error path per AC). Implementation, verify wiring, Boundary Probe sub-step when `touches_io_boundary`. Full body in `references/path-a-feature.md`. → **Phase Timing:** emit `mark build` at entry. The three governance-rule anchors stay inline so `tests/test_skill_step_6_rules_present.py` continues to fire:
 
 - **Test-Update-Klausel** — when an iterate changes test infrastructure itself (skip semantics, hygiene rules, test conventions, this skill's checklist), it MUST update the skill's reference rules in the same diff.
 - **Registry-driven SSoT meta-test rule** — when a registry in `shared/scripts/lib/*` references files/identifiers on disk, BOTH directions of drift protection MUST exist: forward (every value resolves to a file) AND reverse (every namespace-matched file has a registry entry).
@@ -164,7 +165,7 @@ Tests first (outcomes, not internal state; one happy + one error path per AC). I
 
 ### Step 7: Self-Review (always)
 
-See `references/iteration-reviews.md` for the 7-point checklist (item 7: Affected Boundaries).
+See `references/iteration-reviews.md` for the 7-point checklist (item 7: Affected Boundaries). → **Phase Timing:** emit `mark review` at entry.
 
 ### Step 7.5: Confidence Calibration (mandatory at medium+, also when `touches_io_boundary`)
 
@@ -257,7 +258,7 @@ See `references/artifact-ownership.md` (iterate spec, `spec.md`, `shipwright_eve
 
 ## Finalization (all paths)
 
-**CRITICAL: F0–F11 (incl. F3a, F5a, F5b, F5c) are MANDATORY.**
+**CRITICAL: F0–F11 (incl. F3a, F5a, F5b, F5c) are MANDATORY.** (→ Phase Timing: `mark test` at F0, `mark finalize` at F1 — see [phase-timing](references/phase-timing.md).)
 
 > **Order matters.** F0.5 / F3 / F3a / F4 / F5 / F5a / F5b / F5c all write tracked artifacts and MUST run before F6 so a single atomic commit stages them. **F5b's `work_completed` event lands in this worktree's `shipwright_events.jsonl`, so F6 stages it and it ships in the PR** (per-tree, PR-committed model — iterate-2026-05-29-events-jsonl-worktree-commit). F0.5 is the production-time E2E gate. F6.5 (SHA patch) and F7/F7b are SKIPPED in the normal worktree flow — they exist only for legacy / out-of-band (non-worktree, replay) event recording. Do not reorder.
 
