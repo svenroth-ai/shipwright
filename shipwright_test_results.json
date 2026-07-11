@@ -1,20 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-10-adopt-brief-plainbank",
-    "date": "2026-07-11T03:30:00+00:00",
+    "run_id": "iterate-2026-07-11-iterate-phase-timing",
+    "date": "2026-07-11T07:45:50+00:00",
     "intent": "feature",
-    "complexity": "small",
-    "campaign": "monorepo-wow-usability-2026-07-10",
-    "sub_iterate_id": "B5",
+    "complexity": "medium",
     "unit": {
-      "passed": 23,
-      "total": 23,
+      "passed": 22,
+      "total": 22,
       "status": "pass",
-      "note": "17 adopt intake (test_brief_intake_adopt.py, incl. in-process main() + loader poison-free/fail-closed) + 6 banner parity (test_banner_plain_language_parity.py); 37 moved shared brief_intake tests also green"
+      "note": "test_iterate_phase_timing.py (SSoT+pin, mark sidecar, compute/normalize, CLI, finalize fold, gitignore congruence). Full suites green: shared 3848, shipwright-iterate 476."
     },
     "integration": {
       "status": "n/a",
-      "note": "adopt/run/iterate SKILLs are prompts; the deterministic seams are the brief-intake helper (shared) + adopt_brief_intake adapter (unit + CLI tested) and the banner copy-parity test"
+      "note": "framework tooling, not cross_component (no merge/hook/phase-validator machinery); deterministic seams are lib/iterate_phase_groups.py + the iterate_phase_timing CLI + the finalize fold, all unit-tested"
     },
     "pgtap": {
       "status": "n/a"
@@ -30,115 +28,134 @@
     },
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest plugins/shipwright-adopt/tests/test_brief_intake_adopt.py -q",
-      "tests_run": 17,
+      "runner": "uv run --extra dev pytest shared/tests/test_iterate_phase_timing.py -q",
+      "tests_run": 22,
       "exit_code": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-10-adopt-brief-plainbank/surface_verification.json",
-      "timestamp": "2026-07-11T03:30:00+00:00",
+      "evidence_path": ".shipwright/runs/iterate-2026-07-11-iterate-phase-timing/surface_verification.json",
+      "timestamp": "2026-07-11T07:45:50+00:00",
       "attempts": 1
     },
     "degraded": [],
     "test_completeness": {
       "status": "complete",
       "counts": {
-        "untested_testable": 0,
-        "tested": 15,
-        "untestable": 0
+        "testable": 18,
+        "tested": 18,
+        "untestable": 0,
+        "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 4,
-        "covered_acs": 4
+        "acs": 6,
+        "covered_acs": 6
       },
       "behaviors": [
         {
-          "behavior": "AC1: adopt full brief with a description -> product_description pre-filled and brief_prefilled==['product_description'] (that Step-C question removed)",
+          "behavior": "AC1: ITERATE_PHASE_GROUPS SSoT == the 5 rail nodes (scope build review test finalize)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_brief_intake_adopt.py::test_full_brief_prefills_product_description PASSED"
+          "evidence": "test_iterate_phase_timing.py::test_groups_are_the_five_rail_nodes PASSED"
         },
         {
-          "behavior": "AC1: profile + scope stay scan-gated even with a full brief (detection over questions -- a brief never pre-answers them)",
+          "behavior": "AC1: SSoT drift-pins to session_plan._PHASE_CATALOG's group order (loaded by file-path to avoid the lib package collision)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_full_brief_keeps_profile_and_scope_scan_gated PASSED"
+          "evidence": "test_groups_pin_to_session_plan_catalog PASSED"
         },
         {
-          "behavior": "AC1: run + iterate banners surface plain-language glosses that EQUAL the shared index (docs/guide.md Appendix A) verbatim",
+          "behavior": "AC2: append_mark writes {phase,ts} to the <run_id>.phase_timings.jsonl sidecar",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_banner_plain_language_parity.py::test_run_banner_matches_index + test_iterate_banner_matches_index + test_*_has_glosses PASSED"
+          "evidence": "test_append_mark_writes_sidecar PASSED + end-to-end CLI probe (mark scope/build/finalize)"
         },
         {
-          "behavior": "AC1/AC2: a brief yields FEWER questions than no-brief (adopt intake removes exactly the product-description prompt, nothing more)",
+          "behavior": "AC2: append_mark is first-wins per group (a re-cross is a no-op, earliest ts kept)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_full_brief_asks_fewer_questions_than_no_brief PASSED"
+          "evidence": "test_append_mark_is_first_wins_per_group PASSED"
         },
         {
-          "behavior": "AC2: the banner copy-parity test is drift-detecting -- a term surfaced on BOTH banners (ADR) must be identical, and any un-mirrored edit FAILS",
+          "behavior": "AC2: append_mark rejects an unknown group id (ValueError)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_shared_terms_identical_across_surfaces PASSED; RED-verified: corrupting the iterate ADR gloss produced 2 failures, then reverted"
+          "evidence": "test_append_mark_rejects_unknown_group PASSED"
         },
         {
-          "behavior": "AC3 (regression): no brief -> has_brief False, brief_prefilled empty, profile/scope scan-gated -> adopt Step C unchanged",
+          "behavior": "AC2: read_marks skips malformed/off-vocab lines (partial sidecar still yields its groups)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_no_brief_leaves_step_c_unchanged + test_cli_no_brief_is_legacy PASSED"
+          "evidence": "test_read_marks_skips_malformed_lines PASSED"
         },
         {
-          "behavior": "AC3 (regression): run + iterate + adopt behave as today without a brief -- full suites green",
-          "category": "regression",
-          "disposition": "tested",
-          "evidence": "shipwright-run 334, shipwright-adopt 373, shipwright-iterate 476, shared 3836 PASSED (1 pre-existing unrelated campaign-backfill fail)"
-        },
-        {
-          "behavior": "Partial brief: coded answers but no description -> nothing pre-filled (product-description prompt still fires); blank/whitespace description not pre-filled",
+          "behavior": "AC2 (security): sidecar_path contains a crafted run_id (../.. cannot escape iterates/)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_coded_only_brief_prefills_nothing + test_blank_description_is_not_prefilled PASSED"
+          "evidence": "test_sidecar_path_contains_crafted_run_id PASSED"
         },
         {
-          "behavior": "io-boundary round-trip: brief JSON producer -> file -> adopt intake consumer -> product_description recovered",
+          "behavior": "AC3: compute_phase_timings yields chronological {phase,started,duration_ms}; last group's end = end_ts",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_brief_file_path_is_read + test_inline_json_payload_prefills_description PASSED; round-trip probe PASS"
+          "evidence": "test_compute_durations_chronological_with_end_ts PASSED"
         },
         {
-          "behavior": "io-boundary human/Windows-edited: utf-8-sig BOM + CRLF + non-ASCII (umlaut/emoji) brief parses to the right product_description",
+          "behavior": "AC3: empty marks -> [] (finalize then omits the field)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "boundary probes (BOM json, CRLF md, non-ASCII json) all PASS -- asymptote reached (2 clean batches, 0 findings)"
+          "evidence": "test_compute_empty_marks_is_empty PASSED"
         },
         {
-          "behavior": "Robustness: malformed inline JSON falls back to free text (no crash); a non-dict JSON FILE degrades to brief-present-but-nothing-prefilled (no mis-prefill)",
+          "behavior": "AC3: durations are non-negative ints (clock-skew / out-of-order clamps to 0)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_malformed_inline_json_does_not_crash + test_non_dict_json_file_prefills_nothing PASSED"
+          "evidence": "test_compute_durations_non_negative_and_int PASSED"
         },
         {
-          "behavior": "Security: an explicit-but-missing brief file degrades to no-brief (never a half-read/path-string description); --brief is data, disallowed-suffix path never slurped",
+          "behavior": "normalize_phase_timings accepts a valid [{phase,started,duration_ms}] block",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_missing_brief_file_degrades_to_no_brief PASSED + shared test_load_brief_disallowed_suffix_not_read_as_file PASSED"
+          "evidence": "test_normalize_accepts_valid_block PASSED"
         },
         {
-          "behavior": "ADR-045-safe reuse: adopt_brief_intake loads shared brief_intake via spec_from_file_location (no cross-plugin lib-namespace shadow); CLI emits the adopt intake JSON (in-process main() + subprocess)",
+          "behavior": "normalize_phase_timings rejects malformed blocks (unknown group, negative/non-int duration, missing keys, non-list, non-dict entry)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_cli_emits_adopt_intake_json + test_main_with_brief_prints_json + test_main_no_brief_prints_legacy PASSED + full cross-plugin adopt suite green (no lib shadow)"
+          "evidence": "test_normalize_rejects_malformed (6 parametrized classes) PASSED"
         },
         {
-          "behavior": "Loader hardening (PR-review fix): a raising exec_module leaves NO poisoned sentinel in sys.modules (register-after-exec), and a None spec fails closed with ImportError; a fresh load still works after a failure",
+          "behavior": "AC2: the mark/summarize CLI works end-to-end and summarize prints computed timings",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_failed_exec_leaves_no_poisoned_sentinel + test_loader_raises_when_spec_is_none PASSED"
+          "evidence": "test_cli_mark_and_summarize PASSED + real-subprocess probe (scope 1113ms / build 1106ms matched 1s sleeps)"
         },
         {
-          "behavior": "AC4: footprint bounded -- run/SKILL.md net-zero at 400, iterate 299, adopt 300 (all pass their <=300/<=400 gates); helpers/tests <300; bloat baseline not ratcheted; adopt_brief_intake changed-line diff-coverage 97.5% (>=80 gate)",
+          "behavior": "AC2: the CLI rejects a non-canonical run_id (exit != 0)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "adopt+iterate test_kern_skill_md_under_300_loc PASSED; wc: run 400 / iterate 299 / adopt 300 / helper 120 / test 245; diff-cover@10.3.0 vs origin/main = 97.5% PASS"
+          "evidence": "test_cli_mark_rejects_noncanonical_run_id PASSED + probe (exit 2 on 'bad')"
+        },
+        {
+          "behavior": "AC4: finalize_iterate folds phase_timings into the work_completed event",
+          "category": "unit",
+          "disposition": "tested",
+          "evidence": "test_finalize_folds_phase_timings PASSED"
+        },
+        {
+          "behavior": "AC4 (backward-compat): finalize with no sidecar leaves work_completed unchanged (no phase_timings)",
+          "category": "unit",
+          "disposition": "tested",
+          "evidence": "test_finalize_without_sidecar_omits_phase_timings PASSED"
+        },
+        {
+          "behavior": "AC4: fold_into_event is additive + best-effort + preserves a pre-existing phase_timings",
+          "category": "unit",
+          "disposition": "tested",
+          "evidence": "test_fold_into_event_is_additive_and_validated PASSED"
+        },
+        {
+          "behavior": "AC6: the sidecar is gitignored and the template SSoT stays congruent with the framework block; durable <run_id>.json is tracked",
+          "category": "unit",
+          "disposition": "tested",
+          "evidence": "test_gitignore_template_congruent.py PASSED (F0 caught the missing template mirror; fixed) + git check-ignore probe"
         }
       ]
     }

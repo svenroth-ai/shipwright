@@ -59,6 +59,11 @@
 # state written at classify time for the WebUI scoped Plan-Card; superseded by
 # the durable <run_id>.json at finalize. iterate-2026-07-10-persist-session-plan.
 /.shipwright/agent_docs/iterates/*.plan.json
+# Iterate-Rail per-phase timing marks (<run_id>.phase_timings.jsonl) — the
+# boundary-mark sidecar folded into work_completed.phase_timings at F5b.
+# Transient run-scoped state (durable copy is the tracked event field), sibling
+# of *.plan.json. iterate-2026-07-11-iterate-phase-timing.
+/.shipwright/agent_docs/iterates/*.phase_timings.jsonl
 /.shipwright/compliance/skill-compliance/
 # Detective-audit report (run_audit.py / /shipwright-compliance) — transient,
 # regenerated each run, not in audit_staleness.DOC_REGISTRY. The .json was

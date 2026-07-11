@@ -1,0 +1,1 @@
+Iterate-Rail per-phase durations: the iterate finalize step now folds real per-group wall-clock times (scope/build/review/test/finalize) into its `work_completed` event as `phase_timings`, so the Command Center's iterate progress bar can show time-per-step (the iterate counterpart of the pipeline PhaseRail; additive, older runs are unaffected).
