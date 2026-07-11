@@ -1,36 +1,38 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-10-adopt-brief-plainbank"
+run_id: "iterate-2026-07-11-phase-completed-per-split"
 phase: "iterate"
-reason: "iterate finalization"
-timestamp: "2026-07-11T03:31:16.405620+00:00"
+reason: "iterate finalization (re-run: post gate-fix + ledger update)"
+timestamp: "2026-07-11T07:32:40.141913+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-11 03:31:16 UTC
+> Auto-generated 2026-07-11 07:32:40 UTC
 
 ## Session Info
 
-- **Session ID**: c6d96e6a-09ff-4e6f-b168-766dfb9d4fa0
-- **Timestamp**: 2026-07-11 03:31:16 UTC
-- **Reason**: iterate finalization
+- **Session ID**: 688842d2-b290-4b50-b21c-ebd4f6107fc2
+- **Timestamp**: 2026-07-11 07:32:40 UTC
+- **Reason**: iterate finalization (re-run: post gate-fix + ledger update)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-10-run-brief-intake
-- **Date**: 2026-07-11T02:21:21.212639Z
-- **Type**: feature
+- **Run ID**: iterate-2026-07-11-phase-completed-per-split
+- **Date**: 2026-07-11T07:30:21.813098Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/campaign-B4-run-brief-intake
-- **ADR**: iterate-2026-07-10-run-brief-intake
+- **Branch**: iterate/phase-completed-per-split
+- **ADR**: iterate-2026-07-11-phase-completed-per-split
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/campaigns/monorepo-wow-usability-2026-07-10/sub-iterates/B4-run-brief-intake.md
+- **Spec**: .shipwright/planning/iterate/2026-07-11-phase-completed-per-split.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/campaign-B5-adopt-brief-plainbank
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-11T03:24:15)
+- **Branch**: iterate/phase-completed-per-split
+- **Run ID**: `iterate-2026-07-11-phase-completed-per-split`
+- **Spec**: .shipwright/planning/iterate/2026-07-11-phase-completed-per-split.md
+- **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
@@ -48,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/campaign-B5-adopt-brief-plainbank
-- **Last Commit**: 0e55235a feat(run): accept a pre-filled WebUI-wizard brief, ask only what's missing (K2c) (#360)
+- **Branch**: iterate/phase-completed-per-split
+- **Last Commit**: ebdce47d chore(triage): sweep 2 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +67,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-e5552bd3 | grade_snapshot | — | 2026-07-11 |
+| evt-cd1e596b | grade_snapshot | — | 2026-07-11 |
+| evt-0a7b22e5 | work_completed | iterate (Widen phase_completed dedup to (phase, splitId) so multi-split phases record per-split ends; promote splitId to a top-level field; de-dup 4 phase-count/latest-ts consumers; plan SKILL emits --split-id.) | 2026-07-11 |
 | evt-cc19d476 | grade_snapshot | — | 2026-07-11 |
 | evt-1ed6cf81 | work_completed | iterate (B5: /shipwright-adopt accepts a WebUI brief via the shared brief_intake helper (promoted to shared/scripts/lib) + a thin adopt_brief_intake adapter; run + iterate banners surface the shared plain-language index with a copy-parity test.) | 2026-07-11 |
-| evt-d9cf4fd8 | grade_snapshot | — | 2026-07-11 |
-| evt-4d080aae | work_completed | iterate (Brief-intake in /shipwright-run: accept a pre-filled WebUI-wizard brief (file or payload), map the four answers to profile + deploy-target/env, and ask only the still-missing questions; no brief -> legacy interview unchanged (K2c).) | 2026-07-11 |
-| evt-233c9260 | grade_snapshot | — | 2026-07-11 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 293
-- **Last iterate**: feature — B5: /shipwright-adopt accepts a WebUI brief via the shared brief_intake helper (promoted to shared/scripts/lib) + a thin adopt_brief_intake adapter; run + iterate banners surface the shared plain-language index with a copy-parity test. (2026-07-11)
+- **Total work events**: 294
+- **Last iterate**: change — Widen phase_completed dedup to (phase, splitId) so multi-split phases record per-split ends; promote splitId to a top-level field; de-dup 4 phase-count/latest-ts consumers; plan SKILL emits --split-id. (2026-07-11)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

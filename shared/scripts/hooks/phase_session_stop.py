@@ -138,6 +138,13 @@ def _record_event(project_root: Path, event_type: str, phase: str,
     ]
     if extra:
         args.extend(["--detail", json.dumps(extra)])
+        # Promote the splitId the caller already carries in `extra` to a
+        # top-level --split-id so phase_completed dedups by (phase, splitId): a
+        # multi-split phase records one end per split rather than collapsing to
+        # the first (iterate-2026-07-11-phase-completed-per-split).
+        split_id = extra.get("splitId")
+        if split_id is not None:  # forward any explicit splitId (None = single-pass phase)
+            args.extend(["--split-id", str(split_id)])
     try:
         subprocess.run(args, capture_output=True, text=True, timeout=10)
     except (subprocess.TimeoutExpired, OSError):

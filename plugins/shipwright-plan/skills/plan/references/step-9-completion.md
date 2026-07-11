@@ -40,8 +40,13 @@ uv run "{plugin_root}/scripts/checks/write-plan-config.py" \
   --project-root "$(pwd)" --status complete --split "{split_name}" --sections {N}
 
 # C1 — Record phase completion event (idempotent — skips if recorded).
+# --split-id makes a multi-split plan phase record one end PER split (dedup key
+# is (phase, splitId)); aligns this SKILL emit with the orchestrator's per-split
+# end so they collapse rather than leaving a phantom split-less plan end.
+# (iterate-2026-07-11-phase-completed-per-split)
 uv run "{shared_root}/scripts/tools/record_event.py" \
   --project-root "$(pwd)" --type phase_completed --phase plan \
+  --split-id "{split_name}" \
   --detail "{N} sections for {split_name}"
 
 # C2 — Update delivery dashboard.

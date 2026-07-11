@@ -176,8 +176,11 @@ def _quality_indicators_events(data: ComplianceData) -> list[str]:
     build_events = [we for we in data.work_events if we.source == "build"]
     iterate_events = [we for we in data.work_events if we.source == "iterate"]
 
-    # Phase completion from events
-    completed_phases = [e["phase"] for e in data.phase_events if e.get("type") == "phase_completed"]
+    # Phase completion from events. Count DISTINCT phase names: a multi-split
+    # phase (build/plan fan out one phase_task per split) now records one
+    # phase_completed PER split (iterate-2026-07-11-phase-completed-per-split), so
+    # a raw list length would overcount the "{n}/7 phases completed" indicator.
+    completed_phases = sorted({e["phase"] for e in data.phase_events if e.get("type") == "phase_completed"})
     total_pipeline = 7  # project, design, plan, build, test, changelog, deploy
 
     # Review counts

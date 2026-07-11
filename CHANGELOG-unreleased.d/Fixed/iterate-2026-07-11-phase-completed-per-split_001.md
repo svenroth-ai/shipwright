@@ -1,0 +1,1 @@
+Multi-split pipeline phases (build/plan) no longer undercount their duration in the tracked event log: every split's completion is recorded, so the per-phase span spans the whole phase instead of only the first split.

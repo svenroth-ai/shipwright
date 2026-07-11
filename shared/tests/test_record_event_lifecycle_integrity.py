@@ -99,6 +99,35 @@ class TestIdempotentAppend:
         # Only the first event remains — the duplicate was NOT written.
         assert len(_events(tmp_path)) == 1
 
+    def test_different_split_ids_not_deduped(self, tmp_path):
+        """AC1 — same phase, different splitId: both ends persist (per-split facts)."""
+        e1 = {**_phase_completed("build", "evt-split0001"), "splitId": "01"}
+        e2 = {**_phase_completed("build", "evt-split0002"), "splitId": "02"}
+        eid1, skip1 = record_event.append_event_idempotent(tmp_path, e1)
+        eid2, skip2 = record_event.append_event_idempotent(tmp_path, e2)
+        assert skip1 is None and skip2 is None
+        assert eid1 == "evt-split0001" and eid2 == "evt-split0002"
+        assert len(_events(tmp_path)) == 2
+
+    def test_same_split_id_deduped_with_split_in_skip(self, tmp_path):
+        """AC2 — same (phase, splitId): second skipped; skip payload carries splitId."""
+        e1 = {**_phase_completed("build", "evt-split0001"), "splitId": "01"}
+        e2 = {**_phase_completed("build", "evt-split0002"), "splitId": "01"}
+        record_event.append_event(tmp_path, e1)
+        eid, skipped = record_event.append_event_idempotent(tmp_path, e2)
+        assert eid is None
+        assert skipped == {"reason": "duplicate_phase", "phase": "build", "splitId": "01"}
+        assert len(_events(tmp_path)) == 1
+
+    def test_split_tagged_and_untagged_are_distinct(self, tmp_path):
+        """A split-tagged end and a phase-only (splitId=None) end don't collide."""
+        e_split = {**_phase_completed("build", "evt-split0001"), "splitId": "01"}
+        e_none = _phase_completed("build", "evt-none00001")  # no splitId
+        _, s1 = record_event.append_event_idempotent(tmp_path, e_split)
+        _, s2 = record_event.append_event_idempotent(tmp_path, e_none)
+        assert s1 is None and s2 is None
+        assert len(_events(tmp_path)) == 2
+
     def test_skips_duplicate_commit_when_flag_set(self, tmp_path):
         record_event.append_event(tmp_path, {
             "v": 1, "id": "evt-wc000001", "ts": "T", "type": "work_completed",

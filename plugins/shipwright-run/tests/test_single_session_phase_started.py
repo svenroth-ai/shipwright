@@ -107,6 +107,38 @@ def test_run_plugin_emitters_never_raise_on_subprocess_failure(monkeypatch, tmp_
                             phase_task_id="ptk-x", split_id=None)
 
 
+def test_run_plugin_emitters_forward_split_id(monkeypatch, tmp_project):
+    """AC3 — the run-plugin (single-session) phase emitters promote a non-None
+    split_id to a top-level --split-id arg (so phase_completed dedups by
+    (phase, splitId)); a None split_id passes no such arg."""
+    import subprocess
+
+    from orchestrator_pkg import events
+
+    captured: list[list[str]] = []
+
+    class _Proc:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    def fake_run(cmd, **_kwargs):
+        captured.append(cmd)
+        return _Proc()
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    events.record_phase_started(tmp_project, phase="build",
+                                phase_task_id="ptk-a", split_id="02-ui")
+    events.record_phase_end(tmp_project, phase="build", status="done",
+                            phase_task_id="ptk-a", split_id=None)
+
+    start_cmd, end_cmd = captured
+    assert "--split-id" in start_cmd
+    assert start_cmd[start_cmd.index("--split-id") + 1] == "02-ui"
+    assert "--split-id" not in end_cmd  # None split → phase-only dedup, unchanged
+
+
 def test_single_session_apply_emits_paired_phase_completed(tmp_project, capsys):
     """single-session-next (start) + single-session-apply (end) write a PAIRED
     phase_started + phase_completed to the tracked shipwright_events.jsonl —

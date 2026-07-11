@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-07-11T03:31:12.413208+00:00
-Total commits: 1126
+Generated: 2026-07-11T07:22:13.740118+00:00
+Total commits: 1128
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 325
-    "feat" : 305
-    "chore" : 237
+    "feat" : 306
+    "chore" : 238
     "docs" : 145
     "refactor" : 67
     "test" : 28
@@ -350,10 +350,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 305 commits
+### Features (feat) — 306 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-11 | iterate | adopt brief-intake reuse + plain-language banner bank (B5) (#361) | 64f197ba0015 |
 | 2026-07-11 | run | accept a pre-filled WebUI-wizard brief, ask only what's missing (K2c) (#360) | 0e55235aebf0 |
 | 2026-07-11 | compliance | grade_snapshot event per Control-Grade regen for the WebUI grade trend (M-Pre-3) (#359) | 16b1da8888bd |
 | 2026-07-11 | iterate | persist session plan as gitignored <run_id>.plan.json for the WebUI Plan-Card (#358) | 4c26a0debd2c |
@@ -660,10 +661,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 237 commits
+### Chores (chore) — 238 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-11 | triage | sweep 2 outbox append(s) into branch | ebdce47da2a8 |
 | 2026-07-10 | design | gitignore transient design-feedback rounds; document single-session review-viewer hosting (#355) | c51e9fe78ab8 |
 | 2026-07-08 | release | v0.30.0 (#348) | 023701b57bb2 |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
@@ -1195,7 +1197,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1126 |
+| Total commits | 1128 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1126 |
+| Human-authored commits | 1128 |
 

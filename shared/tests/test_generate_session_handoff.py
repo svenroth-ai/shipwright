@@ -38,6 +38,29 @@ def test_generate_handoff_includes_all_required_fields(tmp_project):
     assert "Config Files to Read" in content
 
 
+def test_recovery_counts_distinct_phases_not_per_split_events(tmp_project):
+    """The Recovery 'N phases completed' summary counts DISTINCT phase names: a
+    multi-split phase now records one phase_completed per split
+    (iterate-2026-07-11-phase-completed-per-split), so a raw list length would
+    overcount (e.g. '5 phases completed' for a 3-phase run with a 3-split build)."""
+    events = [
+        {"v": 1, "type": "phase_completed", "phase": "project", "ts": "2026-04-01T09:00:00Z"},
+        {"v": 1, "type": "phase_completed", "phase": "plan", "ts": "2026-04-01T10:00:00Z"},
+        {"v": 1, "type": "phase_completed", "phase": "build",
+         "splitId": "01", "ts": "2026-04-02T09:00:00Z"},
+        {"v": 1, "type": "phase_completed", "phase": "build",
+         "splitId": "02", "ts": "2026-04-02T10:00:00Z"},
+        {"v": 1, "type": "phase_completed", "phase": "build",
+         "splitId": "03", "ts": "2026-04-02T11:00:00Z"},
+    ]
+    (tmp_project / "shipwright_events.jsonl").write_text(
+        "\n".join(json.dumps(e) for e in events) + "\n", encoding="utf-8",
+    )
+    content = generate_handoff(tmp_project)
+    assert "- **Pipeline**: 3 phases completed" in content  # project, plan, build
+    assert "5 phases completed" not in content  # not the raw per-split event count
+
+
 def test_generate_handoff_renders_last_iterate_when_history_present(tmp_project):
     """Iterate 11.3 — run_config.iterate_history[-1] becomes a 'Last Iterate'
     section so the handoff reflects iterate state instead of stale build state."""
