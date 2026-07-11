@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-11T01:12:28.167862+00:00
+Generated: 2026-07-11T02:20:22.384564+00:00
 
 ## Requirements Coverage
 
@@ -27,6 +27,7 @@ Generated: 2026-07-11T01:12:28.167862+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-4d080aae"></a>The Shipwright starter now remembers the answers you gave the setup wizard, so it does not ask them again. | iterate | feature |  | 28/28 | — | 2026-07-11 |
 | <a id="evt-9806da2f"></a>grade_snapshot event per compliance regen for the WebUI Control-Grade trend | iterate | feature |  | — | — | 2026-07-11 |
 | <a id="evt-b769510b"></a>When the pipeline sizes up a change, it now saves a small plan file listing which steps it will run and which it will skip, so the web dashboard can show that plan for the change. | iterate | feature |  | 17/17 | — | 2026-07-10 |
 | <a id="evt-8045591b"></a>The pipeline now records the moment each phase begins, so the dashboard can show how long each phase took. | iterate | feature |  | 7/7 | — | 2026-07-10 |
@@ -325,7 +326,7 @@ Generated: 2026-07-11T01:12:28.167862+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 291 |
+| Iterate changes | 292 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

@@ -1,9 +1,9 @@
 {
   "status": "completed",
-  "timestamp": "2026-06-12T20:59:29.953575+00:00",
-  "provider": "internal-code-reviewer",
-  "findings_count": 3,
+  "timestamp": "2026-07-11T02:12:40.317055+00:00",
+  "provider": "openrouter",
+  "findings_count": 6,
   "self_review_fallback_ran": false,
-  "reason": "Step-8 code-reviewer (opus) on the diff: 3 LOW findings, all fixed \u2014 _SKIP_RE->_SKIP_PATH_RE/_SKIP_EXT_RE; pr_reviewer code-assertion de-tautologised (code+keyword adjacency); numeric block threshold pinned. No blocking findings. Live dogfood of the review path: diff judged long-but-coherent (G1) + justified-duplication (G5), 0 forced churn.",
+  "reason": null,
   "review_mode": "code"
 }
