@@ -1,17 +1,20 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-10-run-brief-intake",
-    "date": "2026-07-11T02:00:00+00:00",
+    "run_id": "iterate-2026-07-10-adopt-brief-plainbank",
+    "date": "2026-07-11T03:30:00+00:00",
     "intent": "feature",
-    "complexity": "medium",
+    "complexity": "small",
+    "campaign": "monorepo-wow-usability-2026-07-10",
+    "sub_iterate_id": "B5",
     "unit": {
-      "passed": 37,
-      "total": 37,
-      "status": "pass"
+      "passed": 23,
+      "total": 23,
+      "status": "pass",
+      "note": "17 adopt intake (test_brief_intake_adopt.py, incl. in-process main() + loader poison-free/fail-closed) + 6 banner parity (test_banner_plain_language_parity.py); 37 moved shared brief_intake tests also green"
     },
     "integration": {
       "status": "n/a",
-      "note": "run SKILL is a prompt; the deterministic seam is the brief_intake helper (unit + CLI tested)"
+      "note": "adopt/run/iterate SKILLs are prompts; the deterministic seams are the brief-intake helper (shared) + adopt_brief_intake adapter (unit + CLI tested) and the banner copy-parity test"
     },
     "pgtap": {
       "status": "n/a"
@@ -27,11 +30,11 @@
     },
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest plugins/shipwright-run/tests/test_brief_intake.py plugins/shipwright-run/tests/test_brief_intake_edge.py -q",
-      "tests_run": 37,
+      "runner": "uv run pytest plugins/shipwright-adopt/tests/test_brief_intake_adopt.py -q",
+      "tests_run": 17,
       "exit_code": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-10-run-brief-intake/surface_verification.json",
-      "timestamp": "2026-07-11T03:00:00+00:00",
+      "evidence_path": ".shipwright/runs/iterate-2026-07-10-adopt-brief-plainbank/surface_verification.json",
+      "timestamp": "2026-07-11T03:30:00+00:00",
       "attempts": 1
     },
     "degraded": [],
@@ -39,7 +42,7 @@
       "status": "complete",
       "counts": {
         "untested_testable": 0,
-        "tested": 37,
+        "tested": 15,
         "untestable": 0
       },
       "enumeration_basis": {
@@ -48,100 +51,94 @@
       },
       "behaviors": [
         {
-          "behavior": "AC1: full brief with persistence=yes -> profile supabase-nextjs, deploy jelastic-dev, and none of the four wizard questions re-asked",
+          "behavior": "AC1: adopt full brief with a description -> product_description pre-filled and brief_prefilled==['product_description'] (that Step-C question removed)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_brief_intake.py::test_full_brief_persistence_yes_selects_supabase PASSED"
+          "evidence": "test_brief_intake_adopt.py::test_full_brief_prefills_product_description PASSED"
         },
         {
-          "behavior": "AC1: full brief with persistence=no -> vite-hono (zero-signup default), deploy none, no supabase env",
+          "behavior": "AC1: profile + scope stay scan-gated even with a full brief (detection over questions -- a brief never pre-answers them)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_full_brief_persistence_no_selects_vite_hono_default + test_persistence_unsure_selects_vite_hono PASSED"
+          "evidence": "test_full_brief_keeps_profile_and_scope_scan_gated PASSED"
         },
         {
-          "behavior": "AC1: supabase env vars asked ONLY on web + persistence (local DB or web-no-DB -> no env questions)",
+          "behavior": "AC1: run + iterate banners surface plain-language glosses that EQUAL the shared index (docs/guide.md Appendix A) verbatim",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_env_questions_only_when_web_and_persistence + test_persistence_yes_but_local_defers_env PASSED"
+          "evidence": "test_banner_plain_language_parity.py::test_run_banner_matches_index + test_iterate_banner_matches_index + test_*_has_glosses PASSED"
         },
         {
-          "behavior": "AC2: partial brief suppresses the answered wizard questions and asks ONLY the gap; missing persistence leaves profile null",
+          "behavior": "AC1/AC2: a brief yields FEWER questions than no-brief (adopt intake removes exactly the product-description prompt, nothing more)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_partial_brief_missing_persistence_asks_only_that + test_partial_brief_description_only PASSED"
+          "evidence": "test_full_brief_asks_fewer_questions_than_no_brief PASSED"
         },
         {
-          "behavior": "AC3 (regression): no brief -> has_brief False, all four questions remain, legacy interview unchanged",
+          "behavior": "AC2: the banner copy-parity test is drift-detecting -- a term surfaced on BOTH banners (ADR) must be identical, and any un-mirrored edit FAILS",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_no_brief_all_questions_remain PASSED + full run-plugin suite 362 green (no-brief path)"
+          "evidence": "test_shared_terms_identical_across_surfaces PASSED; RED-verified: corrupting the iterate ADR gloss produced 2 failures, then reverted"
         },
         {
-          "behavior": "Conservative normalization: synonyms map to canonical tokens; ambiguous plain-language answers fall through to remaining (never guessed)",
+          "behavior": "AC3 (regression): no brief -> has_brief False, brief_prefilled empty, profile/scope scan-gated -> adopt Step C unchanged",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_normalize_synonyms + test_normalize_ambiguous_phrases_fall_through_to_remaining PASSED"
+          "evidence": "test_no_brief_leaves_step_c_unchanged + test_cli_no_brief_is_legacy PASSED"
         },
         {
-          "behavior": "io-boundary round-trip: write brief JSON -> file -> intake -> assert profile/deploy/no-re-ask",
-          "category": "unit",
+          "behavior": "AC3 (regression): run + iterate + adopt behave as today without a brief -- full suites green",
+          "category": "regression",
           "disposition": "tested",
-          "evidence": "test_roundtrip_json_file PASSED"
+          "evidence": "shipwright-run 334, shipwright-adopt 373, shipwright-iterate 476, shared 3836 PASSED (1 pre-existing unrelated campaign-backfill fail)"
         },
         {
-          "behavior": "io-boundary human/Windows-edited file: BOM + CRLF brief still parses to the right profile",
+          "behavior": "Partial brief: coded answers but no description -> nothing pre-filled (product-description prompt still fires); blank/whitespace description not pre-filled",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_roundtrip_utf8_bom_and_crlf PASSED"
+          "evidence": "test_coded_only_brief_prefills_nothing + test_blank_description_is_not_prefilled PASSED"
         },
         {
-          "behavior": "Security: a non-brief-suffix path is never slurped (@/etc/passwd-style path cannot leak file contents into the prompt)",
+          "behavior": "io-boundary round-trip: brief JSON producer -> file -> adopt intake consumer -> product_description recovered",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_load_brief_disallowed_suffix_not_read_as_file PASSED"
+          "evidence": "test_brief_file_path_is_read + test_inline_json_payload_prefills_description PASSED; round-trip probe PASS"
         },
         {
-          "behavior": "Robustness: malformed / empty / wrong-shape (JSON array or scalar) brief degrades to the legacy interview, never crashes (found by io-boundary probe, then fixed)",
+          "behavior": "io-boundary human/Windows-edited: utf-8-sig BOM + CRLF + non-ASCII (umlaut/emoji) brief parses to the right product_description",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_load_brief_malformed_json_file_degrades + test_load_brief_empty_file_yields_all_remaining + test_non_dict_json_shape_degrades_not_crashes PASSED"
+          "evidence": "boundary probes (BOM json, CRLF md, non-ASCII json) all PASS -- asymptote reached (2 clean batches, 0 findings)"
         },
         {
-          "behavior": "Load shapes: dict, inline JSON, inline key:value payload, JSON file, @-prefixed path, plain text",
+          "behavior": "Robustness: malformed inline JSON falls back to free text (no crash); a non-dict JSON FILE degrades to brief-present-but-nothing-prefilled (no mis-prefill)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_load_brief_from_json_file + _at_prefix_path + _inline_json_payload + _inline_keyvalue_payload + _plain_text_is_description_only PASSED"
+          "evidence": "test_malformed_inline_json_does_not_crash + test_non_dict_json_file_prefills_nothing PASSED"
         },
         {
-          "behavior": "CLI: --brief prints the intake JSON (profile + has_brief True); no --brief prints has_brief False with all questions remaining",
+          "behavior": "Security: an explicit-but-missing brief file degrades to no-brief (never a half-read/path-string description); --brief is data, disallowed-suffix path never slurped",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_cli_full_brief + test_cli_no_brief PASSED"
+          "evidence": "test_missing_brief_file_degrades_to_no_brief PASSED + shared test_load_brief_disallowed_suffix_not_read_as_file PASSED"
         },
         {
-          "behavior": "Review MUST-FIX: an explicit but unreadable file reference (missing/oversized/OSError/disallowed @-path or bare brief-suffix path) returns None -> legacy interview, never description=<the path string>",
+          "behavior": "ADR-045-safe reuse: adopt_brief_intake loads shared brief_intake via spec_from_file_location (no cross-plugin lib-namespace shadow); CLI emits the adopt intake JSON (in-process main() + subprocess)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_brief_intake_edge.py::test_missing_at_prefixed_json_degrades_to_legacy + test_missing_bare_brief_suffix_path_degrades_to_legacy + test_oversized_brief_file_degrades_to_legacy + reconciled test_load_brief_disallowed_suffix_not_read_as_file PASSED"
+          "evidence": "test_cli_emits_adopt_intake_json + test_main_with_brief_prints_json + test_main_no_brief_prints_legacy PASSED + full cross-plugin adopt suite green (no lib shadow)"
         },
         {
-          "behavior": "Review SHOULD-FIX: description is always str|None (a non-string description number/list is coerced to str, never a silent non-string counted as answered)",
+          "behavior": "Loader hardening (PR-review fix): a raising exec_module leaves NO poisoned sentinel in sys.modules (register-after-exec), and a None spec fails closed with ImportError; a fresh load still works after a failure",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_brief_intake_edge.py::test_non_string_description_coerced_to_str PASSED"
+          "evidence": "test_failed_exec_leaves_no_poisoned_sentinel + test_loader_raises_when_spec_is_none PASSED"
         },
         {
-          "behavior": "Review SHOULD-FIX: Supabase env labels are the NEXT_PUBLIC_-prefixed build vars from the profile (not the bare SUPABASE_URL/ANON_KEY that mis-map build)",
+          "behavior": "AC4: footprint bounded -- run/SKILL.md net-zero at 400, iterate 299, adopt 300 (all pass their <=300/<=400 gates); helpers/tests <300; bloat baseline not ratcheted; adopt_brief_intake changed-line diff-coverage 97.5% (>=80 gate)",
           "category": "unit",
           "disposition": "tested",
-          "evidence": "test_brief_intake_edge.py::test_supabase_env_labels_are_next_public_prefixed PASSED"
-        },
-        {
-          "behavior": "Review SHOULD-FIX: mixed inline text keeps its free-text prose as description (not dropped when a key:value line matches); nested fenced JSON parses in full",
-          "category": "unit",
-          "disposition": "tested",
-          "evidence": "test_brief_intake_edge.py::test_mixed_inline_text_preserves_prose_as_description + test_fenced_json_block_with_nested_object_parses_in_full PASSED"
+          "evidence": "adopt+iterate test_kern_skill_md_under_300_loc PASSED; wc: run 400 / iterate 299 / adopt 300 / helper 120 / test 245; diff-cover@10.3.0 vs origin/main = 97.5% PASS"
         }
       ]
     }

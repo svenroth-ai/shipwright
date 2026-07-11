@@ -1,0 +1,1 @@
+/shipwright-adopt accepts a pre-delivered brief (`--brief`) and skips the Step-C product-description question the brief answers, mirroring /shipwright-run's brief-intake; `brief_intake.py` is now shared by both plugins.

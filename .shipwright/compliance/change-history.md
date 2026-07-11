@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-07-11T02:20:22.384564+00:00
-Total commits: 1125
+Generated: 2026-07-11T03:31:12.413208+00:00
+Total commits: 1126
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 325
-    "feat" : 304
+    "feat" : 305
     "chore" : 237
     "docs" : 145
     "refactor" : 67
@@ -350,10 +350,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 304 commits
+### Features (feat) — 305 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-11 | run | accept a pre-filled WebUI-wizard brief, ask only what's missing (K2c) (#360) | 0e55235aebf0 |
 | 2026-07-11 | compliance | grade_snapshot event per Control-Grade regen for the WebUI grade trend (M-Pre-3) (#359) | 16b1da8888bd |
 | 2026-07-11 | iterate | persist session plan as gitignored <run_id>.plan.json for the WebUI Plan-Card (#358) | 4c26a0debd2c |
 | 2026-07-11 | run | emit phase_started + paired phase_completed at pipeline phase entry/exit (M-Pre-1) (#357) | a087173639e5 |
@@ -1194,7 +1195,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1125 |
+| Total commits | 1126 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1125 |
+| Human-authored commits | 1126 |
 

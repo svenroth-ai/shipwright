@@ -1,0 +1,13 @@
+{
+  "run_id": "iterate-2026-07-10-adopt-brief-plainbank",
+  "date": "2026-07-11T03:31:42.199585Z",
+  "type": "feature",
+  "complexity": "small",
+  "branch": "iterate/campaign-B5-adopt-brief-plainbank",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/campaigns/monorepo-wow-usability-2026-07-10/sub-iterates/B5-adopt-brief-plainbank.md",
+  "adr": "iterate-2026-07-10-adopt-brief-plainbank",
+  "campaign": "monorepo-wow-usability-2026-07-10",
+  "sub_iterate_id": "B5",
+  "summary": "Adopt brief-intake (shared brief_intake helper + adopt adapter) + run/iterate plain-language banner bank with copy-parity test"
+}

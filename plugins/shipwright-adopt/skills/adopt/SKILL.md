@@ -38,6 +38,7 @@ corresponding step fires.
 
 ```
 /shipwright-adopt [--dry-run]
+                  [--brief <path|payload>]
                   [--profile <name>]
                   [--scope full_app|library|cli]
                   [--include-nested]
@@ -126,6 +127,13 @@ One question per turn; ask only when the answer cannot be inferred
 from Layer 1. Examples: low profile confidence, scope ambiguity,
 nested-project policy, missing test/build commands. Also present
 `enrichment.product_description` for user edit.
+
+**Brief pre-fill (K2d, optional).** With `--brief`, run the shared intake FIRST;
+skip prompts it pre-fills (`product_description` → `enrichment.product_description`),
+keep `profile`/`scope` scan-gated (detection over questions). No brief → unchanged.
+```bash
+uv run "${CLAUDE_PLUGIN_ROOT}/scripts/lib/adopt_brief_intake.py" --brief "<path|payload>"
+```
 
 Full procedure → [references/step-c-interview.md](references/step-c-interview.md).
 When-to-ask-vs-infer → [references/interview-protocol.md](references/interview-protocol.md).

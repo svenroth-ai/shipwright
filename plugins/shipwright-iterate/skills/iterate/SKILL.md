@@ -44,6 +44,9 @@ Usage: /shipwright-iterate --type feature|change|bug "description"
 Paths: FEATURE / CHANGE → [interview]→[spec]→[plan]→[approval]→[review]→[design]→build→test→commit
        BUG              → [spec]→reproduce→[plan]→fix→test→commit
 Complexity: trivial | small | medium | large (auto-detected, overridable)
+In plain words (shared index → docs/guide.md Appendix A):
+  ADR: Log of architectural decisions with rationale (why this database, why this pattern)
+  Conventional Commits: Standardized commit-message format (`feat:`, `fix:`, etc.) so version history is machine-readable
 ================================================================================
 ```
 
@@ -252,8 +255,6 @@ See `references/escape-hatch.md` and `references/iteration-planning.md` (handoff
 
 See `references/artifact-ownership.md` (iterate spec, `spec.md`, `shipwright_events.jsonl`, ADR, `architecture.md`, mini-plan).
 
----
-
 ## Finalization (all paths)
 
 **CRITICAL: F0–F11 (incl. F3a, F5a, F5b, F5c) are MANDATORY.**
@@ -290,8 +291,6 @@ Four fail-closed conditions enforced by `surface_verification.py` (orchestrator)
 | F7b | [F7b](references/F7b.md) | `commit_event_followup.py` — seals an **out-of-band F7** main-tree append only (not the worktree flow; idempotent noop otherwise) |
 | F11 | [F11](references/F11.md) | Leak-guard (`--stage f11`), `ensure_current.py` refresh-if-behind (integrate+regenerate before arm), push + `gh pr create` against `origin/<default>`, arm fail-soft `gh pr merge --auto --squash` (iterate/* only; deferred under campaign `SHIPWRIGHT_ITERATE_AUTOMERGE=0` — orchestrator merges each PR in turn, interleaved-serial), update handoff, run `verify_iterate_finalization.py`, then **`watch_pr_delivery.py`** — delivered = MERGED + green (no shoot-and-forget) |
 | F12 | [F12](references/F12.md) | Count pending drops; prompt for `/shipwright-changelog` once PR merges; print summary banner |
-
----
 
 ## Degraded Mode
 See `references/degraded-mode.md` (no sync config, stale mappings, no visual-guidelines, browser-verify failure, code-reviewer unavailable, external review opt-out, pipeline handoff failure, no designs). Record degraded conditions in `shipwright_test_results.json.degraded[]`.
