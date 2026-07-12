@@ -1,1 +1,0 @@
-The external review gate no longer silently falls back to self-review when API keys are present but every review fails: it now returns a non-zero exit with a recorded degraded reason instead of a success-looking result.

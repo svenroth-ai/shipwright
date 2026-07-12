@@ -1,7 +1,7 @@
 {
   "name": "shipwright-plan",
   "description": "AI-assisted deep planning with research, interview, external LLM review, and TDD approach",
-  "version": "0.30.0",
+  "version": "0.31.0",
   "author": {
     "name": "Sven Roth",
     "url": "https://github.com/svenroth-ai"

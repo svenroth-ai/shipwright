@@ -1,1 +1,0 @@
-shipwright-iterate intro banner no longer prints a hardcoded, stale version string (was `v0.3.0`); the banner now carries no version, matching every other plugin, with a drift-guard test preventing regression.

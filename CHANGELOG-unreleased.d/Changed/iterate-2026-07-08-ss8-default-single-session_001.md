@@ -1,1 +1,0 @@
-/shipwright-run: single_session is now the default and sole supported pipeline mode (runs on every surface); multi_session is deprecated (retained for back-compat, removal deferred). Existing runs migrate explicitly — see docs/migrations/multi-session-to-single-session.md.

@@ -218,3 +218,12 @@ _Existing user-facing documentation discovered by /shipwright-adopt._
 - **ADR-309** (2026-07-08): Single-session pipeline resumability, recovery & observability (SS5)
 - **iterate-2026-07-10-grade-snapshot-events** (2026-07-11): Data-flow — grade_snapshot appended to the durable tracked shipwright_events.jsonl at each compliance grade regen (record_event new --type + emit_grade_snapshot), giving the WebUI Ship's-Log grade trend + per-run delta (M-Pre-3). → decision_log (Run-ID).
 - **iterate-2026-07-10-run-brief-intake** (2026-07-11): Data-flow — /shipwright-run accepts a WebUI-wizard brief (file/payload) via a tested brief_intake helper that maps persistence→profile + run-location→deploy/env and asks only the still-missing questions; no brief → legacy interview unchanged (K2c). → decision_log (Run-ID).
+- **ADR-311** (2026-07-08): Single-session pipeline resumability, recovery & observability (SS5)
+- **ADR-312** (2026-07-08): External-review gate fails loud on degradation
+- **ADR-316** (2026-07-11): Adopt accepts a WebUI brief; brief_intake promoted to shared
+- **ADR-320** (2026-07-11): Emit phase_started at the two phase-entry call sites
+- **ADR-322** (2026-07-11): grade_snapshot event per compliance regen
+- **ADR-323** (2026-07-11): Persist iterate session plan as gitignored <run_id>.plan.json sibling
+- **ADR-324** (2026-07-11): Brief-intake: /shipwright-run accepts a pre-filled wizard brief
+- **ADR-325** (2026-07-11): Iterate-Rail per-phase durations via boundary-mark sidecar
+- **ADR-326** (2026-07-11): Per-split phase_completed: dedup on (phase, splitId)
