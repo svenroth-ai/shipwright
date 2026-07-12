@@ -29,9 +29,9 @@ OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 # Default models — can be overridden via config dict
 DEFAULT_MODELS = {
     "openrouter_gemini": "google/gemini-3.1-pro-preview",
-    "openrouter_chatgpt": "openai/gpt-5.4",
+    "openrouter_chatgpt": "openai/gpt-5.6-terra-pro",
     "gemini": "gemini-3.1-pro-preview",
-    "chatgpt": "gpt-5.4",
+    "chatgpt": "gpt-5.6-terra-pro",
 }
 
 

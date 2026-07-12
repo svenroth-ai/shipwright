@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-07-11T07:52:11.084706+00:00
-Total commits: 1129
+Generated: 2026-07-12T18:05:37.884990+00:00
+Total commits: 1132
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 325
+    "fix" : 326
     "feat" : 307
-    "chore" : 238
+    "chore" : 240
     "docs" : 145
     "refactor" : 67
     "test" : 28
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 325 commits
+### Fixes (fix) — 326 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-11 | run | record phase_completed per split for accurate multi-split durations (#362) | 70652aef7ed4 |
 | 2026-07-08 | review | external-review gate fails loud on degradation + gpt-5.x param (#351) | 515d65086ccc |
 | 2026-07-08 | iterate | remove stale hardcoded version from intro banner (#350) | f36a656208b5 |
 | 2026-07-08 | scripts | update-marketplace.sh installs registered-but-missing plugins (#347) | 9ae9551f16f0 |
@@ -354,7 +355,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-11 | iterate | fold per-phase durations into work_completed for the WebUI Iterate-Rail (M-Pre-1 iterate half) | 6ee8dae2971b |
+| 2026-07-11 | iterate | fold per-phase durations into work_completed for the WebUI Iterate-Rail (M-Pre-1 iterate half) (#363) | a710b4167114 |
 | 2026-07-11 | iterate | adopt brief-intake reuse + plain-language banner bank (B5) (#361) | 64f197ba0015 |
 | 2026-07-11 | run | accept a pre-filled WebUI-wizard brief, ask only what's missing (K2c) (#360) | 0e55235aebf0 |
 | 2026-07-11 | compliance | grade_snapshot event per Control-Grade regen for the WebUI grade trend (M-Pre-3) (#359) | 16b1da8888bd |
@@ -662,11 +663,13 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 238 commits
+### Chores (chore) — 240 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-11 | triage | sweep 2 outbox append(s) into branch | da24e91aff32 |
+| 2026-07-12 | triage | sweep 5 outbox append(s) into branch | 580fa5fa1e01 |
+| 2026-07-12 | release | bump root pyproject.toml to v0.31.0 (#365) | 1b4a471e075d |
+| 2026-07-12 | release | v0.31.0 (#364) | db6c3d3f3fa2 |
 | 2026-07-10 | design | gitignore transient design-feedback rounds; document single-session review-viewer hosting (#355) | c51e9fe78ab8 |
 | 2026-07-08 | release | v0.30.0 (#348) | 023701b57bb2 |
 | 2026-07-03 | security | tailor accepted-risk Semgrep rules at the producer (#309) | c465c81c0ac9 |
@@ -1198,7 +1201,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1129 |
+| Total commits | 1132 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1129 |
+| Human-authored commits | 1132 |
 

@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-11 08:01 UTC | Session: e63898b6-731a-4116-92f3-e4b9dfac8870 | Run: iterate-2026-07-11-iterate-phase-timing
+> Updated: 2026-07-12 18:05 UTC | Session: c2ffdb03-c658-4f9e-8b04-7a13bf956f55 | Run: iterate-2026-07-12-review-model-terra-pro
 
-## Recent Changes (295 iterations)
+## Recent Changes (296 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | external review GPT default -> gpt-5.6-terra-pro | 37/37 |  | tooling | 2026-07-12 |
 | change | Widen phase_completed dedup to (phase, splitId) so multi-split phases record per-split ends; promote splitId to a top-level field; de-dup 4 phase-count/latest-ts consumers; plan SKILL emits --split-id. | 0/0 |  | infra | 2026-07-11 |
 | feature | Iterate-Rail per-phase durations (M-Pre-1 iterate half): mark 5 group boundaries -> fold phase_timings into the work_completed event | 22/22 |  | tooling | 2026-07-11 |
 | feature | B5: /shipwright-adopt accepts a WebUI brief via the shared brief_intake helper (promoted to shared/scripts/lib) + a thin adopt_brief_intake adapter; run + iterate banners surface the shared plain-language index with a copy-parity test. | 0/0 |  | tooling | 2026-07-11 |
@@ -302,7 +303,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-11T07:45:50+00:00 | Unit: 22/22 | Smoke: n/a | (iterate)
+Last run: 2026-07-12 | Unit: 37/37 | Smoke: n/a | (iterate)
 
 ## Pipeline
 

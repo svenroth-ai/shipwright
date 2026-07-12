@@ -1,9 +1,0 @@
-{
-  "run_id": "iterate-2026-07-04-grade-g2-review-followup",
-  "date": "2026-07-04T08:03:21.905911Z",
-  "type": "bug",
-  "complexity": "small",
-  "branch": "iterate/grade-g2-review-followup",
-  "tests_passed": true,
-  "adr": "iterate-2026-07-04-grade-g2-review-followup"
-}
