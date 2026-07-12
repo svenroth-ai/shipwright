@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-11-iterate-phase-timing"
+run_id: "iterate-2026-07-12-review-model-terra-pro"
 phase: "iterate"
-reason: "iterate: Iterate-Rail per-phase durations (M-Pre-1 iterate half)"
-timestamp: "2026-07-11T08:01:19.386096+00:00"
+reason: "iterate: external review model default -> gpt-5.6-terra-pro"
+timestamp: "2026-07-12T18:05:43.773179+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-11 08:01:19 UTC
+> Auto-generated 2026-07-12 18:05:43 UTC
 
 ## Session Info
 
-- **Session ID**: e63898b6-731a-4116-92f3-e4b9dfac8870
-- **Timestamp**: 2026-07-11 08:01:19 UTC
-- **Reason**: iterate: Iterate-Rail per-phase durations (M-Pre-1 iterate half)
+- **Session ID**: c2ffdb03-c658-4f9e-8b04-7a13bf956f55
+- **Timestamp**: 2026-07-12 18:05:43 UTC
+- **Reason**: iterate: external review model default -> gpt-5.6-terra-pro
 
 ## Last Iterate
 
@@ -29,9 +29,7 @@ timestamp: "2026-07-11T08:01:19.386096+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/iterate-phase-timing
-- **Run ID**: iterate-2026-07-11-iterate-phase-timing
-- **Spec**: .shipwright/planning/iterate/2026-07-11-iterate-phase-timing.md
+- **Branch**: iterate/review-model-terra-pro
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -50,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/iterate-phase-timing
-- **Last Commit**: 6ee8dae2 feat(iterate): fold per-phase durations into work_completed for the WebUI Iterate-Rail (M-Pre-1 iterate half)
+- **Branch**: iterate/review-model-terra-pro
+- **Last Commit**: 580fa5fa chore(triage): sweep 5 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -67,24 +65,24 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-650ce315 | grade_snapshot | — | 2026-07-12 |
+| evt-d1e4d49d | work_completed | iterate (external review GPT default -> gpt-5.6-terra-pro) | 2026-07-12 |
 | evt-da02439d | grade_snapshot | — | 2026-07-11 |
 | evt-95a4c491 | grade_snapshot | — | 2026-07-11 |
 | evt-e5552bd3 | grade_snapshot | — | 2026-07-11 |
-| evt-cd1e596b | grade_snapshot | — | 2026-07-11 |
-| evt-0a7b22e5 | work_completed | iterate (Widen phase_completed dedup to (phase, splitId) so multi-split phases record per-split ends; promote splitId to a top-level field; de-dup 4 phase-count/latest-ts consumers; plan SKILL emits --split-id.) | 2026-07-11 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 295
-- **Last iterate**: change — Widen phase_completed dedup to (phase, splitId) so multi-split phases record per-split ends; promote splitId to a top-level field; de-dup 4 phase-count/latest-ts consumers; plan SKILL emits --split-id. (2026-07-11)
+- **Total work events**: 296
+- **Last iterate**: change — external review GPT default -> gpt-5.6-terra-pro (2026-07-12)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
 
-### ADR-309: Single-session pipeline resumability, recovery & observability (SS5)
-- **Date:** 2026-07-08
-- **Section:** SS5 resumability/recovery + observability
-- **Run-ID:** iterate-2026-07-08-ss5-resumability
-- **Context:** Single-session runs (mode==single_session) drive the whole pipeline in ONE master conversation (SS3/SS4). If it dies mid-run there was no first-class resume, and no structured observability into the loop's transitions. Multi-session runs must stay on the old path untouched.
-- **De
+### ADR-326: Per-split phase_completed: dedup on (phase, splitId)
+- **Date:** 2026-07-11
+- **Section:** iterate/phase-completed-per-split
+- **Run-ID:** iterate-2026-07-11-phase-completed-per-split
+- **Context:** Multi-split pipeline phases (build/plan) undercounted per-phase duration in the tracked shipwright_events.jsonl: phase_completed deduped by phase alone (first-wins), keeping only the first split's end, while phase_started is already recorded per split.
+- **Decision:** Widen the phase_completed d

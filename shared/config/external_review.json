@@ -7,9 +7,9 @@
   },
   "models": {
     "gemini": "gemini-3.1-pro-preview",
-    "chatgpt": "gpt-5.4",
+    "chatgpt": "gpt-5.6-terra-pro",
     "openrouter_gemini": "google/gemini-3.1-pro-preview",
-    "openrouter_chatgpt": "openai/gpt-5.4",
+    "openrouter_chatgpt": "openai/gpt-5.6-terra-pro",
     "_comment": "Models for external review. OpenRouter models used when OPENROUTER_API_KEY is set (recommended). Direct models used with GEMINI_API_KEY/OPENAI_API_KEY. Override per-environment via SHIPWRIGHT_REVIEW_MODEL_GEMINI / _CHATGPT / _OPENROUTER_GEMINI / _OPENROUTER_CHATGPT (resolved by lib.external_review_config.resolve_model)."
   },
   "llm_client": {

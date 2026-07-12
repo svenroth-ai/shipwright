@@ -1,18 +1,17 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-11-iterate-phase-timing",
-    "date": "2026-07-11T07:45:50+00:00",
-    "intent": "feature",
-    "complexity": "medium",
+    "run_id": "iterate-2026-07-12-review-model-terra-pro",
+    "date": "2026-07-12",
+    "intent": "change",
+    "complexity": "trivial",
     "unit": {
-      "passed": 22,
-      "total": 22,
-      "status": "pass",
-      "note": "test_iterate_phase_timing.py (SSoT+pin, mark sidecar, compute/normalize, CLI, finalize fold, gitignore congruence). Full suites green: shared 3848, shipwright-iterate 476."
+      "passed": 37,
+      "total": 37,
+      "status": "passed",
+      "note": "shared external-review suite (test_external_review_config.py, test_llm_review.py, test_external_review_openai_param.py) green after the model-default swap; resolver returns openai/gpt-5.6-terra-pro."
     },
     "integration": {
-      "status": "n/a",
-      "note": "framework tooling, not cross_component (no merge/hook/phase-validator machinery); deterministic seams are lib/iterate_phase_groups.py + the iterate_phase_timing CLI + the finalize fold, all unit-tested"
+      "status": "n/a"
     },
     "pgtap": {
       "status": "n/a"
@@ -27,137 +26,18 @@
       "status": "n/a"
     },
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --extra dev pytest shared/tests/test_iterate_phase_timing.py -q",
-      "tests_run": 22,
+      "surface": "none",
+      "runner": "n/a (config-only default-model swap)",
+      "tests_run": 0,
       "exit_code": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-11-iterate-phase-timing/surface_verification.json",
-      "timestamp": "2026-07-11T07:45:50+00:00",
-      "attempts": 1
+      "evidence_path": ".shipwright/runs/iterate-2026-07-12-review-model-terra-pro/surface_verification.json",
+      "timestamp": "2026-07-12T00:00:00+00:00",
+      "justification": "Config-only default-model swap (gpt-5.4 -> gpt-5.6-terra-pro). No startable user surface; resolver behavior is covered by the shared external-review unit tests (37 passed)."
     },
     "degraded": [],
     "test_completeness": {
-      "status": "complete",
-      "counts": {
-        "testable": 18,
-        "tested": 18,
-        "untestable": 0,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 6,
-        "covered_acs": 6
-      },
-      "behaviors": [
-        {
-          "behavior": "AC1: ITERATE_PHASE_GROUPS SSoT == the 5 rail nodes (scope build review test finalize)",
-          "category": "unit",
-          "disposition": "tested",
-          "evidence": "test_iterate_phase_timing.py::test_groups_are_the_five_rail_nodes PASSED"
-        },
-        {
-          "behavior": "AC1: SSoT drift-pins to session_plan._PHASE_CATALOG's group order (loaded by file-path to avoid the lib package collision)",
-          "category": "unit",
-          "disposition": "tested",
-          "evidence": "test_groups_pin_to_session_plan_catalog PASSED"
-        },
-        {
-          "behavior": "AC2: append_mark writes {phase,ts} to the <run_id>.phase_timings.jsonl sidecar",
-          "category": "unit",
-          "disposition": "tested",
-          "evidence": "test_append_mark_writes_sidecar PASSED + end-to-end CLI probe (mark scope/build/finalize)"
-        },
-        {
-          "behavior": "AC2: append_mark is first-wins per group (a re-cross is a no-op, earliest ts kept)",
-          "category": "unit",
-          "disposition": "tested",
-          "evidence": "test_append_mark_is_first_wins_per_group PASSED"
-        },
-        {
-          "behavior": "AC2: append_mark rejects an unknown group id (ValueError)",
-          "category": "unit",
-          "disposition": "tested",
-          "evidence": "test_append_mark_rejects_unknown_group PASSED"
-        },
-        {
-          "behavior": "AC2: read_marks skips malformed/off-vocab lines (partial sidecar still yields its groups)",
-          "category": "unit",
-          "disposition": "tested",
-          "evidence": "test_read_marks_skips_malformed_lines PASSED"
-        },
-        {
-          "behavior": "AC2 (security): sidecar_path contains a crafted run_id (../.. cannot escape iterates/)",
-          "category": "unit",
-          "disposition": "tested",
-          "evidence": "test_sidecar_path_contains_crafted_run_id PASSED"
-        },
-        {
-          "behavior": "AC3: compute_phase_timings yields chronological {phase,started,duration_ms}; last group's end = end_ts",
-          "category": "unit",
-          "disposition": "tested",
-          "evidence": "test_compute_durations_chronological_with_end_ts PASSED"
-        },
-        {
-          "behavior": "AC3: empty marks -> [] (finalize then omits the field)",
-          "category": "unit",
-          "disposition": "tested",
-          "evidence": "test_compute_empty_marks_is_empty PASSED"
-        },
-        {
-          "behavior": "AC3: durations are non-negative ints (clock-skew / out-of-order clamps to 0)",
-          "category": "unit",
-          "disposition": "tested",
-          "evidence": "test_compute_durations_non_negative_and_int PASSED"
-        },
-        {
-          "behavior": "normalize_phase_timings accepts a valid [{phase,started,duration_ms}] block",
-          "category": "unit",
-          "disposition": "tested",
-          "evidence": "test_normalize_accepts_valid_block PASSED"
-        },
-        {
-          "behavior": "normalize_phase_timings rejects malformed blocks (unknown group, negative/non-int duration, missing keys, non-list, non-dict entry)",
-          "category": "unit",
-          "disposition": "tested",
-          "evidence": "test_normalize_rejects_malformed (6 parametrized classes) PASSED"
-        },
-        {
-          "behavior": "AC2: the mark/summarize CLI works end-to-end and summarize prints computed timings",
-          "category": "unit",
-          "disposition": "tested",
-          "evidence": "test_cli_mark_and_summarize PASSED + real-subprocess probe (scope 1113ms / build 1106ms matched 1s sleeps)"
-        },
-        {
-          "behavior": "AC2: the CLI rejects a non-canonical run_id (exit != 0)",
-          "category": "unit",
-          "disposition": "tested",
-          "evidence": "test_cli_mark_rejects_noncanonical_run_id PASSED + probe (exit 2 on 'bad')"
-        },
-        {
-          "behavior": "AC4: finalize_iterate folds phase_timings into the work_completed event",
-          "category": "unit",
-          "disposition": "tested",
-          "evidence": "test_finalize_folds_phase_timings PASSED"
-        },
-        {
-          "behavior": "AC4 (backward-compat): finalize with no sidecar leaves work_completed unchanged (no phase_timings)",
-          "category": "unit",
-          "disposition": "tested",
-          "evidence": "test_finalize_without_sidecar_omits_phase_timings PASSED"
-        },
-        {
-          "behavior": "AC4: fold_into_event is additive + best-effort + preserves a pre-existing phase_timings",
-          "category": "unit",
-          "disposition": "tested",
-          "evidence": "test_fold_into_event_is_additive_and_validated PASSED"
-        },
-        {
-          "behavior": "AC6: the sidecar is gitignored and the template SSoT stays congruent with the framework block; durable <run_id>.json is tracked",
-          "category": "unit",
-          "disposition": "tested",
-          "evidence": "test_gitignore_template_congruent.py PASSED (F0 caught the missing template mirror; fixed) + git check-ignore probe"
-        }
-      ]
+      "status": "n/a",
+      "justification": "Trivial complexity: a config-value swap of the default GPT review-model string. Behavior-preserving; the resolver's model resolution is covered by the existing shared external-review unit tests (37 passed). No new testable behavior is introduced."
     }
   },
   "coverage": {

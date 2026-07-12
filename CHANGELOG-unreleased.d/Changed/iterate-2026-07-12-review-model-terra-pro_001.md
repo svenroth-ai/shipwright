@@ -1,0 +1,1 @@
+External LLM review's GPT leg now defaults to gpt-5.6-terra-pro (was gpt-5.4) for both the OpenRouter and direct paths; the Gemini reviewer and the PR-review bot are unchanged. Override per-environment with SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_CHATGPT.

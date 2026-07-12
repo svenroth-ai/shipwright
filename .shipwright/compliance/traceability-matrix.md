@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-11T07:52:11.084706+00:00
+Generated: 2026-07-12T18:05:37.884990+00:00
 
 ## Requirements Coverage
 
@@ -27,6 +27,7 @@ Generated: 2026-07-11T07:52:11.084706+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-d1e4d49d"></a>The automatic code-review AI now uses the newer, cheaper GPT-5.6 Terra Pro model on the OpenAI side instead of GPT-5.4; how reviews run is otherwise unchanged. | iterate | change |  | 37/37 | — | 2026-07-12 |
 | <a id="evt-e3cdb1ef"></a>The iterate now records how long each of its 5 steps took, so the Command Center's iterate progress bar can show real time-per-step. | iterate | feature |  | 22/22 | — | 2026-07-11 |
 | <a id="evt-0a7b22e5"></a>Widen phase_completed dedup to (phase, splitId) so multi-split phases record per-split ends; promote splitId to a top-level field; de-dup 4 phase-count/latest-ts consumers; plan SKILL emits --split-id. | iterate | change |  | — | — | 2026-07-11 |
 | <a id="evt-1ed6cf81"></a>B5: /shipwright-adopt accepts a WebUI brief via the shared brief_intake helper (promoted to shared/scripts/lib) + a thin adopt_brief_intake adapter; run + iterate banners surface the shared plain-language index with a copy-parity test. | iterate | feature |  | — | — | 2026-07-11 |
@@ -329,7 +330,7 @@ Generated: 2026-07-11T07:52:11.084706+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 295 |
+| Iterate changes | 296 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
