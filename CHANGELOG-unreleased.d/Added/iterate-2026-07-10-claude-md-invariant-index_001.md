@@ -1,1 +1,0 @@
-CLAUDE.md net-growth gate: the F11 verifier check_agent_doc_budget (+ standalone CLI) now blocks an iterate that grows CLAUDE.md by more than 30 lines vs the git base — forward-only, creation/deletion exempt; deliberate escape hatch SHIPWRIGHT_CLAUDE_MD_GROWTH_OK=1 is surfaced visibly, never silently

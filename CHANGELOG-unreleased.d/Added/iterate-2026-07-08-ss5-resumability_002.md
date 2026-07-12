@@ -1,1 +1,0 @@
-Structured observability for the single-session loop, appended to `.shipwright/run_loop_events.jsonl` (phase dispatch, result, strict-stop, human-gate pause/resume, resume, recovery). Multi-session runs are unaffected — no telemetry or loop-state files are created for them.

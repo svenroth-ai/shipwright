@@ -335,3 +335,6 @@ Contribution rules, dev setup, the graduated trust model, and high-sensitivity a
 - **ADR-306** (2026-07-07): Subagents own artifact persistence; the orchestrator guards it on disk
 - **ADR-307** (2026-07-07): SubagentStop write-section hook is a non-blocking fallback (supersedes ADR-042 block-on-failure)
 - **ADR-308** (2026-07-08): update-marketplace.sh auto-installs registered-but-missing plugins
+- **ADR-317** (2026-07-11): Run + iterate banners surface the shared plain-language index (copy-parity)
+- **ADR-318** (2026-07-10): CLAUDE.md invariant-index rule + 30-line net-growth gate
+- **ADR-321** (2026-07-11): Scope phase_started emission to pipeline phases; defer the iterate F-phase half

@@ -2,7 +2,7 @@
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "shipwright",
   "description": "Shipwright SDLC — AI-powered software delivery lifecycle framework",
-  "version": "0.30.0",
+  "version": "0.31.0",
   "owner": {
     "name": "svenroth.ai",
     "url": "https://github.com/svenroth-ai"
@@ -11,7 +11,7 @@
     {
       "name": "shipwright-run",
       "description": "Orchestrate the full Shipwright SDLC pipeline — from user description to deployed application",
-      "version": "0.30.0",
+      "version": "0.31.0",
       "source": "./plugins/shipwright-run",
       "category": "development",
       "tags": ["orchestration", "sdlc", "pipeline", "deployment"]
@@ -19,7 +19,7 @@
     {
       "name": "shipwright-project",
       "description": "Decompose project requirements into well-scoped planning units with IREB-aligned specs",
-      "version": "0.30.0",
+      "version": "0.31.0",
       "source": "./plugins/shipwright-project",
       "category": "development",
       "tags": ["planning", "decomposition", "requirements", "ireb"]
@@ -27,7 +27,7 @@
     {
       "name": "shipwright-design",
       "description": "Generate UI mockups from IREB specs — standalone HTML screens and user flows",
-      "version": "0.30.0",
+      "version": "0.31.0",
       "source": "./plugins/shipwright-design",
       "category": "development",
       "tags": ["ui-design", "mockups", "html", "prototyping", "untitled-ui"]
@@ -35,7 +35,7 @@
     {
       "name": "shipwright-plan",
       "description": "Deep planning with research, interview, external LLM review, and TDD approach",
-      "version": "0.30.0",
+      "version": "0.31.0",
       "source": "./plugins/shipwright-plan",
       "category": "development",
       "tags": ["planning", "tdd", "architecture", "llm-review"]
@@ -43,7 +43,7 @@
     {
       "name": "shipwright-build",
       "description": "TDD implementation with code review, Conventional Commits, and feature branch workflow",
-      "version": "0.30.0",
+      "version": "0.31.0",
       "source": "./plugins/shipwright-build",
       "category": "development",
       "tags": ["implementation", "tdd", "code-review", "conventional-commits"]
@@ -51,7 +51,7 @@
     {
       "name": "shipwright-test",
       "description": "Profile-aware test runner: unit tests, smoke tests, Playwright E2E, and security scans",
-      "version": "0.30.0",
+      "version": "0.31.0",
       "source": "./plugins/shipwright-test",
       "category": "development",
       "tags": ["testing", "vitest", "playwright", "smoke-test"]
@@ -59,7 +59,7 @@
     {
       "name": "shipwright-deploy",
       "description": "Deploy to Jelastic (Infomaniak) with smoke test verification and rollback support",
-      "version": "0.30.0",
+      "version": "0.31.0",
       "source": "./plugins/shipwright-deploy",
       "category": "development",
       "tags": ["deployment", "jelastic", "infomaniak", "rollback"]
@@ -67,7 +67,7 @@
     {
       "name": "shipwright-changelog",
       "description": "Parse Conventional Commits, generate Keep-a-Changelog entries, create version tags and PRs",
-      "version": "0.30.0",
+      "version": "0.31.0",
       "source": "./plugins/shipwright-changelog",
       "category": "development",
       "tags": ["changelog", "conventional-commits", "semver", "pr"]
@@ -75,7 +75,7 @@
     {
       "name": "shipwright-security",
       "description": "Security scanning — Semgrep + Trivy + Gitleaks + Shipwright prompt-injection scan (OSS default), with an automated remediation loop and an optional Aikido backend",
-      "version": "0.30.0",
+      "version": "0.31.0",
       "source": "./plugins/shipwright-security",
       "category": "development",
       "tags": ["security", "sast", "sca", "secrets", "semgrep", "trivy", "gitleaks", "remediation", "aikido"]
@@ -83,7 +83,7 @@
     {
       "name": "shipwright-compliance",
       "description": "IREB traceability, Requirements Traceability Matrix, SBOM, test evidence, and change history reports",
-      "version": "0.30.0",
+      "version": "0.31.0",
       "source": "./plugins/shipwright-compliance",
       "category": "development",
       "tags": ["compliance", "ireb", "traceability", "sbom", "rtm"]
@@ -91,7 +91,7 @@
     {
       "name": "shipwright-iterate",
       "description": "Lightweight SDLC for ongoing changes. Auto-detects intent (feature/change/bug) and runs specs → build → test → commit.",
-      "version": "0.30.0",
+      "version": "0.31.0",
       "source": "./plugins/shipwright-iterate",
       "category": "development",
       "tags": ["iterate", "change", "bug-fix", "continuous"]
@@ -99,7 +99,7 @@
     {
       "name": "shipwright-preview",
       "description": "Local browser preview — start dev server and show URL for in-browser testing",
-      "version": "0.30.0",
+      "version": "0.31.0",
       "source": "./plugins/shipwright-preview",
       "category": "development",
       "tags": ["preview", "dev-server", "browser", "local"]
@@ -107,7 +107,7 @@
     {
       "name": "shipwright-adopt",
       "description": "Onboard an existing (brownfield) repository into the Shipwright SDLC — analyze stack + routes + conventions, generate CLAUDE.md + agent_docs + configs + E2E baseline",
-      "version": "0.30.0",
+      "version": "0.31.0",
       "source": "./plugins/shipwright-adopt",
       "category": "development",
       "tags": ["adoption", "onboarding", "brownfield", "legacy", "documentation"]
@@ -115,7 +115,7 @@
     {
       "name": "shipwright-grade",
       "description": "Grade any git repository against the Control Grade rubric (A–F) — a read-only, deterministic cold-repo grader that reuses the same scoring engine as the compliance dashboard. Grades a local path or clones a URL; underivable dimensions render honest n/a.",
-      "version": "0.30.0",
+      "version": "0.31.0",
       "source": "./plugins/shipwright-grade",
       "category": "development",
       "tags": ["grade", "control-grade", "repo-grader", "read-only", "openssf-scorecard", "lead-magnet"]

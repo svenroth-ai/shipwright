@@ -4127,3 +4127,225 @@ shipwright/
 - **Rationale:** Idempotent re-dispatch is safe because the phase-runner is a subagent of the master, so master death = runner death (no orphaned worker; a multi_session-only risk). Reuses recover-phase-task + phase_task_lifecycle verbatim (no bespoke path); observability isolated so multi_session never grows an events file; append-log is O(1) single-writer + best-effort.
 - **Consequences:** Multi-session lifecycle + generic recover-phase-task untouched (dual-mode back-compat suite proves no run_loop_* files appear for multi_session). New gitignored write surface run_loop_events.jsonl. begin_dispatch now reinits a stale-runId pointer so a re-run in the same dir never attaches to an old run.
 - **Rejected:** Emitting telemetry from the master_stop_check Stop hook + folding events into the tracked shipwright_events.jsonl: re-couples persistence to a Stop hook (the failure SS4 removed), touches hooks/*.py, and pollutes the tracked pipeline log with per-run orchestrator telemetry.
+
+---
+
+### ADR-310: Remove hardcoded version from iterate intro banner
+- **Date:** 2026-07-08
+- **Section:** shipwright-iterate / intro banner
+- **Run-ID:** iterate-2026-07-08-remove-iterate-banner-version
+- **Context:** shipwright-iterate was the only plugin whose intro banner printed a version (SHIPWRIGHT-ITERATE v0.3.0). No mechanism synced it — sync_check.py guards only plugin.json vs marketplace.json — so it drifted stale (banner v0.3.0 vs authoritative marketplace/plugin version 0.30.0).
+- **Decision:** Remove the version token from the SKILL.md H1 heading and the intro-banner title line; add drift-guard test test_skill_banner_no_version.py asserting the iterate banner carries no version token.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Bumping the banner to the current version would re-stale on the next release absent a sync mechanism; removal is durable and cross-plugin consistent.
+- **Consequences:** iterate now matches all 13 other plugins (banners carry no version); the banner cannot drift again; a regression that re-adds a version fails the guard test.
+- **Rejected:** Bump banner to 0.30.0 (re-stales next release); extend sync_check to guard banner+pyproject versions (larger scope, deferred).
+
+---
+
+### ADR-311: Single-session pipeline resumability, recovery & observability (SS5)
+- **Date:** 2026-07-08
+- **Section:** SS5 resumability/recovery + observability
+- **Run-ID:** iterate-2026-07-08-ss5-resumability
+- **Context:** Single-session runs (mode==single_session) drive the whole pipeline in ONE master conversation (SS3/SS4). If it dies mid-run there was no first-class resume, and no structured observability into the loop's transitions. Multi-session runs must stay on the old path untouched.
+- **Decision:** Add resumability confined to single-session code paths: re-invoking /shipwright-run auto-detects a live loop-state on a non-terminal run and resumes via a confirm card (single-session-resume read-only; --confirm commits). A mid-flight in_progress task re-dispatches idempotently. New append-only telemetry .shipwright/run_loop_events.jsonl (7 event types) + single-session-gate/-recover; every entry point is mode+runId gated.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Idempotent re-dispatch is safe because the phase-runner is a subagent of the master, so master death = runner death (no orphaned worker; a multi_session-only risk). Reuses recover-phase-task + phase_task_lifecycle verbatim (no bespoke path); observability isolated so multi_session never grows an events file; append-log is O(1) single-writer + best-effort.
+- **Consequences:** Multi-session lifecycle + generic recover-phase-task untouched (dual-mode back-compat suite proves no run_loop_* files appear for multi_session). New gitignored write surface run_loop_events.jsonl. begin_dispatch now reinits a stale-runId pointer so a re-run in the same dir never attaches to an old run.
+- **Rejected:** Emitting telemetry from the master_stop_check Stop hook + folding events into the tracked shipwright_events.jsonl: re-couples persistence to a Stop hook (the failure SS4 removed), touches hooks/*.py, and pollutes the tracked pipeline log with per-run orchestrator telemetry.
+
+---
+
+### ADR-312: External-review gate fails loud on degradation
+- **Date:** 2026-07-08
+- **Section:** Iterate — bug: SS6 external-review gate fix
+- **Run-ID:** iterate-2026-07-08-ss6-external-review-fix
+- **Context:** A live /shipwright-plan degraded silently to self-review: Gemini's key was absent AND the direct OpenAI call errored on `max_tokens` (rejected by gpt-5.x). external_review.py hardcoded `success:true`, so the caller marked the gate completed though zero reviews actually ran.
+- **Decision:** Swap direct-OpenAI `max_tokens`->`max_completion_tokens` in external_review.py + lib/llm_review.py; add lib/external_review_degraded.py so the CLI returns `success:false` + `degraded:true` + non-zero exit + stderr banner when a provider is attempted but 0 reviews succeed. Both Branch A caller docs treat degraded as 'review did not run'.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Mirrors the scanner-degraded-marker data-flow fix: a degraded leg must be distinguishable from a clean pass. `max_completion_tokens` is accepted by all current OpenAI chat models.
+- **Consequences:** The review gate can no longer silently no-op; degraded runs surface a recorded reason and fail loud. OpenRouter path keeps `max_tokens` (normalized downstream). Partial success (1 of 2 reviewers) still passes.
+- **Rejected:** Flipping OpenRouter to max_completion_tokens (risks a new incompat; OpenRouter's canonical field is max_tokens); keeping success:true with only a warning (callers already ignore warnings).
+
+---
+
+### ADR-313: SS7 ships CLI E2E capstone; WebUI Playwright half split to SS8
+- **Date:** 2026-07-08
+- **Section:** SS7-e2e-integration-suite
+- **Run-ID:** iterate-2026-07-08-ss7-e2e-integration-suite
+- **Context:** The single-session-pipeline campaign's capstone needed a cross-surface E2E. The WebUI Playwright flow requires the separate shipwright-webui repo (SHIPWRIGHT_WEBUI is unimplemented in the monorepo) and the S1b track, so it cannot run green here.
+- **Decision:** Deliver the self-contained monorepo/CLI capstone here — full pipeline through a human-gate pause/resume, strict-stop mid-fan-out, cross-surface parity across CLAUDE_CODE_ENTRYPOINT + the SHIPWRIGHT_WEBUI marker, in-flight multi-session resumability, and a known-bug regression roster. Register the WebUI Playwright half as campaign SS8 (repo shipwright-webui, prereq S1b).
+- **Commit:** (assigned post-merge)
+- **Rationale:** A true E2E must cover both CLI and WebUI (Sven). The monorepo half is self-contained and shippable now; the WebUI half is genuinely cross-repo and gated on S1b.
+- **Consequences:** AC2 (green Playwright flow) migrates to SS8. SS7's parity proof is surface-agnostic-loop-by-construction and now BITES on a SHIPWRIGHT_WEBUI branch; SS8's real browser flow complements it. Test-only; no production surface changed (arch-impact none).
+- **Rejected:** A fat capstone re-implementing SS3 full-pipeline/fan-out/strict-stop (duplication/YAGNI); duplicating SS6's external_review subprocess regression (threaded a thin in-process contract pin instead).
+
+---
+
+### ADR-314: single-session is the default + sole supported pipeline mode; multi-session deprecated
+- **Date:** 2026-07-08
+- **Section:** SS8-default-single-session
+- **Run-ID:** iterate-2026-07-08-ss8-default-single-session
+- **Context:** SS1-SS7 shipped single-session as an ADDITIVE mode with multi-session as the default fallback. With exactly one user there is no back-compat requirement (Spec/pipeline-as-campaign-convergence.md SUPERSEDING-DECISION).
+- **Decision:** Flip the FRESH-run default (DEFAULT_RUN_MODE) to single_session; introduce a SEPARATE LEGACY_FALLBACK_MODE=multi_session for config_io.run_mode so a mode-less/unrecognized config is NOT silently reinterpreted (explicit migration). Schema mode.default stays multi_session (the assume-when-absent contract, matching run_mode). Deprecate multi_session in the SKILL/docs; keep the code.
+- **Commit:** (assigned post-merge)
+- **Rationale:** single-session runs on every surface (CLI/WebUI/extension/desktop). The fresh-default vs legacy-fallback SEPARATION is the correctness invariant (external + internal review confirmed it); it prevents mid-flight reinterpretation of legacy configs.
+- **Consequences:** Fresh /shipwright-run runs are single_session (Sven's AC5 UAT enabler). Existing runs migrate explicitly (flip mode + resume; docs/migrations/multi-session-to-single-session.md). Multi-session code removal deferred (trg-0e8e7f90); WebUI single-session representation is a separate campaign (trg-01db884a). arch-impact none (no structural change).
+- **Rejected:** Flipping DEFAULT_RUN_MODE wholesale (one constant for both) — silently reinterprets mode-less/legacy configs as single-session mid-flight; would force weakening the SS5 back-compat tests. Immediate multi-session code removal — load-bearing cross-plugin hooks, deferred to trg-0e8e7f90.
+
+---
+
+### ADR-315: Plain-language rule for questions to the user
+- **Date:** 2026-07-09
+- **Section:** Iterate — change: plain-language questions rule
+- **Run-ID:** iterate-2026-07-09-plain-language-questions
+- **Context:** Questions Shipwright agents put to the user were often too technical for a non-senior dev or normal user to answer from a functional standpoint.
+- **Decision:** Add an ASK-FIRST rule to the constitution requiring plain, functional, jargon-free phrasing of user-facing questions, and mirror it into both CLAUDE.md producers (greenfield template + adopt render) plus the user guide.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The constitution is the single canonical home for cross-cutting agent behavior; templates mirror it so generated projects inherit it; phrasing-only, rigor unchanged.
+- **Consequences:** Every greenfield/adopted project inherits the rule in its generated CLAUDE.md; no FR/functional change. A pin test guards the two producers and the canonical constitution rule from drift/deletion.
+- **Rejected:** Editing only the two repo-root CLAUDE.md files (done earlier) would not reach generated projects. The per-spec plain-language summary layer (Stage 2) is intentionally deferred.
+
+---
+
+### ADR-316: Adopt accepts a WebUI brief; brief_intake promoted to shared
+- **Date:** 2026-07-11
+- **Section:** Adopt brief-intake (K2d)
+- **Run-ID:** iterate-2026-07-10-adopt-brief-plainbank
+- **Context:** The WebUI 'improve existing code' door hands /shipwright-adopt the same wizard brief B4 gave /shipwright-run. Adopt should skip interview questions the brief/scan already answers (detection over questions, concept §2.1).
+- **Decision:** Promote brief_intake.py from the run plugin to shared/scripts/lib/ (the only cache-stable cross-plugin home). New adopt_brief_intake.py loads it via the ADR-045-safe spec_from_file_location loader and maps a brief onto adopt Step C: description -> product_description (pre-filled, that question removed); profile + scope stay scan-gated.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Shared is the only location that resolves in BOTH the dev tree and the versioned plugin-cache; a subprocess CLI plus spec_from_file_location avoid the cross-plugin lib-namespace shadow (ADR-045).
+- **Consequences:** Run + adopt now share one brief helper. Adopt's --brief flag pre-fills the product-description confirmation only; no brief -> Step C unchanged (AC3). The old run-local path is fully repointed (reference doc updated; the two helper tests moved to shared/tests).
+- **Rejected:** Subprocess-calling the run plugin's copy from adopt (fragile sibling-plugin path in the versioned cache); reimplementing the brief parser inside adopt (drift).
+
+---
+
+### ADR-317: Run + iterate banners surface the shared plain-language index (copy-parity)
+- **Date:** 2026-07-11
+- **Section:** Plain-language banner bank (K4b)
+- **Run-ID:** iterate-2026-07-10-adopt-brief-plainbank
+- **Context:** Concept §2.5 just-in-time jargon: the run + iterate skill §A banners should explain terms from the SAME plain-language bank the WebUI glossary uses -- docs/guide.md Appendix A Plain-Language Index -- with identical wording and no drift.
+- **Decision:** Each §A banner gains an 'In plain words' block quoting index rows verbatim (run: IREB-Spec + ADR; iterate: ADR + Conventional Commits). A new copy-parity test binds every banner gloss to guide.md Appendix A so any un-mirrored edit FAILS; a term on both banners (ADR) must be worded identically.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The guide index stays the single source (the WebUI mirrors it in its own repo); a parity test makes drift detectable, mirroring B2's matrix-pinning approach.
+- **Consequences:** New convention: banner glosses MUST equal the guide's Plain-Language Index (drift = test failure, not hope). Static SKILL banners cannot runtime-include a file, so this is copy-with-parity, not runtime single-sourcing. Run kept net-zero at 400 LOC; iterate offset to 299 via two redundant divider removals.
+- **Rejected:** A new machine-readable JSON bank -- would create a SECOND source competing with the guide table the WebUI already mirrors, against 'one source'.
+
+---
+
+### ADR-318: CLAUDE.md invariant-index rule + 30-line net-growth gate
+- **Date:** 2026-07-10
+- **Section:** Iterate — change: CLAUDE.md keep-it-lean rule + growth gate
+- **Run-ID:** iterate-2026-07-10-claude-md-invariant-index
+- **Context:** The 600-char entry budget covers architecture.md/conventions.md but not CLAUDE.md, and neither CLAUDE.md producer said where invariants belong — adopted repos accreted DO-NOT blocks inlining full ADR rationale (webui CLAUDE.md ~2.4x the monorepo's).
+- **Decision:** Both producers (greenfield template + adopt renderer, mirror-tested) seed an 'Editing this file (keep it lean)' rule: one line + ADR pointer per invariant. lib/CLI/F11 verifier add a forward-only net-growth cap (CLAUDE_MD_MAX_NEW_LINES=30), checked only when CLAUDE.md exists at base AND worktree; SHIPWRIGHT_CLAUDE_MD_GROWTH_OK=1 skips only the growth rule with a visible note.
+- **Commit:** (assigned post-merge)
+- **Rationale:** CLAUDE.md has no stable entry grammar to parse (DO-NOT blocks are free-form prose), so net-file growth is the enforceable proxy — and the 600-char entry rule only became real once it got a gate; guidance-only would repeat that failure.
+- **Consequences:** Enforcement ships to every adopted repo via the plugin cache (retro-protects webui/leadwright). Creation/deletion and untouched legacy bloat never block; deliberate large sections stay possible via the visible escape hatch. guide.md + hooks-and-pipeline.md updated.
+- **Rejected:** Per-section char budget inside CLAUDE.md (no parseable grammar); wiring CLAUDE.md into the bloat anti-ratchet baseline (adopted repos have no shipwright_bloat_baseline.json, so it would miss the repos with the problem).
+
+---
+
+### ADR-319: Single-session design gate: WebUI hosts the emitted review viewer; feedback rounds are gitignored scratch
+- **Date:** 2026-07-10
+- **Section:** Iterate - change: single-session design gate feedback
+- **Run-ID:** iterate-2026-07-10-design-gate-feedback-gitignore
+- **Context:** In single_session the design gate is orchestrator-approve: the phase-runner emits the mockups + the index.html review viewer and stops (paused design card). A human must review and give feedback from that card.
+- **Decision:** design-feedback-round{N}.md is transient gitignored scratch. The WebUI hosts the emitted index.html review viewer in an isolated full-fidelity surface (a sandboxed full-bleed iframe or new tab), NOT the generic Smart Viewer, and direct-writes the round file to the worktree; a Resume action clears the gate.
+- **Commit:** (assigned post-merge)
+- **Rationale:** index.html already bundles full-fidelity mockup viewing AND the per-screen feedback panel; the Smart Viewer (generic code/HTML/JSON/md tab renderer) would fight the mockup's own tokens and duplicate/hide the feedback UI.
+- **Consequences:** Round files never ship in a PR; durable design artifacts (mockups, manifest, visual-guidelines) stay tracked. Mockup-viewing and feedback reuse the already-emitted viewer instead of a WebUI rebuild.
+- **Rejected:** Render mockups inside the Smart Viewer; rebuild the feedback form separately in the WebUI (reintroduces a manual view<->feedback bridge).
+
+---
+
+### ADR-320: Emit phase_started at the two phase-entry call sites
+- **Date:** 2026-07-11
+- **Section:** B1
+- **Run-ID:** iterate-2026-07-10-emit-phase-started
+- **Context:** The phase_started event type was defined in record_event.py and already CONSUMED (compliance change_history collector + verifiers infrastructure_checks I2/I3/I4, runtime_checks, security_compliance) but NOTHING emitted it, so the durable shipwright_events.jsonl carried only end timestamps (phase_completed) and the WebUI PhaseRail could not show per-phase durations (concept wow-usability §5a M-Pre-1).
+- **Decision:** Add the missing emitter at the two phase-ENTRY sites, mirroring phase_session_stop's phase_completed: (1) multi_session SessionStart hook phase_session_start.py via a new shared helper lib/phase_event_emit.py; (2) single_session single-session-next CLI boundary via orchestrator_pkg/events.record_phase_started. Both carry phase + detail{phaseTaskId,splitId,runId}, gated on a fresh (non-idempotent) claim so exactly one phase_started per phase.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Mirrors the existing emit call site; keeps the baselined 660-LOC phase_task_lifecycle CAS state machine pure (events emitted by callers, not the lifecycle); ADR-045 forbids the run plugin importing shared lib, so each side uses its local subprocess idiom.
+- **Consequences:** Durable event log now pairs phase_started with the existing phase_completed; the pre-wired freshness/collector consumers activate their phase_started anchors. Additive, best-effort (never raises; logs stderr on emit failure), non-blocking — no existing event changed.
+- **Rejected:** Emitting inside phase_task_lifecycle.claim_phase_task (ratchets a baselined file + pollutes the pure state machine); single_session-only emission (loses the multi_session pairing AC2 references).
+
+---
+
+### ADR-321: Scope phase_started emission to pipeline phases; defer the iterate F-phase half
+- **Date:** 2026-07-11
+- **Section:** B1
+- **Run-ID:** iterate-2026-07-10-emit-phase-started
+- **Context:** AC1 read 'every pipeline + iterate phase'. The iterate flow (F0-F12) records a single work_completed at F5b, NOT per-F-phase events, so it has no phase_completed pairing model in the tracked log. The WebUI Iterate-Rail is a display-grouping/mapping layer over the ~20 real iterate phases in webui lib/narrator.ts (concept K3), not a framework per-F-phase emitter.
+- **Decision:** B1 emits phase_started (and the paired phase_completed/phase_failed) for the 7 PIPELINE phases only, in both run modes. Iterate per-F-phase emission is DEFERRED to a tracked follow-up; emitting unpaired per-F phase_started without an END model would yield durations the WebUI cannot close.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Honest scope decision surfaced to the operator: the pairing model that makes durations computable does not exist for iterate F-phases yet, and inventing an unpaired emitter now would be premature.
+- **Consequences:** Pipeline PhaseRail durations work end-to-end now; the iterate half is explicitly recorded (spec AC1 scoped, triage follow-up filed) rather than silently narrowed. No unpaired iterate events pollute the tracked log.
+- **Rejected:** Emit unpaired per-F phase_started for iterate now (no END pairing -> uncloseable durations, event-log noise); silently drop the iterate clause from AC1 (would be an undocumented narrowing).
+
+---
+
+### ADR-322: grade_snapshot event per compliance regen
+- **Date:** 2026-07-11
+- **Section:** Iterate — feature: grade_snapshot per compliance regen (campaign B, B3)
+- **Run-ID:** iterate-2026-07-10-grade-snapshot-events
+- **Context:** The WebUI Ship's-Log Grade-Trend needs grade HISTORY, but the Control Grade is a repo aggregate the compliance dashboard overwrites on every regen — no history survived (M-Pre-3). No producer emitted a durable per-run grade record for the WebUI to trend.
+- **Decision:** At each compliance dashboard regen, update_compliance.py appends ONE grade_snapshot{grade,score,ts} to the durable tracked shipwright_events.jsonl via record_event.append_event (new emit_grade_snapshot compliance module, mirroring the SBOM/test-evidence triage emitters). grade_snapshot is now a first-class record_event --type (choices + build_event branch + --grade/--score).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Idempotency (AC1): the simpler contract — one snapshot per regen, appended unconditionally; the WebUI dedupes consecutive identical (grade,score) points. commit omitted (finalize regen runs pre-F6; correlate by ts). Emit + dashboard render both call the deterministic compute_grade on the SAME collected data, so the snapshot cannot diverge — pinned by a real-flow parity test.
+- **Consequences:** Additive: event-log consumers (change_history/infrastructure/runtime checks) filter by known type and ignore grade_snapshot; dashboard.md output unchanged. finalize_iterate's regen also emits a snapshot (per-run delta) — over-specified finalize tests filter type==work_completed (net-zero LOC). record_event.py kept <=785 (no bloat ratchet).
+- **Rejected:** Plumb the computed GradeReport from the render into the emitter (render returns markdown; _control_block.py at its 296/300 ceiling; determinism on shared frozen data + a parity test give the same guarantee). Emit from control_grade.py (the repo-agnostic scorer). Producer-side no-op dedup (needs a read-back scan for no functional gain).
+
+---
+
+### ADR-323: Persist iterate session plan as gitignored <run_id>.plan.json sibling
+- **Date:** 2026-07-11
+- **Section:** M-Pre-2 / concept §5a
+- **Run-ID:** iterate-2026-07-10-persist-session-plan
+- **Context:** classify_complexity prints its classification to stdout (byte-stable contract) but never persists phases/skips/risk_flags, so the WebUI scoped Plan-Card (webui A15/A16) has no data source.
+- **Decision:** New session_plan.py projects the classify result into {run_id,complexity,risk_flags,phases,skips} and writes <run_id>.plan.json beside the finalized <run_id>.json. classify_complexity.main() gains --run-id; when set it calls persist_session_plan_safe AFTER the stdout print (fail-soft). SKILL Step E passes --run-id. The plan file is GITIGNORED transient state.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Persisting stdout verbatim cannot satisfy the AC (stdout lacks phases/skips); a small projection is required. Gitignored: regenerated each classify, superseded at finalize.
+- **Consequences:** New producer->file->consumer data flow. The file shares its dir with load_history_prior's *.json glob; added an explicit .plan.json guard so the plan is never miscounted as a finalized history entry. STDOUT stays byte-identical (subprocess test).
+- **Rejected:** Dump stdout JSON verbatim (no phases/skips in stdout); track the plan file (transient, would pollute git history).
+- **Details:** [B2-persist-session-plan.md](../planning/iterate/campaigns/monorepo-wow-usability-2026-07-10/sub-iterates/B2-persist-session-plan.md)
+
+---
+
+### ADR-324: Brief-intake: /shipwright-run accepts a pre-filled wizard brief
+- **Date:** 2026-07-11
+- **Section:** plugins/shipwright-run/skills/run — Steps 1-3 brief-intake (K2c)
+- **Run-ID:** iterate-2026-07-10-run-brief-intake
+- **Context:** The WebUI Intent Wizard (K2) collects four plain-language answers (description, users, persistence, run-location) and launches /shipwright-run, which today restarts its interview and re-asks them. This is the framework half of K2 (webui A09 relies on it to avoid double-asking).
+- **Decision:** Add a deterministic Python intake helper (scripts/lib/brief_intake.py) + a references/brief-intake.md doc. SKILL Steps 1-3 detect a brief (file path or inline payload), map persistence->profile and run-location->deploy/env, and ask ONLY the still-missing questions. No brief -> the legacy interview is byte-for-byte unchanged.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The brief->(profile,env,remaining) mapping lives in the helper so it is unit-tested over fixtures (28 tests). SKILL.md stays at its 400-line runtime-prompt ceiling (net-zero edit). Synonym/text tolerance hedges the not-yet-frozen WebUI->run JSON contract.
+- **Consequences:** The terminal interview no longer repeats a wizard-answered question. vite-hono is the zero-signup default; supabase-nextjs only when persistence=yes; supabase env vars asked only on web+persistence. A wrong-shape, unreadable or oversized brief degrades to the legacy interview (webui A09 fallback), never crashes the run.
+- **Rejected:** Putting the mapping prose in inference-rules.md (conflates keyword-inference with brief-mapping — distinct concerns). A strict-JSON-only <50 LOC parser (brittle while the two-repo webui->run contract is unfrozen; description-only fallback + bounded synonyms are the safer hedge).
+
+---
+
+### ADR-325: Iterate-Rail per-phase durations via boundary-mark sidecar
+- **Date:** 2026-07-11
+- **Section:** Iterate — feature: Iterate-Rail per-phase durations (M-Pre-1 iterate half)
+- **Run-ID:** iterate-2026-07-11-iterate-phase-timing
+- **Context:** The WebUI Iterate-Rail wants real per-phase durations, but an iterate writes one work_completed event at F5b and its ~20 phases are LLM-executed SKILL steps with no program boundaries (unlike the pipeline, B1). Per-phase durations were dark (concept §5a; triage trg-8efeb3d7).
+- **Decision:** The SKILL emits a lightweight mark at each of the 5 Iterate-Rail group boundaries (scope build review test finalize) into a gitignored <run_id>.phase_timings.jsonl sidecar; finalize_iterate folds the computed per-group {phase,started,duration_ms} into work_completed as phase_timings. Additive: no sidecar leaves the event unchanged.
+- **Commit:** (assigned post-merge)
+- **Rationale:** 5-group granularity matches the concept's 5-node rail and is cheap (5 marks, not ~40 events); framework produces timing, WebUI renders — same model as pipeline B1. Chronological anchors mean external_plan_review counts under scope (disclosed, display-only).
+- **Consequences:** The WebUI reads work_completed.phase_timings when present (partial / pre-M-Pre-1 history degrades gracefully). New lib/iterate_phase_groups.py SSoT is pinned to session_plan._PHASE_CATALOG so the Plan-Card grouping and the durations join. Rendering is a follow-up webui iterate; framework is producer-only.
+- **Rejected:** Full ~20-phase emission (rejected: ~40 imprecise LLM-timed events per iterate, log-polluting). Structure-only webui mapping (rejected by user: leaves durations blank). record_event.py --phase-timings-json manual path (dropped mid-build: no consumer since finalize is sole producer; would ratchet the grandfathered file).
+
+---
+
+### ADR-326: Per-split phase_completed: dedup on (phase, splitId)
+- **Date:** 2026-07-11
+- **Section:** iterate/phase-completed-per-split
+- **Run-ID:** iterate-2026-07-11-phase-completed-per-split
+- **Context:** Multi-split pipeline phases (build/plan) undercounted per-phase duration in the tracked shipwright_events.jsonl: phase_completed deduped by phase alone (first-wins), keeping only the first split's end, while phase_started is already recorded per split.
+- **Decision:** Widen the phase_completed dedup key to (phase, splitId) and promote splitId to a top-level phase-event field via a new --split-id arg, recording one end per split. Consumers derive the per-phase span (min start..max end) and per-split bars.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Append-log-of-facts model: record atomic per-split facts, derive views. The start side is already per-split, so this symmetrizes the log; the emit stays pure (no last-split detection).
+- **Consequences:** Per-split duration bars enabled; per-phase span accurate; 4 phase-count/latest-ts consumers de-duped by phase name; plan SKILL emits --split-id; WebUI PhaseRail follow-up filed (trg-941d870b). Single-split phases (splitId=None) unchanged.
+- **Rejected:** Option 2 (emit phase_completed only at final-split completion): couples the telemetry emit path to lifecycle split-state and is lossy (no per-split bars).

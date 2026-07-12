@@ -1,1 +1,0 @@
-Single-session pipelines (`/shipwright-run` `mode: single_session`) are now resumable: if the orchestrator conversation dies mid-run, re-invoking `/shipwright-run` detects the in-flight run and offers to resume it, re-running any mid-flight phase idempotently. Recovery is available via `single-session-resume` / `-recover`.

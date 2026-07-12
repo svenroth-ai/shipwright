@@ -5,11 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.31.0] - 2026-07-12
 
 ### Added
 
+- Single-session pipelines (`/shipwright-run` `mode: single_session`) are now resumable: if the orchestrator conversation dies mid-run, re-invoking `/shipwright-run` detects the in-flight run and offers to resume it, re-running any mid-flight phase idempotently. Recovery is available via `single-session-resume` / `-recover`.
+- Structured observability for the single-session loop, appended to `.shipwright/run_loop_events.jsonl` (phase dispatch, result, strict-stop, human-gate pause/resume, resume, recovery). Multi-session runs are unaffected — no telemetry or loop-state files are created for them.
+- Single-session pipeline: end-to-end integration + cross-surface regression capstone — a full pipeline walked through a human-gate pause/resume with strict-stop, cross-surface parity (CLI/WebUI/chat), in-flight multi-session resumability, and a known-bug regression roster.
+- Constitution + generated-project CLAUDE.md now instruct agents to phrase questions to the user in plain, functional language a non-senior developer can understand (no unexplained jargon).
+- /shipwright-adopt accepts a pre-delivered brief (`--brief`) and skips the Step-C product-description question the brief answers, mirroring /shipwright-run's brief-intake; `brief_intake.py` is now shared by both plugins.
+- The /shipwright-run and /shipwright-iterate intro banners now surface plain-language explanations of jargon (IREB-Spec, ADR, Conventional Commits) drawn verbatim from the shared Plain-Language Index in docs/guide.md, with a copy-parity test guarding against drift.
+- CLAUDE.md net-growth gate: the F11 verifier check_agent_doc_budget (+ standalone CLI) now blocks an iterate that grows CLAUDE.md by more than 30 lines vs the git base — forward-only, creation/deletion exempt; deliberate escape hatch SHIPWRIGHT_CLAUDE_MD_GROWTH_OK=1 is surfaced visibly, never silently
+- Control Grade history: each compliance dashboard regen now appends one durable `grade_snapshot{grade, score, ts}` event to the tracked `shipwright_events.jsonl` (new `record_event` `--type grade_snapshot`), so the WebUI Ship's-Log can project a grade TREND + per-run delta instead of only the latest overwritten aggregate — additive (existing events and dashboard output unchanged; unknown-type consumers ignore it), one snapshot per regen with WebUI-side dedup
+- Iterate session-plan persistence: `classify_complexity.py --run-id` now additively writes a `<run_id>.plan.json` (complexity, planned phases, skipped phases + why, risk flags) next to the finalized iterate record so the WebUI scoped Plan-Card has a data source — stdout stays byte-identical, the persist is fail-soft and the file is gitignored transient run-scoped state
+- Brief-intake for `/shipwright-run`: the pipeline entry point now accepts a pre-delivered brief (a file path or an inline payload) carrying the WebUI Intent-Wizard's four plain-language answers (description, users, persistence, run-location), maps them to the stack profile and deploy/env choices (`persistence=yes` → `supabase-nextjs`; otherwise the zero-signup `vite-hono` default; Supabase env vars asked only for web + persistence), and asks ONLY the still-missing questions — so the terminal interview never re-asks what the wizard already answered — while a run WITHOUT a brief behaves exactly as before (legacy interview unchanged); a malformed, unreadable or wrong-shape brief degrades to the legacy interview rather than failing the run (K2c)
+- Iterate-Rail per-phase durations: the iterate finalize step now folds real per-group wall-clock times (scope/build/review/test/finalize) into its `work_completed` event as `phase_timings`, so the Command Center's iterate progress bar can show time-per-step (the iterate counterpart of the pipeline PhaseRail; additive, older runs are unaffected).
 - Pipeline event log now records a `phase_started` at each **pipeline phase's** entry and a paired `phase_completed`/`phase_failed` at its exit, in both run modes — multi-session via the SessionStart/Stop hooks, single-session (the default) via the `single-session-next`/`single-session-apply` boundaries — so per-phase durations are computable from the tracked `shipwright_events.jsonl` alone (WebUI PhaseRail, M-Pre-1). Additive and best-effort. Per-phase timing for the iterate flow (F0–F12) is tracked separately as a follow-up.
+
+### Changed
+
+- /shipwright-run: single_session is now the default and sole supported pipeline mode (runs on every surface); multi_session is deprecated (retained for back-compat, removal deferred). Existing runs migrate explicitly — see docs/migrations/multi-session-to-single-session.md.
+- Both CLAUDE.md producers (greenfield template and /shipwright-adopt renderer) now seed an 'Editing this file (keep it lean)' rule — one line + ADR pointer per invariant, rationale in the ADR — so generated projects stop accreting inline-rationale DO-NOT blocks
+- Design feedback rounds (design-feedback-round*.md) are now gitignored transient scratch; the design review-loop documents how the single-session WebUI hosts the emitted review viewer (isolated, not the Smart Viewer) and writes feedback straight into the worktree
+- Phase events in shipwright_events.jsonl now carry a top-level splitId and phase_completed is deduplicated on (phase, splitId), enabling per-split duration bars in the WebUI PhaseRail. Single-split phases are unchanged.
+
+### Fixed
+
+- shipwright-iterate intro banner no longer prints a hardcoded, stale version string (was `v0.3.0`); the banner now carries no version, matching every other plugin, with a drift-guard test preventing regression.
+- External LLM review no longer errors on the direct OpenAI call under gpt-5.x models (max_tokens replaced by max_completion_tokens in external_review.py and llm_review.py).
+- The external review gate no longer silently falls back to self-review when API keys are present but every review fails: it now returns a non-zero exit with a recorded degraded reason instead of a success-looking result.
+- Multi-split pipeline phases (build/plan) no longer undercount their duration in the tracked event log: every split's completion is recorded, so the per-phase span spans the whole phase instead of only the first split.
+- Iterate finalization no longer loses its history entry when a gitignored WebUI session-plan card (<run_id>.plan.json) is present: the iterate-entry reader now excludes secondary-extension sidecars, so retention can't mistake the date-less plan file for the oldest entry and delete the real one (and find_entry_by_run_id resolves the real entry).
 
 ## [0.30.0] - 2026-07-08
 

@@ -1,1 +1,0 @@
-Iterate finalization no longer loses its history entry when a gitignored WebUI session-plan card (<run_id>.plan.json) is present: the iterate-entry reader now excludes secondary-extension sidecars, so retention can't mistake the date-less plan file for the oldest entry and delete the real one (and find_entry_by_run_id resolves the real entry).
