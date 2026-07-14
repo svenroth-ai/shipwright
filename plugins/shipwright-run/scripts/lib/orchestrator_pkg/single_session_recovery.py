@@ -7,21 +7,22 @@ These functions CALL a lifecycle mutator (``recover_phase_task``) and mutate
 ``single_session_loop`` — the pure ``single_session`` package is forbidden from calling
 a mutator (the SS1 lifecycle-reuse contract).
 
-**Dual-mode back-compat.** EVERY entry point here first passes ``_guard``: it is a no-op
-rejection (no file created, nothing mutated, no event) unless the run is
-``mode == single_session`` AND the persisted ``loop_state`` belongs to the SAME run
-(``loop_state.runId == run_config.runId``). A ``multi_session`` run, or a stale loop-state
-left by a prior aborted run under a newer run_config, is refused with ``wrong_mode`` /
-``runid_mismatch`` — never silently attached to the wrong run. Observability is emitted
-ONLY from these single-session paths, so a ``multi_session`` run never grows an events file.
+**Fail-closed gate.** EVERY entry point here first passes ``_guard``: it is a no-op
+rejection (no file created, nothing mutated, no event) unless the run records the
+explicit ``mode: single_session`` literal AND the persisted ``loop_state`` belongs to
+the SAME run (``loop_state.runId == run_config.runId``). A config that is not a
+drivable single-session run, or a stale loop-state left by a prior aborted run under a
+newer run_config, is refused with ``mode_unsupported`` / ``runid_mismatch`` — never
+silently attached to the wrong run.
 
-**Why idempotent re-dispatch of an in_progress task is safe here** (but would not be under
-``multi_session``): in ``single_session`` the phase-runner is a SUBAGENT of the master
-conversation, so when the master dies the runner dies with it — there is no orphaned live
-worker to race on resume. The split-brain concern is a ``multi_session``-only property
-(its phases run as independent external ``claude --session-id`` processes). Resume simply
-re-dispatches the in_progress task idempotently (``begin_dispatch`` re-claims by its own
-sessionUuid); the SS4 artifact persistence-guard still verifies outputs on apply.
+**Why idempotent re-dispatch of an in_progress task is safe.** The phase-runner is a
+SUBAGENT of the master conversation, so when the master dies the runner dies with it —
+there is no orphaned live worker to race on resume. (Split-brain WAS a real concern
+under the removed multi_session mode, whose phases ran as independent external Claude
+processes that outlived the master; removing that mode removed the concern with it.)
+Resume simply re-dispatches the in_progress task idempotently (``begin_dispatch``
+re-claims by its own sessionUuid); the SS4 artifact persistence-guard still verifies
+outputs on apply.
 """
 from __future__ import annotations
 
@@ -43,8 +44,9 @@ from single_session.loop_state import (  # noqa: E402
 from single_session.orchestrator_context import reload_orchestrator_context  # noqa: E402
 
 from .config_io import load_run_config  # noqa: E402
-from .constants import LEGACY_FALLBACK_MODE, SCHEMA_VERSION  # noqa: E402
-from .single_session_loop import SINGLE_SESSION, resolve_next_dispatch  # noqa: E402
+from .config_io import is_single_session, mode_rejection  # noqa: E402
+from .constants import SCHEMA_VERSION  # noqa: E402
+from .single_session_loop import resolve_next_dispatch  # noqa: E402
 
 
 def _lifecycle():
@@ -59,17 +61,14 @@ def _guard(project_root: Path) -> dict[str, Any]:
 
     ``ok=True`` (+ ``config``, ``run_id``, ``loop_state``) only for a single_session run
     whose persisted loop_state belongs to the same run. Otherwise ``ok=False`` with an
-    ``action``: ``no_config`` | ``wrong_mode`` | ``not_resumable`` (no loop_state yet) |
-    ``runid_mismatch``. No file is created or mutated on any rejection.
+    ``action``: ``no_config`` | ``mode_unsupported`` | ``not_resumable`` (no loop_state
+    yet) | ``runid_mismatch``. No file is created or mutated on any rejection.
     """
     config = load_run_config(project_root, migrate=False)
     if not config or config.get("schemaVersion") != SCHEMA_VERSION:
         return {"ok": False, "action": "no_config"}
-    mode = config.get("mode")
-    if mode != SINGLE_SESSION:
-        # Mode-less/legacy config → report the effective legacy mode, matching
-        # single_session_loop's wrong_mode payload (a mode-less run is multi_session).
-        return {"ok": False, "action": "wrong_mode", "mode": mode or LEGACY_FALLBACK_MODE}
+    if not is_single_session(config):
+        return mode_rejection(config)
     loop_state = load_loop_state(project_root)
     if loop_state is None:
         return {"ok": False, "action": "not_resumable", "reason": "no_loop_state"}
@@ -108,7 +107,7 @@ def resume_run(project_root: Path, *, confirm: bool = False) -> dict[str, Any]:
     nor emits. Emits the ``resume`` event ONLY when ``confirm=True`` (the user chose
     Resume); merely displaying the card records nothing (detection is not commitment).
 
-    Actions: ``no_config`` | ``wrong_mode`` | ``not_resumable`` | ``runid_mismatch`` |
+    Actions: ``no_config`` | ``mode_unsupported`` | ``not_resumable`` | ``runid_mismatch`` |
     ``resume``. On ``resume`` it carries ``resumeAction`` (what ``single-session-next``
     will do next), the compact ``context`` (reload), the ``loopState`` pointer, and
     ``next`` — the resolved dispatch/terminal signal the master loops on after confirming.
@@ -160,7 +159,7 @@ def mark_human_gate(
     gate (``paused=True``) and again when the human releases it (``paused=False``): it
     flips loop_state status ``paused_human_gate`` <-> ``running`` and emits
     ``human_gate_pause`` / ``human_gate_resume``. Mode- and run-identity-gated — a
-    multi_session or mismatched run is refused with no mutation and no event.
+    non-single-session or mismatched run is refused with no mutation and no event.
     """
     guard = _guard(project_root)
     if not guard.get("ok"):
@@ -190,7 +189,7 @@ def recover_single_session(
     resumable loop pointer to the recovered task (attempt reset; loop status lifted back to
     ``running`` if the run had failed because of it), and emits a ``recovery`` event.
     Mode- and run-identity-gated. The generic ``recover-phase-task`` CLI is untouched for
-    multi_session.
+    not a drivable single-session run.
     """
     guard = _guard(project_root)
     if not guard.get("ok"):

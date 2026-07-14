@@ -1,7 +1,7 @@
 """CLI adapter for the single-session orchestrator loop (Campaign 2026-07-07, SS3).
 
-Maps the two subcommands the ``single_session`` master drives to the pure loop
-functions in ``single_session_loop``:
+Maps the subcommands the master drives to the pure loop functions in
+``single_session_loop``:
 
   * ``single-session-next``  — resolve + claim + record the frontier phase task,
     or return a terminal signal (``complete`` / ``failed`` / ``needs_validation``).
@@ -11,7 +11,7 @@ functions in ``single_session_loop``:
 Exit-code map (shared with ``router.dispatch_lifecycle``):
     0 -> dispatch / terminal signal / successful apply
     2 -> fail-closed CAS reject on apply (stale_version / stale_session)
-    1 -> guard (wrong_mode / no_config), claim failure, invalid result, IO error
+    1 -> guard (mode_unsupported / no_config), claim failure, invalid result, IO error
 """
 from __future__ import annotations
 
@@ -72,7 +72,7 @@ def dispatch_single_session(args: argparse.Namespace, project_root: Path) -> int
 
     # ----- SS5 resumability / recovery / human-gate -----------------------
     # Lazy import (recovery drags in the lifecycle mutators). Each function is
-    # mode- and run-identity-gated, so a multi_session run is a no-op rejection.
+    # mode- and run-identity-gated, so a non-single-session config is a no-op rejection.
     if args.command in ("single-session-resume", "single-session-gate",
                         "single-session-recover"):
         from .single_session_recovery import (

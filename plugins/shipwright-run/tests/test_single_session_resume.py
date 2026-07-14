@@ -7,6 +7,7 @@ mode- and run-identity-gated, each emitting observability only on the single-ses
 """
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -34,11 +35,17 @@ def _ss_config(project_root: Path):
 
 
 def _multi_config(project_root: Path):
-    # SS8: single_session is the default now — request multi_session explicitly.
-    return create_config(
-        "full_app", "supabase-nextjs", "guided", "jelastic-dev", project_root,
-        mode="multi_session",
-    )
+    """A NON-DRIVABLE (stale multi_session) config, written straight to disk.
+
+    create_config now refuses the removed mode, so this is the only way such a config
+    can exist: already there, left over from before the removal.
+    """
+    create_config("full_app", "supabase-nextjs", "guided", "jelastic-dev", project_root)
+    path = project_root / "shipwright_run_config.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["mode"] = "multi_session"
+    path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    return data
 
 
 def _seed(project_root: Path, *, run_id: str | None = None) -> str:
@@ -62,11 +69,11 @@ def test_resume_no_config(tmp_project):
     assert rec.resume_run(tmp_project)["action"] == "no_config"
 
 
-def test_resume_wrong_mode_on_multi_session(tmp_project):
+def test_resume_refused_on_stale_multi_session(tmp_project):
     _multi_config(tmp_project)
     res = rec.resume_run(tmp_project)
-    assert res["action"] == "wrong_mode"
-    # A multi_session run must not grow single-session telemetry.
+    assert res["action"] == "mode_unsupported"
+    # A refused run must not grow telemetry.
     assert obs.load_events(tmp_project) == []
     assert not obs.events_path(tmp_project).exists()
 
@@ -149,11 +156,11 @@ def test_human_gate_pause_then_resume_flips_status_and_emits(tmp_project):
     assert all(e["runId"] == run_id for e in events)
 
 
-def test_human_gate_refused_on_multi_session_no_mutation(tmp_project):
+def test_human_gate_refused_on_stale_multi_session_no_mutation(tmp_project):
     _multi_config(tmp_project)
     res = rec.mark_human_gate(tmp_project, phase_task_id="ptk-x", phase="plan", paused=True)
     assert res["ok"] is False
-    assert res["action"] == "wrong_mode"
+    assert res["action"] == "mode_unsupported"
     assert load_loop_state(tmp_project) is None  # no loop_state created
     assert obs.load_events(tmp_project) == []
 
@@ -188,11 +195,11 @@ def test_recover_refused_on_runid_mismatch(tmp_project):
     assert obs.load_events(tmp_project) == []
 
 
-def test_recover_refused_on_multi_session(tmp_project):
+def test_recover_refused_on_stale_multi_session(tmp_project):
     _multi_config(tmp_project)
     res = rec.recover_single_session(tmp_project, phase_task_id="ptk-x")
     assert res["ok"] is False
-    assert res["action"] == "wrong_mode"
+    assert res["action"] == "mode_unsupported"
     assert not obs.events_path(tmp_project).exists()
 
 

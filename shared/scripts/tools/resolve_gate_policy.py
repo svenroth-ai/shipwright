@@ -6,7 +6,7 @@ The CLI a phase skill invokes to honour the non-interactive gate mode. It reads
 then prints the effective policy for a gate — or the whole phase.
 
 Mode precedence: ``--mode`` > ``$SHIPWRIGHT_RUN_MODE`` > ``run_config.mode``
-(via ``--project-root``) > ``multi_session``. Under any non-single-session mode
+(via ``--project-root``) > ``standalone`` (inert). Outside a driven single-session run
 every gate resolves to ``interactive`` (today's behaviour).
 
 Examples::

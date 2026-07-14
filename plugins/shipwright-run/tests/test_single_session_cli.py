@@ -28,6 +28,23 @@ def _ss_config(project_root: Path, *, mode: str = "single_session"):
     )
 
 
+def _stale_config(project_root: Path, *, mode: str | None = "multi_session"):
+    """Write a NON-DRIVABLE config straight to disk.
+
+    ``create_config`` now refuses the removed mode, so a stale run can only be
+    produced the way a real one would be found: already sitting on disk.
+    """
+    cfg = _ss_config(project_root)
+    path = project_root / "shipwright_run_config.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if mode is None:
+        data.pop("mode", None)
+    else:
+        data["mode"] = mode
+    path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    return cfg
+
+
 def _ss_config_with_loop_state(project_root: Path):
     """single_session config + a matching loop_state (a resumable run). Returns cfg."""
     cfg = _ss_config(project_root)
@@ -63,11 +80,11 @@ def test_next_exit0_on_dispatch(tmp_project, capsys):
     assert json.loads(capsys.readouterr().out)["action"] == "dispatch"
 
 
-def test_next_exit1_on_wrong_mode(tmp_project, capsys):
-    _ss_config(tmp_project, mode="multi_session")
+def test_next_exit1_on_non_drivable_mode(tmp_project, capsys):
+    _stale_config(tmp_project)
     rc = dispatch_single_session(_ns(command="single-session-next"), tmp_project)
     assert rc == 1
-    assert json.loads(capsys.readouterr().out)["action"] == "wrong_mode"
+    assert json.loads(capsys.readouterr().out)["action"] == "mode_unsupported"
 
 
 # --- single-session-apply --------------------------------------------------
@@ -161,11 +178,11 @@ def test_resume_exit0_on_resumable_run(tmp_project, capsys):
     assert json.loads(capsys.readouterr().out)["action"] == "resume"
 
 
-def test_resume_exit1_on_wrong_mode(tmp_project, capsys):
-    _ss_config(tmp_project, mode="multi_session")
+def test_resume_exit1_on_non_drivable_mode(tmp_project, capsys):
+    _stale_config(tmp_project)
     rc = dispatch_single_session(_ns(command="single-session-resume", confirm=False), tmp_project)
     assert rc == 1
-    assert json.loads(capsys.readouterr().out)["action"] == "wrong_mode"
+    assert json.loads(capsys.readouterr().out)["action"] == "mode_unsupported"
 
 
 def test_gate_exit0_pauses(tmp_project, capsys):
@@ -179,8 +196,8 @@ def test_gate_exit0_pauses(tmp_project, capsys):
     assert json.loads(capsys.readouterr().out)["status"] == "paused_human_gate"
 
 
-def test_gate_exit1_on_wrong_mode(tmp_project):
-    _ss_config(tmp_project, mode="multi_session")
+def test_gate_exit1_on_non_drivable_mode(tmp_project):
+    _stale_config(tmp_project)
     rc = dispatch_single_session(_ns(
         command="single-session-gate", phase_task_id="ptk", phase="plan",
         split_id=None, state="pause",
@@ -198,8 +215,8 @@ def test_recover_exit0_on_valid_task(tmp_project, capsys):
     assert json.loads(capsys.readouterr().out)["ok"] is True
 
 
-def test_recover_exit1_on_wrong_mode(tmp_project):
-    _ss_config(tmp_project, mode="multi_session")
+def test_recover_exit1_on_non_drivable_mode(tmp_project):
+    _stale_config(tmp_project)
     rc = dispatch_single_session(_ns(
         command="single-session-recover", phase_task_id="ptk", force_status="awaiting_launch",
     ), tmp_project)

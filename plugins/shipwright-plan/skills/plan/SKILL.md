@@ -53,11 +53,11 @@ on-demand when it lands here.
 
 See [step-0-context-recovery.md](references/step-0-context-recovery.md).
 
-If your context contains a `=== SHIPWRIGHT-PIPELINE-CONTEXT ===` block
-(injected by the SessionStart hook), parse `phaseTaskId` and run
-`shared/scripts/tools/get_phase_context.py` as your very first action,
-then read every artifact in the returned `skill_artifacts_to_read`
-list before proceeding. No block → standalone invocation, continue
+If the orchestrator handed you a `phaseTaskId` (you were dispatched as a
+phase-runner subagent by `/shipwright-run`), run
+`shared/scripts/tools/get_phase_context.py --phase-task-id <id>` as your very
+first action, then read every artifact in the returned `skill_artifacts_to_read`
+list before proceeding. No `phaseTaskId` → standalone invocation, continue
 with Step 1.
 
 ---

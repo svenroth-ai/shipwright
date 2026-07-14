@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-07-14-remove-multi-session",
+  "date": "2026-07-14T18:25:18.403642Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/remove-multi-session",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/2026-07-14-remove-multi-session.md",
+  "adr": "iterate-2026-07-14-remove-multi-session",
+  "summary": "Removed the multi-session pipeline mode and its external per-phase-session engine (3 hooks + 3 helpers, deregistered from all 8 phase plugins). single_session is the sole mode: the master DRIVES every phase as a phase-runner subagent, so the pipeline advances on every surface."
+}

@@ -9,20 +9,6 @@
       "adr": null
     },
     {
-      "path": "integration-tests/test_multi_session_pipeline.py",
-      "limit": 300,
-      "current": 431,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "integration-tests/test_phase_session_hook_chain.py",
-      "limit": 300,
-      "current": 359,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
       "path": "integration-tests/test_shipwright_run_e2e.py",
       "limit": 300,
       "current": 333,
@@ -908,13 +894,6 @@
       "path": "shared/tests/test_phase_quality_rollout.py",
       "limit": 300,
       "current": 453,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "shared/tests/test_phase_session_hooks.py",
-      "limit": 300,
-      "current": 384,
       "state": "grandfathered",
       "adr": null
     },

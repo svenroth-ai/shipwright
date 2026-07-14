@@ -376,91 +376,105 @@ After build completes: shows split summary table. After test completes: shows te
 
 ---
 
-## Multi-Session Pipeline Lifecycle (v2)
+## Pipeline Lifecycle (v2, single-session)
 
-> **Schema v2 (2026-04-25, ADR-001).** `/shipwright-run` is no longer a
-> single-session pipeline driver — it is a *coordinator*. Each phase
+> **`single_session` is the SOLE pipeline mode** (since
+> `iterate-2026-07-14-remove-multi-session`). `/shipwright-run` **drives** the
+> pipeline: it writes the spec, then runs every phase
 > (`project`, `design`, `plan`, `build`, `test`, `changelog`, `deploy` —
-> 7 phases since the security decouple) runs in its own external Claude
-> CLI session. The master writes the spec, prints a **surface-aware**
-> hand-off banner (branched on `CLAUDE_CODE_ENTRYPOINT`: a terminal gets
-> the board **Continue** / paste card; the VS Code extension or desktop
-> app gets a warning that this chat can't launch a bound phase session),
-> and ends. Phase Stop hooks plan the next phase via `complete-phase-task`
-> → `plan_next_phase`.
+> 7 phases since the security decouple) as a phase-runner **subagent inside its
+> own ONE conversation**. Because a phase is a subagent and not a separate
+> process, the pipeline advances on **every surface** — CLI, WebUI, VS Code
+> extension, desktop app.
 >
-> **Surface limitation (honest limits).** The multi-session pipeline needs
-> a launcher that can spawn `claude --session-id <uuid>` — i.e. a terminal
-> (CLI) or the WebUI Command Center. The Claude Code VS Code extension /
-> desktop **chat** cannot, so `/shipwright-run` cannot advance from there
-> (`/shipwright-iterate`, single-session, works everywhere).
+> **What was removed.** The original v2 model (`mode: multi_session`, ADR-001)
+> made the master a *coordinator*: it printed a surface-aware `claude --session-id`
+> launch card and stepped aside, and each phase ran as its own external bound
+> Claude session that claimed/completed its phase task through a trio of
+> SessionStart/UserPromptSubmit/Stop hooks. That engine —
+> `phase_session_start.py`, `phase_user_prompt_validate.py`,
+> `phase_session_stop.py`, plus their private helpers `phase_context_blocks.py`,
+> `lib/hook_session.py` and `lib/phase_event_emit.py` — is **deleted**, and the
+> three hooks are deregistered from all 8 phase plugins. It could only advance on
+> a surface able to spawn a bound session, so `/shipwright-run` stalled at phase 1
+> in the VS Code extension and desktop chat. See
+> `docs/migrations/multi-session-to-single-session.md`.
+>
+> **Drivability is an explicit literal.** A run is a driven pipeline **iff its
+> config records `mode: "single_session"`**. A mode-less pre-SS1 config, or one
+> still carrying `multi_session`, is refused by **every execution entry point**
+> (`write-config`, `single-session-next` / `-apply` / `-resume` / `-recover`) with
+> an actionable migration message — *before* any claim, mutation or event. The
+> guard deliberately does **not** live in the read path, so historical runs stay
+> inspectable (WebUI run history, `.shipwright/runs/**`).
 
-> **Single-session gate mode (Campaign 2026-07-07, SS2).** When a run sets
-> `mode: "single_session"` (SS8, 2026-07-08: now the DEFAULT and sole supported
-> mode; `multi_session` is deprecated/back-compat only — a mode-less legacy config
-> still reads as `multi_session` and migrates explicitly, see
-> `docs/migrations/multi-session-to-single-session.md`), each phase
-> runs as a phase-runner subagent inside the master's ONE conversation.
-> Interactive `AskUserQuestion` gates then follow a per-gate policy from
-> `shared/config/gate_catalog.json`: `auto-default` (proceed with a documented
-> answer, no END-TURN), `orchestrator-approve` (stop and surface to a human), or
-> `hard-stop` (always require a human — PROD deploy, destructive SQL,
-> migration-apply failure, rollback; constitution-locked). At startup the five
+> **Phase-gate policy (Campaign 2026-07-07, SS2).** Each phase runs as a
+> phase-runner subagent, so its interactive `AskUserQuestion` gates follow a
+> per-gate policy from `shared/config/gate_catalog.json`: `auto-default` (proceed
+> with a documented answer, no END-TURN), `orchestrator-approve` (stop and surface
+> to a human), or `hard-stop` (always require a human — PROD deploy, destructive
+> SQL, migration-apply failure, rollback; constitution-locked). At startup the five
 > phase skills (`project`, `design`, `plan`, `build`, `deploy`) read the policy
 > via `shared/scripts/tools/resolve_gate_policy.py`; the full contract is
-> `shared/prompts/single-session-gate-discipline.md` and the catalog is
-> documented in `docs/gate-catalog.md`. Under `multi_session`/standalone the
-> mechanism is inert (every gate resolves to `interactive` — today's behaviour).
-> SS2 lands the catalog + resolver + honoring blocks.
+> `shared/prompts/single-session-gate-discipline.md` and the catalog is documented
+> in `docs/gate-catalog.md`. The mechanism is **inert** — every gate resolves to
+> `interactive` — for any config that is not an explicit `single_session` run, so a
+> standalone or adopted project keeps its ordinary interactive gates. That
+> inertness is keyed on `gate_policy.INERT_MODE` (`"standalone"`), which is a
+> *sentinel, not a mode*: it replaced the `multi_session` literal that used to play
+> that role, and it is why removing the mode did not silently start auto-answering
+> gates in every standalone project.
 
-> **Single-session orchestrator loop (Campaign 2026-07-07, SS3).** Under
-> `mode: "single_session"` the master does NOT print a launch card and step
-> aside — it DRIVES the pipeline in ONE conversation, replacing the phase Stop
-> hook's between-phase action with an in-conversation loop. Two orchestrator
-> subcommands (`orchestrator.py single-session-next` / `single-session-apply`,
-> in `orchestrator_pkg/single_session_loop.py` + `single_session_cli.py`)
-> alternate with the `shipwright-run:phase-runner` subagent
-> (`plugins/shipwright-run/agents/phase-runner.md`): **next** resolves the
-> frontier phase task, claims it (`claim_phase_task`), and records a dispatch in
+> **The orchestrator loop (Campaign 2026-07-07, SS3).** The master DRIVES the
+> pipeline in ONE conversation. Two orchestrator subcommands
+> (`orchestrator.py single-session-next` / `single-session-apply`, in
+> `orchestrator_pkg/single_session_loop.py` + `single_session_cli.py`) alternate
+> with the `shipwright-run:phase-runner` subagent
+> (`plugins/shipwright-run/agents/phase-runner.md`): **next** resolves the frontier
+> phase task, claims it (`claim_phase_task`), and records a dispatch in
 > `.shipwright/run_loop_state.json`; **apply** validates the phase-runner RESULT
 > CONTRACT, **verifies on disk that every artifact an `ok:true` result claims
-> exists** (`orchestrator_context.verify_artifacts_exist` — a claimed-but-
-> unwritten artifact is rejected `artifacts_missing`, no completion), freezes
-> splits when a design phase completes (same ordering as `phase_session_stop`, so
-> build fans out per split), routes the result through `complete_phase_task` (an
-> `ok:false` result strict-stops via `mark_phase_failed`, planning NO successor),
-> and advances the loop pointer. The phase-runner has a **write path** and
-> persists its own outputs to disk (it does NOT rely on a Stop hook). On resume
-> the master rebuilds context via the `single-session-reload` subcommand
-> (`orchestrator_context.reload_orchestrator_context`) — from run_config + compact
-> `phase_tasks[].result` summaries, never a transcript (context-budget bound).
-> The loop owns NO bespoke completion path — every phase-task mutation goes
-> through `phase_task_lifecycle`, the same helpers the multi-session Stop hook
-> uses; loop-state holds no authoritative phase status. Splits are serial in v1.
-> The master-side protocol is
-> `plugins/shipwright-run/skills/run/references/single-session-loop.md`.
+> exists** (`orchestrator_context.verify_artifacts_exist` — a claimed-but-unwritten
+> artifact is rejected `artifacts_missing`, no completion), freezes splits when a
+> design phase completes (so build fans out per split), routes the result through
+> `complete_phase_task` (an `ok:false` result strict-stops via `mark_phase_failed`,
+> planning NO successor), and advances the loop pointer. The phase-runner has a
+> **write path** and persists its own outputs to disk (it does NOT rely on a Stop
+> hook). On resume the master rebuilds context via the `single-session-reload`
+> subcommand (`orchestrator_context.reload_orchestrator_context`) — from run_config
+> + compact `phase_tasks[].result` summaries, never a transcript (context-budget
+> bound). The loop owns NO bespoke completion path — every phase-task mutation goes
+> through `phase_task_lifecycle`. **Those are the same helpers the deleted Stop hook
+> called, which is why removing that hook cost the pipeline nothing.** Loop-state
+> holds no authoritative phase status. Splits are serial in v1. The master-side
+> protocol is `plugins/shipwright-run/skills/run/references/single-session-loop.md`.
 
-> **Resumability / recovery + observability (Campaign 2026-07-07, SS5).** If the
-> master conversation dies mid-run, re-invoking `/shipwright-run` auto-detects the
-> live loop-state on a non-terminal `single_session` run and resumes via a confirm
-> card. Three orchestrator subcommands back it, all in
-> `orchestrator_pkg/single_session_recovery.py` and **mode- + run-identity-gated** (a
-> `multi_session` or stale-`runId` run is a no-op rejection — no file written):
-> `single-session-resume` (read-only resume decision for the card; `--confirm` records
-> the commitment), `single-session-gate --state pause|resume` (human-gate state +
-> event), `single-session-recover` (in-loop `recover-phase-task` + loop-pointer realign
-> + event). A task left `in_progress` is re-dispatched idempotently by
-> `single-session-next` (the phase-runner is a subagent of the master, so master death =
-> runner death — no orphaned worker to race). The loop appends structured telemetry to
+> **Resumability / recovery + observability (Campaign 2026-07-07, SS5).** The
+> master IS the driver, so a closed/crashed master is simply a paused run:
+> re-invoking `/shipwright-run` detects the live loop-state on a non-terminal run
+> and resumes via a confirm card. Three orchestrator subcommands back it, all in
+> `orchestrator_pkg/single_session_recovery.py` and **mode- + run-identity-gated**
+> (a non-single-session or stale-`runId` config is a no-op rejection — nothing
+> mutated, no file written): `single-session-resume` (read-only resume decision for
+> the card; `--confirm` records the commitment), `single-session-gate --state
+> pause|resume` (human-gate state + event), `single-session-recover` (in-loop
+> `recover-phase-task` + loop-pointer realign + event). A task left `in_progress`
+> is re-dispatched idempotently by `single-session-next`: the phase-runner is a
+> subagent of the master, so master death = runner death, and there is no orphaned
+> worker to race. (Split-brain WAS a real hazard under `multi_session`, whose phases
+> were independent external processes that outlived the master; removing that mode
+> removed the hazard.) The loop appends structured telemetry to
 > **`.shipwright/run_loop_events.jsonl`** (append-only JSONL, gitignored by the
-> `/.shipwright/*` wildcard, distinct from the tracked `shipwright_events.jsonl`; event
-> types `dispatch` / `phase_result` / `strict_stop` / `human_gate_pause` /
-> `human_gate_resume` / `resume` / `recovery`), emitted ONLY on single-session paths and
-> best-effort (a write failure warns to stderr, never crashes the loop). The generic
-> `recover-phase-task` CLI and the whole `multi_session` lifecycle are untouched (the
-> dual-mode back-compat guarantee, proven by
-> `plugins/shipwright-run/tests/test_single_session_backcompat.py`).
-> Delivered SS1–SS5; remaining: SS6 (external-review fix), SS7 (E2E parity suite).
+> `/.shipwright/*` wildcard, distinct from the tracked `shipwright_events.jsonl`;
+> event types `dispatch` / `phase_result` / `strict_stop` / `human_gate_pause` /
+> `human_gate_resume` / `resume` / `recovery`), best-effort (a write failure warns
+> to stderr, never crashes the loop). The durable, tracked `phase_started` /
+> `phase_completed` pairs in `shipwright_events.jsonl` are emitted by the loop CLI
+> (`single-session-next` → `record_phase_started`, `single-session-apply` →
+> `record_phase_end`), one per split; with `phase_session_start` gone the loop is
+> their SOLE producer. End-to-end proof:
+> `integration-tests/test_single_session_sole_mode.py` (residue guard + survivor
+> contract) and `integration-tests/test_single_session_capstone.py`.
 
 ### Run-Config Schema v2
 
@@ -541,75 +555,66 @@ task is `done` AND (2) all other `phase_tasks[]` are terminal (`done` or
 "needs_validation"` plus a `pipeline_completion_blocked` event. **Failure
 is terminal:** any `failed` task immediately flips `run.status = failed`.
 
-### Phase-Session Lifecycle
+### Phase Lifecycle (in-conversation loop)
+
+Phases are advanced by the master's loop, **not by hooks**. The three phase-session
+hooks that used to drive this (`phase_session_start` / `phase_user_prompt_validate` /
+`phase_session_stop`) are deleted; there is no per-phase SessionStart/Stop chain left.
 
 ```
-USER: board Continue (WebUI) — or, in a plain terminal, paste
-      'claude --session-id <uuid> --add-dir <root> --name <...> /<phase>'
+USER: /shipwright-run   (any surface — CLI, WebUI, VS Code, desktop)
    |
    v
-SessionStart hooks (in order):
-   0. ensure_shared_cache.py       (marketplace-install self-heal: if the
-                                    ${CLAUDE_PLUGIN_ROOT}/../../shared cache dir
-                                    is missing, mirror it from the marketplace
-                                    full-clone. stdlib-only + fail-open +
-                                    idempotent; plugin-local + vendored so a
-                                    plain `claude plugin install` still delivers
-                                    it, and runs FIRST so every later
-                                    ../../shared/* hook resolves)
-   1. capture_session_id.py        (sets SHIPWRIGHT_SESSION_ID, ROOT)
-   2. phase_session_start.py       (Discovery via sessionUuid match;
-                                    on match: claim-phase-task CAS,
-                                    write sessionstart-validation.json,
-                                    optionally write .block-pending sentinel,
-                                    emit SHIPWRIGHT-PIPELINE-CONTEXT additionalContext)
-   3. check_artifact_drift.py      (scans project_root for legacy artifact
-                                    dirs from active migrations in
-                                    shared/scripts/lib/artifact_migrations.py;
-                                    warn-only — SessionStart cannot block, so
-                                    always exit 0:
-                                    in_progress → stderr notice +
-                                    .shipwright/stale-folders.md;
-                                    migrated → additionalContext on stdout
-                                    (the model-facing channel) + stderr notice)
+MASTER writes shipwright_run_config.json (mode: single_session), then LOOPS:
    |
-   v
-UserPromptSubmit hook (per prompt; first prompt only matters):
-   - phase_user_prompt_validate.py (reads .block-pending sentinel,
-                                    if present → decision:"block" + delete marker;
-                                    else → no-op)
+   +--> orchestrator.py single-session-next
+   |       - resolve the frontier phase task
+   |       - claim_phase_task (CAS, by the task's own sessionUuid claim token)
+   |       - record dispatch in .shipwright/run_loop_state.json
+   |       - record_phase_started -> shipwright_events.jsonl (tracked)
    |
-   v
-Skill-Run:
-   - Step 0 (NEW): If PIPELINE-CONTEXT block present in context, parse
-     phaseTaskId and run get_phase_context.py → read prior artifacts.
-     Otherwise standalone-mode and skip.
-   - Step 1+ as normal.
+   +--> Task(shipwright-run:phase-runner)   <-- a SUBAGENT, not a new session
+   |       - runs the ONE phase skill (dispatch.slashCommand)
+   |       - honours gate policy (auto-default / orchestrator-approve / hard-stop)
+   |       - WRITES ITS OWN OUTPUTS TO DISK (does not rely on any Stop hook)
+   |       - returns the compact RESULT CONTRACT {ok, phase, summary, artifacts[]}
    |
-   v
-Stop hooks (in order — critical):
-   1. phase_session_stop.py        (Discovery via sessionUuid;
-                                    if design phase: freeze-splits first;
-                                    complete-phase-task OR mark-phase-failed
-                                    based on result.ok;
-                                    plan_next_phase auto-runs from
-                                    complete-phase-task)
-   2. generate_handoff_on_stop.py  (writes phase-specific handoff under
-                                    .shipwright/agent_docs/runs/<runId>/<ptk>/handoff.md)
-   3. audit_phase_quality_on_stop.py (existing — unchanged)
+   +--> orchestrator.py single-session-apply
+   |       - validate the RESULT CONTRACT
+   |       - verify_artifacts_exist  (a claimed-but-unwritten artifact ->
+   |                                  artifacts_missing, NO completion)
+   |       - freeze_splits when a design phase completes
+   |       - complete_phase_task (ok:false -> mark_phase_failed, NO successor)
+   |         -> plan_next_phase appends the successor task
+   |       - record_phase_end -> shipwright_events.jsonl (tracked)
+   |
+   +--> loop until terminal: complete | failed | needs_validation
 ```
 
-**Standalone path** (no run config or no `sessionUuid` match): both
-phase-session hooks are no-ops. Skills see no `SHIPWRIGHT-PIPELINE-CONTEXT`,
-skip Step 0, run as before.
+Phase plugins keep their ordinary SessionStart chain (`ensure_shared_cache`,
+`capture_session_id`, `check_artifact_drift`, `session_start_using_shipwright`) and
+their ordinary Stop chain (`audit_phase_quality_on_stop`, `generate_handoff_on_stop`,
+`bloat_gate_on_stop`, …). What they no longer carry is the phase-claim trio — and, for
+all 8 phase plugins, the `UserPromptSubmit` event entirely (`phase_user_prompt_validate`
+was its only entry).
+
+**Standalone path** (a phase skill invoked directly, outside a run): unchanged and now
+trivially so — with no phase-session hooks there is nothing to no-op. Gate policy is
+inert (every gate `interactive`) because the config is not an explicit `single_session`
+run.
 
 ### Crash Recovery
 
-A phase session that crashes (terminal kill, OS crash, `kill -9`) leaves its
-`phase_tasks[i].status` at `in_progress` with `claimedBySessionUuid` set.
-Pipeline is wedged: `phase_session_start.py` fail-closes any new launch.
+If the master conversation dies mid-phase, the phase task is left `in_progress` with
+`claimedBySessionUuid` set. This is **not** a wedge: the phase-runner was a subagent of
+the dead master, so it died with it — there is no orphaned worker to race. Re-invoking
+`/shipwright-run` resumes, and `single-session-next` **re-dispatches the task
+idempotently** (re-claims by its own `sessionUuid`, `executionCount` not re-bumped);
+the artifact persistence-guard still verifies its outputs on apply. In-loop recovery is
+`single-session-recover` (same lifecycle mutator + a `recovery` event + loop-pointer
+realign).
 
-**Escape hatch:**
+**Escape hatch** for a genuinely wedged task:
 
 ```bash
 uv run plugins/shipwright-run/scripts/lib/orchestrator.py recover-phase-task \
@@ -669,16 +674,18 @@ with **no** `{"hooks": {...}}` wrapper, and/or object-form matchers
 
 ## Hooks Registry
 
-> **Note (v2, 2026-04-25; updated post-decouple).** The 7 orchestrator
-> phase plugins (`project`, `design`, `plan`, `build`, `test`,
-> `changelog`, `deploy`) wire the **shared phase-session hooks**:
-> `phase_session_start.py` after `capture_session_id.py` on
-> `SessionStart`, `phase_user_prompt_validate.py` on `UserPromptSubmit`,
-> and `phase_session_stop.py` first on `Stop`. The standalone `security`
-> and `compliance` plugins also load these hooks for their own session
-> lifecycle but are not orchestrator phases. The per-plugin tables below
-> show the unique hooks; see § Shared Phase-Session Hooks (v2) for the
-> multi-session trio that every phase plugin inherits.
+> **Note (updated `iterate-2026-07-14-remove-multi-session`).** The 8 phase
+> plugins (`project`, `design`, `plan`, `build`, `test`, `security`,
+> `changelog`, `deploy`) used to wire a **shared phase-session trio** —
+> `phase_session_start.py` on `SessionStart`, `phase_user_prompt_validate.py`
+> on `UserPromptSubmit`, `phase_session_stop.py` first on `Stop` — which
+> claimed and completed a phase task per external Claude session. That trio is
+> **deleted**: phases are now advanced by the master's in-conversation loop.
+> The removal also emptied the `UserPromptSubmit` event in all 8 (the validator
+> was its only entry), so those plugins no longer register that event at all.
+> The per-plugin tables below show each plugin's hooks; the shared chain every
+> plugin still inherits is `ensure_shared_cache` → `capture_session_id` →
+> `check_artifact_drift` → `session_start_using_shipwright` on `SessionStart`.
 
 ### Fan-out consolidation (once-per-event guard)
 
@@ -736,12 +743,12 @@ plain `claude plugin install` never copies it into the cache; only the dev scrip
 `../../shared/*` hook therefore 404s (fail-open, but noisy — the symptom that
 prompted this hook was `track_tool_calls.py` "can't find its own path" on a fresh
 macOS install). The same gap hits the sibling **`plugins/`** tree: several hooks
-import a plugin's lib cross-plugin via `${CLAUDE_PLUGIN_ROOT}/../../plugins/shipwright-X/…`
-(e.g. `phase_session_start` → the shipwright-run `phase_task_lifecycle`), and
-`cache/shipwright/plugins/` is likewise created only by `update-marketplace.sh` —
-so on a fresh install those imports degrade to their `None` fallback (which
-`phase_session_start` then called unguarded, crashing SessionStart until its guard
-landed alongside this healer).
+import a plugin's lib cross-plugin via `${CLAUDE_PLUGIN_ROOT}/../../plugins/shipwright-X/…`,
+and `cache/shipwright/plugins/` is likewise created only by `update-marketplace.sh` —
+so on a fresh install those imports degrade to their `None` fallback. (The hook that
+originally motivated this healer, `phase_session_start`, called that fallback unguarded
+and crashed SessionStart; it has since been deleted with the multi-session engine, but
+the cross-plugin import gap it exposed is real for any such hook.)
 
 **What it does.** When the expected `shared/` cache dir is missing, it mirrors it
 from the marketplace **full-clone** (`~/.claude/plugins/marketplaces/<name>/shared`,
@@ -766,9 +773,7 @@ Properties:
 Composition is pinned by `shared/tests/test_ensure_shared_cache_integration.py`
 (heals a simulated marketplace layout — both `shared/` from the clone and
 `plugins/` from the installed dirs; `plugins/` heals even with no clone; idempotent
-no-op; fail-open; dev-model no-op). The `phase_session_start` guard that tolerates
-the degraded cross-plugin import is pinned by
-`shared/tests/test_phase_session_hooks.py::test_start_degraded_cross_plugin_import_does_not_crash`.
+no-op; fail-open; dev-model no-op).
 
 ### Shared Hook: capture_session_id.py
 
@@ -813,8 +818,8 @@ stage produced the id whenever a non-env stage fired.
 ### Shared Hook: check_artifact_drift.py
 
 **Script:** `shared/scripts/hooks/check_artifact_drift.py` — wired
-as the third SessionStart hook in **every** plugin (12 hooks.json
-files), after `capture_session_id.py` and `phase_session_start.py`.
+as a SessionStart hook in **every** plugin (12 hooks.json files),
+after `capture_session_id.py`.
 
 **What it does:** scans the resolved `SHIPWRIGHT_PROJECT_ROOT` for
 any *legacy* top-level artifact directory (e.g. `planning/`) whose <!-- artifact-path-canon: legacy -->
@@ -1323,39 +1328,37 @@ Other FAILs remain audit-only forever (or until an explicit
 follow-up adds them to the allowlist). Tier-2 findings are never
 promoted, even if their id hypothetically coincides with a gate id.
 
-### Shared Phase-Session Hooks (v2)
+### Shared Phase-Session Hooks (v2) — REMOVED
 
-Wired into **every** orchestrator phase plugin (`project`, `design`, `plan`, `build`,
-`test`, `changelog`, `deploy` — 7 phases) to make multi-session pipelines
-work. The standalone `security` and `compliance` plugins also load these
-hooks but are not orchestrator phases since the v7/decouple iterates.
-See §Multi-Session Pipeline Lifecycle (v2) for the end-to-end flow.
-
-**`shared/scripts/hooks/phase_session_start.py` — SessionStart, after capture_session_id.**
-Discovers whether the launching session is part of an active run by matching
-`SHIPWRIGHT_SESSION_ID` against `phase_tasks[].sessionUuid`. On match it
-performs a CAS claim (`awaiting_launch → in_progress`), writes
-`.shipwright/runs/<runId>/<phaseTaskId>/sessionstart-validation.json`
-(persistent diagnostic) and, on validation failure, also writes
-`.block-pending` (single-use sentinel for the UserPromptSubmit hook). On
-success it emits a `SHIPWRIGHT-PIPELINE-CONTEXT` block via
-`hookSpecificOutput.additionalContext` carrying `phaseTaskId`. **No match →
-no-op.** Standalone phase invocations are unaffected.
-
-**`shared/scripts/hooks/phase_user_prompt_validate.py` — UserPromptSubmit.**
-Reads `.block-pending` if present, returns `decision: "block"` plus exit 2
-to abort wrong-skill / duplicate-claim / failed-prereq launches before the
-LLM ever runs. After the first read it deletes the marker so follow-up
-prompts in the same session pass through. SessionStart cannot block on its
-own (verified via F0 spike) — this hook closes the gap.
-
-**`shared/scripts/hooks/phase_session_stop.py` — Stop, before audit/handoff.**
-Re-discovers `phaseTaskId` via the `sessionUuid` match, parses `result.ok`
-from the phase's local config (`shipwright_<phase>_config.json`). For the
-design phase it calls `freeze-splits` first. Then calls **either**
-`complete-phase-task` (ok) or `mark-phase-failed` (not-ok) on the
-orchestrator. `complete-phase-task` automatically materialises the next
-phase task via the state machine.
+> **Deleted in `iterate-2026-07-14-remove-multi-session`.** This trio implemented
+> the external per-phase-session engine: it was wired into all 8 phase plugins and
+> made `mode: multi_session` work by claiming and completing a phase task per bound
+> Claude session. With the master now driving every phase as a subagent in ONE
+> conversation, none of it can ever fire (a subagent has no bound session id to
+> match against `phase_tasks[].sessionUuid`), so it was dead code and is gone.
+>
+> - `shared/scripts/hooks/phase_session_start.py` — SessionStart. Matched
+>   `SHIPWRIGHT_SESSION_ID` against `phase_tasks[].sessionUuid`; on match did the
+>   CAS claim (`awaiting_launch → in_progress`), wrote `sessionstart-validation.json`,
+>   wrote a `.block-pending` sentinel on validation failure, and emitted a
+>   `SHIPWRIGHT-PIPELINE-CONTEXT` block.
+> - `shared/scripts/hooks/phase_user_prompt_validate.py` — UserPromptSubmit. Read
+>   `.block-pending` and returned `decision: "block"` + exit 2 (SessionStart cannot
+>   block on its own), then deleted the marker.
+> - `shared/scripts/hooks/phase_session_stop.py` — Stop. Re-discovered the phase task,
+>   read `result.ok` from `shipwright_<phase>_config.json`, called `freeze-splits` for
+>   the design phase, then `complete-phase-task` / `mark-phase-failed`.
+>
+> Private helpers deleted with them: `shared/scripts/hooks/phase_context_blocks.py`,
+> `shared/scripts/lib/hook_session.py`, `shared/scripts/lib/phase_event_emit.py`.
+>
+> **What replaced them:** the lifecycle mutators they called
+> (`claim_phase_task` / `complete_phase_task` / `mark_phase_failed` / `freeze_splits`
+> / `plan_next_phase`, in `plugins/shipwright-run/scripts/lib/phase_task_lifecycle.py`)
+> are **unchanged and still load-bearing** — the master's loop calls exactly those,
+> which is why deleting the hooks cost the pipeline nothing. See § Phase Lifecycle
+> (in-conversation loop). The `phase_started` event these hooks used to emit is now
+> emitted by `single-session-next`.
 
 **Tools used by Step 0 of every phase skill:**
 `shared/scripts/tools/get_phase_context.py --phase-task-id <id>` returns

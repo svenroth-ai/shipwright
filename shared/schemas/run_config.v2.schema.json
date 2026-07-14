@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://shipwright.local/schemas/run_config.v2.schema.json",
   "title": "Shipwright Run Config (schemaVersion 2)",
-  "description": "Authoritative shape of shipwright_run_config.json for the shipwright-run pipeline orchestrator (single-session is the default and sole supported mode; multi-session is deprecated). Vertragsschicht for the shipwright-webui repo (schema v3 of sdk-sessions.json mirrors phase_tasks[]).",
+  "description": "Authoritative shape of shipwright_run_config.json for the shipwright-run pipeline orchestrator. single_session is the SOLE execution mode: the master drives every phase via a phase-runner subagent in ONE conversation. Vertragsschicht for the shipwright-webui repo (schema v3 of sdk-sessions.json mirrors phase_tasks[]).",
   "type": "object",
   "required": [
     "schemaVersion",
@@ -33,9 +33,8 @@
     "profile": { "type": ["string", "null"] },
     "autonomy": { "enum": ["guided", "autonomous"] },
     "mode": {
-      "enum": ["multi_session", "single_session"],
-      "default": "multi_session",
-      "description": "Pipeline execution mode. NOTE the two distinct 'defaults': this JSON-Schema `default` is the ASSUME-WHEN-ABSENT value and is 'multi_session' — it MUST match the code's absent-read fallback (config_io.run_mode) so a consumer applying schema defaults never silently reinterprets a mode-less legacy run. SEPARATELY, a FRESH write by /shipwright-run (SS8, 2026-07-08) produces 'single_session' — the sole supported mode: the master drives every phase via a phase-runner subagent in ONE conversation (runs on every surface). 'multi_session' (each phase its own external UUID-bound Claude session, the pre-SS1 behaviour) is DEPRECATED, retained only for back-compat; removal is deferred. OPTIONAL and NOT in 'required': a mode-less config migrates explicitly (set mode: single_session + resume). An unrecognised value is also read as multi_session so a typo can't select an unbuilt path."
+      "enum": ["single_session"],
+      "description": "Pipeline execution mode. 'single_session' is the SOLE mode: the /shipwright-run master drives every phase via a phase-runner subagent in ONE conversation, so the pipeline advances on every surface. The former 'multi_session' mode (each phase its own external bound Claude session, claimed/completed by SessionStart+Stop hooks) was REMOVED together with its engine in iterate-2026-07-14-remove-multi-session. DRIVABILITY IS AN EXPLICIT LITERAL: a run is a driven pipeline iff it records 'single_session'. NOTE the deliberate ABSENCE of a JSON-Schema `default`: absence is MEANINGFUL here (it means 'not a drivable run'), so there is no assume-when-absent value a consumer may fill in — a `default` would let a schema-default consumer (ajv useDefaults) silently reinterpret a mode-less pre-SS1 config as a drivable one, which is exactly what the explicit-literal rule forbids. The field stays OPTIONAL (not in 'required') purely for READ-compatibility: a mode-less config, and one still carrying 'multi_session', LOADS fine (so historical runs stay inspectable) but is refused by every execution entry point with an actionable migration message (set mode: single_session + resume; phase_tasks[] are shared and re-claim is idempotent, so no phase work is lost)."
     },
     "deploy_target": { "type": "string" },
     "pipeline": {
@@ -148,7 +147,7 @@
         "sessionUuid": {
           "type": "string",
           "format": "uuid",
-          "description": "Pre-bound at planning time. Used by phase_session_start.py for sessionUuid-match discovery."
+          "description": "Pre-bound at planning time. The phase task's CAS CLAIM TOKEN — the single-session loop claims the task with it (claim_phase_task). NOT a Claude session id: under the removed multi_session mode it doubled as the id a phase session was launched with, but the phase runner is now a subagent of the master and has no bound session of its own."
         },
         "version": {
           "type": "integer",

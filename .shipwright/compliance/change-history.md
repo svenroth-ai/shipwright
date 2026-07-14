@@ -1,20 +1,20 @@
 # Commit Change Log
 
-Generated: 2026-07-14T16:33:13.466664+00:00
-Total commits: 1134
+Generated: 2026-07-14T18:24:23.533942+00:00
+Total commits: 1136
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 327
-    "feat" : 307
+    "feat" : 308
     "chore" : 241
     "docs" : 145
     "refactor" : 67
     "test" : 28
     "ci" : 11
-    "other" : 7
+    "other" : 8
     "build" : 1
 ```
 
@@ -352,10 +352,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 307 commits
+### Features (feat) — 308 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-14 | grade,adopt | version the two artifacts the Command Center renders, and anchor the bump gate in git (#368) | 9def63904619 |
 | 2026-07-11 | iterate | fold per-phase durations into work_completed for the WebUI Iterate-Rail (M-Pre-1 iterate half) (#363) | a710b4167114 |
 | 2026-07-11 | iterate | adopt brief-intake reuse + plain-language banner bank (B5) (#361) | 64f197ba0015 |
 | 2026-07-11 | run | accept a pre-filled WebUI-wizard brief, ask only what's missing (K2c) (#360) | 0e55235aebf0 |
@@ -668,7 +669,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-14 | triage | sweep 4 outbox append(s) into branch | dabfab613f3d |
+| 2026-07-14 | triage | sweep 5 outbox append(s) into branch | f88eb04a7725 |
 | 2026-07-12 | review | default external-review GPT model to gpt-5.6-terra-pro (#366) | 4b71eec6aaa4 |
 | 2026-07-12 | release | bump root pyproject.toml to v0.31.0 (#365) | 1b4a471e075d |
 | 2026-07-12 | release | v0.31.0 (#364) | db6c3d3f3fa2 |
@@ -1181,10 +1182,11 @@ pie title Commit Types
 | 2026-05-31 | — | run shared/ test suites in CI via per-dir invocations | eb68b567899d |
 | 2026-05-31 | integration | gate integration-tests step on failure; fix F821 in events-log test | 83d68709d125 |
 
-### Other (other) — 7 commits
+### Other (other) — 8 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-14 | — | refactor(run)!: single_session is the sole pipeline mode; remove the external per-phase-session engine | 4f266ba256f0 |
 | 2026-04-24 | — | feat!: extract WebUI into own repo (shipwright-webui) — v0.4.0 | 47cacebb2a24 |
 | 2026-04-23 | — | iterate 3.9 — E2E spec backlog cleanup + TaskCard menu-bubbling fix (#9) | 514ec0b55a92 |
 | 2026-04-22 | — | iterate 3.8 — post-iterate-3 cleanup (E2E + scrollbar gutter) (#8) | 8a1950a50ee1 |
@@ -1203,7 +1205,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1134 |
+| Total commits | 1136 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1134 |
+| Human-authored commits | 1136 |
 

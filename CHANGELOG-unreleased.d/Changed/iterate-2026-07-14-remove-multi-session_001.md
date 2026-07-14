@@ -1,0 +1,1 @@
+`single_session` is now the sole pipeline mode: `/shipwright-run` **drives** every phase as a phase-runner subagent in one conversation, so the pipeline works on every surface (CLI, WebUI, VS Code, desktop). Closing the master merely pauses a run — re-invoke to resume.

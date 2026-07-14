@@ -1,6 +1,6 @@
-"""Phase-task lifecycle subcommands for the multi-session pipeline.
+"""Phase-task lifecycle subcommands for the /shipwright-run pipeline.
 
-F2 of the /shipwright-run multi-session refactor. Implements the CAS-protected
+Implements the CAS-protected
 state transitions that the F3 hooks (phase_session_start, phase_user_prompt_validate,
 phase_session_stop) and the recovery CLI invoke.
 

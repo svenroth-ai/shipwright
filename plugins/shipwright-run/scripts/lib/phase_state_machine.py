@@ -1,4 +1,4 @@
-"""Pure-function pipeline state machine for the multi-session run orchestrator.
+"""Pure-function pipeline state machine for the /shipwright-run orchestrator.
 
 Single source of truth for "given a completed phase task, what is the next one".
 Returns descriptive specs (not full phase_tasks[] entries) — the caller

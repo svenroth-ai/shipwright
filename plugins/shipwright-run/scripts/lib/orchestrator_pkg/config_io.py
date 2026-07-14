@@ -15,7 +15,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .constants import CONFIG_NAME, LEGACY_FALLBACK_MODE, RUN_MODES, SCHEMA_VERSION
+from .constants import (
+    CONFIG_NAME,
+    DEFAULT_RUN_MODE,
+    LEGACY_MODE_MESSAGE,
+    LEGACY_MULTI_SESSION,
+    MODE_REQUIRED_MESSAGE,
+    SCHEMA_VERSION,
+)
 
 # ``run_config_store`` is a top-level module in this plugin's scripts/lib;
 # importing ``.constants`` above already put that dir on sys.path.
@@ -69,24 +76,68 @@ def save_run_config(project_root: Path, config: dict[str, Any]) -> None:
 
 
 def is_v2_config(config: dict[str, Any]) -> bool:
-    """Return True if config carries the multi-session schema (v2)."""
+    """Return True if config carries the pipeline schema (v2)."""
     return config.get("schemaVersion") == SCHEMA_VERSION
 
 
-def run_mode(config: dict[str, Any]) -> str:
-    """Return the pipeline execution mode, defaulting legacy configs safely.
+# --------------------------------------------------------------------------- #
+# Mode
+#
+# THE INVARIANT: a run is a driven single-session pipeline **iff its config
+# records the explicit literal `mode: "single_session"`.** Nothing is inferred.
+#
+# `gate_policy.read_run_config_mode` applies the identical explicit-literal test,
+# so the orchestrator loop and the gate mechanism can never disagree about
+# whether a run is being driven — the conflation that made the old
+# multi_session-as-fallback model dangerous to remove.
+# --------------------------------------------------------------------------- #
 
-    Back-compat (Campaign 2026-07-07, SS1): the ``mode`` field is additive and
-    optional. A config written before SS1 has no ``mode`` key — it is read as
-    ``multi_session`` (``LEGACY_FALLBACK_MODE``, the pre-SS1 behaviour), so old
-    runs keep working unchanged. An unrecognised value is *also* coerced to it so
-    a hand-edited typo can never silently select an unbuilt execution path.
+# NOTE: there is deliberately NO ``run_mode()`` reporter here. One existed briefly and
+# was a trap: for a mode-less config it answered "single_session" (the sole mode) while
+# ``is_single_session()`` answered False (not drivable) — two functions, same config,
+# opposite answers, inviting the next caller to write `run_mode(cfg) == "single_session"`
+# and silently reintroduce the reinterpretation this module exists to prevent. Read the
+# raw value with ``config.get("mode")`` and ask ``is_single_session`` about drivability.
 
-    SS8 (2026-07-08): a FRESH run now defaults to ``single_session``
-    (``DEFAULT_RUN_MODE``), but this READ path deliberately keeps the legacy
-    fallback at ``multi_session`` — flipping the fresh default must NOT silently
-    reinterpret an existing mode-less run; that run migrates EXPLICITLY (set
-    ``mode: single_session`` + resume; docs/migrations/multi-session-to-single-session.md).
+
+def is_single_session(config: dict[str, Any]) -> bool:
+    """THE drivability predicate — explicit literal only (see THE INVARIANT)."""
+    return config.get("mode") == DEFAULT_RUN_MODE
+
+
+def is_legacy_multi_session(config: dict[str, Any]) -> bool:
+    """True when ``config`` records the removed ``multi_session`` mode."""
+    return config.get("mode") == LEGACY_MULTI_SESSION
+
+
+def mode_rejection(config: dict[str, Any]) -> dict[str, Any]:
+    """The actionable fail-closed payload for a config that is NOT drivable.
+
+    Returned — before anything is claimed, completed, mutated or emitted — by every
+    entry point that would ADVANCE a run:
+
+      * ``write-config`` (and ``create_config``, which raises instead);
+      * the ``single-session-*`` subcommands (loop + resume/gate/recover);
+      * the ADVANCING phase-lifecycle subcommands (``router._ADVANCING_COMMANDS``:
+        claim / complete / mark-failed / freeze-splits / plan-next-phase).
+
+    Two paths are exempt ON PURPOSE, and the exemptions are the point rather than an
+    oversight: the READ-ONLY lifecycle commands (a historical run must stay
+    inspectable — the guard is never in the read path), and ``recover-phase-task``,
+    the manual escape hatch the documented migration of a wedged run depends on.
+
+    Two shapes, one fix (``set mode: single_session``):
+      * the removed ``multi_session`` literal — an explicit choice whose engine is
+        gone; say so rather than silently reinterpreting the user's intent;
+      * anything else, incl. a mode-less pre-SS1 config — never opted into a mode;
+        it just has to declare the only one there is.
     """
     mode = config.get("mode")
-    return mode if mode in RUN_MODES else LEGACY_FALLBACK_MODE
+    message = LEGACY_MODE_MESSAGE if mode == LEGACY_MULTI_SESSION else MODE_REQUIRED_MESSAGE
+    return {
+        "ok": False,
+        "action": "mode_unsupported",
+        "reason": "mode_unsupported",
+        "mode": mode,
+        "message": message,
+    }

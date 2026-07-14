@@ -57,8 +57,8 @@ uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/resolve_gate_policy
 Apply the `effective_policy`: `auto-default` → proceed with the `default_answer`
 (no END-TURN; e.g. the interview is answered from the seed, the split manifest is
 auto-approved); `orchestrator-approve` / `hard-stop` → STILL STOP and hand back to
-the orchestrator (never auto-answer — e.g. a missing Supabase secret). Under
-`multi_session`/standalone every gate is `interactive` (unchanged). Full contract:
+the orchestrator (never auto-answer — e.g. a missing Supabase secret). Outside a
+driven single-session run (standalone / adopted) every gate is `interactive`. Full contract:
 `shared/prompts/single-session-gate-discipline.md`.
 
 ---
@@ -67,9 +67,9 @@ the orchestrator (never auto-answer — e.g. a missing Supabase secret). Under
 
 See [references/step-0-context-recovery.md](references/step-0-context-recovery.md).
 
-If `=== SHIPWRIGHT-PIPELINE-CONTEXT ===` is in your context, you are part
-of an active `/shipwright-run` pipeline — parse `phaseTaskId` and run
-`get_phase_context.py` BEFORE Step 1. Otherwise (standalone), continue
+If the orchestrator handed you a `phaseTaskId` (you were dispatched as a
+phase-runner subagent by `/shipwright-run`), run `get_phase_context.py
+--phase-task-id <id>` BEFORE Step 1. Otherwise (standalone), continue
 with Step 1.
 
 ---

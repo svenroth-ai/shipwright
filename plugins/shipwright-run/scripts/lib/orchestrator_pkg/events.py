@@ -140,7 +140,7 @@ def record_phase_end(
 ) -> None:
     """Durable phase-END event for a ``single_session`` phase.
 
-    Mirrors ``phase_session_stop`` (multi_session): ``phase_completed`` for a
+    ``phase_completed`` for a
     done phase, ``phase_failed`` for a failed one. Without it the single_session
     END lands ONLY in the TRANSIENT ``run_loop_events.jsonl``
     (``obs.emit_phase_result``), so per-phase durations were not computable from

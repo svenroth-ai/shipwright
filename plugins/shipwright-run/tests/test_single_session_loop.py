@@ -99,20 +99,26 @@ def test_resolve_no_config_on_empty_dir(tmp_project):
     assert loop.resolve_next_dispatch(tmp_project)["action"] == "no_config"
 
 
-def test_resolve_wrong_mode_on_multi_session(tmp_project):
-    # SS8: single_session is the default now → request multi_session explicitly (wrong_mode).
-    create_config("full_app", "supabase-nextjs", "guided", "jelastic-dev", tmp_project,
-                  mode="multi_session")
-    res = loop.resolve_next_dispatch(tmp_project)
-    assert res["action"] == "wrong_mode" and res["mode"] == "multi_session"
-
-    # A mode-less (pre-SS1/legacy) config is ALSO wrong_mode; the payload coerces the
-    # absent mode to the legacy fallback (single_session_loop's `mode or LEGACY_FALLBACK_MODE`).
+def test_resolve_refuses_non_drivable_configs(tmp_project):
+    """Drivable IFF the explicit single_session literal — nothing is inferred.
+    A stale multi_session config and a mode-less pre-SS1 one are both refused,
+    each with the message that names its own cause."""
+    create_config("full_app", "supabase-nextjs", "guided", "jelastic-dev", tmp_project)
     p = tmp_project / "shipwright_run_config.json"
-    p.write_text(json.dumps({k: v for k, v in json.loads(p.read_text("utf-8")).items()
-                             if k != "mode"}), encoding="utf-8")
+
+    # (a) the removed literal, found on disk (create_config refuses to WRITE it).
+    data = json.loads(p.read_text("utf-8"))
+    data["mode"] = "multi_session"
+    p.write_text(json.dumps(data), encoding="utf-8")
     res = loop.resolve_next_dispatch(tmp_project)
-    assert res["action"] == "wrong_mode" and res["mode"] == "multi_session"
+    assert res["action"] == "mode_unsupported" and res["mode"] == "multi_session"
+    assert "REMOVED" in res["message"]
+
+    # (b) a mode-less (pre-SS1) config. NOT coerced to the sole mode.
+    data.pop("mode")
+    p.write_text(json.dumps(data), encoding="utf-8")
+    res = loop.resolve_next_dispatch(tmp_project)
+    assert res["action"] == "mode_unsupported" and res["mode"] is None
 
 
 def test_resolve_dispatches_project_on_fresh_single_session(tmp_project):

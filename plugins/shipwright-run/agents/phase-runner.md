@@ -23,7 +23,24 @@ You receive these parameters in the prompt:
 - `slashCommand`: the phase skill to execute (e.g. `/shipwright-plan`)
 - `project_root`: absolute path to the project root
 - `phaseTaskId`, `sessionUuid`, `version`: identity/CAS tokens (echo them back
-  to the master; do NOT invent them)
+  to the master; do NOT invent them). `sessionUuid` is the task's CAS claim
+  token, NOT a Claude session id — you are a subagent of the master and have no
+  bound session of your own.
+
+## Step 0: load your prior-phase context
+
+Before running the phase skill, surface the artifacts your phase depends on:
+
+```bash
+uv run "{shared_root}/scripts/tools/get_phase_context.py" \
+  --phase-task-id "{phaseTaskId}" --project-root "{project_root}"
+```
+
+Read everything it lists in `skill_artifacts_to_read`, then start the skill's normal
+Step 1. (This context used to be injected by the `phase_session_start` SessionStart hook
+into an external phase session. You are a subagent, not a session, so no hook can inject
+anything into you — the master hands you the `phaseTaskId` instead, and you fetch the
+context yourself.)
 
 ## Iron rule: persist to DISK, summarise in the RESULT
 

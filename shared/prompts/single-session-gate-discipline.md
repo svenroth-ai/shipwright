@@ -4,7 +4,7 @@
 deploy) running under the **single-session pipeline**
 (`shipwright_run_config.json` `mode: "single_session"`, Campaign 2026-07-07).
 
-**Additive & inert otherwise.** Under `multi_session` (deprecated), standalone,
+**Inert outside a driven run.** For a standalone / adopted / mode-less config,
 or any unrecognised mode, this contract does nothing — every gate resolves to
 `interactive` and you behave exactly as your phase already documents.
 
@@ -23,7 +23,7 @@ uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/resolve_gate_policy
 ```
 
 Mode precedence: `--mode` > `$SHIPWRIGHT_RUN_MODE` > `run_config.mode` >
-`multi_session`. Apply the printed `effective_policy`:
+`standalone` (inert). Apply the printed `effective_policy`:
 
 | `effective_policy` | what you do |
 |---|---|
@@ -42,7 +42,7 @@ Mode precedence: `--mode` > `$SHIPWRIGHT_RUN_MODE` > `run_config.mode` >
   also resolves an unknown gate id to `interactive` for exactly this reason.)
 - **Fail safe, not fail-blocking.** If the resolver errors or is unavailable
   (missing/corrupt catalog, bad invocation), behave **interactively** — call
-  `AskUserQuestion` and STOP, exactly as a `multi_session` run would. Never block
+  `AskUserQuestion` and STOP, exactly as an ordinary interactive run would. Never block
   the run or auto-answer on a resolver failure.
 - **`default_answer` is opaque guidance, not a parsed value.** Apply it in
   context; do not build ad-hoc parsing on its exact wording.

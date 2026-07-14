@@ -38,6 +38,30 @@ LIFECYCLE_COMMANDS: frozenset[str] = frozenset({
     "plan-next-phase",
 })
 
+# Lifecycle commands that ADVANCE a run by mutating phase-task state. A config that is
+# not a drivable single-session run must not reach them: the loop's own guard would be
+# worthless if the same mutations were one CLI call away
+# (iterate-2026-07-14-remove-multi-session; external code review, GPT F2).
+_ADVANCING_COMMANDS: frozenset[str] = frozenset({
+    "claim-phase-task",
+    "complete-phase-task",
+    "mark-phase-failed",
+    "freeze-splits",
+    "plan-next-phase",
+})
+
+# The rest are exempt ON PURPOSE:
+#
+#   * ``get-phase-task`` / ``find-phase-task-by-session-uuid`` /
+#     ``validate-prerequisites`` are READ-ONLY. The mode guard lives on the execution
+#     path, never the read path, so a historical run stays inspectable.
+#
+#   * ``recover-phase-task`` is the manual ESCAPE HATCH, and it is deliberately usable
+#     on a non-drivable config: the documented migration of a run whose phase is wedged
+#     ``in_progress`` calls it (docs/migrations/multi-session-to-single-session.md), and
+#     guarding it would make exactly the runs that most need migrating unrecoverable. It
+#     cannot advance a pipeline — it only RELEASES a claim and bumps the CAS version.
+
 
 def dispatch_lifecycle(args: argparse.Namespace, project_root: Path) -> int:
     """Run an F2 phase-lifecycle subcommand. Returns process exit code.
@@ -45,10 +69,36 @@ def dispatch_lifecycle(args: argparse.Namespace, project_root: Path) -> int:
     Exit code map:
         0 -> result["ok"] is True
         2 -> fail-closed reasons (wrong_skill, duplicate_claim,
-             phase_already_terminal, prereqs_unmet, stale_version,
-             stale_session) — used by hooks for SessionStart/UserPromptSubmit blocks
-        1 -> generic error (not_found, invalid args, etc.)
+             phase_already_terminal, prereqs_unmet, stale_version, stale_session)
+        1 -> generic error (not_found, invalid args, mode_unsupported)
     """
+    # Fail closed BEFORE any mutation when the config is not drivable — a stale
+    # ``multi_session`` one, or a mode-less v2 (pre-SS1) one.
+    #
+    # The mode-less arm is deliberately scoped to v2. A v1 / standalone config has no
+    # ``mode`` either, but it is NOT a pipeline run at all — telling its owner to "set
+    # mode: single_session" would be nonsense, so it falls through and the lifecycle
+    # reports its own ``not_found``. The EXPLICIT removed literal is refused regardless
+    # of schemaVersion: whoever wrote it meant a pipeline, and a hand-edited config that
+    # lost its schemaVersion must not slip past the guard (external review, GPT).
+    if args.command in _ADVANCING_COMMANDS:
+        from .config_io import (
+            is_legacy_multi_session,
+            is_single_session,
+            is_v2_config,
+            load_run_config,
+            mode_rejection,
+        )
+
+        config = load_run_config(project_root, migrate=False)
+        not_drivable = is_legacy_multi_session(config) or (
+            is_v2_config(config) and not is_single_session(config)
+        )
+        if not_drivable:
+            # stdout, like every other lifecycle result — a caller that parses stdout on
+            # a non-zero exit must still find the payload (external review, Gemini).
+            print(json.dumps(mode_rejection(config), indent=2))
+            return 1
     # Lazy import keeps the base orchestrator surface clean — the lifecycle
     # implementation drags in CAS / claim machinery (~660 LOC) which is
     # only needed for the F2 subcommands.
