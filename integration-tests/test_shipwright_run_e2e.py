@@ -50,7 +50,7 @@ def run_script(script_path: str, args: list[str], cwd: str = None) -> dict:
 class TestFullPipelineE2E:
     """Simulate the full pipeline: run → project → plan → build → changelog."""
 
-    def test_full_pipeline(self, tmp_path):
+    def test_full_pipeline(self, tmp_path, undrive):
         """Complete pipeline from inference to changelog."""
         project = tmp_path / "todo-app"
         project.mkdir()
@@ -84,6 +84,7 @@ class TestFullPipelineE2E:
         )
         assert result["current_step"] == "project"
         assert (project / "shipwright_run_config.json").exists()
+        undrive(project)  # v1 update-step path (see undrive fixture)
 
         # === Phase 2: shipwright-project ===
         req = planning / "requirements.md"
@@ -107,8 +108,6 @@ class TestFullPipelineE2E:
         )
         (planning / "01-auth" / "spec.md").write_text("# Auth Spec\n")
 
-        # Update orchestrator: project complete (--force skips canon validation
-        # which requires artifacts not produced in integration tests)
         run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
             ["update-step", "--project-root", str(project),
@@ -222,7 +221,7 @@ class TestFullPipelineE2E:
 class TestResumeFromAnyPoint:
     """Verify orchestrator resume works from every pipeline step."""
 
-    def test_resume_after_each_step(self, tmp_path):
+    def test_resume_after_each_step(self, tmp_path, undrive):
         project = tmp_path / "resume-test"
         project.mkdir()
 
@@ -234,6 +233,7 @@ class TestResumeFromAnyPoint:
              "--profile", "supabase-nextjs",
              "--project-root", str(project)],
         )
+        undrive(project)  # v1 update-step path (see undrive fixture)
 
         # Pipeline order: project → design → plan → build → test →
         # changelog → deploy (matches PIPELINE_STEPS in orchestrator.py).

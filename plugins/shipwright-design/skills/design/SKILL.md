@@ -59,24 +59,7 @@ Output:
 
 ### C. Detect Invocation Mode
 
-Determine if running within the pipeline or standalone:
-
-1. Read `shipwright_run_config.json` (if exists)
-2. **Pipeline mode**: `status == "in_progress"` AND `current_step == "design"`
-   - Full pipeline integration (update orchestrator state, enforce gates)
-3. **Standalone mode**: file missing OR `status == "complete"` OR `current_step != "design"`
-   - Skip pipeline state updates (no `orchestrator.py update-step` calls)
-   - Skip upstream completion checks
-   - Still produce all artifacts (mockup HTML files, design-manifest.md)
-   - If no `shipwright_project_config.json` exists, work with whatever specs are available in `.shipwright/planning/`. If none exist, ask user to describe what screens they need.
-   - Print: `"Running in standalone mode — pipeline state will not be updated."`
-4. If `status == "in_progress"` AND `current_step != "design"`:
-   - Warn: `"Pipeline is in progress at step {current_step}. Running /shipwright-design out of sequence may cause issues."`
-   - Ask user before continuing.
-
-Store the detected mode in a variable `invocation_mode` = `"pipeline"` | `"standalone"` for use in later steps.
-
-**Single-Session Gate Discipline:** under `mode: "single_session"`, honour per-gate policies — resolve interactive gates via `${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/resolve_gate_policy.py --phase design --list` before stopping (`auto-default` → proceed; `orchestrator-approve`/`hard-stop` → STOP; `design.preview-approval` + `design.review-loop-finalize` are orchestrator-approve — a human eyeballs the mockups). Full rule: `shared/prompts/single-session-gate-discipline.md`.
+Resolve it with `{shared_root}/scripts/tools/get_phase_context.py --phase-task-id "{phaseTaskId}" --phase design` (**omit `--phase-task-id` entirely if the orchestrator did not hand you one** — that is what selects standalone) and store the returned `mode` as `invocation_mode` (`pipeline` | `standalone` | `error` → STOP). **The dispatch token is the authority — never re-derive the mode from run-config state.** In `pipeline` mode do NOT call `orchestrator.py update-step` (`single-session-apply` owns completion). Full decision tree + the Single-Session Gate Discipline: [invocation-mode](references/invocation-mode.md).
 
 ### D. Discover Plugin Root
 
@@ -122,6 +105,12 @@ before proceeding so this phase session has full context for what came before.
 
 If NO `phaseTaskId` was handed to you, this is a standalone invocation —
 continue with Step 1 below as normal.
+
+**One resolver, one verdict.** This is the same tool your "Detect Invocation Mode" step
+already ran, so reuse that payload rather than re-deriving anything: its `mode` IS your
+`invocation_mode`. Pass `--phase <your phase>` so a token belonging to another phase is
+rejected, and if `mode` is `"error"` (exit 2) **STOP** — a dispatched phase must never
+fall back to standalone.
 
 ---
 

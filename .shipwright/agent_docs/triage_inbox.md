@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-14T20:22:37.991230Z. Items waiting for triage decision.
+> Auto-generated 2026-07-14T23:08:05.857788Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 294
-- Triage: 5 | Promoted: 1 | Dismissed: 287 | Snoozed: 1
+- Total: 295
+- Triage: 4 | Promoted: 1 | Dismissed: 289 | Snoozed: 1
 
-## Top 5 items (severity-sorted)
+## Top 4 items (severity-sorted)
 
 ### Source: compliance (1 item)
 
@@ -25,29 +25,22 @@
     ```
   - Promote: `triage_promote.py --id trg-4a615381 --task-ref EXT:<ref>`
 
-### Source: iterate (1 item)
+### Source: iterate (2 items)
 
 <a id="trg-de6e736c"></a>
 - **Phase skills detect invocation mode from the unmaintained v1 current_step, so a driven phase can wrongly conclude stand…** `id=trg-de6e736c | severity=medium | kind=bug → P2/engineering`
   - The 8 phase skills classify "pipeline vs standalone" in their First-Actions step C ("Detect Invocation Mode") by readin…
   - Promote: `triage_promote.py --id trg-de6e736c --task-ref EXT:<ref>`
 
-### Source: manual (2 items)
+<a id="trg-d1e466aa"></a>
+- **Retire the write-once v1 run-config fields (current_step / completed_steps)** `id=trg-d1e466aa | severity=low | kind=improvement → P3/engineering`
+  - Follow-up from iterate-2026-07-14-phase-invocation-mode (external plan review, Gemini #2). The v2 lifecycle never advan…
+  - Promote: `triage_promote.py --id trg-d1e466aa --task-ref EXT:<ref>`
 
-<a id="trg-0e8e7f90"></a>
-- **Remove the deprecated multi-session pipeline engine (single-session is now the sole mode)** `id=trg-0e8e7f90 | severity=low | kind=improvement → P3/engineering`
-  - Decision 2026-07-08 (Sven): single-session is the sole pipeline mode; multi-session no longer needed (one user, no back…
-  - Promote: `triage_promote.py --id trg-0e8e7f90 --task-ref EXT:<ref>`
+### Source: manual (1 item)
 
 <a id="trg-cced399c"></a>
 - **Decompose FR-01.10 / FR-01.07 into sub-FRs for precise feature traceability** `id=trg-cced399c | severity=low | kind=improvement → P3/engineering`
   - Follow-up to iterate-2026-06-30-fr-retag-honesty. Introduce sub-FRs (e.g. FR-01.10.x for Control Grade / RTM / SBOM / d…
   - Promote: `triage_promote.py --id trg-cced399c --task-ref EXT:<ref>`
-
-### Source: operator (1 item)
-
-<a id="trg-bc75d6fe"></a>
-- **Sweep quarantines a dismiss forever when the append lives only in main's tracked working tree (silent data loss + resur…** `id=trg-bc75d6fe | severity=high | kind=bug → P1/engineering`
-  - Reproduced live in shipwright-webui on 2026-07-14: triage item trg-6db81c59 kept resurfacing on the board after every d…
-  - Promote: `triage_promote.py --id trg-bc75d6fe --task-ref EXT:<ref>`
 

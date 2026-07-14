@@ -79,10 +79,14 @@ Read `shipwright_project_config.json` from project root and load profile from
 
 ### B2. Detect Invocation Mode
 
-Pipeline mode (`shipwright_run_config.json.status == "in_progress"` AND
-`current_step == "test"`) vs standalone. Standalone runs add
-`"mode": "standalone"` to `shipwright_test_results.json` and skip pipeline
-state updates. Out-of-sequence pipeline state requires ASK before continuing.
+Resolve it with `{shared_root}/scripts/tools/get_phase_context.py --phase-task-id
+"{phaseTaskId}" --phase test` (**omit `--phase-task-id` entirely if the orchestrator did not hand you one** — that is what selects standalone) and store the returned `mode` as `invocation_mode`.
+**The dispatch token the orchestrator hands you is the authority — never re-derive
+the mode from run-config state.** `pipeline` → full integration. `standalone` (no
+token) → add `"mode": "standalone"` to `shipwright_test_results.json`, skip pipeline
+state updates, and ASK first when `requires_out_of_sequence_warning` is true.
+`error` → **STOP** (never continue as standalone: the validator rejects
+standalone-stamped results and the run deadlocks).
 Full rules: see [first-actions](references/first-actions.md).
 
 ### B3. Load Project Context

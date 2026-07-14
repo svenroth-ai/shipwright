@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-14T20:05:09.348996+00:00
+Generated: 2026-07-14T23:08:01.730971+00:00
 
 ## Requirements Coverage
 
@@ -28,6 +28,7 @@ Generated: 2026-07-14T20:05:09.348996+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-622c1582"></a>Pipeline phases now correctly know whether they are part of an orchestrated run, instead of sometimes mistaking a real pipeline run for a one-off manual run. | iterate | bug |  | 33/33 | — | 2026-07-14 |
 | <a id="evt-a670d8da"></a>Sweep drift/dismiss-loss fix complete; PR pending | iterate | bug |  | — | — | 2026-07-14 |
 | <a id="evt-a5b70713"></a>iterate complete: multi-session removal | iterate | change | [FR-01.01](#rtm-fr-0101) | — | — | 2026-07-14 |
 | <a id="evt-edcf1064"></a>Cross-repo output contracts: shipwright-grade's ReportModel (grade.py --format json) and shipwright-adopt's snapshot.json are rendered field-for-field by the Command Center WebUI. Both now carry a schema_version (major=breaking, the consumer must refuse to render; minor=additive), both SKILL.mds state the contract and name the consumer, and a contract gate per producer diffs the emitted JSON wire-shape against the fixture published on origin/main -- a baseline a PR cannot rewrite -- derives the bump that diff obliges, and fails until it has been performed. Also fixes a dead detector found while pinning the contract: adopt's git.major_refactor_commits returned [] for every repository. | iterate | change |  | — | — | 2026-07-14 |
@@ -334,7 +335,7 @@ Generated: 2026-07-14T20:05:09.348996+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 299 |
+| Iterate changes | 300 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |

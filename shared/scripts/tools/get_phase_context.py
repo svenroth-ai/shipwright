@@ -1,51 +1,58 @@
 #!/usr/bin/env python3
-"""Phase Step-0 Context Recovery tool.
+"""Phase Step-0 Context Recovery tool + the phase skills' invocation-mode resolver.
 
-Surfaces the prior-phase artifacts a phase needs to read before it starts.
+Two callers, one verdict:
 
-**How the phaseTaskId reaches the caller (post-`iterate-2026-07-14-remove-multi-session`).**
-It used to arrive in a ``SHIPWRIGHT-PIPELINE-CONTEXT`` block that the
-``phase_session_start`` SessionStart hook injected into an external phase session. That
-hook is DELETED with the multi-session engine, and it could never have fired in the
-surviving mode anyway (the phase runner is a SUBAGENT of the master, so it has no bound
-Claude session whose id could match a ``phase_tasks[].sessionUuid``).
+* **The phase-runner's Step 0** (``plugins/shipwright-run/agents/phase-runner.md``) runs
+  this to surface the prior-phase artifacts its phase depends on.
+* **Every driven phase skill's "Detect Invocation Mode" step** runs this to decide whether
+  it is a pipeline phase or a hand-invoked standalone run.
 
-The master now passes it directly: ``single-session-next`` returns the ``phaseTaskId`` in
-its dispatch descriptor, and the master briefs the phase-runner subagent to run
+They MUST agree, so they ask the same tool. Before
+``iterate-2026-07-14-phase-invocation-mode`` the skills answered it themselves, in prose,
+from the **v1** fields ``status`` + ``current_step`` — which the **v2** pipeline never
+advances (``phase_task_lifecycle`` writes ``phase_tasks[]``; ``config_factory`` stamps
+``current_step`` once at run creation and nothing moves it). Every driven phase past the
+first therefore self-classified as *standalone*. The mode logic now lives in
+``shared/scripts/lib/phase_invocation_mode.py`` — see that module for the full rationale,
+the three-outcome contract, and the token trust model.
 
-    uv run get_phase_context.py --phase-task-id <ptk-XXXX>
-
-as its first action (see ``plugins/shipwright-run/agents/phase-runner.md``).
-
-Standalone branch: if no --phase-task-id is provided OR the lookup fails
-(no run_config.json, schema v1, no matching task), the tool prints a
-"standalone" mode JSON and exits 0. The Skill is expected to ignore
-pipeline metadata and proceed with its normal Step 1.
+**How the phaseTaskId reaches the caller.** It used to arrive in a
+``SHIPWRIGHT-PIPELINE-CONTEXT`` block that the ``phase_session_start`` SessionStart hook
+injected into an external phase session. That hook is DELETED with the multi-session
+engine, and it could never have fired in the surviving mode anyway (the phase runner is a
+SUBAGENT of the master, so it has no bound Claude session whose id could match a
+``phase_tasks[].sessionUuid``). The master now passes it directly: ``single-session-next``
+returns the ``phaseTaskId`` in its dispatch descriptor, and the master briefs the
+phase-runner subagent to run this tool as its first action.
 
 Usage:
-    uv run get_phase_context.py --phase-task-id <ptk-XXXX> [--project-root <path>]
+    uv run get_phase_context.py --phase-task-id <ptk-XXXX> [--phase build] \
+        [--project-root <path>]
 
-Output: structured JSON on stdout with the following shape:
-    {
-      "mode": "pipeline" | "standalone",
-      "runId": "...",                          # only when mode=pipeline
-      "phaseTaskId": "ptk-XXXX",               # echoed back
-      "phase": "build",
-      "splitId": "01-core" | null,
-      "version": 2,
-      "prerequisites": [
-        {"phaseTaskId": "ptk-PRED", "phase": "plan", "splitId": null,
-         "status": "done", "artifacts": [...]}
-      ],
-      "runConditions": {...},
-      "splits_frozen": [...],
-      "skill_artifacts_to_read": [
-        ".shipwright/agent_docs/sections/01-core/...",
-        "shipwright_plan_config.json",
-        ...
-      ],
-      "next_action_hint": "Read the artifacts in skill_artifacts_to_read, then proceed with skill Step 1."
-    }
+Omit ``--phase-task-id`` when you were NOT dispatched by the orchestrator: that is the
+only input that yields ``standalone``. Pass ``--phase`` (your own phase) so a stale or
+wrong-phase token is rejected rather than honoured.
+
+Exit codes: ``0`` for ``pipeline`` / ``standalone``; ``2`` for ``error`` — a token was
+supplied but does not resolve. On ``2`` the caller STOPs; it must NOT continue as
+standalone.
+
+Output: structured JSON on stdout.
+
+    mode=pipeline:
+      {"mode": "pipeline", "runId", "phaseTaskId", "phase", "splitId", "version",
+       "slashCommand", "prerequisites": [{"phaseTaskId", "phase", "splitId", "status",
+       "artifacts"}], "runConditions", "splits_frozen", "skill_artifacts_to_read": [...],
+       "next_action_hint"}
+
+    mode=standalone:
+      {"mode": "standalone", "reason": "no_phase_task_id", "phaseTaskId": null,
+       "pipeline_active": bool, "active_phases": [...],
+       "requires_out_of_sequence_warning": bool, "next_action_hint"}
+
+    mode=error:
+      {"mode": "error", "reason", "phaseTaskId", "message", "next_action_hint"}
 """
 from __future__ import annotations
 
@@ -55,21 +62,20 @@ import sys
 from pathlib import Path
 from typing import Any, Optional
 
-
-# Add lib/ for imports — both shared/scripts/lib (if present) and the run plugin
+# Add shared/scripts/lib for the invocation-mode resolver.
 _THIS_DIR = Path(__file__).resolve().parent
 _SHARED_LIB = _THIS_DIR.parent / "lib"
 if _SHARED_LIB.exists():
     sys.path.insert(0, str(_SHARED_LIB))
 
-# The phase_task_lifecycle lib lives in the run plugin.
-_RUN_LIB = (
-    _THIS_DIR.parent.parent.parent / "plugins" / "shipwright-run" / "scripts" / "lib"
+from phase_invocation_mode import (  # noqa: E402
+    ERROR,
+    PIPELINE,
+    resolve_invocation_mode,
 )
-sys.path.insert(0, str(_RUN_LIB))
 
-
-CONFIG_NAME = "shipwright_run_config.json"
+EXIT_OK = 0
+EXIT_UNRESOLVED_TOKEN = 2
 
 
 # ---------------------------------------------------------------------------
@@ -131,44 +137,25 @@ def _suggest_artifacts(phase: str, split_id: Optional[str]) -> list[str]:
 # ---------------------------------------------------------------------------
 
 
-def _standalone_payload(reason: str, phase_task_id: Optional[str]) -> dict[str, Any]:
-    return {
-        "mode": "standalone",
-        "reason": reason,
-        "phaseTaskId": phase_task_id,
-        "next_action_hint": (
-            "No active shipwright-run pipeline detected. Proceed with the "
-            "skill's normal Step 1 — there is no pipeline metadata to load."
-        ),
-    }
-
-
 def build_phase_context(
-    project_root: Path, phase_task_id: Optional[str],
+    project_root: Path,
+    phase_task_id: Optional[str],
+    phase: Optional[str] = None,
 ) -> dict[str, Any]:
-    """Return the structured Step-0 payload. Never raises."""
-    if not phase_task_id:
-        return _standalone_payload("no_phase_task_id", None)
+    """Return the structured Step-0 payload. Never raises.
 
-    config_path = project_root / CONFIG_NAME
-    if not config_path.exists():
-        return _standalone_payload("no_run_config", phase_task_id)
+    Delegates the verdict to :func:`phase_invocation_mode.resolve_invocation_mode` — the
+    single authority both this tool and the phase skills consult — and enriches a
+    ``pipeline`` verdict with the prior-phase artifacts the runner should read.
+    ``standalone`` and ``error`` payloads pass through verbatim.
+    """
+    payload, task, config = resolve_invocation_mode(project_root, phase_task_id, phase)
+    if payload["mode"] != PIPELINE:
+        return payload
 
-    try:
-        config = json.loads(config_path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return _standalone_payload("run_config_parse_error", phase_task_id)
+    assert task is not None and config is not None  # guaranteed by the PIPELINE verdict
 
-    if config.get("schemaVersion") != 2:
-        return _standalone_payload("schema_v1_legacy", phase_task_id)
-
-    tasks = config.get("phase_tasks") or []
-    task = next((t for t in tasks if t.get("phaseTaskId") == phase_task_id), None)
-    if task is None:
-        return _standalone_payload("phase_task_id_not_found", phase_task_id)
-
-    # Resolve prerequisites
-    by_id = {t.get("phaseTaskId"): t for t in tasks}
+    by_id = {t.get("phaseTaskId"): t for t in (config.get("phase_tasks") or [])}
     prereqs_out: list[dict[str, Any]] = []
     for pid in task.get("prerequisites") or []:
         pred = by_id.get(pid)
@@ -183,27 +170,16 @@ def build_phase_context(
             "artifacts": PHASE_OWN_ARTIFACTS.get(pred.get("phase") or "", []),
         })
 
-    return {
-        "mode": "pipeline",
-        "runId": config.get("runId"),
-        "phaseTaskId": task.get("phaseTaskId"),
-        "phase": task.get("phase"),
-        "splitId": task.get("splitId"),
-        "version": task.get("version"),
-        "slashCommand": task.get("slashCommand"),
-        "prerequisites": prereqs_out,
-        "runConditions": config.get("runConditions") or {},
-        "splits_frozen": config.get("splits_frozen") or [],
-        "skill_artifacts_to_read": _suggest_artifacts(
-            task.get("phase") or "", task.get("splitId"),
-        ),
-        "next_action_hint": (
-            "Read the files/dirs listed in skill_artifacts_to_read, then "
-            "proceed with the skill's normal Step 1. You do not need to manage "
-            "your phase status: the orchestrator records it when it applies your "
-            "result (single-session-apply)."
-        ),
-    }
+    payload["prerequisites"] = prereqs_out
+    payload["skill_artifacts_to_read"] = _suggest_artifacts(
+        task.get("phase") or "", task.get("splitId"),
+    )
+    payload["next_action_hint"] = (
+        "Read the files/dirs listed in skill_artifacts_to_read, then proceed with the "
+        "skill's normal Step 1. You do not need to manage your phase status: the "
+        "orchestrator records it when it applies your result (single-session-apply)."
+    )
+    return payload
 
 
 def main() -> int:
@@ -212,14 +188,21 @@ def main() -> int:
     parser.add_argument(
         "--phase-task-id", default=None,
         help="phaseTaskId, as handed to you by the orchestrator in its dispatch. "
-             "If omitted, prints standalone-mode payload.",
+             "Omit it ONLY if you were not dispatched — that is the sole input that "
+             "yields standalone mode.",
+    )
+    parser.add_argument(
+        "--phase", default=None,
+        help="Your own phase (project|design|plan|build|test|changelog|deploy). When "
+             "given, a token belonging to a different phase is rejected instead of "
+             "honoured.",
     )
     args = parser.parse_args()
 
     project_root = Path(args.project_root).resolve()
-    payload = build_phase_context(project_root, args.phase_task_id)
+    payload = build_phase_context(project_root, args.phase_task_id, args.phase)
     print(json.dumps(payload, indent=2))
-    return 0
+    return EXIT_UNRESOLVED_TOKEN if payload["mode"] == ERROR else EXIT_OK
 
 
 if __name__ == "__main__":

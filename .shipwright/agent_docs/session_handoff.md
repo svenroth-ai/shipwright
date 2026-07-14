@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-14-remove-multi-session"
+run_id: "iterate-2026-07-14-phase-invocation-mode"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-14T20:22:37.991230+00:00"
+reason: "iterate: phase invocation-mode from dispatch token"
+timestamp: "2026-07-14T23:08:05.857788+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-14 20:22:37 UTC
+> Auto-generated 2026-07-14 23:08:05 UTC
 
 ## Session Info
 
-- **Session ID**: 8092ea86-f095-4458-9979-ba3fd7b0c1d7
-- **Timestamp**: 2026-07-14 20:22:37 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: e5a4eb07-e36d-4d16-9290-2c48215b6b78
+- **Timestamp**: 2026-07-14 23:08:05 UTC
+- **Reason**: iterate: phase invocation-mode from dispatch token
 
 ## Last Iterate
 
@@ -30,11 +30,9 @@ timestamp: "2026-07-14T20:22:37.991230+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/remove-multi-session
-- **Run ID**: `iterate-2026-07-14-remove-multi-session`
-- **Spec**: .shipwright/planning/iterate/2026-07-14-remove-multi-session.md
-- **Complexity**: medium
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-14T17:02:27)
+- **Branch**: iterate/phase-invocation-mode
+- **Spec**: .shipwright/planning/iterate/2026-07-14-phase-invocation-mode.md
+- **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
@@ -52,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/remove-multi-session
-- **Last Commit**: ec628635 Merge remote-tracking branch 'origin/main' into iterate/remove-multi-session
+- **Branch**: iterate/phase-invocation-mode
+- **Last Commit**: d20415d2 chore(triage): sweep 2 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,17 +67,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-55c016da | grade_snapshot | — | 2026-07-14 |
+| evt-622c1582 | work_completed | iterate (Phase skills detect invocation mode from the dispatch token, not the never-advanced v1 current_step; update-step made inert in a driven run.) | 2026-07-14 |
+| evt-66217d75 | grade_snapshot | — | 2026-07-14 |
 | evt-fec83856 | grade_snapshot | — | 2026-07-14 |
 | evt-a670d8da | work_completed | iterate (Sweep drift/dismiss-loss fix complete; PR pending) | 2026-07-14 |
-| evt-e0117fd9 | grade_snapshot | — | 2026-07-14 |
-| evt-3a3f1234 | grade_snapshot | — | 2026-07-14 |
-| evt-83b1496d | grade_snapshot | — | 2026-07-14 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 299
-- **Last iterate**: bug — Sweep drift/dismiss-loss fix complete; PR pending (2026-07-14)
+- **Total work events**: 300
+- **Last iterate**: bug — Phase skills detect invocation mode from the dispatch token, not the never-advanced v1 current_step; update-step made inert in a driven run. (2026-07-14)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

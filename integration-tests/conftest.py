@@ -18,6 +18,26 @@ SHARED_SCRIPTS = REPO_ROOT / "shared" / "scripts"
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
+
+@pytest.fixture
+def undrive():
+    """Return a helper that strips ``mode`` from a run config.
+
+    ``update-step`` is INERT in a driven run (`mode: single_session`) post
+    iterate-2026-07-14-phase-invocation-mode — the master loop advances a driven pipeline
+    (see test_single_session_pipeline.py + orchestrator_pkg/cli.py). E2E tests that drive
+    the pipeline through the ``update-step`` CLI must run it against a NON-driven config to
+    exercise the v1 state machine (still live for standalone/legacy/adopted). ``write-config``
+    only stamps ``single_session``, so drop it.
+    """
+    def _undrive(project: Path) -> None:
+        cfg_path = project / "shipwright_run_config.json"
+        cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+        cfg.pop("mode", None)
+        cfg_path.write_text(json.dumps(cfg), encoding="utf-8")
+
+    return _undrive
+
 # Make shared tools importable
 if str(SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SHARED_SCRIPTS))

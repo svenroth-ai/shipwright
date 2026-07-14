@@ -33,14 +33,29 @@ Before running the phase skill, surface the artifacts your phase depends on:
 
 ```bash
 uv run "{shared_root}/scripts/tools/get_phase_context.py" \
-  --phase-task-id "{phaseTaskId}" --project-root "{project_root}"
+  --phase-task-id "{phaseTaskId}" --phase "{phase}" --project-root "{project_root}"
 ```
 
-Read everything it lists in `skill_artifacts_to_read`, then start the skill's normal
-Step 1. (This context used to be injected by the `phase_session_start` SessionStart hook
-into an external phase session. You are a subagent, not a session, so no hook can inject
-anything into you — the master hands you the `phaseTaskId` instead, and you fetch the
-context yourself.)
+This one call answers **both** questions the phase skill needs: *what do I read first*
+(`skill_artifacts_to_read`) and *am I a driven phase* (`mode`). The skill's own "Detect
+Invocation Mode" step consumes the SAME `mode` — they must never disagree, so they ask the
+same resolver rather than each deriving it.
+
+- **`mode: "pipeline"`** (exit 0) — the normal dispatched case. Read everything in
+  `skill_artifacts_to_read`, then start the skill's normal Step 1, in pipeline mode.
+- **`mode: "error"`** (exit 2) — you were handed a `phaseTaskId` that does not resolve to a
+  valid, actionable task for your phase (stale, terminal, wrong phase, unreadable config).
+  **STOP and return `ok: false`** with the payload's `reason`/`message`. Do NOT fall back
+  to standalone and do NOT do the phase's work: a driven phase that proceeds as standalone
+  stamps its artifacts `"mode": "standalone"`, which the pipeline validators then reject.
+- **`mode: "standalone"`** — you were dispatched without a token. That is a briefing bug:
+  the master always passes `dispatch.phaseTaskId`. Return `ok: false` (`reason:
+  "no_phase_task_id"`) rather than silently running the phase out of pipeline context.
+
+(This context used to be injected by the `phase_session_start` SessionStart hook into an
+external phase session. You are a subagent, not a session, so no hook can inject anything
+into you — the master hands you the `phaseTaskId` instead, and you fetch the context
+yourself.)
 
 ## Iron rule: persist to DISK, summarise in the RESULT
 
