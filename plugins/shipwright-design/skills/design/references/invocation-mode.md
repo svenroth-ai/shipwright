@@ -35,4 +35,4 @@ Omit `--phase-task-id` if you were not handed one. Set `invocation_mode` from th
 
 Store the resolver's verdict as `invocation_mode` — `"pipeline"` | `"standalone"` | `"error"` (STOP) — for use in later steps.
 
-**Single-Session Gate Discipline:** under `mode: "single_session"`, honour per-gate policies — resolve interactive gates via `${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/resolve_gate_policy.py --phase design --list` before stopping (`auto-default` → proceed; `orchestrator-approve`/`hard-stop` → STOP; `design.preview-approval` + `design.review-loop-finalize` are orchestrator-approve — a human eyeballs the mockups). Full rule: `shared/prompts/single-session-gate-discipline.md`.
+(The Single-Session Gate Discipline block lives in `SKILL.md` step C, next to this pointer.)

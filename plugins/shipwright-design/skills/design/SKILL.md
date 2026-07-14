@@ -59,7 +59,9 @@ Output:
 
 ### C. Detect Invocation Mode
 
-Resolve it with `{shared_root}/scripts/tools/get_phase_context.py --phase-task-id "{phaseTaskId}" --phase design` (**omit `--phase-task-id` entirely if the orchestrator did not hand you one** — that is what selects standalone) and store the returned `mode` as `invocation_mode` (`pipeline` | `standalone` | `error` → STOP). **The dispatch token is the authority — never re-derive the mode from run-config state.** In `pipeline` mode do NOT call `orchestrator.py update-step` (`single-session-apply` owns completion). Full decision tree + the Single-Session Gate Discipline: [invocation-mode](references/invocation-mode.md).
+Resolve it with `{shared_root}/scripts/tools/get_phase_context.py --phase-task-id "{phaseTaskId}" --phase design` (**omit `--phase-task-id` entirely if the orchestrator did not hand you one** — that is what selects standalone) and store the returned `mode` as `invocation_mode` (`pipeline` | `standalone` | `error` → STOP). **The dispatch token is the authority — never re-derive the mode from run-config state.** In `pipeline` mode do NOT call `orchestrator.py update-step` (`single-session-apply` owns completion). Full decision tree: [invocation-mode](references/invocation-mode.md).
+
+**Single-Session Gate Discipline:** under `mode: "single_session"`, honour per-gate policies — resolve interactive gates via `${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/resolve_gate_policy.py --phase design --list` before stopping (`auto-default` → proceed; `orchestrator-approve`/`hard-stop` → STOP; `design.preview-approval` + `design.review-loop-finalize` are orchestrator-approve — a human eyeballs the mockups). Full rule: `shared/prompts/single-session-gate-discipline.md`.
 
 ### D. Discover Plugin Root
 
