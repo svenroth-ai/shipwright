@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-07-14T16:33:13.466664+00:00
-Total commits: 1134
+Generated: 2026-07-14T20:05:09.348996+00:00
+Total commits: 1135
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 327
-    "feat" : 307
+    "feat" : 308
     "chore" : 241
     "docs" : 145
     "refactor" : 67
@@ -352,10 +352,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 307 commits
+### Features (feat) — 308 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-14 | grade,adopt | version the two artifacts the Command Center renders, and anchor the bump gate in git (#368) | 9def63904619 |
 | 2026-07-11 | iterate | fold per-phase durations into work_completed for the WebUI Iterate-Rail (M-Pre-1 iterate half) (#363) | a710b4167114 |
 | 2026-07-11 | iterate | adopt brief-intake reuse + plain-language banner bank (B5) (#361) | 64f197ba0015 |
 | 2026-07-11 | run | accept a pre-filled WebUI-wizard brief, ask only what's missing (K2c) (#360) | 0e55235aebf0 |
@@ -668,7 +669,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-14 | triage | sweep 4 outbox append(s) into branch | dabfab613f3d |
+| 2026-07-14 | triage | sweep 6 outbox append(s) into branch | 9300552d6f38 |
 | 2026-07-12 | review | default external-review GPT model to gpt-5.6-terra-pro (#366) | 4b71eec6aaa4 |
 | 2026-07-12 | release | bump root pyproject.toml to v0.31.0 (#365) | 1b4a471e075d |
 | 2026-07-12 | release | v0.31.0 (#364) | db6c3d3f3fa2 |
@@ -1203,7 +1204,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1134 |
+| Total commits | 1135 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1134 |
+| Human-authored commits | 1135 |
 

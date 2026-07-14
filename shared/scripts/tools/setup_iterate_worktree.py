@@ -47,7 +47,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 
 from lib.gitattributes_selfheal import self_heal_gitattributes  # noqa: E402
 from lib.gitignore_selfheal import self_heal_gitignore  # noqa: E402
-from lib.sweep_outbox import sweep_outbox_to_branch  # noqa: E402
+from lib.sweep_outbox import sweep_outbox_to_branch, sweep_warnings  # noqa: E402
 from lib.worktree_isolation import (  # noqa: E402
     GitError,
     WORKTREES_DIRNAME,
@@ -219,12 +219,12 @@ def setup(
     #    triage.jsonl + commit on iterate/<slug> BEFORE snapshotting (D2): appends ride
     #    the PR to origin, not local main. Step-3 refreshed origin/<default> for the GC.
     #    Surface any non-clean sweep so a caller never assumes delivery — incl. `skipped`
-    #    (e.g. staged_changes from a self-heal residue) which else SILENTLY defers it.
+    #    (e.g. staged_changes from a self-heal residue) which else SILENTLY defers it, and
+    #    a QUARANTINE (an operator action withheld — it used to look like a clean run).
     sweep = sweep_outbox_to_branch(main_root, worktree_path, default_branch=db)
-    sweep_warning = (f"sweep-outbox {sweep.status}: {sweep.errors or sweep.reason}"
-                     if sweep.status in ("invalid", "error", "skipped") else None)
-    if sweep.status in ("invalid", "error", "skipped"):
-        print(f"setup_iterate_worktree: {sweep_warning}", file=sys.stderr)
+    sweep_notes = sweep_warnings(sweep)
+    for note in sweep_notes:
+        print(f"setup_iterate_worktree: {note}", file=sys.stderr)
 
     # 6. Snapshot the main tree + write the per-session run pointer.
     snap_path = write_snapshot(main_root, run_id)
@@ -238,7 +238,7 @@ def setup(
     )
     prune_stale_run_pointers(main_root)
 
-    warnings = [w for w in (fetch_detail, base_warning, *heal_warnings, sweep_warning) if w]
+    warnings = [w for w in (fetch_detail, base_warning, *heal_warnings, *sweep_notes) if w]
     return 0, {
         "action": "created",
         "in_worktree": False,

@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-14T16:33:13.466664+00:00
+Generated: 2026-07-14T20:05:09.348996+00:00
 
 ## Requirements Coverage
 
@@ -28,6 +28,7 @@ Generated: 2026-07-14T16:33:13.466664+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-a670d8da"></a>Sweep drift/dismiss-loss fix complete; PR pending | iterate | bug |  | — | — | 2026-07-14 |
 | <a id="evt-edcf1064"></a>Cross-repo output contracts: shipwright-grade's ReportModel (grade.py --format json) and shipwright-adopt's snapshot.json are rendered field-for-field by the Command Center WebUI. Both now carry a schema_version (major=breaking, the consumer must refuse to render; minor=additive), both SKILL.mds state the contract and name the consumer, and a contract gate per producer diffs the emitted JSON wire-shape against the fixture published on origin/main -- a baseline a PR cannot rewrite -- derives the bump that diff obliges, and fails until it has been performed. Also fixes a dead detector found while pinning the contract: adopt's git.major_refactor_commits returned [] for every repository. | iterate | change |  | — | — | 2026-07-14 |
 | <a id="evt-d1e4d49d"></a>The automatic code-review AI now uses the newer, cheaper GPT-5.6 Terra Pro model on the OpenAI side instead of GPT-5.4; how reviews run is otherwise unchanged. | iterate | change |  | 37/37 | — | 2026-07-12 |
 | <a id="evt-e3cdb1ef"></a>The iterate now records how long each of its 5 steps took, so the Command Center's iterate progress bar can show real time-per-step. | iterate | feature |  | 22/22 | — | 2026-07-11 |
@@ -332,7 +333,7 @@ Generated: 2026-07-14T16:33:13.466664+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 297 |
+| Iterate changes | 298 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |

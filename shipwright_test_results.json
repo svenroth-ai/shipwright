@@ -1,172 +1,122 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-14-webui-render-contract",
+    "run_id": "iterate-2026-07-14-sweep-drift-dismiss-loss",
     "date": "2026-07-14",
-    "intent": "change",
+    "intent": "bug",
     "complexity": "medium",
     "unit": {
-      "passed": 4705,
-      "total": 4705,
-      "status": "passed",
-      "note": "Full fresh suites at F0: shared 3934 passed / 13 skipped; shipwright-grade 392 passed / 6 skipped; shipwright-adopt 379 passed / 1 skipped. ruff@0.15.15 clean. The 2 gate skips are the BOOTSTRAP arm (origin/main publishes no contract fixture yet \u2014 this is the commit that introduces one); they assert `not any_published_contract` first, so a renamed CONTRACTS_DIR cannot disarm the gate by masquerading as a bootstrap."
+      "passed": 3960,
+      "failed": 0,
+      "skipped": 12,
+      "suite": "shared/tests (-m 'not slow and not cross_plugin')"
     },
     "integration": {
       "passed": 184,
-      "total": 184,
-      "status": "passed",
-      "note": "integration-tests/ green (184 passed, 2 deselected)."
+      "failed": 0,
+      "suite": "integration-tests (-m 'not slow')"
     },
     "pgtap": {
-      "status": "n/a"
+      "status": "n/a",
+      "reason": "no database in this repo"
     },
     "e2e": {
-      "status": "passed",
-      "note": "CLI surface: scripts/verify_contract_surface.py drives BOTH producers end-to-end \u2014 `grade.py --format json` and `analyze_codebase.py` \u2014 against a real repository and validates the emitted bytes against the contract fixture published for the version they claim. Both conform."
+      "status": "n/a",
+      "reason": "no web surface; the behavior surface is the iterate-setup CLI (see surface_verification)"
     },
     "design_fidelity": {
-      "status": "n/a"
+      "status": "n/a",
+      "reason": "no UI change"
     },
     "smoke": {
-      "status": "n/a"
+      "status": "n/a",
+      "reason": "no server"
     },
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run scripts/verify_contract_surface.py",
-      "tests_run": 2,
+      "runner": "uv run scripts/verify_sweep_delivery_surface.py",
+      "tests_run": 8,
       "exit_code": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-14-webui-render-contract/surface_verification.json",
+      "evidence_path": ".shipwright/runs/iterate-2026-07-14-sweep-drift-dismiss-loss/surface_verification.json",
       "timestamp": "2026-07-14T00:00:00+00:00",
-      "justification": "The user-facing surface of this change IS the two artifacts a consumer fetches. The runner invokes each producer's real CLI and checks the real output \u2014 a unit pin over the dataclass would not catch a wrapper or encoder silently changing what reaches the Command Center."
+      "justification": "The behavior surface of this fix is the iterate-setup CLI. The runner drives the real setup_iterate_worktree.py against a real git repo seeded with the exact shipwright-webui failure shape, then asks the operator's question through the board's own reader (triage.read_all_items). A unit pin over decide() would not catch the sweep still eating the dismiss at the entry point."
     },
-    "degraded": [
-      {
-        "condition": "classifier risk-flag false positive",
-        "detail": "classify_complexity emitted `touches_migrations` from the word 'schema' in the run description. Prose-only: this repo has no migrations, and the diff touches none. Overridden; the diff-derived predicates in risk_detectors.py are authoritative and F11 recomputes them. The real flag is touches_io_boundary (both artifacts are serialized producer/consumer boundaries), which was honored \u2014 round-trip / boundary verification is exactly what the contract gates and the F0.5 CLI runner do."
-      }
-    ],
+    "degraded": [],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
           "id": 1,
-          "behavior": "grade JSON carries schema_version",
+          "behavior": "AC1 \u2014 a status whose append is known only from main's tracked log is not an orphan and is never a quarantine candidate",
           "disposition": "tested",
-          "evidence": "test_schema_version_reaches_the_json_output + TestRealCliConformance"
+          "evidence": "test_status_whose_append_is_only_in_main_tracked_is_not_an_orphan + test_the_old_universe_is_what_ate_the_dismiss (the pre-fix universe quarantines the same dismiss)"
         },
         {
           "id": 2,
-          "behavior": "adopt snapshot carries schema_version",
+          "behavior": "AC2 \u2014 a protected-but-unplaceable status fails CLOSED (invalid) instead of being quarantined, with an actionable reason",
           "disposition": "tested",
-          "evidence": "test_schema_version_is_written_into_the_snapshot"
+          "evidence": "test_an_unplaceable_known_append_blocks_instead_of_eating_the_dismiss (sweep returns invalid; dismiss stays in the outbox; quarantine log empty)"
         },
         {
           "id": 3,
-          "behavior": "a shape change with no version bump FAILS",
+          "behavior": "AC3 \u2014 append-only drift in main's tracked log is routed into the outbox and rides the branch; main's log is restored to HEAD",
           "disposition": "tested",
-          "evidence": "TestRequireBump; TestEndToEndGate (against a real git baseline)"
+          "evidence": "test_main_tracked_drift_append_is_routed_into_the_outbox + verify_sweep_delivery_surface.py (real CLI, 8/8)"
         },
         {
           "id": 4,
-          "behavior": "removed/retyped => major; added-only => minor",
+          "behavior": "AC4 \u2014 refusal guards mutate nothing: diverged / reordered / deleted-HEAD-line / whitespace-only edit / emptied / deleted / staged index / malformed drift",
           "disposition": "tested",
-          "evidence": "TestDiffAndRequiredBump"
+          "evidence": "test_sweep_drift_guards.py (8 refusal tests, each asserting the tracked log and outbox are byte-unchanged)"
         },
         {
           "id": 5,
-          "behavior": "performed >= required, not equality (bundling + semantic hatch)",
+          "behavior": "AC4b \u2014 a state that is understood but unrepairable (no HEAD blob; headerless blob) does NOT block delivery of the outbox",
           "disposition": "tested",
-          "evidence": "test_additive_change_may_be_bundled_into_a_major_release; test_unchanged_shape_may_take_a_deliberate_major_bump"
+          "evidence": "test_an_uncommitted_log_is_unrepairable_but_never_blocks_delivery + test_an_uncommitted_log_still_lets_the_sweep_deliver_the_outbox"
         },
         {
           "id": 6,
-          "behavior": "versions compare numerically (1.10 > 1.2), not lexically",
+          "behavior": "AC5 \u2014 quarantine + adoption counts reach the operator (stderr + warnings[])",
           "disposition": "tested",
-          "evidence": "test_versions_compare_numerically_not_lexically"
+          "evidence": "test_sweep_warnings_surface_quarantine_and_adoption + the surface runner asserts the QUARANTINED warning in setup's warnings[]"
         },
         {
           "id": 7,
-          "behavior": "EDITING a published fixture is caught (the load-bearing half)",
+          "behavior": "AC6 \u2014 the webui shape end-to-end: the operator's only dismiss survives and the reader resolves the item to dismissed",
           "disposition": "tested",
-          "evidence": "test_editing_a_published_fixture_is_caught"
+          "evidence": "test_the_operators_only_dismiss_survives_the_sweep + verify_sweep_delivery_surface.py check 2 (triage.read_all_items \u2192 'dismissed')"
         },
         {
           "id": 8,
-          "behavior": "DELETING a published fixture is caught",
+          "behavior": "The restore preserves the log's real EOL: neither a CRLF checkout nor a CRLF drift line over an LF checkout reflows the file",
           "disposition": "tested",
-          "evidence": "test_deleting_a_published_fixture_is_caught"
+          "evidence": "test_crlf_main_tracked_log_stays_clean_after_the_repair (autocrlf=true) + test_a_crlf_drift_line_over_an_lf_checkout_does_not_reflow_the_whole_log (autocrlf=false)"
         },
         {
           "id": 9,
-          "behavior": "bootstrap stand-down cannot be abused by renaming the dir",
+          "behavior": "A block mutates nothing \u2014 the drift never leaves the git-tracked log for the gitignored buffer on an aborting sweep",
           "disposition": "tested",
-          "evidence": "test_a_renamed_contracts_dir_does_not_look_like_a_bootstrap"
+          "evidence": "test_a_block_mutates_nothing_even_when_drift_is_adoptable"
         },
         {
           "id": 10,
-          "behavior": "a container BECOMING NULLABLE demands a major (adds no field, but the consumer indexes it)",
+          "behavior": "Crash-replay is idempotent: an interrupted adoption re-plans and never double-buffers the drift",
           "disposition": "tested",
-          "evidence": "TestNullabilityIsBreaking (4 cases)"
+          "evidence": "test_replaying_an_interrupted_adoption_does_not_double_deliver"
         },
         {
           "id": 11,
-          "behavior": "weak pins rejected: empty arrays and null-only leaves",
+          "behavior": "A race during the restore reports 'buffered' with the true adopted count, not a silent 'adopted' with 0",
           "disposition": "tested",
-          "evidence": "test_the_pin_has_no_unpinned_arrays; test_the_pin_has_no_null_only_leaves"
+          "evidence": "test_a_race_during_the_restore_reports_buffered_not_adopted (monkeypatched HEAD oid)"
         },
         {
           "id": 12,
-          "behavior": "the pin describes the SERIALIZED artifact, not just the dataclass",
+          "behavior": "A genuine orphan (append nowhere at all) is still quarantined \u2014 the #303 behavior is preserved",
           "disposition": "tested",
-          "evidence": "TestRealCliConformance; scripts/verify_contract_surface.py (F0.5)"
-        },
-        {
-          "id": 13,
-          "behavior": "status vocabulary probed against the REAL engine, not the test fixture's re-implementation",
-          "disposition": "tested",
-          "evidence": "test_the_real_engine_only_ever_emits_the_pinned_vocabulary"
-        },
-        {
-          "id": 14,
-          "behavior": "both SKILLs state the contract with substance (consumer named, rule stated, version semantics, frozen baseline)",
-          "disposition": "tested",
-          "evidence": "test_cross_repo_contract_documented.py (21 cases)"
-        },
-        {
-          "id": 15,
-          "behavior": "schema_version is ADDITIVE \u2014 a snapshot written before it existed stays readable; no reader may require it",
-          "disposition": "tested",
-          "evidence": "TestBackwardCompatibility"
-        },
-        {
-          "id": 16,
-          "behavior": "git_analyzer detects major_refactor_commits at all (it returned [] for every repo \u2014 dead field)",
-          "disposition": "tested",
-          "evidence": "test_a_refactor_touching_many_files_is_detected (RED before fix)"
-        },
-        {
-          "id": 17,
-          "behavior": "a '|' in a commit subject does not shift date/author",
-          "disposition": "tested",
-          "evidence": "test_a_pipe_in_the_subject_does_not_shift_the_other_fields"
-        },
-        {
-          "id": 18,
-          "behavior": "terminal/markdown/HTML renders are byte-unchanged by the new field",
-          "disposition": "untestable",
-          "evidence": "test_render_snapshots.py goldens pass unchanged \u2014 the new field is machine metadata; adding it changed no rendered row, and the existing golden IS the assertion.",
-          "reason_code": "covered-by-existing-test"
+          "evidence": "test_a_status_whose_append_exists_nowhere_is_still_quarantined + the surface runner's GHOST_ID check"
         }
-      ],
-      "counts": {
-        "testable": 17,
-        "tested": 17,
-        "untestable": 1,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 9,
-        "covered_acs": 9
-      }
+      ]
     }
   },
   "coverage": {
