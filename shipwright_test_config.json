@@ -2,5 +2,12 @@
   "coverage": {
     "min": 70,
     "_comment": "Diff-coverage roadmap Phase 2 (iterate-2026-07-04-diff-coverage-rollout-combine). Calibrated anti-ratchet baseline for the W4 verifier (shared/scripts/tools/verifiers/test_compliance.py): W4 FAILs when shipwright_test_results.json.coverage.total < this min. The measured combined repo-wide line-rate at kickoff was 80.2% (25068/31274 lines, all plugins + shared + integration). 70 is a deliberate CONSERVATIVE floor ~10 points below that measured baseline — headroom for local-vs-CI measurement variance (CI additionally runs the security-scanner smoke tests that skip locally) and for normal churn. This is a NEW baseline (W4 has never gated this repo), not a weakened active gate; it is meant to be ratcheted UP in later phases, never a number chosen to hide a bad total. Refresh coverage.total via shared/scripts/tools/record_coverage_total.py against a freshly combined coverage.xml."
+  },
+  "suite": {
+    "xdist": {
+      "shared/tests": 8,
+      "integration-tests": 8
+    },
+    "_comment": "F0 suite runner (shared/scripts/tools/run_test_suite.py, iterate-2026-07-14-f0-parallel-suite). Units are DISCOVERED like ci.yml (never hardcoded) and run as parallel processes; this block only carries overrides. 'xdist' is a per-unit OPT-IN allowlist for pytest-xdist fan-out INSIDE a unit — measured 2026-07-14: shared/tests 297s -> 79s, integration-tests 83s -> 18s, both with an identical pass/fail set. shipwright-compliance is DELIBERATELY ABSENT and must stay absent: it is not xdist-safe (5 shared-state races in test_test_evidence.py under -n 8; the same tests pass 37/37 serially). NEVER replace this allowlist with a global '-n auto'. 'max_workers' (optional, positive int) overrides the derived CPU budget of cpu_count-2; the outer pool and the inner xdist workers draw from that ONE budget, so the machine is not oversubscribed."
   }
 }
