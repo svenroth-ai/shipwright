@@ -1,36 +1,38 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-14-webui-render-contract"
+run_id: "iterate-2026-07-14-sweep-drift-dismiss-loss"
 phase: "iterate"
-reason: "iterate finalization"
-timestamp: "2026-07-14T16:33:18.244708+00:00"
+reason: "Sweep drift/dismiss-loss fix complete; PR pending"
+timestamp: "2026-07-14T20:05:13.818463+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-14 16:33:18 UTC
+> Auto-generated 2026-07-14 20:05:13 UTC
 
 ## Session Info
 
-- **Session ID**: 57ed3c96-fbed-4b00-8a50-92e2343c4465
-- **Timestamp**: 2026-07-14 16:33:18 UTC
-- **Reason**: iterate finalization
+- **Session ID**: 79ea0bcc-7295-42cf-89d4-a1b2ab8b481c
+- **Timestamp**: 2026-07-14 20:05:13 UTC
+- **Reason**: Sweep drift/dismiss-loss fix complete; PR pending
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-12-review-model-terra-pro
-- **Date**: 2026-07-12T18:06:16.296897Z
+- **Run ID**: iterate-2026-07-14-webui-render-contract
+- **Date**: 2026-07-14T16:33:50.859925Z
 - **Type**: change
-- **Complexity**: trivial
-- **Branch**: iterate/review-model-terra-pro
-- **ADR**: iterate-2026-07-12-review-model-terra-pro
+- **Complexity**: medium
+- **Branch**: iterate/webui-render-contract
+- **ADR**: iterate-2026-07-14-webui-render-contract
+- **Description**: Cross-repo output contracts for the two artifacts the Command Center WebUI renders field-for-field (grade's ReportModel, adopt's snapshot.json): schema_version on both, the contract stated in both SKILL.mds, and a per-producer gate whose baseline is origin/main so the version bump cannot be evaded.
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/2026-07-14-webui-render-contract.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/webui-render-contract
-- **Run ID**: `iterate-2026-07-14-webui-render-contract`
-- **Spec**: .shipwright/planning/iterate/2026-07-14-webui-render-contract.md
+- **Branch**: iterate/sweep-drift-dismiss-loss
+- **Run ID**: iterate-2026-07-14-sweep-drift-dismiss-loss
+- **Spec**: .shipwright/planning/iterate/2026-07-14-sweep-drift-dismiss-loss.md
 - **Complexity**: medium
 - **External Review Marker**: missing
 
@@ -51,8 +53,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/webui-render-contract
-- **Last Commit**: dabfab61 chore(triage): sweep 4 outbox append(s) into branch
+- **Branch**: iterate/sweep-drift-dismiss-loss
+- **Last Commit**: 9300552d chore(triage): sweep 6 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +70,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-fec83856 | grade_snapshot | — | 2026-07-14 |
+| evt-a670d8da | work_completed | iterate (Sweep drift/dismiss-loss fix complete; PR pending) | 2026-07-14 |
 | evt-df71725d | grade_snapshot | — | 2026-07-14 |
 | evt-edcf1064 | work_completed | iterate (Cross-repo output contracts: shipwright-grade's ReportModel (grade.py --format json) and shipwright-adopt's snapshot.json are rendered field-for-field by the Command Center WebUI. Both now carry a schema_version (major=breaking, the consumer must refuse to render; minor=additive), both SKILL.mds state the contract and name the consumer, and a contract gate per producer diffs the emitted JSON wire-shape against the fixture published on origin/main -- a baseline a PR cannot rewrite -- derives the bump that diff obliges, and fails until it has been performed. Also fixes a dead detector found while pinning the contract: adopt's git.major_refactor_commits returned [] for every repository.) | 2026-07-14 |
 | evt-650ce315 | grade_snapshot | — | 2026-07-12 |
-| evt-d1e4d49d | work_completed | iterate (external review GPT default -> gpt-5.6-terra-pro) | 2026-07-12 |
-| evt-da02439d | grade_snapshot | — | 2026-07-11 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 297
-- **Last iterate**: change — Cross-repo output contracts: shipwright-grade's ReportModel (grade.py --format json) and shipwright-adopt's snapshot.json are rendered field-for-field by the Command Center WebUI. Both now carry a schema_version (major=breaking, the consumer must refuse to render; minor=additive), both SKILL.mds state the contract and name the consumer, and a contract gate per producer diffs the emitted JSON wire-shape against the fixture published on origin/main -- a baseline a PR cannot rewrite -- derives the bump that diff obliges, and fails until it has been performed. Also fixes a dead detector found while pinning the contract: adopt's git.major_refactor_commits returned [] for every repository. (2026-07-14)
+- **Total work events**: 298
+- **Last iterate**: bug — Sweep drift/dismiss-loss fix complete; PR pending (2026-07-14)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

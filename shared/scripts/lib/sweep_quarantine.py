@@ -67,21 +67,46 @@ def _materialize(worktree_lines: list[str], outbox_lines: list[str], eol: str) -
     return (eol.join(deduped) + eol) if deduped else ""
 
 
-def decide(worktree_lines: list[str], outbox_lines: list[str], eol: str) -> QuarantineDecision:
+def decide(
+    worktree_lines: list[str],
+    outbox_lines: list[str],
+    eol: str,
+    known_append_ids: frozenset[str] = frozenset(),
+) -> QuarantineDecision:
     """Classify the materialized log and decide clean / quarantine / block.
 
     Only OUTBOX-originating orphan-status lines are quarantine candidates (the sweep
     cannot rewrite the worktree-tracked/origin log). Quarantine is adopted ONLY when
     trimming the candidates leaves a fully-clean remainder; any residual error → block.
+
+    ``known_append_ids`` widens the orphan UNIVERSE beyond ``worktree-tracked ∪ outbox``
+    (iterate-2026-07-14-sweep-drift-dismiss-loss). The caller passes the append ids it
+    knows from MAIN's tracked log; a ``status`` for one of those has a real append — it
+    is NOT an orphan and must never be quarantined, because quarantining it DELETES the
+    operator's only dismiss and the item resurrects on the board forever. If such a
+    status still cannot be validated (its append exists but the repair could not place
+    it in the materialized log), every remaining error is a protected one → ``block``:
+    a loud hard stop is the correct failure, silent data loss is not.
     """
     text = _materialize(worktree_lines, outbox_lines, eol)
     verdict = classify_triage_text(text)
     if not verdict.errors:
         return QuarantineDecision("clean", deduped_text=text, trimmed_outbox=list(outbox_lines))
-    if verdict.has_non_orphan_error or not verdict.orphan_status_ids:
-        return QuarantineDecision("block", errors=list(verdict.errors))
+    protected = verdict.orphan_status_ids & frozenset(known_append_ids)
+    orphan_ids = verdict.orphan_status_ids - frozenset(known_append_ids)
+    if verdict.has_non_orphan_error or not orphan_ids:
+        # A protected status is NOT "an append the merge dropped" — we blocked precisely
+        # BECAUSE we know its append exists, in main's tracked log, unreachable from this
+        # branch. Saying "no append anywhere" would send the operator hunting for corruption
+        # that isn't there and offer no remedy (code review). Name the real state and the fix.
+        errors = list(verdict.errors) + [
+            f"protected_status_unplaceable: id {iid!r} has an append in main's tracked log that is "
+            f"not reachable from this branch — deliver main (push / merge origin), then re-run"
+            for iid in sorted(protected)
+        ]
+        return QuarantineDecision("block", errors=errors)
 
-    candidates = [ln for ln in outbox_lines if _is_status_with_id(ln, verdict.orphan_status_ids)]
+    candidates = [ln for ln in outbox_lines if _is_status_with_id(ln, orphan_ids)]
     if not candidates:
         # Every orphan lives in the worktree-tracked log; the sweep cannot fix it.
         return QuarantineDecision("block", errors=list(verdict.errors))

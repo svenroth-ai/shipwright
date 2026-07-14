@@ -26,7 +26,7 @@ if str(_SHARED_SCRIPTS) not in sys.path:
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # for _sweep_helpers
 
 import _sweep_helpers as h  # noqa: E402
-from lib import sweep_outbox  # noqa: E402
+from lib.sweep_text import normalize_lines  # noqa: E402
 from lib.sweep_outbox import sweep_outbox_to_branch  # noqa: E402
 
 TRIAGE = h.TRIAGE
@@ -66,7 +66,7 @@ def test_sweep_eol_normalize_matches_reconcile() -> None:
     raw = "a\r\nb\nc\r\nb\r\n"  # mixed EOL + a duplicate ("b")
 
     # Sweep's normalize.
-    lines, eol = sweep_outbox._normalize_lines(raw)
+    lines, eol = normalize_lines(raw)  # the sweep's normalize (now the shared neutral leaf)
     sweep_deduped, _ = dedup_triage_lines(lines)
     sweep_text = (eol.join(sweep_deduped) + eol) if sweep_deduped else ""
 
