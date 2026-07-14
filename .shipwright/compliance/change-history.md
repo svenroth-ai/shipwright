@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-07-12T18:05:37.884990+00:00
-Total commits: 1132
+Generated: 2026-07-14T16:33:13.466664+00:00
+Total commits: 1134
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 326
+    "fix" : 327
     "feat" : 307
-    "chore" : 240
+    "chore" : 241
     "docs" : 145
     "refactor" : 67
     "test" : 28
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 326 commits
+### Fixes (fix) — 327 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-14 | sweep | drop the Python 3.13-only read_text(newline=) that broke every iterate on 3.11/3.12 (#367) | 88b520208cab |
 | 2026-07-11 | run | record phase_completed per split for accurate multi-split durations (#362) | 70652aef7ed4 |
 | 2026-07-08 | review | external-review gate fails loud on degradation + gpt-5.x param (#351) | 515d65086ccc |
 | 2026-07-08 | iterate | remove stale hardcoded version from intro banner (#350) | f36a656208b5 |
@@ -663,11 +664,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 240 commits
+### Chores (chore) — 241 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-12 | triage | sweep 5 outbox append(s) into branch | 580fa5fa1e01 |
+| 2026-07-14 | triage | sweep 4 outbox append(s) into branch | dabfab613f3d |
+| 2026-07-12 | review | default external-review GPT model to gpt-5.6-terra-pro (#366) | 4b71eec6aaa4 |
 | 2026-07-12 | release | bump root pyproject.toml to v0.31.0 (#365) | 1b4a471e075d |
 | 2026-07-12 | release | v0.31.0 (#364) | db6c3d3f3fa2 |
 | 2026-07-10 | design | gitignore transient design-feedback rounds; document single-session review-viewer hosting (#355) | c51e9fe78ab8 |
@@ -1201,7 +1203,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1132 |
+| Total commits | 1134 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1132 |
+| Human-authored commits | 1134 |
 

@@ -1,0 +1,59 @@
+{
+  "consumer": "shipwright-webui \u2014 Command Center 'Grade your repo' screen",
+  "contract": {
+    "skeleton": {
+      "band_label": "string",
+      "controls_shipwright_would_light": [
+        "string"
+      ],
+      "dimensions": [
+        {
+          "anchor": "string",
+          "detail": "string",
+          "key": "string",
+          "label": "string",
+          "provenance": {
+            "disabled_enrichments": [
+              "string"
+            ],
+            "freshness": "string",
+            "mode": "string",
+            "sampled": "boolean",
+            "source": "string",
+            "truncated": "boolean"
+          },
+          "score": "number|null",
+          "status": "string",
+          "weight": "number",
+          "would_light_up": "boolean"
+        }
+      ],
+      "grade": "string",
+      "gradeable": "boolean",
+      "honest_ceiling_note": "string",
+      "measurable_count": "number",
+      "mode": "string",
+      "na_count": "number",
+      "network_enabled": "boolean",
+      "network_enrichments": [
+        "string"
+      ],
+      "network_note": "string",
+      "reasons": [
+        "string"
+      ],
+      "routing_reason": "string",
+      "routing_state": "string",
+      "schema_version": "string",
+      "score": "number|null",
+      "static_test_inventory": "string",
+      "target_display": "string",
+      "verdict": "string",
+      "verified_from": "string"
+    },
+    "vocabularies": {
+      "DimensionView.status": "gap|n/a|ok"
+    }
+  },
+  "schema_version": "1.0"
+}

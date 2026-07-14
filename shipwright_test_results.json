@@ -1,23 +1,27 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-12-review-model-terra-pro",
-    "date": "2026-07-12",
+    "run_id": "iterate-2026-07-14-webui-render-contract",
+    "date": "2026-07-14",
     "intent": "change",
-    "complexity": "trivial",
+    "complexity": "medium",
     "unit": {
-      "passed": 37,
-      "total": 37,
+      "passed": 4705,
+      "total": 4705,
       "status": "passed",
-      "note": "shared external-review suite (test_external_review_config.py, test_llm_review.py, test_external_review_openai_param.py) green after the model-default swap; resolver returns openai/gpt-5.6-terra-pro."
+      "note": "Full fresh suites at F0: shared 3934 passed / 13 skipped; shipwright-grade 392 passed / 6 skipped; shipwright-adopt 379 passed / 1 skipped. ruff@0.15.15 clean. The 2 gate skips are the BOOTSTRAP arm (origin/main publishes no contract fixture yet \u2014 this is the commit that introduces one); they assert `not any_published_contract` first, so a renamed CONTRACTS_DIR cannot disarm the gate by masquerading as a bootstrap."
     },
     "integration": {
-      "status": "n/a"
+      "passed": 184,
+      "total": 184,
+      "status": "passed",
+      "note": "integration-tests/ green (184 passed, 2 deselected)."
     },
     "pgtap": {
       "status": "n/a"
     },
     "e2e": {
-      "status": "n/a"
+      "status": "passed",
+      "note": "CLI surface: scripts/verify_contract_surface.py drives BOTH producers end-to-end \u2014 `grade.py --format json` and `analyze_codebase.py` \u2014 against a real repository and validates the emitted bytes against the contract fixture published for the version they claim. Both conform."
     },
     "design_fidelity": {
       "status": "n/a"
@@ -26,18 +30,143 @@
       "status": "n/a"
     },
     "surface_verification": {
-      "surface": "none",
-      "runner": "n/a (config-only default-model swap)",
-      "tests_run": 0,
+      "surface": "cli",
+      "runner": "uv run scripts/verify_contract_surface.py",
+      "tests_run": 2,
       "exit_code": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-12-review-model-terra-pro/surface_verification.json",
-      "timestamp": "2026-07-12T00:00:00+00:00",
-      "justification": "Config-only default-model swap (gpt-5.4 -> gpt-5.6-terra-pro). No startable user surface; resolver behavior is covered by the shared external-review unit tests (37 passed)."
+      "evidence_path": ".shipwright/runs/iterate-2026-07-14-webui-render-contract/surface_verification.json",
+      "timestamp": "2026-07-14T00:00:00+00:00",
+      "justification": "The user-facing surface of this change IS the two artifacts a consumer fetches. The runner invokes each producer's real CLI and checks the real output \u2014 a unit pin over the dataclass would not catch a wrapper or encoder silently changing what reaches the Command Center."
     },
-    "degraded": [],
+    "degraded": [
+      {
+        "condition": "classifier risk-flag false positive",
+        "detail": "classify_complexity emitted `touches_migrations` from the word 'schema' in the run description. Prose-only: this repo has no migrations, and the diff touches none. Overridden; the diff-derived predicates in risk_detectors.py are authoritative and F11 recomputes them. The real flag is touches_io_boundary (both artifacts are serialized producer/consumer boundaries), which was honored \u2014 round-trip / boundary verification is exactly what the contract gates and the F0.5 CLI runner do."
+      }
+    ],
     "test_completeness": {
-      "status": "n/a",
-      "justification": "Trivial complexity: a config-value swap of the default GPT review-model string. Behavior-preserving; the resolver's model resolution is covered by the existing shared external-review unit tests (37 passed). No new testable behavior is introduced."
+      "status": "complete",
+      "behaviors": [
+        {
+          "id": 1,
+          "behavior": "grade JSON carries schema_version",
+          "disposition": "tested",
+          "evidence": "test_schema_version_reaches_the_json_output + TestRealCliConformance"
+        },
+        {
+          "id": 2,
+          "behavior": "adopt snapshot carries schema_version",
+          "disposition": "tested",
+          "evidence": "test_schema_version_is_written_into_the_snapshot"
+        },
+        {
+          "id": 3,
+          "behavior": "a shape change with no version bump FAILS",
+          "disposition": "tested",
+          "evidence": "TestRequireBump; TestEndToEndGate (against a real git baseline)"
+        },
+        {
+          "id": 4,
+          "behavior": "removed/retyped => major; added-only => minor",
+          "disposition": "tested",
+          "evidence": "TestDiffAndRequiredBump"
+        },
+        {
+          "id": 5,
+          "behavior": "performed >= required, not equality (bundling + semantic hatch)",
+          "disposition": "tested",
+          "evidence": "test_additive_change_may_be_bundled_into_a_major_release; test_unchanged_shape_may_take_a_deliberate_major_bump"
+        },
+        {
+          "id": 6,
+          "behavior": "versions compare numerically (1.10 > 1.2), not lexically",
+          "disposition": "tested",
+          "evidence": "test_versions_compare_numerically_not_lexically"
+        },
+        {
+          "id": 7,
+          "behavior": "EDITING a published fixture is caught (the load-bearing half)",
+          "disposition": "tested",
+          "evidence": "test_editing_a_published_fixture_is_caught"
+        },
+        {
+          "id": 8,
+          "behavior": "DELETING a published fixture is caught",
+          "disposition": "tested",
+          "evidence": "test_deleting_a_published_fixture_is_caught"
+        },
+        {
+          "id": 9,
+          "behavior": "bootstrap stand-down cannot be abused by renaming the dir",
+          "disposition": "tested",
+          "evidence": "test_a_renamed_contracts_dir_does_not_look_like_a_bootstrap"
+        },
+        {
+          "id": 10,
+          "behavior": "a container BECOMING NULLABLE demands a major (adds no field, but the consumer indexes it)",
+          "disposition": "tested",
+          "evidence": "TestNullabilityIsBreaking (4 cases)"
+        },
+        {
+          "id": 11,
+          "behavior": "weak pins rejected: empty arrays and null-only leaves",
+          "disposition": "tested",
+          "evidence": "test_the_pin_has_no_unpinned_arrays; test_the_pin_has_no_null_only_leaves"
+        },
+        {
+          "id": 12,
+          "behavior": "the pin describes the SERIALIZED artifact, not just the dataclass",
+          "disposition": "tested",
+          "evidence": "TestRealCliConformance; scripts/verify_contract_surface.py (F0.5)"
+        },
+        {
+          "id": 13,
+          "behavior": "status vocabulary probed against the REAL engine, not the test fixture's re-implementation",
+          "disposition": "tested",
+          "evidence": "test_the_real_engine_only_ever_emits_the_pinned_vocabulary"
+        },
+        {
+          "id": 14,
+          "behavior": "both SKILLs state the contract with substance (consumer named, rule stated, version semantics, frozen baseline)",
+          "disposition": "tested",
+          "evidence": "test_cross_repo_contract_documented.py (21 cases)"
+        },
+        {
+          "id": 15,
+          "behavior": "schema_version is ADDITIVE \u2014 a snapshot written before it existed stays readable; no reader may require it",
+          "disposition": "tested",
+          "evidence": "TestBackwardCompatibility"
+        },
+        {
+          "id": 16,
+          "behavior": "git_analyzer detects major_refactor_commits at all (it returned [] for every repo \u2014 dead field)",
+          "disposition": "tested",
+          "evidence": "test_a_refactor_touching_many_files_is_detected (RED before fix)"
+        },
+        {
+          "id": 17,
+          "behavior": "a '|' in a commit subject does not shift date/author",
+          "disposition": "tested",
+          "evidence": "test_a_pipe_in_the_subject_does_not_shift_the_other_fields"
+        },
+        {
+          "id": 18,
+          "behavior": "terminal/markdown/HTML renders are byte-unchanged by the new field",
+          "disposition": "untestable",
+          "evidence": "test_render_snapshots.py goldens pass unchanged \u2014 the new field is machine metadata; adding it changed no rendered row, and the existing golden IS the assertion.",
+          "reason_code": "covered-by-existing-test"
+        }
+      ],
+      "counts": {
+        "testable": 17,
+        "tested": 17,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 9,
+        "covered_acs": 9
+      }
     }
   },
   "coverage": {

@@ -1571,6 +1571,17 @@ Phase-Quality integration: registered as phase `adopt` in `PLUGIN_TO_PHASE`, `C4
 > `collect_all`/`build_grade_inputs` adapter cross-plugin (via `engine_bridge` /
 > `reuse_bridge`, lazy + cached, ADR-045 mitigations) so a grader-grade of a
 > Shipwright repo equals its dashboard grade by construction.
+>
+> **It has an EXTERNAL consumer, though.** The Command Center WebUI renders
+> `grade.py --format json` (the `ReportModel` graph) field-for-field, exactly as
+> it renders `/shipwright-adopt`'s `.shipwright/adopt/snapshot.json` on its adopt
+> screen. Neither artifact is in the matrices above — they are consumed *outside*
+> this repo — but both are **versioned contracts** (`schema_version`, `major.minor`),
+> and a shape change requires a matching WebUI change. Each producer's SKILL.md
+> states the contract ("Cross-repo contract"); the gates
+> (`test_report_model_contract.py`, `test_snapshot_contract.py`) diff the emitted
+> payload against the fixture published on `origin/main` and fail until the obliged
+> bump is performed. See FR-01.15.
 
 ### Plugin-registered (shipwright-iterate)
 

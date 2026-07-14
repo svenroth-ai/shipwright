@@ -4,6 +4,16 @@
 Usage:
     uv run analyze_codebase.py --project-root /path [--exclude-path webui ...] \\
         [--output /tmp/snapshot.json] [--profile-hint supabase-nextjs]
+
+⚠️ **CROSS-REPO CONTRACT — an external consumer renders this snapshot.** The Command
+Center WebUI (github.com/svenroth-ai/shipwright-webui) reads
+``.shipwright/adopt/snapshot.json`` to show the operator *"what's already here"*
+(stack, conventions, tests, CI) before /shipwright-adopt writes anything.
+
+A key renamed or dropped here — **at any depth**, not just top level — does NOT fail
+loudly over there; it renders a half-empty card. Before you change this shape, read
+the "Cross-repo contract" section of ``skills/adopt/SKILL.md``. The gate in
+``tests/test_snapshot_contract.py`` will stop you and tell you what to do.
 """
 
 from __future__ import annotations
@@ -13,6 +23,12 @@ import json
 import sys
 from pathlib import Path
 from typing import Any
+
+# Version of the snapshot wire shape (see the module docstring). MAJOR = breaking for
+# the consumer (a key removed, renamed or retyped); MINOR = additive. Nothing asks you
+# to remember this: tests/test_snapshot_contract.py diffs the live snapshot against the
+# contract fixture as of origin/main and fails until the obliged bump is performed.
+SNAPSHOT_SCHEMA_VERSION = "1.0"
 
 
 def _load_lib(lib_dir: Path) -> dict[str, Any]:
@@ -87,6 +103,7 @@ def analyze(
         profile = {"matched": profile_hint, "confidence": 1.0, "candidates": profile.get("candidates", []), "source": "user-hint"}
 
     return {
+        "schema_version": SNAPSHOT_SCHEMA_VERSION,
         "project_root": str(project_root),
         "excludes": list(excludes),
         "stack": stack,

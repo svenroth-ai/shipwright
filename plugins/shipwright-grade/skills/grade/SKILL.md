@@ -27,6 +27,58 @@ score, never faked) and are surfaced as *controls Shipwright would light up*.
 > outside* — it inspects history and structure, it does not verify behaviour.
 > Every heuristic grade is labelled as such.
 
+## ⚠️ Cross-repo contract — the Command Center renders this report
+
+**This report has an external consumer.** The Command Center WebUI
+([shipwright-webui](https://github.com/svenroth-ai/shipwright-webui)) renders the
+`ReportModel` graph **field-for-field** on its *"Grade your repo"* screen —
+deliberately, so that screen and the downloadable HTML report cannot tell different
+stories. It consumes `grade.py --format json`, which is literally
+`json.dumps(dataclasses.asdict(model))`, so **every field on `ReportModel` /
+`DimensionView` / `DimensionProvenance` is on the wire**.
+
+**A change to this shape requires a corresponding WebUI change.** A field renamed or
+dropped here does *not* fail loudly over there — it renders a half-empty card, or worse,
+a plausible-but-wrong one.
+
+**Load-bearing fields** (`plugins/shipwright-grade/scripts/lib/report_model.py`):
+
+| Field | Why the consumer cannot lose it |
+|---|---|
+| `dimensions[].status` (`ok`\|`gap`\|`n/a`) | Drives the **visual**. An `n/a` is drawn as *absent evidence* (a dashed track), **never** as a zero-score bar. No code path may synthesize a score for an underivable dimension. |
+| `dimensions[].provenance` + `.detail` | The per-row *"how this was measured"* disclosure — the grade showing its work. |
+| `network_enabled` / `network_note` / `network_enrichments` | **Exactly what left the machine.** This is the receipt for the product's *"read-only, no account"* promise and is shown verbatim. If it disappears, the WebUI loses its trust surface. |
+| `honest_ceiling_note` | Rendered *above* the dimensions: it reframes a low grade as a finding about the **record**, not a verdict on the code. |
+| `measurable_count`, `na_count`, `controls_shipwright_would_light[]` | The *"what adopting Shipwright would light up"* story. |
+| `schema_version` | Lets the consumer detect a shape it does not understand and say so, instead of rendering nonsense. |
+
+**Versioning (`report_model.SCHEMA_VERSION`, `major.minor`).**
+
+- **MAJOR** — breaking: a field **removed, renamed or retyped**. The WebUI must **refuse
+  to render** an unrecognised major ("report shape not recognised") rather than
+  half-render it. Ship a matching WebUI change.
+- **MINOR** — additive: a new field. The WebUI keeps rendering and ignores what it does
+  not know, so an addition must **not** force a WebUI release — otherwise people would
+  stop bumping at all.
+
+**You are not asked to remember any of this.** `tests/test_report_model_contract.py`
+diffs the emitted payload against the contract fixture **as published on `origin/main`**,
+derives the bump that diff obliges, and fails until it has been performed. The published
+fixture (`tests/contracts/grade-report-<version>.json`) is **frozen**: a breaking change
+cannot be hidden by rewriting the pin, because the baseline is the one thing a pull
+request cannot rewrite. To land a shape change: bump `SCHEMA_VERSION`, add a **new**
+versioned fixture, and open the WebUI PR.
+
+**The version is not a substitute for validation.** It is producer-controlled metadata; a
+malformed payload can still claim `1.0`. The consumer validates the shape *and* checks
+the version, and fails closed on an unknown major.
+
+**Target resolution is part of the contract too.** `grade.py` accepts a local path **or a
+remote** (shallow-cloned into a throwaway tempdir, purged after; `--no-clone` opts out).
+The WebUI surfaces the clone step and its network cost explicitly — *"do not pretend a URL
+is free"* — so keep that behaviour stable, or tell the WebUI. Pinned by
+`tests/test_clone.py` and `tests/test_resolve_target.py`.
+
 ## Authoritative vs heuristic
 
 - **Authoritative** — a target with a healthy, current `.shipwright/` (a root-level
@@ -88,7 +140,10 @@ uv run scripts/tools/grade.py octocat/Hello-World      # GitHub owner/repo short
 
 - `--format terminal` (default) prints a compact A–F card with the top reasons.
 - `--format markdown` emits the same view-model as Markdown.
-- `--format json` emits the typed report view-model (stable schema) for tooling.
+- `--format json` emits the typed report view-model for tooling, carrying a
+  `schema_version` (`major.minor`) so a consumer can detect a shape it does not
+  understand. The stability of that shape is *enforced*, not merely asserted — see
+  **Cross-repo contract** above.
 - `--format html` emits a single **self-contained** report (inline CSS, zero
   external requests, restrictive meta CSP, theme-aware) to stdout — the
   lead-magnet artifact. Redirect it: `… --format html > report.html`. Every

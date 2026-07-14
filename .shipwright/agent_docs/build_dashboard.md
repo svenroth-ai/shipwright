@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-12 18:05 UTC | Session: c2ffdb03-c658-4f9e-8b04-7a13bf956f55 | Run: iterate-2026-07-12-review-model-terra-pro
+> Updated: 2026-07-14 16:33 UTC | Session: 57ed3c96-fbed-4b00-8a50-92e2343c4465 | Run: iterate-2026-07-14-webui-render-contract
 
-## Recent Changes (296 iterations)
+## Recent Changes (297 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Cross-repo output contracts: shipwright-grade's ReportModel (grade.py --format json) and shipwright-adopt's snapshot.json are rendered field-for-field by the Command Center WebUI. Both now carry a schema_version (major=breaking, the consumer must refuse to render; minor=additive), both SKILL.mds state the contract and name the consumer, and a contract gate per producer diffs the emitted JSON wire-shape against the fixture published on origin/main -- a baseline a PR cannot rewrite -- derives the bump that diff obliges, and fails until it has been performed. Also fixes a dead detector found while pinning the contract: adopt's git.major_refactor_commits returned [] for every repository. | 0/0 |  |  | 2026-07-14 |
 | change | external review GPT default -> gpt-5.6-terra-pro | 37/37 |  | tooling | 2026-07-12 |
 | change | Widen phase_completed dedup to (phase, splitId) so multi-split phases record per-split ends; promote splitId to a top-level field; de-dup 4 phase-count/latest-ts consumers; plan SKILL emits --split-id. | 0/0 |  | infra | 2026-07-11 |
 | feature | Iterate-Rail per-phase durations (M-Pre-1 iterate half): mark 5 group boundaries -> fold phase_timings into the work_completed event | 22/22 |  | tooling | 2026-07-11 |
@@ -303,7 +304,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-12 | Unit: 37/37 | Smoke: n/a | (iterate)
+Last run: 2026-07-14 | Unit: 4705/4705 | Integration: 184/184 | Smoke: n/a | (iterate)
 
 ## Pipeline
 
