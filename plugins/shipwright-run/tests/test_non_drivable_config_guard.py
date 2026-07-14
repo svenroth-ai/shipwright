@@ -237,7 +237,6 @@ def test_removed_literal_is_refused_even_without_schema_version(tmp_project):
     `mode`, but it is not a pipeline run at all, and telling its owner to "set
     mode: single_session" would be nonsense. Pinned below.
     """
-    config = json.loads((tmp_project / CONFIG_NAME).read_text(encoding="utf-8"))         if (tmp_project / CONFIG_NAME).exists() else {}
     _write_config(tmp_project, "multi_session")
     config = json.loads((tmp_project / CONFIG_NAME).read_text(encoding="utf-8"))
     del config["schemaVersion"]

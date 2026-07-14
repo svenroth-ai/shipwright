@@ -116,7 +116,7 @@ def _drive_to_completion(project_root: Path) -> list[tuple[str, str | None]]:
     for _ in range(40):  # generous bound; 7 phases + 2 splits finish well inside it
         payload = json.loads(_orch(project_root, "single-session-next").stdout)
         if payload["action"] == "complete":
-            return seen
+            break
         assert payload["action"] == "dispatch", f"unexpected loop action: {payload}"
         dispatch = payload["dispatch"]
         seen.append((dispatch["phase"], dispatch["splitId"]))
@@ -124,7 +124,9 @@ def _drive_to_completion(project_root: Path) -> list[tuple[str, str | None]]:
         assert applied.returncode == 0, (
             f"apply failed for {dispatch['phase']}: {applied.stdout}{applied.stderr}"
         )
-    pytest.fail(f"pipeline never terminated; dispatched: {seen}")
+    else:  # the bound was exhausted without a `complete` signal
+        pytest.fail(f"pipeline never terminated; dispatched: {seen}")
+    return seen
 
 
 @pytest.fixture()
