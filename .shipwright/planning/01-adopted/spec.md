@@ -94,6 +94,28 @@ End-to-End Verification Gate; historical events evt-510b8df3 + evt-40c653f7):
   through a running stack via `surface_verification.py`; spec-only
   authorship (`tests_run == 0`) counts as no test and fails the gate.
 
+Refined by `iterate-2026-07-14-f0-parallel-suite` (F0 Fresh Verification
+Gate — parallel suite runner; verdict-preserving):
+
+- (E) Given a project that declares a `suite` block in
+  `shipwright_test_config.json`, when the F0 gate runs via
+  `shared/scripts/tools/run_test_suite.py`, then the discovered test units
+  (the same selection rule as `ci.yml`) execute as parallel processes and
+  the gate returns the **same pass/fail verdict as serial execution** —
+  `pytest-xdist` fan-out is a per-unit opt-in allowlist, never a global
+  `-n auto`.
+- (E) Given a unit that reports a failure only under concurrency, when the
+  runner finishes the parallel pass, then that unit is re-run **serially,
+  without xdist, in a clean temp dir**, and that serial verdict is
+  authoritative — so a race can never cause a false STOP; an infrastructure
+  fault (proven by the absence of the unit's JUnit report) is retried once
+  with the identical command shape and a deterministic fault still fails
+  the gate.
+- (E) Given the F0 runner exists, when CI runs, then `.github/workflows/ci.yml`
+  still executes the same units **serially** as the independent cross-check
+  for a parallel-only false green, enforced by
+  `test_f0_ci_parity.py::test_ci_stays_SERIAL`.
+
 ### FR-01.13 — `/shipwright-adopt` (no project-level hook install)
 
 Refined by `iterate-20260505-plugin-hook-registration`. Supersedes

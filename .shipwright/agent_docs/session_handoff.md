@@ -1,44 +1,44 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-14-remove-multi-session"
+run_id: "iterate-2026-07-14-f0-parallel-suite"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-14T20:22:37.991230+00:00"
+reason: "iterate: F0 parallel suite runner"
+timestamp: "2026-07-14T22:44:30.319245+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-14 20:22:37 UTC
+> Auto-generated 2026-07-14 22:44:30 UTC
 
 ## Session Info
 
-- **Session ID**: 8092ea86-f095-4458-9979-ba3fd7b0c1d7
-- **Timestamp**: 2026-07-14 20:22:37 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: c40d2729-5d8c-4a25-bcb2-05a6496312c5
+- **Timestamp**: 2026-07-14 22:44:30 UTC
+- **Reason**: iterate: F0 parallel suite runner
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-14-sweep-drift-dismiss-loss
-- **Date**: 2026-07-14T20:05:39.541225Z
-- **Type**: bug
+- **Run ID**: iterate-2026-07-14-f0-parallel-suite
+- **Date**: 2026-07-14T22:43:36.033498Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/sweep-drift-dismiss-loss
-- **ADR**: iterate-2026-07-14-sweep-drift-dismiss-loss
-- **Description**: The triage outbox sweep silently destroyed operator dismisses: an append stranded in main's tracked triage.jsonl reached no branch, so a status for it looked like an orphan and the #303 quarantine deleted it while reporting success — the item resurrected on the board after every dismiss (webui, trg-6db81c59). The sweep now plans a main-tree drift adoption read-only, decides against the log it would produce, and only then routes the drift into the outbox and restores main's log to HEAD via git; decide() takes the append ids known from main so a legitimate status is never quarantined, unplaceable fails closed, and quarantine/adoption counts reach the operator.
+- **Branch**: iterate/f0-parallel-suite
+- **ADR**: iterate-2026-07-14-f0-parallel-suite
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-14-sweep-drift-dismiss-loss.md
+- **Spec**: .shipwright/planning/iterate/2026-07-14-f0-parallel-suite.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/remove-multi-session
-- **Run ID**: `iterate-2026-07-14-remove-multi-session`
-- **Spec**: .shipwright/planning/iterate/2026-07-14-remove-multi-session.md
+- **Branch**: iterate/f0-parallel-suite
+- **Run ID**: iterate-2026-07-14-f0-parallel-suite
+- **Spec**: .shipwright/planning/iterate/2026-07-14-f0-parallel-suite.md
 - **Complexity**: medium
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-14T17:02:27)
+- **External Review Marker**: stale (predates spec (2026-07-14T21:31:17))
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/remove-multi-session
-- **Last Commit**: ec628635 Merge remote-tracking branch 'origin/main' into iterate/remove-multi-session
+- **Branch**: iterate/f0-parallel-suite
+- **Last Commit**: e01334a8 chore(triage): sweep 1 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,17 +69,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-fec83856 | grade_snapshot | — | 2026-07-14 |
-| evt-a670d8da | work_completed | iterate (Sweep drift/dismiss-loss fix complete; PR pending) | 2026-07-14 |
-| evt-e0117fd9 | grade_snapshot | — | 2026-07-14 |
-| evt-3a3f1234 | grade_snapshot | — | 2026-07-14 |
-| evt-83b1496d | grade_snapshot | — | 2026-07-14 |
+| evt-08956f26 | grade_snapshot | — | 2026-07-14 |
+| evt-27b3b806 | grade_snapshot | — | 2026-07-14 |
+| evt-97b242ee | grade_snapshot | — | 2026-07-14 |
+| evt-ee294bfa | grade_snapshot | — | 2026-07-14 |
+| evt-5dc16a45 | work_completed | iterate (F0 parallel suite runner) | 2026-07-14 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 299
-- **Last iterate**: bug — Sweep drift/dismiss-loss fix complete; PR pending (2026-07-14)
+- **Total work events**: 300
+- **Last iterate**: change — F0 parallel suite runner (2026-07-14)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
