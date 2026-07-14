@@ -107,7 +107,18 @@ def append_quarantine(
     """Durably append ``lines`` (each wrapped with ``quarantined_at`` / ``reason`` /
     ``original``) to the quarantine log. ``now`` overridable for deterministic tests."""
     ts = now or datetime.now(timezone.utc).isoformat()
-    existing = path.read_text(encoding="utf-8", newline="") if path.exists() else ""
+    # NOT ``Path.read_text(..., newline="")``: that keyword only exists on Python
+    # 3.13+, while the shared scripts run on the CONSUMING project's interpreter
+    # (pyproject: requires-python >= 3.11). It raised TypeError on 3.11/3.12 and
+    # took setup_iterate_worktree.py down with it — after the worktree was already
+    # created, so every iterate in such a project aborted mid-setup. ``newline=""``
+    # is load-bearing here (the log's existing EOLs must survive the round-trip),
+    # so open the file explicitly instead of dropping it.
+    if path.exists():
+        with path.open(encoding="utf-8", newline="") as fh:
+            existing = fh.read()
+    else:
+        existing = ""
     records = [
         json.dumps({"quarantined_at": ts, "reason": reason, "original": ln}, ensure_ascii=False)
         for ln in lines
