@@ -146,6 +146,26 @@ the ADR-020 documentation-parity AC.
   into `.claude/settings.json`. Same plugin-owned model + manual-
   cleanup note as FR-01.02.
 
+**REMOVED** by `iterate-2026-07-14-remove-multi-session`: the
+multi-session execution mode. `/shipwright-run` is no longer a
+*coordinator* that prints a `claude --session-id` launch card and
+steps aside while each phase runs as its own external bound Claude
+session (claimed/completed by the `phase_session_start` /
+`phase_user_prompt_validate` / `phase_session_stop` hook trio, now
+deleted and deregistered from all 8 phase plugins).
+
+- (E) `single_session` is the SOLE mode: the master **drives** every
+  phase as a phase-runner subagent in ONE conversation, so the
+  pipeline advances on every surface — including the VS Code
+  extension and desktop chat, which cannot spawn a bound session and
+  where the pipeline previously stalled at phase 1.
+- (E) A run is **drivable iff** its config records the explicit
+  literal `mode: "single_session"`. A pre-removal config (the removed
+  literal, or no `mode` at all) is refused by every *advancing* entry
+  point with an actionable one-line migration, and is never silently
+  reinterpreted. It still **loads**, so historical runs stay
+  inspectable. See `docs/migrations/multi-session-to-single-session.md`.
+
 ### FR-01.10 — `/shipwright-compliance` (spec-impact inverse-drift audit)
 
 Refined by `iterate-2026-05-16-spec-impact-gate`.

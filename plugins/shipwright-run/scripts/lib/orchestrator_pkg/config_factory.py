@@ -1,6 +1,6 @@
 """Run-config factory for the orchestrator package.
 
-Builds the initial v2 multi-session config (``shipwright_run_config.json``)
+Builds the initial v2 pipeline config (``shipwright_run_config.json``)
 including the seed phase_task for the project phase. Also exposes
 ``build_pipeline`` — the static pipeline-step list — as a function so
 callers that want the live planning order go through one entry point.
@@ -19,7 +19,14 @@ from typing import Any, Optional
 from phase_state_machine import freeze_run_conditions, initial_phase_spec
 
 from .config_io import load_run_config, save_run_config
-from .constants import DEFAULT_RUN_MODE, PIPELINE_STEPS, RUN_MODES, SCHEMA_VERSION
+from .constants import (
+    DEFAULT_RUN_MODE,
+    LEGACY_MODE_MESSAGE,
+    LEGACY_MULTI_SESSION,
+    PIPELINE_STEPS,
+    RUN_MODES,
+    SCHEMA_VERSION,
+)
 
 
 def build_pipeline() -> list[str]:
@@ -45,10 +52,11 @@ def _new_phase_task_id() -> str:
 def _build_initial_phase_task(now_iso: str) -> dict[str, Any]:
     """Construct the initial phase_tasks[] entry for the project phase.
 
-    Pre-binds a sessionUuid so the WebUI/launch-card can render the user's
-    paste-able command immediately. The Plan v3 launchCommandHint is
-    populated by the launch-card renderer (WebUI or master skill banner) —
-    we store the slashCommand here as the authoritative source.
+    ``sessionUuid`` is a pre-bound uuid4 used as the phase task's CAS CLAIM
+    TOKEN by the single-session loop (``single_session_loop.next_dispatch``).
+    It is NOT a Claude session id: under the removed multi_session mode it
+    doubled as the bound session id a phase was launched with, but the phase
+    runner is now a subagent of the master and has no bound session of its own. ``slashCommand`` remains the authoritative phase entry point.
     """
     spec = initial_phase_spec()
     return {
@@ -90,14 +98,14 @@ def create_config(
     (current_step / completed_steps); we still merge those, but the new
     config we write is always v2 (schemaVersion: 2 + phase_tasks[]).
 
-    ``mode`` (Campaign 2026-07-07, SS1) selects the pipeline execution mode.
-    SS8 (2026-07-08): the fresh default is ``single_session`` (the sole mode);
-    ``multi_session`` is deprecated/back-compat only. It is validated against
-    ``RUN_MODES`` and always written to the config so downstream readers never
-    have to guess. The initial phase_tasks[] seed is mode-independent — the
-    single-session orchestrator loop (SS3) consumes the SAME phase_tasks[] via
-    the phase_task_lifecycle helpers, so no parallel seed shape is created here.
+    ``mode`` is always written to the config so downstream readers (and the
+    WebUI, which renders this contract) never have to guess. ``single_session``
+    is the sole mode; the removed ``multi_session`` literal is rejected here
+    with the migration message rather than an opaque enum error, so the factory
+    can never seed a run under an execution model that no longer exists.
     """
+    if mode == LEGACY_MULTI_SESSION:
+        raise ValueError(LEGACY_MODE_MESSAGE)
     if mode not in RUN_MODES:
         raise ValueError(
             f"invalid mode {mode!r}; expected one of {', '.join(RUN_MODES)}"
@@ -140,9 +148,9 @@ def create_config(
         # --- v2 fields ---
         "schemaVersion": SCHEMA_VERSION,
         "runId": run_id,
-        # Pipeline execution mode (SS1). SS8: fresh default is single_session
-        # (honored by the SS3 in-conversation orchestrator loop); multi_session
-        # (external UUID-bound phase-session model) is the deprecated legacy value.
+        # Pipeline execution mode — single_session is the sole mode, honoured by
+        # the in-conversation orchestrator loop. Written explicitly (not left to a
+        # reader default) because the WebUI renders this field.
         "mode": mode,
         "runConditions": run_conditions,
         "splits_frozen": [],

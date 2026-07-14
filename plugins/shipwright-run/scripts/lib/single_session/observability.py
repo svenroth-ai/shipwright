@@ -4,7 +4,7 @@ Append-only JSONL telemetry at ``.shipwright/run_loop_events.jsonl`` — the loo
 own transition log, DISTINCT from the tracked pipeline ``shipwright_events.jsonl``
 and from ``run_loop_state.json``. It is emitted ONLY from single-session code paths
 (``single_session_loop`` dispatch/apply + ``single_session_recovery``
-resume/gate/recover); a ``multi_session`` run never calls them, so its events file
+resume/gate/recover); a non-single-session config never reaches them, so its events file
 never appears — the dual-mode back-compat guarantee (SS5, asserted by the back-compat
 suite).
 

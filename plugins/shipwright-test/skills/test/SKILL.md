@@ -110,8 +110,8 @@ Based on profile:
 
 ## Step 0: Phase Session Context Recovery
 
-If your context contains `=== SHIPWRIGHT-PIPELINE-CONTEXT ===`, parse
-`phaseTaskId` and run `get_phase_context.py` as the first action.
+If the orchestrator handed you a `phaseTaskId`, run
+`get_phase_context.py --phase-task-id <id>` as the first action.
 Full body: see [step-0-phase-session](references/step-0-phase-session.md).
 
 ## Step 1: Run Unit Tests

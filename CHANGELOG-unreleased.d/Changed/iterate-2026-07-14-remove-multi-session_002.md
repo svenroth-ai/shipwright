@@ -1,0 +1,1 @@
+A run config written before the removal (`mode: multi_session`, or no `mode` at all) is now refused by every execution entry point with a one-line migration message instead of being silently reinterpreted. It still loads, so historical runs stay inspectable. See `docs/migrations/multi-session-to-single-session.md`.

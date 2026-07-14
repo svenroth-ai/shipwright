@@ -252,7 +252,7 @@ def build_event(args: argparse.Namespace) -> dict:
 
     elif args.type in ("phase_started", "phase_completed",
                        "phase_failed", "stale_stop_rejected"):
-        # phase_failed + stale_stop_rejected (deep-audit F15): the phase Stop hook
+        # phase_failed + stale_stop_rejected (deep-audit F15): the (removed) phase Stop hook
         # emits these for a failed phase / an owner-CAS-rejected stale stop. They
         # carry phase + (JSON) detail like phase_completed but are NOT phase-deduped.
         event["phase"] = args.phase

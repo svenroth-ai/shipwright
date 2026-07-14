@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
-"""Stop hook for the Master /shipwright-run session (F3a).
+"""Stop hook for the Master /shipwright-run session.
 
-Observational only — never sets run.status. Final-status responsibility
-moved to complete-phase-task (Plan v4 §Master-Run-Lifecycle): this guarantees
-exactly-once delivery without relying on the user reopening the master
-session.
+Observational only — never sets run.status. Final-status responsibility belongs to
+complete-phase-task (Plan v4 §Master-Run-Lifecycle): that guarantees exactly-once
+delivery without relying on the user reopening the master session.
 
 Behaviour:
     1. If shipwright_run_config.json doesn't exist or isn't v2 -> exit 0.
-    2. If any phase_task is non-terminal: print a "still in progress" banner
-       to stderr (Claude shows hook stderr to the user) so they know the
-       master is intentionally idling.
-    3. If run.status == complete: print the celebration banner.
-    4. If run.status == failed: print the diagnostic banner with the
-       failed phase_task list so the user knows where to look.
+    2. If the config is NOT a drivable single-session run (it records the removed
+       ``multi_session`` mode, or no mode at all) -> print the migration notice.
+       Keyed on the SAME explicit-literal predicate the loop and gate_policy use.
+    3. If any phase_task is non-terminal: print a "still in progress" banner to
+       stderr (Claude shows hook stderr to the user) telling the user how to
+       resume — which, under single_session, is simply re-invoking /shipwright-run:
+       the master DRIVES the pipeline, so there is nothing to launch elsewhere.
+    4. If run.status == complete: print the celebration banner.
+    5. If run.status == failed: print the diagnostic banner with the failed
+       phase_task list so the user knows where to look.
 
 Exit code: always 0. This hook never blocks the master session shutdown.
 """
@@ -28,6 +31,17 @@ from typing import Any
 
 CONFIG_NAME = "shipwright_run_config.json"
 
+# Mirror of orchestrator_pkg.constants (a hook must not import the plugin lib).
+#
+# THE INVARIANT, shared with config_io.is_single_session and
+# gate_policy.read_run_config_mode: a run is drivable IFF it records the explicit
+# `single_session` literal. Keying this banner on `!= SINGLE_SESSION` (rather than
+# `== multi_session`) keeps all three surfaces on the SAME predicate — a mode-less
+# pre-SS1 config would otherwise get the normal "just re-invoke /shipwright-run"
+# banner here, and then be refused by /shipwright-run itself.
+SINGLE_SESSION = "single_session"
+LEGACY_MULTI_SESSION = "multi_session"
+
 
 def _summarise(config: dict[str, Any]) -> tuple[list[dict], list[dict], list[dict]]:
     tasks = config.get("phase_tasks") or []
@@ -39,22 +53,8 @@ def _summarise(config: dict[str, Any]) -> tuple[list[dict], list[dict], list[dic
 
 def _format_task_line(t: dict[str, Any]) -> str:
     split = f"/{t.get('splitId')}" if t.get("splitId") else ""
-    return f"  - {t.get('phase')}{split} (ptk={t.get('phaseTaskId')[-6:]}) status={t.get('status')}"
-
-
-def _short_run_id(run_id: str) -> str:
-    """Drop the 'run-' prefix and take the first 4 hex chars (matches the
-    master skill's banner naming convention)."""
-    if run_id.startswith("run-"):
-        return run_id[4:8]
-    return run_id[:4]
-
-
-def _name_suffix(task: dict[str, Any]) -> str:
-    split_id = task.get("splitId")
-    if split_id:
-        return f"{task.get('phase')} / {split_id}"
-    return str(task.get("phase"))
+    ptk = str(t.get("phaseTaskId"))[-6:]
+    return f"  - {t.get('phase')}{split} (ptk={ptk}) status={t.get('status')}"
 
 
 def _orchestrator_path(project_root: Path) -> str:
@@ -71,29 +71,47 @@ def _orchestrator_path(project_root: Path) -> str:
     return "<plugin>/scripts/lib/orchestrator.py"
 
 
-def _format_launch_command(task: dict[str, Any], project_root: Path,
-                           run_id: str) -> str:
-    """Render the paste-able `claude --session-id ...` launch command for an
-    awaiting_launch task. Mirrors the master skill's Step 5 banner format so
-    the user sees the same command shape across surfaces."""
-    return (
-        f"      claude --session-id {task.get('sessionUuid')} "
-        f"--add-dir \"{project_root}\" "
-        f"--name 'Run-{_short_run_id(run_id)} / {_name_suffix(task)}' "
-        f"'{task.get('slashCommand')}'"
-    )
-
-
 def _format_recover_command(task: dict[str, Any], orch_path: str,
                             *, force_status: str | None = None) -> str:
     extra = f" --force-status {force_status}" if force_status else ""
-    # Always quote the orchestrator path — installations under directories
-    # with spaces (e.g. Windows "Program Files" or a OneDrive-synced folder) would otherwise
+    # Always quote the orchestrator path — installations under directories with
+    # spaces (Windows "Program Files", a OneDrive-synced folder) would otherwise
     # break when the user pastes the snippet into their shell.
-    return (
-        f"      uv run \"{orch_path}\" recover-phase-task "
-        f"--phase-task-id {task.get('phaseTaskId')}{extra}"
-    )
+    ptk = task.get("phaseTaskId")
+    return f'      uv run "{orch_path}" recover-phase-task --phase-task-id {ptk}{extra}'
+
+
+def _not_drivable_lines(run_id: str, mode: object) -> list[str]:
+    """Banner for a run config that is NOT a drivable single-session run.
+
+    Two causes, one fix — mirroring ``config_io.mode_rejection``: the config records the
+    REMOVED ``multi_session`` mode, or it records no mode at all (a pre-SS1 run, which is
+    not accused of a choice it never made).
+    """
+    if mode == LEGACY_MULTI_SESSION:
+        cause = [
+            "run.mode = multi_session — REMOVED.",
+            "",
+            "This run predates the single-session pipeline. Each phase used to run as its",
+            "own external bound Claude session; that engine no longer exists.",
+        ]
+    else:
+        cause = [
+            f"run.mode = {mode!r} — not a drivable pipeline run.",
+            "",
+            "single_session is the sole mode, and a run must record it explicitly.",
+        ]
+    return [
+        f"\n=== /shipwright-run Master Status ({run_id}) ===",
+        *cause,
+        "",
+        "To migrate (no phase work is lost — phase_tasks[] are shared and re-claim is",
+        "idempotent):",
+        '  1. set "mode": "single_session" in shipwright_run_config.json',
+        "  2. re-invoke /shipwright-run to resume",
+        "",
+        "See docs/migrations/multi-session-to-single-session.md.",
+    ]
 
 
 def run(project_root: Path) -> int:
@@ -108,6 +126,12 @@ def run(project_root: Path) -> int:
         return 0
 
     run_id = config.get("runId", "unknown-run")
+
+    mode = config.get("mode")
+    if mode != SINGLE_SESSION:
+        sys.stderr.write("\n".join(_not_drivable_lines(run_id, mode)) + "\n")
+        return 0
+
     status = config.get("status", "unknown")
     terminal, failed, pending = _summarise(config)
     orch_path = _orchestrator_path(project_root)
@@ -140,37 +164,26 @@ def run(project_root: Path) -> int:
                 "    (use --force-status skipped to move on without re-running this phase)"
             )
         lines.append("")
-        lines.append(
-            "After recover-phase-task, re-invoke /shipwright-run to print a "
-            "fresh launch card,"
-        )
-        lines.append("or paste the WebUI Kanban launch command if the WebUI is in use.")
+        lines.append("After recover-phase-task, re-invoke /shipwright-run — the master")
+        lines.append("resumes the loop from the recovered phase.")
     elif pending:
-        lines.append("PIPELINE IN PROGRESS — master is intentionally idling.")
-        lines.append("")
-        lines.append("Pending phase tasks. To continue, paste the matching")
-        lines.append("launch command into a new terminal:")
+        lines.append("PIPELINE IN PROGRESS — the master session ended mid-run.")
         lines.append("")
         for t in pending:
             lines.append(_format_task_line(t))
-            if t.get("status") == "awaiting_launch":
-                lines.append(_format_launch_command(t, project_root, run_id))
-            elif t.get("status") == "in_progress":
-                lines.append(
-                    "      (already claimed by a phase session — close it cleanly,"
-                )
-                lines.append(
-                    "       or run recover-phase-task if it crashed:"
-                )
-                lines.append(_format_recover_command(t, orch_path))
-                lines.append(
-                    "       and then re-launch with the command above)"
-                )
+        lines.append("")
+        lines.append("The master DRIVES the pipeline in one conversation, so there is")
+        lines.append("nothing to launch separately: re-invoke /shipwright-run. It prints")
+        lines.append("a resume card, then continues from the frontier phase.")
+        # Only offer the recover escape hatch when there IS something wedged — otherwise
+        # the banner ends on a colon with no command under it.
+        wedged = [t for t in pending if t.get("status") == "in_progress"]
+        if wedged:
             lines.append("")
-        lines.append(
-            "(Or open the master with /shipwright-run again — the resume banner "
-            "prints the next launch card.)"
-        )
+            lines.append("A task left in_progress (the master died mid-phase) is re-dispatched")
+            lines.append("idempotently on resume. Only for a genuinely wedged task:")
+            for t in wedged:
+                lines.append(_format_recover_command(t, orch_path))
     else:
         lines.append("(no actionable status — config in unexpected state)")
 

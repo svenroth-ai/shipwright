@@ -1,129 +1,236 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-14-sweep-drift-dismiss-loss",
+    "run_id": "iterate-2026-07-14-remove-multi-session",
     "date": "2026-07-14",
-    "intent": "bug",
+    "intent": "change",
     "complexity": "medium",
     "unit": {
-      "passed": 3960,
-      "failed": 0,
-      "skipped": 12,
-      "suite": "shared/tests (-m 'not slow and not cross_plugin')"
+      "status": "pass",
+      "detail": "14 plugin suites green: run 346, compliance 966, security 470, iterate 476, adopt 387, grade 385, test 143, build 84, project 59, plan 57, deploy 26, changelog 23, design 19, preview 10"
     },
     "integration": {
-      "passed": 184,
-      "failed": 0,
-      "suite": "integration-tests (-m 'not slow')"
+      "status": "pass",
+      "detail": "integration-tests 204 passed (incl. 38 residue+survivor); shared 3893 passed"
     },
     "pgtap": {
       "status": "n/a",
-      "reason": "no database in this repo"
+      "detail": "no database surface"
     },
     "e2e": {
-      "status": "n/a",
-      "reason": "no web surface; the behavior surface is the iterate-setup CLI (see surface_verification)"
+      "status": "pass",
+      "detail": "F0.5 CLI surface: 38 tests via surface_verification.py --surface cli"
     },
     "design_fidelity": {
       "status": "n/a",
-      "reason": "no UI change"
+      "detail": "no UI surface"
     },
     "smoke": {
       "status": "n/a",
-      "reason": "no server"
+      "detail": "no server surface"
     },
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run scripts/verify_sweep_delivery_surface.py",
-      "tests_run": 8,
+      "runner": "uv run --extra dev pytest integration-tests/test_single_session_sole_mode.py integration-tests/test_removal_survivors_offpath.py integration-tests/test_multi_session_removal_residue.py -q",
       "exit_code": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-14-sweep-drift-dismiss-loss/surface_verification.json",
-      "timestamp": "2026-07-14T00:00:00+00:00",
-      "justification": "The behavior surface of this fix is the iterate-setup CLI. The runner drives the real setup_iterate_worktree.py against a real git repo seeded with the exact shipwright-webui failure shape, then asks the operator's question through the board's own reader (triage.read_all_items). A unit pin over decide() would not catch the sweep still eating the dismiss at the entry point."
+      "tests_run": 38,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\remove-multi-session\\.shipwright\\runs\\iterate-2026-07-14-remove-multi-session\\surface_verification.log",
+      "timestamp": "2026-07-14T20:22:33.531Z",
+      "attempts": 1
     },
-    "degraded": [],
+    "degraded": [
+      {
+        "condition": "classifier risk-flag false positive",
+        "detail": "classify_complexity raised touches_auth from the DESCRIPTION prose (the word 'session'), not from the diff. No auth/RLS/middleware path is touched. Overridden; the diff-derived flag that actually binds is cross_component (hooks.json x8, **/hooks/*.py), whose integration coverage is delivered."
+      },
+      {
+        "condition": "pre-existing bug found by review, deliberately NOT fixed here",
+        "detail": "trg-de6e736c: the 8 phase skills detect invocation mode from run_config.current_step, which the v2 lifecycle never advances (proven: after driving project+design through the real loop the frontier is 'plan' while current_step is still 'project'). NOT a regression from this iterate \u2014 the deleted phase_session_stop hook never wrote current_step either (verified against origin/main), so it was equally blind under multi_session. It is the long-standing v1-compat/v2 divergence and wants its own iterate across all 8 skills; bolting it onto a removal PR would be scope creep."
+      }
+    ],
     "test_completeness": {
       "status": "complete",
-      "behaviors": [
-        {
-          "id": 1,
-          "behavior": "AC1 \u2014 a status whose append is known only from main's tracked log is not an orphan and is never a quarantine candidate",
-          "disposition": "tested",
-          "evidence": "test_status_whose_append_is_only_in_main_tracked_is_not_an_orphan + test_the_old_universe_is_what_ate_the_dismiss (the pre-fix universe quarantines the same dismiss)"
-        },
-        {
-          "id": 2,
-          "behavior": "AC2 \u2014 a protected-but-unplaceable status fails CLOSED (invalid) instead of being quarantined, with an actionable reason",
-          "disposition": "tested",
-          "evidence": "test_an_unplaceable_known_append_blocks_instead_of_eating_the_dismiss (sweep returns invalid; dismiss stays in the outbox; quarantine log empty)"
-        },
-        {
-          "id": 3,
-          "behavior": "AC3 \u2014 append-only drift in main's tracked log is routed into the outbox and rides the branch; main's log is restored to HEAD",
-          "disposition": "tested",
-          "evidence": "test_main_tracked_drift_append_is_routed_into_the_outbox + verify_sweep_delivery_surface.py (real CLI, 8/8)"
-        },
-        {
-          "id": 4,
-          "behavior": "AC4 \u2014 refusal guards mutate nothing: diverged / reordered / deleted-HEAD-line / whitespace-only edit / emptied / deleted / staged index / malformed drift",
-          "disposition": "tested",
-          "evidence": "test_sweep_drift_guards.py (8 refusal tests, each asserting the tracked log and outbox are byte-unchanged)"
-        },
-        {
-          "id": 5,
-          "behavior": "AC4b \u2014 a state that is understood but unrepairable (no HEAD blob; headerless blob) does NOT block delivery of the outbox",
-          "disposition": "tested",
-          "evidence": "test_an_uncommitted_log_is_unrepairable_but_never_blocks_delivery + test_an_uncommitted_log_still_lets_the_sweep_deliver_the_outbox"
-        },
-        {
-          "id": 6,
-          "behavior": "AC5 \u2014 quarantine + adoption counts reach the operator (stderr + warnings[])",
-          "disposition": "tested",
-          "evidence": "test_sweep_warnings_surface_quarantine_and_adoption + the surface runner asserts the QUARANTINED warning in setup's warnings[]"
-        },
-        {
-          "id": 7,
-          "behavior": "AC6 \u2014 the webui shape end-to-end: the operator's only dismiss survives and the reader resolves the item to dismissed",
-          "disposition": "tested",
-          "evidence": "test_the_operators_only_dismiss_survives_the_sweep + verify_sweep_delivery_surface.py check 2 (triage.read_all_items \u2192 'dismissed')"
-        },
-        {
-          "id": 8,
-          "behavior": "The restore preserves the log's real EOL: neither a CRLF checkout nor a CRLF drift line over an LF checkout reflows the file",
-          "disposition": "tested",
-          "evidence": "test_crlf_main_tracked_log_stays_clean_after_the_repair (autocrlf=true) + test_a_crlf_drift_line_over_an_lf_checkout_does_not_reflow_the_whole_log (autocrlf=false)"
-        },
-        {
-          "id": 9,
-          "behavior": "A block mutates nothing \u2014 the drift never leaves the git-tracked log for the gitignored buffer on an aborting sweep",
-          "disposition": "tested",
-          "evidence": "test_a_block_mutates_nothing_even_when_drift_is_adoptable"
-        },
-        {
-          "id": 10,
-          "behavior": "Crash-replay is idempotent: an interrupted adoption re-plans and never double-buffers the drift",
-          "disposition": "tested",
-          "evidence": "test_replaying_an_interrupted_adoption_does_not_double_deliver"
-        },
-        {
-          "id": 11,
-          "behavior": "A race during the restore reports 'buffered' with the true adopted count, not a silent 'adopted' with 0",
-          "disposition": "tested",
-          "evidence": "test_a_race_during_the_restore_reports_buffered_not_adopted (monkeypatched HEAD oid)"
-        },
-        {
-          "id": 12,
-          "behavior": "A genuine orphan (append nowhere at all) is still quarantined \u2014 the #303 behavior is preserved",
-          "disposition": "tested",
-          "evidence": "test_a_status_whose_append_exists_nowhere_is_still_quarantined + the surface runner's GHOST_ID check"
-        }
-      ],
+      "enumeration_basis": {
+        "acs": 10,
+        "covered_acs": 10,
+        "note": "AC1-AC10 of .shipwright/planning/iterate/2026-07-14-remove-multi-session.md"
+      },
       "counts": {
-        "testable": 12,
-        "tested": 12,
-        "untestable": 0,
+        "total": 33,
+        "tested": 32,
+        "untestable": 1,
         "untested_testable": 0
       },
-      "enumeration_basis": "AC1-AC6 of the iterate spec, plus the six behaviors the external + internal reviews added (EOL reflow, block-mutates-nothing, crash replay, restore race, unrepairable-must-not-block, genuine-orphan still quarantined)."
+      "behaviors": [
+        {
+          "behavior": "The 6 engine modules (phase_session_start/_stop/user_prompt_validate, phase_context_blocks, hook_session, phase_event_emit) no longer exist",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_multi_session_removal_residue.py::test_deleted_module_is_gone (6 params)"
+        },
+        {
+          "behavior": "No live source imports a deleted module (a stale import is a hard load failure, not a type error)",
+          "disposition": "tested",
+          "evidence": "test_multi_session_removal_residue.py::test_no_live_source_imports_a_deleted_module"
+        },
+        {
+          "behavior": "No hooks.json registers a deleted hook (a stale registration makes Claude Code skip that plugin's WHOLE chain)",
+          "disposition": "tested",
+          "evidence": "test_multi_session_removal_residue.py::test_no_hooks_json_registers_a_deleted_hook + shared/tests/test_phase_plugin_hooks_consistency.py::test_every_registered_hook_script_exists (all 12 manifests)"
+        },
+        {
+          "behavior": "The 8 phase plugins no longer register the trio, and their UserPromptSubmit event is gone entirely (the validator was its only entry)",
+          "disposition": "tested",
+          "evidence": "test_phase_plugin_hooks_consistency.py::test_no_user_prompt_submit_event + ::test_no_plugin_registers_a_removed_phase_session_hook"
+        },
+        {
+          "behavior": "No live source or shipped skill emits a `claude --session-id` phase launch card",
+          "disposition": "tested",
+          "evidence": "test_multi_session_removal_residue.py::test_no_live_source_emits_a_phase_launch_card + plugins/shipwright-run/tests/test_run_skill_drives_pipeline.py::test_skill_emits_no_launch_card"
+        },
+        {
+          "behavior": "master_stop_check tells the user to re-invoke /shipwright-run instead of pasting a launch card",
+          "disposition": "tested",
+          "evidence": "test_master_stop_check.py::test_in_progress_banner_tells_the_user_to_reinvoke_run"
+        },
+        {
+          "behavior": "single_session is the sole mode; create_config always writes it and REJECTS the removed one",
+          "disposition": "tested",
+          "evidence": "test_run_config_mode.py::test_single_session_is_the_sole_mode, ::test_create_config_rejects_the_removed_multi_session_mode"
+        },
+        {
+          "behavior": "--mode no longer ADVERTISES multi_session, but passing it still yields the migration message (not `invalid choice`)",
+          "disposition": "tested",
+          "evidence": "test_run_config_mode.py::test_write_config_cli_does_not_advertise_the_removed_mode, ::test_write_config_cli_rejects_the_removed_literal_with_a_migration_message"
+        },
+        {
+          "behavior": "A non-drivable config (stale multi_session OR mode-less) is refused at the loop entry points (next/resume/gate/recover) with NO claim, NO mutation, NO event, NO loop-state",
+          "disposition": "tested",
+          "evidence": "test_non_drivable_config_guard.py (7 tests, both flavours)"
+        },
+        {
+          "behavior": "single-session-APPLY is refused too \u2014 it completes a task, plans a successor and appends a durable phase_completed, so guarding only `next` was security theatre",
+          "disposition": "tested",
+          "evidence": "test_non_drivable_config_guard.py + integration test_single_session_sole_mode.py::test_stale_multi_session_config_is_refused_with_no_side_effects (found by the internal code-review cascade)"
+        },
+        {
+          "behavior": "The ADVANCING generic lifecycle CLI commands (claim/complete/mark-failed/freeze-splits/plan-next-phase) are refused on a non-drivable config",
+          "disposition": "tested",
+          "evidence": "test_non_drivable_config_guard.py::test_advancing_lifecycle_command_refused_on_non_drivable_config (5 params) (found by the external GPT review)"
+        },
+        {
+          "behavior": "...while the READ-ONLY lifecycle commands and recover-phase-task still work on a stale config (the migration itself calls recover)",
+          "disposition": "tested",
+          "evidence": "test_non_drivable_config_guard.py::test_read_only_lifecycle_commands_still_work_on_a_stale_config, ::test_recover_phase_task_still_works_on_a_stale_config"
+        },
+        {
+          "behavior": "A stale config still LOADS without raising (the guard is on the execution path, never the read path), so historical runs stay inspectable",
+          "disposition": "tested",
+          "evidence": "test_run_config_mode.py::test_stale_multi_session_config_loads_without_raising, ::test_legacy_config_without_mode_loads_unchanged"
+        },
+        {
+          "behavior": "INTEGRATION: a full 7-phase pipeline (plan/build fanning out over 2 splits) runs to status:complete over the real orchestrator CLI with the engine deleted \u2014 exercising claim, freeze_splits, complete and plan_next_phase without the Stop hook that used to call them",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "integration-tests/test_single_session_sole_mode.py::test_full_pipeline_runs_to_complete_without_the_engine"
+        },
+        {
+          "behavior": "sessionUuid survives as the CAS claim token (not a Claude session id) \u2014 the task is claimed by its own sessionUuid",
+          "disposition": "tested",
+          "evidence": "test_single_session_sole_mode.py::test_session_uuid_is_still_the_claim_token"
+        },
+        {
+          "behavior": "The crashed-phase escape hatch still composes: recover-phase-task -> re-claim on the BUMPED version -> complete -> pipeline advances, with the stale attempt CAS-fenced out",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "integration-tests/test_cross_surface_backcompat.py::TestCrashedPhaseRecoversAndAdvances"
+        },
+        {
+          "behavior": "generate_handoff_on_stop still writes runtime/session_handoff.md after losing its phase-namespaced branch",
+          "disposition": "tested",
+          "evidence": "test_removal_survivors_offpath.py::test_generic_handoff_still_written_after_the_phase_branch_was_cut"
+        },
+        {
+          "behavior": "...and its phase-completion fallback still fires (asserting only the handoff file would let a dropped fallback pass \u2014 the hook still exits 0 and still writes)",
+          "disposition": "tested",
+          "evidence": "test_removal_survivors_offpath.py::test_phase_completion_fallback_still_fires (found by the external GPT review)"
+        },
+        {
+          "behavior": "THE TRAP: phase gates stay INERT (interactive, should_stop) for a standalone / adopted / v1 / mode-less / corrupt / stale-mode config \u2014 removing the multi_session literal must not auto-arm the gate mechanism everywhere",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_gate_policy.py::test_gate_mechanism_stays_inert_outside_a_driven_run (5 params) + integration test_removal_survivors_offpath.py::test_gate_policy_is_inert_for_a_standalone_project (real CLI)"
+        },
+        {
+          "behavior": "...and gates still ACTIVATE for an explicit single_session run, so the guard is not over-broad",
+          "disposition": "tested",
+          "evidence": "test_gate_policy.py::test_gates_activate_only_on_the_explicit_single_session_literal + integration test_removal_survivors_offpath.py::test_gate_policy_activates_for_a_driven_single_session_run"
+        },
+        {
+          "behavior": "gate_policy.INERT_MODE is a sentinel, not a mode: it collides with neither single_session nor the removed literal",
+          "disposition": "tested",
+          "evidence": "test_gate_policy.py::test_inert_mode_is_not_a_pipeline_mode"
+        },
+        {
+          "behavior": "phase_started/phase_completed still land in the TRACKED events log, exactly one pair per (phase, splitId), driven through the REAL loop on a pipeline that actually fans out \u2014 the loop is now the SOLE producer",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "test_single_session_sole_mode.py::test_loop_emits_one_tracked_start_end_pair_per_split (strengthened after the GPT review flagged the split-less version as vacuous)"
+        },
+        {
+          "behavior": "The per-split phase_completed dedup rule (iterate-2026-07-11) survives at its OWNER, record_event.py, driven as a real subprocess",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_phase_completed_per_split_integration.py (re-homed: both emitters it used were deleted)"
+        },
+        {
+          "behavior": "The run SKILL documents a DRIVEN pipeline: master drives, phase-runner subagent, every surface, no mode question, no launch card, stale-config migration path",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_run_skill_drives_pipeline.py (6 tests) + integration test_cross_surface_backcompat.py::TestEverySurfaceRunsThePipeline"
+        },
+        {
+          "behavior": "The v2 schema declares NO default for `mode` (absence is meaningful; a default would let an ajv-useDefaults consumer reinterpret a legacy config as drivable)",
+          "disposition": "tested",
+          "evidence": "test_run_config_mode.py::test_schema_mode_declares_no_default, ::test_schema_mode_enum_is_single_valued (found by the internal code-review cascade)"
+        },
+        {
+          "behavior": "docs/hooks-and-pipeline.md, docs/guide.md, docs/gate-catalog.md and the migration note read correctly to a human",
+          "disposition": "untestable",
+          "reason_code": "requires-manual-visual-judgment",
+          "evidence": "Prose accuracy is judged, not asserted. The machine-checkable half IS pinned: no live source references a deleted module or renders a launch card (residue guard), and the run SKILL's contract is pinned by test_run_skill_drives_pipeline.py."
+        },
+        {
+          "behavior": "The 11 Step-0 blocks across the 8 phase skills key on 'the orchestrator handed you a phaseTaskId', not the deleted SHIPWRIGHT-PIPELINE-CONTEXT block (whose only producer was phase_session_start) \u2014 otherwise a driven phase would silently take the standalone branch and contradict its own phase-runner brief",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_multi_session_removal_residue.py::test_no_shipped_skill_gates_on_the_deleted_context_block (flagged independently by all three reviewers: internal, GPT-5.6, Codex)"
+        },
+        {
+          "behavior": "An EXPLICIT multi_session config is refused even without schemaVersion (a hand-edited config that lost it still meant a pipeline) \u2014 while a v1/standalone config, which also has no mode, is NOT told to set one",
+          "disposition": "tested",
+          "evidence": "test_non_drivable_config_guard.py::test_removed_literal_is_refused_even_without_schema_version, ::test_v1_standalone_config_is_not_told_to_set_a_mode (external review, GPT)"
+        },
+        {
+          "behavior": "The lifecycle guard's rejection payload goes to STDOUT like every other lifecycle result, so a caller parsing stdout on a non-zero exit still finds it",
+          "disposition": "tested",
+          "evidence": "test_non_drivable_config_guard.py::test_advancing_lifecycle_command_refused_on_non_drivable_config (external review, Gemini)"
+        },
+        {
+          "behavior": "The loop/apply module split is acyclic in both import orders and preserves behavior (apply_phase_result still reachable as single_session_loop.apply_phase_result)",
+          "disposition": "tested",
+          "evidence": "the whole run-plugin suite (346) imports both orders; test_single_session_loop.py + test_single_session_artifact_guard.py call loop.apply_phase_result unchanged"
+        },
+        {
+          "behavior": "The Step-0 retarget is guarded in BOTH directions: the dead SHIPWRIGHT-PIPELINE-CONTEXT trigger cannot return (negative), AND every one of the 8 phase skills still carries a phaseTaskId-keyed trigger + a get_phase_context.py call (positive) \u2014 a ban-only guard would still pass if someone deleted Step-0 outright, leaving the exact regression it exists to prevent",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_multi_session_removal_residue.py::test_every_phase_skill_still_recovers_its_context_via_phase_task_id (8 params; FALSIFIED: goes red when Step-0 is stripped from a skill) (external review, GPT, delta round)"
+        },
+        {
+          "behavior": "The Step-0 retarget fixed BOTH branches: the 'you are in a pipeline' one AND the 'otherwise standalone' one. The first cut fixed only the positive branch \u2014 8 skills still said 'if NO PIPELINE-CONTEXT block is present, you are standalone', so a DRIVEN phase would still have fallen into standalone mode. The guard missed it because it matched the LONG token while the stale text used the short one.",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_multi_session_removal_residue.py::test_no_shipped_skill_gates_on_the_deleted_context_block, now matching the SHORT token (FALSIFIED: reintroducing the exact bug turns it red) \u2014 found by Codex in the delta review, after two earlier review rounds and my own guard had both passed it"
+        },
+        {
+          "behavior": "The Step-0 residue guard matches the dead trigger as a CLASS (case-insensitive, 5 spellings), not one exact token \u2014 a guard that matches a narrower string than the bug certifies exactly what it cannot see, which is how it missed the negative-branch blocker in the first place",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_multi_session_removal_residue.py::test_no_shipped_skill_gates_on_the_deleted_context_block (FALSIFIED against 3 distinct re-wordings of the stale branch \u2014 all caught) (Codex, delta round #2)"
+        }
+      ]
     }
   },
   "coverage": {

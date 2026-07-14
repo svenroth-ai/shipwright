@@ -5,7 +5,7 @@
 > edit by hand - edit the JSON and regenerate (shell-agnostic writer):
 > `uv run shared/scripts/tools/resolve_gate_policy.py --render-doc --output docs/gate-catalog.md`
 
-Single-session pipeline phase-gate catalog (Campaign 2026-07-07, SS2). SSoT for every interactive AskUserQuestion + END-TURN gate across the project/design/plan/build/deploy phase skills, with a per-gate non-interactive policy. Read by resolve_gate_policy.py; consumed by phase-runner subagents under run_config.mode == 'single_session'. Additive: the mechanism is inert (every gate resolves to 'interactive') under multi_session/standalone. docs/gate-catalog.md is GENERATED from this file (gate_policy.render_catalog_markdown) - edit here, then regenerate.
+Single-session pipeline phase-gate catalog (Campaign 2026-07-07, SS2). SSoT for every interactive AskUserQuestion + END-TURN gate across the project/design/plan/build/deploy phase skills, with a per-gate non-interactive policy. Read by resolve_gate_policy.py; consumed by phase-runner subagents under run_config.mode == 'single_session'. The mechanism is INERT (every gate resolves to 'interactive') for any config that is not an explicit single_session run - a standalone or adopted project is unaffected. docs/gate-catalog.md is GENERATED from this file (gate_policy.render_catalog_markdown) - edit here, then regenerate.
 
 ## Policies
 

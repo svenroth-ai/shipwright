@@ -1,15 +1,21 @@
 #!/usr/bin/env python3
-"""Phase-skill Step 0 Context Recovery tool.
+"""Phase Step-0 Context Recovery tool.
 
-Called by every phase Skill (project, design, plan, build, test, security,
-changelog, deploy) as their FIRST action when running inside an active
-shipwright-run pipeline. Spike F0 finding: phase-discovery env vars set
-by SessionStart hook do NOT propagate to Bash-tool subprocesses, so the
-Skill must:
-  1. Read phaseTaskId from the SHIPWRIGHT-PIPELINE-CONTEXT block injected
-     by phase_session_start.py via additionalContext.
-  2. Call this tool with --phase-task-id <id>.
-  3. Read the prior-phase artifacts this tool surfaces.
+Surfaces the prior-phase artifacts a phase needs to read before it starts.
+
+**How the phaseTaskId reaches the caller (post-`iterate-2026-07-14-remove-multi-session`).**
+It used to arrive in a ``SHIPWRIGHT-PIPELINE-CONTEXT`` block that the
+``phase_session_start`` SessionStart hook injected into an external phase session. That
+hook is DELETED with the multi-session engine, and it could never have fired in the
+surviving mode anyway (the phase runner is a SUBAGENT of the master, so it has no bound
+Claude session whose id could match a ``phase_tasks[].sessionUuid``).
+
+The master now passes it directly: ``single-session-next`` returns the ``phaseTaskId`` in
+its dispatch descriptor, and the master briefs the phase-runner subagent to run
+
+    uv run get_phase_context.py --phase-task-id <ptk-XXXX>
+
+as its first action (see ``plugins/shipwright-run/agents/phase-runner.md``).
 
 Standalone branch: if no --phase-task-id is provided OR the lookup fails
 (no run_config.json, schema v1, no matching task), the tool prints a
@@ -193,9 +199,9 @@ def build_phase_context(
         ),
         "next_action_hint": (
             "Read the files/dirs listed in skill_artifacts_to_read, then "
-            "proceed with the skill's normal Step 1. The pipeline will track "
-            "your phase status via the SessionStop hook — you do not need to "
-            "manage it manually."
+            "proceed with the skill's normal Step 1. You do not need to manage "
+            "your phase status: the orchestrator records it when it applies your "
+            "result (single-session-apply)."
         ),
     }
 
@@ -205,7 +211,7 @@ def main() -> int:
     parser.add_argument("--project-root", default=".")
     parser.add_argument(
         "--phase-task-id", default=None,
-        help="phaseTaskId from the SHIPWRIGHT-PIPELINE-CONTEXT block. "
+        help="phaseTaskId, as handed to you by the orchestrator in its dispatch. "
              "If omitted, prints standalone-mode payload.",
     )
     args = parser.parse_args()

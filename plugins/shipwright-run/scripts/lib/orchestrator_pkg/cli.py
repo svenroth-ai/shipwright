@@ -16,10 +16,29 @@ from pathlib import Path
 
 from .build_progress import get_build_progress
 from .config_factory import create_config
-from .constants import DEFAULT_RUN_MODE, PIPELINE_STEPS, RUN_MODES
+from .constants import (
+    DEFAULT_RUN_MODE,
+    LEGACY_MODE_MESSAGE,
+    LEGACY_MULTI_SESSION,
+    PIPELINE_STEPS,
+    RUN_MODES,
+)
 from .router import LIFECYCLE_COMMANDS, dispatch_lifecycle
 from .single_session_cli import SINGLE_SESSION_COMMANDS, dispatch_single_session
 from .step_planning import get_next_step, update_step
+
+
+def _mode_value(value: str) -> str:
+    """argparse ``type`` for ``--mode``: intercept the REMOVED mode with a real message.
+
+    argparse applies ``type`` before ``choices``, so this fires first and raises the
+    migration guidance. Without it, ``multi_session`` would fall through to the
+    ``choices`` check and die with a bare ``invalid choice: 'multi_session'`` — which
+    tells a user with a pre-removal config nothing about what to do.
+    """
+    if value == LEGACY_MULTI_SESSION:
+        raise argparse.ArgumentTypeError(LEGACY_MODE_MESSAGE)
+    return value
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -35,12 +54,14 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--scope", required=True, choices=["full_app", "extension"])
     p.add_argument("--profile", default=None)
     p.add_argument("--autonomy", default="guided", choices=["guided", "autonomous"])
+    # ``choices`` advertises ONLY the real mode, so `--help` and the usage line never
+    # present the removed one as selectable. The ``type`` hook still intercepts the
+    # removed literal FIRST (argparse applies type before choices), so passing it yields
+    # the actionable migration message rather than a bare "invalid choice".
     p.add_argument(
-        "--mode", default=DEFAULT_RUN_MODE, choices=list(RUN_MODES),
-        help=("Pipeline execution mode. single_session (default, SS8): master "
-              "drives phases via a phase-runner subagent in one conversation. "
-              "multi_session (DEPRECATED, back-compat only): each phase = its "
-              "own external session."),
+        "--mode", default=DEFAULT_RUN_MODE, choices=list(RUN_MODES), type=_mode_value,
+        help=("Pipeline execution mode. single_session is the SOLE mode: the master "
+              "drives every phase via a phase-runner subagent in one conversation."),
     )
     p.add_argument("--deploy-target", default="jelastic-dev")
     p.add_argument("--project-root", default=".")
@@ -65,8 +86,7 @@ def build_parser() -> argparse.ArgumentParser:
     # All return JSON on stdout. Exit codes:
     #   0 = ok
     #   1 = generic error (not_found, invalid args)
-    #   2 = fail-closed (block) — used by phase_session_start.py /
-    #       phase_user_prompt_validate.py
+    #   2 = fail-closed (CAS / prereq reject)
 
     p = subparsers.add_parser("get-phase-task")
     p.add_argument("--project-root", default=".")
@@ -116,9 +136,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--phase-task-id", required=True,
                    help="phaseTaskId of the COMPLETED predecessor task")
 
-    # ----- SS3 single-session orchestrator-loop subcommands --------------
-    # The /shipwright-run master drives these two in ONE conversation under
-    # `mode: single_session`. Both delegate to single_session_cli (which reuses
+    # ----- Single-session orchestrator-loop subcommands -------------------
+    # The /shipwright-run master drives these in ONE conversation.
+    # They delegate to single_session_cli (which reuses
     # phase_task_lifecycle — no bespoke completion path). Exit codes match the
     # lifecycle map (0 ok, 2 fail-closed CAS reject, 1 guard/error).
     p = subparsers.add_parser("single-session-next")
@@ -139,8 +159,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--project-root", default=".")
 
     # ----- SS5 resumability / recovery / human-gate observability ---------
-    # Each is mode- and run-identity-gated (a multi_session run is a no-op
-    # rejection, no file written) — the dual-mode back-compat guarantee.
+    # Each is mode- and run-identity-gated: a config that is not an explicit
+    # single_session run is a no-op rejection (nothing mutated, no file written).
     p = subparsers.add_parser("single-session-resume")
     p.add_argument("--project-root", default=".")
     p.add_argument("--confirm", action="store_true",
@@ -171,6 +191,9 @@ def main() -> int:
     project_root = Path(args.project_root).resolve()
 
     if args.command == "write-config":
+        # The removed mode is intercepted by the parser itself (``_mode_value``), so it
+        # can never arrive here. ``create_config`` guards it a second time for library
+        # callers that bypass the CLI.
         config = create_config(
             args.scope, args.profile, args.autonomy,
             args.deploy_target, project_root, mode=args.mode,

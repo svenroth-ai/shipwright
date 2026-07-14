@@ -1,19 +1,19 @@
-# Single-Session Orchestrator Loop (`mode: single_session`)
+# The Orchestrator Loop (`mode: single_session`)
 
-> Reached from Step 4 when the run config carries `mode: single_session`
-> (Campaign 2026-07-07, SS3). In this mode the master does NOT print a launch
-> card and step aside — it DRIVES every phase from this one conversation, the
-> way a campaign drives sub-iterates. This is now the DEFAULT and sole mode
-> (SS8). `multi_session` (deprecated, back-compat only) is unchanged: use Step
-> 5's surface-aware hand-off.
+> Step 5 of the master skill. The master DRIVES every phase from this one
+> conversation, the way a campaign drives sub-iterates. `single_session` is the
+> SOLE pipeline mode.
 
-## Why single_session
+## Why the master drives
 
-`multi_session` advances each phase from its own external `claude --session-id`
-session (a phase Stop hook plans the next). Surfaces that can't start a bound
-session — the VS Code extension, the desktop chat — therefore stall at phase 1.
-`single_session` runs the whole pipeline in-conversation via a phase-runner
-subagent per phase, so it advances on EVERY surface.
+The pipeline used to advance each phase from its own external bound Claude
+session, with a phase Stop hook planning the next one (`mode: multi_session`).
+Surfaces that cannot start a bound session — the VS Code extension, the desktop
+chat — therefore stalled at phase 1. That engine was removed in
+iterate-2026-07-14-remove-multi-session. The master now runs the whole pipeline
+in-conversation via one phase-runner subagent per phase, so it advances on EVERY
+surface, and a run pauses/resumes with the master rather than fragmenting across
+sessions.
 
 ## The loop
 
@@ -35,12 +35,16 @@ Repeat until a terminal signal:
    - `complete` → the pipeline finished. Stop; print the completion summary.
    - `failed` → a phase strict-stopped (`failed_tasks`). Stop; surface it.
    - `needs_validation` → deploy done but tasks non-terminal (`blocked`). Stop.
-   - `wrong_mode` / `no_config` → not a single_session run; do not loop.
+   - `mode_unsupported` / `no_config` → not a drivable single-session run; do not
+     loop. Print the returned `message` (a mode-less or removed-`multi_session`
+     config migrates by setting `"mode": "single_session"` and re-invoking).
 
 2. **Dispatch the `shipwright-run:phase-runner` subagent** for
    `dispatch.slashCommand` (the `phase` / `splitId`). Brief it with the phase
-   context; it runs that ONE phase skill, **writes every real output to DISK
-   itself** (it has a Write path — see `plugins/shipwright-run/agents/
+   context — **including `dispatch.phaseTaskId`, so it can load its prior-phase
+   artifacts itself** via `get_phase_context.py --phase-task-id` (its Step 0; no hook can
+   inject context into a subagent). It runs that ONE phase skill, **writes every real
+   output to DISK itself** (it has a Write path — see `plugins/shipwright-run/agents/
    phase-runner.md`), and returns a compact phase-runner RESULT CONTRACT (see
    `plugins/shipwright-run/scripts/lib/single_session/result_contract.py`):
    `{ok, phase, summary, artifacts[], reason?, splitId?}`. The `summary` is
@@ -77,9 +81,12 @@ Repeat until a terminal signal:
 ## Gates, splits, failures
 
 - **Gates** are honored INSIDE each phase skill via the SS2 gate policy
-  (`shared/config/gate_catalog.json`): under single_session an `auto-default`
-  gate proceeds with no END-TURN; `orchestrator-approve` / `hard-stop` still
-  stop for a human (constitution AskUserQuestion discipline). The loop just
+  (`shared/config/gate_catalog.json`): in a driven single-session run an
+  `auto-default` gate proceeds with no END-TURN; `orchestrator-approve` /
+  `hard-stop` still stop for a human (constitution AskUserQuestion discipline).
+  The mechanism is inert (every gate `interactive`) for any config that is not an
+  explicit `mode: single_session` run — a standalone or adopted project is
+  unaffected. The loop just
   dispatches; a stopping gate surfaces as the phase pausing. When a phase pauses
   at an `orchestrator-approve` / `hard-stop` gate, record it for observability +
   loop-state:
@@ -123,7 +130,9 @@ resumes via a **confirm card** rather than starting fresh:
    - `runid_mismatch` → the persisted loop-state belongs to a DIFFERENT run than the
      current `run_config` (a stale pointer from a prior aborted run). Do NOT resume;
      surface both run ids.
-   - `wrong_mode` / `no_config` → not a single_session run; do not resume.
+   - `mode_unsupported` / `no_config` → not a drivable single-session run; do not
+     resume. Print the returned `message` (the fix is to set
+     `"mode": "single_session"` and re-invoke).
    - `not_resumable` → single_session but nothing was ever dispatched; start the loop
      normally from `single-session-next`.
 2. **On Resume, commit it** (records the `resume` event) and re-enter the loop:
@@ -137,19 +146,26 @@ resumes via a **confirm card** rather than starting fresh:
    (`idempotent: true`, `executionCount` NOT re-bumped) and the SS4 artifact
    persistence-guard still verifies its outputs on apply.
 
-**Why idempotent re-run is safe here.** In `single_session` the phase-runner is a
-SUBAGENT of the master conversation, so when the master dies the runner dies with it —
-there is no orphaned live worker to race on resume. (The split-brain concern is a
-`multi_session`-only property, where each phase runs as an independent external
-`claude --session-id` process.) `recover-phase-task` stays the manual escape for a
-truly wedged task; in the loop use `single-session-recover` (same lifecycle mutator +
-a `recovery` event + loop-pointer realign).
+**Why idempotent re-run is safe here.** The phase-runner is a SUBAGENT of the master
+conversation, so when the master dies the runner dies with it — there is no orphaned
+live worker to race on resume. (Split-brain WAS a real hazard under the removed
+`multi_session` mode, whose phases ran as independent external Claude processes that
+outlived the master; removing that mode removed the hazard with it.)
+`recover-phase-task` stays the manual escape for a truly wedged task; in the loop use
+`single-session-recover` (same lifecycle mutator + a `recovery` event + loop-pointer
+realign).
 
 ## Observability
 
 The loop appends structured telemetry to `.shipwright/run_loop_events.jsonl` (append-only
 JSONL, gitignored, distinct from the tracked pipeline `shipwright_events.jsonl`). Event
 types: `dispatch`, `phase_result`, `strict_stop`, `human_gate_pause`,
-`human_gate_resume`, `resume`, `recovery`. Emission is **single-session-only and
-best-effort** — a `multi_session` run never grows this file (the dual-mode back-compat
-guarantee), and a telemetry write failure never crashes the loop (it warns to stderr).
+`human_gate_resume`, `resume`, `recovery`. Emission is **best-effort** — a config that
+is not a drivable single-session run never reaches these paths (so it never grows the
+file), and a telemetry write failure never crashes the loop (it warns to stderr).
+
+The durable, tracked `phase_started` / `phase_completed` pairs in
+`shipwright_events.jsonl` are emitted by the loop CLI itself
+(`single-session-next` → `record_phase_started`, `single-session-apply` →
+`record_phase_end`), one per split. They used to have a second producer in the
+`phase_session_start` hook; with that hook gone the loop is the SOLE producer.

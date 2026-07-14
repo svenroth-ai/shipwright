@@ -12,7 +12,7 @@ import pytest
 
 from lib.gate_policy import (
     COVERED_PHASES,
-    DEFAULT_RUN_MODE,
+    INERT_MODE,
     INTERACTIVE,
     POLICIES,
     SINGLE_SESSION,
@@ -110,7 +110,8 @@ def test_dry_run_per_phase(phase):
 
 def test_mode_precedence_explicit_wins():
     assert effective_mode(explicit=SINGLE_SESSION, env=None, project_root=None) == SINGLE_SESSION
-    assert effective_mode(explicit="multi_session", env=SINGLE_SESSION, project_root=None) == "multi_session"
+    # Anything that is not the single_session literal is INERT, never a second mode.
+    assert effective_mode(explicit="multi_session", env=SINGLE_SESSION, project_root=None) == INERT_MODE
 
 
 def test_mode_precedence_env_over_config(tmp_path):
@@ -121,37 +122,67 @@ def test_mode_precedence_env_over_config(tmp_path):
 
 
 def test_mode_default_when_nothing_set(tmp_path):
-    assert effective_mode(explicit=None, env=None, project_root=tmp_path) == DEFAULT_RUN_MODE
-    assert effective_mode(explicit=None, env=None, project_root=None) == DEFAULT_RUN_MODE
+    assert effective_mode(explicit=None, env=None, project_root=tmp_path) == INERT_MODE
+    assert effective_mode(explicit=None, env=None, project_root=None) == INERT_MODE
 
 
-@pytest.mark.parametrize("mode", ["single_session", "multi_session"])
-def test_run_config_mode_round_trip(tmp_path, mode):
-    """Boundary Probe: a mode written to run_config reads back identically, and
-    the resolver's effective_policy honours it end-to-end."""
+def test_gates_activate_only_on_the_explicit_single_session_literal(tmp_path):
+    """Boundary Probe: run_config.mode round-trips, and the resolver honours it."""
     cfg = tmp_path / "shipwright_run_config.json"
-    cfg.write_text(json.dumps({"schemaVersion": 2, "mode": mode}), encoding="utf-8")
-    assert read_run_config_mode(tmp_path) == mode
+    cfg.write_text(json.dumps({"schemaVersion": 2, "mode": SINGLE_SESSION}), encoding="utf-8")
+    assert read_run_config_mode(tmp_path) == SINGLE_SESSION
     resolved = effective_mode(explicit=None, env=None, project_root=tmp_path)
-    assert resolved == mode
+    assert resolved == SINGLE_SESSION
+    assert resolve_gate_policy("project.interview", mode=resolved)["effective_policy"] == "auto-default"
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        pytest.param(None, id="no-config-at-all"),
+        pytest.param({}, id="v1-standalone-no-schema-no-mode"),
+        pytest.param({"schemaVersion": 2}, id="v2-mode-less-legacy"),
+        pytest.param({"schemaVersion": 2, "mode": "multi_session"}, id="stale-removed-mode"),
+        pytest.param({"schemaVersion": 2, "mode": "sngle_sesion"}, id="typo"),
+    ],
+)
+def test_gate_mechanism_stays_inert_outside_a_driven_run(tmp_path, config):
+    """THE REGRESSION TRAP of the multi-session removal.
+
+    `multi_session` used to double as the "not a single-session run" sentinel that kept
+    every phase gate `interactive` for standalone / adopted / mode-less projects. Had the
+    literal simply been deleted with nothing put in its place, all of those projects would
+    have started AUTO-ANSWERING their gates — a live behaviour change (this monorepo's own
+    run_config is a v1 standalone with no `mode` key at all).
+
+    Activation is therefore EXPLICIT-LITERAL-ONLY: only `mode == "single_session"` turns
+    gates on. Everything else — including a stale `multi_session` config, which the
+    execution entry points reject long before gate resolution — resolves to `interactive`.
+    """
+    if config is not None:
+        (tmp_path / "shipwright_run_config.json").write_text(
+            json.dumps(config), encoding="utf-8"
+        )
+    assert read_run_config_mode(tmp_path) == INERT_MODE
+    resolved = effective_mode(explicit=None, env=None, project_root=tmp_path)
+    assert resolved == INERT_MODE
+    # An auto-default gate must NOT auto-answer here — it stays interactive and stops.
     r = resolve_gate_policy("project.interview", mode=resolved)
-    if mode == SINGLE_SESSION:
-        assert r["effective_policy"] == "auto-default"
-    else:
-        assert r["effective_policy"] == INTERACTIVE
-
-
-def test_read_run_config_mode_missing_or_modeless(tmp_path):
-    assert read_run_config_mode(tmp_path) == DEFAULT_RUN_MODE  # no config
-    (tmp_path / "shipwright_run_config.json").write_text(
-        json.dumps({"schemaVersion": 2}), encoding="utf-8"
-    )
-    assert read_run_config_mode(tmp_path) == DEFAULT_RUN_MODE  # mode-less legacy
+    assert r["effective_policy"] == INTERACTIVE
+    assert r["should_stop"] is True
+    assert r["default_answer"] is None
 
 
 def test_read_run_config_mode_survives_corrupt_json(tmp_path):
     (tmp_path / "shipwright_run_config.json").write_text("{not json", encoding="utf-8")
-    assert read_run_config_mode(tmp_path) == DEFAULT_RUN_MODE
+    assert read_run_config_mode(tmp_path) == INERT_MODE
+
+
+def test_inert_mode_is_not_a_pipeline_mode():
+    """The sentinel must not collide with the real mode, and must not resurrect the
+    removed literal under a new name."""
+    assert INERT_MODE != SINGLE_SESSION
+    assert INERT_MODE != "multi_session"
 
 
 # --------------------------------------------------------------------------- #

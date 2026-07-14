@@ -6,7 +6,7 @@ Generated: 2026-07-14T20:05:09.348996+00:00
 
 | Requirement | Title | Priority | Verified By | Tests | Last tested | Reconciled? | Status |
 |-------------|-------|----------|-------------|-------|-------------|-------------|--------|
-| [FR-01.01](../../.shipwright/planning/01-adopted/spec.md#fr-0101)<a id="rtm-fr-0101"></a> | Orchestrate the full Shipwright SDLC pipeline — drives project, plan, build, test, security, deploy, changelog, and compliance phases end-to-end. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-b0b9c422](#evt-b0b9c422), [evt-ca7b7d64](#evt-ca7b7d64), [evt-7620210f](#evt-7620210f) | 225/225 → 1691/1716 | 2026-05-05 ([iter](#evt-7620210f)) | — | COVERED |
+| [FR-01.01](../../.shipwright/planning/01-adopted/spec.md#fr-0101)<a id="rtm-fr-0101"></a> | Orchestrate the full Shipwright SDLC pipeline — drives project, plan, build, test, security, deploy, changelog, and compliance phases end-to-end. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-b0b9c422](#evt-b0b9c422), [evt-ca7b7d64](#evt-ca7b7d64), [evt-7620210f](#evt-7620210f) +1 | 225/225 → 1691/1716 | 2026-05-05 ([iter](#evt-7620210f)) | ⚠️ needs re-verification | COVERED |
 | [FR-01.02](../../.shipwright/planning/01-adopted/spec.md#fr-0102)<a id="rtm-fr-0102"></a> | Decompose project requirements (IREB) into well-scoped planning units; generate initial CLAUDE.md and `.shipwright/agent_docs` for the target project. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-b0b9c422](#evt-b0b9c422), [evt-ca7b7d64](#evt-ca7b7d64), [evt-7620210f](#evt-7620210f) +1 | 225/225 → 140/140 | 2026-05-16 ([iter](#evt-8659999c)) | ✅ | COVERED |
 | [FR-01.03](../../.shipwright/planning/01-adopted/spec.md#fr-0103)<a id="rtm-fr-0103"></a> | AI-assisted deep planning with research, optional interview, external dual-LLM review (Gemini + GPT in parallel), TDD-first approach; produces section files consumable by /shipwright-build. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7) | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | — | COVERED |
 | [FR-01.04](../../.shipwright/planning/01-adopted/spec.md#fr-0104)<a id="rtm-fr-0104"></a> | Generate UI mockups from IREB specs as standalone HTML screens and user flows; iteratable via chat. | Should | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7) | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | — | COVERED |
@@ -29,6 +29,7 @@ Generated: 2026-07-14T20:05:09.348996+00:00
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
 | <a id="evt-a670d8da"></a>Sweep drift/dismiss-loss fix complete; PR pending | iterate | bug |  | — | — | 2026-07-14 |
+| <a id="evt-a5b70713"></a>iterate complete: multi-session removal | iterate | change | [FR-01.01](#rtm-fr-0101) | — | — | 2026-07-14 |
 | <a id="evt-edcf1064"></a>Cross-repo output contracts: shipwright-grade's ReportModel (grade.py --format json) and shipwright-adopt's snapshot.json are rendered field-for-field by the Command Center WebUI. Both now carry a schema_version (major=breaking, the consumer must refuse to render; minor=additive), both SKILL.mds state the contract and name the consumer, and a contract gate per producer diffs the emitted JSON wire-shape against the fixture published on origin/main -- a baseline a PR cannot rewrite -- derives the bump that diff obliges, and fails until it has been performed. Also fixes a dead detector found while pinning the contract: adopt's git.major_refactor_commits returned [] for every repository. | iterate | change |  | — | — | 2026-07-14 |
 | <a id="evt-d1e4d49d"></a>The automatic code-review AI now uses the newer, cheaper GPT-5.6 Terra Pro model on the OpenAI side instead of GPT-5.4; how reviews run is otherwise unchanged. | iterate | change |  | 37/37 | — | 2026-07-12 |
 | <a id="evt-e3cdb1ef"></a>The iterate now records how long each of its 5 steps took, so the Command Center's iterate progress bar can show real time-per-step. | iterate | feature |  | 22/22 | — | 2026-07-11 |
@@ -333,7 +334,7 @@ Generated: 2026-07-14T20:05:09.348996+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 298 |
+| Iterate changes | 299 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |
@@ -346,6 +347,7 @@ Generated: 2026-07-14T20:05:09.348996+00:00
 
 ### FRs needing re-verification
 
+- [FR-01.01](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-a5b70713` (2026-07-14)
 - [FR-01.15](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run
 
 ### FRs with open triage items

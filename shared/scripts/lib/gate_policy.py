@@ -11,10 +11,9 @@ policy:
   * ``hard-stop``             — ALWAYS stop for an explicit human decision
                                 (constitution-locked; no autonomy bypasses it).
 
-The mechanism is **additive and inert** unless the run is single-session: under
-``multi_session`` / standalone (or any unrecognised mode) every gate resolves to
-``interactive`` — exactly today's behaviour. The resolver NEVER auto-answers a
-constitution-flagged gate (defense-in-depth on top of the load-time validator).
+Inert outside a driven pipeline run: for a standalone / adopted / mode-less / v1 /
+missing config every gate resolves to ``interactive``. The resolver NEVER
+auto-answers a constitution-flagged gate (defense-in-depth on the validator).
 
 ``docs/gate-catalog.md`` is GENERATED from the JSON by
 ``render_catalog_markdown`` — edit the JSON, then regenerate.
@@ -31,17 +30,23 @@ ORCHESTRATOR_APPROVE = "orchestrator-approve"
 HARD_STOP = "hard-stop"
 POLICIES = (AUTO_DEFAULT, ORCHESTRATOR_APPROVE, HARD_STOP)
 
-# Effective policy for a non-single-session run: the mechanism is inert.
+# Effective policy outside a driven pipeline run: the mechanism is inert.
 INTERACTIVE = "interactive"
 
 FIRES = ("always", "conditional", "never")
 COVERED_PHASES = ("project", "design", "plan", "build", "deploy")
 
-# Run modes. Mirror of run_config.v2 / orchestrator_pkg.constants (shared can't
-# import a plugin). Only the single_session literal is load-bearing here: any
-# other value is treated as inert, matching config_io.run_mode's fail-safe.
+# ``single_session`` is the sole pipeline mode (mirror of run_config.v2 /
+# orchestrator_pkg.constants — shared can't import a plugin).
 SINGLE_SESSION = "single_session"
-DEFAULT_RUN_MODE = "multi_session"
+
+# Sentinel for "NOT a driven pipeline run" — standalone / adopted / mode-less / v1 /
+# missing / corrupt config. NOT a pipeline mode: it exists only so the gate mechanism
+# has something to key inertness on. The removed "multi_session" literal used to play
+# this role; dropping it without a replacement sentinel would have flipped every
+# standalone project from `interactive` gates to auto-answered ones. Activation is
+# EXPLICIT-LITERAL-ONLY: only `mode == "single_session"` turns gates on.
+INERT_MODE = "standalone"
 
 _REQUIRED_GATE_KEYS = ("id", "phase", "policy", "default_answer", "constitution", "fires", "summary")
 
@@ -140,29 +145,29 @@ def load_catalog(path: Optional[Path] = None) -> dict[str, Any]:
 # --------------------------------------------------------------------------- #
 
 def read_run_config_mode(project_root: Any) -> str:
-    """Return ``run_config.mode`` (single_session) or DEFAULT_RUN_MODE.
+    """Return ``SINGLE_SESSION`` or ``INERT_MODE``.
 
-    Back-compat + fail-safe: a missing/mode-less/corrupt config reads as
-    ``multi_session`` so the mechanism stays inert. Only the exact literal
-    ``single_session`` activates it.
+    Fail-safe: a missing / mode-less / corrupt config reads as ``INERT_MODE`` so
+    the mechanism stays inert. Only the exact literal ``single_session``
+    activates it.
     """
     if project_root is None:
-        return DEFAULT_RUN_MODE
+        return INERT_MODE
     cfg = Path(project_root) / _CONFIG_NAME
     if not cfg.exists():
-        return DEFAULT_RUN_MODE
+        return INERT_MODE
     try:
         mode = json.loads(cfg.read_text(encoding="utf-8")).get("mode")
     except (json.JSONDecodeError, OSError):
-        return DEFAULT_RUN_MODE
-    return SINGLE_SESSION if mode == SINGLE_SESSION else DEFAULT_RUN_MODE
+        return INERT_MODE
+    return SINGLE_SESSION if mode == SINGLE_SESSION else INERT_MODE
 
 
 def effective_mode(*, explicit: Optional[str], env: Optional[str], project_root: Any) -> str:
     """Resolve the run mode by precedence: explicit > env > run_config > default."""
     for candidate in (explicit, env):
         if candidate:
-            return SINGLE_SESSION if candidate == SINGLE_SESSION else DEFAULT_RUN_MODE
+            return SINGLE_SESSION if candidate == SINGLE_SESSION else INERT_MODE
     return read_run_config_mode(project_root)
 
 

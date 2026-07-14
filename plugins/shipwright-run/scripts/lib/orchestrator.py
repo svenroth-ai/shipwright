@@ -31,7 +31,8 @@ from orchestrator_pkg import (  # noqa: E402,F401
     _read_latest_phase_quality_finding,
     _record_compliance_update_failed, _record_pipeline_migration_event,
     build_pipeline, create_config, get_build_progress, get_next_step,
-    is_v2_config, load_run_config, run_compliance_update, run_mode,
+    is_legacy_multi_session, is_single_session, is_v2_config, load_run_config,
+    mode_rejection, run_compliance_update,
     save_run_config, update_step,
 )
 from orchestrator_pkg.cli import main  # noqa: E402

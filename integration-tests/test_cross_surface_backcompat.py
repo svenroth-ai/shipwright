@@ -1,17 +1,18 @@
-"""Cross-surface back-compat + campaign known-bug regression roster (SS7).
+"""Cross-surface guarantees + campaign known-bug regression roster (SS7).
 
-Two guarantees the capstone owes the campaign, distinct from the single-session
-story in ``test_single_session_capstone.py``:
+Two guarantees the capstone owes the campaign, distinct from the happy-path story in
+``test_single_session_capstone.py``:
 
-  * **(C) an in-flight MULTI-session run remains resumable.** The default
-    (``multi_session``) path must survive a crash and be picked back up — closing
-    the positive-half hole the existing suite left open (SS3/SS5 / the existing
-    multi_session suite proved a *stale* completion is rejected; nothing proved the
-    recovered task is re-claimed on its bumped version, completed, and the pipeline
-    advances). And it must do so WITHOUT the SS5 single-session machinery leaking
-    in: no ``run_loop_state.json`` / ``run_loop_events.jsonl`` may ever appear for a
-    multi_session run. (C) is driven over the real orchestrator subprocess CLI —
-    the exact surface a phase Stop hook invokes.
+  * **(C) a crashed phase is recoverable and the pipeline advances.** The generic
+    lifecycle escape hatch — ``recover-phase-task`` releases a wedged claim, the task
+    is re-claimed on its BUMPED version and completed, and the pipeline moves to the
+    next phase — while the crashed attempt is FENCED OFF (its now-stale completion is
+    refused). Driven over the real orchestrator subprocess CLI.
+
+    Retargeted by ``iterate-2026-07-14-remove-multi-session``: this used to be
+    "an in-flight MULTI-session run remains resumable". That mode is gone, but the
+    lifecycle it exercised is not — ``recover-phase-task`` and the version-CAS fence
+    are SHARED, and are exactly the machinery that had to survive the removal.
 
   * **(D) the external_review gate can never silently no-op** — a thin, in-process
     roster pin for SS6 (#351). Deep coverage (the full CLI, every
@@ -49,13 +50,10 @@ def _run_cli(args: list[str], project_root: Path) -> subprocess.CompletedProcess
     return res
 
 
-def _write_multi_config(project: Path) -> dict:
-    # SS8: single_session is the default now — request the DEPRECATED multi_session
-    # path explicitly (this suite proves that legacy path stays resumable).
+def _write_run_config(project: Path) -> dict:
     res = _run_cli([
         "write-config", "--scope", "full_app", "--profile", "supabase-nextjs",
         "--autonomy", "guided", "--deploy-target", "jelastic-dev",
-        "--mode", "multi_session",
     ], project)
     assert res.returncode == 0, res.stderr
     return json.loads(res.stdout)
@@ -110,16 +108,22 @@ def _load_finalize_review_output():
             sys.path.remove(lib_dir)
 
 
-# ---------- (C) in-flight multi-session run remains resumable -----------
+# ---------- (C) a crashed phase recovers and the pipeline advances ----------
 
-class TestMultiSessionRemainsResumable:
-    """Default-path resumability positive half + no single-session leak."""
+class TestCrashedPhaseRecoversAndAdvances:
+    """The generic recover -> re-claim -> complete -> advance lifecycle.
+
+    Every mutator exercised here (claim / recover / complete / plan-next) was ALSO
+    called by the ``phase_session_stop`` hook that ``iterate-2026-07-14-remove-multi-session``
+    deleted. They are SHARED with the surviving single-session loop, and this proves the
+    deletion did not take them — or the version-CAS fence — with it.
+    """
 
     def test_crash_recover_reclaim_complete_advances(self, tmp_path):
-        project = tmp_path / "multi-resume"
+        project = tmp_path / "crash-resume"
         project.mkdir()
-        cfg = _write_multi_config(project)
-        assert cfg["mode"] == "multi_session"
+        cfg = _write_run_config(project)
+        assert cfg["mode"] == "single_session"
         first = cfg["phase_tasks"][0]
         assert first["phase"] == "project"
 
@@ -137,16 +141,15 @@ class TestMultiSessionRemainsResumable:
         assert recovered["version"] > crashed_version
 
         # 3. The crashed attempt is fenced off: its now-stale completion is refused
-        #    (the safety pivot that makes resume meaningful). Exhaustive negative
-        #    coverage of this rejection lives in test_multi_session_pipeline.py.
+        #    (the safety pivot that makes resume meaningful).
         stale = _complete(project, phase_task_id=first["phaseTaskId"],
                           session_uuid=first["sessionUuid"], version=crashed_version)
         assert stale.returncode == 2, stale.stdout
 
         # 4. POSITIVE HALF: the recovered task is re-claimed on its BUMPED version and
-        #    completed (in multi_session the sessionUuid is bound to the task, so the
-        #    relaunched `claude --session-id` reuses it — the version is what fences
-        #    the crashed attempt out, not session identity).
+        #    completed. sessionUuid is bound to the TASK (it is the CAS claim token,
+        #    not a Claude session id), so the retry reuses it — the VERSION is what
+        #    fences the crashed attempt out, not session identity.
         assert _claim(project, phase_task_id=first["phaseTaskId"],
                       session_uuid=recovered["sessionUuid"], expected_phase="project").returncode == 0
         reclaimed_version = _task(project, first["phaseTaskId"])["version"]
@@ -161,7 +164,8 @@ class TestMultiSessionRemainsResumable:
         frontier = next(t for t in after["phase_tasks"] if t["status"] == "awaiting_launch")
         assert frontier["phase"] == "design"
 
-        # 6. Back-compat: the SS5 single-session machinery never touched this run.
+        # 6. The generic lifecycle path writes no loop state of its own — the loop
+        #    pointer is owned by single-session-next/-apply, not by these mutators.
         assert _no_single_session_files(project)
 
 
@@ -193,26 +197,36 @@ class TestExternalReviewGateCannotSilentlyNoop:
         assert hcode == 0 and healthy["success"] is True and healthy["degraded"] is False
 
 
-# ---------- chat-surface honest decline (parity's other half) ----------
+# ---------- every surface now RUNS the pipeline (the point of the removal) ----------
 
 _RUN_SKILL = REPO_ROOT / "plugins" / "shipwright-run" / "skills" / "run" / "SKILL.md"
-_BANNER_GUARD = (REPO_ROOT / "plugins" / "shipwright-run" / "tests"
-                 / "test_run_skill_handoff_banner.py")
+_DRIVE_GUARD = (REPO_ROOT / "plugins" / "shipwright-run" / "tests"
+                / "test_run_skill_drives_pipeline.py")
 
 
-class TestChatSurfaceHonestDecline:
-    """Parity's honest other half: a chat surface (VS Code / desktop) can't launch
-    a bound multi_session phase session, so /shipwright-run must DECLINE honestly
-    there — not silently stall. Enforces the reference the capstone parity test
-    leans on (the SKILL.md prose contract + its drift-guard both exist) rather than
-    only documenting it. Deep prose coverage: test_run_skill_handoff_banner.py."""
+class TestEverySurfaceRunsThePipeline:
+    """The INVERSE of the guarantee this class used to make.
 
-    def test_run_skill_declines_on_chat_surface(self):
-        assert _BANNER_GUARD.exists(), "the chat-surface banner drift-guard must exist"
+    It used to assert that /shipwright-run DECLINES honestly on a chat surface (VS Code /
+    desktop), because those surfaces cannot spawn a bound `claude --session-id` phase
+    session — so the pipeline stalled at phase 1 there. Removing the multi-session engine
+    removed that limitation entirely: a phase is now a SUBAGENT of the master, and a
+    subagent runs wherever its parent runs.
+
+    So the honest contract is now the opposite one — the skill must NOT branch on the
+    launch surface, must NOT decline anywhere, and must claim every-surface support.
+    """
+
+    def test_run_skill_does_not_decline_on_any_surface(self):
+        assert _DRIVE_GUARD.exists(), "the drives-the-pipeline drift-guard must exist"
         text = _RUN_SKILL.read_text(encoding="utf-8")
-        assert "CLAUDE_CODE_ENTRYPOINT" in text, "the master must detect the launch surface"
-        a = text.find("**(a) `surface` is chat")
-        b = text.find("**(b) `surface` is terminal")
-        assert a != -1 and b != -1 and a < b, "SKILL.md must carry chat/terminal branches"
-        assert "can't" in text[a:b].lower() or "cannot" in text[a:b].lower(), \
-            "the chat branch must honestly state the pipeline can't launch here"
+
+        assert "CLAUDE_CODE_ENTRYPOINT" not in text, (
+            "the master must no longer branch on the launch surface — every surface runs"
+        )
+        assert "--session-id" not in text, (
+            "no launch card: there is no external phase session to launch"
+        )
+        assert "every surface" in text.lower(), (
+            "the skill must state that the pipeline advances on every surface"
+        )

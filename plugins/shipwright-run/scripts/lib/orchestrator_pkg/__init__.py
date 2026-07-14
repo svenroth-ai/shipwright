@@ -28,7 +28,14 @@ from __future__ import annotations
 from .build_progress import get_build_progress
 from .compliance_runner import run_compliance_update
 from .config_factory import build_pipeline, create_config
-from .config_io import is_v2_config, load_run_config, run_mode, save_run_config
+from .config_io import (
+    is_legacy_multi_session,
+    is_single_session,
+    is_v2_config,
+    load_run_config,
+    mode_rejection,
+    save_run_config,
+)
 from .constants import (
     CONFIG_NAME,
     DEFAULT_RUN_MODE,
@@ -65,7 +72,9 @@ __all__ = [
     "get_next_step",
     "is_v2_config",
     "load_run_config",
-    "run_mode",
+    "is_single_session",
+    "is_legacy_multi_session",
+    "mode_rejection",
     "run_compliance_update",
     "save_run_config",
     "update_step",

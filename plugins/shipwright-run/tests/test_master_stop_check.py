@@ -79,22 +79,40 @@ def test_in_progress_banner_lists_pending(v2_project, capsys):
     assert "PIPELINE FAILED" not in err
 
 
-def test_in_progress_banner_renders_paste_able_launch_command(v2_project, capsys):
-    """Banner must include the actual claude --session-id launch command for
-    each awaiting_launch task — not just a 'check the WebUI' hand-wave."""
+def test_in_progress_banner_tells_the_user_to_reinvoke_run(v2_project, capsys):
+    """The banner must NOT render a `claude --session-id` launch card.
+
+    That card belonged to the removed multi-session engine: pasting it would start a
+    bound phase session that claims a task nothing can complete. The master now DRIVES
+    the pipeline, so the only correct resume instruction is "re-invoke /shipwright-run".
+    """
     cfg = _read_cfg(v2_project)
-    project_task = cfg["phase_tasks"][0]
-    assert project_task["status"] == "awaiting_launch"
-    expected_uuid = project_task["sessionUuid"]
+    assert cfg["phase_tasks"][0]["status"] == "awaiting_launch"
 
     master_stop_check.run(v2_project)
     err = capsys.readouterr().err
 
-    assert "claude --session-id" in err, "missing launch command for awaiting task"
-    assert expected_uuid in err, "launch command must use the pre-bound sessionUuid"
-    assert "/shipwright-project" in err, "launch command must include slashCommand"
-    # Run-prefix shorthand from the banner naming convention
-    assert "Run-" in err
+    assert "--session-id" not in err, (
+        "banner still renders a launch card for an engine that no longer exists"
+    )
+    assert "/shipwright-run" in err, "banner must tell the user how to resume"
+    assert "IN PROGRESS" in err
+
+
+def test_stale_multi_session_config_gets_a_migration_banner(v2_project, capsys):
+    """A run config left on the removed mode must be named, not silently summarised."""
+    cfg = _read_cfg(v2_project)
+    cfg["mode"] = "multi_session"
+    (v2_project / "shipwright_run_config.json").write_text(
+        json.dumps(cfg, indent=2), encoding="utf-8",
+    )
+
+    master_stop_check.run(v2_project)
+    err = capsys.readouterr().err
+
+    assert "REMOVED" in err
+    assert '"mode": "single_session"' in err, "banner must give the one-line fix"
+    assert "migrations/multi-session-to-single-session.md" in err
 
 
 def test_complete_banner(v2_project, capsys):
