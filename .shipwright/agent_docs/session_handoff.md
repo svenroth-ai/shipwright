@@ -1,11 +1,3 @@
----
-canon_generated: true
-run_id: "iterate-2026-07-14-phase-invocation-mode"
-phase: "iterate"
-reason: "iterate: phase invocation-mode from dispatch token"
-timestamp: "2026-07-14T23:08:05.857788+00:00"
----
-
 # Session Handoff
 
 > Auto-generated 2026-07-14 23:08:05 UTC
@@ -14,19 +6,18 @@ timestamp: "2026-07-14T23:08:05.857788+00:00"
 
 - **Session ID**: e5a4eb07-e36d-4d16-9290-2c48215b6b78
 - **Timestamp**: 2026-07-14 23:08:05 UTC
-- **Reason**: iterate: phase invocation-mode from dispatch token
+- **Reason**: post-finalization fixups: agent-doc budget trim
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-14-sweep-drift-dismiss-loss
-- **Date**: 2026-07-14T20:05:39.541225Z
+- **Run ID**: iterate-2026-07-14-phase-invocation-mode
+- **Date**: 2026-07-14T23:08:22.204756Z
 - **Type**: bug
 - **Complexity**: medium
-- **Branch**: iterate/sweep-drift-dismiss-loss
-- **ADR**: iterate-2026-07-14-sweep-drift-dismiss-loss
-- **Description**: The triage outbox sweep silently destroyed operator dismisses: an append stranded in main's tracked triage.jsonl reached no branch, so a status for it looked like an orphan and the #303 quarantine deleted it while reporting success — the item resurrected on the board after every dismiss (webui, trg-6db81c59). The sweep now plans a main-tree drift adoption read-only, decides against the log it would produce, and only then routes the drift into the outbox and restores main's log to HEAD via git; decide() takes the append ids known from main so a legitimate status is never quarantined, unplaceable fails closed, and quarantine/adoption counts reach the operator.
+- **Branch**: iterate/phase-invocation-mode
+- **ADR**: iterate-2026-07-14-phase-invocation-mode
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-14-sweep-drift-dismiss-loss.md
+- **Spec**: .shipwright/planning/iterate/2026-07-14-phase-invocation-mode.md
 
 ## Current Iterate Progress
 
@@ -51,7 +42,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Git State
 
 - **Branch**: iterate/phase-invocation-mode
-- **Last Commit**: d20415d2 chore(triage): sweep 2 outbox append(s) into branch
+- **Last Commit**: 7abf260e fix(phases)!: detect invocation mode from the dispatch token, not the never-advanced v1 current_step (#369 follow-up)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
