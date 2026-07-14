@@ -46,7 +46,6 @@
     ],
     "test_completeness": {
       "status": "complete",
-      "untested_testable": 0,
       "behaviors": [
         {
           "id": 1,
@@ -154,9 +153,20 @@
           "id": 18,
           "behavior": "terminal/markdown/HTML renders are byte-unchanged by the new field",
           "disposition": "untestable",
-          "evidence": "reason_code=covered-by-existing-test \u2014 the test_render_snapshots.py goldens pass unchanged, which IS the assertion"
+          "evidence": "test_render_snapshots.py goldens pass unchanged \u2014 the new field is machine metadata; adding it changed no rendered row, and the existing golden IS the assertion.",
+          "reason_code": "covered-by-existing-test"
         }
-      ]
+      ],
+      "counts": {
+        "testable": 17,
+        "tested": 17,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 9,
+        "covered_acs": 9
+      }
     }
   },
   "coverage": {
