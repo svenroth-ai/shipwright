@@ -116,7 +116,14 @@
           "disposition": "tested",
           "evidence": "test_a_status_whose_append_exists_nowhere_is_still_quarantined + the surface runner's GHOST_ID check"
         }
-      ]
+      ],
+      "counts": {
+        "testable": 12,
+        "tested": 12,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": "AC1-AC6 of the iterate spec, plus the six behaviors the external + internal reviews added (EOL reflow, block-mutates-nothing, crash replay, restore race, unrepairable-must-not-block, genuine-orphan still quarantined)."
     }
   },
   "coverage": {
