@@ -100,9 +100,9 @@ def _isolate_github_pr_api(monkeypatch):
 def _sweep_tests_unset_ci(request, monkeypatch):
     # Sweep/D2V suites run the REAL outbox sweep, which no-ops under `$CI`
     # (`ci_without_optin` safety); they assert it COMMITS, so must run as a local
-    # iterate ($CI unset). `$CI=true` on GitHub Actions → 44 false skips (PR #172).
-    # A guard test re-sets CI in its own body (its setenv runs after this fixture).
-    if request.path.name.startswith(("test_sweep_outbox", "test_d2v_empirical_gate")):
+    # iterate ($CI unset). `$CI=true` → 44 false skips (PR #172). Prefix = the whole
+    # test_sweep* FAMILY. A guard test re-sets CI in its own body (after this fixture).
+    if request.path.name.startswith(("test_sweep", "test_d2v_empirical_gate")):
         monkeypatch.delenv("CI", raising=False)
 
 

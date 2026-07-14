@@ -2,7 +2,8 @@
 
 Split from :mod:`lib.sweep_outbox` (D2 review cascade — FIX B, doubt-1) so the
 sweep orchestrator stays under the 300-LOC guideline and the GC membership rule
-is unit-testable in isolation.
+is unit-testable in isolation. :func:`delivered_membership` reads ``origin``'s blob
+(the one git call here); the membership RULE below it stays pure.
 
 The GC drops an outbox line ONLY once it is reachable from ``origin/<default>``.
 Historically that was a raw stripped-text comparison. FIX B hardens it: an
@@ -16,6 +17,22 @@ text-membership match. A non-delivered id always survives (fail-safe); a missing
 from __future__ import annotations
 
 import json
+from pathlib import Path
+
+from lib.churn_merge import TRIAGE_LOG
+from lib.sweep_text import normalized_set
+from lib.worktree_isolation import run_git
+
+
+def delivered_membership(main_root: Path, default_branch: str) -> tuple[set[str], set[str]]:
+    """Read ``origin/<default>:<triage>`` and parse it into the ``(append_ids, text)``
+    GC anchors. An outbox line is safe to drop only once reachable from ``origin``.
+    ``check=False`` so a missing ref / file yields ``(set(), set())`` — nothing GC'd
+    (fail-safe; a non-delivered id always survives)."""
+    proc = run_git(["show", f"origin/{default_branch}:{TRIAGE_LOG}"], cwd=main_root, check=False)
+    if proc.returncode != 0:
+        return set(), set()
+    return parse_delivered(normalized_set(proc.stdout))
 
 
 def parse_delivered(normalized_lines: set[str]) -> tuple[set[str], set[str]]:

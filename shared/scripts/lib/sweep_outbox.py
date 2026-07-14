@@ -9,17 +9,22 @@ committed on the ``iterate/<slug>`` branch — so they ride the PR to ``origin``
 and ``main`` never gets a local fold commit (which previously orphaned on local
 main and piled up; Codex Q1).
 
-Two invariants make this loss-proof:
+Three invariants make this loss-proof:
 
 * **Whole-section lock (Codex Q4):** the canonical triage ``_FileLock`` is held
-  across read-outbox -> read-worktree-tracked -> materialize -> branch-commit ->
-  GC. A concurrent background producer appending to the outbox serializes
-  against the ENTIRE sweep — it is never read-then-lost.
+  across adopt-drift -> read-outbox -> read-worktree-tracked -> materialize ->
+  branch-commit -> GC. A concurrent background producer appending to the outbox
+  serializes against the ENTIRE sweep — it is never read-then-lost.
 * **Origin-delivered GC (Codex unlisted failure mode):** an outbox line is
   dropped ONLY once present in ``origin/<default>``'s tracked log — by semantic
   ``id`` for append lines (FIX B) + normalized text for status (see
   :mod:`lib.sweep_gc`). A just-swept line stays until origin-delivered; re-sweeping
   is harmless (``merge=union`` + dedup → exactly-once). NEVER reset-after-read.
+* **No undelivered channel (iterate-2026-07-14-sweep-drift-dismiss-loss):** an
+  append that lands in MAIN's TRACKED log is routed into the outbox first
+  (:mod:`lib.sweep_drift`) — else it reaches no branch, its ``status`` looks like an
+  orphan, and the quarantine DESTROYS the operator's dismiss. Nothing may be
+  quarantined while its append is merely undelivered.
 
 The EOL-normalize + dedup + validate pipeline (now in :mod:`lib.sweep_quarantine`,
 which also quarantines orphan-status lines) is byte-compatible with
@@ -31,7 +36,6 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
-from dataclasses import dataclass, field
 from pathlib import Path
 
 # Wire up shared/scripts so sibling lib/ + triage import regardless of caller.
@@ -42,45 +46,15 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 import triage  # noqa: E402  — canonical lock + outbox path SSoT
 from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.churn_merge import TRIAGE_LOG  # noqa: E402
-from lib.sweep_gc import is_delivered, parse_delivered  # noqa: E402
+from lib.sweep_drift import commit_main_tracked_drift, plan_main_tracked_drift  # noqa: E402
+from lib.sweep_gc import delivered_membership, is_delivered  # noqa: E402
 from lib.sweep_quarantine import append_quarantine, decide as quarantine_decide, quarantine_path  # noqa: E402
+from lib.sweep_result import SweepResult, sweep_warnings  # noqa: E402,F401  (re-export: callers import both from here)
+from lib.sweep_text import normalize_lines, read_text_verbatim  # noqa: E402
 from lib.worktree_isolation import run_git  # noqa: E402
 
 #: Truthy spellings of ``$CI`` that disable the auto-commit unless ``allow_ci``.
 _CI_TRUTHY = frozenset({"1", "true", "yes", "on"})
-
-
-@dataclass
-class SweepResult:
-    """Outcome of :func:`sweep_outbox_to_branch`.
-
-    ``status`` ∈ {``committed``, ``no_change``, ``skipped``, ``invalid``,
-    ``error``}. ``reason`` carries the guard name for ``skipped`` / ``error``;
-    ``swept`` is the count of genuinely-new (deduped) lines folded into the
-    branch on a ``committed`` run; ``gc_dropped`` is the count of outbox lines
-    dropped because they are already origin-delivered; ``quarantined`` is the
-    count of orphan-status lines moved to the quarantine log this run; ``errors``
-    holds validator messages for ``invalid``.
-    """
-
-    status: str
-    reason: str = ""
-    swept: int = 0
-    gc_dropped: int = 0
-    quarantined: int = 0
-    commit_subject: str = ""
-    errors: list[str] = field(default_factory=list)
-
-    def to_dict(self) -> dict:
-        return {
-            "status": self.status,
-            "reason": self.reason,
-            "swept": self.swept,
-            "gc_dropped": self.gc_dropped,
-            "quarantined": self.quarantined,
-            "commit_subject": self.commit_subject,
-            "errors": self.errors,
-        }
 
 
 def _ci_active() -> bool:
@@ -110,58 +84,6 @@ def _has_staged_changes(root: Path) -> bool:
     a ``git commit -- <triage>`` interacting with a user's staged WIP (AC-3 of
     reconcile)."""
     return run_git(["diff", "--cached", "--quiet"], cwd=root, check=False).returncode != 0
-
-
-def _normalize_lines(raw: str) -> tuple[list[str], str]:
-    """Split ``raw`` into stripped-of-CRLF lines + the file's EOL style.
-
-    IDENTICAL idiom to :mod:`lib.reconcile_triage` (Codex Q3): strip a trailing
-    ``\\r`` per line, drop the artifact empty line from a trailing newline.
-    Returns ``(lines, eol)`` where ``eol`` is ``\\r\\n`` iff ``raw`` contained one.
-    """
-    eol = "\r\n" if "\r\n" in raw else "\n"
-    lines = [ln[:-1] if ln.endswith("\r") else ln for ln in raw.split("\n")]
-    if lines and lines[-1] == "":
-        lines = lines[:-1]
-    return lines, eol
-
-
-def _normalized_set(text: str) -> set[str]:
-    """Stripped, CRLF-absorbed, non-blank line set of ``text`` (empty if falsy)."""
-    if not text:
-        return set()
-    lines, _ = _normalize_lines(text)
-    return {ln.strip() for ln in lines if ln.strip()}
-
-
-def _atomic_write(path: Path, text: str) -> None:
-    """Write ``text`` verbatim (UTF-8, no newline translation) durably — tmp +
-    fsync + os.replace — so a reader never sees a torn file and a crash never
-    drops the content (shared :func:`durable_atomic_write`)."""
-    durable_atomic_write(path, text)
-
-
-def _delivered_membership(main_root: Path, default_branch: str) -> tuple[set[str], set[str]]:
-    """Fetch ``origin/<default>:<triage>`` and parse it into ``(append_ids, text)``
-    GC anchors (see :func:`lib.sweep_gc.parse_delivered`). An outbox line is safe
-    to drop only once reachable from ``origin``; membership is by semantic id for
-    ``append`` lines (drift-immune, FIX B) and stripped text for status lines.
-    ``check=False`` so a missing ref / file yields ``(set(), set())`` — nothing
-    GC'd (fail-safe; a non-delivered id always survives)."""
-    proc = run_git(
-        ["show", f"origin/{default_branch}:{TRIAGE_LOG}"], cwd=main_root, check=False
-    )
-    if proc.returncode != 0:
-        return set(), set()
-    return parse_delivered(_normalized_set(proc.stdout))
-
-
-def _read_text(path: Path) -> str:
-    """Read ``path`` verbatim (no newline translation); empty string if absent."""
-    if not path.exists():
-        return ""
-    with path.open("r", encoding="utf-8", newline="") as fh:
-        return fh.read()
 
 
 def sweep_outbox_to_branch(
@@ -197,16 +119,30 @@ def sweep_outbox_to_branch(
     worktree_triage = worktree_path / TRIAGE_LOG
     lock_path = triage._lock_path(main_root)
 
-    # --- critical section: ONE lock across read->materialize->commit->GC ----
+    # --- critical section: ONE lock across plan->read->materialize->commit->GC
     with triage._FileLock(lock_path):
-        outbox_raw = _read_text(outbox_path)
-        outbox_lines_norm, outbox_eol = _normalize_lines(outbox_raw)
-        outbox_lines = [ln for ln in outbox_lines_norm if ln.strip()]
+        # An append stranded in MAIN's TRACKED log is delivered by NOTHING, and a `status`
+        # for it then looks like an orphan — which is how the sweep used to eat operator
+        # dismisses. PLAN its adoption (read-only) so it can ride the branch like any other
+        # buffered append. A refusal means the repair does not understand main's state:
+        # touch NOTHING and surface it (sweep_drift).
+        plan = plan_main_tracked_drift(main_root, outbox_path)
+        if plan.status == "refused":
+            return SweepResult(status="skipped", reason=plan.reason)
+
+        outbox_raw = read_text_verbatim(outbox_path)
+        outbox_lines_norm, outbox_eol = normalize_lines(outbox_raw)
+        # The planned drift joins the outbox VIRTUALLY: the sweep decides against the log it
+        # WOULD produce, and only then does anything get written. Adopting first would move
+        # the operator's data out of the tracked log into a gitignored buffer and only then
+        # discover the sweep must abort — main would look clean while the sole copy sat in a
+        # file `git clean -x` deletes (code review, high).
+        outbox_lines = [ln for ln in outbox_lines_norm if ln.strip()] + plan.fresh
         if not outbox_lines:
             return SweepResult(status="no_change", reason="empty_outbox")
 
-        worktree_raw = _read_text(worktree_triage)
-        worktree_lines_norm, wt_eol = _normalize_lines(worktree_raw)
+        worktree_raw = read_text_verbatim(worktree_triage)
+        worktree_lines_norm, wt_eol = normalize_lines(worktree_raw)
         # The branch log uses the worktree file's EOL style (LF for a fresh
         # checkout); fall back to LF when the worktree log is absent/empty.
         eol = wt_eol if worktree_raw else "\n"
@@ -214,10 +150,21 @@ def sweep_outbox_to_branch(
         # Materialize + classify. Orphan-status lines that ORIGINATE IN THE OUTBOX are
         # QUARANTINED rather than hard-blocking the whole sweep (genuine corruption —
         # bad header / dup append / invalid JSON — still fails closed). See sweep_quarantine.
-        decision = quarantine_decide(worktree_lines_norm, outbox_lines, eol)
+        decision = quarantine_decide(
+            worktree_lines_norm, outbox_lines, eol,
+            known_append_ids=plan.known_append_ids,
+        )
         if decision.action == "block":
-            # Do NOT commit, do NOT touch the outbox — surface for the operator.
+            # Nothing has been mutated yet — not the outbox, not main's tracked log.
             return SweepResult(status="invalid", errors=decision.errors)
+
+        # The decision holds: NOW make the adoption real (durable outbox write, then the
+        # git restore of main's tracked log).
+        adopted, adopt_note = 0, ""
+        if plan.status == "adoptable":
+            done = commit_main_tracked_drift(plan, main_root, outbox_path)
+            adopted, adopt_note = done.adopted, done.reason
+
         quarantined = 0
         if decision.action == "quarantine":
             append_quarantine(
@@ -238,10 +185,10 @@ def sweep_outbox_to_branch(
         committed_subject = ""
         if deduped_text != worktree_raw:
             worktree_triage.parent.mkdir(parents=True, exist_ok=True)
-            _atomic_write(worktree_triage, deduped_text)
+            durable_atomic_write(worktree_triage, deduped_text)
             add = run_git(["add", "--", TRIAGE_LOG], cwd=worktree_path, check=False)
             if add.returncode != 0:
-                return SweepResult(status="error", reason=f"add_failed: {add.stderr.strip()[:300]}")
+                return SweepResult(status="error", reason=f"add_failed: {add.stderr.strip()[:300]}", adopted=adopted)
             # FIX D (D2 review cascade): gate the commit on a REAL staged delta.
             # ``deduped_text != worktree_raw`` can be EOL-only (materialized LF vs
             # a CRLF-checked-out log) that git's index — governed by autocrlf —
@@ -264,16 +211,16 @@ def sweep_outbox_to_branch(
                         cwd=worktree_path, check=False, timeout=120.0,
                     )
                 except subprocess.TimeoutExpired:
-                    return SweepResult(status="error", reason="commit_timeout")
+                    return SweepResult(status="error", reason="commit_timeout", adopted=adopted)
                 if commit.returncode != 0:
-                    return SweepResult(status="error", reason=f"commit_failed: {commit.stderr.strip()[:300]}")
+                    return SweepResult(status="error", reason=f"commit_failed: {commit.stderr.strip()[:300]}", adopted=adopted)
                 committed_subject = subject
 
         # --- GC (still under the lock): drop ONLY origin-delivered lines ----
         # Survivors keep the OUTBOX's OWN EOL (gitignored → no cross-platform
         # rewrite; OpenAI review). FIX B: membership is by semantic ``id`` for
         # append lines (drift-immune) + stripped text for status/unparseable lines.
-        delivered_ids, delivered_text = _delivered_membership(main_root, default_branch)
+        delivered_ids, delivered_text = delivered_membership(main_root, default_branch)
         survivors = [
             ln for ln in outbox_lines
             if not is_delivered(ln.strip(), delivered_ids, delivered_text)
@@ -283,18 +230,18 @@ def sweep_outbox_to_branch(
         # this run (``outbox_lines`` is already the trimmed set).
         if gc_dropped or quarantined:
             survivor_text = (outbox_eol.join(survivors) + outbox_eol) if survivors else ""
-            _atomic_write(outbox_path, survivor_text)
+            durable_atomic_write(outbox_path, survivor_text)
 
         if not committed_subject:
             # Nothing folded into the branch (every outbox line already tracked);
             # report no_change unless the GC alone trimmed the outbox.
             status = "committed" if gc_dropped else "no_change"
             return SweepResult(
-                status=status, reason="" if gc_dropped else "no_branch_change",
-                swept=0, gc_dropped=gc_dropped, quarantined=quarantined,
+                status=status, reason=adopt_note or ("" if gc_dropped else "no_branch_change"),
+                swept=0, gc_dropped=gc_dropped, quarantined=quarantined, adopted=adopted,
             )
 
         return SweepResult(
-            status="committed", swept=swept, gc_dropped=gc_dropped,
-            quarantined=quarantined, commit_subject=committed_subject,
+            status="committed", swept=swept, gc_dropped=gc_dropped, reason=adopt_note,
+            quarantined=quarantined, adopted=adopted, commit_subject=committed_subject,
         )

@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-14T20:13:46.958736Z. Items waiting for triage decision.
+> Auto-generated 2026-07-14T20:05:13.818463Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
 - Total: 291
-- Triage: 3 | Promoted: 1 | Dismissed: 286 | Snoozed: 1
+- Triage: 4 | Promoted: 1 | Dismissed: 285 | Snoozed: 1
 
-## Top 3 items (severity-sorted)
+## Top 4 items (severity-sorted)
 
 ### Source: compliance (1 item)
 
@@ -36,4 +36,11 @@
 - **Decompose FR-01.10 / FR-01.07 into sub-FRs for precise feature traceability** `id=trg-cced399c | severity=low | kind=improvement → P3/engineering`
   - Follow-up to iterate-2026-06-30-fr-retag-honesty. Introduce sub-FRs (e.g. FR-01.10.x for Control Grade / RTM / SBOM / d…
   - Promote: `triage_promote.py --id trg-cced399c --task-ref EXT:<ref>`
+
+### Source: operator (1 item)
+
+<a id="trg-bc75d6fe"></a>
+- **Sweep quarantines a dismiss forever when the append lives only in main's tracked working tree (silent data loss + resur…** `id=trg-bc75d6fe | severity=high | kind=bug → P1/engineering`
+  - Reproduced live in shipwright-webui on 2026-07-14: triage item trg-6db81c59 kept resurfacing on the board after every d…
+  - Promote: `triage_promote.py --id trg-bc75d6fe --task-ref EXT:<ref>`
 

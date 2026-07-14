@@ -80,7 +80,7 @@ def write_outbox(work: Path, *lines: str) -> None:
 
 def make_worktree(work: Path, slug: str) -> Path:
     wt = work / ".worktrees" / slug
-    git(work, "worktree", "add", str(wt), "-b", f"iterate/{slug}", "main")
+    git(work, "worktree", "add", str(wt), "-b", f"iterate/{slug}", "origin/main")
     return wt
 
 

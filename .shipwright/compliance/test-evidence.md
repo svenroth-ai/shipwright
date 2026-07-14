@@ -1,6 +1,6 @@
 # Test Evidence Report
 
-Generated: 2026-07-14T18:24:23.533942+00:00
+Generated: 2026-07-14T20:05:09.348996+00:00
 
 ## Summary
 
@@ -14,7 +14,7 @@ Generated: 2026-07-14T18:24:23.533942+00:00
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | iterate complete: multi-session removal | [iterate](traceability-matrix.md#evt-a5b70713) | — | +0 | — | — | 2026-07-14 |
+| 1 | Sweep drift/dismiss-loss fix complete; PR pending | [iterate](traceability-matrix.md#evt-a670d8da) | — | +0 | — | — | 2026-07-14 |
 | 2 | Cross-repo output contracts: shipwright-grade's ReportModel (grade.py --format json) and shipwright-adopt's snapshot.json are rendered field-for-field by the Command Center WebUI. Both now carry a schema_version (major=breaking, the consumer must refuse to render; minor=additive), both SKILL.mds state the contract and name the consumer, and a contract gate per producer diffs the emitted JSON wire-shape against the fixture published on origin/main -- a baseline a PR cannot rewrite -- derives the bump that diff obliges, and fails until it has been performed. Also fixes a dead detector found while pinning the contract: adopt's git.major_refactor_commits returned [] for every repository. | [iterate](traceability-matrix.md#evt-edcf1064) | — | +0 | — | — | 2026-07-14 |
 | 3 | The automatic code-review AI now uses the newer, cheaper GPT-5.6 Terra Pro model on the OpenAI side instead of GPT-5.4; how reviews run is otherwise unchanged. | [iterate](traceability-matrix.md#evt-d1e4d49d) | unit | +0 | 37/37 | PASS | 2026-07-12 |
 | 4 | Widen phase_completed dedup to (phase, splitId) so multi-split phases record per-split ends; promote splitId to a top-level field; de-dup 4 phase-count/latest-ts consumers; plan SKILL emits --split-id. | [iterate](traceability-matrix.md#evt-0a7b22e5) | — | +0 | — | — | 2026-07-11 |

@@ -1,11 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-14 20:22 UTC | Session: 8092ea86-f095-4458-9979-ba3fd7b0c1d7 | Run: iterate-2026-07-14-remove-multi-session
+> Updated: 2026-07-14 20:05 UTC | Session: 79ea0bcc-7295-42cf-89d4-a1b2ab8b481c | Run: iterate-2026-07-14-sweep-drift-dismiss-loss
 
 ## Recent Changes (298 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| change | iterate complete: multi-session removal | 0/0 |  | FR-01.01 | 2026-07-14 |
+| bug | Sweep drift/dismiss-loss fix complete; PR pending | 0/0 |  | tooling | 2026-07-14 |
 | change | Cross-repo output contracts: shipwright-grade's ReportModel (grade.py --format json) and shipwright-adopt's snapshot.json are rendered field-for-field by the Command Center WebUI. Both now carry a schema_version (major=breaking, the consumer must refuse to render; minor=additive), both SKILL.mds state the contract and name the consumer, and a contract gate per producer diffs the emitted JSON wire-shape against the fixture published on origin/main -- a baseline a PR cannot rewrite -- derives the bump that diff obliges, and fails until it has been performed. Also fixes a dead detector found while pinning the contract: adopt's git.major_refactor_commits returned [] for every repository. | 0/0 |  |  | 2026-07-14 |
 | change | external review GPT default -> gpt-5.6-terra-pro | 37/37 |  | tooling | 2026-07-12 |
 | change | Widen phase_completed dedup to (phase, splitId) so multi-split phases record per-split ends; promote splitId to a top-level field; de-dup 4 phase-count/latest-ts consumers; plan SKILL emits --split-id. | 0/0 |  | infra | 2026-07-11 |
