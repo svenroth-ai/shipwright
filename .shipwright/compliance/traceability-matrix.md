@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-12T18:05:37.884990+00:00
+Generated: 2026-07-14T16:33:13.466664+00:00
 
 ## Requirements Coverage
 
@@ -20,6 +20,7 @@ Generated: 2026-07-12T18:05:37.884990+00:00
 | [FR-01.12](../../.shipwright/planning/01-adopted/spec.md#fr-0112)<a id="rtm-fr-0112"></a> | Local browser preview — start dev server for the target project and show the URL. | May | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7) | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | — | COVERED |
 | [FR-01.13](../../.shipwright/planning/01-adopted/spec.md#fr-0113)<a id="rtm-fr-0113"></a> | Onboard an existing (brownfield) repository into the Shipwright SDLC; analyzes codebase, generates CLAUDE.md, agent_docs, planning specs, compliance artifacts, suggest_iterate hook, and an E2E baseline; scaffolds `.env.local` with the profile's framework keys. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-273bbb54](#evt-273bbb54), [evt-b0b9c422](#evt-b0b9c422), [evt-aab7ddbd](#evt-aab7ddbd) +5 | 225/225 → 304/304 | 2026-05-16 ([iter](#evt-38e36ac6)) | — | COVERED |
 | [FR-01.14](../../.shipwright/planning/01-adopted/spec.md#fr-0114)<a id="rtm-fr-0114"></a> | Pre-backlog triage buffer — findings from local hooks/scans/audits and from GitHub's automated runs (code-scanning, Dependabot, secret-scanning alerts, failed CI runs) land in a per-project `.shipwright/triage.jsonl` store via idempotent producers and surface in the Command Center WebUI Triage tab with operator-driven promote/dismiss, keeping the ExternalTask list curated instead of flooded. | Must | [evt-3f488ddc](#evt-3f488ddc), [evt-32f2f1f4](#evt-32f2f1f4), [evt-84dbdf5e](#evt-84dbdf5e), [evt-e14e5f26](#evt-e14e5f26) +5 | 1642/1649 → 3629/3641 | 2026-07-03 ([iter](#evt-5755f932)) | ✅ | COVERED |
+| [FR-01.15](../../.shipwright/planning/01-adopted/spec.md#fr-0115)<a id="rtm-fr-0115"></a> | The two artifacts the Command Center WebUI renders field-for-field — `/shipwright-grade`'s report view-model (`grade.py --format json`) and `/shipwright-adopt`'s `.shipwright/adopt/snapshot.json` — are versioned output contracts (`schema_version`, `major.minor`: major = breaking, the consumer must refuse to render; minor = additive, the consumer keeps working). Each producer's SKILL.md states the contract and names the consumer, and a contract gate per producer diffs the emitted payload against the fixture published on `origin/main` and fails until the bump that diff obliges has been performed — so a shape change cannot reach the consumer silently. | Must | — | — | — | ⚠️ needs re-verification | NOT VERIFIED |
 
 > **Legend** — *Tests*: `passed/total` of the latest event that ran tests; `first → latest` shows progression across tested runs. *Last tested*: date of that event (`iter` / `build` source); age is informational, **not a penalty**. *Reconciled?*: ✅ behavior-affected FR re-verified since its last change · ⚠️ needs re-verification (behavior changed, not yet re-tested) · — not behavior-touched.
 
@@ -27,6 +28,7 @@ Generated: 2026-07-12T18:05:37.884990+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-edcf1064"></a>Cross-repo output contracts: shipwright-grade's ReportModel (grade.py --format json) and shipwright-adopt's snapshot.json are rendered field-for-field by the Command Center WebUI. Both now carry a schema_version (major=breaking, the consumer must refuse to render; minor=additive), both SKILL.mds state the contract and name the consumer, and a contract gate per producer diffs the emitted JSON wire-shape against the fixture published on origin/main -- a baseline a PR cannot rewrite -- derives the bump that diff obliges, and fails until it has been performed. Also fixes a dead detector found while pinning the contract: adopt's git.major_refactor_commits returned [] for every repository. | iterate | change |  | — | — | 2026-07-14 |
 | <a id="evt-d1e4d49d"></a>The automatic code-review AI now uses the newer, cheaper GPT-5.6 Terra Pro model on the OpenAI side instead of GPT-5.4; how reviews run is otherwise unchanged. | iterate | change |  | 37/37 | — | 2026-07-12 |
 | <a id="evt-e3cdb1ef"></a>The iterate now records how long each of its 5 steps took, so the Command Center's iterate progress bar can show real time-per-step. | iterate | feature |  | 22/22 | — | 2026-07-11 |
 | <a id="evt-0a7b22e5"></a>Widen phase_completed dedup to (phase, splitId) so multi-split phases record per-split ends; promote splitId to a top-level field; de-dup 4 phase-count/latest-ts consumers; plan SKILL emits --split-id. | iterate | change |  | — | — | 2026-07-11 |
@@ -330,12 +332,20 @@ Generated: 2026-07-12T18:05:37.884990+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 296 |
-| Requirements total | 14 |
-| Requirements verified | 14/14 |
-| Must-have verified | 11/11 |
+| Iterate changes | 297 |
+| Requirements total | 15 |
+| Requirements verified | 14/15 |
+| Must-have verified | 11/12 |
 | Total review findings | 66 |
 | Unresolved findings | 24 |
+
+### FRs without tests
+
+- [FR-01.15](../../.shipwright/planning/01-adopted/spec.md) (Must): The two artifacts the Command Center WebUI renders field-for-field — `/shipwrigh
+
+### FRs needing re-verification
+
+- [FR-01.15](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run
 
 ### FRs with open triage items
 

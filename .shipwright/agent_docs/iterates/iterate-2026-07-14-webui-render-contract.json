@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-07-14-webui-render-contract",
+  "date": "2026-07-14T16:33:50.859925Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/webui-render-contract",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/2026-07-14-webui-render-contract.md",
+  "adr": "iterate-2026-07-14-webui-render-contract",
+  "description": "Cross-repo output contracts for the two artifacts the Command Center WebUI renders field-for-field (grade's ReportModel, adopt's snapshot.json): schema_version on both, the contract stated in both SKILL.mds, and a per-producer gate whose baseline is origin/main so the version bump cannot be evaded."
+}

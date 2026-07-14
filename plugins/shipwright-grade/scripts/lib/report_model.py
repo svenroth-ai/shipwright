@@ -9,6 +9,18 @@ n/a semantics (GPT #12): a dimension with ``score is None`` renders **N/A**
 (never ``0/15``), is excluded from the score denominator (the engine already
 does this), is listed under *controls Shipwright would light up*, and is never
 coerced to a failing 0.
+
+⚠️ **CROSS-REPO CONTRACT — an external consumer renders this model.** The Command
+Center WebUI (github.com/svenroth-ai/shipwright-webui) renders the ``ReportModel``
+graph *field-for-field* on its "Grade your repo" screen, so that screen and the
+downloadable HTML report cannot tell different stories. It reaches the WebUI as
+``grade.py --format json`` (literally ``json.dumps(dataclasses.asdict(model))``),
+so **every field here is on the wire**.
+
+A field renamed or dropped here does NOT fail loudly over there — it renders a
+half-empty card, or a plausible-but-wrong one. Before you change this shape, read
+the "Cross-repo contract" section of ``skills/grade/SKILL.md``. The gate in
+``tests/test_report_model_contract.py`` will stop you and tell you what to do.
 """
 
 from __future__ import annotations
@@ -50,6 +62,23 @@ _DIM_META: dict[str, dict[str, Any]] = {
 }
 
 _GIT_DERIVED = frozenset({"requirement_traceability", "change_traceability"})
+
+# The version of the wire shape this model serializes to (see the module docstring).
+# MAJOR = breaking for the consumer (a field removed, renamed or retyped) — the WebUI
+# must REFUSE to render an unrecognised major rather than half-render it. MINOR =
+# additive (a new field) — the WebUI keeps rendering and ignores what it doesn't know,
+# so an addition must NOT force a WebUI release, or people would stop bumping at all.
+#
+# You are not expected to remember to bump this: tests/test_report_model_contract.py
+# diffs the live payload against the contract fixture as of origin/main, derives the
+# bump that diff obliges, and fails until it has been performed.
+SCHEMA_VERSION = "1.0"
+
+# The closed value domain of DimensionView.status. The WebUI BRANCHES on these: "n/a"
+# draws as absent evidence (a dashed track), never as a zero-score bar. A 4th value
+# would break its rendering while leaving every field name and type untouched — the
+# one break the structural gate cannot see — so it is pinned separately.
+STATUS_VOCABULARY = ("gap", "n/a", "ok")
 
 # The honest-ceiling note is mode-dependent: an authoritative grade is NOT an
 # "estimate from the outside" — it is computed from the repo's own Shipwright
@@ -119,6 +148,10 @@ class ReportModel:
     network_enabled: bool = False
     network_note: str = ""
     network_enrichments: tuple[str, ...] = ()
+    # Wire-shape version for the external consumer. Last, and defaulted, so every
+    # existing constructor keeps working (a defaulted field may not precede a
+    # non-defaulted one) and it lands in asdict() → --format json for free.
+    schema_version: str = SCHEMA_VERSION
 
 
 def _provenance(

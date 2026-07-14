@@ -1,0 +1,157 @@
+{
+  "consumer": "shipwright-webui - Command Center adopt screen ('what's already here')",
+  "contract": {
+    "skeleton": {
+      "ci_pipeline": {
+        "provider": "string|null",
+        "workflows": [
+          "string"
+        ]
+      },
+      "commands": {
+        "build": "string|null",
+        "dev": "string|null",
+        "lint": "string|null",
+        "test": "string|null"
+      },
+      "conventions": {
+        "editorconfig": {
+          "__kind__": "object|null",
+          "end_of_line": "string",
+          "indent_size": "string",
+          "indent_style": "string"
+        },
+        "formatter": "string|null",
+        "linter": "string|null",
+        "python_style": "string|null",
+        "tsconfig_strict": "boolean",
+        "typescript": "boolean"
+      },
+      "excludes": [
+        "string"
+      ],
+      "features": [
+        {
+          "confidence": "number",
+          "fr_id": "string",
+          "framework": "string",
+          "method": "string",
+          "route": "string",
+          "source_file": "string"
+        }
+      ],
+      "folders": {
+        "layers": [
+          {
+            "name": "string",
+            "paths": [
+              "string"
+            ]
+          }
+        ],
+        "loc_by_layer": "<opaque:object>"
+      },
+      "git": {
+        "commits_total": "number",
+        "contributors": [
+          "string"
+        ],
+        "contributors_total": "number",
+        "first_commit": "string",
+        "major_refactor_commits": [
+          {
+            "author": "string",
+            "date": "string",
+            "files_changed": "number",
+            "sha": "string",
+            "subject": "string"
+          }
+        ]
+      },
+      "nested_projects": [
+        {
+          "markers": [
+            "string"
+          ],
+          "path": "string",
+          "reason": "string"
+        }
+      ],
+      "profile": {
+        "candidates": [
+          {
+            "matched_deps": [
+              "string"
+            ],
+            "name": "string",
+            "score": "number"
+          }
+        ],
+        "confidence": "number",
+        "matched": "string",
+        "source": "string"
+      },
+      "project_root": "string",
+      "schema_version": "string",
+      "stack": {
+        "auth": "<opaque:object>",
+        "backend": "<opaque:object>",
+        "database": "<opaque:object>",
+        "frontend": "<opaque:object>",
+        "multi_service": {
+          "confidence": "string",
+          "detected": "boolean",
+          "evidence": [
+            "string"
+          ],
+          "services": [
+            {
+              "dev_command": "string",
+              "framework": "string",
+              "name": "string",
+              "proxy_target": "string|null",
+              "root": "string"
+            }
+          ]
+        },
+        "primary_language": "string",
+        "runtime": "<opaque:object>",
+        "signals": [
+          "string"
+        ]
+      },
+      "test_frameworks": {
+        "coverage_tool": "string|null",
+        "db": {
+          "__kind__": "object|null",
+          "command": "string",
+          "framework": "string"
+        },
+        "e2e": {
+          "__kind__": "object|null",
+          "command": "string",
+          "framework": "string"
+        },
+        "integration": {
+          "__kind__": "object|null",
+          "command": "string",
+          "framework": "string"
+        },
+        "unit": {
+          "__kind__": "object|null",
+          "command": "string",
+          "framework": "string"
+        }
+      }
+    }
+  },
+  "opaque": [
+    "stack.auth",
+    "stack.backend",
+    "stack.database",
+    "stack.frontend",
+    "stack.runtime",
+    "folders.loc_by_layer"
+  ],
+  "schema_version": "1.0"
+}

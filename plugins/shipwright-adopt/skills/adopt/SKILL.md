@@ -92,8 +92,8 @@ uv run "${CLAUDE_PLUGIN_ROOT}/scripts/tools/analyze_codebase.py" \
   --output <cwd>/.shipwright/adopt/snapshot.json
 ```
 
-Full procedure → [references/step-b-codebase-analysis.md](references/step-b-codebase-analysis.md).
-Detector heuristics → [references/codebase-analysis.md](references/codebase-analysis.md).
+Full procedure → [references/step-b-codebase-analysis.md](references/step-b-codebase-analysis.md). Detector heuristics → [references/codebase-analysis.md](references/codebase-analysis.md).
+⚠️ **Cross-repo contract — `snapshot.json` has an EXTERNAL consumer.** The Command Center WebUI ([shipwright-webui](https://github.com/svenroth-ai/shipwright-webui)) renders it field-for-field on its adopt screen; **a change to this shape requires a corresponding WebUI change** (a key renamed or dropped, at any depth, does not fail loudly there — it renders a half-empty card). It is a **versioned contract**, and `tests/test_snapshot_contract.py` enforces the bump against `origin/main`, so you are not asked to remember this → [references/cross-repo-contract.md](references/cross-repo-contract.md).
 
 ### Step B.5 — Playwright Route-Discovery (Layer 1.5, optional)
 
