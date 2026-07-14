@@ -1,45 +1,44 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-14-sweep-drift-dismiss-loss"
+run_id: "iterate-2026-07-14-remove-multi-session"
 phase: "iterate"
-reason: "Sweep drift/dismiss-loss fix complete; PR pending"
-timestamp: "2026-07-14T20:05:13.818463+00:00"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-07-14T20:22:37.991230+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-14 20:05:13 UTC
+> Auto-generated 2026-07-14 20:22:37 UTC
 
 ## Session Info
 
-- **Session ID**: 79ea0bcc-7295-42cf-89d4-a1b2ab8b481c
-- **Timestamp**: 2026-07-14 20:05:13 UTC
-- **Reason**: Sweep drift/dismiss-loss fix complete; PR pending
+- **Session ID**: 8092ea86-f095-4458-9979-ba3fd7b0c1d7
+- **Timestamp**: 2026-07-14 20:22:37 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-14-webui-render-contract
-- **Date**: 2026-07-14T16:33:50.859925Z
-- **Type**: change
+- **Run ID**: iterate-2026-07-14-sweep-drift-dismiss-loss
+- **Date**: 2026-07-14T20:05:39.541225Z
+- **Type**: bug
 - **Complexity**: medium
-- **Branch**: iterate/webui-render-contract
-- **ADR**: iterate-2026-07-14-webui-render-contract
-- **Description**: Cross-repo output contracts for the two artifacts the Command Center WebUI renders field-for-field (grade's ReportModel, adopt's snapshot.json): schema_version on both, the contract stated in both SKILL.mds, and a per-producer gate whose baseline is origin/main so the version bump cannot be evaded.
+- **Branch**: iterate/sweep-drift-dismiss-loss
+- **ADR**: iterate-2026-07-14-sweep-drift-dismiss-loss
+- **Description**: The triage outbox sweep silently destroyed operator dismisses: an append stranded in main's tracked triage.jsonl reached no branch, so a status for it looked like an orphan and the #303 quarantine deleted it while reporting success — the item resurrected on the board after every dismiss (webui, trg-6db81c59). The sweep now plans a main-tree drift adoption read-only, decides against the log it would produce, and only then routes the drift into the outbox and restores main's log to HEAD via git; decide() takes the append ids known from main so a legitimate status is never quarantined, unplaceable fails closed, and quarantine/adoption counts reach the operator.
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-14-webui-render-contract.md
+- **Spec**: .shipwright/planning/iterate/2026-07-14-sweep-drift-dismiss-loss.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/sweep-drift-dismiss-loss
-- **Run ID**: iterate-2026-07-14-sweep-drift-dismiss-loss
-- **Spec**: .shipwright/planning/iterate/2026-07-14-sweep-drift-dismiss-loss.md
+- **Branch**: iterate/remove-multi-session
+- **Run ID**: `iterate-2026-07-14-remove-multi-session`
+- **Spec**: .shipwright/planning/iterate/2026-07-14-remove-multi-session.md
 - **Complexity**: medium
-- **External Review Marker**: missing
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-14T17:02:27)
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -53,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/sweep-drift-dismiss-loss
-- **Last Commit**: 9300552d chore(triage): sweep 6 outbox append(s) into branch
+- **Branch**: iterate/remove-multi-session
+- **Last Commit**: ec628635 Merge remote-tracking branch 'origin/main' into iterate/remove-multi-session
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -72,14 +71,14 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 |-------|------|--------|------|
 | evt-fec83856 | grade_snapshot | — | 2026-07-14 |
 | evt-a670d8da | work_completed | iterate (Sweep drift/dismiss-loss fix complete; PR pending) | 2026-07-14 |
-| evt-df71725d | grade_snapshot | — | 2026-07-14 |
-| evt-edcf1064 | work_completed | iterate (Cross-repo output contracts: shipwright-grade's ReportModel (grade.py --format json) and shipwright-adopt's snapshot.json are rendered field-for-field by the Command Center WebUI. Both now carry a schema_version (major=breaking, the consumer must refuse to render; minor=additive), both SKILL.mds state the contract and name the consumer, and a contract gate per producer diffs the emitted JSON wire-shape against the fixture published on origin/main -- a baseline a PR cannot rewrite -- derives the bump that diff obliges, and fails until it has been performed. Also fixes a dead detector found while pinning the contract: adopt's git.major_refactor_commits returned [] for every repository.) | 2026-07-14 |
-| evt-650ce315 | grade_snapshot | — | 2026-07-12 |
+| evt-e0117fd9 | grade_snapshot | — | 2026-07-14 |
+| evt-3a3f1234 | grade_snapshot | — | 2026-07-14 |
+| evt-83b1496d | grade_snapshot | — | 2026-07-14 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 298
+- **Total work events**: 299
 - **Last iterate**: bug — Sweep drift/dismiss-loss fix complete; PR pending (2026-07-14)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
