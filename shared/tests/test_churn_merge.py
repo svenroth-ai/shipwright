@@ -57,6 +57,20 @@ def test_classify_normalises_backslash_paths() -> None:
     assert blocking == []
 
 
+def test_ci_security_json_in_churn_allowlist() -> None:
+    # The AR-10 CI-security summary is a DERIVED compliance snapshot, regenerated
+    # by the SAME _update_compliance producer as the five compliance MDs — but a
+    # .json, so the .md-shaped DERIVED_MDS missed it and classify() wrongly marked
+    # it BLOCKING, aborting merges (hit merging #374). It must be auto-resolvable.
+    assert ".shipwright/compliance/ci-security.json" in CHURN_ALLOWLIST
+
+
+def test_classify_admits_ci_security_json() -> None:
+    resolvable, blocking = classify([".shipwright/compliance/ci-security.json"])
+    assert resolvable == [".shipwright/compliance/ci-security.json"]
+    assert blocking == []
+
+
 # --- campaign status.json glob predicate (campaign S3) ----------------------
 # status.json lives at a WILDCARD path (one per campaign), so it cannot be a
 # fixed CHURN_ALLOWLIST entry — admitted by the is_campaign_status glob predicate
