@@ -1,0 +1,1 @@
+Per-test execution-evidence reader (JUnit XML / Playwright JSON / Vitest reporter → normalized `test-evidence-index.json`) so requirement coverage is execution-backed: `coverage[layer]=ok` now requires a tagged test that is enabled AND observed passing, so a green-but-skipped required-layer test reads as MISSING, not covered (traceability R1 / G5).

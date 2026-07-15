@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-15 21:17 UTC | Session: a69abb9e-d21a-40a1-846b-13913cca2b09 | Run: iterate-2026-07-15-tag-convention-and-manifest
+> Updated: 2026-07-15 23:14 UTC | Session: a69abb9e-d21a-40a1-846b-13913cca2b09 | Run: iterate-2026-07-15-execution-evidence
 
-## Recent Changes (307 iterations)
+## Recent Changes (308 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | Per-test execution-evidence reader (JUnit/Playwright/Vitest) -> schema-validated fail-closed evidence index joined into the traceability manifest so coverage is execution-backed (R1/G5): enabled+pass=ok, skipped/missing/fail=MISSING; plus an expiring-waiver primitive and a frozen closed-vocab boundary | 1047/1047 |  | compliance | 2026-07-15 |
 | feature | TT1: @FR-XX.YY tag convention + test_links compliance collector + test-traceability.json manifest (schema v2), the backward test->FR link + per-layer coverage join | 1009/1009 |  | compliance | 2026-07-15 |
 | change | iterate: freeze requirement->test traceability contracts + panel-verified harness (P1) | 0/0 |  | tooling | 2026-07-15 |
 | bug | admit ci-security.json to the churn-merge allowlist (+ rollback parity) | 41/41 |  | tooling | 2026-07-15 |
@@ -314,7 +315,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-15 | Unit: 1009/1009 | Smoke: not_run | (iterate)
+Last run: 2026-07-15 | Unit: 1047/1047 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

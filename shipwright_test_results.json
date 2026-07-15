@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-15-tag-convention-and-manifest",
+    "run_id": "iterate-2026-07-15-execution-evidence",
     "date": "2026-07-15",
     "unit": {
       "status": "passed",
-      "passed": 1012,
-      "total": 1012
+      "passed": 1047,
+      "total": 1047
     },
     "integration": {
       "status": "not_run",
@@ -33,11 +33,7 @@
     "degraded": [
       {
         "condition": "classifier_risk_flag_override",
-        "detail": "classify_complexity flagged touches_migrations from message prose only ('database'/'migrations' narrative); overridden -- the diff has zero SQL / supabase/migrations paths. F11 recomputes risk flags from the diff."
-      },
-      {
-        "condition": "preexisting_unrelated_failure",
-        "detail": "shared/tests/test_campaign_status_backfill.py::test_existing_campaign_regenerates_without_downgrade[2026-07-15-test-traceability-layers] fails identically on clean origin/main (confirmed via stash). Root cause is the campaign-status skeleton parser mis-reading the LOCAL, gitignored campaign.md (0 tracked files) -- CI never sees this campaign. Not a TT1 regression; out of TT1 scope (collector + templates)."
+        "detail": "classify_complexity flagged touches_migrations from message prose only (the fixture spec narrates 'database persistence'); overridden -- the diff has zero SQL / supabase/migrations paths (compliance collectors + a JSON schema + tests). F11 recomputes risk flags from the diff."
       }
     ],
     "surface_verification": {
@@ -45,37 +41,30 @@
       "runner": "surface_verification.py --surface none",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/sub_iterate-20260715-201956/TT1/result.json",
+      "evidence_path": ".shipwright/runs/iterate-2026-07-15-execution-evidence/surface_verification.json",
       "timestamp": "2026-07-15T00:00:00+00:00",
-      "justification": "TT1 ships a compliance data collector (test_links) that emits a generated JSON artifact, the @FR tag convention in two rule templates, and their tests. There is no startable, user-experienceable surface (no web/API/CLI app affordance) and no backend-affects-frontend change (detect_frontend_changes: has_frontend_changes=false). Fully exercised by the compliance + shared pytest suites at F0 (compliance 1012 GREEN incl. order-forced test_enforcement_hooks-first, shared 4039 GREEN) plus empirical boundary/round-trip probes recorded in the iterate ADR."
+      "justification": "Compliance data collector: the execution-evidence reader (execution_evidence.py + _execution_evidence_io.py) emits a generated JSON index consumed by the test_links manifest, plus a JSON schema, F5.md docs, and their tests. No startable user-experienceable surface (no web/API/CLI app affordance); detect_frontend_changes has_frontend_changes=false. Fully exercised by the compliance pytest suite at F0 (1047 GREEN incl. order-forced test_enforcement_hooks-first, ADR-045) plus empirical CLI + round-trip boundary probes recorded in the iterate ADR."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "AC1 manifest maps FRs -> {unit,integration,e2e} test lists from @FR tags across pytest+Playwright+Vitest and equals the frozen golden answer key (bindings, tag_source, orphans, invalid, untagged)", "disposition": "tested", "evidence": "test_test_links_collector.py::test_manifest_requirements_match_golden + test_manifest_orphans_invalid_untagged_match_golden + test_all_three_runners_and_layers_represented (PASS)" },
-        { "behavior": "AC1/AC4 the emitted manifest validates against the v2 JSON Schema and schema_version==2, collector_version + spec_hash present", "disposition": "tested", "evidence": "test_test_links_collector.py::test_manifest_validates_against_v2_schema (PASS)" },
-        { "behavior": "AC1 spec_path is project-root-relative POSIX (rooting pinned directly, not normalized away)", "disposition": "tested", "evidence": "test_test_links_collector.py::test_spec_path_is_project_root_relative_posix (PASS)" },
-        { "behavior": "AC1/R1 skipped != covered: an FR whose only e2e test is skipped has coverage.e2e=MISSING; ok requires enabled+pass", "disposition": "tested", "evidence": "test_test_links_collector.py::test_skipped_e2e_is_missing_not_covered (PASS)" },
-        { "behavior": "AC2 a describe/suite-level tag applies to every inner test (same-line, multiline callback brace, and nested describes)", "disposition": "tested", "evidence": "test_test_links_collector.py::test_describe_level_tag_propagates_to_every_inner_test + test_multiline_describe_signature_still_propagates + test_nested_describes_both_apply (PASS)" },
-        { "behavior": "AC2 multiple tags per test are supported (suite tag + own title-suffix tag both bind)", "disposition": "tested", "evidence": "test_test_links_collector.py::test_multiple_tags_per_test (PASS)" },
-        { "behavior": "AC2 a malformed tag is recorded in invalid_tags, never crashes", "disposition": "tested", "evidence": "test_test_links_collector.py::test_malformed_tag_is_recorded_not_crashed (PASS)" },
-        { "behavior": "AC3 an untagged test lands in untagged_tests; a malformed-tagged test does NOT (it is a hygiene finding)", "disposition": "tested", "evidence": "test_test_links_collector.py::test_untagged_test_lands_in_bucket (PASS)" },
-        { "behavior": "AC3 a test tagged to a removed FR is a confirmed_orphan (reason fr_removed); the removed FR keeps no live tests", "disposition": "tested", "evidence": "test_test_links_collector.py::test_removed_fr_test_is_a_confirmed_orphan (PASS)" },
-        { "behavior": "AC4 the manifest regenerates through the real update_compliance CLI (--phase iterate emits test-traceability.json)", "disposition": "tested", "evidence": "test_test_links_collector.py::test_update_compliance_iterate_phase_emits_manifest + test_update_compliance_phases.py (PASS)" },
-        { "behavior": "AC4 generate_file writes a schema-valid manifest over conventional roots; the bounded-scope boundary (a stray root-level test is not scanned) is pinned", "disposition": "tested", "evidence": "test_test_links_collector.py::test_generate_file_writes_valid_manifest (PASS)" },
-        { "behavior": "Layer detection: integration-tests/ dir + tests/integration/ + .integration.test.* -> integration; e2e/ + .spec -> e2e; else unit (fixes the review's HIGH misclassification bug)", "disposition": "tested", "evidence": "test_test_links_collector.py::test_layer_detection[7 cases] (PASS)" },
-        { "behavior": "FR parser: 4-col traceability shape reads explicit Layers + provenance (explicit / inferred_legacy UI-flow->e2e / defaulted_legacy->unit)", "disposition": "tested", "evidence": "test_requirement_parse.py::test_4col_explicit_layers_and_provenance (PASS)" },
-        { "behavior": "FR parser: a ## Removed Requirements row parses with status=removed; active rows stay active", "disposition": "tested", "evidence": "test_requirement_parse.py::test_removed_section_marks_status_removed (PASS)" },
-        { "behavior": "FR parser: the 5-col adopt shape (ADR-031) reads the Description as the title, NOT as Layers, and infers layers", "disposition": "tested", "evidence": "test_requirement_parse.py::test_5col_adopt_shape_reads_description_as_title_not_layers (PASS)" },
-        { "behavior": "FR parser: manifest key is namespace::FR-XX.YY and spec_path is carried (frozen requirement_model consumed, not forked)", "disposition": "tested", "evidence": "test_requirement_parse.py::test_namespaced_key_and_spec_path (PASS)" },
-        { "behavior": "AC5 the @FR tag convention is documented in the tests + integration-tests rule templates; all new source/test modules <=300 LOC; bloat baseline not ratcheted", "disposition": "tested", "evidence": "structural: git diff shows both rules/*.template carry the '@FR' convention section; wc -l = 244/155/50/153/84 (collectors) + 300/105/89 (tests), all <=300; shipwright_bloat_baseline.json unchanged in the diff" },
-        { "behavior": "Obj1 (ADR-045) build_manifest succeeds even when sys.modules['lib'] is already the compliance-local lib (order-fragile CI-red class): _lib_loader saves/clears/imports-shared/restores", "disposition": "tested", "evidence": "test_test_links_hardening.py::test_build_manifest_robust_to_prebound_compliance_local_lib (PASS); repro `pytest test_enforcement_hooks.py test_test_links_collector.py` was 14-fail, now 47 PASS" },
-        { "behavior": "Obj2/Obj4 covers(\"\") -> InvalidTag(raw='') is coerced to a non-empty raw + reason so the manifest stays schema-valid; generate_file validates the manifest fail-closed before write", "disposition": "tested", "evidence": "test_test_links_hardening.py::test_covers_empty_string_yields_schema_valid_manifest + test_generate_file_fails_closed_on_invalid_manifest (PASS)" },
-        { "behavior": "Obj3 out-of-vocab execution-evidence status/executed is normalized to the frozen closed vocab in _make_link (unknown -> safe default), never a schema-invalid testLink", "disposition": "tested", "evidence": "_make_link vocab guard + write-time validation backstop; covered by test_covers_empty_string_yields_schema_valid_manifest schema assertion" }
+        { "behavior": "AC1 the reader maps JUnit XML / Playwright JSON / Vitest reporter to per-test {status,executed,runner} over the P1 fixtures and reproduces the panel-verified evidence_index answer key exactly", "disposition": "tested", "evidence": "test_execution_evidence.py::test_reader_reproduces_evidence_index_answer_key + test_junit_maps_pass_and_key_from_file_attr + test_playwright_and_vitest_pass_mapping (PASS)" },
+        { "behavior": "AC1/R1 a skipped tagged test is status=skipped, executed=not_run; JUnit failure/error children map to fail, skipped child to not_run (fail-closed)", "disposition": "tested", "evidence": "test_execution_evidence.py::test_skipped_tagged_test_is_skipped_not_run + test_junit_failure_and_skipped_children_map_fail_closed (PASS)" },
+        { "behavior": "AC1 reader keys are the collector stable path::name id (posix, no backslash); the emitted index validates against the evidence-index v2 schema", "disposition": "tested", "evidence": "test_execution_evidence.py::test_reader_keys_are_collector_path_name_ids + test_reader_output_validates_against_schema (PASS)" },
+        { "behavior": "AC2 the CORE R1 regression: an FR whose only required-layer test is skipped has coverage MISSING even on a green run; enabled+pass yields ok", "disposition": "tested", "evidence": "test_execution_evidence_join.py::test_green_but_skipped_required_layer_is_MISSING_not_ok + test_executed_pass_required_layer_is_ok (PASS)" },
+        { "behavior": "AC2 the coverage predicate: only status=enabled AND executed=pass yields ok; skipped/fail/not_run/quarantined/only never do; one real pass among skips suffices", "disposition": "tested", "evidence": "test_execution_evidence_join.py::test_cov_status_predicate_only_enabled_pass_is_ok[7 cases] (PASS)" },
+        { "behavior": "AC3 a missing evidence file resolves every tested layer to not_run and no coverage to ok (never a self-reported pass); a report that omits a required test keeps it not_run -> MISSING", "disposition": "tested", "evidence": "test_execution_evidence_join.py::test_missing_evidence_file_resolves_not_run_never_pass + test_partial_evidence_omitting_a_required_test_stays_missing (PASS)" },
+        { "behavior": "AC3 (review C1/H1) a regen with no fresh raw report does NOT trust a prior run's stale index: generate_file falls back to not_run/MISSING", "disposition": "tested", "evidence": "test_execution_evidence_join.py::test_stale_index_is_not_trusted_when_no_fresh_reports (PASS)" },
+        { "behavior": "AC3 the expiring waiver is honored while valid and fails when expired; an incomplete/malformed waiver is invalid (not honored); layer_satisfied fails closed without a valid waiver", "disposition": "tested", "evidence": "test_execution_evidence_join.py::test_waiver_valid_while_unexpired_expired_after + test_incomplete_or_malformed_waiver_is_invalid_not_honored + test_layer_satisfied_honors_valid_waiver_fails_expired (PASS)" },
+        { "behavior": "AC4 the status/executed vocab is a validated frozen boundary: out-of-vocab (executed:'passed', status:'active') is coerced fail-closed at ingestion; the schema rejects out-of-vocab + extra keys; code vocab cannot drift from the schema enums", "disposition": "tested", "evidence": "test_execution_evidence.py::test_out_of_vocab_evidence_is_coerced_fail_closed + test_schema_rejects_out_of_vocab_and_extra_keys + test_code_vocab_cannot_drift_from_schema_enums (PASS)" },
+        { "behavior": "Review C2/H2 operator-authored expiring waivers survive a machine-results refresh and normalization (not silently dropped) so the layer gate can honor them", "disposition": "tested", "evidence": "test_execution_evidence_join.py::test_operator_waiver_survives_a_machine_results_refresh + test_normalize_index_preserves_waivers + test_schema_waiver_requires_full_accountability (PASS)" },
+        { "behavior": "Review C4/P4 fail-closed reduction: a duplicate test id (retry/shard/project) never lets a pass mask a failure; a Playwright retry that eventually passes is pass, an all-failed spec is fail; an oversized JUnit report fails closed to empty", "disposition": "tested", "evidence": "test_execution_evidence.py::test_duplicate_test_id_failure_is_not_hidden_by_a_later_pass + test_playwright_retry_reduces_to_pass_only_failure_is_fail + test_oversized_junit_report_fails_closed_empty (PASS)" },
+        { "behavior": "Finalization wiring: refresh_index is non-destructive when no reports (leaves an existing index) and freshness-stamps generated_at + source_reports when it emits", "disposition": "tested", "evidence": "test_execution_evidence_join.py::test_refresh_index_noop_leaves_existing_index_untouched + test_refresh_index_emits_and_stamps_freshness (PASS)" },
+        { "behavior": "AC5 footprint: new source/test modules all <=300 LOC (execution_evidence 279, _execution_evidence_io 122, tests 205/216); bloat baseline not ratcheted; TT1 collector suite still green (no fork)", "disposition": "tested", "evidence": "structural: wc -l all <=300; shipwright_bloat_baseline.json unchanged in the diff; test_test_links_collector.py + test_traceability_fixtures.py + shared golden-consistency GREEN" }
       ],
       "counts": {
-        "testable": 20,
-        "tested": 20,
+        "testable": 13,
+        "tested": 13,
         "untestable": 0,
         "untested_testable": 0
       },

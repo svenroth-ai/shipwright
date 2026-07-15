@@ -1,0 +1,1 @@
+Fail-closed execution evidence: a missing evidence file for a required layer resolves to `not_run` (never a self-reported pass), out-of-vocabulary `status`/`executed` values are coerced at ingestion against a frozen closed-enum schema, and a layer that genuinely cannot run in an environment is covered only by an explicit expiring waiver (honored while valid, fails when expired).

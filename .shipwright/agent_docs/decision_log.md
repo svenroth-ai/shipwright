@@ -4349,3 +4349,16 @@ shipwright/
 - **Rationale:** Append-log-of-facts model: record atomic per-split facts, derive views. The start side is already per-split, so this symmetrizes the log; the emit stays pure (no last-split detection).
 - **Consequences:** Per-split duration bars enabled; per-phase span accurate; 4 phase-count/latest-ts consumers de-duped by phase name; plan SKILL emits --split-id; WebUI PhaseRail follow-up filed (trg-941d870b). Single-split phases (splitId=None) unchanged.
 - **Rejected:** Option 2 (emit phase_completed only at final-split completion): couples the telemetry emit path to lifecycle split-state and is lossy (no per-split bars).
+
+---
+
+### ADR-327: Per-test execution-evidence reader as the R1 coverage source
+- **Date:** 2026-07-16
+- **Section:** Iterate → TT-EV execution-evidence
+- **Run-ID:** iterate-2026-07-15-execution-evidence
+- **Context:** TT1 shipped the traceability manifest with per-test status/executed, but the only producer of the normalized evidence index was a hand-authored fixture. A static @FR tag proves nothing (Spec 11 R1 / unclosed G5): a skipped/never-run/filtered test would still satisfy a required layer.
+- **Decision:** Add a pure execution-evidence reader (collectors/execution_evidence.py + _execution_evidence_io.py) parsing JUnit XML / Playwright JSON / Vitest reporter into a schema-validated frozen-closed-vocab index keyed to the collector stable path::name ids; test_links.generate_file refreshes it from raw reports and passes EMPTY evidence when no fresh report exists (never trusting a stale index). Waivers, out-of-vocab coercion, and duplicate-id merges are all fail-closed.
+- **Commit:** pending
+- **Consequences:** Coverage is now execution-backed: enabled+pass => ok, skipped/missing/fail => MISSING. The committed index is derived/RTM-visibility only (R3); enforcing gates (TT2/TT5) regenerate base+head and consume the waiver primitive layer_satisfied.
+- **Rejected:** Wiring reporter flags into surface_verification.py (runner-agnostic by contract; deferred to TT5). Wiping the index on a no-report regen (would thrash the manifest; the fresh-evidence guard in generate_file is the surgical fix).
+- **Details:** [2026-07-15-execution-evidence.md](../planning/iterate/2026-07-15-execution-evidence.md)

@@ -215,11 +215,20 @@ def generate_file(project_root, data=None) -> Path:
     dirs is the shared engine's job (adopt TT7 / retrofit TT8), not a compliance regen.
     """
     project_root = Path(project_root).resolve()
+    # TT-EV: refresh the per-test execution-evidence index from any raw runner
+    # reports THIS regen dropped, so coverage is execution-backed (R1). If no fresh
+    # report was produced, we pass EMPTY evidence (fail-closed not_run) rather than
+    # trusting a prior run's possibly-stale index — a regen with no evidence can
+    # never self-report a previous pass. The on-disk index is left untouched for
+    # audit; enforcing gates (TT2/TT5) regenerate base+head themselves (R3).
+    from ._execution_evidence_io import refresh_index  # noqa: PLC0415 — local to avoid import cost when unused
+    fresh = refresh_index(project_root)
+    evidence = io.load_evidence(project_root) if fresh else {}
     generated_at = getattr(data, "timestamp", None) or _DEFAULT_TS
     manifest = build_manifest(
         project_root,
         test_roots=io.default_test_roots(project_root),
-        evidence=io.load_evidence(project_root),
+        evidence=evidence,
         enumerate_untagged=True,
         generated_at=generated_at,
         source_commit=io.git_head(project_root),
