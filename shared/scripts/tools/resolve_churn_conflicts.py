@@ -235,7 +235,7 @@ def complete_merge(project_root: Path, *, run_id: str | None = None) -> ResolveR
         elif rel in (EVENTS_LOG, TEST_RESULTS):
             _take_side(project_root, rel, "--ours")
             resolved.append(rel)
-        else:  # DERIVED_MDS or campaign status.json (S3): placeholder, regenerated later
+        else:  # a regenerated allowlisted snapshot or campaign status.json (S3): placeholder, regenerated later
             # resolvable ⊆ allowlist ∪ campaign-status, so this catch-all never drops a path
             _take_side(project_root, rel, "--theirs")
             resolved.append(rel)

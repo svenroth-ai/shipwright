@@ -133,6 +133,7 @@ artifact has exactly one documented resolution strategy:
 | `.shipwright/compliance/test-evidence.md` | **regenerate** |
 | `.shipwright/compliance/traceability-matrix.md` | **regenerate** |
 | `.shipwright/compliance/change-history.md` | **regenerate** |
+| `.shipwright/compliance/ci-security.json` | **regenerate** (structured CI-security summary; best-effort refresh from the latest `security.yml` run, else the mainline `--theirs` placeholder stands) |
 | `.shipwright/agent_docs/build_dashboard.md` | **regenerate** |
 | `.shipwright/agent_docs/session_handoff.md` | **regenerate** |
 | `.shipwright/agent_docs/triage_inbox.md` | **regenerate** |

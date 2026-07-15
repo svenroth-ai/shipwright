@@ -1,0 +1,1 @@
+Iterate merges no longer abort when `.shipwright/compliance/ci-security.json` conflicts — the derived CI-security summary is admitted to the churn-merge allowlist and resolved like the compliance snapshots, with matching regenerate-failure rollback parity.

@@ -1,6 +1,6 @@
 # Test Evidence Report
 
-Generated: 2026-07-15T13:22:06.672550+00:00
+Generated: 2026-07-15T13:09:49.978463+00:00
 
 ## Summary
 
@@ -14,7 +14,7 @@ Generated: 2026-07-15T13:22:06.672550+00:00
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | Add a UTF-8 reconfigure guard to finalize_iterate.py main() (stdout+stderr) plus two cp1252 subprocess regression tests | [iterate](traceability-matrix.md#evt-c1b23d3b) | — | +0 | — | — | 2026-07-15 |
+| 1 | Iterate merges no longer get stuck when the CI-security summary file conflicts — it is now auto-resolved like the other generated compliance files. | [iterate](traceability-matrix.md#evt-fdd65a28) | unit | +0 | 41/41 | PASS | 2026-07-15 |
 | 2 | A test in the testing plugin used to leave a stray .shipwright folder in the tracked test fixtures every time it ran; it now writes to a throwaway temp folder, so the repository stays clean. | [iterate](traceability-matrix.md#evt-54e93bec) | unit | +0 | 143/143 | PASS | 2026-07-15 |
 | 3 | The finalize phase can now run its steps as one bundled command instead of several separate ones, and two internal log-writers no longer create duplicate entries when a step is re-run. | [iterate](traceability-matrix.md#evt-deb20021) | mixed | +0 | 42/42 | PASS | 2026-07-15 |
 | 4 | The pre-commit test gate now runs the test groups at the same time instead of one after another, cutting the wait from about ten minutes to under two, with a safety net that re-checks anything that looks failed so the gate stays exactly as strict. | [iterate](traceability-matrix.md#evt-5dc16a45) | mixed | +0 | 54/54 | PASS | 2026-07-14 |
@@ -325,36 +325,36 @@ _Synthesized from per-iterate **unit** results — Integration / pgTAP / E2E / S
 
 | Run | Trigger | Unit | Integration | pgTAP | E2E | Smoke | Date |
 |-----|---------|------|-------------|-------|-----|-------|------|
-| 1 | iterate | 271/271 | — | — | — | — | 2026-07-04 |
-| 2 | iterate | 3643/3643 | — | — | — | — | 2026-07-05 |
-| 3 | iterate | 273/273 | — | — | — | — | 2026-07-05 |
-| 4 | iterate | 3978/3978 | — | — | — | — | 2026-07-06 |
-| 5 | iterate | 137/137 | — | — | — | — | 2026-07-06 |
-| 6 | iterate | 3666/3666 | — | — | — | — | 2026-07-06 |
-| 7 | iterate | 169/169 | — | — | — | — | 2026-07-06 |
-| 8 | iterate | 951/951 | — | — | — | — | 2026-07-06 |
-| 9 | iterate | 5598/5625 | — | — | — | — | 2026-07-06 |
-| 10 | iterate | 3667/3667 | — | — | — | — | 2026-07-06 |
-| 11 | iterate | 4148/4167 | — | — | — | — | 2026-07-07 |
-| 12 | iterate | 4081/4097 | — | — | — | — | 2026-07-07 |
-| 13 | iterate | 4175/4191 | — | — | — | — | 2026-07-07 |
-| 14 | iterate | 4067/4087 | — | — | — | — | 2026-07-07 |
-| 15 | iterate | 3693/3709 | — | — | — | — | 2026-07-07 |
-| 16 | iterate | 417/417 | — | — | — | — | 2026-07-07 |
-| 17 | iterate | 3749/3749 | — | — | — | — | 2026-07-08 |
-| 18 | iterate | 438/438 | — | — | — | — | 2026-07-08 |
-| 19 | iterate | 3751/3763 | — | — | — | — | 2026-07-09 |
-| 20 | iterate | 69/69 | — | — | — | — | 2026-07-10 |
-| 21 | iterate | 4749/4749 | — | — | — | — | 2026-07-10 |
-| 22 | iterate | 7/7 | — | — | — | — | 2026-07-10 |
-| 23 | iterate | 17/17 | — | — | — | — | 2026-07-10 |
-| 24 | iterate | 28/28 | — | — | — | — | 2026-07-11 |
-| 25 | iterate | 22/22 | — | — | — | — | 2026-07-11 |
-| 26 | iterate | 37/37 | — | — | — | — | 2026-07-12 |
-| 27 | iterate | 33/33 | — | — | — | — | 2026-07-14 |
-| 28 | iterate | 54/54 | — | — | — | — | 2026-07-14 |
-| 29 | iterate | 42/42 | — | — | — | — | 2026-07-15 |
-| 30 | iterate | 143/143 | — | — | — | — | 2026-07-15 |
+| 1 | iterate | 3643/3643 | — | — | — | — | 2026-07-05 |
+| 2 | iterate | 273/273 | — | — | — | — | 2026-07-05 |
+| 3 | iterate | 3978/3978 | — | — | — | — | 2026-07-06 |
+| 4 | iterate | 137/137 | — | — | — | — | 2026-07-06 |
+| 5 | iterate | 3666/3666 | — | — | — | — | 2026-07-06 |
+| 6 | iterate | 169/169 | — | — | — | — | 2026-07-06 |
+| 7 | iterate | 951/951 | — | — | — | — | 2026-07-06 |
+| 8 | iterate | 5598/5625 | — | — | — | — | 2026-07-06 |
+| 9 | iterate | 3667/3667 | — | — | — | — | 2026-07-06 |
+| 10 | iterate | 4148/4167 | — | — | — | — | 2026-07-07 |
+| 11 | iterate | 4081/4097 | — | — | — | — | 2026-07-07 |
+| 12 | iterate | 4175/4191 | — | — | — | — | 2026-07-07 |
+| 13 | iterate | 4067/4087 | — | — | — | — | 2026-07-07 |
+| 14 | iterate | 3693/3709 | — | — | — | — | 2026-07-07 |
+| 15 | iterate | 417/417 | — | — | — | — | 2026-07-07 |
+| 16 | iterate | 3749/3749 | — | — | — | — | 2026-07-08 |
+| 17 | iterate | 438/438 | — | — | — | — | 2026-07-08 |
+| 18 | iterate | 3751/3763 | — | — | — | — | 2026-07-09 |
+| 19 | iterate | 69/69 | — | — | — | — | 2026-07-10 |
+| 20 | iterate | 4749/4749 | — | — | — | — | 2026-07-10 |
+| 21 | iterate | 7/7 | — | — | — | — | 2026-07-10 |
+| 22 | iterate | 17/17 | — | — | — | — | 2026-07-10 |
+| 23 | iterate | 28/28 | — | — | — | — | 2026-07-11 |
+| 24 | iterate | 22/22 | — | — | — | — | 2026-07-11 |
+| 25 | iterate | 37/37 | — | — | — | — | 2026-07-12 |
+| 26 | iterate | 33/33 | — | — | — | — | 2026-07-14 |
+| 27 | iterate | 54/54 | — | — | — | — | 2026-07-14 |
+| 28 | iterate | 42/42 | — | — | — | — | 2026-07-15 |
+| 29 | iterate | 143/143 | — | — | — | — | 2026-07-15 |
+| 30 | iterate | 41/41 | — | — | — | — | 2026-07-15 |
 
 ## Code Review Evidence
 

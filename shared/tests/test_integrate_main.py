@@ -29,6 +29,7 @@ _AUDIT_STALENESS = (
     REPO_ROOT / "plugins" / "shipwright-compliance" / "scripts" / "audit" / "audit_staleness.py"
 )
 _DASH = ".shipwright/compliance/dashboard.md"
+_CI_SEC = ".shipwright/compliance/ci-security.json"
 _RUN_ID = "iterate-2026-05-31-churn-merge-resolver"
 
 
@@ -182,6 +183,59 @@ def test_integrate_aborts_and_restores_on_source_conflict(git_origin_repo, make_
     # merge --abort restored a clean tree (no unmerged paths, nothing staged).
     assert _git(wt, "diff", "--name-only", "--diff-filter=U").stdout.strip() == ""
     assert _git(wt, "diff", "--cached", "--name-only").stdout.strip() == ""
+
+
+def test_integrate_rollback_restores_ci_security_on_regen_failure(
+    git_origin_repo, make_worktree, monkeypatch
+) -> None:
+    """Rollback parity: ci-security.json is admitted to CHURN_ALLOWLIST as a
+    derived compliance snapshot, so integrate_main's restore-on-regenerate-failure
+    path must restore it too — a best-effort ``refresh_ci_security`` can mutate it
+    BEFORE another generator errors. Without CI_SECURITY_SUMMARY in the restore
+    set, a ``regenerate_failed`` merge would leave ci-security.json dirty. Also
+    pins that the merge placeholder is the mainline ``--theirs`` side (the merge
+    always brings origin/<default> INTO the iterate branch — external-review F1).
+    """
+    work, _origin = git_origin_repo
+    _set_repo_identity(work)
+    _write(work, _CI_SEC, '{"critical": 0}\n')
+    _write(work, _DASH, "base dashboard\n")
+    _git(work, "add", "-A")
+    _git(work, "commit", "-m", "seed ci-security + dashboard")
+    _git(work, "push", "origin", "main")
+
+    wt = make_worktree(work, "cisec-rollback")
+    _write(wt, _CI_SEC, '{"critical": 1}\n')   # iterate (ours) side
+    _write(wt, _DASH, "iterate dashboard\n")
+    _git(wt, "commit", "-am", "iterate")
+
+    _write(work, _CI_SEC, '{"critical": 2}\n')  # main (theirs) side → both changed → conflict
+    _write(work, _DASH, "main dashboard\n")
+    _git(work, "commit", "-am", "main advances")
+    _git(work, "push", "origin", "main")
+
+    def failing_regen(project_root, run_id, **kw):
+        # A best-effort ci-security refresh mutated the file BEFORE the dashboard
+        # generator errored — the exact transactional hazard the rollback covers.
+        _write(Path(project_root), _CI_SEC, '{"critical": 999, "mutated": true}\n')
+        _git(Path(project_root), "add", "--", _CI_SEC)
+        return {_DASH: "error", _CI_SEC: "regenerated"}
+
+    monkeypatch.setattr(integrate_main.rcc, "regenerate_tracked_snapshots", failing_regen)
+
+    result = integrate_main.integrate(wt, _RUN_ID, do_fetch=True)
+
+    assert result["status"] == "regenerate_failed", result
+    # The merge commit resolved ci-security.json to the MAINLINE --theirs side
+    # (critical:2, NOT the iterate's critical:1) — external-review F1.
+    committed = _git(wt, "show", "HEAD:" + _CI_SEC).stdout
+    assert '"critical": 2' in committed, committed
+    # Rollback restored the working tree to that merge-commit state: the mutated
+    # bytes are gone and ci-security.json is clean.
+    on_disk = (wt / _CI_SEC).read_text(encoding="utf-8")
+    assert "mutated" not in on_disk, on_disk
+    assert on_disk == committed, (on_disk, committed)
+    assert _git(wt, "status", "--porcelain", "--", _CI_SEC).stdout.strip() == ""
 
 
 # Campaign status.json concurrent-sibling regenerate (S3) lives in

@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-15-churn-allowlist-ci-security",
+  "date": "2026-07-15T13:09:49.898766Z",
+  "type": "bug",
+  "complexity": "medium",
+  "branch": "iterate/churn-allowlist-ci-security",
+  "spec": ".shipwright/planning/iterate/2026-07-15-churn-allowlist-ci-security.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-15-churn-allowlist-ci-security"
+}

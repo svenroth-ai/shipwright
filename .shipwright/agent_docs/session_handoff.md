@@ -1,35 +1,38 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-15-finalize-utf8-guard"
+run_id: "iterate-2026-07-15-churn-allowlist-ci-security"
 phase: "iterate"
-reason: "iterate: fix finalize_iterate.py cp1252 stdio crash"
-timestamp: "2026-07-15T13:22:11.117529+00:00"
+reason: "iterate: admit ci-security.json to the churn-merge allowlist"
+timestamp: "2026-07-15T13:09:54.465587+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-15 13:22:11 UTC
+> Auto-generated 2026-07-15 13:09:54 UTC
 
 ## Session Info
 
-- **Session ID**: c81674d4-2de4-4fd2-ae13-dd1d3677572c
-- **Timestamp**: 2026-07-15 13:22:11 UTC
-- **Reason**: iterate: fix finalize_iterate.py cp1252 stdio crash
+- **Session ID**: d983bbf3-1318-4c52-b579-b6bdda1d1bd4
+- **Timestamp**: 2026-07-15 13:09:54 UTC
+- **Reason**: iterate: admit ci-security.json to the churn-merge allowlist
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-15-finalize-utf8-guard
-- **Date**: 2026-07-15T13:22:06.591233Z
+- **Run ID**: iterate-2026-07-15-churn-allowlist-ci-security
+- **Date**: 2026-07-15T13:09:49.898766Z
 - **Type**: bug
-- **Complexity**: small
-- **Branch**: iterate/finalize-utf8-guard
-- **ADR**: iterate-2026-07-15-finalize-utf8-guard
+- **Complexity**: medium
+- **Branch**: iterate/churn-allowlist-ci-security
+- **ADR**: iterate-2026-07-15-churn-allowlist-ci-security
 - **Tests passed**: True
-- **Spec**: n/a (small bug fix; no iterate spec)
+- **Spec**: .shipwright/planning/iterate/2026-07-15-churn-allowlist-ci-security.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/finalize-utf8-guard
+- **Branch**: iterate/churn-allowlist-ci-security
+- **Run ID**: iterate-2026-07-15-churn-allowlist-ci-security
+- **Spec**: .shipwright/planning/iterate/2026-07-15-churn-allowlist-ci-security.md
+- **Complexity**: medium (floor: `cross_component` — the diff touches
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/finalize-utf8-guard
-- **Last Commit**: 1d740f79 chore(triage): sweep 3 outbox append(s) into branch
+- **Branch**: iterate/churn-allowlist-ci-security
+- **Last Commit**: 7fe025aa chore(triage): sweep 3 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,8 +68,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-7730cf64 | grade_snapshot | — | 2026-07-15 |
-| evt-c1b23d3b | work_completed | iterate (Add a UTF-8 reconfigure guard to finalize_iterate.py main() (stdout+stderr) plus two cp1252 subprocess regression tests) | 2026-07-15 |
+| evt-8eef5509 | grade_snapshot | — | 2026-07-15 |
+| evt-fdd65a28 | work_completed | iterate (admit ci-security.json to the churn-merge allowlist (+ rollback parity)) | 2026-07-15 |
 | evt-1f6b2bca | grade_snapshot | — | 2026-07-15 |
 | evt-d23adfee | grade_snapshot | — | 2026-07-15 |
 | evt-54e93bec | work_completed | iterate (Redirect perf-check integration test --cwd to tmp_path so the runner's triage emission stops leaking into the tracked fixtures dir) | 2026-07-15 |
@@ -75,7 +78,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 304
-- **Last iterate**: Fix finalize_iterate.py crashing on Windows cp1252 when its piped stdout/stderr carries non-ASCII output, which aborts the finalize bundle — Add a UTF-8 reconfigure guard to finalize_iterate.py main() (stdout+stderr) plus two cp1252 subprocess regression tests (2026-07-15)
+- **Last iterate**: bug — admit ci-security.json to the churn-merge allowlist (+ rollback parity) (2026-07-15)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
