@@ -1,0 +1,12 @@
+{
+  "run_id": "iterate-2026-07-15-tag-convention-and-manifest",
+  "date": "2026-07-15T21:18:48.128158Z",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/campaign-TT1-tag-convention-and-manifest",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-15-tag-convention-and-manifest.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-15-tag-convention-and-manifest",
+  "campaign": "2026-07-15-test-traceability-layers",
+  "sub_iterate_id": "TT1"
+}

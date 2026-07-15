@@ -12,6 +12,25 @@ globs: "**/tests/**,**/*.test.*,**/*.spec.*,**/e2e/**"
 - Test edge cases: empty input, null values, boundary conditions, error paths
 - Keep test files co-located or in a parallel `tests/` directory matching source structure
 
+## Requirement traceability tags (`@FR`)
+
+Tag a test with the requirement(s) it exercises using the canonical token `@FR-XX.YY`
+(two-digit.two-digit). One concept, one idiom per runner — the compliance `test_links`
+collector reads them all and emits `.shipwright/compliance/test-traceability.json`
+(the backward `test → FR` link and the per-layer coverage the aggregate test count cannot
+express). A tag on a `describe`/suite applies to every test inside it; multiple tags per
+test are allowed; a malformed token (`@FR-1.3`) is ignored, never bound to coverage.
+
+| Runner | Idiom | Example |
+|---|---|---|
+| pytest | `@pytest.mark.covers("FR-…")` (register the `covers` marker in `pyproject.toml`) | `@pytest.mark.covers("FR-01.03", "FR-01.04")` |
+| Playwright | native tag array | `test('signs in', { tag: ['@FR-01.03'] }, …)` |
+| Vitest | title suffix, or a `// @covers` comment on the line above | `it('writes the row @FR-01.03', …)` / `// @covers FR-01.03` |
+
+Tags are additive metadata: they do not change what a test asserts, and naming a test
+after its behavior (above) still holds — the `@FR` token is a machine link, not the name.
+A tagged test only counts as *covering* a layer when it is enabled AND observed passing.
+
 ## Example: Correct boundary mocking
 
 ```typescript

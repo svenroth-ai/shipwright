@@ -1,0 +1,399 @@
+{
+  "schema_version": 2,
+  "collector_version": "test_links/1.0.0",
+  "generated_at": "2026-07-15T21:17:40.986510+00:00",
+  "source_commit": "e74d8090758e782beb962b8c3103dabf0933d8b6",
+  "spec_hash": "sha256:c8944f86bcd4737b474e245f4b79800f37db76da0b3515b6eec98fecdcd11adb",
+  "requirements": {
+    "01-adopted::FR-01.01": {
+      "id": "FR-01.01",
+      "spec_path": ".shipwright/planning/01-adopted/spec.md",
+      "title": "Orchestrate the full Shipwright SDLC pipeline — drives project, plan, build, test, security, deploy, changelog, and compliance phases end-to-end.",
+      "priority": "Must",
+      "status": "active",
+      "required_layers": [
+        "unit"
+      ],
+      "required_layers_source": "defaulted_legacy",
+      "tests": {},
+      "coverage": {
+        "unit": "MISSING"
+      }
+    },
+    "01-adopted::FR-01.02": {
+      "id": "FR-01.02",
+      "spec_path": ".shipwright/planning/01-adopted/spec.md",
+      "title": "Decompose project requirements (IREB) into well-scoped planning units; generate initial CLAUDE.md and `.shipwright/agent_docs` for the target project.",
+      "priority": "Must",
+      "status": "active",
+      "required_layers": [
+        "unit"
+      ],
+      "required_layers_source": "defaulted_legacy",
+      "tests": {},
+      "coverage": {
+        "unit": "MISSING"
+      }
+    },
+    "01-adopted::FR-01.03": {
+      "id": "FR-01.03",
+      "spec_path": ".shipwright/planning/01-adopted/spec.md",
+      "title": "AI-assisted deep planning with research, optional interview, external dual-LLM review (Gemini + GPT in parallel), TDD-first approach; produces section files consumable by /shipwright-build.",
+      "priority": "Must",
+      "status": "active",
+      "required_layers": [
+        "unit"
+      ],
+      "required_layers_source": "defaulted_legacy",
+      "tests": {},
+      "coverage": {
+        "unit": "MISSING"
+      }
+    },
+    "01-adopted::FR-01.04": {
+      "id": "FR-01.04",
+      "spec_path": ".shipwright/planning/01-adopted/spec.md",
+      "title": "Generate UI mockups from IREB specs as standalone HTML screens and user flows; iteratable via chat.",
+      "priority": "Should",
+      "status": "active",
+      "required_layers": [
+        "e2e"
+      ],
+      "required_layers_source": "inferred_legacy",
+      "tests": {},
+      "coverage": {
+        "e2e": "MISSING"
+      }
+    },
+    "01-adopted::FR-01.05": {
+      "id": "FR-01.05",
+      "spec_path": ".shipwright/planning/01-adopted/spec.md",
+      "title": "Implement code from /shipwright-plan sections with TDD (red-green-refactor), code review, Conventional Commits, feature-branch git workflow.",
+      "priority": "Must",
+      "status": "active",
+      "required_layers": [
+        "unit"
+      ],
+      "required_layers_source": "defaulted_legacy",
+      "tests": {},
+      "coverage": {
+        "unit": "MISSING"
+      }
+    },
+    "01-adopted::FR-01.06": {
+      "id": "FR-01.06",
+      "spec_path": ".shipwright/planning/01-adopted/spec.md",
+      "title": "Run unit tests, E2E tests (Playwright), smoke tests, and security scans for Shipwright projects; emit a boundary-coverage report flagging serialized-format producer/consumer pairs that lack a round-trip test.",
+      "priority": "Must",
+      "status": "active",
+      "required_layers": [
+        "unit"
+      ],
+      "required_layers_source": "defaulted_legacy",
+      "tests": {},
+      "coverage": {
+        "unit": "MISSING"
+      }
+    },
+    "01-adopted::FR-01.07": {
+      "id": "FR-01.07",
+      "spec_path": ".shipwright/planning/01-adopted/spec.md",
+      "title": "Security scanning chain (Aikido + Semgrep + Trivy + Gitleaks) with automated remediation loop and per-scanner exclude lists.",
+      "priority": "Must",
+      "status": "active",
+      "required_layers": [
+        "unit"
+      ],
+      "required_layers_source": "defaulted_legacy",
+      "tests": {},
+      "coverage": {
+        "unit": "MISSING"
+      }
+    },
+    "01-adopted::FR-01.08": {
+      "id": "FR-01.08",
+      "spec_path": ".shipwright/planning/01-adopted/spec.md",
+      "title": "Deploy to configured targets with smoke testing and rollback; Jelastic (Infomaniak) shipped, Vercel + compose-VPS profiles documented as stubs.",
+      "priority": "Should",
+      "status": "active",
+      "required_layers": [
+        "unit"
+      ],
+      "required_layers_source": "defaulted_legacy",
+      "tests": {},
+      "coverage": {
+        "unit": "MISSING"
+      }
+    },
+    "01-adopted::FR-01.09": {
+      "id": "FR-01.09",
+      "spec_path": ".shipwright/planning/01-adopted/spec.md",
+      "title": "Parse Conventional Commits from git history, generate Keep-a-Changelog entries, create version tags, open release PRs.",
+      "priority": "Must",
+      "status": "active",
+      "required_layers": [
+        "unit"
+      ],
+      "required_layers_source": "defaulted_legacy",
+      "tests": {},
+      "coverage": {
+        "unit": "MISSING"
+      }
+    },
+    "01-adopted::FR-01.10": {
+      "id": "FR-01.10",
+      "spec_path": ".shipwright/planning/01-adopted/spec.md",
+      "title": "Generate audit-ready compliance documentation (RTM, test evidence, change history, SBOM) and run on-demand cross-artifact detective audit.",
+      "priority": "Must",
+      "status": "active",
+      "required_layers": [
+        "unit"
+      ],
+      "required_layers_source": "defaulted_legacy",
+      "tests": {},
+      "coverage": {
+        "unit": "MISSING"
+      }
+    },
+    "01-adopted::FR-01.11": {
+      "id": "FR-01.11",
+      "spec_path": ".shipwright/planning/01-adopted/spec.md",
+      "title": "Complexity-adaptive SDLC for ongoing changes — auto-detects intent and complexity, scales from quick fix to structured feature with specs, plans, reviews, tests; every feature/change classifies its spec impact (ADD/MODIFY/REMOVE/NONE), enforced at finalization.",
+      "priority": "Must",
+      "status": "active",
+      "required_layers": [
+        "unit"
+      ],
+      "required_layers_source": "defaulted_legacy",
+      "tests": {},
+      "coverage": {
+        "unit": "MISSING"
+      }
+    },
+    "01-adopted::FR-01.12": {
+      "id": "FR-01.12",
+      "spec_path": ".shipwright/planning/01-adopted/spec.md",
+      "title": "Local browser preview — start dev server for the target project and show the URL.",
+      "priority": "May",
+      "status": "active",
+      "required_layers": [
+        "e2e"
+      ],
+      "required_layers_source": "inferred_legacy",
+      "tests": {},
+      "coverage": {
+        "e2e": "MISSING"
+      }
+    },
+    "01-adopted::FR-01.13": {
+      "id": "FR-01.13",
+      "spec_path": ".shipwright/planning/01-adopted/spec.md",
+      "title": "Onboard an existing (brownfield) repository into the Shipwright SDLC; analyzes codebase, generates CLAUDE.md, agent_docs, planning specs, compliance artifacts, suggest_iterate hook, and an E2E baseline; scaffolds `.env.local` with the profile's framework keys.",
+      "priority": "Must",
+      "status": "active",
+      "required_layers": [
+        "unit"
+      ],
+      "required_layers_source": "defaulted_legacy",
+      "tests": {},
+      "coverage": {
+        "unit": "MISSING"
+      }
+    },
+    "01-adopted::FR-01.14": {
+      "id": "FR-01.14",
+      "spec_path": ".shipwright/planning/01-adopted/spec.md",
+      "title": "Pre-backlog triage buffer — findings from local hooks/scans/audits and from GitHub's automated runs (code-scanning, Dependabot, secret-scanning alerts, failed CI runs) land in a per-project `.shipwright/triage.jsonl` store via idempotent producers and surface in the Command Center WebUI Triage tab with operator-driven promote/dismiss, keeping the ExternalTask list curated instead of flooded.",
+      "priority": "Must",
+      "status": "active",
+      "required_layers": [
+        "unit"
+      ],
+      "required_layers_source": "defaulted_legacy",
+      "tests": {},
+      "coverage": {
+        "unit": "MISSING"
+      }
+    },
+    "01-adopted::FR-01.15": {
+      "id": "FR-01.15",
+      "spec_path": ".shipwright/planning/01-adopted/spec.md",
+      "title": "The two artifacts the Command Center WebUI renders field-for-field — `/shipwright-grade`'s report view-model (`grade.py --format json`) and `/shipwright-adopt`'s `.shipwright/adopt/snapshot.json` — are versioned output contracts (`schema_version`, `major.minor`: major = breaking, the consumer must refuse to render; minor = additive, the consumer keeps working). Each producer's SKILL.md states the contract and names the consumer, and a contract gate per producer diffs the emitted payload against the fixture published on `origin/main` and fails until the bump that diff obliges has been performed — so a shape change cannot reach the consumer silently.",
+      "priority": "Must",
+      "status": "active",
+      "required_layers": [
+        "e2e"
+      ],
+      "required_layers_source": "inferred_legacy",
+      "tests": {},
+      "coverage": {
+        "e2e": "MISSING"
+      }
+    }
+  },
+  "orphans": [],
+  "invalid_tags": [],
+  "untagged_tests": [
+    "integration-tests/test_aggregate_triage_fanout.py::test_aggregate_triage_fanout_concurrent_one_regen",
+    "integration-tests/test_aggregate_triage_fanout.py::test_aggregate_triage_fanout_per_session_independent",
+    "integration-tests/test_aggregate_triage_fanout.py::test_aggregate_triage_fanout_regenerates_once",
+    "integration-tests/test_autopilot_flow.py::test_complete_section_1",
+    "integration-tests/test_autopilot_flow.py::test_context_pressure_triggers_checkpoint",
+    "integration-tests/test_autopilot_flow.py::test_dashboard_initial",
+    "integration-tests/test_autopilot_flow.py::test_full_autopilot_lifecycle",
+    "integration-tests/test_autopilot_flow.py::test_initial_progress",
+    "integration-tests/test_autopilot_flow.py::test_no_pressure_below_threshold",
+    "integration-tests/test_autopilot_flow.py::test_resume_after_checkpoint",
+    "integration-tests/test_behavior_snapshot_gate.py::test_catalog_reduction_dead_code_stays_green",
+    "integration-tests/test_behavior_snapshot_gate.py::test_clean_simplify_stays_green",
+    "integration-tests/test_behavior_snapshot_gate.py::test_hidden_side_effect_rejected",
+    "integration-tests/test_behavior_snapshot_gate.py::test_removed_coverage_rejected",
+    "integration-tests/test_behavior_snapshot_gate.py::test_snapshot_refuses_red_baseline",
+    "integration-tests/test_behavior_snapshot_gate.py::test_snapshot_warns_when_no_node_ids",
+    "integration-tests/test_behavior_snapshot_gate.py::test_verify_replays_snapshot_command_without_test_cmd",
+    "integration-tests/test_bloat_gate_fanout.py::test_bloat_gate_fanout_blocks_once",
+    "integration-tests/test_bloat_gate_fanout.py::test_bloat_gate_fanout_concurrent_one_blocker",
+    "integration-tests/test_bloat_gate_fanout.py::test_bloat_gate_fanout_per_session_independent",
+    "integration-tests/test_ci_lint_gate.py::test_curated_ruff_ruleset_present",
+    "integration-tests/test_ci_lint_gate.py::test_job_name_does_not_claim_type",
+    "integration-tests/test_ci_lint_gate.py::test_lint_step_gates_and_is_not_neutered",
+    "integration-tests/test_ci_self_gating.py::test_integration_step_does_not_swallow_failures",
+    "integration-tests/test_ci_self_gating.py::test_integration_step_not_continue_on_error",
+    "integration-tests/test_compliance_enforcement.py::test_custom_thresholds_from_config",
+    "integration-tests/test_compliance_enforcement.py::test_hooks_ignore_non_matching_commands",
+    "integration-tests/test_compliance_enforcement.py::test_hooks_transparent_early_pipeline",
+    "integration-tests/test_compliance_enforcement.py::test_override_logging_integration",
+    "integration-tests/test_compliance_enforcement.py::test_rtm_hook_allows_commit_when_coverage_ok",
+    "integration-tests/test_compliance_enforcement.py::test_rtm_hook_blocks_commit_after_build",
+    "integration-tests/test_compliance_enforcement.py::test_security_hook_allows_deploy_when_clean",
+    "integration-tests/test_compliance_enforcement.py::test_security_hook_blocks_deploy_with_findings",
+    "integration-tests/test_compliance_enforcement.py::test_write_section_on_stop_invalid_payload",
+    "integration-tests/test_compliance_enforcement.py::test_write_section_on_stop_missing_transcript",
+    "integration-tests/test_compliance_hook_failopen.py::test_both_bash_gates_use_no_project",
+    "integration-tests/test_compliance_hook_failopen.py::test_diagnostic_names_the_failing_hook",
+    "integration-tests/test_compliance_hook_failopen.py::test_hooks_json_is_valid_json",
+    "integration-tests/test_compliance_hook_failopen.py::test_rtm_coverage_fails_open_on_internal_crash",
+    "integration-tests/test_compliance_hook_failopen.py::test_security_scan_fails_open_on_internal_crash",
+    "integration-tests/test_core_trilogy_flow.py::test_01_project_setup",
+    "integration-tests/test_core_trilogy_flow.py::test_02_project_chat_mode",
+    "integration-tests/test_core_trilogy_flow.py::test_03_project_simulate_interview_and_manifest",
+    "integration-tests/test_core_trilogy_flow.py::test_04_project_write_specs_and_config",
+    "integration-tests/test_core_trilogy_flow.py::test_05_plan_setup",
+    "integration-tests/test_core_trilogy_flow.py::test_06_plan_simulate_full_flow",
+    "integration-tests/test_core_trilogy_flow.py::test_07_build_setup",
+    "integration-tests/test_core_trilogy_flow.py::test_08_build_tools",
+    "integration-tests/test_core_trilogy_flow.py::test_09_full_trilogy_artifacts",
+    "integration-tests/test_core_trilogy_flow.py::test_10_design_setup_re_run_idempotency",
+    "integration-tests/test_cross_surface_backcompat.py::test_crash_recover_reclaim_complete_advances",
+    "integration-tests/test_cross_surface_backcompat.py::test_degraded_gate_is_loud",
+    "integration-tests/test_cross_surface_backcompat.py::test_run_skill_does_not_decline_on_any_surface",
+    "integration-tests/test_devops_flow.py::test_changelog_on_trilogy_commits",
+    "integration-tests/test_devops_flow.py::test_parse_and_categorize",
+    "integration-tests/test_devops_flow.py::test_profile_command_mapping",
+    "integration-tests/test_devops_flow.py::test_run_echo_as_test",
+    "integration-tests/test_devops_flow.py::test_setup_detects_commits",
+    "integration-tests/test_devops_flow.py::test_smoke_test_structure",
+    "integration-tests/test_devops_flow.py::test_validate_with_token",
+    "integration-tests/test_devops_flow.py::test_validate_without_token",
+    "integration-tests/test_events_log_parity.py::test_parity_in_main_repo",
+    "integration-tests/test_events_log_parity.py::test_parity_inside_worktree",
+    "integration-tests/test_events_log_parity.py::test_parity_non_git_dir",
+    "integration-tests/test_fr_table_drift_protection.py::test_both_parsers_extract_equivalent_fr_rows",
+    "integration-tests/test_fr_table_drift_protection.py::test_both_parsers_have_compatible_capture_arity",
+    "integration-tests/test_fr_table_drift_protection.py::test_both_parsers_reject_non_fr_lines",
+    "integration-tests/test_fr_table_drift_protection.py::test_probe_crlf_line_endings",
+    "integration-tests/test_fr_table_drift_protection.py::test_probe_extra_trailing_whitespace",
+    "integration-tests/test_fr_table_drift_protection.py::test_probe_hash_in_description_value",
+    "integration-tests/test_fr_table_drift_protection.py::test_probe_known_limitation_pipe_inside_description",
+    "integration-tests/test_fr_table_drift_protection.py::test_probe_leading_whitespace_before_pipe",
+    "integration-tests/test_fr_table_drift_protection.py::test_probe_non_ascii_in_description",
+    "integration-tests/test_fr_table_drift_protection.py::test_probe_utf8_bom_at_file_start",
+    "integration-tests/test_hook_fanout_consolidation.py::test_audit_phase_from_session_state_not_plugin_root",
+    "integration-tests/test_hook_fanout_consolidation.py::test_check_file_size_marker_converges",
+    "integration-tests/test_hook_fanout_consolidation.py::test_drift_fanout_emits_once",
+    "integration-tests/test_hook_fanout_consolidation.py::test_foreign_first_invocation_does_not_block",
+    "integration-tests/test_hook_fanout_consolidation.py::test_handoff_fanout_runs_once",
+    "integration-tests/test_hook_fanout_consolidation.py::test_mark_plugin_edit_marker_converges",
+    "integration-tests/test_hook_fanout_consolidation.py::test_robust_when_first_plugin_disabled",
+    "integration-tests/test_hook_fanout_consolidation.py::test_stop_audit_fanout_concurrent_one_winner",
+    "integration-tests/test_hook_fanout_consolidation.py::test_stop_audit_fanout_runs_once",
+    "integration-tests/test_lock_serialization_subprocess.py::test_four_parallel_appends_against_legacy_array",
+    "integration-tests/test_lock_serialization_subprocess.py::test_parallel_appends_on_clean_project",
+    "integration-tests/test_multi_session_removal_residue.py::test_deleted_module_is_gone",
+    "integration-tests/test_multi_session_removal_residue.py::test_every_phase_skill_still_recovers_its_context_via_phase_task_id",
+    "integration-tests/test_multi_session_removal_residue.py::test_load_bearing_module_survived",
+    "integration-tests/test_multi_session_removal_residue.py::test_no_hooks_json_registers_a_deleted_hook",
+    "integration-tests/test_multi_session_removal_residue.py::test_no_live_source_emits_a_phase_launch_card",
+    "integration-tests/test_multi_session_removal_residue.py::test_no_live_source_imports_a_deleted_module",
+    "integration-tests/test_multi_session_removal_residue.py::test_no_live_source_offers_multi_session_as_a_selectable_mode",
+    "integration-tests/test_multi_session_removal_residue.py::test_no_shipped_skill_gates_on_the_deleted_context_block",
+    "integration-tests/test_multi_session_removal_residue.py::test_phase_task_lifecycle_still_exposes_every_mutator_the_loop_needs",
+    "integration-tests/test_parallel_iterate_isolation.py::test_both_runs_pass_the_leak_guard",
+    "integration-tests/test_parallel_iterate_isolation.py::test_each_run_gets_own_worktree_and_branch",
+    "integration-tests/test_parallel_iterate_isolation.py::test_leak_into_main_tree_is_caught",
+    "integration-tests/test_parallel_iterate_isolation.py::test_main_tree_stays_clean",
+    "integration-tests/test_parallel_iterate_isolation.py::test_no_cross_tree_write",
+    "integration-tests/test_parallel_iterate_isolation.py::test_slug_collision_rejected",
+    "integration-tests/test_parallel_iterates_no_merge_conflict.py::test_aggregator_does_not_delete_drops_outside_its_snapshot",
+    "integration-tests/test_parallel_iterates_no_merge_conflict.py::test_migration_on_both_branches_merges_cleanly",
+    "integration-tests/test_parallel_iterates_no_merge_conflict.py::test_two_independent_iterates_merge_without_conflict",
+    "integration-tests/test_phase_invocation_mode_integration.py::test_current_step_never_advances_and_cannot_identify_a_split_task",
+    "integration-tests/test_phase_invocation_mode_integration.py::test_every_dispatched_phase_resolves_as_pipeline",
+    "integration-tests/test_phase_invocation_mode_integration.py::test_out_of_band_invocation_during_a_live_run_warns",
+    "integration-tests/test_phase_invocation_mode_integration.py::test_replayed_token_from_a_finished_phase_is_an_error_not_standalone",
+    "integration-tests/test_phase_skill_invocation_mode_canon.py::test_driven_phase_registry_matches_the_lifecycle_map",
+    "integration-tests/test_phase_skill_invocation_mode_canon.py::test_no_undriven_skill_carries_an_invocation_mode_section",
+    "integration-tests/test_phase_skill_invocation_mode_canon.py::test_registered_file_never_names_a_v1_state_field",
+    "integration-tests/test_phase_skill_invocation_mode_canon.py::test_registered_file_resolves_the_mode_via_the_shared_resolver",
+    "integration-tests/test_removal_survivors_offpath.py::test_gate_policy_activates_for_a_driven_single_session_run",
+    "integration-tests/test_removal_survivors_offpath.py::test_gate_policy_is_inert_for_a_standalone_project",
+    "integration-tests/test_removal_survivors_offpath.py::test_generic_handoff_still_written_after_the_phase_branch_was_cut",
+    "integration-tests/test_removal_survivors_offpath.py::test_phase_completion_fallback_still_fires",
+    "integration-tests/test_shared_contracts_consumers.py::test_boundary_coverage_no_iterate_lib_path",
+    "integration-tests/test_shared_contracts_consumers.py::test_boundary_coverage_no_sys_path_insert",
+    "integration-tests/test_shared_contracts_consumers.py::test_boundary_coverage_uses_contract",
+    "integration-tests/test_shared_contracts_consumers.py::test_compliance_bridge_no_ancestor_walk",
+    "integration-tests/test_shared_contracts_consumers.py::test_compliance_bridge_no_subprocess_for_compliance",
+    "integration-tests/test_shared_contracts_consumers.py::test_compliance_bridge_uses_contract",
+    "integration-tests/test_shared_contracts_consumers.py::test_compliance_contract_end_to_end",
+    "integration-tests/test_shared_contracts_consumers.py::test_compliance_contract_importable",
+    "integration-tests/test_shared_contracts_consumers.py::test_iterate_contract_idempotent_import",
+    "integration-tests/test_shared_contracts_consumers.py::test_iterate_contract_importable",
+    "integration-tests/test_shared_contracts_consumers.py::test_iterate_contract_is_io_boundary_change",
+    "integration-tests/test_shared_contracts_consumers.py::test_top_level_shared_contracts_init_reexports",
+    "integration-tests/test_shared_contracts_consumers_behavior.py::test_compliance_bridge_no_importlib_module_dispatch",
+    "integration-tests/test_shared_contracts_consumers_behavior.py::test_compliance_bridge_no_phase_reports_duplication",
+    "integration-tests/test_shared_contracts_consumers_behavior.py::test_contract_phase_reports_matches_compliance_plugin_source",
+    "integration-tests/test_shared_contracts_consumers_behavior.py::test_run_update_compliance_unknown_phase_isolated",
+    "integration-tests/test_shared_contracts_consumers_behavior.py::test_run_update_compliance_writes_canonical_reports",
+    "integration-tests/test_shipwright_run_e2e.py::test_existing_project_infers_extension",
+    "integration-tests/test_shipwright_run_e2e.py::test_extension_without_iterate_flag",
+    "integration-tests/test_shipwright_run_e2e.py::test_full_pipeline",
+    "integration-tests/test_shipwright_run_e2e.py::test_iterate_flag_deprecated_still_accepted",
+    "integration-tests/test_shipwright_run_e2e.py::test_resume_after_each_step",
+    "integration-tests/test_single_session_capstone.py::test_build_failure_mid_fanout_halts_and_plans_no_next_split",
+    "integration-tests/test_single_session_capstone.py::test_gate_walk_with_section_writer_regression",
+    "integration-tests/test_single_session_capstone.py::test_pipeline_identical_across_surfaces",
+    "integration-tests/test_single_session_pipeline.py::test_claimed_but_unwritten_artifact_is_rejected",
+    "integration-tests/test_single_session_pipeline.py::test_failure_mid_pipeline_halts_with_no_successor",
+    "integration-tests/test_single_session_pipeline.py::test_full_pipeline_with_split_fanout_completes",
+    "integration-tests/test_single_session_resume_integration.py::test_dead_master_resumes_and_replays_idempotently",
+    "integration-tests/test_single_session_sole_mode.py::test_fresh_run_is_single_session",
+    "integration-tests/test_single_session_sole_mode.py::test_full_pipeline_runs_to_complete_without_the_engine",
+    "integration-tests/test_single_session_sole_mode.py::test_help_does_not_advertise_the_removed_mode",
+    "integration-tests/test_single_session_sole_mode.py::test_loop_emits_one_tracked_start_end_pair_per_split",
+    "integration-tests/test_single_session_sole_mode.py::test_session_uuid_is_still_the_claim_token",
+    "integration-tests/test_single_session_sole_mode.py::test_stale_multi_session_config_is_refused_with_no_side_effects",
+    "integration-tests/test_single_session_sole_mode.py::test_write_config_refuses_the_removed_mode",
+    "integration-tests/test_state_recovery.py::test_build_config_tracks_progress",
+    "integration-tests/test_state_recovery.py::test_force_overwrite",
+    "integration-tests/test_state_recovery.py::test_project_config_readable_by_build",
+    "integration-tests/test_state_recovery.py::test_resume_after_dirs",
+    "integration-tests/test_state_recovery.py::test_resume_after_interview",
+    "integration-tests/test_state_recovery.py::test_resume_after_manifest",
+    "integration-tests/test_state_recovery.py::test_resume_after_partial_sections",
+    "integration-tests/test_state_recovery.py::test_resume_after_plan",
+    "integration-tests/test_state_recovery.py::test_resume_after_specs",
+    "integration-tests/test_state_recovery.py::test_resume_all_sections_done"
+  ]
+}

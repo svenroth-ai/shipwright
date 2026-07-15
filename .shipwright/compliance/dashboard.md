@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-07-15T19:39:03.297223+00:00
+Generated: 2026-07-15T21:17:40.986510+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -12,9 +12,9 @@ Scope: library
 
 | | Dimension | Signal | Anchor |
 |---|-----------|--------|--------|
-| ✅ | Requirement traceability | 14/15 FRs covered; 306/306 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
+| ✅ | Requirement traceability | 14/15 FRs covered; 307/307 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
 | ✅ | Test health | latest full suite 4749/4749 (2026-07-10) | automated tests pass (OpenSSF Scorecard) |
-| ✅ | Change traceability | 306/306 changes linked to a commit, ADR or test run | change provenance (SLSA) |
+| ✅ | Change traceability | 307/307 changes linked to a commit, ADR or test run | change provenance (SLSA) |
 | ⚠️ | Change reconciliation | 2/7 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
 | ✅ | Security | 0 open high/critical | no open high/critical vulns (NIST SSDF) |
 | ✅ | Size / maintainability discipline | ratchet delta -88 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
@@ -22,13 +22,13 @@ Scope: library
 
 > 📊 **Test-Health · diff-coverage (Control-Grade input · target ≥80%):** not measured this session — per-PR signal; see the CI "Diff coverage" artifact.
 
-Verified from: `shipwright_events.jsonl (306 events, 2026-05-02 → 2026-07-15)`
+Verified from: `shipwright_events.jsonl (307 events, 2026-05-02 → 2026-07-15)`
 
 _Grade = importance-weighted average over the measurable dimensions (n/a excluded from the denominator), modeled on OpenSSF Scorecard. Age is neutral; only unreconciled change and net growth are control failures. Each Anchor names the open standard the dimension follows — see the guide's Control-Grade dimensions table._
 
 ## 🛡️ CI Security (fail-closed gate)
 
-Latest scan: **2026-07-15** · source `security.yml#29420993343` · critical-gate **✅ PASS**
+Latest scan: **2026-07-15** · source `security.yml#29446134691` · critical-gate **✅ PASS**
 
 | Severity | Count |
 |----------|-------|
@@ -52,21 +52,21 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Metric | Value | Status | Why warn? |
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
-| Work events (iterate) | 306 changes | INFO |  |
+| Work events (iterate) | 307 changes | INFO |  |
 | Recent changes traced to an FR | 3/30 (10%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
-| All unit tests passing | 4749/4749 | PASS | +18 change(s) since last full suite |
+| All unit tests passing | 4749/4749 | PASS | +19 change(s) since last full suite |
 | Architecture decisions | 326 ADRs | INFO |  |
 | Iterate tests passing | 46/56 testable changes tested | WARN | 10 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 11 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 7 open | WARN | 7 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Triage open | 6 open | WARN | 6 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit (grandfathered) | 124 | INFO |  |
 | Bloat in allowlist | 155 entries | INFO |  |
 | Bloat ratchet delta | -88 lines | PASS |  |
 
 ## Project Velocity
 
-- Iterate: 306 changes (2026-05-02 → 2026-07-15)
+- Iterate: 307 changes (2026-05-02 → 2026-07-15)
 - Last activity: 2026-07-15
 
 ## External LLM Review Evidence
@@ -79,7 +79,9 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 
 ## 🔎 Consistency Audit
 
-_Detective cross-artifact audit not run this session — run `/shipwright-compliance` to refresh._
+Detective audit (2026-06-14): **FAIL — drift found** · 51 checks — 38 pass, 1 fail, 12 skip.
+
+_Inlined from `audit-report.json` (a gitignored transient — no external link, so this stays visible on the public repo)._
 
 ## Compliance Artifacts
 

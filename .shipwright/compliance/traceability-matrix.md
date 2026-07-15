@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-15T19:39:03.297223+00:00
+Generated: 2026-07-15T21:17:40.986510+00:00
 
 ## Requirements Coverage
 
@@ -28,6 +28,7 @@ Generated: 2026-07-15T19:39:03.297223+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-3823741d"></a>Compliance can now record which tests cover each requirement, and at which layer (unit/integration/e2e), by reading @FR tags on the tests. | iterate | feature |  | 1009/1009 | — | 2026-07-15 |
 | <a id="evt-91b3f7a9"></a>freeze requirement->test traceability contracts + panel-verified harness (P1) | iterate | change |  | — | — | 2026-07-15 |
 | <a id="evt-c1b23d3b"></a>Add a UTF-8 reconfigure guard to finalize_iterate.py main() (stdout+stderr) plus two cp1252 subprocess regression tests | iterate | change |  | — | — | 2026-07-15 |
 | <a id="evt-fdd65a28"></a>Iterate merges no longer get stuck when the CI-security summary file conflicts — it is now auto-resolved like the other generated compliance files. | iterate | bug |  | 41/41 | — | 2026-07-15 |
@@ -341,7 +342,7 @@ Generated: 2026-07-15T19:39:03.297223+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 306 |
+| Iterate changes | 307 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |

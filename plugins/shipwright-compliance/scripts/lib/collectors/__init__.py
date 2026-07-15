@@ -67,6 +67,10 @@ from .test_evidence import (
     collect_test_files,
     collect_test_results,
 )
+from .test_links import (
+    build_manifest as build_test_traceability_manifest,
+    generate_file as generate_test_links,
+)
 
 
 def collect_all(project_root: Path) -> ComplianceData:
@@ -151,6 +155,9 @@ __all__ = [
     "UNKNOWN_LICENSE",
     # Top-level entry
     "collect_all",
+    # Traceability manifest (campaign TT1)
+    "build_test_traceability_manifest",
+    "generate_test_links",
     # Collectors
     "collect_configs",
     "collect_dependencies",

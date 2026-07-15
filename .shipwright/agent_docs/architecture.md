@@ -231,3 +231,4 @@ _Existing user-facing documentation discovered by /shipwright-adopt._
 - **ADR-324** (2026-07-11): Brief-intake: /shipwright-run accepts a pre-filled wizard brief
 - **ADR-325** (2026-07-11): Iterate-Rail per-phase durations via boundary-mark sidecar
 - **ADR-326** (2026-07-11): Per-split phase_completed: dedup on (phase, splitId)
+- **iterate-2026-07-15-tag-convention-and-manifest** (2026-07-15): Data-flow — new `test_links` compliance collector emits `.shipwright/compliance/test-traceability.json` (schema v2), the backward test→FR link + per-layer join built from `@FR` tags across pytest/Playwright/Vitest; wired into `update_compliance` PHASE_REPORTS. Consumed next by the layer-aware RTM (TT2). → decision_log (Run-ID).
