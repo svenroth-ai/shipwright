@@ -31,7 +31,7 @@ from pathlib import Path
 _SCRIPTS_DIR = Path(__file__).resolve().parent.parent  # shared/scripts
 sys.path.insert(0, str(_SCRIPTS_DIR))
 
-from lib.churn_merge import DERIVED_MDS, is_campaign_status  # noqa: E402
+from lib.churn_merge import CI_SECURITY_SUMMARY, DERIVED_MDS, is_campaign_status  # noqa: E402
 from tools import resolve_churn_conflicts as rcc  # noqa: E402
 
 
@@ -171,10 +171,15 @@ def integrate(
         )
         failed = [k for k, v in outcomes.items() if v == "error"]
         if failed:
-            # Transactional rollback: restore every derived MD AND any campaign
+            # Transactional rollback: restore every derived snapshot (the .md set
+            # AND the ci-security.json summary, whose best-effort refresh may have
+            # mutated it before another generator failed) AND any campaign
             # status.json touched this pass (campaign S3) to the just-made merge
             # commit, so a partial regeneration never leaves a dirty tree.
-            restorable = [p for p in sorted(DERIVED_MDS) if (project_root / p).exists()]
+            restorable = [
+                p for p in sorted(DERIVED_MDS | {CI_SECURITY_SUMMARY})
+                if (project_root / p).exists()
+            ]
             restorable += [
                 k for k in sorted(outcomes)
                 if is_campaign_status(k) and (project_root / k).exists()

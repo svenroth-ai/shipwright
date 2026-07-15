@@ -1,37 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-15-finalize-bundle"
+run_id: "iterate-2026-07-15-churn-allowlist-ci-security"
 phase: "iterate"
-reason: "iterate: finalize bundle (duration campaign part 2)"
-timestamp: "2026-07-15T07:13:33.307263+00:00"
+reason: "iterate: admit ci-security.json to the churn-merge allowlist"
+timestamp: "2026-07-15T13:09:54.465587+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-15 07:13:33 UTC
+> Auto-generated 2026-07-15 13:09:54 UTC
 
 ## Session Info
 
-- **Session ID**: 04a272a1-7fbf-498d-9f3a-c01212a48704
-- **Timestamp**: 2026-07-15 07:13:33 UTC
-- **Reason**: iterate: finalize bundle (duration campaign part 2)
+- **Session ID**: d983bbf3-1318-4c52-b579-b6bdda1d1bd4
+- **Timestamp**: 2026-07-15 13:09:54 UTC
+- **Reason**: iterate: admit ci-security.json to the churn-merge allowlist
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-15-finalize-bundle
-- **Date**: 2026-07-15T07:13:28.948310Z
-- **Type**: change
+- **Run ID**: iterate-2026-07-15-churn-allowlist-ci-security
+- **Date**: 2026-07-15T13:09:49.898766Z
+- **Type**: bug
 - **Complexity**: medium
-- **Branch**: iterate/finalize-bundle
-- **ADR**: iterate-2026-07-15-finalize-bundle
+- **Branch**: iterate/churn-allowlist-ci-security
+- **ADR**: iterate-2026-07-15-churn-allowlist-ci-security
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-15-finalize-bundle.md
+- **Spec**: .shipwright/planning/iterate/2026-07-15-churn-allowlist-ci-security.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/finalize-bundle
-- **Spec**: .shipwright/planning/iterate/2026-07-15-finalize-bundle.md
-- **External Review Marker**: stale (predates spec (2026-07-15T06:23:09))
+- **Branch**: iterate/churn-allowlist-ci-security
+- **Run ID**: iterate-2026-07-15-churn-allowlist-ci-security
+- **Spec**: .shipwright/planning/iterate/2026-07-15-churn-allowlist-ci-security.md
+- **Complexity**: medium (floor: `cross_component` — the diff touches
+- **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
@@ -49,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/finalize-bundle
-- **Last Commit**: 017459b6 chore(triage): sweep 2 outbox append(s) into branch
+- **Branch**: iterate/churn-allowlist-ci-security
+- **Last Commit**: 7fe025aa chore(triage): sweep 3 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -66,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-80db7446 | grade_snapshot | — | 2026-07-15 |
-| evt-deb20021 | work_completed | iterate (finalize_bundle.py orchestrator + drop-tool idempotency (duration campaign part 2)) | 2026-07-15 |
-| evt-1bd60514 | grade_snapshot | — | 2026-07-15 |
-| evt-08956f26 | grade_snapshot | — | 2026-07-14 |
-| evt-27b3b806 | grade_snapshot | — | 2026-07-14 |
+| evt-8eef5509 | grade_snapshot | — | 2026-07-15 |
+| evt-fdd65a28 | work_completed | iterate (admit ci-security.json to the churn-merge allowlist (+ rollback parity)) | 2026-07-15 |
+| evt-1f6b2bca | grade_snapshot | — | 2026-07-15 |
+| evt-d23adfee | grade_snapshot | — | 2026-07-15 |
+| evt-54e93bec | work_completed | iterate (Redirect perf-check integration test --cwd to tmp_path so the runner's triage emission stops leaking into the tracked fixtures dir) | 2026-07-15 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 302
-- **Last iterate**: change — finalize_bundle.py orchestrator + drop-tool idempotency (duration campaign part 2) (2026-07-15)
+- **Total work events**: 304
+- **Last iterate**: bug — admit ci-security.json to the churn-merge allowlist (+ rollback parity) (2026-07-15)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

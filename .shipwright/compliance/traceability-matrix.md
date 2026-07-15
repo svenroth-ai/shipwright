@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-15T07:13:29.031025+00:00
+Generated: 2026-07-15T13:09:49.978463+00:00
 
 ## Requirements Coverage
 
@@ -28,6 +28,7 @@ Generated: 2026-07-15T07:13:29.031025+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-fdd65a28"></a>Iterate merges no longer get stuck when the CI-security summary file conflicts — it is now auto-resolved like the other generated compliance files. | iterate | bug |  | 41/41 | — | 2026-07-15 |
 | <a id="evt-deb20021"></a>The finalize phase can now run its steps as one bundled command instead of several separate ones, and two internal log-writers no longer create duplicate entries when a step is re-run. | iterate | change |  | 42/42 | — | 2026-07-15 |
 | <a id="evt-54e93bec"></a>A test in the testing plugin used to leave a stray .shipwright folder in the tracked test fixtures every time it ran; it now writes to a throwaway temp folder, so the repository stays clean. | iterate | bug |  | 143/143 | — | 2026-07-15 |
 | <a id="evt-622c1582"></a>Pipeline phases now correctly know whether they are part of an orchestrated run, instead of sometimes mistaking a real pipeline run for a one-off manual run. | iterate | bug |  | 33/33 | — | 2026-07-14 |
@@ -338,7 +339,7 @@ Generated: 2026-07-15T07:13:29.031025+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 303 |
+| Iterate changes | 304 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |
