@@ -1,33 +1,44 @@
+---
+canon_generated: true
+run_id: "iterate-2026-07-14-f0-parallel-suite"
+phase: "iterate"
+reason: "iterate: F0 parallel suite runner"
+timestamp: "2026-07-14T22:44:30.319245+00:00"
+---
+
 # Session Handoff
 
-> Auto-generated 2026-07-14 23:08:05 UTC
+> Auto-generated 2026-07-14 22:44:30 UTC
 
 ## Session Info
 
-- **Session ID**: e5a4eb07-e36d-4d16-9290-2c48215b6b78
-- **Timestamp**: 2026-07-14 23:08:05 UTC
-- **Reason**: post-finalization fixups: agent-doc budget trim
+- **Session ID**: c40d2729-5d8c-4a25-bcb2-05a6496312c5
+- **Timestamp**: 2026-07-14 22:44:30 UTC
+- **Reason**: iterate: F0 parallel suite runner
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-14-phase-invocation-mode
-- **Date**: 2026-07-14T23:08:22.204756Z
-- **Type**: bug
+- **Run ID**: iterate-2026-07-14-f0-parallel-suite
+- **Date**: 2026-07-14T22:43:36.033498Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/phase-invocation-mode
-- **ADR**: iterate-2026-07-14-phase-invocation-mode
+- **Branch**: iterate/f0-parallel-suite
+- **ADR**: iterate-2026-07-14-f0-parallel-suite
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-14-phase-invocation-mode.md
+- **Spec**: .shipwright/planning/iterate/2026-07-14-f0-parallel-suite.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/phase-invocation-mode
-- **Spec**: .shipwright/planning/iterate/2026-07-14-phase-invocation-mode.md
-- **External Review Marker**: missing
+- **Branch**: iterate/f0-parallel-suite
+- **Run ID**: iterate-2026-07-14-f0-parallel-suite
+- **Spec**: .shipwright/planning/iterate/2026-07-14-f0-parallel-suite.md
+- **Complexity**: medium
+- **External Review Marker**: stale (predates spec (2026-07-14T21:31:17))
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -41,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/phase-invocation-mode
-- **Last Commit**: 7abf260e fix(phases)!: detect invocation mode from the dispatch token, not the never-advanced v1 current_step (#369 follow-up)
+- **Branch**: iterate/f0-parallel-suite
+- **Last Commit**: e01334a8 chore(triage): sweep 1 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -58,17 +69,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-55c016da | grade_snapshot | — | 2026-07-14 |
-| evt-622c1582 | work_completed | iterate (Phase skills detect invocation mode from the dispatch token, not the never-advanced v1 current_step; update-step made inert in a driven run.) | 2026-07-14 |
-| evt-66217d75 | grade_snapshot | — | 2026-07-14 |
-| evt-fec83856 | grade_snapshot | — | 2026-07-14 |
-| evt-a670d8da | work_completed | iterate (Sweep drift/dismiss-loss fix complete; PR pending) | 2026-07-14 |
+| evt-08956f26 | grade_snapshot | — | 2026-07-14 |
+| evt-27b3b806 | grade_snapshot | — | 2026-07-14 |
+| evt-97b242ee | grade_snapshot | — | 2026-07-14 |
+| evt-ee294bfa | grade_snapshot | — | 2026-07-14 |
+| evt-5dc16a45 | work_completed | iterate (F0 parallel suite runner) | 2026-07-14 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 300
-- **Last iterate**: bug — Phase skills detect invocation mode from the dispatch token, not the never-advanced v1 current_step; update-step made inert in a driven run. (2026-07-14)
+- **Last iterate**: change — F0 parallel suite runner (2026-07-14)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

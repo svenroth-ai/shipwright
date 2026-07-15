@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-07-14T23:08:01.730971+00:00
+Generated: 2026-07-14T22:43:21.236306+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -17,7 +17,7 @@ Scope: library
 | ✅ | Change traceability | 300/300 changes linked to a commit, ADR or test run | change provenance (SLSA) |
 | ⚠️ | Change reconciliation | 2/7 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
 | ✅ | Security | 0 open high/critical | no open high/critical vulns (NIST SSDF) |
-| ✅ | Size / maintainability discipline | ratchet delta -34 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
+| ✅ | Size / maintainability discipline | ratchet delta -86 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
 | ✅ | Dependency hygiene | 0 unresolved / 11 licenses; 0 copyleft | dependency license & risk (OWASP) |
 
 > 📊 **Test-Health · diff-coverage (Control-Grade input · target ≥80%):** not measured this session — per-PR signal; see the CI "Diff coverage" artifact.
@@ -53,16 +53,16 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
 | Work events (iterate) | 300 changes | INFO |  |
-| Recent changes traced to an FR | 2/30 (7%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
+| Recent changes traced to an FR | 3/30 (10%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
 | All unit tests passing | 4749/4749 | PASS | +12 change(s) since last full suite |
 | Architecture decisions | 326 ADRs | INFO |  |
-| Iterate tests passing | 45/55 testable changes tested | WARN | 10 testable change(s) without tests — see test-evidence.md |
+| Iterate tests passing | 46/56 testable changes tested | WARN | 10 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 11 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 4 open | WARN | 4 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Triage open | 5 open | WARN | 5 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit (grandfathered) | 124 | INFO |  |
 | Bloat in allowlist | 155 entries | INFO |  |
-| Bloat ratchet delta | -34 lines | PASS |  |
+| Bloat ratchet delta | -86 lines | PASS |  |
 
 ## Project Velocity
 

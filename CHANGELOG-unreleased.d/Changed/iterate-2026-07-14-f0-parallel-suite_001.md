@@ -1,0 +1,1 @@
+F0 verification gate now runs the test suite as parallel processes (~9.8min to ~1.5min) via a new shared/scripts/tools/run_test_suite.py, with per-unit pytest-xdist opt-in and a serial re-verify that keeps the gate exactly as strict

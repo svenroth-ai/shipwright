@@ -1,6 +1,6 @@
 # Test Evidence Report
 
-Generated: 2026-07-14T23:08:01.730971+00:00
+Generated: 2026-07-14T22:43:21.236306+00:00
 
 ## Summary
 
@@ -14,7 +14,7 @@ Generated: 2026-07-14T23:08:01.730971+00:00
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | Pipeline phases now correctly know whether they are part of an orchestrated run, instead of sometimes mistaking a real pipeline run for a one-off manual run. | [iterate](traceability-matrix.md#evt-622c1582) | mixed | +0 | 33/33 | PASS | 2026-07-14 |
+| 1 | The pre-commit test gate now runs the test groups at the same time instead of one after another, cutting the wait from about ten minutes to under two, with a safety net that re-checks anything that looks failed so the gate stays exactly as strict. | [iterate](traceability-matrix.md#evt-5dc16a45) | mixed | +0 | 54/54 | PASS | 2026-07-14 |
 | 2 | Sweep drift/dismiss-loss fix complete; PR pending | [iterate](traceability-matrix.md#evt-a670d8da) | — | +0 | — | — | 2026-07-14 |
 | 3 | iterate complete: multi-session removal | [iterate](traceability-matrix.md#evt-a5b70713) | — | +0 | — | — | 2026-07-14 |
 | 4 | Cross-repo output contracts: shipwright-grade's ReportModel (grade.py --format json) and shipwright-adopt's snapshot.json are rendered field-for-field by the Command Center WebUI. Both now carry a schema_version (major=breaking, the consumer must refuse to render; minor=additive), both SKILL.mds state the contract and name the consumer, and a contract gate per producer diffs the emitted JSON wire-shape against the fixture published on origin/main -- a baseline a PR cannot rewrite -- derives the bump that diff obliges, and fails until it has been performed. Also fixes a dead detector found while pinning the contract: adopt's git.major_refactor_commits returned [] for every repository. | [iterate](traceability-matrix.md#evt-edcf1064) | — | +0 | — | — | 2026-07-14 |
@@ -350,7 +350,7 @@ _Synthesized from per-iterate **unit** results — Integration / pgTAP / E2E / S
 | 27 | iterate | 28/28 | — | — | — | — | 2026-07-11 |
 | 28 | iterate | 22/22 | — | — | — | — | 2026-07-11 |
 | 29 | iterate | 37/37 | — | — | — | — | 2026-07-12 |
-| 30 | iterate | 33/33 | — | — | — | — | 2026-07-14 |
+| 30 | iterate | 54/54 | — | — | — | — | 2026-07-14 |
 
 ## Code Review Evidence
 

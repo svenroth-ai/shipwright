@@ -2012,6 +2012,37 @@ When a phase detects missing prerequisite artifacts, it should attempt to derive
 | **Test** (Step B3) | `visual-guidelines.md`, `screen-routes.json`, `claude-plan-e2e.md`, `dev_url`, `playwright.config.ts` |
 | **Plan** (Step 8) | `claude-plan-e2e.md` (if UI project, default enabled) |
 
+### F0 Fresh Verification Gate — the suite runner (iterate-2026-07-14-f0-parallel-suite)
+
+F0 re-runs the whole suite before every iterate commit. It now has a canonical
+runner instead of an improvised, serial command:
+
+```bash
+uv run "{shared_root}/scripts/tools/run_test_suite.py" --project-root "{project_root}"
+```
+
+| Aspect | Rule |
+|---|---|
+| **Unit selection** | **Discovered**, never hardcoded — the same rule as `ci.yml` (`plugins/*/` with `pyproject.toml` + `tests/`, the three `shared/` test dirs, `integration-tests/`). A new plugin is included automatically. Drift guard: `shared/scripts/tools/tests/test_f0_ci_parity.py` fails if `ci.yml` stops using that rule. |
+| **Parallelism** | Units run as parallel processes (they are already isolated processes — ADR-044). |
+| **xdist** | **Per-unit OPT-IN** via `suite.xdist` in `shipwright_test_config.json`. A global `-n auto` is FORBIDDEN. **`shipwright-compliance` must stay off the allowlist** — it is not xdist-safe (shared-state races in `test_test_evidence.py`). |
+| **"pytest ran?"** | PROVEN by the JUnit report file, never guessed from output prose (`uv run` also exits 1 when it fails to build the env; pytest pluralises `error`→`errors`, so a fixture-level race would be misread). rc 1 + report = test failure; rc 1 + no report = infra fault. |
+| **Safety net** | A unit reporting a genuine pytest *test failure* is re-run **serially, without xdist, alone, after the pool drains, in a clean temp dir**; that verdict is authoritative. Red-in-parallel + green-alone → gate does NOT stop (no false STOP), but warns — it is a race **or** a flake, and the runner does not claim to know which. |
+| **Faults** | An infra fault is retried ONCE with the **identical command shape** (xdist still on). A deterministic fault (rc 5 nothing-collected, usage error, unprovisionable xdist) reproduces and still FAILS — nothing is laundered. A transient one (uv-cache hardlink race under 18 concurrent processes) recovers. **The retry must never strip xdist.** A hang is capped by `suite.timeout_seconds` (default 1800) and becomes a fault. |
+| **CPU** | Outer pool + inner xdist workers share ONE budget (`cpu_count - 2`, or `suite.max_workers`). |
+| **Opt-in** | No `suite` block → the runner refuses with an actionable message and F0 keeps the project's own test command. Adopted projects are unaffected. |
+
+**F0 is an accelerated PRE-gate.** The retries remove false STOPs, but they cannot
+prove serial equivalence for units that *passed* — a test passing only *because* of
+parallelism would not be caught. **`ci.yml` therefore stays SERIAL by design** and is
+the authoritative serial gate before merge; this is enforced, not merely documented
+(`test_f0_ci_parity.py::test_ci_stays_SERIAL` fails if CI gains `-n auto` /
+`--numprocesses` / `pytest-xdist`). Do not parallelise CI, and do not claim F0's
+verdict is provably identical to a serial run. Known limit: retries get a clean temp
+dir, but the repo working tree is shared and not reset.
+(Measured 2026-07-14: F0 ~9.8 min serial → ~1.9 min; `shared/tests` 297s → 79s and
+`integration-tests` 83s → 18s under xdist, both with an identical pass/fail set.)
+
 ### Browser Verify + End-to-End Verification Gate Semantics (Build Step 8 / 4.5, Iterate Step 9 + F0.5)
 
 Browser Verify is **mandatory** whenever the section/iterate diff touches any

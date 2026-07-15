@@ -1,11 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-14 23:08 UTC | Session: e5a4eb07-e36d-4d16-9290-2c48215b6b78 | Run: iterate-2026-07-14-phase-invocation-mode
+> Updated: 2026-07-14 22:44 UTC | Session: c40d2729-5d8c-4a25-bcb2-05a6496312c5 | Run: iterate-2026-07-14-f0-parallel-suite
 
 ## Recent Changes (300 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| bug | Phase skills detect invocation mode from the dispatch token, not the never-advanced v1 current_step; update-step made inert in a driven run. | 33/33 |  | tooling | 2026-07-14 |
+| change | F0 parallel suite runner | 54/54 |  | FR-01.11 | 2026-07-14 |
 | bug | Sweep drift/dismiss-loss fix complete; PR pending | 0/0 |  | tooling | 2026-07-14 |
 | change | iterate complete: multi-session removal | 0/0 |  | FR-01.01 | 2026-07-14 |
 | change | Cross-repo output contracts: shipwright-grade's ReportModel (grade.py --format json) and shipwright-adopt's snapshot.json are rendered field-for-field by the Command Center WebUI. Both now carry a schema_version (major=breaking, the consumer must refuse to render; minor=additive), both SKILL.mds state the contract and name the consumer, and a contract gate per producer diffs the emitted JSON wire-shape against the fixture published on origin/main -- a baseline a PR cannot rewrite -- derives the bump that diff obliges, and fails until it has been performed. Also fixes a dead detector found while pinning the contract: adopt's git.major_refactor_commits returned [] for every repository. | 0/0 |  |  | 2026-07-14 |
@@ -307,7 +307,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-14 | Smoke: n/a | (iterate)
+Last run: 2026-07-14 | Unit: 54/54 | Integration: 184/184 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
