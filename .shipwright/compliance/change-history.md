@@ -1,29 +1,30 @@
 # Commit Change Log
 
-Generated: 2026-07-14T22:43:21.236306+00:00
-Total commits: 1137
+Generated: 2026-07-14T23:08:01.730971+00:00
+Total commits: 1141
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 328
+    "fix" : 329
     "feat" : 308
-    "chore" : 241
+    "chore" : 242
     "docs" : 145
-    "refactor" : 67
+    "refactor" : 68
     "test" : 28
     "ci" : 11
-    "other" : 8
+    "other" : 9
     "build" : 1
 ```
 
 ## Changes by Type
 
-### Fixes (fix) — 328 commits
+### Fixes (fix) — 329 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-15 | design | keep the Single-Session Gate Discipline block in SKILL.md | 6446bcd060d9 |
 | 2026-07-14 | sweep | stop the triage sweep silently destroying operator dismisses (#370) | 0d4a2026b925 |
 | 2026-07-14 | sweep | drop the Python 3.13-only read_text(newline=) that broke every iterate on 3.11/3.12 (#367) | 88b520208cab |
 | 2026-07-11 | run | record phase_completed per split for accurate multi-split durations (#362) | 70652aef7ed4 |
@@ -666,11 +667,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 241 commits
+### Chores (chore) — 242 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-14 | triage | sweep 1 outbox append(s) into branch | e01334a8beee |
+| 2026-07-15 | iterate | trim agent-doc entries under the 600-char budget + refresh handoff | 7fd02fcd0839 |
+| 2026-07-14 | triage | sweep 2 outbox append(s) into branch | d20415d27130 |
 | 2026-07-12 | review | default external-review GPT model to gpt-5.6-terra-pro (#366) | 4b71eec6aaa4 |
 | 2026-07-12 | release | bump root pyproject.toml to v0.31.0 (#365) | 1b4a471e075d |
 | 2026-07-12 | release | v0.31.0 (#364) | db6c3d3f3fa2 |
@@ -1062,10 +1064,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 67 commits
+### Refactoring (refactor) — 68 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-15 | iterate | parallelise the F0 verification gate without weakening it (#371) | 0befc7d075be |
 | 2026-07-07 | coverage | route the monorepo's own diff-coverage gate through the shared action (Stage 3) (#340) | 863dd8aec9cb |
 | 2026-07-07 | coverage | extract the diff-coverage gate into a shared composite action (Stage 1) (#338) | 546ae678f711 |
 | 2026-07-07 | security | route GH-owned action-tag checks through the shared predicate (#337) | 3b511e0578bc |
@@ -1183,10 +1186,11 @@ pie title Commit Types
 | 2026-05-31 | — | run shared/ test suites in CI via per-dir invocations | eb68b567899d |
 | 2026-05-31 | integration | gate integration-tests step on failure; fix F821 in events-log test | 83d68709d125 |
 
-### Other (other) — 8 commits
+### Other (other) — 9 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-15 | — | fix(phases)!: detect invocation mode from the dispatch token, not the never-advanced v1 current_step (#369 follow-up) | 7abf260ecc7a |
 | 2026-07-14 | — | refactor(run)!: single_session is the sole pipeline mode; remove the external per-phase-session engine (#369) | aef19f2c1668 |
 | 2026-04-24 | — | feat!: extract WebUI into own repo (shipwright-webui) — v0.4.0 | 47cacebb2a24 |
 | 2026-04-23 | — | iterate 3.9 — E2E spec backlog cleanup + TaskCard menu-bubbling fix (#9) | 514ec0b55a92 |
@@ -1206,7 +1210,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1137 |
+| Total commits | 1141 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1137 |
+| Human-authored commits | 1141 |
 

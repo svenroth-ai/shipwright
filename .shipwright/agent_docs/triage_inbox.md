@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-14T22:44:30.319245Z. Items waiting for triage decision.
+> Auto-generated 2026-07-14T23:08:05.857788Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
 - Total: 295
-- Triage: 5 | Promoted: 1 | Dismissed: 288 | Snoozed: 1
+- Triage: 4 | Promoted: 1 | Dismissed: 289 | Snoozed: 1
 
-## Top 5 items (severity-sorted)
+## Top 4 items (severity-sorted)
 
 ### Source: compliance (1 item)
 
@@ -32,17 +32,12 @@
   - The 8 phase skills classify "pipeline vs standalone" in their First-Actions step C ("Detect Invocation Mode") by readin…
   - Promote: `triage_promote.py --id trg-de6e736c --task-ref EXT:<ref>`
 
-<a id="trg-11196d99"></a>
-- **shipwright-test suite leaks tests/fixtures/.shipwright/ into the working tree** `id=trg-11196d99 | severity=low | kind=improvement → P3/engineering`
-  - Pre-existing test-hygiene leak, NOT caused by the F0 parallel runner: running 'pytest tests/' in plugins/shipwright-tes…
-  - Promote: `triage_promote.py --id trg-11196d99 --task-ref EXT:<ref>`
+<a id="trg-d1e466aa"></a>
+- **Retire the write-once v1 run-config fields (current_step / completed_steps)** `id=trg-d1e466aa | severity=low | kind=improvement → P3/engineering`
+  - Follow-up from iterate-2026-07-14-phase-invocation-mode (external plan review, Gemini #2). The v2 lifecycle never advan…
+  - Promote: `triage_promote.py --id trg-d1e466aa --task-ref EXT:<ref>`
 
-### Source: manual (2 items)
-
-<a id="trg-0e8e7f90"></a>
-- **Remove the deprecated multi-session pipeline engine (single-session is now the sole mode)** `id=trg-0e8e7f90 | severity=low | kind=improvement → P3/engineering`
-  - Decision 2026-07-08 (Sven): single-session is the sole pipeline mode; multi-session no longer needed (one user, no back…
-  - Promote: `triage_promote.py --id trg-0e8e7f90 --task-ref EXT:<ref>`
+### Source: manual (1 item)
 
 <a id="trg-cced399c"></a>
 - **Decompose FR-01.10 / FR-01.07 into sub-FRs for precise feature traceability** `id=trg-cced399c | severity=low | kind=improvement → P3/engineering`
