@@ -541,11 +541,28 @@ in `phase_tasks[]`:
     }
   ],
   "status": "in_progress | complete | failed | needs_validation",
-  "current_step": "...",            // legacy v1-compat field, advisory only
-  "completed_steps": [...],         // legacy v1-compat field, advisory only
+  "current_step": "...",            // legacy v1-compat field — NOT ADVANCED, see below
+  "completed_steps": [...],         // legacy v1-compat field — NOT ADVANCED, see below
   "pipeline": [...]                 // legacy v1-compat field, drives banner counts
 }
 ```
+
+> **`current_step` / `completed_steps` are WRITE-ONCE, NEVER-ADVANCED. Never key logic
+> on them.** `config_factory` stamps `current_step` at run creation (`"project"`) and
+> nothing in the v2 lifecycle moves it: `phase_task_lifecycle` advances `phase_tasks[]`
+> + `completed_phase_task_ids` + `status`, and that is the whole authority. They survive
+> only for legacy readers that key on their *presence* (`phase_quality.resolve_source`)
+> or render from them (compliance `mermaid.py`).
+>
+> The phase skills used to derive "pipeline vs standalone" from
+> `status == "in_progress" AND current_step == <my phase>`, which is FALSE for every
+> driven phase past the first — so every dispatched phase self-classified as standalone
+> and stamped its artifacts `"mode": "standalone"` (which `_validate_test` then rejects,
+> deadlocking the run). Fixed in `iterate-2026-07-14-phase-invocation-mode`: the
+> invocation mode is now resolved **only** from the dispatch token — see § Invocation
+> mode below. A scalar `current_step` could not have answered the question even if it
+> *were* maintained: the frontier is split-qualified (`plan/01-core` vs `plan/02-ui` share
+> a phase name), so it cannot identify *which* task you are.
 
 **`runConditions` is frozen at run creation.** Mid-run env changes
 (`AIKIDO_CLIENT_ID`) do not retroactively change pipeline shape.
@@ -1391,9 +1408,38 @@ promoted, even if their id hypothetically coincides with a gate id.
 > emitted by `single-session-next`.
 
 **Tools used by Step 0 of every phase skill:**
-`shared/scripts/tools/get_phase_context.py --phase-task-id <id>` returns
+`shared/scripts/tools/get_phase_context.py --phase-task-id <id> --phase <phase>` returns
 prerequisite paths, prior phase artifacts, and `runConditions` for the
 phase to load explicitly.
+
+#### Invocation mode (context loading — what every driven phase skill reads at startup)
+
+The SAME tool is the **sole authority** for "am I a pipeline phase or a hand-invoked
+standalone run?". Both the phase-runner's Step 0 and each phase skill's *Detect Invocation
+Mode* step consume its `mode`, so the two can never disagree. The mode logic itself lives
+in `shared/scripts/lib/phase_invocation_mode.py`.
+
+**The dispatch token is the authority** — a phase skill must NOT read run-config state to
+decide its mode (see the `current_step` note under the schema above; a drift test,
+`integration-tests/test_phase_skill_invocation_mode_canon.py`, enforces this in both
+directions across all 7 driven skills).
+
+| `mode` | Exit | When | Skill behaviour |
+|---|---|---|---|
+| `pipeline` | 0 | a valid, actionable `phaseTaskId` for THIS phase | Full pipeline integration; artifacts NOT marked standalone |
+| `standalone` | 0 | **no token supplied** — the only standalone trigger | Skip pipeline state updates; mark artifacts `"mode": "standalone"`. If `requires_out_of_sequence_warning` is true, a driven run is live at `active_phases` → warn + ASK (gate `<phase>.out-of-sequence-continue`) |
+| `error` | 2 | a token WAS supplied but is unresolvable / stale / terminal / wrong-phase / unreadable config | **STOP** and return `ok: false`. Never fall back to standalone — that is what stamps a driven run's artifacts standalone and deadlocks the pipeline |
+
+Validity contract for a token: the task must exist in `phase_tasks[]`, its `phase` must
+match the caller's, and its status must be `in_progress` (the orchestrator claims a task
+*before* it dispatches, so anything else means the token is stale or replayed).
+`phaseTaskId` is a **correlation id, not an authorization capability** — the trust model is
+a single local repo whose run config the operator can already read.
+
+Driven phases: `project`, `design`, `plan`, `build`, `test`, `changelog`, `deploy`.
+`security` is **not** orchestrator-driven (`phase_state_machine` never materialises a
+security phase_task) and detects its mode from the presence of
+`shipwright_project_config.json` instead.
 
 ### shipwright-run
 
@@ -1685,6 +1731,17 @@ Called by `orchestrator.py:update_step()` before marking a phase complete. Retur
 **Override mechanism:** `--force` flag on `update-step` skips validation (user approved via AskUserQuestion).
 
 **Flow:** `update-step --status complete` → validator runs → if ASK issues found → returns `status: "needs_validation"` → SKILL.md asks user → user says "continue" → `update-step --status complete --force` → phase completes.
+
+> **`update-step` is INERT in a driven single-session run** (drivability guard,
+> iterate-2026-07-14-phase-invocation-mode, `orchestrator_pkg/cli.py`). The flow above is
+> the **v1 / standalone / legacy / adopted** path. In a driven run (`mode:
+> single_session`) `single-session-apply` owns phase completion — `update-step` makes NO
+> run-state write and returns `{driven_run: true, state_mutated: false}`. This is
+> mechanical enforcement of the existing canon (`run/SKILL.md`: *"the loop's two
+> subcommands are the only way phases advance"*). Without it, a phase skill that resolved
+> `pipeline` (see § Invocation mode) would call `update-step` and could write
+> `status: "needs_validation"` — the same key `resolve_next_dispatch` reads before the
+> phase_tasks frontier — permanently halting a structurally healthy run.
 
 ---
 

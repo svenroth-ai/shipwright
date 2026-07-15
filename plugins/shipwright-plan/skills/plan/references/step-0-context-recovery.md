@@ -15,3 +15,9 @@ before proceeding so this phase session has full context for what came before.
 
 If NO `phaseTaskId` was handed to you, this is a standalone invocation —
 continue with Step 1 below as normal.
+
+**One resolver, one verdict.** This is the same tool your "Detect Invocation Mode" step
+already ran, so reuse that payload rather than re-deriving anything: its `mode` IS your
+`invocation_mode`. Pass `--phase <your phase>` so a token belonging to another phase is
+rejected, and if `mode` is `"error"` (exit 2) **STOP** — a dispatched phase must never
+fall back to standalone.

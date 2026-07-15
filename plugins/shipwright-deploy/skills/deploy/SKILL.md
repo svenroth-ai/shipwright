@@ -54,21 +54,13 @@ Checks for:
 
 ### B2. Detect Invocation Mode
 
-Determine if running within the pipeline or standalone:
+Resolve it with `{shared_root}/scripts/tools/get_phase_context.py --phase-task-id "{phaseTaskId}" --phase deploy` (**omit `--phase-task-id` entirely if the orchestrator did not hand you one** — that selects standalone) and store the returned `mode` as `invocation_mode`. **The dispatch token is the authority — never re-derive the mode from run-config state** (authority: `shared/scripts/lib/phase_invocation_mode.py`).
 
-1. Read `shipwright_run_config.json` (if exists)
-2. **Pipeline mode**: `status == "in_progress"` AND `current_step == "deploy"`
-   - Full pipeline integration (update orchestrator state, enforce gates)
-3. **Standalone mode**: file missing OR `status == "complete"` OR `current_step != "deploy"`
-   - Skip pipeline state updates (no `orchestrator.py update-step` calls)
-   - Skip test gate check but warn: `"No pipeline test results found. Deploying without test verification."`
-   - Still produce all artifacts (deploy logs, event log)
-   - Print: `"Running in standalone mode — pipeline state will not be updated."`
-4. If `status == "in_progress"` AND `current_step != "deploy"`:
-   - Warn: `"Pipeline is in progress at step {current_step}. Running /shipwright-deploy out of sequence may cause issues."`
-   - Ask user before continuing.
+- **`pipeline`** — dispatched: enforce gates and deploy. Do NOT call `orchestrator.py update-step` (`single-session-apply` owns completion; it is inert in a driven run anyway).
+- **`standalone`** — no token: skip pipeline-state updates; skip the test gate but warn `"No pipeline test results found. Deploying without test verification."`; still produce all artifacts. If `requires_out_of_sequence_warning` is `true`, warn + ASK before continuing (gate `deploy.out-of-sequence-continue`).
+- **`error`** (exit 2) — dispatched with an unresolvable token: **STOP**, return `ok: false`; never continue as standalone.
 
-Store the detected mode in a variable `invocation_mode` = `"pipeline"` | `"standalone"` for use in later steps.
+**Note:** a PROD deploy is ASK-FIRST regardless of `invocation_mode` (constitution).
 
 ### Single-Session Gate Discipline
 
@@ -157,6 +149,12 @@ Deploy is the pipeline-terminal phase — when this session's Stop hook fires
 
 If NO `phaseTaskId` was handed to you, this is a standalone invocation —
 continue with Step 1 below as normal.
+
+**One resolver, one verdict.** This is the same tool your "Detect Invocation Mode" step
+already ran, so reuse that payload rather than re-deriving anything: its `mode` IS your
+`invocation_mode`. Pass `--phase <your phase>` so a token belonging to another phase is
+rejected, and if `mode` is `"error"` (exit 2) **STOP** — a dispatched phase must never
+fall back to standalone.
 
 ---
 

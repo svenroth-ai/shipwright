@@ -16,6 +16,7 @@ from pathlib import Path
 
 from .build_progress import get_build_progress
 from .config_factory import create_config
+from .config_io import is_single_session, load_run_config
 from .constants import (
     DEFAULT_RUN_MODE,
     LEGACY_MODE_MESSAGE,
@@ -205,6 +206,34 @@ def main() -> int:
         print(json.dumps(result, indent=2))
 
     elif args.command == "update-step":
+        # Drivability guard (iterate-2026-07-14-phase-invocation-mode). `update-step` is the
+        # v1 completion path; in a driven single_session run `single-session-apply` owns
+        # phase completion — run/SKILL.md is explicit: "Do NOT ... call `orchestrator
+        # update-step`. The loop's two subcommands are the only way phases advance." Every
+        # real caller of this command is a phase skill's completion step or the
+        # generate_handoff_on_stop fallback; both reach it here at the CLI. Under the bug the
+        # phase skills misclassified as standalone and skipped the call, so it stayed
+        # harmless by accident. Correcting that classification would make them call it for
+        # real — and update_step writes status="needs_validation" on any ask-level issue, the
+        # same key resolve_next_dispatch reads BEFORE the phase_tasks frontier, permanently
+        # halting a healthy run. So refuse it mechanically here rather than trusting prose.
+        # The underlying update_step() function is unchanged: it still serves standalone /
+        # legacy / adopted runs (no mode, or mode != single_session), and its state-machine
+        # unit tests call it directly.
+        cfg = load_run_config(project_root, migrate=False)
+        if cfg and is_single_session(cfg):
+            print(json.dumps({
+                "driven_run": True,
+                "state_mutated": False,
+                "step": args.step,
+                "requested_status": args.status,
+                "message": (
+                    "update-step is inert in a driven single_session run: single-session-apply "
+                    f"owns phase completion (run/SKILL.md). Ignored '{args.step}' -> "
+                    f"'{args.status}'."
+                ),
+            }, indent=2))
+            return 0
         config = update_step(project_root, args.step, args.status, force=args.force)
         print(json.dumps(config, indent=2))
 

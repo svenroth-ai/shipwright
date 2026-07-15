@@ -48,7 +48,7 @@
       "default_answer": null,
       "constitution": false,
       "fires": "never",
-      "summary": "status==in_progress AND current_step!=project. A state anomaly; the orchestrator owns sequencing so it should not fire in a well-formed single-session run."
+      "summary": "No dispatch token (phaseTaskId) was handed to the skill, yet a driven run is LIVE (get_phase_context: requires_out_of_sequence_warning). A hand-invoked /shipwright-project during a driven run; the orchestrator owns sequencing, so it should not fire in a well-formed single-session run."
     },
     {
       "id": "project.session-conflict",
@@ -111,7 +111,7 @@
       "default_answer": null,
       "constitution": false,
       "fires": "never",
-      "summary": "status==in_progress AND current_step!=design. State anomaly; should not fire in a well-formed single-session run."
+      "summary": "No dispatch token (phaseTaskId) was handed to the skill, yet a driven run is LIVE (get_phase_context: requires_out_of_sequence_warning). A hand-invoked /shipwright-design during a driven run; the orchestrator owns sequencing."
     },
     {
       "id": "design.brand-extraction-confirm",
@@ -201,7 +201,7 @@
       "default_answer": null,
       "constitution": false,
       "fires": "never",
-      "summary": "status==in_progress AND current_step!=plan. State anomaly; the orchestrator owns sequencing."
+      "summary": "No dispatch token (phaseTaskId) was handed to the skill, yet a driven run is LIVE (get_phase_context: requires_out_of_sequence_warning). A hand-invoked /shipwright-plan during a driven run; the orchestrator owns sequencing."
     },
     {
       "id": "plan.interview",
@@ -255,7 +255,7 @@
       "default_answer": null,
       "constitution": false,
       "fires": "never",
-      "summary": "status==in_progress AND current_step!=build. State anomaly; the orchestrator owns sequencing."
+      "summary": "No dispatch token (phaseTaskId) was handed to the skill, yet a driven run is LIVE (get_phase_context: requires_out_of_sequence_warning). A hand-invoked /shipwright-build during a driven run; the orchestrator owns sequencing."
     },
     {
       "id": "build.env-validation-missing-vars",
@@ -345,7 +345,7 @@
       "default_answer": null,
       "constitution": false,
       "fires": "never",
-      "summary": "status==in_progress AND current_step!=deploy. State anomaly; the orchestrator owns sequencing."
+      "summary": "No dispatch token (phaseTaskId) was handed to the skill, yet a driven run is LIVE (get_phase_context: requires_out_of_sequence_warning). A hand-invoked /shipwright-deploy during a driven run; the orchestrator owns sequencing."
     },
     {
       "id": "deploy.missing-env-vars",

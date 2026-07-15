@@ -107,21 +107,37 @@ Create `<project>/.shipwright/planning/` and proceed to Step E.
 
 ## D. Detect Invocation Mode
 
-Determine if running within the pipeline or standalone:
+**The `phaseTaskId` the orchestrator hands you at dispatch is the authority** — NOT any
+state field inside `shipwright_run_config.json`. The pipeline's v1 state fields are no
+longer advanced, so keying on them made every driven phase past the first misclassify
+itself as standalone; the rationale is in `shared/scripts/lib/phase_invocation_mode.py`.
+**Never re-derive the mode yourself.** Ask the resolver:
 
-1. Read `shipwright_run_config.json` (if exists)
-2. **Pipeline mode**: `status == "in_progress"` AND `current_step == "project"`
-   - Full pipeline integration (update orchestrator state, enforce gates)
-3. **Standalone mode**: file missing OR `status == "complete"` OR `current_step != "project"`
-   - Skip pipeline state updates (no `orchestrator.py update-step` calls)
-   - Skip upstream completion checks
-   - Still produce all artifacts (configs, specs, .shipwright/agent_docs)
-   - Print: `"Running in standalone mode — pipeline state will not be updated."`
-4. If `status == "in_progress"` AND `current_step != "project"`:
-   - Warn: `"Pipeline is in progress at step {current_step}. Running /shipwright-project out of sequence may cause issues."`
-   - Ask user before continuing.
+```bash
+uv run "{shared_root}/scripts/tools/get_phase_context.py" \
+  --phase-task-id "{phaseTaskId}" --phase project --project-root "{project_root}"
+```
 
-Store the detected mode in a variable `invocation_mode` = `"pipeline"` | `"standalone"` for use in later steps.
+Omit `--phase-task-id` if you were not handed one. Set `invocation_mode` from the returned
+`mode`, which is exactly one of:
+
+- **`pipeline`** — you were dispatched. Enforce gates, and do the phase's real work.
+  **Do NOT call `orchestrator.py update-step`** (nor any other run-state write): in a
+  driven run `single-session-apply` owns phase completion — it records your status when
+  it applies your result. See `plugins/shipwright-run/skills/run/SKILL.md`. (`update-step`
+  is inert in a driven run anyway, but do not rely on that.)
+- **`standalone`** — no token, so this is a hand-invoked run:
+  - Skip pipeline state updates (no `orchestrator.py update-step` calls)
+  - Skip upstream completion checks
+  - Still produce all artifacts (configs, specs, .shipwright/agent_docs)
+  - Print: `"Running in standalone mode — pipeline state will not be updated."`
+  - If `requires_out_of_sequence_warning` is `true`, a driven run is LIVE at
+    `active_phases`. Warn that running `/shipwright-project` out-of-band may collide with
+    it, and **ask the user before continuing** (gate `project.out-of-sequence-continue`).
+- **`error`** (exit code 2) — you were dispatched but the token does not resolve (stale,
+  terminal, wrong phase, or an unreadable config). **STOP.** Do NOT continue as
+  standalone: that is precisely what stamps a driven run's artifacts `"mode": "standalone"`
+  and deadlocks the pipeline. Surface it to the orchestrator as an `ok: false` result.
 
 ## E. Discover Plugin Root
 

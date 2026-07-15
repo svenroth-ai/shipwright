@@ -1,125 +1,131 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-14-f0-parallel-suite",
+    "run_id": "iterate-2026-07-14-phase-invocation-mode",
     "date": "2026-07-14",
+    "intent": "bug",
+    "complexity": "medium",
     "unit": {
-      "status": "passed",
-      "passed": 54,
-      "total": 54
+      "status": "pass",
+      "detail": "Affected plugin suites green: run 353, compliance 966, adopt 387, test 143, project 59, plan 57, deploy 26, changelog 23, design 19. New: shared test_get_phase_context 17, test_phase_invocation_mode_edges 19, run test_update_step_driven_run_guard 7."
     },
     "integration": {
-      "status": "passed",
-      "passed": 184,
-      "total": 184
+      "status": "pass",
+      "detail": "integration-tests 230 passed (incl. new test_phase_invocation_mode_integration 4 + test_phase_skill_invocation_mode_canon 24); shared/tests 3948 passed (4 pre-existing ADR-044/045 cross-plugin-session failures, identical on untouched origin/main, green under each plugin's own session)."
     },
     "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "n/a",
+      "detail": "no database surface"
     },
     "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "pass",
+      "detail": "F0.5 CLI surface: 33 tests via surface_verification.py --surface cli (resolver composed with the real phase_task_lifecycle frontier + the update-step guard driven as a CLI subprocess)."
     },
     "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "n/a",
+      "detail": "no UI surface"
     },
     "smoke": {
-      "status": "not_run"
+      "status": "n/a",
+      "detail": "no server surface"
     },
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run shared/scripts/tools/run_test_suite.py --project-root .",
+      "runner": "uv run --extra dev pytest integration-tests/test_phase_invocation_mode_integration.py integration-tests/test_phase_skill_invocation_mode_canon.py integration-tests/test_shipwright_run_e2e.py -q",
       "exit_code": 0,
-      "tests_run": 18,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-14-f0-parallel-suite/surface_verification.json",
-      "timestamp": "2026-07-14T00:00:00Z"
+      "tests_run": 33,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\phase-invocation-mode\\.shipwright\\runs\\iterate-2026-07-14-phase-invocation-mode\\surface_verification.log",
+      "timestamp": "2026-07-14T23:02:13.411Z",
+      "attempts": 1
     },
+    "degraded": [
+      {
+        "condition": "classifier risk-flag false positive",
+        "detail": "classify_complexity raised touches_io_boundary from the DESCRIPTION prose; the diff-derived flags that actually bind are touches_io_boundary (shipwright_run_config.json producer/consumer) AND cross_component (get_phase_context.py). Both enforcements delivered: round-trip resolver edge tests + a category:integration behavior."
+      }
+    ],
     "test_completeness": {
       "status": "complete",
-      "behaviors": [
-        {
-          "behavior": "units discovered like ci.yml; a new plugin auto-included",
-          "disposition": "tested",
-          "evidence": "test_suite_units.py::test_discovers_* + test_a_new_plugin_is_picked_up_automatically PASSED"
-        },
-        {
-          "behavior": "shared dirs keep the marker; xdist only when allowlisted + provisioned",
-          "disposition": "tested",
-          "evidence": "test_run_test_suite.py::test_shared_dirs_keep_the_marker_expression + test_xdist_only_when_allowlisted_and_dep_is_provisioned PASSED"
-        },
-        {
-          "behavior": "config boundary (missing/malformed/unknown-unit/timeout) validated before any subprocess",
-          "disposition": "tested",
-          "evidence": "test_suite_units.py (12 cases) + test_unprovisionable_xdist_is_an_actionable_error PASSED"
-        },
-        {
-          "behavior": "'pytest ran' proven by the JUnit report, not output prose (plural 'errors' case)",
-          "disposition": "tested",
-          "evidence": "test_run_test_suite_faults.py::test_pytest_ran_is_proven_by_the_junit_report_not_by_prose PASSED"
-        },
-        {
-          "behavior": "test-failure red-in-parallel + green-alone is a race: gate GREEN, re-verify without xdist, clean temp",
-          "disposition": "tested",
-          "evidence": "test_run_test_suite.py::test_red_in_parallel_but_green_serially_is_a_RACE_not_a_stop PASSED"
-        },
-        {
-          "behavior": "red both times fails the gate",
-          "disposition": "tested",
-          "evidence": "test_run_test_suite.py::test_red_in_parallel_and_red_serially_fails_the_gate PASSED"
-        },
-        {
-          "behavior": "deterministic infra fault reproduces -> RED; transient recovers -> reported; retry never strips xdist",
-          "disposition": "tested",
-          "evidence": "test_a_reproducing_infra_fault_fails_the_gate + test_a_transient_infra_fault_recovers_but_is_reported + test_an_infra_retry_never_strips_xdist PASSED"
-        },
-        {
-          "behavior": "hang -> fault (timeout); unlaunchable unit -> fault not traceback",
-          "disposition": "tested",
-          "evidence": "test_run_test_suite_faults.py::test_a_hung_unit_* + test_an_unlaunchable_unit_* PASSED"
-        },
-        {
-          "behavior": "_exec isolates TMPDIR/TEMP/TMP + cwd per unit, shell=False",
-          "disposition": "tested",
-          "evidence": "test_run_test_suite_faults.py::test_exec_isolates_tmpdir_and_cwd_and_never_uses_a_shell PASSED"
-        },
-        {
-          "behavior": "CPU budget: no oversubscription, no deadlock, over-heavy unit clamped",
-          "disposition": "tested",
-          "evidence": "test_run_test_suite_faults.py::test_budget_never_oversubscribes_and_never_deadlocks PASSED"
-        },
-        {
-          "behavior": "zero discovered units is a refusal, not a green suite; all green -> exit 0",
-          "disposition": "tested",
-          "evidence": "test_zero_discovered_units_is_a_refusal_not_a_green_suite + test_all_green_exits_zero PASSED"
-        },
-        {
-          "behavior": "operator strings ASCII; CI stays serial (guarded); CI/F0 selection parity",
-          "disposition": "tested",
-          "evidence": "test_operator_facing_strings_are_ascii_only + test_f0_ci_parity.py::test_ci_stays_SERIAL (+5) PASSED"
-        },
-        {
-          "behavior": "the real 18-unit suite runs green and ~6.5x faster on this repo",
-          "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "a wall-clock assertion is flaky across hardware; measured out-of-band: 18/18 GREEN in 90s vs 589s serial"
-        }
-      ],
+      "enumeration_basis": {
+        "acs": 8,
+        "covered_acs": 8,
+        "note": "AC1-AC8 of .shipwright/planning/iterate/2026-07-14-phase-invocation-mode.md (AC8 added during build from the Stage-3 doubt review)"
+      },
       "counts": {
-        "testable": 23,
-        "tested": 23,
-        "untestable": 1,
+        "total": 13,
+        "tested": 13,
+        "untestable": 0,
         "untested_testable": 0
       },
-      "enumeration_basis": {
-        "acs": 13,
-        "covered_acs": 13
-      }
-    },
-    "degraded": []
+      "behaviors": [
+        {
+          "behavior": "AC1: no dispatch token -> standalone, carrying pipeline_active / active_phases / requires_out_of_sequence_warning derived only from v2 fields",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_get_phase_context.py::test_no_phase_task_id_* + test_no_phase_task_id_while_a_driven_run_is_live_warns_out_of_sequence + test_completed_run_is_not_live"
+        },
+        {
+          "behavior": "AC1: three outcomes not two - a supplied-but-unusable token (empty / unsubstituted placeholder / corrupt config) is error, never a silent standalone downgrade",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_phase_invocation_mode_edges.py::test_empty_or_blank_token_is_error, ::test_unsubstituted_placeholder_is_error, ::test_token_with_corrupt_run_config_is_error"
+        },
+        {
+          "behavior": "AC1: a v2-shaped but structurally corrupt config (phase_tasks:[null] / {} / 7) never raises - error on the token path, not-live on the tokenless path",
+          "disposition": "tested",
+          "evidence": "test_phase_invocation_mode_edges.py::test_structurally_corrupt_phase_tasks_never_raises, ::test_corrupt_phase_tasks_on_the_tokenless_path_reports_not_live"
+        },
+        {
+          "behavior": "AC2: validity contract - task must exist, match the caller's phase, and be in_progress (claimed); terminal / unclaimed / wrong-phase / unknown -> error with an actionable remedy",
+          "disposition": "tested",
+          "evidence": "test_get_phase_context.py::test_token_for_another_phase_is_error, ::test_terminal_token_is_error, ::test_unclaimed_token_is_error + test_phase_invocation_mode_edges.py::test_unclaimed_task_error_names_the_resume_remedy, ::test_terminal_task_error_names_the_recover_remedy"
+        },
+        {
+          "behavior": "AC2/AC3: a valid actionable token for this phase -> pipeline (with splitId, prerequisites, artifacts)",
+          "disposition": "tested",
+          "evidence": "test_get_phase_context.py::test_pipeline_mode_for_dispatched_project_task, ::test_pipeline_mode_resolves_prerequisites, ::test_pipeline_build_split_uses_split_scoped_paths"
+        },
+        {
+          "behavior": "AC1: active_phases dedupes concurrent same-phase tasks (the frontier shape a scalar current_step cannot represent)",
+          "disposition": "tested",
+          "evidence": "test_get_phase_context.py::test_active_phases_dedupes_concurrent_split_tasks"
+        },
+        {
+          "behavior": "AC1: TERMINAL_STATUSES copy pinned to the phase_task_lifecycle SSoT (self-contained per ADR-044, drift-guarded)",
+          "disposition": "tested",
+          "evidence": "test_get_phase_context.py::test_terminal_statuses_sync"
+        },
+        {
+          "behavior": "INTEGRATION (cross_component): every dispatched frontier phase of a real split-fanned run resolves pipeline through the actual phase_task_lifecycle transitions, while the old v1 predicate returns standalone at each - the bug and its fix, composed",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "integration-tests/test_phase_invocation_mode_integration.py::test_every_dispatched_phase_resolves_as_pipeline, ::test_current_step_never_advances_and_cannot_identify_a_split_task"
+        },
+        {
+          "behavior": "INTEGRATION (AC8): update-step is inert in a driven run (no state write) yet keeps the v1 path for non-driven configs - a driven run cannot be wedged into needs_validation by a phase skill",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "plugins/shipwright-run/tests/test_update_step_driven_run_guard.py (CLI subprocess; negative control reproduces the wedge with the guard removed) + integration-tests/test_shipwright_run_e2e.py (v1 path intact via _undrive)"
+        },
+        {
+          "behavior": "AC3: out-of-band invocation during a live driven run raises requires_out_of_sequence_warning; replayed / wrong-phase tokens are error not standalone",
+          "disposition": "tested",
+          "evidence": "test_phase_invocation_mode_integration.py::test_out_of_band_invocation_during_a_live_run_warns, ::test_replayed_token_from_a_finished_phase_is_an_error_not_standalone"
+        },
+        {
+          "behavior": "AC5: all 7 driven skills resolve the mode via get_phase_context.py and none name a v1 state field; the gate is binary + both-direction and catches the rename evasion (negative control)",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_phase_skill_invocation_mode_canon.py (24 tests: registry<->files both ways, whole-file forbidden-string ban, required-resolver-pattern)"
+        },
+        {
+          "behavior": "AC4: the 5 *.out-of-sequence-continue gate summaries no longer describe the removed current_step predicate; catalog re-validates and the generated doc re-renders",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_gate_policy.py (26 passed) + resolve_gate_policy.py --render-doc regenerated docs/gate-catalog.md (CI drift-guard compares JSON->MD)"
+        },
+        {
+          "behavior": "AC7: docs/hooks-and-pipeline.md records the invocation-mode resolver contract + the update-step drivability guard (mandated when startup-context / between-phase behavior changes)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_hooks_pipeline_doc*.py + the doc's own drift guards remain green in the shared suite (3948 passed)"
+        }
+      ]
+    }
   },
   "coverage": {
     "total": 80.2,

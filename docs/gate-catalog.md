@@ -22,7 +22,7 @@ Single-session pipeline phase-gate catalog (Campaign 2026-07-07, SS2). SSoT for 
 |---|---|---|---|---|
 | `project.pipeline-vs-standalone` | auto-default | never | no | A.1 first-turn: full pipeline vs standalone spec. Skipped when shipwright_run_config.json already exists (the orchestrator pre-writes it). **Default:** Full Pipeline |
 | `project.target-directory` | auto-default | never | no | Inline/chat only: where to create the project. Skipped when the pipeline supplies the project path. **Default:** The project name inferred from the seed description (or the current directory). |
-| `project.out-of-sequence-continue` | orchestrator-approve | never | no | status==in_progress AND current_step!=project. A state anomaly; the orchestrator owns sequencing so it should not fire in a well-formed single-session run. |
+| `project.out-of-sequence-continue` | orchestrator-approve | never | no | No dispatch token (phaseTaskId) was handed to the skill, yet a driven run is LIVE (get_phase_context: requires_out_of_sequence_warning). A hand-invoked /shipwright-project during a driven run; the orchestrator owns sequencing, so it should not fire in a well-formed single-session run. |
 | `project.session-conflict` | orchestrator-approve | never | no | Existing session/state conflict at setup. 'Start fresh' discards existing work and must never be auto-picked; a fresh pipeline dir has no conflict. |
 | `project.surface-assumptions` | auto-default | always | no | Pre-interview: surface inferred assumptions for correction (inline prose, borderline gate). **Default:** Proceed with the inferred assumptions (derived from the seed requirements). |
 | `project.interview` | auto-default | always | no | The requirements interview (adaptive depth). The primary interactivity surface; the pipeline always supplies a seed. **Default:** Answer each requirements question from the seed description/spec and record it as an assumption; a pipeline run always carries a seed to derive from. |
@@ -34,7 +34,7 @@ Single-session pipeline phase-gate catalog (Campaign 2026-07-07, SS2). SSoT for 
 
 | Gate | Policy | Fires | Constitution | Summary / default |
 |---|---|---|---|---|
-| `design.out-of-sequence-continue` | orchestrator-approve | never | no | status==in_progress AND current_step!=design. State anomaly; should not fire in a well-formed single-session run. |
+| `design.out-of-sequence-continue` | orchestrator-approve | never | no | No dispatch token (phaseTaskId) was handed to the skill, yet a driven run is LIVE (get_phase_context: requires_out_of_sequence_warning). A hand-invoked /shipwright-design during a driven run; the orchestrator owns sequencing. |
 | `design.brand-extraction-confirm` | auto-default | conditional | no | Step 2.5: confirm auto-extracted brand tokens. Fires only when an existing website is known. **Default:** Use the site-extracted brand tokens as the foundation (they remain overridable downstream). |
 | `design.design-interview` | auto-default | always | no | Step 3: 3-5 design-system/brand/layout questions. Every field has a documented default. **Default:** Untitled UI flavor + Clean & Modern character + Sidebar nav (or the Step 2.5 extracted tokens if present); the visual direction is re-checked at design.preview-approval. |
 | `design.screen-list-confirm` | auto-default | always | no | Confirm the proposed screen list after the design interview. **Default:** Accept the FR-derived screen list (re-verified by the FR-Coverage Gate at finalize). |
@@ -49,7 +49,7 @@ Single-session pipeline phase-gate catalog (Campaign 2026-07-07, SS2). SSoT for 
 | Gate | Policy | Fires | Constitution | Summary / default |
 |---|---|---|---|---|
 | `plan.validate-input` | orchestrator-approve | never | no | No/invalid spec path at startup. The orchestrator supplies the spec, so this should not fire; on failure return control rather than hang. |
-| `plan.out-of-sequence-continue` | orchestrator-approve | never | no | status==in_progress AND current_step!=plan. State anomaly; the orchestrator owns sequencing. |
+| `plan.out-of-sequence-continue` | orchestrator-approve | never | no | No dispatch token (phaseTaskId) was handed to the skill, yet a driven run is LIVE (get_phase_context: requires_out_of_sequence_warning). A hand-invoked /shipwright-plan during a driven run; the orchestrator owns sequencing. |
 | `plan.interview` | auto-default | always | no | The design-decision interview (adaptive 3-5 questions). Largest interactivity surface; answered from context under single_session. **Default:** Answer each design-decision question from the loaded project context (spec, CLAUDE.md, conventions.md, architecture.md) and record it as an assumption in the plan interview record. Human plan-review is deferred to SS3's cross-phase gate-list (Sven, 2026-07-07). |
 | `plan.context-check` | auto-default | conditional | no | Fires only on self-assessed large context: 5-10 bullet outline for approval before writing the plan. **Default:** Self-summarize and proceed to write the plan without blocking on outline approval (a context-hygiene optimization; downstream review/verification still runs). |
 | `plan.external-review-missing-keys` | auto-default | conditional | no | Step 5 Branch B: no external-review API key. Not silently skippable; the self-review fallback preserves the gate. **Default:** Option 2: skip external review, fall back to the mandatory self-review ('2x denken') pass, and log the opt-out reason ('non-interactive single-session run; no OPENROUTER key provisioned'). |
@@ -60,7 +60,7 @@ Single-session pipeline phase-gate catalog (Campaign 2026-07-07, SS2). SSoT for 
 | Gate | Policy | Fires | Constitution | Summary / default |
 |---|---|---|---|---|
 | `build.section-file-required` | orchestrator-approve | never | no | No/invalid section-file arg. The orchestrator passes the path in the brief; a miss is a wiring bug - return control. |
-| `build.out-of-sequence-continue` | orchestrator-approve | never | no | status==in_progress AND current_step!=build. State anomaly; the orchestrator owns sequencing. |
+| `build.out-of-sequence-continue` | orchestrator-approve | never | no | No dispatch token (phaseTaskId) was handed to the skill, yet a driven run is LIVE (get_phase_context: requires_out_of_sequence_warning). A hand-invoked /shipwright-build during a driven run; the orchestrator owns sequencing. |
 | `build.env-validation-missing-vars` | orchestrator-approve | conditional | no | validate_env.py reports missing required env vars. Secret/env provisioning is a human/orchestrator responsibility; never auto-skip. |
 | `build.destructive-sql-confirm` | hard-stop | conditional | yes (locked) | A generated migration contains DROP/TRUNCATE/DELETE-without-WHERE. Constitution ASK-FIRST 'regardless of autonomy level' - irreversible data loss. |
 | `build.migration-preflight-fail` | orchestrator-approve | conditional | no | Migration preflight (CLI/auth/connectivity) failed before apply. Environment repair the subagent can't self-do; return control (do not run tests against a stale schema). |
@@ -75,7 +75,7 @@ Single-session pipeline phase-gate catalog (Campaign 2026-07-07, SS2). SSoT for 
 
 | Gate | Policy | Fires | Constitution | Summary / default |
 |---|---|---|---|---|
-| `deploy.out-of-sequence-continue` | orchestrator-approve | never | no | status==in_progress AND current_step!=deploy. State anomaly; the orchestrator owns sequencing. |
+| `deploy.out-of-sequence-continue` | orchestrator-approve | never | no | No dispatch token (phaseTaskId) was handed to the skill, yet a driven run is LIVE (get_phase_context: requires_out_of_sequence_warning). A hand-invoked /shipwright-deploy during a driven run; the orchestrator owns sequencing. |
 | `deploy.missing-env-vars` | orchestrator-approve | conditional | no | validate_env.py reports missing required deploy vars. Provisioning deploy secrets is a human responsibility; auto-skip risks a broken deploy. |
 | `deploy.test-gate-failed` | orchestrator-approve | conditional | yes (locked) | Tests missing/red at the deploy gate. Constitution ASK-FIRST 'skipping test layers'; in a healthy pipeline the prior test phase passed, so this should not fire. |
 | `deploy.migration-prereqs-missing` | orchestrator-approve | conditional | no | Migrations exist but a prerequisite (config.toml / project link / access token) is missing. Credential/linking provisioning is outside the subagent's reach. |

@@ -22,8 +22,9 @@ in order:
 
 - **A.** Print Intro Banner
 - **B.** Validate Input — stop if `@spec.md` missing/invalid
-- **C.** Detect Invocation Mode (`pipeline` | `standalone`) — stored
-  as `invocation_mode`
+- **C.** Detect Invocation Mode — resolve via `get_phase_context.py
+  --phase-task-id "{phaseTaskId}" --phase plan`; store `mode` as `invocation_mode`
+  (`pipeline`|`standalone`|`error`→STOP). Token is authority, never re-derive from run state. [first-actions](references/first-actions.md).
 - **C2.** Load Project Context (MANDATORY): `CLAUDE.md`,
   `.shipwright/agent_docs/conventions.md`, `decision_log.md`,
   `architecture.md`, and `git log --oneline -10`. WARN on missing

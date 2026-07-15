@@ -1,0 +1,1 @@
+Pipeline phase skills (project/design/plan/build/test/changelog/deploy) now detect pipeline-vs-standalone mode from the orchestrator's dispatch token instead of the v1 run-config `current_step` field the v2 pipeline never advances — a driven phase no longer misclassifies itself as standalone and mis-stamps its artifacts
