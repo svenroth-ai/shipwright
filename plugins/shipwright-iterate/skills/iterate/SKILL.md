@@ -260,7 +260,7 @@ See `references/artifact-ownership.md` (iterate spec, `spec.md`, `shipwright_eve
 
 **CRITICAL: F0–F11 (incl. F3a, F5a, F5b, F5c) are MANDATORY.** (→ Phase Timing: `mark test` at F0, `mark finalize` at F1 — see [phase-timing](references/phase-timing.md).)
 
-> **Order matters.** F0.5 / F3 / F3a / F4 / F5 / F5a / F5b / F5c all write tracked artifacts and MUST run before F6 so a single atomic commit stages them. **F5b's `work_completed` event lands in this worktree's `shipwright_events.jsonl`, so F6 stages it and it ships in the PR** (per-tree, PR-committed model — iterate-2026-05-29-events-jsonl-worktree-commit). F0.5 is the production-time E2E gate. F6.5 (SHA patch) and F7/F7b are SKIPPED in the normal worktree flow — they exist only for legacy / out-of-band (non-worktree, replay) event recording. Do not reorder.
+> **Order matters.** F0.5 / F3 / F3a / F4 / F5 / F5a / F5b / F5c all write tracked artifacts and MUST run before F6 so a single atomic commit stages them. **F5b's `work_completed` event lands in this worktree's `shipwright_events.jsonl`, so F6 stages it and it ships in the PR** (per-tree, PR-committed model — iterate-2026-05-29-events-jsonl-worktree-commit). F0.5 is the production-time E2E gate. F6.5 (SHA patch) and F7/F7b are SKIPPED in the normal worktree flow — they exist only for legacy / out-of-band (non-worktree, replay) event recording. Do not reorder. **Speed (optional):** F1/F3/F4/F5c/F5b MAY be driven in ONE call via `finalize_bundle.py` (pure orchestrator; F5 before it, F2/F3a/F6 stay manual; whole-bundle re-run is safe) — see [F-finalize-bundle](references/F-finalize-bundle.md).
 
 ### F0: Fresh Verification Gate
 

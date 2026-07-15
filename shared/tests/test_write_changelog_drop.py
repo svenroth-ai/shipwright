@@ -41,6 +41,33 @@ class TestWrite:
         assert first_path.exists()
         assert first_path.read_text(encoding="utf-8") == "First bullet\n"
 
+    def test_identical_bullet_same_run_id_is_idempotent(self, tmp_path):
+        """Re-invoking with the SAME (run_id, category, bullet) returns the
+        EXISTING drop instead of creating a duplicate _002 — makes whole-bundle
+        retry safe (iterate-2026-07-15-finalize-bundle). A DIFFERENT bullet in
+        the same run still gets its own counter (see the _002 test above)."""
+        first = write_changelog_drop(
+            tmp_path, "iterate-2026-04-23-idem", "Added", "Same bullet"
+        )
+        again = write_changelog_drop(
+            tmp_path, "iterate-2026-04-23-idem", "Added", "Same bullet"
+        )
+        assert again == first
+        assert first.name == "iterate-2026-04-23-idem_001.md"
+        cat = category_dir(tmp_path, "Added")
+        assert sorted(cat.glob("iterate-2026-04-23-idem_*.md")) == [first]
+
+    def test_idempotency_ignores_surrounding_whitespace(self, tmp_path):
+        """Dedup keys on the STRIPPED bullet, so a re-run that differs only in
+        surrounding whitespace still dedups (the tool strips before writing)."""
+        first = write_changelog_drop(
+            tmp_path, "iterate-2026-04-23-ws-idem", "Changed", "A bullet"
+        )
+        again = write_changelog_drop(
+            tmp_path, "iterate-2026-04-23-ws-idem", "Changed", "\n  A bullet  \n"
+        )
+        assert again == first
+
     def test_different_categories_get_independent_counters(self, tmp_path):
         added = write_changelog_drop(
             tmp_path, "iterate-2026-04-23-both", "Added", "added bullet"

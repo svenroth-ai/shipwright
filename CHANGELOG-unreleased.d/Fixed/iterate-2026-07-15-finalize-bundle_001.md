@@ -1,0 +1,1 @@
+The iterate decision-log (`write_decision_drop.py`) and changelog (`write_changelog_drop.py`) drop-writers are now idempotent per `(run_id, content)` — a re-run with identical content returns the existing drop instead of writing a duplicate `_NNN` entry (first-run output is byte-identical).

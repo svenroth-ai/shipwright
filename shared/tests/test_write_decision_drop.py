@@ -43,11 +43,27 @@ def test_writes_json_drop(tmp_path):
     assert data["date"]  # populated by the tool
 
 
-def test_two_drops_same_run_get_distinct_counters(tmp_path):
-    p1 = write_decision_drop(tmp_path, **_fields())
-    p2 = write_decision_drop(tmp_path, **_fields())
+def test_two_distinct_drops_same_run_get_distinct_counters(tmp_path):
+    """Two DIFFERENT ADRs in the same run still get their own counters —
+    the multi-ADR-per-run feature is preserved by the idempotency guard
+    (dedup keys on content, not just run_id)."""
+    p1 = write_decision_drop(tmp_path, **_fields(title="First"))
+    p2 = write_decision_drop(tmp_path, **_fields(title="Second"))
     assert p1.name == "iterate-20260515-foo_001.json"
     assert p2.name == "iterate-20260515-foo_002.json"
+
+
+def test_identical_content_is_idempotent(tmp_path):
+    """Re-invoking with the SAME (run_id, content) returns the EXISTING drop
+    instead of creating a duplicate _002 — makes whole-bundle retry safe
+    (iterate-2026-07-15-finalize-bundle). Volatile date/commit are excluded
+    from the dedup key so a cross-midnight re-run still dedups."""
+    p1 = write_decision_drop(tmp_path, **_fields())
+    p2 = write_decision_drop(tmp_path, **_fields())
+    assert p2 == p1
+    assert p1.name == "iterate-20260515-foo_001.json"
+    # Exactly ONE file on disk — no duplicate.
+    assert sorted(drop_dir(tmp_path).glob("iterate-20260515-foo_*.json")) == [p1]
 
 
 def test_empty_decision_rejected(tmp_path):

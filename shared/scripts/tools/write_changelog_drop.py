@@ -138,6 +138,31 @@ def _next_counter_path(project_root: Path, category: str, run_id: str) -> Path:
     )
 
 
+def _find_existing_drop(project_root: Path, category: str, run_id: str, content: str) -> Path | None:
+    """Return an existing ``<run_id>_NNN.md`` drop in ``category`` whose bytes
+    equal ``content``, else ``None``.
+
+    Makes re-invocation idempotent per ``(run_id, category, bullet)`` so a
+    whole-bundle retry after a partial finalize failure does NOT duplicate the
+    changelog bullet (iterate-2026-07-15-finalize-bundle). A DIFFERENT bullet in
+    the same run still gets its own counter — multi-bullet-per-run is preserved.
+    Compares raw bytes (the write path is binary, ``\\n``-only) so the check is
+    newline-exact. First-run output is byte-identical to the pre-idempotency tool.
+    """
+    cat_dir = category_dir(project_root, category)
+    if not cat_dir.is_dir():
+        return None
+    safe_run_id = sanitize_run_id_for_filename(run_id)
+    want = content.encode("utf-8")
+    for existing in sorted(cat_dir.glob(f"{safe_run_id}_*.md")):
+        try:
+            if existing.read_bytes() == want:
+                return existing
+        except OSError:
+            continue
+    return None
+
+
 def _within_drop_dir(project_root: Path, candidate: Path) -> bool:
     """Defense-in-depth: the final write path must resolve under drop_dir."""
     base = drop_dir(project_root).resolve()
@@ -208,6 +233,12 @@ def write_changelog_drop(
     _warn_if_msys_mangled(stripped, run_id, category)
 
     project_root = project_root.resolve()
+
+    # Idempotency: a re-run with identical (run_id, category, bullet) returns the
+    # existing drop instead of claiming a new counter (whole-bundle retry safety).
+    existing = _find_existing_drop(project_root, category, run_id, stripped + "\n")
+    if existing is not None:
+        return existing
 
     for _ in range(_MAX_COUNTER):
         candidate = _next_counter_path(project_root, category, run_id)
