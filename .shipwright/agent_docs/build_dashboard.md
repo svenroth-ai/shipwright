@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-14 23:08 UTC | Session: e5a4eb07-e36d-4d16-9290-2c48215b6b78 | Run: iterate-2026-07-14-phase-invocation-mode
+> Updated: 2026-07-15 05:48 UTC | Session: b45e8fa0-3ca5-45d7-8777-83ba8272c639 | Run: iterate-2026-07-15-perf-test-triage-leak
 
-## Recent Changes (301 iterations)
+## Recent Changes (302 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | Redirect perf-check integration test --cwd to tmp_path so the runner's triage emission stops leaking into the tracked fixtures dir | 143/143 |  | tooling | 2026-07-15 |
 | change | F0 parallel suite runner | 54/54 |  | FR-01.11 | 2026-07-14 |
 | bug | Phase skills detect invocation mode from the dispatch token, not the never-advanced v1 current_step; update-step made inert in a driven run. | 33/33 |  | tooling | 2026-07-14 |
 | bug | Sweep drift/dismiss-loss fix complete; PR pending | 0/0 |  | tooling | 2026-07-14 |
@@ -308,7 +309,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-14 | Smoke: n/a | (iterate)
+Last run: 2026-07-15 | Smoke: n/a | (iterate)
 
 ## Pipeline
 

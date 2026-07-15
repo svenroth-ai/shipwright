@@ -92,7 +92,12 @@ def test_all_pass_with_fake_lhci_and_sample_bundle(tmp_path):
 # ── (b) lighthouse fail under gate=block → exit 1 ────────────────────────────
 
 def test_block_gate_fails_when_lighthouse_below_budget(tmp_path):
-    cwd = FIXTURES
+    # cwd = a throwaway tmp project root, NOT the tracked FIXTURES dir: on a
+    # failed sub-check the runner emits .shipwright/triage.jsonl under cwd, so
+    # pointing it at FIXTURES would leak into version control. The bundle
+    # sub-check gracefully skips (no build dir here); this test asserts only the
+    # lighthouse gate behavior, and the LHR fixture is passed by absolute path.
+    cwd = tmp_path
     profile_path = _make_temp_profile(tmp_path, gate="block")
     proc = _run(
         ["--cwd", str(cwd), "--profile-path", str(profile_path),
@@ -107,6 +112,16 @@ def test_block_gate_fails_when_lighthouse_below_budget(tmp_path):
     assert out["lighthouse"]["score_passed"] is False
     assert out["lighthouse"]["lcp_ms"] == 4100
     assert out["lighthouse"]["lcp_passed"] is False
+    # Regression guard: a failed sub-check makes the runner emit
+    # .shipwright/triage.jsonl under the project root passed via --cwd. That
+    # root MUST be throwaway (tmp_path), never the tracked fixtures dir — else
+    # every run leaves plugins/shipwright-test/tests/fixtures/.shipwright/
+    # behind and dirties the tree (iterate-2026-07-15-perf-test-triage-leak).
+    # Anchoring on tmp_path fails loudly if --cwd is ever pointed back at
+    # FIXTURES.
+    assert (tmp_path / ".shipwright" / "triage.jsonl").exists(), (
+        "triage emission should land under the throwaway tmp project root"
+    )
 
 
 # ── warn gate: same bad LHR but exit 0 + success true ────────────────────────
