@@ -51,6 +51,21 @@
 
 Internal reviewer cascade (spec→code→doubt): `delegated_to_orchestrator`.
 
+## Delegated-Cascade + CI Round 2 (coordinator-consolidated — spec PASS, code CHANGES-REQUESTED, doubt 1 HIGH + `PR Review` bot)
+
+| # | Sev | Finding | Disposition |
+|---|-----|---------|-------------|
+| R2-1 | High (code+doubt) | `_playwright_state` flattened `results[]` across ALL projects and returned pass if any passed BEFORE checking failures → chromium-pass + firefox-fail = false-green `ok` | **accepted-and-fixed** — `_evidence_readers._project_verdict` reduces EACH `tests[]` (project) with retry semantics, then `_playwright_state` combines projects FAIL-CLOSED via `stronger` (any project fail ⇒ fail). Multi-project fixture + reader + end-to-end MISSING tests added |
+| R2-2 | High (code) | No path/id normalization → absolute Vitest `name` + per-plugin pytest `file` never join the project-root-relative collector id → silent all-MISSING on real repos | **accepted-and-fixed** — `norm_path` strips an absolute project_root prefix + optional `base` rebase; `build_index`/`refresh_index` thread `root`. Absolute-Vitest + pytest-base join tests added |
+| R2-3 | High (bot) | CLI `main()` read `--junit/--playwright/--vitest` + wrote `--out` with no confinement (path traversal) | **accepted-and-fixed** — `_confined` resolves + rejects any path escaping project_root; test added |
+| R2-4 | Med | pytest parametrized `test_foo[p0]` never joined the function-level `@covers` id | **accepted-and-fixed** — JUnit name `[…]` suffix stripped; params fold fail-closed via `merge_into`; test added |
+| R2-5 | Med | `refresh_index` `json.loads` unguarded → a truncated report crashes the whole `update_compliance` regen | **accepted-and-fixed** — `_read_json`/`_read_text` catch JSONDecodeError/OSError → that runner skipped fail-closed; corrupt-report test added |
+| R2-6 | Med (doubt) | `_make_link` coerced an unknown status to `enabled` (fail-OPEN) | **accepted-and-fixed** — coerced to `quarantined` (matches `normalize_status`); unknown+pass can't claim ok; test added |
+| R2-7 | Low | Missing `read_vitest` failed/skipped branch tests | **accepted-and-fixed** — added |
+| R2-CF1 | — | `refresh_index` stamps `generated_at=now` with no HEAD check — a stale all-pass report re-ingests as fresh | **carry-forward → TT5** — documented in the io module caveat + here; TT5 (emit-side owner) clears `.shipwright/compliance/evidence/` per run + records provenance; consumers must not treat `generated_at` as HEAD-proof |
+| R2-CF2 | — | `layer_satisfied` ignores the waiver `scope` field | **carry-forward → TT5** — code caveat in `layer_satisfied`; the TT2/TT5 gate must pre-filter waivers by layer AND scope |
+| R2-CF3 | — | Emit-side (surface_verification drop) deferred ⇒ committed manifest is all-MISSING until TT5; `layer_satisfied` has no production caller yet | **carry-forward → TT5** — TT5 lands the emitter, adds the production caller, and must NOT gate on an all-MISSING manifest |
+
 ## Self-Review (Step 3.6)
 
 1. **Spec Compliance** — pass: AC1-AC5 each mapped to a green test; R1/G5 pinned.

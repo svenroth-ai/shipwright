@@ -4,8 +4,8 @@
     "date": "2026-07-15",
     "unit": {
       "status": "passed",
-      "passed": 1047,
-      "total": 1047
+      "passed": 1056,
+      "total": 1056
     },
     "integration": {
       "status": "not_run",
@@ -43,7 +43,7 @@
       "tests_run": 0,
       "evidence_path": ".shipwright/runs/iterate-2026-07-15-execution-evidence/surface_verification.json",
       "timestamp": "2026-07-15T00:00:00+00:00",
-      "justification": "Compliance data collector: the execution-evidence reader (execution_evidence.py + _execution_evidence_io.py) emits a generated JSON index consumed by the test_links manifest, plus a JSON schema, F5.md docs, and their tests. No startable user-experienceable surface (no web/API/CLI app affordance); detect_frontend_changes has_frontend_changes=false. Fully exercised by the compliance pytest suite at F0 (1047 GREEN incl. order-forced test_enforcement_hooks-first, ADR-045) plus empirical CLI + round-trip boundary probes recorded in the iterate ADR."
+      "justification": "Compliance data collector: the execution-evidence reader (execution_evidence.py + _execution_evidence_io.py) emits a generated JSON index consumed by the test_links manifest, plus a JSON schema, F5.md docs, and their tests. No startable user-experienceable surface (no web/API/CLI app affordance); detect_frontend_changes has_frontend_changes=false. Fully exercised by the compliance pytest suite at F0 (1056 GREEN incl. order-forced test_enforcement_hooks-first, ADR-045) plus empirical CLI + round-trip boundary probes recorded in the iterate ADR."
     },
     "test_completeness": {
       "status": "complete",
@@ -60,11 +60,16 @@
         { "behavior": "Review C2/H2 operator-authored expiring waivers survive a machine-results refresh and normalization (not silently dropped) so the layer gate can honor them", "disposition": "tested", "evidence": "test_execution_evidence_join.py::test_operator_waiver_survives_a_machine_results_refresh + test_normalize_index_preserves_waivers + test_schema_waiver_requires_full_accountability (PASS)" },
         { "behavior": "Review C4/P4 fail-closed reduction: a duplicate test id (retry/shard/project) never lets a pass mask a failure; a Playwright retry that eventually passes is pass, an all-failed spec is fail; an oversized JUnit report fails closed to empty", "disposition": "tested", "evidence": "test_execution_evidence.py::test_duplicate_test_id_failure_is_not_hidden_by_a_later_pass + test_playwright_retry_reduces_to_pass_only_failure_is_fail + test_oversized_junit_report_fails_closed_empty (PASS)" },
         { "behavior": "Finalization wiring: refresh_index is non-destructive when no reports (leaves an existing index) and freshness-stamps generated_at + source_reports when it emits", "disposition": "tested", "evidence": "test_execution_evidence_join.py::test_refresh_index_noop_leaves_existing_index_untouched + test_refresh_index_emits_and_stamps_freshness (PASS)" },
-        { "behavior": "AC5 footprint: new source/test modules all <=300 LOC (execution_evidence 279, _execution_evidence_io 122, tests 205/216); bloat baseline not ratcheted; TT1 collector suite still green (no fork)", "disposition": "tested", "evidence": "structural: wc -l all <=300; shipwright_bloat_baseline.json unchanged in the diff; test_test_links_collector.py + test_traceability_fixtures.py + shared golden-consistency GREEN" }
+        { "behavior": "Review R2-1 (HIGH, code+doubt) Playwright multi-project: a spec's tests[] is one entry PER PROJECT (browser); the reader reduces each project then combines FAIL-CLOSED (chromium pass + firefox fail -> executed=fail -> coverage.e2e=MISSING), never the false-green 'any result passed -> pass'", "disposition": "tested", "evidence": "test_execution_evidence_paths.py::test_multiproject_pass_does_not_mask_a_project_fail + test_multiproject_fail_yields_coverage_missing (PASS)" },
+        { "behavior": "Review R2-2 (HIGH, code) path/id normalization: an absolute Vitest testResults[].name strips to the project-root-relative id and joins; a per-plugin pytest JUnit file rebases via an explicit base -> real evidence actually joins (not silent all-MISSING)", "disposition": "tested", "evidence": "test_execution_evidence_paths.py::test_absolute_vitest_name_is_rebased_and_joins + test_pytest_junit_base_rebases_a_per_plugin_file (PASS)" },
+        { "behavior": "Review R2-3 (HIGH, bot) CLI path-traversal: main() confines every --junit/--playwright/--vitest/--out path to project_root, rejecting a ..-traversal or an absolute path outside the root", "disposition": "tested", "evidence": "test_execution_evidence_paths.py::test_confined_rejects_paths_outside_project_root (PASS)" },
+        { "behavior": "Review R2-4/R2-5 pytest parametrized JUnit names ([param]) fold to the function-level @covers id fail-closed (any param fail -> fail); a truncated/corrupt JSON report is skipped fail-closed instead of crashing the whole update_compliance regen", "disposition": "tested", "evidence": "test_execution_evidence_paths.py::test_parametrized_junit_folds_to_function_id_fail_closed + test_corrupt_report_is_skipped_fail_closed (PASS)" },
+        { "behavior": "Review R2-6 (doubt) _make_link coerces an unknown/forged evidence status to quarantined (NOT enabled), so status:'active'+executed:'pass' cannot claim coverage ok; R2-7 read_vitest failed/skipped/todo branches", "disposition": "tested", "evidence": "test_execution_evidence_join.py::test_out_of_vocab_status_in_evidence_is_quarantined_not_enabled + test_execution_evidence.py::test_read_vitest_failed_and_skipped_branches (PASS)" },
+        { "behavior": "AC5 footprint: source split across _evidence_vocab (62) / _evidence_readers (160) / execution_evidence (155) / _execution_evidence_io (162); tests 217/230/120; ALL <=300 LOC; bloat baseline not ratcheted; TT1 collector suite still green (no fork)", "disposition": "tested", "evidence": "structural: wc -l all <=300; shipwright_bloat_baseline.json unchanged in the diff; compliance suite 1056 GREEN (enforcement-hooks forced first) + shared golden-consistency 3 GREEN" }
       ],
       "counts": {
-        "testable": 13,
-        "tested": 13,
+        "testable": 18,
+        "tested": 18,
         "untestable": 0,
         "untested_testable": 0
       },

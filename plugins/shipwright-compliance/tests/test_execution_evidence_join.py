@@ -214,3 +214,17 @@ def test_normalize_index_preserves_waivers():
            "results": {"a::b": {"status": "enabled", "executed": "pass"}},
            "waivers": [_WAIVER]}
     assert normalize_index(raw)["waivers"] == [_WAIVER]
+
+
+def test_out_of_vocab_status_in_evidence_is_quarantined_not_enabled():
+    # _make_link must coerce an unknown/forged status to a NON-enabled fail-closed
+    # value so status:"active" + executed:"pass" cannot claim coverage ok.
+    manifest = build_manifest(
+        _APP, spec_files=[_APP / "spec.md"], test_roots=[_APP],
+        evidence={"tests/test_auth.py::test_sign_in_rejects_bad_password":
+                  {"status": "active", "executed": "pass"}},
+        enumerate_untagged=True,
+    )
+    fr = manifest["requirements"]["app::FR-03.01"]
+    assert fr["tests"]["unit"][0]["status"] == "quarantined"   # not "enabled"
+    assert fr["coverage"]["unit"] == "MISSING"                 # so no false-green ok

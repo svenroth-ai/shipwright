@@ -107,6 +107,18 @@ def test_playwright_and_vitest_pass_mapping():
     assert vt["unit/orders.test.ts::writes the order row"]["executed"] == "pass"
 
 
+def test_read_vitest_failed_and_skipped_branches():
+    data = {"testResults": [{"name": "unit/x.test.ts", "assertionResults": [
+        {"title": "f", "status": "failed"},
+        {"title": "s", "status": "skipped"},
+        {"title": "t", "status": "todo"},
+    ]}]}
+    out = read_vitest(data)
+    assert (out["unit/x.test.ts::f"]["status"], out["unit/x.test.ts::f"]["executed"]) == ("enabled", "fail")
+    assert out["unit/x.test.ts::s"] == {"status": "skipped", "executed": "not_run", "runner": "vitest"}
+    assert (out["unit/x.test.ts::t"]["status"], out["unit/x.test.ts::t"]["executed"]) == ("skipped", "not_run")
+
+
 def test_reader_output_validates_against_schema(raw_index):
     validate_index(raw_index)  # raises on invalid
     assert raw_index["schema_version"] == 2

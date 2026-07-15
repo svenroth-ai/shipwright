@@ -54,15 +54,17 @@ def _cov_status(links: list[dict]) -> str:
 
 def _make_link(hit, layer: str, evidence: dict) -> dict:
     ev = evidence.get(hit.test, {})
-    # Normalize to the frozen closed vocab — an out-of-vocab evidence value (TT-EV owns
-    # the full evidence contract) degrades to the safe default, never a schema-invalid link.
+    # Normalize to the frozen closed vocab FAIL-CLOSED — an out-of-vocab evidence value
+    # (TT-EV owns the full contract) degrades to a non-enabled/not-run value so a forged
+    # or garbled status can never combine with a pass to claim coverage ok. A test with
+    # no evidence at all keeps status "enabled" but executed "not_run" (⇒ not ok).
     status = ev.get("status", "enabled")
     executed = ev.get("executed", "not_run")
     return {
         "id": hit.test,
         "path": hit.test,
         "layer": layer,
-        "status": status if status in _STATUS_VOCAB else "enabled",
+        "status": status if status in _STATUS_VOCAB else "quarantined",
         "executed": executed if executed in _EXECUTED_VOCAB else "not_run",
         "tag_source": hit.tag_source,
     }
