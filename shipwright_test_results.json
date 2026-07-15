@@ -51,27 +51,25 @@
           "evidence": "test_finalize_iterate_utf8.py::test_gate_error_stdout_is_utf8_under_legacy_console_encoding PASSED (returncode 1 + char present in detail; revert-check RED)"
         },
         {
-          "behavior": "main() stderr diagnostics emit UTF-8 (no cp1252 crash) — same reconfigure loop as the proven stdout path",
-          "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "reason": "stderr is reconfigured in the same loop the stdout tests prove executes; a deterministic non-ASCII-stderr trigger would test CPython's reconfigure() contract, not our logic"
+          "behavior": "_reconfigure_stdio_utf8() pins BOTH stdout and stderr to UTF-8 (stderr carries interpolated exception/path text)",
+          "disposition": "tested",
+          "evidence": "test_finalize_iterate_utf8.py::test_reconfigure_stdio_utf8_pins_both_streams PASSED (both streams reconfigured with encoding=utf-8)"
         },
         {
-          "behavior": "guard degrades safely when sys.stdout/stderr lacks reconfigure (StringIO/pytest capture) or is closed",
-          "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "reason": "the in-process test_finalize_iterate.py suite drives main()/run() under pytest capture (no reconfigure attr) and passes; getattr/try guard mirrors the audited triage_cli.py precedent"
+          "behavior": "guard is fail-soft: a stream whose reconfigure raises, or that lacks reconfigure (StringIO/pytest capture), never crashes main()",
+          "disposition": "tested",
+          "evidence": "test_finalize_iterate_utf8.py::test_reconfigure_stdio_utf8_swallows_stream_errors + ::test_reconfigure_stdio_utf8_skips_streams_without_reconfigure PASSED"
         }
       ],
       "counts": {
-        "testable": 2,
-        "tested": 2,
-        "untestable": 2,
+        "testable": 4,
+        "tested": 4,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 2,
-        "covered_acs": 2
+        "acs": 4,
+        "covered_acs": 4
       }
     }
   },

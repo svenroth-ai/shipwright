@@ -33,6 +33,12 @@ from pathlib import Path
 _WORKTREE = Path(__file__).resolve().parents[2]
 FINALIZE_ITERATE = _WORKTREE / "shared" / "scripts" / "tools" / "finalize_iterate.py"
 
+_SHARED_SCRIPTS = _WORKTREE / "shared" / "scripts"
+if str(_SHARED_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SHARED_SCRIPTS))
+
+from tools import finalize_iterate  # noqa: E402  (in-process guard-helper tests)
+
 # Outside cp1252 (Western European): CJK + a U+2713 check mark. If either reaches
 # a cp1252-encoded stdout/stderr, the pre-fix CLI dies with UnicodeEncodeError.
 NON_CP1252 = "中文_✓"  # 中文_✓
@@ -116,3 +122,56 @@ def test_gate_error_stdout_is_utf8_under_legacy_console_encoding(
     doc = json.loads(res.stdout.decode("utf-8"))
     assert doc["error"] == "fr_gate_unclassified"
     assert NON_CP1252 in doc["detail"]  # the non-cp1252 char round-tripped as UTF-8
+
+
+# ---------------------------------------------------------------------------
+# In-process unit coverage of the guard helper. The subprocess tests above
+# exercise it end-to-end, but coverage.py cannot see a child process — these
+# pin both branches (reconfigure applied / reconfigure raises) in-process so
+# the defensive fail-soft path is proven, not just line-covered.
+# ---------------------------------------------------------------------------
+
+
+class _RecordingStream:
+    """A stream stub whose reconfigure() records its kwargs."""
+
+    def __init__(self) -> None:
+        self.calls: list[dict] = []
+
+    def reconfigure(self, **kwargs: object) -> None:
+        self.calls.append(kwargs)
+
+
+class _BoomStream:
+    """A stream stub whose reconfigure() raises — a detached/closed stream."""
+
+    def reconfigure(self, **kwargs: object) -> None:
+        raise ValueError("underlying buffer has been detached")
+
+
+def test_reconfigure_stdio_utf8_pins_both_streams(monkeypatch) -> None:
+    """Happy path: both stdout and stderr are reconfigured to UTF-8."""
+    out, err = _RecordingStream(), _RecordingStream()
+    monkeypatch.setattr(sys, "stdout", out)
+    monkeypatch.setattr(sys, "stderr", err)
+    finalize_iterate._reconfigure_stdio_utf8()
+    assert out.calls == [{"encoding": "utf-8"}]
+    assert err.calls == [{"encoding": "utf-8"}]
+
+
+def test_reconfigure_stdio_utf8_swallows_stream_errors(monkeypatch) -> None:
+    """Fail-soft: a stream whose reconfigure raises must not propagate — the
+    later write surfaces any real problem, the guard never crashes main()."""
+    monkeypatch.setattr(sys, "stdout", _BoomStream())
+    monkeypatch.setattr(sys, "stderr", _BoomStream())
+    finalize_iterate._reconfigure_stdio_utf8()  # must NOT raise
+
+
+def test_reconfigure_stdio_utf8_skips_streams_without_reconfigure(monkeypatch) -> None:
+    """A stream lacking reconfigure (e.g. a StringIO / capture object) is
+    skipped via the callable() guard, not crashed on."""
+    import io
+
+    monkeypatch.setattr(sys, "stdout", io.StringIO())
+    monkeypatch.setattr(sys, "stderr", io.StringIO())
+    finalize_iterate._reconfigure_stdio_utf8()  # must NOT raise
