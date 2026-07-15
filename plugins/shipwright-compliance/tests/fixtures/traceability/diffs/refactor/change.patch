@@ -1,0 +1,26 @@
+diff --git a/base/orders.py b/head/orders.py
+index 8511ec50..2459b845 100644
+--- a/base/orders.py
++++ b/head/orders.py
+@@ -1,14 +1,13 @@
+-"""Order service (refactor diff — BASE). DATA for the harness."""
++"""Order service (refactor diff — HEAD). DATA for the harness.
+ 
+-
+-def persist_order(order):
+-    rows = _serialize(order)
+-    return _write(rows)
++Pure refactor: the two private helpers are inlined into one. Same result and the
++same public function signature; the tests are unchanged.
++"""
+ 
+ 
+-def _serialize(order):
+-    return [order]
++def persist_order(order):
++    return _persist_rows([order])
+ 
+ 
+-def _write(rows):
++def _persist_rows(rows):
+     return len(rows) == 1

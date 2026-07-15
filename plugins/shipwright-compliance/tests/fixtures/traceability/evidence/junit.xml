@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- pytest JUnit sample (unit + integration). DATA for the harness. The
+     collector keys <testcase> classname/name back to the manifest id
+     "path::name"; the normalized join is evidence_index.json. -->
+<testsuites>
+  <testsuite name="pytest" tests="4" failures="0" errors="0" skipped="0" time="0.042">
+    <testcase classname="tests.test_auth" name="test_sign_in_rejects_bad_password" file="tests/test_auth.py" time="0.010"/>
+    <testcase classname="tests.test_auth" name="test_sign_in_locale" file="tests/test_auth.py" time="0.008"/>
+    <testcase classname="tests.test_auth" name="test_health_endpoint" file="tests/test_auth.py" time="0.006"/>
+    <testcase classname="tests.integration.test_orders_db" name="test_order_persists_to_database" file="tests/integration/test_orders_db.py" time="0.018"/>
+  </testsuite>
+</testsuites>

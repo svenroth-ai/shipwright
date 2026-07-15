@@ -1,0 +1,74 @@
+{
+  "schema_version": 2,
+  "collector_version": "test_links/0.0.0-contract",
+  "generated_at": "2026-07-15T00:00:00+00:00",
+  "source_commit": "0000000000000000000000000000000000000000",
+  "spec_hash": "sha256:contract-example",
+  "requirements": {
+    "01-adopted::FR-01.03": {
+      "id": "FR-01.03",
+      "spec_path": ".shipwright/planning/01-adopted/spec.md",
+      "title": "User can sign in",
+      "priority": "Must",
+      "status": "active",
+      "required_layers": ["unit", "e2e"],
+      "required_layers_source": "explicit",
+      "tests": {
+        "unit": [
+          {
+            "id": "unit/auth::test_sign_in_rejects_bad_password",
+            "path": "tests/test_auth.py::test_sign_in_rejects_bad_password",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          }
+        ],
+        "e2e": [
+          {
+            "id": "e2e/auth::signs in and lands on dashboard",
+            "path": "e2e/auth.spec.ts::signs in and lands on dashboard",
+            "layer": "e2e",
+            "status": "skipped",
+            "executed": "not_run",
+            "tag_source": "native_tag"
+          }
+        ]
+      },
+      "coverage": {
+        "unit": "ok",
+        "e2e": "MISSING"
+      }
+    },
+    "02-legacy::FR-02.01": {
+      "id": "FR-02.01",
+      "spec_path": ".shipwright/planning/02-legacy/spec.md",
+      "title": "Copy the launch command to the clipboard",
+      "priority": "Should",
+      "status": "removed",
+      "required_layers": ["e2e"],
+      "required_layers_source": "defaulted_legacy",
+      "tests": {},
+      "coverage": {
+        "e2e": "n/a"
+      }
+    }
+  },
+  "orphans": [
+    {
+      "test": "e2e/legacy.spec.ts::copies the launch command",
+      "tagged_fr": "FR-02.01",
+      "reason": "fr_removed",
+      "category": "confirmed_orphan"
+    }
+  ],
+  "invalid_tags": [
+    {
+      "test": "tests/test_auth.py::test_sign_in_locale",
+      "raw": "@FR-1.3"
+    }
+  ],
+  "untagged_tests": [
+    "tests/test_smoke.py::test_health_endpoint"
+  ]
+}

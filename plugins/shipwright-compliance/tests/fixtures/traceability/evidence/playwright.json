@@ -1,0 +1,49 @@
+{
+  "_comment": "Playwright JSON-reporter sample. DATA for the harness. The 'signs in' spec is SKIPPED (status skipped, results empty of a pass) -> executed not_run -> the R1 'skipped != covered' case. Shape trimmed to the fields the collector reads.",
+  "config": { "version": "1.48.0" },
+  "stats": { "expected": 2, "skipped": 1, "unexpected": 0, "flaky": 0 },
+  "suites": [
+    {
+      "title": "auth.spec.ts",
+      "file": "e2e/auth.spec.ts",
+      "specs": [
+        {
+          "title": "signs in and lands on dashboard",
+          "tags": ["@FR-03.01"],
+          "ok": true,
+          "tests": [
+            { "expectedStatus": "skipped", "status": "skipped", "results": [ { "status": "skipped" } ] }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "dashboard.spec.ts",
+      "file": "e2e/dashboard.spec.ts",
+      "specs": [
+        {
+          "title": "dashboard shows live orders",
+          "tags": ["@FR-03.02"],
+          "ok": true,
+          "tests": [
+            { "expectedStatus": "passed", "status": "expected", "results": [ { "status": "passed" } ] }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "legacy.spec.ts",
+      "file": "e2e/legacy.spec.ts",
+      "specs": [
+        {
+          "title": "copies the launch command to the clipboard",
+          "tags": ["@FR-03.09"],
+          "ok": true,
+          "tests": [
+            { "expectedStatus": "passed", "status": "expected", "results": [ { "status": "passed" } ] }
+          ]
+        }
+      ]
+    }
+  ]
+}

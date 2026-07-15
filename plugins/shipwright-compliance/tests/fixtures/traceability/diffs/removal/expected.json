@@ -1,0 +1,13 @@
+{
+  "scenario": "removal",
+  "key_property": "removal_flagged",
+  "gate": "removal_to_orphan (F11)",
+  "signal": "FR-03.03 moved from Functional Requirements into ## Removed Requirements",
+  "base_linked_tests": [
+    "tests/integration/test_orders_db.py::test_order_persists_to_database"
+  ],
+  "head_action_on_those_tests": "none — the @FR-03.03 test still exists and is unchanged",
+  "expected_blocked": true,
+  "expected_reason": "A removed FR's base-linked tests must be deleted or retargeted in the same diff; here they still stand, so the removal->orphan gate FAILS. Bare tag removal would also FAIL (R3).",
+  "must_not_pass_as_green": true
+}

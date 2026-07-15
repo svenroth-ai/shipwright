@@ -1,0 +1,18 @@
+diff --git a/base/spec.md b/head/spec.md
+index f6b59aa3..727827ee 100644
+--- a/base/spec.md
++++ b/head/spec.md
+@@ -1,7 +1,12 @@
+-# Spec: Demo App (removal diff — BASE)
++# Spec: Demo App (removal diff — HEAD)
+ 
+ ## Functional Requirements
+ 
++| FR | Description | Priority | Layers |
++|----|-------------|----------|--------|
++
++## Removed Requirements
++
+ | FR | Description | Priority | Layers |
+ |----|-------------|----------|--------|
+ | FR-03.03 | Persist an order to the database | Should | integration |

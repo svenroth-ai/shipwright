@@ -1,0 +1,97 @@
+{
+  "_comment": "Machine-readable fixture catalog: example -> expected result. Drives the loader smoke test (every referenced path must exist) and the iterate completion summary. key_property is one of the four the adversarial panel checks, or null.",
+  "schema_version": 2,
+  "contracts": {
+    "manifest_schema": "../../../scripts/lib/traceability_schema.json",
+    "manifest_schema_example": "../../../scripts/lib/traceability_schema.example.json",
+    "tag_grammar_doc": "../../../../../shared/scripts/lib/references/traceability-tag-grammar.md"
+  },
+  "fixtures": [
+    {
+      "name": "mini_repo_app",
+      "kind": "mini_repo",
+      "path": "mini_repos/app",
+      "example": "A spec.md with active + removed FRs and Layers in each provenance state, plus tagged pytest/Playwright/Vitest tests (all four grammar forms) + a malformed tag + an untagged test.",
+      "expected_result": "Parses to the golden manifest: 4 FRs, 1 orphan, 1 invalid_tag, 1 untagged.",
+      "key_property": null
+    },
+    {
+      "name": "golden_manifest",
+      "kind": "golden",
+      "path": "golden/manifest.json",
+      "example": "The answer key for mini_repos/app.",
+      "expected_result": "Validates against the v2 schema; FR-03.01 e2e=MISSING (skipped), FR-03.09 orphan flagged, all three provenance states present.",
+      "key_property": "golden_correct"
+    },
+    {
+      "name": "golden_report",
+      "kind": "golden",
+      "path": "golden/report.md",
+      "example": "The layer-aware RTM render snapshot.",
+      "expected_result": "One row per FR with per-layer ok/MISSING/n-a; orphan + invalid + untagged sections.",
+      "key_property": "golden_correct"
+    },
+    {
+      "name": "evidence_skipped",
+      "kind": "evidence",
+      "path": "evidence/evidence_index.json",
+      "example": "Per-test execution evidence incl. a skipped e2e test.",
+      "expected_result": "e2e/auth.spec.ts 'signs in...' => status skipped, executed not_run => coverage MISSING, never ok.",
+      "key_property": "skipped_not_covered"
+    },
+    {
+      "name": "evidence_raw_reports",
+      "kind": "evidence",
+      "path": ["evidence/junit.xml", "evidence/playwright.json", "evidence/vitest.json"],
+      "example": "Raw JUnit / Playwright-JSON / Vitest reporter samples keyed to test ids.",
+      "expected_result": "Loadable; the Playwright sample carries the skipped spec; normalize to evidence_index.json.",
+      "key_property": "skipped_not_covered"
+    },
+    {
+      "name": "diff_removal",
+      "kind": "diff",
+      "path": "diffs/removal",
+      "example": "FR-03.03 moved to ## Removed Requirements; its tagged test still exists.",
+      "expected_result": "removal->orphan gate BLOCKS (expected_blocked=true).",
+      "key_property": "removal_flagged"
+    },
+    {
+      "name": "diff_behavior_change",
+      "kind": "diff",
+      "path": "diffs/behavior_change",
+      "example": "FR-03.02 description changed (behavior-change signal); its e2e test present + passing.",
+      "expected_result": "change->cross-layer gate PASSES (covered at required layer); red only if a required layer lacks an executed-passing test.",
+      "key_property": null
+    },
+    {
+      "name": "diff_refactor",
+      "kind": "diff",
+      "path": "diffs/refactor",
+      "example": "Pure refactor of orders.py; no spec/AC/FR delta; tests unchanged.",
+      "expected_result": "No behavior-change signal => cross-layer gate does NOT fire (expected_blocked=false).",
+      "key_property": "refactor_not_blocked"
+    },
+    {
+      "name": "llm_record_replay",
+      "kind": "llm_adapter",
+      "path": "llm_adapter",
+      "example": "Stubbed record/replay adapter + cassette (R4-bounded payloads, auto_write=false).",
+      "expected_result": "Offline replay returns the recorded adjudication; a payload with a test body is refused.",
+      "key_property": null
+    },
+    {
+      "name": "predeclared_decisions",
+      "kind": "decision",
+      "path": ["decisions/adopt_ambiguity.json", "decisions/orphan_retirement.json"],
+      "example": "Predeclared adopt-ambiguity answers + orphan-retirement choices.",
+      "expected_result": "Loadable; an unattended runner resolves prompts from these instead of stalling.",
+      "key_property": null
+    }
+  ],
+  "key_properties": {
+    "skipped_not_covered": "A tagged-but-skipped test counts as NOT covered.",
+    "removal_flagged": "A removed-feature test is flagged as an orphan.",
+    "refactor_not_blocked": "A pure refactor is left un-blocked (green).",
+    "golden_correct": "The golden answer keys are correct on inspection."
+  }
+}

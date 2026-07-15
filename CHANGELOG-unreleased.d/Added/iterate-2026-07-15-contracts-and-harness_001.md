@@ -1,0 +1,1 @@
+Traceability manifest v2 JSON Schema (Draft 2020-12) that structurally enforces coverage=ok => an enabled+passing test link (skipped != covered), a removed FR => no live tests, required-layer coverage completeness, and layer-matched test links.

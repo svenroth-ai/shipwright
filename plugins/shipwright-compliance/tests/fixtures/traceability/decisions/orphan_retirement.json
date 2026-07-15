@@ -1,0 +1,19 @@
+{
+  "_comment": "Predeclared orphan-retirement choices for TT8 dogfooding, so an unattended runner never stalls. Retiring an orphan is a product call; these fixtures pin the choice per orphan test. 'file_triage' = surface as a triage item, never auto-delete (R4/§7).",
+  "schema_version": 2,
+  "kind": "orphan_retirement",
+  "choices": {
+    "e2e/legacy.spec.ts::copies the launch command to the clipboard": {
+      "tagged_fr": "FR-03.09",
+      "category": "confirmed_orphan",
+      "decision": "delete_test",
+      "rationale": "FR-03.09 was retired by ADR; its e2e spec asserts a removed affordance"
+    },
+    "e2e/unmapped.spec.ts::renders a legacy widget": {
+      "tagged_fr": null,
+      "category": "unmapped",
+      "decision": "file_triage",
+      "rationale": "no live FR maps; review candidate, not a stale-feature accusation — never auto-delete"
+    }
+  }
+}

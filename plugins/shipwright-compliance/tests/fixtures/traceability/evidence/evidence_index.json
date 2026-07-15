@@ -1,0 +1,13 @@
+{
+  "_comment": "Normalized per-test execution evidence, keyed to the manifest test ids (R1). Derived from the raw runner reports in this directory (junit.xml, playwright.json, vitest.json). 'ok' coverage requires status=enabled AND executed=pass; the skipped e2e below is the R1 'skipped != covered' case.",
+  "schema_version": 2,
+  "results": {
+    "tests/test_auth.py::test_sign_in_rejects_bad_password": { "status": "enabled", "executed": "pass", "runner": "pytest" },
+    "tests/integration/test_orders_db.py::test_order_persists_to_database": { "status": "enabled", "executed": "pass", "runner": "pytest" },
+    "e2e/auth.spec.ts::signs in and lands on dashboard": { "status": "skipped", "executed": "not_run", "runner": "playwright" },
+    "e2e/dashboard.spec.ts::dashboard shows live orders": { "status": "enabled", "executed": "pass", "runner": "playwright" },
+    "e2e/legacy.spec.ts::copies the launch command to the clipboard": { "status": "enabled", "executed": "pass", "runner": "playwright" },
+    "unit/orders.test.ts::writes the order row": { "status": "enabled", "executed": "pass", "runner": "vitest" },
+    "unit/orders.test.ts::rejects a duplicate order @FR-03.03": { "status": "enabled", "executed": "pass", "runner": "vitest" }
+  }
+}
