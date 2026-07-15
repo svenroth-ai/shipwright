@@ -1,37 +1,36 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-15-finalize-bundle"
+run_id: "iterate-2026-07-15-finalize-utf8-guard"
 phase: "iterate"
-reason: "iterate: finalize bundle (duration campaign part 2)"
-timestamp: "2026-07-15T07:13:33.307263+00:00"
+reason: "iterate: fix finalize_iterate.py cp1252 stdio crash"
+timestamp: "2026-07-15T13:22:11.117529+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-15 07:13:33 UTC
+> Auto-generated 2026-07-15 13:22:11 UTC
 
 ## Session Info
 
-- **Session ID**: 04a272a1-7fbf-498d-9f3a-c01212a48704
-- **Timestamp**: 2026-07-15 07:13:33 UTC
-- **Reason**: iterate: finalize bundle (duration campaign part 2)
+- **Session ID**: c81674d4-2de4-4fd2-ae13-dd1d3677572c
+- **Timestamp**: 2026-07-15 13:22:11 UTC
+- **Reason**: iterate: fix finalize_iterate.py cp1252 stdio crash
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-15-finalize-bundle
-- **Date**: 2026-07-15T07:13:28.948310Z
-- **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/finalize-bundle
-- **ADR**: iterate-2026-07-15-finalize-bundle
+- **Run ID**: iterate-2026-07-15-finalize-utf8-guard
+- **Date**: 2026-07-15T13:22:06.591233Z
+- **Type**: bug
+- **Complexity**: small
+- **Branch**: iterate/finalize-utf8-guard
+- **ADR**: iterate-2026-07-15-finalize-utf8-guard
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-15-finalize-bundle.md
+- **Spec**: n/a (small bug fix; no iterate spec)
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/finalize-bundle
-- **Spec**: .shipwright/planning/iterate/2026-07-15-finalize-bundle.md
-- **External Review Marker**: stale (predates spec (2026-07-15T06:23:09))
+- **Branch**: iterate/finalize-utf8-guard
+- **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
@@ -49,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/finalize-bundle
-- **Last Commit**: 017459b6 chore(triage): sweep 2 outbox append(s) into branch
+- **Branch**: iterate/finalize-utf8-guard
+- **Last Commit**: 1d740f79 chore(triage): sweep 3 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -66,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-80db7446 | grade_snapshot | — | 2026-07-15 |
-| evt-deb20021 | work_completed | iterate (finalize_bundle.py orchestrator + drop-tool idempotency (duration campaign part 2)) | 2026-07-15 |
-| evt-1bd60514 | grade_snapshot | — | 2026-07-15 |
-| evt-08956f26 | grade_snapshot | — | 2026-07-14 |
-| evt-27b3b806 | grade_snapshot | — | 2026-07-14 |
+| evt-7730cf64 | grade_snapshot | — | 2026-07-15 |
+| evt-c1b23d3b | work_completed | iterate (Add a UTF-8 reconfigure guard to finalize_iterate.py main() (stdout+stderr) plus two cp1252 subprocess regression tests) | 2026-07-15 |
+| evt-1f6b2bca | grade_snapshot | — | 2026-07-15 |
+| evt-d23adfee | grade_snapshot | — | 2026-07-15 |
+| evt-54e93bec | work_completed | iterate (Redirect perf-check integration test --cwd to tmp_path so the runner's triage emission stops leaking into the tracked fixtures dir) | 2026-07-15 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 302
-- **Last iterate**: change — finalize_bundle.py orchestrator + drop-tool idempotency (duration campaign part 2) (2026-07-15)
+- **Total work events**: 304
+- **Last iterate**: Fix finalize_iterate.py crashing on Windows cp1252 when its piped stdout/stderr carries non-ASCII output, which aborts the finalize bundle — Add a UTF-8 reconfigure guard to finalize_iterate.py main() (stdout+stderr) plus two cp1252 subprocess regression tests (2026-07-15)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

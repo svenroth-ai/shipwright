@@ -1,10 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-07-15 07:13 UTC | Session: 04a272a1-7fbf-498d-9f3a-c01212a48704 | Run: iterate-2026-07-15-finalize-bundle
+> Updated: 2026-07-15 13:22 UTC | Session: c81674d4-2de4-4fd2-ae13-dd1d3677572c | Run: iterate-2026-07-15-finalize-utf8-guard
 
-## Recent Changes (302 iterations)
+## Recent Changes (304 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Add a UTF-8 reconfigure guard to finalize_iterate.py main() (stdout+stderr) plus two cp1252 subprocess regression tests | 0/0 |  | tooling | 2026-07-15 |
+| bug | Redirect perf-check integration test --cwd to tmp_path so the runner's triage emission stops leaking into the tracked fixtures dir | 143/143 |  | tooling | 2026-07-15 |
 | change | finalize_bundle.py orchestrator + drop-tool idempotency (duration campaign part 2) | 42/42 |  | tooling | 2026-07-15 |
 | change | F0 parallel suite runner | 54/54 |  | FR-01.11 | 2026-07-14 |
 | bug | Phase skills detect invocation mode from the dispatch token, not the never-advanced v1 current_step; update-step made inert in a driven run. | 33/33 |  | tooling | 2026-07-14 |
@@ -309,7 +311,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-15 | Smoke: n/a | (iterate)
+Last run: 2026-07-15 | Unit: 3993/3993 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

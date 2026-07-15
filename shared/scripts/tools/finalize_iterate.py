@@ -449,6 +449,23 @@ def run(
 
 
 def main(argv: list[str] | None = None) -> int:
+    # UTF-8 stdio: main() prints ensure_ascii=False JSON to stdout (the machine
+    # contract finalize_bundle.py captures for F5b) and interpolates exception /
+    # path text into stderr. On Windows both default to cp1252 when the stream is
+    # a pipe (capture_output=True) — how finalize_bundle.py (#374) pipes this tool
+    # — so a non-cp1252 char (a repo under a CJK path in result["project_root"], a
+    # non-ASCII gate detail) raised UnicodeEncodeError and aborted the bundle. Pin
+    # UTF-8 at the source (both streams), matching the finalize_bundle / triage_cli
+    # / resolve_gate_policy / verifiers.stdio siblings — not a per-caller
+    # PYTHONIOENCODING env var.
+    for _stream in (sys.stdout, sys.stderr):
+        _reconfigure = getattr(_stream, "reconfigure", None)
+        if callable(_reconfigure):
+            try:
+                _reconfigure(encoding="utf-8")
+            except (ValueError, OSError):
+                pass  # detached/closed stream — let the write surface the error
+
     parser = argparse.ArgumentParser(description="Finalize iterate run")
     sub = parser.add_subparsers(dest="cmd")
 

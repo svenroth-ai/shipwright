@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-15T07:13:33.307263Z. Items waiting for triage decision.
+> Auto-generated 2026-07-15T13:22:11.117529Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 297
-- Triage: 5 | Promoted: 1 | Dismissed: 290 | Snoozed: 1
+- Total: 298
+- Triage: 4 | Promoted: 1 | Dismissed: 292 | Snoozed: 1
 
-## Top 5 items (severity-sorted)
+## Top 4 items (severity-sorted)
 
 ### Source: compliance (1 item)
 
@@ -25,22 +25,12 @@
     ```
   - Promote: `triage_promote.py --id trg-4a615381 --task-ref EXT:<ref>`
 
-### Source: iterate (3 items)
-
-<a id="trg-f6ceeb37"></a>
-- **Iterate 2: bundle F1-F5c finalization into fewer LLM round-trips** `id=trg-f6ceeb37 | severity=low | kind=improvement → P3/engineering`
-  - Iterate-duration campaign, part 2 of 3 (part 1 = F0 parallel runner, DELIVERED #371). The finalize phase is ~4.1 min in…
-  - Promote: `triage_promote.py --id trg-f6ceeb37 --task-ref EXT:<ref>`
+### Source: iterate (1 item)
 
 <a id="trg-d1e466aa"></a>
 - **Retire the write-once v1 run-config fields (current_step / completed_steps)** `id=trg-d1e466aa | severity=low | kind=improvement → P3/engineering`
   - Follow-up from iterate-2026-07-14-phase-invocation-mode (external plan review, Gemini #2). The v2 lifecycle never advan…
   - Promote: `triage_promote.py --id trg-d1e466aa --task-ref EXT:<ref>`
-
-<a id="trg-11196d99"></a>
-- **shipwright-test suite leaks tests/fixtures/.shipwright/ into the working tree** `id=trg-11196d99 | severity=low | kind=improvement → P3/engineering`
-  - Pre-existing test-hygiene leak, NOT caused by the F0 parallel runner: running 'pytest tests/' in plugins/shipwright-tes…
-  - Promote: `triage_promote.py --id trg-11196d99 --task-ref EXT:<ref>`
 
 ### Source: manual (1 item)
 
@@ -48,4 +38,11 @@
 - **Decompose FR-01.10 / FR-01.07 into sub-FRs for precise feature traceability** `id=trg-cced399c | severity=low | kind=improvement → P3/engineering`
   - Follow-up to iterate-2026-06-30-fr-retag-honesty. Introduce sub-FRs (e.g. FR-01.10.x for Control Grade / RTM / SBOM / d…
   - Promote: `triage_promote.py --id trg-cced399c --task-ref EXT:<ref>`
+
+### Source: operator (1 item)
+
+<a id="trg-b3296282"></a>
+- **Admit ci-security.json to the churn CHURN_ALLOWLIST (ensure_current aborts on it)** `id=trg-b3296282 | severity=low | kind=improvement → P3/engineering`
+  - CHURN_ALLOWLIST (shared/scripts/lib/churn_merge.py = DERIVED_MDS \| events/test_results/triage) omits .shipwright/compl…
+  - Promote: `triage_promote.py --id trg-b3296282 --task-ref EXT:<ref>`
 

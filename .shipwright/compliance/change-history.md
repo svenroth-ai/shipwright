@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-07-15T07:13:29.031025+00:00
-Total commits: 1140
+Generated: 2026-07-15T13:22:06.672550+00:00
+Total commits: 1141
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 328
+    "fix" : 329
     "feat" : 309
     "chore" : 241
     "docs" : 145
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 328 commits
+### Fixes (fix) — 329 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-15 | test | stop the perf-check integration test leaking triage into tracked fixtures (#373) | af0187a9a981 |
 | 2026-07-14 | sweep | stop the triage sweep silently destroying operator dismisses (#370) | 0d4a2026b925 |
 | 2026-07-14 | sweep | drop the Python 3.13-only read_text(newline=) that broke every iterate on 3.11/3.12 (#367) | 88b520208cab |
 | 2026-07-11 | run | record phase_completed per split for accurate multi-split durations (#362) | 70652aef7ed4 |
@@ -357,7 +358,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-15 | iterate | bundle the finalize F1/F3/F4/F5c/F5b LLM round-trips | 3de6e6ea7e28 |
+| 2026-07-15 | iterate | bundle the finalize F1/F3/F4/F5c/F5b LLM round-trips (#374) | d36f61dcf464 |
 | 2026-07-14 | grade,adopt | version the two artifacts the Command Center renders, and anchor the bump gate in git (#368) | 9def63904619 |
 | 2026-07-11 | iterate | fold per-phase durations into work_completed for the WebUI Iterate-Rail (M-Pre-1 iterate half) (#363) | a710b4167114 |
 | 2026-07-11 | iterate | adopt brief-intake reuse + plain-language banner bank (B5) (#361) | 64f197ba0015 |
@@ -671,7 +672,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-15 | triage | sweep 2 outbox append(s) into branch | 017459b6530a |
+| 2026-07-15 | triage | sweep 3 outbox append(s) into branch | 1d740f79a7c3 |
 | 2026-07-12 | review | default external-review GPT model to gpt-5.6-terra-pro (#366) | 4b71eec6aaa4 |
 | 2026-07-12 | release | bump root pyproject.toml to v0.31.0 (#365) | 1b4a471e075d |
 | 2026-07-12 | release | v0.31.0 (#364) | db6c3d3f3fa2 |
@@ -1209,7 +1210,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1140 |
+| Total commits | 1141 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1140 |
+| Human-authored commits | 1141 |
 

@@ -1,120 +1,78 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-15-finalize-bundle",
+    "run_id": "iterate-2026-07-15-finalize-utf8-guard",
     "date": "2026-07-15",
-    "intent": "change",
-    "complexity": "medium",
     "unit": {
-      "status": "pass",
-      "detail": "F0 suite GREEN: 18 units in 1.4min (shared/tests 76s, all plugins). New: shared test_finalize_bundle 15 + test_finalize_bundle_cli 23 + idempotency additions to test_write_decision_drop/test_write_changelog_drop."
+      "status": "passed",
+      "passed": 3993,
+      "total": 3993
     },
     "integration": {
-      "status": "pass",
-      "detail": "integration-tests unit GREEN; shared/tests test_finalize_bundle_integration 4 (real-subprocess composition, bundle==manual-sequence equivalence, whole-bundle retry, partial-failure recovery)."
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
-      "status": "n/a",
-      "detail": "no database surface"
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "e2e": {
-      "status": "pass",
-      "detail": "F0.5 CLI surface: 4 tests via surface_verification.py --surface cli (the integration test spawns the real finalize_bundle.py process = the CLI surface)."
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
     },
     "design_fidelity": {
-      "status": "n/a",
-      "detail": "no UI surface"
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "smoke": {
-      "status": "n/a",
-      "detail": "no server surface"
-    },
-    "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --extra dev pytest shared/tests/test_finalize_bundle_integration.py -q",
-      "exit_code": 0,
-      "tests_run": 4,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\finalize-bundle\\.shipwright\\runs\\iterate-2026-07-15-finalize-bundle\\surface_verification.log",
-      "timestamp": "2026-07-15T07:10:10.839Z",
-      "attempts": 1
+      "status": "not_run"
     },
     "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 2,
+      "exit_code": 0,
+      "justification": "finalize_iterate.py is an internal Python CLI with no web/UI/API surface. End-to-end verification IS the subprocess-level regression suite (test_finalize_iterate_utf8.py): it invokes the real CLI binary via sys.executable under PYTHONIOENCODING=cp1252 — the exact production failure condition finalize_bundle triggers when it pipes F5b — asserting returncode 0/1 and a UTF-8-decodable JSON contract. A revert-check confirmed both probes go RED without the fix."
+    },
     "test_completeness": {
       "status": "complete",
-      "enumeration_basis": {
-        "acs": 10,
-        "covered_acs": 10,
-        "note": "AC1-AC8 + AC-idem-tools + AC-idem-bundle of .shipwright/planning/iterate/2026-07-15-finalize-bundle.md"
-      },
-      "counts": {
-        "testable": 12,
-        "tested": 12,
-        "untestable": 0,
-        "untested_testable": 0
-      },
       "behaviors": [
         {
-          "behavior": "AC1: 5 sections -> 5 tools in dependency order F1->F3->F4->F5c->F5b, exit 0, every step ok",
+          "behavior": "main() result-JSON stdout survives non-cp1252 output under a legacy console codepage (no UnicodeEncodeError)",
           "disposition": "tested",
-          "evidence": "test_finalize_bundle.py::test_all_steps_ok_runs_in_dependency_order"
+          "evidence": "test_finalize_iterate_utf8.py::test_stdout_is_utf8_under_legacy_console_encoding PASSED (returncode 0 + UTF-8 JSON echoing project_root; revert-check RED)"
         },
         {
-          "behavior": "AC2/AC3: abort-on-first-failure names the step; F1 drift (stdout drift_detected) vs crash (unparseable) distinguished; F3/F4/F5c/F5b failures each named",
+          "behavior": "main() fail-closed FinalizeGateError stdout branch survives a non-cp1252 change_type echoed into its detail",
           "disposition": "tested",
-          "evidence": "test_finalize_bundle.py::test_f3_failure_aborts_and_names_the_step, ::test_f1_drift_aborts_before_any_write, ::test_f1_crash_unparseable_stdout_is_failure_not_drift, ::test_f4_failure_on_second_bullet_names_f4_and_aborts, ::test_f5b_failure_names_f5b"
+          "evidence": "test_finalize_iterate_utf8.py::test_gate_error_stdout_is_utf8_under_legacy_console_encoding PASSED (returncode 1 + char present in detail; revert-check RED)"
         },
         {
-          "behavior": "F1 always-runs-unless-skip; custom + default ref passed through",
-          "disposition": "tested",
-          "evidence": "test_finalize_bundle.py::test_f1_skip_bypasses_drift_gate, ::test_f1_custom_ref_is_passed_through, ::test_f1_default_ref_when_section_absent"
+          "behavior": "main() stderr diagnostics emit UTF-8 (no cp1252 crash) — same reconfigure loop as the proven stdout path",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "reason": "stderr is reconfigured in the same loop the stdout tests prove executes; a deterministic non-ASCII-stderr trigger would test CPython's reconfigure() contract, not our logic"
         },
         {
-          "behavior": "AC4: payload validation fail-fast (missing/unknown top keys, empty/bad changelog, blank run_id, missing event_extras, unknown sub-object keys, iterate_entry forbidden run_id/date) before any subprocess",
-          "disposition": "tested",
-          "evidence": "test_finalize_bundle_cli.py::test_missing_required_section_is_validation_error, ::test_unknown_top_level_key_rejected, ::test_unknown_decision_key_rejected, ::test_unknown_artifact_sync_key_rejected, ::test_iterate_entry_forbidden_key_rejected + 4 more"
-        },
-        {
-          "behavior": "AC6/AC7: argv construction per step (F3 fields, optional flags omitted when absent, F5c entry-json, F5b reason+event-extras); N bullets -> N F4 invocations; same project_root to all",
-          "disposition": "tested",
-          "evidence": "test_finalize_bundle.py::test_f3_argv_carries_decision_fields, ::test_f3_omits_optional_flags_when_absent, ::test_f5c_argv_passes_entry_json, ::test_f5b_argv_passes_reason_and_event_extras, ::test_all_steps_receive_the_same_project_root, ::test_n_changelog_bullets_produce_n_invocations"
-        },
-        {
-          "behavior": "stdout capture: noisy child truncated, single valid JSON document emitted",
-          "disposition": "tested",
-          "evidence": "test_finalize_bundle_cli.py::test_noisy_child_output_is_truncated_and_bundle_emits_single_json"
-        },
-        {
-          "behavior": "internal error (subprocess spawn failure) -> ONE structured JSON doc, exit 3, never a bare traceback",
-          "disposition": "tested",
-          "evidence": "test_finalize_bundle_cli.py::test_internal_error_emits_structured_json_exit_3"
-        },
-        {
-          "behavior": "main() exit codes 0/1/2 + payload IO errors (unreadable, invalid JSON, validation)",
-          "disposition": "tested",
-          "evidence": "test_finalize_bundle_cli.py::test_main_success_exit_0, ::test_main_step_failure_exit_1, ::test_main_validation_error_exit_2, ::test_main_missing_payload_file_exit_2, ::test_main_invalid_json_exit_2"
-        },
-        {
-          "behavior": "F5b signal surfacing: finalize_iterate per-step status (e.g. compliance skipped) lifted into steps.F5b.finalize_steps, not buried",
-          "disposition": "tested",
-          "evidence": "test_finalize_bundle_cli.py::test_finalize_steps_surfaced_from_f5b_stdout"
-        },
-        {
-          "behavior": "AC-idem-tools: write_decision_drop + write_changelog_drop dedup on identical (run_id, content); first-run byte-identical; different content -> fresh counter",
-          "disposition": "tested",
-          "evidence": "test_write_decision_drop.py::test_identical_content_is_idempotent, ::test_two_distinct_drops_same_run_get_distinct_counters + test_write_changelog_drop.py::test_identical_bullet_same_run_id_is_idempotent, ::test_idempotency_ignores_surrounding_whitespace, ::test_second_bullet_same_run_id_gets_counter_002"
-        },
-        {
-          "behavior": "INTEGRATION (composition): bundle invokes the 5 REAL tools on disk and each writes its artifact with the payload content; W4 coverage.total preserved by F5b compliance regen",
-          "disposition": "tested",
-          "category": "integration",
-          "evidence": "test_finalize_bundle_integration.py::test_bundle_composes_the_real_tools_and_writes_every_artifact"
-        },
-        {
-          "behavior": "INTEGRATION (equivalence + retry): bundle output == manual 5-tool sequence (modulo event id/ts); whole-bundle retry idempotent; partial-failure (F5b FR-gate reject after F3/F4/F5c wrote) recovers on whole-bundle re-run with no dups",
-          "disposition": "tested",
-          "category": "integration",
-          "evidence": "test_finalize_bundle_integration.py::test_bundle_output_equals_the_manual_sequence, ::test_whole_bundle_retry_is_idempotent, ::test_partial_failure_then_whole_bundle_retry_recovers_without_dups"
+          "behavior": "guard degrades safely when sys.stdout/stderr lacks reconfigure (StringIO/pytest capture) or is closed",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "reason": "the in-process test_finalize_iterate.py suite drives main()/run() under pytest capture (no reconfigure attr) and passes; getattr/try guard mirrors the audited triage_cli.py precedent"
         }
-      ]
+      ],
+      "counts": {
+        "testable": 2,
+        "tested": 2,
+        "untestable": 2,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 2,
+        "covered_acs": 2
+      }
     }
   },
   "coverage": {
