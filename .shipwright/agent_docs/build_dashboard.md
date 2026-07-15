@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-15 13:22 UTC | Session: c81674d4-2de4-4fd2-ae13-dd1d3677572c | Run: iterate-2026-07-15-finalize-utf8-guard
+> Updated: 2026-07-15 19:39 UTC | Session: b8f69523-4022-421a-846d-d7d47ec349fd | Run: iterate-2026-07-15-contracts-and-harness
 
-## Recent Changes (305 iterations)
+## Recent Changes (306 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | iterate: freeze requirement->test traceability contracts + panel-verified harness (P1) | 0/0 |  | tooling | 2026-07-15 |
 | bug | admit ci-security.json to the churn-merge allowlist (+ rollback parity) | 41/41 |  | tooling | 2026-07-15 |
 | change | Add a UTF-8 reconfigure guard to finalize_iterate.py main() (stdout+stderr) plus two cp1252 subprocess regression tests | 0/0 |  | tooling | 2026-07-15 |
 | bug | Redirect perf-check integration test --cwd to tmp_path so the runner's triage emission stops leaking into the tracked fixtures dir | 143/143 |  | tooling | 2026-07-15 |
@@ -312,7 +313,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-15 | Unit: 3993/3993 | Smoke: not_run | (iterate)
+Last run: 2026-07-15 | Unit: 45/45 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

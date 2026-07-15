@@ -9,6 +9,21 @@ from pathlib import Path
 import pytest
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
+_TRACEABILITY_FIXTURES = FIXTURES_DIR / "traceability"
+
+
+def pytest_ignore_collect(collection_path: Path, config) -> bool:
+    """Keep the traceability fixture mini-repos out of the real pytest session.
+
+    The tagged sample tests under ``tests/fixtures/traceability/`` (``test_*.py``,
+    ``*.spec.ts``, ``*.test.ts``) are DATA for the traceability harness — the
+    production collector points its runners at them explicitly. The real suite
+    must never collect them (they would run as no-op tests and pollute
+    counts/coverage). Loaded from this testpaths-root conftest so the ignore
+    takes effect before pytest recurses into the fixture subtree.
+    """
+    p = Path(collection_path)
+    return p == _TRACEABILITY_FIXTURES or _TRACEABILITY_FIXTURES in p.parents
 
 
 @pytest.fixture

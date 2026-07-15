@@ -1,0 +1,14 @@
+{
+  "scenario": "behavior_change",
+  "key_property": null,
+  "gate": "change_to_cross_layer (F11)",
+  "signal": "FR-03.02 description changed (behavior-change signal from the spec/AC delta + recomputed fr_impact) — NOT arbitrary source-file inference (R2)",
+  "changed_fr": "FR-03.02",
+  "required_layers": ["e2e"],
+  "head_evidence_for_required_layers": {
+    "e2e": "e2e/dashboard.spec.ts::dashboard shows live orders is enabled + executed=pass"
+  },
+  "expected_blocked": false,
+  "expected_reason": "Each behavior-changed FR must have, at every required layer, a tagged test that is executed-passing in this run's evidence (R1). No forced file-touch. Here e2e is covered and passing, so the gate is GREEN.",
+  "red_variant_note": "If the e2e test were skipped/absent (no executed-passing test at a required layer), the same gate would BLOCK. An undeterminable mapping is a could-not-determine WARN, never a silent pass."
+}

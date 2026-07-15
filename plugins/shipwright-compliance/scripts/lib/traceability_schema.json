@@ -1,0 +1,287 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shipwright.dev/schemas/test-traceability.v2.schema.json",
+  "title": "Test-Traceability Manifest v2",
+  "description": "Generated compliance artifact (.shipwright/compliance/test-traceability.json) joining requirements to their tagged tests per layer, with per-test execution evidence. Frozen contract for the requirement->test traceability campaign (Spec test-traceability-across-layers.md sec 11). The committed artifact is derived/RTM-visibility only; enforcing gates regenerate base+head themselves (R3).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "collector_version",
+    "generated_at",
+    "source_commit",
+    "spec_hash",
+    "requirements",
+    "orphans",
+    "invalid_tags",
+    "untagged_tests"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 2,
+      "description": "Pinned manifest schema version. Travels with requirement_model.MODEL_VERSION."
+    },
+    "collector_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Version of the collector that produced this artifact (audit provenance, R3)."
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_commit": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The head commit the manifest was generated from (audit provenance, R3)."
+    },
+    "spec_hash": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Hash of the spec inputs, so a stale/hand-edited manifest is detectable (R3)."
+    },
+    "requirements": {
+      "type": "object",
+      "description": "Requirements keyed by namespace::FR-XX.YY (spec-provenance namespaced, R4/R5).",
+      "propertyNames": {
+        "pattern": "^.+::FR-\\d{2}\\.\\d{2}$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/requirement"
+      }
+    },
+    "orphans": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/orphan"
+      }
+    },
+    "invalid_tags": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/invalidTag"
+      }
+    },
+    "untagged_tests": {
+      "type": "array",
+      "description": "Tests with no @FR tag (informational, not a hard gate).",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "$defs": {
+    "layer": {
+      "enum": ["unit", "integration", "e2e"]
+    },
+    "coverageOkImpliesPassing": {
+      "$comment": "R1 skipped != covered, enforced structurally: coverage.<layer> == 'ok' REQUIRES tests.<layer> to contain a test link that is BOTH status 'enabled' AND executed 'pass'. A skipped/not_run/failed link can never yield 'ok'.",
+      "allOf": [
+        {
+          "if": { "properties": { "coverage": { "properties": { "unit": { "const": "ok" } }, "required": ["unit"] } }, "required": ["coverage"] },
+          "then": { "properties": { "tests": { "properties": { "unit": { "type": "array", "contains": { "$ref": "#/$defs/passingTestLink" } } }, "required": ["unit"] } }, "required": ["tests"] }
+        },
+        {
+          "if": { "properties": { "coverage": { "properties": { "integration": { "const": "ok" } }, "required": ["integration"] } }, "required": ["coverage"] },
+          "then": { "properties": { "tests": { "properties": { "integration": { "type": "array", "contains": { "$ref": "#/$defs/passingTestLink" } } }, "required": ["integration"] } }, "required": ["tests"] }
+        },
+        {
+          "if": { "properties": { "coverage": { "properties": { "e2e": { "const": "ok" } }, "required": ["e2e"] } }, "required": ["coverage"] },
+          "then": { "properties": { "tests": { "properties": { "e2e": { "type": "array", "contains": { "$ref": "#/$defs/passingTestLink" } } }, "required": ["e2e"] } }, "required": ["tests"] }
+        }
+      ]
+    },
+    "passingTestLink": {
+      "type": "object",
+      "properties": { "status": { "const": "enabled" }, "executed": { "const": "pass" } },
+      "required": ["status", "executed"]
+    },
+    "requiredLayersHaveCoverage": {
+      "$comment": "Every required layer must have a coverage entry — a required layer cannot be silently omitted from coverage (its absence would hide an uncovered layer).",
+      "allOf": [
+        {
+          "if": { "properties": { "required_layers": { "contains": { "const": "unit" } } }, "required": ["required_layers"] },
+          "then": { "properties": { "coverage": { "required": ["unit"] } }, "required": ["coverage"] }
+        },
+        {
+          "if": { "properties": { "required_layers": { "contains": { "const": "integration" } } }, "required": ["required_layers"] },
+          "then": { "properties": { "coverage": { "required": ["integration"] } }, "required": ["coverage"] }
+        },
+        {
+          "if": { "properties": { "required_layers": { "contains": { "const": "e2e" } } }, "required": ["required_layers"] },
+          "then": { "properties": { "coverage": { "required": ["e2e"] } }, "required": ["coverage"] }
+        }
+      ]
+    },
+    "requirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "spec_path",
+        "title",
+        "priority",
+        "status",
+        "required_layers",
+        "required_layers_source",
+        "tests",
+        "coverage"
+      ],
+      "allOf": [
+        { "$ref": "#/$defs/coverageOkImpliesPassing" },
+        { "$ref": "#/$defs/requiredLayersHaveCoverage" },
+        {
+          "$comment": "A removed FR carries no live tests (its tests become orphans). removed => tests is empty.",
+          "if": { "properties": { "status": { "const": "removed" } }, "required": ["status"] },
+          "then": { "properties": { "tests": { "maxProperties": 0 } } }
+        }
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^FR-\\d{2}\\.\\d{2}$",
+          "description": "Canonical display/machine id (two-digit.two-digit)."
+        },
+        "spec_path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Relative path to the spec.md the FR lives in."
+        },
+        "title": {
+          "type": "string"
+        },
+        "priority": {
+          "enum": ["Must", "Should", "May"]
+        },
+        "status": {
+          "enum": ["active", "removed"]
+        },
+        "required_layers": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/layer"
+          }
+        },
+        "required_layers_source": {
+          "enum": ["explicit", "inferred_legacy", "defaulted_legacy"],
+          "description": "Provenance of required_layers. D-layer WARNs on legacy-missing, FAILs on post-rollout omission (R4)."
+        },
+        "tests": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Tagged tests bound to this FR, grouped by layer. A layer key may be omitted or empty. Each link's own 'layer' field MUST match the group it is filed under (so unit coverage cannot be claimed from an e2e test link).",
+          "properties": {
+            "unit": { "type": "array", "items": { "allOf": [ { "$ref": "#/$defs/testLink" }, { "properties": { "layer": { "const": "unit" } } } ] } },
+            "integration": { "type": "array", "items": { "allOf": [ { "$ref": "#/$defs/testLink" }, { "properties": { "layer": { "const": "integration" } } } ] } },
+            "e2e": { "type": "array", "items": { "allOf": [ { "$ref": "#/$defs/testLink" }, { "properties": { "layer": { "const": "e2e" } } } ] } }
+          }
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Coverage-at-layer status. 'ok' REQUIRES a tagged test that is enabled AND executed=pass (R1); a skipped/not_run test is 'MISSING'.",
+          "properties": {
+            "unit": {
+              "$ref": "#/$defs/coverageStatus"
+            },
+            "integration": {
+              "$ref": "#/$defs/coverageStatus"
+            },
+            "e2e": {
+              "$ref": "#/$defs/coverageStatus"
+            }
+          }
+        }
+      }
+    },
+    "coverageStatus": {
+      "enum": ["ok", "MISSING", "n/a"]
+    },
+    "testLink": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path", "layer", "status", "executed", "tag_source"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Stable test id, keyed to execution evidence."
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Source location, path::name."
+        },
+        "layer": {
+          "$ref": "#/$defs/layer"
+        },
+        "status": {
+          "enum": ["enabled", "skipped", "quarantined", "only"],
+          "description": "Static disposition of the test in source."
+        },
+        "executed": {
+          "enum": ["pass", "fail", "not_run"],
+          "description": "Observed result from this run's execution evidence (R1). Only 'pass' + status 'enabled' yields coverage 'ok'."
+        },
+        "tag_source": {
+          "enum": ["pytest_marker", "covers_comment", "native_tag", "title_suffix"],
+          "description": "Which grammar form bound this tag (fr_tag_grammar.TAG_SOURCES)."
+        }
+      }
+    },
+    "orphan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["test", "tagged_fr", "reason", "category"],
+      "allOf": [
+        {
+          "$comment": "A confirmed_orphan has an explicit tag pointing at a dead/removed FR, so its tagged_fr must be a real FR id. An unmapped orphan has no FR match, so tagged_fr is null.",
+          "if": { "properties": { "category": { "const": "confirmed_orphan" } }, "required": ["category"] },
+          "then": { "properties": { "tagged_fr": { "type": "string" } } }
+        }
+      ],
+      "properties": {
+        "test": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tagged_fr": {
+          "oneOf": [
+            { "type": "string", "pattern": "^FR-\\d{2}\\.\\d{2}$" },
+            { "type": "null", "description": "null when category is 'unmapped' — the test maps to no live FR (R4)." }
+          ]
+        },
+        "reason": {
+          "enum": ["fr_removed", "fr_absent"],
+          "description": "fr_removed: FR is in ## Removed Requirements. fr_absent: FR is not in the live spec at all."
+        },
+        "category": {
+          "enum": ["confirmed_orphan", "possible_orphan", "unmapped"],
+          "description": "confirmed_orphan: explicit tag -> dead/removed FR. possible_orphan: heuristic/ambiguous. unmapped: no match (R4)."
+        }
+      }
+    },
+    "invalidTag": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["test", "raw"],
+      "properties": {
+        "test": {
+          "type": "string",
+          "description": "Test the malformed tag was found on (may be empty if unbound)."
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The malformed tag text, e.g. @FR-1.3."
+        },
+        "reason": {
+          "type": "string",
+          "description": "Optional diagnostic for why the tag is invalid, e.g. 'non_canonical_fr_id' | 'non_string_arg' (fr_tag_grammar.InvalidTag.reason). Optional so a bare {test, raw} entry still validates."
+        }
+      }
+    }
+  }
+}

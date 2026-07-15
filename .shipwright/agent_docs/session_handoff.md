@@ -1,40 +1,44 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-15-finalize-utf8-guard"
+run_id: "iterate-2026-07-15-contracts-and-harness"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-15T13:22:11.117529+00:00"
+reason: "iterate: freeze requirement->test traceability contracts + panel-verified harness (P1)"
+timestamp: "2026-07-15T19:39:08.832620+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-15 13:22:11 UTC
+> Auto-generated 2026-07-15 19:39:08 UTC
 
 ## Session Info
 
-- **Session ID**: c81674d4-2de4-4fd2-ae13-dd1d3677572c
-- **Timestamp**: 2026-07-15 13:22:11 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: b8f69523-4022-421a-846d-d7d47ec349fd
+- **Timestamp**: 2026-07-15 19:39:08 UTC
+- **Reason**: iterate: freeze requirement->test traceability contracts + panel-verified harness (P1)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-15-finalize-utf8-guard
-- **Date**: 2026-07-15T13:22:06.591233Z
-- **Type**: bug
-- **Complexity**: small
-- **Branch**: iterate/finalize-utf8-guard
-- **ADR**: iterate-2026-07-15-finalize-utf8-guard
+- **Run ID**: iterate-2026-07-15-contracts-and-harness
+- **Date**: 2026-07-15T19:39:03.220490Z
+- **Type**: feature
+- **Complexity**: medium
+- **Branch**: iterate/contracts-and-harness
+- **ADR**: iterate-2026-07-15-contracts-and-harness
 - **Tests passed**: True
-- **Spec**: n/a (small bug fix; no iterate spec)
+- **Spec**: .shipwright/planning/iterate/2026-07-15-contracts-and-harness.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/finalize-utf8-guard
+- **Branch**: iterate/contracts-and-harness
+- **Run ID**: `iterate-2026-07-15-contracts-and-harness`
+- **Spec**: .shipwright/planning/iterate/2026-07-15-contracts-and-harness.md
+- **Complexity**: medium
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -48,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/finalize-utf8-guard
-- **Last Commit**: dbc32202 Merge remote-tracking branch 'origin/main' into iterate/finalize-utf8-guard
+- **Branch**: iterate/contracts-and-harness
+- **Last Commit**: 0fdd4acd chore(triage): sweep 10 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +69,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-c894b430 | grade_snapshot | — | 2026-07-15 |
+| evt-91b3f7a9 | work_completed | iterate (iterate: freeze requirement->test traceability contracts + panel-verified harness (P1)) | 2026-07-15 |
+| evt-32fe021a | grade_snapshot | — | 2026-07-15 |
 | evt-8eef5509 | grade_snapshot | — | 2026-07-15 |
 | evt-fdd65a28 | work_completed | iterate (admit ci-security.json to the churn-merge allowlist (+ rollback parity)) | 2026-07-15 |
-| evt-7730cf64 | grade_snapshot | — | 2026-07-15 |
-| evt-c1b23d3b | work_completed | iterate (Add a UTF-8 reconfigure guard to finalize_iterate.py main() (stdout+stderr) plus two cp1252 subprocess regression tests) | 2026-07-15 |
-| evt-1f6b2bca | grade_snapshot | — | 2026-07-15 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 305
-- **Last iterate**: bug — admit ci-security.json to the churn-merge allowlist (+ rollback parity) (2026-07-15)
+- **Total work events**: 306
+- **Last iterate**: change — iterate: freeze requirement->test traceability contracts + panel-verified harness (P1) (2026-07-15)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

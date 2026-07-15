@@ -1,0 +1,32 @@
+{
+  "_comment": "Recorded LLM adjudications for the offline backfill leg. Keys are sha256 of the R4-bounded request payload (test_path + test_title + candidate_frs). Responses carry auto_write=false: an LLM-alone/title-similarity verdict is advisory and may NOT auto-write (only explicit-tag/exact-split corroboration may).",
+  "schema_version": 2,
+  "interactions": {
+    "sha256:05b465f09ec442946f6dd972573dd732040a90d3862db3b105f38e17a0b2903a": {
+      "payload": {
+        "test_path": "unit/orders.test.ts",
+        "test_title": "writes the order row",
+        "candidate_frs": ["FR-03.02", "FR-03.03"]
+      },
+      "response": {
+        "proposed_fr": "FR-03.03",
+        "confidence": 0.61,
+        "auto_write": false,
+        "rationale": "title describes order persistence; matches FR-03.03 wording"
+      }
+    },
+    "sha256:28828e8cc2814764f79cb24c8e0317189ffcdf156c41fa83f02b2257ecad5dc0": {
+      "payload": {
+        "test_path": "e2e/legacy.spec.ts",
+        "test_title": "copies the launch command to the clipboard",
+        "candidate_frs": []
+      },
+      "response": {
+        "proposed_fr": null,
+        "confidence": 0.12,
+        "auto_write": false,
+        "rationale": "no live FR matches; candidate for orphan review, not a stale-feature accusation"
+      }
+    }
+  }
+}

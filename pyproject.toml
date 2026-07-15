@@ -38,6 +38,7 @@ markers = [
     "integration: marks tests as integration tests",
     "slow: marks tests that spawn subprocesses or perform long I/O (excluded from the default run; use `pytest -m slow`)",
     "cross_plugin: tests that import another plugin's lib/tools modules. The cross-plugin namespace collision is structural (ADR-044) and hard-fails in CI from a shared/tests session via test_hygiene.import_or_fail_in_ci — they must run under their owning plugin's pytest session, so they are excluded from the `shared/tests` CI step (`-m 'not cross_plugin'`).",
+    "covers: binds a test to one or more FRs for requirement->test traceability (@FR tags, Spec D1)",
 ]
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,14 @@
+diff --git a/base/spec.md b/head/spec.md
+index 73cd8ed3..c5eea1c3 100644
+--- a/base/spec.md
++++ b/head/spec.md
+@@ -1,7 +1,7 @@
+-# Spec: Demo App (behavior-change diff — BASE)
++# Spec: Demo App (behavior-change diff — HEAD)
+ 
+ ## Functional Requirements
+ 
+ | FR | Description | Priority | Layers |
+ |----|-------------|----------|--------|
+-| FR-03.02 | Dashboard shows live orders | Must | e2e |
++| FR-03.02 | Dashboard shows live orders with running totals | Must | e2e |

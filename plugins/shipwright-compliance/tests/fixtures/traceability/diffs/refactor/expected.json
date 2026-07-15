@@ -1,0 +1,12 @@
+{
+  "scenario": "refactor",
+  "key_property": "refactor_not_blocked",
+  "gate": "change_to_cross_layer (F11)",
+  "signal": "NONE — source changed but there is no spec.md/AC/FR-mapping delta, so no behavior-change signal fires (R2). The cross-layer gate keys off the behavior-change signal, not arbitrary source-file inference.",
+  "changed_files": ["orders.py"],
+  "spec_or_fr_delta": false,
+  "expected_blocked": false,
+  "expected_reason": "A pure refactor produces no behavior-change signal, so the cross-layer gate does NOT fire and does NOT force a meaningless test-file touch. This is the critical 'must NOT block' green case.",
+  "lexically_clean_note": "head/orders.py is kept free of requirement-ish tokens (spec / AC / FR / behavior) in its CHANGED text on purpose, so a naive keyword prefilter cannot mistake this refactor for a behavior change. The trigger must be a real spec/FR-mapping delta, not source-text keywords.",
+  "must_not_block": true
+}

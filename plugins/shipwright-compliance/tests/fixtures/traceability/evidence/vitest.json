@@ -1,0 +1,16 @@
+{
+  "_comment": "Vitest JSON-reporter sample (Jest-shaped). DATA for the harness. Both unit tests pass -> FR-03.03 coverage.unit = ok.",
+  "numTotalTests": 2,
+  "numPassedTests": 2,
+  "numFailedTests": 0,
+  "testResults": [
+    {
+      "name": "unit/orders.test.ts",
+      "status": "passed",
+      "assertionResults": [
+        { "title": "writes the order row", "fullName": "order persistence > writes the order row", "status": "passed" },
+        { "title": "rejects a duplicate order @FR-03.03", "fullName": "order persistence > rejects a duplicate order @FR-03.03", "status": "passed" }
+      ]
+    }
+  ]
+}

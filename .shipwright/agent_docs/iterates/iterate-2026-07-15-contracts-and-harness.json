@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-15-contracts-and-harness",
+  "date": "2026-07-15T19:39:03.220490Z",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/contracts-and-harness",
+  "spec": ".shipwright/planning/iterate/2026-07-15-contracts-and-harness.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-15-contracts-and-harness"
+}

@@ -1,0 +1,17 @@
+{
+  "_comment": "Predeclared answers to the ambiguity prompts adopt (TT7) raises when inferring required_layers, so an unattended runner never stalls on a human prompt. Keyed by FR; each answer records the chosen layers + provenance it should stamp.",
+  "schema_version": 2,
+  "kind": "adopt_required_layers_ambiguity",
+  "answers": {
+    "app::FR-03.02": {
+      "question": "FR-03.02 has no Layers column. Infer as UI/flow (e2e) or leave defaulted (unit)?",
+      "decision": "inferred_legacy",
+      "required_layers": ["e2e"]
+    },
+    "app::FR-03.03": {
+      "question": "FR-03.03 persists to a DB. Infer integration, or default to unit only?",
+      "decision": "defaulted_legacy",
+      "required_layers": ["unit"]
+    }
+  }
+}

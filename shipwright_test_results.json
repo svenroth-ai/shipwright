@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-15-finalize-utf8-guard",
+    "run_id": "iterate-2026-07-15-contracts-and-harness",
     "date": "2026-07-15",
     "unit": {
       "status": "passed",
-      "passed": 3993,
-      "total": 3993
+      "passed": 45,
+      "total": 45
     },
     "integration": {
       "status": "not_run",
@@ -30,46 +30,55 @@
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [],
+    "degraded": [
+      {
+        "condition": "classifier_risk_flag_override",
+        "detail": "classify_complexity flagged touches_migrations from message prose only; overridden -- there are no migrations in the diff. F11 recomputes risk flags from the diff, which carries no supabase/migrations path."
+      }
+    ],
     "surface_verification": {
       "surface": "none",
-      "tests_run": 2,
+      "runner": "surface_verification.py --surface none",
       "exit_code": 0,
-      "justification": "finalize_iterate.py is an internal Python CLI with no web/UI/API surface. End-to-end verification IS the subprocess-level regression suite (test_finalize_iterate_utf8.py): it invokes the real CLI binary via sys.executable under PYTHONIOENCODING=cp1252 — the exact production failure condition finalize_bundle triggers when it pipes F5b — asserting returncode 0/1 and a UTF-8-decodable JSON contract. A revert-check confirmed both probes go RED without the fix."
+      "tests_run": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-15-contracts-and-harness/surface_verification.json",
+      "timestamp": "2026-07-15T00:00:00+00:00",
+      "justification": "P1 ships framework-level frozen contracts (traceability manifest v2 JSON Schema, requirement-model + @FR tag-grammar Python modules) plus a test-harness/fixture package. No startable, user-experienceable surface exists (no web/API/CLI app affordance) and no backend-affects-frontend change. Fully exercised by the shared + compliance pytest suites at F0 (18 units GREEN) and an adversarial GPT+Gemini+Codex panel (AC4)."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        {
-          "behavior": "main() result-JSON stdout survives non-cp1252 output under a legacy console codepage (no UnicodeEncodeError)",
-          "disposition": "tested",
-          "evidence": "test_finalize_iterate_utf8.py::test_stdout_is_utf8_under_legacy_console_encoding PASSED (returncode 0 + UTF-8 JSON echoing project_root; revert-check RED)"
-        },
-        {
-          "behavior": "main() fail-closed FinalizeGateError stdout branch survives a non-cp1252 change_type echoed into its detail",
-          "disposition": "tested",
-          "evidence": "test_finalize_iterate_utf8.py::test_gate_error_stdout_is_utf8_under_legacy_console_encoding PASSED (returncode 1 + char present in detail; revert-check RED)"
-        },
-        {
-          "behavior": "_reconfigure_stdio_utf8() pins BOTH stdout and stderr to UTF-8 (stderr carries interpolated exception/path text)",
-          "disposition": "tested",
-          "evidence": "test_finalize_iterate_utf8.py::test_reconfigure_stdio_utf8_pins_both_streams PASSED (both streams reconfigured with encoding=utf-8)"
-        },
-        {
-          "behavior": "guard is fail-soft: a stream whose reconfigure raises, or that lacks reconfigure (StringIO/pytest capture), never crashes main()",
-          "disposition": "tested",
-          "evidence": "test_finalize_iterate_utf8.py::test_reconfigure_stdio_utf8_swallows_stream_errors + ::test_reconfigure_stdio_utf8_skips_streams_without_reconfigure PASSED"
-        }
+        { "behavior": "AC1 manifest schema is a valid Draft 2020-12 schema; schema_version const is 2", "disposition": "tested", "evidence": "test_traceability_fixtures.py::test_schema_is_valid_draft2020" },
+        { "behavior": "AC1 golden example + golden manifest validate against the schema", "disposition": "tested", "evidence": "test_golden_example_validates + test_golden_manifest_validates" },
+        { "behavior": "AC1 malformed instances rejected (schema_version, id pattern, executed enum, additionalProperties)", "disposition": "tested", "evidence": "test_schema_rejects_malformed" },
+        { "behavior": "AC1/R1 schema enforces skipped != covered: coverage 'ok' requires an enabled+pass test link", "disposition": "tested", "evidence": "test_schema_enforces_skipped_not_covered" },
+        { "behavior": "AC1 schema enforces removed FR => no live tests", "disposition": "tested", "evidence": "test_schema_enforces_removed_has_no_live_tests" },
+        { "behavior": "AC1 schema requires a coverage entry for every required layer", "disposition": "tested", "evidence": "test_schema_requires_coverage_for_every_required_layer" },
+        { "behavior": "AC1 schema enforces each test link's layer matches its group (no unit coverage from an e2e link)", "disposition": "tested", "evidence": "test_schema_enforces_test_link_layer_matches_its_group" },
+        { "behavior": "AC1 orphan tagged_fr: null only for unmapped; confirmed_orphan requires a real FR id", "disposition": "tested", "evidence": "test_schema_orphan_null_fr_rules" },
+        { "behavior": "AC1/R5 MODEL_VERSION tracks the manifest schema_version const (both 2)", "disposition": "tested", "evidence": "test_model_version_tracks_manifest_schema_version" },
+        { "behavior": "AC2 all four @FR grammar forms bind to a test (pytest marker / // @covers / native tag / title suffix)", "disposition": "tested", "evidence": "test_pytest_marker_binds_to_function, test_covers_comment_binds_to_next_test, test_native_tag_form, test_title_tag_binds_only_as_a_suffix" },
+        { "behavior": "AC2 malformed tags -> invalid_tags (single-digit, non-string arg, trailing junk, non-canonical), bound or not", "disposition": "tested", "evidence": "test_pytest_marker_malformed_and_nonstring_are_invalid, test_ts_malformed_tag_is_invalid, test_trailing_junk_token_is_invalid_not_a_valid_prefix, test_malformed_covers_recorded_even_when_unbound" },
+        { "behavior": "AC2 binding is strict: // @covers adjacency + same-line, title suffix only, test.describe excluded", "disposition": "tested", "evidence": "test_covers_comment_binds_only_when_immediately_adjacent, test_covers_comment_on_same_line_binds_to_that_test, test_test_describe_is_not_a_binding_target" },
+        { "behavior": "AC2 exported TAG_TOKEN_RE rejects trailing continuations (@FR-01.03x / .4 / 033)", "disposition": "tested", "evidence": "test_exported_tag_token_re_rejects_continuations" },
+        { "behavior": "AC2 pytest 'covers' marker registered in the compliance + root pyproject", "disposition": "tested", "evidence": "test_covers_marker_registered" },
+        { "behavior": "AC2/AC3 fixture mini-repo exercises all four tag_sources and binds the expected FRs; only FR-1.3 invalid; untagged test unbound", "disposition": "tested", "evidence": "test_fixture_repo_exercises_all_four_tag_sources, test_fixture_repo_binds_expected_frs, test_fixture_untagged_test_produces_no_hit" },
+        { "behavior": "AC3 fixture package loads: mini-repo, diffs (incl refactor), evidence (incl skipped), decisions, golden report, catalog paths", "disposition": "tested", "evidence": "test_minirepo_loads, test_diffs_load_with_expected_verdicts, test_evidence_loads_including_skipped, test_predeclared_decisions_load, test_golden_report_snapshot_present, test_catalog_paths_all_resolve" },
+        { "behavior": "AC3/R1 normalized evidence index agrees with the raw Playwright report (skipped -> not_run)", "disposition": "tested", "evidence": "test_evidence_loads_including_skipped (raw<->index cross-check)" },
+        { "behavior": "AC3/R3 diff scenarios are self-contained: linked/required-layer tests exist in base+head trees", "disposition": "tested", "evidence": "test_diffs_load_with_expected_verdicts" },
+        { "behavior": "AC3/R4 LLM adapter replays offline; refuses bodies (disallowed key / over-long field / non-canonical candidate_frs); forces auto_write=false", "disposition": "tested", "evidence": "test_traceability_llm_adapter.py::test_llm_adapter_replays_offline_and_refuses_bodies" },
+        { "behavior": "AC3 property-4 golden correct: golden manifest matches the reference parser + execution evidence (bindings, tag_source, invalid, orphans, coverage)", "disposition": "tested", "evidence": "test_traceability_golden_consistency.py (3 tests)" },
+        { "behavior": "AC4 adversarial-panel judgment of the four key properties (skipped!=covered, removal flagged, refactor not blocked, golden correct)", "disposition": "untestable", "reason_code": "requires-external-nondeterministic-service", "evidence": "verified by the GPT-5.6 + Gemini 3.1 + Codex panel RUN over 4 rounds to convergence (non-degraded); verdicts recorded in the iterate spec's Adversarial-panel section" }
       ],
       "counts": {
-        "testable": 4,
-        "tested": 4,
-        "untestable": 0,
+        "testable": 20,
+        "tested": 20,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 4,
-        "covered_acs": 4
+        "acs": 5,
+        "covered_acs": 5
       }
     }
   },
