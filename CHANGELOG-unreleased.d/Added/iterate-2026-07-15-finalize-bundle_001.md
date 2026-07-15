@@ -1,0 +1,1 @@
+`finalize_bundle.py` — run the iterate finalize steps F1/F3/F4/F5c/F5b as ONE orchestrated call from a JSON payload (pure orchestrator; per-step result; aborts naming the failed step; whole-bundle re-run is safe), collapsing the sequential LLM round-trips of the finalize phase.

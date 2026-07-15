@@ -78,6 +78,39 @@ def drop_dir(project_root: Path) -> Path:
     return root / ".shipwright" / "agent_docs" / DROP_DIRNAME
 
 
+# Semantic fields the idempotency key compares on — excludes the volatile
+# ``date`` (same-day-stable, but a cross-midnight re-run must still dedup) and
+# ``commit`` (empty at F3 time). Two drops with the same run_id AND identical
+# values for all of these are the SAME ADR re-written, not a new one.
+_DEDUP_KEYS = (
+    "run_id", "section", "title", "context", "decision", "consequences",
+    "rationale", "rejected", "architecture_impact", "spec_ref",
+)
+
+
+def _find_existing_drop(dd: Path, safe: str, payload: dict) -> Path | None:
+    """Return an existing ``<safe>_NNN.json`` drop whose semantic content equals
+    ``payload`` (ignoring volatile date/commit), else ``None``.
+
+    Makes re-invocation idempotent per ``(run_id, content)`` so a whole-bundle
+    retry after a partial finalize failure does NOT duplicate the ADR
+    (iterate-2026-07-15-finalize-bundle). A drop with the same run_id but
+    DIFFERENT content still gets its own counter — the multi-ADR-per-run feature
+    is preserved. First-run output is byte-identical to the pre-idempotency tool.
+    """
+    if not dd.is_dir():
+        return None
+    want = {k: payload.get(k) for k in _DEDUP_KEYS}
+    for existing in sorted(dd.glob(f"{safe}_*.json")):
+        try:
+            data = json.loads(existing.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+            continue
+        if isinstance(data, dict) and all(data.get(k) == want[k] for k in _DEDUP_KEYS):
+            return existing
+    return None
+
+
 def _atomic_exclusive_write(target: Path, content: str) -> None:
     """Create ``target`` exclusively (O_EXCL) and write ``content``.
 
@@ -158,6 +191,11 @@ def write_decision_drop(
 
     dd = drop_dir(project_root)
     safe = sanitize_run_id_for_filename(run_id)
+    # Idempotency: a re-run with identical (run_id, content) returns the existing
+    # drop instead of claiming a new counter (whole-bundle retry safety).
+    existing = _find_existing_drop(dd, safe, payload)
+    if existing is not None:
+        return existing
     for counter in range(1, _MAX_COUNTER):
         candidate = dd / f"{safe}_{counter:03d}.json"
         try:

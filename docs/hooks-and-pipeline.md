@@ -2287,8 +2287,14 @@ lock-serialised tools so every Canon caller lands in a consistent shape:
 - **`shared/scripts/tools/write_changelog_drop.py`** — writes one
   `CHANGELOG-unreleased.d/<category>/<run_id>_NNN.md` bullet per F4 call.
   Exclusive-create via `O_EXCL` so concurrent calls can't collide on the
-  same counter. Replaces the legacy `append_changelog_entry.py` for the
-  iterate-F4 path.
+  same counter. **Idempotent per `(run_id, category, bullet)`**
+  (iterate-2026-07-15-finalize-bundle): a re-run with identical bullet content
+  returns the existing drop instead of a duplicate `_NNN` — a DIFFERENT bullet
+  still gets its own counter, so multi-bullet-per-run is preserved. Same guard
+  in `write_decision_drop.py` (keyed on the ADR's semantic fields, ignoring
+  volatile date/commit). First-run output is byte-identical; this makes a
+  whole-bundle finalize retry safe. Replaces the legacy
+  `append_changelog_entry.py` for the iterate-F4 path.
 - **`shared/scripts/tools/aggregate_changelog.py`** — release-time
   aggregator. Reads the drop directory, renders a Keep-a-Changelog
   versioned section, inserts it at the structural point in `CHANGELOG.md`
@@ -2304,6 +2310,17 @@ lock-serialised tools so every Canon caller lands in a consistent shape:
   with 50-entry retention per phase. Handles generic pipeline phases —
   `iterate` no longer flows through this file since F5c was swapped to
   `append_iterate_entry.py`.
+- **`shared/scripts/tools/finalize_bundle.py`** (iterate-2026-07-15) — a
+  **pure orchestrator** that drives the LLM-turn-heavy finalize steps
+  F1 (`artifact_sync`), F3 (`write_decision_drop`), F4 (`write_changelog_drop`),
+  F5c (`append_iterate_entry`), F5b (`finalize_iterate`) in **one** call from a
+  single `--payload-file` JSON, in dependency order (F1 first → F5b last),
+  aborting with the failed step's name. It writes **no** artifact itself — every
+  file is produced by the same unchanged tool — so it only collapses the
+  turn-taking, not what gets written. F5 (test-results), F2/F3a (agent-doc
+  bullets) and F6 (commit) stay manual. Because the five tools are idempotent
+  per `run_id`, a whole-bundle re-run after a fix never duplicates an artifact.
+  Full contract: iterate skill `references/F-finalize-bundle.md`.
 
 All helpers use `shared/scripts/lib/file_lock.py`, which wraps
 `fcntl.flock` on POSIX and `msvcrt.locking` on Windows with a hard

@@ -1,36 +1,37 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-15-perf-test-triage-leak"
+run_id: "iterate-2026-07-15-finalize-bundle"
 phase: "iterate"
-reason: "iterate: perf-test-triage-leak"
-timestamp: "2026-07-15T05:48:50.010334+00:00"
+reason: "iterate: finalize bundle (duration campaign part 2)"
+timestamp: "2026-07-15T07:13:33.307263+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-15 05:48:50 UTC
+> Auto-generated 2026-07-15 07:13:33 UTC
 
 ## Session Info
 
-- **Session ID**: b45e8fa0-3ca5-45d7-8777-83ba8272c639
-- **Timestamp**: 2026-07-15 05:48:50 UTC
-- **Reason**: iterate: perf-test-triage-leak
+- **Session ID**: 04a272a1-7fbf-498d-9f3a-c01212a48704
+- **Timestamp**: 2026-07-15 07:13:33 UTC
+- **Reason**: iterate: finalize bundle (duration campaign part 2)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-14-phase-invocation-mode
-- **Date**: 2026-07-14T23:08:22.204756Z
-- **Type**: bug
+- **Run ID**: iterate-2026-07-15-finalize-bundle
+- **Date**: 2026-07-15T07:13:28.948310Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/phase-invocation-mode
-- **ADR**: iterate-2026-07-14-phase-invocation-mode
+- **Branch**: iterate/finalize-bundle
+- **ADR**: iterate-2026-07-15-finalize-bundle
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-14-phase-invocation-mode.md
+- **Spec**: .shipwright/planning/iterate/2026-07-15-finalize-bundle.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/perf-test-triage-leak
-- **External Review Marker**: missing
+- **Branch**: iterate/finalize-bundle
+- **Spec**: .shipwright/planning/iterate/2026-07-15-finalize-bundle.md
+- **External Review Marker**: stale (predates spec (2026-07-15T06:23:09))
 
 ### Mandatory replay on Resume
 
@@ -48,8 +49,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/perf-test-triage-leak
-- **Last Commit**: 0f0ff9fb chore(triage): sweep 2 outbox append(s) into branch
+- **Branch**: iterate/finalize-bundle
+- **Last Commit**: 017459b6 chore(triage): sweep 2 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,8 +66,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-d23adfee | grade_snapshot | — | 2026-07-15 |
-| evt-54e93bec | work_completed | iterate (Redirect perf-check integration test --cwd to tmp_path so the runner's triage emission stops leaking into the tracked fixtures dir) | 2026-07-15 |
+| evt-80db7446 | grade_snapshot | — | 2026-07-15 |
+| evt-deb20021 | work_completed | iterate (finalize_bundle.py orchestrator + drop-tool idempotency (duration campaign part 2)) | 2026-07-15 |
 | evt-1bd60514 | grade_snapshot | — | 2026-07-15 |
 | evt-08956f26 | grade_snapshot | — | 2026-07-14 |
 | evt-27b3b806 | grade_snapshot | — | 2026-07-14 |
@@ -75,7 +76,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 302
-- **Last iterate**: bug — Redirect perf-check integration test --cwd to tmp_path so the runner's triage emission stops leaking into the tracked fixtures dir (2026-07-15)
+- **Last iterate**: change — finalize_bundle.py orchestrator + drop-tool idempotency (duration campaign part 2) (2026-07-15)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
