@@ -1,0 +1,1 @@
+finalize_iterate.py no longer crashes with UnicodeEncodeError on Windows (cp1252) when its stdout/stderr is a pipe and the emitted JSON or diagnostics carry non-cp1252 characters (e.g. a repo under a CJK/Cyrillic path), which previously aborted the whole finalize bundle

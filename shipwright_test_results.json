@@ -1,21 +1,19 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-15-churn-allowlist-ci-security",
+    "run_id": "iterate-2026-07-15-finalize-utf8-guard",
     "date": "2026-07-15",
-    "intent": "bug",
-    "complexity": "medium",
     "unit": {
       "status": "passed",
-      "passed": 34,
-      "total": 34
+      "passed": 3993,
+      "total": 3993
     },
     "integration": {
-      "status": "passed",
-      "passed": 7,
-      "total": 7
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
@@ -25,63 +23,53 @@
       "total": 0
     },
     "design_fidelity": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "smoke": {
-      "status": "skipped"
-    },
-    "surface_verification": {
-      "surface": "none",
-      "runner": "",
-      "exit_code": 0,
-      "tests_run": 0,
-      "evidence_path": "",
-      "timestamp": "2026-07-15T13:03:12.083Z",
-      "attempts": 0,
-      "justification": "Framework-internal merge-machinery change: admits .shipwright/compliance/ci-security.json to churn_merge.CHURN_ALLOWLIST + adds it to integrate_main's regenerate-failure rollback set. No product route, UI component, API, CLI, or message contract is added/modified; ci-security.json's schema (the WebUI read contract) is unchanged. Fully verified by unit + real-git integration tests (F0 18/18 GREEN). No startable user-experienceable surface exists."
+      "status": "not_run"
     },
     "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 2,
+      "exit_code": 0,
+      "justification": "finalize_iterate.py is an internal Python CLI with no web/UI/API surface. End-to-end verification IS the subprocess-level regression suite (test_finalize_iterate_utf8.py): it invokes the real CLI binary via sys.executable under PYTHONIOENCODING=cp1252 — the exact production failure condition finalize_bundle triggers when it pipes F5b — asserting returncode 0/1 and a UTF-8-decodable JSON contract. A revert-check confirmed both probes go RED without the fix."
+    },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC-1: ci-security.json is a member of CHURN_ALLOWLIST",
+          "behavior": "main() result-JSON stdout survives non-cp1252 output under a legacy console codepage (no UnicodeEncodeError)",
           "disposition": "tested",
-          "evidence": "test_churn_merge.py::test_ci_security_json_in_churn_allowlist PASSED"
+          "evidence": "test_finalize_iterate_utf8.py::test_stdout_is_utf8_under_legacy_console_encoding PASSED (returncode 0 + UTF-8 JSON echoing project_root; revert-check RED)"
         },
         {
-          "behavior": "AC-2: classify() returns ci-security.json as resolvable, not blocking",
+          "behavior": "main() fail-closed FinalizeGateError stdout branch survives a non-cp1252 change_type echoed into its detail",
           "disposition": "tested",
-          "evidence": "test_churn_merge.py::test_classify_admits_ci_security_json PASSED"
+          "evidence": "test_finalize_iterate_utf8.py::test_gate_error_stdout_is_utf8_under_legacy_console_encoding PASSED (returncode 1 + char present in detail; revert-check RED)"
         },
         {
-          "behavior": "AC-3: doc-table <-> CHURN_ALLOWLIST stays 1:1 with the new regenerate row",
+          "behavior": "_reconfigure_stdio_utf8() pins BOTH stdout and stderr to UTF-8 (stderr carries interpolated exception/path text)",
           "disposition": "tested",
-          "evidence": "test_churn_merge_doc_sync.py::test_doc_table_matches_churn_allowlist_both_directions + test_each_strategy_is_a_known_keyword PASSED"
+          "evidence": "test_finalize_iterate_utf8.py::test_reconfigure_stdio_utf8_pins_both_streams PASSED (both streams reconfigured with encoding=utf-8)"
         },
         {
-          "behavior": "AC-4: a conflicting ci-security.json resolves through integrate_main.integrate without blocking (mainline --theirs placeholder stands, no markers)",
+          "behavior": "guard is fail-soft: a stream whose reconfigure raises, or that lacks reconfigure (StringIO/pytest capture), never crashes main()",
           "disposition": "tested",
-          "category": "integration",
-          "evidence": "test_parallel_merge_cascade_integration.py::test_ci_security_json_conflict_resolves_through_cascade PASSED (real-git 3-branch serial drain)"
-        },
-        {
-          "behavior": "AC-5: integrate rollback restores ci-security.json on regenerate failure (clean tree; mainline placeholder)",
-          "disposition": "tested",
-          "evidence": "test_integrate_main.py::test_integrate_rollback_restores_ci_security_on_regen_failure PASSED"
+          "evidence": "test_finalize_iterate_utf8.py::test_reconfigure_stdio_utf8_swallows_stream_errors + ::test_reconfigure_stdio_utf8_skips_streams_without_reconfigure PASSED"
         }
       ],
       "counts": {
-        "testable": 5,
-        "tested": 5,
+        "testable": 4,
+        "tested": 4,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 5,
-        "covered_acs": 5
+        "acs": 4,
+        "covered_acs": 4
       }
     }
   },

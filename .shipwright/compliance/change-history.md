@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-07-15T13:09:49.978463+00:00
-Total commits: 1141
+Generated: 2026-07-15T13:22:06.672550+00:00
+Total commits: 1143
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 329
+    "fix" : 331
     "feat" : 309
     "chore" : 241
     "docs" : 145
@@ -20,10 +20,12 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 329 commits
+### Fixes (fix) — 331 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-15 | iterate | pin finalize_iterate.py stdio to UTF-8 so cp1252 Windows pipes don't abort the finalize bundle | 9573aa713836 |
+| 2026-07-15 | churn | admit ci-security.json to the merge allowlist so iterate merges don't abort (#375) | fc3e48c3de7f |
 | 2026-07-15 | test | stop the perf-check integration test leaking triage into tracked fixtures (#373) | af0187a9a981 |
 | 2026-07-14 | sweep | stop the triage sweep silently destroying operator dismisses (#370) | 0d4a2026b925 |
 | 2026-07-14 | sweep | drop the Python 3.13-only read_text(newline=) that broke every iterate on 3.11/3.12 (#367) | 88b520208cab |
@@ -672,7 +674,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-15 | triage | sweep 3 outbox append(s) into branch | 7fe025aa08d8 |
+| 2026-07-15 | triage | sweep 3 outbox append(s) into branch | 1d740f79a7c3 |
 | 2026-07-12 | review | default external-review GPT model to gpt-5.6-terra-pro (#366) | 4b71eec6aaa4 |
 | 2026-07-12 | release | bump root pyproject.toml to v0.31.0 (#365) | 1b4a471e075d |
 | 2026-07-12 | release | v0.31.0 (#364) | db6c3d3f3fa2 |
@@ -1210,7 +1212,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1141 |
+| Total commits | 1143 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1141 |
+| Human-authored commits | 1143 |
 
