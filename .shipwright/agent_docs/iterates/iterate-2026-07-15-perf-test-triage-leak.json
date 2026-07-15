@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-15-perf-test-triage-leak",
+  "date": "2026-07-15T05:49:43.770937Z",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/perf-test-triage-leak",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-07-15-perf-test-triage-leak"
+}

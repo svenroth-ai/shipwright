@@ -1,0 +1,1 @@
+shipwright-test: stop the performance-check integration test from writing .shipwright/triage.jsonl into the tracked tests/fixtures dir — it now points the runner at a throwaway tmp_path, so serial test runs no longer leave the tree dirty

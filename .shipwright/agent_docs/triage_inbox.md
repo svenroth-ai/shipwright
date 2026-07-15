@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-14T23:08:05.857788Z. Items waiting for triage decision.
+> Auto-generated 2026-07-15T05:48:50.010334Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 295
-- Triage: 4 | Promoted: 1 | Dismissed: 289 | Snoozed: 1
+- Total: 297
+- Triage: 5 | Promoted: 1 | Dismissed: 290 | Snoozed: 1
 
-## Top 4 items (severity-sorted)
+## Top 5 items (severity-sorted)
 
 ### Source: compliance (1 item)
 
@@ -25,17 +25,22 @@
     ```
   - Promote: `triage_promote.py --id trg-4a615381 --task-ref EXT:<ref>`
 
-### Source: iterate (2 items)
+### Source: iterate (3 items)
 
-<a id="trg-de6e736c"></a>
-- **Phase skills detect invocation mode from the unmaintained v1 current_step, so a driven phase can wrongly conclude stand…** `id=trg-de6e736c | severity=medium | kind=bug → P2/engineering`
-  - The 8 phase skills classify "pipeline vs standalone" in their First-Actions step C ("Detect Invocation Mode") by readin…
-  - Promote: `triage_promote.py --id trg-de6e736c --task-ref EXT:<ref>`
+<a id="trg-f6ceeb37"></a>
+- **Iterate 2: bundle F1-F5c finalization into fewer LLM round-trips** `id=trg-f6ceeb37 | severity=low | kind=improvement → P3/engineering`
+  - Iterate-duration campaign, part 2 of 3 (part 1 = F0 parallel runner, DELIVERED #371). The finalize phase is ~4.1 min in…
+  - Promote: `triage_promote.py --id trg-f6ceeb37 --task-ref EXT:<ref>`
 
 <a id="trg-d1e466aa"></a>
 - **Retire the write-once v1 run-config fields (current_step / completed_steps)** `id=trg-d1e466aa | severity=low | kind=improvement → P3/engineering`
   - Follow-up from iterate-2026-07-14-phase-invocation-mode (external plan review, Gemini #2). The v2 lifecycle never advan…
   - Promote: `triage_promote.py --id trg-d1e466aa --task-ref EXT:<ref>`
+
+<a id="trg-11196d99"></a>
+- **shipwright-test suite leaks tests/fixtures/.shipwright/ into the working tree** `id=trg-11196d99 | severity=low | kind=improvement → P3/engineering`
+  - Pre-existing test-hygiene leak, NOT caused by the F0 parallel runner: running 'pytest tests/' in plugins/shipwright-tes…
+  - Promote: `triage_promote.py --id trg-11196d99 --task-ref EXT:<ref>`
 
 ### Source: manual (1 item)
 

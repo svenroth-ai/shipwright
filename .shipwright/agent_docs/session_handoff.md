@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-14-phase-invocation-mode"
+run_id: "iterate-2026-07-15-perf-test-triage-leak"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-14T23:08:05.857788+00:00"
+reason: "iterate: perf-test-triage-leak"
+timestamp: "2026-07-15T05:48:50.010334+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-14 23:08:05 UTC
+> Auto-generated 2026-07-15 05:48:50 UTC
 
 ## Session Info
 
-- **Session ID**: e5a4eb07-e36d-4d16-9290-2c48215b6b78
-- **Timestamp**: 2026-07-14 23:08:05 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: b45e8fa0-3ca5-45d7-8777-83ba8272c639
+- **Timestamp**: 2026-07-15 05:48:50 UTC
+- **Reason**: iterate: perf-test-triage-leak
 
 ## Last Iterate
 
@@ -29,8 +29,7 @@ timestamp: "2026-07-14T23:08:05.857788+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/phase-invocation-mode
-- **Spec**: .shipwright/planning/iterate/2026-07-14-phase-invocation-mode.md
+- **Branch**: iterate/perf-test-triage-leak
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -49,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/phase-invocation-mode
-- **Last Commit**: f2b629cc Merge remote-tracking branch 'origin/main' into iterate/phase-invocation-mode
+- **Branch**: iterate/perf-test-triage-leak
+- **Last Commit**: 0f0ff9fb chore(triage): sweep 2 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -66,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-d23adfee | grade_snapshot | — | 2026-07-15 |
+| evt-54e93bec | work_completed | iterate (Redirect perf-check integration test --cwd to tmp_path so the runner's triage emission stops leaking into the tracked fixtures dir) | 2026-07-15 |
+| evt-1bd60514 | grade_snapshot | — | 2026-07-15 |
 | evt-08956f26 | grade_snapshot | — | 2026-07-14 |
 | evt-27b3b806 | grade_snapshot | — | 2026-07-14 |
-| evt-97b242ee | grade_snapshot | — | 2026-07-14 |
-| evt-ee294bfa | grade_snapshot | — | 2026-07-14 |
-| evt-5dc16a45 | work_completed | iterate (F0 parallel suite runner) | 2026-07-14 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 301
-- **Last iterate**: change — F0 parallel suite runner (2026-07-14)
+- **Total work events**: 302
+- **Last iterate**: bug — Redirect perf-check integration test --cwd to tmp_path so the runner's triage emission stops leaking into the tracked fixtures dir (2026-07-15)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

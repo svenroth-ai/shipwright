@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-14T23:08:01.730971+00:00
+Generated: 2026-07-15T05:48:45.787439+00:00
 
 ## Requirements Coverage
 
@@ -28,6 +28,7 @@ Generated: 2026-07-14T23:08:01.730971+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-54e93bec"></a>A test in the testing plugin used to leave a stray .shipwright folder in the tracked test fixtures every time it ran; it now writes to a throwaway temp folder, so the repository stays clean. | iterate | bug |  | 143/143 | — | 2026-07-15 |
 | <a id="evt-622c1582"></a>Pipeline phases now correctly know whether they are part of an orchestrated run, instead of sometimes mistaking a real pipeline run for a one-off manual run. | iterate | bug |  | 33/33 | — | 2026-07-14 |
 | <a id="evt-5dc16a45"></a>The pre-commit test gate now runs the test groups at the same time instead of one after another, cutting the wait from about ten minutes to under two, with a safety net that re-checks anything that looks failed so the gate stays exactly as strict. | iterate | change | [FR-01.11](#rtm-fr-0111) | 54/54 | — | 2026-07-14 |
 | <a id="evt-a670d8da"></a>Sweep drift/dismiss-loss fix complete; PR pending | iterate | bug |  | — | — | 2026-07-14 |
@@ -336,7 +337,7 @@ Generated: 2026-07-14T23:08:01.730971+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 301 |
+| Iterate changes | 302 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |
