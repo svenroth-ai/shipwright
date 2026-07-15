@@ -54,6 +54,21 @@ test module. Bloat baseline NOT ratcheted; all files ≤300 LOC.
 | C6 | Low | AC2 fixture only covers same-line braces. | **accepted-and-fixed** — multiline + nested fixtures added. |
 | C-Gemini | High(?) | Truncated mid-analysis of `_suite_tags.py` pending-state. | **reviewed — no actionable defect**; the `pending` state is cleared on every non-comment, non-decl line (matches the frozen parser's own flush semantics). |
 
+## Internal review cascade (delegated to orchestrator) — spec PASS · code PASS · doubt: 2 HIGH + 1 MED addressed
+
+The orchestrator ran the internal `spec-reviewer` → `code-reviewer` → `doubt-reviewer`
+cascade on the pushed diff. spec-reviewer PASS, code-reviewer PASS; the adversarial
+doubt-reviewer surfaced (and the orchestrator reproduced) findings resolved on the same
+branch, consolidated into the atomic F6 commit:
+
+| Obj | Sev | Finding | Disposition |
+|-----|-----|---------|-------------|
+| Obj1 | High | `_load_grammar`/`_load_model` lazy-import is order-fragile: a pre-bound compliance-local `sys.modules['lib']` (e.g. `test_enforcement_hooks.py` at collection time) makes `from lib import fr_tag_grammar` resolve against the wrong `lib` → `ImportError` (CI-red/local-green). Repro: `pytest test_enforcement_hooks.py test_test_links_collector.py` = 14 failures. | **accepted-and-fixed** — new `collectors/_lib_loader.py` saves/clears/imports-from-shared/restores `sys.modules['lib']` (+ caches the shared module). Repro now 47 PASS. Regression: `test_test_links_hardening.py::test_build_manifest_robust_to_prebound_compliance_local_lib`. |
+| Obj2 | High | `@pytest.mark.covers("FR-..", "")` → frozen grammar emits `InvalidTag(raw="")`; the frozen schema pins `invalidTag.raw` to `minLength:1` → the pass-through ships a schema-invalid artifact. | **accepted-and-fixed** — `invalid_tags` emit coerces empty `raw` → `"<empty>"` + carries the grammar `reason`. Regression: `test_covers_empty_string_yields_schema_valid_manifest`. |
+| Obj4 | High | `generate_file` did NO write-time validation → any producer/schema drift ships silently. | **accepted-and-fixed** — `generate_file` now validates the assembled manifest against `traceability_schema.json` and **raises** (fail-closed) before write. Regression: `test_generate_file_fails_closed_on_invalid_manifest`. |
+| Obj3 | Med | `_make_link` trusted evidence `status`/`executed` verbatim → an out-of-vocab value ships a schema-invalid `testLink`. | **accepted-and-fixed** — normalized to the frozen closed vocab (unknown → safe default); write-time validation backstops it. |
+| Obj(fanout) | Med | Un-namespaced `@FR-XX.YY` grammar: a hit files into EVERY active FR sharing the display id → one test marks coverage `ok` for every split reusing `FR-03.01` (false-green in multi-split repos). | **documented-limitation → TT2/TT5** — inherent to the frozen grammar; NOT changed here (data-only). Recorded in the `test_links` module docstring + handed to TT2's RTM + TT5's gate (prefer same-split resolution). |
+
 ## Self-Review (Step 3.6 — canonical 7-item checklist)
 
 1. **Spec Compliance** — PASS. AC1–AC5 met; golden reproduced exactly (modulo audit-only

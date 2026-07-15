@@ -11,33 +11,39 @@ enforcing gates (TT5) regenerate base+head themselves (R3).
 Filesystem-facing helpers (which files are tests, layer detection, spec/evidence
 discovery, provenance) live in ``_test_links_io.py``; this module is the pure
 tag → FR → manifest assembly plus the ``update_compliance`` wiring.
+
+KNOWN LIMITATION (un-namespaced tag fan-out) — the frozen ``@FR-XX.YY`` grammar carries
+NO spec namespace, so a hit is filed into EVERY active requirement sharing that display
+id: in a multi-split repo where two splits both declare ``FR-03.01``, one tagged test
+marks coverage ``ok`` for both (a potential false-green). This is inherent to the frozen
+grammar and is left as-is here (data only); TT2's RTM + TT5's gate MUST account for it
+(e.g. by preferring same-split resolution) before relying on per-split coverage.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import sys
 from pathlib import Path
 
 from . import _test_links_io as io
+from ._lib_loader import load_shared_lib
 from ._requirement_parse import parse_requirements
 from ._suite_tags import propagate_suite_tags
 
 COLLECTOR_VERSION = "test_links/1.0.0"
 _DEFAULT_TS = "1970-01-01T00:00:00+00:00"
 _LAYER_ORDER = ("unit", "integration", "e2e")
+# Frozen closed vocabularies (mirror traceability_schema.json testLink enums) — a
+# boundary guard so out-of-vocab execution evidence can never ship a schema-invalid link.
+_STATUS_VOCAB = frozenset({"enabled", "skipped", "quarantined", "only"})
+_EXECUTED_VOCAB = frozenset({"pass", "fail", "not_run"})
 
 
 def _load_grammar():
-    """Lazily import the frozen ``@FR`` reference parser (ADR-045: never bind ``lib``
-    at module import — do it at call time so cross-plugin pytest keeps its own ``lib``)."""
-    shared = Path(__file__).resolve().parents[5] / "shared" / "scripts"
-    if str(shared) not in sys.path:
-        sys.path.insert(0, str(shared))
-    from lib import fr_tag_grammar  # noqa: PLC0415
-
-    return fr_tag_grammar
+    """Import the frozen ``@FR`` reference parser via the robust shared-lib loader
+    (ADR-045: safe even when ``sys.modules['lib']`` is already the compliance-local lib)."""
+    return load_shared_lib("fr_tag_grammar")
 
 
 def _cov_status(links: list[dict]) -> str:
@@ -48,12 +54,16 @@ def _cov_status(links: list[dict]) -> str:
 
 def _make_link(hit, layer: str, evidence: dict) -> dict:
     ev = evidence.get(hit.test, {})
+    # Normalize to the frozen closed vocab — an out-of-vocab evidence value (TT-EV owns
+    # the full evidence contract) degrades to the safe default, never a schema-invalid link.
+    status = ev.get("status", "enabled")
+    executed = ev.get("executed", "not_run")
     return {
         "id": hit.test,
         "path": hit.test,
         "layer": layer,
-        "status": ev.get("status", "enabled"),
-        "executed": ev.get("executed", "not_run"),
+        "status": status if status in _STATUS_VOCAB else "enabled",
+        "executed": executed if executed in _EXECUTED_VOCAB else "not_run",
         "tag_source": hit.tag_source,
     }
 
@@ -168,9 +178,31 @@ def build_manifest(
         "spec_hash": io.spec_hash(spec_texts),
         "requirements": req_nodes,
         "orphans": orphans,
-        "invalid_tags": [{"test": iv.test, "raw": iv.raw} for iv in invalid],
+        # A frozen-grammar edge (e.g. covers("")) yields raw="" which the schema forbids
+        # (invalidTag.raw minLength 1); coerce to a non-empty marker and carry the grammar
+        # reason so the diagnostic survives and the artifact stays schema-valid.
+        "invalid_tags": [
+            {"test": iv.test, "raw": iv.raw or "<empty>",
+             "reason": getattr(iv, "reason", "") or "non_canonical_fr_id"}
+            for iv in invalid
+        ],
         "untagged_tests": sorted(all_test_ids - tagged_ids),
     }
+
+
+def _validate_manifest(manifest: dict) -> None:
+    """Fail-closed write-time schema check: raise if the assembled manifest is not
+    v2-schema-valid, so producer/schema drift blows up loud in regen instead of
+    silently shipping a corrupt artifact."""
+    import jsonschema  # noqa: PLC0415 — compliance dep; lazy so non-compliance imports stay light
+
+    schema_path = Path(__file__).resolve().parents[1] / "traceability_schema.json"
+    schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    errors = list(jsonschema.Draft202012Validator(schema).iter_errors(manifest))
+    if errors:
+        raise ValueError(
+            "test-traceability manifest failed v2-schema validation: " + errors[0].message
+        )
 
 
 def generate_file(project_root, data=None) -> Path:
@@ -192,6 +224,7 @@ def generate_file(project_root, data=None) -> Path:
         generated_at=generated_at,
         source_commit=io.git_head(project_root),
     )
+    _validate_manifest(manifest)  # fail-closed before writing the artifact
     out = project_root / ".shipwright" / "compliance" / "test-traceability.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

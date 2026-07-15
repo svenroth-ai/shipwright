@@ -4,8 +4,8 @@
     "date": "2026-07-15",
     "unit": {
       "status": "passed",
-      "passed": 1009,
-      "total": 1009
+      "passed": 1012,
+      "total": 1012
     },
     "integration": {
       "status": "not_run",
@@ -47,7 +47,7 @@
       "tests_run": 0,
       "evidence_path": ".shipwright/runs/sub_iterate-20260715-201956/TT1/result.json",
       "timestamp": "2026-07-15T00:00:00+00:00",
-      "justification": "TT1 ships a compliance data collector (test_links) that emits a generated JSON artifact, the @FR tag convention in two rule templates, and their tests. There is no startable, user-experienceable surface (no web/API/CLI app affordance) and no backend-affects-frontend change (detect_frontend_changes: has_frontend_changes=false). Fully exercised by the compliance + shared pytest suites at F0 (compliance 1009 GREEN, shared 4039 GREEN) plus empirical boundary/round-trip probes recorded in the iterate ADR."
+      "justification": "TT1 ships a compliance data collector (test_links) that emits a generated JSON artifact, the @FR tag convention in two rule templates, and their tests. There is no startable, user-experienceable surface (no web/API/CLI app affordance) and no backend-affects-frontend change (detect_frontend_changes: has_frontend_changes=false). Fully exercised by the compliance + shared pytest suites at F0 (compliance 1012 GREEN incl. order-forced test_enforcement_hooks-first, shared 4039 GREEN) plus empirical boundary/round-trip probes recorded in the iterate ADR."
     },
     "test_completeness": {
       "status": "complete",
@@ -68,11 +68,14 @@
         { "behavior": "FR parser: a ## Removed Requirements row parses with status=removed; active rows stay active", "disposition": "tested", "evidence": "test_requirement_parse.py::test_removed_section_marks_status_removed (PASS)" },
         { "behavior": "FR parser: the 5-col adopt shape (ADR-031) reads the Description as the title, NOT as Layers, and infers layers", "disposition": "tested", "evidence": "test_requirement_parse.py::test_5col_adopt_shape_reads_description_as_title_not_layers (PASS)" },
         { "behavior": "FR parser: manifest key is namespace::FR-XX.YY and spec_path is carried (frozen requirement_model consumed, not forked)", "disposition": "tested", "evidence": "test_requirement_parse.py::test_namespaced_key_and_spec_path (PASS)" },
-        { "behavior": "AC5 the @FR tag convention is documented in the tests + integration-tests rule templates; all new source/test modules <=300 LOC; bloat baseline not ratcheted", "disposition": "tested", "evidence": "structural: git diff shows both rules/*.template carry the '@FR' convention section; wc -l = 211/153/160/84 (collectors) + 299/89 (tests), all <=300; shipwright_bloat_baseline.json unchanged in the diff" }
+        { "behavior": "AC5 the @FR tag convention is documented in the tests + integration-tests rule templates; all new source/test modules <=300 LOC; bloat baseline not ratcheted", "disposition": "tested", "evidence": "structural: git diff shows both rules/*.template carry the '@FR' convention section; wc -l = 244/155/50/153/84 (collectors) + 300/105/89 (tests), all <=300; shipwright_bloat_baseline.json unchanged in the diff" },
+        { "behavior": "Obj1 (ADR-045) build_manifest succeeds even when sys.modules['lib'] is already the compliance-local lib (order-fragile CI-red class): _lib_loader saves/clears/imports-shared/restores", "disposition": "tested", "evidence": "test_test_links_hardening.py::test_build_manifest_robust_to_prebound_compliance_local_lib (PASS); repro `pytest test_enforcement_hooks.py test_test_links_collector.py` was 14-fail, now 47 PASS" },
+        { "behavior": "Obj2/Obj4 covers(\"\") -> InvalidTag(raw='') is coerced to a non-empty raw + reason so the manifest stays schema-valid; generate_file validates the manifest fail-closed before write", "disposition": "tested", "evidence": "test_test_links_hardening.py::test_covers_empty_string_yields_schema_valid_manifest + test_generate_file_fails_closed_on_invalid_manifest (PASS)" },
+        { "behavior": "Obj3 out-of-vocab execution-evidence status/executed is normalized to the frozen closed vocab in _make_link (unknown -> safe default), never a schema-invalid testLink", "disposition": "tested", "evidence": "_make_link vocab guard + write-time validation backstop; covered by test_covers_empty_string_yields_schema_valid_manifest schema assertion" }
       ],
       "counts": {
-        "testable": 17,
-        "tested": 17,
+        "testable": 20,
+        "tested": 20,
         "untestable": 0,
         "untested_testable": 0
       },

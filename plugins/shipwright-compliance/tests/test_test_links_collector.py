@@ -101,8 +101,12 @@ def test_spec_path_is_project_root_relative_posix(app_manifest):
 def test_manifest_orphans_invalid_untagged_match_golden(app_manifest):
     golden = _load(_FIX / "golden" / "manifest.json")
     assert app_manifest["orphans"] == golden["orphans"]
-    assert app_manifest["invalid_tags"] == golden["invalid_tags"]
     assert app_manifest["untagged_tests"] == golden["untagged_tests"]
+    # invalid_tags: golden pins required (test, raw); the collector adds an optional
+    # schema-permitted `reason`, so compare on (test, raw) + assert reason present.
+    got = {(t["test"], t["raw"]) for t in app_manifest["invalid_tags"]}
+    assert got == {(t["test"], t["raw"]) for t in golden["invalid_tags"]}
+    assert all(t.get("reason") for t in app_manifest["invalid_tags"])
 
 
 def test_all_three_runners_and_layers_represented(app_manifest):
@@ -263,18 +267,15 @@ def test_generate_file_writes_valid_manifest(tmp_path, validator):
         "def test_health():\n    assert True\n",
         encoding="utf-8",
     )
-    # A test OUTSIDE the conventional roots (repo root) is intentionally NOT scanned
-    # by generate_file — comprehensive discovery is the backfill engine's job (TT6/TT8).
+    # A test OUTSIDE the conventional roots is intentionally NOT scanned (TT6/TT8 own it).
     (tmp_path / "stray.test.ts").write_text("it('stray @FR-07.01', () => {});\n", encoding="utf-8")
 
     from scripts.lib.collectors.test_links import generate_file
     out = generate_file(tmp_path)
-    assert out.exists()
     manifest = _load(out)
     assert not list(validator.iter_errors(manifest))
     fr = manifest["requirements"]["01-demo::FR-07.01"]
     assert any("tests/test_health.py::test_health" == link["path"] for link in fr["tests"]["unit"])
-    # boundary: the stray root-level test is not scanned (bounded discovery, documented)
     assert not any("stray" in u for u in manifest["untagged_tests"])
 
 

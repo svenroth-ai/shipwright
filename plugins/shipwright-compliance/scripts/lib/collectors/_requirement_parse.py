@@ -27,8 +27,8 @@ Rows under a ``## Removed Requirements`` heading are parsed with ``status="remov
 from __future__ import annotations
 
 import re
-import sys
-from pathlib import Path
+
+from ._lib_loader import load_shared_lib
 
 _MD_HEADING_RE = re.compile(r"^(#{1,6})\s+(\S.*?)\s*$")
 
@@ -49,14 +49,9 @@ _LAYERS_COLS = ("layers", "layer")
 
 
 def _load_model():
-    """Lazily import the shared requirement model (ADR-045: never bind ``lib`` at
-    module import — do it at call time so cross-plugin pytest keeps its own ``lib``)."""
-    shared = Path(__file__).resolve().parents[5] / "shared" / "scripts"
-    if str(shared) not in sys.path:
-        sys.path.insert(0, str(shared))
-    from lib import requirement_model  # noqa: PLC0415
-
-    return requirement_model
+    """Import the shared requirement model via the robust shared-lib loader (ADR-045:
+    safe even when ``sys.modules['lib']`` is already the compliance-local lib)."""
+    return load_shared_lib("requirement_model")
 
 
 def _row_cells(line: str) -> list[str] | None:
