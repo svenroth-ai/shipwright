@@ -1,0 +1,1 @@
+compliance: documented the `@FR-XX.YY` requirement-traceability tag convention (pytest `covers` marker, Playwright native tag, Vitest title-suffix/`// @covers`, suite-level propagation) in the tests + integration-tests rule templates so build/adopt scaffold it.

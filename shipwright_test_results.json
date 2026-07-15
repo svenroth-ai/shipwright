@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-15-contracts-and-harness",
+    "run_id": "iterate-2026-07-15-tag-convention-and-manifest",
     "date": "2026-07-15",
     "unit": {
       "status": "passed",
-      "passed": 45,
-      "total": 45
+      "passed": 1009,
+      "total": 1009
     },
     "integration": {
       "status": "not_run",
@@ -33,7 +33,11 @@
     "degraded": [
       {
         "condition": "classifier_risk_flag_override",
-        "detail": "classify_complexity flagged touches_migrations from message prose only; overridden -- there are no migrations in the diff. F11 recomputes risk flags from the diff, which carries no supabase/migrations path."
+        "detail": "classify_complexity flagged touches_migrations from message prose only ('database'/'migrations' narrative); overridden -- the diff has zero SQL / supabase/migrations paths. F11 recomputes risk flags from the diff."
+      },
+      {
+        "condition": "preexisting_unrelated_failure",
+        "detail": "shared/tests/test_campaign_status_backfill.py::test_existing_campaign_regenerates_without_downgrade[2026-07-15-test-traceability-layers] fails identically on clean origin/main (confirmed via stash). Root cause is the campaign-status skeleton parser mis-reading the LOCAL, gitignored campaign.md (0 tracked files) -- CI never sees this campaign. Not a TT1 regression; out of TT1 scope (collector + templates)."
       }
     ],
     "surface_verification": {
@@ -41,39 +45,35 @@
       "runner": "surface_verification.py --surface none",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-15-contracts-and-harness/surface_verification.json",
+      "evidence_path": ".shipwright/runs/sub_iterate-20260715-201956/TT1/result.json",
       "timestamp": "2026-07-15T00:00:00+00:00",
-      "justification": "P1 ships framework-level frozen contracts (traceability manifest v2 JSON Schema, requirement-model + @FR tag-grammar Python modules) plus a test-harness/fixture package. No startable, user-experienceable surface exists (no web/API/CLI app affordance) and no backend-affects-frontend change. Fully exercised by the shared + compliance pytest suites at F0 (18 units GREEN) and an adversarial GPT+Gemini+Codex panel (AC4)."
+      "justification": "TT1 ships a compliance data collector (test_links) that emits a generated JSON artifact, the @FR tag convention in two rule templates, and their tests. There is no startable, user-experienceable surface (no web/API/CLI app affordance) and no backend-affects-frontend change (detect_frontend_changes: has_frontend_changes=false). Fully exercised by the compliance + shared pytest suites at F0 (compliance 1009 GREEN, shared 4039 GREEN) plus empirical boundary/round-trip probes recorded in the iterate ADR."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "AC1 manifest schema is a valid Draft 2020-12 schema; schema_version const is 2", "disposition": "tested", "evidence": "test_traceability_fixtures.py::test_schema_is_valid_draft2020" },
-        { "behavior": "AC1 golden example + golden manifest validate against the schema", "disposition": "tested", "evidence": "test_golden_example_validates + test_golden_manifest_validates" },
-        { "behavior": "AC1 malformed instances rejected (schema_version, id pattern, executed enum, additionalProperties)", "disposition": "tested", "evidence": "test_schema_rejects_malformed" },
-        { "behavior": "AC1/R1 schema enforces skipped != covered: coverage 'ok' requires an enabled+pass test link", "disposition": "tested", "evidence": "test_schema_enforces_skipped_not_covered" },
-        { "behavior": "AC1 schema enforces removed FR => no live tests", "disposition": "tested", "evidence": "test_schema_enforces_removed_has_no_live_tests" },
-        { "behavior": "AC1 schema requires a coverage entry for every required layer", "disposition": "tested", "evidence": "test_schema_requires_coverage_for_every_required_layer" },
-        { "behavior": "AC1 schema enforces each test link's layer matches its group (no unit coverage from an e2e link)", "disposition": "tested", "evidence": "test_schema_enforces_test_link_layer_matches_its_group" },
-        { "behavior": "AC1 orphan tagged_fr: null only for unmapped; confirmed_orphan requires a real FR id", "disposition": "tested", "evidence": "test_schema_orphan_null_fr_rules" },
-        { "behavior": "AC1/R5 MODEL_VERSION tracks the manifest schema_version const (both 2)", "disposition": "tested", "evidence": "test_model_version_tracks_manifest_schema_version" },
-        { "behavior": "AC2 all four @FR grammar forms bind to a test (pytest marker / // @covers / native tag / title suffix)", "disposition": "tested", "evidence": "test_pytest_marker_binds_to_function, test_covers_comment_binds_to_next_test, test_native_tag_form, test_title_tag_binds_only_as_a_suffix" },
-        { "behavior": "AC2 malformed tags -> invalid_tags (single-digit, non-string arg, trailing junk, non-canonical), bound or not", "disposition": "tested", "evidence": "test_pytest_marker_malformed_and_nonstring_are_invalid, test_ts_malformed_tag_is_invalid, test_trailing_junk_token_is_invalid_not_a_valid_prefix, test_malformed_covers_recorded_even_when_unbound" },
-        { "behavior": "AC2 binding is strict: // @covers adjacency + same-line, title suffix only, test.describe excluded", "disposition": "tested", "evidence": "test_covers_comment_binds_only_when_immediately_adjacent, test_covers_comment_on_same_line_binds_to_that_test, test_test_describe_is_not_a_binding_target" },
-        { "behavior": "AC2 exported TAG_TOKEN_RE rejects trailing continuations (@FR-01.03x / .4 / 033)", "disposition": "tested", "evidence": "test_exported_tag_token_re_rejects_continuations" },
-        { "behavior": "AC2 pytest 'covers' marker registered in the compliance + root pyproject", "disposition": "tested", "evidence": "test_covers_marker_registered" },
-        { "behavior": "AC2/AC3 fixture mini-repo exercises all four tag_sources and binds the expected FRs; only FR-1.3 invalid; untagged test unbound", "disposition": "tested", "evidence": "test_fixture_repo_exercises_all_four_tag_sources, test_fixture_repo_binds_expected_frs, test_fixture_untagged_test_produces_no_hit" },
-        { "behavior": "AC3 fixture package loads: mini-repo, diffs (incl refactor), evidence (incl skipped), decisions, golden report, catalog paths", "disposition": "tested", "evidence": "test_minirepo_loads, test_diffs_load_with_expected_verdicts, test_evidence_loads_including_skipped, test_predeclared_decisions_load, test_golden_report_snapshot_present, test_catalog_paths_all_resolve" },
-        { "behavior": "AC3/R1 normalized evidence index agrees with the raw Playwright report (skipped -> not_run)", "disposition": "tested", "evidence": "test_evidence_loads_including_skipped (raw<->index cross-check)" },
-        { "behavior": "AC3/R3 diff scenarios are self-contained: linked/required-layer tests exist in base+head trees", "disposition": "tested", "evidence": "test_diffs_load_with_expected_verdicts" },
-        { "behavior": "AC3/R4 LLM adapter replays offline; refuses bodies (disallowed key / over-long field / non-canonical candidate_frs); forces auto_write=false", "disposition": "tested", "evidence": "test_traceability_llm_adapter.py::test_llm_adapter_replays_offline_and_refuses_bodies" },
-        { "behavior": "AC3 property-4 golden correct: golden manifest matches the reference parser + execution evidence (bindings, tag_source, invalid, orphans, coverage)", "disposition": "tested", "evidence": "test_traceability_golden_consistency.py (3 tests)" },
-        { "behavior": "AC4 adversarial-panel judgment of the four key properties (skipped!=covered, removal flagged, refactor not blocked, golden correct)", "disposition": "untestable", "reason_code": "requires-external-nondeterministic-service", "evidence": "verified by the GPT-5.6 + Gemini 3.1 + Codex panel RUN over 4 rounds to convergence (non-degraded); verdicts recorded in the iterate spec's Adversarial-panel section" }
+        { "behavior": "AC1 manifest maps FRs -> {unit,integration,e2e} test lists from @FR tags across pytest+Playwright+Vitest and equals the frozen golden answer key (bindings, tag_source, orphans, invalid, untagged)", "disposition": "tested", "evidence": "test_test_links_collector.py::test_manifest_requirements_match_golden + test_manifest_orphans_invalid_untagged_match_golden + test_all_three_runners_and_layers_represented (PASS)" },
+        { "behavior": "AC1/AC4 the emitted manifest validates against the v2 JSON Schema and schema_version==2, collector_version + spec_hash present", "disposition": "tested", "evidence": "test_test_links_collector.py::test_manifest_validates_against_v2_schema (PASS)" },
+        { "behavior": "AC1 spec_path is project-root-relative POSIX (rooting pinned directly, not normalized away)", "disposition": "tested", "evidence": "test_test_links_collector.py::test_spec_path_is_project_root_relative_posix (PASS)" },
+        { "behavior": "AC1/R1 skipped != covered: an FR whose only e2e test is skipped has coverage.e2e=MISSING; ok requires enabled+pass", "disposition": "tested", "evidence": "test_test_links_collector.py::test_skipped_e2e_is_missing_not_covered (PASS)" },
+        { "behavior": "AC2 a describe/suite-level tag applies to every inner test (same-line, multiline callback brace, and nested describes)", "disposition": "tested", "evidence": "test_test_links_collector.py::test_describe_level_tag_propagates_to_every_inner_test + test_multiline_describe_signature_still_propagates + test_nested_describes_both_apply (PASS)" },
+        { "behavior": "AC2 multiple tags per test are supported (suite tag + own title-suffix tag both bind)", "disposition": "tested", "evidence": "test_test_links_collector.py::test_multiple_tags_per_test (PASS)" },
+        { "behavior": "AC2 a malformed tag is recorded in invalid_tags, never crashes", "disposition": "tested", "evidence": "test_test_links_collector.py::test_malformed_tag_is_recorded_not_crashed (PASS)" },
+        { "behavior": "AC3 an untagged test lands in untagged_tests; a malformed-tagged test does NOT (it is a hygiene finding)", "disposition": "tested", "evidence": "test_test_links_collector.py::test_untagged_test_lands_in_bucket (PASS)" },
+        { "behavior": "AC3 a test tagged to a removed FR is a confirmed_orphan (reason fr_removed); the removed FR keeps no live tests", "disposition": "tested", "evidence": "test_test_links_collector.py::test_removed_fr_test_is_a_confirmed_orphan (PASS)" },
+        { "behavior": "AC4 the manifest regenerates through the real update_compliance CLI (--phase iterate emits test-traceability.json)", "disposition": "tested", "evidence": "test_test_links_collector.py::test_update_compliance_iterate_phase_emits_manifest + test_update_compliance_phases.py (PASS)" },
+        { "behavior": "AC4 generate_file writes a schema-valid manifest over conventional roots; the bounded-scope boundary (a stray root-level test is not scanned) is pinned", "disposition": "tested", "evidence": "test_test_links_collector.py::test_generate_file_writes_valid_manifest (PASS)" },
+        { "behavior": "Layer detection: integration-tests/ dir + tests/integration/ + .integration.test.* -> integration; e2e/ + .spec -> e2e; else unit (fixes the review's HIGH misclassification bug)", "disposition": "tested", "evidence": "test_test_links_collector.py::test_layer_detection[7 cases] (PASS)" },
+        { "behavior": "FR parser: 4-col traceability shape reads explicit Layers + provenance (explicit / inferred_legacy UI-flow->e2e / defaulted_legacy->unit)", "disposition": "tested", "evidence": "test_requirement_parse.py::test_4col_explicit_layers_and_provenance (PASS)" },
+        { "behavior": "FR parser: a ## Removed Requirements row parses with status=removed; active rows stay active", "disposition": "tested", "evidence": "test_requirement_parse.py::test_removed_section_marks_status_removed (PASS)" },
+        { "behavior": "FR parser: the 5-col adopt shape (ADR-031) reads the Description as the title, NOT as Layers, and infers layers", "disposition": "tested", "evidence": "test_requirement_parse.py::test_5col_adopt_shape_reads_description_as_title_not_layers (PASS)" },
+        { "behavior": "FR parser: manifest key is namespace::FR-XX.YY and spec_path is carried (frozen requirement_model consumed, not forked)", "disposition": "tested", "evidence": "test_requirement_parse.py::test_namespaced_key_and_spec_path (PASS)" },
+        { "behavior": "AC5 the @FR tag convention is documented in the tests + integration-tests rule templates; all new source/test modules <=300 LOC; bloat baseline not ratcheted", "disposition": "tested", "evidence": "structural: git diff shows both rules/*.template carry the '@FR' convention section; wc -l = 211/153/160/84 (collectors) + 299/89 (tests), all <=300; shipwright_bloat_baseline.json unchanged in the diff" }
       ],
       "counts": {
-        "testable": 20,
-        "tested": 20,
-        "untestable": 1,
+        "testable": 17,
+        "tested": 17,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {

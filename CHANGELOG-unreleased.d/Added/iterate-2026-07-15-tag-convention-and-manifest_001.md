@@ -1,0 +1,1 @@
+compliance: `test_links` collector emits `.shipwright/compliance/test-traceability.json` (schema v2) — the backward test→FR link and per-layer (unit/integration/e2e) coverage join, read from `@FR-XX.YY` tags across pytest, Playwright and Vitest, wired into the compliance regen (TT1).

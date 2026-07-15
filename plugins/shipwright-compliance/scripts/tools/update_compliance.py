@@ -22,6 +22,7 @@ from scripts.lib.test_evidence import (
     generate_file as generate_test_evidence,
 )
 from scripts.lib.change_history import generate_file as generate_change_history
+from scripts.lib.collectors.test_links import generate_file as generate_test_links
 from scripts.lib.compliance_report import generate_file as generate_dashboard
 from scripts.lib._grade_snapshot import emit_grade_snapshot
 from scripts.lib.sbom_generator import (
@@ -29,17 +30,20 @@ from scripts.lib.sbom_generator import (
     generate_file as generate_sbom,
 )
 
-# Phase -> which reports to regenerate
+# Phase -> which reports to regenerate.
+# ``test_links`` (the requirement->test traceability manifest, campaign TT1) rides
+# with the FR/test-affecting phases: FRs change on project/plan, the tag↔test join
+# changes on build/test/changelog/iterate. adopt (the baseline) is wired in TT7.
 PHASE_REPORTS = {
-    "project": ["rtm", "dashboard"],
+    "project": ["rtm", "test_links", "dashboard"],
     "design": ["dashboard"],
-    "plan": ["rtm", "dashboard"],
+    "plan": ["rtm", "test_links", "dashboard"],
     "compliance": ["dashboard"],
-    "build": ["rtm", "test_evidence", "change_history", "sbom", "dashboard"],
-    "test": ["test_evidence", "dashboard"],
+    "build": ["rtm", "test_evidence", "test_links", "change_history", "sbom", "dashboard"],
+    "test": ["test_evidence", "test_links", "dashboard"],
     "deploy": ["dashboard"],
-    "changelog": ["rtm", "test_evidence", "change_history", "sbom", "dashboard"],
-    "iterate": ["rtm", "test_evidence", "change_history", "sbom", "dashboard"],
+    "changelog": ["rtm", "test_evidence", "test_links", "change_history", "sbom", "dashboard"],
+    "iterate": ["rtm", "test_evidence", "test_links", "change_history", "sbom", "dashboard"],
     # iterate-2026-05-23-security-adopt-compliance-snapshots:
     # adopt establishes the initial baseline → all 5 docs.
     # security pipeline finalize touches dashboard/test_evidence/change_history/sbom
@@ -51,6 +55,7 @@ PHASE_REPORTS = {
 GENERATORS = {
     "rtm": generate_rtm,
     "test_evidence": generate_test_evidence,
+    "test_links": generate_test_links,
     "change_history": generate_change_history,
     "dashboard": generate_dashboard,
     "sbom": generate_sbom,

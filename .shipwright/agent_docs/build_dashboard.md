@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-15 19:39 UTC | Session: b8f69523-4022-421a-846d-d7d47ec349fd | Run: iterate-2026-07-15-contracts-and-harness
+> Updated: 2026-07-15 21:17 UTC | Session: a69abb9e-d21a-40a1-846b-13913cca2b09 | Run: iterate-2026-07-15-tag-convention-and-manifest
 
-## Recent Changes (306 iterations)
+## Recent Changes (307 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | TT1: @FR-XX.YY tag convention + test_links compliance collector + test-traceability.json manifest (schema v2), the backward test->FR link + per-layer coverage join | 1009/1009 |  | compliance | 2026-07-15 |
 | change | iterate: freeze requirement->test traceability contracts + panel-verified harness (P1) | 0/0 |  | tooling | 2026-07-15 |
 | bug | admit ci-security.json to the churn-merge allowlist (+ rollback parity) | 41/41 |  | tooling | 2026-07-15 |
 | change | Add a UTF-8 reconfigure guard to finalize_iterate.py main() (stdout+stderr) plus two cp1252 subprocess regression tests | 0/0 |  | tooling | 2026-07-15 |
@@ -313,7 +314,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-15 | Unit: 45/45 | Smoke: not_run | (iterate)
+Last run: 2026-07-15 | Unit: 1009/1009 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

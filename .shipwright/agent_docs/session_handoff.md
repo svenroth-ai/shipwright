@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-15-contracts-and-harness"
+run_id: "iterate-2026-07-15-tag-convention-and-manifest"
 phase: "iterate"
-reason: "iterate: freeze requirement->test traceability contracts + panel-verified harness (P1)"
-timestamp: "2026-07-15T19:39:08.832620+00:00"
+reason: "iterate: TT1 @FR tag convention + test_links collector + traceability manifest"
+timestamp: "2026-07-15T21:17:45.117688+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-15 19:39:08 UTC
+> Auto-generated 2026-07-15 21:17:45 UTC
 
 ## Session Info
 
-- **Session ID**: b8f69523-4022-421a-846d-d7d47ec349fd
-- **Timestamp**: 2026-07-15 19:39:08 UTC
-- **Reason**: iterate: freeze requirement->test traceability contracts + panel-verified harness (P1)
+- **Session ID**: a69abb9e-d21a-40a1-846b-13913cca2b09
+- **Timestamp**: 2026-07-15 21:17:45 UTC
+- **Reason**: iterate: TT1 @FR tag convention + test_links collector + traceability manifest
 
 ## Last Iterate
 
@@ -29,16 +29,12 @@ timestamp: "2026-07-15T19:39:08.832620+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/contracts-and-harness
-- **Run ID**: `iterate-2026-07-15-contracts-and-harness`
-- **Spec**: .shipwright/planning/iterate/2026-07-15-contracts-and-harness.md
-- **Complexity**: medium
-- **External Review Marker**: missing
+- **Branch**: iterate/campaign-TT1-tag-convention-and-manifest
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-15T21:06:30)
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/contracts-and-harness
-- **Last Commit**: 0fdd4acd chore(triage): sweep 10 outbox append(s) into branch
+- **Branch**: iterate/campaign-TT1-tag-convention-and-manifest
+- **Last Commit**: e74d8090 feat(traceability): freeze requirement->test contracts + panel-verified harness (P1) (#377)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-ecbfdbdd | grade_snapshot | — | 2026-07-15 |
+| evt-3823741d | work_completed | iterate (TT1: @FR-XX.YY tag convention + test_links compliance collector + test-traceability.json manifest (schema v2), the backward test->FR link + per-layer coverage join) | 2026-07-15 |
 | evt-c894b430 | grade_snapshot | — | 2026-07-15 |
 | evt-91b3f7a9 | work_completed | iterate (iterate: freeze requirement->test traceability contracts + panel-verified harness (P1)) | 2026-07-15 |
 | evt-32fe021a | grade_snapshot | — | 2026-07-15 |
-| evt-8eef5509 | grade_snapshot | — | 2026-07-15 |
-| evt-fdd65a28 | work_completed | iterate (admit ci-security.json to the churn-merge allowlist (+ rollback parity)) | 2026-07-15 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 306
-- **Last iterate**: change — iterate: freeze requirement->test traceability contracts + panel-verified harness (P1) (2026-07-15)
+- **Total work events**: 307
+- **Last iterate**: feature — TT1: @FR-XX.YY tag convention + test_links compliance collector + test-traceability.json manifest (schema v2), the backward test->FR link + per-layer coverage join (2026-07-15)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

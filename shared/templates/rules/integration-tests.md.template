@@ -11,6 +11,22 @@ globs: "**/tests/integration/**,**/*.integration.test.*"
 - Load environment from `.env.test` (must point to localhost/127.0.0.1 only)
 - Run sequentially (`fileParallelism: false`) to avoid data races
 
+## Requirement traceability tags (`@FR`)
+
+Tag each integration test with the requirement it verifies using `@FR-XX.YY` so the
+compliance `test_links` collector records integration-layer coverage per FR (the
+`test → FR` backward link). A CRUD/DB requirement typically requires the `integration`
+layer, so a missing tag here shows up as an uncovered integration layer in the RTM.
+
+- **Vitest** (integration configs): title suffix — `it('creates a row @FR-02.01', …)` —
+  or a `// @covers FR-02.01` comment on the line above the `it`/`describe`. A tag on the
+  `describe` applies to every test in the block.
+- **pytest** integration tests: `@pytest.mark.covers("FR-02.01")` (the `covers` marker is
+  registered in `pyproject.toml`).
+
+The token is additive: it does not change the assertion, and a tag only counts as covering
+the layer when the test is enabled AND passing (a skipped test is not coverage).
+
 ## Safety Rules
 
 - **Service-role client is for setup/teardown ONLY** — never use it for test assertions

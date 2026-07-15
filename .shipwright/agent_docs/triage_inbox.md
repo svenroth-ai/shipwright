@@ -6,21 +6,16 @@
 ## Status summary
 
 - Total: 303
-- Triage: 7 | Promoted: 1 | Dismissed: 294 | Snoozed: 1
+- Triage: 6 | Promoted: 1 | Dismissed: 295 | Snoozed: 1
 
-## Top 7 items (severity-sorted)
+## Top 6 items (severity-sorted)
 
-### Source: campaign-anchor (3 items)
+### Source: campaign-anchor (2 items)
 
 <a id="trg-9a782f7b"></a>
 - **Trace-Campaign: requirement to test traceability across layers (unit/integration/E2E), autonomous** `id=trg-9a782f7b | severity=medium | kind=improvement → P2/engineering`
   - Main autonomous campaign 2026-07-15-test-traceability-layers (TT1..TT8). Runs after Trace-Prerequisite merges. Adds bid…
   - Promote: `triage_promote.py --id trg-9a782f7b --task-ref EXT:<ref>`
-
-<a id="trg-f41043ec"></a>
-- **Trace-Prerequisite: freeze contracts + build traceability test-harness (unlocks the autonomous campaign)** `id=trg-f41043ec | severity=medium | kind=improvement → P2/engineering`
-  - Autonomous prerequisite iterate P1, independently adversarially panel-verified (Codex + GPT + Gemini). Freezes manifest…
-  - Promote: `triage_promote.py --id trg-f41043ec --task-ref EXT:<ref>`
 
 <a id="trg-17aaaccd"></a>
 - **Trace-Webui: retrofit traceability in the webui repo (handoff, run after monorepo campaign ships)** `id=trg-17aaaccd | severity=low | kind=improvement → P3/engineering`
