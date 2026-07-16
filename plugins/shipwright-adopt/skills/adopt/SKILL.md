@@ -175,24 +175,12 @@ Nested-project policy → [references/nested-project-policy.md](references/neste
 ### Step E.5 — Env Scaffold (`.env.local`)
 
 After the artifact generator returns, adopt MUST scaffold
-`<project_root>/.env.local` via
-`shared/scripts/validate_env.py::init_env_file(project_root, "all",
-profile_dir, include_framework=True)`. The result lands in
-`results["env_local"]` for the Step H banner.
-
-Contract:
-
-- **Idempotent — never overwrites** existing values. Missing keys are
-  appended; action is `created` / `updated` / `unchanged`.
-- **`.gitignore` enforced FIRST.** On enforcement failure, the scaffold
-  returns `action: skipped, reason: gitignore_enforcement_failed` and
-  writes NOTHING.
-- **No real values written, ever.** Comment-prefixed entries only.
-- **Existing user content preserved byte-for-byte** on `updated`.
-
-Profile-specific keys come from `required_env_vars[...]` on the active
-stack profile. Framework keys (always written): `OPENROUTER_API_KEY`,
-`GEMINI_API_KEY`, `OPENAI_API_KEY`.
+`<project_root>/.env.local` via `shared/scripts/validate_env.py::init_env_file(
+project_root, "all", profile_dir, include_framework=True)` (result in
+`results["env_local"]`). Idempotent (never overwrites; preserves user content);
+`.gitignore` enforced FIRST (on failure → `action: skipped`, writes nothing);
+comment-prefixed entries only. Keys = profile `required_env_vars[...]` + framework
+`OPENROUTER_API_KEY` / `GEMINI_API_KEY` / `OPENAI_API_KEY`.
 
 Full procedure → [references/step-e5-env-scaffold.md](references/step-e5-env-scaffold.md).
 
@@ -205,15 +193,10 @@ uv run "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/lib/gitignore_canon.py" \
 
 Merges the canonical `.shipwright/` artifact-ignore block (SSoT:
 `shared/templates/shipwright-gitignore.template`) into the project's
-`.gitignore`. **Idempotent + additive** — line-level merge that adds only
-missing rules inside a managed BEGIN/END block (never duplicates), so
-re-running self-heals an already-adopted repo. Closes the gap where
-framework-added ignore rules (e.g. `/.shipwright/agent_docs/runtime/`,
-ADR-089) never reached consuming projects: transient artifacts get
-ignored while the canonical SDLC-doc homes stay tracked. JSON output:
-`{action, path, added, already_present, total_canonical}`. Drift vs. the
-framework's own `.gitignore` block is guarded by
-`shared/tests/test_gitignore_template_congruent.py`.
+`.gitignore`. **Idempotent + additive** — line-level merge inside a managed
+BEGIN/END block (never duplicates), so re-running self-heals an already-adopted
+repo (transient artifacts ignored; canonical SDLC-doc homes stay tracked). JSON
+output: `{action, path, added, already_present, total_canonical}`.
 
 Full procedure → [references/step-e-artifact-generation.md](references/step-e-artifact-generation.md) (Step E.6 section).
 
@@ -224,14 +207,30 @@ uv run "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/tools/scaffold_triage_inbox.p
   --project-root <project_root> --json
 ```
 
-Idempotent — writes `.shipwright/triage.jsonl` (schema header — now the
-**tracked** SSoT backlog, re-included by the Step E.6 canonical block's
-`!/.shipwright/triage.jsonl` negation, so it ships in the Step H commit),
-`.shipwright/agent_docs/triage_inbox.md` (empty skeleton), and updates
-`.gitignore` for the `.lock` + GC `.bak` only (self-healing a stale bare
-`triage.jsonl` ignore line). Result in `results["triage_inbox"]`.
+Idempotent — writes `.shipwright/triage.jsonl` (schema header; the **tracked**
+SSoT backlog, re-included by the Step E.6 canonical block so it ships in the Step
+H commit), `.shipwright/agent_docs/triage_inbox.md` (empty skeleton), and updates
+`.gitignore` for the `.lock` + GC `.bak` only. Result in `results["triage_inbox"]`.
 
 Full procedure → [references/step-e16-triage-inbox.md](references/step-e16-triage-inbox.md).
+
+### Step E.17 — Traceability Baseline (before compliance seeding)
+
+Establish the requirement→test traceability baseline (TT7) — runs after Step E, BEFORE
+Step F (whose collector emits the manifest from the tags this writes):
+
+```bash
+uv run "${CLAUDE_PLUGIN_ROOT}/scripts/tools/seed_traceability_baseline.py" \
+  --project-root <cwd> [--split-name 01-adopted] [--decisions <fixture>] [--dry-run]
+```
+
+Scaffolds the `@FR` convention into `.claude/rules/`, runs the TT6 backfill (advisory
+split-match only — never `--repo-follows-split-convention`), takes a **repo-wide** skip
+inventory, and files orphan/skip candidates as tracked triage. Zero-test repos backfill
+clean (no false gate). An ambiguous FR is asked via `AskUserQuestion` interactively, or
+resolved from `--decisions` unattended (the tool never stalls).
+
+Full procedure → [references/step-e17-traceability-baseline.md](references/step-e17-traceability-baseline.md).
 
 ### Step F — Compliance Seeding
 
@@ -283,6 +282,7 @@ See [references/backfill-iterate-config.md](references/backfill-iterate-config.m
 - `references/step-e-artifact-generation.md` — Step E artifact writes
 - `references/step-e5-env-scaffold.md` — Step E.5 .env.local scaffold
 - `references/step-e16-triage-inbox.md` — Step E.16 triage inbox
+- `references/step-e17-traceability-baseline.md` — Step E.17 traceability baseline (backfill + tag convention + skip inventory)
 - `references/step-f-compliance-seeding.md` — Step F compliance
 - `references/step-g-layer3-review.md` — Step G Layer-3 review
 - `references/step-h-validate-commit-handoff.md` — Step H validate / commit / handoff

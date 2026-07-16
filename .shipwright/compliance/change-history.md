@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-07-16T14:57:56.427304+00:00
-Total commits: 1150
+Generated: 2026-07-16T17:01:11.550832+00:00
+Total commits: 1151
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 331
-    "feat" : 317
+    "feat" : 318
     "chore" : 240
     "docs" : 145
     "refactor" : 68
@@ -356,11 +356,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 317 commits
+### Features (feat) — 318 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-16 | traceability | shared backfill_test_links engine — map existing tests to FRs (TT6) | e1e639b11282 |
+| 2026-07-16 | adopt | establish the requirement->test traceability baseline at onboarding (TT7) | f5a8ecf3547e |
+| 2026-07-16 | traceability | shared backfill_test_links engine — map existing tests to FRs (TT6) (#384) | 0edb3dbcab46 |
 | 2026-07-16 | iterate | enforcing F11 traceability gates — removal→orphan + change→cross-layer (TT5) (#383) | 0cec0f8e15b8 |
 | 2026-07-16 | iterate | TS/JS silent-skip ban + quarantine-with-expiry hygiene gate (traceability TT4) (#382) | 2c70a4ba6653 |
 | 2026-07-16 | compliance | layer-aware RTM + D-orphan/D-layer detectives + D1 hardening (traceability TT2) (#381) | 61646d3bd22f |
@@ -1219,7 +1220,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1150 |
+| Total commits | 1151 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1150 |
+| Human-authored commits | 1151 |
 

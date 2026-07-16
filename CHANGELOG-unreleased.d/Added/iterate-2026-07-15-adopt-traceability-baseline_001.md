@@ -1,0 +1,1 @@
+adopt: establish the requirement->test traceability baseline at onboarding (TT7) - scaffold the `@FR` tag convention into `.claude/rules/`, backfill existing tests, take a repo-wide skip inventory, and seed the layer-aware manifest; orphan/unmapped/skip candidates land in the triage Inbox and a zero-test repo adopts cleanly.
