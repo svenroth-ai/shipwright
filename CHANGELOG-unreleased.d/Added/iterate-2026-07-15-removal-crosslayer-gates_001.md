@@ -1,0 +1,1 @@
+iterate F11 traceability gate `removal_coverage`: a removed FR's base-linked tests must be deleted or retargeted to a live FR — still-tagged, bare-tag-removal, and rename/identifier-strip escapes all FAIL. Regenerates base+head manifests from git (never the committed artifact) so a stale/hand-edited manifest cannot satisfy it (traceability TT5, gap G3).

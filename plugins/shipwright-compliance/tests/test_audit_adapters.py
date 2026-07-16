@@ -53,10 +53,10 @@ def test_verify_imports_raises_on_missing_symbol():
 
 def test_verify_imports_raises_on_arity_drift():
     """If an imported function loses a required positional arg, gate fails."""
-    # CheckResult has no positional args accepting project_root, so it's
-    # a natural low-arity target — ``min_arity=5`` must trip the gate.
+    # CheckResult is a natural low-arity target (5 fields: name, ok, detail, severity,
+    # strict_exempt) — demanding ``min_arity=6`` must trip the gate.
     with pytest.raises(ImportGateError):
-        verify_imports([("tools.verifiers.common", "CheckResult", 5)])
+        verify_imports([("tools.verifiers.common", "CheckResult", 6)])
 
 
 def test_verify_imports_raises_on_missing_module():

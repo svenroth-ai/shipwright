@@ -1,35 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-15-tsjs-skip-ban"
+run_id: "iterate-2026-07-15-removal-crosslayer-gates"
 phase: "iterate"
-reason: "iterate: TS/JS silent-skip ban + quarantine-with-expiry (TT4)"
-timestamp: "2026-07-16T10:09:06.401339+00:00"
+reason: "iterate: F11 removal->orphan + change->cross-layer traceability gates (TT5)"
+timestamp: "2026-07-16T13:48:18.845338+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-16 10:09:06 UTC
+> Auto-generated 2026-07-16 13:48:18 UTC
 
 ## Session Info
 
 - **Session ID**: a69abb9e-d21a-40a1-846b-13913cca2b09
-- **Timestamp**: 2026-07-16 10:09:06 UTC
-- **Reason**: iterate: TS/JS silent-skip ban + quarantine-with-expiry (TT4)
+- **Timestamp**: 2026-07-16 13:48:18 UTC
+- **Reason**: iterate: F11 removal->orphan + change->cross-layer traceability gates (TT5)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-15-tsjs-skip-ban
-- **Date**: 2026-07-16T09:21:01.416785Z
+- **Run ID**: iterate-2026-07-15-removal-crosslayer-gates
+- **Date**: 2026-07-16T12:02:14.824832Z
 - **Type**: feature
-- **Complexity**: small
-- **Branch**: iterate/campaign-TT4-tsjs-skip-ban
-- **ADR**: iterate-2026-07-15-tsjs-skip-ban
+- **Complexity**: medium
+- **Branch**: iterate/campaign-TT5-iterate-removal-crosslayer-gates
+- **ADR**: iterate-2026-07-15-removal-crosslayer-gates
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/campaigns/2026-07-15-test-traceability-layers/sub-iterates/TT4-tsjs-skip-ban.md
+- **Spec**: .shipwright/planning/iterate/campaigns/2026-07-15-test-traceability-layers/sub-iterates/TT5-iterate-removal-crosslayer-gates.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/campaign-TT4-tsjs-skip-ban
+- **Branch**: iterate/campaign-TT5-iterate-removal-crosslayer-gates
 - **External Review Marker**: completed (external_review_state.json @ 2026-07-16T07:09:37)
 
 ### Mandatory replay on Resume
@@ -48,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/campaign-TT4-tsjs-skip-ban
-- **Last Commit**: 9842c1d2 feat(iterate): TS/JS silent-skip ban + quarantine-with-expiry hygiene gate (traceability TT4)
+- **Branch**: iterate/campaign-TT5-iterate-removal-crosslayer-gates
+- **Last Commit**: eaf9859e fix(iterate): fail-close the two F11 traceability gates per the adversarial panel (TT5)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-740ed3f3 | grade_snapshot | — | 2026-07-16 |
+| evt-0f5989d5 | grade_snapshot | — | 2026-07-16 |
+| evt-ccdc986f | grade_snapshot | — | 2026-07-16 |
+| evt-13178e21 | work_completed | iterate (F11 removal->orphan + change->cross-layer traceability gates (TT5): regenerate base+head manifests + evidence index from git, never the committed artifact) | 2026-07-16 |
 | evt-5f6dfc66 | grade_snapshot | — | 2026-07-16 |
-| evt-45947aa7 | grade_snapshot | — | 2026-07-16 |
-| evt-ef5ce6c0 | work_completed | iterate (TS/JS silent-skip ban + quarantine-with-expiry hygiene gate (TT4)) | 2026-07-16 |
-| evt-dbf6b0b1 | grade_snapshot | — | 2026-07-16 |
-| evt-44b63518 | grade_snapshot | — | 2026-07-16 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 311
-- **Last iterate**: feature — TS/JS silent-skip ban + quarantine-with-expiry hygiene gate (TT4) (2026-07-16)
+- **Total work events**: 312
+- **Last iterate**: feature — F11 removal->orphan + change->cross-layer traceability gates (TT5): regenerate base+head manifests + evidence index from git, never the committed artifact (2026-07-16)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

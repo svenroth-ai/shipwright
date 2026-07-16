@@ -47,8 +47,10 @@ from tools.verifiers.iterate_checks import (  # noqa: E402,F401
     check_agent_doc_budget,
     check_architecture_documented,
     check_changelog_unreleased,
+    check_cross_layer_coverage,
     check_events_has_commit,
     check_iterate_history_has_run_id,
+    check_removal_coverage,
     check_session_handoff_fresh,
     check_spec_impact_recorded,
     run_all_checks,
@@ -73,7 +75,12 @@ def main() -> None:
     print(format_report("iterate finalization", results))
 
     errors = sum(1 for r in results if r.is_failure and r.severity == Severity.ERROR.value)
-    warnings = sum(1 for r in results if r.is_failure and r.severity == Severity.WARNING.value)
+    # ``strict_exempt`` WARNINGs (advisory collision/legacy + could-not-determine) are always
+    # advisory — ``--strict`` must not promote them (else a prose edit / legacy FR mass-false-reds).
+    warnings = sum(
+        1 for r in results
+        if r.is_failure and r.severity == Severity.WARNING.value and not getattr(r, "strict_exempt", False)
+    )
 
     if errors > 0 or (args.strict and warnings > 0):
         sys.exit(1)
