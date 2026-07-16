@@ -1,0 +1,22 @@
+{
+  "_comment": "Multi-project Playwright JSON: ONE spec run under two projects (browsers). tests[] holds one entry PER PROJECT; results[] are retries WITHIN a project. chromium passed, firefox failed -> the spec is FAILED (Playwright's own exit is non-zero). Proves the reader reduces each project then combines FAIL-CLOSED (any project fail -> executed=fail), not the false-green 'any result passed anywhere -> pass'.",
+  "config": { "version": "1.48.0" },
+  "stats": { "expected": 1, "unexpected": 1, "skipped": 0, "flaky": 0 },
+  "suites": [
+    {
+      "title": "checkout.spec.ts",
+      "file": "e2e/checkout.spec.ts",
+      "specs": [
+        {
+          "title": "completes checkout @FR-03.02",
+          "tags": ["@FR-03.02"],
+          "ok": false,
+          "tests": [
+            { "projectName": "chromium", "status": "expected", "results": [ { "status": "passed" } ] },
+            { "projectName": "firefox", "status": "unexpected", "results": [ { "status": "failed" }, { "status": "failed" } ] }
+          ]
+        }
+      ]
+    }
+  ]
+}

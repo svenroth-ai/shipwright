@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shipwright.dev/schemas/test-evidence-index.v2.schema.json",
+  "title": "Test Execution Evidence Index v2",
+  "description": "Normalized per-test execution evidence (.shipwright/compliance/test-evidence-index.json), produced by the execution_evidence reader from JUnit/Playwright/Vitest runner output and consumed by the test_links collector to decide coverage-at-layer (Spec test-traceability-across-layers.md sec 11 R1 / G5). status + executed are a FROZEN closed vocabulary: an out-of-vocab value is a schema violation, so a producer/consumer can never trust an un-normalized evidence value. 'ok' coverage requires status=enabled AND executed=pass; a skipped/not_run/missing test is fail-closed, never a pass.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "results"],
+  "properties": {
+    "schema_version": {
+      "const": 2,
+      "description": "Pinned evidence-index schema version. Travels with the manifest v2 schema."
+    },
+    "_comment": {
+      "type": "string",
+      "description": "Optional human note (harness fixtures carry one)."
+    },
+    "generated_at": {
+      "type": "string",
+      "description": "Optional ISO-8601 timestamp of when the reader emitted the index (freshness/staleness audit)."
+    },
+    "source_reports": {
+      "type": "array",
+      "description": "Optional list of the raw runner reports this index was derived from (project-root-relative). Empty/absent => no fresh runner evidence backed this index; a gate must not trust a prior run's passes (R3).",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "results": {
+      "type": "object",
+      "description": "Per-test evidence keyed to the collector's stable `path::name` test id.",
+      "additionalProperties": {
+        "$ref": "#/$defs/evidence"
+      }
+    },
+    "waivers": {
+      "type": "array",
+      "description": "Explicit expiring waivers for a required layer that genuinely cannot run in an environment (R1). Honored only while valid; an expired/incomplete waiver is fail-closed (never a self-reported pass).",
+      "items": {
+        "$ref": "#/$defs/waiver"
+      }
+    }
+  },
+  "$defs": {
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "executed"],
+      "properties": {
+        "status": {
+          "enum": ["enabled", "skipped", "quarantined", "only"],
+          "description": "Static disposition of the test in source (frozen vocab, mirrors testLink.status)."
+        },
+        "executed": {
+          "enum": ["pass", "fail", "not_run"],
+          "description": "Observed result from this run's runner evidence (frozen vocab, mirrors testLink.executed). Only 'pass' + status 'enabled' yields coverage 'ok' (R1)."
+        },
+        "runner": {
+          "type": "string",
+          "description": "Which runner produced the evidence (pytest | playwright | vitest | ...), for audit provenance."
+        }
+      }
+    },
+    "waiver": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["layer", "reason", "owner", "ticket", "expires"],
+      "description": "A layer-scoped expiring waiver. Every field is accountability metadata; a waiver missing any is not honored (fail-closed).",
+      "properties": {
+        "layer": {
+          "enum": ["unit", "integration", "e2e"]
+        },
+        "scope": {
+          "type": "string",
+          "description": "Optional FR key (namespace::FR-XX.YY) the waiver applies to, or '*' for every FR at this layer. Absent => '*'."
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Why this layer cannot run in this environment."
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ticket": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Tracking ticket that must retire the waiver."
+        },
+        "expires": {
+          "type": "string",
+          "format": "date",
+          "description": "ISO-8601 date (YYYY-MM-DD). The reader fails closed once now > expires."
+        }
+      }
+    }
+  }
+}

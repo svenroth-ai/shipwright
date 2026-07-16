@@ -54,15 +54,17 @@ def _cov_status(links: list[dict]) -> str:
 
 def _make_link(hit, layer: str, evidence: dict) -> dict:
     ev = evidence.get(hit.test, {})
-    # Normalize to the frozen closed vocab — an out-of-vocab evidence value (TT-EV owns
-    # the full evidence contract) degrades to the safe default, never a schema-invalid link.
+    # Normalize to the frozen closed vocab FAIL-CLOSED — an out-of-vocab evidence value
+    # (TT-EV owns the full contract) degrades to a non-enabled/not-run value so a forged
+    # or garbled status can never combine with a pass to claim coverage ok. A test with
+    # no evidence at all keeps status "enabled" but executed "not_run" (⇒ not ok).
     status = ev.get("status", "enabled")
     executed = ev.get("executed", "not_run")
     return {
         "id": hit.test,
         "path": hit.test,
         "layer": layer,
-        "status": status if status in _STATUS_VOCAB else "enabled",
+        "status": status if status in _STATUS_VOCAB else "quarantined",
         "executed": executed if executed in _EXECUTED_VOCAB else "not_run",
         "tag_source": hit.tag_source,
     }
@@ -215,11 +217,20 @@ def generate_file(project_root, data=None) -> Path:
     dirs is the shared engine's job (adopt TT7 / retrofit TT8), not a compliance regen.
     """
     project_root = Path(project_root).resolve()
+    # TT-EV: refresh the per-test execution-evidence index from any raw runner
+    # reports THIS regen dropped, so coverage is execution-backed (R1). If no fresh
+    # report was produced, we pass EMPTY evidence (fail-closed not_run) rather than
+    # trusting a prior run's possibly-stale index — a regen with no evidence can
+    # never self-report a previous pass. The on-disk index is left untouched for
+    # audit; enforcing gates (TT2/TT5) regenerate base+head themselves (R3).
+    from ._execution_evidence_io import refresh_index  # noqa: PLC0415 — local to avoid import cost when unused
+    fresh = refresh_index(project_root)
+    evidence = io.load_evidence(project_root) if fresh else {}
     generated_at = getattr(data, "timestamp", None) or _DEFAULT_TS
     manifest = build_manifest(
         project_root,
         test_roots=io.default_test_roots(project_root),
-        evidence=io.load_evidence(project_root),
+        evidence=evidence,
         enumerate_untagged=True,
         generated_at=generated_at,
         source_commit=io.git_head(project_root),

@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-07-15T21:17:40.986510+00:00
-Total commits: 1143
+Generated: 2026-07-15T23:14:11.598998+00:00
+Total commits: 1145
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 331
-    "feat" : 310
+    "feat" : 312
     "chore" : 240
     "docs" : 145
     "refactor" : 68
@@ -356,10 +356,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 310 commits
+### Features (feat) — 312 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-16 | compliance | per-test execution-evidence reader -> execution-backed coverage (TT-EV) | e92cb3ca6f3a |
+| 2026-07-16 | compliance | test_links collector + test-traceability manifest + @FR tag convention (TT1) (#378) | c8767470fada |
 | 2026-07-15 | traceability | freeze requirement->test contracts + panel-verified harness (P1) (#377) | e74d8090758e |
 | 2026-07-15 | iterate | bundle the finalize F1/F3/F4/F5c/F5b LLM round-trips (#374) | d36f61dcf464 |
 | 2026-07-14 | grade,adopt | version the two artifacts the Command Center renders, and anchor the bump gate in git (#368) | 9def63904619 |
@@ -1212,7 +1214,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1143 |
+| Total commits | 1145 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1143 |
+| Human-authored commits | 1145 |
 

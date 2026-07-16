@@ -3,14 +3,14 @@
     "critical": 0,
     "high": 0,
     "low": 0,
-    "medium": 0
+    "medium": 1
   },
   "critical_gate": "pass",
   "degraded": false,
   "open_high_critical": 0,
   "prompt_injection": 0,
-  "scan_date": "2026-07-15T19:52:20Z",
+  "scan_date": "2026-07-15T22:31:35Z",
   "schema": 1,
-  "source": "security.yml#29446134691",
-  "total": 0
+  "source": "security.yml#29455699932",
+  "total": 1
 }
