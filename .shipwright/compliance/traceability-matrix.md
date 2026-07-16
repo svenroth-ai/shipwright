@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-16T14:57:56.427304+00:00
+Generated: 2026-07-16T17:01:11.550832+00:00
 
 ## Requirements Coverage
 
@@ -28,6 +28,7 @@ Generated: 2026-07-16T14:57:56.427304+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-9eede3ac"></a>Repos onboarding to Shipwright now start with test-to-requirement traceability already set up, instead of building up untracked, stale tests over time. | iterate | feature |  | 5697/5697 | — | 2026-07-16 |
 | <a id="evt-8718d8b4"></a>New shared tool that reads a repo's existing tests and figures out which requirement each one checks, tagging the clear matches and flagging the rest for review. | iterate | feature |  | 4597/4597 | — | 2026-07-16 |
 | <a id="evt-13178e21"></a>Shipwright now blocks an iterate that removes a feature but leaves its test running, or changes behaviour without a passing test at every layer that feature requires. | iterate | feature |  | 4164/4164 | — | 2026-07-16 |
 | <a id="evt-ef5ce6c0"></a>Test files written in TypeScript or JavaScript can no longer quietly disable a test: a skipped or focused test must carry an expiry-dated quarantine note, or the check fails. | iterate | feature |  | 4572/4572 | — | 2026-07-16 |
@@ -348,7 +349,7 @@ Generated: 2026-07-16T14:57:56.427304+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 313 |
+| Iterate changes | 314 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |

@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-16 15:45 UTC | Session: a69abb9e-d21a-40a1-846b-13913cca2b09 | Run: iterate-2026-07-15-shared-backfill-engine
+> Updated: 2026-07-16 17:42 UTC | Session: a69abb9e-d21a-40a1-846b-13913cca2b09 | Run: iterate-2026-07-15-adopt-traceability-baseline
 
-## Recent Changes (313 iterations)
+## Recent Changes (314 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | TT7: adopt Step E.17 establishes the requirement->test traceability baseline (tag convention scaffold + TT6 backfill + repo-wide skip inventory + predeclared-decision resolution + test_links wired into the adopt compliance phase). | 5697/5697 |  | tooling | 2026-07-16 |
 | feature | shared backfill_test_links engine (TT6): map existing tests to FRs, deterministic-first + opt-in LLM, emit tag edits/proposals/orphans | 4597/4597 |  | tooling | 2026-07-16 |
 | feature | F11 removal->orphan + change->cross-layer traceability gates (TT5): regenerate base+head manifests + evidence index from git, never the committed artifact | 4164/4164 |  | tooling | 2026-07-16 |
 | feature | TS/JS silent-skip ban + quarantine-with-expiry hygiene gate (TT4) | 4572/4572 |  | tooling | 2026-07-16 |
@@ -320,7 +321,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-16 | Unit: 4597/4597 | Integration: 1/1 | Smoke: skipped | (iterate)
+Last run: 2026-07-16 | Unit: 5704/5704 | Integration: 6/6 | Smoke: skipped | (iterate)
 
 ## Pipeline
 

@@ -1,0 +1,9 @@
+{
+  "run_id": "iterate-2026-07-15-adopt-traceability-baseline",
+  "date": "2026-07-16T17:01:11.473372Z",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/campaign-TT7-adopt-traceability-baseline",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-15-adopt-traceability-baseline"
+}

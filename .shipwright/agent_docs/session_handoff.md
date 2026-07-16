@@ -1,35 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-15-shared-backfill-engine"
+run_id: "iterate-2026-07-15-adopt-traceability-baseline"
 phase: "iterate"
-reason: "iterate finalization"
-timestamp: "2026-07-16T15:45:28.979917+00:00"
+reason: "iterate: adopt establishes the traceability baseline (TT7)"
+timestamp: "2026-07-16T17:42:01.630011+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-16 15:45:28 UTC
+> Auto-generated 2026-07-16 17:42:01 UTC
 
 ## Session Info
 
 - **Session ID**: a69abb9e-d21a-40a1-846b-13913cca2b09
-- **Timestamp**: 2026-07-16 15:45:28 UTC
-- **Reason**: iterate finalization
+- **Timestamp**: 2026-07-16 17:42:01 UTC
+- **Reason**: iterate: adopt establishes the traceability baseline (TT7)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-15-shared-backfill-engine
-- **Date**: 2026-07-16T14:59:07.664392Z
+- **Run ID**: iterate-2026-07-15-adopt-traceability-baseline
+- **Date**: 2026-07-16T17:01:11.473372Z
 - **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/campaign-TT6-shared-backfill-engine
-- **ADR**: iterate-2026-07-15-shared-backfill-engine
+- **Branch**: iterate/campaign-TT7-adopt-traceability-baseline
+- **ADR**: iterate-2026-07-15-adopt-traceability-baseline
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/campaigns/2026-07-15-test-traceability-layers/sub-iterates/TT6-shared-backfill-engine.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/campaign-TT6-shared-backfill-engine
+- **Branch**: iterate/campaign-TT7-adopt-traceability-baseline
 - **External Review Marker**: completed (external_review_state.json @ 2026-07-16T14:54:02)
 
 ### Mandatory replay on Resume
@@ -48,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/campaign-TT6-shared-backfill-engine
-- **Last Commit**: e1e639b1 feat(traceability): shared backfill_test_links engine — map existing tests to FRs (TT6)
+- **Branch**: iterate/campaign-TT7-adopt-traceability-baseline
+- **Last Commit**: f5a8ecf3 feat(adopt): establish the requirement->test traceability baseline at onboarding (TT7)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-8290a41d | grade_snapshot | — | 2026-07-16 |
+| evt-552a7eed | grade_snapshot | — | 2026-07-16 |
+| evt-9eede3ac | work_completed | iterate (TT7: adopt Step E.17 establishes the requirement->test traceability baseline (tag convention scaffold + TT6 backfill + repo-wide skip inventory + predeclared-decision resolution + test_links wired into the adopt compliance phase).) | 2026-07-16 |
 | evt-e76cd0c5 | grade_snapshot | — | 2026-07-16 |
 | evt-7713274b | grade_snapshot | — | 2026-07-16 |
-| evt-662dff1a | grade_snapshot | — | 2026-07-16 |
-| evt-8718d8b4 | work_completed | iterate (shared backfill_test_links engine (TT6): map existing tests to FRs, deterministic-first + opt-in LLM, emit tag edits/proposals/orphans) | 2026-07-16 |
-| evt-740ed3f3 | grade_snapshot | — | 2026-07-16 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 313
-- **Last iterate**: feature — shared backfill_test_links engine (TT6): map existing tests to FRs, deterministic-first + opt-in LLM, emit tag edits/proposals/orphans (2026-07-16)
+- **Total work events**: 314
+- **Last iterate**: feature — TT7: adopt Step E.17 establishes the requirement->test traceability baseline (tag convention scaffold + TT6 backfill + repo-wide skip inventory + predeclared-decision resolution + test_links wired into the adopt compliance phase). (2026-07-16)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

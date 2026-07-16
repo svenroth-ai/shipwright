@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-15-shared-backfill-engine",
+    "run_id": "iterate-2026-07-15-adopt-traceability-baseline",
     "date": "2026-07-16",
     "unit": {
       "status": "passed",
-      "passed": 4597,
-      "total": 4597
+      "passed": 5704,
+      "total": 5704
     },
     "integration": {
       "status": "passed",
-      "passed": 1,
-      "total": 1
+      "passed": 6,
+      "total": 6
     },
     "pgtap": {
       "status": "not_run",
@@ -31,86 +31,93 @@
       "status": "skipped"
     },
     "degraded": [
-      "complexity classifier returned risk_flag cross_component from message-prose keywords (\"shared tooling\", \"composes with\"); the diff touches NO cross_component file pattern (backfill_* files are not framework machinery like churn/hooks/phase-validators), so the F11 check_integration_coverage recompute does NOT fire. A real category:integration behavior (backfill → TT1 collector manifest) is supplied anyway (below).",
-      "risk_flag touches_rls is a message-keyword false positive (matched \"residue\"); no RLS/auth/migration is touched by this shared-tooling diff."
+      "complexity classifier returned risk_flags touches_auth + touches_migrations from message-prose keywords (the spec mentions RLS/migration/schema as SURFACE examples for required_layers inference); the diff touches NO auth/migration file — it adds an adopt tool + two pure libs + a compliance phase-list line. The authoritative diff-predicate risk floor is 'small'; the medium+ review path was run regardless."
     ],
     "surface_verification": {
       "surface": "none",
-      "runner": "surface_verification.py --surface none",
+      "runner": "seed_traceability_baseline.py --project-root <fixture> (+ --dry-run)",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-15-shared-backfill-engine/surface_verification.json",
       "timestamp": "2026-07-16T00:00:00+00:00",
-      "justification": "Framework tooling change: a new shared engine shared/scripts/tools/backfill_test_links.py + four _lib legs (backfill_scan/signals/write/llm) + a fixture mini-repo + tests. No runnable app surface (web/cli/api) added or modified. Exercised by the CLI surface (backfill_test_links.py --project-root/--dry-run/--use-llm) plus the shared pytest suites AND a REAL cross-component integration test that runs the TT1 test_links collector in a clean subprocess over the fixture repo after backfill writes tags."
+      "justification": "Framework tooling change: a new adopt onboarding step (seed_traceability_baseline.py + traceability_baseline/traceability_layers pure libs) + a one-line compliance phase wiring. No runnable app surface (web/cli/api) is added or modified. The tool's CLI surface is exercised end-to-end by 6 subprocess E2E tests over temp adopt-shaped repos (with-tests / no-tests / predeclared-decisions / dry-run / idempotency), each spawning the real tool + the real Step F collector."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 — over a tagless fixture repo the engine auto-writes ONLY deterministic single-FR matches (path_fr_token FR-05.02, unique_split FR-06.01), lists title-similarity as a proposal (FR-05.01, not written), and reports the three orphan categories",
+          "behavior": "AC1 — adopting a with-tests fixture populates test-traceability.json (a tagged unit test lands as an FR-01.01 unit coverage link), infers required_layers, and scaffolds the @FR convention into .claude/rules/",
           "disposition": "tested",
-          "evidence": "shared/scripts/tools/tests/test_backfill_test_links.py::test_deterministic_auto_writes_and_categories PASSED (asserts the tag edits in-file, the proposal, confirmed+possible+unmapped orphans)"
+          "evidence": "test_seed_traceability_baseline.py::test_with_tests_repo_scaffolds_tags_and_populates_baseline PASSED (asserts the scaffolded rule, the manifest unit link for FR-01.01, and inferred_legacy provenance)"
         },
         {
-          "behavior": "AC2 — title-similarity and the LLM leg may NEVER auto-write alone (§11-R1): even a 0.99-confidence LLM verdict + title match stays a proposal; deterministic legs run offline; the LLM leg is opt-in and touches only the residue",
+          "behavior": "AC2 — orphan/unmapped candidates are recorded as tracked triage carrying the TT6 category (unmapped = review candidate, never a stale accusation); a zero-test repo adopts cleanly with an empty-but-present manifest and no false gate",
           "disposition": "tested",
-          "evidence": "test_backfill_llm.py::test_title_and_llm_never_auto_write + ::test_llm_disabled_by_default_is_deterministic PASSED"
+          "evidence": "test_with_tests_repo... (dedupKey adopt-unmapped:: + 'never'/no-'stale' assertions) + test_zero_test_repo_adopts_cleanly (manifest EXISTS, empty, inferred_legacy → advisory) PASSED"
         },
         {
-          "behavior": "AC3 — idempotent: a second run adds no duplicate tag, files are byte-stable, and the machine-readable report is deterministically ordered across runs",
+          "behavior": "AC3 — snapshot.json shape is unchanged (baseline lives in a separate compliance manifest + adopt summary); the WebUI snapshot contract test stays green",
           "disposition": "tested",
-          "evidence": "test_backfill_test_links.py::test_idempotent_rerun_adds_no_duplicate_tags + ::test_already_tagged_test_is_honoured_not_rewritten + ::test_report_is_deterministically_ordered_and_written PASSED"
+          "evidence": "test_snapshot_contract.py (9 tests) PASSED; no analyze_codebase / SNAPSHOT_SCHEMA_VERSION change in the diff"
         },
         {
-          "behavior": "AC4 — NEW RED-before/green-after tests for the cascade, confidence gating, orphan detection, idempotency, conflict, mixed/multi-dead tags, CRLF preservation, and pytest-import safety; framework suites green; new-code diff coverage ≥80% (the CI diff-coverage gate)",
+          "behavior": "AC4 — NEW RED-before/green-after tests over adopt fixtures (with-tests, no-tests, predeclared-decisions); framework suites green",
           "disposition": "tested",
-          "evidence": "39 backfill tests (test_backfill_test_links.py + test_backfill_llm.py + test_backfill_engine_units.py) PASSED at 93% coverage of the 5 backfill modules (llm 95%, scan 90%, signals 97%, write 84%, tool 96%); shared framework suites green (incl. test_events_log_ssot.py + test_artifact_path_canon.py); compliance traceability suites green (98)"
+          "evidence": "test_traceability_baseline.py (13) + test_seed_traceability_baseline.py (6) PASSED; adopt 419 + compliance 1104 + shared 4174 green"
         },
         {
-          "behavior": "Write safety (coordinator C1/C1b) — the source line ending is preserved CROSS-PLATFORM (read_bytes/write_bytes, no os.linesep translation; the CI-red green-local/red-Linux CRLF bug is gone) and a non-UTF-8 source is skipped untouched + recorded in write_failures (never a partial write), with the report always emitted",
+          "behavior": "AC5 — footprint within adopt skill/scripts + tests; source files ≤300 LOC (273/161/197); SKILL.md ≤300; bloat baseline not ratcheted",
           "disposition": "tested",
-          "evidence": "test_backfill_test_links.py::test_crlf_line_endings_preserved_on_insert (byte-level) + ::test_non_utf8_source_is_skipped_and_recorded PASSED; empirical CRLF+LF probe confirms byte-identical output for both endings"
+          "evidence": "wc -l all new source ≤300; test_skill_references_link.py::test_kern_skill_md_under_300_loc PASSED; no shipwright_bloat_baseline.json change"
         },
         {
-          "behavior": "unique_split is convention-gated (coordinator C2) — a bare NN- filename prefix auto-writes ONLY with --repo-follows-split-convention (default OFF for the shared engine / adopt, since NN- is the Playwright/Cypress execution-order convention on brownfield repos); OFF → advisory proposal, ON → auto-write",
+          "behavior": "Binding §11-R5 — the predeclared-decision path resolves an ambiguous FR unattended and writes the decision back to the spec BEFORE Step F, so the collector's manifest carries the decided layers; it NEVER stalls (no fixture → inference_default)",
           "disposition": "tested",
-          "evidence": "test_backfill_test_links.py::test_unique_split_is_advisory_without_convention_flag (default OFF → proposal, not written) + ::test_deterministic_auto_writes_and_categories (flag ON → unique_split auto-write) PASSED"
+          "evidence": "test_predeclared_decisions_resolve_unattended_without_stalling (manifest FR-03.02 == ['e2e'], layers_written_to_spec==2) + test_resolve_never_stalls_without_a_fixture PASSED"
         },
         {
-          "behavior": "LLM payload secret redaction (§11-R4 / coordinator C3) — token shapes (GitHub/OpenAI/AWS/Slack/JWT/Bearer/long-hex) are scrubbed from path+title before anything leaves the process",
+          "behavior": "Binding §11-R5 — a repo-wide (NOT diff-scoped) skip inventory reuses the TT4 Python + TS/JS scanners and files every pre-existing skip as triage, pruning vendored dirs",
           "disposition": "tested",
-          "evidence": "test_backfill_llm.py::test_secrets_are_redacted_before_leaving_the_process PASSED (a token embedded in a test title reaches the adjudicator as [REDACTED])"
+          "evidence": "test_skip_inventory_catches_python_and_ts_skips_repo_wide (node_modules pruned) + the with-tests E2E skip triage PASSED"
         },
         {
-          "behavior": "AC5 — footprint within shared/scripts/{tools,lib} + tests; every new source file ≤300 LOC (scan 295, signals 288, tool 275, llm 179, write 117); bloat baseline NOT ratcheted",
+          "behavior": "Code-review C2 — --dry-run mutates nothing on disk (no rules, no triage, no summary) yet still reports would-be actions",
           "disposition": "tested",
-          "evidence": "wc -l all new source ≤300; shipwright_bloat_baseline.json unchanged; ruff@0.15.15 clean on all new files"
+          "evidence": "test_dry_run_mutates_nothing PASSED"
         },
         {
-          "behavior": "Orphan categories (§11-R4) — confirmed_orphan (one record per dead tag, removed vs absent), possible_orphan (untagged, removed-only path/commit/title signal), unmapped (no signal, never an accusation); an orphan is surfaced, never deleted",
+          "behavior": "Doubt D1 — the repo-wide walk prunes vendored/build dirs DURING descent (os.walk in-place dirnames prune), so a large committed node_modules on a brownfield-JS repo is never recursed into",
           "disposition": "tested",
-          "evidence": "test_backfill_test_links.py::test_mixed_live_and_dead_tag_surfaces_confirmed_orphan + ::test_every_dead_tag_surfaces_as_its_own_confirmed_orphan + ::test_removed_only_path_token_is_possible_orphan_not_unmapped + ::test_orphan_is_surfaced_never_deleted PASSED"
+          "evidence": "test_traceability_baseline.py::test_enumerate_prunes_vendored_dirs_during_descent PASSED (a node_modules/ test file is not enumerated)"
         },
         {
-          "behavior": "LLM data controls (§11-R4) — offline by default; the opt-in payload carries only path+title+FR-ids (never a body, guard rejects it); untrusted output outside the candidate set is dropped; CI uses P1's stubbed record/replay adapter (no live call)",
+          "behavior": "Doubt D2 — the spec Layers write-back honours \\| escapes + a cell-count-vs-header guard (no mis-column), preserves CRLF (raw bytes + keepends), and is idempotent (unchanged cell → no write)",
           "disposition": "tested",
-          "evidence": "test_backfill_llm.py::test_llm_payload_guard_refuses_a_body + ::test_untrusted_llm_out_of_set_fr_is_dropped + ::test_llm_leg_offline_via_p1_record_replay_adapter PASSED"
+          "evidence": "test_traceability_layers.py::{test_apply_decisions_does_not_mis_column_a_piped_description, test_apply_decisions_skips_a_miscolumned_unescaped_pipe_row, test_apply_decisions_preserves_crlf_and_is_idempotent} PASSED"
         },
         {
-          "behavior": "Signal (d) introducing-commit — a real git-init + shipwright_events.jsonl mapping a commit to a single FR drives a unique_commit auto-write (no injection); a multi-FR commit stays advisory",
+          "behavior": "Doubt D3 — the repo-wide inventory also flags unconditional @pytest.mark.skip (the commonest disable idiom) via a local AST scan, without touching the shared scanner's cross-consumer contract",
           "disposition": "tested",
-          "evidence": "test_backfill_test_links.py::test_introducing_commit_map_reads_real_git_and_events + ::test_unique_commit_signal_auto_writes + ::test_multi_fr_commit_stays_advisory PASSED"
+          "evidence": "test_skip_inventory_flags_unconditional_pytest_mark_skip PASSED (skip + skipif both caught)"
         },
         {
-          "behavior": "cross_component composition (category:integration) — the engine composes with the TT1 test_links collector + manifest: after backfill writes tags, build_manifest (run in a clean subprocess) reflects them as coverage links and surfaces the removed-FR orphan",
-          "category": "integration",
+          "behavior": "Doubt D4 — above 10 findings the skip inventory rolls up into ONE summary triage card (per-pattern count, max severity) instead of flooding the Inbox; at/below, granular",
           "disposition": "tested",
-          "evidence": "shared/scripts/tools/tests/test_backfill_llm.py::test_backfill_feeds_tt1_manifest_end_to_end PASSED (subprocess drives the real compliance collector over the fixture repo)"
+          "evidence": "test_skip_triage_rolls_up_above_threshold PASSED (15 findings → 1 card; 10 → 10 cards)"
+        },
+        {
+          "behavior": "Doubt D5 — --dry-run routes the TT6 backfill report to a temp dir so .shipwright/backfill/ on the adopted repo is never created (preview mutates nothing)",
+          "disposition": "tested",
+          "evidence": "test_dry_run_mutates_nothing PASSED (asserts .shipwright/backfill/ absent)"
+        },
+        {
+          "behavior": "Doubt D7 — a fast NON-slow guard subprocesses only the collector over a tiny fixture and asserts the @pytest.mark.covers tag → FR-01.01 unit coverage link, so the wiring is gated by the default lane even if the slow lane is excluded",
+          "disposition": "tested",
+          "evidence": "test_collector_links_a_tagged_test_to_its_fr PASSED (non-slow)"
         }
       ],
       "counts": {
-        "testable": 12,
-        "tested": 12,
+        "testable": 14,
+        "tested": 14,
         "untestable": 0,
         "untested_testable": 0
       },

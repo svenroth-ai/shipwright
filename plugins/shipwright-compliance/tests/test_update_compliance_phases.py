@@ -2,7 +2,9 @@
 
 Adds two new phase keys:
   * ``adopt`` — full doc set (rtm, test_evidence, change_history, sbom,
-    dashboard) since adopt establishes the initial baseline.
+    dashboard) since adopt establishes the initial baseline. Traceability TT7
+    adds ``test_links`` here too: adopt's Step E.17 backfills existing tests, so
+    this collector emits the baseline requirement→test manifest at onboarding.
   * ``security`` — 4 docs (dashboard, test_evidence, change_history,
     sbom). RTM excluded because security work doesn't change FR coverage.
 
@@ -29,10 +31,11 @@ UPDATE_SCRIPT = PLUGIN_ROOT / "scripts" / "tools" / "update_compliance.py"
 
 
 def test_phase_reports_adopt_has_full_doc_set():
-    """Adopt seeds the initial baseline → all 5 compliance docs regen."""
+    """Adopt seeds the initial baseline → all 5 compliance docs regen, plus the
+    TT7 requirement→test manifest (``test_links``) from Step E.17's backfill."""
     assert "adopt" in PHASE_REPORTS, "PHASE_REPORTS missing 'adopt' key"
     assert sorted(PHASE_REPORTS["adopt"]) == sorted([
-        "rtm", "test_evidence", "change_history", "sbom", "dashboard",
+        "rtm", "test_evidence", "test_links", "change_history", "sbom", "dashboard",
     ])
 
 

@@ -48,7 +48,10 @@ PHASE_REPORTS = {
     # adopt establishes the initial baseline → all 5 docs.
     # security pipeline finalize touches dashboard/test_evidence/change_history/sbom
     # but NOT rtm — security work doesn't add/modify FRs.
-    "adopt": ["rtm", "test_evidence", "change_history", "sbom", "dashboard"],
+    # traceability TT7: adopt seeds the initial test-traceability manifest too — the
+    # backfill step (seed_traceability_baseline.py) tags existing tests just BEFORE Step F,
+    # so this collector emits the baseline RTM link from those tags at onboarding.
+    "adopt": ["rtm", "test_evidence", "test_links", "change_history", "sbom", "dashboard"],
     "security": ["dashboard", "test_evidence", "change_history", "sbom"],
 }
 

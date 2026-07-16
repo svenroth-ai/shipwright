@@ -28,5 +28,7 @@ regeneration overwrites this file on every release pass._
 - [ADR-101 — bloat github triage pr ci producer tests](101-bloat-github-triage-pr-ci-producer-tests.md)
 - [ADR-102 — shc file lock extraction](102-shc-file-lock-extraction.md)
 - [ADR-103 — shc git helpers unify](103-shc-git-helpers-unify.md)
+- [ADR-104 — TT6 shared backfill engine](104-tt6-shared-backfill-engine.md)
+- [ADR-105 — TT7 adopt establishes the traceability baseline](105-tt7-adopt-traceability-baseline.md)
 - [_archive agent doc updates](_archive-agent-doc-updates.md)
 - [_template bloat exception](_template-bloat-exception.md)
