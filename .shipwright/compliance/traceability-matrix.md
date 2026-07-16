@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-16T07:19:43.140029+00:00
+Generated: 2026-07-16T09:21:21.946290+00:00
 
 ## Requirements Coverage
 
@@ -28,6 +28,7 @@ Generated: 2026-07-16T07:19:43.140029+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-ef5ce6c0"></a>Test files written in TypeScript or JavaScript can no longer quietly disable a test: a skipped or focused test must carry an expiry-dated quarantine note, or the check fails. | iterate | feature |  | 4572/4572 | — | 2026-07-16 |
 | <a id="evt-2c0654b3"></a>The requirements matrix now shows per-layer test coverage (Unit/Integration/E2E), and compliance flags tests pointing at deleted requirements plus requirements missing a required test layer. | iterate | feature |  | 1090/1090 | — | 2026-07-16 |
 | <a id="evt-34535c2f"></a>Each requirement now declares which kinds of tests it needs; adopted projects get a sensible, non-blocking guess. | iterate | feature |  | 1060/1060 | — | 2026-07-16 |
 | <a id="evt-58cd05dd"></a>Test coverage now counts a requirement as covered at a layer only when a real test actually ran and passed there; a skipped or never-run test no longer counts. | iterate | feature |  | 1047/1047 | — | 2026-07-15 |
@@ -345,7 +346,7 @@ Generated: 2026-07-16T07:19:43.140029+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 310 |
+| Iterate changes | 311 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |

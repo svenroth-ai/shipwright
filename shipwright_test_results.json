@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-15-layer-aware-rtm-and-gates",
+    "run_id": "iterate-2026-07-15-tsjs-skip-ban",
     "date": "2026-07-16",
     "unit": {
       "status": "passed",
-      "passed": 1104,
-      "total": 1104
+      "passed": 4591,
+      "total": 4591
     },
     "integration": {
-      "status": "passed",
-      "passed": 25,
-      "total": 25
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -31,109 +31,84 @@
       "status": "skipped"
     },
     "degraded": [
-      "complexity classifier returned touches_auth — a prose-keyword false positive (prior_source=keyword, history_n=0); the diff touches zero auth code (two compliance sibling modules + net-neutral RTM/group_d edits + tests + a glossary line). Overridden to 'medium'; F11 recomputes risk from diff-predicates."
+      "complexity classifier returned touches_auth — a prose-keyword false positive (prior_source=keyword, history_n=0); the diff touches zero auth code (a new TS/JS hygiene scanner + CLI routing + two iterate reference docs + tests). Left at 'small'; F11 recomputes risk from diff-predicates."
     ],
     "surface_verification": {
       "surface": "none",
       "runner": "surface_verification.py --surface none",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-15-layer-aware-rtm-and-gates/surface_verification.json",
+      "evidence_path": ".shipwright/runs/iterate-2026-07-15-tsjs-skip-ban/surface_verification.json",
       "timestamp": "2026-07-16T00:00:00+00:00",
-      "justification": "Framework tooling change: two compliance sibling modules (_group_d_traceability, _rtm_layer_columns), net-neutral edits to the capped rtm_generator.py + group_d.py, a glossary line, and tests. No runnable app surface (no web/cli/api entrypoint added or modified). Exercised entirely by the pytest suites (compliance 1090, shared 373 selected, integration 25) plus the real producer(test_links manifest)->file->consumer(group_d + rtm_generator) round-trip probes recorded in the iterate ADR Confidence Calibration."
+      "justification": "Framework tooling change: a new shared TS/JS test-hygiene scanner (ts_test_hygiene.py + _ts_lexer.py) + CLI routing in scan_test_hygiene.py + two iterate reference docs (F0.5.md, iteration-reviews.md) + tests. No runnable app surface (web/cli/api) added or modified. Exercised by the CLI surface (scan_test_hygiene.py --files/--diff on real .spec.ts fixtures: exit 0 clean / 1 findings / 2 usage) plus the pytest suites (shared 4115, iterate 476) and two real git-diff end-to-end probes (incl. chained .only.each flagged, conditional test.skip(cond) exempt, /test.only(/ regex not flagged) recorded in the iterate ADR Confidence Calibration."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 — RTM renders per-FR Unit|Integration|E2E columns from the manifest; an FR with unit-but-no-E2E is visibly E2E: MISSING (a glyph, not a bare number); pre-existing positional columns (Reconciled?=7, Status=8) are unshifted",
+          "behavior": "AC1 — a test.skip/it.skip/describe.skip/test.fixme/xit/xfail OR a focused test (.only/fit/fdescribe) in a changed TS/JS spec without valid quarantine metadata fails the hygiene gate",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_rtm_layer_columns.py::test_header_has_layer_columns + ::test_unit_ok_e2e_missing_renders_glyphs_not_numbers + ::test_pre_existing_positional_columns_unshifted PASSED; real-monorepo render probe (ADR Confidence Calibration probe 4)"
+          "evidence": "shared/tests/test_ts_test_hygiene.py::test_skip_form_without_quarantine_is_flagged + ::test_focus_form_is_unconditional_fail + ::test_only_is_not_quarantineable_even_with_annotation PASSED; shared/tests/test_scan_test_hygiene_cli.py::test_focused_test_exits_one + ::test_bare_xfail_exits_one PASSED"
         },
         {
-          "behavior": "AC2 — D-orphan fires MEDIUM on a test tagged with a removed/absent FR and stays green when every tag resolves live; both namespace fan-out directions pinned (live-in-any-namespace = not orphan; removed-only = orphan)",
+          "behavior": "AC2 — a properly-quarantined skip (reason+owner+ticket+future expires) passes; a missing field / malformed / past-expires quarantine fails",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_group_d_traceability.py::test_orphan_flags_confirmed_orphan_medium + ::test_orphan_passes_when_no_orphans + ::test_orphan_fanout_live_in_any_namespace_is_not_flagged + ::test_orphan_fanout_removed_only_is_flagged PASSED"
+          "evidence": "shared/tests/test_ts_test_hygiene.py::test_valid_future_quarantine_passes + ::test_expired_quarantine_fails + ::test_expires_today_is_not_expired + ::test_malformed_expires_is_treated_as_missing + ::test_missing_field_fails + ::test_block_comment_quarantine_form_passes PASSED"
         },
         {
-          "behavior": "AC3 — D-layer fires on an active FR missing a required layer, severity by priority; legacy-provenance FRs are advisory (surfaced, no any_fail) per carry-forward #2 / Spec §9",
+          "behavior": "AC3 — the check runs post-Self-Review (CLI --diff, mandatory at medium+) and at F0.5 as the single mechanical gate (F11 does not re-run it; docs softened), diff-scoped by line so untouched legacy skips do not block; deleting a quarantine or editing expires still trips it",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_group_d_traceability.py::test_layer_explicit_missing_layer_fails_by_priority + ::test_layer_should_priority_is_medium + ::test_layer_legacy_missing_layer_is_advisory_not_fail + ::test_layer_removed_fr_is_not_evaluated PASSED"
+          "evidence": "shared/tests/test_ts_test_hygiene.py::test_filter_drops_untouched_preexisting_skip + ::test_filter_expired_triggered_by_editing_quarantine_block + ::test_no_quarantine_scope_covers_comment_block_above + ::test_added_lines_from_diff PASSED; iteration-reviews.md §8 + F0.5.md wiring pinned by test_iteration_reviews_section_8.py PASSED"
         },
         {
-          "behavior": "AC4 — D1 no longer reports COVERED for an FR whose only event has tests_total:0 and no test link (former false-green regression pinned)",
+          "behavior": "AC4 — comment/string/template awareness: a .only inside a // comment, a string literal, or a template is NOT flagged (no naive-regex false match), and multi-line templates keep line numbers",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_d1_hardening.py::test_d1_hardened_untested_event_no_longer_covers PASSED"
+          "evidence": "shared/tests/test_ts_test_hygiene.py::test_skip_or_only_in_comment_or_string_is_not_flagged + ::test_multiline_template_preserves_line_numbers PASSED"
         },
         {
-          "behavior": "PANEL-FIX O1 — D1 link-proof: an explicit/post-rollout FR needs a tested event AND a real manifest test link (two separate per-FR proofs); a link for a DIFFERENT FR does not cover this FR; legacy FRs keep the event-only proof (no monorepo avalanche)",
+          "behavior": "AC5 — footprint ≤300 LOC after the lexer was extracted into _ts_lexer.py (ts_test_hygiene.py 299, _ts_lexer.py 164, scan_test_hygiene.py 295, all test files ≤300); bloat baseline not ratcheted (no new crossing among the changed files)",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_d1_hardening.py::test_d1_explicit_fr_tested_event_but_no_link_is_uncovered + ::test_d1_explicit_fr_with_tested_event_and_link_is_covered + ::test_d1_link_for_a_different_fr_does_not_cover_this_fr + ::test_d1_legacy_fr_no_manifest_covers_on_event_proof_alone PASSED"
+          "evidence": "bloat_baseline.scan(): crossings among changed files == []; wc -l all changed source ≤300 (ADR Confidence Calibration probe)"
         },
         {
-          "behavior": "Carry-forward #1 — D-layer fan-out fail-closed: an ok on a display id shared across active namespaces is NOT credited (ambiguous_fanout); a unique id ok IS credited",
+          "behavior": "Reviewer hardening (OpenAI code-review MEDIUM) — valid-JS whitespace/newline around member access (test . skip / test\\n.only) must not bypass the matcher",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_group_d_traceability.py::test_layer_fanout_collision_ok_is_not_credited + ::test_layer_non_collision_ok_is_credited PASSED"
+          "evidence": "shared/tests/test_ts_test_hygiene.py::test_whitespace_around_member_access_does_not_bypass PASSED"
         },
         {
-          "behavior": "Carry-forward #3 — invalid_layers (author typo'd Layers cell) surfaced as a HARD D-layer finding naming the FR + raw token",
+          "behavior": "Doubt MUST-FIX 1 — chained modifiers do not evade: test.only.each / test.concurrent.only (focus) and test.skip.each / it.concurrent.skip (skip) are flagged",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_group_d_traceability.py::test_layer_invalid_layers_is_hard_finding PASSED"
+          "evidence": "shared/tests/test_ts_test_hygiene_evasion.py::test_chained_modifiers_are_flagged PASSED; real git-diff probe (ADR Confidence Calibration)"
         },
         {
-          "behavior": "R3 fail-closed manifest — absent / non-v2 / malformed manifest → D-orphan+D-layer SKIP (no proof != pass), never a silent pass",
+          "behavior": "Doubt MUST-FIX 2 — regex-literal lexing: a backtick inside /`/ no longer blanks to EOF (a skip below is still flagged); /test.only(/ is not scanned as code; an unterminated template/string emits a LOUD could_not_lex finding, never a silent blank",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_group_d_traceability.py::test_traceability_findings_skip_when_manifest_absent + ::test_load_manifest_rejects_non_v2 PASSED"
+          "evidence": "test_ts_test_hygiene_evasion.py::test_backtick_in_regex_does_not_swallow_skip_below + ::test_regex_literal_is_not_scanned_as_code + ::test_unterminated_template_is_a_loud_finding + ::test_lex_records_unterminated_string PASSED"
         },
         {
-          "behavior": "PANEL-FIX O6 — end-to-end wiring: group_d.run emits D-orphan + D-layer findings from a committed valid manifest (guards the out.extend splice)",
+          "behavior": "Doubt MUST-FIX 3 — a runtime conditional test.skip(cond, 'reason') / test.fixme(cond, desc) / test.skip() (first arg not a string literal) is EXEMPT; the declaration form test.skip('name', fn) is still flagged",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_group_d_traceability.py::test_group_d_run_emits_traceability_findings_end_to_end PASSED"
+          "evidence": "test_ts_test_hygiene_evasion.py::test_conditional_skip_is_exempt + ::test_declaration_skip_is_still_flagged PASSED"
         },
         {
-          "behavior": "PANEL-FIX O5 — the orphan suggested-command carries only the schema-pinned FR id (never the untrusted test path); the path stays in evidence (no quote-break/injection)",
+          "behavior": "Doubt MUST-FIX 4 — global forms anchored so chart.fit(...) / obj.xit(...) after a dot do NOT false-flag a hard STOP; standalone fit(...) still flagged",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_group_d_traceability.py::test_orphan_flags_confirmed_orphan_medium (asserts path NOT in cmd, path IS in evidence) PASSED"
+          "evidence": "test_ts_test_hygiene_evasion.py::test_dotted_global_lookalikes_are_not_flagged + ::test_standalone_global_focus_is_flagged PASSED"
         },
         {
-          "behavior": "AC5 / anti-ratchet — new logic in ≤300-LOC siblings; capped rtm_generator.py (763) + group_d.py (464) net-neutral; test files under 300 or unbaselined; RED-before verified",
+          "behavior": "Doubt MUST-FIX 5 — file gate widened to *.e2e.* + e2e//tests//__tests__/ dirs so a non-default testMatch (checkout.e2e.ts) is scanned; custom-testMatch/computed-access limit documented",
           "disposition": "tested",
-          "evidence": "anti_ratchet_check --worktree: no block (test_audit_groups_a_d.py held at 789); wc -l all new/edited source ≤300; full compliance suite 1101 PASSED"
+          "evidence": "shared/tests/test_ts_test_hygiene.py::test_is_ts_test_file (e2e/checkout.e2e.ts, tests/util.ts) PASSED; F0.5.md coverage-limit note"
         },
         {
-          "behavior": "PANEL-2 M1 — an UNKNOWN required_layers_source token (rename/drift/hand-edit) missing a required layer is fail-closed HARD, never silently advisory (check_layer + refine_d1_covered use `not in _LEGACY_SOURCES`, not `== explicit`)",
+          "behavior": "Doubt SHOULD-FIX 6/8/9 — a >180-day-out expires fails (js.skip.expiry_too_far); deletion straddle re-trips a skip only when the deleted hunk carried quarantine content (not any nearby deletion); test.todo is flagged as a silent non-run",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_group_d_hardening.py::test_dlayer_unknown_source_is_hard_not_advisory PASSED"
-        },
-        {
-          "behavior": "PANEL-2 M2a — a display id shared across namespaces including a REMOVED occurrence is a collision; its fanned coverage ok is NOT credited by D-layer and the fanned test is surfaced as a possible_orphan",
-          "disposition": "tested",
-          "evidence": "test_group_d_hardening.py::test_dlayer_active_active_collision_ok_not_credited + ::test_dlayer_active_removed_collision_ok_not_credited + ::test_orphan_fanout_active_removed_surfaced_as_possible (real build_manifest) PASSED"
-        },
-        {
-          "behavior": "PANEL-2 M2b — the RTM renders a fanned collision ok as ? (ambiguous), agreeing with D-layer's fail-closed ambiguous_fanout (no RTM-green-while-gate-flags)",
-          "disposition": "tested",
-          "evidence": "test_group_d_hardening.py::test_rtm_renders_collision_ok_as_ambiguous + test_rtm_layer_columns.py::test_collision_display_id_renders_ambiguous_not_ok PASSED"
-        },
-        {
-          "behavior": "PANEL-2 M3 — check_orphan surfaces an unknown-category orphan fail-closed (pass only when nothing to surface); load_manifest re-validates against traceability_schema.json on READ and rejects an out-of-vocab enum (skip, never trusted)",
-          "disposition": "tested",
-          "evidence": "test_group_d_hardening.py::test_orphan_unknown_category_is_surfaced + ::test_load_manifest_rejects_schema_invalid_enum PASSED"
-        },
-        {
-          "behavior": "PANEL-2 S4/S5/S6 — invalid_tags surfaced as a hygiene finding; the D1 link-proof requires coverage==ok (a skipped link is not coverage, R1); R1 pinned end-to-end via build_manifest (skipped evidence → MISSING → D-layer explicit HARD)",
-          "disposition": "tested",
-          "evidence": "test_group_d_hardening.py::test_orphan_surfaces_invalid_tags + ::test_r1_skipped_evidence_makes_explicit_layer_hard_fail + test_d1_hardening.py::test_d1_explicit_fr_with_only_a_skipped_link_is_uncovered PASSED"
-        },
-        {
-          "behavior": "PANEL-3 FIX1/2/3 — check_layer's missing/None required_layers_source defaults to a NON-legacy sentinel → HARD (matching refine_d1_covered, no fail-open); the honest renamed explicit-requires-link test + real-path out-of-vocab-source→schema-invalid→SKIP + a visible D1 fallback note when the manifest is PRESENT-but-untrusted (absent → silent, no note)",
-          "disposition": "tested",
-          "evidence": "test_group_d_hardening.py::test_dlayer_missing_source_key_is_hard_not_advisory + ::test_d1_explicit_source_requires_link + ::test_out_of_vocab_source_is_rejected_on_read_and_d1_falls_back + ::test_d1_absent_manifest_fallback_has_no_note PASSED"
+          "evidence": "test_ts_test_hygiene_evasion.py::test_far_future_expiry_fails + ::test_todo_is_flagged PASSED; test_ts_test_hygiene.py::test_added_lines_from_diff (non-quarantine deletion→set(), quarantine deletion→straddle) PASSED"
         }
       ],
       "counts": {
-        "testable": 17,
-        "tested": 17,
+        "testable": 12,
+        "tested": 12,
         "untestable": 0,
         "untested_testable": 0
       },

@@ -1,35 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-15-layer-aware-rtm-and-gates"
+run_id: "iterate-2026-07-15-tsjs-skip-ban"
 phase: "iterate"
-reason: "iterate: layer-aware RTM + D-orphan/D-layer + D1 hardening (traceability TT2)"
-timestamp: "2026-07-16T08:25:19.433920+00:00"
+reason: "iterate: TS/JS silent-skip ban + quarantine-with-expiry (TT4)"
+timestamp: "2026-07-16T10:09:06.401339+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-16 08:25:19 UTC
+> Auto-generated 2026-07-16 10:09:06 UTC
 
 ## Session Info
 
 - **Session ID**: a69abb9e-d21a-40a1-846b-13913cca2b09
-- **Timestamp**: 2026-07-16 08:25:19 UTC
-- **Reason**: iterate: layer-aware RTM + D-orphan/D-layer + D1 hardening (traceability TT2)
+- **Timestamp**: 2026-07-16 10:09:06 UTC
+- **Reason**: iterate: TS/JS silent-skip ban + quarantine-with-expiry (TT4)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-15-layer-aware-rtm-and-gates
-- **Date**: 2026-07-16T08:25:14.821180Z
+- **Run ID**: iterate-2026-07-15-tsjs-skip-ban
+- **Date**: 2026-07-16T09:21:01.416785Z
 - **Type**: feature
-- **Complexity**: medium
-- **Branch**: iterate/campaign-TT2-layer-aware-rtm-and-gates
-- **ADR**: iterate-2026-07-15-layer-aware-rtm-and-gates
+- **Complexity**: small
+- **Branch**: iterate/campaign-TT4-tsjs-skip-ban
+- **ADR**: iterate-2026-07-15-tsjs-skip-ban
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-15-layer-aware-rtm-and-gates.md
+- **Spec**: .shipwright/planning/iterate/campaigns/2026-07-15-test-traceability-layers/sub-iterates/TT4-tsjs-skip-ban.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/campaign-TT2-layer-aware-rtm-and-gates
+- **Branch**: iterate/campaign-TT4-tsjs-skip-ban
 - **External Review Marker**: completed (external_review_state.json @ 2026-07-16T07:09:37)
 
 ### Mandatory replay on Resume
@@ -48,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/campaign-TT2-layer-aware-rtm-and-gates
-- **Last Commit**: f237f94b fix(compliance): close TT2 adversarial-panel fail-open / false-green holes (same iterate)
+- **Branch**: iterate/campaign-TT4-tsjs-skip-ban
+- **Last Commit**: 9842c1d2 feat(iterate): TS/JS silent-skip ban + quarantine-with-expiry hygiene gate (traceability TT4)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-5f6dfc66 | grade_snapshot | — | 2026-07-16 |
+| evt-45947aa7 | grade_snapshot | — | 2026-07-16 |
+| evt-ef5ce6c0 | work_completed | iterate (TS/JS silent-skip ban + quarantine-with-expiry hygiene gate (TT4)) | 2026-07-16 |
 | evt-dbf6b0b1 | grade_snapshot | — | 2026-07-16 |
 | evt-44b63518 | grade_snapshot | — | 2026-07-16 |
-| evt-2b536e9c | grade_snapshot | — | 2026-07-16 |
-| evt-2c0654b3 | work_completed | iterate (Layer-aware RTM columns + D-orphan/D-layer detectives + D1 hardening (traceability TT2)) | 2026-07-16 |
-| evt-52bbc0b4 | grade_snapshot | — | 2026-07-16 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 310
-- **Last iterate**: feature — Layer-aware RTM columns + D-orphan/D-layer detectives + D1 hardening (traceability TT2) (2026-07-16)
+- **Total work events**: 311
+- **Last iterate**: feature — TS/JS silent-skip ban + quarantine-with-expiry hygiene gate (TT4) (2026-07-16)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
