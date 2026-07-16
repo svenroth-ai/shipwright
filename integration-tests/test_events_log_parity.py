@@ -71,6 +71,7 @@ def main_repo(tmp_path):
     return main
 
 
+@pytest.mark.covers("FR-01.11")
 def test_parity_in_main_repo(main_repo):
     compliance_resolve = _load_compliance_resolver()
     shared = resolve_events_path(main_repo).resolve()
@@ -78,6 +79,7 @@ def test_parity_in_main_repo(main_repo):
     assert shared == compliance == (main_repo / "shipwright_events.jsonl").resolve()
 
 
+@pytest.mark.covers("FR-01.11")
 def test_parity_inside_worktree(main_repo):
     """The case that matters: from a linked worktree both resolvers must agree
     on the WORKTREE's own log — events.jsonl is a per-tree, PR-committed
@@ -93,6 +95,7 @@ def test_parity_inside_worktree(main_repo):
     assert shared == compliance == (wt / "shipwright_events.jsonl").resolve()
 
 
+@pytest.mark.covers("FR-01.11")
 def test_parity_non_git_dir(tmp_path):
     compliance_resolve = _load_compliance_resolver()
     shared = resolve_events_path(tmp_path).resolve()

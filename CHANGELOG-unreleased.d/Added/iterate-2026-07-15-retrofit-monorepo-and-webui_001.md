@@ -1,0 +1,1 @@
+Requirement->test traceability retrofit for the monorepo's own tests: high-confidence @FR tags on the integration-tests baseline + a regenerated test-traceability manifest, the full repo-wide inventory rolled up as triage, and a self-contained webui-repo retrofit handoff brief (traceability campaign TT8).

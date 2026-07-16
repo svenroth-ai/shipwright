@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-15-retrofit-monorepo-and-webui",
+  "date": "2026-07-16T18:39:51.256498Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/campaign-TT8-retrofit-monorepo-and-webui",
+  "spec": ".shipwright/planning/iterate/campaigns/2026-07-15-test-traceability-layers/sub-iterates/TT8-retrofit-monorepo-and-webui.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-15-retrofit-monorepo-and-webui"
+}

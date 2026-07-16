@@ -1,34 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-15-adopt-traceability-baseline"
+run_id: "iterate-2026-07-15-retrofit-monorepo-and-webui"
 phase: "iterate"
-reason: "iterate: adopt establishes the traceability baseline (TT7)"
-timestamp: "2026-07-16T17:42:01.630011+00:00"
+reason: "iterate: TT8 monorepo traceability retrofit + webui handoff brief"
+timestamp: "2026-07-16T18:39:55.852213+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-16 17:42:01 UTC
+> Auto-generated 2026-07-16 18:39:55 UTC
 
 ## Session Info
 
 - **Session ID**: a69abb9e-d21a-40a1-846b-13913cca2b09
-- **Timestamp**: 2026-07-16 17:42:01 UTC
-- **Reason**: iterate: adopt establishes the traceability baseline (TT7)
+- **Timestamp**: 2026-07-16 18:39:55 UTC
+- **Reason**: iterate: TT8 monorepo traceability retrofit + webui handoff brief
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-15-adopt-traceability-baseline
-- **Date**: 2026-07-16T17:01:11.473372Z
-- **Type**: feature
-- **Complexity**: medium
-- **Branch**: iterate/campaign-TT7-adopt-traceability-baseline
-- **ADR**: iterate-2026-07-15-adopt-traceability-baseline
+- **Run ID**: iterate-2026-07-15-retrofit-monorepo-and-webui
+- **Date**: 2026-07-16T18:39:51.256498Z
+- **Type**: change
+- **Complexity**: small
+- **Branch**: iterate/campaign-TT8-retrofit-monorepo-and-webui
+- **ADR**: iterate-2026-07-15-retrofit-monorepo-and-webui
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/campaigns/2026-07-15-test-traceability-layers/sub-iterates/TT8-retrofit-monorepo-and-webui.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/campaign-TT7-adopt-traceability-baseline
+- **Branch**: iterate/campaign-TT8-retrofit-monorepo-and-webui
 - **External Review Marker**: completed (external_review_state.json @ 2026-07-16T14:54:02)
 
 ### Mandatory replay on Resume
@@ -47,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/campaign-TT7-adopt-traceability-baseline
-- **Last Commit**: f5a8ecf3 feat(adopt): establish the requirement->test traceability baseline at onboarding (TT7)
+- **Branch**: iterate/campaign-TT8-retrofit-monorepo-and-webui
+- **Last Commit**: a85c22cd feat(adopt): establish the requirement->test traceability baseline at onboarding (TT7) (#385)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-b959b7d8 | grade_snapshot | — | 2026-07-16 |
+| evt-a0436498 | work_completed | iterate (TT8: retrofit this monorepo's own tests with @FR requirement->test traceability tags (integration-tests baseline; 187-candidate full-corpus inventory triaged), regenerate the compliance test-traceability manifest, and author the webui-repo retrofit handoff brief.) | 2026-07-16 |
 | evt-8290a41d | grade_snapshot | — | 2026-07-16 |
 | evt-552a7eed | grade_snapshot | — | 2026-07-16 |
 | evt-9eede3ac | work_completed | iterate (TT7: adopt Step E.17 establishes the requirement->test traceability baseline (tag convention scaffold + TT6 backfill + repo-wide skip inventory + predeclared-decision resolution + test_links wired into the adopt compliance phase).) | 2026-07-16 |
-| evt-e76cd0c5 | grade_snapshot | — | 2026-07-16 |
-| evt-7713274b | grade_snapshot | — | 2026-07-16 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 314
-- **Last iterate**: feature — TT7: adopt Step E.17 establishes the requirement->test traceability baseline (tag convention scaffold + TT6 backfill + repo-wide skip inventory + predeclared-decision resolution + test_links wired into the adopt compliance phase). (2026-07-16)
+- **Total work events**: 315
+- **Last iterate**: change — TT8: retrofit this monorepo's own tests with @FR requirement->test traceability tags (integration-tests baseline; 187-candidate full-corpus inventory triaged), regenerate the compliance test-traceability manifest, and author the webui-repo retrofit handoff brief. (2026-07-16)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

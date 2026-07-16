@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-07-16T17:01:11.550832+00:00
+Generated: 2026-07-16T18:39:51.338541+00:00
 Total commits: 1151
 
 ## Commit Distribution
@@ -360,7 +360,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-16 | adopt | establish the requirement->test traceability baseline at onboarding (TT7) | f5a8ecf3547e |
+| 2026-07-16 | adopt | establish the requirement->test traceability baseline at onboarding (TT7) (#385) | a85c22cdbad6 |
 | 2026-07-16 | traceability | shared backfill_test_links engine — map existing tests to FRs (TT6) (#384) | 0edb3dbcab46 |
 | 2026-07-16 | iterate | enforcing F11 traceability gates — removal→orphan + change→cross-layer (TT5) (#383) | 0cec0f8e15b8 |
 | 2026-07-16 | iterate | TS/JS silent-skip ban + quarantine-with-expiry hygiene gate (traceability TT4) (#382) | 2c70a4ba6653 |
