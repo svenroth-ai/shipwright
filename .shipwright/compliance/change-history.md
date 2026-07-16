@@ -1,14 +1,14 @@
 # Commit Change Log
 
 Generated: 2026-07-16T12:01:57.347888+00:00
-Total commits: 1148
+Total commits: 1149
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 331
-    "feat" : 315
+    "feat" : 316
     "chore" : 240
     "docs" : 145
     "refactor" : 68
@@ -356,10 +356,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 315 commits
+### Features (feat) — 316 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-16 | iterate | enforcing F11 traceability gates — removal→orphan + change→cross-layer (TT5) | 20ecb3f3ddd6 |
 | 2026-07-16 | iterate | TS/JS silent-skip ban + quarantine-with-expiry hygiene gate (traceability TT4) (#382) | 2c70a4ba6653 |
 | 2026-07-16 | compliance | layer-aware RTM + D-orphan/D-layer detectives + D1 hardening (traceability TT2) (#381) | 61646d3bd22f |
 | 2026-07-16 | traceability | declare required_layers per FR + adopt surface-inference (TT3) (#380) | bbb19a1e7123 |
@@ -1217,7 +1218,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1148 |
+| Total commits | 1149 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1148 |
+| Human-authored commits | 1149 |
 

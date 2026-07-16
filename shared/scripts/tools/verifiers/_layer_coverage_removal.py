@@ -157,37 +157,79 @@ def _base_linked_tests(node: dict) -> list[str]:
 
 def _removed_keys(head: dict) -> set[str]:
     """Keys whose head node is explicitly ``status: removed`` (a ``## Removed Requirements``
-    row) — the precise gate trigger. A key merely ABSENT at head is NOT a removal signal:
-    that is a spec relocation / namespace change / parse hiccup / plain deletion, and hard-
-    triggering on it would false-red (external-review MUST-FIX). A tagged test pointing at a
-    wholly-absent FR is still caught by the STANDING ``D-orphan`` detective (TT2)."""
+    row) — one of the two removal triggers (the other is a wholesale row deletion that still
+    leaves a test standing, see :func:`_deleted_row_keys`)."""
     return {
         key for key, node in (head.get("requirements") or {}).items()
         if isinstance(node, dict) and node.get("status") == "removed"
     }
 
 
+def _has_surviving_test(bnode: dict, disp: str, hx: HeadIndex, rename_map: dict[str, str]) -> bool:
+    """True when head still carries a test for ``disp`` — an orphan STILL tagged to it, or a
+    base-linked test that survives (untagged / orphaned / linked, or moved via rename_map)."""
+    if any(disp in frs for frs in hx.orphan_frs.values()):
+        return True
+    for tid in _base_linked_tests(bnode):
+        if tid in hx.untagged or tid in hx.orphan_tests or tid in hx.link_display:
+            return True
+        path, _, name = tid.partition("::")
+        moved = f"{rename_map[path]}::{name}" if path in rename_map and name else None
+        if moved and (moved in hx.untagged or moved in hx.orphan_tests or moved in hx.link_display):
+            return True
+    return False
+
+
+def _deleted_row_keys(
+    base_active: dict, head: dict, hx: HeadIndex, rename_map: dict[str, str],
+) -> set[str]:
+    """Base-active FRs whose row was DELETED OUTRIGHT (no head node at all) yet a test still
+    stands for them (MUST-FIX 3) — a false-green the ``status: removed`` trigger alone misses.
+
+    Fires only when the FR is truly gone: NOT active under any head namespace (guards against
+    a relocation/collision to another split) AND its spec file was NOT renamed (guards against
+    a spec-file move — ``rename_map``). Together these keep a genuine relocation from a
+    false-red while catching a deleted feature whose test keeps running."""
+    removed = _removed_keys(head)
+    head_active = set(_active_nodes(head))
+    out: set[str] = set()
+    for key, bnode in base_active.items():
+        if key in removed or key in head_active:
+            continue
+        disp = bnode.get("id")
+        if disp in hx.active_display_ids:                       # still active elsewhere → relocation
+            continue
+        if (bnode.get("spec_path") or "") in rename_map:        # spec file moved → relocation
+            continue
+        if _has_surviving_test(bnode, disp, hx, rename_map):
+            out.add(key)
+    return out
+
+
 def evaluate_removal(
     base: dict, head: dict, rename_map: dict[str, str] | None = None,
 ) -> RemovalVerdict:
-    """A base-active FR moved into ``## Removed Requirements`` must retire its base-linked
-    tests (deleted or retargeted to a live FR).
+    """A base-active FR that was removed (moved into ``## Removed Requirements`` OR its row
+    deleted outright while a test still stands) must retire its base-linked tests.
 
-    Trigger = ``active`` at base AND ``removed`` at head (NOT merely absent — see
-    :func:`_removed_keys`). ``rename_map`` (old→new path, from ``git diff -M``) plus a
-    new-untagged-in-surviving-file check close the rename/identifier-change + tag-strip
-    escapes. A collision display id demotes an otherwise-HARD verdict to ADVISORY (false-red
-    avoidance — the tag may cover a still-active same-id FR in another namespace).
+    Two triggers: :func:`_removed_keys` (explicit ``status: removed``) and
+    :func:`_deleted_row_keys` (a wholesale deletion with a surviving test, guarded against a
+    relocation/collision false-red). ``rename_map`` (old→new path, from ``git diff -M``) plus
+    the new-untagged escape check + the git-diff-independent orphan sweep close the
+    rename/identifier + tag-strip escapes. A collision display id demotes an otherwise-HARD
+    verdict to ADVISORY (the tag may cover a still-active same-id FR in another namespace).
     """
     rename_map = rename_map or {}
     verdict = RemovalVerdict()
     base_active = _active_nodes(base)
-    removed_keys = _removed_keys(head)
     hx = build_head_index(head)
     collisions = collision_display_ids(head)
     base_ids = _all_test_ids(base)
+    # Two triggers: an explicit `status: removed` row AND a wholesale row deletion that still
+    # leaves a test standing (MUST-FIX 3) — both must retire their base-linked tests.
+    candidate_keys = _removed_keys(head) | _deleted_row_keys(base_active, head, hx, rename_map)
     for key, bnode in base_active.items():
-        if key not in removed_keys:
+        if key not in candidate_keys:
             continue
         verdict.removed_frs.append(key)
         disp = bnode.get("id")

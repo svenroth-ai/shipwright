@@ -3,29 +3,29 @@ canon_generated: true
 run_id: "iterate-2026-07-15-removal-crosslayer-gates"
 phase: "iterate"
 reason: "iterate: F11 removal->orphan + change->cross-layer traceability gates (TT5)"
-timestamp: "2026-07-16T12:02:01.845551+00:00"
+timestamp: "2026-07-16T13:13:27.576064+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-16 12:02:01 UTC
+> Auto-generated 2026-07-16 13:13:27 UTC
 
 ## Session Info
 
 - **Session ID**: a69abb9e-d21a-40a1-846b-13913cca2b09
-- **Timestamp**: 2026-07-16 12:02:01 UTC
+- **Timestamp**: 2026-07-16 13:13:27 UTC
 - **Reason**: iterate: F11 removal->orphan + change->cross-layer traceability gates (TT5)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-15-tsjs-skip-ban
-- **Date**: 2026-07-16T09:21:01.416785Z
+- **Run ID**: iterate-2026-07-15-removal-crosslayer-gates
+- **Date**: 2026-07-16T12:02:14.824832Z
 - **Type**: feature
-- **Complexity**: small
-- **Branch**: iterate/campaign-TT4-tsjs-skip-ban
-- **ADR**: iterate-2026-07-15-tsjs-skip-ban
+- **Complexity**: medium
+- **Branch**: iterate/campaign-TT5-iterate-removal-crosslayer-gates
+- **ADR**: iterate-2026-07-15-removal-crosslayer-gates
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/campaigns/2026-07-15-test-traceability-layers/sub-iterates/TT4-tsjs-skip-ban.md
+- **Spec**: .shipwright/planning/iterate/campaigns/2026-07-15-test-traceability-layers/sub-iterates/TT5-iterate-removal-crosslayer-gates.md
 
 ## Current Iterate Progress
 
@@ -49,7 +49,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Git State
 
 - **Branch**: iterate/campaign-TT5-iterate-removal-crosslayer-gates
-- **Last Commit**: 2c70a4ba feat(iterate): TS/JS silent-skip ban + quarantine-with-expiry hygiene gate (traceability TT4) (#382)
+- **Last Commit**: 20ecb3f3 feat(iterate): enforcing F11 traceability gates — removal→orphan + change→cross-layer (TT5)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,11 +65,11 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-0f5989d5 | grade_snapshot | — | 2026-07-16 |
 | evt-ccdc986f | grade_snapshot | — | 2026-07-16 |
 | evt-13178e21 | work_completed | iterate (F11 removal->orphan + change->cross-layer traceability gates (TT5): regenerate base+head manifests + evidence index from git, never the committed artifact) | 2026-07-16 |
 | evt-5f6dfc66 | grade_snapshot | — | 2026-07-16 |
 | evt-45947aa7 | grade_snapshot | — | 2026-07-16 |
-| evt-ef5ce6c0 | work_completed | iterate (TS/JS silent-skip ban + quarantine-with-expiry hygiene gate (TT4)) | 2026-07-16 |
 
 ## Recovery
 

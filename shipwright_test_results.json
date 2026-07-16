@@ -9,8 +9,8 @@
     },
     "integration": {
       "status": "passed",
-      "passed": 9,
-      "total": 9
+      "passed": 15,
+      "total": 15
     },
     "pgtap": {
       "status": "not_run",
@@ -40,7 +40,7 @@
       "tests_run": 0,
       "evidence_path": ".shipwright/runs/iterate-2026-07-15-removal-crosslayer-gates/surface_verification.json",
       "timestamp": "2026-07-16T00:00:00+00:00",
-      "justification": "Framework tooling change: two F11 iterate-finalization verifier gates (shared/scripts/tools/verifiers/layer_coverage.py + _layer_coverage_{core,removal,regen}.py) + a shared emit-side (shared/scripts/lib/evidence_drop.py) + F5.md prose. No runnable app surface (web/cli/api) added or modified. Exercised by the CLI surface (evidence_drop.py stage/clear + verify_iterate_finalization.py) plus the pytest suites (shared 4164, iterate 476, compliance 1104) AND a REAL-git end-to-end integration suite (test_layer_coverage_gate_integration.py, 9 tests: removal blocks on a standing/renamed test, cross-layer blocks a skipped/foreign/planted-index e2e, refactor does NOT block) that composes the gate with the TT1 collector + TT-EV evidence + git-archive regeneration."
+      "justification": "Framework tooling change: two F11 iterate-finalization verifier gates (shared/scripts/tools/verifiers/layer_coverage.py + _layer_coverage_{core,removal,regen,evidence}.py) + a shared emit-side (shared/scripts/lib/evidence_drop.py) + F5.md prose. No runnable app surface (web/cli/api) added or modified. Exercised by the CLI surface (evidence_drop.py stage/clear + verify_iterate_finalization.py) plus the pytest suites (shared, iterate 476, compliance 1104) AND a REAL-git end-to-end integration+hardening suite (test_layer_coverage_gate_integration.py + test_layer_coverage_hardening.py, 15 tests: removal blocks on a standing/renamed/moved test and a wholesale row deletion, an infra gap/unresolvable base ERRORs at medium+, cross-layer blocks a skipped/foreign/stale-run e2e, a relocation + refactor do NOT block) that composes the gate with the TT1 collector + TT-EV evidence + git-archive regeneration."
     },
     "test_completeness": {
       "status": "complete",
@@ -68,7 +68,7 @@
         {
           "behavior": "AC5 — footprint within the verifiers module + run_all_checks wiring + tests; every new source/test file ≤300 LOC; bloat baseline NOT ratcheted (the emit-side lives in shared/scripts/lib and surface_verification.py was left untouched to avoid ratcheting its grandfathered 463-LOC entry)",
           "disposition": "tested",
-          "evidence": "wc -l all new files ≤300 (core 181, removal 221, regen 276, layer_coverage 181, evidence_drop 202); shipwright_bloat_baseline.json unchanged; both gates registered in run_all_checks (test_layer_coverage_core.py::test_both_gates_registered_in_run_all_checks PASSED)"
+          "evidence": "wc -l all new source ≤300 (core 191, removal 263, regen 252, evidence 87, layer_coverage 190, evidence_drop 187, _migration_check 52) + all new tests ≤300; shipwright_bloat_baseline.json unchanged (iterate_checks kept under baseline via the _migration_check extraction); both gates registered in run_all_checks (test_layer_coverage_core.py::test_both_gates_registered_in_run_all_checks PASSED)"
         },
         {
           "behavior": "cross_component composition (category:integration) — the gate composes with the TT1 collector + TT-EV execution evidence + git-diff base/head regeneration on REAL git",
@@ -85,11 +85,16 @@
           "behavior": "Security (Gemini panel) — the pre-3.12 tar-extract fallback rejects path traversal (containment, not a startswith prefix) AND symlink/hardlink/device members",
           "disposition": "tested",
           "evidence": "shared/tests/test_layer_coverage_core.py::test_safe_extract_rejects_path_traversal PASSED; _safe_extract skips non-reg/non-dir members (member.isreg()/isdir())"
+        },
+        {
+          "behavior": "Coordinator adversarial-panel (code+doubt+Codex) MUST-FIX — (1) an infra gap ERRORs/blocks at medium+ (never a green SKIP), SKIPs below; (2) evidence is built IN-MEMORY from ONLY the provenance-staged reports (no refresh_index root-fallback ingestion, no index write), and stage_reports FAILs on an un-purgeable stale report; (3) a wholesale FR-row deletion with a surviving test FAILs while a relocation is not false-red; (4) no commit^ base fallback → an unresolvable base ERRORs; removal floors to all complexities (SHOULD-6); advisory/could-not-determine are --strict-exempt (SHOULD-7)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_layer_coverage_hardening.py (8 tests: missing-commit ERROR@medium / SKIP<medium, regen-failure ERROR, no-base-ref ERROR, deleted-row FAIL, relocation not-false-red, stale-run + foreign-head evidence blocked) PASSED; test_layer_coverage_core.py::test_fresh_evidence_ignores_repo_root_report_fallback + ::test_fresh_evidence_builds_from_reports_ignoring_planted_index PASSED; test_evidence_drop stage/clear raise-on-failure"
         }
       ],
       "counts": {
-        "testable": 8,
-        "tested": 8,
+        "testable": 9,
+        "tested": 9,
         "untestable": 0,
         "untested_testable": 0
       },

@@ -9,9 +9,14 @@
 
 Both are RECOMPUTED from git + freshly-regenerated base/head manifests
 (``_layer_coverage_regen``), never from a self-reported ledger or the committed artifact —
-the same non-dodgeable posture as ``check_integration_coverage``. Both fire medium+ only
-and require ``--commit``; below that, or when git/collector infra is unavailable, they SKIP
-with a reason (an infra gap must never masquerade as a green gate).
+the same non-dodgeable posture as ``check_integration_coverage``.
+
+FAIL-CLOSED on infra failure (MUST-FIX 1): for a **medium/large** iterate, a missing
+``--commit``, an unresolvable base ref, a failed regeneration / collector load, or a
+verifier exception is an **ERROR (block)**, never a green SKIP — a gate that cannot run on
+an iterate it is meant to enforce must FAIL. Only **below medium** does an infra gap SKIP.
+``removal_coverage`` runs at **all** complexities (SHOULD-FIX 6 — a removal is never
+trivial); ``cross_layer_coverage`` runs at **medium+** only.
 
 FAIL-CLOSED reasoning (why these cannot false-green):
 * removal: the head manifest is regenerated from the HEAD checkout, so a stale test that
@@ -39,6 +44,7 @@ from ._layer_coverage_core import CrossLayerVerdict, evaluate_cross_layer  # noq
 from ._layer_coverage_regen import regenerate_base_head  # noqa: E402
 from ._layer_coverage_removal import RemovalVerdict, evaluate_removal  # noqa: E402
 from .common import CheckResult, Severity  # noqa: E402
+from .git_helpers import _git_available  # noqa: E402
 
 _REMOVAL_NAME = "removal coverage (removed FR → orphaned tests)"
 _CROSS_LAYER_NAME = "cross-layer coverage (behaviour change → executed-passing layers)"
@@ -53,14 +59,18 @@ def _skip(name: str, detail: str) -> CheckResult:
     return CheckResult(name, True, detail, severity=Severity.SKIPPED.value)
 
 
-def _gate_prelude(name: str, project_root: Path, run_id: str, commit_hash: str) -> CheckResult | None:
-    """Shared medium+/``--commit`` gate. Returns a SKIP CheckResult, or None to proceed."""
-    complexity = _complexity(project_root, run_id)
-    if complexity not in ("medium", "large"):
-        return _skip(name, f"skipped (complexity={complexity or 'unknown'})")
-    if not commit_hash:
-        return _skip(name, "skipped (no --commit supplied)")
-    return None
+def _is_enforcing(complexity: str) -> bool:
+    return complexity in ("medium", "large")
+
+
+def _infra_result(name: str, complexity: str, detail: str) -> CheckResult:
+    """A regen infra FAILURE on a git repo (no commit / unresolvable base / collector or
+    archive failure / exception). Fail-CLOSED at medium+ (ERROR — block), a legitimate SKIP
+    below medium. Distinct from a non-git project, which is an inapplicable context, not a
+    failure — that always SKIPs (git-diff enforcement does not apply)."""
+    if _is_enforcing(complexity):
+        return CheckResult(name, False, f"cannot enforce this medium+ iterate: {detail}")
+    return _skip(name, f"skipped (complexity={complexity or 'unknown'}; {detail})")
 
 
 def _removal_suggest(display: str) -> str:
@@ -71,20 +81,23 @@ def _removal_suggest(display: str) -> str:
 
 
 def check_removal_coverage(project_root: Path, run_id: str, commit_hash: str = "") -> CheckResult:
-    """Removal → orphan gate. Regenerates base+head (R3) and requires every base-linked
-    test of a newly non-active FR to be deleted or retargeted."""
+    """Removal → orphan gate. Runs at ALL complexities (a removal is never trivial, SHOULD-FIX
+    6). Regenerates base+head (R3); an infra gap is ERROR at medium+, SKIP below (MUST-FIX 1);
+    a real un-retired test is a HARD FAIL at any complexity."""
     name = _REMOVAL_NAME
-    prelude = _gate_prelude(name, project_root, run_id, commit_hash)
-    if prelude is not None:
-        return prelude
+    complexity = _complexity(project_root, run_id)
+    if not commit_hash:
+        return _infra_result(name, complexity, "no --commit supplied")
+    if not _git_available(project_root):
+        return _skip(name, "skipped (not a git repo — git-diff enforcement N/A)")
     try:
         regen = regenerate_base_head(project_root, commit_hash, with_evidence=False)
         if regen is None:
-            return _skip(name, "skipped (git unavailable / no merge-base / collector unavailable)")
+            return _infra_result(name, complexity, "git unavailable / no base ref / collector unavailable")
         base, head, renames = regen
         verdict = evaluate_removal(base, head, renames)
-    except Exception as exc:  # noqa: BLE001 — infra error degrades to SKIP, never crashes F11
-        return _skip(name, f"skipped (regeneration error: {type(exc).__name__})")
+    except Exception as exc:  # noqa: BLE001 — surface as ERROR at medium+, never a silent crash
+        return _infra_result(name, complexity, f"regeneration error: {type(exc).__name__}")
     return _removal_result(name, verdict)
 
 
@@ -109,7 +122,7 @@ def _removal_result(name: str, verdict: RemovalVerdict) -> CheckResult:
             name, False,
             f"{len(verdict.removed_frs)} removed FR(s); {len(verdict.advisory)} base-linked "
             f"test(s) are collision-ambiguous (deferred to a namespaced tag): " + "; ".join(ev),
-            severity=Severity.WARNING.value,
+            severity=Severity.WARNING.value, strict_exempt=True,
         )
     return CheckResult(
         name, True,
@@ -121,19 +134,23 @@ def check_cross_layer_coverage(project_root: Path, run_id: str, commit_hash: str
     """Change → cross-layer gate. Regenerates base+head with THIS run's execution evidence
     and requires each behaviour-changed FR to be executed-passing at every required layer."""
     name = _CROSS_LAYER_NAME
-    prelude = _gate_prelude(name, project_root, run_id, commit_hash)
-    if prelude is not None:
-        return prelude
+    complexity = _complexity(project_root, run_id)
+    if not _is_enforcing(complexity):
+        return _skip(name, f"skipped (complexity={complexity or 'unknown'})")
+    if not commit_hash:
+        return _infra_result(name, complexity, "no --commit supplied")
+    if not _git_available(project_root):
+        return _skip(name, "skipped (not a git repo — git-diff enforcement N/A)")
     try:
         regen = regenerate_base_head(
             project_root, commit_hash, with_evidence=True, run_id=run_id,
         )
         if regen is None:
-            return _skip(name, "skipped (git unavailable / no merge-base / collector unavailable)")
+            return _infra_result(name, complexity, "git unavailable / no base ref / collector unavailable")
         base, head, _renames = regen
         verdict = evaluate_cross_layer(base, head)
-    except Exception as exc:  # noqa: BLE001 — infra error degrades to SKIP, never crashes F11
-        return _skip(name, f"skipped (regeneration error: {type(exc).__name__})")
+    except Exception as exc:  # noqa: BLE001 — surface as ERROR at medium+, never a silent crash
+        return _infra_result(name, complexity, f"regeneration error: {type(exc).__name__}")
     return _cross_layer_result(name, verdict)
 
 
@@ -141,9 +158,10 @@ def _cross_layer_result(name: str, verdict: CrossLayerVerdict) -> CheckResult:
     if verdict.could_not_determine:
         return CheckResult(
             name, False,
-            "spec changed but no FR→behaviour mapping could be determined "
-            "(no parseable active FR) — could-not-determine (not a silent pass)",
-            severity=Severity.WARNING.value,
+            "spec changed but no FR-row-level behaviour change was determinable (an AC-prose "
+            "edit under an unchanged FR row, or no parseable active FR) — could-not-determine, "
+            "a visible WARN for a human to adjudicate, never a silent pass",
+            severity=Severity.WARNING.value, strict_exempt=True,
         )
     if not verdict.changed_keys:
         return CheckResult(name, True, "no behaviour-changed FR (no spec/AC/FR delta)")
@@ -168,7 +186,7 @@ def _cross_layer_result(name: str, verdict: CrossLayerVerdict) -> CheckResult:
             f"{len(verdict.advisory)} required layer(s) of behaviour-changed FR(s) lack an "
             f"executed-passing test but are legacy/collision (advisory, not blocking): "
             + "; ".join(gaps),
-            severity=Severity.WARNING.value,
+            severity=Severity.WARNING.value, strict_exempt=True,
         )
     return CheckResult(
         name, True,

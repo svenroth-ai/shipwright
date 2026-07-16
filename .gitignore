@@ -204,6 +204,11 @@ Spec/
 # leaked in every adopted repo).
 /.shipwright/compliance/audit-report.md
 /.shipwright/compliance/audit-report.json
+# Execution-evidence emit-side drops (traceability TT5): raw runner reports staged at
+# F0.5/F5 + the normalized index the collector rebuilds. Transient per-run inputs to the
+# cross-layer gate (which reads them in-memory), never durable committed artifacts.
+/.shipwright/compliance/evidence/
+/.shipwright/compliance/test-evidence-index.json
 # External-review gate markers under planning/iterate/ are TRANSIENT run-scoped
 # state (mark-review-state.py Branch A/B/C), not durable audit evidence: the RTM
 # (rtm.collect_external_review_states) explicitly SKIPS planning/iterate/ and only

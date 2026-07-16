@@ -75,7 +75,12 @@ def main() -> None:
     print(format_report("iterate finalization", results))
 
     errors = sum(1 for r in results if r.is_failure and r.severity == Severity.ERROR.value)
-    warnings = sum(1 for r in results if r.is_failure and r.severity == Severity.WARNING.value)
+    # ``strict_exempt`` WARNINGs (advisory collision/legacy + could-not-determine) are always
+    # advisory — ``--strict`` must not promote them (else a prose edit / legacy FR mass-false-reds).
+    warnings = sum(
+        1 for r in results
+        if r.is_failure and r.severity == Severity.WARNING.value and not getattr(r, "strict_exempt", False)
+    )
 
     if errors > 0 or (args.strict and warnings > 0):
         sys.exit(1)

@@ -65,22 +65,17 @@ class Severity(str, Enum):
 
 @dataclass
 class CheckResult:
-    """One verifier finding.
-
-    ``ok`` is tri-state:
-
-    - ``True``  — check ran and passed
-    - ``False`` — check ran and failed (severity decides whether it blocks)
-    - ``None``  — check was deliberately skipped (severity ``SKIPPED``)
-
-    The ``None`` case exists so ``verify_phase.py --phase all`` can
-    surface "runtime stub" without counting it as pass OR fail.
-    """
+    """One verifier finding. ``ok`` is tri-state: True=passed, False=failed (severity
+    decides blocking), None=deliberately skipped (severity ``SKIPPED``) — the None case lets
+    ``verify_phase.py --phase all`` surface a runtime stub without counting it pass OR fail."""
 
     name: str
     ok: bool | None
     detail: str = ""
     severity: str = Severity.ERROR.value
+    # A WARNING that ``--strict`` must NOT promote to a hard failure (traceability gates set it
+    # on advisory collision/legacy + could-not-determine findings, so strict F11 can't mass-false-red).
+    strict_exempt: bool = False
 
     @property
     def is_skipped(self) -> bool:

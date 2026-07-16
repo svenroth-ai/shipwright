@@ -49,21 +49,19 @@ def clear_evidence_reports(project_root: Path) -> None:
     """Remove the runner reports, the provenance sidecar, AND the normalized evidence index
     before a run.
 
-    Clearing the reports alone is not enough (external-review MUST-FIX): the gate consumes
-    the SEPARATELY-persisted ``test-evidence-index.json``, so a stale index from a prior run
-    could be trusted while a fresh provenance sidecar sits beside it. Deleting the index too
-    means that if ``refresh_index`` does not run (or fails) this run, the consumer loads
-    EMPTY evidence (fail-closed → MISSING), never a prior run's passes. Missing files ignored.
+    Clearing the reports alone is not enough (external-review MUST-FIX): the gate reads the
+    SEPARATELY-persisted ``test-evidence-index.json``, so a stale index/report from a prior run
+    could be trusted beside a fresh provenance sidecar. A removal that FAILS is fatal, not
+    swallowed (MUST-FIX 2): if an old report/index cannot be purged we must NOT proceed to
+    stage — a stale artifact left in place is a false-green vector. A genuinely-absent file is
+    a no-op; only a real ``OSError`` (lock/permission) propagates.
     """
     d = evidence_dir(project_root)
     for target in [d / name for name in list(REPORT_NAMES.values()) + [_PROVENANCE_NAME]] + [
         _index_path(project_root)
     ]:
-        try:
-            if target.is_file():
-                target.unlink()
-        except OSError:
-            pass
+        if target.is_file():
+            target.unlink()  # raise on failure — a stale artifact must never survive a clear
 
 
 def stage_reports(
@@ -94,10 +92,7 @@ def stage_reports(
         if not src_path.is_file():
             continue
         dest = d / REPORT_NAMES[key]
-        try:
-            shutil.copyfile(src_path, dest)
-        except OSError:
-            continue
+        shutil.copyfile(src_path, dest)  # raise on failure — provenance must not claim an unstaged report
         staged[key] = {
             "name": REPORT_NAMES[key],
             "mtime": datetime.fromtimestamp(

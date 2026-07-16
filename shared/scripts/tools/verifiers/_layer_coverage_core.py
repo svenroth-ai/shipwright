@@ -156,6 +156,15 @@ def evaluate_cross_layer(base: dict, head: dict) -> CrossLayerVerdict:
         priority = node.get("priority", "Must")
         coverage = node.get("coverage") or {}
         ambiguous = disp in collisions
+        # DOCUMENTED DEFERRAL (MUST-ADDRESS 5 rebuttal): the frozen ``@FR`` grammar is
+        # UN-namespaced, so a passing test tagged ``@FR-XX.YY`` credits this FR regardless of
+        # the test's split path — in a MULTI-namespace repo a test under split B could satisfy
+        # split A's same-id FR when only A is active (no collision → the guard above never
+        # fires). A clean path→split guard is not feasible for the monorepo layout (tests live
+        # in shared/tests, plugins/*/tests — never co-located with a spec split), and the
+        # pre-rollout monorepo is CONFIRMED single-namespace (only ``01-adopted``, zero
+        # cross-namespace id collisions), so it is unaffected. Per-split tag resolution is the
+        # carried-forward collision remedy (same track as TT2 doubt #3).
         for layer in node.get("required_layers") or []:
             if coverage.get(layer) == "ok" and not ambiguous:
                 continue

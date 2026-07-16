@@ -34,8 +34,7 @@ _SHARED_SCRIPTS = Path(__file__).resolve().parents[2]
 if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 
-from lib import evidence_drop  # noqa: E402
-
+from ._layer_coverage_evidence import fresh_evidence  # noqa: E402
 from .git_helpers import _git_available, _run_git  # noqa: E402
 
 _COLLECTOR: tuple | None = None
@@ -111,12 +110,12 @@ def _rename_map(project_root: Path, base_sha: str, head_sha: str) -> dict[str, s
 def _merge_base(project_root: Path, commit: str) -> str:
     """Real branch-base for the iterate branch: merge-base with the default branch.
 
-    Resolves against ``origin/HEAD`` → ``origin/main`` → a LOCAL ``main``/``master`` so an
-    offline multi-commit branch still gets its true branch point (external-review MUST-FIX —
-    the first-parent short-cut would compare only the tip commit and miss a removal/change
-    made in an earlier branch commit). ``commit^`` is the last-resort ONLY for a degenerate
-    repo with no discoverable default branch (e.g. a single-branch fixture), where it equals
-    the base for a single-commit diff."""
+    Resolves against ``origin/HEAD`` → ``origin/main``/``master`` → a LOCAL ``main``/``master``.
+    There is NO ``commit^`` fallback (external-review MUST-FIX 4): the first-parent short-cut
+    would compare only the tip commit and miss a removal/change made in an earlier commit of a
+    multi-commit branch — a false-green. When no default branch resolves a real merge-base we
+    return ``""`` so the enforcing gate treats it as an infra failure and BLOCKS (fail-closed)
+    rather than silently narrowing the diff."""
     candidates: list[str] = []
     rc, ref, _ = _run_git(project_root, "rev-parse", "--abbrev-ref", "origin/HEAD")
     if rc == 0 and ref.strip().startswith("origin/"):
@@ -126,8 +125,7 @@ def _merge_base(project_root: Path, commit: str) -> str:
         rc, mb, _ = _run_git(project_root, "merge-base", base_ref, commit)
         if rc == 0 and mb.strip() and mb.strip() != commit:
             return mb.strip()
-    rc, parent, _ = _run_git(project_root, "rev-parse", f"{commit}^")
-    return parent.strip() if rc == 0 and parent.strip() else ""
+    return ""
 
 
 def _safe_extract(tar: tarfile.TarFile, dest: Path) -> None:
@@ -186,49 +184,34 @@ def _build(test_links, io, root: Path, evidence: dict, source_commit: str) -> di
     )
 
 
-def _fresh_evidence(project_root: Path, run_id: str, commit_hash: str, evio) -> dict:
-    """This run's per-test evidence, fail-closed on freshness AND **regenerated** from the
-    staged raw reports so a stale/planted index can never credit a pass (external-review
-    MUST-FIX — the R3 "regenerate, don't trust" rule applied to evidence, not just manifests):
+# Process-level base cache (SHOULD-FIX 8): the evidence-INDEPENDENT base manifest + rename map
+# are identical for both gates on the same commit, so build them ONCE per (root, commit) rather
+# than re-archiving the base for each. Small dicts keyed by (root, commit); a fresh verify
+# subprocess starts empty. Cleared by tests via ``clear_regen_cache``.
+_BASE_CACHE: dict[tuple[str, str], tuple[dict, dict[str, str]] | None] = {}
 
-    1. the emit-side provenance sidecar's ``run_id`` matches this run, AND
-    2. the provenance's recorded ``head_commit`` is present AND (when a commit is verified) is
-       an ANCESTOR of / equal to it — so foreign/diverged-branch evidence never credits THIS
-       head (the sidecar is stamped at F0.5, before the F6 commit, so it names an ancestor),
-       THEN
-    3. the evidence index is REBUILT from the raw reports the emit-side staged (which it
-       cleared the dir before writing) via the TT-EV producer — the verifier does not trust
-       the persisted ``test-evidence-index.json`` at all, so a restored/hand-edited index with
-       old passing results is overwritten by content actually parsed from this run's reports.
 
-    Any proof missing / no staged reports → EMPTY evidence → every layer ``MISSING``.
-    """
-    if not evidence_drop.evidence_is_fresh(project_root, run_id):
-        return {}
-    prov = evidence_drop.read_provenance(project_root) or {}
-    prov_head = str(prov.get("head_commit") or "")
-    if not prov_head:
-        return {}
-    if commit_hash:
-        rc, _, _ = _run_git(project_root, "merge-base", "--is-ancestor", prov_head, commit_hash)
-        if rc != 0:  # not an ancestor (foreign/diverged evidence) → fail-closed
-            return {}
-    # Regenerate the index from the staged reports (R3). refresh_index reads ONLY the
-    # conventional evidence-dir reports (which stage_reports cleared + repopulated this run)
-    # and overwrites the index, so its results are provably this run's report content.
-    try:
-        if evio.refresh_index(project_root) is None:  # no staged reports found
-            return {}
-    except Exception:  # noqa: BLE001 — a broken producer degrades to empty (fail-closed)
-        return {}
-    import json  # noqa: PLC0415
-    index_path = Path(project_root) / ".shipwright" / "compliance" / "test-evidence-index.json"
-    try:
-        index = json.loads(index_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError, ValueError):
-        return {}
-    results = index.get("results") if isinstance(index, dict) else None
-    return results if isinstance(results, dict) else {}
+def clear_regen_cache() -> None:
+    _BASE_CACHE.clear()
+
+
+def _base_and_renames(project_root: Path, commit_hash: str, test_links, io):
+    key = (str(project_root), commit_hash)
+    if key in _BASE_CACHE:
+        return _BASE_CACHE[key]
+    result = None
+    base_sha = _merge_base(project_root, commit_hash)
+    if base_sha:
+        try:
+            with tempfile.TemporaryDirectory(prefix="sw-trace-base-") as bd:
+                base_root = Path(bd)
+                if _archive_tree(project_root, base_sha, base_root):
+                    base = _build(test_links, io, base_root, {}, base_sha)
+                    result = (base, _rename_map(project_root, base_sha, commit_hash))
+        except (OSError, ValueError):
+            result = None
+    _BASE_CACHE[key] = result
+    return result
 
 
 def regenerate_base_head(
@@ -239,38 +222,31 @@ def regenerate_base_head(
     run_id: str = "",
 ) -> tuple[dict, dict, dict[str, str]] | None:
     """Regenerate ``(base_manifest, head_manifest, rename_map)`` from the base + head
-    checkouts (R3).
-
-    ``with_evidence`` decides whether the HEAD manifest carries this run's execution
-    evidence (cross-layer gate needs it; the removal gate does not — linkage is
-    evidence-independent). ``rename_map`` (old→new path from ``git diff -M``) lets the
-    removal gate follow a renamed test. Returns ``None`` when git is unavailable, no
-    merge-base resolves, the collector cannot be loaded, or an archive fails — every such
-    case is an infrastructure gap the caller renders as a SKIP, never a silent pass/crash.
-    """
+    checkouts (R3). The base manifest + rename map are memoized per (root, commit) and shared
+    between the two gates (SHOULD-FIX 8); only the HEAD manifest is rebuilt per call so the
+    cross-layer gate can fold in this run's evidence (``with_evidence``). Returns ``None`` when
+    git is unavailable, no base ref resolves, the collector cannot load, or an archive fails —
+    every such case is an infrastructure gap the caller renders as ERROR (medium+) / SKIP."""
     if not commit_hash or not _git_available(project_root):
-        return None
-    base_sha = _merge_base(project_root, commit_hash)
-    if not base_sha:
         return None
     loaded = _load_collector()
     if loaded is None:
         return None
     test_links, io, evio = loaded
-    evidence = _fresh_evidence(project_root, run_id, commit_hash, evio) if with_evidence else {}
+    br = _base_and_renames(project_root, commit_hash, test_links, io)
+    if br is None:
+        return None
+    base, rename_map = br
+    evidence = fresh_evidence(project_root, run_id, commit_hash, evio) if with_evidence else {}
     try:
-        with tempfile.TemporaryDirectory(prefix="sw-trace-base-") as bd, \
-                tempfile.TemporaryDirectory(prefix="sw-trace-head-") as hd:
-            base_root, head_root = Path(bd), Path(hd)
-            if not _archive_tree(project_root, base_sha, base_root):
-                return None
+        with tempfile.TemporaryDirectory(prefix="sw-trace-head-") as hd:
+            head_root = Path(hd)
             if not _archive_tree(project_root, commit_hash, head_root):
                 return None
-            base = _build(test_links, io, base_root, {}, base_sha)
             head = _build(test_links, io, head_root, evidence, commit_hash)
     except (OSError, ValueError):
         return None
-    return base, head, _rename_map(project_root, base_sha, commit_hash)
+    return base, head, rename_map
 
 
 __all__ = ["regenerate_base_head", "_merge_base", "_load_collector"]

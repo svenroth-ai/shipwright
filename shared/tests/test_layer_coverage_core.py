@@ -187,11 +187,10 @@ def _stage_junit(root: Path, run_id: str, body: str) -> None:
     evidence_drop.stage_reports(root, run_id=run_id, head_commit="deadbeef", junit=junit)
 
 
-def test_fresh_evidence_regenerates_from_reports_ignoring_planted_index(tmp_path):
-    # External-review MUST-FIX (R3 for evidence): the gate REBUILDS the index from the staged
-    # raw reports and does not trust a persisted one — a planted stale PASS is overwritten by
-    # the content actually parsed from this run's report.
-    from tools.verifiers._layer_coverage_regen import _fresh_evidence  # noqa: PLC0415
+def test_fresh_evidence_builds_from_reports_ignoring_planted_index(tmp_path):
+    # MUST-FIX 2 (R3 for evidence): the gate BUILDS the index in-memory from the staged raw
+    # report and NEVER reads a persisted one — a planted stale PASS is not even consulted.
+    from tools.verifiers._layer_coverage_evidence import fresh_evidence  # noqa: PLC0415
 
     _stage_junit(tmp_path, "r", _JUNIT_ONE)
     idx = tmp_path / ".shipwright" / "compliance" / "test-evidence-index.json"
@@ -199,16 +198,33 @@ def test_fresh_evidence_regenerates_from_reports_ignoring_planted_index(tmp_path
         "schema_version": 2, "source_reports": [".shipwright/compliance/evidence/junit.xml"],
         "results": {"stale::x": {"status": "enabled", "executed": "pass"}},
     }), encoding="utf-8")
-    ev = _fresh_evidence(tmp_path, "r", "", _evio())
+    ev = fresh_evidence(tmp_path, "r", "", _evio())
     assert "tests/x.py::test_a" in ev and "stale::x" not in ev
+
+
+def test_fresh_evidence_ignores_repo_root_report_fallback(tmp_path):
+    # MUST-FIX 2: only the provenance-STAGED report under .shipwright/compliance/evidence/ is
+    # read — a prior run's repo-ROOT test-results.json (which refresh_index would ingest) is
+    # NOT consulted, so its passing e2e can never leak in.
+    from tools.verifiers._layer_coverage_evidence import fresh_evidence  # noqa: PLC0415
+
+    _stage_junit(tmp_path, "r", _JUNIT_ONE)  # stages junit-only (no e2e)
+    (tmp_path / "test-results.json").write_text(json.dumps({  # stale root playwright report
+        "suites": [{"title": "e.spec.ts", "file": "e2e/e.spec.ts", "specs": [
+            {"title": "leaks", "ok": True,
+             "tests": [{"status": "expected", "results": [{"status": "passed"}]}]}]}],
+    }), encoding="utf-8")
+    ev = fresh_evidence(tmp_path, "r", "", _evio())
+    assert "tests/x.py::test_a" in ev
+    assert not any("e2e/e.spec.ts" in k for k in ev)  # root fallback NOT ingested
 
 
 def test_fresh_evidence_empty_when_no_report_staged(tmp_path):
     from lib import evidence_drop  # noqa: PLC0415
-    from tools.verifiers._layer_coverage_regen import _fresh_evidence  # noqa: PLC0415
+    from tools.verifiers._layer_coverage_evidence import fresh_evidence  # noqa: PLC0415
 
     evidence_drop.stage_reports(tmp_path, run_id="r", head_commit="x")  # provenance, no reports
-    assert _fresh_evidence(tmp_path, "r", "", _evio()) == {}
+    assert fresh_evidence(tmp_path, "r", "", _evio()) == {}
 
 
 def test_behavior_changed_keys_new_fr_and_layer_change():
