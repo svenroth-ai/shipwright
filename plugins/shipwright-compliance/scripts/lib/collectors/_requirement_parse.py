@@ -17,6 +17,13 @@ The header row's column names drive the mapping (``Layers`` / ``Description`` /
 ``Layers`` column → ``required_layers`` provenance (Spec D2 / R4):
 
 * present + non-empty  → ``required_layers_source = "explicit"``
+* present + an ``(inferred)`` marker (adopt-generated, surface-derived — not
+  author-chosen) → ``inferred_legacy`` so an adopted brownfield FR stays advisory
+  (Spec §9), never collapsing into the ``explicit`` hard-gate regime
+* present (explicitly headed) + non-empty but ZERO valid canonical layers, no marker
+  (author typo/synonym, e.g. ``int, db``) → kept ``explicit`` + recorded in the
+  ``invalid_layers`` out-accumulator; NOT demoted to legacy (that would escape the
+  post-rollout hard gate and silently discard the author's intent — §11-R4 collapse)
 * absent/empty + a UI/flow signal in the title → ``inferred_legacy`` → ``(e2e,)``
 * absent/empty + no signal → ``defaulted_legacy`` → ``(unit,)`` (every FR ⇒ unit)
 
@@ -46,6 +53,15 @@ _UI_FLOW_PHRASES: tuple[str, ...] = ("sign in", "sign-in", "log in")
 _TITLE_COLS = ("description", "name", "text", "requirement", "title")
 _PRIORITY_COLS = ("priority",)
 _LAYERS_COLS = ("layers", "layer")
+
+# An adopt-generated Layers cell carries the EXACT `(inferred)` marker (the only
+# token `artifact_writer` ever emits): its layers were derived from the detected
+# surface, not author-chosen, so it reads as advisory (`inferred_legacy`) rather
+# than `explicit` — else a brownfield repo's FRs collapse into the hard-gate regime
+# and drown in MISSING findings (Spec §9 / R4). Matched NARROWLY to `(inferred)`
+# only: a post-rollout author writing e.g. `unit, e2e (auto)` must NOT be silently
+# downgraded out of the hard gate — a plain author cell carries no marker → `explicit`.
+_INFERRED_MARKER_RE = re.compile(r"\(\s*inferred\s*\)", re.IGNORECASE)
 
 
 def _load_model():
@@ -97,8 +113,19 @@ def _infer_layers(title: str) -> tuple[tuple, str]:
     return ("unit",), "defaulted_legacy"
 
 
-def parse_requirements(content: str, *, namespace: str, spec_path: str) -> list:
-    """Parse every FR row (active + removed) into ``Requirement`` objects."""
+def parse_requirements(
+    content: str, *, namespace: str, spec_path: str,
+    invalid_layers: list | None = None,
+) -> list:
+    """Parse every FR row (active + removed) into ``Requirement`` objects.
+
+    ``invalid_layers`` (optional out-accumulator) collects diagnostics for FR rows
+    whose **explicitly-headed** ``Layers`` cell is non-empty but resolves to ZERO
+    valid canonical layers (an author typo/synonym, e.g. ``int, db``). Such a cell
+    is kept ``explicit`` (so the post-rollout hard gate still fires) and its raw text
+    is recorded — it is NOT demoted to advisory legacy, which would both hide it from
+    the gate and silently discard the author's intent (mirror of TT1 ``invalid_tags``).
+    """
     rm = _load_model()
     reqs: list = []
     colmap: dict[str, int] | None = None
@@ -135,13 +162,34 @@ def parse_requirements(content: str, *, namespace: str, spec_path: str) -> list:
             # adopt 5-col Description cell is never mistaken for layers.
             has_layers = any(n in colmap for n in _LAYERS_COLS)
             layers_cell = _pick(cells, colmap, _LAYERS_COLS, len(cells)) if has_layers else ""
+            layers_from_named_col = has_layers
         else:
-            # No header: fall back to the positional 4-col traceability shape.
+            # No header: fall back to the positional 4-col traceability shape. This
+            # cell is AMBIGUOUS (in a headerless adopt row cells[3] is the Description),
+            # so a non-canonical value here is NOT treated as an invalid Layers typo.
             layers_cell = cells[3] if len(cells) >= 4 else ""
+            layers_from_named_col = False
+        raw_cell = layers_cell.strip()
+        has_marker = bool(_INFERRED_MARKER_RE.search(layers_cell))
         layers = _parse_layers(layers_cell, rm)
         if layers:
+            source = "inferred_legacy" if has_marker else "explicit"
+        elif has_marker:
+            # adopt-inferred cell that resolved to no valid layers → still advisory.
+            source = "inferred_legacy"
+        elif raw_cell and layers_from_named_col:
+            # A non-empty, explicitly-headed Layers cell with zero valid canonical
+            # tokens (author typo/synonym) → keep `explicit` so D-layer's post-rollout
+            # hard gate still fires, and record the raw for a diagnostic. Do NOT demote
+            # to legacy (that is the §11-R4 collapse: an escape + silent intent loss).
             source = "explicit"
+            if invalid_layers is not None:
+                invalid_layers.append({
+                    "fr": fr_id, "spec_path": spec_path,
+                    "raw": raw_cell, "reason": "no_canonical_layer",
+                })
         else:
+            # Empty cell (or an ambiguous positional cell) → legacy inference.
             layers, source = _infer_layers(title)
 
         reqs.append(rm.Requirement(

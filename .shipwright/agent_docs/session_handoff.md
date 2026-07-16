@@ -1,36 +1,36 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-15-execution-evidence"
+run_id: "iterate-2026-07-15-required-layers-on-frs"
 phase: "iterate"
-reason: "iterate: per-test execution-evidence ingestion -> manifest status/executed (TT-EV) round-2 hardening"
-timestamp: "2026-07-15T23:49:01.412371+00:00"
+reason: "iterate: required_layers on FRs (TT3)"
+timestamp: "2026-07-16T06:19:26.145657+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-15 23:49:01 UTC
+> Auto-generated 2026-07-16 06:19:26 UTC
 
 ## Session Info
 
 - **Session ID**: a69abb9e-d21a-40a1-846b-13913cca2b09
-- **Timestamp**: 2026-07-15 23:49:01 UTC
-- **Reason**: iterate: per-test execution-evidence ingestion -> manifest status/executed (TT-EV) round-2 hardening
+- **Timestamp**: 2026-07-16 06:19:26 UTC
+- **Reason**: iterate: required_layers on FRs (TT3)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-15-execution-evidence
-- **Date**: 2026-07-15T23:14:36.509396Z
+- **Run ID**: iterate-2026-07-15-required-layers-on-frs
+- **Date**: 2026-07-16T05:37:03.123238Z
 - **Type**: feature
-- **Complexity**: small
-- **Branch**: iterate/campaign-TT-EV-execution-evidence
-- **ADR**: iterate-2026-07-15-execution-evidence
+- **Complexity**: medium
+- **Branch**: iterate/campaign-TT3-required-layers-on-frs
+- **ADR**: iterate-2026-07-15-required-layers-on-frs
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/campaigns/2026-07-15-test-traceability-layers/sub-iterates/TT-EV-execution-evidence.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-15-required-layers-on-frs.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/campaign-TT-EV-execution-evidence
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-15T23:09:13)
+- **Branch**: iterate/campaign-TT3-required-layers-on-frs
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-16T05:34:21)
 
 ### Mandatory replay on Resume
 
@@ -48,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/campaign-TT-EV-execution-evidence
-- **Last Commit**: e92cb3ca feat(compliance): per-test execution-evidence reader -> execution-backed coverage (TT-EV)
+- **Branch**: iterate/campaign-TT3-required-layers-on-frs
+- **Last Commit**: 73baad07 feat(traceability): declare required_layers per FR + adopt surface-inference (TT3)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-52bbc0b4 | grade_snapshot | — | 2026-07-16 |
+| evt-05a832b4 | grade_snapshot | — | 2026-07-16 |
+| evt-34535c2f | work_completed | iterate (FR Layers column + adopt surface-inference + (inferred) advisory-provenance marker (TT3)) | 2026-07-16 |
 | evt-c055f554 | grade_snapshot | — | 2026-07-15 |
 | evt-efd3417b | grade_snapshot | — | 2026-07-15 |
-| evt-58cd05dd | work_completed | iterate (Per-test execution-evidence reader (JUnit/Playwright/Vitest) -> schema-validated fail-closed evidence index joined into the traceability manifest so coverage is execution-backed (R1/G5): enabled+pass=ok, skipped/missing/fail=MISSING; plus an expiring-waiver primitive and a frozen closed-vocab boundary) | 2026-07-15 |
-| evt-ecbfdbdd | grade_snapshot | — | 2026-07-15 |
-| evt-3823741d | work_completed | iterate (TT1: @FR-XX.YY tag convention + test_links compliance collector + test-traceability.json manifest (schema v2), the backward test->FR link + per-layer coverage join) | 2026-07-15 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 308
-- **Last iterate**: feature — Per-test execution-evidence reader (JUnit/Playwright/Vitest) -> schema-validated fail-closed evidence index joined into the traceability manifest so coverage is execution-backed (R1/G5): enabled+pass=ok, skipped/missing/fail=MISSING; plus an expiring-waiver primitive and a frozen closed-vocab boundary (2026-07-15)
+- **Total work events**: 309
+- **Last iterate**: feature — FR Layers column + adopt surface-inference + (inferred) advisory-provenance marker (TT3) (2026-07-16)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

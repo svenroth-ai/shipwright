@@ -1,9 +1,0 @@
-{
-  "run_id": "iterate-2026-07-06-shared-cache-selfheal",
-  "date": "2026-07-06T10:21:55.019556Z",
-  "type": "change",
-  "complexity": "medium",
-  "branch": "iterate/shared-cache-selfheal",
-  "tests_passed": true,
-  "adr": "iterate-2026-07-06-shared-cache-selfheal"
-}

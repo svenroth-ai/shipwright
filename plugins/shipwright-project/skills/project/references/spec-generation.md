@@ -107,12 +107,26 @@ Rules:
 
 ## 2. Functional Requirements
 
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| FR-{NN}.01 | The system SHALL ... | Must |
-| FR-{NN}.02 | The system SHALL ... | Must |
-| FR-{NN}.03 | The system SHOULD ... | Should |
-| FR-{NN}.04 | The system MAY ... | May |
+| ID | Requirement | Priority | Layers |
+|----|-------------|----------|--------|
+| FR-{NN}.01 | The system SHALL ... | Must | unit, e2e |
+| FR-{NN}.02 | The system SHALL ... | Must | unit, integration |
+| FR-{NN}.03 | The system SHOULD ... | Should | unit |
+| FR-{NN}.04 | The system MAY ... | May | unit |
+
+**`Layers`** declares the test layers this requirement MUST be covered at, from
+`{unit, integration, e2e}` — the set compliance checks per-layer coverage against
+(a UI requirement that only ever gets a unit test is then a visible gap, not tribal
+knowledge). Emit it with these defaults, then let the author override:
+
+- **every FR ⇒ `unit`.**
+- a **UI / user-flow** requirement (a page, screen, click, form, navigation) **⇒ add `e2e`.**
+- a **CRUD / persistence / DB** requirement (store, query, migrate a row) **⇒ add `integration`.**
+
+Comma-separate multiple layers. The column is **backward-compatible**: an FR authored
+without it still parses — a UI-worded FR defaults to `e2e`, everything else to `unit` —
+but a requirement created after this field ships SHOULD declare it explicitly, so its
+provenance reads as author-chosen rather than legacy-inferred.
 
 ### Acceptance Criteria
 

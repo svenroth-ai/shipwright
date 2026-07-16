@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
   "collector_version": "test_links/1.0.0",
-  "generated_at": "2026-07-15T23:14:11.598998+00:00",
-  "source_commit": "e92cb3ca6f3a1b4790bf85a1032e3391aff200a4",
+  "generated_at": "2026-07-16T05:37:03.201740+00:00",
+  "source_commit": "73baad075cda5808c6e15be3baa059a530f4c571",
   "spec_hash": "sha256:c8944f86bcd4737b474e245f4b79800f37db76da0b3515b6eec98fecdcd11adb",
   "requirements": {
     "01-adopted::FR-01.01": {
@@ -233,6 +233,7 @@
   },
   "orphans": [],
   "invalid_tags": [],
+  "invalid_layers": [],
   "untagged_tests": [
     "integration-tests/test_aggregate_triage_fanout.py::test_aggregate_triage_fanout_concurrent_one_regen",
     "integration-tests/test_aggregate_triage_fanout.py::test_aggregate_triage_fanout_per_session_independent",

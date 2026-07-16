@@ -295,11 +295,11 @@ def read_package_scripts(package_json_path: str | os.PathLike[str]) -> dict[str,
 # and the 5-data-column /shipwright-adopt format
 #   | FR-01.01 | /shipwright-run | Must | Orchestrate ... | enrichment.json |
 # Capture groups (always present): 1=ID, 2=col2 (Text or Name), 3=Priority.
-# Optional groups (5-col only): 4=Description, 5=Source.
+# Optional groups (5-col+): 4=Description, 5=Source; any further columns (e.g. the TT3 `Layers` column) are matched + discarded via the linear `(?:[^|]*\|)*` tail (mirrors rtm.py's ReDoS-hardened matcher — no `\s`/`[^|]` overlap) so a row is never DROPPED for carrying them.
 # The semantic FR body is group(4) when present, else group(2). See ADR-031.
 _FR_TABLE_RE = re.compile(
     r"^\|\s*(FR-[\d.]+)\s*\|\s*([^|]+?)\s*\|\s*(Must|Should|May)\s*\|"
-    r"(?:\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|)?\s*$"
+    r"(?:\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|)?(?:[^|]*\|)*\s*$"
 )
 
 # A spec.md may carry a `## Removed Requirements` (or `### Removed

@@ -56,6 +56,17 @@ Test phase. The test-runner reads all `claude-plan-e2e.md` files and generates P
 The generated specs are then executed by Playwright (Step 3). Results flow into
 `shipwright_test_results.json` → compliance reports → build dashboard.
 
+## Required Layers on the FR
+
+Every user-flow you plan an E2E for corresponds to a Functional Requirement whose
+spec.md `Layers` column MUST include `e2e` (see spec-generation.md — a UI/flow FR
+gets `unit, e2e`; a CRUD/DB FR gets `unit, integration`; every FR gets `unit`). When
+planning surfaces a flow whose FR does not yet declare `e2e`, add `e2e` to that FR's
+`Layers` — the E2E plan is the *evidence* that the layer is required. Keep the default
+conservative: a genuinely API-only or purely-internal requirement stays `unit` (or
+`unit, integration`) and gets no flow here. This is what makes the compliance
+cross-layer coverage check meaningful rather than noise.
+
 ## Guidelines
 
 - Focus on user-visible flows (not API-only routes)

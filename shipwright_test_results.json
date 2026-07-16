@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-15-execution-evidence",
-    "date": "2026-07-15",
+    "run_id": "iterate-2026-07-15-required-layers-on-frs",
+    "date": "2026-07-16",
     "unit": {
       "status": "passed",
-      "passed": 1056,
-      "total": 1056
+      "passed": 1063,
+      "total": 1063
     },
     "integration": {
       "status": "not_run",
@@ -18,7 +18,7 @@
       "total": 0
     },
     "e2e": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
@@ -28,48 +28,87 @@
       "total": 0
     },
     "smoke": {
-      "status": "not_run"
+      "status": "skipped"
     },
     "degraded": [
-      {
-        "condition": "classifier_risk_flag_override",
-        "detail": "classify_complexity flagged touches_migrations from message prose only (the fixture spec narrates 'database persistence'); overridden -- the diff has zero SQL / supabase/migrations paths (compliance collectors + a JSON schema + tests). F11 recomputes risk flags from the diff."
-      }
+      "complexity classifier returned 'large' + touches_auth/rls/migrations — prose-keyword false positives (prior_source=keyword, history_n=0); the diff touches zero auth/RLS/migration code. Overridden to 'medium'; F11 recomputes risk from diff-predicates."
     ],
     "surface_verification": {
       "surface": "none",
       "runner": "surface_verification.py --surface none",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-15-execution-evidence/surface_verification.json",
-      "timestamp": "2026-07-15T00:00:00+00:00",
-      "justification": "Compliance data collector: the execution-evidence reader (execution_evidence.py + _execution_evidence_io.py) emits a generated JSON index consumed by the test_links manifest, plus a JSON schema, F5.md docs, and their tests. No startable user-experienceable surface (no web/API/CLI app affordance); detect_frontend_changes has_frontend_changes=false. Fully exercised by the compliance pytest suite at F0 (1056 GREEN incl. order-forced test_enforcement_hooks-first, ADR-045) plus empirical CLI + round-trip boundary probes recorded in the iterate ADR."
+      "evidence_path": ".shipwright/runs/iterate-2026-07-15-required-layers-on-frs/surface_verification.json",
+      "timestamp": "2026-07-16T00:00:00+00:00",
+      "justification": "Framework tooling + docs change: net-zero drift_parsers regex tolerance, a pure adopt Layers-inference helper, the model-parser (inferred) provenance downgrade, and spec-authoring docs. No runnable app surface (no web/cli/api entrypoint added or modified). The change is exercised entirely by the pytest suites (compliance 1060, adopt 398, shared drift 37, project/plan refs 14) plus the producer(adopt)->spec.md->model-parser round-trip probe recorded in the iterate ADR Confidence Calibration."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "AC1 the reader maps JUnit XML / Playwright JSON / Vitest reporter to per-test {status,executed,runner} over the P1 fixtures and reproduces the panel-verified evidence_index answer key exactly", "disposition": "tested", "evidence": "test_execution_evidence.py::test_reader_reproduces_evidence_index_answer_key + test_junit_maps_pass_and_key_from_file_attr + test_playwright_and_vitest_pass_mapping (PASS)" },
-        { "behavior": "AC1/R1 a skipped tagged test is status=skipped, executed=not_run; JUnit failure/error children map to fail, skipped child to not_run (fail-closed)", "disposition": "tested", "evidence": "test_execution_evidence.py::test_skipped_tagged_test_is_skipped_not_run + test_junit_failure_and_skipped_children_map_fail_closed (PASS)" },
-        { "behavior": "AC1 reader keys are the collector stable path::name id (posix, no backslash); the emitted index validates against the evidence-index v2 schema", "disposition": "tested", "evidence": "test_execution_evidence.py::test_reader_keys_are_collector_path_name_ids + test_reader_output_validates_against_schema (PASS)" },
-        { "behavior": "AC2 the CORE R1 regression: an FR whose only required-layer test is skipped has coverage MISSING even on a green run; enabled+pass yields ok", "disposition": "tested", "evidence": "test_execution_evidence_join.py::test_green_but_skipped_required_layer_is_MISSING_not_ok + test_executed_pass_required_layer_is_ok (PASS)" },
-        { "behavior": "AC2 the coverage predicate: only status=enabled AND executed=pass yields ok; skipped/fail/not_run/quarantined/only never do; one real pass among skips suffices", "disposition": "tested", "evidence": "test_execution_evidence_join.py::test_cov_status_predicate_only_enabled_pass_is_ok[7 cases] (PASS)" },
-        { "behavior": "AC3 a missing evidence file resolves every tested layer to not_run and no coverage to ok (never a self-reported pass); a report that omits a required test keeps it not_run -> MISSING", "disposition": "tested", "evidence": "test_execution_evidence_join.py::test_missing_evidence_file_resolves_not_run_never_pass + test_partial_evidence_omitting_a_required_test_stays_missing (PASS)" },
-        { "behavior": "AC3 (review C1/H1) a regen with no fresh raw report does NOT trust a prior run's stale index: generate_file falls back to not_run/MISSING", "disposition": "tested", "evidence": "test_execution_evidence_join.py::test_stale_index_is_not_trusted_when_no_fresh_reports (PASS)" },
-        { "behavior": "AC3 the expiring waiver is honored while valid and fails when expired; an incomplete/malformed waiver is invalid (not honored); layer_satisfied fails closed without a valid waiver", "disposition": "tested", "evidence": "test_execution_evidence_join.py::test_waiver_valid_while_unexpired_expired_after + test_incomplete_or_malformed_waiver_is_invalid_not_honored + test_layer_satisfied_honors_valid_waiver_fails_expired (PASS)" },
-        { "behavior": "AC4 the status/executed vocab is a validated frozen boundary: out-of-vocab (executed:'passed', status:'active') is coerced fail-closed at ingestion; the schema rejects out-of-vocab + extra keys; code vocab cannot drift from the schema enums", "disposition": "tested", "evidence": "test_execution_evidence.py::test_out_of_vocab_evidence_is_coerced_fail_closed + test_schema_rejects_out_of_vocab_and_extra_keys + test_code_vocab_cannot_drift_from_schema_enums (PASS)" },
-        { "behavior": "Review C2/H2 operator-authored expiring waivers survive a machine-results refresh and normalization (not silently dropped) so the layer gate can honor them", "disposition": "tested", "evidence": "test_execution_evidence_join.py::test_operator_waiver_survives_a_machine_results_refresh + test_normalize_index_preserves_waivers + test_schema_waiver_requires_full_accountability (PASS)" },
-        { "behavior": "Review C4/P4 fail-closed reduction: a duplicate test id (retry/shard/project) never lets a pass mask a failure; a Playwright retry that eventually passes is pass, an all-failed spec is fail; an oversized JUnit report fails closed to empty", "disposition": "tested", "evidence": "test_execution_evidence.py::test_duplicate_test_id_failure_is_not_hidden_by_a_later_pass + test_playwright_retry_reduces_to_pass_only_failure_is_fail + test_oversized_junit_report_fails_closed_empty (PASS)" },
-        { "behavior": "Finalization wiring: refresh_index is non-destructive when no reports (leaves an existing index) and freshness-stamps generated_at + source_reports when it emits", "disposition": "tested", "evidence": "test_execution_evidence_join.py::test_refresh_index_noop_leaves_existing_index_untouched + test_refresh_index_emits_and_stamps_freshness (PASS)" },
-        { "behavior": "Review R2-1 (HIGH, code+doubt) Playwright multi-project: a spec's tests[] is one entry PER PROJECT (browser); the reader reduces each project then combines FAIL-CLOSED (chromium pass + firefox fail -> executed=fail -> coverage.e2e=MISSING), never the false-green 'any result passed -> pass'", "disposition": "tested", "evidence": "test_execution_evidence_paths.py::test_multiproject_pass_does_not_mask_a_project_fail + test_multiproject_fail_yields_coverage_missing (PASS)" },
-        { "behavior": "Review R2-2 (HIGH, code) path/id normalization: an absolute Vitest testResults[].name strips to the project-root-relative id and joins; a per-plugin pytest JUnit file rebases via an explicit base -> real evidence actually joins (not silent all-MISSING)", "disposition": "tested", "evidence": "test_execution_evidence_paths.py::test_absolute_vitest_name_is_rebased_and_joins + test_pytest_junit_base_rebases_a_per_plugin_file (PASS)" },
-        { "behavior": "Review R2-3 (HIGH, bot) CLI path-traversal: main() confines every --junit/--playwright/--vitest/--out path to project_root, rejecting a ..-traversal or an absolute path outside the root", "disposition": "tested", "evidence": "test_execution_evidence_paths.py::test_confined_rejects_paths_outside_project_root (PASS)" },
-        { "behavior": "Review R2-4/R2-5 pytest parametrized JUnit names ([param]) fold to the function-level @covers id fail-closed (any param fail -> fail); a truncated/corrupt JSON report is skipped fail-closed instead of crashing the whole update_compliance regen", "disposition": "tested", "evidence": "test_execution_evidence_paths.py::test_parametrized_junit_folds_to_function_id_fail_closed + test_corrupt_report_is_skipped_fail_closed (PASS)" },
-        { "behavior": "Review R2-6 (doubt) _make_link coerces an unknown/forged evidence status to quarantined (NOT enabled), so status:'active'+executed:'pass' cannot claim coverage ok; R2-7 read_vitest failed/skipped/todo branches", "disposition": "tested", "evidence": "test_execution_evidence_join.py::test_out_of_vocab_status_in_evidence_is_quarantined_not_enabled + test_execution_evidence.py::test_read_vitest_failed_and_skipped_branches (PASS)" },
-        { "behavior": "AC5 footprint: source split across _evidence_vocab (62) / _evidence_readers (160) / execution_evidence (155) / _execution_evidence_io (162); tests 217/230/120; ALL <=300 LOC; bloat baseline not ratcheted; TT1 collector suite still green (no fork)", "disposition": "tested", "evidence": "structural: wc -l all <=300; shipwright_bloat_baseline.json unchanged in the diff; compliance suite 1056 GREEN (enforcement-hooks forced first) + shared golden-consistency 3 GREEN" }
+        {
+          "behavior": "shared parse_fr_table must not DROP an FR carrying a Layers column (4-col + 6-col), stays backward-compatible with 3/5-col",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_drift_parsers_layers.py::test_layers_column_does_not_drop_frs + ::test_6col_adopt_with_layers_body_is_description + ::test_backward_compat_3col_still_parses PASSED"
+        },
+        {
+          "behavior": "trailing-cell tolerance is linear-time (ReDoS-safe) on a pathological pipe-heavy row",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_drift_parsers_layers.py::test_trailing_tolerance_is_linear_time_on_a_pathological_row PASSED"
+        },
+        {
+          "behavior": "adopt infers required_layers from surface: route/page=>e2e, migration/schema/table/RLS=>integration, always unit, unknown=>unit-only, multiple surfaces union",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_fr_layer_inference.py::test_route_feature_infers_e2e_and_unit + ::test_migration_feature_infers_integration_and_unit + ::test_multiple_surfaces_union_all_three_layers + ::test_unknown_surface_defaults_to_unit_only PASSED"
+        },
+        {
+          "behavior": "incidental 'table' in a UI component name must NOT infer integration (structured path-segment signal, not substring)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_fr_layer_inference.py::test_incidental_table_in_component_name_does_not_infer_integration PASSED"
+        },
+        {
+          "behavior": "adopt renders the Layers column annotated (inferred); real brownfield fixture route FRs declare e2e end-to-end",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_fr_layer_inference.py::test_rendered_spec_carries_a_layers_column + ::test_brownfield_fixture_route_frs_declare_e2e_end_to_end PASSED"
+        },
+        {
+          "behavior": "model parser downgrades an (inferred)-marked Layers cell to advisory inferred_legacy (NOT explicit) so adopted FRs are not hard-gated (Spec 9 / R4)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_requirement_parse.py::test_adopt_inferred_marker_reads_as_advisory_not_explicit PASSED; producer->spec.md->parser round-trip probe in the ADR Confidence Calibration"
+        },
+        {
+          "behavior": "model parser reads an explicit integration Layers value + normalizes (case-fold/dedup/drop-unknown) + keeps legacy provenance distinct",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_requirement_parse.py::test_greenfield_requirement_col_with_explicit_integration_layer + ::test_layers_are_normalized_lowercased_deduped_and_unknown_dropped + ::test_greenfield_empty_layers_is_legacy_provenance_not_explicit PASSED"
+        },
+        {
+          "behavior": "MUST-FIX 1 (§11-R4 collapse): a headed Layers cell that is non-empty but resolves to zero valid canonical layers (author typo, e.g. 'int, db') stays explicit + is recorded in invalid_layers — NOT demoted to advisory legacy; empty cell still takes the legacy path",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_requirement_parse.py::test_nonempty_but_noncanonical_layers_cell_is_flagged_not_demoted + tests/test_invalid_layers_manifest.py::test_invalid_layers_cell_surfaced_and_fr_stays_explicit PASSED"
+        },
+        {
+          "behavior": "MUST-FIX 2: only the exact (inferred) marker downgrades to advisory; a post-rollout author writing (auto)/(adopted) stays explicit (hard-gated)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_requirement_parse.py::test_only_the_exact_inferred_marker_downgrades_not_auto_or_adopt PASSED"
+        },
+        {
+          "behavior": "MUST-FIX 3: adopt's emitted (inferred) marker is bound to compliance's reader by a cross-plugin round-trip (render adopt spec -> parse via compliance -> inferred_legacy), so drift on either literal fails a test",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_fr_layer_inference.py::test_inferred_marker_roundtrip_binds_adopt_emit_to_compliance_read PASSED"
+        },
+        {
+          "behavior": "MUST-FIX 4: a backend API route (fastapi/flask/express) does NOT infer e2e; a backend data route infers integration; e2e requires a UI framework or UI-file source",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_fr_layer_inference.py::test_backend_api_route_is_not_e2e + ::test_backend_data_route_infers_integration_not_e2e + ::test_multiple_surfaces_union_all_three_layers PASSED"
+        },
+        {
+          "behavior": "MUST-FIX 5: the drift_parsers trailing tolerance is linear-time on a NON-matching pathological row (no closing pipe, backtracking-on-failure path)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_drift_parsers_layers.py::test_trailing_tolerance_is_linear_time_on_a_NON_matching_row PASSED"
+        }
       ],
       "counts": {
-        "testable": 18,
-        "tested": 18,
+        "testable": 12,
+        "tested": 12,
         "untestable": 0,
         "untested_testable": 0
       },

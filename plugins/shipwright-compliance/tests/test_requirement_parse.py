@@ -87,3 +87,116 @@ def test_namespaced_key_and_spec_path():
     r1 = _by_id(reqs, "FR-02.01")
     assert r1.key == "01-adopted::FR-02.01"
     assert r1.spec_path == ".shipwright/planning/01-adopted/spec.md"
+
+
+# TT3 — the greenfield project/plan template FR table (a `Requirement`-named body
+# column + an explicit `Layers` column). Pins AC1's "a CRUD FR gets integration"
+# via an explicit Layers value, and the empty-cell provenance regime for AC3.
+_GREENFIELD = """# Spec
+## 2. Functional Requirements
+| ID | Requirement | Priority | Layers |
+|----|-------------|----------|--------|
+| FR-03.01 | The system SHALL persist orders to the database | Must | unit, integration |
+| FR-03.02 | The system SHALL show a dashboard | Should | |
+"""
+
+
+def test_greenfield_requirement_col_with_explicit_integration_layer():
+    reqs = parse_requirements(_GREENFIELD, namespace="03", spec_path="spec.md")
+    r1 = _by_id(reqs, "FR-03.01")
+    assert r1.title == "The system SHALL persist orders to the database"
+    assert r1.required_layers == ("unit", "integration")
+    assert r1.required_layers_source == "explicit"
+
+
+def test_greenfield_empty_layers_is_legacy_provenance_not_explicit():
+    # AC3: an FR authored without the field must NOT read as "explicit" — the two
+    # regimes (post-rollout omission vs legacy-missing) must stay distinguishable.
+    reqs = parse_requirements(_GREENFIELD, namespace="03", spec_path="spec.md")
+    r2 = _by_id(reqs, "FR-03.02")
+    assert r2.required_layers_source == "inferred_legacy"   # "dashboard" ⇒ e2e
+    assert r2.required_layers == ("e2e",)
+
+
+# An adopt-generated spec annotates its surface-inferred layers with `(inferred)`.
+# The set is still read, but the provenance is downgraded to advisory so a
+# brownfield repo's FRs do NOT collapse into the `explicit` hard-gate (Spec §9 /
+# R4). This is the producer(adopt)→spec.md→parser round-trip the review flagged.
+_ADOPT_INFERRED = """# Spec
+## Functional Requirements
+| ID | Name | Priority | Description | Source | Layers |
+|----|------|----------|-------------|--------|--------|
+| FR-04.01 | /orders | Must | Orders page | src/app/orders/page.tsx | unit, e2e (inferred) |
+| FR-04.02 | schema | Must | Persist orders | db/migrations/001.sql | unit, integration (inferred) |
+"""
+
+
+_INVALID_LAYERS = """# Spec
+## Functional Requirements
+| ID | Requirement | Priority | Layers |
+|----|-------------|----------|--------|
+| FR-09.03 | Persist orders | Must | int, db |
+| FR-09.04 | Checkout page | Must | |
+"""
+
+
+def test_nonempty_but_noncanonical_layers_cell_is_flagged_not_demoted():
+    # MUST-FIX 1 (§11-R4 collapse): an author typo/synonym in a HEADED Layers cell
+    # must stay `explicit` (so D-layer's post-rollout hard gate still fires) and be
+    # recorded — NOT silently demoted to advisory `defaulted_legacy` (which would both
+    # escape the gate and discard the author's intended integration layer).
+    invalid: list = []
+    reqs = parse_requirements(
+        _INVALID_LAYERS, namespace="09", spec_path="s.md", invalid_layers=invalid)
+    r = _by_id(reqs, "FR-09.03")
+    assert r.required_layers == ()                 # "int"/"db" are not canonical layers
+    assert r.required_layers_source == "explicit"  # kept explicit, NOT demoted to legacy
+    assert any(x["fr"] == "FR-09.03" and x["raw"] == "int, db"
+               and x["reason"] == "no_canonical_layer" for x in invalid)
+    # an EMPTY cell still takes the legacy path unchanged (and is NOT flagged)
+    r2 = _by_id(reqs, "FR-09.04")
+    assert r2.required_layers_source == "inferred_legacy"   # "page" ⇒ e2e
+    assert not any(x["fr"] == "FR-09.04" for x in invalid)
+
+
+def test_only_the_exact_inferred_marker_downgrades_not_auto_or_adopt():
+    # MUST-FIX 2: only the exact ` (inferred)` marker (what adopt emits) downgrades to
+    # advisory. A post-rollout author writing `(auto)`/`(adopted)` must stay `explicit`
+    # (hard-gated) — the marker regex is narrowed to `(inferred)` only.
+    spec = (
+        "## Functional Requirements\n"
+        "| ID | Requirement | Priority | Layers |\n"
+        "|----|-------------|----------|--------|\n"
+        "| FR-09.05 | Store orders | Must | unit, e2e (auto) |\n"
+        "| FR-09.06 | Store items | Must | unit, e2e (inferred) |\n"
+    )
+    reqs = parse_requirements(spec, namespace="09", spec_path="s.md")
+    assert _by_id(reqs, "FR-09.05").required_layers_source == "explicit"        # (auto) not downgraded
+    assert _by_id(reqs, "FR-09.06").required_layers_source == "inferred_legacy"  # (inferred) advisory
+
+
+def test_adopt_inferred_marker_reads_as_advisory_not_explicit():
+    reqs = parse_requirements(_ADOPT_INFERRED, namespace="01-adopted", spec_path="spec.md")
+    r1 = _by_id(reqs, "FR-04.01")
+    assert r1.required_layers == ("unit", "e2e")
+    assert r1.required_layers_source == "inferred_legacy"   # NOT "explicit"
+    r2 = _by_id(reqs, "FR-04.02")
+    assert r2.required_layers == ("unit", "integration")
+    assert r2.required_layers_source == "inferred_legacy"
+
+
+_NOISY = """# Spec
+## Functional Requirements
+| ID | Requirement | Priority | Layers |
+|----|-------------|----------|--------|
+| FR-05.01 | Store an order | Must | E2E, unit, unit, foo, none |
+"""
+
+
+def test_layers_are_normalized_lowercased_deduped_and_unknown_dropped():
+    # AC1 robustness: an author-typed Layers cell is case-folded, de-duplicated, and
+    # non-layer tokens (foo/none) are dropped — the manifest never carries junk.
+    reqs = parse_requirements(_NOISY, namespace="05", spec_path="spec.md")
+    r = _by_id(reqs, "FR-05.01")
+    assert r.required_layers == ("e2e", "unit")   # order preserved, deduped, valid-only
+    assert r.required_layers_source == "explicit"

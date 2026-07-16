@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-07-15T23:14:11.598998+00:00
-Total commits: 1145
+Generated: 2026-07-16T05:37:03.201740+00:00
+Total commits: 1146
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 331
-    "feat" : 312
+    "feat" : 313
     "chore" : 240
     "docs" : 145
     "refactor" : 68
@@ -356,11 +356,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 312 commits
+### Features (feat) — 313 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-16 | compliance | per-test execution-evidence reader -> execution-backed coverage (TT-EV) | e92cb3ca6f3a |
+| 2026-07-16 | traceability | declare required_layers per FR + adopt surface-inference (TT3) | 73baad075cda |
+| 2026-07-16 | compliance | per-test execution-evidence reader -> execution-backed coverage (TT-EV) (#379) | 188af9ad5bbe |
 | 2026-07-16 | compliance | test_links collector + test-traceability manifest + @FR tag convention (TT1) (#378) | c8767470fada |
 | 2026-07-15 | traceability | freeze requirement->test contracts + panel-verified harness (P1) (#377) | e74d8090758e |
 | 2026-07-15 | iterate | bundle the finalize F1/F3/F4/F5c/F5b LLM round-trips (#374) | d36f61dcf464 |
@@ -1214,7 +1215,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1145 |
+| Total commits | 1146 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1145 |
+| Human-authored commits | 1146 |
 
