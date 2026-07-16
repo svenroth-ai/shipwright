@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-16-collector-test-roots",
+  "date": "2026-07-16T20:24:24.024366Z",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/collector-test-roots",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-16-collector-test-roots.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-16-collector-test-roots"
+}

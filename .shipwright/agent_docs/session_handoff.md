@@ -1,36 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-15-retrofit-monorepo-and-webui"
+run_id: "iterate-2026-07-16-collector-test-roots"
 phase: "iterate"
-reason: "iterate: TT8 monorepo traceability retrofit + webui handoff brief"
-timestamp: "2026-07-16T18:39:55.852213+00:00"
+reason: "iterate: config-driven test_roots for the test_links collector"
+timestamp: "2026-07-16T20:24:29.654240+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-16 18:39:55 UTC
+> Auto-generated 2026-07-16 20:24:29 UTC
 
 ## Session Info
 
 - **Session ID**: a69abb9e-d21a-40a1-846b-13913cca2b09
-- **Timestamp**: 2026-07-16 18:39:55 UTC
-- **Reason**: iterate: TT8 monorepo traceability retrofit + webui handoff brief
+- **Timestamp**: 2026-07-16 20:24:29 UTC
+- **Reason**: iterate: config-driven test_roots for the test_links collector
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-15-retrofit-monorepo-and-webui
-- **Date**: 2026-07-16T18:39:51.256498Z
-- **Type**: change
-- **Complexity**: small
-- **Branch**: iterate/campaign-TT8-retrofit-monorepo-and-webui
-- **ADR**: iterate-2026-07-15-retrofit-monorepo-and-webui
+- **Run ID**: iterate-2026-07-16-collector-test-roots
+- **Date**: 2026-07-16T20:24:24.024366Z
+- **Type**: feature
+- **Complexity**: medium
+- **Branch**: iterate/collector-test-roots
+- **ADR**: iterate-2026-07-16-collector-test-roots
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/campaigns/2026-07-15-test-traceability-layers/sub-iterates/TT8-retrofit-monorepo-and-webui.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-16-collector-test-roots.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/campaign-TT8-retrofit-monorepo-and-webui
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-16T14:54:02)
+- **Branch**: iterate/collector-test-roots
+- **Run ID**: iterate-2026-07-16-collector-test-roots
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-16-collector-test-roots.md
+- **Complexity**: medium · **change_type:** feature · **spec_impact:** none (framework tooling)
+- **External Review Marker**: stale (predates spec (2026-07-16T20:11:27))
 
 ### Mandatory replay on Resume
 
@@ -48,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/campaign-TT8-retrofit-monorepo-and-webui
-- **Last Commit**: a85c22cd feat(adopt): establish the requirement->test traceability baseline at onboarding (TT7) (#385)
+- **Branch**: iterate/collector-test-roots
+- **Last Commit**: 2c85758e chore(traceability): retrofit monorepo tests with @FR tags + webui handoff brief (TT8) (#386)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-74374d73 | grade_snapshot | — | 2026-07-16 |
+| evt-37ed67db | work_completed | iterate (config-driven traceability.test_roots + exclude_dirs for the test_links collector) | 2026-07-16 |
 | evt-b959b7d8 | grade_snapshot | — | 2026-07-16 |
 | evt-a0436498 | work_completed | iterate (TT8: retrofit this monorepo's own tests with @FR requirement->test traceability tags (integration-tests baseline; 187-candidate full-corpus inventory triaged), regenerate the compliance test-traceability manifest, and author the webui-repo retrofit handoff brief.) | 2026-07-16 |
 | evt-8290a41d | grade_snapshot | — | 2026-07-16 |
-| evt-552a7eed | grade_snapshot | — | 2026-07-16 |
-| evt-9eede3ac | work_completed | iterate (TT7: adopt Step E.17 establishes the requirement->test traceability baseline (tag convention scaffold + TT6 backfill + repo-wide skip inventory + predeclared-decision resolution + test_links wired into the adopt compliance phase).) | 2026-07-16 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 315
-- **Last iterate**: change — TT8: retrofit this monorepo's own tests with @FR requirement->test traceability tags (integration-tests baseline; 187-candidate full-corpus inventory triaged), regenerate the compliance test-traceability manifest, and author the webui-repo retrofit handoff brief. (2026-07-16)
+- **Total work events**: 316
+- **Last iterate**: feature — config-driven traceability.test_roots + exclude_dirs for the test_links collector (2026-07-16)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

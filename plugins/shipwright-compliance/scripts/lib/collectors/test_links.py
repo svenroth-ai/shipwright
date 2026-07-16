@@ -75,6 +75,7 @@ def build_manifest(
     *,
     spec_files: list[Path] | None = None,
     test_roots: list[Path] | None = None,
+    prune_dirs: frozenset[str] | None = None,
     evidence: dict | None = None,
     enumerate_untagged: bool = True,
     generated_at: str = _DEFAULT_TS,
@@ -111,7 +112,7 @@ def build_manifest(
     invalid: list = []
     layer_by_test: dict[str, str] = {}
     all_test_ids: set[str] = set()
-    for abs_path, rel_path in io.iter_test_files(test_roots, project_root):
+    for abs_path, rel_path in io.iter_test_files(test_roots, project_root, prune_dirs or io._PRUNE_DIRS):
         source = abs_path.read_text(encoding="utf-8", errors="ignore")
         layer = io.detect_layer(rel_path)
         res = grammar.parse_source(rel_path, source)
@@ -218,7 +219,10 @@ def generate_file(project_root, data=None) -> Path:
     """Write ``.shipwright/compliance/test-traceability.json`` (update_compliance wiring).
 
     Real-project scope: the FR table + ``@FR``-tagged tests + the untagged tests found
-    under the *conventional* test roots (``tests/``, ``e2e/``, ``integration-tests/``, …).
+    under the collector's test roots — by default the *conventional* roots (``tests/``,
+    ``e2e/``, ``integration-tests/``, …), or exactly the ``traceability.test_roots`` a project
+    opts into via ``shipwright_compliance_config.json`` (e.g. a monorepo adds ``plugins/*/tests``
+    + ``shared/tests``, and ``traceability.exclude_dirs`` to keep fixture mini-repos out).
     ``untagged_tests`` honestly reflects what was scanned (never a silently-empty list),
     but the COMPLETE repo-wide inventory + backfill of scattered/non-conventional test
     dirs is the shared engine's job (adopt TT7 / retrofit TT8), not a compliance regen.
@@ -236,7 +240,8 @@ def generate_file(project_root, data=None) -> Path:
     generated_at = getattr(data, "timestamp", None) or _DEFAULT_TS
     manifest = build_manifest(
         project_root,
-        test_roots=io.default_test_roots(project_root),
+        test_roots=io.configured_test_roots(project_root),
+        prune_dirs=io.configured_prune_dirs(project_root),
         evidence=evidence,
         enumerate_untagged=True,
         generated_at=generated_at,

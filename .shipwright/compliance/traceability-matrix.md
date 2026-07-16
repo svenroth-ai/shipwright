@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-16T18:39:51.338541+00:00
+Generated: 2026-07-16T20:24:24.104701+00:00
 
 ## Requirements Coverage
 
@@ -28,6 +28,7 @@ Generated: 2026-07-16T18:39:51.338541+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-37ed67db"></a>The traceability tool can now be told which folders hold tests, so requirement tags written in plugin and shared tests are actually counted instead of ignored. | iterate | feature |  | 1119/1119 | — | 2026-07-16 |
 | <a id="evt-a0436498"></a>The framework's own tests now start to carry which-requirement-they-cover labels, and there's a ready-to-run plan to do the same in the web UI project. | iterate | change |  | 5936/5936 | — | 2026-07-16 |
 | <a id="evt-9eede3ac"></a>Repos onboarding to Shipwright now start with test-to-requirement traceability already set up, instead of building up untracked, stale tests over time. | iterate | feature |  | 5697/5697 | — | 2026-07-16 |
 | <a id="evt-8718d8b4"></a>New shared tool that reads a repo's existing tests and figures out which requirement each one checks, tagging the clear matches and flagging the rest for review. | iterate | feature |  | 4597/4597 | — | 2026-07-16 |
@@ -350,7 +351,7 @@ Generated: 2026-07-16T18:39:51.338541+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 315 |
+| Iterate changes | 316 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |

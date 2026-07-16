@@ -35,14 +35,23 @@ def _describe_tokens(line: str, dtest: str, grammar, pending, same_line_covers, 
 def propagate_suite_tags(source: str, path: str, grammar):
     """Return ``(hits, invalid)`` for describe-level tags propagated to inner tests.
 
-    ``.py`` sources produce nothing (no ``describe`` / ``it(`` string-literal decls),
-    so this is safe to call on any test file.
+    Non-TS/JS sources produce nothing: describe/it suites are a TS/JS-only construct, so a
+    ``describe(...)`` / ``it(...)`` that appears only inside a PYTHON string literal (e.g. a
+    collector self-test that embeds TS test-source as data) is NOT mistaken for a real suite
+    tag. Safe to call on any test file — the suffix gate makes the "``.py`` yields nothing"
+    contract real rather than incidental.
 
     Brace-depth scoped with an ``entered`` flag so a describe whose callback body
     brace lands on the FOLLOWING line (Prettier-wrapped signatures) is not popped
     before its body opens. Known limitation: a one-line ``describe(..., () => { it(...) })``
     does not propagate (describe + test share a line) — the dominant multi-line form does.
     """
+    # describe/it suites are a TS/JS-only construct — gate on the frozen grammar's OWN suffix set
+    # (the single authoritative list, identical to what the collector scans) so a describe/it
+    # inside a PYTHON string literal is never mistaken for a real suite tag, and no third copy of
+    # the suffix vocabulary drifts.
+    if not path.lower().endswith(grammar._TS_SUFFIXES):
+        return [], []
     hits: list = []
     invalid: list = []
     stack: list[list] = []   # [open_depth, tokens, entered]

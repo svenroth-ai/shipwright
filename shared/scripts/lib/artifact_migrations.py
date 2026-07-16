@@ -453,6 +453,17 @@ ALLOWLIST: dict[str, list[str]] = {
         # See "planning" entry for shipwright_test_results.json rationale.
         "shipwright_test_results.json",
         ".shipwright/compliance/change-history.md",
+        # test-traceability.json is the generated requirement→test manifest
+        # (test_links collector) — a per-iterate churn artifact update_compliance
+        # commits on every finalize. Its plugins/shipwright-compliance/tests/... ids
+        # carry the -compliance/ segment the compliance regex false-matches (`-`
+        # absent from the lookbehind), so without this the NEXT unrelated iterate's
+        # canon lint fails. Empirically ONLY this migration is tripped (0 hits for
+        # planning/designs/agent_docs). The sibling regression test carries the same
+        # strings + the bare "compliance" migration name, so it is exempt here too
+        # (same class as test_artifact_path_canon.py in the planning allowlist).
+        ".shipwright/compliance/test-traceability.json",
+        "shared/tests/test_artifact_path_canon_manifest_allowlist.py",
         # Generated agent-doc caches (single-producer trio, ADR-089) render
         # arbitrary text — triage finding detail/launchPayload, iterate/build
         # context — that may quote ANY legacy path; regenerated each iterate so a
