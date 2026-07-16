@@ -107,7 +107,12 @@ def _coverage_table_legend() -> list[str]:
         "*Last tested*: date of that event (`iter` / `build` source); age is "
         "informational, **not a penalty**. *Reconciled?*: ✅ behavior-affected "
         "FR re-verified since its last change · ⚠️ needs re-verification "
-        "(behavior changed, not yet re-tested) · — not behavior-touched."
+        "(behavior changed, not yet re-tested) · — not behavior-touched. "
+        "*Unit / Integration / E2E* (traceability manifest): `ok` an executed-passing "
+        "tagged test covers the FR at that layer · `MISSING` the layer is required but "
+        "has no executed-passing test · `?` ambiguous — the display id is shared across "
+        "namespaces so the fanned tag is not credited (D-layer defers this to TT5) · "
+        "`n/a` layer not required · — no manifest entry."
     )
     return [legend, ""]
 

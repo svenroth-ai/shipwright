@@ -1,33 +1,22 @@
-"""Group D — Event-log FR coverage (plan v7 Option Z, Step 4).
+"""Group D — FR coverage detectives (event-log + traceability manifest).
 
-Cross-references ``shipwright_events.jsonl`` against the project's spec
-table FRs (collected via ``drift_parsers.collect_requirements_from_planning``).
-All four checks are detective-only — Phase-Quality cannot see them, the
-Canon gate cannot see them, only a holistic events × spec scan can.
+Cross-references ``shipwright_events.jsonl`` (and, for D-orphan/D-layer, the TT1
+test-traceability manifest) against the project's spec table FRs (via
+``drift_parsers.collect_requirements_from_planning``). All checks are detective-only.
 
-- D1 — Spec FR uncovered by events. For each FR in the spec table,
-  flag if no ``work_completed`` event has the FR in ``affected_frs``.
-  Severity is priority-driven: Must=HIGH, Should=MEDIUM, May=LOW.
-- D2 — Stale FR reference. Flag ``affected_frs`` FR-IDs in the event
-  log not present in the current spec (renames/removals). Severity MEDIUM.
-- D3 — Promised FR not delivered. FR appears in some past event's
-  ``new_frs`` but never in any same-event-or-later ``affected_frs`` — the
-  spec promised the work, the work never landed. A same-event delivery
-  (``new_frs`` + ``affected_frs`` together, the normal single-iterate case)
-  counts as delivered. Severity MEDIUM.
-- D4 — Latest covering event has failing tests. The most recent event
-  covering an FR has ``tests.passed < tests.total`` — the FR sits in a
-  partially-broken state. Severity LOW.
-- D5 — FEATURE/CHANGE iterate event with no FR linkage. The inverse of
-  D1: a ``work_completed`` event with ``source=iterate`` and
-  ``intent`` in (feature, change) whose ``affected_frs`` and ``new_frs``
-  are both empty and that did not record ``spec_impact=none`` — a
-  capability that landed without producing a requirement. Severity MEDIUM.
+- D1 — Spec FR uncovered. Needs a *tested* event (tests.total>0) naming it AND, for an
+  explicit/post-rollout FR, a real manifest test link (TT2 hardening, two SEPARATE proofs
+  — an untested 0/0 commit or a missing link no longer marks it covered; §2 false-green).
+  Severity priority-driven: Must=HIGH, Should=MEDIUM, May=LOW.
+- D2 — Stale FR reference: ``affected_frs`` FR-IDs not in the current spec. MEDIUM.
+- D3 — Promised FR (``new_frs``) never reaffirmed via ``affected_frs``. MEDIUM.
+- D4 — Latest covering event has ``tests.passed < tests.total``. LOW.
+- D5 — FEATURE/CHANGE iterate event with no FR linkage and no ``spec_impact=none``. MEDIUM.
+- D-orphan / D-layer — manifest-driven (see ``_group_d_traceability``): a test tagged with
+  a removed/absent FR; an active FR missing an executed-passing test at a required layer.
 
-**Epoch floor (D2 only):** the most recent ``spec_updated`` event is a
-watermark; older events are ignored for stale-ref findings. **D1 dropped
-the watermark (BP-1):** coverage is all-time ("a requirement untouched for
-months is under control"). D3/D4 are time-invariant.
+**Epoch floor (D2 only):** the most recent ``spec_updated`` event is a watermark.
+D1 dropped it (BP-1, all-time coverage); D3/D4 are time-invariant.
 """
 
 from __future__ import annotations
@@ -36,6 +25,7 @@ import json
 from pathlib import Path
 from typing import Any, Iterable
 
+from scripts.audit import _group_d_traceability as _traceability
 from scripts.audit.audit_adapters import (
     SOURCE_DETECTIVE_ONLY,
     Finding,
@@ -134,6 +124,7 @@ _PRIORITY_TO_SEVERITY = {"Must": "HIGH", "Should": "MEDIUM", "May": "LOW"}
 def _check_d1(
     spec_frs: list[drift_parsers.FunctionalRequirement],
     events: list[dict] | None,
+    project_root: Path,
 ) -> tuple[str, str, str, list[str]]:
     """Returns (status, severity, detail, evidence)."""
     if not spec_frs:
@@ -145,17 +136,23 @@ def _check_d1(
     if not work_completed:
         return "skip", "LOW", "no work_completed events recorded", []
 
-    # BP-1: covered = named by ANY work_completed event, ever (no epoch floor —
-    # "untouched for months is under control"). See hooks-and-pipeline.md.
+    # TT2 hardening (Spec §5 — two SEPARATE proofs, never joined into one false-green):
+    # (1) event proof — only a *tested* event (tests.total>0) counts; a 0/0 docs/refactor
+    # commit no longer marks an FR covered (§2). (2) link proof — an explicit/post-rollout
+    # FR ALSO needs a real manifest test link (refine_d1_covered), provenance-gated (§9).
     covered: set[str] = set()
     for ev in work_completed:
+        tests = ev.get("tests") or {}
+        if not (isinstance(tests.get("total"), int) and tests["total"] > 0):
+            continue
         for fr in ev.get("affected_frs", []) or []:
             if isinstance(fr, str):
                 covered.add(fr)
+    covered, _d1_note = _traceability.refine_d1_covered(covered, project_root)
 
     uncovered = [fr for fr in spec_frs if fr.id not in covered]
     if not uncovered:
-        return "pass", "LOW", "every spec FR has a covering event", []
+        return "pass", "LOW", "every spec FR has a covering event" + _d1_note, []
 
     # Severity = highest priority among uncovered FRs.
     severities = {_PRIORITY_TO_SEVERITY.get(fr.priority, "LOW") for fr in uncovered}
@@ -175,7 +172,7 @@ def _check_d1(
         if len(ids) > 3:
             head += f", … (+{len(ids) - 3})"
         parts.append(f"{prio}: {head}")
-    detail = "uncovered FRs — " + "; ".join(parts)
+    detail = "uncovered FRs — " + "; ".join(parts) + _d1_note
     evidence = [f"{fr.id} ({fr.priority}, in {fr.spec_path})" for fr in uncovered]
     return "fail", severity, detail, evidence
 
@@ -434,7 +431,7 @@ def run(
     events = events_amend.apply_amendments(raw) if (raw := _load_events(project_root)) is not None else None
 
     plan: list[tuple[str, callable]] = [
-        ("D1", lambda: _check_d1(spec_frs, events)),
+        ("D1", lambda: _check_d1(spec_frs, events, project_root)),
         ("D2", lambda: _check_d2(spec_frs, events)),
         ("D3", lambda: _check_d3(events)),
         ("D4", lambda: _check_d4(spec_frs, events)),
@@ -462,4 +459,6 @@ def run(
                 if status == "fail" else None
             ),
         ))
+    # D-orphan + D-layer consume the TT1 manifest (self-contained + fail-closed).
+    out.extend(_traceability.traceability_findings(project_root))
     return out

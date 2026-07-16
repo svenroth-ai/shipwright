@@ -37,6 +37,7 @@ from scripts.lib._rtm_reconciliation_render import (
     _evt_anchor_ref,
     _render_needs_reverification_section,
 )
+from scripts.lib._rtm_layer_columns import layer_cells, load_layer_index
 from scripts.lib._rtm_links import commit_cell, fr_anchor_id, last_tested_cell, link_frs, resolve_repo_url, timeline_order, utc_date  # noqa: E501
 from scripts.lib.event_display import event_display_name
 
@@ -416,12 +417,13 @@ def _requirements_coverage_events(data: ComplianceData) -> list[str]:
     # on age. `_compute_reconciliation_safe` lazy-imports the helper so a
     # minimal env degrades to "—" instead of crashing.
     rec = _compute_reconciliation_safe(data.work_events)
+    layer_idx = load_layer_index(data.project_root)  # TT2: per-FR layer coverage glyphs
 
     lines = [
         "## Requirements Coverage",
         "",
-        "| Requirement | Title | Priority | Verified By | Tests | Last tested | Reconciled? | Status |",
-        "|-------------|-------|----------|-------------|-------|-------------|-------------|--------|",
+        "| Requirement | Title | Priority | Verified By | Tests | Last tested | Reconciled? | Status | Unit | Integration | E2E |",
+        "|-------------|-------|----------|-------------|-------|-------------|-------------|--------|------|-------------|-----|",
     ]
 
     for req in data.requirements:
@@ -450,13 +452,10 @@ def _requirements_coverage_events(data: ComplianceData) -> list[str]:
             if len(refs) > 4:
                 verified_cell += f" +{len(refs) - 4}"
 
-            # Verification signal comes ONLY from events that recorded a test
-            # count. Untested (0/0) events — docs / refactor / backfill-retro
-            # commits, or verification artifacts — are NEUTRAL: they neither
-            # cover nor fail an FR. Status reflects the LATEST tested event,
-            # not an all()-over-history, so a single 0/0 commit or a transient
-            # historical failure a later run fixed never pins the FR to FAIL.
-            # (iterate-2026-05-30-rtm-covered-ignore-untested-events)
+            # Verification signal comes ONLY from events that recorded a test count;
+            # untested (0/0) events are NEUTRAL. Status reflects the LATEST tested
+            # event (not an all()-over-history), so a lone 0/0 or a transient historical
+            # failure a later run fixed never pins the FR to FAIL. (2026-05-30 rtm-covered)
             tested = [we for we in events if we.tests_total and we.tests_total > 0]
             if tested:
                 latest = _latest_tested_event(tested)
@@ -510,13 +509,14 @@ def _requirements_coverage_events(data: ComplianceData) -> list[str]:
                 status = rendered
 
         reconciled_cell = _RECONCILED_MARK[rec.status(req.id)]
+        u_cell, i_cell, e_cell = layer_cells(layer_idx, req.split, req.id)  # TT2 layer glyphs
         # In-document anchor AFTER the req link (keeps row prefix `| [FR-…]`); Timeline FRs link here.
         anchor = f'<a id="{fr_anchor_id(req.id)}"></a>'
 
         lines.append(
             f"| {escape_cell(req_link)}{anchor} | {escape_cell(display_text)} | {req.priority} "
             f"| {escape_cell(verified_cell)} | {escape_cell(tests_cell)} "
-            f"| {escape_cell(last_tested)} | {reconciled_cell} | {status} |"
+            f"| {escape_cell(last_tested)} | {reconciled_cell} | {status} | {u_cell} | {i_cell} | {e_cell} |"
         )
 
     lines.append("")
