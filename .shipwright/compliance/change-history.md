@@ -360,7 +360,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-16 | traceability | shared backfill_test_links engine — map existing tests to FRs (TT6) | b1512577026b |
+| 2026-07-16 | traceability | shared backfill_test_links engine — map existing tests to FRs (TT6) | e1e639b11282 |
 | 2026-07-16 | iterate | enforcing F11 traceability gates — removal→orphan + change→cross-layer (TT5) (#383) | 0cec0f8e15b8 |
 | 2026-07-16 | iterate | TS/JS silent-skip ban + quarantine-with-expiry hygiene gate (traceability TT4) (#382) | 2c70a4ba6653 |
 | 2026-07-16 | compliance | layer-aware RTM + D-orphan/D-layer detectives + D1 hardening (traceability TT2) (#381) | 61646d3bd22f |

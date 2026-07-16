@@ -62,9 +62,9 @@
           "evidence": "test_backfill_test_links.py::test_idempotent_rerun_adds_no_duplicate_tags + ::test_already_tagged_test_is_honoured_not_rewritten + ::test_report_is_deterministically_ordered_and_written PASSED"
         },
         {
-          "behavior": "AC4 — NEW RED-before/green-after tests for the cascade, confidence gating, orphan detection, idempotency, conflict, mixed/multi-dead tags, CRLF preservation, and pytest-import safety; framework suites green",
+          "behavior": "AC4 — NEW RED-before/green-after tests for the cascade, confidence gating, orphan detection, idempotency, conflict, mixed/multi-dead tags, CRLF preservation, and pytest-import safety; framework suites green; new-code diff coverage ≥80% (the CI diff-coverage gate)",
           "disposition": "tested",
-          "evidence": "24 backfill tests (test_backfill_test_links.py + test_backfill_llm.py) PASSED; shared framework suites green (shared/tests + scripts/tests + scripts/tools/tests, incl. test_events_log_ssot.py + test_artifact_path_canon.py); compliance traceability suites green (98)"
+          "evidence": "39 backfill tests (test_backfill_test_links.py + test_backfill_llm.py + test_backfill_engine_units.py) PASSED at 93% coverage of the 5 backfill modules (llm 95%, scan 90%, signals 97%, write 84%, tool 96%); shared framework suites green (incl. test_events_log_ssot.py + test_artifact_path_canon.py); compliance traceability suites green (98)"
         },
         {
           "behavior": "Write safety (coordinator C1/C1b) — the source line ending is preserved CROSS-PLATFORM (read_bytes/write_bytes, no os.linesep translation; the CI-red green-local/red-Linux CRLF bug is gone) and a non-UTF-8 source is skipped untouched + recorded in write_failures (never a partial write), with the report always emitted",
