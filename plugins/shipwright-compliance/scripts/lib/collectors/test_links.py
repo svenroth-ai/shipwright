@@ -94,12 +94,15 @@ def build_manifest(
     requirements: dict = {}          # manifest key → Requirement
     by_display_id: dict[str, list] = {}
     spec_texts: list[str] = []
+    invalid_layers: list = []        # FRs whose Layers cell has no valid canonical layer
     for spec in spec_files:
         text = Path(spec).read_text(encoding="utf-8", errors="ignore")
         spec_texts.append(text)
         namespace = Path(spec).resolve().parent.name
         rel_spec = io.rel(spec, project_root)
-        for req in parse_requirements(text, namespace=namespace, spec_path=rel_spec):
+        for req in parse_requirements(
+            text, namespace=namespace, spec_path=rel_spec, invalid_layers=invalid_layers,
+        ):
             requirements[req.key] = req
             by_display_id.setdefault(req.id, []).append(req)
 
@@ -188,6 +191,10 @@ def build_manifest(
              "reason": getattr(iv, "reason", "") or "non_canonical_fr_id"}
             for iv in invalid
         ],
+        # FRs whose explicitly-headed Layers cell resolved to zero valid layers
+        # (author typo/synonym). Kept `explicit` so D-layer's hard gate still fires;
+        # surfaced here so the finding can name the bad raw token (Spec §11-R4).
+        "invalid_layers": invalid_layers,
         "untagged_tests": sorted(all_test_ids - tagged_ids),
     }
 

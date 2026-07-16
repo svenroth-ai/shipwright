@@ -95,6 +95,19 @@ Writes — **in order**:
     enrichment-supplied `acceptance_draft` always wins when present.
     Test files themselves are filtered out of the FR list (Fix 3a).
 
+    **FR `Layers` column (surface-inferred).** Each reverse-engineered FR
+    row in the planning `spec.md` carries a `Layers` column declaring the
+    test layers it must be covered at, inferred from its detected surface by
+    `render_helpers.infer_required_layers`: a route / page / UI-framework
+    source ⇒ `e2e`; a migration / schema / table / RLS-policy source ⇒
+    `integration`; every FR ⇒ `unit`. Multiple surfaces union. The default is
+    deliberately conservative — an unknown surface ⇒ `unit` only — so an
+    adopted brownfield repo is not instantly drowned in "MISSING e2e"
+    findings (Spec §9). The emitted values are annotated `(inferred)`, which
+    the compliance requirement-model parser reads as **advisory**
+    (`inferred_legacy` provenance) rather than the author-declared `explicit`
+    hard-gate regime. Authors confirm or override via `/shipwright-iterate`.
+
 11. **TODO / FIXME inventory** (Fix 6). After artifact generation,
     adopt ripgreps `\b(TODO|FIXME|HACK|XXX|DEPRECATED)\b:?` over source
     files, respecting `.gitignore` (`git check-ignore -z --stdin`)

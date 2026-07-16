@@ -62,6 +62,13 @@
         "$ref": "#/$defs/invalidTag"
       }
     },
+    "invalid_layers": {
+      "type": "array",
+      "description": "FRs whose explicitly-headed Layers cell resolved to zero valid canonical layers (author typo/synonym). Optional + additive (older manifests omit it); kept `explicit` upstream so the D-layer hard gate still fires, surfaced here so the finding can name the raw token (Spec §11-R4).",
+      "items": {
+        "$ref": "#/$defs/invalidLayer"
+      }
+    },
     "untagged_tests": {
       "type": "array",
       "description": "Tests with no @FR tag (informational, not a hard gate).",
@@ -280,6 +287,31 @@
         "reason": {
           "type": "string",
           "description": "Optional diagnostic for why the tag is invalid, e.g. 'non_canonical_fr_id' | 'non_string_arg' (fr_tag_grammar.InvalidTag.reason). Optional so a bare {test, raw} entry still validates."
+        }
+      }
+    },
+    "invalidLayer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fr", "raw"],
+      "properties": {
+        "fr": {
+          "type": "string",
+          "pattern": "^FR-\\d{2}\\.\\d{2}$",
+          "description": "The FR whose Layers cell is unrecognized."
+        },
+        "spec_path": {
+          "type": "string",
+          "description": "Relative path to the spec.md the FR lives in."
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The unrecognized Layers cell text, e.g. 'int, db'."
+        },
+        "reason": {
+          "type": "string",
+          "description": "Optional diagnostic, e.g. 'no_canonical_layer'."
         }
       }
     }

@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-15T23:14:11.598998+00:00
+Generated: 2026-07-16T05:37:03.201740+00:00
 
 ## Requirements Coverage
 
@@ -28,6 +28,7 @@ Generated: 2026-07-15T23:14:11.598998+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-34535c2f"></a>Each requirement now declares which kinds of tests it needs; adopted projects get a sensible, non-blocking guess. | iterate | feature |  | 1060/1060 | — | 2026-07-16 |
 | <a id="evt-58cd05dd"></a>Test coverage now counts a requirement as covered at a layer only when a real test actually ran and passed there; a skipped or never-run test no longer counts. | iterate | feature |  | 1047/1047 | — | 2026-07-15 |
 | <a id="evt-3823741d"></a>Compliance can now record which tests cover each requirement, and at which layer (unit/integration/e2e), by reading @FR tags on the tests. | iterate | feature |  | 1009/1009 | — | 2026-07-15 |
 | <a id="evt-91b3f7a9"></a>freeze requirement->test traceability contracts + panel-verified harness (P1) | iterate | change |  | — | — | 2026-07-15 |
@@ -343,7 +344,7 @@ Generated: 2026-07-15T23:14:11.598998+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 308 |
+| Iterate changes | 309 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |

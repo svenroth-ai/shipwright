@@ -723,7 +723,7 @@ Shipwright's orchestrator pipeline consists of **7 phases** (project, design, pl
 **What it produces**
 
 - `.shipwright/planning/` directory with numbered split subdirectories (`01-auth/`, `02-dashboard/`, etc.)
-- `spec.md` inside each split directory -- an IREB-style specification with functional requirements, non-functional requirements, and scope boundaries
+- `spec.md` inside each split directory -- an IREB-style specification with functional requirements, non-functional requirements, and scope boundaries. Each functional requirement carries a `Layers` column declaring the test layers it must be covered at (from `{unit, integration, e2e}`) -- a UI/flow requirement gets `unit, e2e`, a CRUD/persistence requirement gets `unit, integration`, and every requirement gets `unit`. Authors override the defaults; a requirement authored without the column still parses (a UI-worded one defaults to `e2e`, everything else to `unit`). This declared set is what compliance checks per-layer coverage against, so "a UI requirement needs an E2E" becomes machine-checkable rather than tribal knowledge. `/shipwright-adopt` infers the same column from a reverse-engineered FR's detected surface (route/page ⇒ `e2e`, migration/schema/RLS-policy ⇒ `integration`).
 - `.shipwright/planning/project-manifest.md` -- execution order, dependencies between splits, and overview
 - `.shipwright/planning/requirements.md` -- consolidated requirements (generated for inline/chat modes)
 - `.shipwright/planning/shipwright_project_interview.md` -- full interview transcript
