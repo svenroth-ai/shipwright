@@ -97,6 +97,17 @@ target. All addressed on the same branch.
 
 **File footprint:** the fixes were absorbed by extracting `_group_d_manifest.py` (load + read-validate + collision, 105 LOC); `_group_d_traceability.py` stays 278 ≤ 300, all touched files ≤300, baseline NOT ratcheted.
 
+## Adversarial panel — round 3 (coordinator final; three residuals)
+
+Round-2 fixes HELD (no live false-green/false-red; collision completeness consistent; D1
+skipped-link excluded; load-validation correct). Three residuals closed.
+
+| # | Sev | Finding | Disposition |
+|---|-----|---------|-------------|
+| O1 | Med | **Provenance fail-open on a MISSING key.** `check_layer` defaulted an absent `required_layers_source` to `"defaulted_legacy"` (advisory) while `refine_d1_covered` treated `None` as fail-closed — the two sites disagreed. Masked on the real path (schema makes the key required → a missing-key node is schema-invalid → SKIP) but a contract break reachable by any direct `check_layer` call or future schema relaxation. | **fixed fail-closed** — `check_layer`'s default is now the non-legacy sentinel `"__missing__"` (routes to HARD), matching `refine_d1_covered` (which also normalises missing→`"__missing__"`). Pinned by `test_dlayer_missing_source_key_is_hard_not_advisory`. |
+| O2 | Low | **Mislabeled test.** `test_d1_unknown_source_requires_link` used `source='explicit'` (its own comment conceded the reader validates enums), so it never exercised an unknown token — it over-claimed. | **fixed (test honesty)** — renamed to `test_d1_explicit_source_requires_link` (what it proves), plus a real-path `test_out_of_vocab_source_is_rejected_on_read_and_d1_falls_back` (out-of-vocab source → schema-invalid → `load_manifest` None → D-orphan/D-layer SKIP, D1 event-proof fallback) and the direct `check_layer` missing-key test (O1). |
+| O3 | Low | **D1 silent fallback.** when `load_manifest` returns None, `refine_d1_covered` silently reverts D1 to event-only; round-2's schema-validation-on-read WIDENED this trigger, so a green D1 could hide a dropped link-proof. | **fixed (observability)** — `refine_d1_covered` now returns `(covered, note)`; the note is non-empty ONLY when the manifest is PRESENT-but-untrusted (schema-invalid) and is appended to the D1 detail. A genuinely absent manifest (expected pre-TT8) stays silent. Pinned by `test_out_of_vocab_...` (note present) + `test_d1_absent_manifest_fallback_has_no_note` (no note). |
+
 ## Internal review cascade (delegated to orchestrator)
 
 The runner has no `Agent` tool, so the internal `spec-reviewer` (HARD-GATE) → `code-reviewer`

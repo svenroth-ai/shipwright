@@ -167,18 +167,53 @@ def test_dlayer_unknown_source_is_hard_not_advisory():
     assert any("post_rollout" in e for e in ev)
 
 
-def test_d1_unknown_source_requires_link(tmp_path):
-    """MUST-FIX 1 — an unknown-source FR (schema-valid path bypassed) also OWES a link."""
+def test_dlayer_missing_source_key_is_hard_not_advisory():
+    """FIX 1 — a node whose ``required_layers_source`` key is ABSENT routes to HARD (the
+    default is a non-legacy sentinel), matching refine_d1_covered's None→fail-closed. This is
+    a direct check_layer call (the real schema-valid path can't reach it — see the SKIP test
+    below — but a future schema relaxation or any direct caller could)."""
+    node = _node("FR-01.01", source="explicit", coverage={"unit": "MISSING"})
+    node.pop("required_layers_source")  # key ABSENT
+    status, sev, detail, ev, cmd = gdt.check_layer(_manifest([node]))
+    assert status == "fail"                                   # HARD, not advisory
+    assert any("__missing__" in e for e in ev)
+
+
+def test_d1_explicit_source_requires_link(tmp_path):
+    """FIX 2 (renamed) — proves what it actually exercises: an EXPLICIT-source FR with no
+    executed-passing link is dropped from D1's covered set (requires-link path). The
+    unknown/missing-token behaviour is pinned by the SKIP test + the check_layer tests."""
     from scripts.audit._group_d_traceability import refine_d1_covered  # noqa: PLC0415
-    # refine reads the committed manifest; write one with an unknown token via load bypass —
-    # here we call the pure set logic through a monkeypatched manifest on disk is overkill,
-    # so assert the branch directly: unknown source ⇒ requires_link, no ok ⇒ dropped.
-    p = tmp_path / ".shipwright/compliance/test-traceability.json"
-    # schema-valid manifest but the reader validates enums, so use a KNOWN explicit token to
-    # prove the requires-link path; the unknown-token HARD path is covered by check_layer.
-    _write(p, json.dumps(_manifest([_node("FR-01.01", source="explicit",
-                                          coverage={"unit": "MISSING"})])))
-    assert refine_d1_covered({"FR-01.01"}, tmp_path) == set()   # explicit + no ok ⇒ dropped
+    _write(tmp_path / ".shipwright/compliance/test-traceability.json",
+           json.dumps(_manifest([_node("FR-01.01", source="explicit",
+                                        coverage={"unit": "MISSING"})])))
+    covered, note = refine_d1_covered({"FR-01.01"}, tmp_path)
+    assert covered == set()                                  # explicit + no ok ⇒ dropped
+    assert note == ""                                        # trusted manifest, no fallback
+
+
+def test_out_of_vocab_source_is_rejected_on_read_and_d1_falls_back(tmp_path):
+    """FIX 2 (real path) — an out-of-vocab ``required_layers_source`` makes the manifest
+    schema-invalid, so ``load_manifest`` returns None: D-orphan/D-layer SKIP and D1 falls
+    back to the event-proof — WITH a visible fallback note (FIX 3), because the manifest was
+    PRESENT but untrusted (a green D1 must not silently hide the dropped link-proof)."""
+    from scripts.audit._group_d_traceability import refine_d1_covered  # noqa: PLC0415
+    bad = _manifest([_node("FR-01.01", source="post_rollout", coverage={"unit": "MISSING"})])
+    _write(tmp_path / ".shipwright/compliance/test-traceability.json", json.dumps(bad))
+    assert gdt.load_manifest(tmp_path) is None               # out-of-vocab enum rejected
+    ids = {f.check_id: f for f in group_d.run(tmp_path, {}, None)}
+    assert ids["D-orphan"].status == "skip" and ids["D-layer"].status == "skip"
+    covered, note = refine_d1_covered({"FR-01.01"}, tmp_path)
+    assert covered == {"FR-01.01"}                           # event-proof fallback
+    assert "PRESENT but untrusted" in note                   # FIX 3: fallback made visible
+
+
+def test_d1_absent_manifest_fallback_has_no_note(tmp_path):
+    """FIX 3 — a genuinely ABSENT manifest (expected pre-TT8) falls back to event-proof
+    SILENTLY (no note): absence is not a masked regression, unlike present-but-untrusted."""
+    from scripts.audit._group_d_traceability import refine_d1_covered  # noqa: PLC0415
+    covered, note = refine_d1_covered({"FR-01.01"}, tmp_path)  # no manifest written
+    assert covered == {"FR-01.01"} and note == ""
 
 
 # --- MUST-FIX 3: check_orphan unknown-category + load-time schema validation -------------

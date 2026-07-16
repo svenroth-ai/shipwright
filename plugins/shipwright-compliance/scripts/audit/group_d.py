@@ -148,11 +148,11 @@ def _check_d1(
         for fr in ev.get("affected_frs", []) or []:
             if isinstance(fr, str):
                 covered.add(fr)
-    covered = _traceability.refine_d1_covered(covered, project_root)
+    covered, _d1_note = _traceability.refine_d1_covered(covered, project_root)
 
     uncovered = [fr for fr in spec_frs if fr.id not in covered]
     if not uncovered:
-        return "pass", "LOW", "every spec FR has a covering event", []
+        return "pass", "LOW", "every spec FR has a covering event" + _d1_note, []
 
     # Severity = highest priority among uncovered FRs.
     severities = {_PRIORITY_TO_SEVERITY.get(fr.priority, "LOW") for fr in uncovered}
@@ -172,7 +172,7 @@ def _check_d1(
         if len(ids) > 3:
             head += f", … (+{len(ids) - 3})"
         parts.append(f"{prio}: {head}")
-    detail = "uncovered FRs — " + "; ".join(parts)
+    detail = "uncovered FRs — " + "; ".join(parts) + _d1_note
     evidence = [f"{fr.id} ({fr.priority}, in {fr.spec_path})" for fr in uncovered]
     return "fail", severity, detail, evidence
 

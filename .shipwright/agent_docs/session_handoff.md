@@ -3,23 +3,23 @@ canon_generated: true
 run_id: "iterate-2026-07-15-layer-aware-rtm-and-gates"
 phase: "iterate"
 reason: "iterate: layer-aware RTM + D-orphan/D-layer + D1 hardening (traceability TT2)"
-timestamp: "2026-07-16T08:01:08.912769+00:00"
+timestamp: "2026-07-16T08:25:19.433920+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-16 08:01:08 UTC
+> Auto-generated 2026-07-16 08:25:19 UTC
 
 ## Session Info
 
 - **Session ID**: a69abb9e-d21a-40a1-846b-13913cca2b09
-- **Timestamp**: 2026-07-16 08:01:08 UTC
+- **Timestamp**: 2026-07-16 08:25:19 UTC
 - **Reason**: iterate: layer-aware RTM + D-orphan/D-layer + D1 hardening (traceability TT2)
 
 ## Last Iterate
 
 - **Run ID**: iterate-2026-07-15-layer-aware-rtm-and-gates
-- **Date**: 2026-07-16T08:01:04.421749Z
+- **Date**: 2026-07-16T08:25:14.821180Z
 - **Type**: feature
 - **Complexity**: medium
 - **Branch**: iterate/campaign-TT2-layer-aware-rtm-and-gates
@@ -49,7 +49,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Git State
 
 - **Branch**: iterate/campaign-TT2-layer-aware-rtm-and-gates
-- **Last Commit**: 95e6d01f feat(compliance): layer-aware RTM + D-orphan/D-layer detectives + D1 hardening (traceability TT2)
+- **Last Commit**: f237f94b fix(compliance): close TT2 adversarial-panel fail-open / false-green holes (same iterate)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,11 +65,11 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-dbf6b0b1 | grade_snapshot | — | 2026-07-16 |
 | evt-44b63518 | grade_snapshot | — | 2026-07-16 |
 | evt-2b536e9c | grade_snapshot | — | 2026-07-16 |
 | evt-2c0654b3 | work_completed | iterate (Layer-aware RTM columns + D-orphan/D-layer detectives + D1 hardening (traceability TT2)) | 2026-07-16 |
 | evt-52bbc0b4 | grade_snapshot | — | 2026-07-16 |
-| evt-05a832b4 | grade_snapshot | — | 2026-07-16 |
 
 ## Recovery
 

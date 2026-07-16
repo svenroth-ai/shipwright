@@ -40,6 +40,7 @@ from scripts.audit._group_d_manifest import (
     collision_ids,
     fanned_possible_orphans,
     load_manifest,
+    manifest_present,
 )
 from scripts.audit.audit_adapters import Finding, SOURCE_DETECTIVE_ONLY
 
@@ -136,7 +137,9 @@ def check_layer(manifest: dict) -> tuple[str, str, str, list[str], str | None]:
     for node in reqs.values():
         if node.get("status") != "active":
             continue
-        source = node.get("required_layers_source", "defaulted_legacy")
+        # FIX 1 — a MISSING/None/empty key defaults to a NON-legacy sentinel so it routes to
+        # HARD (matching refine_d1_covered's None→fail-closed), never fail-open to advisory.
+        source = node.get("required_layers_source") or "__missing__"
         coverage = node.get("coverage") or {}
         disp = node.get("id")
         priority = node.get("priority", "Must")
@@ -200,21 +203,28 @@ def check_layer(manifest: dict) -> tuple[str, str, str, list[str], str | None]:
 # ---------------------------------------------------------------------------
 
 
-def refine_d1_covered(event_tested: set[str], project_root: Path) -> set[str]:
-    """Drop from the event-tested ``covered`` set any FR that ALSO owes a manifest test
-    link but has no *executed-passing* one — the second, SEPARATE proof (Spec §5). The two
-    proofs never collapse: a tested event for FR-A + a tagged test for a *different* FR-B
-    can't cover FR-A (``linked`` keys each FR to its OWN links), and a merely-present but
-    skipped link does NOT satisfy it (R1 — the link must be ``coverage==ok``).
+def refine_d1_covered(event_tested: set[str], project_root: Path) -> tuple[set[str], str]:
+    """Return ``(covered, note)``. Drop from the event-tested ``covered`` set any FR that
+    ALSO owes a manifest test link but has no *executed-passing* one — the second, SEPARATE
+    proof (Spec §5). The two proofs never collapse: a tested event for FR-A + a tagged test
+    for a *different* FR-B can't cover FR-A (``linked`` keys each FR to its OWN links), and a
+    merely-present but skipped link does NOT satisfy it (R1 — the link must be ``coverage==ok``).
 
     Fail-closed provenance (MUST-FIX 1): the link is required for ``explicit`` **and any
-    UNKNOWN** provenance token; only a KNOWN legacy source keeps the event-only proof so the
-    pre-TT8 monorepo does not avalanche. A **collision** id is left on the event proof (its
-    link is indeterminate — a HARD drop would be a false-red; D-layer surfaces the ambiguity
-    advisory instead). No manifest → event-proof only."""
+    UNKNOWN / missing** provenance token; only a KNOWN legacy source keeps the event-only
+    proof so the pre-TT8 monorepo does not avalanche. A **collision** id is left on the event
+    proof (its link is indeterminate — a HARD drop would be a false-red; D-layer surfaces the
+    ambiguity advisory instead).
+
+    ``note`` (FIX 3 observability): non-empty when the link-proof was skipped because the
+    manifest is PRESENT-but-untrusted (schema-invalid) — a green D1 could then hide a dropped
+    link-proof, so the fallback is made visible. Empty for a trusted manifest OR a genuinely
+    absent one (absent is expected pre-TT8, not a masked regression)."""
     manifest = load_manifest(project_root)
     if manifest is None:
-        return event_tested
+        note = (" [D1 link-proof skipped: manifest PRESENT but untrusted (schema-invalid) —"
+                " event-proof only]" if manifest_present(project_root) else "")
+        return event_tested, note
     reqs = manifest.get("requirements") or {}
     collisions = collision_ids(reqs)
     linked: set[str] = set()
@@ -223,15 +233,16 @@ def refine_d1_covered(event_tested: set[str], project_root: Path) -> set[str]:
         if node.get("status") != "active":
             continue
         disp = node.get("id")
-        if node.get("required_layers_source") not in _LEGACY_SOURCES:
-            requires_link.add(disp)  # explicit OR unknown token → fail-closed
+        if (node.get("required_layers_source") or "__missing__") not in _LEGACY_SOURCES:
+            requires_link.add(disp)  # explicit OR unknown/missing token → fail-closed
         if disp not in collisions and any(
                 c == "ok" for c in (node.get("coverage") or {}).values()):
             linked.add(disp)  # a non-ambiguous executed-passing link (R1)
-    return {
+    covered = {
         fr for fr in event_tested
         if fr not in requires_link or fr in linked or fr in collisions
     }
+    return covered, ""
 
 
 # ---------------------------------------------------------------------------

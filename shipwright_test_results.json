@@ -4,8 +4,8 @@
     "date": "2026-07-16",
     "unit": {
       "status": "passed",
-      "passed": 1101,
-      "total": 1101
+      "passed": 1104,
+      "total": 1104
     },
     "integration": {
       "status": "passed",
@@ -124,11 +124,16 @@
           "behavior": "PANEL-2 S4/S5/S6 — invalid_tags surfaced as a hygiene finding; the D1 link-proof requires coverage==ok (a skipped link is not coverage, R1); R1 pinned end-to-end via build_manifest (skipped evidence → MISSING → D-layer explicit HARD)",
           "disposition": "tested",
           "evidence": "test_group_d_hardening.py::test_orphan_surfaces_invalid_tags + ::test_r1_skipped_evidence_makes_explicit_layer_hard_fail + test_d1_hardening.py::test_d1_explicit_fr_with_only_a_skipped_link_is_uncovered PASSED"
+        },
+        {
+          "behavior": "PANEL-3 FIX1/2/3 — check_layer's missing/None required_layers_source defaults to a NON-legacy sentinel → HARD (matching refine_d1_covered, no fail-open); the honest renamed explicit-requires-link test + real-path out-of-vocab-source→schema-invalid→SKIP + a visible D1 fallback note when the manifest is PRESENT-but-untrusted (absent → silent, no note)",
+          "disposition": "tested",
+          "evidence": "test_group_d_hardening.py::test_dlayer_missing_source_key_is_hard_not_advisory + ::test_d1_explicit_source_requires_link + ::test_out_of_vocab_source_is_rejected_on_read_and_d1_falls_back + ::test_d1_absent_manifest_fallback_has_no_note PASSED"
         }
       ],
       "counts": {
-        "testable": 16,
-        "tested": 16,
+        "testable": 17,
+        "tested": 17,
         "untestable": 0,
         "untested_testable": 0
       },

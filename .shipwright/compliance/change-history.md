@@ -1,13 +1,13 @@
 # Commit Change Log
 
 Generated: 2026-07-16T07:19:43.140029+00:00
-Total commits: 1147
+Total commits: 1148
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 331
+    "fix" : 332
     "feat" : 314
     "chore" : 240
     "docs" : 145
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 331 commits
+### Fixes (fix) — 332 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-16 | compliance | close TT2 adversarial-panel fail-open / false-green holes (same iterate) | f237f94b3e00 |
 | 2026-07-15 | iterate | pin finalize_iterate.py stdio to UTF-8 (cp1252 Windows crash aborted the finalize bundle) (#376) | c25d681a72ce |
 | 2026-07-15 | churn | admit ci-security.json to the merge allowlist so iterate merges don't abort (#375) | fc3e48c3de7f |
 | 2026-07-15 | test | stop the perf-check integration test leaking triage into tracked fixtures (#373) | af0187a9a981 |
@@ -1216,7 +1217,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1147 |
+| Total commits | 1148 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1147 |
+| Human-authored commits | 1148 |
 

@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-16T07:19:47.556516Z. Items waiting for triage decision.
+> Auto-generated 2026-07-16T08:01:08.912769Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 303
-- Triage: 6 | Promoted: 1 | Dismissed: 295 | Snoozed: 1
+- Total: 304
+- Triage: 7 | Promoted: 1 | Dismissed: 295 | Snoozed: 1
 
-## Top 6 items (severity-sorted)
+## Top 7 items (severity-sorted)
 
 ### Source: campaign-anchor (2 items)
 
@@ -43,6 +43,23 @@
     Each finding + hint is listed in this item's detail.
     ```
   - Promote: `triage_promote.py --id trg-4a615381 --task-ref EXT:<ref>`
+
+### Source: github (1 item)
+
+<a id="trg-c3f016c2"></a>
+- **GitHub security: 1 shipwright-security finding(s) (medium)** `id=trg-c3f016c2 | severity=medium | kind=improvement → P2/engineering`
+  - Repo svenroth-ai/shipwright \| code-scanning: (unavailable) \| dependabot: (unavailable) \| shipwright-security: 1 medi…
+  - Launch payload (copy into a new Claude session):
+    ```text
+    /shipwright-security
+    
+    Context: the shipwright-security CI workflow reports 1 open finding(s) for svenroth-ai/shipwright (GHAS Code Scanning is not configured).
+    Severity breakdown — shipwright-security: 1 medium.
+    Workflow run: https://github.com/svenroth-ai/shipwright/actions/runs/29476710363
+    Re-scan locally: see docs/security-ci-setup.md
+    Source: triage item gh-security:svenroth-ai/shipwright
+    ```
+  - Promote: `triage_promote.py --id trg-c3f016c2 --task-ref EXT:<ref>`
 
 ### Source: iterate (1 item)
 

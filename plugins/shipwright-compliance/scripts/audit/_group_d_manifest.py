@@ -33,6 +33,15 @@ def _schema_valid(data: dict) -> bool:
         return False
 
 
+def manifest_present(project_root: Path) -> bool:
+    """True when the committed manifest FILE exists (regardless of whether it validates).
+
+    Lets a consumer distinguish a PRESENT-but-untrusted (schema-invalid) manifest — where a
+    fail-closed SKIP / fallback could mask a real regression — from a genuinely absent one
+    (expected pre-TT8), so the untrusted case can be surfaced (FIX 3)."""
+    return (Path(project_root) / _MANIFEST_REL).exists()
+
+
 def load_manifest(project_root: Path) -> dict | None:
     """Read + schema-validate the committed v2 manifest. ``None`` on ANY failure.
 
