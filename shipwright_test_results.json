@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-15-removal-crosslayer-gates",
+    "run_id": "iterate-2026-07-15-shared-backfill-engine",
     "date": "2026-07-16",
     "unit": {
       "status": "passed",
-      "passed": 4164,
-      "total": 4164
+      "passed": 4597,
+      "total": 4597
     },
     "integration": {
       "status": "passed",
-      "passed": 15,
-      "total": 15
+      "passed": 1,
+      "total": 1
     },
     "pgtap": {
       "status": "not_run",
@@ -31,75 +31,86 @@
       "status": "skipped"
     },
     "degraded": [
-      "complexity classifier returned risk_flag cross_component from message-prose keywords (verifier machinery); the diff touches NO cross_component file pattern (iterate_checks is deliberately excluded — self-gating is circular), so the F11 check_integration_coverage recompute does NOT fire. A real category:integration behavior is supplied anyway (below)."
+      "complexity classifier returned risk_flag cross_component from message-prose keywords (\"shared tooling\", \"composes with\"); the diff touches NO cross_component file pattern (backfill_* files are not framework machinery like churn/hooks/phase-validators), so the F11 check_integration_coverage recompute does NOT fire. A real category:integration behavior (backfill → TT1 collector manifest) is supplied anyway (below).",
+      "risk_flag touches_rls is a message-keyword false positive (matched \"residue\"); no RLS/auth/migration is touched by this shared-tooling diff."
     ],
     "surface_verification": {
       "surface": "none",
       "runner": "surface_verification.py --surface none",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-15-removal-crosslayer-gates/surface_verification.json",
+      "evidence_path": ".shipwright/runs/iterate-2026-07-15-shared-backfill-engine/surface_verification.json",
       "timestamp": "2026-07-16T00:00:00+00:00",
-      "justification": "Framework tooling change: two F11 iterate-finalization verifier gates (shared/scripts/tools/verifiers/layer_coverage.py + _layer_coverage_{core,removal,regen,evidence}.py) + a shared emit-side (shared/scripts/lib/evidence_drop.py) + F5.md prose. No runnable app surface (web/cli/api) added or modified. Exercised by the CLI surface (evidence_drop.py stage/clear + verify_iterate_finalization.py) plus the pytest suites (shared, iterate 476, compliance 1104) AND a REAL-git end-to-end integration+hardening suite (test_layer_coverage_gate_integration.py + test_layer_coverage_hardening.py, 15 tests: removal blocks on a standing/renamed/moved test and a wholesale row deletion, an infra gap/unresolvable base ERRORs at medium+, cross-layer blocks a skipped/foreign/stale-run e2e, a relocation + refactor do NOT block) that composes the gate with the TT1 collector + TT-EV evidence + git-archive regeneration."
+      "justification": "Framework tooling change: a new shared engine shared/scripts/tools/backfill_test_links.py + four _lib legs (backfill_scan/signals/write/llm) + a fixture mini-repo + tests. No runnable app surface (web/cli/api) added or modified. Exercised by the CLI surface (backfill_test_links.py --project-root/--dry-run/--use-llm) plus the shared pytest suites AND a REAL cross-component integration test that runs the TT1 test_links collector in a clean subprocess over the fixture repo after backfill writes tags."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 — removal→orphan gate: removing an FR while its base-linked test still stands FAILs; deleting or retargeting to a live FR passes; a bare @FR tag removal (escape into untagged_tests) FAILs",
+          "behavior": "AC1 — over a tagless fixture repo the engine auto-writes ONLY deterministic single-FR matches (path_fr_token FR-05.02, unique_split FR-06.01), lists title-similarity as a proposal (FR-05.01, not written), and reports the three orphan categories",
           "disposition": "tested",
-          "evidence": "shared/tests/test_layer_coverage.py::test_removal_still_tagged_fails + ::test_removal_bare_tag_removal_fails + ::test_removal_retarget_passes + ::test_removal_deleted_test_passes PASSED; real-git shared/tests/test_layer_coverage_gate_integration.py::test_removal_gate_blocks_on_real_git PASSED"
+          "evidence": "shared/scripts/tools/tests/test_backfill_test_links.py::test_deterministic_auto_writes_and_categories PASSED (asserts the tag edits in-file, the proposal, confirmed+possible+unmapped orphans)"
         },
         {
-          "behavior": "AC2 — change→cross-layer gate: a behaviour-changed FR requiring [unit,e2e] FAILs when a required layer is not executed-passing and passes only when ALL are; a pure refactor with no spec delta triggers nothing",
+          "behavior": "AC2 — title-similarity and the LLM leg may NEVER auto-write alone (§11-R1): even a 0.99-confidence LLM verdict + title match stays a proposal; deterministic legs run offline; the LLM leg is opt-in and touches only the residue",
           "disposition": "tested",
-          "evidence": "shared/tests/test_layer_coverage.py::test_cross_layer_requires_all_layers_missing_one_blocks + ::test_cross_layer_requires_all_layers_both_passing_is_green + ::test_cross_layer_skipped_test_fails + ::test_cross_layer_pure_refactor_does_not_fire PASSED; integration ::test_refactor_does_not_block_on_real_git PASSED"
+          "evidence": "test_backfill_llm.py::test_title_and_llm_never_auto_write + ::test_llm_disabled_by_default_is_deterministic PASSED"
         },
         {
-          "behavior": "AC3 — both gates REGENERATE base+head (a hand-edited committed manifest cannot satisfy them); an empty FR→behaviour mapping emits could-not-determine WARN, never a silent pass",
+          "behavior": "AC3 — idempotent: a second run adds no duplicate tag, files are byte-stable, and the machine-readable report is deterministically ordered across runs",
           "disposition": "tested",
-          "evidence": "shared/tests/test_layer_coverage_core.py::test_cross_layer_could_not_determine_when_spec_changed_but_no_fr + ::test_cross_layer_could_not_determine_when_spec_changed_but_no_row_delta PASSED; regeneration proven by the real-git integration suite (archives base+head, never reads the committed artifact)"
+          "evidence": "test_backfill_test_links.py::test_idempotent_rerun_adds_no_duplicate_tags + ::test_already_tagged_test_is_honoured_not_rewritten + ::test_report_is_deterministically_ordered_and_written PASSED"
         },
         {
-          "behavior": "AC4 — NEW tests RED-before/green-after over P1's removal/behaviour-change/refactor diff fixtures + execution-evidence; framework suites green",
+          "behavior": "AC4 — NEW RED-before/green-after tests for the cascade, confidence gating, orphan detection, idempotency, conflict, mixed/multi-dead tags, CRLF preservation, and pytest-import safety; framework suites green",
           "disposition": "tested",
-          "evidence": "shared/tests/test_layer_coverage.py (fixture-driven build_manifest over on-disk base/head) + test_layer_coverage_core.py + test_evidence_drop.py PASSED; shared 4164 / iterate 476 / compliance 1104 green"
+          "evidence": "24 backfill tests (test_backfill_test_links.py + test_backfill_llm.py) PASSED; shared framework suites green (shared/tests + scripts/tests + scripts/tools/tests, incl. test_events_log_ssot.py + test_artifact_path_canon.py); compliance traceability suites green (98)"
         },
         {
-          "behavior": "AC5 — footprint within the verifiers module + run_all_checks wiring + tests; every new source/test file ≤300 LOC; bloat baseline NOT ratcheted (the emit-side lives in shared/scripts/lib and surface_verification.py was left untouched to avoid ratcheting its grandfathered 463-LOC entry)",
+          "behavior": "Write safety (coordinator C1/C1b) — the source line ending is preserved CROSS-PLATFORM (read_bytes/write_bytes, no os.linesep translation; the CI-red green-local/red-Linux CRLF bug is gone) and a non-UTF-8 source is skipped untouched + recorded in write_failures (never a partial write), with the report always emitted",
           "disposition": "tested",
-          "evidence": "wc -l all new source ≤300 (core 190, removal 263, regen 257, evidence 87, layer_coverage 227, evidence_drop 187, _migration_check 52) + all new tests ≤300; shipwright_bloat_baseline.json unchanged (iterate_checks + common.py kept under baseline via the _migration_check extraction + docstring compaction); both gates registered in run_all_checks (test_layer_coverage_core.py::test_both_gates_registered_in_run_all_checks PASSED)"
+          "evidence": "test_backfill_test_links.py::test_crlf_line_endings_preserved_on_insert (byte-level) + ::test_non_utf8_source_is_skipped_and_recorded PASSED; empirical CRLF+LF probe confirms byte-identical output for both endings"
         },
         {
-          "behavior": "cross_component composition (category:integration) — the gate composes with the TT1 collector + TT-EV execution evidence + git-diff base/head regeneration on REAL git",
+          "behavior": "unique_split is convention-gated (coordinator C2) — a bare NN- filename prefix auto-writes ONLY with --repo-follows-split-convention (default OFF for the shared engine / adopt, since NN- is the Playwright/Cypress execution-order convention on brownfield repos); OFF → advisory proposal, ON → auto-write",
+          "disposition": "tested",
+          "evidence": "test_backfill_test_links.py::test_unique_split_is_advisory_without_convention_flag (default OFF → proposal, not written) + ::test_deterministic_auto_writes_and_categories (flag ON → unique_split auto-write) PASSED"
+        },
+        {
+          "behavior": "LLM payload secret redaction (§11-R4 / coordinator C3) — token shapes (GitHub/OpenAI/AWS/Slack/JWT/Bearer/long-hex) are scrubbed from path+title before anything leaves the process",
+          "disposition": "tested",
+          "evidence": "test_backfill_llm.py::test_secrets_are_redacted_before_leaving_the_process PASSED (a token embedded in a test title reaches the adjudicator as [REDACTED])"
+        },
+        {
+          "behavior": "AC5 — footprint within shared/scripts/{tools,lib} + tests; every new source file ≤300 LOC (scan 295, signals 288, tool 275, llm 179, write 117); bloat baseline NOT ratcheted",
+          "disposition": "tested",
+          "evidence": "wc -l all new source ≤300; shipwright_bloat_baseline.json unchanged; ruff@0.15.15 clean on all new files"
+        },
+        {
+          "behavior": "Orphan categories (§11-R4) — confirmed_orphan (one record per dead tag, removed vs absent), possible_orphan (untagged, removed-only path/commit/title signal), unmapped (no signal, never an accusation); an orphan is surfaced, never deleted",
+          "disposition": "tested",
+          "evidence": "test_backfill_test_links.py::test_mixed_live_and_dead_tag_surfaces_confirmed_orphan + ::test_every_dead_tag_surfaces_as_its_own_confirmed_orphan + ::test_removed_only_path_token_is_possible_orphan_not_unmapped + ::test_orphan_is_surfaced_never_deleted PASSED"
+        },
+        {
+          "behavior": "LLM data controls (§11-R4) — offline by default; the opt-in payload carries only path+title+FR-ids (never a body, guard rejects it); untrusted output outside the candidate set is dropped; CI uses P1's stubbed record/replay adapter (no live call)",
+          "disposition": "tested",
+          "evidence": "test_backfill_llm.py::test_llm_payload_guard_refuses_a_body + ::test_untrusted_llm_out_of_set_fr_is_dropped + ::test_llm_leg_offline_via_p1_record_replay_adapter PASSED"
+        },
+        {
+          "behavior": "Signal (d) introducing-commit — a real git-init + shipwright_events.jsonl mapping a commit to a single FR drives a unique_commit auto-write (no injection); a multi-FR commit stays advisory",
+          "disposition": "tested",
+          "evidence": "test_backfill_test_links.py::test_introducing_commit_map_reads_real_git_and_events + ::test_unique_commit_signal_auto_writes + ::test_multi_fr_commit_stays_advisory PASSED"
+        },
+        {
+          "behavior": "cross_component composition (category:integration) — the engine composes with the TT1 test_links collector + manifest: after backfill writes tags, build_manifest (run in a clean subprocess) reflects them as coverage links and surfaces the removed-FR orphan",
           "category": "integration",
           "disposition": "tested",
-          "evidence": "shared/tests/test_layer_coverage_gate_integration.py (9 real-git tests: git archive base+head → build_manifest → refresh_index evidence → gate verdict) PASSED — the reference-pattern analogue of test_parallel_merge_cascade_integration.py"
-        },
-        {
-          "behavior": "External-review MUST-FIX (7-round GPT+Gemini panel) — stale/planted evidence index is REGENERATED from staged reports (R3); evidence is HEAD-attributable (mandatory head_commit + ancestor check); removal escapes (still-tagged, bare-strip, file-rename, function-rename, move+kept-tag via git-independent orphan sweep, move+untagged same-name) are HARD; collision/legacy gaps are advisory WARN, not silent green",
-          "disposition": "tested",
-          "evidence": "test_layer_coverage_core.py::test_fresh_evidence_regenerates_from_reports_ignoring_planted_index + integration ::test_cross_layer_gate_blocks_when_evidence_head_commit_is_foreign + ::test_cross_layer_gate_ignores_planted_pass_index_regenerates_from_report; test_layer_coverage.py::test_removal_moved_test_keeps_dead_tag_fails_without_rename_map + ::test_removal_moved_untagged_same_name_fails_without_rename_map + ::test_removal_function_rename_strip_same_file_fails; test_layer_coverage_core.py::test_advisory_only_verdicts_surface_as_warning_not_green PASSED"
-        },
-        {
-          "behavior": "Security (Gemini panel) — the pre-3.12 tar-extract fallback rejects path traversal (containment, not a startswith prefix) AND symlink/hardlink/device members",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_layer_coverage_core.py::test_safe_extract_rejects_path_traversal PASSED; _safe_extract skips non-reg/non-dir members (member.isreg()/isdir())"
-        },
-        {
-          "behavior": "Coordinator adversarial-panel (code+doubt+Codex) MUST-FIX — (1) an infra gap ERRORs/blocks at medium+ (never a green SKIP), SKIPs below; (2) evidence is built IN-MEMORY from ONLY the provenance-staged reports (no refresh_index root-fallback ingestion, no index write), and stage_reports FAILs on an un-purgeable stale report; (3) a wholesale FR-row deletion with a surviving test FAILs while a relocation is not false-red; (4) no commit^ base fallback → an unresolvable base ERRORs; removal floors to all complexities (SHOULD-6); advisory/could-not-determine are --strict-exempt (SHOULD-7)",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_layer_coverage_hardening.py (missing-commit ERROR@medium / SKIP<medium, no-base-ref ERROR, deleted-row FAIL, relocation not-false-red, stale-run + foreign-head evidence blocked) PASSED; test_layer_coverage_core.py::test_fresh_evidence_ignores_repo_root_report_fallback + ::test_fresh_evidence_builds_from_reports_ignoring_planted_index PASSED; test_evidence_drop stage/clear raise-on-failure"
-        },
-        {
-          "behavior": "Coordinator panel round-3 (final) MEDIUM residuals — FIX 1: a git SUBPROCESS failure/timeout on a real medium+ work-tree ERRORs (fail-closed), distinguished from a CLEAN non-git context which SKIPs (a tri-state _git_context, no longer the fail-open _git_available conflation); FIX 2: the base ref also resolves via the branch's upstream @{u}, so an adopted repo with a develop/trunk default + unset origin/HEAD is not false-RED, while a truly unresolvable base still ERRORs",
-          "disposition": "tested",
-          "evidence": "test_layer_coverage_hardening.py::test_git_subprocess_failure_errors_at_medium + ::test_non_git_project_skips + ::test_base_resolves_via_upstream_on_adopted_default + ::test_no_base_ref_errors_not_narrowed_diff PASSED"
+          "evidence": "shared/scripts/tools/tests/test_backfill_llm.py::test_backfill_feeds_tt1_manifest_end_to_end PASSED (subprocess drives the real compliance collector over the fixture repo)"
         }
       ],
       "counts": {
-        "testable": 10,
-        "tested": 10,
+        "testable": 12,
+        "tested": 12,
         "untestable": 0,
         "untested_testable": 0
       },

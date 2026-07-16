@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-15-shared-backfill-engine",
+  "date": "2026-07-16T14:59:07.664392Z",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/campaign-TT6-shared-backfill-engine",
+  "spec": ".shipwright/planning/iterate/campaigns/2026-07-15-test-traceability-layers/sub-iterates/TT6-shared-backfill-engine.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-15-shared-backfill-engine"
+}
