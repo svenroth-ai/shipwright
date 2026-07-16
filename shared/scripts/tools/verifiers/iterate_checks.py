@@ -41,7 +41,6 @@ from lib.architecture_doc import (  # noqa: E402
 )
 from lib.events_log import resolve_events_path, resolve_main_repo_root  # noqa: E402
 from lib.iterate_entry import (  # noqa: E402
-    MIGRATION_QUARANTINED_COUNT_KEY,
     find_entry_by_run_id,
     read_iterate_entries,
     sanitize_run_id_for_filename,
@@ -58,6 +57,10 @@ from .integration_coverage import (  # noqa: E402, F401 — re-exported surface
     _CROSS_COMPONENT_PATTERNS,
     _is_cross_component,
 )
+# The two enforcing traceability F11 gates (TT5) + the extracted migration check,
+# re-exported from their historical home (`iterate_checks`).
+from ._migration_check import check_migration_quarantine_empty  # noqa: E402, F401
+from .layer_coverage import check_cross_layer_coverage, check_removal_coverage  # noqa: E402, F401
 
 
 # ---------------------------------------------------------------------------
@@ -1064,33 +1067,6 @@ def check_architecture_documented(project_root: Path, run_id: str) -> CheckResul
     )
 
 
-def check_migration_quarantine_empty(project_root: Path) -> CheckResult:
-    """Advisory warn — flag if iterate_history migration quarantined any entries.
-
-    Loud signal on the operator's console so quarantined losses don't go
-    unnoticed. Does not fail the check so follow-on work can proceed.
-    """
-    name = "iterate migration quarantine empty"
-    cfg = project_root / "shipwright_run_config.json"
-    if not cfg.exists():
-        return CheckResult(name, None, "no run_config", severity=Severity.SKIPPED.value)
-    try:
-        data = json.loads(cfg.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return CheckResult(name, None, "malformed run_config", severity=Severity.SKIPPED.value)
-
-    count = data.get(MIGRATION_QUARANTINED_COUNT_KEY, 0)
-    if not isinstance(count, int) or count == 0:
-        return CheckResult(name, True, "no quarantined legacy entries")
-
-    report = data.get("_iterate_migration_quarantine_report", "<no report path>")
-    return CheckResult(
-        name, False,
-        f"{count} legacy iterate entries quarantined during migration — see {report}",
-        severity=Severity.WARNING.value,
-    )
-
-
 # Orchestrator (kept for backwards compat with verify_iterate_finalization.py).
 def run_all_checks(
     project_root: Path,
@@ -1115,6 +1091,8 @@ def run_all_checks(
         ),
         check_architecture_documented(project_root, run_id),
         check_integration_coverage(project_root, run_id, commit_hash),
+        check_removal_coverage(project_root, run_id, commit_hash),
+        check_cross_layer_coverage(project_root, run_id, commit_hash),
         check_agent_doc_budget(project_root, run_id, commit_hash),
     ]
 

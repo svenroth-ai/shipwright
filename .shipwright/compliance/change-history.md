@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-07-16T09:21:21.946290+00:00
+Generated: 2026-07-16T12:01:57.347888+00:00
 Total commits: 1148
 
 ## Commit Distribution
@@ -360,7 +360,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-16 | iterate | TS/JS silent-skip ban + quarantine-with-expiry hygiene gate (traceability TT4) | 9842c1d2fd87 |
+| 2026-07-16 | iterate | TS/JS silent-skip ban + quarantine-with-expiry hygiene gate (traceability TT4) (#382) | 2c70a4ba6653 |
 | 2026-07-16 | compliance | layer-aware RTM + D-orphan/D-layer detectives + D1 hardening (traceability TT2) (#381) | 61646d3bd22f |
 | 2026-07-16 | traceability | declare required_layers per FR + adopt surface-inference (TT3) (#380) | bbb19a1e7123 |
 | 2026-07-16 | compliance | per-test execution-evidence reader -> execution-backed coverage (TT-EV) (#379) | 188af9ad5bbe |

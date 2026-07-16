@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-16T09:21:21.946290+00:00
+Generated: 2026-07-16T12:01:57.347888+00:00
 
 ## Requirements Coverage
 
@@ -28,6 +28,7 @@ Generated: 2026-07-16T09:21:21.946290+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-13178e21"></a>Shipwright now blocks an iterate that removes a feature but leaves its test running, or changes behaviour without a passing test at every layer that feature requires. | iterate | feature |  | 4164/4164 | — | 2026-07-16 |
 | <a id="evt-ef5ce6c0"></a>Test files written in TypeScript or JavaScript can no longer quietly disable a test: a skipped or focused test must carry an expiry-dated quarantine note, or the check fails. | iterate | feature |  | 4572/4572 | — | 2026-07-16 |
 | <a id="evt-2c0654b3"></a>The requirements matrix now shows per-layer test coverage (Unit/Integration/E2E), and compliance flags tests pointing at deleted requirements plus requirements missing a required test layer. | iterate | feature |  | 1090/1090 | — | 2026-07-16 |
 | <a id="evt-34535c2f"></a>Each requirement now declares which kinds of tests it needs; adopted projects get a sensible, non-blocking guess. | iterate | feature |  | 1060/1060 | — | 2026-07-16 |
@@ -346,7 +347,7 @@ Generated: 2026-07-16T09:21:21.946290+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 311 |
+| Iterate changes | 312 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |

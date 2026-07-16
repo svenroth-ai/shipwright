@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-15-tsjs-skip-ban",
+    "run_id": "iterate-2026-07-15-removal-crosslayer-gates",
     "date": "2026-07-16",
     "unit": {
       "status": "passed",
-      "passed": 4591,
-      "total": 4591
+      "passed": 4164,
+      "total": 4164
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 9,
+      "total": 9
     },
     "pgtap": {
       "status": "not_run",
@@ -31,84 +31,65 @@
       "status": "skipped"
     },
     "degraded": [
-      "complexity classifier returned touches_auth — a prose-keyword false positive (prior_source=keyword, history_n=0); the diff touches zero auth code (a new TS/JS hygiene scanner + CLI routing + two iterate reference docs + tests). Left at 'small'; F11 recomputes risk from diff-predicates."
+      "complexity classifier returned risk_flag cross_component from message-prose keywords (verifier machinery); the diff touches NO cross_component file pattern (iterate_checks is deliberately excluded — self-gating is circular), so the F11 check_integration_coverage recompute does NOT fire. A real category:integration behavior is supplied anyway (below)."
     ],
     "surface_verification": {
       "surface": "none",
       "runner": "surface_verification.py --surface none",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-15-tsjs-skip-ban/surface_verification.json",
+      "evidence_path": ".shipwright/runs/iterate-2026-07-15-removal-crosslayer-gates/surface_verification.json",
       "timestamp": "2026-07-16T00:00:00+00:00",
-      "justification": "Framework tooling change: a new shared TS/JS test-hygiene scanner (ts_test_hygiene.py + _ts_lexer.py) + CLI routing in scan_test_hygiene.py + two iterate reference docs (F0.5.md, iteration-reviews.md) + tests. No runnable app surface (web/cli/api) added or modified. Exercised by the CLI surface (scan_test_hygiene.py --files/--diff on real .spec.ts fixtures: exit 0 clean / 1 findings / 2 usage) plus the pytest suites (shared 4115, iterate 476) and two real git-diff end-to-end probes (incl. chained .only.each flagged, conditional test.skip(cond) exempt, /test.only(/ regex not flagged) recorded in the iterate ADR Confidence Calibration."
+      "justification": "Framework tooling change: two F11 iterate-finalization verifier gates (shared/scripts/tools/verifiers/layer_coverage.py + _layer_coverage_{core,removal,regen}.py) + a shared emit-side (shared/scripts/lib/evidence_drop.py) + F5.md prose. No runnable app surface (web/cli/api) added or modified. Exercised by the CLI surface (evidence_drop.py stage/clear + verify_iterate_finalization.py) plus the pytest suites (shared 4164, iterate 476, compliance 1104) AND a REAL-git end-to-end integration suite (test_layer_coverage_gate_integration.py, 9 tests: removal blocks on a standing/renamed test, cross-layer blocks a skipped/foreign/planted-index e2e, refactor does NOT block) that composes the gate with the TT1 collector + TT-EV evidence + git-archive regeneration."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 — a test.skip/it.skip/describe.skip/test.fixme/xit/xfail OR a focused test (.only/fit/fdescribe) in a changed TS/JS spec without valid quarantine metadata fails the hygiene gate",
+          "behavior": "AC1 — removal→orphan gate: removing an FR while its base-linked test still stands FAILs; deleting or retargeting to a live FR passes; a bare @FR tag removal (escape into untagged_tests) FAILs",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ts_test_hygiene.py::test_skip_form_without_quarantine_is_flagged + ::test_focus_form_is_unconditional_fail + ::test_only_is_not_quarantineable_even_with_annotation PASSED; shared/tests/test_scan_test_hygiene_cli.py::test_focused_test_exits_one + ::test_bare_xfail_exits_one PASSED"
+          "evidence": "shared/tests/test_layer_coverage.py::test_removal_still_tagged_fails + ::test_removal_bare_tag_removal_fails + ::test_removal_retarget_passes + ::test_removal_deleted_test_passes PASSED; real-git shared/tests/test_layer_coverage_gate_integration.py::test_removal_gate_blocks_on_real_git PASSED"
         },
         {
-          "behavior": "AC2 — a properly-quarantined skip (reason+owner+ticket+future expires) passes; a missing field / malformed / past-expires quarantine fails",
+          "behavior": "AC2 — change→cross-layer gate: a behaviour-changed FR requiring [unit,e2e] FAILs when a required layer is not executed-passing and passes only when ALL are; a pure refactor with no spec delta triggers nothing",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ts_test_hygiene.py::test_valid_future_quarantine_passes + ::test_expired_quarantine_fails + ::test_expires_today_is_not_expired + ::test_malformed_expires_is_treated_as_missing + ::test_missing_field_fails + ::test_block_comment_quarantine_form_passes PASSED"
+          "evidence": "shared/tests/test_layer_coverage.py::test_cross_layer_requires_all_layers_missing_one_blocks + ::test_cross_layer_requires_all_layers_both_passing_is_green + ::test_cross_layer_skipped_test_fails + ::test_cross_layer_pure_refactor_does_not_fire PASSED; integration ::test_refactor_does_not_block_on_real_git PASSED"
         },
         {
-          "behavior": "AC3 — the check runs post-Self-Review (CLI --diff, mandatory at medium+) and at F0.5 as the single mechanical gate (F11 does not re-run it; docs softened), diff-scoped by line so untouched legacy skips do not block; deleting a quarantine or editing expires still trips it",
+          "behavior": "AC3 — both gates REGENERATE base+head (a hand-edited committed manifest cannot satisfy them); an empty FR→behaviour mapping emits could-not-determine WARN, never a silent pass",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ts_test_hygiene.py::test_filter_drops_untouched_preexisting_skip + ::test_filter_expired_triggered_by_editing_quarantine_block + ::test_no_quarantine_scope_covers_comment_block_above + ::test_added_lines_from_diff PASSED; iteration-reviews.md §8 + F0.5.md wiring pinned by test_iteration_reviews_section_8.py PASSED"
+          "evidence": "shared/tests/test_layer_coverage_core.py::test_cross_layer_could_not_determine_when_spec_changed_but_no_fr + ::test_cross_layer_could_not_determine_when_spec_changed_but_no_row_delta PASSED; regeneration proven by the real-git integration suite (archives base+head, never reads the committed artifact)"
         },
         {
-          "behavior": "AC4 — comment/string/template awareness: a .only inside a // comment, a string literal, or a template is NOT flagged (no naive-regex false match), and multi-line templates keep line numbers",
+          "behavior": "AC4 — NEW tests RED-before/green-after over P1's removal/behaviour-change/refactor diff fixtures + execution-evidence; framework suites green",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ts_test_hygiene.py::test_skip_or_only_in_comment_or_string_is_not_flagged + ::test_multiline_template_preserves_line_numbers PASSED"
+          "evidence": "shared/tests/test_layer_coverage.py (fixture-driven build_manifest over on-disk base/head) + test_layer_coverage_core.py + test_evidence_drop.py PASSED; shared 4164 / iterate 476 / compliance 1104 green"
         },
         {
-          "behavior": "AC5 — footprint ≤300 LOC after the lexer was extracted into _ts_lexer.py (ts_test_hygiene.py 299, _ts_lexer.py 164, scan_test_hygiene.py 295, all test files ≤300); bloat baseline not ratcheted (no new crossing among the changed files)",
+          "behavior": "AC5 — footprint within the verifiers module + run_all_checks wiring + tests; every new source/test file ≤300 LOC; bloat baseline NOT ratcheted (the emit-side lives in shared/scripts/lib and surface_verification.py was left untouched to avoid ratcheting its grandfathered 463-LOC entry)",
           "disposition": "tested",
-          "evidence": "bloat_baseline.scan(): crossings among changed files == []; wc -l all changed source ≤300 (ADR Confidence Calibration probe)"
+          "evidence": "wc -l all new files ≤300 (core 181, removal 221, regen 276, layer_coverage 181, evidence_drop 202); shipwright_bloat_baseline.json unchanged; both gates registered in run_all_checks (test_layer_coverage_core.py::test_both_gates_registered_in_run_all_checks PASSED)"
         },
         {
-          "behavior": "Reviewer hardening (OpenAI code-review MEDIUM) — valid-JS whitespace/newline around member access (test . skip / test\\n.only) must not bypass the matcher",
+          "behavior": "cross_component composition (category:integration) — the gate composes with the TT1 collector + TT-EV execution evidence + git-diff base/head regeneration on REAL git",
+          "category": "integration",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ts_test_hygiene.py::test_whitespace_around_member_access_does_not_bypass PASSED"
+          "evidence": "shared/tests/test_layer_coverage_gate_integration.py (9 real-git tests: git archive base+head → build_manifest → refresh_index evidence → gate verdict) PASSED — the reference-pattern analogue of test_parallel_merge_cascade_integration.py"
         },
         {
-          "behavior": "Doubt MUST-FIX 1 — chained modifiers do not evade: test.only.each / test.concurrent.only (focus) and test.skip.each / it.concurrent.skip (skip) are flagged",
+          "behavior": "External-review MUST-FIX (7-round GPT+Gemini panel) — stale/planted evidence index is REGENERATED from staged reports (R3); evidence is HEAD-attributable (mandatory head_commit + ancestor check); removal escapes (still-tagged, bare-strip, file-rename, function-rename, move+kept-tag via git-independent orphan sweep, move+untagged same-name) are HARD; collision/legacy gaps are advisory WARN, not silent green",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ts_test_hygiene_evasion.py::test_chained_modifiers_are_flagged PASSED; real git-diff probe (ADR Confidence Calibration)"
+          "evidence": "test_layer_coverage_core.py::test_fresh_evidence_regenerates_from_reports_ignoring_planted_index + integration ::test_cross_layer_gate_blocks_when_evidence_head_commit_is_foreign + ::test_cross_layer_gate_ignores_planted_pass_index_regenerates_from_report; test_layer_coverage.py::test_removal_moved_test_keeps_dead_tag_fails_without_rename_map + ::test_removal_moved_untagged_same_name_fails_without_rename_map + ::test_removal_function_rename_strip_same_file_fails; test_layer_coverage_core.py::test_advisory_only_verdicts_surface_as_warning_not_green PASSED"
         },
         {
-          "behavior": "Doubt MUST-FIX 2 — regex-literal lexing: a backtick inside /`/ no longer blanks to EOF (a skip below is still flagged); /test.only(/ is not scanned as code; an unterminated template/string emits a LOUD could_not_lex finding, never a silent blank",
+          "behavior": "Security (Gemini panel) — the pre-3.12 tar-extract fallback rejects path traversal (containment, not a startswith prefix) AND symlink/hardlink/device members",
           "disposition": "tested",
-          "evidence": "test_ts_test_hygiene_evasion.py::test_backtick_in_regex_does_not_swallow_skip_below + ::test_regex_literal_is_not_scanned_as_code + ::test_unterminated_template_is_a_loud_finding + ::test_lex_records_unterminated_string PASSED"
-        },
-        {
-          "behavior": "Doubt MUST-FIX 3 — a runtime conditional test.skip(cond, 'reason') / test.fixme(cond, desc) / test.skip() (first arg not a string literal) is EXEMPT; the declaration form test.skip('name', fn) is still flagged",
-          "disposition": "tested",
-          "evidence": "test_ts_test_hygiene_evasion.py::test_conditional_skip_is_exempt + ::test_declaration_skip_is_still_flagged PASSED"
-        },
-        {
-          "behavior": "Doubt MUST-FIX 4 — global forms anchored so chart.fit(...) / obj.xit(...) after a dot do NOT false-flag a hard STOP; standalone fit(...) still flagged",
-          "disposition": "tested",
-          "evidence": "test_ts_test_hygiene_evasion.py::test_dotted_global_lookalikes_are_not_flagged + ::test_standalone_global_focus_is_flagged PASSED"
-        },
-        {
-          "behavior": "Doubt MUST-FIX 5 — file gate widened to *.e2e.* + e2e//tests//__tests__/ dirs so a non-default testMatch (checkout.e2e.ts) is scanned; custom-testMatch/computed-access limit documented",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_ts_test_hygiene.py::test_is_ts_test_file (e2e/checkout.e2e.ts, tests/util.ts) PASSED; F0.5.md coverage-limit note"
-        },
-        {
-          "behavior": "Doubt SHOULD-FIX 6/8/9 — a >180-day-out expires fails (js.skip.expiry_too_far); deletion straddle re-trips a skip only when the deleted hunk carried quarantine content (not any nearby deletion); test.todo is flagged as a silent non-run",
-          "disposition": "tested",
-          "evidence": "test_ts_test_hygiene_evasion.py::test_far_future_expiry_fails + ::test_todo_is_flagged PASSED; test_ts_test_hygiene.py::test_added_lines_from_diff (non-quarantine deletion→set(), quarantine deletion→straddle) PASSED"
+          "evidence": "shared/tests/test_layer_coverage_core.py::test_safe_extract_rejects_path_traversal PASSED; _safe_extract skips non-reg/non-dir members (member.isreg()/isdir())"
         }
       ],
       "counts": {
-        "testable": 12,
-        "tested": 12,
+        "testable": 8,
+        "tested": 8,
         "untestable": 0,
         "untested_testable": 0
       },

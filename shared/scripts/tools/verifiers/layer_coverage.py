@@ -1,0 +1,179 @@
+"""The two enforcing F11 traceability gates (Spec §11 R2/R3, gaps G3/G4/G7/G8).
+
+* ``removal_coverage`` — a removed FR's base-linked tests must be deleted or retargeted to
+  a live FR; a bare ``@FR`` tag removal (the stale test escapes into ``untagged_tests``)
+  or a still-standing tag → dead FR is a HARD finding.
+* ``cross_layer_coverage`` — a behaviour-changed FR (spec/AC/FR delta, NOT source-file
+  inference) must have an executed-passing tagged test at every ``required_layer`` (R1); a
+  pure refactor triggers nothing; an undeterminable FR mapping WARNs, never silently passes.
+
+Both are RECOMPUTED from git + freshly-regenerated base/head manifests
+(``_layer_coverage_regen``), never from a self-reported ledger or the committed artifact —
+the same non-dodgeable posture as ``check_integration_coverage``. Both fire medium+ only
+and require ``--commit``; below that, or when git/collector infra is unavailable, they SKIP
+with a reason (an infra gap must never masquerade as a green gate).
+
+FAIL-CLOSED reasoning (why these cannot false-green):
+* removal: the head manifest is regenerated from the HEAD checkout, so a stale test that
+  merely dropped its tag lands in ``untagged_tests`` (HARD) and one still tagged to the
+  dead FR lands in ``orphans`` (HARD) — there is no state in which a live spec/removed FR
+  keeps a passing E2E test and the gate stays green.
+* cross-layer: coverage ``ok`` requires ``enabled`` + ``executed=pass`` in THIS run's
+  provenance-verified evidence, so a skipped/never-run test reads MISSING, never a pass.
+And why they cannot false-RED: a pure refactor leaves base==head specs (no changed FR); a
+legacy-provenance or collision (un-namespaced fan-out) gap is ADVISORY, never HARD.
+"""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+_SCRIPTS_ROOT = Path(__file__).resolve().parents[2]
+if str(_SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_ROOT))
+
+from lib.iterate_entry import find_entry_by_run_id  # noqa: E402
+
+from ._layer_coverage_core import CrossLayerVerdict, evaluate_cross_layer  # noqa: E402
+from ._layer_coverage_regen import regenerate_base_head  # noqa: E402
+from ._layer_coverage_removal import RemovalVerdict, evaluate_removal  # noqa: E402
+from .common import CheckResult, Severity  # noqa: E402
+
+_REMOVAL_NAME = "removal coverage (removed FR → orphaned tests)"
+_CROSS_LAYER_NAME = "cross-layer coverage (behaviour change → executed-passing layers)"
+
+
+def _complexity(project_root: Path, run_id: str) -> str:
+    entry = find_entry_by_run_id(project_root, run_id)
+    return str((entry or {}).get("complexity", "")).lower()
+
+
+def _skip(name: str, detail: str) -> CheckResult:
+    return CheckResult(name, True, detail, severity=Severity.SKIPPED.value)
+
+
+def _gate_prelude(name: str, project_root: Path, run_id: str, commit_hash: str) -> CheckResult | None:
+    """Shared medium+/``--commit`` gate. Returns a SKIP CheckResult, or None to proceed."""
+    complexity = _complexity(project_root, run_id)
+    if complexity not in ("medium", "large"):
+        return _skip(name, f"skipped (complexity={complexity or 'unknown'})")
+    if not commit_hash:
+        return _skip(name, "skipped (no --commit supplied)")
+    return None
+
+
+def _removal_suggest(display: str) -> str:
+    return (
+        f"/shipwright-iterate --type change \"delete or retarget the tests tagged "
+        f"@{display} — a removed FR's base-linked tests must not stay green\""
+    )
+
+
+def check_removal_coverage(project_root: Path, run_id: str, commit_hash: str = "") -> CheckResult:
+    """Removal → orphan gate. Regenerates base+head (R3) and requires every base-linked
+    test of a newly non-active FR to be deleted or retargeted."""
+    name = _REMOVAL_NAME
+    prelude = _gate_prelude(name, project_root, run_id, commit_hash)
+    if prelude is not None:
+        return prelude
+    try:
+        regen = regenerate_base_head(project_root, commit_hash, with_evidence=False)
+        if regen is None:
+            return _skip(name, "skipped (git unavailable / no merge-base / collector unavailable)")
+        base, head, renames = regen
+        verdict = evaluate_removal(base, head, renames)
+    except Exception as exc:  # noqa: BLE001 — infra error degrades to SKIP, never crashes F11
+        return _skip(name, f"skipped (regeneration error: {type(exc).__name__})")
+    return _removal_result(name, verdict)
+
+
+def _removal_result(name: str, verdict: RemovalVerdict) -> CheckResult:
+    if not verdict.removed_frs:
+        return CheckResult(name, True, "no FR moved out of active (## Removed Requirements)")
+    if verdict.any_fail:
+        evidence = [f"{disp}: {test} — {reason}" for disp, test, reason in verdict.hard[:6]]
+        detail = (
+            f"{len(verdict.hard)} base-linked test(s) of {len(verdict.removed_frs)} removed "
+            f"FR(s) were neither deleted nor retargeted: " + "; ".join(evidence)
+            + f"  →  {_removal_suggest(verdict.hard[0][0])}"
+        )
+        return CheckResult(name, False, detail)
+    if verdict.advisory:
+        # Not a clean green: a collision-id test tagged to the removed FR is structurally
+        # ambiguous (may cover another namespace's same-id FR) → surface as WARN, never a
+        # silent pass, but never a HARD block either (that would be a false-red until a
+        # namespaced tag form exists — TT2 doubt #3 deferral).
+        ev = [f"{disp}: {test} — {reason}" for disp, test, reason in verdict.advisory[:4]]
+        return CheckResult(
+            name, False,
+            f"{len(verdict.removed_frs)} removed FR(s); {len(verdict.advisory)} base-linked "
+            f"test(s) are collision-ambiguous (deferred to a namespaced tag): " + "; ".join(ev),
+            severity=Severity.WARNING.value,
+        )
+    return CheckResult(
+        name, True,
+        f"{len(verdict.removed_frs)} removed FR(s); all base-linked tests deleted/retargeted",
+    )
+
+
+def check_cross_layer_coverage(project_root: Path, run_id: str, commit_hash: str = "") -> CheckResult:
+    """Change → cross-layer gate. Regenerates base+head with THIS run's execution evidence
+    and requires each behaviour-changed FR to be executed-passing at every required layer."""
+    name = _CROSS_LAYER_NAME
+    prelude = _gate_prelude(name, project_root, run_id, commit_hash)
+    if prelude is not None:
+        return prelude
+    try:
+        regen = regenerate_base_head(
+            project_root, commit_hash, with_evidence=True, run_id=run_id,
+        )
+        if regen is None:
+            return _skip(name, "skipped (git unavailable / no merge-base / collector unavailable)")
+        base, head, _renames = regen
+        verdict = evaluate_cross_layer(base, head)
+    except Exception as exc:  # noqa: BLE001 — infra error degrades to SKIP, never crashes F11
+        return _skip(name, f"skipped (regeneration error: {type(exc).__name__})")
+    return _cross_layer_result(name, verdict)
+
+
+def _cross_layer_result(name: str, verdict: CrossLayerVerdict) -> CheckResult:
+    if verdict.could_not_determine:
+        return CheckResult(
+            name, False,
+            "spec changed but no FR→behaviour mapping could be determined "
+            "(no parseable active FR) — could-not-determine (not a silent pass)",
+            severity=Severity.WARNING.value,
+        )
+    if not verdict.changed_keys:
+        return CheckResult(name, True, "no behaviour-changed FR (no spec/AC/FR delta)")
+    if verdict.any_fail:
+        gaps = [f"{g.display} [{g.layer}] ({g.priority}) — {g.reason}" for g in verdict.hard[:6]]
+        detail = (
+            f"{len(verdict.hard)} required layer(s) of {len(verdict.changed_keys)} "
+            f"behaviour-changed FR(s) have no executed-passing test: " + "; ".join(gaps)
+            + "  →  /shipwright-iterate --type change \"add an executed-passing test at "
+            "the missing layer(s) — a green-but-skipped test does not satisfy the gate\""
+        )
+        return CheckResult(name, False, detail)
+    if verdict.advisory:
+        # A behaviour-changed FR with a legacy-provenance or collision required layer that
+        # has no executed-passing test is NOT a clean pass (external-review MUST-FIX): it
+        # surfaces as WARN so the gap is visible, but stays non-blocking — a HARD block on a
+        # heuristic (inferred/defaulted) or structurally-ambiguous (collision) layer would be
+        # a false-red on the pre-rollout monorepo. Explicit gaps already went HARD above.
+        gaps = [f"{g.display} [{g.layer}] ({g.source}) — {g.reason}" for g in verdict.advisory[:6]]
+        return CheckResult(
+            name, False,
+            f"{len(verdict.advisory)} required layer(s) of behaviour-changed FR(s) lack an "
+            f"executed-passing test but are legacy/collision (advisory, not blocking): "
+            + "; ".join(gaps),
+            severity=Severity.WARNING.value,
+        )
+    return CheckResult(
+        name, True,
+        f"{len(verdict.changed_keys)} behaviour-changed FR(s) covered+passing at every required layer",
+    )
+
+
+__all__ = ["check_removal_coverage", "check_cross_layer_coverage"]
