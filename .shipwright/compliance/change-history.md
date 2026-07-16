@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-07-16T12:01:57.347888+00:00
+Generated: 2026-07-16T14:57:56.427304+00:00
 Total commits: 1150
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 332
-    "feat" : 316
+    "fix" : 331
+    "feat" : 317
     "chore" : 240
     "docs" : 145
     "refactor" : 68
@@ -20,11 +20,10 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 332 commits
+### Fixes (fix) — 331 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-16 | iterate | fail-close the two F11 traceability gates per the adversarial panel (TT5) | eaf9859ea659 |
 | 2026-07-15 | iterate | pin finalize_iterate.py stdio to UTF-8 (cp1252 Windows crash aborted the finalize bundle) (#376) | c25d681a72ce |
 | 2026-07-15 | churn | admit ci-security.json to the merge allowlist so iterate merges don't abort (#375) | fc3e48c3de7f |
 | 2026-07-15 | test | stop the perf-check integration test leaking triage into tracked fixtures (#373) | af0187a9a981 |
@@ -357,11 +356,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 316 commits
+### Features (feat) — 317 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-16 | iterate | enforcing F11 traceability gates — removal→orphan + change→cross-layer (TT5) | 20ecb3f3ddd6 |
+| 2026-07-16 | traceability | shared backfill_test_links engine — map existing tests to FRs (TT6) | e1e639b11282 |
+| 2026-07-16 | iterate | enforcing F11 traceability gates — removal→orphan + change→cross-layer (TT5) (#383) | 0cec0f8e15b8 |
 | 2026-07-16 | iterate | TS/JS silent-skip ban + quarantine-with-expiry hygiene gate (traceability TT4) (#382) | 2c70a4ba6653 |
 | 2026-07-16 | compliance | layer-aware RTM + D-orphan/D-layer detectives + D1 hardening (traceability TT2) (#381) | 61646d3bd22f |
 | 2026-07-16 | traceability | declare required_layers per FR + adopt surface-inference (TT3) (#380) | bbb19a1e7123 |

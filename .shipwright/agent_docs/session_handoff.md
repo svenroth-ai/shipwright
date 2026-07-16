@@ -1,36 +1,36 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-15-removal-crosslayer-gates"
+run_id: "iterate-2026-07-15-shared-backfill-engine"
 phase: "iterate"
-reason: "iterate: F11 removal->orphan + change->cross-layer traceability gates (TT5)"
-timestamp: "2026-07-16T13:48:18.845338+00:00"
+reason: "iterate finalization"
+timestamp: "2026-07-16T15:45:28.979917+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-16 13:48:18 UTC
+> Auto-generated 2026-07-16 15:45:28 UTC
 
 ## Session Info
 
 - **Session ID**: a69abb9e-d21a-40a1-846b-13913cca2b09
-- **Timestamp**: 2026-07-16 13:48:18 UTC
-- **Reason**: iterate: F11 removal->orphan + change->cross-layer traceability gates (TT5)
+- **Timestamp**: 2026-07-16 15:45:28 UTC
+- **Reason**: iterate finalization
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-15-removal-crosslayer-gates
-- **Date**: 2026-07-16T12:02:14.824832Z
+- **Run ID**: iterate-2026-07-15-shared-backfill-engine
+- **Date**: 2026-07-16T14:59:07.664392Z
 - **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/campaign-TT5-iterate-removal-crosslayer-gates
-- **ADR**: iterate-2026-07-15-removal-crosslayer-gates
+- **Branch**: iterate/campaign-TT6-shared-backfill-engine
+- **ADR**: iterate-2026-07-15-shared-backfill-engine
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/campaigns/2026-07-15-test-traceability-layers/sub-iterates/TT5-iterate-removal-crosslayer-gates.md
+- **Spec**: .shipwright/planning/iterate/campaigns/2026-07-15-test-traceability-layers/sub-iterates/TT6-shared-backfill-engine.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/campaign-TT5-iterate-removal-crosslayer-gates
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-16T07:09:37)
+- **Branch**: iterate/campaign-TT6-shared-backfill-engine
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-16T14:54:02)
 
 ### Mandatory replay on Resume
 
@@ -48,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/campaign-TT5-iterate-removal-crosslayer-gates
-- **Last Commit**: eaf9859e fix(iterate): fail-close the two F11 traceability gates per the adversarial panel (TT5)
+- **Branch**: iterate/campaign-TT6-shared-backfill-engine
+- **Last Commit**: e1e639b1 feat(traceability): shared backfill_test_links engine — map existing tests to FRs (TT6)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-e76cd0c5 | grade_snapshot | — | 2026-07-16 |
+| evt-7713274b | grade_snapshot | — | 2026-07-16 |
+| evt-662dff1a | grade_snapshot | — | 2026-07-16 |
+| evt-8718d8b4 | work_completed | iterate (shared backfill_test_links engine (TT6): map existing tests to FRs, deterministic-first + opt-in LLM, emit tag edits/proposals/orphans) | 2026-07-16 |
 | evt-740ed3f3 | grade_snapshot | — | 2026-07-16 |
-| evt-0f5989d5 | grade_snapshot | — | 2026-07-16 |
-| evt-ccdc986f | grade_snapshot | — | 2026-07-16 |
-| evt-13178e21 | work_completed | iterate (F11 removal->orphan + change->cross-layer traceability gates (TT5): regenerate base+head manifests + evidence index from git, never the committed artifact) | 2026-07-16 |
-| evt-5f6dfc66 | grade_snapshot | — | 2026-07-16 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 312
-- **Last iterate**: feature — F11 removal->orphan + change->cross-layer traceability gates (TT5): regenerate base+head manifests + evidence index from git, never the committed artifact (2026-07-16)
+- **Total work events**: 313
+- **Last iterate**: feature — shared backfill_test_links engine (TT6): map existing tests to FRs, deterministic-first + opt-in LLM, emit tag edits/proposals/orphans (2026-07-16)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

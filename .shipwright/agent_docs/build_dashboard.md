@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-16 13:48 UTC | Session: a69abb9e-d21a-40a1-846b-13913cca2b09 | Run: iterate-2026-07-15-removal-crosslayer-gates
+> Updated: 2026-07-16 15:45 UTC | Session: a69abb9e-d21a-40a1-846b-13913cca2b09 | Run: iterate-2026-07-15-shared-backfill-engine
 
-## Recent Changes (312 iterations)
+## Recent Changes (313 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | shared backfill_test_links engine (TT6): map existing tests to FRs, deterministic-first + opt-in LLM, emit tag edits/proposals/orphans | 4597/4597 |  | tooling | 2026-07-16 |
 | feature | F11 removal->orphan + change->cross-layer traceability gates (TT5): regenerate base+head manifests + evidence index from git, never the committed artifact | 4164/4164 |  | tooling | 2026-07-16 |
 | feature | TS/JS silent-skip ban + quarantine-with-expiry hygiene gate (TT4) | 4572/4572 |  | tooling | 2026-07-16 |
 | feature | Layer-aware RTM columns + D-orphan/D-layer detectives + D1 hardening (traceability TT2) | 1090/1090 |  | compliance | 2026-07-16 |
@@ -319,7 +320,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-16 | Unit: 4164/4164 | Integration: 15/15 | Smoke: skipped | (iterate)
+Last run: 2026-07-16 | Unit: 4597/4597 | Integration: 1/1 | Smoke: skipped | (iterate)
 
 ## Pipeline
 
