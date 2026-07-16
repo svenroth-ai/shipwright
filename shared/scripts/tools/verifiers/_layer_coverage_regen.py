@@ -110,16 +110,21 @@ def _rename_map(project_root: Path, base_sha: str, head_sha: str) -> dict[str, s
 def _merge_base(project_root: Path, commit: str) -> str:
     """Real branch-base for the iterate branch: merge-base with the default branch.
 
-    Resolves against ``origin/HEAD`` → ``origin/main``/``master`` → a LOCAL ``main``/``master``.
-    There is NO ``commit^`` fallback (external-review MUST-FIX 4): the first-parent short-cut
-    would compare only the tip commit and miss a removal/change made in an earlier commit of a
-    multi-commit branch — a false-green. When no default branch resolves a real merge-base we
-    return ``""`` so the enforcing gate treats it as an infra failure and BLOCKS (fail-closed)
-    rather than silently narrowing the diff."""
+    Resolves against ``origin/HEAD`` → the branch's own upstream ``@{u}`` → ``origin/main``/
+    ``master`` → a LOCAL ``main``/``master``. The ``@{u}`` tracking branch (coordinator FIX 2)
+    covers an ADOPTED/brownfield repo whose default is ``develop``/``trunk`` and whose
+    ``origin/HEAD`` symbolic-ref is unset — none of the name candidates would match, but the
+    upstream does. There is NO ``commit^`` fallback (MUST-FIX 4): the first-parent short-cut
+    would compare only the tip commit and miss a removal/change made in an earlier commit — a
+    false-green. When NO method resolves a real merge-base we return ``""`` so the enforcing
+    gate treats it as an infra failure and BLOCKS (fail-closed), never a narrowed diff."""
     candidates: list[str] = []
     rc, ref, _ = _run_git(project_root, "rev-parse", "--abbrev-ref", "origin/HEAD")
     if rc == 0 and ref.strip().startswith("origin/"):
         candidates.append(ref.strip())
+    rc, up, _ = _run_git(project_root, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
+    if rc == 0 and up.strip() and up.strip() != "@{u}":
+        candidates.append(up.strip())  # the branch's tracking upstream (adopted-repo default)
     candidates += ["origin/main", "origin/master", "main", "master"]
     for base_ref in candidates:
         rc, mb, _ = _run_git(project_root, "merge-base", base_ref, commit)

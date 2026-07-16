@@ -2025,6 +2025,8 @@ uv run shared/scripts/tools/verify_iterate_finalization.py \
 
 `--strict` treats warnings as errors. The exit code is 0 for green (or warnings-only without `--strict`) and 1 for any error.
 
+> **`--commit` is required at medium+ for the traceability gates.** The two enforcing F11 gates (`removal_coverage`, `cross_layer_coverage`) fail-closed: on a **medium+** iterate they need `--commit` to diff base→head, so a commit-less `verify_iterate_finalization.py` (or `verify_phase.py --phase iterate`) at medium+ now reports `cannot enforce … no --commit` as an **error**, not a green skip. This is a diagnostic behavior change — a commit-less error is not a real gate failure; pass `--commit $(git rev-parse HEAD)`. The pipeline/SKILL invocations already do.
+
 Full canon definition, skip criteria, and per-plugin coverage matrix live in [docs/hooks-and-pipeline.md § Minimum Phase Completion Canon](hooks-and-pipeline.md#minimum-phase-completion-canon-c1c5).
 
 ### Phase-Quality Audit (Consolidated Stop-Hook)

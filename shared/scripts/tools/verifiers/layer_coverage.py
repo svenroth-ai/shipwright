@@ -44,7 +44,7 @@ from ._layer_coverage_core import CrossLayerVerdict, evaluate_cross_layer  # noq
 from ._layer_coverage_regen import regenerate_base_head  # noqa: E402
 from ._layer_coverage_removal import RemovalVerdict, evaluate_removal  # noqa: E402
 from .common import CheckResult, Severity  # noqa: E402
-from .git_helpers import _git_available  # noqa: E402
+from .git_helpers import _run_git  # noqa: E402
 
 _REMOVAL_NAME = "removal coverage (removed FR → orphaned tests)"
 _CROSS_LAYER_NAME = "cross-layer coverage (behaviour change → executed-passing layers)"
@@ -61,6 +61,34 @@ def _skip(name: str, detail: str) -> CheckResult:
 
 def _is_enforcing(complexity: str) -> bool:
     return complexity in ("medium", "large")
+
+
+def _git_context(project_root: Path) -> str:
+    """Tri-state git probe (coordinator FIX 1): ``work_tree`` | ``not_git`` | ``git_error``.
+
+    A binary ``_git_available`` conflates "not a git repo" (an inapplicable context → SKIP)
+    with a git SUBPROCESS failure/timeout on a real work-tree (a wedged index.lock / stalled
+    FS / >10s stall → an infra failure that must fail-CLOSED at medium+). Only a DEFINITIVE
+    non-git answer (rc 0 → not "true", or git ran and said "not a git repository") is
+    ``not_git``; a synthesized failure (OSError/timeout → rc 1, empty stderr) or any other
+    non-zero rc without that message is ``git_error``."""
+    rc, out, err = _run_git(project_root, "rev-parse", "--is-inside-work-tree", timeout=10.0)
+    if rc == 0:
+        return "work_tree" if out.strip() == "true" else "not_git"
+    if "not a git repository" in (err or "").lower() or "not a work tree" in (err or "").lower():
+        return "not_git"
+    return "git_error"
+
+
+def _git_precheck(name: str, project_root: Path, complexity: str) -> CheckResult | None:
+    """SKIP on a clean non-git context; ERROR (medium+) on a git subprocess failure/timeout;
+    ``None`` to proceed when it is a real work-tree."""
+    ctx = _git_context(project_root)
+    if ctx == "not_git":
+        return _skip(name, "skipped (not a git work tree — git-diff enforcement N/A)")
+    if ctx == "git_error":
+        return _infra_result(name, complexity, "git probe failed/timed out (wedged index.lock / stalled FS)")
+    return None
 
 
 def _infra_result(name: str, complexity: str, detail: str) -> CheckResult:
@@ -88,8 +116,9 @@ def check_removal_coverage(project_root: Path, run_id: str, commit_hash: str = "
     complexity = _complexity(project_root, run_id)
     if not commit_hash:
         return _infra_result(name, complexity, "no --commit supplied")
-    if not _git_available(project_root):
-        return _skip(name, "skipped (not a git repo — git-diff enforcement N/A)")
+    precheck = _git_precheck(name, project_root, complexity)
+    if precheck is not None:
+        return precheck
     try:
         regen = regenerate_base_head(project_root, commit_hash, with_evidence=False)
         if regen is None:
@@ -139,8 +168,9 @@ def check_cross_layer_coverage(project_root: Path, run_id: str, commit_hash: str
         return _skip(name, f"skipped (complexity={complexity or 'unknown'})")
     if not commit_hash:
         return _infra_result(name, complexity, "no --commit supplied")
-    if not _git_available(project_root):
-        return _skip(name, "skipped (not a git repo — git-diff enforcement N/A)")
+    precheck = _git_precheck(name, project_root, complexity)
+    if precheck is not None:
+        return precheck
     try:
         regen = regenerate_base_head(
             project_root, commit_hash, with_evidence=True, run_id=run_id,

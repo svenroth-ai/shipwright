@@ -72,11 +72,49 @@ def test_missing_commit_skips_below_medium(tmp_path):
 
 
 def test_non_git_project_skips(tmp_path):
-    # A NON-GIT project is an inapplicable context for a git-diff gate (not an infra failure),
-    # so it SKIPs — distinct from a git repo whose regen fails (ERROR at medium+, below).
+    # A CLEAN non-git context (git ran and said "not a work tree") is inapplicable for a
+    # git-diff gate, so it SKIPs — distinct from a git subprocess failure (ERROR, below).
     _seed(tmp_path, "r", "medium")
     r = check_removal_coverage(tmp_path, "r", "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
     assert r.is_skipped, r.detail
+
+
+def test_git_subprocess_failure_errors_at_medium(tmp_path, monkeypatch):
+    # Coordinator FIX 1: a git SUBPROCESS failure/timeout (synthesized rc=1, empty stderr) on a
+    # medium+ iterate must ERROR (block) — NOT be conflated with a clean non-git SKIP (fail-open).
+    import tools.verifiers.layer_coverage as lc  # noqa: PLC0415
+
+    _seed(tmp_path, "r", "medium")
+    monkeypatch.setattr(lc, "_run_git", lambda *a, **k: (1, "", ""))  # OSError/timeout shape
+    for fn in (lc.check_removal_coverage, lc.check_cross_layer_coverage):
+        r = fn(tmp_path, "r", "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
+        assert r.ok is False and not r.is_skipped, r.detail
+
+
+# --- FIX 2: base resolves via the branch's upstream on an adopted non-main default ----
+
+
+def test_base_resolves_via_upstream_on_adopted_default(tmp_path):
+    # Coordinator FIX 2: an adopted repo whose default is `develop` (origin/HEAD unset, no
+    # main/master) must still resolve a base via the branch's upstream @{u} — no false-red ERROR.
+    clear_regen_cache()
+    root = tmp_path / "repo"
+    root.mkdir()
+    _git(root, "init", "-q")
+    _git(root, "config", "user.email", "t@t.dev")
+    _git(root, "config", "user.name", "t")
+    _git(root, "config", "commit.gpgsign", "false")
+    _git(root, "symbolic-ref", "HEAD", "refs/heads/develop")  # non-main default, origin/HEAD unset
+    _write(root, ".shipwright/planning/app/spec.md", _SPEC_ACTIVE)
+    _commit(root, "base")
+    _git(root, "branch", "trunk-base")  # a local ref to act as the tracking upstream, at base
+    _git(root, "branch", "--set-upstream-to=trunk-base", "develop")  # @{u} = trunk-base
+    _write(root, "orders.py", "x = 1\n")  # benign head change (no removal)
+    head = _commit(root, "head: benign change")
+    _seed_medium(root, "iterate-adopt")
+    r = check_removal_coverage(root, "iterate-adopt", head)
+    # base resolved via @{u} → the gate RAN (no removal → clean pass), not an ERROR-on-no-base.
+    assert r.ok is True and "cannot enforce" not in r.detail, r.detail
 
 
 # --- MUST-FIX 4: no resolvable base ref → ERROR (not a narrowed-diff pass) ----
