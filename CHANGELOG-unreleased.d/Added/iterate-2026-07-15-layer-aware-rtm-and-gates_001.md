@@ -1,0 +1,1 @@
+compliance: the RTM now renders per-FR `Unit | Integration | E2E` coverage (executed-passing / MISSING / n/a) from the test-traceability manifest, and Group-D gains `D-orphan` (a test tagged with a removed/absent requirement) and `D-layer` (an active requirement missing an executed-passing test at a required layer, provenance-gated).

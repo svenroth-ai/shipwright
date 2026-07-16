@@ -178,9 +178,12 @@
   written atomically by the PostToolUse hook with TTL-filtered
   entries. Read by the Stop gate. Per-session by `SHIPWRIGHT_SESSION_ID`
   to prevent cross-session leakage.
-- **RTM** — Requirement Traceability Matrix. Maps every FR-ID to
-  the spec line, the implementing file, the test file, the
-  changelog entry, and the deployment record. Producer:
+- **RTM** — Requirement Traceability Matrix. Maps every FR-ID to its
+  spec line, its work/verification events, and its **per-layer test
+  coverage** (`Unit | Integration | E2E`, sourced from the
+  test-traceability manifest — `ok` = an executed-passing tagged test,
+  `MISSING`, or `n/a`), plus the reconciliation status and any open
+  triage. Producer:
   `plugins/shipwright-compliance/scripts/lib/rtm_generator.py`.
 - **SBOM** — Software Bill of Materials. Producer:
   `plugins/shipwright-compliance/scripts/lib/sbom_generator.py`.

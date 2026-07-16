@@ -1,36 +1,36 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-15-required-layers-on-frs"
+run_id: "iterate-2026-07-15-layer-aware-rtm-and-gates"
 phase: "iterate"
-reason: "iterate: required_layers on FRs (TT3)"
-timestamp: "2026-07-16T06:19:26.145657+00:00"
+reason: "iterate: layer-aware RTM + D-orphan/D-layer + D1 hardening (traceability TT2)"
+timestamp: "2026-07-16T07:19:47.556516+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-16 06:19:26 UTC
+> Auto-generated 2026-07-16 07:19:47 UTC
 
 ## Session Info
 
 - **Session ID**: a69abb9e-d21a-40a1-846b-13913cca2b09
-- **Timestamp**: 2026-07-16 06:19:26 UTC
-- **Reason**: iterate: required_layers on FRs (TT3)
+- **Timestamp**: 2026-07-16 07:19:47 UTC
+- **Reason**: iterate: layer-aware RTM + D-orphan/D-layer + D1 hardening (traceability TT2)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-15-required-layers-on-frs
-- **Date**: 2026-07-16T05:37:03.123238Z
+- **Run ID**: iterate-2026-07-15-layer-aware-rtm-and-gates
+- **Date**: 2026-07-16T07:19:43.055405Z
 - **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/campaign-TT3-required-layers-on-frs
-- **ADR**: iterate-2026-07-15-required-layers-on-frs
+- **Branch**: iterate/campaign-TT2-layer-aware-rtm-and-gates
+- **ADR**: iterate-2026-07-15-layer-aware-rtm-and-gates
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-15-required-layers-on-frs.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-15-layer-aware-rtm-and-gates.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/campaign-TT3-required-layers-on-frs
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-16T05:34:21)
+- **Branch**: iterate/campaign-TT2-layer-aware-rtm-and-gates
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-16T07:09:37)
 
 ### Mandatory replay on Resume
 
@@ -48,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/campaign-TT3-required-layers-on-frs
-- **Last Commit**: 73baad07 feat(traceability): declare required_layers per FR + adopt surface-inference (TT3)
+- **Branch**: iterate/campaign-TT2-layer-aware-rtm-and-gates
+- **Last Commit**: bbb19a1e feat(traceability): declare required_layers per FR + adopt surface-inference (TT3) (#380)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-2b536e9c | grade_snapshot | — | 2026-07-16 |
+| evt-2c0654b3 | work_completed | iterate (Layer-aware RTM columns + D-orphan/D-layer detectives + D1 hardening (traceability TT2)) | 2026-07-16 |
 | evt-52bbc0b4 | grade_snapshot | — | 2026-07-16 |
 | evt-05a832b4 | grade_snapshot | — | 2026-07-16 |
 | evt-34535c2f | work_completed | iterate (FR Layers column + adopt surface-inference + (inferred) advisory-provenance marker (TT3)) | 2026-07-16 |
-| evt-c055f554 | grade_snapshot | — | 2026-07-15 |
-| evt-efd3417b | grade_snapshot | — | 2026-07-15 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 309
-- **Last iterate**: feature — FR Layers column + adopt surface-inference + (inferred) advisory-provenance marker (TT3) (2026-07-16)
+- **Total work events**: 310
+- **Last iterate**: feature — Layer-aware RTM columns + D-orphan/D-layer detectives + D1 hardening (traceability TT2) (2026-07-16)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

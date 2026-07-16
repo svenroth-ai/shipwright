@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-07-16T05:37:03.201740+00:00
+Generated: 2026-07-16T07:19:43.140029+00:00
 Total commits: 1146
 
 ## Commit Distribution
@@ -360,7 +360,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-16 | traceability | declare required_layers per FR + adopt surface-inference (TT3) | 73baad075cda |
+| 2026-07-16 | traceability | declare required_layers per FR + adopt surface-inference (TT3) (#380) | bbb19a1e7123 |
 | 2026-07-16 | compliance | per-test execution-evidence reader -> execution-backed coverage (TT-EV) (#379) | 188af9ad5bbe |
 | 2026-07-16 | compliance | test_links collector + test-traceability manifest + @FR tag convention (TT1) (#378) | c8767470fada |
 | 2026-07-15 | traceability | freeze requirement->test contracts + panel-verified harness (P1) (#377) | e74d8090758e |

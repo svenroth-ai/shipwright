@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-16 06:19 UTC | Session: a69abb9e-d21a-40a1-846b-13913cca2b09 | Run: iterate-2026-07-15-required-layers-on-frs
+> Updated: 2026-07-16 07:19 UTC | Session: a69abb9e-d21a-40a1-846b-13913cca2b09 | Run: iterate-2026-07-15-layer-aware-rtm-and-gates
 
-## Recent Changes (309 iterations)
+## Recent Changes (310 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | Layer-aware RTM columns + D-orphan/D-layer detectives + D1 hardening (traceability TT2) | 1090/1090 |  | compliance | 2026-07-16 |
 | feature | FR Layers column + adopt surface-inference + (inferred) advisory-provenance marker (TT3) | 1060/1060 |  | tooling | 2026-07-16 |
 | feature | Per-test execution-evidence reader (JUnit/Playwright/Vitest) -> schema-validated fail-closed evidence index joined into the traceability manifest so coverage is execution-backed (R1/G5): enabled+pass=ok, skipped/missing/fail=MISSING; plus an expiring-waiver primitive and a frozen closed-vocab boundary | 1047/1047 |  | compliance | 2026-07-15 |
 | feature | TT1: @FR-XX.YY tag convention + test_links compliance collector + test-traceability.json manifest (schema v2), the backward test->FR link + per-layer coverage join | 1009/1009 |  | compliance | 2026-07-15 |
@@ -316,7 +317,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-16 | Unit: 1063/1063 | Smoke: skipped | (iterate)
+Last run: 2026-07-16 | Unit: 1090/1090 | Integration: 25/25 | Smoke: skipped | (iterate)
 
 ## Pipeline
 

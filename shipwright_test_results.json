@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-15-required-layers-on-frs",
+    "run_id": "iterate-2026-07-15-layer-aware-rtm-and-gates",
     "date": "2026-07-16",
     "unit": {
       "status": "passed",
-      "passed": 1063,
-      "total": 1063
+      "passed": 1090,
+      "total": 1090
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 25,
+      "total": 25
     },
     "pgtap": {
       "status": "not_run",
@@ -31,84 +31,79 @@
       "status": "skipped"
     },
     "degraded": [
-      "complexity classifier returned 'large' + touches_auth/rls/migrations — prose-keyword false positives (prior_source=keyword, history_n=0); the diff touches zero auth/RLS/migration code. Overridden to 'medium'; F11 recomputes risk from diff-predicates."
+      "complexity classifier returned touches_auth — a prose-keyword false positive (prior_source=keyword, history_n=0); the diff touches zero auth code (two compliance sibling modules + net-neutral RTM/group_d edits + tests + a glossary line). Overridden to 'medium'; F11 recomputes risk from diff-predicates."
     ],
     "surface_verification": {
       "surface": "none",
       "runner": "surface_verification.py --surface none",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-15-required-layers-on-frs/surface_verification.json",
+      "evidence_path": ".shipwright/runs/iterate-2026-07-15-layer-aware-rtm-and-gates/surface_verification.json",
       "timestamp": "2026-07-16T00:00:00+00:00",
-      "justification": "Framework tooling + docs change: net-zero drift_parsers regex tolerance, a pure adopt Layers-inference helper, the model-parser (inferred) provenance downgrade, and spec-authoring docs. No runnable app surface (no web/cli/api entrypoint added or modified). The change is exercised entirely by the pytest suites (compliance 1060, adopt 398, shared drift 37, project/plan refs 14) plus the producer(adopt)->spec.md->model-parser round-trip probe recorded in the iterate ADR Confidence Calibration."
+      "justification": "Framework tooling change: two compliance sibling modules (_group_d_traceability, _rtm_layer_columns), net-neutral edits to the capped rtm_generator.py + group_d.py, a glossary line, and tests. No runnable app surface (no web/cli/api entrypoint added or modified). Exercised entirely by the pytest suites (compliance 1090, shared 373 selected, integration 25) plus the real producer(test_links manifest)->file->consumer(group_d + rtm_generator) round-trip probes recorded in the iterate ADR Confidence Calibration."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "shared parse_fr_table must not DROP an FR carrying a Layers column (4-col + 6-col), stays backward-compatible with 3/5-col",
+          "behavior": "AC1 — RTM renders per-FR Unit|Integration|E2E columns from the manifest; an FR with unit-but-no-E2E is visibly E2E: MISSING (a glyph, not a bare number); pre-existing positional columns (Reconciled?=7, Status=8) are unshifted",
           "disposition": "tested",
-          "evidence": "shared/tests/test_drift_parsers_layers.py::test_layers_column_does_not_drop_frs + ::test_6col_adopt_with_layers_body_is_description + ::test_backward_compat_3col_still_parses PASSED"
+          "evidence": "plugins/shipwright-compliance/tests/test_rtm_layer_columns.py::test_header_has_layer_columns + ::test_unit_ok_e2e_missing_renders_glyphs_not_numbers + ::test_pre_existing_positional_columns_unshifted PASSED; real-monorepo render probe (ADR Confidence Calibration probe 4)"
         },
         {
-          "behavior": "trailing-cell tolerance is linear-time (ReDoS-safe) on a pathological pipe-heavy row",
+          "behavior": "AC2 — D-orphan fires MEDIUM on a test tagged with a removed/absent FR and stays green when every tag resolves live; both namespace fan-out directions pinned (live-in-any-namespace = not orphan; removed-only = orphan)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_drift_parsers_layers.py::test_trailing_tolerance_is_linear_time_on_a_pathological_row PASSED"
+          "evidence": "plugins/shipwright-compliance/tests/test_group_d_traceability.py::test_orphan_flags_confirmed_orphan_medium + ::test_orphan_passes_when_no_orphans + ::test_orphan_fanout_live_in_any_namespace_is_not_flagged + ::test_orphan_fanout_removed_only_is_flagged PASSED"
         },
         {
-          "behavior": "adopt infers required_layers from surface: route/page=>e2e, migration/schema/table/RLS=>integration, always unit, unknown=>unit-only, multiple surfaces union",
+          "behavior": "AC3 — D-layer fires on an active FR missing a required layer, severity by priority; legacy-provenance FRs are advisory (surfaced, no any_fail) per carry-forward #2 / Spec §9",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-adopt/tests/test_fr_layer_inference.py::test_route_feature_infers_e2e_and_unit + ::test_migration_feature_infers_integration_and_unit + ::test_multiple_surfaces_union_all_three_layers + ::test_unknown_surface_defaults_to_unit_only PASSED"
+          "evidence": "plugins/shipwright-compliance/tests/test_group_d_traceability.py::test_layer_explicit_missing_layer_fails_by_priority + ::test_layer_should_priority_is_medium + ::test_layer_legacy_missing_layer_is_advisory_not_fail + ::test_layer_removed_fr_is_not_evaluated PASSED"
         },
         {
-          "behavior": "incidental 'table' in a UI component name must NOT infer integration (structured path-segment signal, not substring)",
+          "behavior": "AC4 — D1 no longer reports COVERED for an FR whose only event has tests_total:0 and no test link (former false-green regression pinned)",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-adopt/tests/test_fr_layer_inference.py::test_incidental_table_in_component_name_does_not_infer_integration PASSED"
+          "evidence": "plugins/shipwright-compliance/tests/test_d1_hardening.py::test_d1_hardened_untested_event_no_longer_covers PASSED"
         },
         {
-          "behavior": "adopt renders the Layers column annotated (inferred); real brownfield fixture route FRs declare e2e end-to-end",
+          "behavior": "PANEL-FIX O1 — D1 link-proof: an explicit/post-rollout FR needs a tested event AND a real manifest test link (two separate per-FR proofs); a link for a DIFFERENT FR does not cover this FR; legacy FRs keep the event-only proof (no monorepo avalanche)",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-adopt/tests/test_fr_layer_inference.py::test_rendered_spec_carries_a_layers_column + ::test_brownfield_fixture_route_frs_declare_e2e_end_to_end PASSED"
+          "evidence": "plugins/shipwright-compliance/tests/test_d1_hardening.py::test_d1_explicit_fr_tested_event_but_no_link_is_uncovered + ::test_d1_explicit_fr_with_tested_event_and_link_is_covered + ::test_d1_link_for_a_different_fr_does_not_cover_this_fr + ::test_d1_legacy_fr_no_manifest_covers_on_event_proof_alone PASSED"
         },
         {
-          "behavior": "model parser downgrades an (inferred)-marked Layers cell to advisory inferred_legacy (NOT explicit) so adopted FRs are not hard-gated (Spec 9 / R4)",
+          "behavior": "Carry-forward #1 — D-layer fan-out fail-closed: an ok on a display id shared across active namespaces is NOT credited (ambiguous_fanout); a unique id ok IS credited",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_requirement_parse.py::test_adopt_inferred_marker_reads_as_advisory_not_explicit PASSED; producer->spec.md->parser round-trip probe in the ADR Confidence Calibration"
+          "evidence": "plugins/shipwright-compliance/tests/test_group_d_traceability.py::test_layer_fanout_collision_ok_is_not_credited + ::test_layer_non_collision_ok_is_credited PASSED"
         },
         {
-          "behavior": "model parser reads an explicit integration Layers value + normalizes (case-fold/dedup/drop-unknown) + keeps legacy provenance distinct",
+          "behavior": "Carry-forward #3 — invalid_layers (author typo'd Layers cell) surfaced as a HARD D-layer finding naming the FR + raw token",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_requirement_parse.py::test_greenfield_requirement_col_with_explicit_integration_layer + ::test_layers_are_normalized_lowercased_deduped_and_unknown_dropped + ::test_greenfield_empty_layers_is_legacy_provenance_not_explicit PASSED"
+          "evidence": "plugins/shipwright-compliance/tests/test_group_d_traceability.py::test_layer_invalid_layers_is_hard_finding PASSED"
         },
         {
-          "behavior": "MUST-FIX 1 (§11-R4 collapse): a headed Layers cell that is non-empty but resolves to zero valid canonical layers (author typo, e.g. 'int, db') stays explicit + is recorded in invalid_layers — NOT demoted to advisory legacy; empty cell still takes the legacy path",
+          "behavior": "R3 fail-closed manifest — absent / non-v2 / malformed manifest → D-orphan+D-layer SKIP (no proof != pass), never a silent pass",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_requirement_parse.py::test_nonempty_but_noncanonical_layers_cell_is_flagged_not_demoted + tests/test_invalid_layers_manifest.py::test_invalid_layers_cell_surfaced_and_fr_stays_explicit PASSED"
+          "evidence": "plugins/shipwright-compliance/tests/test_group_d_traceability.py::test_traceability_findings_skip_when_manifest_absent + ::test_load_manifest_rejects_non_v2 PASSED"
         },
         {
-          "behavior": "MUST-FIX 2: only the exact (inferred) marker downgrades to advisory; a post-rollout author writing (auto)/(adopted) stays explicit (hard-gated)",
+          "behavior": "PANEL-FIX O6 — end-to-end wiring: group_d.run emits D-orphan + D-layer findings from a committed valid manifest (guards the out.extend splice)",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_requirement_parse.py::test_only_the_exact_inferred_marker_downgrades_not_auto_or_adopt PASSED"
+          "evidence": "plugins/shipwright-compliance/tests/test_group_d_traceability.py::test_group_d_run_emits_traceability_findings_end_to_end PASSED"
         },
         {
-          "behavior": "MUST-FIX 3: adopt's emitted (inferred) marker is bound to compliance's reader by a cross-plugin round-trip (render adopt spec -> parse via compliance -> inferred_legacy), so drift on either literal fails a test",
+          "behavior": "PANEL-FIX O5 — the orphan suggested-command carries only the schema-pinned FR id (never the untrusted test path); the path stays in evidence (no quote-break/injection)",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-adopt/tests/test_fr_layer_inference.py::test_inferred_marker_roundtrip_binds_adopt_emit_to_compliance_read PASSED"
+          "evidence": "plugins/shipwright-compliance/tests/test_group_d_traceability.py::test_orphan_flags_confirmed_orphan_medium (asserts path NOT in cmd, path IS in evidence) PASSED"
         },
         {
-          "behavior": "MUST-FIX 4: a backend API route (fastapi/flask/express) does NOT infer e2e; a backend data route infers integration; e2e requires a UI framework or UI-file source",
+          "behavior": "AC5 / anti-ratchet — new logic in ≤300-LOC siblings; capped rtm_generator.py (763) + group_d.py (464) net-neutral; test files under 300 or unbaselined; RED-before verified",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-adopt/tests/test_fr_layer_inference.py::test_backend_api_route_is_not_e2e + ::test_backend_data_route_infers_integration_not_e2e + ::test_multiple_surfaces_union_all_three_layers PASSED"
-        },
-        {
-          "behavior": "MUST-FIX 5: the drift_parsers trailing tolerance is linear-time on a NON-matching pathological row (no closing pipe, backtracking-on-failure path)",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_drift_parsers_layers.py::test_trailing_tolerance_is_linear_time_on_a_NON_matching_row PASSED"
+          "evidence": "anti_ratchet_check --worktree: no block (test_audit_groups_a_d.py held at 789); wc -l all new/edited source ≤300; full compliance suite 1090 PASSED"
         }
       ],
       "counts": {
-        "testable": 12,
-        "tested": 12,
+        "testable": 11,
+        "tested": 11,
         "untestable": 0,
         "untested_testable": 0
       },

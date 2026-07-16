@@ -417,7 +417,7 @@ def test_d1_passes_when_every_must_fr_has_an_event(tmp_path):
     )
     _events(tmp_path / "shipwright_events.jsonl", [
         {"type": "work_completed", "ts": "2026-04-01T00:00:00+00:00",
-         "affected_frs": ["FR-01.01", "FR-01.02"]},
+         "affected_frs": ["FR-01.01", "FR-01.02"], "tests": {"passed": 3, "total": 3}},
     ])
 
     findings = group_d.run(tmp_path, _default_config(), None)
@@ -493,7 +493,7 @@ def test_d1_coverage_persists_across_later_spec_update(tmp_path):
     )
     _events(tmp_path / "shipwright_events.jsonl", [
         {"type": "work_completed", "ts": "2026-01-01T00:00:00+00:00",
-         "affected_frs": ["FR-01.01"]},
+         "affected_frs": ["FR-01.01"], "tests": {"passed": 2, "total": 2}},
         {"type": "work_completed", "ts": "2026-03-01T00:00:00+00:00",
          "spec_updated": ".shipwright/planning/01-foo/spec.md"},
     ])

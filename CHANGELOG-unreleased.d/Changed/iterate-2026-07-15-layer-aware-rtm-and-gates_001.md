@@ -1,0 +1,1 @@
+compliance: hardened detective D1 so a requirement is only `COVERED` by a *tested* event (tests>0) and, once it declares layers post-rollout, a real test link — closing the false-green where a bare `affected_frs` mention counted as coverage.
