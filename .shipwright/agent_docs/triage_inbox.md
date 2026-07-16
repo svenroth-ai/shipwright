@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-16T17:42:01.630011Z. Items waiting for triage decision.
+> Auto-generated 2026-07-16T18:39:55.852213Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 305
-- Triage: 8 | Promoted: 1 | Dismissed: 295 | Snoozed: 1
+- Total: 309
+- Triage: 12 | Promoted: 1 | Dismissed: 295 | Snoozed: 1
 
-## Top 8 items (severity-sorted)
+## Top 12 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -81,4 +81,26 @@
 - **Decompose FR-01.10 / FR-01.07 into sub-FRs for precise feature traceability** `id=trg-cced399c | severity=low | kind=improvement → P3/engineering`
   - Follow-up to iterate-2026-06-30-fr-retag-honesty. Introduce sub-FRs (e.g. FR-01.10.x for Control Grade / RTM / SBOM / d…
   - Promote: `triage_promote.py --id trg-cced399c --task-ref EXT:<ref>`
+
+### Source: retrofit-traceability (4 items)
+
+<a id="trg-e32343ab"></a>
+- **50 pre-existing skipped/focused tests found at onboarding** `id=trg-e32343ab | severity=medium | kind=maintenance → P2/engineering`
+  - Repo-wide skip inventory (1× js.skip.no_quarantine, 1× pytest.mark.skip, 22× pytest.mark.skipif, 26× pytest.skip). Stan…
+  - Promote: `triage_promote.py --id trg-e32343ab --task-ref EXT:<ref>`
+
+<a id="trg-a57392a2"></a>
+- **Traceability retrofit: 24 low-confidence @FR backfill proposals to review** `id=trg-a57392a2 | severity=low | kind=maintenance → P3/engineering`
+  - 24 tests (full corpus, fixtures excluded) have a below-auto-write FR candidate (reviewed, not written). Candidate FRs:…
+  - Promote: `triage_promote.py --id trg-a57392a2 --task-ref EXT:<ref>`
+
+<a id="trg-f92f5f32"></a>
+- **Traceability retrofit: 7137 monorepo tests unmapped to any FR (full corpus, review candidates)** `id=trg-f92f5f32 | severity=low | kind=maintenance → P3/engineering`
+  - Full-corpus scan: 7137 tests (fixtures excluded) map to no live FR. The monorepo tracks framework-internal FRs, so most…
+  - Promote: `triage_promote.py --id trg-f92f5f32 --task-ref EXT:<ref>`
+
+<a id="trg-01bb6cae"></a>
+- **Traceability retrofit: 187 high-confidence @FR candidates in plugins/*/tests + shared/tests (not yet manifest-tracked)** `id=trg-01bb6cae | severity=low | kind=maintenance → P3/engineering`
+  - A full-corpus backfill (7419 tests, fixtures excluded) found 187 tests that map to an FR at auto-write confidence via `…
+  - Promote: `triage_promote.py --id trg-01bb6cae --task-ref EXT:<ref>`
 

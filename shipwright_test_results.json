@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-15-retrofit-monorepo-and-webui",
+    "run_id": "iterate-2026-07-16-collector-test-roots",
     "date": "2026-07-16",
     "unit": {
       "status": "passed",
-      "passed": 5704,
-      "total": 5704
+      "passed": 1119,
+      "total": 1119
     },
     "integration": {
       "status": "passed",
-      "passed": 232,
-      "total": 232
+      "passed": 2,
+      "total": 2
     },
     "pgtap": {
       "status": "not_run",
@@ -31,70 +31,66 @@
       "status": "skipped"
     },
     "degraded": [
-      "complexity classifier returned estimate='large' + risk_flag touches_auth from message-prose keywords: the spec prose contains 'author'/'authored'/'Author' (author the webui brief) which trips touches_auth, and the long spec prose trips the 'large' scope-keyword estimate. The authoritative diff-driven detectors on the actual changed files fire NOTHING (touches_build_files=False; no auth/migration/RLS/billing/IO product code). True complexity=small (data/tags + docs, byte-stable product source). Recorded per feedback_classifier_message_keyword_falsepos.md; the medium+ review path (3.5/3.7/3.8) was run regardless.",
-      "TT7 recorded the same classifier prose-false-positive class — the diff-predicate risk floor, not the message keywords, is authoritative (F11 recomputes)."
+      "complexity classifier first returned estimate='large' + risk_flag touches_migrations from message-prose keywords (the verbose plan message trips the scope-keyword estimate; nothing in the diff touches SQL/migrations). A neutral, diff-accurate re-run returned 'medium' (history prior n=20, scope_keyword_estimate=trivial, zero risk flags). Overridden to medium per feedback_classifier_message_keyword_falsepos.md; the medium+ review path (3.5/3.7/3.8) was run regardless; F11 recomputes from diff-predicates. Real flags: cross_component + touches_io_boundary."
     ],
     "surface_verification": {
       "surface": "none",
-      "runner": "backfill_test_links.py --project-root . (+ --dry-run) | update_compliance.py --phase iterate | group_d.run",
+      "runner": "pytest (plugins/shipwright-compliance 1119 + shared traceability/layer 68) + live generate_file() config-boundary probes + group_d/layer_coverage gate suites",
       "exit_code": 0,
       "tests_run": 0,
       "timestamp": "2026-07-16T00:00:00+00:00",
-      "justification": "Data/tag + docs retrofit: applies 3 high-confidence @FR tags into an existing test file, regenerates the compliance test-traceability manifest, files rolled-up triage, and authors a webui handoff brief. No runnable app surface (web/cli/api) is added or modified. The engine + collector + Group-D detectors it drives are already exercised end-to-end by the TT1-TT7 suites; TT8's own outcomes are verified by the empirical probes below + the full F0 suite (18 units GREEN)."
+      "justification": "No runnable app surface (web/cli/api) is added or changed — this is a compliance-collector scan-scope config knob. The behavior is proven by the F0 suite (1119 compliance + 68 shared traceability/layer, all green), two @pytest.mark.integration round-trips through generate_file(), and 11 empirical config-boundary probes (BOM/CRLF/non-object/absolute/**/escape + real-monorepo regen). The collector + Group-D detectors it drives are exercised end-to-end by the TT1-TT7 suites."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 — the 3 high-confidence @FR tags land in test_events_log_parity.py and the regenerated test-traceability.json binds them to FR-01.11 at the integration layer (RTM layer-aware columns render)",
+          "behavior": "AC1 — a @FR-tagged test under a config-opted plugins/*/tests root round-trips into the regenerated on-disk manifest (the tag PERSISTS instead of write-then-drop)",
           "disposition": "tested",
-          "evidence": "manifest re-read: 3 bound links for 01-adopted::FR-01.11 (integration); RTM traceability-matrix.md renders Unit|Integration|E2E columns; collector assembly covered by plugins/shipwright-compliance/tests/test_test_links_collector.py"
+          "category": "integration",
+          "evidence": "test_test_links_config_roots.py::test_plugin_dir_tagged_test_round_trips_and_fixtures_are_fenced PASSED — generate_file() writes the manifest, schema-validates, and FR-07.01 carries the plugins/demo/tests/test_widget.py link"
         },
         {
-          "behavior": "AC2 — D-orphan/D-layer/D1 run and are advisory (not hard-block) for the monorepo's legacy FRs; coverage-delta note states confident-vs-residue counts",
+          "behavior": "AC4 — the collector's own traceability fixture mini-repos (fake @FR tags) are fenced by traceability.exclude_dirs so scanning plugins/*/tests fans NO bogus orphan; the exclude is load-bearing",
           "disposition": "tested",
-          "evidence": "group_d.run() over the live repo: D-orphan PASS (0 orphans), D-layer PASS LOW (15 advisory legacy gaps, no false hard-block); TT8-coverage-delta.md carries the counts; test_group_d_traceability.py covers the detector logic"
+          "category": "integration",
+          "evidence": "test_plugin_dir_tagged_test_round_trips_and_fixtures_are_fenced (orphans==[]) + test_without_exclude_the_fixture_tag_would_orphan (FR-99.99 confirmed_orphan appears WITHOUT the exclude) — both PASSED"
         },
         {
-          "behavior": "AC3 — webui-retrofit-brief.md is a self-contained webui-repo iterate spec (2-stage validation, five known specs as acceptance, explicit does-not-run-from-monorepo + cache-sync stop-condition)",
+          "behavior": "AC2 — config ABSENT ⇒ default scan is byte-unchanged (frozen golden + collector goldens reproduce exactly)",
           "disposition": "tested",
-          "evidence": "external_review.py --mode code confirmed the brief content present (Gemini ship-as-is); the brief force-tracked at its campaign path so it ships in the PR (was gitignored)"
+          "evidence": "test_configured_roots_default_to_conventional_when_absent PASSED; shared/tests/test_traceability_golden_consistency.py + plugins/shipwright-compliance/tests/test_test_links_collector.py golden-equality tests PASSED"
         },
         {
-          "behavior": "AC4 — product (non-test) source is byte-stable: only test files receive @FR tags; the diff touches ONLY 1 test file + the manifest + triage + docs",
+          "behavior": "AC3 — traversal rewritten rglob→os.walk+in-place dirnames prune: vendored subtrees never descended, overlapping roots yield each file once, deterministic order",
           "disposition": "tested",
-          "evidence": "git diff --name-only assertion: integration-tests/test_events_log_parity.py (test) + test-traceability.json + triage.jsonl + 2 campaign docs; PRODUCT-SOURCE VIOLATIONS = NONE"
+          "evidence": "test_overlapping_roots_yield_each_file_once PASSED; goldens (order-sensitive) reproduce; dirnames sorted in-place"
         },
         {
-          "behavior": "AC5 — footprint = tags in an existing test file + the manifest + the brief + the coverage-delta note + triage; bloat baseline not ratcheted; docs <300 LOC-relevant",
+          "behavior": "AC5 — describe/it suite propagation gated to TS/JS so a describe/it inside a PYTHON string literal (collector self-tests) is not a phantom suite tag",
           "disposition": "tested",
-          "evidence": "no shipwright_bloat_baseline.json change in the diff; footprint matches the spec's Files section"
+          "evidence": "test_describe_it_inside_a_python_string_is_not_a_suite_tag PASSED; real-monorepo regen: 5 phantom orphans BEFORE the gate → 0 AFTER"
         },
         {
-          "behavior": "Backfill idempotency — a re-run over the now-tagged repo writes 0 new tags (the 3 are honoured)",
+          "behavior": "AC6 — malformed config robustness: non-object JSON root, absolute test_roots entry, `**` glob, garbled/BOM JSON, and ../ escape are all dropped/fenced (never crash the regen), fallback is observable via stderr",
           "disposition": "tested",
-          "evidence": "PROBE 1: backfill --dry-run re-run → auto_written=0, already_tagged=3"
+          "evidence": "test_non_object_config_root_does_not_crash, test_absolute_test_root_entry_is_dropped_not_crashed, test_recursive_glob_entry_is_skipped_others_kept, test_malformed_config_falls_back_to_default, test_config_root_escaping_the_project_is_dropped — all PASSED"
         },
         {
-          "behavior": "The additive @pytest.mark.covers tags do not break test collection (marker registered, tests still discover identically)",
+          "behavior": "AC7 — the real monorepo manifest regenerates clean with the opt-in (15 reqs, 0 orphans, 0 invalid, schema-valid; untagged 158→7014 = the honest backfill surface)",
           "disposition": "tested",
-          "evidence": "PROBE 2: pytest --collect-only → 3 tests collected, 0 unknown-marker warnings; covers registered in root pyproject.toml"
-        },
-        {
-          "behavior": "Scan-scope honesty — the backfill's 162 ≈ 166 raw test defs (captures class-method tests, not a systematic omission); pytest's 232 nodes are parametrization fan-out; the complete corpus inventory (7419 tests) is produced with fixture false-positives excluded",
-          "disposition": "tested",
-          "evidence": "PROBE 3: def-count 166 vs engine 162 (heuristic delta), 86 class-method tests captured; full-corpus dry-run 7419 → 187 candidates / 0 real orphans (14 fixture false-positives excluded)"
+          "evidence": "live generate_file(project_root) probe: reqs=15 orphans=0 invalid=0 untagged=7014; group_d D-orphan/D-layer + layer_coverage TT5 suites PASSED against the output"
         }
       ],
       "counts": {
-        "testable": 8,
-        "tested": 8,
+        "testable": 7,
+        "tested": 7,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 5,
-        "covered_acs": 5
+        "acs": 7,
+        "covered_acs": 7
       }
     }
   },

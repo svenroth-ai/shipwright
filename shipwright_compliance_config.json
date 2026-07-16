@@ -2,6 +2,23 @@
   "enforcement": {
     "rtm_coverage_min": 0.7
   },
+  "traceability": {
+    "test_roots": [
+      "tests",
+      "test",
+      "__tests__",
+      "e2e",
+      "integration-tests",
+      "src",
+      "app",
+      "packages",
+      "plugins/*/tests",
+      "shared/tests"
+    ],
+    "exclude_dirs": [
+      "fixtures"
+    ]
+  },
   "status": "initial",
   "last_full_generation": "2026-05-02T18:37:57.867344+00:00",
   "seeded_by_adopt": true,

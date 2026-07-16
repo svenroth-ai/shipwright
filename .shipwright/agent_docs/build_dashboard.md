@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-16 18:39 UTC | Session: a69abb9e-d21a-40a1-846b-13913cca2b09 | Run: iterate-2026-07-15-retrofit-monorepo-and-webui
+> Updated: 2026-07-16 20:24 UTC | Session: a69abb9e-d21a-40a1-846b-13913cca2b09 | Run: iterate-2026-07-16-collector-test-roots
 
-## Recent Changes (315 iterations)
+## Recent Changes (316 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | config-driven traceability.test_roots + exclude_dirs for the test_links collector | 1119/1119 |  | compliance | 2026-07-16 |
 | change | TT8: retrofit this monorepo's own tests with @FR requirement->test traceability tags (integration-tests baseline; 187-candidate full-corpus inventory triaged), regenerate the compliance test-traceability manifest, and author the webui-repo retrofit handoff brief. | 5936/5936 |  | compliance | 2026-07-16 |
 | feature | TT7: adopt Step E.17 establishes the requirement->test traceability baseline (tag convention scaffold + TT6 backfill + repo-wide skip inventory + predeclared-decision resolution + test_links wired into the adopt compliance phase). | 5697/5697 |  | tooling | 2026-07-16 |
 | feature | shared backfill_test_links engine (TT6): map existing tests to FRs, deterministic-first + opt-in LLM, emit tag edits/proposals/orphans | 4597/4597 |  | tooling | 2026-07-16 |
@@ -322,7 +323,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-16 | Unit: 5704/5704 | Integration: 232/232 | Smoke: skipped | (iterate)
+Last run: 2026-07-16 | Unit: 1119/1119 | Integration: 2/2 | Smoke: skipped | (iterate)
 
 ## Pipeline
 

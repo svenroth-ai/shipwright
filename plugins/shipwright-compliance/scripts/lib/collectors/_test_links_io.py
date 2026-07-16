@@ -11,7 +11,9 @@ from __future__ import annotations
 import ast
 import hashlib
 import json
+import os
 import subprocess
+import sys
 from pathlib import Path
 
 _ZERO_SHA = "0" * 40
@@ -75,23 +77,35 @@ def enumerate_tests(rel_path: str, source: str, grammar) -> list[str]:
     return []
 
 
-def iter_test_files(roots: list[Path], base: Path):
-    """Yield ``(abs_path, rel_path)`` for every test source file under ``roots``."""
+def iter_test_files(roots: list[Path], base: Path, prune_dirs: frozenset[str] = _PRUNE_DIRS):
+    """Yield ``(abs_path, rel_path)`` for every test source file under ``roots``.
+
+    Descent-pruned (``os.walk`` + in-place ``dirnames[:]``): a vendored/build subtree whose
+    name is in ``prune_dirs`` is never DESCENDED into — no O(all-files) rglob materialize+sort
+    of a large committed ``node_modules`` (the TT7 fix, reused here). Files are collected +
+    sorted per-root, so the manifest order is deterministic and byte-identical to the prior
+    rglob scan for any tree with no prune-named ancestor.
+    """
     seen: set[Path] = set()
     for root in roots:
-        if not root.exists():
+        if not root.is_dir():
             continue
-        for path in sorted(root.rglob("*")):
-            if not path.is_file() or path.suffix.lower() not in _SRC_SUFFIXES:
-                continue
-            if any(part in _PRUNE_DIRS for part in path.parts):
-                continue
-            name = path.name.lower()
-            is_test = (
-                name.startswith("test_") or name.endswith("_test.py")
-                or ".test." in name or ".spec." in name
-            )
-            if not is_test or path in seen:
+        found: list[Path] = []
+        for dirpath, dirnames, filenames in os.walk(root):  # followlinks=False (default): no symlink escape
+            dirnames[:] = sorted(d for d in dirnames if d not in prune_dirs)  # prune + order before descent
+            for name in filenames:
+                path = Path(dirpath) / name
+                if path.suffix.lower() not in _SRC_SUFFIXES:
+                    continue
+                low = name.lower()
+                is_test = (
+                    low.startswith("test_") or low.endswith("_test.py")
+                    or ".test." in low or ".spec." in low
+                )
+                if is_test:
+                    found.append(path)
+        for path in sorted(found):
+            if path in seen:
                 continue
             seen.add(path)
             yield path, path.relative_to(base).as_posix()
@@ -126,6 +140,81 @@ def default_test_roots(project_root: Path) -> list[Path]:
     return [project_root / d for d in _DEFAULT_TEST_DIRS if (project_root / d).is_dir()]
 
 
+def _read_traceability_config(project_root: Path) -> dict:
+    """Return the ``traceability`` block of ``shipwright_compliance_config.json`` — an empty
+    dict when the file/key is absent or unreadable (⇒ the historical default behavior)."""
+    path = project_root / "shipwright_compliance_config.json"
+    if not path.exists():
+        return {}
+    try:
+        config = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        # A PRESENT-but-unreadable config (garbled JSON, a leading BOM, an IO error) silently
+        # disables the opt-in — surface it so the fallback-to-default is observable, not silent.
+        sys.stderr.write(f"[test_links] shipwright_compliance_config.json unreadable ({exc}); using default roots\n")
+        return {}
+    if not isinstance(config, dict):  # valid JSON but a non-object root (``[]`` / ``"x"`` / ``null``)
+        return {}
+    block = config.get("traceability")
+    return block if isinstance(block, dict) else {}
+
+
+def configured_test_roots(project_root: Path) -> list[Path]:
+    """Resolve the directories the collector scans, honoring an optional project opt-in.
+
+    Reads ``traceability.test_roots`` (dir names / fixed-depth globs relative to the project
+    root) from ``shipwright_compliance_config.json``. ABSENT ⇒ the collector keeps its exact
+    historical scope — the conventional ``_DEFAULT_TEST_DIRS`` (zero change for every existing
+    project + the frozen fixtures). PRESENT ⇒ exactly those roots, so a monorepo opts its
+    ``plugins/*/tests`` + ``shared/tests`` in via config rather than the shared collector
+    hardcoding any repo layout.
+
+    Each entry may be a literal dir (``shared/tests``) or a BOUNDED glob (``plugins/*/tests``);
+    ``Path.glob`` resolves at the pattern's fixed depth so root resolution never descends a
+    vendored tree. A ``**`` entry is skipped (it would re-introduce the rglob-descent hang the
+    walk-prune fixes); a non-string / empty entry is skipped too. Presence is authoritative — a
+    PRESENT list is used exactly (each valid entry resolved, even if it resolves to zero dirs);
+    only an ABSENT key or a non-list value falls back to the default (the latter with a stderr
+    diagnostic, never a silent revert). Each resolved dir is containment-checked (``os.walk`` runs
+    ``followlinks=False``; a match resolving OUTSIDE the project root — an absolute/``..``/symlink
+    escape — is dropped). Results are de-duplicated by resolved path and per-pattern sorted.
+    """
+    entries = _read_traceability_config(project_root).get("test_roots")
+    if entries is None:
+        return default_test_roots(project_root)                     # key absent → historical default
+    if not isinstance(entries, list):
+        sys.stderr.write("[test_links] traceability.test_roots is not a list; using default roots\n")
+        return default_test_roots(project_root)
+    root = project_root.resolve()
+    roots: list[Path] = []
+    seen: set[Path] = set()
+    for entry in entries:
+        if not isinstance(entry, str) or not entry or "**" in entry:
+            continue
+        try:
+            matches = sorted(project_root.glob(entry))
+        except (ValueError, NotImplementedError, OSError):
+            continue  # absolute / unsupported pattern → dropped, never a crashed regen
+        for match in matches:
+            resolved = match.resolve()
+            if match.is_dir() and resolved not in seen and resolved.is_relative_to(root):
+                seen.add(resolved)
+                roots.append(match)
+    return roots
+
+
+def configured_prune_dirs(project_root: Path) -> frozenset[str]:
+    """Dir names pruned DURING descent: the built-in vendored/build ``_PRUNE_DIRS`` plus any
+    ``traceability.exclude_dirs`` the project adds. A monorepo excludes ``fixtures`` so the
+    collector's OWN traceability test-fixtures (mini-repos carrying deliberately fake ``@FR``
+    tags) never pollute the real manifest. ABSENT ⇒ exactly ``_PRUNE_DIRS`` (no change)."""
+    extra = _read_traceability_config(project_root).get("exclude_dirs")
+    if not isinstance(extra, list):
+        return _PRUNE_DIRS
+    names = {e for e in extra if isinstance(e, str) and e}
+    return _PRUNE_DIRS | names if names else _PRUNE_DIRS
+
+
 def load_evidence(project_root: Path) -> dict:
     path = project_root / ".shipwright" / "compliance" / "test-evidence-index.json"
     if not path.exists():
@@ -149,5 +238,6 @@ def git_head(project_root: Path) -> str:
 
 __all__ = [
     "detect_layer", "enumerate_tests", "iter_test_files", "rel", "spec_hash",
-    "discover_specs", "default_test_roots", "load_evidence", "git_head", "_ZERO_SHA",
+    "discover_specs", "default_test_roots", "configured_test_roots", "configured_prune_dirs",
+    "load_evidence", "git_head", "_ZERO_SHA",
 ]

@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-07-16T18:39:51.338541+00:00
-Total commits: 1151
+Generated: 2026-07-16T20:24:24.104701+00:00
+Total commits: 1152
 
 ## Commit Distribution
 
@@ -9,7 +9,7 @@ Total commits: 1151
 pie title Commit Types
     "fix" : 331
     "feat" : 318
-    "chore" : 240
+    "chore" : 241
     "docs" : 145
     "refactor" : 68
     "test" : 28
@@ -679,10 +679,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 240 commits
+### Chores (chore) — 241 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-16 | traceability | retrofit monorepo tests with @FR tags + webui handoff brief (TT8) (#386) | 2c85758ee6bc |
 | 2026-07-12 | review | default external-review GPT model to gpt-5.6-terra-pro (#366) | 4b71eec6aaa4 |
 | 2026-07-12 | release | bump root pyproject.toml to v0.31.0 (#365) | 1b4a471e075d |
 | 2026-07-12 | release | v0.31.0 (#364) | db6c3d3f3fa2 |
@@ -1220,7 +1221,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1151 |
+| Total commits | 1152 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1151 |
+| Human-authored commits | 1152 |
 
