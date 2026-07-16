@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-15-tsjs-skip-ban",
+  "date": "2026-07-16T09:21:01.416785Z",
+  "type": "feature",
+  "complexity": "small",
+  "branch": "iterate/campaign-TT4-tsjs-skip-ban",
+  "spec": ".shipwright/planning/iterate/campaigns/2026-07-15-test-traceability-layers/sub-iterates/TT4-tsjs-skip-ban.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-15-tsjs-skip-ban"
+}

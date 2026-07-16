@@ -1,14 +1,21 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-16T08:01:08.912769Z. Items waiting for triage decision.
+> Auto-generated 2026-07-16T09:21:26.519299Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 304
-- Triage: 7 | Promoted: 1 | Dismissed: 295 | Snoozed: 1
+- Total: 305
+- Triage: 8 | Promoted: 1 | Dismissed: 295 | Snoozed: 1
 
-## Top 7 items (severity-sorted)
+## Top 8 items (severity-sorted)
+
+### Source: analysis (1 item)
+
+<a id="trg-57317128"></a>
+- **Plugin scope split: entry-point plugins (adopt/grade/run) global, 11 pipeline plugins project-scoped** `id=trg-57317128 | severity=medium | kind=improvement → P2/engineering`
+  - Scope the Shipwright marketplace correctly instead of enabling all ~14 plugins at user scope (they currently load /ship…
+  - Promote: `triage_promote.py --id trg-57317128 --task-ref EXT:<ref>`
 
 ### Source: campaign-anchor (2 items)
 

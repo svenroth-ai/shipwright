@@ -78,19 +78,32 @@ The probe surfaces silent-skip patterns that mask CI tooling absence or
 collection-time-only `@pytest.mark.skipif` decorators that can't carry a
 CI gate structurally. See ADR-044 + ADR-045.
 
+The same command also scans changed **TS/JS** specs (Playwright / Vitest /
+Jest). There a `test.skip` / `it.skip` / `describe.skip` / `test.fixme` /
+`test.todo` / `xit` (incl. chained `.skip.each` / `.only.each` /
+`.concurrent.only`) must carry a structured **quarantine annotation**
+(`@quarantine` comment block with `reason` + `owner` + `ticket` +
+`expires: YYYY-MM-DD`); an **expired** or >180-day-out `expires` fails, and a
+focused test (`.only` / `fit` / `fdescribe`) is an **unconditional** failure
+that can never be quarantined. A runtime conditional `test.skip(cond, 'reason')`
+(first arg not a string) is exempt. The TS/JS leg is diff-scoped by line — an
+expired or bare skip only fails a PR that introduces or edits it.
+
 ```bash
 uv run shared/scripts/tools/scan_test_hygiene.py --diff
 ```
 
 - **Mandatory at medium+**
 - Advisory at trivial / small
-- Skip rules: an explicit `# test-hygiene: allow-silent-skip — <rationale>`
+- Skip rules (Python): an explicit `# test-hygiene: allow-silent-skip — <rationale>`
   marker comment on the offending line (or in a contiguous comment block
   immediately above it) suppresses a finding. The rationale must
   describe a setup-condition or upstream-state gate (not a binary-on-PATH
   gate, which is exactly what the rule catches).
+- Skip rules (TS/JS): the `@quarantine` block above the skip is the only
+  escape for a `skip`/`fixme`/`xit`; there is no escape for `.only`/`fit`.
 - Exit code: `0` = no findings (pass); `1` = findings present (fail —
-  either fix or document with the marker); `2` = usage error.
+  either fix or document with the marker/quarantine); `2` = usage error.
 
 ### Output Format
 ```

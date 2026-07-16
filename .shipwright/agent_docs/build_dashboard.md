@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-16 08:25 UTC | Session: a69abb9e-d21a-40a1-846b-13913cca2b09 | Run: iterate-2026-07-15-layer-aware-rtm-and-gates
+> Updated: 2026-07-16 10:09 UTC | Session: a69abb9e-d21a-40a1-846b-13913cca2b09 | Run: iterate-2026-07-15-tsjs-skip-ban
 
-## Recent Changes (310 iterations)
+## Recent Changes (311 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | TS/JS silent-skip ban + quarantine-with-expiry hygiene gate (TT4) | 4572/4572 |  | tooling | 2026-07-16 |
 | feature | Layer-aware RTM columns + D-orphan/D-layer detectives + D1 hardening (traceability TT2) | 1090/1090 |  | compliance | 2026-07-16 |
 | feature | FR Layers column + adopt surface-inference + (inferred) advisory-provenance marker (TT3) | 1060/1060 |  | tooling | 2026-07-16 |
 | feature | Per-test execution-evidence reader (JUnit/Playwright/Vitest) -> schema-validated fail-closed evidence index joined into the traceability manifest so coverage is execution-backed (R1/G5): enabled+pass=ok, skipped/missing/fail=MISSING; plus an expiring-waiver primitive and a frozen closed-vocab boundary | 1047/1047 |  | compliance | 2026-07-15 |
@@ -317,7 +318,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-16 | Unit: 1104/1104 | Integration: 25/25 | Smoke: skipped | (iterate)
+Last run: 2026-07-16 | Unit: 4591/4591 | Smoke: skipped | (iterate)
 
 ## Pipeline
 
