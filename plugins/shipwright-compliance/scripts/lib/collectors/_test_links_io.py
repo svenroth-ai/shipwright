@@ -102,7 +102,12 @@ def iter_test_files(roots: list[Path], base: Path, prune_dirs: frozenset[str] = 
                     low.startswith("test_") or low.endswith("_test.py")
                     or ".test." in low or ".spec." in low
                 )
-                if is_test:
+                # ``is_file()`` (follows symlinks) fences a broken/dangling symlink or a
+                # non-regular entry named ``test_*.py``: os.walk lists it in ``filenames`` but
+                # ``read_text`` would raise an uncaught ``FileNotFoundError`` (``errors='ignore'``
+                # swallows only decode errors), crashing the whole regen. Matters more now the
+                # scan reaches the wide plugin/shared tree, not just curated ``tests/`` roots.
+                if is_test and path.is_file():
                     found.append(path)
         for path in sorted(found):
             if path in seen:

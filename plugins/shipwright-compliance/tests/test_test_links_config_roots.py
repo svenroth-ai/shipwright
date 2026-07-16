@@ -231,3 +231,27 @@ def test_without_exclude_the_fixture_tag_would_orphan(tmp_path):
     manifest = json.loads(out.read_text(encoding="utf-8"))
     assert any(o["tagged_fr"] == "FR-99.99" and o["category"] == "confirmed_orphan"
                for o in manifest["orphans"]), manifest["orphans"]
+
+
+def test_iter_test_files_skips_broken_symlink_without_crashing(tmp_path):
+    """A dangling symlink named ``test_*.py`` is listed by ``os.walk`` but ``read_text``
+    would raise ``FileNotFoundError`` (``errors='ignore'`` swallows only decode errors),
+    crashing the whole regen. The ``is_file()`` guard fences it. Matters now the scan
+    reaches the wide plugin/shared tree, not just curated ``tests/`` roots."""
+    root = tmp_path / "tests"
+    root.mkdir()
+    (root / "test_real.py").write_text("def test_ok():\n    assert True\n", encoding="utf-8")
+    broken = root / "test_dangling.py"
+    try:
+        broken.symlink_to(tmp_path / "no_such_target.py")
+    except (OSError, NotImplementedError):
+        # OS capability gate, not a missing-binary/import skip: symlink creation needs
+        # privilege/developer-mode on Windows. CI runs on ubuntu-latest (see .github/
+        # workflows/*.yml — POSIX only), where this always succeeds, so the guard IS
+        # exercised in CI; the skip only spares a privilege-less Windows dev box.
+        pytest.skip("symlink creation unavailable (Windows without developer-mode)")
+
+    rels = [rel for _abs, rel in io.iter_test_files([root], tmp_path)]
+
+    assert any(r.endswith("tests/test_real.py") for r in rels)
+    assert not any("test_dangling.py" in r for r in rels)  # fenced, and no exception raised

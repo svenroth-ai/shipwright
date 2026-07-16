@@ -173,6 +173,38 @@ manifest round-trip; (c) the filesystem scan (`os.walk`).
   roots collide on `path::name` (same identity contract as the frozen grammar/TT1 — no new
   divergence); non-ASCII/whitespace spec-table cells were calibrated by TT1 (unchanged here).
 
+### Post-build doubt-review fix round (orchestrator adversarial cascade)
+
+The spec/code/doubt cascade on the built PR surfaced one HIGH must-fix that the runner's
+own GPT+Gemini review missed — a latent CI time-bomb, exactly the false-green class this
+traceability campaign exists to catch:
+
+- **Finding (doubt HIGH):** committing the monorepo `traceability` opt-in makes the config
+  LIVE, but `update_compliance` regenerates + commits `test-traceability.json` on EVERY
+  iterate finalize. The regenerated manifest renders ~1000 `plugins/shipwright-compliance/
+  tests/...` ids whose `-compliance/` segment false-matches the `compliance` migration's
+  canon regex (`-` absent from the negative-lookbehind) — so the NEXT *unrelated* iterate's
+  `test_artifact_path_canon` gate would go red on an artifact it never touched.
+- **Fix:** allowlist `.shipwright/compliance/test-traceability.json` in all four migration
+  allowlists (same generated-churn-artifact class as `change-history.md`), + a regression
+  (`shared/tests/test_artifact_path_canon_manifest_allowlist.py`) proving the FP is real
+  (non-vacuous) and the manifest is exempt everywhere.
+- **Probe 12 (empirical proof):** wrote the real expanded 7024-entry manifest (0 orphans,
+  schema-valid) to the tracked path and ran the canon lint → GREEN via the allowlist (1068
+  `-compliance/` hits all exempt); restored the committed manifest.
+- **LOW-4 hardening (doubt):** the wider `os.walk` scan could list a dangling `test_*.py`
+  symlink whose `read_text` (`errors='ignore'` swallows only decode errors) would crash the
+  regen → added an `is_file()` guard in `iter_test_files` + a POSIX-CI-exercised regression.
+- **MEDIUM carried forward (NOT this iterate):** the TT5 enforcing regen
+  (`_layer_coverage_regen._build`) uses `default_test_roots` and stays config-blind, so
+  plugin/shared coverage is RTM-visibility-only until a follow-up threads the config in
+  (handling the base-side config asymmetry). No effect here — no plugin tags exist yet, so
+  the RTM and the gate agree. Recorded for the tag-backfill iterate.
+
+The expanded manifest is intentionally NOT committed here (it regenerates naturally and
+would fan a churn-conflict cascade across the concurrent iterate worktrees); the canon fix
+keeps every future auto-regen green.
+
 ## Risk-flag note
 
 First classifier run returned `large` with `prior_source=keyword` + `touches_migrations` — the
