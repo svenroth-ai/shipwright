@@ -4,8 +4,8 @@
     "date": "2026-07-16",
     "unit": {
       "status": "passed",
-      "passed": 1090,
-      "total": 1090
+      "passed": 1101,
+      "total": 1101
     },
     "integration": {
       "status": "passed",
@@ -98,12 +98,37 @@
         {
           "behavior": "AC5 / anti-ratchet — new logic in ≤300-LOC siblings; capped rtm_generator.py (763) + group_d.py (464) net-neutral; test files under 300 or unbaselined; RED-before verified",
           "disposition": "tested",
-          "evidence": "anti_ratchet_check --worktree: no block (test_audit_groups_a_d.py held at 789); wc -l all new/edited source ≤300; full compliance suite 1090 PASSED"
+          "evidence": "anti_ratchet_check --worktree: no block (test_audit_groups_a_d.py held at 789); wc -l all new/edited source ≤300; full compliance suite 1101 PASSED"
+        },
+        {
+          "behavior": "PANEL-2 M1 — an UNKNOWN required_layers_source token (rename/drift/hand-edit) missing a required layer is fail-closed HARD, never silently advisory (check_layer + refine_d1_covered use `not in _LEGACY_SOURCES`, not `== explicit`)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_group_d_hardening.py::test_dlayer_unknown_source_is_hard_not_advisory PASSED"
+        },
+        {
+          "behavior": "PANEL-2 M2a — a display id shared across namespaces including a REMOVED occurrence is a collision; its fanned coverage ok is NOT credited by D-layer and the fanned test is surfaced as a possible_orphan",
+          "disposition": "tested",
+          "evidence": "test_group_d_hardening.py::test_dlayer_active_active_collision_ok_not_credited + ::test_dlayer_active_removed_collision_ok_not_credited + ::test_orphan_fanout_active_removed_surfaced_as_possible (real build_manifest) PASSED"
+        },
+        {
+          "behavior": "PANEL-2 M2b — the RTM renders a fanned collision ok as ? (ambiguous), agreeing with D-layer's fail-closed ambiguous_fanout (no RTM-green-while-gate-flags)",
+          "disposition": "tested",
+          "evidence": "test_group_d_hardening.py::test_rtm_renders_collision_ok_as_ambiguous + test_rtm_layer_columns.py::test_collision_display_id_renders_ambiguous_not_ok PASSED"
+        },
+        {
+          "behavior": "PANEL-2 M3 — check_orphan surfaces an unknown-category orphan fail-closed (pass only when nothing to surface); load_manifest re-validates against traceability_schema.json on READ and rejects an out-of-vocab enum (skip, never trusted)",
+          "disposition": "tested",
+          "evidence": "test_group_d_hardening.py::test_orphan_unknown_category_is_surfaced + ::test_load_manifest_rejects_schema_invalid_enum PASSED"
+        },
+        {
+          "behavior": "PANEL-2 S4/S5/S6 — invalid_tags surfaced as a hygiene finding; the D1 link-proof requires coverage==ok (a skipped link is not coverage, R1); R1 pinned end-to-end via build_manifest (skipped evidence → MISSING → D-layer explicit HARD)",
+          "disposition": "tested",
+          "evidence": "test_group_d_hardening.py::test_orphan_surfaces_invalid_tags + ::test_r1_skipped_evidence_makes_explicit_layer_hard_fail + test_d1_hardening.py::test_d1_explicit_fr_with_only_a_skipped_link_is_uncovered PASSED"
         }
       ],
       "counts": {
-        "testable": 11,
-        "tested": 11,
+        "testable": 16,
+        "tested": 16,
         "untestable": 0,
         "untested_testable": 0
       },

@@ -89,14 +89,25 @@ def test_absent_manifest_renders_dashes(tmp_path):
 
 
 def test_namespaced_key_resolves_this_rows_split(tmp_path):
-    """The row matches its OWN split::FR entry — a same-id FR in another namespace
-    with different coverage does not bleed in."""
+    """The row matches its OWN split::FR entry (distinct ids, no collision) — a different
+    FR in another namespace does not bleed in."""
+    _write_manifest(tmp_path, {
+        "01-auth::FR-01.01": _node("FR-01.01", ["e2e"], {"e2e": "ok"}),
+        "02-other::FR-02.02": _node("FR-02.02", ["e2e"], {"e2e": "MISSING"}),
+    })
+    cells = _row(generate(_data(tmp_path, split="01-auth")))
+    assert cells[11] == "ok"  # 01-auth's own entry
+
+
+def test_collision_display_id_renders_ambiguous_not_ok(tmp_path):
+    """MUST-FIX 2b — when the display id is shared across namespaces the fanned ``ok`` is
+    rendered ``?`` (RTM agrees with D-layer's fail-closed ``ambiguous_fanout``)."""
     _write_manifest(tmp_path, {
         "01-auth::FR-01.01": _node("FR-01.01", ["e2e"], {"e2e": "ok"}),
         "02-other::FR-01.01": _node("FR-01.01", ["e2e"], {"e2e": "MISSING"}),
     })
     cells = _row(generate(_data(tmp_path, split="01-auth")))
-    assert cells[11] == "ok"  # 01-auth's own entry, not 02-other's MISSING
+    assert cells[11] == "?"  # collision → not credited
 
 
 def test_legend_decodes_layer_columns(tmp_path):

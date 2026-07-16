@@ -182,8 +182,12 @@
   spec line, its work/verification events, and its **per-layer test
   coverage** (`Unit | Integration | E2E`, sourced from the
   test-traceability manifest — `ok` = an executed-passing tagged test,
-  `MISSING`, or `n/a`), plus the reconciliation status and any open
-  triage. Producer:
+  `MISSING`, `n/a`, or `?` when the display id is shared across
+  namespaces so the frozen un-namespaced `@FR` tag is fanned and its
+  coverage cannot be credited — the namespaced row key resolves the
+  right node but the node's value is already fanned; the disambiguation
+  remedy is deferred to TT5), plus the reconciliation status and any
+  open triage. Producer:
   `plugins/shipwright-compliance/scripts/lib/rtm_generator.py`.
 - **SBOM** — Software Bill of Materials. Producer:
   `plugins/shipwright-compliance/scripts/lib/sbom_generator.py`.

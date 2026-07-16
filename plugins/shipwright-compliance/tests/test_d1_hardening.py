@@ -64,11 +64,13 @@ def test_d1_legacy_fr_no_manifest_covers_on_event_proof_alone(tmp_path):
 # ---------------------------------------------------------------------------
 
 
-def _node(fr_id, *, source, tests):
+def _node(fr_id, *, source, tests, coverage=None):
+    # coverage tracks the link's executed state (R1): a passing link ⇒ unit=ok, else MISSING.
+    cov = coverage or ({"unit": "ok"} if tests else {"unit": "MISSING"})
     return {
         "id": fr_id, "spec_path": "s", "title": fr_id, "priority": "Must",
         "status": "active", "required_layers": ["unit"],
-        "required_layers_source": source, "tests": tests, "coverage": {"unit": "MISSING"},
+        "required_layers_source": source, "tests": tests, "coverage": cov,
     }
 
 
@@ -88,6 +90,11 @@ def _link():
                       "status": "enabled", "executed": "pass", "tag_source": "pytest_marker"}]}
 
 
+def _skipped_link():
+    return {"unit": [{"id": "t", "path": "tests/t.py::t", "layer": "unit",
+                      "status": "skipped", "executed": "not_run", "tag_source": "pytest_marker"}]}
+
+
 def _tested_event(fr):
     return [{"type": "work_completed", "ts": "2026-04-01T00:00:00+00:00",
              "affected_frs": [fr], "tests": {"passed": 5, "total": 5}}]
@@ -99,6 +106,18 @@ def test_d1_explicit_fr_tested_event_but_no_link_is_uncovered(tmp_path):
     _spec_file(tmp_path, "FR-01.01")
     _events_file(tmp_path, _tested_event("FR-01.01"))
     _write_manifest(tmp_path, [_node("FR-01.01", source="explicit", tests={})])
+    d1 = next(f for f in group_d.run(tmp_path, {}, None) if f.check_id == "D1")
+    assert d1.status == "fail", d1.detail
+    assert "FR-01.01" in d1.detail
+
+
+def test_d1_explicit_fr_with_only_a_skipped_link_is_uncovered(tmp_path):
+    """SHOULD-FIX 5 / R1 — a present-but-skipped link (``coverage != ok``) does NOT satisfy
+    the D1 link proof; a skipped test is not coverage."""
+    _spec_file(tmp_path, "FR-01.01")
+    _events_file(tmp_path, _tested_event("FR-01.01"))
+    _write_manifest(tmp_path, [_node("FR-01.01", source="explicit",
+                                     tests=_skipped_link(), coverage={"unit": "MISSING"})])
     d1 = next(f for f in group_d.run(tmp_path, {}, None) if f.check_id == "D1")
     assert d1.status == "fail", d1.detail
     assert "FR-01.01" in d1.detail

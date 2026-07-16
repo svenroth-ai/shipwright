@@ -1,13 +1,11 @@
 """D-orphan + D-layer detective tests (traceability campaign TT2, Spec §5).
 
-RED before TT2 (``_group_d_traceability`` did not exist); green after. Two layers:
-
-* **unit** — ``check_orphan`` / ``check_layer`` over hand-built manifest dicts. Pins the
-  provenance release valve (explicit FAIL vs legacy advisory), the namespace fan-out
-  fail-closed rule for D-layer, ``invalid_layers``, and the R1 executed-passing coverage.
-* **integration** — ``build_manifest`` over synthetic multi-namespace fixtures, so the
-  frozen-grammar fan-out is exercised end-to-end: a tag resolving to a live FR in ANY
-  namespace is never an orphan; a tag resolving only to a removed FR is.
+RED before TT2 (``_group_d_traceability`` did not exist); green after. This file holds the
+UNIT-level checks (``check_orphan`` / ``check_layer`` over hand-built manifest dicts): the
+provenance release valve (explicit FAIL vs legacy advisory), the fan-out fail-closed rule,
+``invalid_layers``, and the wiring. The real-``build_manifest`` fan-out / collision +
+coordinator-hardening tests (MUST-FIX 1–3, SHOULD-FIX 4/6) live in
+``test_group_d_hardening.py`` (keeps this file under the 300-LOC guideline).
 """
 
 from __future__ import annotations
@@ -21,7 +19,6 @@ if str(_HERE.parent) not in sys.path:
     sys.path.insert(0, str(_HERE.parent))
 
 from scripts.audit import _group_d_traceability as gdt  # noqa: E402
-from scripts.lib.collectors.test_links import build_manifest  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -151,10 +148,12 @@ def test_layer_removed_fr_is_not_evaluated():
 # ---------------------------------------------------------------------------
 
 
-def test_layer_fanout_collision_ok_is_not_credited():
-    """A display id shared by ≥2 active namespaces can be false-satisfied by ONE
-    fanned tag. Fail-closed: the ``ok`` is NOT credited → the explicit FR still
-    fails, reason ambiguous_fanout."""
+def test_layer_fanout_collision_ok_is_not_credited_but_advisory():
+    """A display id shared by ≥2 namespaces can be false-satisfied by ONE fanned tag.
+    Fail-closed vs false-GREEN: the ``ok`` is NOT credited (surfaced as an
+    ``ambiguous_fanout`` gap). Fail-closed vs false-RED: it is ADVISORY (not a HARD
+    ``any_fail``), because a collision explicit FR is structurally unsatisfiable under
+    un-namespaced tags — that remedy is deferred to TT5 (MUST-FIX 2)."""
     m = _manifest([
         ("01-a", _node("FR-03.01", source="explicit", required=("unit",),
                        coverage={"unit": "ok"})),
@@ -162,8 +161,9 @@ def test_layer_fanout_collision_ok_is_not_credited():
                        coverage={"unit": "ok"})),
     ])
     status, sev, detail, ev, cmd = gdt.check_layer(m)
-    assert status == "fail"
-    assert any("ambiguous_fanout" in e for e in ev)
+    assert status == "pass"                                 # advisory, not a HARD fail
+    assert any("ambiguous_fanout" in e for e in ev)         # but NOT silently credited
+    assert "deferred to TT5" in detail
 
 
 def test_layer_non_collision_ok_is_credited():
@@ -235,65 +235,5 @@ def test_group_d_run_emits_traceability_findings_end_to_end(tmp_path):
         assert f.source == "detective-only"
 
 
-# ---------------------------------------------------------------------------
-# Integration — frozen-grammar fan-out through build_manifest (carry-forward #1)
-# ---------------------------------------------------------------------------
-
-
-def _spec(fr_rows: str, removed_rows: str = "") -> str:
-    body = "# Spec\n\n| FR | Description | Priority | Layers |\n| --- | --- | --- | --- |\n" + fr_rows
-    if removed_rows:
-        body += "\n## Removed Requirements\n\n| FR | Description | Priority |\n| --- | --- | --- |\n" + removed_rows
-    return body + "\n"
-
-
-def _build(tmp_path):
-    ns_a = tmp_path / ".shipwright" / "planning" / "01-a"
-    ns_b = tmp_path / ".shipwright" / "planning" / "02-b"
-    ns_a.mkdir(parents=True)
-    ns_b.mkdir(parents=True)
-    # 01-a: FR-03.01 ACTIVE. 02-b: FR-03.01 REMOVED + FR-09.09 REMOVED.
-    (ns_a / "spec.md").write_text(
-        _spec("| FR-03.01 | Live requirement | Must | unit |\n"), encoding="utf-8")
-    (ns_b / "spec.md").write_text(
-        _spec("| FR-08.01 | Other live | Must | unit |\n",
-              "| FR-03.01 | Old dup | Must |\n| FR-09.09 | Retired feature | Must |\n"),
-        encoding="utf-8")
-    tests_dir = tmp_path / "tests"
-    tests_dir.mkdir()
-    # One test fans to FR-03.01 (live in 01-a, removed in 02-b) → NOT an orphan.
-    (tests_dir / "test_live.py").write_text(
-        'import pytest\n\n@pytest.mark.covers("FR-03.01")\ndef test_live():\n    assert True\n',
-        encoding="utf-8")
-    # One test points ONLY at a removed FR → confirmed orphan.
-    (tests_dir / "test_dead.py").write_text(
-        'import pytest\n\n@pytest.mark.covers("FR-09.09")\ndef test_dead():\n    assert True\n',
-        encoding="utf-8")
-    return build_manifest(
-        tmp_path,
-        spec_files=[ns_a / "spec.md", ns_b / "spec.md"],
-        test_roots=[tests_dir],
-        evidence={},
-    )
-
-
-def test_orphan_fanout_live_in_any_namespace_is_not_flagged(tmp_path):
-    """Direction 1 — a tag resolving to a live FR in ANY namespace (even while a
-    same-id FR is Removed in another split) is coverage, never an orphan."""
-    manifest = _build(tmp_path)
-    orphan_frs = {o["tagged_fr"] for o in manifest["orphans"]}
-    assert "FR-03.01" not in orphan_frs               # resolved live in 01-a
-    status, *_ = gdt.check_orphan(manifest)
-    # FR-09.09 IS a real orphan, so the check fails — but NOT because of FR-03.01.
-    assert status == "fail"
-    assert all("FR-03.01" not in e for e in gdt.check_orphan(manifest)[3])
-
-
-def test_orphan_fanout_removed_only_is_flagged(tmp_path):
-    """Direction 2 — a tag resolving only to a Removed FR is a confirmed orphan."""
-    manifest = _build(tmp_path)
-    orphan_frs = {o["tagged_fr"] for o in manifest["orphans"]}
-    assert "FR-09.09" in orphan_frs
-    status, sev, detail, ev, cmd = gdt.check_orphan(manifest)
-    assert status == "fail"
-    assert "FR-09.09" in detail
+# Real-``build_manifest`` fan-out / collision + hardening tests live in
+# ``test_group_d_hardening.py`` (keeps this unit-level file under the 300-LOC guideline).

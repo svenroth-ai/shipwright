@@ -76,6 +76,27 @@ brief §"ADVERSARIAL PANEL"). No separate plan-mode round. Marker: `skipped_fold
 | O6 | Med | Wiring tests only exercised absent/non-v2 manifest, not the end-to-end audit path with a valid manifest. | **accepted-and-fixed** — added `test_group_d_run_emits_traceability_findings_end_to_end` (writes a valid manifest with an orphan + an explicit layer gap, runs `group_d.run`, asserts D-orphan + D-layer FAIL and detective-only source). |
 | G-* | — | Gemini's response was an un-finished chain-of-thought probing `None in _WORST` in `_rtm_layer_columns`. | **verified non-issue** — `coverage.get(l)` returning `None` is correctly excluded (`None in _WORST` is `False`), so a missing layer never renders a stray glyph. No change. |
 
+## Adversarial panel — second round (coordinator hard gate; Codex + doubt-reviewer + GPT/Gemini)
+
+The panel found fail-open / false-green holes that are DORMANT on today's monorepo (all-legacy,
+single namespace, no collisions) but bite the campaign's actual multi-namespace / post-rollout
+target. All addressed on the same branch.
+
+| # | Sev | Finding | Disposition |
+|---|-----|---------|-------------|
+| M1 | High | **Provenance fail-open.** `check_layer` / `refine_d1_covered` branched on `== "explicit"`, so ANY non-explicit token (rename/drift/hand-edit/unknown) silently downgraded a post-rollout FR to advisory / event-only — the dead `_LEGACY_SOURCES` frozenset was the intended guard. | **accepted-and-fixed** — routing is now `explicit`→hard, `in _LEGACY_SOURCES`→advisory, **any other/missing token → fail-closed HARD**, in BOTH sites. Pinned by `test_dlayer_unknown_source_is_hard_not_advisory`. |
+| M2a | Critical (Codex) | **Collision completeness.** `_collision_ids` counted only active nodes, so an id ACTIVE in ns-A + REMOVED in ns-B was not a collision and A's fanned `ok` was credited (false-green). | **accepted-and-fixed** — `collision_ids` counts active AND removed occurrences; a collision `ok` is never credited, and the fanned test is surfaced as a `possible_orphan`. Pinned over REAL `build_manifest` (`test_dlayer_active_removed_collision_ok_not_credited`, `test_orphan_fanout_active_removed_surfaced_as_possible`). |
+| M2b | High (doubt) | **RTM ⇄ D-layer disagreement.** the RTM rendered a fanned collision `ok` verbatim while D-layer fail-closed it. | **accepted-and-fixed** — `_rtm_layer_columns` is collision-aware; a collision `ok` renders `?`. Docstring + glossary RTM line corrected (namespaced key resolves the NODE, not the fanned VALUE). Pinned by `test_rtm_renders_collision_ok_as_ambiguous`. |
+| M3a | High | **check_orphan fail-open.** the green branch keyed on `not confirmed and not possible`, silently dropping an orphan whose category is outside the known set. | **accepted-and-fixed** — the pass branch fires only when nothing needs surfacing; an unknown-category orphan is surfaced fail-closed. Pinned by `test_orphan_unknown_category_is_surfaced`. |
+| M3b | High (doubt) | **Load-time trust.** `load_manifest` / `load_layer_index` checked only `schema_version==2`. | **accepted-and-fixed** — `_group_d_manifest.load_manifest` re-validates against `traceability_schema.json` on READ (jsonschema); reject/skip on failure (incl. jsonschema-unavailable → fail-closed). Pinned by `test_load_manifest_rejects_schema_invalid_enum`. |
+| S4 | Med | **`invalid_tags` unsurfaced** — a `@covers('FR-1.3')` typo silently under-covers. | **fixed** — surfaced as a LOW hygiene finding in D-orphan, mirroring `invalid_layers`. Pinned by `test_orphan_surfaces_invalid_tags`. |
+| S5 | Med | **D1 link-proof credited a skipped link** (`any(tests.values())`). | **fixed** — the link must be `coverage==ok` (enabled+pass, R1). Pinned by `test_d1_explicit_fr_with_only_a_skipped_link_is_uncovered`. |
+| S6 | Med | **R1 not pinned end-to-end at the detector.** | **fixed** — `test_r1_skipped_evidence_makes_explicit_layer_hard_fail` runs real `build_manifest` (skipped evidence → coverage MISSING → D-layer explicit HARD). |
+| — | — | **Collision false-RED remedy** — a genuinely-covered explicit FR whose id collides is structurally unsatisfiable under un-namespaced tags. | **documented → TT5** — D-layer stays ADVISORY for collision ids (not credited, but not HARD either — no false-red); the remedy (namespaced / per-split tags) is deferred. Do not attempt path-based resolution here. |
+| — | — | **Enforcing regeneration (R3)** — the ENFORCING F11 gate must regenerate base+head and re-validate on read; do not trust the committed manifest. | **documented → TT5.** |
+
+**File footprint:** the fixes were absorbed by extracting `_group_d_manifest.py` (load + read-validate + collision, 105 LOC); `_group_d_traceability.py` stays 278 ≤ 300, all touched files ≤300, baseline NOT ratcheted.
+
 ## Internal review cascade (delegated to orchestrator)
 
 The runner has no `Agent` tool, so the internal `spec-reviewer` (HARD-GATE) → `code-reviewer`

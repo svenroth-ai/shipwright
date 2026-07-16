@@ -1,74 +1,56 @@
 """``D-orphan`` + ``D-layer`` detective checks (traceability campaign TT2, Spec §5).
 
 Both consume the TT1 test-traceability manifest (``.shipwright/compliance/
-test-traceability.json``). Split out of ``group_d.py`` so that file stays under its
-ADR-096 anti-ratchet cap; ``group_d.run`` calls :func:`traceability_findings`.
+test-traceability.json``), loaded + schema-validated fail-closed by ``_group_d_manifest``.
+Split out of ``group_d.py`` so that file stays under its ADR-096 anti-ratchet cap;
+``group_d.run`` calls :func:`traceability_findings`.
 
-Fail-closed design (this is a gate — a false *green* is worse than a false *red*):
+Fail-CLOSED is the rule (a false *green* defeats the campaign; a false *red* is merely
+noisy). Where a fully fail-closed HARD verdict would create a false-RED, the detector
+stays ADVISORY and the remedy is deferred to TT5 rather than crediting a false-green.
 
-- **Manifest source (R3).** The committed manifest is derived / RTM-visibility only;
-  the two *enforcing* iterate gates (TT5 F11) regenerate base+head themselves. This
-  *detective* runs post-merge and is non-blocking, and ``update_compliance`` regenerates
-  the committed manifest every phase (fresh at audit time), so it reads the committed
-  artifact — but an **absent / malformed / non-v2** manifest is a SKIP (no proof ≠ pass),
-  never a silent pass.
+- **Manifest trust.** ``_group_d_manifest.load_manifest`` reads the committed artifact but
+  **re-validates it against the schema on READ** — a hand-edited / stale / older-collector
+  manifest is rejected (→ SKIP), so the closed-vocab guarantee (enums, coverage⇔passing) is
+  never merely trusted. The base+head-regenerating ENFORCING gate is TT5's F11 (R3).
 
-- **``D-orphan``.** Surfaces ``manifest.orphans`` (a test tagged with a removed/absent
-  FR). The collector already resolves the frozen un-namespaced ``@FR-XX.YY`` fan-out
-  correctly — a tag is an orphan only when it resolves to NO *active* FR in ANY namespace
-  (``fr_removed`` if a removed match exists, else ``fr_absent``); a tag that resolves to a
-  live FR anywhere is filed as coverage, never an orphan — so D-orphan cannot false-flag a
-  live tag. ``category`` is respected: ``confirmed_orphan`` → MEDIUM (the session class),
-  ``possible_orphan`` → LOW, ``unmapped`` → informational (never a stale-feature
-  accusation, R4). The diff-scoped "bare tag removal on a *changed* test = HARD" gate is
-  TT5's F11 job (needs base+head); this detective sees only the current manifest.
+- **``D-orphan``.** Surfaces ``manifest.orphans`` fail-closed: ``confirmed_orphan`` → MEDIUM,
+  ``possible_orphan`` (incl. a tag fanned onto a collision id) → LOW, an **unknown category**
+  → LOW (never silently dropped), ``unmapped`` → informational, and ``invalid_tags`` (a
+  malformed ``@covers`` typo that silently under-covers) → LOW hygiene. The pass branch fires
+  ONLY when there is nothing to surface. The diff-scoped "bare tag removal on a *changed*
+  test = HARD" gate needs base+head and is TT5's F11 job.
 
 - **``D-layer``.** An active FR whose ``required_layers`` include a layer with no
-  executed-passing tagged test there (``coverage[layer] != "ok"``; R1 — a green-but-skipped
-  test is ``MISSING``, not ``ok``). Provenance is the release valve (R4 / carry-forward):
-  ``explicit`` (post-rollout) FRs FAIL, severity by priority (Must=HIGH/Should=MED/May=LOW)
-  and count toward ``any_fail``; ``inferred_legacy`` / ``defaulted_legacy`` FRs are
-  ADVISORY (surfaced, but ``status="pass"`` so the pre-TT8 monorepo — all-MISSING, no run
-  evidence yet — does not drown in HIGH findings). ``invalid_layers`` (author declared an
-  unparseable layer) is a HARD hygiene finding. **Namespace fan-out:** a display id shared
-  by ≥2 active requirements can be false-satisfied by a fanned tag, so an ``ok`` on a
-  collision FR is treated as NOT-confirmed (fail-closed) rather than credited.
+  executed-passing tagged test (``coverage[layer] != "ok"``; R1). Severity routing:
+  ``explicit`` **or an UNKNOWN provenance token** → HARD by priority (fail-closed — a future
+  rename / drift / hand-edit must not silently downgrade); a KNOWN legacy source
+  (``inferred_legacy`` / ``defaulted_legacy``) → ADVISORY (the pre-TT8 monorepo valve);
+  a **collision (fan-out) id** → ADVISORY regardless of provenance and DEFERRED to TT5 (its
+  ``ok`` is never credited — fail-closed vs false-green — but a HARD block would be a
+  false-red: a collision explicit FR is structurally unsatisfiable under un-namespaced tags,
+  whose remedy = namespaced/per-split tags = TT5). ``invalid_layers`` → HARD hygiene.
 """
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
+from scripts.audit._group_d_manifest import (
+    collision_ids,
+    fanned_possible_orphans,
+    load_manifest,
+)
 from scripts.audit.audit_adapters import Finding, SOURCE_DETECTIVE_ONLY
 
-_MANIFEST_REL = ".shipwright/compliance/test-traceability.json"
-_LAYER_ORDER = ("unit", "integration", "e2e")
 _PRIORITY_TO_SEVERITY = {"Must": "HIGH", "Should": "MEDIUM", "May": "LOW"}
 _SEV_ORDER = {"LOW": 0, "MEDIUM": 1, "HIGH": 2}
 _LEGACY_SOURCES = frozenset({"inferred_legacy", "defaulted_legacy"})
+_KNOWN_CATEGORIES = frozenset({"confirmed_orphan", "possible_orphan", "unmapped"})
 
 
 def _max_sev(sevs: set[str]) -> str:
     return max(sevs, key=lambda s: _SEV_ORDER.get(s, 0)) if sevs else "LOW"
-
-
-def load_manifest(project_root: Path) -> dict | None:
-    """Read the committed v2 manifest. ``None`` when absent / unreadable / not v2.
-
-    ``None`` drives a SKIP upstream — a missing proof is never a pass (fail-closed)."""
-    path = Path(project_root) / _MANIFEST_REL
-    if not path.exists():
-        return None
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return None
-    if not isinstance(data, dict) or data.get("schema_version") != 2:
-        return None
-    if not isinstance(data.get("requirements"), dict):
-        return None
-    return data
 
 
 # ---------------------------------------------------------------------------
@@ -78,9 +60,8 @@ def load_manifest(project_root: Path) -> dict | None:
 
 def _suggest_orphan(fr: str | None) -> str:
     # The specific test path stays in *evidence* (untrusted repo content), never in this
-    # copy-paste command — a test id with a quote/shell metachar would otherwise break the
-    # command (external-review MED). ``fr`` is schema-pinned ``FR-\d{2}\.\d{2}`` (or None),
-    # so it is safe to interpolate.
+    # copy-paste command — a test id with a quote/shell metachar would break it. ``fr`` is
+    # schema-pinned ``FR-\d{2}\.\d{2}`` (or None), so it is safe to interpolate.
     target = f"for {fr} " if fr else ""
     return (
         f"/shipwright-iterate --type change \"retarget or retire the orphaned "
@@ -88,45 +69,55 @@ def _suggest_orphan(fr: str | None) -> str:
     )
 
 
+def _orphan_line(o: dict, tag: str) -> str:
+    fr = o.get("tagged_fr")
+    target = f"→ {fr}" if fr else "(no live FR)"
+    return f"{o.get('test', '?')} {target} ({o.get('reason', '')}) [{tag}]"
+
+
 def check_orphan(manifest: dict) -> tuple[str, str, str, list[str], str | None]:
     """(status, severity, detail, evidence, suggested_cmd) for D-orphan."""
     orphans = manifest.get("orphans") or []
+    invalid_tags = manifest.get("invalid_tags") or []
     confirmed = [o for o in orphans if o.get("category") == "confirmed_orphan"]
     possible = [o for o in orphans if o.get("category") == "possible_orphan"]
     unmapped = [o for o in orphans if o.get("category") == "unmapped"]
+    # Fail-CLOSED: an orphan whose category is outside the known set is NOT silently
+    # dropped into the green branch — it is surfaced (treated as at-least possible).
+    other = [o for o in orphans if o.get("category") not in _KNOWN_CATEGORIES]
+    fanned = fanned_possible_orphans(manifest)  # collision-credited tags → possible orphans
+    possible = possible + other + fanned
 
-    def _line(o: dict, tag: str) -> str:
-        fr = o.get("tagged_fr")
-        reason = o.get("reason", "")
-        target = f"→ {fr}" if fr else "(no live FR)"
-        return f"{o.get('test', '?')} {target} ({reason}) [{tag}]"
-
-    # unmapped alone is NOT an accusation (R4) — surface, never fail on it.
-    if not confirmed and not possible:
+    # Clean pass ONLY when nothing needs surfacing. ``unmapped`` alone is informational
+    # (R4 — not a stale-feature accusation), but invalid_tags is a real hygiene defect.
+    if not confirmed and not possible and not invalid_tags:
         if unmapped:
-            ev = [_line(o, "unmapped") for o in unmapped]
             return ("pass", "LOW",
                     f"{len(unmapped)} unmapped test(s) (informational — not orphans)",
-                    ev, None)
-        return ("pass", "MEDIUM",
-                "no test is tagged with a removed/absent FR", [], None)
+                    [_orphan_line(o, "unmapped") for o in unmapped], None)
+        return ("pass", "MEDIUM", "no test is tagged with a removed/absent FR", [], None)
 
     severity = "MEDIUM" if confirmed else "LOW"
-    evidence = ([_line(o, "confirmed") for o in confirmed]
-                + [_line(o, "possible") for o in possible]
-                + [_line(o, "unmapped") for o in unmapped])
+    evidence = (
+        [_orphan_line(o, "confirmed") for o in confirmed]
+        + [_orphan_line(o, "possible") for o in possible]
+        + [f"{iv.get('test', '?')}: malformed tag {iv.get('raw', '')!r} "
+           f"({iv.get('reason', 'invalid')}) — silent under-coverage [invalid_tag]"
+           for iv in invalid_tags]
+        + [_orphan_line(o, "unmapped") for o in unmapped]
+    )
     parts: list[str] = []
     if confirmed:
         parts.append(f"{len(confirmed)} confirmed (tag → removed/absent FR)")
     if possible:
-        parts.append(f"{len(possible)} possible (heuristic)")
-    head = confirmed[0] if confirmed else possible[0]
-    detail = (
-        "test(s) tagged with a dead/removed FR — " + "; ".join(parts)
-        + f"; e.g. {head.get('test', '?')} → {head.get('tagged_fr')}"
-    )
+        parts.append(f"{len(possible)} possible (heuristic / ambiguous fan-out)")
+    if invalid_tags:
+        parts.append(f"{len(invalid_tags)} malformed @FR tag(s)")
+    head = confirmed[0] if confirmed else (possible[0] if possible else None)
+    ref = (f"; e.g. {head.get('test', '?')} → {head.get('tagged_fr')}") if head else ""
+    detail = "test-tag defects — " + "; ".join(parts) + ref
     return ("fail", severity, detail, evidence,
-            _suggest_orphan(head.get("tagged_fr")))
+            _suggest_orphan(head.get("tagged_fr") if head else None))
 
 
 # ---------------------------------------------------------------------------
@@ -134,24 +125,14 @@ def check_orphan(manifest: dict) -> tuple[str, str, str, list[str], str | None]:
 # ---------------------------------------------------------------------------
 
 
-def _collision_ids(reqs: dict) -> set[str]:
-    """Display ids owned by ≥2 ACTIVE requirement nodes (fan-out ambiguity)."""
-    seen: dict[str, int] = {}
-    for node in reqs.values():
-        if node.get("status") == "active":
-            disp = node.get("id")
-            seen[disp] = seen.get(disp, 0) + 1
-    return {i for i, n in seen.items() if n > 1}
-
-
 def check_layer(manifest: dict) -> tuple[str, str, str, list[str], str | None]:
     """(status, severity, detail, evidence, suggested_cmd) for D-layer."""
     reqs = manifest.get("requirements") or {}
     invalid = manifest.get("invalid_layers") or []
-    collisions = _collision_ids(reqs)
+    collisions = collision_ids(reqs)
 
-    hard: list[tuple] = []       # explicit-provenance gaps (FAIL)
-    advisory: list[tuple] = []   # legacy-provenance gaps (WARN, no any_fail)
+    hard: list[tuple] = []       # explicit / unknown-provenance gaps (FAIL)
+    advisory: list[tuple] = []   # legacy + collision-deferred gaps (WARN, no any_fail)
     for node in reqs.values():
         if node.get("status") != "active":
             continue
@@ -162,15 +143,20 @@ def check_layer(manifest: dict) -> tuple[str, str, str, list[str], str | None]:
         ambiguous = disp in collisions
         for layer in node.get("required_layers") or []:
             cov = coverage.get(layer)
-            # Fail-closed: an `ok` on a fanned-out (collision) FR is NOT confirmed
-            # coverage — the tag may exercise a different namespace's same-id FR.
+            # Fail-closed: a collision id's `ok` is NEVER credited (the tag may belong to a
+            # different namespace's same-id FR).
             if cov == "ok" and not ambiguous:
                 continue
-            reason = "ambiguous_fanout" if (ambiguous and cov == "ok") else "MISSING"
+            reason = "ambiguous_fanout" if ambiguous else "MISSING"
             gap = (disp, layer, priority, reason, source)
-            (hard if source == "explicit" else advisory).append(gap)
+            if ambiguous:
+                advisory.append(gap)                 # DEFERRED to TT5 (false-red avoidance)
+            elif source not in _LEGACY_SOURCES:
+                hard.append(gap)                     # explicit OR unknown token → fail-closed
+            else:
+                advisory.append(gap)                 # known legacy → advisory
 
-    def _gap_line(g: tuple, tag: str) -> str:
+    def _line(g: tuple, tag: str) -> str:
         disp, layer, priority, reason, source = g
         return f"{disp} [{layer}] ({priority}) — {reason} [{tag}, {source}]"
 
@@ -183,31 +169,29 @@ def check_layer(manifest: dict) -> tuple[str, str, str, list[str], str | None]:
         sevs = {_PRIORITY_TO_SEVERITY.get(p, "LOW") for (_, _, p, _, _) in hard}
         if invalid:
             sevs.add("MEDIUM")
-        severity = _max_sev(sevs)
         parts = []
         if hard:
-            parts.append(f"{len(hard)} explicit FR layer-gap(s)")
+            parts.append(f"{len(hard)} explicit/unknown FR layer-gap(s)")
         if invalid:
             parts.append(f"{len(invalid)} invalid-layer declaration(s)")
         if advisory:
-            parts.append(f"{len(advisory)} legacy advisory gap(s)")
+            parts.append(f"{len(advisory)} advisory gap(s)")
         detail = "post-rollout coverage gaps — " + "; ".join(parts)
-        evidence = ([_gap_line(g, "HARD") for g in hard] + inv_lines
-                    + [_gap_line(g, "advisory") for g in advisory])
+        evidence = ([_line(g, "HARD") for g in hard] + inv_lines
+                    + [_line(g, "advisory") for g in advisory])
         suggest = (
             "/shipwright-iterate --type change \"add an executed-passing test at the "
             "missing layer(s) — see .shipwright/compliance/audit-report.md\""
         )
-        return "fail", severity, detail, evidence, suggest
+        return "fail", _max_sev(sevs), detail, evidence, suggest
 
-    # No explicit gaps → pass; still surface any legacy advisory gaps (WARN).
-    if advisory:
+    if advisory:  # no HARD gaps → pass, but surface the advisory (legacy + collision) gaps
+        n_amb = sum(1 for g in advisory if g[3] == "ambiguous_fanout")
         detail = (
-            f"no explicit FR is missing a required layer; "
-            f"{len(advisory)} legacy advisory gap(s) (pre-rollout provenance — WARN)"
+            f"no explicit FR is missing a required layer; {len(advisory)} advisory gap(s) "
+            f"({n_amb} ambiguous fan-out — deferred to TT5; rest pre-rollout legacy)"
         )
-        return ("pass", "LOW", detail,
-                [_gap_line(g, "advisory") for g in advisory], None)
+        return ("pass", "LOW", detail, [_line(g, "advisory") for g in advisory], None)
     return "pass", "LOW", "every active FR is covered at its required layers", [], None
 
 
@@ -218,31 +202,36 @@ def check_layer(manifest: dict) -> tuple[str, str, str, list[str], str | None]:
 
 def refine_d1_covered(event_tested: set[str], project_root: Path) -> set[str]:
     """Drop from the event-tested ``covered`` set any FR that ALSO owes a manifest test
-    link but has none — the second, SEPARATE proof (event-coverage AND test-link-coverage,
-    Spec §5). The two proofs never collapse: a tested event for FR-A + a tagged test for a
-    *different* FR-B can't cover FR-A, because ``linked`` keys each FR to its OWN links.
+    link but has no *executed-passing* one — the second, SEPARATE proof (Spec §5). The two
+    proofs never collapse: a tested event for FR-A + a tagged test for a *different* FR-B
+    can't cover FR-A (``linked`` keys each FR to its OWN links), and a merely-present but
+    skipped link does NOT satisfy it (R1 — the link must be ``coverage==ok``).
 
-    The link proof is provenance-gated (Spec §9 landmine / carry-forward #2): it bites only
-    for ``explicit`` (post-rollout) FRs; ``legacy``/pre-rollout FRs keep the event-only proof
-    so the pre-TT8 monorepo (no ``@FR`` tags yet) does not avalanche into all-FR D1 failures.
-    Fail-closed on fan-out: a link on a display id shared across namespaces is NOT counted
-    (it may exercise a different namespace's same-id FR). No manifest → event-proof only."""
+    Fail-closed provenance (MUST-FIX 1): the link is required for ``explicit`` **and any
+    UNKNOWN** provenance token; only a KNOWN legacy source keeps the event-only proof so the
+    pre-TT8 monorepo does not avalanche. A **collision** id is left on the event proof (its
+    link is indeterminate — a HARD drop would be a false-red; D-layer surfaces the ambiguity
+    advisory instead). No manifest → event-proof only."""
     manifest = load_manifest(project_root)
     if manifest is None:
         return event_tested
     reqs = manifest.get("requirements") or {}
-    collisions = _collision_ids(reqs)
+    collisions = collision_ids(reqs)
     linked: set[str] = set()
-    explicit: set[str] = set()
+    requires_link: set[str] = set()
     for node in reqs.values():
         if node.get("status") != "active":
             continue
         disp = node.get("id")
-        if node.get("required_layers_source") == "explicit":
-            explicit.add(disp)
-        if disp not in collisions and any((node.get("tests") or {}).values()):
-            linked.add(disp)
-    return {fr for fr in event_tested if fr not in explicit or fr in linked}
+        if node.get("required_layers_source") not in _LEGACY_SOURCES:
+            requires_link.add(disp)  # explicit OR unknown token → fail-closed
+        if disp not in collisions and any(
+                c == "ok" for c in (node.get("coverage") or {}).values()):
+            linked.add(disp)  # a non-ambiguous executed-passing link (R1)
+    return {
+        fr for fr in event_tested
+        if fr not in requires_link or fr in linked or fr in collisions
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -266,10 +255,11 @@ def _finding(check_id: str, result: tuple) -> Finding:
 
 
 def traceability_findings(project_root: Path) -> list[Finding]:
-    """Run D-orphan + D-layer. Manifest absent → both SKIP (fail-closed)."""
+    """Run D-orphan + D-layer. Manifest absent / untrusted → both SKIP (fail-closed)."""
     manifest = load_manifest(project_root)
     if manifest is None:
-        skip = ("skip", "MEDIUM", "test-traceability manifest absent or not v2", [], None)
+        skip = ("skip", "MEDIUM",
+                "test-traceability manifest absent, not v2, or schema-invalid", [], None)
         return [_finding("D-orphan", skip), _finding("D-layer", skip)]
     out: list[Finding] = []
     for check_id, fn in (("D-orphan", check_orphan), ("D-layer", check_layer)):
@@ -284,4 +274,5 @@ def traceability_findings(project_root: Path) -> list[Finding]:
     return out
 
 
-__all__ = ["load_manifest", "check_orphan", "check_layer", "traceability_findings"]
+__all__ = ["load_manifest", "check_orphan", "check_layer", "refine_d1_covered",
+           "traceability_findings"]
