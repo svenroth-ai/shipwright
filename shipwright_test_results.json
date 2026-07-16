@@ -1,6 +1,6 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-15-adopt-traceability-baseline",
+    "run_id": "iterate-2026-07-15-retrofit-monorepo-and-webui",
     "date": "2026-07-16",
     "unit": {
       "status": "passed",
@@ -9,8 +9,8 @@
     },
     "integration": {
       "status": "passed",
-      "passed": 6,
-      "total": 6
+      "passed": 232,
+      "total": 232
     },
     "pgtap": {
       "status": "not_run",
@@ -31,93 +31,64 @@
       "status": "skipped"
     },
     "degraded": [
-      "complexity classifier returned risk_flags touches_auth + touches_migrations from message-prose keywords (the spec mentions RLS/migration/schema as SURFACE examples for required_layers inference); the diff touches NO auth/migration file — it adds an adopt tool + two pure libs + a compliance phase-list line. The authoritative diff-predicate risk floor is 'small'; the medium+ review path was run regardless."
+      "complexity classifier returned estimate='large' + risk_flag touches_auth from message-prose keywords: the spec prose contains 'author'/'authored'/'Author' (author the webui brief) which trips touches_auth, and the long spec prose trips the 'large' scope-keyword estimate. The authoritative diff-driven detectors on the actual changed files fire NOTHING (touches_build_files=False; no auth/migration/RLS/billing/IO product code). True complexity=small (data/tags + docs, byte-stable product source). Recorded per feedback_classifier_message_keyword_falsepos.md; the medium+ review path (3.5/3.7/3.8) was run regardless.",
+      "TT7 recorded the same classifier prose-false-positive class — the diff-predicate risk floor, not the message keywords, is authoritative (F11 recomputes)."
     ],
     "surface_verification": {
       "surface": "none",
-      "runner": "seed_traceability_baseline.py --project-root <fixture> (+ --dry-run)",
+      "runner": "backfill_test_links.py --project-root . (+ --dry-run) | update_compliance.py --phase iterate | group_d.run",
       "exit_code": 0,
       "tests_run": 0,
       "timestamp": "2026-07-16T00:00:00+00:00",
-      "justification": "Framework tooling change: a new adopt onboarding step (seed_traceability_baseline.py + traceability_baseline/traceability_layers pure libs) + a one-line compliance phase wiring. No runnable app surface (web/cli/api) is added or modified. The tool's CLI surface is exercised end-to-end by 6 subprocess E2E tests over temp adopt-shaped repos (with-tests / no-tests / predeclared-decisions / dry-run / idempotency), each spawning the real tool + the real Step F collector."
+      "justification": "Data/tag + docs retrofit: applies 3 high-confidence @FR tags into an existing test file, regenerates the compliance test-traceability manifest, files rolled-up triage, and authors a webui handoff brief. No runnable app surface (web/cli/api) is added or modified. The engine + collector + Group-D detectors it drives are already exercised end-to-end by the TT1-TT7 suites; TT8's own outcomes are verified by the empirical probes below + the full F0 suite (18 units GREEN)."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 — adopting a with-tests fixture populates test-traceability.json (a tagged unit test lands as an FR-01.01 unit coverage link), infers required_layers, and scaffolds the @FR convention into .claude/rules/",
+          "behavior": "AC1 — the 3 high-confidence @FR tags land in test_events_log_parity.py and the regenerated test-traceability.json binds them to FR-01.11 at the integration layer (RTM layer-aware columns render)",
           "disposition": "tested",
-          "evidence": "test_seed_traceability_baseline.py::test_with_tests_repo_scaffolds_tags_and_populates_baseline PASSED (asserts the scaffolded rule, the manifest unit link for FR-01.01, and inferred_legacy provenance)"
+          "evidence": "manifest re-read: 3 bound links for 01-adopted::FR-01.11 (integration); RTM traceability-matrix.md renders Unit|Integration|E2E columns; collector assembly covered by plugins/shipwright-compliance/tests/test_test_links_collector.py"
         },
         {
-          "behavior": "AC2 — orphan/unmapped candidates are recorded as tracked triage carrying the TT6 category (unmapped = review candidate, never a stale accusation); a zero-test repo adopts cleanly with an empty-but-present manifest and no false gate",
+          "behavior": "AC2 — D-orphan/D-layer/D1 run and are advisory (not hard-block) for the monorepo's legacy FRs; coverage-delta note states confident-vs-residue counts",
           "disposition": "tested",
-          "evidence": "test_with_tests_repo... (dedupKey adopt-unmapped:: + 'never'/no-'stale' assertions) + test_zero_test_repo_adopts_cleanly (manifest EXISTS, empty, inferred_legacy → advisory) PASSED"
+          "evidence": "group_d.run() over the live repo: D-orphan PASS (0 orphans), D-layer PASS LOW (15 advisory legacy gaps, no false hard-block); TT8-coverage-delta.md carries the counts; test_group_d_traceability.py covers the detector logic"
         },
         {
-          "behavior": "AC3 — snapshot.json shape is unchanged (baseline lives in a separate compliance manifest + adopt summary); the WebUI snapshot contract test stays green",
+          "behavior": "AC3 — webui-retrofit-brief.md is a self-contained webui-repo iterate spec (2-stage validation, five known specs as acceptance, explicit does-not-run-from-monorepo + cache-sync stop-condition)",
           "disposition": "tested",
-          "evidence": "test_snapshot_contract.py (9 tests) PASSED; no analyze_codebase / SNAPSHOT_SCHEMA_VERSION change in the diff"
+          "evidence": "external_review.py --mode code confirmed the brief content present (Gemini ship-as-is); the brief force-tracked at its campaign path so it ships in the PR (was gitignored)"
         },
         {
-          "behavior": "AC4 — NEW RED-before/green-after tests over adopt fixtures (with-tests, no-tests, predeclared-decisions); framework suites green",
+          "behavior": "AC4 — product (non-test) source is byte-stable: only test files receive @FR tags; the diff touches ONLY 1 test file + the manifest + triage + docs",
           "disposition": "tested",
-          "evidence": "test_traceability_baseline.py (13) + test_seed_traceability_baseline.py (6) PASSED; adopt 419 + compliance 1104 + shared 4174 green"
+          "evidence": "git diff --name-only assertion: integration-tests/test_events_log_parity.py (test) + test-traceability.json + triage.jsonl + 2 campaign docs; PRODUCT-SOURCE VIOLATIONS = NONE"
         },
         {
-          "behavior": "AC5 — footprint within adopt skill/scripts + tests; source files ≤300 LOC (273/161/197); SKILL.md ≤300; bloat baseline not ratcheted",
+          "behavior": "AC5 — footprint = tags in an existing test file + the manifest + the brief + the coverage-delta note + triage; bloat baseline not ratcheted; docs <300 LOC-relevant",
           "disposition": "tested",
-          "evidence": "wc -l all new source ≤300; test_skill_references_link.py::test_kern_skill_md_under_300_loc PASSED; no shipwright_bloat_baseline.json change"
+          "evidence": "no shipwright_bloat_baseline.json change in the diff; footprint matches the spec's Files section"
         },
         {
-          "behavior": "Binding §11-R5 — the predeclared-decision path resolves an ambiguous FR unattended and writes the decision back to the spec BEFORE Step F, so the collector's manifest carries the decided layers; it NEVER stalls (no fixture → inference_default)",
+          "behavior": "Backfill idempotency — a re-run over the now-tagged repo writes 0 new tags (the 3 are honoured)",
           "disposition": "tested",
-          "evidence": "test_predeclared_decisions_resolve_unattended_without_stalling (manifest FR-03.02 == ['e2e'], layers_written_to_spec==2) + test_resolve_never_stalls_without_a_fixture PASSED"
+          "evidence": "PROBE 1: backfill --dry-run re-run → auto_written=0, already_tagged=3"
         },
         {
-          "behavior": "Binding §11-R5 — a repo-wide (NOT diff-scoped) skip inventory reuses the TT4 Python + TS/JS scanners and files every pre-existing skip as triage, pruning vendored dirs",
+          "behavior": "The additive @pytest.mark.covers tags do not break test collection (marker registered, tests still discover identically)",
           "disposition": "tested",
-          "evidence": "test_skip_inventory_catches_python_and_ts_skips_repo_wide (node_modules pruned) + the with-tests E2E skip triage PASSED"
+          "evidence": "PROBE 2: pytest --collect-only → 3 tests collected, 0 unknown-marker warnings; covers registered in root pyproject.toml"
         },
         {
-          "behavior": "Code-review C2 — --dry-run mutates nothing on disk (no rules, no triage, no summary) yet still reports would-be actions",
+          "behavior": "Scan-scope honesty — the backfill's 162 ≈ 166 raw test defs (captures class-method tests, not a systematic omission); pytest's 232 nodes are parametrization fan-out; the complete corpus inventory (7419 tests) is produced with fixture false-positives excluded",
           "disposition": "tested",
-          "evidence": "test_dry_run_mutates_nothing PASSED"
-        },
-        {
-          "behavior": "Doubt D1 — the repo-wide walk prunes vendored/build dirs DURING descent (os.walk in-place dirnames prune), so a large committed node_modules on a brownfield-JS repo is never recursed into",
-          "disposition": "tested",
-          "evidence": "test_traceability_baseline.py::test_enumerate_prunes_vendored_dirs_during_descent PASSED (a node_modules/ test file is not enumerated)"
-        },
-        {
-          "behavior": "Doubt D2 — the spec Layers write-back honours \\| escapes + a cell-count-vs-header guard (no mis-column), preserves CRLF (raw bytes + keepends), and is idempotent (unchanged cell → no write)",
-          "disposition": "tested",
-          "evidence": "test_traceability_layers.py::{test_apply_decisions_does_not_mis_column_a_piped_description, test_apply_decisions_skips_a_miscolumned_unescaped_pipe_row, test_apply_decisions_preserves_crlf_and_is_idempotent} PASSED"
-        },
-        {
-          "behavior": "Doubt D3 — the repo-wide inventory also flags unconditional @pytest.mark.skip (the commonest disable idiom) via a local AST scan, without touching the shared scanner's cross-consumer contract",
-          "disposition": "tested",
-          "evidence": "test_skip_inventory_flags_unconditional_pytest_mark_skip PASSED (skip + skipif both caught)"
-        },
-        {
-          "behavior": "Doubt D4 — above 10 findings the skip inventory rolls up into ONE summary triage card (per-pattern count, max severity) instead of flooding the Inbox; at/below, granular",
-          "disposition": "tested",
-          "evidence": "test_skip_triage_rolls_up_above_threshold PASSED (15 findings → 1 card; 10 → 10 cards)"
-        },
-        {
-          "behavior": "Doubt D5 — --dry-run routes the TT6 backfill report to a temp dir so .shipwright/backfill/ on the adopted repo is never created (preview mutates nothing)",
-          "disposition": "tested",
-          "evidence": "test_dry_run_mutates_nothing PASSED (asserts .shipwright/backfill/ absent)"
-        },
-        {
-          "behavior": "Doubt D7 — a fast NON-slow guard subprocesses only the collector over a tiny fixture and asserts the @pytest.mark.covers tag → FR-01.01 unit coverage link, so the wiring is gated by the default lane even if the slow lane is excluded",
-          "disposition": "tested",
-          "evidence": "test_collector_links_a_tagged_test_to_its_fr PASSED (non-slow)"
+          "evidence": "PROBE 3: def-count 166 vs engine 162 (heuristic delta), 86 class-method tests captured; full-corpus dry-run 7419 → 187 candidates / 0 real orphans (14 fixture false-positives excluded)"
         }
       ],
       "counts": {
-        "testable": 14,
-        "tested": 14,
+        "testable": 8,
+        "tested": 8,
         "untestable": 0,
         "untested_testable": 0
       },

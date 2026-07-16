@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
   "collector_version": "test_links/1.0.0",
-  "generated_at": "2026-07-16T17:01:11.550832+00:00",
-  "source_commit": "f5a8ecf3547ecb4a9f8184412c207119c87f8200",
+  "generated_at": "2026-07-16T18:39:51.338541+00:00",
+  "source_commit": "a85c22cdbad650ffcea85cf455b01e95d16474fd",
   "spec_hash": "sha256:c8944f86bcd4737b474e245f4b79800f37db76da0b3515b6eec98fecdcd11adb",
   "requirements": {
     "01-adopted::FR-01.01": {
@@ -165,9 +165,37 @@
         "unit"
       ],
       "required_layers_source": "defaulted_legacy",
-      "tests": {},
+      "tests": {
+        "integration": [
+          {
+            "id": "integration-tests/test_events_log_parity.py::test_parity_in_main_repo",
+            "path": "integration-tests/test_events_log_parity.py::test_parity_in_main_repo",
+            "layer": "integration",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "integration-tests/test_events_log_parity.py::test_parity_inside_worktree",
+            "path": "integration-tests/test_events_log_parity.py::test_parity_inside_worktree",
+            "layer": "integration",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "integration-tests/test_events_log_parity.py::test_parity_non_git_dir",
+            "path": "integration-tests/test_events_log_parity.py::test_parity_non_git_dir",
+            "layer": "integration",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          }
+        ]
+      },
       "coverage": {
-        "unit": "MISSING"
+        "unit": "MISSING",
+        "integration": "MISSING"
       }
     },
     "01-adopted::FR-01.12": {
@@ -296,9 +324,6 @@
     "integration-tests/test_devops_flow.py::test_smoke_test_structure",
     "integration-tests/test_devops_flow.py::test_validate_with_token",
     "integration-tests/test_devops_flow.py::test_validate_without_token",
-    "integration-tests/test_events_log_parity.py::test_parity_in_main_repo",
-    "integration-tests/test_events_log_parity.py::test_parity_inside_worktree",
-    "integration-tests/test_events_log_parity.py::test_parity_non_git_dir",
     "integration-tests/test_fr_table_drift_protection.py::test_both_parsers_extract_equivalent_fr_rows",
     "integration-tests/test_fr_table_drift_protection.py::test_both_parsers_have_compatible_capture_arity",
     "integration-tests/test_fr_table_drift_protection.py::test_both_parsers_reject_non_fr_lines",
