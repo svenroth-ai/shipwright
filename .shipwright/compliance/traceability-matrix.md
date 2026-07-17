@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-17T20:56:51.914875+00:00
+Generated: 2026-07-17T22:03:20.860589+00:00
 
 ## Requirements Coverage
 
@@ -28,6 +28,7 @@ Generated: 2026-07-17T20:56:51.914875+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-e848e205"></a>Decided the ~6,800 framework tests without a requirement tag are expected and fine, closed the review reminder, and wrote down why. | iterate | change |  | 17/17 | — | 2026-07-17 |
 | <a id="evt-3ef91172"></a>backfill plugin/shared @FR tags + config-aware TT5 gate | iterate | change |  | — | — | 2026-07-17 |
 | <a id="evt-bd6ec9ec"></a>Canonical run_id changelog-bullet anchor + forward-only shape gate; aggregator stops the ADR-NNN dup; write_decision_log canonicalized; System-Overview mermaid + Data Flow (Plugins/GitHub) refreshed | iterate | change |  | — | — | 2026-07-17 |
 | <a id="evt-a49e415c"></a>Stage ci-security.json in the churn regenerate follow-up commit (close #375 CR-1 forward-staging gap) | iterate | bug |  | — | — | 2026-07-17 |
@@ -355,7 +356,7 @@ Generated: 2026-07-17T20:56:51.914875+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 320 |
+| Iterate changes | 321 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |
