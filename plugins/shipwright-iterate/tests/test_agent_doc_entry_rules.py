@@ -47,6 +47,8 @@ from lib.agent_doc_budget import (  # noqa: E402
     iter_entries,
     over_budget,
 )
+from lib.agent_doc_shape import ENFORCED_FROM as _SHAPE_ENFORCED_FROM  # noqa: E402
+from lib.agent_doc_shape import SHAPE_SECTIONS, non_canonical  # noqa: E402
 from lib.architecture_doc import IMPACT_TARGETS, REAL_IMPACTS  # noqa: E402
 
 # Enforcement boundary: every entry authored on/after this date must comply.
@@ -76,6 +78,33 @@ def test_new_entries_within_budget(filename: str, header: str):
             f"{_ENFORCED_FROM.isoformat()} — keep each entry a one-line 'what + "
             f"ADR pointer'; move detail into the ADR / .shipwright/planning/adr/ "
             "spec folder (see references/F2.md, references/reflection.md):\n  - "
+            + "\n  - ".join(violations)
+        )
+
+
+# --- entry shape (real files) -----------------------------------------------
+
+
+@pytest.mark.parametrize("filename,header", SHAPE_SECTIONS)
+def test_dated_entries_are_canonical_shape(filename: str, header: str):
+    """Every dated changelog bullet on/after the shape cutoff is
+    ``- **<run_id|ADR-NNN>** (date): <Impact> — <sentence>. → <pointer>``.
+    Locks the one-time normalization so a non-canonical entry (a Campaign /
+    sub_iterate / free-text anchor, a duplicate ADR-NNN dup, or a missing arrow)
+    can't creep back into the monorepo docs. ``## Learnings`` is intentionally NOT
+    in SHAPE_SECTIONS (date-first grammar). The F11 verifier covers the
+    forward-only adopted-repo path."""
+    path = _AGENT_DOCS / filename
+    if not path.exists():
+        pytest.skip(f"{filename} absent")
+    entries = iter_entries(path.read_text(encoding="utf-8", errors="ignore"), header)
+    violations = non_canonical(entries, enforced_from=_SHAPE_ENFORCED_FROM)
+    if violations:
+        pytest.fail(
+            f"{filename} '{header}' has non-canonical dated entries on/after "
+            f"{_SHAPE_ENFORCED_FROM.isoformat()} — each must read "
+            "'- **<run_id|ADR-NNN>** (YYYY-MM-DD): <Impact> — <sentence>. → <pointer>' "
+            "(no Campaign/sub_iterate/free-text anchor; see references/F2.md):\n  - "
             + "\n  - ".join(violations)
         )
 

@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-17T21:05:26.743535Z. Items waiting for triage decision.
+> Auto-generated 2026-07-17T22:03:26.464116Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
 - Total: 316
-- Triage: 7 | Promoted: 1 | Dismissed: 307 | Snoozed: 1
+- Triage: 6 | Promoted: 1 | Dismissed: 308 | Snoozed: 1
 
-## Top 7 items (severity-sorted)
+## Top 6 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -46,17 +46,12 @@
   - Follow-up to iterate-2026-06-30-fr-retag-honesty. Introduce sub-FRs (e.g. FR-01.10.x for Control Grade / RTM / SBOM / d…
   - Promote: `triage_promote.py --id trg-cced399c --task-ref EXT:<ref>`
 
-### Source: traceability-followup (2 items)
+### Source: traceability-followup (1 item)
 
 <a id="trg-6b4b6a33"></a>
 - **STEP 2: Test-rot cleanup - triage 50 skipped/.only tests (quarantine-with-expiry or delete)** `id=trg-6b4b6a33 | severity=medium | kind=maintenance → P2/engineering`
   - ORDERED STEP 2 (independent of STEP 1; can run any time). === FIX-NOW: if run as an iterate, YOU (the agent) are the re…
   - Promote: `triage_promote.py --id trg-6b4b6a33 --task-ref EXT:<ref>`
-
-<a id="trg-0942da1f"></a>
-- **STEP 3: Review 7137 FR-unmapped tests (review-only, never auto-delete, then dismiss or leave)** `id=trg-0942da1f | severity=low | kind=maintenance → P3/engineering`
-  - ORDERED STEP 3 (lowest urgency, review-only). 7137 monorepo tests (full corpus, fixtures excluded) map to no live FR. T…
-  - Promote: `triage_promote.py --id trg-0942da1f --task-ref EXT:<ref>`
 
 ### Source: webui-spec-audit (1 item)
 

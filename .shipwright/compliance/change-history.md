@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-07-17T22:37:10.398298+00:00
-Total commits: 1157
+Generated: 2026-07-17T22:03:20.860589+00:00
+Total commits: 1159
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 332
-    "feat" : 320
-    "chore" : 243
+    "feat" : 321
+    "chore" : 244
     "docs" : 145
     "refactor" : 68
     "test" : 28
@@ -357,10 +357,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 320 commits
+### Features (feat) — 321 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-17 | agent-docs | canonical run_id changelog anchor + shape gate; kill aggregator ADR dup (#391) | 00174d952230 |
 | 2026-07-17 | traceability | backfill 189 plugin/shared @FR tags + config-aware TT5 gate (STEP 1) (#390) | a419ce461f8c |
 | 2026-07-16 | compliance | config-driven test_roots for the test_links collector (#387) | 853a45217dc6 |
 | 2026-07-16 | adopt | establish the requirement->test traceability baseline at onboarding (TT7) (#385) | a85c22cdbad6 |
@@ -682,11 +683,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 243 commits
+### Chores (chore) — 244 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-17 | triage | sweep 5 outbox append(s) into branch | 26f4d700515f |
+| 2026-07-18 | traceability | dismiss STEP 3 FR-unmapped review card + record accepted-state policy | 29b53bcd6318 |
+| 2026-07-17 | triage | sweep 5 outbox append(s) into branch | d2fab580b07d |
 | 2026-07-17 | compliance | mark shared-lib loader import_module as by-design (semgrep FP) (#388) | fc6957724db1 |
 | 2026-07-16 | traceability | retrofit monorepo tests with @FR tags + webui handoff brief (TT8) (#386) | 2c85758ee6bc |
 | 2026-07-12 | review | default external-review GPT model to gpt-5.6-terra-pro (#366) | 4b71eec6aaa4 |
@@ -1226,7 +1228,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1157 |
+| Total commits | 1159 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1157 |
+| Human-authored commits | 1159 |
 
