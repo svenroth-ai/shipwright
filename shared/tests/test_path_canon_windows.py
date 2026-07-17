@@ -90,7 +90,7 @@ def test_scan_handles_symlinked_legacy_dir(tmp_path, with_in_progress):
     try:
         os.symlink(real_dir, legacy_link, target_is_directory=True)
     except (OSError, NotImplementedError) as exc:
-        pytest.skip(f"symlink unsupported in this environment: {exc}")
+        pytest.skip(f"symlink unsupported in this environment: {exc}")  # test-hygiene: allow-silent-skip: symlink needs OS/privilege (Windows dev-mode); POSIX CI exercises it
 
     findings = sad.scan_for_stale_legacy_dirs(tmp_path)
     # We accept either: (1) detected as drift (preferred) or (2) silently

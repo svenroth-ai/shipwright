@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-17T20:56:57.233003Z. Items waiting for triage decision.
+> Auto-generated 2026-07-17T21:05:26.743535Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 315
-- Triage: 10 | Promoted: 1 | Dismissed: 303 | Snoozed: 1
+- Total: 316
+- Triage: 7 | Promoted: 1 | Dismissed: 307 | Snoozed: 1
 
-## Top 10 items (severity-sorted)
+## Top 7 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -16,20 +16,6 @@
 - **Plugin scope split: entry-point plugins (adopt/grade/run) global, 11 pipeline plugins project-scoped** `id=trg-57317128 | severity=medium | kind=improvement → P2/engineering`
   - Scope the Shipwright marketplace correctly instead of enabling all ~14 plugins at user scope (they currently load /ship…
   - Promote: `triage_promote.py --id trg-57317128 --task-ref EXT:<ref>`
-
-### Source: campaign-anchor (1 item)
-
-<a id="trg-17aaaccd"></a>
-- **Trace-Webui: retrofit traceability in the webui repo (handoff, run after monorepo campaign ships)** `id=trg-17aaaccd | severity=low | kind=improvement → P3/engineering`
-  - Handoff reminder: the webui retrofit is a separate single iterate that runs IN the webui repo from webui's own triage,…
-  - Promote: `triage_promote.py --id trg-17aaaccd --task-ref EXT:<ref>`
-
-### Source: code-review (1 item)
-
-<a id="trg-ac428050"></a>
-- **Harden regenerate_tracked_snapshots to stage ci-security.json on a fresh-scan rewrite (forward parity with the rollback…** `id=trg-ac428050 | severity=low | kind=improvement → P3/engineering`
-  - Pre-existing (independent of #375): regenerate_tracked_snapshots stages only its out set (derived MDs + agent MDs + cam…
-  - Promote: `triage_promote.py --id trg-ac428050 --task-ref EXT:<ref>`
 
 ### Source: compliance (1 item)
 
@@ -46,23 +32,6 @@
     ```
   - Promote: `triage_promote.py --id trg-4a615381 --task-ref EXT:<ref>`
 
-### Source: github (1 item)
-
-<a id="trg-c3f016c2"></a>
-- **GitHub security: 1 shipwright-security finding(s) (medium)** `id=trg-c3f016c2 | severity=medium | kind=improvement → P2/engineering`
-  - Repo svenroth-ai/shipwright \| code-scanning: (unavailable) \| dependabot: (unavailable) \| shipwright-security: 1 medi…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-security
-    
-    Context: the shipwright-security CI workflow reports 1 open finding(s) for svenroth-ai/shipwright (GHAS Code Scanning is not configured).
-    Severity breakdown — shipwright-security: 1 medium.
-    Workflow run: https://github.com/svenroth-ai/shipwright/actions/runs/29476710363
-    Re-scan locally: see docs/security-ci-setup.md
-    Source: triage item gh-security:svenroth-ai/shipwright
-    ```
-  - Promote: `triage_promote.py --id trg-c3f016c2 --task-ref EXT:<ref>`
-
 ### Source: iterate (1 item)
 
 <a id="trg-d1e466aa"></a>
@@ -77,12 +46,7 @@
   - Follow-up to iterate-2026-06-30-fr-retag-honesty. Introduce sub-FRs (e.g. FR-01.10.x for Control Grade / RTM / SBOM / d…
   - Promote: `triage_promote.py --id trg-cced399c --task-ref EXT:<ref>`
 
-### Source: traceability-followup (3 items)
-
-<a id="trg-7d33cc1a"></a>
-- **STEP 1: Backfill iterate - write 187 plugin/shared @FR tags + decide 24 low-conf + thread config into TT5 layer_coverag…** `id=trg-7d33cc1a | severity=high | kind=improvement → P1/engineering`
-  - ORDERED STEP 1. === FIX-NOW EXECUTION CONTRACT: the human operator does NOT technically review this - YOU (the executin…
-  - Promote: `triage_promote.py --id trg-7d33cc1a --task-ref EXT:<ref>`
+### Source: traceability-followup (2 items)
 
 <a id="trg-6b4b6a33"></a>
 - **STEP 2: Test-rot cleanup - triage 50 skipped/.only tests (quarantine-with-expiry or delete)** `id=trg-6b4b6a33 | severity=medium | kind=maintenance → P2/engineering`
@@ -93,4 +57,11 @@
 - **STEP 3: Review 7137 FR-unmapped tests (review-only, never auto-delete, then dismiss or leave)** `id=trg-0942da1f | severity=low | kind=maintenance → P3/engineering`
   - ORDERED STEP 3 (lowest urgency, review-only). 7137 monorepo tests (full corpus, fixtures excluded) map to no live FR. T…
   - Promote: `triage_promote.py --id trg-0942da1f --task-ref EXT:<ref>`
+
+### Source: webui-spec-audit (1 item)
+
+<a id="trg-8e840ca0"></a>
+- **FR taxonomy: capability-altitude FR minting (adopt) + Mint-vs-Fold gate (iterate) + FR-hygiene lint (compliance)** `id=trg-8e840ca0 | severity=medium | kind=improvement → P2/engineering`
+  - Root cause of badly-scoped, wrongly-numbered FRs in adopted specs: two FR-minting engines with incompatible philosophy.…
+  - Promote: `triage_promote.py --id trg-8e840ca0 --task-ref EXT:<ref>`
 

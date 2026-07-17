@@ -270,7 +270,7 @@ class TestSymlinkSkip:
                 target.unlink()
             except (OSError, NotImplementedError):
                 import pytest
-                pytest.skip("symlinks not creatable on this Windows runner")
+                pytest.skip("symlinks not creatable on this Windows runner")  # test-hygiene: allow-silent-skip: symlink needs OS/privilege (Windows dev-mode); POSIX CI exercises it
         repo, cache = _setup(tmp_path)
         _seed_repo_plugin(repo, "shipwright-foo", {"SKILL.md": "# x\n"})
         # Add a symlink in the repo plugin. The hash function refuses
@@ -283,7 +283,7 @@ class TestSymlinkSkip:
             link.symlink_to(target)
         except (OSError, NotImplementedError):
             import pytest
-            pytest.skip("symlinks not creatable on this runner")
+            pytest.skip("symlinks not creatable on this runner")  # test-hygiene: allow-silent-skip: symlink needs OS/privilege (Windows dev-mode); POSIX CI exercises it
         _seed_cache_plugin(cache, "shipwright-foo", "0.1.0", {
             "SKILL.md": "# x\n",
             "target.md": "real",

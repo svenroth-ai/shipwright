@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-17 20:56 UTC | Session: ddb39c8c-af24-445d-992e-fcc344ec6078 | Run: iterate-2026-07-17-backfill-plugin-fr-tags
+> Updated: 2026-07-17 22:37 UTC | Session: 06448ac1-5d4a-4305-a0a0-46637780c199 | Run: iterate-2026-07-17-test-rot-cleanup
 
-## Recent Changes (319 iterations)
+## Recent Changes (320 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | STEP 2 test-rot cleanup: 51 pre-existing skipped-test findings resolved (CI-guard / marker / remove / delete) + adopt fixtures-prune scoped to tests/ | 0/0 |  | tooling | 2026-07-17 |
 | bug | Stage ci-security.json in the churn regenerate follow-up commit (close #375 CR-1 forward-staging gap) | 0/0 |  | infra | 2026-07-17 |
 | change | iterate: backfill plugin/shared @FR tags + config-aware TT5 gate | 0/0 |  | compliance | 2026-07-17 |
 | change | Add by-design nosemgrep suppression on _lib_loader.py import_module (line 41). | 0/0 |  | tooling | 2026-07-17 |
@@ -326,7 +327,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-17 | Unit: 6561/6561 | Integration: 232/232 | Smoke: not_run | (iterate)
+Last run: 2026-07-17 | Unit: 6807/6807 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-17-test-rot-cleanup",
+  "date": "2026-07-17T22:37:10.306072Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/test-rot-cleanup",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/2026-07-17-test-rot-cleanup.md",
+  "adr": "iterate-2026-07-17-test-rot-cleanup"
+}

@@ -23,6 +23,7 @@ from scripts.tools.combine_coverage import (
     label_of,
     paths_alias_for,
 )
+from scripts.test_hygiene import is_ci  # noqa: E402
 
 _MOD_TEMPLATE = (
     "def f(x):\n"
@@ -252,6 +253,8 @@ class TestPartialCombine:
     def _skip_if_no_coverage(self):
         if not _coverage_available():
             import pytest
+            if is_ci():
+                pytest.fail("coverage not importable in CI — provision via `uv run --with coverage`")
             pytest.skip("coverage not installed (local)")
 
     def test_partial_is_flagged_not_ok(self, tmp_path, monkeypatch):

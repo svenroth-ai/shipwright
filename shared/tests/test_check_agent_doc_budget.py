@@ -6,12 +6,9 @@ diff — the path the F11 verifier reuses), plus the no-git no-op behaviour.
 
 from __future__ import annotations
 
-import shutil
 import subprocess
 import sys
 from pathlib import Path
-
-import pytest
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _SHARED_SCRIPTS = _REPO_ROOT / "shared" / "scripts"
@@ -21,7 +18,9 @@ for _p in (str(_SHARED_SCRIPTS), str(_SHARED_SCRIPTS / "tools")):
 
 from lib.agent_doc_budget import CLAUDE_MD_MAX_NEW_LINES, ENTRY_MAX_CHARS  # noqa: E402
 from tools.check_agent_doc_budget import find_violations, main, resolve_base  # noqa: E402
+from test_hygiene import skip_or_fail_on_missing_binary  # noqa: E402
 
+_GIT_HINT = "git not on PATH — CI provisions it via actions/checkout"
 _BIG = "y" * (ENTRY_MAX_CHARS + 50)
 
 
@@ -67,8 +66,8 @@ def _git(repo: Path, *args: str) -> None:
     subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True, text=True)
 
 
-@pytest.mark.skipif(shutil.which("git") is None, reason="git not available")
 def test_forward_only_flags_only_new_oversize(tmp_path: Path):
+    skip_or_fail_on_missing_binary("git", _GIT_HINT)
     repo = tmp_path / "repo"
     repo.mkdir()
     _git(repo, "init", "-q")
@@ -95,8 +94,8 @@ def test_forward_only_flags_only_new_oversize(tmp_path: Path):
     assert len(violations) == 1 and "Learnings" in violations[0][1]
 
 
-@pytest.mark.skipif(shutil.which("git") is None, reason="git not available")
 def test_forward_only_ignores_untouched_legacy_oversize(tmp_path: Path):
+    skip_or_fail_on_missing_binary("git", _GIT_HINT)
     repo = tmp_path / "repo"
     repo.mkdir()
     _git(repo, "init", "-q")
@@ -146,8 +145,8 @@ def _grow_claude_md(repo: Path, extra_lines: int) -> None:
     )
 
 
-@pytest.mark.skipif(shutil.which("git") is None, reason="git not available")
 def test_claude_md_growth_over_cap_flagged(tmp_path: Path):
+    skip_or_fail_on_missing_binary("git", _GIT_HINT)
     repo = _growth_repo(tmp_path, base_lines=10)
     _grow_claude_md(repo, CLAUDE_MD_MAX_NEW_LINES + 1)
     violations, base = find_violations(repo)
@@ -155,16 +154,16 @@ def test_claude_md_growth_over_cap_flagged(tmp_path: Path):
     assert len(violations) == 1 and violations[0][0] == "CLAUDE.md"
 
 
-@pytest.mark.skipif(shutil.which("git") is None, reason="git not available")
 def test_claude_md_growth_within_cap_clean(tmp_path: Path):
+    skip_or_fail_on_missing_binary("git", _GIT_HINT)
     repo = _growth_repo(tmp_path, base_lines=10)
     _grow_claude_md(repo, CLAUDE_MD_MAX_NEW_LINES)
     violations, _ = find_violations(repo)
     assert violations == []
 
 
-@pytest.mark.skipif(shutil.which("git") is None, reason="git not available")
 def test_claude_md_new_file_at_worktree_skipped(tmp_path: Path):
+    skip_or_fail_on_missing_binary("git", _GIT_HINT)
     # CLAUDE.md absent at base (first-time creation) → creation is not
     # accretion → growth check skipped even when the new file is large.
     repo = tmp_path / "repo"
@@ -183,16 +182,16 @@ def test_claude_md_new_file_at_worktree_skipped(tmp_path: Path):
     assert violations == []
 
 
-@pytest.mark.skipif(shutil.which("git") is None, reason="git not available")
 def test_claude_md_deleted_in_worktree_skipped(tmp_path: Path):
+    skip_or_fail_on_missing_binary("git", _GIT_HINT)
     repo = _growth_repo(tmp_path, base_lines=10)
     (repo / "CLAUDE.md").unlink()
     violations, _ = find_violations(repo)
     assert violations == []
 
 
-@pytest.mark.skipif(shutil.which("git") is None, reason="git not available")
 def test_claude_md_replaced_by_directory_skipped(tmp_path: Path):
+    skip_or_fail_on_missing_binary("git", _GIT_HINT)
     # A non-regular-file CLAUDE.md (odd repo state) must skip, never crash.
     repo = _growth_repo(tmp_path, base_lines=10)
     (repo / "CLAUDE.md").unlink()
@@ -201,8 +200,8 @@ def test_claude_md_replaced_by_directory_skipped(tmp_path: Path):
     assert violations == []
 
 
-@pytest.mark.skipif(shutil.which("git") is None, reason="git not available")
 def test_claude_md_growth_opt_out_param(tmp_path: Path):
+    skip_or_fail_on_missing_binary("git", _GIT_HINT)
     # check_claude_md=False (the env-override path in CLI/verifier) skips ONLY
     # the growth rule — entry budgets still enforced.
     repo = _growth_repo(tmp_path, base_lines=10)

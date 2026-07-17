@@ -107,7 +107,7 @@ class TestCanonicalLayout:
         try:
             link.symlink_to(outside)
         except (OSError, NotImplementedError):
-            pytest.skip("symlinks not supported on this platform/privilege")
+            pytest.skip("symlinks not supported on this platform/privilege")  # test-hygiene: allow-silent-skip: symlink needs OS/privilege (Windows dev-mode); POSIX CI exercises it
         d = decide_routing(repo)
         # RTM present, event log symlink ignored → MIXED, never authoritative.
         assert d.detected_mode == "heuristic"

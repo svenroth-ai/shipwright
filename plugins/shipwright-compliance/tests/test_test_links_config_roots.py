@@ -249,7 +249,7 @@ def test_iter_test_files_skips_broken_symlink_without_crashing(tmp_path):
         # privilege/developer-mode on Windows. CI runs on ubuntu-latest (see .github/
         # workflows/*.yml — POSIX only), where this always succeeds, so the guard IS
         # exercised in CI; the skip only spares a privilege-less Windows dev box.
-        pytest.skip("symlink creation unavailable (Windows without developer-mode)")
+        pytest.skip("symlink creation unavailable (Windows without developer-mode)")  # test-hygiene: allow-silent-skip: symlink needs OS/privilege (Windows dev-mode); POSIX CI exercises it
 
     rels = [rel for _abs, rel in io.iter_test_files([root], tmp_path)]
 

@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-17T20:56:51.914875+00:00
+Generated: 2026-07-17T22:37:10.398298+00:00
 
 ## Requirements Coverage
 
@@ -28,6 +28,7 @@ Generated: 2026-07-17T20:56:51.914875+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-f09df6a1"></a>STEP 2 test-rot cleanup: 51 pre-existing skipped-test findings resolved (CI-guard / marker / remove / delete) + adopt fixtures-prune scoped to tests/ | iterate | change |  | — | — | 2026-07-17 |
 | <a id="evt-3ef91172"></a>backfill plugin/shared @FR tags + config-aware TT5 gate | iterate | change |  | — | — | 2026-07-17 |
 | <a id="evt-a49e415c"></a>Stage ci-security.json in the churn regenerate follow-up commit (close #375 CR-1 forward-staging gap) | iterate | bug |  | — | — | 2026-07-17 |
 | <a id="evt-99ae3fa0"></a>Add by-design nosemgrep suppression on _lib_loader.py import_module (line 41). | iterate | change |  | — | — | 2026-07-17 |
@@ -354,7 +355,7 @@ Generated: 2026-07-17T20:56:51.914875+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 319 |
+| Iterate changes | 320 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |

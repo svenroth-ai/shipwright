@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-17-backfill-plugin-fr-tags",
+    "run_id": "iterate-2026-07-17-test-rot-cleanup",
     "date": "2026-07-17",
     "unit": {
       "status": "passed",
-      "passed": 6561,
-      "total": 6561
+      "passed": 6807,
+      "total": 6807
     },
     "integration": {
-      "status": "passed",
-      "passed": 232,
-      "total": 232
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -35,73 +35,57 @@
       "surface": "none",
       "tests_run": 0,
       "exit_code": 0,
-      "justification": "Compliance/traceability INFRASTRUCTURE change (backfill engine worktree-scan fix + config-aware TT5 enforcement gate + 189 @FR tag data). No web/UI/API surface and nothing the WebUI renders field-for-field is touched; spec_impact none (no product FR behaviour change), so the E2E/cross-layer gates do not fire. Verified via the Python suites (shared/tests 4170, backfill 239, gate suites 29, adopt/test/iterate/compliance plugins, integration-tests 232) + ruff."
+      "justification": "Test-hygiene cleanup: resolves 51 pre-existing skipped-test inventory findings (CI-guard conversions, allow-markers, 2 dead-decorator removals, 1 no-op-stub delete) + one adopt-lib skip-inventory scanner refinement. Test-only edits + one scanner scope change; NO product/source, API, store, SSE/WS or UI code touched, so spec_impact is none and the E2E/cross-layer gates do not fire. Verified via the Python suites (shared/tests 4412, adopt 415, iterate 476, grade 385, compliance 1119) + the exact producing scanner re-run (repo_wide_skip_inventory: 51 -> 0) + ruff."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "engine scans a repo nested under a prune-named ancestor (the .worktrees worktree)",
+          "behavior": "git/uv/coverage skips loud-fail in CI (body-level guard) instead of silently skipping (CI-GUARD)",
           "disposition": "tested",
-          "evidence": "test_backfill_engine_units.py::test_iter_test_files_scans_a_repo_nested_under_a_prune_named_ancestor PASSED"
+          "evidence": "converted suites run unconditionally where the binary exists: test_check_agent_doc_budget.py (15) + test_hooks_json_registration.py (12) + test_combine_coverage.py (13) PASSED"
         },
         {
-          "behavior": "in-tree node_modules / __pycache__ still pruned after the prune-predicate change",
+          "behavior": "grade _strict()->is_ci() rename makes the scanner recognize the already-correct CI-gated-fail guard, behavior unchanged",
           "disposition": "tested",
-          "evidence": "same test asserts neither node_modules nor __pycache__ appears"
+          "evidence": "test_empirical.py collects clean (12) + inventory drops the two sites; tuple order irrelevant for `in`"
         },
         {
-          "behavior": "enforcing gate sees config-opted plugin-dir coverage (base predates config)",
+          "behavior": "stale skipif(not vite-hono.json.exists()) removed -> the 2 tests run unconditionally (REMOVE-DEAD)",
+          "disposition": "tested",
+          "evidence": "test_stack_detector_multi_service.py 11 PASSED (both previously-skipped tests now run green); vite-hono.json confirmed present"
+        },
+        {
+          "behavior": "28 genuinely-conditional skips carry an allow-silent-skip marker; the inventory is silent on them but suites still skip correctly locally",
+          "disposition": "tested",
+          "evidence": "repo_wide_skip_inventory == 0 (exercises _line_is_suppressed on every marker incl. the 2 multi-line block-comment markers) + touched suites green with only the correct conditional skips"
+        },
+        {
+          "behavior": "no-op pass stub deleted; its scenario stays covered at the cmd_start layer (DELETE, no coverage lost)",
+          "disposition": "tested",
+          "evidence": "test_start_port_busy_no_state_errors_no_kill PASSES + zero references to the deleted test id; the stub was @pytest.mark.skip + pass (zero runtime coverage before/after)"
+        },
+        {
+          "behavior": "a fixtures/ dir UNDER a tests/ tree is pruned from the inventory; a fixtures/ dir OUTSIDE a tests tree is still scanned (SCANNER-FIX, narrowed)",
           "disposition": "tested",
           "category": "integration",
-          "evidence": "test_layer_coverage_config_scope.py::test_gate_sees_plugin_dir_coverage_when_head_opts_it_in (real git archive -> collector -> gate)"
+          "evidence": "new test_traceability_baseline.py::test_enumerate_prunes_fixtures_only_under_a_tests_tree asserts both directions (real rot under top-level fixtures/ still flagged; tests/fixtures data silent)"
         },
         {
-          "behavior": "gate misses plugin coverage without config (load-bearing control)",
+          "behavior": "full pre-existing skip inventory clears end-to-end",
           "disposition": "tested",
-          "evidence": "test_layer_coverage_config_scope.py::test_gate_misses_plugin_dir_coverage_without_config_load_bearing"
-        },
-        {
-          "behavior": "union floor: a config narrowing below defaults cannot false-green the removal gate",
-          "disposition": "tested",
-          "evidence": "test_removal_gate_keeps_default_floor_when_config_narrows (revert-proven load-bearing)"
-        },
-        {
-          "behavior": "monotonic re-scan: head dropping the config cannot false-green the removal gate",
-          "disposition": "tested",
-          "evidence": "test_removal_gate_rescans_base_dirs_when_head_drops_the_config (revert-proven load-bearing)"
-        },
-        {
-          "behavior": "rename-target re-scan: a test moved to a NEW dir + FR removed + config dropped cannot false-green",
-          "disposition": "tested",
-          "evidence": "test_removal_gate_follows_a_renamed_test_into_a_new_dir_when_config_drops (revert-proven load-bearing)"
-        },
-        {
-          "behavior": "exclude_dirs load-bearing: a fixture-path test cannot fake a required layer",
-          "disposition": "tested",
-          "evidence": "test_gate_excludes_fixture_path_so_a_fixture_cannot_fake_a_layer (revert-proven load-bearing)"
-        },
-        {
-          "behavior": "189 @FR tags written correctly; a plugin-dir tag round-trips into the manifest with 0 orphans",
-          "disposition": "tested",
-          "evidence": "existing test_test_links_config_roots.py::test_plugin_dir_tagged_test_round_trips_and_fixtures_are_fenced + manual regen (orphans==0)"
-        },
-        {
-          "behavior": "covers pytest marker registered in iterate/test/adopt pyprojects so tagged tests don't warn",
-          "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "reason": "pyproject config verified by collecting the tagged suites (all green, no strict-marker error)"
+          "evidence": "repo_wide_skip_inventory over the worktree: 51 -> 0 (falsifiable asymptote)"
         }
       ],
       "counts": {
-        "testable": 9,
-        "tested": 9,
-        "untestable": 1,
+        "testable": 7,
+        "tested": 7,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 9,
-        "covered_acs": 9
+        "acs": 5,
+        "covered_acs": 5
       }
     }
   },

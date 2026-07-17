@@ -94,7 +94,7 @@ class TestTheGate:
                 f"{CONTRACTS_DIR}/{STEM}-*.json. The gate is looking in the wrong place "
                 "and has disarmed itself — fix the constants, do not skip."
             )
-            pytest.skip("origin/main publishes no contract yet (bootstrap commit)")
+            pytest.skip("origin/main publishes no contract yet (bootstrap commit)")  # test-hygiene: allow-silent-skip: bootstrap-only: origin/main has no published contract at first commit
         base_version, base_fixture = baseline
         CB_diff = CE.require_bump(
             base_fixture["contract"], live_contract(),

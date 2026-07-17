@@ -36,11 +36,23 @@ def enumerate_test_files(project_root: Path, is_ts_test_file) -> tuple[list[Path
     (the brownfield-JS class adopt exists for) is never DESCENDED into — no O(all-files)
     materialize+sort of hundreds of thousands of vendored paths (doubt MED#2). ``.shipwright``
     is pruned so the framework's own scaffolded specs never enter a target repo's inventory.
+
+    A ``fixtures`` dir is pruned ONLY when it lives under a ``tests`` tree
+    (``tests/**/fixtures/``): that is fixture DATA (sample/mini repos a collector test
+    deliberately asserts on), not the host repo's own tests. The scoping is deliberate —
+    a top-level or non-``tests`` ``fixtures`` dir may hold real rotting tests, so pruning
+    ``fixtures`` globally would blind adopt to genuine rot on every brownfield repo (review).
     """
     py_files: list[Path] = []
     ts_files: list[Path] = []
-    for dirpath, dirnames, filenames in os.walk(str(project_root)):
-        dirnames[:] = [d for d in dirnames if d not in _PRUNE_DIRS]  # prune before descent
+    root_str = str(project_root)
+    for dirpath, dirnames, filenames in os.walk(root_str):
+        # ``fixtures`` is test DATA only inside a ``tests`` tree; prune it there, keep it elsewhere.
+        under_tests = "tests" in os.path.relpath(dirpath, root_str).split(os.sep)
+        dirnames[:] = [
+            d for d in dirnames
+            if d not in _PRUNE_DIRS and not (d == "fixtures" and under_tests)
+        ]
         for name in filenames:
             path = Path(dirpath) / name
             if path.suffix == ".py" and _is_python_test_file(path):

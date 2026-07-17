@@ -253,7 +253,7 @@ def _ast_violations(rel: str, path: Path, target: str) -> list[dict]:
 def test_no_legacy_artifact_paths(migration: dict) -> None:
     """No legacy-path string literals outside the allowlist."""
     if not _git_tracked_files():
-        pytest.skip("git ls-files unavailable — running outside a git checkout")
+        pytest.skip("git ls-files unavailable — running outside a git checkout")  # test-hygiene: allow-silent-skip (non-git-checkout affordance; CI is always a git checkout, so this never fires there)
 
     patterns = [re.compile(p) for p in migration["old_path_patterns"]]
     target = migration["ast_check_string"]

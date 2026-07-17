@@ -357,28 +357,6 @@ def test_wait_for_service_child_died_fails_fast(tmp_path):
     assert elapsed < 5  # NOT the full 30s
 
 
-@pytest.mark.skip(
-    reason=(
-        "no-op stub — `_wait_for_service` is not reached when port is held "
-        "before our Popen() runs; the port-busy + no-PID branch is handled "
-        "at cmd_start level by `_already_running_owned`. Behavior coverage "
-        "lives in test_start_port_busy_no_state_errors_no_kill (cmd_start "
-        "layer). Removing the stub would lose the docstring rationale; "
-        "skipping rather than passing keeps the green count honest."
-    )
-)
-@patch("dev_server._is_port_in_use_for_host", return_value=True)
-def test_wait_for_service_port_held_by_external_process_no_pid(mock_port, tmp_path):
-    """Port open BEFORE we Popened — but our PID never started.
-
-    `_already_running_owned` covers this at start-time. The lower-level
-    `_wait_for_service` doesn't get called in that path, so this case is
-    proven via cmd_start (see test_start_port_busy_no_state_errors_no_kill).
-    Marking as covered-elsewhere; nothing to assert at this level.
-    """
-    pass
-
-
 @patch("dev_server._http_probe")
 @patch("dev_server._is_port_in_use_for_host", return_value=True)
 def test_wait_for_service_ready_path_2xx(mock_port, mock_http, tmp_path):
@@ -516,7 +494,12 @@ def test_start_already_running_only_when_pid_owned(mock_port, mock_pid, tmp_path
 
 @patch("dev_server._is_port_in_use_for_host", return_value=True)
 def test_start_port_busy_no_state_errors_no_kill(mock_port, tmp_path):
-    """Port in use but no state file → error, do NOT kill anything."""
+    """Port in use but no state file → error, do NOT kill anything.
+
+    Also the canonical coverage for the port-held-by-external-process-with-no-PID
+    case: ``_already_running_owned`` short-circuits at start-time, so the lower-level
+    ``_wait_for_service`` is never reached on that path (no separate test needed there).
+    """
     with patch("dev_server._kill_one") as kill_mock:
         # Run cmd_start with default profile (matches existing single-service test)
         result = dev_server.cmd_start(tmp_path, "supabase-nextjs")

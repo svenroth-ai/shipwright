@@ -40,7 +40,7 @@ _LEGACY_RETENTION_COMMENT_TOKEN = "legacy path"
 @pytest.fixture(scope="module")
 def gitignore_lines() -> list[str]:
     if not _GITIGNORE.exists():
-        pytest.skip(f".gitignore not found at {_GITIGNORE}")
+        pytest.skip(f".gitignore not found at {_GITIGNORE}")  # test-hygiene: allow-silent-skip: defensive guard for partial/non-repo checkout; file is present in CI
     return _GITIGNORE.read_text(encoding="utf-8").splitlines()
 
 
@@ -104,7 +104,7 @@ def test_shipwright_dir_is_ignored(gitignore_lines):
 def test_legacy_entry_present_during_in_progress(gitignore_lines, migration):
     """During migration, both legacy + canonical must be ignored."""
     if migration["status"] != "in_progress":
-        pytest.skip(f"migration `{migration['name']}` is {migration['status']}")
+        pytest.skip(f"migration `{migration['name']}` is {migration['status']}")  # test-hygiene: allow-silent-skip: conditional on repo migration/drop state; correctly inert otherwise
     legacy_entry = migration["legacy_dirname"] + "/"
     assert _line_index_matching(gitignore_lines, legacy_entry) is not None, (
         f"During in_progress migration of `{migration['name']}`, .gitignore "
@@ -116,7 +116,7 @@ def test_legacy_entry_present_during_in_progress(gitignore_lines, migration):
 def test_legacy_entry_kept_with_comment_after_migration(gitignore_lines, migration):
     """Post-migration the legacy entry STAYS (Gemini #2) with a comment."""
     if migration["status"] != "migrated":
-        pytest.skip(f"migration `{migration['name']}` is {migration['status']}")
+        pytest.skip(f"migration `{migration['name']}` is {migration['status']}")  # test-hygiene: allow-silent-skip: conditional on repo migration/drop state; correctly inert otherwise
     legacy_entry = migration["legacy_dirname"] + "/"
     idx = _line_index_matching(gitignore_lines, legacy_entry)
     assert idx is not None, (

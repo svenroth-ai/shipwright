@@ -18,11 +18,18 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
+_SHARED_SCRIPTS = _REPO_ROOT / "shared" / "scripts"
+if str(_SHARED_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SHARED_SCRIPTS))
+from test_hygiene import skip_or_fail_on_missing_binary  # noqa: E402
+
+_UV_HINT = "uv not on PATH — provision via astral-sh/setup-uv in CI"
 _PLUGIN_HOOKS_JSON = (
     _REPO_ROOT / "plugins" / "shipwright-iterate" / "hooks" / "hooks.json"
 )
@@ -228,10 +235,6 @@ def _make_shipwright_project(project_dir: Path, status: str = "complete") -> Non
     )
 
 
-@pytest.mark.skipif(
-    shutil.which("uv") is None,
-    reason="uv binary not on PATH; round-trip test requires uv to spawn the hook",
-)
 def test_round_trip_routing_match_emits_additional_context(
     fake_plugin_cache: Path,
     tmp_path: Path,
@@ -239,6 +242,7 @@ def test_round_trip_routing_match_emits_additional_context(
     """AC-11: producer→file→consumer round-trip. Spawn the canonical
     command with a routing-pattern prompt, assert exit 0 + valid
     hookSpecificOutput on stdout."""
+    skip_or_fail_on_missing_binary("uv", _UV_HINT)
     project = tmp_path / "fake-shipwright-project"
     _make_shipwright_project(project)
 
@@ -257,9 +261,6 @@ def test_round_trip_routing_match_emits_additional_context(
         assert "[Shipwright]" in ctx
 
 
-@pytest.mark.skipif(
-    shutil.which("uv") is None, reason="uv binary not on PATH"
-)
 def test_round_trip_non_shipwright_project_silent_exit(
     fake_plugin_cache: Path,
     tmp_path: Path,
@@ -267,6 +268,7 @@ def test_round_trip_non_shipwright_project_silent_exit(
     """Guard 1 of suggest_iterate.py: in a non-Shipwright project (no
     shipwright_run_config.json), the hook must exit 0 silently with
     no stdout. Regression test for external-review-finding-12."""
+    skip_or_fail_on_missing_binary("uv", _UV_HINT)
     project = tmp_path / "non-shipwright-project"
     project.mkdir()  # no shipwright_run_config.json
 
@@ -279,13 +281,11 @@ def test_round_trip_non_shipwright_project_silent_exit(
     )
 
 
-@pytest.mark.skipif(
-    shutil.which("uv") is None, reason="uv binary not on PATH"
-)
 def test_round_trip_slash_command_skipped(
     fake_plugin_cache: Path, tmp_path: Path
 ):
     """Guard 3: slash-prefix prompts are skipped (user already chose a skill)."""
+    skip_or_fail_on_missing_binary("uv", _UV_HINT)
     project = tmp_path / "shipwright-project"
     _make_shipwright_project(project)
 
@@ -296,13 +296,11 @@ def test_round_trip_slash_command_skipped(
     assert result.stdout.strip() == ""
 
 
-@pytest.mark.skipif(
-    shutil.which("uv") is None, reason="uv binary not on PATH"
-)
 def test_round_trip_short_prompt_skipped(
     fake_plugin_cache: Path, tmp_path: Path
 ):
     """Guard 4: prompts under 10 chars are skipped (greetings)."""
+    skip_or_fail_on_missing_binary("uv", _UV_HINT)
     project = tmp_path / "shipwright-project"
     _make_shipwright_project(project)
 
@@ -311,14 +309,12 @@ def test_round_trip_short_prompt_skipped(
     assert result.stdout.strip() == ""
 
 
-@pytest.mark.skipif(
-    shutil.which("uv") is None, reason="uv binary not on PATH"
-)
 def test_round_trip_invalid_stdin_payload(
     fake_plugin_cache: Path, tmp_path: Path
 ):
     """Defensive: malformed stdin must not crash the hook (would
     cascade into a UserPromptSubmit block)."""
+    skip_or_fail_on_missing_binary("uv", _UV_HINT)
     script = (
         fake_plugin_cache
         / ".."
@@ -356,6 +352,8 @@ def test_round_trip_invalid_stdin_payload(
 _CLAUDE_USER_HOME = Path.home() / ".claude" / "plugins" / "cache" / "shipwright"
 
 
+# test-hygiene: allow-silent-skip — dev-machine-only: the ~/.claude plugin cache
+# is absent in CI (nothing to run against); AC-13 verifies the INSTALLED copy.
 @pytest.mark.skipif(
     not _CLAUDE_USER_HOME.exists(),
     reason=(
@@ -436,6 +434,8 @@ def _cache_hooks_json_in_sync_with_source() -> tuple[bool, Path | None]:
     return a == b, candidate
 
 
+# test-hygiene: allow-silent-skip — dev-machine-only: post-sync cache is absent in
+# CI; the must-pass invariant is the source-tree static-shape assertions above.
 @pytest.mark.skipif(
     not _CLAUDE_USER_HOME.exists()
     or not _cache_hooks_json_in_sync_with_source()[0],

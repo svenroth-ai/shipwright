@@ -47,7 +47,10 @@ def _edge_entries() -> list[dict]:
     return [e for e in _entries() if not e.get("expected_band")]
 
 
-def _strict() -> bool:
+def is_ci() -> bool:
+    """CI-strictness gate. Local (mirrors shared ``test_hygiene.is_ci``) to keep the
+    grade plugin's test suite self-contained — same convention as ``conftest.require_git``.
+    The canonical name lets the silent-skip scanner recognise the ``if is_ci(): fail`` guard."""
     return os.environ.get("CI", "").lower() in ("1", "true")
 
 
@@ -59,7 +62,7 @@ def _fixture_or_skip(entry: dict) -> dict:
     if cached is None:
         msg = (f"{entry['name']}: no recorded fixture — record it with "
                "`run_empirical.py --refresh`")
-        if _strict():
+        if is_ci():
             pytest.fail(msg)  # launch gate: missing coverage is a hard failure
         pytest.skip(msg)
     return cached
@@ -87,7 +90,7 @@ def test_calibration_ordering():
     for entry in _calibration_entries():
         cached = replay.replay(f"{entry['name']}@{entry['pinned_sha']}")
         if cached is None:
-            if _strict():
+            if is_ci():
                 pytest.fail(f"{entry['name']}: no fixture for the ordering check")
             pytest.skip("missing fixtures — record with `run_empirical.py --refresh`")
         results.append(result_for(entry["name"], grade_from_fixture(cached), entry))

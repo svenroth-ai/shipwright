@@ -112,7 +112,7 @@ def test_run_skips_symlinked_status_target(project, tmp_path):
     try:
         (cdir / "status.json").symlink_to(real)
     except (OSError, NotImplementedError):
-        pytest.skip("symlink creation not permitted on this host")
+        pytest.skip("symlink creation not permitted on this host")  # test-hygiene: allow-silent-skip: symlink needs OS/privilege (Windows dev-mode); POSIX CI exercises it
 
     extras = {**_BASE_EXTRAS, "campaign": "demo", "sub_iterate_id": "S1"}
     result = finalize_iterate.run(project, run_id="iterate-sym", event_extras=extras)
