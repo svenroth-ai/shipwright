@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
   "collector_version": "test_links/1.0.0",
-  "generated_at": "2026-07-17T18:52:09.564563+00:00",
-  "source_commit": "0d51bdf436fe7afc04beb390ddfc421a39d6f8e9",
+  "generated_at": "2026-07-17T19:46:32.679353+00:00",
+  "source_commit": "573311d93bac0f385f3106cc62236af7d38ed9e9",
   "spec_hash": "sha256:c8944f86bcd4737b474e245f4b79800f37db76da0b3515b6eec98fecdcd11adb",
   "requirements": {
     "01-adopted::FR-01.01": {
@@ -4527,6 +4527,9 @@
     "shared/tests/test_ci_coverage_wiring.py::test_integration_step_measures_coverage",
     "shared/tests/test_ci_coverage_wiring.py::test_plugin_step_measures_per_plugin_coverage",
     "shared/tests/test_ci_coverage_wiring.py::test_shared_step_writes_shared_tier_datafile",
+    "shared/tests/test_ci_security_forward_staging.py::test_ci_security_fresh_scan_reaches_followup_commit",
+    "shared/tests/test_ci_security_forward_staging.py::test_regenerate_does_not_stage_unchanged_ci_security",
+    "shared/tests/test_ci_security_forward_staging.py::test_regenerate_stages_ci_security_when_rewritten",
     "shared/tests/test_ci_template_diff_coverage.py::test_vitest_templates_carry_a_warn_only_diff_coverage_job",
     "shared/tests/test_ci_template_registry_completeness.py::test_every_ci_template_on_disk_has_registry_entry",
     "shared/tests/test_ci_template_registry_completeness.py::test_registry_glob_finds_at_least_one_template",

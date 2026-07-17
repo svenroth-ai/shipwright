@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-17-suppress-nonliteral-import-fp",
+    "run_id": "iterate-2026-07-17-ci-security-forward-staging",
     "date": "2026-07-17",
     "unit": {
       "status": "passed",
-      "passed": 79,
-      "total": 80
+      "passed": 4167,
+      "total": 4179
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 1,
+      "total": 1
     },
     "pgtap": {
       "status": "not_run",
@@ -31,19 +31,56 @@
       "status": "skipped"
     },
     "degraded": [
-      "Complexity classifier returned estimate='small' (confidence 0.6, prior_source=keyword) from the word 'add' in the change message; zero risk flags, risk_floor=trivial. Overridden to trivial per feedback_classifier_message_keyword_falsepos.md — the diff is a single inline comment (nosemgrep suppression) with no runtime behavior. F11 recomputes spec_impact/FR-gate from diff-predicates regardless."
+      "Complexity classifier returned estimate='large' (confidence 0.85, prior_source=keyword) from the description prose; the diff-authoritative signal is the cross_component risk flag (the diff touches shared/scripts/tools/resolve_churn_conflicts.py, a CROSS_COMPONENT_FILE_PATTERN) whose safety floor is medium. Overridden large->medium per feedback_classifier_message_keyword_falsepos.md — the actual diff is a net-neutral ~3-line change to regenerate_tracked_snapshots plus a focused test file. F11 recomputes cross_component from the diff regardless."
     ],
     "surface_verification": {
       "surface": "none",
-      "runner": "pytest (plugins/shipwright-compliance related collector tests: test_test_links_collector/config_roots/hardening + test_requirement_parse + test_execution_evidence_join/paths + test_invalid_layers_manifest)",
+      "runner": null,
       "exit_code": 0,
       "tests_run": 0,
       "timestamp": "2026-07-17T00:00:00+00:00",
-      "justification": "Comment-only source change (inline nosemgrep suppression for a confirmed non-literal-import false positive); no runnable app surface (web/cli/api) is added or changed. The loader's runtime behavior is unchanged and pinned by 79 passing related compliance collector tests at F0 (1 conditional skip)."
+      "justification": "Framework-internal git-merge machinery (resolve_churn_conflicts.regenerate_tracked_snapshots forward-staging). No web/API/product surface — the diff only classifies+stages the ci-security.json path during an integrate merge; it does not alter the file's shape or any UI-consumed runtime contract. Behavior fully verified at F0 by 3 dedicated tests (test_ci_security_forward_staging.py, RED-pre-fix/GREEN-post-fix, incl. a real-git integrate integration test) plus the full shared suite (4167 passed)."
     },
     "test_completeness": {
-      "status": "n/a",
-      "justification": "Trivial complexity — behavior-preserving comment-only change (inline nosemgrep suppression). No new or changed runtime behavior to enumerate; load_shared_lib behaves identically and is pinned by the 79 passing related compliance tests at F0."
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "regenerate_tracked_snapshots records+stages ci-security.json when _update_compliance rewrote it (fresh security.yml scan)",
+          "disposition": "tested",
+          "evidence": "test_ci_security_forward_staging.py::test_regenerate_stages_ci_security_when_rewritten PASSED (verified RED pre-fix: out.get(ci-security)==None)"
+        },
+        {
+          "behavior": "a fresh scan's ci-security.json rewrite reaches the integrate_main regenerate follow-up commit, leaving a clean working tree",
+          "category": "integration",
+          "disposition": "tested",
+          "evidence": "test_ci_security_forward_staging.py::test_ci_security_fresh_scan_reaches_followup_commit PASSED (real-git integrate composition; RED pre-fix steps=['fetched','merge-committed','regenerate-noop'] with dirty tree)"
+        },
+        {
+          "behavior": "fail-soft no-scan: an unchanged ci-security.json is not staged into a phantom follow-up commit (git add on an unchanged file is a no-op)",
+          "disposition": "tested",
+          "evidence": "test_ci_security_forward_staging.py::test_regenerate_does_not_stage_unchanged_ci_security PASSED"
+        },
+        {
+          "behavior": "no regression: the pre-existing 5-file compliance staging assertion still holds (ci-security only staged when it exists on disk)",
+          "disposition": "tested",
+          "evidence": "test_resolve_churn_conflicts.py::test_regenerate_invokes_canonical_producers_and_stages PASSED (unchanged)"
+        },
+        {
+          "behavior": "resolve_churn_conflicts.py stays net-neutral at its ADR-099 300-cap exception so the anti-ratchet gate stays green",
+          "disposition": "tested",
+          "evidence": "newline count == 357 == shipwright_bloat_baseline.json 'current' for the path; bloat-check.yml CI + local anti_ratchet_check.py at F0"
+        }
+      ],
+      "counts": {
+        "testable": 5,
+        "tested": 5,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
+      }
     }
   },
   "coverage": {

@@ -38,6 +38,7 @@ sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from lib.churn_merge import (  # noqa: E402
     CHURN_ALLOWLIST,
+    CI_SECURITY_SUMMARY,
     COMPLIANCE_MDS,
     DERIVED_MDS,
     EVENTS_LOG,
@@ -277,13 +278,12 @@ def regenerate_tracked_snapshots(
             finalize_iterate._generate_handoff(project_root, session_id, run_id, reason) or "error"
         )
     if "triage_inbox" in stems:
-        out[".shipwright/agent_docs/triage_inbox.md"] = finalize_iterate._snapshot_triage_runtime(
-            project_root
-        )
+        out[".shipwright/agent_docs/triage_inbox.md"] = finalize_iterate._snapshot_triage_runtime(project_root)
     if any(t in COMPLIANCE_MDS for t in targets):
-        # One call regenerates all five compliance MDs (consistent set, O9).
+        # One call regenerates the five compliance MDs + ci-security.json (same producer,
+        # O9); ci-security joins the staged set here (mirrors integrate_main's rollback set).
         paths = finalize_iterate._update_compliance(project_root)
-        for rel in sorted(COMPLIANCE_MDS):
+        for rel in sorted(COMPLIANCE_MDS | {CI_SECURITY_SUMMARY}):
             out[rel] = "regenerated" if paths else "error"
 
     if campaign_status_rels:  # re-project ONLY the campaigns this merge touched (S3)
