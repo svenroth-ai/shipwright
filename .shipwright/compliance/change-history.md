@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-07-17T22:03:20.860589+00:00
-Total commits: 1159
+Generated: 2026-07-17T22:37:10.398298+00:00
+Total commits: 1160
 
 ## Commit Distribution
 
@@ -9,7 +9,7 @@ Total commits: 1159
 pie title Commit Types
     "fix" : 332
     "feat" : 321
-    "chore" : 244
+    "chore" : 245
     "docs" : 145
     "refactor" : 68
     "test" : 28
@@ -683,12 +683,13 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 244 commits
+### Chores (chore) — 245 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-18 | traceability | dismiss STEP 3 FR-unmapped review card + record accepted-state policy | 29b53bcd6318 |
-| 2026-07-17 | triage | sweep 5 outbox append(s) into branch | d2fab580b07d |
+| 2026-07-18 | test-hygiene | resolve 51 pre-existing skipped-test findings (STEP 2) | df1d6cea02d9 |
+| 2026-07-18 | traceability | dismiss STEP 3 FR-unmapped review card + record accepted-state policy (#392) | 9bff5d72718b |
+| 2026-07-17 | triage | sweep 5 outbox append(s) into branch | 26f4d700515f |
 | 2026-07-17 | compliance | mark shared-lib loader import_module as by-design (semgrep FP) (#388) | fc6957724db1 |
 | 2026-07-16 | traceability | retrofit monorepo tests with @FR tags + webui handoff brief (TT8) (#386) | 2c85758ee6bc |
 | 2026-07-12 | review | default external-review GPT model to gpt-5.6-terra-pro (#366) | 4b71eec6aaa4 |
@@ -1228,7 +1229,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1159 |
+| Total commits | 1160 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1159 |
+| Human-authored commits | 1160 |
 

@@ -278,7 +278,7 @@ def test_parse_fr_table_real_adopted_spec_extracts_all_frs():
     repo_root = Path(__file__).resolve().parents[2]
     spec = repo_root / ".shipwright" / "planning" / "01-adopted" / "spec.md"
     if not spec.exists():
-        pytest.skip("01-adopted/spec.md not present in this checkout")
+        pytest.skip("01-adopted/spec.md not present in this checkout")  # test-hygiene: allow-silent-skip: defensive guard for partial/non-repo checkout; file is present in CI
     content = spec.read_text(encoding="utf-8")
     frs = parse_fr_table(
         content,

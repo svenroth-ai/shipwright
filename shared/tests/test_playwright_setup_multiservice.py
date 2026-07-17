@@ -55,7 +55,7 @@ def test_resolve_setup_dir_falls_back_to_cwd_for_single_service(tmp_path):
     assert result == tmp_path
 
 
-@pytest.mark.skipif(
+@pytest.mark.skipif(  # test-hygiene: allow-silent-skip: Windows-only path semantics; POSIX CI cannot exercise it
     os.name != "nt",
     reason=(
         "Exercises the Windows npm.cmd-resolution branch by faking os.name='nt'. "

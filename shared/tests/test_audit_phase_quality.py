@@ -620,7 +620,7 @@ def test_strict_ancestor_follows_symlinks(tmp_path: Path):
     try:
         link.symlink_to(actual, target_is_directory=True)
     except (OSError, NotImplementedError):
-        pytest.skip("Symlinks not supported on this platform/privileges")
+        pytest.skip("Symlinks not supported on this platform/privileges")  # test-hygiene: allow-silent-skip: symlink needs OS/privilege (Windows dev-mode); POSIX CI exercises it
     # link/sub should be recognized as descendant of actual → not a strict ancestor
     assert pq.cwd_is_strict_ancestor_of(link / "sub", actual) is False
     # actual should be ancestor of link/sub (since link resolves to actual)
@@ -650,7 +650,7 @@ def test_strict_ancestor_logs_and_returns_false_on_oserror(monkeypatch, capsys, 
     assert "resolve failed" in stderr
 
 
-@pytest.mark.skipif(os.name != "nt", reason="Windows case-insensitive paths")
+@pytest.mark.skipif(os.name != "nt", reason="Windows case-insensitive paths")  # test-hygiene: allow-silent-skip: Windows-only path semantics; POSIX CI cannot exercise it
 def test_strict_ancestor_windows_case_insensitive(tmp_path: Path):
     """On Windows, C:\\Foo\\Bar and C:\\FOO\\bar resolve to the same path."""
     sub = tmp_path / "SubDir"
@@ -705,7 +705,7 @@ def test_explicit_opt_in_symlink_resolution(monkeypatch, tmp_path: Path):
     try:
         link.symlink_to(actual, target_is_directory=True)
     except (OSError, NotImplementedError):
-        pytest.skip("Symlinks not supported on this platform/privileges")
+        pytest.skip("Symlinks not supported on this platform/privileges")  # test-hygiene: allow-silent-skip: symlink needs OS/privilege (Windows dev-mode); POSIX CI exercises it
     # Env points to symlink, project_root is the real path → resolves to same
     monkeypatch.setenv("SHIPWRIGHT_PROJECT_ROOT", str(link))
     assert pq.project_root_was_explicitly_selected(actual) is True

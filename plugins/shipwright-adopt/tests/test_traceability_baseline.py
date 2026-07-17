@@ -107,6 +107,37 @@ def test_enumerate_prunes_vendored_dirs_during_descent(tmp_path: Path):
     assert ts == []
 
 
+def test_enumerate_prunes_fixtures_only_under_a_tests_tree(tmp_path: Path):
+    # A ``fixtures`` dir UNDER a ``tests`` tree holds test DATA (sample/mini repos a
+    # collector test deliberately asserts on) — an intentional input, not rot — so it is
+    # pruned during descent. But a ``fixtures`` dir OUTSIDE a tests tree may hold real
+    # rotting tests, so it is NOT pruned (narrower than a global prune → adopt keeps its
+    # brownfield sensitivity).
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_a.py").write_text(
+        "import pytest\ndef test_a():\n    pytest.skip('real rot')\n", encoding="utf-8")
+    under_tests = tmp_path / "tests" / "fixtures" / "mini_repo" / "e2e"
+    under_tests.mkdir(parents=True)
+    (under_tests / "auth.spec.ts").write_text("test.skip('data', async () => {});\n", encoding="utf-8")
+    (under_tests / "test_sample.py").write_text(
+        "import pytest\ndef test_s():\n    pytest.skip('data')\n", encoding="utf-8")
+    # A top-level fixtures dir (NOT under tests/) with a genuinely rotting skipped test.
+    top = tmp_path / "fixtures"
+    top.mkdir()
+    (top / "test_real.py").write_text(
+        "import pytest\ndef test_r():\n    pytest.skip('genuine rot outside a tests tree')\n",
+        encoding="utf-8")
+    py, ts = tb.enumerate_test_files(tmp_path, lambda p: p.suffix == ".ts")
+    names = sorted(p.name for p in py)
+    assert names == ["test_a.py", "test_real.py"]     # tests/fixtures pruned; top-level fixtures kept
+    assert ts == []                                    # the fixture-data ts spec NOT enumerated
+    inv = tb.repo_wide_skip_inventory(tmp_path, _SHARED_SCRIPTS)
+    flagged = {f["file"] for f in inv}
+    assert "tests/test_a.py" in flagged                # real rot still caught
+    assert "fixtures/test_real.py" in flagged          # real rot OUTSIDE a tests tree still caught
+    assert not any("tests/fixtures" in f for f in flagged)  # fixture DATA under tests/ is silent
+
+
 def test_skip_inventory_flags_unconditional_pytest_mark_skip(tmp_path: Path):
     # doubt LOW#3: the commonest disable idiom the shared scanner does NOT flag.
     (tmp_path / "tests").mkdir()

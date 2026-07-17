@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-17-arch-doc-refresh-harden",
+    "run_id": "iterate-2026-07-17-test-rot-cleanup",
     "date": "2026-07-17",
     "unit": {
       "status": "passed",
-      "passed": 6215,
-      "total": 6230
+      "passed": 6807,
+      "total": 6807
     },
     "integration": {
       "status": "not_run",
@@ -28,33 +28,65 @@
       "total": 0
     },
     "smoke": {
-      "status": "skipped"
+      "status": "not_run"
     },
     "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "runner": "pytest (shared/tests + shared/scripts/tests + shared/scripts/tools/tests + plugins/shipwright-iterate/tests + plugins/shipwright-compliance/tests)",
-      "exit_code": 0,
       "tests_run": 0,
-      "timestamp": "2026-07-17T00:00:00+00:00",
-      "justification": "Framework tooling + curated-doc change (new agent_doc_shape gate + CLI + F11 verifier, aggregate_decisions dedup, write_decision_log canonicalization, architecture.md/conventions.md refresh). This monorepo is a Claude-Code plugin library — no runnable app surface (web/cli/api) is added or changed; verified end-to-end by the pytest suites exercising the producer->file->consumer round-trip."
+      "exit_code": 0,
+      "justification": "Test-hygiene cleanup: resolves 51 pre-existing skipped-test inventory findings (CI-guard conversions, allow-markers, 2 dead-decorator removals, 1 no-op-stub delete) + one adopt-lib skip-inventory scanner refinement. Test-only edits + one scanner scope change; NO product/source, API, store, SSE/WS or UI code touched, so spec_impact is none and the E2E/cross-layer gates do not fire. Verified via the Python suites (shared/tests 4412, adopt 415, iterate 476, grade 385, compliance 1119) + the exact producing scanner re-run (repo_wide_skip_inventory: 51 -> 0) + ruff."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "aggregator skips the dup ADR-NNN append when the F2 run_id bullet is documented in the target section", "disposition": "tested", "evidence": "shared/tests/test_aggregate_skip_documented.py::test_documented_run_id_appends_zero_arch_lines PASSED" },
-        { "behavior": "aggregator appends the canonical fallback when the run_id is undocumented / only in prose (section-scoped, not whole-file)", "disposition": "tested", "evidence": "test_aggregate_skip_documented.py::test_undocumented_run_id_appends_one_canonical_bullet + ::test_run_id_only_in_prose_still_appends PASSED" },
-        { "behavior": "direct write_decision_log path is untouched and emits the canonical <Impact> — sentence. -> pointer bullet", "disposition": "tested", "evidence": "test_aggregate_skip_documented.py::test_direct_path_appends_one_canonical_bullet + test_arch_update_writer_format.py PASSED" },
-        { "behavior": "canonical writer collapses multi-line summaries to one bullet (no injected bullet, no double period)", "disposition": "tested", "evidence": "test_arch_update_writer_format.py::test_multiline_summary_collapses_to_single_bullet PASSED" },
-        { "behavior": "shape gate rejects Campaign/sub_iterate/free-text anchors, missing Impact separator, and a non-decision_log/archive arrow", "disposition": "tested", "evidence": "shared/tests/test_agent_doc_shape.py (campaign/sub_iterate/free-text/missing-impact/arrow-to-nondecisionlog) PASSED" },
-        { "behavior": "shape gate accepts canonical run_id + ADR-NNN + archive anchors; grandfathers undated/pre-cutoff", "disposition": "tested", "evidence": "test_agent_doc_shape.py::test_canonical_run_id_and_adr_pass + test_archive_pointer_accepted + test_undated_and_precutoff_are_grandfathered PASSED" },
-        { "behavior": "shape gate is forward-only (legacy untouched entry not flagged) and blocks a new non-canonical bullet vs the git base", "disposition": "tested", "evidence": "test_agent_doc_shape_check_wiring.py::test_verifier_ignores_legacy_untouched_noncanonical + ::test_verifier_blocks_new_noncanonical PASSED", "category": "integration" },
-        { "behavior": "check_agent_doc_shape is registered in run_all_checks (F11 composition) and fail-soft SKIPs without a git base", "disposition": "tested", "evidence": "test_agent_doc_shape_check_wiring.py::test_agent_doc_shape_in_run_all_checks + ::test_check_fail_soft_skips_without_git_base PASSED" },
-        { "behavior": "the real monorepo architecture.md + conventions.md ## …Updates tails are canonical full-corpus (normalization locked)", "disposition": "tested", "evidence": "plugins/shipwright-iterate/tests/test_agent_doc_entry_rules.py::test_dated_entries_are_canonical_shape PASSED" },
-        { "behavior": "System-Overview mermaid renders correctly in the user's viewer", "disposition": "untestable", "reason_code": "requires-manual-visual-judgment", "reason": "the portable rewrite was empirically validated to PARSE under Mermaid v11 and to contain no &nbsp;/glued-subgraph/internal-direction, but the actual visual render in a given renderer is a human judgement" }
+        {
+          "behavior": "git/uv/coverage skips loud-fail in CI (body-level guard) instead of silently skipping (CI-GUARD)",
+          "disposition": "tested",
+          "evidence": "converted suites run unconditionally where the binary exists: test_check_agent_doc_budget.py (15) + test_hooks_json_registration.py (12) + test_combine_coverage.py (13) PASSED"
+        },
+        {
+          "behavior": "grade _strict()->is_ci() rename makes the scanner recognize the already-correct CI-gated-fail guard, behavior unchanged",
+          "disposition": "tested",
+          "evidence": "test_empirical.py collects clean (12) + inventory drops the two sites; tuple order irrelevant for `in`"
+        },
+        {
+          "behavior": "stale skipif(not vite-hono.json.exists()) removed -> the 2 tests run unconditionally (REMOVE-DEAD)",
+          "disposition": "tested",
+          "evidence": "test_stack_detector_multi_service.py 11 PASSED (both previously-skipped tests now run green); vite-hono.json confirmed present"
+        },
+        {
+          "behavior": "28 genuinely-conditional skips carry an allow-silent-skip marker; the inventory is silent on them but suites still skip correctly locally",
+          "disposition": "tested",
+          "evidence": "repo_wide_skip_inventory == 0 (exercises _line_is_suppressed on every marker incl. the 2 multi-line block-comment markers) + touched suites green with only the correct conditional skips"
+        },
+        {
+          "behavior": "no-op pass stub deleted; its scenario stays covered at the cmd_start layer (DELETE, no coverage lost)",
+          "disposition": "tested",
+          "evidence": "test_start_port_busy_no_state_errors_no_kill PASSES + zero references to the deleted test id; the stub was @pytest.mark.skip + pass (zero runtime coverage before/after)"
+        },
+        {
+          "behavior": "a fixtures/ dir UNDER a tests/ tree is pruned from the inventory; a fixtures/ dir OUTSIDE a tests tree is still scanned (SCANNER-FIX, narrowed)",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "new test_traceability_baseline.py::test_enumerate_prunes_fixtures_only_under_a_tests_tree asserts both directions (real rot under top-level fixtures/ still flagged; tests/fixtures data silent)"
+        },
+        {
+          "behavior": "full pre-existing skip inventory clears end-to-end",
+          "disposition": "tested",
+          "evidence": "repo_wide_skip_inventory over the worktree: 51 -> 0 (falsifiable asymptote)"
+        }
       ],
-      "counts": { "testable": 9, "tested": 9, "untestable": 1, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 7, "covered_acs": 7 }
+      "counts": {
+        "testable": 7,
+        "tested": 7,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
+      }
     }
   },
   "coverage": {

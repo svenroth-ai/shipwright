@@ -24,6 +24,7 @@ from shared.scripts.lib.deploy_profile_validator import (  # noqa: E402
     validate,
 )
 from shared.scripts.tools import validate_deploy_profile as cli_module  # noqa: E402
+from shared.scripts.test_hygiene import skip_or_fail_on_missing_binary  # noqa: E402
 
 SCHEMA_PATH = REPO_ROOT / "shared" / "profiles" / "deploy-profile.schema.json"
 PROFILES_DIR = REPO_ROOT / "shared" / "profiles" / "deploy"
@@ -328,9 +329,8 @@ class TestCLIInProcess:
 
 
 def _run_cli(args: list[str]) -> subprocess.CompletedProcess:
-    uv_bin = shutil.which("uv")
-    if uv_bin is None:
-        pytest.skip("uv not available")
+    skip_or_fail_on_missing_binary("uv", "uv not on PATH — provision via astral-sh/setup-uv in CI")
+    uv_bin = shutil.which("uv")  # guaranteed present after the guard above
     return subprocess.run(
         [uv_bin, "run", "shared/scripts/tools/validate_deploy_profile.py", *args],
         cwd=REPO_ROOT,

@@ -69,7 +69,7 @@ def test_new_entries_within_budget(filename: str, header: str):
     (<= ENTRY_MAX_CHARS). Genuinely undated legacy entries are exempt."""
     path = _AGENT_DOCS / filename
     if not path.exists():
-        pytest.skip(f"{filename} absent")
+        pytest.skip(f"{filename} absent")  # test-hygiene: allow-silent-skip: defensive guard for partial/non-repo checkout; file is present in CI
     entries = iter_entries(path.read_text(encoding="utf-8", errors="ignore"), header)
     violations = over_budget(entries, enforced_from=_ENFORCED_FROM)
     if violations:
@@ -96,7 +96,7 @@ def test_dated_entries_are_canonical_shape(filename: str, header: str):
     forward-only adopted-repo path."""
     path = _AGENT_DOCS / filename
     if not path.exists():
-        pytest.skip(f"{filename} absent")
+        pytest.skip(f"{filename} absent")  # test-hygiene: allow-silent-skip: defensive guard for partial/non-repo checkout; file is present in CI
     entries = iter_entries(path.read_text(encoding="utf-8", errors="ignore"), header)
     violations = non_canonical(entries, enforced_from=_SHAPE_ENFORCED_FROM)
     if violations:

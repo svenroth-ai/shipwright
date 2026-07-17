@@ -995,7 +995,7 @@ class TestCollectRequirementsAdoptFiveCol:
         spec = repo_root / ".shipwright" / "planning" / "01-adopted" / "spec.md"
         if not spec.exists():
             import pytest
-            pytest.skip("01-adopted/spec.md not present in this checkout")
+            pytest.skip("01-adopted/spec.md not present in this checkout")  # test-hygiene: allow-silent-skip: defensive guard for partial/non-repo checkout; file is present in CI
 
         # collect_requirements walks {project_root}/.shipwright/planning/*/spec.md
         reqs = collect_requirements(repo_root)

@@ -1,35 +1,38 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-17-step3-fr-unmapped-review"
+run_id: "iterate-2026-07-17-test-rot-cleanup"
 phase: "iterate"
-reason: "F11 pre-merge refresh: iterate-2026-07-17-step3-fr-unmapped-review"
-timestamp: "2026-07-17T22:03:26.464116+00:00"
+reason: "STEP 2 test-rot cleanup: 51 pre-existing skipped-test findings resolved (CI-guard / marker / remove / delete) + adopt fixtures-prune scoped to tests/"
+timestamp: "2026-07-17T22:37:15.623237+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-17 22:03:26 UTC
+> Auto-generated 2026-07-17 22:37:15 UTC
 
 ## Session Info
 
-- **Session ID**: 40969434-3270-441d-8539-20c5daea8d9f
-- **Timestamp**: 2026-07-17 22:03:26 UTC
-- **Reason**: F11 pre-merge refresh: iterate-2026-07-17-step3-fr-unmapped-review
+- **Session ID**: 06448ac1-5d4a-4305-a0a0-46637780c199
+- **Timestamp**: 2026-07-17 22:37:15 UTC
+- **Reason**: STEP 2 test-rot cleanup: 51 pre-existing skipped-test findings resolved (CI-guard / marker / remove / delete) + adopt fixtures-prune scoped to tests/
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-17-step3-fr-unmapped-review
-- **Date**: 2026-07-17T22:02:57.056679Z
+- **Run ID**: iterate-2026-07-17-test-rot-cleanup
+- **Date**: 2026-07-17T22:37:10.306072Z
 - **Type**: change
-- **Complexity**: trivial
-- **Branch**: iterate/step3-fr-unmapped-review
-- **ADR**: iterate-2026-07-17-step3-fr-unmapped-review
+- **Complexity**: medium
+- **Branch**: iterate/test-rot-cleanup
+- **ADR**: iterate-2026-07-17-test-rot-cleanup
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/adr/106-step3-fr-unmapped-tests-accepted-state.md
+- **Spec**: .shipwright/planning/iterate/2026-07-17-test-rot-cleanup.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/step3-fr-unmapped-review
+- **Branch**: iterate/test-rot-cleanup
+- **Run ID**: iterate-2026-07-17-test-rot-cleanup
+- **Spec**: .shipwright/planning/iterate/2026-07-17-test-rot-cleanup.md
+- **Complexity**: medium (history-calibrated; 0 risk flags)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/step3-fr-unmapped-review
-- **Last Commit**: 95a47c31 Merge remote-tracking branch 'origin/main' into iterate/step3-fr-unmapped-review
+- **Branch**: iterate/test-rot-cleanup
+- **Last Commit**: 26f4d700 chore(triage): sweep 5 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-0cae8393 | grade_snapshot | — | 2026-07-17 |
-| evt-3f23ed5d | grade_snapshot | — | 2026-07-17 |
-| evt-e848e205 | work_completed | iterate (STEP 3: dismiss the FR-unmapped review card (trg-0942da1f); record accepted-state policy for framework-internal untagged tests (ADR 106).) | 2026-07-17 |
+| evt-233db575 | grade_snapshot | — | 2026-07-17 |
+| evt-f09df6a1 | work_completed | iterate (STEP 2 test-rot cleanup: 51 pre-existing skipped-test findings resolved (CI-guard / marker / remove / delete) + adopt fixtures-prune scoped to tests/) | 2026-07-17 |
 | evt-1672af39 | grade_snapshot | — | 2026-07-17 |
-| evt-b973003b | grade_snapshot | — | 2026-07-17 |
+| evt-92ef6ad0 | grade_snapshot | — | 2026-07-17 |
+| evt-a49e415c | work_completed | iterate (Stage ci-security.json in the churn regenerate follow-up commit (close #375 CR-1 forward-staging gap)) | 2026-07-17 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 321
-- **Last iterate**: change — STEP 3: dismiss the FR-unmapped review card (trg-0942da1f); record accepted-state policy for framework-internal untagged tests (ADR 106). (2026-07-17)
+- **Total work events**: 320
+- **Last iterate**: change — STEP 2 test-rot cleanup: 51 pre-existing skipped-test findings resolved (CI-guard / marker / remove / delete) + adopt fixtures-prune scoped to tests/ (2026-07-17)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

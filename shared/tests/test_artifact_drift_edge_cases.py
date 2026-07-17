@@ -73,9 +73,9 @@ def designs_migration():
         (m for m in mod.ARTIFACT_MIGRATIONS if m["name"] == "designs"), None
     )
     if match is None:
-        pytest.skip("designs migration entry not present in manifest")
+        pytest.skip("designs migration entry not present in manifest")  # test-hygiene: allow-silent-skip: conditional on repo migration/drop state; correctly inert otherwise
     if match["status"] == "pending":
-        pytest.skip("designs migration is pending; nothing to test yet")
+        pytest.skip("designs migration is pending; nothing to test yet")  # test-hygiene: allow-silent-skip: conditional on repo migration/drop state; correctly inert otherwise
     return match
 
 

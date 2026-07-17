@@ -59,7 +59,7 @@ def test_resolve_executable_returns_invokable_npm():
 def test_resolve_executable_returns_invokable_npx():
     """Same end-to-end check for npx — used by playwright_setup + route_crawler."""
     if not (shutil.which("npx") or shutil.which("npx.cmd")):
-        pytest.skip("npx not on PATH")
+        pytest.skip("npx not on PATH")  # test-hygiene: allow-silent-skip: node/npx is not provisioned in the Python monorepo CI (optional toolchain)
     resolved = resolve_executable("npx")
     r = subprocess.run(
         [resolved, "--version"],

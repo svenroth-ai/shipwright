@@ -546,7 +546,7 @@ def test_a5_passes_against_shipped_template(tmp_path):
     repo_root = PLUGIN_ROOT.parent.parent
     template = repo_root / "shared" / "templates" / "github-actions" / "security.yml.template"
     if not template.is_file():
-        pytest.skip(f"template not found at {template}")
+        pytest.skip(f"template not found at {template}")  # test-hygiene: allow-silent-skip: defensive guard for partial/non-repo checkout; file is present in CI
 
     _write_workflow(tmp_path, template.read_text(encoding="utf-8"))
     findings = group_a5.run(tmp_path, {}, None)

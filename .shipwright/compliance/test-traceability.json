@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
   "collector_version": "test_links/1.0.0",
-  "generated_at": "2026-07-17T20:56:51.914875+00:00",
-  "source_commit": "097c96fc06b5a2a58ed201dface03d089d5e5d7e",
+  "generated_at": "2026-07-17T22:37:10.398298+00:00",
+  "source_commit": "748226fe26ecf1b133fe84a230b465f47f2f265c",
   "spec_hash": "sha256:c8944f86bcd4737b474e245f4b79800f37db76da0b3515b6eec98fecdcd11adb",
   "requirements": {
     "01-adopted::FR-01.01": {
@@ -2288,6 +2288,7 @@
     "plugins/shipwright-adopt/tests/test_test_framework_detector.py::test_nextjs_vitest_playwright",
     "plugins/shipwright-adopt/tests/test_test_framework_detector.py::test_python_pytest",
     "plugins/shipwright-adopt/tests/test_traceability_baseline.py::test_collector_links_a_tagged_test_to_its_fr",
+    "plugins/shipwright-adopt/tests/test_traceability_baseline.py::test_enumerate_prunes_fixtures_only_under_a_tests_tree",
     "plugins/shipwright-adopt/tests/test_traceability_baseline.py::test_enumerate_prunes_vendored_dirs_during_descent",
     "plugins/shipwright-adopt/tests/test_traceability_baseline.py::test_orphan_triage_carries_category_and_no_stale_accusation",
     "plugins/shipwright-adopt/tests/test_traceability_baseline.py::test_scaffold_appends_convention_to_a_preexisting_rule_file",
@@ -6252,7 +6253,6 @@
     "shared/tests/test_dev_server_multiservice.py::test_wait_for_service_explicit_ipv6_host_no_ipv4_probe",
     "shared/tests/test_dev_server_multiservice.py::test_wait_for_service_http_uses_declared_host",
     "shared/tests/test_dev_server_multiservice.py::test_wait_for_service_ipv6_only_bind",
-    "shared/tests/test_dev_server_multiservice.py::test_wait_for_service_port_held_by_external_process_no_pid",
     "shared/tests/test_dev_server_multiservice.py::test_wait_for_service_port_open_only",
     "shared/tests/test_dev_server_multiservice.py::test_wait_for_service_ready_path_2xx",
     "shared/tests/test_dev_server_multiservice.py::test_wait_for_service_ready_path_3xx",

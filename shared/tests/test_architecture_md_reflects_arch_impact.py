@@ -156,7 +156,7 @@ def test_every_arch_impact_drop_has_architecture_md_entry():
         records = records_in_run_set(records, owned)
 
     if not arch_impact_records(records):
-        pytest.skip("no owned architecture-impact decision-drops to verify")
+        pytest.skip("no owned architecture-impact decision-drops to verify")  # test-hygiene: allow-silent-skip: conditional on repo migration/drop state; correctly inert otherwise
 
     texts = {"architecture.md": _arch_md_text(), "conventions.md": _conv_md_text()}
     missing = missing_entries(records, texts)
@@ -190,7 +190,7 @@ def test_arch_impact_drops_found_at_all():
     drops_dir = _main_repo_root() / ".shipwright" / "agent_docs" / "decision-drops"
     disposition, _reason = _discovery_sanity(drops_dir)
     if disposition == "skip":
-        pytest.skip(_reason)
+        pytest.skip(_reason)  # test-hygiene: allow-silent-skip: conditional on repo migration/drop state; correctly inert otherwise
     # 'ok' → the resolver found real drop file(s), so discovery works. The
     # arch-impact SUBSET may legitimately be empty (post-release, or simply no
     # recent iterate declared a component/data-flow/convention impact) — assert

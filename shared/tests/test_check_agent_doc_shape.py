@@ -7,12 +7,9 @@ CLI surfaces (exit codes + messages).
 
 from __future__ import annotations
 
-import shutil
 import subprocess
 import sys
 from pathlib import Path
-
-import pytest
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _SHARED_SCRIPTS = _REPO_ROOT / "shared" / "scripts"
@@ -21,6 +18,9 @@ for _p in (str(_SHARED_SCRIPTS), str(_SHARED_SCRIPTS / "tools")):
         sys.path.insert(0, _p)
 
 from tools.check_agent_doc_shape import find_violations, main  # noqa: E402
+from test_hygiene import skip_or_fail_on_missing_binary  # noqa: E402
+
+_GIT_HINT = "git not on PATH — CI provisions it via actions/checkout"
 
 _CANON = "- **iterate-2026-07-01-x** (2026-07-01): Component — a real thing. → decision_log (Run-ID)"
 _NONCANON = "- **Campaign X** (2026-07-01): a thing. → decision_log (Run-ID)"
@@ -81,8 +81,8 @@ def _base_repo(tmp_path: Path, arch_updates: str) -> Path:
     return repo
 
 
-@pytest.mark.skipif(shutil.which("git") is None, reason="git not available")
 def test_forward_only_flags_only_new_noncanonical(tmp_path: Path):
+    skip_or_fail_on_missing_binary("git", _GIT_HINT)
     repo = _base_repo(tmp_path, arch_updates="")  # clean base
     arch = repo / ".shipwright" / "agent_docs" / "architecture.md"
     arch.write_text(arch.read_text(encoding="utf-8") + f"{_NONCANON}\n", encoding="utf-8")
@@ -91,8 +91,8 @@ def test_forward_only_flags_only_new_noncanonical(tmp_path: Path):
     assert len(violations) == 1 and "Architecture Updates" in violations[0][1]
 
 
-@pytest.mark.skipif(shutil.which("git") is None, reason="git not available")
 def test_forward_only_ignores_untouched_legacy_noncanonical(tmp_path: Path):
+    skip_or_fail_on_missing_binary("git", _GIT_HINT)
     repo = _base_repo(tmp_path, arch_updates=f"{_NONCANON}\n")  # legacy junk in base
     violations, _ = find_violations(repo)
     assert violations == []

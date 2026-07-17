@@ -10,9 +10,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
-
-
 from lib.stack_detector import detect_stack
 from lib.profile_matcher import match_profile
 
@@ -151,10 +148,6 @@ def test_detect_stack_no_change_for_single_service_repo(tmp_path: Path):
 # AC11 — matcher prefers vite-hono for webui shape
 # ---------------------------------------------------------------------------
 
-@pytest.mark.skipif(
-    not (SHARED_PROFILES / "vite-hono.json").exists(),
-    reason="vite-hono.json not yet shipped",
-)
 def test_match_profile_picks_vite_hono_for_split_repo(tmp_path: Path):
     _build_webui_shape(tmp_path)
     sig = detect_stack(tmp_path)
@@ -166,10 +159,6 @@ def test_match_profile_picks_vite_hono_for_split_repo(tmp_path: Path):
         assert candidates["vite-hono"] > candidates["supabase-nextjs"]
 
 
-@pytest.mark.skipif(
-    not (SHARED_PROFILES / "vite-hono.json").exists(),
-    reason="vite-hono.json not yet shipped",
-)
 def test_match_profile_does_not_pick_vite_hono_for_next_api_monorepo(tmp_path: Path):
     """Next.js + Express API split repo MUST NOT match vite-hono."""
     (tmp_path / "client").mkdir()

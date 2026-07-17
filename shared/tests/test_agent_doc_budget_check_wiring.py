@@ -7,12 +7,9 @@ enforcement, and that the check fail-soft SKIPs on a non-git tmp dir.
 
 from __future__ import annotations
 
-import shutil
 import subprocess
 import sys
 from pathlib import Path
-
-import pytest
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _SCRIPTS = _REPO_ROOT / "shared" / "scripts"
@@ -22,6 +19,9 @@ if str(_SCRIPTS) not in sys.path:
 from lib.agent_doc_budget import CLAUDE_MD_MAX_NEW_LINES  # noqa: E402
 from tools.verifiers.agent_doc_budget_check import check_agent_doc_budget  # noqa: E402
 from tools.verifiers.iterate_checks import run_all_checks  # noqa: E402
+from test_hygiene import skip_or_fail_on_missing_binary  # noqa: E402
+
+_GIT_HINT = "git not on PATH — CI provisions it via actions/checkout"
 
 
 def test_agent_doc_budget_in_run_all_checks(tmp_path: Path):
@@ -62,15 +62,15 @@ def _growth_repo(tmp_path: Path) -> Path:
     return repo
 
 
-@pytest.mark.skipif(shutil.which("git") is None, reason="git not available")
 def test_verifier_blocks_claude_md_over_growth(tmp_path: Path, monkeypatch):
+    skip_or_fail_on_missing_binary("git", _GIT_HINT)
     monkeypatch.delenv("SHIPWRIGHT_CLAUDE_MD_GROWTH_OK", raising=False)
     r = check_agent_doc_budget(_growth_repo(tmp_path), "r1")
     assert r.ok is False and "CLAUDE.md" in r.detail
 
 
-@pytest.mark.skipif(shutil.which("git") is None, reason="git not available")
 def test_verifier_env_override_skips_growth_but_stays_green(tmp_path: Path, monkeypatch):
+    skip_or_fail_on_missing_binary("git", _GIT_HINT)
     # The override is a SUCCESS with a visible note — never a violation.
     monkeypatch.setenv("SHIPWRIGHT_CLAUDE_MD_GROWTH_OK", "1")
     r = check_agent_doc_budget(_growth_repo(tmp_path), "r1")

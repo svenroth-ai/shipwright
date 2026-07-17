@@ -470,7 +470,7 @@ _CAPTURED_SAMPLE = (
 )
 
 
-@pytest.mark.skipif(
+@pytest.mark.skipif(  # test-hygiene: allow-silent-skip: dev-local captured artifact (gitignored .shipwright/runs) — absent in CI, runs only in the main repo where the sample was recorded
     not _CAPTURED_SAMPLE.exists(),
     reason="captured sample artifact absent (run captured in main repo only)",
 )
