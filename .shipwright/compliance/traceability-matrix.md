@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-16T20:24:24.104701+00:00
+Generated: 2026-07-17T18:52:09.564563+00:00
 
 ## Requirements Coverage
 
@@ -28,6 +28,7 @@ Generated: 2026-07-16T20:24:24.104701+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-99ae3fa0"></a>Add by-design nosemgrep suppression on _lib_loader.py import_module (line 41). | iterate | change |  | — | — | 2026-07-17 |
 | <a id="evt-37ed67db"></a>The traceability tool can now be told which folders hold tests, so requirement tags written in plugin and shared tests are actually counted instead of ignored. | iterate | feature |  | 1119/1119 | — | 2026-07-16 |
 | <a id="evt-a0436498"></a>The framework's own tests now start to carry which-requirement-they-cover labels, and there's a ready-to-run plan to do the same in the web UI project. | iterate | change |  | 5936/5936 | — | 2026-07-16 |
 | <a id="evt-9eede3ac"></a>Repos onboarding to Shipwright now start with test-to-requirement traceability already set up, instead of building up untracked, stale tests over time. | iterate | feature |  | 5697/5697 | — | 2026-07-16 |
@@ -351,7 +352,7 @@ Generated: 2026-07-16T20:24:24.104701+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 316 |
+| Iterate changes | 317 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |

@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-17-suppress-nonliteral-import-fp",
+  "date": "2026-07-17T18:52:09.304127Z",
+  "type": "change",
+  "complexity": "trivial",
+  "branch": "iterate/suppress-nonliteral-import-fp",
+  "spec": "(trivial \u2014 no iterate spec)",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-17-suppress-nonliteral-import-fp"
+}

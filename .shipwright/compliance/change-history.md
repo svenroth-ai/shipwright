@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-07-16T20:24:24.104701+00:00
-Total commits: 1152
+Generated: 2026-07-17T18:52:09.564563+00:00
+Total commits: 1154
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 331
-    "feat" : 318
-    "chore" : 241
+    "feat" : 319
+    "chore" : 242
     "docs" : 145
     "refactor" : 68
     "test" : 28
@@ -356,10 +356,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 318 commits
+### Features (feat) — 319 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-16 | compliance | config-driven test_roots for the test_links collector (#387) | 853a45217dc6 |
 | 2026-07-16 | adopt | establish the requirement->test traceability baseline at onboarding (TT7) (#385) | a85c22cdbad6 |
 | 2026-07-16 | traceability | shared backfill_test_links engine — map existing tests to FRs (TT6) (#384) | 0edb3dbcab46 |
 | 2026-07-16 | iterate | enforcing F11 traceability gates — removal→orphan + change→cross-layer (TT5) (#383) | 0cec0f8e15b8 |
@@ -679,10 +680,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 241 commits
+### Chores (chore) — 242 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-17 | triage | sweep 4 outbox append(s) into branch | 0d51bdf436fe |
 | 2026-07-16 | traceability | retrofit monorepo tests with @FR tags + webui handoff brief (TT8) (#386) | 2c85758ee6bc |
 | 2026-07-12 | review | default external-review GPT model to gpt-5.6-terra-pro (#366) | 4b71eec6aaa4 |
 | 2026-07-12 | release | bump root pyproject.toml to v0.31.0 (#365) | 1b4a471e075d |
@@ -1221,7 +1223,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1152 |
+| Total commits | 1154 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1152 |
+| Human-authored commits | 1154 |
 

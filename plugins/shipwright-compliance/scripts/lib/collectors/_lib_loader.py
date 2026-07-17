@@ -38,6 +38,14 @@ def load_shared_lib(name: str):
     if str(_SHARED_SCRIPTS) not in sys.path:
         sys.path.insert(0, str(_SHARED_SCRIPTS))
     try:
+        # `name` is always a hardcoded module identifier from first-party callers
+        # (fixed set: requirement_model, drift_parsers, fr_tag_grammar, events_log,
+        # security_workflow, fr_classification, bloat_baseline, architecture_doc,
+        # events_amend) — no untrusted input reaches it, and the f-string is
+        # confined to the first-party ``lib.*`` namespace. import_module by package
+        # name (not spec_from_file_location) is required so shared modules' relative
+        # imports (e.g. fr_tag_grammar's ``from .requirement_model``) resolve.
+        # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
         module = importlib.import_module(f"lib.{name}")
         _CACHE[name] = module
         return module

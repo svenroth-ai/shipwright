@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-16 20:24 UTC | Session: a69abb9e-d21a-40a1-846b-13913cca2b09 | Run: iterate-2026-07-16-collector-test-roots
+> Updated: 2026-07-17 18:52 UTC | Session: 6e2941ea-7c72-4243-a0c6-dde68c5db726 | Run: iterate-2026-07-17-suppress-nonliteral-import-fp
 
-## Recent Changes (316 iterations)
+## Recent Changes (317 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Add by-design nosemgrep suppression on _lib_loader.py import_module (line 41). | 0/0 |  | tooling | 2026-07-17 |
 | feature | config-driven traceability.test_roots + exclude_dirs for the test_links collector | 1119/1119 |  | compliance | 2026-07-16 |
 | change | TT8: retrofit this monorepo's own tests with @FR requirement->test traceability tags (integration-tests baseline; 187-candidate full-corpus inventory triaged), regenerate the compliance test-traceability manifest, and author the webui-repo retrofit handoff brief. | 5936/5936 |  | compliance | 2026-07-16 |
 | feature | TT7: adopt Step E.17 establishes the requirement->test traceability baseline (tag convention scaffold + TT6 backfill + repo-wide skip inventory + predeclared-decision resolution + test_links wired into the adopt compliance phase). | 5697/5697 |  | tooling | 2026-07-16 |
@@ -323,7 +324,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-16 | Unit: 1119/1119 | Integration: 2/2 | Smoke: skipped | (iterate)
+Last run: 2026-07-17 | Unit: 79/80 | Smoke: skipped | (iterate)
 
 ## Pipeline
 

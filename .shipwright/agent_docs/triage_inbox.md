@@ -1,12 +1,12 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-16T18:39:55.852213Z. Items waiting for triage decision.
+> Auto-generated 2026-07-17T18:52:18.775115Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 309
-- Triage: 12 | Promoted: 1 | Dismissed: 295 | Snoozed: 1
+- Total: 310
+- Triage: 12 | Promoted: 1 | Dismissed: 296 | Snoozed: 1
 
 ## Top 12 items (severity-sorted)
 
@@ -17,12 +17,7 @@
   - Scope the Shipwright marketplace correctly instead of enabling all ~14 plugins at user scope (they currently load /ship…
   - Promote: `triage_promote.py --id trg-57317128 --task-ref EXT:<ref>`
 
-### Source: campaign-anchor (2 items)
-
-<a id="trg-9a782f7b"></a>
-- **Trace-Campaign: requirement to test traceability across layers (unit/integration/E2E), autonomous** `id=trg-9a782f7b | severity=medium | kind=improvement → P2/engineering`
-  - Main autonomous campaign 2026-07-15-test-traceability-layers (TT1..TT8). Runs after Trace-Prerequisite merges. Adds bid…
-  - Promote: `triage_promote.py --id trg-9a782f7b --task-ref EXT:<ref>`
+### Source: campaign-anchor (1 item)
 
 <a id="trg-17aaaccd"></a>
 - **Trace-Webui: retrofit traceability in the webui repo (handoff, run after monorepo campaign ships)** `id=trg-17aaaccd | severity=low | kind=improvement → P3/engineering`
@@ -103,4 +98,11 @@
 - **Traceability retrofit: 187 high-confidence @FR candidates in plugins/*/tests + shared/tests (not yet manifest-tracked)** `id=trg-01bb6cae | severity=low | kind=maintenance → P3/engineering`
   - A full-corpus backfill (7419 tests, fixtures excluded) found 187 tests that map to an FR at auto-write confidence via `…
   - Promote: `triage_promote.py --id trg-01bb6cae --task-ref EXT:<ref>`
+
+### Source: traceability-backfill (1 item)
+
+<a id="trg-d032b1e2"></a>
+- **Backfill iterate: write plugin/shared @FR tags (trg-01bb6cae 187 + trg-a57392a2 24) + thread config into TT5 _layer_cov…** `id=trg-d032b1e2 | severity=medium | kind=improvement → P2/engineering`
+  - Anchor for the tag-backfill iterate, now UNBLOCKED by iterate-2026-07-16-collector-test-roots (PR #387, squash 853a4521…
+  - Promote: `triage_promote.py --id trg-d032b1e2 --task-ref EXT:<ref>`
 
