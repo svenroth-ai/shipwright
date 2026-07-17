@@ -5,26 +5,24 @@
 
 ```mermaid
 flowchart TB
-  CC["Claude Code (host)<br/>loads plugins from ~/.claude/plugins/cache/shipwright/"]
+  CC["Claude Code host<br/>loads plugins from ~/.claude/plugins/cache/shipwright/ (runtime cache)"]
 
-  subgraph plugins["plugins/"]
-    direction TB
-    P["shipwright-run<br/>shipwright-project<br/>shipwright-plan<br/>shipwright-design<br/>shipwright-build<br/>shipwright-test<br/>shipwright-security<br/>shipwright-deploy<br/>shipwright-changelog<br/>shipwright-compliance<br/>shipwright-iterate<br/>shipwright-preview<br/>shipwright-adopt<br/>shipwright-grade"]
+  subgraph "Monorepo (this repo)"
+    plugins["plugins/ — 14 phase plugins<br/>run · project · design · plan · build · test<br/>security · deploy · changelog · compliance<br/>iterate · preview · adopt · grade"]
+    shared["shared/ — cross-plugin code<br/>contracts (ADR-088) · profiles · templates<br/>prompts · schemas · config · scripts"]
   end
 
-  subgraph shared["shared/"]
-    direction TB
-    S["scripts/ (lib, tools, hooks)<br/>contracts/ (cross-plugin facade)<br/>profiles/ (stack + deploy)<br/>templates/<br/>prompts/ (review prompts)<br/>config/ (defaults)<br/>schemas/"]
+  subgraph "Target project (per repo)"
+    artifacts["CLAUDE.md · shipwright_*_config.json<br/>shipwright_events.jsonl (append-only)<br/>.shipwright/ — agent_docs · planning<br/>compliance · designs · triage.jsonl"]
   end
 
-  subgraph target["Target project"]
-    direction TB
-    T["CLAUDE.md<br/>shipwright_*_config.json<br/>shipwright_events.jsonl<br/>.shipwright/<br/>&nbsp;&nbsp;agent_docs/ (+ runtime/ gitignored)<br/>&nbsp;&nbsp;planning/ compliance/ designs/<br/>&nbsp;&nbsp;adopt/ reviews/"]
-  end
+  gh["GitHub<br/>CI gates (ci · security · pr-review · codeql)<br/>PR auto-merge · findings API"]
 
-  CC --> plugins
-  plugins -- "reads/writes" --> shared
-  plugins -- "writes/reads" --> target
+  CC -->|runs| plugins
+  plugins -->|import| shared
+  plugins -->|read / write| artifacts
+  plugins -->|push · PR| gh
+  gh -->|findings to triage| artifacts
 ```
 
 ## Stack
@@ -50,23 +48,125 @@ See `decision_log.md` for detailed ADRs. Profile-level decisions (stack, auth pa
 
 ## Data Flow
 
-Each SDLC phase is its own Claude Code plugin under plugins/<phase>/, with the standard Claude Code plugin layout: .claude-plugin/plugin.json, hooks/hooks.json, skills/<phase>/SKILL.md, scripts/ (checks, hooks, lib, tools), tests/, and pyproject.toml. Cross-plugin code lives under shared/ (scripts, contracts, profiles, templates, prompts, config, schemas). `shared/contracts/` (ADR-088) is the supported entry point for cross-plugin imports — re-export facades (`shared.contracts.compliance`, `shared.contracts.iterate`) shield consumers from refactors of the underlying plugin internals. Plugins communicate via a unified session id (SHIPWRIGHT_SESSION_ID), shared shipwright_*_config.json files written into the target project, and an append-only shipwright_events.jsonl event log. Hooks defined in hooks.json are the single source of truth for between-phase actions and quality gates; behavior is documented in docs/hooks-and-pipeline.md. Memory and decision history is captured in .shipwright/agent_docs/decision_log.md (canonical H3 ADR format) and per-iterate or per-phase artifacts under .shipwright/planning/ and .shipwright/compliance/. A separate plugin cache at ~/.claude/plugins/cache/shipwright/ is used by Claude Code at runtime; updates require running scripts/update-marketplace.sh after pushing plugin-side changes.
+Shipwright is a monorepo of Claude Code plugins — one per SDLC phase — that
+operate on a **target project** (this monorepo grades itself, so it is also its
+own target). Work is never ad-hoc: each phase is a skill, and the phases
+coordinate through four shared channels described below. This section documents
+the steady-state data flow; per-change history lives in `## Architecture Updates`
+and `decision_log.md`, not here.
 
-Secrets live exclusively in `<project_root>/.env.local`, scaffolded by `/shipwright-adopt` (Step E.5, ADR-021) and read at runtime by `shared/scripts/lib/env.py::load_shipwright_env`. Every adopted repo carries the framework-level external-review keys (OPENROUTER_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY) plus the active profile's `required_env_vars`. The file is git-ignored before write — a `.gitignore` enforcement failure aborts the scaffold rather than risking a tracked secrets file.
+### Plugins
 
-**Triage Inbox** (iterate-2026-05-11-triage-inbox-1a, ADR-046): pre-backlog intake JSONL store under `<project_root>/.shipwright/triage.jsonl`, git-tracked (the SSoT backlog, per-tree like `shipwright_events.jsonl`; see the C1 convention entry below — campaign 2026-06-05-track-triage-jsonl), append-only with history events. Producers (Phase-Quality Stop-hook + Compliance audit_detector) emit findings via `shared/scripts/triage.py::append_triage_item_idempotent` with dedup-keys (`{phase}:{code}` for Phase-Quality with 24h window, `check_id` for Compliance with cross-session window=None). Consumer (`aggregate_triage_on_stop.py`, last Stop-hook in the iterate plugin's chain) regenerates `.shipwright/agent_docs/triage_inbox.md`. Promote bridge: manual CLI `shared/scripts/tools/triage_promote.py` (Iterate 1a) → future WebUI Triage tab (Iterate 3) creating an `ExternalTask` in shipwright-webui's `sdk-sessions.json` with `promotedFromTriageId` back-reference. Triage and Backlog are intentionally separate stores; see `docs/guide.md` § 4.11.
+**Layout.** Every phase is a plugin under `plugins/<phase>/` with the standard
+Claude Code layout: `.claude-plugin/plugin.json`, `hooks/hooks.json`,
+`skills/<phase>/SKILL.md`, `agents/` (subagent definitions), `scripts/`
+(`checks`, `hooks`, `lib`, `tools`), `tests/`, and `pyproject.toml`. Cross-plugin
+code lives under `shared/` (`scripts`, `contracts`, `profiles`, `templates`,
+`prompts`, `config`, `schemas`).
 
-**GitHub findings producer** (iterate-2026-05-19-github-triage-importer): a throttled SessionStart hook `shared/scripts/hooks/import_github_findings.py` — registered once, only in the shipwright-iterate plugin's `hooks.json` — pulls GitHub code-scanning / Dependabot / secret-scanning alerts and the latest failed default-branch CI run per workflow via the `gh` CLI and emits them as `source="github"` triage items. Logic is split across two shared modules: `shared/scripts/github_api.py` (thin `gh api` client; returns `None` on any failure so callers can tell a failed fetch from an empty one) and `shared/scripts/github_triage.py` (alert→item mapping, throttle, orchestrator). New write surface: `<project_root>/.shipwright/github_import_state.json` (throttle timestamp, gitignored by the `.shipwright/*` rule). New read surface: the GitHub REST API via `gh`. Throttle interval resolves run-config `triage.github_import_throttle_hours` → env `SHIPWRIGHT_GITHUB_IMPORT_THROTTLE_HOURS` → 6h default. Dedup keys are stable and namespaced (`github:{code-scanning,dependabot,secret-scanning}:<number>`, `github-ci:<workflow>:<sha>`); auto-resolve is key-shape-scoped (ADR-052) and fires only for sources whose fetch succeeded — a failed fetch never mass-resolves. The hook is fail-soft (always exit 0). Un-defers the CI producer deferred under ADR-047 — pull-based, not the webhook receiver originally ruled out of scope.
+**Cross-plugin imports.** `shared/contracts/` (ADR-088) is the *only* supported
+entry point for one plugin to import another — the re-export facades
+(`shared.contracts.compliance`, `shared.contracts.iterate`) shield consumers from
+refactors of the underlying internals. Direct deep imports across plugins are a
+convention violation.
 
-**GitHub security-artifact ingestion path** (iterate-2026-05-21-security-artifact-producer): the same SessionStart hook gains a parallel third source for the `gh-security:{owner}/{repo}` action-unit. When `cs_alerts is None` (GHAS Code Scanning unavailable — typical on private repos without GHAS), `github_api.latest_security_workflow_run()` finds the most recent successful run of `.github/workflows/security.yml` on the default branch (gated by a `SHIPWRIGHT_GITHUB_ARTIFACT_MAX_AGE_DAYS` freshness window, default 14d), then `github_api.download_security_findings(run_id)` pulls the `security-scan-results` artifact via `gh run download`, parses `findings.json`, and returns the validated `findings` list. The orchestrator routes the result to a sibling mapper `github_triage.security_action_unit_from_artifact` that produces an action-unit with the same `gh-security:{owner}/{repo}` dedup key and `launchPayload` contract. The artifact path is skipped when `cs_alerts` succeeds (no double-counting against GHAS-uploaded SARIF). `by_source["gh-security:artifact"]` distinguishes the ingestion path for telemetry. Severity counts are derived from iterating `findings[]` rather than trusting the redundant `by_severity` aggregate; raw scanner-controlled strings (`rule` / `description` / `affected_file`) are never rendered into the persisted `detail` or `launchPayload`. When the artifact carries only raw SARIF (every `/shipwright-adopt` repo's template runs raw `semgrep scan --sarif`, no `findings.json`), `security_findings._findings_from_sarif` also applies the opt-in accepted-risk drop (`SHIPWRIGHT_SEMGREP_ACCEPT_GH_OWNED_ACTION_TAGS`) for GitHub-owned `github-actions-mutable-action-tag` findings — the same predicate the plugin scan uses, lifted to the shared leaf module `shared/scripts/gh_action_tag_owner.py` (iterate-2026-07-06-semgrep-accept-producer). The triage consumer and `refresh_ci_security` pass the repo root as `workflow_base` so the owner is read from the checked-out workflow file (unresolvable → kept; third-party stays flagged; inSource `# nosemgrep` suppressions already honoured). See `docs/security-ci-setup.md` for the Path A vs Path B operator choice and `docs/guide.md` § 4.11.1 for the user-facing action-unit description.
+**How phases communicate.** Four channels, all rooted in the target project:
 
-**GitHub PR-CI loop-closing producer** (iterate-2026-06-11-automerge-gh-pr-ci-producer, B4.5 Phase 1): the same SessionStart hook gains the `gh-pr-ci:{pr_number}` action-unit so failed hard-gates on an **open PR** surface in triage — without it, GitHub-native auto-merge (a later B4.5 step) could sit armed-but-waiting on a red PR with no visibility. New module `shared/scripts/github_pr_api.py` (PR-scoped `gh` client, split from the LOC-capped `github_api.py`; reuses `github_api._gh_api` for identical None-on-failure semantics): `fetch_open_prs()` (`pulls?state=open`, paginated → complete open set), `fetch_pr_check_runs(head_sha)` (`commits/{sha}/check-runs?filter=latest`; returns `None` when `len(check_runs) < total_count` so a >100-check truncation can't be misread as all-green), `fetch_pr_state(pr_number)` (resolve-only merged/closed distinction), and the reduce `open_prs_with_failed_checks()` (excludes draft PRs; returns `None` if ANY per-PR fetch failed — the MED-#1 symmetry rule). New mapper `github_triage.mappers.pr_ci_action_unit` (severity `high`, dedup `gh-pr-ci:{n}` with no head_sha; check names sanitised + sorted). New consumer-side submodule `github_triage/pr_ci.py` (`import_pr_ci_findings`, keeps `consumer.py` ≤300 LOC). Auto-resolve is **differentiated** via `github_triage.resolve.resolve_pr_ci` (`prChecksResolved` / `prMerged` / `prClosed`; unfetchable state keeps the item open rather than guessing) — deliberately routed OUTSIDE the generic `resolve_stale` sweep (PREFIX_PR_CI is in `_OWNED_PREFIXES` but kept out of `resolvable_prefixes`). `by_source["gh-pr-ci:"]` carries the emit count, or `None` when the source's fetch failed. New read surface: the GitHub PRs + check-runs REST endpoints via `gh` (throttled with the existing 6h import clock). No new write surface (reuses `triage.jsonl`); no message-contract change (existing action-unit schema, so the WebUI renders it unchanged). See `docs/guide.md` § 4.11.1.
+- **`SHIPWRIGHT_SESSION_ID`** — one unified session id across every plugin in a
+  run, so hooks and artifacts written by different phases correlate.
+- **`shipwright_*_config.json`** — the per-phase config files written into the
+  target project root (`shipwright_run_config.json` is authoritative for pipeline
+  mode and step state; writes are atomic + path-lock-coordinated via
+  `run_config_store.py`).
+- **`shipwright_events.jsonl`** — an append-only, **per-tree, PR-committed**
+  event log (`phase_started`/`phase_completed`/`phase_failed`, `work_completed`,
+  `test_run`, `grade_snapshot`, …). It is the durable spine every producer reads
+  from and every derived view (RTM, dashboard, campaign status, WebUI rails)
+  reduces over. `resolve_events_path` returns `<project_root>/shipwright_events.jsonl`
+  literally; the iterate's own event is recorded in its worktree and ships in the PR.
+- **`hooks.json`** — the single source of truth for between-phase actions and
+  quality gates. What fires when is documented in `docs/hooks-and-pipeline.md`.
 
-**GitHub Tier-3 PR review** (iterate-2026-06-11-automerge-pr-review, B4.5 Phase 2): a new CI workflow `.github/workflows/pr-review.yml` gates external-contributor, sensitive-path (`plugins/*/{hooks,skills,agents}/`, `.github/workflows/`), and `needs-review`-labelled PRs through an OpenRouter LLM review before auto-merge — Tier 1 (iterate-branch) and Tier 2 (maintainer `svroch`) PRs are NOT reviewed at the PR stage (already covered locally at `/shipwright-iterate` Step 8), so the gate is proportional-to-risk (`$0` for Tier 1/2). The thin workflow has two jobs: `decide` (fork-guarded via `head.repo.full_name == github.repository`; hoists all `${{ github.* }}` into `env:` to satisfy the `run-shell-injection` rule; tier logic in bash/jq with `skip-pr-review` / `needs-review` label overrides) and `review` (required-check job named exactly `PR Review`, gated on `needs.decide.outputs.needs_review == 'true'`; a `needs:`-skipped job stays green so Tier 1/2 still pass the required check). Review logic lives in a new shipwright-security tool `scripts/tools/pr_review.py` + pure-helper lib `scripts/lib/pr_review_lib.py` (split to keep both ≤300 LOC): a stdlib-`urllib` POST to OpenRouter `/chat/completions` with `response_format: json_object`, a strict-JSON `{decision, summary, blocking, comments}` → exit-code merge gate (approve/comment=0, block=1, error=2), a 200k-char diff truncation that downgrades a partial review to comment-state (exit 0 + ⚠️ warning, never auto-block), and API-key log redaction. New prompt directory `shared/prompts/pr_reviewer/{system,user}` (directory form per PR #119) tuned for external-contributor review with an untrusted-diff prompt-injection inoculation. New read surface: the OpenRouter chat-completions API + the GitHub PR diff/comment endpoints via `gh`. Model switchable via `SHIPWRIGHT_PR_REVIEW_MODEL` (default `anthropic/claude-sonnet-4.6`). Snapshot-tested by `plugins/shipwright-security/tests/test_pr_review_workflow_shape.py`. Activation (the `OPENROUTER_API_KEY` secret, the branch-protection required-check, repo auto-merge, and the iterate F11 `gh pr merge --auto` patch) are separate B4.5 Phase 2/3 follow-ups. See `Spec/early-access-readiness-plan.md` § B4.5.
+**Pipeline mode.** `single_session` is the sole pipeline mode: one conversation
+drives every phase as a subagent (the external per-phase-session engine was
+removed). The orchestrator loop resolves each phase, claims it, runs the
+phase-runner, and applies the result; `gate_catalog.json` + `lib/gate_policy.py`
+decide which gates auto-answer vs. require approval vs. hard-stop.
 
-**Bloat Loop-Gate** (iterate-2026-05-25-bloat-foundation, Campaign A.foundation = A1 + A2 + A3): two-hook structural prevention against file-size regrowth. The shared classification + schema library `shared/scripts/lib/bloat_baseline.py` is the single producer for the bloat-allowlist format and the `runtime-prompt` (SKILL.md / CLAUDE.md / `plugins/*/agents/*.md` / `shared/prompts/*.md` → 400 LOC) vs source/test (300 LOC) classification — consumed by every other piece. **PostToolUse hook** `shared/scripts/hooks/check_file_size.py` (extended this iterate) writes a per-session marker `<project_root>/.shipwright/locks/bloat_pending.<SHIPWRIGHT_SESSION_ID>.json` (atomic tmp+rename, read-modify-write upsert by path, TTL 1h enforced by the reader) carrying every crossing or anti-ratchet event. **Stop hook** `shared/scripts/hooks/bloat_gate_on_stop.py` (new) reads only the current session's marker (no cross-session aggregation — protects parallel worktrees from each other), re-measures every entry at decision time (so a fixed file isn't punished), and emits top-level `{"decision":"block","reason":"..."}` per Stop-schema ADR-042 for anti-ratchet entries or new crossings outside `shipwright_bloat_baseline.json`. Block-reason body adapts the Iron-Law / Red-Flags / Rationalization-Prevention text from `obra/superpowers` `verification-before-completion` (MIT, © Jesse Vincent). New convention: both hooks are registered in every `plugins/*/hooks/hooks.json` (12 plugins) and the registry is drift-protected by a reverse-direction meta-test in `shared/tests/test_hook_registry_bloat.py`. New write surfaces: the per-session marker JSON and the project-root baseline JSON. Adopt sequence: `plugins/shipwright-adopt/scripts/lib/baseline_generator.py` wraps `bloat_baseline.scan` and runs as Step A.0 (before any other artifact write) so the gate has something to compare against on the first Stop event. Fail-open: missing or malformed baseline / marker → pass silently with a stderr diagnostic.
+**Decision & memory trail.** Architecture/convention memory is curated in
+`.shipwright/agent_docs/` (`architecture.md`, `conventions.md`, canonical H3 ADRs
+in `decision_log.md`). Iterates write run-id-keyed drops to
+`.shipwright/agent_docs/decision-drops/`; `aggregate_decisions.py` folds them into
+`decision_log.md` with sequential `ADR-NNN` at release. Per-iterate/per-phase
+artifacts live under `.shipwright/planning/` and `.shipwright/compliance/`.
 
-**Worktree isolation** (iterate-2026-05-15-iterate-worktree-isolation): every `/shipwright-iterate` run executes in its own git worktree under `<project_root>/.worktrees/<slug>/` on branch `iterate/<slug>`, cut from freshly-fetched `origin/<default>`. `setup_iterate_worktree.py` (skill step B1a) creates it and writes two gitignored main-repo surfaces: a per-run main-tree snapshot at `.shipwright/runs/<run-id>/main_tree_snapshot.json` and a per-session run pointer at `.shipwright/iterate_active/<session-id>.json`. The F0/F11 leak-guard `check_iterate_isolation.py` diffs the main tree against that snapshot and fails closed on any leak. `shipwright_events.jsonl` is a **per-tree, PR-committed artifact** (iterate-2026-05-29-events-jsonl-worktree-commit, superseding the 2026-05-16 main-redirect): the iterate's `work_completed` event is recorded into the worktree's OWN log at F5b and committed by F6, so it ships in the PR and the main tree is never written; the leak-guard's `shipwright_events.jsonl`(`.lock`) exemption is retained only as defense-in-depth for the legacy out-of-band F7/F7b path. Iterate ADRs are written run-id-keyed to `.shipwright/agent_docs/decision-drops/` (`write_decision_drop.py`) and folded into `decision_log.md` with sequential `ADR-NNN` at release time by `aggregate_decisions.py`. The former canonical/secondary session-role machinery is removed — isolation is structural, not detected.
+**Worktree isolation.** Every `/shipwright-iterate` run executes in its own git
+worktree under `.worktrees/<slug>/` on branch `iterate/<slug>`, cut from
+freshly-fetched `origin/<default>`. A leak-guard (`check_iterate_isolation.py`)
+diffs the main tree against a per-run snapshot and fails closed on any write that
+escapes the worktree.
+
+**Runtime plugin cache.** Claude Code loads plugins at runtime from
+`~/.claude/plugins/cache/shipwright/`, **not** from this repo. Plugin-side edits
+(`plugins/*`, `shared/*`, any `SKILL.md`) reach runtime only after
+`scripts/update-marketplace.sh`; `scripts/check_plugin_cache_sync.py` detects
+drift. (End users consuming the published plugins do not need this step.)
+
+**Secrets.** Secrets live exclusively in `<project_root>/.env.local`, scaffolded
+by `/shipwright-adopt` (ADR-021) and read by
+`shared/scripts/lib/env.py::load_shipwright_env` — the framework external-review
+keys (`OPENROUTER_API_KEY`, `GEMINI_API_KEY`, `OPENAI_API_KEY`) plus the active
+profile's `required_env_vars`. The file is git-ignored before write; a
+`.gitignore` enforcement failure aborts the scaffold.
+
+### GitHub
+
+GitHub is both a **gate** (CI must be green to merge) and a **findings source**
+(alerts and failed runs flow back into the local backlog). Both directions are
+wired into the pipeline.
+
+**CI gates (`.github/workflows/`).** The Required Checks that gate merge to
+`main`:
+
+- `ci.yml` — the hard lint gate (`uvx ruff@0.15.15 check .`, no `|| true`) + the
+  Python test suites + the **diff-coverage gate** (`.github/actions/diff-coverage-gate`;
+  <80% of changed lines vs `origin/main` fails closed).
+- `security.yml` — the scanner chain (Semgrep/Trivy/gitleaks) → `findings.json`
+  + SARIF; the critical-gate fails **closed** on a degraded or critical scan.
+- `pr-review.yml` — the Tier-3 external-LLM PR review; it is the 6th Required
+  Check in the auto-merge (B4.5) design and runs only for external-contributor,
+  sensitive-path (`plugins/*/{hooks,skills,agents}/`, `.github/workflows/`), or
+  `needs-review`-labelled PRs (Tier 1/2 stay green via a skipped `needs:` job).
+- `codeql.yml` (code scanning), `bloat-check.yml` (anti-ratchet file-size
+  regression), `grade-empirical.yml` (Control-Grade projector suite).
+
+**Findings → Triage Inbox.** A single throttled `SessionStart` hook
+(`import_github_findings.py`, registered once in shipwright-iterate) pulls three
+GitHub sources via the `gh` CLI and emits them as `source="github"` triage
+action-units (dedup-keyed, auto-resolve scoped so a failed fetch never
+mass-resolves):
+
+- code-scanning / Dependabot / secret-scanning alerts + the latest failed
+  default-branch CI run per workflow (`github_api.py`, `github_triage/`).
+- `gh-security:{owner}/{repo}` — when GHAS Code Scanning is unavailable (typical
+  on private repos), it falls back to the `security.yml` `security-scan-results`
+  artifact (freshness-gated), parsing `findings.json`/SARIF directly.
+- `gh-pr-ci:{pr}` — failed hard-gates on an **open** PR, so an armed auto-merge
+  can't sit waiting on a red PR unnoticed (`github_pr_api.py`).
+
+**Findings sink.** All producers append to `<project_root>/.shipwright/triage.jsonl`
+(git-tracked, per-tree, append-only) via
+`triage.py::append_triage_item_idempotent`. A gitignored per-tree **outbox** +
+sweep-to-PR-branch mechanism ensures appends made off the main tree still reach
+origin. Consumers regenerate `triage_inbox.md` and the Command Center WebUI
+Triage tab; `refresh_ci_security.py` folds the latest `security.yml` findings into
+a tracked `.shipwright/compliance/ci-security.json` that lights the compliance
+dashboard's CI-Security section and the Control-Grade Security dimension.
+
+**Auto-merge.** With all Required Checks green (and GHAS review threads
+resolved), iterate F11 brings the branch current through `integrate_main` and
+arms `gh pr merge --auto --squash`; "delivered" means merged + green, verified by
+`watch_pr_delivery.py` (no shoot-and-forget).
 
 ## See also
 
@@ -76,7 +176,8 @@ _Existing user-facing documentation discovered by /shipwright-adopt._
 - [`docs/guide.md`](../../docs/guide.md)
 
 ## Architecture Updates
-> **One line per change** — always-loaded Layer-1 context, so every line costs tokens on every future iterate. Format: `- **<run_id|ADR-NNN>** (YYYY-MM-DD): <Impact> — <one sentence: what + key surface>. → decision_log (Run-ID/ADR)`. **Budget ≤ 600 chars; detail goes in the ADR / `.shipwright/planning/adr/`, not here.** Enforced repo-agnostically (incl. adopted repos) by the F11 verifier + `shared/scripts/tools/check_agent_doc_budget.py` (SSoT `lib.agent_doc_budget`); see `references/F2.md`. Full verbatim prose for compacted entries lives in [`../planning/adr/_archive-agent-doc-updates.md`](../planning/adr/_archive-agent-doc-updates.md). Routing (`lib.architecture_doc.IMPACT_TARGETS`): `convention`-impact → [`conventions.md`](conventions.md) `## Convention Updates`; only `component` / `data-flow` live here.
+> **One line per change** — always-loaded Layer-1 context, so every line costs tokens on every future iterate. Format: `- **<run_id|ADR-NNN>** (YYYY-MM-DD): <Impact> — <one sentence: what + key surface>. → decision_log (Run-ID/ADR)`. **Budget ≤ 600 chars; detail goes in the ADR / `.shipwright/planning/adr/`, not here.** Enforced repo-agnostically (incl. adopted repos) by the F11 verifier + `shared/scripts/tools/check_agent_doc_budget.py` (SSoT `lib.agent_doc_budget`); see `references/F2.md`. Bullet **shape** (a `run_id`|`ADR-NNN` anchor, an `<Impact> —` lead, and a `→` pointer — no `Campaign`/`sub_iterate`/free-text) is enforced from 2026-06-28 by `check_agent_doc_shape` (SSoT `lib.agent_doc_shape`); the release aggregator writes no duplicate `ADR-NNN` bullet — the run_id line is the single canonical entry. Full verbatim prose for compacted entries lives in [`../planning/adr/_archive-agent-doc-updates.md`](../planning/adr/_archive-agent-doc-updates.md). Routing (`lib.architecture_doc.IMPACT_TARGETS`): `convention`-impact → [`conventions.md`](conventions.md) `## Convention Updates`; only `component` / `data-flow` live here.
+- **iterate-2026-07-17-arch-doc-refresh-harden** (2026-07-17): Component — new `lib/agent_doc_shape.py` SSoT + repo-agnostic CLI/F11 verifier `check_agent_doc_shape` enforce the canonical changelog-bullet grammar (`run_id|ADR-NNN` anchor + `<Impact> —` + `→ decision_log`) on the two `…Updates` sections; the release aggregator stops appending a dup `ADR-NNN` bullet when the F2 run_id bullet exists (section-scoped `run_id_documented_for_impact`); `_append_architecture_update` canonicalized; System-Overview mermaid + Data-Flow (Plugins/GitHub) refreshed. → decision_log (Run-ID)
 - **iterate-2026-07-15-shared-backfill-engine** (2026-07-16): Component — new shared retrofit engine `tools/backfill_test_links.py` (+ `_lib` legs `backfill_scan/signals/write/llm`) that maps a repo's existing tests to FRs deterministic-first (path-token/unique-split/introducing-commit), LLM-assisted-second (opt-in, advisory-only, R4-bounded payload). Auto-writes only a deterministic single-FR match; lists proposals; surfaces `confirmed`/`possible`/`unmapped` orphans, never auto-deleting. Its `@FR` tags feed the TT1 manifest; shared by adopt (TT7) + retrofit (TT8). → decision_log (Run-ID).
 - **iterate-2026-07-15-removal-crosslayer-gates** (2026-07-16): Component — two ENFORCING F11 traceability gates in shared `tools/verifiers` (`run_all_checks`): `removal_coverage` (a removed FR's base-linked tests must be deleted/retargeted, else HARD) and `cross_layer_coverage` (a behaviour-changed FR needs an executed-passing test at each required_layer). Both REGENERATE base+head manifests + the evidence index from staged reports (R3, never the committed artifact); + shared emit-side `lib/evidence_drop.py`. → decision_log (Run-ID).
 - **iterate-2026-07-15-layer-aware-rtm-and-gates** (2026-07-16): Component — the RTM renders per-FR `Unit | Integration | E2E` coverage from the TT1 manifest; Group-D gains `D-orphan` (a test tagged with a removed/absent FR) + `D-layer` (an active FR missing an executed-passing test at a required layer; explicit FAIL / legacy advisory, fan-out fail-closed) in new `_group_d_traceability.py`; D1 hardened (a tested event AND, for explicit FRs, a real manifest link). New `_rtm_layer_columns.py` sibling keeps the capped rtm_generator/group_d net-neutral. → decision_log (Run-ID).
@@ -200,39 +301,8 @@ _Existing user-facing documentation discovered by /shipwright-adopt._
 - **ADR-212** (2026-06-13): Behavior-preserving SIMPLIFY sub-mode + snapshot/verify gate
 - **ADR-217** (2026-06-13): Unify simplify <-> reducibility around one shared tool + one catalog
 - **ADR-221** (2026-06-14): Repo-agnostic agent-doc entry-budget gate + cleanup
-- **ADR-242** (2026-06-28): Control-Grade traceability credits satisfied no-FR; behavior-affecting changes must link an FR
-- **ADR-243** (2026-06-28): BP-2: per-FR fr_impact map lights the Control-Grade reconciliation dimension
-- **ADR-245** (2026-06-28): Ingest CI security.yml findings into the compliance dashboard + grader
-- **ADR-253** (2026-06-28): SBOM dedup by installed version + honest verdict
-- **ADR-258** (2026-06-30): Goodhart-resistant Control-Grade verdict gate + anchor pivot
-- **ADR-266** (2026-07-01): Control Grade composition-neutral (drop the FR-tag-decline gate)
-- **ADR-268** (2026-07-03): Diff-coverage Phase 1: measure, do not commit per-diff state or gate
-- **ADR-270** (2026-07-04): shipwright-grade: cold-repo signal projector (G1)
-- **ADR-272** (2026-07-05): Diff-coverage feeds Control-Grade Test-Health as a threshold-gated WARN
-- **ADR-273** (2026-07-04): Monorepo coverage combine via per-plugin [paths] remap; light W4
-- **ADR-276** (2026-07-04): Cold-repo grade signals via reused collectors + additive engine field + network-gated test-health
-- **ADR-277** (2026-07-04): Escape-by-default HTML report renderer (shipwright-grade G3)
-- **ADR-278** (2026-07-04): shipwright-grade G4: authoritative wiring + URL clone-and-grade + plugin registration
-- **ADR-279** (2026-07-04): Plain-language copy layer for the grade report (marketing instrument)
-- **ADR-280** (2026-07-04): Tier-3 PR review filters generated files from the diff before truncation
-- **ADR-287** (2026-07-06): Prove the diff-coverage gate bites before the hard-flip
-- **ADR-293** (2026-07-06): Cold-repo projector calibrated to well-run > deprecated (G6)
-- **ADR-295** (2026-07-07): Accepted-risk GH-owned action-tag drop reaches the artifact-ingest path, not just the plugin scan
-- **ADR-303** (2026-07-07): Single-session phase-gate mode (per-gate policy)
-- **ADR-304** (2026-07-07): Single-session pipeline mode scaffold + phase-runner contracts
-- **ADR-305** (2026-07-07): Single-session orchestrator loop (in-conversation pipeline driver)
-- **ADR-309** (2026-07-08): Single-session pipeline resumability, recovery & observability (SS5)
 - **iterate-2026-07-10-grade-snapshot-events** (2026-07-11): Data-flow — grade_snapshot appended to the durable tracked shipwright_events.jsonl at each compliance grade regen (record_event new --type + emit_grade_snapshot), giving the WebUI Ship's-Log grade trend + per-run delta (M-Pre-3). → decision_log (Run-ID).
 - **iterate-2026-07-10-run-brief-intake** (2026-07-11): Data-flow — /shipwright-run accepts a WebUI-wizard brief (file/payload) via a tested brief_intake helper that maps persistence→profile + run-location→deploy/env and asks only the still-missing questions; no brief → legacy interview unchanged (K2c). → decision_log (Run-ID).
 - **iterate-2026-07-14-sweep-drift-dismiss-loss** (2026-07-14): Component — the D2 outbox sweep gains a main-tree drift repair (`sweep_drift.py`; leaf `sweep_text.py`; reporting `sweep_result.py`). New write surface: the sweep writes MAIN's tracked `.shipwright/triage.jsonl` — it adopts append-only drift there into the outbox so appends that reached no branch ride the iterate PR, and `decide()` gains a `known_append_ids` universe so a legitimate status is never quarantined. → decision_log (Run-ID).
-- **ADR-311** (2026-07-08): Single-session pipeline resumability, recovery & observability (SS5)
-- **ADR-312** (2026-07-08): External-review gate fails loud on degradation
-- **ADR-316** (2026-07-11): Adopt accepts a WebUI brief; brief_intake promoted to shared
-- **ADR-320** (2026-07-11): Emit phase_started at the two phase-entry call sites
-- **ADR-322** (2026-07-11): grade_snapshot event per compliance regen
-- **ADR-323** (2026-07-11): Persist iterate session plan as gitignored <run_id>.plan.json sibling
-- **ADR-324** (2026-07-11): Brief-intake: /shipwright-run accepts a pre-filled wizard brief
-- **ADR-325** (2026-07-11): Iterate-Rail per-phase durations via boundary-mark sidecar
-- **ADR-326** (2026-07-11): Per-split phase_completed: dedup on (phase, splitId)
 - **iterate-2026-07-15-tag-convention-and-manifest** (2026-07-15): Data-flow — new `test_links` compliance collector emits `.shipwright/compliance/test-traceability.json` (schema v2), the backward test→FR link + per-layer join built from `@FR` tags across pytest/Playwright/Vitest; wired into `update_compliance` PHASE_REPORTS. Consumed next by the layer-aware RTM (TT2). → decision_log (Run-ID).
-- **ADR-327** (2026-07-16): Per-test execution-evidence reader as the R1 coverage source
+- **iterate-2026-07-15-execution-evidence** (2026-07-16): Component + data-flow — per-test execution-evidence reader as the R1 coverage source. → decision_log (Run-ID)

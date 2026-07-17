@@ -35,6 +35,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
+from lib import architecture_doc  # noqa: E402
 from lib.file_lock import LockTimeout, file_lock  # noqa: E402
 from lib.repo_root import resolve_main_repo_root  # noqa: E402
 from tools.write_decision_log import (  # noqa: E402
@@ -178,9 +179,13 @@ def aggregate(
         if rendered and not dry_run:
             log_path.parent.mkdir(parents=True, exist_ok=True)
             log_path.write_text(content + "".join(rendered), encoding="utf-8")
+            agent_docs = project_root / ".shipwright" / "agent_docs"
             for offset, (drop_path, data) in enumerate(valid):
                 impact = data.get("architecture_impact", "none")
-                if impact and impact != "none":
+                # Canonical anchor = run_id: skip the dup ADR bullet when the F2 run_id bullet already documents this drop (only the rare undocumented drop gets a fallback ADR bullet).
+                documented = architecture_doc.run_id_documented_for_impact(
+                    agent_docs, impact, (data.get("run_id") or "").strip())
+                if impact and impact != "none" and not documented:
                     summary = data.get("title") or data.get("decision", "")[:60]
                     _append_architecture_update(
                         project_root, next_num + offset, impact, summary,

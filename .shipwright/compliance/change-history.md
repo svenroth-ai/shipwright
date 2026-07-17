@@ -1,18 +1,18 @@
 # Commit Change Log
 
 Generated: 2026-07-17T20:56:51.914875+00:00
-Total commits: 1157
+Total commits: 1160
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 332
-    "feat" : 320
-    "chore" : 243
+    "feat" : 321
+    "chore" : 244
     "docs" : 145
     "refactor" : 68
-    "test" : 28
+    "test" : 29
     "ci" : 11
     "other" : 9
     "build" : 1
@@ -357,11 +357,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 320 commits
+### Features (feat) — 321 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-17 | traceability | backfill 189 plugin/shared @FR tags + config-aware TT5 gate (STEP 1) | 71db78c8f4b7 |
+| 2026-07-17 | traceability | backfill 189 plugin/shared @FR tags + config-aware TT5 gate (STEP 1) (#390) | a419ce461f8c |
+| 2026-07-17 | agent-docs | canonical run_id changelog anchor + shape gate; kill aggregator ADR dup | fa0f6a53bb10 |
 | 2026-07-16 | compliance | config-driven test_roots for the test_links collector (#387) | 853a45217dc6 |
 | 2026-07-16 | adopt | establish the requirement->test traceability baseline at onboarding (TT7) (#385) | a85c22cdbad6 |
 | 2026-07-16 | traceability | shared backfill_test_links engine — map existing tests to FRs (TT6) (#384) | 0edb3dbcab46 |
@@ -682,11 +683,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 243 commits
+### Chores (chore) — 244 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-17 | triage | sweep 12 outbox append(s) into branch | cb7a36f3bc28 |
+| 2026-07-17 | churn | regenerate compliance snapshots after origin/main merge | d9651374d8aa |
+| 2026-07-17 | triage | sweep 12 outbox append(s) into branch | cbc31b470c61 |
 | 2026-07-17 | compliance | mark shared-lib loader import_module as by-design (semgrep FP) (#388) | fc6957724db1 |
 | 2026-07-16 | traceability | retrofit monorepo tests with @FR tags + webui handoff brief (TT8) (#386) | 2c85758ee6bc |
 | 2026-07-12 | review | default external-review GPT model to gpt-5.6-terra-pro (#366) | 4b71eec6aaa4 |
@@ -1153,10 +1155,11 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 28 commits
+### Tests (test) — 29 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-17 | agent-docs | cover check_agent_doc_shape CLI + full-corpus mode | 1d5a207848e7 |
 | 2026-07-08 | run | single-session E2E integration + cross-surface capstone (SS7) (#352) | aa385b3dcd02 |
 | 2026-07-06 | coverage | replay the diff-coverage gate against the last 5 real monorepo PRs (#329) | ccb22388bb9b |
 | 2026-07-05 | grade | import engine_bridge normally in authoritative tests (#321) | 4d21fdc9ba1a |
@@ -1226,7 +1229,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1157 |
+| Total commits | 1160 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1157 |
+| Human-authored commits | 1160 |
 

@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-17-backfill-plugin-fr-tags"
+run_id: "iterate-2026-07-17-arch-doc-refresh-harden"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-17T20:56:57.233003+00:00"
+reason: "merge origin/main reconciliation"
+timestamp: "2026-07-17T21:08:26.226424+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-17 20:56:57 UTC
+> Auto-generated 2026-07-17 21:08:26 UTC
 
 ## Session Info
 
-- **Session ID**: ddb39c8c-af24-445d-992e-fcc344ec6078
-- **Timestamp**: 2026-07-17 20:56:57 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: 1202b22a-3c9e-4c44-b27c-1519865a3d53
+- **Timestamp**: 2026-07-17 21:08:26 UTC
+- **Reason**: merge origin/main reconciliation
 
 ## Last Iterate
 
@@ -29,9 +29,10 @@ timestamp: "2026-07-17T20:56:57.233003+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/backfill-plugin-fr-tags
-- **Spec**: .shipwright/planning/iterate/2026-07-17-backfill-plugin-fr-tags.md
-- **Complexity**: medium (history-calibrated; gate change + shared-engine change)
+- **Branch**: iterate/arch-doc-refresh-harden
+- **Run ID**: iterate-2026-07-17-arch-doc-refresh-harden
+- **Spec**: .shipwright/planning/iterate/2026-07-17-arch-doc-refresh-harden.md
+- **Complexity**: medium (overridden from keyword `large`; force-continue, full rigor)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -50,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/backfill-plugin-fr-tags
-- **Last Commit**: 20ece606 Merge remote-tracking branch 'origin/main' into iterate/backfill-plugin-fr-tags
+- **Branch**: iterate/arch-doc-refresh-harden
+- **Last Commit**: 097c96fc Merge remote-tracking branch 'origin/main' into iterate/arch-doc-refresh-harden
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -67,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-92ef6ad0 | grade_snapshot | — | 2026-07-17 |
-| evt-a49e415c | work_completed | iterate (Stage ci-security.json in the churn regenerate follow-up commit (close #375 CR-1 forward-staging gap)) | 2026-07-17 |
+| evt-1672af39 | grade_snapshot | — | 2026-07-17 |
 | evt-b973003b | grade_snapshot | — | 2026-07-17 |
 | evt-3ef91172 | work_completed | iterate (iterate: backfill plugin/shared @FR tags + config-aware TT5 gate) | 2026-07-17 |
-| evt-0cb56caa | grade_snapshot | — | 2026-07-17 |
+| evt-18bb0c1c | grade_snapshot | — | 2026-07-17 |
+| evt-92ef6ad0 | grade_snapshot | — | 2026-07-17 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 319
-- **Last iterate**: bug — Stage ci-security.json in the churn regenerate follow-up commit (close #375 CR-1 forward-staging gap) (2026-07-17)
+- **Total work events**: 320
+- **Last iterate**: change — iterate: backfill plugin/shared @FR tags + config-aware TT5 gate (2026-07-17)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

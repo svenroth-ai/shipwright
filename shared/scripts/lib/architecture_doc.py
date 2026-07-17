@@ -235,6 +235,55 @@ def records_in_run_set(
     return [r for r in records if r.run_id in allowed]
 
 
+def run_id_documented_for_impact(
+    agent_docs_dir: Path, impact: object, run_id: str
+) -> bool:
+    """True iff ``run_id`` is the ANCHOR of a bullet in the SECTION ``impact``
+    routes to.
+
+    Used by the release aggregator to SKIP a duplicate ``ADR-NNN`` bullet when the
+    iterate's F2 run_id bullet is already present. Deliberately **section-scoped**
+    (a ``- **<run_id>**`` bullet under the target ``## …Updates`` header), NOT a
+    whole-file scan — a run_id appearing only in prose (e.g. the Data Flow
+    narrative) is not a bullet, so the aggregator still appends rather than wrongly
+    skipping and leaving the change with no changelog entry (external-review
+    Gemini/OpenAI). Blank run_id / unroutable impact / absent doc → ``False``.
+    """
+    if not run_id:
+        return False
+    target = IMPACT_TARGETS.get(normalize_impact(impact))
+    if target is None:
+        return False
+    filename, section_header = target
+    try:
+        text = (Path(agent_docs_dir) / filename).read_text(
+            encoding="utf-8", errors="ignore"
+        )
+    except OSError:
+        return False
+    return _run_id_anchored_in_section(text, section_header, run_id)
+
+
+def _run_id_anchored_in_section(text: str, section_header: str, run_id: str) -> bool:
+    """True iff a ``- **<run_id>** …`` bullet exists under ``section_header``.
+
+    Slices the section body (its header line → the next ``## `` heading) and
+    matches a bold-anchor bullet, so a run_id mentioned elsewhere in the file
+    (another section, prose, a link) does not count. The closing ``**`` right
+    after the escaped run_id makes the match exact (a longer run_id can't satisfy
+    a shorter one).
+    """
+    anchor = re.compile(r"^- \*\*" + re.escape(run_id) + r"\*\*")
+    in_sec = False
+    for ln in text.splitlines():
+        if ln.startswith("## "):
+            in_sec = ln.strip() == section_header
+            continue
+        if in_sec and anchor.match(ln):
+            return True
+    return False
+
+
 def corrupt_for_run(corrupt_filenames: list[str], run_id: str) -> list[str]:
     """Corrupt drop filenames belonging to ``run_id`` (matched by filename).
 

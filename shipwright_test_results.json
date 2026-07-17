@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-17-backfill-plugin-fr-tags",
+    "run_id": "iterate-2026-07-17-arch-doc-refresh-harden",
     "date": "2026-07-17",
     "unit": {
       "status": "passed",
-      "passed": 6561,
-      "total": 6561
+      "passed": 6215,
+      "total": 6230
     },
     "integration": {
-      "status": "passed",
-      "passed": 232,
-      "total": 232
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -28,81 +28,33 @@
       "total": 0
     },
     "smoke": {
-      "status": "not_run"
+      "status": "skipped"
     },
     "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "tests_run": 0,
+      "runner": "pytest (shared/tests + shared/scripts/tests + shared/scripts/tools/tests + plugins/shipwright-iterate/tests + plugins/shipwright-compliance/tests)",
       "exit_code": 0,
-      "justification": "Compliance/traceability INFRASTRUCTURE change (backfill engine worktree-scan fix + config-aware TT5 enforcement gate + 189 @FR tag data). No web/UI/API surface and nothing the WebUI renders field-for-field is touched; spec_impact none (no product FR behaviour change), so the E2E/cross-layer gates do not fire. Verified via the Python suites (shared/tests 4170, backfill 239, gate suites 29, adopt/test/iterate/compliance plugins, integration-tests 232) + ruff."
+      "tests_run": 0,
+      "timestamp": "2026-07-17T00:00:00+00:00",
+      "justification": "Framework tooling + curated-doc change (new agent_doc_shape gate + CLI + F11 verifier, aggregate_decisions dedup, write_decision_log canonicalization, architecture.md/conventions.md refresh). This monorepo is a Claude-Code plugin library — no runnable app surface (web/cli/api) is added or changed; verified end-to-end by the pytest suites exercising the producer->file->consumer round-trip."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        {
-          "behavior": "engine scans a repo nested under a prune-named ancestor (the .worktrees worktree)",
-          "disposition": "tested",
-          "evidence": "test_backfill_engine_units.py::test_iter_test_files_scans_a_repo_nested_under_a_prune_named_ancestor PASSED"
-        },
-        {
-          "behavior": "in-tree node_modules / __pycache__ still pruned after the prune-predicate change",
-          "disposition": "tested",
-          "evidence": "same test asserts neither node_modules nor __pycache__ appears"
-        },
-        {
-          "behavior": "enforcing gate sees config-opted plugin-dir coverage (base predates config)",
-          "disposition": "tested",
-          "category": "integration",
-          "evidence": "test_layer_coverage_config_scope.py::test_gate_sees_plugin_dir_coverage_when_head_opts_it_in (real git archive -> collector -> gate)"
-        },
-        {
-          "behavior": "gate misses plugin coverage without config (load-bearing control)",
-          "disposition": "tested",
-          "evidence": "test_layer_coverage_config_scope.py::test_gate_misses_plugin_dir_coverage_without_config_load_bearing"
-        },
-        {
-          "behavior": "union floor: a config narrowing below defaults cannot false-green the removal gate",
-          "disposition": "tested",
-          "evidence": "test_removal_gate_keeps_default_floor_when_config_narrows (revert-proven load-bearing)"
-        },
-        {
-          "behavior": "monotonic re-scan: head dropping the config cannot false-green the removal gate",
-          "disposition": "tested",
-          "evidence": "test_removal_gate_rescans_base_dirs_when_head_drops_the_config (revert-proven load-bearing)"
-        },
-        {
-          "behavior": "rename-target re-scan: a test moved to a NEW dir + FR removed + config dropped cannot false-green",
-          "disposition": "tested",
-          "evidence": "test_removal_gate_follows_a_renamed_test_into_a_new_dir_when_config_drops (revert-proven load-bearing)"
-        },
-        {
-          "behavior": "exclude_dirs load-bearing: a fixture-path test cannot fake a required layer",
-          "disposition": "tested",
-          "evidence": "test_gate_excludes_fixture_path_so_a_fixture_cannot_fake_a_layer (revert-proven load-bearing)"
-        },
-        {
-          "behavior": "189 @FR tags written correctly; a plugin-dir tag round-trips into the manifest with 0 orphans",
-          "disposition": "tested",
-          "evidence": "existing test_test_links_config_roots.py::test_plugin_dir_tagged_test_round_trips_and_fixtures_are_fenced + manual regen (orphans==0)"
-        },
-        {
-          "behavior": "covers pytest marker registered in iterate/test/adopt pyprojects so tagged tests don't warn",
-          "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "reason": "pyproject config verified by collecting the tagged suites (all green, no strict-marker error)"
-        }
+        { "behavior": "aggregator skips the dup ADR-NNN append when the F2 run_id bullet is documented in the target section", "disposition": "tested", "evidence": "shared/tests/test_aggregate_skip_documented.py::test_documented_run_id_appends_zero_arch_lines PASSED" },
+        { "behavior": "aggregator appends the canonical fallback when the run_id is undocumented / only in prose (section-scoped, not whole-file)", "disposition": "tested", "evidence": "test_aggregate_skip_documented.py::test_undocumented_run_id_appends_one_canonical_bullet + ::test_run_id_only_in_prose_still_appends PASSED" },
+        { "behavior": "direct write_decision_log path is untouched and emits the canonical <Impact> — sentence. -> pointer bullet", "disposition": "tested", "evidence": "test_aggregate_skip_documented.py::test_direct_path_appends_one_canonical_bullet + test_arch_update_writer_format.py PASSED" },
+        { "behavior": "canonical writer collapses multi-line summaries to one bullet (no injected bullet, no double period)", "disposition": "tested", "evidence": "test_arch_update_writer_format.py::test_multiline_summary_collapses_to_single_bullet PASSED" },
+        { "behavior": "shape gate rejects Campaign/sub_iterate/free-text anchors, missing Impact separator, and a non-decision_log/archive arrow", "disposition": "tested", "evidence": "shared/tests/test_agent_doc_shape.py (campaign/sub_iterate/free-text/missing-impact/arrow-to-nondecisionlog) PASSED" },
+        { "behavior": "shape gate accepts canonical run_id + ADR-NNN + archive anchors; grandfathers undated/pre-cutoff", "disposition": "tested", "evidence": "test_agent_doc_shape.py::test_canonical_run_id_and_adr_pass + test_archive_pointer_accepted + test_undated_and_precutoff_are_grandfathered PASSED" },
+        { "behavior": "shape gate is forward-only (legacy untouched entry not flagged) and blocks a new non-canonical bullet vs the git base", "disposition": "tested", "evidence": "test_agent_doc_shape_check_wiring.py::test_verifier_ignores_legacy_untouched_noncanonical + ::test_verifier_blocks_new_noncanonical PASSED", "category": "integration" },
+        { "behavior": "check_agent_doc_shape is registered in run_all_checks (F11 composition) and fail-soft SKIPs without a git base", "disposition": "tested", "evidence": "test_agent_doc_shape_check_wiring.py::test_agent_doc_shape_in_run_all_checks + ::test_check_fail_soft_skips_without_git_base PASSED" },
+        { "behavior": "the real monorepo architecture.md + conventions.md ## …Updates tails are canonical full-corpus (normalization locked)", "disposition": "tested", "evidence": "plugins/shipwright-iterate/tests/test_agent_doc_entry_rules.py::test_dated_entries_are_canonical_shape PASSED" },
+        { "behavior": "System-Overview mermaid renders correctly in the user's viewer", "disposition": "untestable", "reason_code": "requires-manual-visual-judgment", "reason": "the portable rewrite was empirically validated to PARSE under Mermaid v11 and to contain no &nbsp;/glued-subgraph/internal-direction, but the actual visual render in a given renderer is a human judgement" }
       ],
-      "counts": {
-        "testable": 9,
-        "tested": 9,
-        "untestable": 1,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 9,
-        "covered_acs": 9
-      }
+      "counts": { "testable": 9, "tested": 9, "untestable": 1, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 7, "covered_acs": 7 }
     }
   },
   "coverage": {

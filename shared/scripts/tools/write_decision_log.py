@@ -237,10 +237,7 @@ def _append_architecture_update(
     summary: str,
     entry_date: str | None = None,
 ) -> str | None:
-    """Append an update note to architecture.md or conventions.md.
-
-    Returns the target filename if updated, None otherwise.
-    """
+    """Append a canonical update bullet to architecture.md/conventions.md; returns the target filename or None."""
     if impact_type in ("component", "data-flow"):
         target = project_root / ".shipwright" / "agent_docs" / "architecture.md"
         section_header = "## Architecture Updates"
@@ -258,8 +255,10 @@ def _append_architecture_update(
         content = content.rstrip() + f"\n\n{section_header}\n"
 
     today = entry_date or date.today().isoformat()
+    from lib.agent_doc_shape import render_canonical_bullet  # lazy import: ADR-045
+    bullet = render_canonical_bullet(f"ADR-{adr_number:03d}", today, impact_type, summary, f"decision_log (ADR-{adr_number:03d})")
     # rstrip first so a file ending in "\n" doesn't add a blank line per bullet.
-    content = content.rstrip("\n") + f"\n- **ADR-{adr_number:03d}** ({today}): {summary}\n"
+    content = content.rstrip("\n") + f"\n{bullet}\n"
     target.write_text(content, encoding="utf-8")
     return target.name
 

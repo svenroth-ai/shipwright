@@ -47,6 +47,7 @@ from lib.iterate_entry import (  # noqa: E402
 )
 
 from .agent_doc_budget_check import check_agent_doc_budget  # noqa: E402,F401 — re-exported
+from .agent_doc_shape_check import check_agent_doc_shape  # noqa: E402,F401 — re-exported
 from .common import CheckResult, Severity  # noqa: E402
 from .git_helpers import _commit_changed_paths, _git_available, _run_git  # noqa: E402
 from .integration_coverage import check_integration_coverage  # noqa: E402
@@ -1094,6 +1095,7 @@ def run_all_checks(
         check_removal_coverage(project_root, run_id, commit_hash),
         check_cross_layer_coverage(project_root, run_id, commit_hash),
         check_agent_doc_budget(project_root, run_id, commit_hash),
+        check_agent_doc_shape(project_root, run_id, commit_hash),
     ]
 
 

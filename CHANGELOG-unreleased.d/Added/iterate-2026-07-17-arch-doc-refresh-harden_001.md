@@ -1,0 +1,1 @@
+Agent-doc **shape gate** (`check_agent_doc_shape`, F11 + repo-agnostic CLI) enforces one canonical grammar for `## Architecture Updates` / `## Convention Updates` bullets: `**run_id|ADR-NNN** (date): <Impact> — <sentence>. → <pointer>` (Campaign/sub_iterate/free-text anchors rejected).

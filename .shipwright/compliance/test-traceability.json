@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
   "collector_version": "test_links/1.0.0",
-  "generated_at": "2026-07-17T19:46:32.679353+00:00",
-  "source_commit": "573311d93bac0f385f3106cc62236af7d38ed9e9",
+  "generated_at": "2026-07-17T20:56:51.914875+00:00",
+  "source_commit": "097c96fc06b5a2a58ed201dface03d089d5e5d7e",
   "spec_hash": "sha256:c8944f86bcd4737b474e245f4b79800f37db76da0b3515b6eec98fecdcd11adb",
   "requirements": {
     "01-adopted::FR-01.01": {
@@ -90,7 +90,234 @@
         "unit"
       ],
       "required_layers_source": "defaulted_legacy",
-      "tests": {},
+      "tests": {
+        "unit": [
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_parses_three_columns",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_parses_three_columns",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_section_missing_returns_empty",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_section_missing_returns_empty",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_section_present_but_no_table_returns_empty",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_section_present_but_no_table_returns_empty",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_handles_utf8_bom",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_handles_utf8_bom",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_handles_crlf_line_endings",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_handles_crlf_line_endings",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_handles_non_ascii",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_handles_non_ascii",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_stops_at_next_h2",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_stops_at_next_h2",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_tolerant_of_alignment_separator",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_tolerant_of_alignment_separator",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_strips_cell_whitespace",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_strips_cell_whitespace",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_empty_file_returns_empty",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_empty_file_returns_empty",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_heading_match_is_exact",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_heading_match_is_exact",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_walks_iterate_planning_tree",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_walks_iterate_planning_tree",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_returns_empty_when_dir_missing",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_returns_empty_when_dir_missing",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_drift_signal_fires_when_io_commit_lacks_section",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_drift_signal_fires_when_io_commit_lacks_section",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_no_drift_when_section_present",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_no_drift_when_section_present",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_round_trip_detection_heuristic",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_round_trip_detection_heuristic",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_missing_events_file_handled_gracefully",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_missing_events_file_handled_gracefully",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_render_json_then_markdown_then_reparse_equivalent",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_render_json_then_markdown_then_reparse_equivalent",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_cli_writes_json_and_markdown",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_cli_writes_json_and_markdown",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_short_stem_does_not_collide_with_unrelated_commit",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_short_stem_does_not_collide_with_unrelated_commit",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_short_stem_matches_with_word_boundary",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_short_stem_matches_with_word_boundary",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_long_stem_keeps_substring_behavior",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_long_stem_keeps_substring_behavior",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_unrelated_old_test_does_not_count_as_evidence",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_unrelated_old_test_does_not_count_as_evidence",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_relevant_changed_test_does_count_as_evidence",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_relevant_changed_test_does_count_as_evidence",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_missing_changed_files_falls_back_to_unknown_marker",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_missing_changed_files_falls_back_to_unknown_marker",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_merge_into_creates_key_in_existing_file",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_merge_into_creates_key_in_existing_file",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_merge_into_creates_file_if_missing",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_merge_into_creates_file_if_missing",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_merge_into_idempotent",
+            "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_merge_into_idempotent",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          }
+        ]
+      },
       "coverage": {
         "unit": "MISSING"
       }
@@ -135,7 +362,66 @@
         "unit"
       ],
       "required_layers_source": "defaulted_legacy",
-      "tests": {},
+      "tests": {
+        "unit": [
+          {
+            "id": "shared/tests/test_aggregate_changelog.py::test_aggregate_warns_on_mangled_bullet_default",
+            "path": "shared/tests/test_aggregate_changelog.py::test_aggregate_warns_on_mangled_bullet_default",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_aggregate_changelog.py::test_aggregate_silent_on_clean_bullets",
+            "path": "shared/tests/test_aggregate_changelog.py::test_aggregate_silent_on_clean_bullets",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_aggregate_changelog.py::test_aggregate_strict_blocks_on_mangled_bullet",
+            "path": "shared/tests/test_aggregate_changelog.py::test_aggregate_strict_blocks_on_mangled_bullet",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_aggregate_changelog.py::test_aggregate_strict_passes_when_clean",
+            "path": "shared/tests/test_aggregate_changelog.py::test_aggregate_strict_passes_when_clean",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_aggregate_changelog.py::test_write_changelog_drop_warns_on_mangled_bullet_at_write_time",
+            "path": "shared/tests/test_aggregate_changelog.py::test_write_changelog_drop_warns_on_mangled_bullet_at_write_time",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_aggregate_changelog.py::test_write_changelog_drop_silent_on_clean_bullet",
+            "path": "shared/tests/test_aggregate_changelog.py::test_write_changelog_drop_silent_on_clean_bullet",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_aggregate_changelog.py::test_aggregate_cli_strict_flag_exits_nonzero_on_mangled",
+            "path": "shared/tests/test_aggregate_changelog.py::test_aggregate_cli_strict_flag_exits_nonzero_on_mangled",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          }
+        ]
+      },
       "coverage": {
         "unit": "MISSING"
       }
@@ -166,6 +452,496 @@
       ],
       "required_layers_source": "defaulted_legacy",
       "tests": {
+        "unit": [
+          {
+            "id": "plugins/shipwright-iterate/tests/test_skill_risk_taxonomy_consistency.py::test_literal_is_taxonomy_key",
+            "path": "plugins/shipwright-iterate/tests/test_skill_risk_taxonomy_consistency.py::test_literal_is_taxonomy_key",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_skill_risk_taxonomy_consistency.py::test_skill_md_exists",
+            "path": "plugins/shipwright-iterate/tests/test_skill_risk_taxonomy_consistency.py::test_skill_md_exists",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_skill_risk_taxonomy_consistency.py::test_skill_md_contains_literal_at_least_three_times",
+            "path": "plugins/shipwright-iterate/tests/test_skill_risk_taxonomy_consistency.py::test_skill_md_contains_literal_at_least_three_times",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_skill_risk_taxonomy_consistency.py::test_literal_present_in_risk_taxonomy_table",
+            "path": "plugins/shipwright-iterate/tests/test_skill_risk_taxonomy_consistency.py::test_literal_present_in_risk_taxonomy_table",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_skill_risk_taxonomy_consistency.py::test_literal_present_in_phase_matrix_section",
+            "path": "plugins/shipwright-iterate/tests/test_skill_risk_taxonomy_consistency.py::test_literal_present_in_phase_matrix_section",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_skill_risk_taxonomy_consistency.py::test_literal_present_in_override_classes_section",
+            "path": "plugins/shipwright-iterate/tests/test_skill_risk_taxonomy_consistency.py::test_literal_present_in_override_classes_section",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_runner_doc_exists",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_runner_doc_exists",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_schema_file_exists",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_schema_file_exists",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_runner_doc_not_empty",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_runner_doc_not_empty",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_5_heading_present",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_5_heading_present",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_5_external_plan_review_label",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_5_external_plan_review_label",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_5_branches_referenced",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_5_branches_referenced",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_5_complexity_gating_documented",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_5_complexity_gating_documented",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_6_heading_present",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_6_heading_present",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_6_self_review_label",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_6_self_review_label",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_6_seven_item_checklist_referenced",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_6_seven_item_checklist_referenced",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_7_heading_present",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_7_heading_present",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_7_code_review_cascade_label",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_7_code_review_cascade_label",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_7_external_review_invocation_documented",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_7_external_review_invocation_documented",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_7_diff_threshold_documented",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_7_diff_threshold_documented",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_8_heading_present",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_8_heading_present",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_8_confidence_calibration_label",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_8_confidence_calibration_label",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_8_references_anti_patterns_doc",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_8_references_anti_patterns_doc",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_8_empirical_probe_language",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_8_empirical_probe_language",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_8_asymptote_heuristic_documented",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_8_asymptote_heuristic_documented",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_result_json_documents_reviews_field",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_result_json_documents_reviews_field",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_result_json_documents_reviews_subkeys",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_result_json_documents_reviews_subkeys",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_schema_has_reviews_property",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_schema_has_reviews_property",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_schema_reviews_has_subkey",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_schema_reviews_has_subkey",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_schema_reviews_field_is_optional",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_schema_reviews_field_is_optional",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_schema_validates_result_with_reviews_field",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_schema_validates_result_with_reviews_field",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_schema_validates_result_without_reviews_field",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_schema_validates_result_without_reviews_field",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_skill_section_5b_references_review_steps",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_skill_section_5b_references_review_steps",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_merge_boundary_coverage.py::test_merge_round_trip_creates_key",
+            "path": "plugins/shipwright-test/tests/test_merge_boundary_coverage.py::test_merge_round_trip_creates_key",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_merge_boundary_coverage.py::test_merge_preserves_existing_top_level_keys",
+            "path": "plugins/shipwright-test/tests/test_merge_boundary_coverage.py::test_merge_preserves_existing_top_level_keys",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_merge_boundary_coverage.py::test_merge_is_idempotent",
+            "path": "plugins/shipwright-test/tests/test_merge_boundary_coverage.py::test_merge_is_idempotent",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_merge_boundary_coverage.py::test_missing_input_returns_nonzero",
+            "path": "plugins/shipwright-test/tests/test_merge_boundary_coverage.py::test_missing_input_returns_nonzero",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_merge_boundary_coverage.py::test_atomic_write_no_leftover_tmp_file",
+            "path": "plugins/shipwright-test/tests/test_merge_boundary_coverage.py::test_atomic_write_no_leftover_tmp_file",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_events_log.py::test_main_repo_identity",
+            "path": "shared/tests/test_events_log.py::test_main_repo_identity",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_events_log.py::test_worktree_resolves_to_worktree_local",
+            "path": "shared/tests/test_events_log.py::test_worktree_resolves_to_worktree_local",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_events_log.py::test_worktree_nested_path_resolved",
+            "path": "shared/tests/test_events_log.py::test_worktree_nested_path_resolved",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_events_log.py::test_non_git_dir_returns_local",
+            "path": "shared/tests/test_events_log.py::test_non_git_dir_returns_local",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_events_log.py::test_resolve_events_path_is_git_independent",
+            "path": "shared/tests/test_events_log.py::test_resolve_events_path_is_git_independent",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_events_log.py::test_str_project_root_accepted",
+            "path": "shared/tests/test_events_log.py::test_str_project_root_accepted",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_events_log.py::test_resolve_main_repo_root_reexported_from_events_log",
+            "path": "shared/tests/test_events_log.py::test_resolve_main_repo_root_reexported_from_events_log",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_events_log.py::test_latest_event_dt_returns_none_when_log_missing",
+            "path": "shared/tests/test_events_log.py::test_latest_event_dt_returns_none_when_log_missing",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_events_log.py::test_latest_event_dt_returns_none_when_log_empty",
+            "path": "shared/tests/test_events_log.py::test_latest_event_dt_returns_none_when_log_empty",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_events_log.py::test_latest_event_dt_single_event",
+            "path": "shared/tests/test_events_log.py::test_latest_event_dt_single_event",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_events_log.py::test_latest_event_dt_multiple_events_returns_max",
+            "path": "shared/tests/test_events_log.py::test_latest_event_dt_multiple_events_returns_max",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_events_log.py::test_latest_event_dt_handles_z_suffix",
+            "path": "shared/tests/test_events_log.py::test_latest_event_dt_handles_z_suffix",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_events_log.py::test_latest_event_dt_handles_non_utc_offset",
+            "path": "shared/tests/test_events_log.py::test_latest_event_dt_handles_non_utc_offset",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_events_log.py::test_latest_event_dt_skips_corrupt_lines",
+            "path": "shared/tests/test_events_log.py::test_latest_event_dt_skips_corrupt_lines",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_events_log.py::test_latest_event_dt_skips_lines_without_ts",
+            "path": "shared/tests/test_events_log.py::test_latest_event_dt_skips_lines_without_ts",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_events_log.py::test_latest_event_dt_skips_non_string_ts",
+            "path": "shared/tests/test_events_log.py::test_latest_event_dt_skips_non_string_ts",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_events_log.py::test_latest_event_dt_skips_unparseable_ts",
+            "path": "shared/tests/test_events_log.py::test_latest_event_dt_skips_unparseable_ts",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_events_log.py::test_latest_event_dt_naive_ts_treated_as_utc",
+            "path": "shared/tests/test_events_log.py::test_latest_event_dt_naive_ts_treated_as_utc",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_events_log.py::test_latest_event_dt_all_corrupt_returns_none",
+            "path": "shared/tests/test_events_log.py::test_latest_event_dt_all_corrupt_returns_none",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_events_log.py::test_latest_event_dt_is_deterministic",
+            "path": "shared/tests/test_events_log.py::test_latest_event_dt_is_deterministic",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_events_log_ssot.py::test_worktree_reachable_files_use_the_resolver",
+            "path": "shared/tests/test_events_log_ssot.py::test_worktree_reachable_files_use_the_resolver",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_events_log_ssot.py::test_no_unaccounted_raw_event_log_joins",
+            "path": "shared/tests/test_events_log_ssot.py::test_no_unaccounted_raw_event_log_joins",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_events_log_ssot.py::test_allowlist_entries_are_not_stale",
+            "path": "shared/tests/test_events_log_ssot.py::test_allowlist_entries_are_not_stale",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          }
+        ],
         "integration": [
           {
             "id": "integration-tests/test_events_log_parity.py::test_parity_in_main_repo",
@@ -223,7 +999,130 @@
         "unit"
       ],
       "required_layers_source": "defaulted_legacy",
-      "tests": {},
+      "tests": {
+        "unit": [
+          {
+            "id": "plugins/shipwright-adopt/tests/test_compliance_bridge_fallback.py::test_run_lib_fallback_no_scripts_module_error",
+            "path": "plugins/shipwright-adopt/tests/test_compliance_bridge_fallback.py::test_run_lib_fallback_no_scripts_module_error",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-adopt/tests/test_known_issues_test_fixture_filter.py::test_default_skips_test_fixtures",
+            "path": "plugins/shipwright-adopt/tests/test_known_issues_test_fixture_filter.py::test_default_skips_test_fixtures",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-adopt/tests/test_known_issues_test_fixture_filter.py::test_scan_tests_includes_fixtures",
+            "path": "plugins/shipwright-adopt/tests/test_known_issues_test_fixture_filter.py::test_scan_tests_includes_fixtures",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-adopt/tests/test_prior_art_harvester_drift.py::test_excluded_path_in_code_block_is_annotated",
+            "path": "plugins/shipwright-adopt/tests/test_prior_art_harvester_drift.py::test_excluded_path_in_code_block_is_annotated",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-adopt/tests/test_prior_art_harvester_drift.py::test_nonexistent_path_in_code_block_is_annotated",
+            "path": "plugins/shipwright-adopt/tests/test_prior_art_harvester_drift.py::test_nonexistent_path_in_code_block_is_annotated",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-adopt/tests/test_prior_art_harvester_drift.py::test_existing_path_no_drift_marker",
+            "path": "plugins/shipwright-adopt/tests/test_prior_art_harvester_drift.py::test_existing_path_no_drift_marker",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-adopt/tests/test_prior_art_harvester_drift.py::test_default_excludes_none_is_backwards_compatible",
+            "path": "plugins/shipwright-adopt/tests/test_prior_art_harvester_drift.py::test_default_excludes_none_is_backwards_compatible",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-adopt/tests/test_prior_art_harvester_drift.py::test_url_in_code_block_not_annotated",
+            "path": "plugins/shipwright-adopt/tests/test_prior_art_harvester_drift.py::test_url_in_code_block_not_annotated",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_skill_md_exists",
+            "path": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_skill_md_exists",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_e5_heading_present",
+            "path": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_e5_heading_present",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_e5_mentions_env_local",
+            "path": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_e5_mentions_env_local",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_e5_calls_validate_env_init",
+            "path": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_e5_calls_validate_env_init",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_e5_documents_gitignore_handling",
+            "path": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_e5_documents_gitignore_handling",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_h_mentions_edit_env_local",
+            "path": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_h_mentions_edit_env_local",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_h_documents_required_keys_dynamically",
+            "path": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_h_documents_required_keys_dynamically",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          }
+        ]
+      },
       "coverage": {
         "unit": "MISSING"
       }
@@ -238,7 +1137,634 @@
         "unit"
       ],
       "required_layers_source": "defaulted_legacy",
-      "tests": {},
+      "tests": {
+        "unit": [
+          {
+            "id": "shared/tests/test_drift_triage_emit.py::test_check_drift_content_findings_dedup_by_file",
+            "path": "shared/tests/test_drift_triage_emit.py::test_check_drift_content_findings_dedup_by_file",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_drift_triage_emit.py::test_check_drift_content_findings_per_distinct_file",
+            "path": "shared/tests/test_drift_triage_emit.py::test_check_drift_content_findings_per_distinct_file",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_drift_triage_emit.py::test_check_drift_only_content_kind_emitted",
+            "path": "shared/tests/test_drift_triage_emit.py::test_check_drift_only_content_kind_emitted",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_drift_triage_emit.py::test_check_drift_no_findings_no_op",
+            "path": "shared/tests/test_drift_triage_emit.py::test_check_drift_no_findings_no_op",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_drift_triage_emit.py::test_check_drift_dedups_across_sessions",
+            "path": "shared/tests/test_drift_triage_emit.py::test_check_drift_dedups_across_sessions",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_drift_triage_emit.py::test_check_drift_drive_letter_casing_dedups_to_one_item",
+            "path": "shared/tests/test_drift_triage_emit.py::test_check_drift_drive_letter_casing_dedups_to_one_item",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_drift_triage_emit.py::test_check_drift_drive_letter_casing_dedups_across_sessions",
+            "path": "shared/tests/test_drift_triage_emit.py::test_check_drift_drive_letter_casing_dedups_across_sessions",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_drift_triage_emit.py::test_check_drift_legacy_noncanonical_item_resolved_on_recanon",
+            "path": "shared/tests/test_drift_triage_emit.py::test_check_drift_legacy_noncanonical_item_resolved_on_recanon",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_drift_triage_emit.py::test_check_drift_resolves_cleared_finding",
+            "path": "shared/tests/test_drift_triage_emit.py::test_check_drift_resolves_cleared_finding",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_drift_triage_emit.py::test_check_drift_resolves_only_vanished_findings",
+            "path": "shared/tests/test_drift_triage_emit.py::test_check_drift_resolves_only_vanished_findings",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_drift_triage_emit.py::test_check_drift_resolve_ignores_artifact_sync_items",
+            "path": "shared/tests/test_drift_triage_emit.py::test_check_drift_resolve_ignores_artifact_sync_items",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_drift_triage_emit.py::test_check_drift_resolve_leaves_terminal_items",
+            "path": "shared/tests/test_drift_triage_emit.py::test_check_drift_resolve_leaves_terminal_items",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_drift_triage_emit.py::test_artifact_sync_one_item_per_affected_mapping",
+            "path": "shared/tests/test_drift_triage_emit.py::test_artifact_sync_one_item_per_affected_mapping",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_drift_triage_emit.py::test_artifact_sync_empty_affected_no_op",
+            "path": "shared/tests/test_drift_triage_emit.py::test_artifact_sync_empty_affected_no_op",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_drift_triage_emit.py::test_artifact_sync_dedups_across_sessions",
+            "path": "shared/tests/test_drift_triage_emit.py::test_artifact_sync_dedups_across_sessions",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_drift_triage_emit.py::test_both_sites_emit_compatible_items",
+            "path": "shared/tests/test_drift_triage_emit.py::test_both_sites_emit_compatible_items",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_returns_fresh_run",
+            "path": "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_returns_fresh_run",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_queries_default_branch",
+            "path": "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_queries_default_branch",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_returns_none_on_empty_list",
+            "path": "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_returns_none_on_empty_list",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_returns_none_on_api_failure",
+            "path": "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_returns_none_on_api_failure",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_returns_none_on_malformed_payload",
+            "path": "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_returns_none_on_malformed_payload",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_freshness_gate_default_14d",
+            "path": "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_freshness_gate_default_14d",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_freshness_gate_env_override",
+            "path": "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_freshness_gate_env_override",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_picks_first_fresh_skipping_stale",
+            "path": "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_picks_first_fresh_skipping_stale",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_invalid_created_at_skipped",
+            "path": "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_invalid_created_at_skipped",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_api_artifact.py::test_download_security_findings_happy_path",
+            "path": "shared/tests/test_github_api_artifact.py::test_download_security_findings_happy_path",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_api_artifact.py::test_download_security_findings_uses_argv_list",
+            "path": "shared/tests/test_github_api_artifact.py::test_download_security_findings_uses_argv_list",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_api_artifact.py::test_download_security_findings_returns_none_on_subprocess_failure",
+            "path": "shared/tests/test_github_api_artifact.py::test_download_security_findings_returns_none_on_subprocess_failure",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_api_artifact.py::test_download_security_findings_returns_none_when_gh_missing",
+            "path": "shared/tests/test_github_api_artifact.py::test_download_security_findings_returns_none_when_gh_missing",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_api_artifact.py::test_download_security_findings_returns_none_when_file_missing",
+            "path": "shared/tests/test_github_api_artifact.py::test_download_security_findings_returns_none_when_file_missing",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_api_artifact.py::test_download_security_findings_discovers_nested_path",
+            "path": "shared/tests/test_github_api_artifact.py::test_download_security_findings_discovers_nested_path",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_api_artifact.py::test_download_security_findings_returns_none_on_invalid_json",
+            "path": "shared/tests/test_github_api_artifact.py::test_download_security_findings_returns_none_on_invalid_json",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_api_artifact.py::test_download_security_findings_returns_none_when_findings_not_a_list",
+            "path": "shared/tests/test_github_api_artifact.py::test_download_security_findings_returns_none_when_findings_not_a_list",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_api_artifact.py::test_download_security_findings_accepts_empty_findings_list",
+            "path": "shared/tests/test_github_api_artifact.py::test_download_security_findings_accepts_empty_findings_list",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_api_artifact.py::test_download_security_findings_cleans_up_tempdir",
+            "path": "shared/tests/test_github_api_artifact.py::test_download_security_findings_cleans_up_tempdir",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_api_artifact.py::test_artifact_max_age_days_default",
+            "path": "shared/tests/test_github_api_artifact.py::test_artifact_max_age_days_default",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_api_artifact.py::test_artifact_max_age_days_env_override",
+            "path": "shared/tests/test_github_api_artifact.py::test_artifact_max_age_days_env_override",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_api_artifact.py::test_artifact_max_age_days_invalid_env_falls_back_to_default",
+            "path": "shared/tests/test_github_api_artifact.py::test_artifact_max_age_days_invalid_env_falls_back_to_default",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_api_artifact.py::test_real_findings_sample_parses",
+            "path": "shared/tests/test_github_api_artifact.py::test_real_findings_sample_parses",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_emits_when_cs_alerts_unavailable",
+            "path": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_emits_when_cs_alerts_unavailable",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_triage_artifact_fallback.py::test_sast_gated_but_prompt_fetched_when_cs_alerts_succeeds",
+            "path": "shared/tests/test_github_triage_artifact_fallback.py::test_sast_gated_but_prompt_fetched_when_cs_alerts_succeeds",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_skipped_when_owner_repo_none",
+            "path": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_skipped_when_owner_repo_none",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_skipped_when_no_run_available",
+            "path": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_skipped_when_no_run_available",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_skipped_when_download_fails",
+            "path": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_skipped_when_download_fails",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_clean_scan_auto_resolves_open_item",
+            "path": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_clean_scan_auto_resolves_open_item",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_failure_does_not_mass_resolve",
+            "path": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_failure_does_not_mass_resolve",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_triage_artifact_fallback.py::test_transition_artifact_to_ghas_preserves_idempotency",
+            "path": "shared/tests/test_github_triage_artifact_fallback.py::test_transition_artifact_to_ghas_preserves_idempotency",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_triage_artifact_fallback.py::test_transition_ghas_to_artifact_preserves_idempotency",
+            "path": "shared/tests/test_github_triage_artifact_fallback.py::test_transition_ghas_to_artifact_preserves_idempotency",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_triage_artifact_fallback.py::test_transition_ghas_clean_then_artifact_findings",
+            "path": "shared/tests/test_github_triage_artifact_fallback.py::test_transition_ghas_clean_then_artifact_findings",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_detail_renders_per_source_counts",
+            "path": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_detail_renders_per_source_counts",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_detail_does_not_leak_raw_finding_strings",
+            "path": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_detail_does_not_leak_raw_finding_strings",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_detail_respects_length_cap",
+            "path": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_detail_respects_length_cap",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_severity_derived_from_findings_list",
+            "path": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_severity_derived_from_findings_list",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_unknown_severity_falls_back_to_medium",
+            "path": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_unknown_severity_falls_back_to_medium",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_empty_list_with_no_prior_state_is_noop",
+            "path": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_empty_list_with_no_prior_state_is_noop",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_triage_artifact_fallback.py::test_no_ghas_with_dependabot_available_and_artifact_emits",
+            "path": "shared/tests/test_github_triage_artifact_fallback.py::test_no_ghas_with_dependabot_available_and_artifact_emits",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_github_triage_artifact_fallback.py::test_no_ghas_with_dependabot_available_and_clean_artifact_auto_resolves",
+            "path": "shared/tests/test_github_triage_artifact_fallback.py::test_no_ghas_with_dependabot_available_and_clean_artifact_auto_resolves",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_performance_triage_emit.py::test_score_failure_emits_one_item",
+            "path": "shared/tests/test_performance_triage_emit.py::test_score_failure_emits_one_item",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_performance_triage_emit.py::test_lcp_failure_emits_one_item",
+            "path": "shared/tests/test_performance_triage_emit.py::test_lcp_failure_emits_one_item",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_performance_triage_emit.py::test_bundle_failure_emits_global_dedup_key",
+            "path": "shared/tests/test_performance_triage_emit.py::test_bundle_failure_emits_global_dedup_key",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_performance_triage_emit.py::test_severity_high_when_over_10_percent",
+            "path": "shared/tests/test_performance_triage_emit.py::test_severity_high_when_over_10_percent",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_performance_triage_emit.py::test_severity_medium_when_under_10_percent",
+            "path": "shared/tests/test_performance_triage_emit.py::test_severity_medium_when_under_10_percent",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_performance_triage_emit.py::test_skipped_sub_checks_emit_nothing",
+            "path": "shared/tests/test_performance_triage_emit.py::test_skipped_sub_checks_emit_nothing",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_performance_triage_emit.py::test_all_passed_emits_nothing",
+            "path": "shared/tests/test_performance_triage_emit.py::test_all_passed_emits_nothing",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_performance_triage_emit.py::test_two_failures_emit_two_items",
+            "path": "shared/tests/test_performance_triage_emit.py::test_two_failures_emit_two_items",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_performance_triage_emit.py::test_same_failure_dedups_within_window",
+            "path": "shared/tests/test_performance_triage_emit.py::test_same_failure_dedups_within_window",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_security_triage_emit.py::test_one_finding_emits_one_triage_item",
+            "path": "shared/tests/test_security_triage_emit.py::test_one_finding_emits_one_triage_item",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_security_triage_emit.py::test_dedup_key_includes_tool_check_file_line",
+            "path": "shared/tests/test_security_triage_emit.py::test_dedup_key_includes_tool_check_file_line",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_security_triage_emit.py::test_kind_bug_for_critical_and_high",
+            "path": "shared/tests/test_security_triage_emit.py::test_kind_bug_for_critical_and_high",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_security_triage_emit.py::test_kind_improvement_for_medium_low_info",
+            "path": "shared/tests/test_security_triage_emit.py::test_kind_improvement_for_medium_low_info",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_security_triage_emit.py::test_unknown_severity_falls_back_to_medium",
+            "path": "shared/tests/test_security_triage_emit.py::test_unknown_severity_falls_back_to_medium",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_security_triage_emit.py::test_title_includes_tool_and_rule",
+            "path": "shared/tests/test_security_triage_emit.py::test_title_includes_tool_and_rule",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_security_triage_emit.py::test_title_capped_at_160_chars",
+            "path": "shared/tests/test_security_triage_emit.py::test_title_capped_at_160_chars",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_security_triage_emit.py::test_detail_includes_file_line_and_description",
+            "path": "shared/tests/test_security_triage_emit.py::test_detail_includes_file_line_and_description",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_security_triage_emit.py::test_same_finding_dedups_within_window",
+            "path": "shared/tests/test_security_triage_emit.py::test_same_finding_dedups_within_window",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_security_triage_emit.py::test_empty_findings_no_op",
+            "path": "shared/tests/test_security_triage_emit.py::test_empty_findings_no_op",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_security_triage_emit.py::test_distinct_files_create_distinct_items",
+            "path": "shared/tests/test_security_triage_emit.py::test_distinct_files_create_distinct_items",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_security_triage_emit.py::test_malformed_finding_does_not_block_others",
+            "path": "shared/tests/test_security_triage_emit.py::test_malformed_finding_does_not_block_others",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          }
+        ]
+      },
       "coverage": {
         "unit": "MISSING"
       }
@@ -520,7 +2046,6 @@
     "plugins/shipwright-adopt/tests/test_codeql_workflow_scaffold.py::test_unknown_profile_returns_no_codeql",
     "plugins/shipwright-adopt/tests/test_codeql_workflow_scaffold.py::test_unresolved_profile_takes_precedence_over_existing",
     "plugins/shipwright-adopt/tests/test_codeql_workflow_scaffold.py::test_writes_when_absent",
-    "plugins/shipwright-adopt/tests/test_compliance_bridge_fallback.py::test_run_lib_fallback_no_scripts_module_error",
     "plugins/shipwright-adopt/tests/test_component_inventory.py::test_inventory_counts_props_from_interface",
     "plugins/shipwright-adopt/tests/test_component_inventory.py::test_inventory_counts_usage_via_grep",
     "plugins/shipwright-adopt/tests/test_component_inventory.py::test_inventory_handles_multi_service_pivot",
@@ -641,8 +2166,6 @@
     "plugins/shipwright-adopt/tests/test_known_issues_inventory.py::test_truncates_long_marker_text_to_200_chars",
     "plugins/shipwright-adopt/tests/test_known_issues_inventory.py::test_writes_empty_state_when_no_markers",
     "plugins/shipwright-adopt/tests/test_known_issues_inventory.py::test_writes_known_issues_md_when_markers_present",
-    "plugins/shipwright-adopt/tests/test_known_issues_test_fixture_filter.py::test_default_skips_test_fixtures",
-    "plugins/shipwright-adopt/tests/test_known_issues_test_fixture_filter.py::test_scan_tests_includes_fixtures",
     "plugins/shipwright-adopt/tests/test_multi_service_detector.py::test_backend_dev_script_counts_as_framework_signal",
     "plugins/shipwright-adopt/tests/test_multi_service_detector.py::test_detect_client_server_with_framework_signal",
     "plugins/shipwright-adopt/tests/test_multi_service_detector.py::test_detect_client_server_with_vite_proxy_high_confidence",
@@ -696,11 +2219,6 @@
     "plugins/shipwright-adopt/tests/test_prior_art_harvester.py::test_harvested_conventions_land_in_conventions_md",
     "plugins/shipwright-adopt/tests/test_prior_art_harvester.py::test_harvested_decisions_land_in_decision_log_md",
     "plugins/shipwright-adopt/tests/test_prior_art_harvester.py::test_no_prior_art_falls_back_to_today_behavior",
-    "plugins/shipwright-adopt/tests/test_prior_art_harvester_drift.py::test_default_excludes_none_is_backwards_compatible",
-    "plugins/shipwright-adopt/tests/test_prior_art_harvester_drift.py::test_excluded_path_in_code_block_is_annotated",
-    "plugins/shipwright-adopt/tests/test_prior_art_harvester_drift.py::test_existing_path_no_drift_marker",
-    "plugins/shipwright-adopt/tests/test_prior_art_harvester_drift.py::test_nonexistent_path_in_code_block_is_annotated",
-    "plugins/shipwright-adopt/tests/test_prior_art_harvester_drift.py::test_url_in_code_block_not_annotated",
     "plugins/shipwright-adopt/tests/test_profile_matcher.py::test_missing_profiles_dir",
     "plugins/shipwright-adopt/tests/test_profile_matcher.py::test_python_matches_plugin_monorepo",
     "plugins/shipwright-adopt/tests/test_profile_matcher.py::test_supabase_nextjs_matched",
@@ -717,13 +2235,6 @@
     "plugins/shipwright-adopt/tests/test_setup_adopt_existing_artifacts.py::test_existing_artifacts_empty_for_clean_repo",
     "plugins/shipwright-adopt/tests/test_setup_adopt_existing_artifacts.py::test_existing_artifacts_list_does_not_break_ok_field",
     "plugins/shipwright-adopt/tests/test_setup_adopt_existing_artifacts.py::test_existing_artifacts_lists_all_relevant_paths",
-    "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_skill_md_exists",
-    "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_e5_calls_validate_env_init",
-    "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_e5_documents_gitignore_handling",
-    "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_e5_heading_present",
-    "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_e5_mentions_env_local",
-    "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_h_documents_required_keys_dynamically",
-    "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_h_mentions_edit_env_local",
     "plugins/shipwright-adopt/tests/test_skill_references_link.py::test_every_expected_step_reference_exists_and_is_linked",
     "plugins/shipwright-adopt/tests/test_skill_references_link.py::test_every_expected_topical_reference_exists_and_is_linked",
     "plugins/shipwright-adopt/tests/test_skill_references_link.py::test_every_kern_link_resolves",
@@ -2383,6 +3894,7 @@
     "plugins/shipwright-grade/tests/test_test_health_signal.py::test_tier2_used_when_tier1_absent",
     "plugins/shipwright-grade/tests/test_test_health_signal.py::test_zero_passing_is_na_without_test_infra",
     "plugins/shipwright-grade/tests/test_test_health_signal.py::test_zero_passing_scores_low_when_repo_has_test_infra",
+    "plugins/shipwright-iterate/tests/test_agent_doc_entry_rules.py::test_dated_entries_are_canonical_shape",
     "plugins/shipwright-iterate/tests/test_agent_doc_entry_rules.py::test_f2_documents_canonical_routing",
     "plugins/shipwright-iterate/tests/test_agent_doc_entry_rules.py::test_grandfathered_entries_exempt",
     "plugins/shipwright-iterate/tests/test_agent_doc_entry_rules.py::test_new_entries_within_budget",
@@ -2764,43 +4276,10 @@
     "plugins/shipwright-iterate/tests/test_skill_references_link.py::test_kern_skill_md_under_300_loc",
     "plugins/shipwright-iterate/tests/test_skill_references_link.py::test_references_dir_exists",
     "plugins/shipwright-iterate/tests/test_skill_references_link.py::test_skill_md_exists",
-    "plugins/shipwright-iterate/tests/test_skill_risk_taxonomy_consistency.py::test_literal_is_taxonomy_key",
-    "plugins/shipwright-iterate/tests/test_skill_risk_taxonomy_consistency.py::test_literal_present_in_override_classes_section",
-    "plugins/shipwright-iterate/tests/test_skill_risk_taxonomy_consistency.py::test_literal_present_in_phase_matrix_section",
-    "plugins/shipwright-iterate/tests/test_skill_risk_taxonomy_consistency.py::test_literal_present_in_risk_taxonomy_table",
-    "plugins/shipwright-iterate/tests/test_skill_risk_taxonomy_consistency.py::test_skill_md_contains_literal_at_least_three_times",
-    "plugins/shipwright-iterate/tests/test_skill_risk_taxonomy_consistency.py::test_skill_md_exists",
     "plugins/shipwright-iterate/tests/test_skill_step_6_rules_present.py::test_skill_md_exists",
     "plugins/shipwright-iterate/tests/test_skill_step_6_rules_present.py::test_step_6_anchors_not_in_unrelated_sections",
     "plugins/shipwright-iterate/tests/test_skill_step_6_rules_present.py::test_step_6_carries_rule_anchor",
     "plugins/shipwright-iterate/tests/test_skill_step_6_rules_present.py::test_step_6_heading_present",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_result_json_documents_reviews_field",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_result_json_documents_reviews_subkeys",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_runner_doc_exists",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_runner_doc_not_empty",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_schema_file_exists",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_schema_has_reviews_property",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_schema_reviews_field_is_optional",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_schema_reviews_has_subkey",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_schema_validates_result_with_reviews_field",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_schema_validates_result_without_reviews_field",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_skill_section_5b_references_review_steps",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_5_branches_referenced",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_5_complexity_gating_documented",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_5_external_plan_review_label",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_5_heading_present",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_6_heading_present",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_6_self_review_label",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_6_seven_item_checklist_referenced",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_7_code_review_cascade_label",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_7_diff_threshold_documented",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_7_external_review_invocation_documented",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_7_heading_present",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_8_asymptote_heuristic_documented",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_8_confidence_calibration_label",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_8_empirical_probe_language",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_8_heading_present",
-    "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_step_3_8_references_anti_patterns_doc",
     "plugins/shipwright-plan/tests/test_check_sections.py::test_check_all_sections_written",
     "plugins/shipwright-plan/tests/test_check_sections.py::test_check_missing_sections",
     "plugins/shipwright-plan/tests/test_check_sections.py::test_check_partial_sections",
@@ -3718,34 +5197,6 @@
     "plugins/shipwright-security/tests/test_workflow_shape.py::test_upload_sarif_action_used",
     "plugins/shipwright-security/tests/test_workflow_shape.py::test_upload_sarif_fork_guard",
     "plugins/shipwright-security/tests/test_workflow_shape.py::test_workflow_dispatch_is_active",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_cli_writes_json_and_markdown",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_drift_signal_fires_when_io_commit_lacks_section",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_empty_file_returns_empty",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_handles_crlf_line_endings",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_handles_non_ascii",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_handles_utf8_bom",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_heading_match_is_exact",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_long_stem_keeps_substring_behavior",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_merge_into_creates_file_if_missing",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_merge_into_creates_key_in_existing_file",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_merge_into_idempotent",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_missing_changed_files_falls_back_to_unknown_marker",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_missing_events_file_handled_gracefully",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_no_drift_when_section_present",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_parses_three_columns",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_relevant_changed_test_does_count_as_evidence",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_render_json_then_markdown_then_reparse_equivalent",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_returns_empty_when_dir_missing",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_round_trip_detection_heuristic",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_section_missing_returns_empty",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_section_present_but_no_table_returns_empty",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_short_stem_does_not_collide_with_unrelated_commit",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_short_stem_matches_with_word_boundary",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_stops_at_next_h2",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_strips_cell_whitespace",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_tolerant_of_alignment_separator",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_unrelated_old_test_does_not_count_as_evidence",
-    "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_walks_iterate_planning_tree",
     "plugins/shipwright-test/tests/test_design_fidelity_check.py::test_auto_checks_in_output",
     "plugins/shipwright-test/tests/test_design_fidelity_check.py::test_detects_gap_usage",
     "plugins/shipwright-test/tests/test_design_fidelity_check.py::test_detects_hardcoded_colors",
@@ -3777,11 +5228,6 @@
     "plugins/shipwright-test/tests/test_design_fidelity_check.py::test_screen_filter_subset",
     "plugins/shipwright-test/tests/test_design_fidelity_check.py::test_space_y_without_gap_fails",
     "plugins/shipwright-test/tests/test_design_fidelity_check.py::test_summary_counts",
-    "plugins/shipwright-test/tests/test_merge_boundary_coverage.py::test_atomic_write_no_leftover_tmp_file",
-    "plugins/shipwright-test/tests/test_merge_boundary_coverage.py::test_merge_is_idempotent",
-    "plugins/shipwright-test/tests/test_merge_boundary_coverage.py::test_merge_preserves_existing_top_level_keys",
-    "plugins/shipwright-test/tests/test_merge_boundary_coverage.py::test_merge_round_trip_creates_key",
-    "plugins/shipwright-test/tests/test_merge_boundary_coverage.py::test_missing_input_returns_nonzero",
     "plugins/shipwright-test/tests/test_performance_check.py::test_evaluate_gate_block_ignores_skipped_layers",
     "plugins/shipwright-test/tests/test_performance_check.py::test_evaluate_gate_block_passes_when_all_pass",
     "plugins/shipwright-test/tests/test_performance_check.py::test_evaluate_gate_block_returns_success_false_on_fail",
@@ -3879,13 +5325,23 @@
     "shared/tests/test_agent_doc_budget_check_wiring.py::test_check_fail_soft_skips_without_git_base",
     "shared/tests/test_agent_doc_budget_check_wiring.py::test_verifier_blocks_claude_md_over_growth",
     "shared/tests/test_agent_doc_budget_check_wiring.py::test_verifier_env_override_skips_growth_but_stays_green",
-    "shared/tests/test_aggregate_changelog.py::test_aggregate_cli_strict_flag_exits_nonzero_on_mangled",
-    "shared/tests/test_aggregate_changelog.py::test_aggregate_silent_on_clean_bullets",
-    "shared/tests/test_aggregate_changelog.py::test_aggregate_strict_blocks_on_mangled_bullet",
-    "shared/tests/test_aggregate_changelog.py::test_aggregate_strict_passes_when_clean",
-    "shared/tests/test_aggregate_changelog.py::test_aggregate_warns_on_mangled_bullet_default",
-    "shared/tests/test_aggregate_changelog.py::test_write_changelog_drop_silent_on_clean_bullet",
-    "shared/tests/test_aggregate_changelog.py::test_write_changelog_drop_warns_on_mangled_bullet_at_write_time",
+    "shared/tests/test_agent_doc_shape.py::test_archive_pointer_accepted",
+    "shared/tests/test_agent_doc_shape.py::test_arrow_to_nondecisionlog_pointer_rejected",
+    "shared/tests/test_agent_doc_shape.py::test_campaign_anchor_rejected",
+    "shared/tests/test_agent_doc_shape.py::test_canonical_run_id_and_adr_pass",
+    "shared/tests/test_agent_doc_shape.py::test_dated_ge_cutoff_noncanonical_is_flagged",
+    "shared/tests/test_agent_doc_shape.py::test_free_text_anchor_rejected",
+    "shared/tests/test_agent_doc_shape.py::test_learnings_section_is_out_of_shape_scope",
+    "shared/tests/test_agent_doc_shape.py::test_missing_arrow_pointer_rejected",
+    "shared/tests/test_agent_doc_shape.py::test_missing_impact_separator_rejected",
+    "shared/tests/test_agent_doc_shape.py::test_new_non_canonical_is_forward_only",
+    "shared/tests/test_agent_doc_shape.py::test_sub_iterate_anchor_rejected",
+    "shared/tests/test_agent_doc_shape.py::test_undated_and_precutoff_are_grandfathered",
+    "shared/tests/test_agent_doc_shape_check_wiring.py::test_agent_doc_shape_in_run_all_checks",
+    "shared/tests/test_agent_doc_shape_check_wiring.py::test_check_fail_soft_skips_without_git_base",
+    "shared/tests/test_agent_doc_shape_check_wiring.py::test_verifier_blocks_new_noncanonical",
+    "shared/tests/test_agent_doc_shape_check_wiring.py::test_verifier_ignores_legacy_untouched_noncanonical",
+    "shared/tests/test_agent_doc_shape_check_wiring.py::test_verifier_passes_new_canonical",
     "shared/tests/test_aggregate_decisions.py::test_aggregates_drops_into_decision_log",
     "shared/tests/test_aggregate_decisions.py::test_aggregation_regenerates_adr_index",
     "shared/tests/test_aggregate_decisions.py::test_architecture_impact_updates_architecture_md",
@@ -3902,6 +5358,10 @@
     "shared/tests/test_aggregate_decisions.py::test_rebuild_adr_index_sorts_freeform_after_numbered",
     "shared/tests/test_aggregate_decisions.py::test_spec_ref_missing_in_drop_does_not_emit_details_bullet",
     "shared/tests/test_aggregate_decisions.py::test_spec_ref_renders_details_link_in_log",
+    "shared/tests/test_aggregate_skip_documented.py::test_direct_path_appends_one_canonical_bullet",
+    "shared/tests/test_aggregate_skip_documented.py::test_documented_run_id_appends_zero_arch_lines",
+    "shared/tests/test_aggregate_skip_documented.py::test_run_id_only_in_prose_still_appends",
+    "shared/tests/test_aggregate_skip_documented.py::test_undocumented_run_id_appends_one_canonical_bullet",
     "shared/tests/test_aggregate_triage_fanout_dedup.py::test_failed_regen_releases_claim",
     "shared/tests/test_aggregate_triage_fanout_dedup.py::test_fanout_dedup_is_per_session",
     "shared/tests/test_aggregate_triage_fanout_dedup.py::test_fanout_dedup_regenerates_once",
@@ -3971,7 +5431,9 @@
     "shared/tests/test_arch_drift_event_scope.py::test_records_in_run_set_empty_allowed_keeps_nothing",
     "shared/tests/test_arch_drift_event_scope.py::test_records_in_run_set_keeps_only_allowed",
     "shared/tests/test_arch_drift_event_scope.py::test_unowned_undocumented_drop_is_excluded",
+    "shared/tests/test_arch_update_writer_format.py::test_canonical_shape_carries_impact_word_and_arrow",
     "shared/tests/test_arch_update_writer_format.py::test_first_bullet_flush_under_header",
+    "shared/tests/test_arch_update_writer_format.py::test_multiline_summary_collapses_to_single_bullet",
     "shared/tests/test_arch_update_writer_format.py::test_no_blank_line_between_consecutive_bullets",
     "shared/tests/test_architecture_doc.py::test_corrupt_for_run_matches_by_filename",
     "shared/tests/test_architecture_doc.py::test_impact_documented_component_not_satisfied_by_conventions_doc",
@@ -4411,6 +5873,16 @@
     "shared/tests/test_check_agent_doc_budget.py::test_full_corpus_exempts_undated",
     "shared/tests/test_check_agent_doc_budget.py::test_full_corpus_flags_oversize_dated_entry",
     "shared/tests/test_check_agent_doc_budget.py::test_full_corpus_mode_never_checks_claude_md_growth",
+    "shared/tests/test_check_agent_doc_shape.py::test_cli_all_clean_exits_0",
+    "shared/tests/test_check_agent_doc_shape.py::test_cli_all_flags_and_exits_1",
+    "shared/tests/test_check_agent_doc_shape.py::test_cli_invalid_since_exits_2",
+    "shared/tests/test_check_agent_doc_shape.py::test_cli_no_git_base_skips",
+    "shared/tests/test_check_agent_doc_shape.py::test_forward_only_flags_only_new_noncanonical",
+    "shared/tests/test_check_agent_doc_shape.py::test_forward_only_ignores_untouched_legacy_noncanonical",
+    "shared/tests/test_check_agent_doc_shape.py::test_forward_only_no_git_is_noop",
+    "shared/tests/test_check_agent_doc_shape.py::test_full_corpus_clean_when_compliant",
+    "shared/tests/test_check_agent_doc_shape.py::test_full_corpus_exempts_precutoff",
+    "shared/tests/test_check_agent_doc_shape.py::test_full_corpus_flags_noncanonical",
     "shared/tests/test_check_artifact_drift_dedup.py::test_distinct_sessions_each_scan",
     "shared/tests/test_check_artifact_drift_dedup.py::test_drift_scan_fail_open_when_claim_errors",
     "shared/tests/test_check_artifact_drift_dedup.py::test_drift_scan_rearms_after_ttl",
@@ -4839,22 +6311,6 @@
     "shared/tests/test_drift_parsers_layers.py::test_layers_column_does_not_drop_frs",
     "shared/tests/test_drift_parsers_layers.py::test_trailing_tolerance_is_linear_time_on_a_NON_matching_row",
     "shared/tests/test_drift_parsers_layers.py::test_trailing_tolerance_is_linear_time_on_a_pathological_row",
-    "shared/tests/test_drift_triage_emit.py::test_artifact_sync_dedups_across_sessions",
-    "shared/tests/test_drift_triage_emit.py::test_artifact_sync_empty_affected_no_op",
-    "shared/tests/test_drift_triage_emit.py::test_artifact_sync_one_item_per_affected_mapping",
-    "shared/tests/test_drift_triage_emit.py::test_both_sites_emit_compatible_items",
-    "shared/tests/test_drift_triage_emit.py::test_check_drift_content_findings_dedup_by_file",
-    "shared/tests/test_drift_triage_emit.py::test_check_drift_content_findings_per_distinct_file",
-    "shared/tests/test_drift_triage_emit.py::test_check_drift_dedups_across_sessions",
-    "shared/tests/test_drift_triage_emit.py::test_check_drift_drive_letter_casing_dedups_across_sessions",
-    "shared/tests/test_drift_triage_emit.py::test_check_drift_drive_letter_casing_dedups_to_one_item",
-    "shared/tests/test_drift_triage_emit.py::test_check_drift_legacy_noncanonical_item_resolved_on_recanon",
-    "shared/tests/test_drift_triage_emit.py::test_check_drift_no_findings_no_op",
-    "shared/tests/test_drift_triage_emit.py::test_check_drift_only_content_kind_emitted",
-    "shared/tests/test_drift_triage_emit.py::test_check_drift_resolve_ignores_artifact_sync_items",
-    "shared/tests/test_drift_triage_emit.py::test_check_drift_resolve_leaves_terminal_items",
-    "shared/tests/test_drift_triage_emit.py::test_check_drift_resolves_cleared_finding",
-    "shared/tests/test_drift_triage_emit.py::test_check_drift_resolves_only_vanished_findings",
     "shared/tests/test_ensure_current.py::test_ensure_current_blocks_on_source_conflict",
     "shared/tests/test_ensure_current.py::test_ensure_current_cli",
     "shared/tests/test_ensure_current.py::test_ensure_current_integrates_when_behind",
@@ -4881,29 +6337,6 @@
     "shared/tests/test_event_once.py::test_second_claim_same_event_skips",
     "shared/tests/test_event_once.py::test_stale_claim_re_arms_then_fresh_skips",
     "shared/tests/test_event_once.py::test_unwritable_parent_fails_open",
-    "shared/tests/test_events_log.py::test_latest_event_dt_all_corrupt_returns_none",
-    "shared/tests/test_events_log.py::test_latest_event_dt_handles_non_utc_offset",
-    "shared/tests/test_events_log.py::test_latest_event_dt_handles_z_suffix",
-    "shared/tests/test_events_log.py::test_latest_event_dt_is_deterministic",
-    "shared/tests/test_events_log.py::test_latest_event_dt_multiple_events_returns_max",
-    "shared/tests/test_events_log.py::test_latest_event_dt_naive_ts_treated_as_utc",
-    "shared/tests/test_events_log.py::test_latest_event_dt_returns_none_when_log_empty",
-    "shared/tests/test_events_log.py::test_latest_event_dt_returns_none_when_log_missing",
-    "shared/tests/test_events_log.py::test_latest_event_dt_single_event",
-    "shared/tests/test_events_log.py::test_latest_event_dt_skips_corrupt_lines",
-    "shared/tests/test_events_log.py::test_latest_event_dt_skips_lines_without_ts",
-    "shared/tests/test_events_log.py::test_latest_event_dt_skips_non_string_ts",
-    "shared/tests/test_events_log.py::test_latest_event_dt_skips_unparseable_ts",
-    "shared/tests/test_events_log.py::test_main_repo_identity",
-    "shared/tests/test_events_log.py::test_non_git_dir_returns_local",
-    "shared/tests/test_events_log.py::test_resolve_events_path_is_git_independent",
-    "shared/tests/test_events_log.py::test_resolve_main_repo_root_reexported_from_events_log",
-    "shared/tests/test_events_log.py::test_str_project_root_accepted",
-    "shared/tests/test_events_log.py::test_worktree_nested_path_resolved",
-    "shared/tests/test_events_log.py::test_worktree_resolves_to_worktree_local",
-    "shared/tests/test_events_log_ssot.py::test_allowlist_entries_are_not_stale",
-    "shared/tests/test_events_log_ssot.py::test_no_unaccounted_raw_event_log_joins",
-    "shared/tests/test_events_log_ssot.py::test_worktree_reachable_files_use_the_resolver",
     "shared/tests/test_events_union_merge.py::test_repo_gitattributes_declares_events_union",
     "shared/tests/test_events_union_merge.py::test_union_merge_roundtrip_preserves_both_events",
     "shared/tests/test_events_union_merge.py::test_without_union_attr_the_same_history_conflicts",
@@ -5276,29 +6709,6 @@
     "shared/tests/test_github_api.py::test_parse_github_remote_handles_none",
     "shared/tests/test_github_api.py::test_parse_github_remote_no_catastrophic_backtracking",
     "shared/tests/test_github_api.py::test_parse_github_remote_rejects_invalid",
-    "shared/tests/test_github_api_artifact.py::test_artifact_max_age_days_default",
-    "shared/tests/test_github_api_artifact.py::test_artifact_max_age_days_env_override",
-    "shared/tests/test_github_api_artifact.py::test_artifact_max_age_days_invalid_env_falls_back_to_default",
-    "shared/tests/test_github_api_artifact.py::test_download_security_findings_accepts_empty_findings_list",
-    "shared/tests/test_github_api_artifact.py::test_download_security_findings_cleans_up_tempdir",
-    "shared/tests/test_github_api_artifact.py::test_download_security_findings_discovers_nested_path",
-    "shared/tests/test_github_api_artifact.py::test_download_security_findings_happy_path",
-    "shared/tests/test_github_api_artifact.py::test_download_security_findings_returns_none_on_invalid_json",
-    "shared/tests/test_github_api_artifact.py::test_download_security_findings_returns_none_on_subprocess_failure",
-    "shared/tests/test_github_api_artifact.py::test_download_security_findings_returns_none_when_file_missing",
-    "shared/tests/test_github_api_artifact.py::test_download_security_findings_returns_none_when_findings_not_a_list",
-    "shared/tests/test_github_api_artifact.py::test_download_security_findings_returns_none_when_gh_missing",
-    "shared/tests/test_github_api_artifact.py::test_download_security_findings_uses_argv_list",
-    "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_freshness_gate_default_14d",
-    "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_freshness_gate_env_override",
-    "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_invalid_created_at_skipped",
-    "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_picks_first_fresh_skipping_stale",
-    "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_queries_default_branch",
-    "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_returns_fresh_run",
-    "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_returns_none_on_api_failure",
-    "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_returns_none_on_empty_list",
-    "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_returns_none_on_malformed_payload",
-    "shared/tests/test_github_api_artifact.py::test_real_findings_sample_parses",
     "shared/tests/test_github_api_sarif_fallback.py::test_empty_findings_json_not_overridden_by_sarif",
     "shared/tests/test_github_api_sarif_fallback.py::test_findings_json_wins_over_sarif",
     "shared/tests/test_github_api_sarif_fallback.py::test_no_json_no_sarif_returns_none",
@@ -5348,24 +6758,6 @@
     "shared/tests/test_github_triage_action_units.py::test_security_action_unit_returns_none_when_owner_repo_none",
     "shared/tests/test_github_triage_action_units.py::test_security_emit_requires_both_feeds_succeeded",
     "shared/tests/test_github_triage_action_units.py::test_security_partial_fetch_does_not_resolve_existing_item",
-    "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_clean_scan_auto_resolves_open_item",
-    "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_detail_does_not_leak_raw_finding_strings",
-    "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_detail_renders_per_source_counts",
-    "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_detail_respects_length_cap",
-    "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_emits_when_cs_alerts_unavailable",
-    "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_empty_list_with_no_prior_state_is_noop",
-    "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_failure_does_not_mass_resolve",
-    "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_severity_derived_from_findings_list",
-    "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_skipped_when_download_fails",
-    "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_skipped_when_no_run_available",
-    "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_skipped_when_owner_repo_none",
-    "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_unknown_severity_falls_back_to_medium",
-    "shared/tests/test_github_triage_artifact_fallback.py::test_no_ghas_with_dependabot_available_and_artifact_emits",
-    "shared/tests/test_github_triage_artifact_fallback.py::test_no_ghas_with_dependabot_available_and_clean_artifact_auto_resolves",
-    "shared/tests/test_github_triage_artifact_fallback.py::test_sast_gated_but_prompt_fetched_when_cs_alerts_succeeds",
-    "shared/tests/test_github_triage_artifact_fallback.py::test_transition_artifact_to_ghas_preserves_idempotency",
-    "shared/tests/test_github_triage_artifact_fallback.py::test_transition_ghas_clean_then_artifact_findings",
-    "shared/tests/test_github_triage_artifact_fallback.py::test_transition_ghas_to_artifact_preserves_idempotency",
     "shared/tests/test_github_triage_pr_ci.py::test_failing_set_excludes_success_neutral_skipped_and_inprogress",
     "shared/tests/test_github_triage_pr_ci.py::test_failing_set_includes_all_non_passing_terminal_conclusions",
     "shared/tests/test_github_triage_pr_ci.py::test_failing_set_is_sorted_deduped_and_sanitised",
@@ -5658,6 +7050,12 @@
     "shared/tests/test_layer_coverage.py::test_removal_retarget_but_keeps_dead_tag_fails",
     "shared/tests/test_layer_coverage.py::test_removal_retarget_passes",
     "shared/tests/test_layer_coverage.py::test_removal_still_tagged_fails",
+    "shared/tests/test_layer_coverage_config_scope.py::test_gate_excludes_fixture_path_so_a_fixture_cannot_fake_a_layer",
+    "shared/tests/test_layer_coverage_config_scope.py::test_gate_misses_plugin_dir_coverage_without_config_load_bearing",
+    "shared/tests/test_layer_coverage_config_scope.py::test_gate_sees_plugin_dir_coverage_when_head_opts_it_in",
+    "shared/tests/test_layer_coverage_config_scope.py::test_removal_gate_follows_a_renamed_test_into_a_new_dir_when_config_drops",
+    "shared/tests/test_layer_coverage_config_scope.py::test_removal_gate_keeps_default_floor_when_config_narrows",
+    "shared/tests/test_layer_coverage_config_scope.py::test_removal_gate_rescans_base_dirs_when_head_drops_the_config",
     "shared/tests/test_layer_coverage_core.py::test_advisory_only_verdicts_surface_as_warning_not_green",
     "shared/tests/test_layer_coverage_core.py::test_behavior_changed_keys_new_fr_and_layer_change",
     "shared/tests/test_layer_coverage_core.py::test_both_gates_registered_in_run_all_checks",
@@ -5776,15 +7174,6 @@
     "shared/tests/test_path_canon_windows.py::test_scan_handles_symlinked_legacy_dir",
     "shared/tests/test_path_canon_windows.py::test_scan_handles_unreadable_legacy_dir",
     "shared/tests/test_path_helpers_template_vitest.py::test_path_helpers_vitest_passes",
-    "shared/tests/test_performance_triage_emit.py::test_all_passed_emits_nothing",
-    "shared/tests/test_performance_triage_emit.py::test_bundle_failure_emits_global_dedup_key",
-    "shared/tests/test_performance_triage_emit.py::test_lcp_failure_emits_one_item",
-    "shared/tests/test_performance_triage_emit.py::test_same_failure_dedups_within_window",
-    "shared/tests/test_performance_triage_emit.py::test_score_failure_emits_one_item",
-    "shared/tests/test_performance_triage_emit.py::test_severity_high_when_over_10_percent",
-    "shared/tests/test_performance_triage_emit.py::test_severity_medium_when_under_10_percent",
-    "shared/tests/test_performance_triage_emit.py::test_skipped_sub_checks_emit_nothing",
-    "shared/tests/test_performance_triage_emit.py::test_two_failures_emit_two_items",
     "shared/tests/test_phase_completed_per_split_integration.py::test_multi_split_build_records_every_split_end",
     "shared/tests/test_phase_completed_per_split_integration.py::test_single_split_phase_unchanged",
     "shared/tests/test_phase_from_plugin_root_versioned.py::test_unversioned_mirror_still_resolves_directly",
@@ -6132,18 +7521,6 @@
     "shared/tests/test_security_findings_gh_tag_drop.py::test_import_findings_alarm_fires_without_accept",
     "shared/tests/test_security_findings_gh_tag_drop.py::test_import_findings_no_alarm_when_gh_owned_accepted",
     "shared/tests/test_security_findings_gh_tag_drop.py::test_owner_base_dir_rejects_absolute_and_traversal",
-    "shared/tests/test_security_triage_emit.py::test_dedup_key_includes_tool_check_file_line",
-    "shared/tests/test_security_triage_emit.py::test_detail_includes_file_line_and_description",
-    "shared/tests/test_security_triage_emit.py::test_distinct_files_create_distinct_items",
-    "shared/tests/test_security_triage_emit.py::test_empty_findings_no_op",
-    "shared/tests/test_security_triage_emit.py::test_kind_bug_for_critical_and_high",
-    "shared/tests/test_security_triage_emit.py::test_kind_improvement_for_medium_low_info",
-    "shared/tests/test_security_triage_emit.py::test_malformed_finding_does_not_block_others",
-    "shared/tests/test_security_triage_emit.py::test_one_finding_emits_one_triage_item",
-    "shared/tests/test_security_triage_emit.py::test_same_finding_dedups_within_window",
-    "shared/tests/test_security_triage_emit.py::test_title_capped_at_160_chars",
-    "shared/tests/test_security_triage_emit.py::test_title_includes_tool_and_rule",
-    "shared/tests/test_security_triage_emit.py::test_unknown_severity_falls_back_to_medium",
     "shared/tests/test_security_workflow_convention.py::test_comment_action_pinned_to_commit_sha",
     "shared/tests/test_security_workflow_convention.py::test_critical_gate_step_id_present",
     "shared/tests/test_security_workflow_convention.py::test_gitleaks_download_is_sha256_verified",
