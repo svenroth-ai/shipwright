@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-17-backfill-plugin-fr-tags",
+  "date": "2026-07-17T20:56:51.832272Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/backfill-plugin-fr-tags",
+  "spec": ".shipwright/planning/iterate/2026-07-17-backfill-plugin-fr-tags.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-17-backfill-plugin-fr-tags"
+}

@@ -13,6 +13,7 @@ This file covers:
 """
 
 from __future__ import annotations
+import pytest
 
 import importlib.util
 import json
@@ -57,6 +58,7 @@ def _write_input(tmp_path: Path) -> Path:
     return p
 
 
+@pytest.mark.covers("FR-01.11")
 def test_merge_round_trip_creates_key(tmp_path):
     """Run the merge; the target file gains the boundary_coverage_report key."""
     input_path = _write_input(tmp_path)
@@ -73,6 +75,7 @@ def test_merge_round_trip_creates_key(tmp_path):
     )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_merge_preserves_existing_top_level_keys(tmp_path):
     """Other keys in the target file are preserved across the merge."""
     input_path = _write_input(tmp_path)
@@ -96,6 +99,7 @@ def test_merge_preserves_existing_top_level_keys(tmp_path):
     assert "boundary_coverage_report" in merged
 
 
+@pytest.mark.covers("FR-01.11")
 def test_merge_is_idempotent(tmp_path):
     """Running the merge twice produces identical content."""
     input_path = _write_input(tmp_path)
@@ -112,6 +116,7 @@ def test_merge_is_idempotent(tmp_path):
     assert first == second
 
 
+@pytest.mark.covers("FR-01.11")
 def test_missing_input_returns_nonzero(tmp_path, capsys):
     """If the input file does not exist, exit non-zero and do not touch the target."""
     target = tmp_path / "shipwright_test_results.json"
@@ -127,6 +132,7 @@ def test_missing_input_returns_nonzero(tmp_path, capsys):
     assert target.read_bytes() == pre
 
 
+@pytest.mark.covers("FR-01.11")
 def test_atomic_write_no_leftover_tmp_file(tmp_path):
     """After a successful merge, there's no .tmp residue in the target dir."""
     input_path = _write_input(tmp_path)

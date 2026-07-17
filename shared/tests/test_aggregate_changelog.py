@@ -60,6 +60,7 @@ _CLEAN = (
 # AC-1 — release-time linter detects mangled bullets, WARN by default
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.09")
 def test_aggregate_warns_on_mangled_bullet_default(
     project: Path,
     capsys: pytest.CaptureFixture[str],
@@ -80,6 +81,7 @@ def test_aggregate_warns_on_mangled_bullet_default(
     assert "iterate-2026-05-03-test" in err
 
 
+@pytest.mark.covers("FR-01.09")
 def test_aggregate_silent_on_clean_bullets(
     project: Path,
     capsys: pytest.CaptureFixture[str],
@@ -99,6 +101,7 @@ def test_aggregate_silent_on_clean_bullets(
 # AC-2 — --strict elevates the WARN to a BLOCK (no aggregation, exit non-zero)
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.09")
 def test_aggregate_strict_blocks_on_mangled_bullet(project: Path) -> None:
     """In strict mode, a mangled bullet causes the aggregator to refuse
     the run: raises an aggregator error AND leaves the drop file in
@@ -119,6 +122,7 @@ def test_aggregate_strict_blocks_on_mangled_bullet(project: Path) -> None:
     assert (project / "CHANGELOG.md").read_text(encoding="utf-8") == pre_changelog
 
 
+@pytest.mark.covers("FR-01.09")
 def test_aggregate_strict_passes_when_clean(project: Path) -> None:
     """Strict mode is a no-op on clean drop files — same outcome as default."""
     write_changelog_drop(project, "iterate-2026-05-03-test", "Added", _CLEAN)
@@ -130,6 +134,7 @@ def test_aggregate_strict_passes_when_clean(project: Path) -> None:
 # AC-3 — write-side defensive WARN at drop-write time
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.09")
 def test_write_changelog_drop_warns_on_mangled_bullet_at_write_time(
     project: Path,
     capsys: pytest.CaptureFixture[str],
@@ -152,6 +157,7 @@ def test_write_changelog_drop_warns_on_mangled_bullet_at_write_time(
     assert written.read_text(encoding="utf-8").strip() == _MANGLED.strip()
 
 
+@pytest.mark.covers("FR-01.09")
 def test_write_changelog_drop_silent_on_clean_bullet(
     project: Path,
     capsys: pytest.CaptureFixture[str],
@@ -168,6 +174,7 @@ def test_write_changelog_drop_silent_on_clean_bullet(
 # AC-2 (CLI) — --strict surfaces as a CLI flag with the documented exit code
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.09")
 def test_aggregate_cli_strict_flag_exits_nonzero_on_mangled(
     project: Path,
     capsys: pytest.CaptureFixture[str],

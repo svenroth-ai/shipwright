@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-07-17T19:46:32.679353+00:00
-Total commits: 1155
+Generated: 2026-07-17T20:56:51.914875+00:00
+Total commits: 1157
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 331
-    "feat" : 319
+    "fix" : 332
+    "feat" : 320
     "chore" : 243
     "docs" : 145
     "refactor" : 68
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 331 commits
+### Fixes (fix) — 332 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-17 | churn | stage ci-security.json in the regenerate follow-up commit (#389) | fe29df0b7683 |
 | 2026-07-15 | iterate | pin finalize_iterate.py stdio to UTF-8 (cp1252 Windows crash aborted the finalize bundle) (#376) | c25d681a72ce |
 | 2026-07-15 | churn | admit ci-security.json to the merge allowlist so iterate merges don't abort (#375) | fc3e48c3de7f |
 | 2026-07-15 | test | stop the perf-check integration test leaking triage into tracked fixtures (#373) | af0187a9a981 |
@@ -356,10 +357,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 319 commits
+### Features (feat) — 320 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-17 | traceability | backfill 189 plugin/shared @FR tags + config-aware TT5 gate (STEP 1) | 71db78c8f4b7 |
 | 2026-07-16 | compliance | config-driven test_roots for the test_links collector (#387) | 853a45217dc6 |
 | 2026-07-16 | adopt | establish the requirement->test traceability baseline at onboarding (TT7) (#385) | a85c22cdbad6 |
 | 2026-07-16 | traceability | shared backfill_test_links engine — map existing tests to FRs (TT6) (#384) | 0edb3dbcab46 |
@@ -684,7 +686,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-17 | triage | sweep 12 outbox append(s) into branch | 573311d93bac |
+| 2026-07-17 | triage | sweep 12 outbox append(s) into branch | cb7a36f3bc28 |
 | 2026-07-17 | compliance | mark shared-lib loader import_module as by-design (semgrep FP) (#388) | fc6957724db1 |
 | 2026-07-16 | traceability | retrofit monorepo tests with @FR tags + webui handoff brief (TT8) (#386) | 2c85758ee6bc |
 | 2026-07-12 | review | default external-review GPT model to gpt-5.6-terra-pro (#366) | 4b71eec6aaa4 |
@@ -1224,7 +1226,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1155 |
+| Total commits | 1157 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1155 |
+| Human-authored commits | 1157 |
 

@@ -103,6 +103,7 @@ def _bundle_passed() -> dict:
 
 # --- Failed sub-check → triage item ----------------------------------------
 
+@pytest.mark.covers("FR-01.14")
 def test_score_failure_emits_one_item(project: Path) -> None:
     results = {"lighthouse": _lh_failed_score(), "bundle": _bundle_passed()}
     appended = perf._emit_failures_to_triage(
@@ -118,6 +119,7 @@ def test_score_failure_emits_one_item(project: Path) -> None:
     assert "/dashboard" in item["dedupKey"]
 
 
+@pytest.mark.covers("FR-01.14")
 def test_lcp_failure_emits_one_item(project: Path) -> None:
     results = {"lighthouse": _lh_failed_lcp(), "bundle": _bundle_passed()}
     appended = perf._emit_failures_to_triage(
@@ -130,6 +132,7 @@ def test_lcp_failure_emits_one_item(project: Path) -> None:
     assert "perf:lcp:" in item["dedupKey"]
 
 
+@pytest.mark.covers("FR-01.14")
 def test_bundle_failure_emits_global_dedup_key(project: Path) -> None:
     results = {"lighthouse": _lh_passed(), "bundle": _bundle_failed()}
     appended = perf._emit_failures_to_triage(
@@ -141,6 +144,7 @@ def test_bundle_failure_emits_global_dedup_key(project: Path) -> None:
     assert item["dedupKey"] == "perf:bundle:global"
 
 
+@pytest.mark.covers("FR-01.14")
 def test_severity_high_when_over_10_percent(project: Path) -> None:
     """LCP 4000ms vs budget 2500ms → 60% over → high."""
     results = {
@@ -156,6 +160,7 @@ def test_severity_high_when_over_10_percent(project: Path) -> None:
     assert item["suggestedPriority"] == "P1"
 
 
+@pytest.mark.covers("FR-01.14")
 def test_severity_medium_when_under_10_percent(project: Path) -> None:
     """LCP 2700ms vs budget 2500ms → 8% over → medium."""
     results = {
@@ -171,6 +176,7 @@ def test_severity_medium_when_under_10_percent(project: Path) -> None:
     assert item["suggestedPriority"] == "P2"
 
 
+@pytest.mark.covers("FR-01.14")
 def test_skipped_sub_checks_emit_nothing(project: Path) -> None:
     results = {"lighthouse": _lh_skipped(), "bundle": _bundle_skipped()}
     appended = perf._emit_failures_to_triage(
@@ -181,6 +187,7 @@ def test_skipped_sub_checks_emit_nothing(project: Path) -> None:
     assert read_all_items(project) == []
 
 
+@pytest.mark.covers("FR-01.14")
 def test_all_passed_emits_nothing(project: Path) -> None:
     results = {"lighthouse": _lh_passed(), "bundle": _bundle_passed()}
     appended = perf._emit_failures_to_triage(
@@ -191,6 +198,7 @@ def test_all_passed_emits_nothing(project: Path) -> None:
     assert read_all_items(project) == []
 
 
+@pytest.mark.covers("FR-01.14")
 def test_two_failures_emit_two_items(project: Path) -> None:
     """Score+LCP both fail → two items (one per metric)."""
     lh = _lh_failed_score()
@@ -209,6 +217,7 @@ def test_two_failures_emit_two_items(project: Path) -> None:
     assert "perf:bundle:global" in keys
 
 
+@pytest.mark.covers("FR-01.14")
 def test_same_failure_dedups_within_window(project: Path) -> None:
     results = {"lighthouse": _lh_failed_score(), "bundle": _bundle_passed()}
     perf._emit_failures_to_triage(

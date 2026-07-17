@@ -10,6 +10,7 @@ codebases whose test files carry real workflow TODOs.
 """
 
 from __future__ import annotations
+import pytest
 
 import sys
 from pathlib import Path
@@ -45,6 +46,7 @@ def _setup_project(tmp_path: Path) -> Path:
     return tmp_path
 
 
+@pytest.mark.covers("FR-01.13")
 def test_default_skips_test_fixtures(tmp_path: Path) -> None:
     """Default scan_tests=False must hide all test-fixture markers."""
     root = _setup_project(tmp_path)
@@ -70,6 +72,7 @@ def test_default_skips_test_fixtures(tmp_path: Path) -> None:
     assert "module_test.py" not in body
 
 
+@pytest.mark.covers("FR-01.13")
 def test_scan_tests_includes_fixtures(tmp_path: Path) -> None:
     # Note (iterate-2026-05-09): the comment-context predicate landed in
     # `_scan_file` excludes Python docstrings (a triple-quoted string

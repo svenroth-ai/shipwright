@@ -50,6 +50,7 @@ def project_root_with_basics(tmp_path: Path) -> Path:
     return tmp_path
 
 
+@pytest.mark.covers("FR-01.13")
 def test_run_lib_fallback_no_scripts_module_error(project_root_with_basics: Path) -> None:
     """The CLI subprocess (matching real invocation) must not surface
     `ModuleNotFoundError("No module named 'scripts'")` for any of

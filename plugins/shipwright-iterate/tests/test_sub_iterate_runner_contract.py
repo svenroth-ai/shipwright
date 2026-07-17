@@ -46,16 +46,19 @@ def _load_schema() -> dict:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.11")
 def test_runner_doc_exists():
     assert RUNNER_DOC.exists(), f"sub-iterate-runner.md missing at {RUNNER_DOC}"
 
 
+@pytest.mark.covers("FR-01.11")
 def test_schema_file_exists():
     assert SCHEMA_FILE.exists(), (
         f"sub_iterate_runner_contract.schema.json missing at {SCHEMA_FILE}"
     )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_runner_doc_not_empty():
     assert _load_runner_text().strip(), "sub-iterate-runner.md is empty"
 
@@ -65,6 +68,7 @@ def test_runner_doc_not_empty():
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.11")
 def test_step_3_5_heading_present():
     text = _load_runner_text()
     assert "Step 3.5" in text, (
@@ -73,6 +77,7 @@ def test_step_3_5_heading_present():
     )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_step_3_5_external_plan_review_label():
     text = _load_runner_text().lower()
     assert "external plan review" in text, (
@@ -82,6 +87,7 @@ def test_step_3_5_external_plan_review_label():
 
 
 @pytest.mark.parametrize("branch_label", ["Branch A", "Branch B", "Branch C"])
+@pytest.mark.covers("FR-01.11")
 def test_step_3_5_branches_referenced(branch_label):
     text = _load_runner_text()
     assert branch_label in text, (
@@ -91,6 +97,7 @@ def test_step_3_5_branches_referenced(branch_label):
     )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_step_3_5_complexity_gating_documented():
     text = _load_runner_text().lower()
     # The gate is medium+ mandatory; trivial/small skip.
@@ -102,6 +109,7 @@ def test_step_3_5_complexity_gating_documented():
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.11")
 def test_step_3_6_heading_present():
     text = _load_runner_text()
     assert "Step 3.6" in text, (
@@ -112,6 +120,7 @@ def test_step_3_6_heading_present():
     )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_step_3_6_self_review_label():
     text = _load_runner_text().lower()
     assert "self-review" in text or "self review" in text, (
@@ -120,6 +129,7 @@ def test_step_3_6_self_review_label():
     )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_step_3_6_seven_item_checklist_referenced():
     text = _load_runner_text().lower()
     assert "iteration-reviews.md" in text, (
@@ -134,6 +144,7 @@ def test_step_3_6_seven_item_checklist_referenced():
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.11")
 def test_step_3_7_heading_present():
     text = _load_runner_text()
     assert "Step 3.7" in text, (
@@ -142,6 +153,7 @@ def test_step_3_7_heading_present():
     )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_step_3_7_code_review_cascade_label():
     text = _load_runner_text().lower()
     assert "code review cascade" in text, (
@@ -150,6 +162,7 @@ def test_step_3_7_code_review_cascade_label():
     )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_step_3_7_external_review_invocation_documented():
     text = _load_runner_text()
     # Cascade must mention the external_review.py --mode code path.
@@ -161,6 +174,7 @@ def test_step_3_7_external_review_invocation_documented():
     )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_step_3_7_diff_threshold_documented():
     text = _load_runner_text()
     # Trigger condition: diff > 100 lines. Allow either "100 lines" or
@@ -175,6 +189,7 @@ def test_step_3_7_diff_threshold_documented():
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.11")
 def test_step_3_8_heading_present():
     text = _load_runner_text()
     assert "Step 3.8" in text, (
@@ -186,6 +201,7 @@ def test_step_3_8_heading_present():
     )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_step_3_8_confidence_calibration_label():
     text = _load_runner_text().lower()
     assert "confidence calibration" in text, (
@@ -194,6 +210,7 @@ def test_step_3_8_confidence_calibration_label():
     )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_step_3_8_references_anti_patterns_doc():
     text = _load_runner_text()
     assert "confidence-anti-patterns.md" in text, (
@@ -203,6 +220,7 @@ def test_step_3_8_references_anti_patterns_doc():
     )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_step_3_8_empirical_probe_language():
     text = _load_runner_text().lower()
     # Step 3.8 must require ACTUAL probes, not just spec-section population.
@@ -225,6 +243,7 @@ def test_step_3_8_empirical_probe_language():
     )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_step_3_8_asymptote_heuristic_documented():
     text = _load_runner_text().lower()
     assert "asymptote" in text, (
@@ -239,6 +258,7 @@ def test_step_3_8_asymptote_heuristic_documented():
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.11")
 def test_result_json_documents_reviews_field():
     text = _load_runner_text()
     # The runner output schema in the markdown must mention the new field.
@@ -251,6 +271,7 @@ def test_result_json_documents_reviews_field():
     "subkey",
     ["plan", "code", "external_code", "self_review", "confidence_calibration"],
 )
+@pytest.mark.covers("FR-01.11")
 def test_result_json_documents_reviews_subkeys(subkey):
     text = _load_runner_text()
     assert subkey in text, (
@@ -268,6 +289,7 @@ def _success_props() -> dict:
     return schema["$defs"]["success"]["properties"]
 
 
+@pytest.mark.covers("FR-01.11")
 def test_schema_has_reviews_property():
     props = _success_props()
     assert "reviews" in props, (
@@ -279,6 +301,7 @@ def test_schema_has_reviews_property():
     "subkey",
     ["plan", "code", "external_code", "self_review", "confidence_calibration"],
 )
+@pytest.mark.covers("FR-01.11")
 def test_schema_reviews_has_subkey(subkey):
     props = _success_props()
     reviews = props["reviews"]
@@ -288,6 +311,7 @@ def test_schema_reviews_has_subkey(subkey):
     )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_schema_reviews_field_is_optional():
     """Backwards-compat: A/B/C/D/E result.json files don't have `reviews`.
 
@@ -300,6 +324,7 @@ def test_schema_reviews_field_is_optional():
     )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_schema_validates_result_with_reviews_field():
     """Positive probe: a result JSON with the new field validates.
 
@@ -334,6 +359,7 @@ def test_schema_validates_result_with_reviews_field():
     jsonschema.validate(sample, schema)
 
 
+@pytest.mark.covers("FR-01.11")
 def test_schema_validates_result_without_reviews_field():
     """Negative-compat probe: legacy result JSON (no `reviews`) still valid."""
     schema = _load_schema()
@@ -361,6 +387,7 @@ def test_schema_validates_result_without_reviews_field():
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.11")
 def test_skill_section_5b_references_review_steps():
     """The autonomous-loop briefing in Section 5b must mention the review steps.
 

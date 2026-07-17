@@ -14,6 +14,7 @@ caught in audit. This guard makes the drift visible.
 """
 
 from __future__ import annotations
+import pytest
 
 import sys
 from pathlib import Path
@@ -32,6 +33,7 @@ def _write_contributing(tmp_path: Path, content: str) -> None:
     (tmp_path / "CONTRIBUTING.md").write_text(content, encoding="utf-8")
 
 
+@pytest.mark.covers("FR-01.13")
 def test_excluded_path_in_code_block_is_annotated(tmp_path: Path) -> None:
     """Path under an --exclude-path entry must be flagged."""
     _write_contributing(
@@ -45,6 +47,7 @@ def test_excluded_path_in_code_block_is_annotated(tmp_path: Path) -> None:
     assert "webui/client" in result.content  # the original ref is still there
 
 
+@pytest.mark.covers("FR-01.13")
 def test_nonexistent_path_in_code_block_is_annotated(tmp_path: Path) -> None:
     """Path that doesn't exist on disk must be flagged."""
     _write_contributing(
@@ -56,6 +59,7 @@ def test_nonexistent_path_in_code_block_is_annotated(tmp_path: Path) -> None:
     assert DRIFT_MARKER_TOKEN in result.content
 
 
+@pytest.mark.covers("FR-01.13")
 def test_existing_path_no_drift_marker(tmp_path: Path) -> None:
     """If the path exists and is not excluded, no drift annotation."""
     (tmp_path / "scripts").mkdir()
@@ -68,6 +72,7 @@ def test_existing_path_no_drift_marker(tmp_path: Path) -> None:
     assert DRIFT_MARKER_TOKEN not in result.content
 
 
+@pytest.mark.covers("FR-01.13")
 def test_default_excludes_none_is_backwards_compatible(tmp_path: Path) -> None:
     """Calling without excludes (legacy callers) still works; no annotation
     when paths exist."""
@@ -82,6 +87,7 @@ def test_default_excludes_none_is_backwards_compatible(tmp_path: Path) -> None:
     assert DRIFT_MARKER_TOKEN not in result.content
 
 
+@pytest.mark.covers("FR-01.13")
 def test_url_in_code_block_not_annotated(tmp_path: Path) -> None:
     """Code blocks may reference https URLs; those must not be flagged
     as missing paths."""

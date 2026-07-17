@@ -6,6 +6,7 @@ common-dir math must be verified on an actual linked worktree.
 """
 
 from __future__ import annotations
+import pytest
 
 import subprocess
 from pathlib import Path
@@ -20,6 +21,7 @@ from lib.events_log import (
 # (shared/tests/conftest.py).
 
 
+@pytest.mark.covers("FR-01.11")
 def test_main_repo_identity(git_origin_repo):
     """In the main repo the resolved path is project_root / EVENT_FILE."""
     work, _ = git_origin_repo
@@ -27,6 +29,7 @@ def test_main_repo_identity(git_origin_repo):
     assert resolved.resolve() == (work / EVENT_FILE).resolve()
 
 
+@pytest.mark.covers("FR-01.11")
 def test_worktree_resolves_to_worktree_local(git_origin_repo, make_worktree):
     """From inside a linked worktree the log resolves to the WORKTREE's own
     copy — events.jsonl is a per-tree, PR-committed artifact (F6 stages it,
@@ -44,6 +47,7 @@ def test_worktree_resolves_to_worktree_local(git_origin_repo, make_worktree):
     assert resolved.parent.resolve() == wt.resolve()
 
 
+@pytest.mark.covers("FR-01.11")
 def test_worktree_nested_path_resolved(git_origin_repo, make_worktree):
     """A worktree several levels under .worktrees/ resolves to its own local
     copy (no git-common-dir math involved any more — the resolver is a literal
@@ -54,6 +58,7 @@ def test_worktree_nested_path_resolved(git_origin_repo, make_worktree):
     assert resolved.resolve() == (wt / EVENT_FILE).resolve()
 
 
+@pytest.mark.covers("FR-01.11")
 def test_non_git_dir_returns_local(tmp_path, recwarn):
     """A non-git directory resolves to project_root/EVENT_FILE, silently.
 
@@ -65,6 +70,7 @@ def test_non_git_dir_returns_local(tmp_path, recwarn):
     assert len(recwarn) == 0
 
 
+@pytest.mark.covers("FR-01.11")
 def test_resolve_events_path_is_git_independent(tmp_path, monkeypatch, recwarn):
     """``resolve_events_path`` no longer calls git at all — the log is a
     per-tree artifact, so the path is always ``project_root / EVENT_FILE``.
@@ -82,6 +88,7 @@ def test_resolve_events_path_is_git_independent(tmp_path, monkeypatch, recwarn):
     assert len(recwarn) == 0
 
 
+@pytest.mark.covers("FR-01.11")
 def test_str_project_root_accepted(git_origin_repo):
     """Accepts a str project_root, not only a Path."""
     work, _ = git_origin_repo
@@ -97,6 +104,7 @@ def test_str_project_root_accepted(git_origin_repo):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.11")
 def test_resolve_main_repo_root_reexported_from_events_log(git_origin_repo):
     """`from lib.events_log import resolve_main_repo_root` still works and
     delegates to lib.repo_root — existing callers (e.g. the compliance Group-F
@@ -122,17 +130,20 @@ def _write_events_jsonl(project_root: Path, lines: list[str]) -> None:
     path.write_text(("\n".join(lines) + "\n") if lines else "", encoding="utf-8")
 
 
+@pytest.mark.covers("FR-01.11")
 def test_latest_event_dt_returns_none_when_log_missing(tmp_path: Path) -> None:
     """Brand-new project: no events.jsonl yet → None."""
     assert latest_event_dt(tmp_path) is None
 
 
+@pytest.mark.covers("FR-01.11")
 def test_latest_event_dt_returns_none_when_log_empty(tmp_path: Path) -> None:
     """Existing-but-empty events.jsonl → None."""
     (tmp_path / EVENT_FILE).write_text("", encoding="utf-8")
     assert latest_event_dt(tmp_path) is None
 
 
+@pytest.mark.covers("FR-01.11")
 def test_latest_event_dt_single_event(tmp_path: Path) -> None:
     """One event → its ts, parsed to UTC."""
     import json
@@ -145,6 +156,7 @@ def test_latest_event_dt_single_event(tmp_path: Path) -> None:
     assert dt == datetime(2026, 5, 20, 12, 0, 0, tzinfo=timezone.utc)
 
 
+@pytest.mark.covers("FR-01.11")
 def test_latest_event_dt_multiple_events_returns_max(tmp_path: Path) -> None:
     """Multiple events → the chronologically-latest one."""
     import json
@@ -158,6 +170,7 @@ def test_latest_event_dt_multiple_events_returns_max(tmp_path: Path) -> None:
     assert dt == datetime(2026, 5, 22, 3, 30, 0, tzinfo=timezone.utc)
 
 
+@pytest.mark.covers("FR-01.11")
 def test_latest_event_dt_handles_z_suffix(tmp_path: Path) -> None:
     """`Z` and `+00:00` suffixes both work and compare correctly."""
     import json
@@ -170,6 +183,7 @@ def test_latest_event_dt_handles_z_suffix(tmp_path: Path) -> None:
     assert dt == datetime(2026, 5, 22, 3, 30, 0, tzinfo=timezone.utc)
 
 
+@pytest.mark.covers("FR-01.11")
 def test_latest_event_dt_handles_non_utc_offset(tmp_path: Path) -> None:
     """Mixed-timezone offsets are correctly ordered by instant, not by
     lexicographic comparison of the timestamp string.
@@ -195,6 +209,7 @@ def test_latest_event_dt_handles_non_utc_offset(tmp_path: Path) -> None:
     )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_latest_event_dt_skips_corrupt_lines(tmp_path: Path) -> None:
     """A malformed JSON line in the middle of the log doesn't kill resolution."""
     import json
@@ -208,6 +223,7 @@ def test_latest_event_dt_skips_corrupt_lines(tmp_path: Path) -> None:
     assert dt == datetime(2026, 5, 22, 3, 30, 0, tzinfo=timezone.utc)
 
 
+@pytest.mark.covers("FR-01.11")
 def test_latest_event_dt_skips_lines_without_ts(tmp_path: Path) -> None:
     """Lines lacking a `ts` field are silently skipped."""
     import json
@@ -220,6 +236,7 @@ def test_latest_event_dt_skips_lines_without_ts(tmp_path: Path) -> None:
     assert dt == datetime(2026, 5, 22, 3, 30, 0, tzinfo=timezone.utc)
 
 
+@pytest.mark.covers("FR-01.11")
 def test_latest_event_dt_skips_non_string_ts(tmp_path: Path) -> None:
     """Lines with a non-string `ts` (e.g. a number) are skipped."""
     import json
@@ -232,6 +249,7 @@ def test_latest_event_dt_skips_non_string_ts(tmp_path: Path) -> None:
     assert dt == datetime(2026, 5, 20, 12, 0, 0, tzinfo=timezone.utc)
 
 
+@pytest.mark.covers("FR-01.11")
 def test_latest_event_dt_skips_unparseable_ts(tmp_path: Path) -> None:
     """Lines with a malformed `ts` string are skipped."""
     import json
@@ -244,6 +262,7 @@ def test_latest_event_dt_skips_unparseable_ts(tmp_path: Path) -> None:
     assert dt == datetime(2026, 5, 20, 12, 0, 0, tzinfo=timezone.utc)
 
 
+@pytest.mark.covers("FR-01.11")
 def test_latest_event_dt_naive_ts_treated_as_utc(tmp_path: Path) -> None:
     """A `ts` without timezone info is interpreted as UTC (event-log convention)."""
     import json
@@ -255,6 +274,7 @@ def test_latest_event_dt_naive_ts_treated_as_utc(tmp_path: Path) -> None:
     assert dt == datetime(2026, 5, 20, 12, 0, 0, tzinfo=timezone.utc)
 
 
+@pytest.mark.covers("FR-01.11")
 def test_latest_event_dt_all_corrupt_returns_none(tmp_path: Path) -> None:
     """Every line corrupt → None (graceful degrade)."""
     _write_events_jsonl(tmp_path, [
@@ -264,6 +284,7 @@ def test_latest_event_dt_all_corrupt_returns_none(tmp_path: Path) -> None:
     assert latest_event_dt(tmp_path) is None
 
 
+@pytest.mark.covers("FR-01.11")
 def test_latest_event_dt_is_deterministic(tmp_path: Path) -> None:
     """Two calls against the same events.jsonl, separated by wall-clock,
     return identical answers — the whole point of the helper.
