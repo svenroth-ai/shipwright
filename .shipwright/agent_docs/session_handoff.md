@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-17-suppress-nonliteral-import-fp"
+run_id: "iterate-2026-07-17-arch-doc-refresh-harden"
 phase: "iterate"
-reason: "iterate: suppress non-literal-import semgrep FP in _lib_loader"
-timestamp: "2026-07-17T18:52:18.775115+00:00"
+reason: "arch-doc consistency: canonical run_id anchor + shape gate + doc refresh"
+timestamp: "2026-07-17T20:51:30.424518+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-17 18:52:18 UTC
+> Auto-generated 2026-07-17 20:51:30 UTC
 
 ## Session Info
 
-- **Session ID**: 6e2941ea-7c72-4243-a0c6-dde68c5db726
-- **Timestamp**: 2026-07-17 18:52:18 UTC
-- **Reason**: iterate: suppress non-literal-import semgrep FP in _lib_loader
+- **Session ID**: 1202b22a-3c9e-4c44-b27c-1519865a3d53
+- **Timestamp**: 2026-07-17 20:51:30 UTC
+- **Reason**: arch-doc consistency: canonical run_id anchor + shape gate + doc refresh
 
 ## Last Iterate
 
@@ -29,7 +29,10 @@ timestamp: "2026-07-17T18:52:18.775115+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/suppress-nonliteral-import-fp
+- **Branch**: iterate/arch-doc-refresh-harden
+- **Run ID**: iterate-2026-07-17-arch-doc-refresh-harden
+- **Spec**: .shipwright/planning/iterate/2026-07-17-arch-doc-refresh-harden.md
+- **Complexity**: medium (overridden from keyword `large`; force-continue, full rigor)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/suppress-nonliteral-import-fp
-- **Last Commit**: 0d51bdf4 chore(triage): sweep 4 outbox append(s) into branch
+- **Branch**: iterate/arch-doc-refresh-harden
+- **Last Commit**: cbc31b47 chore(triage): sweep 12 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-f84c9348 | grade_snapshot | — | 2026-07-17 |
+| evt-bd6ec9ec | work_completed | iterate (Canonical run_id changelog-bullet anchor + forward-only shape gate; aggregator stops the ADR-NNN dup; write_decision_log canonicalized; System-Overview mermaid + Data Flow (Plugins/GitHub) refreshed) | 2026-07-17 |
 | evt-0cb56caa | grade_snapshot | — | 2026-07-17 |
 | evt-99ae3fa0 | work_completed | iterate (Add by-design nosemgrep suppression on _lib_loader.py import_module (line 41).) | 2026-07-17 |
 | evt-74374d73 | grade_snapshot | — | 2026-07-16 |
-| evt-37ed67db | work_completed | iterate (config-driven traceability.test_roots + exclude_dirs for the test_links collector) | 2026-07-16 |
-| evt-b959b7d8 | grade_snapshot | — | 2026-07-16 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 317
-- **Last iterate**: change — Add by-design nosemgrep suppression on _lib_loader.py import_module (line 41). (2026-07-17)
+- **Total work events**: 318
+- **Last iterate**: change — Canonical run_id changelog-bullet anchor + forward-only shape gate; aggregator stops the ADR-NNN dup; write_decision_log canonicalized; System-Overview mermaid + Data Flow (Plugins/GitHub) refreshed (2026-07-17)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

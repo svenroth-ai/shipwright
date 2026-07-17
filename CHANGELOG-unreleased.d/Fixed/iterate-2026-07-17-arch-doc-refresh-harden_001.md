@@ -1,0 +1,1 @@
+The changelog aggregator no longer appends a duplicate `ADR-NNN` bullet for a change whose run_id bullet already exists — ending the run_id/ADR duplication in the always-loaded agent docs; the direct decision-log path now emits the same canonical form.

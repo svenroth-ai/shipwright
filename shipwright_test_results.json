@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-17-suppress-nonliteral-import-fp",
+    "run_id": "iterate-2026-07-17-arch-doc-refresh-harden",
     "date": "2026-07-17",
     "unit": {
       "status": "passed",
-      "passed": 79,
-      "total": 80
+      "passed": 6215,
+      "total": 6230
     },
     "integration": {
       "status": "not_run",
@@ -30,20 +30,31 @@
     "smoke": {
       "status": "skipped"
     },
-    "degraded": [
-      "Complexity classifier returned estimate='small' (confidence 0.6, prior_source=keyword) from the word 'add' in the change message; zero risk flags, risk_floor=trivial. Overridden to trivial per feedback_classifier_message_keyword_falsepos.md — the diff is a single inline comment (nosemgrep suppression) with no runtime behavior. F11 recomputes spec_impact/FR-gate from diff-predicates regardless."
-    ],
+    "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "runner": "pytest (plugins/shipwright-compliance related collector tests: test_test_links_collector/config_roots/hardening + test_requirement_parse + test_execution_evidence_join/paths + test_invalid_layers_manifest)",
+      "runner": "pytest (shared/tests + shared/scripts/tests + shared/scripts/tools/tests + plugins/shipwright-iterate/tests + plugins/shipwright-compliance/tests)",
       "exit_code": 0,
       "tests_run": 0,
       "timestamp": "2026-07-17T00:00:00+00:00",
-      "justification": "Comment-only source change (inline nosemgrep suppression for a confirmed non-literal-import false positive); no runnable app surface (web/cli/api) is added or changed. The loader's runtime behavior is unchanged and pinned by 79 passing related compliance collector tests at F0 (1 conditional skip)."
+      "justification": "Framework tooling + curated-doc change (new agent_doc_shape gate + CLI + F11 verifier, aggregate_decisions dedup, write_decision_log canonicalization, architecture.md/conventions.md refresh). This monorepo is a Claude-Code plugin library — no runnable app surface (web/cli/api) is added or changed; verified end-to-end by the pytest suites exercising the producer->file->consumer round-trip."
     },
     "test_completeness": {
-      "status": "n/a",
-      "justification": "Trivial complexity — behavior-preserving comment-only change (inline nosemgrep suppression). No new or changed runtime behavior to enumerate; load_shared_lib behaves identically and is pinned by the 79 passing related compliance tests at F0."
+      "status": "complete",
+      "behaviors": [
+        { "behavior": "aggregator skips the dup ADR-NNN append when the F2 run_id bullet is documented in the target section", "disposition": "tested", "evidence": "shared/tests/test_aggregate_skip_documented.py::test_documented_run_id_appends_zero_arch_lines PASSED" },
+        { "behavior": "aggregator appends the canonical fallback when the run_id is undocumented / only in prose (section-scoped, not whole-file)", "disposition": "tested", "evidence": "test_aggregate_skip_documented.py::test_undocumented_run_id_appends_one_canonical_bullet + ::test_run_id_only_in_prose_still_appends PASSED" },
+        { "behavior": "direct write_decision_log path is untouched and emits the canonical <Impact> — sentence. -> pointer bullet", "disposition": "tested", "evidence": "test_aggregate_skip_documented.py::test_direct_path_appends_one_canonical_bullet + test_arch_update_writer_format.py PASSED" },
+        { "behavior": "canonical writer collapses multi-line summaries to one bullet (no injected bullet, no double period)", "disposition": "tested", "evidence": "test_arch_update_writer_format.py::test_multiline_summary_collapses_to_single_bullet PASSED" },
+        { "behavior": "shape gate rejects Campaign/sub_iterate/free-text anchors, missing Impact separator, and a non-decision_log/archive arrow", "disposition": "tested", "evidence": "shared/tests/test_agent_doc_shape.py (campaign/sub_iterate/free-text/missing-impact/arrow-to-nondecisionlog) PASSED" },
+        { "behavior": "shape gate accepts canonical run_id + ADR-NNN + archive anchors; grandfathers undated/pre-cutoff", "disposition": "tested", "evidence": "test_agent_doc_shape.py::test_canonical_run_id_and_adr_pass + test_archive_pointer_accepted + test_undated_and_precutoff_are_grandfathered PASSED" },
+        { "behavior": "shape gate is forward-only (legacy untouched entry not flagged) and blocks a new non-canonical bullet vs the git base", "disposition": "tested", "evidence": "test_agent_doc_shape_check_wiring.py::test_verifier_ignores_legacy_untouched_noncanonical + ::test_verifier_blocks_new_noncanonical PASSED", "category": "integration" },
+        { "behavior": "check_agent_doc_shape is registered in run_all_checks (F11 composition) and fail-soft SKIPs without a git base", "disposition": "tested", "evidence": "test_agent_doc_shape_check_wiring.py::test_agent_doc_shape_in_run_all_checks + ::test_check_fail_soft_skips_without_git_base PASSED" },
+        { "behavior": "the real monorepo architecture.md + conventions.md ## …Updates tails are canonical full-corpus (normalization locked)", "disposition": "tested", "evidence": "plugins/shipwright-iterate/tests/test_agent_doc_entry_rules.py::test_dated_entries_are_canonical_shape PASSED" },
+        { "behavior": "System-Overview mermaid renders correctly in the user's viewer", "disposition": "untestable", "reason_code": "requires-manual-visual-judgment", "reason": "the portable rewrite was empirically validated to PARSE under Mermaid v11 and to contain no &nbsp;/glued-subgraph/internal-direction, but the actual visual render in a given renderer is a human judgement" }
+      ],
+      "counts": { "testable": 9, "tested": 9, "untestable": 1, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 7, "covered_acs": 7 }
     }
   },
   "coverage": {

@@ -5,10 +5,10 @@
 
 ## Status summary
 
-- Total: 310
-- Triage: 12 | Promoted: 1 | Dismissed: 296 | Snoozed: 1
+- Total: 315
+- Triage: 10 | Promoted: 1 | Dismissed: 303 | Snoozed: 1
 
-## Top 12 items (severity-sorted)
+## Top 10 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -77,32 +77,20 @@
   - Follow-up to iterate-2026-06-30-fr-retag-honesty. Introduce sub-FRs (e.g. FR-01.10.x for Control Grade / RTM / SBOM / d…
   - Promote: `triage_promote.py --id trg-cced399c --task-ref EXT:<ref>`
 
-### Source: retrofit-traceability (4 items)
+### Source: traceability-followup (3 items)
 
-<a id="trg-e32343ab"></a>
-- **50 pre-existing skipped/focused tests found at onboarding** `id=trg-e32343ab | severity=medium | kind=maintenance → P2/engineering`
-  - Repo-wide skip inventory (1× js.skip.no_quarantine, 1× pytest.mark.skip, 22× pytest.mark.skipif, 26× pytest.skip). Stan…
-  - Promote: `triage_promote.py --id trg-e32343ab --task-ref EXT:<ref>`
+<a id="trg-7d33cc1a"></a>
+- **STEP 1: Backfill iterate - write 187 plugin/shared @FR tags + decide 24 low-conf + thread config into TT5 layer_coverag…** `id=trg-7d33cc1a | severity=high | kind=improvement → P1/engineering`
+  - ORDERED STEP 1. === FIX-NOW EXECUTION CONTRACT: the human operator does NOT technically review this - YOU (the executin…
+  - Promote: `triage_promote.py --id trg-7d33cc1a --task-ref EXT:<ref>`
 
-<a id="trg-a57392a2"></a>
-- **Traceability retrofit: 24 low-confidence @FR backfill proposals to review** `id=trg-a57392a2 | severity=low | kind=maintenance → P3/engineering`
-  - 24 tests (full corpus, fixtures excluded) have a below-auto-write FR candidate (reviewed, not written). Candidate FRs:…
-  - Promote: `triage_promote.py --id trg-a57392a2 --task-ref EXT:<ref>`
+<a id="trg-6b4b6a33"></a>
+- **STEP 2: Test-rot cleanup - triage 50 skipped/.only tests (quarantine-with-expiry or delete)** `id=trg-6b4b6a33 | severity=medium | kind=maintenance → P2/engineering`
+  - ORDERED STEP 2 (independent of STEP 1; can run any time). === FIX-NOW: if run as an iterate, YOU (the agent) are the re…
+  - Promote: `triage_promote.py --id trg-6b4b6a33 --task-ref EXT:<ref>`
 
-<a id="trg-f92f5f32"></a>
-- **Traceability retrofit: 7137 monorepo tests unmapped to any FR (full corpus, review candidates)** `id=trg-f92f5f32 | severity=low | kind=maintenance → P3/engineering`
-  - Full-corpus scan: 7137 tests (fixtures excluded) map to no live FR. The monorepo tracks framework-internal FRs, so most…
-  - Promote: `triage_promote.py --id trg-f92f5f32 --task-ref EXT:<ref>`
-
-<a id="trg-01bb6cae"></a>
-- **Traceability retrofit: 187 high-confidence @FR candidates in plugins/*/tests + shared/tests (not yet manifest-tracked)** `id=trg-01bb6cae | severity=low | kind=maintenance → P3/engineering`
-  - A full-corpus backfill (7419 tests, fixtures excluded) found 187 tests that map to an FR at auto-write confidence via `…
-  - Promote: `triage_promote.py --id trg-01bb6cae --task-ref EXT:<ref>`
-
-### Source: traceability-backfill (1 item)
-
-<a id="trg-d032b1e2"></a>
-- **Backfill iterate: write plugin/shared @FR tags (trg-01bb6cae 187 + trg-a57392a2 24) + thread config into TT5 _layer_cov…** `id=trg-d032b1e2 | severity=medium | kind=improvement → P2/engineering`
-  - Anchor for the tag-backfill iterate, now UNBLOCKED by iterate-2026-07-16-collector-test-roots (PR #387, squash 853a4521…
-  - Promote: `triage_promote.py --id trg-d032b1e2 --task-ref EXT:<ref>`
+<a id="trg-0942da1f"></a>
+- **STEP 3: Review 7137 FR-unmapped tests (review-only, never auto-delete, then dismiss or leave)** `id=trg-0942da1f | severity=low | kind=maintenance → P3/engineering`
+  - ORDERED STEP 3 (lowest urgency, review-only). 7137 monorepo tests (full corpus, fixtures excluded) map to no live FR. T…
+  - Promote: `triage_promote.py --id trg-0942da1f --task-ref EXT:<ref>`
 
