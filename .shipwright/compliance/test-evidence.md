@@ -1,6 +1,6 @@
 # Test Evidence Report
 
-Generated: 2026-07-17T20:51:25.037229+00:00
+Generated: 2026-07-17T19:46:32.679353+00:00
 
 ## Summary
 
@@ -14,7 +14,7 @@ Generated: 2026-07-17T20:51:25.037229+00:00
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | Canonical run_id changelog-bullet anchor + forward-only shape gate; aggregator stops the ADR-NNN dup; write_decision_log canonicalized; System-Overview mermaid + Data Flow (Plugins/GitHub) refreshed | [iterate](traceability-matrix.md#evt-bd6ec9ec) | — | +0 | — | — | 2026-07-17 |
+| 1 | Stage ci-security.json in the churn regenerate follow-up commit (close #375 CR-1 forward-staging gap) | [iterate](traceability-matrix.md#evt-a49e415c) | — | +0 | — | — | 2026-07-17 |
 | 2 | Add by-design nosemgrep suppression on _lib_loader.py import_module (line 41). | [iterate](traceability-matrix.md#evt-99ae3fa0) | — | +0 | — | — | 2026-07-17 |
 | 3 | The traceability tool can now be told which folders hold tests, so requirement tags written in plugin and shared tests are actually counted instead of ignored. | [iterate](traceability-matrix.md#evt-37ed67db) | unit | +0 | 1119/1119 | PASS | 2026-07-16 |
 | 4 | The framework's own tests now start to carry which-requirement-they-cover labels, and there's a ready-to-run plan to do the same in the web UI project. | [iterate](traceability-matrix.md#evt-a0436498) | unit | +0 | 5936/5936 | PASS | 2026-07-16 |

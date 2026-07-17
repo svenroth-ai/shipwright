@@ -1,38 +1,38 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-17-arch-doc-refresh-harden"
+run_id: "iterate-2026-07-17-ci-security-forward-staging"
 phase: "iterate"
-reason: "arch-doc consistency: canonical run_id anchor + shape gate + doc refresh"
-timestamp: "2026-07-17T20:51:30.424518+00:00"
+reason: "iterate finalization: ci-security forward-staging"
+timestamp: "2026-07-17T19:46:38.096952+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-17 20:51:30 UTC
+> Auto-generated 2026-07-17 19:46:38 UTC
 
 ## Session Info
 
-- **Session ID**: 1202b22a-3c9e-4c44-b27c-1519865a3d53
-- **Timestamp**: 2026-07-17 20:51:30 UTC
-- **Reason**: arch-doc consistency: canonical run_id anchor + shape gate + doc refresh
+- **Session ID**: 56161d3c-8318-4554-b37e-476e6f37f05d
+- **Timestamp**: 2026-07-17 19:46:38 UTC
+- **Reason**: iterate finalization: ci-security forward-staging
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-17-suppress-nonliteral-import-fp
-- **Date**: 2026-07-17T18:52:09.304127Z
-- **Type**: change
-- **Complexity**: trivial
-- **Branch**: iterate/suppress-nonliteral-import-fp
-- **ADR**: iterate-2026-07-17-suppress-nonliteral-import-fp
+- **Run ID**: iterate-2026-07-17-ci-security-forward-staging
+- **Date**: 2026-07-17T19:44:57.186599Z
+- **Type**: bug
+- **Complexity**: medium
+- **Branch**: iterate/ci-security-forward-staging
+- **ADR**: iterate-2026-07-17-ci-security-forward-staging
 - **Tests passed**: True
-- **Spec**: (trivial — no iterate spec)
+- **Spec**: .shipwright/planning/iterate/2026-07-17-ci-security-forward-staging.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/arch-doc-refresh-harden
-- **Run ID**: iterate-2026-07-17-arch-doc-refresh-harden
-- **Spec**: .shipwright/planning/iterate/2026-07-17-arch-doc-refresh-harden.md
-- **Complexity**: medium (overridden from keyword `large`; force-continue, full rigor)
+- **Branch**: iterate/ci-security-forward-staging
+- **Run ID**: iterate-2026-07-17-ci-security-forward-staging
+- **Spec**: .shipwright/planning/iterate/2026-07-17-ci-security-forward-staging.md
+- **Complexity**: medium — the `classify_complexity` message-prose estimate came
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -51,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/arch-doc-refresh-harden
-- **Last Commit**: cbc31b47 chore(triage): sweep 12 outbox append(s) into branch
+- **Branch**: iterate/ci-security-forward-staging
+- **Last Commit**: 573311d9 chore(triage): sweep 12 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,8 +68,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-f84c9348 | grade_snapshot | — | 2026-07-17 |
-| evt-bd6ec9ec | work_completed | iterate (Canonical run_id changelog-bullet anchor + forward-only shape gate; aggregator stops the ADR-NNN dup; write_decision_log canonicalized; System-Overview mermaid + Data Flow (Plugins/GitHub) refreshed) | 2026-07-17 |
+| evt-92ef6ad0 | grade_snapshot | — | 2026-07-17 |
+| evt-a49e415c | work_completed | iterate (Stage ci-security.json in the churn regenerate follow-up commit (close #375 CR-1 forward-staging gap)) | 2026-07-17 |
 | evt-0cb56caa | grade_snapshot | — | 2026-07-17 |
 | evt-99ae3fa0 | work_completed | iterate (Add by-design nosemgrep suppression on _lib_loader.py import_module (line 41).) | 2026-07-17 |
 | evt-74374d73 | grade_snapshot | — | 2026-07-16 |
@@ -78,7 +78,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 318
-- **Last iterate**: change — Canonical run_id changelog-bullet anchor + forward-only shape gate; aggregator stops the ADR-NNN dup; write_decision_log canonicalized; System-Overview mermaid + Data Flow (Plugins/GitHub) refreshed (2026-07-17)
+- **Last iterate**: bug — Stage ci-security.json in the churn regenerate follow-up commit (close #375 CR-1 forward-staging gap) (2026-07-17)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
