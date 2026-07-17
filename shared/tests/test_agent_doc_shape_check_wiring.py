@@ -9,12 +9,9 @@ orchestrator against a real git base.
 
 from __future__ import annotations
 
-import shutil
 import subprocess
 import sys
 from pathlib import Path
-
-import pytest
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _SCRIPTS = _REPO_ROOT / "shared" / "scripts"
@@ -23,6 +20,9 @@ if str(_SCRIPTS) not in sys.path:
 
 from tools.verifiers.agent_doc_shape_check import check_agent_doc_shape  # noqa: E402
 from tools.verifiers.iterate_checks import run_all_checks  # noqa: E402
+from test_hygiene import skip_or_fail_on_missing_binary  # noqa: E402
+
+_GIT_HINT = "git not on PATH — CI provisions it via actions/checkout"
 
 _HEADER = "## Architecture Updates"
 _CANON = (
@@ -60,22 +60,22 @@ def _repo(tmp_path: Path, base_body: str, head_body: str) -> Path:
     return repo
 
 
-@pytest.mark.skipif(shutil.which("git") is None, reason="git not available")
 def test_verifier_blocks_new_noncanonical(tmp_path: Path):
+    skip_or_fail_on_missing_binary("git", _GIT_HINT)
     repo = _repo(tmp_path, base_body="", head_body=f"{_NONCANON}\n")
     r = check_agent_doc_shape(repo, "r1")
     assert r.ok is False and "non-canonical" in r.detail
 
 
-@pytest.mark.skipif(shutil.which("git") is None, reason="git not available")
 def test_verifier_passes_new_canonical(tmp_path: Path):
+    skip_or_fail_on_missing_binary("git", _GIT_HINT)
     repo = _repo(tmp_path, base_body="", head_body=f"{_CANON}\n")
     r = check_agent_doc_shape(repo, "r1")
     assert r.ok is True
 
 
-@pytest.mark.skipif(shutil.which("git") is None, reason="git not available")
 def test_verifier_ignores_legacy_untouched_noncanonical(tmp_path: Path):
+    skip_or_fail_on_missing_binary("git", _GIT_HINT)
     # A legacy non-canonical entry present at BOTH base and head is forward-only
     # exempt — only the newly-added canonical entry differs.
     repo = _repo(tmp_path, base_body=f"{_NONCANON}\n", head_body=f"{_NONCANON}\n{_CANON}\n")

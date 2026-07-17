@@ -96,7 +96,7 @@ def test_dated_entries_are_canonical_shape(filename: str, header: str):
     forward-only adopted-repo path."""
     path = _AGENT_DOCS / filename
     if not path.exists():
-        pytest.skip(f"{filename} absent")
+        pytest.skip(f"{filename} absent")  # test-hygiene: allow-silent-skip: defensive guard for partial/non-repo checkout; file is present in CI
     entries = iter_entries(path.read_text(encoding="utf-8", errors="ignore"), header)
     violations = non_canonical(entries, enforced_from=_SHAPE_ENFORCED_FROM)
     if violations:
