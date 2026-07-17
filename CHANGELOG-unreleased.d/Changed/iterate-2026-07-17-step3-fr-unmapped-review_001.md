@@ -1,0 +1,1 @@
+Traceability (monorepo dogfood): framework-internal tests without an @FR tag are documented as the accepted steady state, not a backlog — closed the STEP 3 review of the FR-unmapped test corpus (self-adopted to 15 coarse per-plugin FRs; the mappable tests were tagged in STEP 1). See ADR 106.

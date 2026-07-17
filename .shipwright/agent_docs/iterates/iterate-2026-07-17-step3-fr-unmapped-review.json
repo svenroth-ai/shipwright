@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-17-step3-fr-unmapped-review",
+  "date": "2026-07-17T22:02:57.056679Z",
+  "type": "change",
+  "complexity": "trivial",
+  "branch": "iterate/step3-fr-unmapped-review",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-17-step3-fr-unmapped-review",
+  "spec": ".shipwright/planning/adr/106-step3-fr-unmapped-tests-accepted-state.md"
+}

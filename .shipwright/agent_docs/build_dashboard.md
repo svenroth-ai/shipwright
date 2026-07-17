@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-17 20:56 UTC | Session: ddb39c8c-af24-445d-992e-fcc344ec6078 | Run: iterate-2026-07-17-backfill-plugin-fr-tags
+> Updated: 2026-07-17 22:03 UTC | Session: 40969434-3270-441d-8539-20c5daea8d9f | Run: iterate-2026-07-17-step3-fr-unmapped-review
 
-## Recent Changes (319 iterations)
+## Recent Changes (320 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | STEP 3: dismiss the FR-unmapped review card (trg-0942da1f); record accepted-state policy for framework-internal untagged tests (ADR 106). | 17/17 |  | compliance | 2026-07-17 |
 | bug | Stage ci-security.json in the churn regenerate follow-up commit (close #375 CR-1 forward-staging gap) | 0/0 |  | infra | 2026-07-17 |
 | change | iterate: backfill plugin/shared @FR tags + config-aware TT5 gate | 0/0 |  | compliance | 2026-07-17 |
 | change | Add by-design nosemgrep suppression on _lib_loader.py import_module (line 41). | 0/0 |  | tooling | 2026-07-17 |

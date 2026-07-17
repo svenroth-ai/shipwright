@@ -1,9 +1,0 @@
-{
-  "run_id": "iterate-2026-07-06-semgrep-accept-producer",
-  "date": "2026-07-06T22:35:44.589840Z",
-  "type": "bug",
-  "complexity": "small",
-  "branch": "iterate/semgrep-accept-producer",
-  "tests_passed": true,
-  "adr": "iterate-2026-07-06-semgrep-accept-producer"
-}
