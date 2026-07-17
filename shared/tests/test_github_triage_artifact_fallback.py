@@ -154,6 +154,7 @@ def _append_events(project_root: Path) -> list[dict]:
 # AC-1, AC-5 — artifact path emits when cs_alerts is None
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.14")
 def test_artifact_emits_when_cs_alerts_unavailable(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -184,6 +185,7 @@ def test_artifact_emits_when_cs_alerts_unavailable(
     assert result["by_source"].get("gh-security:artifact") == 1
 
 
+@pytest.mark.covers("FR-01.14")
 def test_sast_gated_but_prompt_fetched_when_cs_alerts_succeeds(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -208,6 +210,7 @@ def test_sast_gated_but_prompt_fetched_when_cs_alerts_succeeds(
     assert prompt_calls == ["prompt"], "prompt_risks.json must be fetched even when Code Scanning is up"
 
 
+@pytest.mark.covers("FR-01.14")
 def test_artifact_skipped_when_owner_repo_none(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -227,6 +230,7 @@ def test_artifact_skipped_when_owner_repo_none(
     assert result["by_source"].get("gh-security:artifact", 0) == 0
 
 
+@pytest.mark.covers("FR-01.14")
 def test_artifact_skipped_when_no_run_available(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -243,6 +247,7 @@ def test_artifact_skipped_when_no_run_available(
     assert not any(a["dedupKey"].startswith("gh-security") for a in appends)
 
 
+@pytest.mark.covers("FR-01.14")
 def test_artifact_skipped_when_download_fails(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -263,6 +268,7 @@ def test_artifact_skipped_when_download_fails(
 # AC-2 — auto-resolve on fresh clean scan
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.14")
 def test_artifact_clean_scan_auto_resolves_open_item(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -297,6 +303,7 @@ def test_artifact_clean_scan_auto_resolves_open_item(
     assert resolved[0]["statusReason"] == "githubResolved"
 
 
+@pytest.mark.covers("FR-01.14")
 def test_artifact_failure_does_not_mass_resolve(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -340,6 +347,7 @@ def test_artifact_failure_does_not_mass_resolve(
 # AC-6 — source-switching transitions
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.14")
 def test_transition_artifact_to_ghas_preserves_idempotency(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -385,6 +393,7 @@ def test_transition_artifact_to_ghas_preserves_idempotency(
     assert sec_events[0]["launchPayload"] == original_payload
 
 
+@pytest.mark.covers("FR-01.14")
 def test_transition_ghas_to_artifact_preserves_idempotency(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -421,6 +430,7 @@ def test_transition_ghas_to_artifact_preserves_idempotency(
     assert sec_events[0]["launchPayload"] == original_payload
 
 
+@pytest.mark.covers("FR-01.14")
 def test_transition_ghas_clean_then_artifact_findings(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -462,6 +472,7 @@ def test_transition_ghas_clean_then_artifact_findings(
 # Detail rendering — per-source counts, no leaked finding strings
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.14")
 def test_artifact_detail_renders_per_source_counts(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -487,6 +498,7 @@ def test_artifact_detail_renders_per_source_counts(
     assert "unavailable" in detail.lower() or "code-scanning" in detail.lower()
 
 
+@pytest.mark.covers("FR-01.14")
 def test_artifact_detail_does_not_leak_raw_finding_strings(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -528,6 +540,7 @@ def test_artifact_detail_does_not_leak_raw_finding_strings(
         )
 
 
+@pytest.mark.covers("FR-01.14")
 def test_artifact_detail_respects_length_cap(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -555,6 +568,7 @@ def test_artifact_detail_respects_length_cap(
 # Severity derivation — list-of-findings, not by_severity aggregate
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.14")
 def test_artifact_severity_derived_from_findings_list(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -584,6 +598,7 @@ def test_artifact_severity_derived_from_findings_list(
     assert event["severity"] == "low"
 
 
+@pytest.mark.covers("FR-01.14")
 def test_artifact_unknown_severity_falls_back_to_medium(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -608,6 +623,7 @@ def test_artifact_unknown_severity_falls_back_to_medium(
 # Empty-but-fresh artifact = clean run signal
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.14")
 def test_artifact_empty_list_with_no_prior_state_is_noop(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -632,6 +648,7 @@ def test_artifact_empty_list_with_no_prior_state_is_noop(
 # Dependabot-orthogonal cases (external review code finding openai-4)
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.14")
 def test_no_ghas_with_dependabot_available_and_artifact_emits(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -669,6 +686,7 @@ def test_no_ghas_with_dependabot_available_and_artifact_emits(
     assert "code-scanning: (unavailable)" in detail
 
 
+@pytest.mark.covers("FR-01.14")
 def test_no_ghas_with_dependabot_available_and_clean_artifact_auto_resolves(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:

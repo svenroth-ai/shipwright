@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-07-17T20:51:25.037229+00:00
+Generated: 2026-07-17T20:56:51.914875+00:00
 Total commits: 1157
 
 ## Commit Distribution
@@ -361,7 +361,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-17 | agent-docs | canonical run_id changelog anchor + shape gate; kill aggregator ADR dup | fa0f6a53bb10 |
+| 2026-07-17 | traceability | backfill 189 plugin/shared @FR tags + config-aware TT5 gate (STEP 1) | 71db78c8f4b7 |
 | 2026-07-16 | compliance | config-driven test_roots for the test_links collector (#387) | 853a45217dc6 |
 | 2026-07-16 | adopt | establish the requirement->test traceability baseline at onboarding (TT7) (#385) | a85c22cdbad6 |
 | 2026-07-16 | traceability | shared backfill_test_links engine — map existing tests to FRs (TT6) (#384) | 0edb3dbcab46 |
@@ -686,7 +686,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-17 | triage | sweep 12 outbox append(s) into branch | cbc31b470c61 |
+| 2026-07-17 | triage | sweep 12 outbox append(s) into branch | cb7a36f3bc28 |
 | 2026-07-17 | compliance | mark shared-lib loader import_module as by-design (semgrep FP) (#388) | fc6957724db1 |
 | 2026-07-16 | traceability | retrofit monorepo tests with @FR tags + webui handoff brief (TT8) (#386) | 2c85758ee6bc |
 | 2026-07-12 | review | default external-review GPT model to gpt-5.6-terra-pro (#366) | 4b71eec6aaa4 |

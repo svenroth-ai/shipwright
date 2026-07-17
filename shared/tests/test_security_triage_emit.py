@@ -58,6 +58,7 @@ def _finding(
     }
 
 
+@pytest.mark.covers("FR-01.14")
 def test_one_finding_emits_one_triage_item(project: Path) -> None:
     appended = sec_report._emit_findings_to_triage(
         project, [_finding()], run_id="r1",
@@ -72,6 +73,7 @@ def test_one_finding_emits_one_triage_item(project: Path) -> None:
     assert item["status"] == "triage"
 
 
+@pytest.mark.covers("FR-01.14")
 def test_dedup_key_includes_tool_check_file_line(project: Path) -> None:
     sec_report._emit_findings_to_triage(project, [_finding()], run_id="r1")
     [item] = read_all_items(project)
@@ -81,6 +83,7 @@ def test_dedup_key_includes_tool_check_file_line(project: Path) -> None:
     )
 
 
+@pytest.mark.covers("FR-01.14")
 def test_kind_bug_for_critical_and_high(project: Path) -> None:
     sec_report._emit_findings_to_triage(
         project,
@@ -92,6 +95,7 @@ def test_kind_bug_for_critical_and_high(project: Path) -> None:
     assert all(it["kind"] == "bug" for it in items.values())
 
 
+@pytest.mark.covers("FR-01.14")
 def test_kind_improvement_for_medium_low_info(project: Path) -> None:
     sec_report._emit_findings_to_triage(
         project,
@@ -105,6 +109,7 @@ def test_kind_improvement_for_medium_low_info(project: Path) -> None:
         assert it["kind"] == "improvement"
 
 
+@pytest.mark.covers("FR-01.14")
 def test_unknown_severity_falls_back_to_medium(project: Path) -> None:
     """Conservative default — never raise into the consolidation path."""
     sec_report._emit_findings_to_triage(
@@ -115,6 +120,7 @@ def test_unknown_severity_falls_back_to_medium(project: Path) -> None:
     assert item["kind"] == "improvement"
 
 
+@pytest.mark.covers("FR-01.14")
 def test_title_includes_tool_and_rule(project: Path) -> None:
     sec_report._emit_findings_to_triage(project, [_finding()], run_id="r1")
     [item] = read_all_items(project)
@@ -122,6 +128,7 @@ def test_title_includes_tool_and_rule(project: Path) -> None:
     assert "py.lang.security.audit.dangerous-system-call" in item["title"]
 
 
+@pytest.mark.covers("FR-01.14")
 def test_title_capped_at_160_chars(project: Path) -> None:
     long = _finding(description="x" * 500)
     sec_report._emit_findings_to_triage(project, [long], run_id="r1")
@@ -129,6 +136,7 @@ def test_title_capped_at_160_chars(project: Path) -> None:
     assert len(item["title"]) <= 160
 
 
+@pytest.mark.covers("FR-01.14")
 def test_detail_includes_file_line_and_description(project: Path) -> None:
     sec_report._emit_findings_to_triage(project, [_finding()], run_id="r1")
     [item] = read_all_items(project)
@@ -137,6 +145,7 @@ def test_detail_includes_file_line_and_description(project: Path) -> None:
     assert "subprocess invocation" in item["detail"]
 
 
+@pytest.mark.covers("FR-01.14")
 def test_same_finding_dedups_within_window(project: Path) -> None:
     sec_report._emit_findings_to_triage(project, [_finding()], run_id="r1")
     appended2 = sec_report._emit_findings_to_triage(
@@ -146,12 +155,14 @@ def test_same_finding_dedups_within_window(project: Path) -> None:
     assert len(read_all_items(project)) == 1
 
 
+@pytest.mark.covers("FR-01.14")
 def test_empty_findings_no_op(project: Path) -> None:
     appended = sec_report._emit_findings_to_triage(project, [], run_id="r1")
     assert appended == 0
     assert read_all_items(project) == []
 
 
+@pytest.mark.covers("FR-01.14")
 def test_distinct_files_create_distinct_items(project: Path) -> None:
     sec_report._emit_findings_to_triage(
         project,
@@ -163,6 +174,7 @@ def test_distinct_files_create_distinct_items(project: Path) -> None:
     assert len(keys) == 2
 
 
+@pytest.mark.covers("FR-01.14")
 def test_malformed_finding_does_not_block_others(project: Path) -> None:
     """A finding missing required fields must NOT block subsequent findings.
 

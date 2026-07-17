@@ -28,4 +28,5 @@ pythonpath = ["."]
 markers = [
     "integration: marks tests as integration tests",
     "slow: marks tests that spawn real subprocesses or perform long I/O (excluded from the default run; use `pytest -m slow`)",
+    "covers: binds a test to one or more FRs for requirement->test traceability (@FR tags, Spec D1)",
 ]

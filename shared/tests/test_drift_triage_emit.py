@@ -53,6 +53,7 @@ def project(tmp_path: Path) -> Path:
 #  test_check_drift_hook.py; this file keeps the producer schema/dedup surface
 #  shared with artifact_sync.)
 
+@pytest.mark.covers("FR-01.14")
 def test_check_drift_content_findings_dedup_by_file(project: Path) -> None:
     """Two content findings on the SAME file collapse to one triage item
     (dedup-key is file:content; same file is the same noise source).
@@ -71,6 +72,7 @@ def test_check_drift_content_findings_dedup_by_file(project: Path) -> None:
     assert item["dedupKey"] == f"drift:{check_drift._canonical_anchor('CLAUDE.md', project)}:content"
 
 
+@pytest.mark.covers("FR-01.14")
 def test_check_drift_content_findings_per_distinct_file(project: Path) -> None:
     """Content findings on DIFFERENT files emit one item per file."""
     appended = check_drift._emit_drift_to_triage(
@@ -88,6 +90,7 @@ def test_check_drift_content_findings_per_distinct_file(project: Path) -> None:
     }
 
 
+@pytest.mark.covers("FR-01.14")
 def test_check_drift_only_content_kind_emitted(project: Path) -> None:
     """Only ``:content`` items are produced now (the timestamp kind is gone)."""
     check_drift._emit_drift_to_triage(
@@ -102,6 +105,7 @@ def test_check_drift_only_content_kind_emitted(project: Path) -> None:
     assert kinds == {"content"}
 
 
+@pytest.mark.covers("FR-01.14")
 def test_check_drift_no_findings_no_op(project: Path) -> None:
     appended = check_drift._emit_drift_to_triage(
         project, content_findings=[],
@@ -110,6 +114,7 @@ def test_check_drift_no_findings_no_op(project: Path) -> None:
     assert read_all_items(project) == []
 
 
+@pytest.mark.covers("FR-01.14")
 def test_check_drift_dedups_across_sessions(project: Path) -> None:
     """match_commit=False, window=None → same file:kind stays ONE item."""
     finding = ["CLAUDE.md: 'docs/' exists on disk but not listed in Structure"]
@@ -136,6 +141,7 @@ def _two_casings(tmp_path: Path) -> tuple[str, str]:
     return p, os.path.join(str(tmp_path), "sub", os.pardir, "CLAUDE.md")
 
 
+@pytest.mark.covers("FR-01.14")
 def test_check_drift_drive_letter_casing_dedups_to_one_item(
     project: Path, tmp_path: Path,
 ) -> None:
@@ -159,6 +165,7 @@ def test_check_drift_drive_letter_casing_dedups_to_one_item(
     assert len(read_all_items(project)) == 1
 
 
+@pytest.mark.covers("FR-01.14")
 def test_check_drift_drive_letter_casing_dedups_across_sessions(
     project: Path, tmp_path: Path,
 ) -> None:
@@ -181,6 +188,7 @@ def test_check_drift_drive_letter_casing_dedups_across_sessions(
     assert len(read_all_items(project)) == 1
 
 
+@pytest.mark.covers("FR-01.14")
 def test_check_drift_legacy_noncanonical_item_resolved_on_recanon(
     project: Path, tmp_path: Path,
 ) -> None:
@@ -224,6 +232,7 @@ def test_check_drift_legacy_noncanonical_item_resolved_on_recanon(
 
 # --- Bug 2: resolve pass auto-dismisses cleared findings -----------------
 
+@pytest.mark.covers("FR-01.14")
 def test_check_drift_resolves_cleared_finding(project: Path) -> None:
     """Once every drift condition clears, the next run flips the still-open
     triage items to dismissed with reason=driftResolved."""
@@ -250,6 +259,7 @@ def test_check_drift_resolves_cleared_finding(project: Path) -> None:
         assert it["statusBy"] == "driftDetector"
 
 
+@pytest.mark.covers("FR-01.14")
 def test_check_drift_resolves_only_vanished_findings(project: Path) -> None:
     """A finding still present on the next run stays in triage; only the
     finding that vanished is dismissed."""
@@ -277,6 +287,7 @@ def test_check_drift_resolves_only_vanished_findings(project: Path) -> None:
     assert by_key[k_webui]["statusReason"] == "driftResolved"
 
 
+@pytest.mark.covers("FR-01.14")
 def test_check_drift_resolve_ignores_artifact_sync_items(project: Path) -> None:
     """check_drift's resolve pass must NOT dismiss artifact_sync.py items —
     both producers use source='drift', but artifact_sync owns the
@@ -301,6 +312,7 @@ def test_check_drift_resolve_ignores_artifact_sync_items(project: Path) -> None:
     assert item["status"] == "triage"
 
 
+@pytest.mark.covers("FR-01.14")
 def test_check_drift_resolve_leaves_terminal_items(project: Path) -> None:
     """An operator-promoted drift item stays terminal even when its finding
     vanishes — the resolve pass only touches status=='triage' items."""
@@ -326,6 +338,7 @@ def test_check_drift_resolve_leaves_terminal_items(project: Path) -> None:
 
 # --- artifact_sync.py producer ------------------------------------------
 
+@pytest.mark.covers("FR-01.14")
 def test_artifact_sync_one_item_per_affected_mapping(project: Path) -> None:
     affected = [
         {
@@ -354,12 +367,14 @@ def test_artifact_sync_one_item_per_affected_mapping(project: Path) -> None:
         assert it["kind"] == "maintenance"
 
 
+@pytest.mark.covers("FR-01.14")
 def test_artifact_sync_empty_affected_no_op(project: Path) -> None:
     appended = artifact_sync._emit_drift_to_triage(project, [])
     assert appended == 0
     assert read_all_items(project) == []
 
 
+@pytest.mark.covers("FR-01.14")
 def test_artifact_sync_dedups_across_sessions(project: Path) -> None:
     affected = [
         {
@@ -378,6 +393,7 @@ def test_artifact_sync_dedups_across_sessions(project: Path) -> None:
 
 # --- Cross-producer: both sources share the schema ----------------------
 
+@pytest.mark.covers("FR-01.14")
 def test_both_sites_emit_compatible_items(project: Path) -> None:
     """A drift item from either site reads the same shape via read_all_items."""
     check_drift._emit_drift_to_triage(

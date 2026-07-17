@@ -340,7 +340,7 @@
     {
       "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py",
       "limit": 300,
-      "current": 394,
+      "current": 421,
       "state": "grandfathered",
       "adr": null
     },
@@ -494,7 +494,7 @@
     {
       "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py",
       "limit": 300,
-      "current": 745,
+      "current": 774,
       "state": "grandfathered",
       "adr": null
     },
@@ -795,7 +795,7 @@
     {
       "path": "shared/tests/test_drift_triage_emit.py",
       "limit": 300,
-      "current": 405,
+      "current": 421,
       "state": "grandfathered",
       "adr": null
     },
@@ -837,7 +837,7 @@
     {
       "path": "shared/tests/test_github_api_artifact.py",
       "limit": 300,
-      "current": 470,
+      "current": 493,
       "state": "grandfathered",
       "adr": null
     },
@@ -858,7 +858,7 @@
     {
       "path": "shared/tests/test_github_triage_artifact_fallback.py",
       "limit": 300,
-      "current": 717,
+      "current": 729,
       "state": "exception",
       "adr": "ADR-094"
     },

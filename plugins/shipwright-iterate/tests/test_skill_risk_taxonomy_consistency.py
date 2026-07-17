@@ -11,6 +11,7 @@ drifts in any of them, the Boundary Probe gate silently goes dark.
 Pattern mirrors the `_SHIPWRIGHT_FRAMEWORK_VARS` AST drift test
 referenced in `.shipwright/agent_docs/conventions.md`.
 """
+import pytest
 
 import sys
 from pathlib import Path
@@ -27,15 +28,18 @@ LITERAL = "touches_io_boundary"
 MIN_OCCURRENCES_IN_SKILL_MD = 3
 
 
+@pytest.mark.covers("FR-01.11")
 def test_literal_is_taxonomy_key():
     """Producer side: the literal is a key in RISK_TAXONOMY."""
     assert LITERAL in RISK_TAXONOMY
 
 
+@pytest.mark.covers("FR-01.11")
 def test_skill_md_exists():
     assert SKILL_PATH.exists(), f"SKILL.md missing at {SKILL_PATH}"
 
 
+@pytest.mark.covers("FR-01.11")
 def test_skill_md_contains_literal_at_least_three_times():
     """Consumer side: SKILL.md references the literal in at least 3 places.
 
@@ -53,6 +57,7 @@ def test_skill_md_contains_literal_at_least_three_times():
     )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_literal_present_in_risk_taxonomy_table():
     """Tighter check: the literal appears in the Risk Taxonomy section."""
     text = SKILL_PATH.read_text(encoding="utf-8")
@@ -74,6 +79,7 @@ def test_literal_present_in_risk_taxonomy_table():
     )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_literal_present_in_phase_matrix_section():
     """The literal appears in the Phase Matrix section (Section 6)."""
     text = SKILL_PATH.read_text(encoding="utf-8")
@@ -95,6 +101,7 @@ def test_literal_present_in_phase_matrix_section():
     )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_literal_present_in_override_classes_section():
     """The literal appears in the Override Classes section."""
     text = SKILL_PATH.read_text(encoding="utf-8")

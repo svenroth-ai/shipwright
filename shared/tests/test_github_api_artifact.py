@@ -91,6 +91,7 @@ def _patch_api_call(monkeypatch, response: Any) -> list[str]:
 # latest_security_workflow_run — happy paths and filters
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.14")
 def test_latest_security_workflow_run_returns_fresh_run(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -102,6 +103,7 @@ def test_latest_security_workflow_run_returns_fresh_run(
     assert result["id"] == 900
 
 
+@pytest.mark.covers("FR-01.14")
 def test_latest_security_workflow_run_queries_default_branch(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -120,6 +122,7 @@ def test_latest_security_workflow_run_queries_default_branch(
     assert "actions/workflows/security.yml/runs" in path
 
 
+@pytest.mark.covers("FR-01.14")
 def test_latest_security_workflow_run_returns_none_on_empty_list(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -129,6 +132,7 @@ def test_latest_security_workflow_run_returns_none_on_empty_list(
     assert github_api.latest_security_workflow_run() is None
 
 
+@pytest.mark.covers("FR-01.14")
 def test_latest_security_workflow_run_returns_none_on_api_failure(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -138,6 +142,7 @@ def test_latest_security_workflow_run_returns_none_on_api_failure(
     assert github_api.latest_security_workflow_run() is None
 
 
+@pytest.mark.covers("FR-01.14")
 def test_latest_security_workflow_run_returns_none_on_malformed_payload(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -150,6 +155,7 @@ def test_latest_security_workflow_run_returns_none_on_malformed_payload(
         )
 
 
+@pytest.mark.covers("FR-01.14")
 def test_latest_security_workflow_run_freshness_gate_default_14d(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -160,6 +166,7 @@ def test_latest_security_workflow_run_freshness_gate_default_14d(
     assert github_api.latest_security_workflow_run() is None
 
 
+@pytest.mark.covers("FR-01.14")
 def test_latest_security_workflow_run_freshness_gate_env_override(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -175,6 +182,7 @@ def test_latest_security_workflow_run_freshness_gate_env_override(
     assert github_api.latest_security_workflow_run() is None
 
 
+@pytest.mark.covers("FR-01.14")
 def test_latest_security_workflow_run_picks_first_fresh_skipping_stale(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -187,6 +195,7 @@ def test_latest_security_workflow_run_picks_first_fresh_skipping_stale(
     assert result["id"] == FRESH_RUN["id"]
 
 
+@pytest.mark.covers("FR-01.14")
 def test_latest_security_workflow_run_invalid_created_at_skipped(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -265,6 +274,7 @@ def _stub_gh_run_download(
     return fake_run
 
 
+@pytest.mark.covers("FR-01.14")
 def test_download_security_findings_happy_path(monkeypatch: pytest.MonkeyPatch) -> None:
     """Successful download + valid JSON → returns the findings list."""
     monkeypatch.setattr(subprocess, "run", _stub_gh_run_download(success=True))
@@ -275,6 +285,7 @@ def test_download_security_findings_happy_path(monkeypatch: pytest.MonkeyPatch) 
     assert result[0]["id"] == "semgrep-0001"
 
 
+@pytest.mark.covers("FR-01.14")
 def test_download_security_findings_uses_argv_list(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -307,6 +318,7 @@ def test_download_security_findings_uses_argv_list(
     assert "timeout" in kwargs
 
 
+@pytest.mark.covers("FR-01.14")
 def test_download_security_findings_returns_none_on_subprocess_failure(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -315,6 +327,7 @@ def test_download_security_findings_returns_none_on_subprocess_failure(
     assert github_api.download_security_findings(900) is None
 
 
+@pytest.mark.covers("FR-01.14")
 def test_download_security_findings_returns_none_when_gh_missing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -327,6 +340,7 @@ def test_download_security_findings_returns_none_when_gh_missing(
     assert github_api.download_security_findings(900) is None
 
 
+@pytest.mark.covers("FR-01.14")
 def test_download_security_findings_returns_none_when_file_missing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -337,6 +351,7 @@ def test_download_security_findings_returns_none_when_file_missing(
     assert github_api.download_security_findings(900) is None
 
 
+@pytest.mark.covers("FR-01.14")
 def test_download_security_findings_discovers_nested_path(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -349,6 +364,7 @@ def test_download_security_findings_discovers_nested_path(
     assert len(result) == 2
 
 
+@pytest.mark.covers("FR-01.14")
 def test_download_security_findings_returns_none_on_invalid_json(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -360,6 +376,7 @@ def test_download_security_findings_returns_none_on_invalid_json(
     assert github_api.download_security_findings(900) is None
 
 
+@pytest.mark.covers("FR-01.14")
 def test_download_security_findings_returns_none_when_findings_not_a_list(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -380,6 +397,7 @@ def test_download_security_findings_returns_none_when_findings_not_a_list(
         assert result is None, f"bad payload {bad!r} should yield None"
 
 
+@pytest.mark.covers("FR-01.14")
 def test_download_security_findings_accepts_empty_findings_list(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -395,6 +413,7 @@ def test_download_security_findings_accepts_empty_findings_list(
     assert result == []  # NOT None — clean scan must be distinguishable from failure
 
 
+@pytest.mark.covers("FR-01.14")
 def test_download_security_findings_cleans_up_tempdir(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
 ) -> None:
@@ -420,16 +439,19 @@ def test_download_security_findings_cleans_up_tempdir(
 # artifact_max_age_days — env override
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.14")
 def test_artifact_max_age_days_default(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("SHIPWRIGHT_GITHUB_ARTIFACT_MAX_AGE_DAYS", raising=False)
     assert github_api.artifact_max_age_days() == 14.0
 
 
+@pytest.mark.covers("FR-01.14")
 def test_artifact_max_age_days_env_override(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("SHIPWRIGHT_GITHUB_ARTIFACT_MAX_AGE_DAYS", "30")
     assert github_api.artifact_max_age_days() == 30.0
 
 
+@pytest.mark.covers("FR-01.14")
 def test_artifact_max_age_days_invalid_env_falls_back_to_default(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -452,6 +474,7 @@ _CAPTURED_SAMPLE = (
     not _CAPTURED_SAMPLE.exists(),
     reason="captured sample artifact absent (run captured in main repo only)",
 )
+@pytest.mark.covers("FR-01.14")
 def test_real_findings_sample_parses(monkeypatch: pytest.MonkeyPatch) -> None:
     """Boundary probe: real findings.json captured from run 26192978904 round-trips.
 

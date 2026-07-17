@@ -22,6 +22,7 @@ This meta-test pins the invariant in both directions (mirrors the
 """
 
 from __future__ import annotations
+import pytest
 
 import re
 from pathlib import Path
@@ -91,6 +92,7 @@ def _has_raw_join(path: Path) -> bool:
     return False
 
 
+@pytest.mark.covers("FR-01.11")
 def test_worktree_reachable_files_use_the_resolver():
     """Forward: the files reached from inside a worktree resolve via the helper."""
     for rel in sorted(_WORKTREE_REACHABLE):
@@ -105,6 +107,7 @@ def test_worktree_reachable_files_use_the_resolver():
         )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_no_unaccounted_raw_event_log_joins():
     """Coverage: every raw event-log join in shared/scripts is the resolver,
     a helper consumer, or an allowlisted main-repo-only site."""
@@ -128,6 +131,7 @@ def test_no_unaccounted_raw_event_log_joins():
     )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_allowlist_entries_are_not_stale():
     """Reverse: every _MAIN_REPO_ONLY entry still exists and still has a raw
     join — a file migrated to the helper must be dropped from the allowlist."""
