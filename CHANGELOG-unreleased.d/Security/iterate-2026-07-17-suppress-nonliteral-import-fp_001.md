@@ -1,0 +1,1 @@
+Marked the shared-lib loader's dynamic import_module (shipwright-compliance collectors/_lib_loader.py) as a reviewed by-design site, suppressing a semgrep non-literal-import false positive (all callers pass hardcoded module names); loader behavior unchanged.

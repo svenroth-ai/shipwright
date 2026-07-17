@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-16-collector-test-roots",
-    "date": "2026-07-16",
+    "run_id": "iterate-2026-07-17-suppress-nonliteral-import-fp",
+    "date": "2026-07-17",
     "unit": {
       "status": "passed",
-      "passed": 1119,
-      "total": 1119
+      "passed": 79,
+      "total": 80
     },
     "integration": {
-      "status": "passed",
-      "passed": 2,
-      "total": 2
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -31,67 +31,19 @@
       "status": "skipped"
     },
     "degraded": [
-      "complexity classifier first returned estimate='large' + risk_flag touches_migrations from message-prose keywords (the verbose plan message trips the scope-keyword estimate; nothing in the diff touches SQL/migrations). A neutral, diff-accurate re-run returned 'medium' (history prior n=20, scope_keyword_estimate=trivial, zero risk flags). Overridden to medium per feedback_classifier_message_keyword_falsepos.md; the medium+ review path (3.5/3.7/3.8) was run regardless; F11 recomputes from diff-predicates. Real flags: cross_component + touches_io_boundary."
+      "Complexity classifier returned estimate='small' (confidence 0.6, prior_source=keyword) from the word 'add' in the change message; zero risk flags, risk_floor=trivial. Overridden to trivial per feedback_classifier_message_keyword_falsepos.md — the diff is a single inline comment (nosemgrep suppression) with no runtime behavior. F11 recomputes spec_impact/FR-gate from diff-predicates regardless."
     ],
     "surface_verification": {
       "surface": "none",
-      "runner": "pytest (plugins/shipwright-compliance 1119 + shared traceability/layer 68) + live generate_file() config-boundary probes + group_d/layer_coverage gate suites",
+      "runner": "pytest (plugins/shipwright-compliance related collector tests: test_test_links_collector/config_roots/hardening + test_requirement_parse + test_execution_evidence_join/paths + test_invalid_layers_manifest)",
       "exit_code": 0,
       "tests_run": 0,
-      "timestamp": "2026-07-16T00:00:00+00:00",
-      "justification": "No runnable app surface (web/cli/api) is added or changed — this is a compliance-collector scan-scope config knob. The behavior is proven by the F0 suite (1119 compliance + 68 shared traceability/layer, all green), two @pytest.mark.integration round-trips through generate_file(), and 11 empirical config-boundary probes (BOM/CRLF/non-object/absolute/**/escape + real-monorepo regen). The collector + Group-D detectors it drives are exercised end-to-end by the TT1-TT7 suites."
+      "timestamp": "2026-07-17T00:00:00+00:00",
+      "justification": "Comment-only source change (inline nosemgrep suppression for a confirmed non-literal-import false positive); no runnable app surface (web/cli/api) is added or changed. The loader's runtime behavior is unchanged and pinned by 79 passing related compliance collector tests at F0 (1 conditional skip)."
     },
     "test_completeness": {
-      "status": "complete",
-      "behaviors": [
-        {
-          "behavior": "AC1 — a @FR-tagged test under a config-opted plugins/*/tests root round-trips into the regenerated on-disk manifest (the tag PERSISTS instead of write-then-drop)",
-          "disposition": "tested",
-          "category": "integration",
-          "evidence": "test_test_links_config_roots.py::test_plugin_dir_tagged_test_round_trips_and_fixtures_are_fenced PASSED — generate_file() writes the manifest, schema-validates, and FR-07.01 carries the plugins/demo/tests/test_widget.py link"
-        },
-        {
-          "behavior": "AC4 — the collector's own traceability fixture mini-repos (fake @FR tags) are fenced by traceability.exclude_dirs so scanning plugins/*/tests fans NO bogus orphan; the exclude is load-bearing",
-          "disposition": "tested",
-          "category": "integration",
-          "evidence": "test_plugin_dir_tagged_test_round_trips_and_fixtures_are_fenced (orphans==[]) + test_without_exclude_the_fixture_tag_would_orphan (FR-99.99 confirmed_orphan appears WITHOUT the exclude) — both PASSED"
-        },
-        {
-          "behavior": "AC2 — config ABSENT ⇒ default scan is byte-unchanged (frozen golden + collector goldens reproduce exactly)",
-          "disposition": "tested",
-          "evidence": "test_configured_roots_default_to_conventional_when_absent PASSED; shared/tests/test_traceability_golden_consistency.py + plugins/shipwright-compliance/tests/test_test_links_collector.py golden-equality tests PASSED"
-        },
-        {
-          "behavior": "AC3 — traversal rewritten rglob→os.walk+in-place dirnames prune: vendored subtrees never descended, overlapping roots yield each file once, deterministic order",
-          "disposition": "tested",
-          "evidence": "test_overlapping_roots_yield_each_file_once PASSED; goldens (order-sensitive) reproduce; dirnames sorted in-place"
-        },
-        {
-          "behavior": "AC5 — describe/it suite propagation gated to TS/JS so a describe/it inside a PYTHON string literal (collector self-tests) is not a phantom suite tag",
-          "disposition": "tested",
-          "evidence": "test_describe_it_inside_a_python_string_is_not_a_suite_tag PASSED; real-monorepo regen: 5 phantom orphans BEFORE the gate → 0 AFTER"
-        },
-        {
-          "behavior": "AC6 — malformed config robustness: non-object JSON root, absolute test_roots entry, `**` glob, garbled/BOM JSON, and ../ escape are all dropped/fenced (never crash the regen), fallback is observable via stderr",
-          "disposition": "tested",
-          "evidence": "test_non_object_config_root_does_not_crash, test_absolute_test_root_entry_is_dropped_not_crashed, test_recursive_glob_entry_is_skipped_others_kept, test_malformed_config_falls_back_to_default, test_config_root_escaping_the_project_is_dropped — all PASSED"
-        },
-        {
-          "behavior": "AC7 — the real monorepo manifest regenerates clean with the opt-in (15 reqs, 0 orphans, 0 invalid, schema-valid; untagged 158→7014 = the honest backfill surface)",
-          "disposition": "tested",
-          "evidence": "live generate_file(project_root) probe: reqs=15 orphans=0 invalid=0 untagged=7014; group_d D-orphan/D-layer + layer_coverage TT5 suites PASSED against the output"
-        }
-      ],
-      "counts": {
-        "testable": 7,
-        "tested": 7,
-        "untestable": 0,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 7,
-        "covered_acs": 7
-      }
+      "status": "n/a",
+      "justification": "Trivial complexity — behavior-preserving comment-only change (inline nosemgrep suppression). No new or changed runtime behavior to enumerate; load_shared_lib behaves identically and is pinned by the 79 passing related compliance tests at F0."
     }
   },
   "coverage": {

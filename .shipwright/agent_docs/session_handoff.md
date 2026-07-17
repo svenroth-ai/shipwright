@@ -1,39 +1,36 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-16-collector-test-roots"
+run_id: "iterate-2026-07-17-suppress-nonliteral-import-fp"
 phase: "iterate"
-reason: "iterate: config-driven test_roots for the test_links collector"
-timestamp: "2026-07-16T20:24:29.654240+00:00"
+reason: "iterate: suppress non-literal-import semgrep FP in _lib_loader"
+timestamp: "2026-07-17T18:52:18.775115+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-16 20:24:29 UTC
+> Auto-generated 2026-07-17 18:52:18 UTC
 
 ## Session Info
 
-- **Session ID**: a69abb9e-d21a-40a1-846b-13913cca2b09
-- **Timestamp**: 2026-07-16 20:24:29 UTC
-- **Reason**: iterate: config-driven test_roots for the test_links collector
+- **Session ID**: 6e2941ea-7c72-4243-a0c6-dde68c5db726
+- **Timestamp**: 2026-07-17 18:52:18 UTC
+- **Reason**: iterate: suppress non-literal-import semgrep FP in _lib_loader
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-16-collector-test-roots
-- **Date**: 2026-07-16T20:24:24.024366Z
-- **Type**: feature
-- **Complexity**: medium
-- **Branch**: iterate/collector-test-roots
-- **ADR**: iterate-2026-07-16-collector-test-roots
+- **Run ID**: iterate-2026-07-17-suppress-nonliteral-import-fp
+- **Date**: 2026-07-17T18:52:09.304127Z
+- **Type**: change
+- **Complexity**: trivial
+- **Branch**: iterate/suppress-nonliteral-import-fp
+- **ADR**: iterate-2026-07-17-suppress-nonliteral-import-fp
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-16-collector-test-roots.md
+- **Spec**: (trivial — no iterate spec)
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/collector-test-roots
-- **Run ID**: iterate-2026-07-16-collector-test-roots
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-16-collector-test-roots.md
-- **Complexity**: medium · **change_type:** feature · **spec_impact:** none (framework tooling)
-- **External Review Marker**: stale (predates spec (2026-07-16T20:11:27))
+- **Branch**: iterate/suppress-nonliteral-import-fp
+- **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
@@ -51,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/collector-test-roots
-- **Last Commit**: 2c85758e chore(traceability): retrofit monorepo tests with @FR tags + webui handoff brief (TT8) (#386)
+- **Branch**: iterate/suppress-nonliteral-import-fp
+- **Last Commit**: 0d51bdf4 chore(triage): sweep 4 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-0cb56caa | grade_snapshot | — | 2026-07-17 |
+| evt-99ae3fa0 | work_completed | iterate (Add by-design nosemgrep suppression on _lib_loader.py import_module (line 41).) | 2026-07-17 |
 | evt-74374d73 | grade_snapshot | — | 2026-07-16 |
 | evt-37ed67db | work_completed | iterate (config-driven traceability.test_roots + exclude_dirs for the test_links collector) | 2026-07-16 |
 | evt-b959b7d8 | grade_snapshot | — | 2026-07-16 |
-| evt-a0436498 | work_completed | iterate (TT8: retrofit this monorepo's own tests with @FR requirement->test traceability tags (integration-tests baseline; 187-candidate full-corpus inventory triaged), regenerate the compliance test-traceability manifest, and author the webui-repo retrofit handoff brief.) | 2026-07-16 |
-| evt-8290a41d | grade_snapshot | — | 2026-07-16 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 316
-- **Last iterate**: feature — config-driven traceability.test_roots + exclude_dirs for the test_links collector (2026-07-16)
+- **Total work events**: 317
+- **Last iterate**: change — Add by-design nosemgrep suppression on _lib_loader.py import_module (line 41). (2026-07-17)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
