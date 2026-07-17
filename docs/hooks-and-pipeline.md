@@ -1944,12 +1944,30 @@ only on the sibling's own unmerged branch — from false-flagging drift on a lat
 branch. Fail-open when no event log exists, so a clean CI checkout (drops dir
 absent anyway) keeps whole-set behavior (iterate-2026-06-12-arch-drift-test-scope).
 
-Format: `- **ADR-NNN** (YYYY-MM-DD): Short description` — a one-line "what +
-pointer to the ADR". These docs are always-loaded Layer-1 context, so each entry
-is forward-budget-capped at 600 chars by
+Format: `- **<run_id|ADR-NNN>** (YYYY-MM-DD): <Impact> — <sentence>. → decision_log (Run-ID/ADR)`
+— a one-line "what + pointer". A hand-written iterate bullet is anchored by the
+iterate's **run_id** (the F2 form); `ADR-NNN` is the anchor only for the direct
+build/plan/… `write_decision_log.py` path. These docs are always-loaded Layer-1
+context, so each entry is forward-budget-capped at 600 chars by
 `plugins/shipwright-iterate/tests/test_agent_doc_entry_rules.py` (mirrors the
 `decision_log.md` per-field budget); the detail lives in the ADR /
 `.shipwright/planning/adr/` spec folder, not the bullet.
+
+**Bullet SHAPE is gated too (iterate-2026-07-17-arch-doc-refresh-harden).** The
+release aggregator (`aggregate_decisions.py`) used to blind-append a *second*
+`ADR-NNN` bullet for a change whose F2 run_id bullet already existed, so the same
+change appeared twice (run_id + ADR-NNN), which a human then compacted by hand. It
+now SKIPS that append when the run_id is already documented in the target section
+(`architecture_doc.run_id_documented_for_impact`) — the run_id line is the single
+canonical entry — and the direct-path bullet is canonicalized to the same
+`<Impact> — <sentence>. →` form. A new forward-only F11 verifier
+`check_agent_doc_shape` (via `tools/check_agent_doc_shape.py::find_violations`,
+SSoT `lib/agent_doc_shape.py`) enforces that every NEW dated bullet under the two
+`…Updates` sections (from 2026-06-28) is
+`- **<run_id|ADR-NNN>** (date): <Impact> — <sentence>. → <pointer>` — rejecting
+`Campaign`/`sub_iterate`/free-text anchors and a missing Impact separator / arrow
+pointer. `## Learnings` (date-first grammar) is out of scope. The monorepo also
+full-corpus-checks the real docs in `test_agent_doc_entry_rules.py`.
 
 **CLAUDE.md is budget-gated too (iterate-2026-07-10-claude-md-invariant-index).**
 CLAUDE.md is the most-loaded context file of all, but it has no stable entry

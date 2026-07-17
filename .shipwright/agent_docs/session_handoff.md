@@ -1,35 +1,38 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-17-step3-fr-unmapped-review"
+run_id: "iterate-2026-07-17-arch-doc-refresh-harden"
 phase: "iterate"
-reason: "iterate: STEP 3 FR-unmapped review decision (dismiss + accepted-state policy)"
-timestamp: "2026-07-17T22:03:26.464116+00:00"
+reason: "merge origin/main reconciliation"
+timestamp: "2026-07-17T21:08:26.226424+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-17 22:03:26 UTC
+> Auto-generated 2026-07-17 21:08:26 UTC
 
 ## Session Info
 
-- **Session ID**: 40969434-3270-441d-8539-20c5daea8d9f
-- **Timestamp**: 2026-07-17 22:03:26 UTC
-- **Reason**: iterate: STEP 3 FR-unmapped review decision (dismiss + accepted-state policy)
+- **Session ID**: 1202b22a-3c9e-4c44-b27c-1519865a3d53
+- **Timestamp**: 2026-07-17 21:08:26 UTC
+- **Reason**: merge origin/main reconciliation
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-17-step3-fr-unmapped-review
-- **Date**: 2026-07-17T22:02:57.056679Z
+- **Run ID**: iterate-2026-07-17-backfill-plugin-fr-tags
+- **Date**: 2026-07-17T20:56:51.832272Z
 - **Type**: change
-- **Complexity**: trivial
-- **Branch**: iterate/step3-fr-unmapped-review
-- **ADR**: iterate-2026-07-17-step3-fr-unmapped-review
+- **Complexity**: medium
+- **Branch**: iterate/backfill-plugin-fr-tags
+- **ADR**: iterate-2026-07-17-backfill-plugin-fr-tags
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/adr/106-step3-fr-unmapped-tests-accepted-state.md
+- **Spec**: .shipwright/planning/iterate/2026-07-17-backfill-plugin-fr-tags.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/step3-fr-unmapped-review
+- **Branch**: iterate/arch-doc-refresh-harden
+- **Run ID**: iterate-2026-07-17-arch-doc-refresh-harden
+- **Spec**: .shipwright/planning/iterate/2026-07-17-arch-doc-refresh-harden.md
+- **Complexity**: medium (overridden from keyword `large`; force-continue, full rigor)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/step3-fr-unmapped-review
-- **Last Commit**: d2fab580 chore(triage): sweep 5 outbox append(s) into branch
+- **Branch**: iterate/arch-doc-refresh-harden
+- **Last Commit**: 097c96fc Merge remote-tracking branch 'origin/main' into iterate/arch-doc-refresh-harden
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-3f23ed5d | grade_snapshot | — | 2026-07-17 |
-| evt-e848e205 | work_completed | iterate (STEP 3: dismiss the FR-unmapped review card (trg-0942da1f); record accepted-state policy for framework-internal untagged tests (ADR 106).) | 2026-07-17 |
 | evt-1672af39 | grade_snapshot | — | 2026-07-17 |
+| evt-b973003b | grade_snapshot | — | 2026-07-17 |
+| evt-3ef91172 | work_completed | iterate (iterate: backfill plugin/shared @FR tags + config-aware TT5 gate) | 2026-07-17 |
+| evt-18bb0c1c | grade_snapshot | — | 2026-07-17 |
 | evt-92ef6ad0 | grade_snapshot | — | 2026-07-17 |
-| evt-a49e415c | work_completed | iterate (Stage ci-security.json in the churn regenerate follow-up commit (close #375 CR-1 forward-staging gap)) | 2026-07-17 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 320
-- **Last iterate**: change — STEP 3: dismiss the FR-unmapped review card (trg-0942da1f); record accepted-state policy for framework-internal untagged tests (ADR 106). (2026-07-17)
+- **Last iterate**: change — iterate: backfill plugin/shared @FR tags + config-aware TT5 gate (2026-07-17)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

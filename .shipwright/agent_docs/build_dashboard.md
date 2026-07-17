@@ -1,13 +1,13 @@
 # Project Activity Dashboard
-> Updated: 2026-07-17 22:03 UTC | Session: 40969434-3270-441d-8539-20c5daea8d9f | Run: iterate-2026-07-17-step3-fr-unmapped-review
+> Updated: 2026-07-17 21:08 UTC | Session: 1202b22a-3c9e-4c44-b27c-1519865a3d53 | Run: iterate-2026-07-17-arch-doc-refresh-harden
 
 ## Recent Changes (320 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| change | STEP 3: dismiss the FR-unmapped review card (trg-0942da1f); record accepted-state policy for framework-internal untagged tests (ADR 106). | 17/17 |  | compliance | 2026-07-17 |
-| bug | Stage ci-security.json in the churn regenerate follow-up commit (close #375 CR-1 forward-staging gap) | 0/0 |  | infra | 2026-07-17 |
 | change | iterate: backfill plugin/shared @FR tags + config-aware TT5 gate | 0/0 |  | compliance | 2026-07-17 |
+| bug | Stage ci-security.json in the churn regenerate follow-up commit (close #375 CR-1 forward-staging gap) | 0/0 |  | infra | 2026-07-17 |
+| change | Canonical run_id changelog-bullet anchor + forward-only shape gate; aggregator stops the ADR-NNN dup; write_decision_log canonicalized; System-Overview mermaid + Data Flow (Plugins/GitHub) refreshed | 0/0 |  | tooling | 2026-07-17 |
 | change | Add by-design nosemgrep suppression on _lib_loader.py import_module (line 41). | 0/0 |  | tooling | 2026-07-17 |
 | feature | config-driven traceability.test_roots + exclude_dirs for the test_links collector | 1119/1119 |  | compliance | 2026-07-16 |
 | change | TT8: retrofit this monorepo's own tests with @FR requirement->test traceability tags (integration-tests baseline; 187-candidate full-corpus inventory triaged), regenerate the compliance test-traceability manifest, and author the webui-repo retrofit handoff brief. | 5936/5936 |  | compliance | 2026-07-16 |
@@ -327,7 +327,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-17 | Unit: 6561/6561 | Integration: 232/232 | Smoke: not_run | (iterate)
+Last run: 2026-07-17 | Unit: 6215/6230 | Smoke: skipped | (iterate)
 
 ## Pipeline
 
