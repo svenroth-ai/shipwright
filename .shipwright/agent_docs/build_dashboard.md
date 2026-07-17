@@ -1,11 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-17 20:56 UTC | Session: ddb39c8c-af24-445d-992e-fcc344ec6078 | Run: iterate-2026-07-17-backfill-plugin-fr-tags
+> Updated: 2026-07-17 19:46 UTC | Session: 56161d3c-8318-4554-b37e-476e6f37f05d | Run: iterate-2026-07-17-ci-security-forward-staging
 
 ## Recent Changes (318 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| change | iterate: backfill plugin/shared @FR tags + config-aware TT5 gate | 0/0 |  | compliance | 2026-07-17 |
+| bug | Stage ci-security.json in the churn regenerate follow-up commit (close #375 CR-1 forward-staging gap) | 0/0 |  | infra | 2026-07-17 |
 | change | Add by-design nosemgrep suppression on _lib_loader.py import_module (line 41). | 0/0 |  | tooling | 2026-07-17 |
 | feature | config-driven traceability.test_roots + exclude_dirs for the test_links collector | 1119/1119 |  | compliance | 2026-07-16 |
 | change | TT8: retrofit this monorepo's own tests with @FR requirement->test traceability tags (integration-tests baseline; 187-candidate full-corpus inventory triaged), regenerate the compliance test-traceability manifest, and author the webui-repo retrofit handoff brief. | 5936/5936 |  | compliance | 2026-07-16 |
@@ -325,7 +325,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-17 | Unit: 6561/6561 | Integration: 232/232 | Smoke: not_run | (iterate)
+Last run: 2026-07-17 | Unit: 4167/4179 | Integration: 1/1 | Smoke: skipped | (iterate)
 
 ## Pipeline
 
