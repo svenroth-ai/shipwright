@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-17-ci-security-forward-staging",
+  "date": "2026-07-17T19:44:57.186599Z",
+  "type": "bug",
+  "complexity": "medium",
+  "branch": "iterate/ci-security-forward-staging",
+  "spec": ".shipwright/planning/iterate/2026-07-17-ci-security-forward-staging.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-17-ci-security-forward-staging"
+}

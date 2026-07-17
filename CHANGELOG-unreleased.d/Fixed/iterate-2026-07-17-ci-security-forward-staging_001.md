@@ -1,0 +1,1 @@
+Churn-merge regenerate now stages .shipwright/compliance/ci-security.json in the integrate follow-up commit, so a fresh security.yml scan's summary refresh during an integrate merge is no longer left modified-but-unstaged (forward mirror of the rollback restore set).
