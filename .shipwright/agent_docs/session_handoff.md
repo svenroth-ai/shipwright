@@ -1,35 +1,37 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-17-suppress-nonliteral-import-fp"
+run_id: "iterate-2026-07-17-backfill-plugin-fr-tags"
 phase: "iterate"
-reason: "iterate: suppress non-literal-import semgrep FP in _lib_loader"
-timestamp: "2026-07-17T18:52:18.775115+00:00"
+reason: "iterate: backfill plugin/shared @FR tags + config-aware TT5 gate"
+timestamp: "2026-07-17T20:56:57.233003+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-17 18:52:18 UTC
+> Auto-generated 2026-07-17 20:56:57 UTC
 
 ## Session Info
 
-- **Session ID**: 6e2941ea-7c72-4243-a0c6-dde68c5db726
-- **Timestamp**: 2026-07-17 18:52:18 UTC
-- **Reason**: iterate: suppress non-literal-import semgrep FP in _lib_loader
+- **Session ID**: ddb39c8c-af24-445d-992e-fcc344ec6078
+- **Timestamp**: 2026-07-17 20:56:57 UTC
+- **Reason**: iterate: backfill plugin/shared @FR tags + config-aware TT5 gate
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-17-suppress-nonliteral-import-fp
-- **Date**: 2026-07-17T18:52:09.304127Z
+- **Run ID**: iterate-2026-07-17-backfill-plugin-fr-tags
+- **Date**: 2026-07-17T20:56:51.832272Z
 - **Type**: change
-- **Complexity**: trivial
-- **Branch**: iterate/suppress-nonliteral-import-fp
-- **ADR**: iterate-2026-07-17-suppress-nonliteral-import-fp
+- **Complexity**: medium
+- **Branch**: iterate/backfill-plugin-fr-tags
+- **ADR**: iterate-2026-07-17-backfill-plugin-fr-tags
 - **Tests passed**: True
-- **Spec**: (trivial — no iterate spec)
+- **Spec**: .shipwright/planning/iterate/2026-07-17-backfill-plugin-fr-tags.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/suppress-nonliteral-import-fp
+- **Branch**: iterate/backfill-plugin-fr-tags
+- **Spec**: .shipwright/planning/iterate/2026-07-17-backfill-plugin-fr-tags.md
+- **Complexity**: medium (history-calibrated; gate change + shared-engine change)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/suppress-nonliteral-import-fp
-- **Last Commit**: 0d51bdf4 chore(triage): sweep 4 outbox append(s) into branch
+- **Branch**: iterate/backfill-plugin-fr-tags
+- **Last Commit**: cb7a36f3 chore(triage): sweep 12 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +67,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-b973003b | grade_snapshot | — | 2026-07-17 |
+| evt-3ef91172 | work_completed | iterate (iterate: backfill plugin/shared @FR tags + config-aware TT5 gate) | 2026-07-17 |
 | evt-0cb56caa | grade_snapshot | — | 2026-07-17 |
 | evt-99ae3fa0 | work_completed | iterate (Add by-design nosemgrep suppression on _lib_loader.py import_module (line 41).) | 2026-07-17 |
 | evt-74374d73 | grade_snapshot | — | 2026-07-16 |
-| evt-37ed67db | work_completed | iterate (config-driven traceability.test_roots + exclude_dirs for the test_links collector) | 2026-07-16 |
-| evt-b959b7d8 | grade_snapshot | — | 2026-07-16 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 317
-- **Last iterate**: change — Add by-design nosemgrep suppression on _lib_loader.py import_module (line 41). (2026-07-17)
+- **Total work events**: 318
+- **Last iterate**: change — iterate: backfill plugin/shared @FR tags + config-aware TT5 gate (2026-07-17)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

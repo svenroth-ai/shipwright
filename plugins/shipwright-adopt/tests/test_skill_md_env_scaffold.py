@@ -29,6 +29,7 @@ def skill_text() -> str:
     return SKILL_MD.read_text(encoding="utf-8")
 
 
+@pytest.mark.covers("FR-01.13")
 def test_skill_md_exists(skill_text: str) -> None:
     """Sanity: file is non-empty markdown."""
     assert skill_text.startswith("---")
@@ -36,9 +37,11 @@ def test_skill_md_exists(skill_text: str) -> None:
 
 
 class TestStepE5EnvScaffold:
+    @pytest.mark.covers("FR-01.13")
     def test_step_e5_heading_present(self, skill_text: str) -> None:
         assert "### Step E.5" in skill_text
 
+    @pytest.mark.covers("FR-01.13")
     def test_step_e5_mentions_env_local(self, skill_text: str) -> None:
         # Locate the Step E.5 block, confined to itself
         e5_start = skill_text.index("### Step E.5")
@@ -47,6 +50,7 @@ class TestStepE5EnvScaffold:
         e5_block = skill_text[e5_start:e5_end]
         assert ".env.local" in e5_block
 
+    @pytest.mark.covers("FR-01.13")
     def test_step_e5_calls_validate_env_init(self, skill_text: str) -> None:
         e5_start = skill_text.index("### Step E.5")
         e5_end = skill_text.index("### Step F", e5_start)
@@ -58,6 +62,7 @@ class TestStepE5EnvScaffold:
         # Idempotence promise must be in the block.
         assert "idempotent" in e5_block.lower() or "never overwrite" in e5_block.lower()
 
+    @pytest.mark.covers("FR-01.13")
     def test_step_e5_documents_gitignore_handling(self, skill_text: str) -> None:
         e5_start = skill_text.index("### Step E.5")
         e5_end = skill_text.index("### Step F", e5_start)
@@ -66,12 +71,14 @@ class TestStepE5EnvScaffold:
 
 
 class TestStepHHandoffBanner:
+    @pytest.mark.covers("FR-01.13")
     def test_step_h_mentions_edit_env_local(self, skill_text: str) -> None:
         # "Edit .env.local" is the literal handoff phrase the iterate spec locks in.
         h_start = skill_text.index("### Step H")
         # H is the last step in the procedure; banner runs to end of section.
         assert "Edit .env.local" in skill_text[h_start:]
 
+    @pytest.mark.covers("FR-01.13")
     def test_step_h_documents_required_keys_dynamically(self, skill_text: str) -> None:
         """The handoff must say keys come from the profile, not hardcode them."""
         h_start = skill_text.index("### Step H")

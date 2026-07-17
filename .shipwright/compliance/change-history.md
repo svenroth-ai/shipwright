@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-07-17T18:52:09.564563+00:00
-Total commits: 1154
+Generated: 2026-07-17T20:56:51.914875+00:00
+Total commits: 1155
 
 ## Commit Distribution
 
@@ -9,7 +9,7 @@ Total commits: 1154
 pie title Commit Types
     "fix" : 331
     "feat" : 319
-    "chore" : 242
+    "chore" : 243
     "docs" : 145
     "refactor" : 68
     "test" : 28
@@ -680,11 +680,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 242 commits
+### Chores (chore) — 243 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-17 | triage | sweep 4 outbox append(s) into branch | 0d51bdf436fe |
+| 2026-07-17 | triage | sweep 12 outbox append(s) into branch | cb7a36f3bc28 |
+| 2026-07-17 | compliance | mark shared-lib loader import_module as by-design (semgrep FP) (#388) | fc6957724db1 |
 | 2026-07-16 | traceability | retrofit monorepo tests with @FR tags + webui handoff brief (TT8) (#386) | 2c85758ee6bc |
 | 2026-07-12 | review | default external-review GPT model to gpt-5.6-terra-pro (#366) | 4b71eec6aaa4 |
 | 2026-07-12 | release | bump root pyproject.toml to v0.31.0 (#365) | 1b4a471e075d |
@@ -1223,7 +1224,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1154 |
+| Total commits | 1155 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1154 |
+| Human-authored commits | 1155 |
 

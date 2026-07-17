@@ -179,11 +179,49 @@ def _archive_tree(project_root: Path, sha: str, dest: Path) -> bool:
     return True
 
 
-def _build(test_links, io, root: Path, evidence: dict, source_commit: str) -> dict:
+def _base_test_dirs(base: dict) -> set[str]:
+    """Every dir the BASE manifest found a test in (tagged links + untagged + orphans), as posix
+    rel paths. Fed to the HEAD ``_build`` so the gate re-scans wherever the base looked: a config
+    narrowed/deleted BETWEEN base and head then can't hide a base-linked test from the removal gate
+    (monotonic across the diff). The union floor only guards the default dirs, NOT the config-opted
+    plugin/shared roots where this repo's tagged tests live — so without this a head commit that
+    both removes an FR and drops ``test_roots`` would false-green."""
+    ids: list[str] = [str(t) for t in (base.get("untagged_tests") or [])]
+    ids += [str(o.get("test", "")) for o in (base.get("orphans") or []) if isinstance(o, dict)]
+    for node in (base.get("requirements") or {}).values():
+        if isinstance(node, dict):
+            for links in (node.get("tests") or {}).values():
+                ids += [str(li.get("path", "")) for li in links if isinstance(li, dict)]
+    # A root-level base test (path with no dir) yields parent "." — KEEP it; ``_build`` maps
+    # ``root / "."`` back to the project root so it is still re-scanned (never silently dropped).
+    return {Path(pth).parent.as_posix() for tid in ids if (pth := tid.split("::", 1)[0])}
+
+
+def _build(test_links, io, root: Path, evidence: dict, source_commit: str,
+           extra_roots: set[str] | None = None) -> dict:
+    # Honour ``traceability.test_roots`` / ``exclude_dirs`` (from ``root`` — the archived base OR
+    # head tree, so a base predating the key falls back to defaults) so a layer covered ONLY by a
+    # config-opted plugin/shared test is SEEN by the enforcing gate, not just the RTM. Two floors
+    # stop the gate from scanning LESS than it must (``configured_test_roots`` REPLACE-semantics
+    # would otherwise let a narrowed config hide a removed FR's still-tagged test → false-green):
+    # (1) UNION with ``default_test_roots`` — never below the conventional floor; (2) ``extra_roots``
+    # (HEAD only) — re-scan every dir the BASE found a test in (see ``_base_test_dirs``), monotonic
+    # across the diff. ``generate_file`` keeps pure REPLACE for the RTM; only the gate needs the
+    # floors. ``configured_prune_dirs`` still applies so fixture mini-repos' fake ``@FR`` tags stay
+    # out of the head-orphan sweep (else a false-RED).
+    configured = io.configured_test_roots(root)
+    test_roots: list[Path] = list(configured)
+    seen = {r.resolve() for r in configured}
+    for candidate in list(io.default_test_roots(root)) + [root / rel for rel in sorted(extra_roots or ())]:
+        resolved = candidate.resolve()
+        if resolved not in seen and candidate.is_dir():
+            seen.add(resolved)
+            test_roots.append(candidate)
     return test_links.build_manifest(
         root,
         spec_files=io.discover_specs(root),
-        test_roots=io.default_test_roots(root),
+        test_roots=test_roots,
+        prune_dirs=io.configured_prune_dirs(root),
         evidence=evidence,
         source_commit=source_commit,
     )
@@ -248,7 +286,10 @@ def regenerate_base_head(
             head_root = Path(hd)
             if not _archive_tree(project_root, commit_hash, head_root):
                 return None
-            head = _build(test_links, io, head_root, evidence, commit_hash)
+            # Re-scan wherever the BASE found tests AND wherever a test git-renamed TO, so a config
+            # narrowed/deleted between base and head can't hide a base-linked (or moved) test.
+            extra = _base_test_dirs(base) | {Path(p).parent.as_posix() for p in rename_map.values() if p}
+            head = _build(test_links, io, head_root, evidence, commit_hash, extra_roots=extra)
     except (OSError, ValueError):
         return None
     return base, head, rename_map

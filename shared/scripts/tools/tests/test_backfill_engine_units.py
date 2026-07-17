@@ -130,6 +130,32 @@ def test_discover_specs_and_default_test_roots(tmp_path):
     assert bf._default_test_roots(tmp_path / "empty") == [tmp_path / "empty"]   # fallback
 
 
+def test_iter_test_files_scans_a_repo_nested_under_a_prune_named_ancestor(tmp_path):
+    """Every iterate runs INSIDE ``.worktrees/<slug>/``, and ``.worktrees`` is a prune name.
+    Pruning on the whole ``path.parts`` (ancestors included) false-prunes EVERY file when the
+    repo itself sits under such a name → the engine scans 0 tests (the real worktree failure).
+    Pruning must consider only the parts BELOW the scan base, so an ancestor named ``.worktrees``
+    (or ``build``/``dist``/...) does not nuke the scan, while an in-tree ``node_modules`` /
+    ``__pycache__`` is still pruned."""
+    import backfill_scan as scan
+
+    base = tmp_path / ".worktrees" / "slug" / "repo"        # repo nested under a prune name
+    tests_dir = base / "plugins" / "demo" / "tests"
+    tests_dir.mkdir(parents=True)
+    (tests_dir / "test_widget.py").write_text("def test_widget():\n    assert True\n", encoding="utf-8")
+    vendored = tests_dir / "node_modules" / "pkg"           # an IN-TREE vendored dir
+    vendored.mkdir(parents=True)
+    (vendored / "test_vendor.py").write_text("def test_vendor():\n    assert True\n", encoding="utf-8")
+    cached = tests_dir / "__pycache__"                      # a second IN-TREE prune dir
+    cached.mkdir()
+    (cached / "test_cached.py").write_text("def test_cached():\n    assert True\n", encoding="utf-8")
+
+    rels = [rel for _abs, rel in scan.iter_test_files([base / "plugins"], base)]
+
+    assert "plugins/demo/tests/test_widget.py" in rels      # not false-pruned by the ancestor
+    assert not any("node_modules" in r or "__pycache__" in r for r in rels)  # in-tree prune dirs still pruned
+
+
 def test_render_markdown_none_and_write_failures():
     empty = {
         "engine_version": "v", "generated_at": "t",

@@ -108,7 +108,12 @@ def iter_test_files(roots: list[Path], base: Path):
         for path in sorted(root.rglob("*")):
             if not path.is_file() or path.suffix.lower() not in _SRC_SUFFIXES:
                 continue
-            if any(part in _PRUNE_DIRS for part in path.parts):
+            # Prune on the IN-TREE parts only (below ``base``): the whole ``path.parts`` would
+            # false-prune the ENTIRE scan when the project root sits under a prune-named
+            # ancestor — the mandatory ``.worktrees/<slug>/`` iterate worktree. In-tree
+            # ``node_modules``/``__pycache__`` is still excluded; a main-root scan is unchanged.
+            rel = path.relative_to(base)
+            if any(part in _PRUNE_DIRS for part in rel.parts):
                 continue
             name = path.name.lower()
             is_test = (
@@ -118,7 +123,7 @@ def iter_test_files(roots: list[Path], base: Path):
             if not is_test or path in seen:
                 continue
             seen.add(path)
-            yield path, path.relative_to(base).as_posix()
+            yield path, rel.as_posix()
 
 
 def _enumerate(rel_path: str, source: str) -> list[tuple[str, int, int]]:

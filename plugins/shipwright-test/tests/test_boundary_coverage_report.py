@@ -12,6 +12,7 @@ the Affected Boundaries section by hand (touches_io_boundary == True).
 """
 
 from __future__ import annotations
+import pytest
 
 import importlib.util
 import json
@@ -119,6 +120,7 @@ def _make_events_file(tmp_path: Path, events: list[dict]) -> Path:
 class TestParseMarkdownTable:
     """The Affected Boundaries section parser. 8-probe coverage from A."""
 
+    @pytest.mark.covers("FR-01.06")
     def test_parses_three_columns(self, tmp_path):
         spec = _write_spec(tmp_path, "spec.md", SPEC_WITH_BOUNDARIES)
         result = bcr.parse_affected_boundaries(spec)
@@ -129,17 +131,20 @@ class TestParseMarkdownTable:
         assert result[1].producer == "`tool.py::serialize`"
         assert result[2].format == "Markdown table"
 
+    @pytest.mark.covers("FR-01.06")
     def test_section_missing_returns_empty(self, tmp_path):
         spec = _write_spec(tmp_path, "spec.md", SPEC_WITHOUT_BOUNDARIES)
         result = bcr.parse_affected_boundaries(spec)
         assert result == []
 
+    @pytest.mark.covers("FR-01.06")
     def test_section_present_but_no_table_returns_empty(self, tmp_path):
         spec = _write_spec(tmp_path, "spec.md", SPEC_EMPTY_BOUNDARIES_SECTION)
         result = bcr.parse_affected_boundaries(spec)
         assert result == []
 
     # Probe 1: UTF-8 BOM
+    @pytest.mark.covers("FR-01.06")
     def test_handles_utf8_bom(self, tmp_path):
         spec = _write_spec(tmp_path, "spec.md", SPEC_WITH_BOUNDARIES, bom=True)
         result = bcr.parse_affected_boundaries(spec)
@@ -147,6 +152,7 @@ class TestParseMarkdownTable:
         assert result[0].producer == "`producer_a.py::write`"
 
     # Probe 2: CRLF line endings
+    @pytest.mark.covers("FR-01.06")
     def test_handles_crlf_line_endings(self, tmp_path):
         spec = _write_spec(tmp_path, "spec.md", SPEC_WITH_BOUNDARIES, crlf=True)
         result = bcr.parse_affected_boundaries(spec)
@@ -155,6 +161,7 @@ class TestParseMarkdownTable:
         assert result[0].format == "JSON"
 
     # Probe 3: Non-ASCII (umlauts)
+    @pytest.mark.covers("FR-01.06")
     def test_handles_non_ascii(self, tmp_path):
         spec = _write_spec(tmp_path, "spec.md", SPEC_NON_ASCII_BOUNDARIES)
         result = bcr.parse_affected_boundaries(spec)
@@ -163,6 +170,7 @@ class TestParseMarkdownTable:
         assert "ümlaut" in result[0].format
 
     # Probe 4: stops at next ## heading
+    @pytest.mark.covers("FR-01.06")
     def test_stops_at_next_h2(self, tmp_path):
         spec = _write_spec(tmp_path, "spec.md", SPEC_WITH_BOUNDARIES)
         result = bcr.parse_affected_boundaries(spec)
@@ -172,6 +180,7 @@ class TestParseMarkdownTable:
             assert "empirical probe" not in r.format
 
     # Probe 5: tolerant of whitespace/alignment markers in separator
+    @pytest.mark.covers("FR-01.06")
     def test_tolerant_of_alignment_separator(self, tmp_path):
         content = """\
 # X
@@ -189,6 +198,7 @@ class TestParseMarkdownTable:
         assert result[0].producer == "p1"
 
     # Probe 6: extra whitespace inside cells
+    @pytest.mark.covers("FR-01.06")
     def test_strips_cell_whitespace(self, tmp_path):
         content = """\
 # X
@@ -205,12 +215,14 @@ class TestParseMarkdownTable:
         assert result[0].format == "f1"
 
     # Probe 7: empty file does not crash
+    @pytest.mark.covers("FR-01.06")
     def test_empty_file_returns_empty(self, tmp_path):
         spec = _write_spec(tmp_path, "spec.md", "")
         result = bcr.parse_affected_boundaries(spec)
         assert result == []
 
     # Probe 8: heading match is exact (## Affected Boundaries) — no false positives
+    @pytest.mark.covers("FR-01.06")
     def test_heading_match_is_exact(self, tmp_path):
         content = """\
 # X
@@ -232,6 +244,7 @@ Just notes, not a table section.
 
 
 class TestScanSpecs:
+    @pytest.mark.covers("FR-01.06")
     def test_walks_iterate_planning_tree(self, tmp_path):
         planning_root = tmp_path / ".shipwright" / "planning" / "iterate"
         planning_root.mkdir(parents=True)
@@ -247,6 +260,7 @@ class TestScanSpecs:
         all_boundaries = [b for s in result for b in s.boundaries]
         assert len(all_boundaries) == 4
 
+    @pytest.mark.covers("FR-01.06")
     def test_returns_empty_when_dir_missing(self, tmp_path):
         result = bcr.scan_specs(tmp_path)
         assert result == []
@@ -258,6 +272,7 @@ class TestScanSpecs:
 
 
 class TestCorrelateWithCommits:
+    @pytest.mark.covers("FR-01.06")
     def test_drift_signal_fires_when_io_commit_lacks_section(self, tmp_path):
         planning_root = tmp_path / ".shipwright" / "planning" / "iterate"
         planning_root.mkdir(parents=True)
@@ -282,6 +297,7 @@ class TestCorrelateWithCommits:
         drift_rows = [r for r in rows if r.drift_signal]
         assert len(drift_rows) >= 1
 
+    @pytest.mark.covers("FR-01.06")
     def test_no_drift_when_section_present(self, tmp_path):
         planning_root = tmp_path / ".shipwright" / "planning" / "iterate"
         planning_root.mkdir(parents=True)
@@ -301,6 +317,7 @@ class TestCorrelateWithCommits:
         for r in rows:
             assert not r.drift_signal
 
+    @pytest.mark.covers("FR-01.06")
     def test_round_trip_detection_heuristic(self, tmp_path):
         """If a test file mentions producer name, mark round_trip_tested=True."""
         planning_root = tmp_path / ".shipwright" / "planning" / "iterate"
@@ -330,6 +347,7 @@ class TestCorrelateWithCommits:
         )
         assert any_tested, "Producer mention in test file should mark round_trip_tested=True"
 
+    @pytest.mark.covers("FR-01.06")
     def test_missing_events_file_handled_gracefully(self, tmp_path):
         planning_root = tmp_path / ".shipwright" / "planning" / "iterate"
         planning_root.mkdir(parents=True)
@@ -348,6 +366,7 @@ class TestCorrelateWithCommits:
 
 
 class TestRoundTripRender:
+    @pytest.mark.covers("FR-01.06")
     def test_render_json_then_markdown_then_reparse_equivalent(self, tmp_path):
         planning_root = tmp_path / ".shipwright" / "planning" / "iterate"
         planning_root.mkdir(parents=True)
@@ -391,6 +410,7 @@ class TestRoundTripRender:
 
 
 class TestCLI:
+    @pytest.mark.covers("FR-01.06")
     def test_cli_writes_json_and_markdown(self, tmp_path, monkeypatch, capsys):
         planning_root = tmp_path / ".shipwright" / "planning" / "iterate"
         planning_root.mkdir(parents=True)
@@ -422,6 +442,7 @@ class TestCLI:
 class TestSlugCollisionProtection:
     """Short stems (`r1.md`, `A.md`) must not match arbitrary commit text."""
 
+    @pytest.mark.covers("FR-01.06")
     def test_short_stem_does_not_collide_with_unrelated_commit(self, tmp_path):
         """A spec named `r1.md` must NOT match commits where 'r1' appears
         only as a substring (e.g. inside a hash, version string, or path).
@@ -460,6 +481,7 @@ class TestSlugCollisionProtection:
             f"matched={r1_row.commits!r}"
         )
 
+    @pytest.mark.covers("FR-01.06")
     def test_short_stem_matches_with_word_boundary(self, tmp_path):
         """A spec named `r1.md` matches commit 'iterate r1: do X' (word boundary)."""
         planning_root = tmp_path / ".shipwright" / "planning" / "iterate"
@@ -491,6 +513,7 @@ class TestSlugCollisionProtection:
             "Short slug should match when surrounded by word boundaries"
         )
 
+    @pytest.mark.covers("FR-01.06")
     def test_long_stem_keeps_substring_behavior(self, tmp_path):
         """For len >= 8, plain substring still works (high specificity)."""
         planning_root = tmp_path / ".shipwright" / "planning" / "iterate"
@@ -534,6 +557,7 @@ class TestRoundTripScoping:
     that actually appeared in the matched commit's `changed_files`.
     """
 
+    @pytest.mark.covers("FR-01.06")
     def test_unrelated_old_test_does_not_count_as_evidence(self, tmp_path):
         """An old test from a different feature that happens to mention
         the producer name must NOT mark `round_trip_tested=True` once we
@@ -583,6 +607,7 @@ class TestRoundTripScoping:
             not br.round_trip_tested for br in narrow_row.boundary_results
         ), "Unrelated old test must not mark round_trip_tested=True"
 
+    @pytest.mark.covers("FR-01.06")
     def test_relevant_changed_test_does_count_as_evidence(self, tmp_path):
         """A test file that IS in `changed_files` and mentions the
         producer should count.
@@ -628,6 +653,7 @@ class TestRoundTripScoping:
             br.round_trip_tested for br in narrow_row.boundary_results
         ), "Relevant changed test should mark round_trip_tested=True"
 
+    @pytest.mark.covers("FR-01.06")
     def test_missing_changed_files_falls_back_to_unknown_marker(self, tmp_path):
         """When `changed_files` is missing on the event, the heuristic
         falls back to the full-walk AND marks the row's tested status
@@ -686,6 +712,7 @@ class TestMergeIntoFlag:
     the JSON output into shipwright_test_results.json#boundary_coverage_report.
     """
 
+    @pytest.mark.covers("FR-01.06")
     def test_merge_into_creates_key_in_existing_file(self, tmp_path):
         planning_root = tmp_path / ".shipwright" / "planning" / "iterate"
         planning_root.mkdir(parents=True)
@@ -708,6 +735,7 @@ class TestMergeIntoFlag:
         assert "boundary_coverage_report" in merged
         assert "rows" in merged["boundary_coverage_report"]
 
+    @pytest.mark.covers("FR-01.06")
     def test_merge_into_creates_file_if_missing(self, tmp_path):
         planning_root = tmp_path / ".shipwright" / "planning" / "iterate"
         planning_root.mkdir(parents=True)
@@ -725,6 +753,7 @@ class TestMergeIntoFlag:
         merged = json.loads(results_path.read_text(encoding="utf-8"))
         assert "boundary_coverage_report" in merged
 
+    @pytest.mark.covers("FR-01.06")
     def test_merge_into_idempotent(self, tmp_path):
         """Running twice produces the same final shape (last write wins)."""
         planning_root = tmp_path / ".shipwright" / "planning" / "iterate"

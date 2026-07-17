@@ -1,0 +1,1 @@
+The enforcing traceability gates (removal + cross-layer) now honour a project's configured plugin/shared test roots and can no longer be false-greened by a config that narrows scope (fail-closed superset scan).

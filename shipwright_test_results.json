@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-17-suppress-nonliteral-import-fp",
+    "run_id": "iterate-2026-07-17-backfill-plugin-fr-tags",
     "date": "2026-07-17",
     "unit": {
       "status": "passed",
-      "passed": 79,
-      "total": 80
+      "passed": 6561,
+      "total": 6561
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 232,
+      "total": 232
     },
     "pgtap": {
       "status": "not_run",
@@ -28,22 +28,81 @@
       "total": 0
     },
     "smoke": {
-      "status": "skipped"
+      "status": "not_run"
     },
-    "degraded": [
-      "Complexity classifier returned estimate='small' (confidence 0.6, prior_source=keyword) from the word 'add' in the change message; zero risk flags, risk_floor=trivial. Overridden to trivial per feedback_classifier_message_keyword_falsepos.md — the diff is a single inline comment (nosemgrep suppression) with no runtime behavior. F11 recomputes spec_impact/FR-gate from diff-predicates regardless."
-    ],
+    "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "runner": "pytest (plugins/shipwright-compliance related collector tests: test_test_links_collector/config_roots/hardening + test_requirement_parse + test_execution_evidence_join/paths + test_invalid_layers_manifest)",
-      "exit_code": 0,
       "tests_run": 0,
-      "timestamp": "2026-07-17T00:00:00+00:00",
-      "justification": "Comment-only source change (inline nosemgrep suppression for a confirmed non-literal-import false positive); no runnable app surface (web/cli/api) is added or changed. The loader's runtime behavior is unchanged and pinned by 79 passing related compliance collector tests at F0 (1 conditional skip)."
+      "exit_code": 0,
+      "justification": "Compliance/traceability INFRASTRUCTURE change (backfill engine worktree-scan fix + config-aware TT5 enforcement gate + 189 @FR tag data). No web/UI/API surface and nothing the WebUI renders field-for-field is touched; spec_impact none (no product FR behaviour change), so the E2E/cross-layer gates do not fire. Verified via the Python suites (shared/tests 4170, backfill 239, gate suites 29, adopt/test/iterate/compliance plugins, integration-tests 232) + ruff."
     },
     "test_completeness": {
-      "status": "n/a",
-      "justification": "Trivial complexity — behavior-preserving comment-only change (inline nosemgrep suppression). No new or changed runtime behavior to enumerate; load_shared_lib behaves identically and is pinned by the 79 passing related compliance tests at F0."
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "engine scans a repo nested under a prune-named ancestor (the .worktrees worktree)",
+          "disposition": "tested",
+          "evidence": "test_backfill_engine_units.py::test_iter_test_files_scans_a_repo_nested_under_a_prune_named_ancestor PASSED"
+        },
+        {
+          "behavior": "in-tree node_modules / __pycache__ still pruned after the prune-predicate change",
+          "disposition": "tested",
+          "evidence": "same test asserts neither node_modules nor __pycache__ appears"
+        },
+        {
+          "behavior": "enforcing gate sees config-opted plugin-dir coverage (base predates config)",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "test_layer_coverage_config_scope.py::test_gate_sees_plugin_dir_coverage_when_head_opts_it_in (real git archive -> collector -> gate)"
+        },
+        {
+          "behavior": "gate misses plugin coverage without config (load-bearing control)",
+          "disposition": "tested",
+          "evidence": "test_layer_coverage_config_scope.py::test_gate_misses_plugin_dir_coverage_without_config_load_bearing"
+        },
+        {
+          "behavior": "union floor: a config narrowing below defaults cannot false-green the removal gate",
+          "disposition": "tested",
+          "evidence": "test_removal_gate_keeps_default_floor_when_config_narrows (revert-proven load-bearing)"
+        },
+        {
+          "behavior": "monotonic re-scan: head dropping the config cannot false-green the removal gate",
+          "disposition": "tested",
+          "evidence": "test_removal_gate_rescans_base_dirs_when_head_drops_the_config (revert-proven load-bearing)"
+        },
+        {
+          "behavior": "rename-target re-scan: a test moved to a NEW dir + FR removed + config dropped cannot false-green",
+          "disposition": "tested",
+          "evidence": "test_removal_gate_follows_a_renamed_test_into_a_new_dir_when_config_drops (revert-proven load-bearing)"
+        },
+        {
+          "behavior": "exclude_dirs load-bearing: a fixture-path test cannot fake a required layer",
+          "disposition": "tested",
+          "evidence": "test_gate_excludes_fixture_path_so_a_fixture_cannot_fake_a_layer (revert-proven load-bearing)"
+        },
+        {
+          "behavior": "189 @FR tags written correctly; a plugin-dir tag round-trips into the manifest with 0 orphans",
+          "disposition": "tested",
+          "evidence": "existing test_test_links_config_roots.py::test_plugin_dir_tagged_test_round_trips_and_fixtures_are_fenced + manual regen (orphans==0)"
+        },
+        {
+          "behavior": "covers pytest marker registered in iterate/test/adopt pyprojects so tagged tests don't warn",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "reason": "pyproject config verified by collecting the tagged suites (all green, no strict-marker error)"
+        }
+      ],
+      "counts": {
+        "testable": 9,
+        "tested": 9,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 9,
+        "covered_acs": 9
+      }
     }
   },
   "coverage": {
