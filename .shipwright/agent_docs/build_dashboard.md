@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-18 22:18 UTC | Session: 1a5c5f62-8d5c-486b-aeca-6de1d4e6d619 | Run: iterate-2026-07-18-accepted-risk-alert-convergence
+> Updated: 2026-07-18 22:36 UTC | Session: 1a5c5f62-8d5c-486b-aeca-6de1d4e6d619 | Run: iterate-2026-07-18-accepted-risk-alert-convergence
 
-## Recent Changes (332 iterations)
+## Recent Changes (333 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Record-boundary recovery + newline-termination guard on shipwright_events.jsonl: record_event.append_event and append_event_idempotent probe ends_without_newline before appending, lib/config.read_events delegates to read_jsonl_records so a concatenated line yields all its records, and the lock-free adopt event_seeder carries a documented duplicate probe (ADR-045 blocks importing the shared leaf). Extends the PR #399 triage contract to the audit trail. | 0/0 |  | tooling | 2026-07-18 |
 | change | iterate: converge accepted risks onto the code-scanning surface (trg-13b8283b) | 0/0 |  | compliance | 2026-07-18 |
 | change | iterate: scanner-agnostic accepted-risk register (trg-15a8e267, item 4) | 0/0 |  | compliance | 2026-07-18 |
 | change | iterate: requirements golden corpus freezing discovery + parser behaviour | 0/0 |  | tooling | 2026-07-18 |

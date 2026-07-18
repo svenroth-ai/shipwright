@@ -3,17 +3,17 @@ canon_generated: true
 run_id: "iterate-2026-07-18-accepted-risk-alert-convergence"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-18T22:18:16.354557+00:00"
+timestamp: "2026-07-18T22:36:05.056466+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-18 22:18:16 UTC
+> Auto-generated 2026-07-18 22:36:05 UTC
 
 ## Session Info
 
 - **Session ID**: 1a5c5f62-8d5c-486b-aeca-6de1d4e6d619
-- **Timestamp**: 2026-07-18 22:18:16 UTC
+- **Timestamp**: 2026-07-18 22:36:05 UTC
 - **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
@@ -51,7 +51,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Git State
 
 - **Branch**: iterate/accepted-risk-alert-convergence
-- **Last Commit**: 1cba13a6 Merge remote-tracking branch 'origin/main' into iterate/accepted-risk-alert-convergence
+- **Last Commit**: 8cfddce1 Merge remote-tracking branch 'origin/main' into iterate/accepted-risk-alert-convergence
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -67,17 +67,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-f39eefda | grade_snapshot | — | 2026-07-18 |
 | evt-76b4cd89 | grade_snapshot | — | 2026-07-18 |
+| evt-66ae4d09 | grade_snapshot | — | 2026-07-18 |
+| evt-9726e6a6 | work_completed | iterate (Record-boundary recovery + newline-termination guard on shipwright_events.jsonl: record_event.append_event and append_event_idempotent probe ends_without_newline before appending, lib/config.read_events delegates to read_jsonl_records so a concatenated line yields all its records, and the lock-free adopt event_seeder carries a documented duplicate probe (ADR-045 blocks importing the shared leaf). Extends the PR #399 triage contract to the audit trail.) | 2026-07-18 |
 | evt-6878c083 | grade_snapshot | — | 2026-07-18 |
-| evt-061daf99 | work_completed | iterate (iterate: converge accepted risks onto the code-scanning surface (trg-13b8283b)) | 2026-07-18 |
-| evt-5a2ddb30 | grade_snapshot | — | 2026-07-18 |
-| evt-7a6fa40a | work_completed | iterate (iterate: scanner-agnostic accepted-risk register (trg-15a8e267, item 4)) | 2026-07-18 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 332
-- **Last iterate**: change — iterate: converge accepted risks onto the code-scanning surface (trg-13b8283b) (2026-07-18)
+- **Total work events**: 333
+- **Last iterate**: change — Record-boundary recovery + newline-termination guard on shipwright_events.jsonl: record_event.append_event and append_event_idempotent probe ends_without_newline before appending, lib/config.read_events delegates to read_jsonl_records so a concatenated line yields all its records, and the lock-free adopt event_seeder carries a documented duplicate probe (ADR-045 blocks importing the shared leaf). Extends the PR #399 triage contract to the audit trail. (2026-07-18)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

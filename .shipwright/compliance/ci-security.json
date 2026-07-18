@@ -9,8 +9,8 @@
   "degraded": false,
   "open_high_critical": 0,
   "prompt_injection": 0,
-  "scan_date": "2026-07-18T22:05:10Z",
+  "scan_date": "2026-07-18T22:39:16Z",
   "schema": 1,
-  "source": "security.yml#29662799546",
+  "source": "security.yml#29663835479",
   "total": 2
 }

@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-18T22:18:16.354557Z. Items waiting for triage decision.
+> Auto-generated 2026-07-18T22:36:05.056466Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 335
-- Triage: 7 | Promoted: 1 | Dismissed: 326 | Snoozed: 1
+- Total: 337
+- Triage: 9 | Promoted: 1 | Dismissed: 326 | Snoozed: 1
 
-## Top 7 items (severity-sorted)
+## Top 9 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -38,6 +38,18 @@
 - **Retire the write-once v1 run-config fields (current_step / completed_steps)** `id=trg-d1e466aa | severity=low | kind=improvement → P3/engineering`
   - Follow-up from iterate-2026-07-14-phase-invocation-mode (external plan review, Gemini #2). The v2 lifecycle never advan…
   - Promote: `triage_promote.py --id trg-d1e466aa --task-ref EXT:<ref>`
+
+### Source: iterate-2026-07-18-requirements-golden-corpus (2 items)
+
+<a id="trg-183a304a"></a>
+- **Flaky idempotency test: dashboard render compared across a minute boundary** `id=trg-183a304a | severity=medium | kind=bug → P2/engineering`
+  - shared/tests/test_finalize_iterate.py::test_run_is_idempotent compares two generated dashboard renders for byte equalit…
+  - Promote: `triage_promote.py --id trg-183a304a --task-ref EXT:<ref>`
+
+<a id="trg-9532fa83"></a>
+- **Three requirements-parser defects frozen by S1, fixed by campaign step S4** `id=trg-9532fa83 | severity=medium | kind=improvement → P2/engineering`
+  - Three defects in the requirements table parsers, found while building the S1 golden corpus (campaign Requirements Catal…
+  - Promote: `triage_promote.py --id trg-9532fa83 --task-ref EXT:<ref>`
 
 ### Source: operator (2 items)
 
