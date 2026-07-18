@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-18T17:04:22.088722+00:00
+Generated: 2026-07-18T20:41:06.472191+00:00
 
 ## Requirements Coverage
 
@@ -28,6 +28,7 @@ Generated: 2026-07-18T17:04:22.088722+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-7a6fa40a"></a>scanner-agnostic accepted-risk register (trg-15a8e267, item 4) | iterate | change |  | — | — | 2026-07-18 |
 | <a id="evt-14ef5fcb"></a>enforce record termination + recover record boundaries on the triage log | iterate | change | [FR-01.14](#rtm-fr-0114) | — | — | 2026-07-18 |
 | <a id="evt-b827a6b1"></a>CI supply-chain risk flag + acknowledgement gate (trg-9509c2e8 item 3) | iterate | change |  | — | — | 2026-07-18 |
 | <a id="evt-3d1c18b7"></a>FR-existence gate — declared requirement ids must exist | iterate | change |  | — | — | 2026-07-18 |
@@ -364,7 +365,7 @@ Generated: 2026-07-18T17:04:22.088722+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 329 |
+| Iterate changes | 330 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |

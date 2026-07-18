@@ -239,6 +239,44 @@ not via a `semgrep --exclude-rule` flag, so it is robust across semgrep
 versions and mirrors the SARIF-suppression parser. SCA acceptances live in the
 parallel Trivy register at repo-root `.trivyignore.yaml`.
 
+#### The accepted-risk register (scanner-agnostic record)
+
+The channels above are where a suppression is *applied*; repo-root
+**`shipwright_accepted_risks.yaml`** is where it is *recorded*. Every acceptance
+carries a `target`, the scanner-native `rule`, an `expires` re-review date, a
+`rationale_ref` naming a recorded decision (`ADR-NNN`, an `iterate-…` run id,
+`#NNN`, `DO-NOT #NNN`), and a `statement`.
+
+Before it existed, the only accepted-risk due date in the framework was
+`expired_at` inside `.trivyignore.yaml` — a *Trivy SCA ignore file*. A Semgrep or
+CI-posture acceptance had nowhere to record an expiry, so one ended up registered
+inside a Trivy ignore file purely to obtain a due date.
+
+The register does not replace the scanner wiring; a both-directions gate keeps
+the two honest:
+
+```bash
+uv run shared/scripts/tools/accepted_risks_cli.py check  --project-root .
+uv run shared/scripts/tools/accepted_risks_cli.py expire --project-root .
+```
+
+`check` fails when a suppression has no register entry (an **unrecorded**
+acceptance — nobody can tell why it is there or when to re-review it) *and* when
+a register entry matches no real suppression (a **stale** record). `expire` fails
+once an acceptance is past its re-review date. Both run in CI via
+`shared/tests/test_accepted_risks_register.py`, so the discipline is mechanical
+rather than conventional — an expiry nobody enforces is a comment.
+
+The compliance dashboard renders the register with expiry status and the
+authority each acceptance rests on. A suppression with **no** register entry is
+rendered as drift, not as an accepted risk: being suppressed is not the same as
+being accepted.
+
+**Not covered offline:** a `github-dismissal` acceptance. Its counterpart is live
+GitHub alert state rather than a file, so `check` reports it as *unchecked* (it
+never treats "not checkable here" as "checked and fine"). Converging that surface
+so one acceptance quiets both triage and code scanning is tracked separately.
+
 **Where the GH-owned drop applies (two paths).** The owner-scoped predicate lives
 in the shared leaf module `shared/scripts/gh_action_tag_owner.py` so both
 application points stay in lockstep:

@@ -1,0 +1,1 @@
+Scanner-agnostic accepted-risk register (`shipwright_accepted_risks.yaml`): every consciously accepted security finding is recorded once with a re-review date, a reference to the decision that authorised it, and a justification — instead of being spread across a Trivy ignore file, two environment switches and manual dismissals.
