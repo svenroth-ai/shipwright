@@ -1,34 +1,38 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-18-events-jsonl-record-boundary"
+run_id: "iterate-2026-07-18-requirements-golden-corpus"
 phase: "iterate"
-reason: "record-boundary recovery + newline guard on the event log"
-timestamp: "2026-07-18T21:54:43.527761+00:00"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-07-18T20:41:12.077490+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-18 21:54:43 UTC
+> Auto-generated 2026-07-18 20:41:12 UTC
 
 ## Session Info
 
-- **Session ID**: 4e41edc2-5b3f-42e5-8f2d-2547e371aa12
-- **Timestamp**: 2026-07-18 21:54:43 UTC
-- **Reason**: record-boundary recovery + newline guard on the event log
+- **Session ID**: 8e6fa31c-9819-4642-9ae6-d261a2be7a91
+- **Timestamp**: 2026-07-18 20:41:12 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-18-events-jsonl-record-boundary
-- **Date**: 2026-07-18T21:53:20.371053Z
+- **Run ID**: iterate-2026-07-18-accepted-risk-register
+- **Date**: 2026-07-18T20:41:06.396378Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/events-jsonl-record-boundary
-- **ADR**: iterate-2026-07-18-events-jsonl-record-boundary
+- **Branch**: iterate/accepted-risk-register
+- **ADR**: iterate-2026-07-18-accepted-risk-register
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/2026-07-18-accepted-risk-register.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/events-jsonl-record-boundary
+- **Branch**: iterate/requirements-golden-corpus
+- **Run ID**: iterate-2026-07-18-requirements-golden-corpus
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-18-requirements-golden-corpus.md
+- **Complexity**: medium (`prior_source: history`, n=20)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -47,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/events-jsonl-record-boundary
-- **Last Commit**: 1e6ad04a chore(triage): sweep 2 outbox append(s) into branch
+- **Branch**: iterate/requirements-golden-corpus
+- **Last Commit**: ffadb528 Merge remote-tracking branch 'origin/main' into iterate/requirements-golden-corpus
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-66ae4d09 | grade_snapshot | — | 2026-07-18 |
-| evt-9726e6a6 | work_completed | iterate (Record-boundary recovery + newline-termination guard on shipwright_events.jsonl: record_event.append_event and append_event_idempotent probe ends_without_newline before appending, lib/config.read_events delegates to read_jsonl_records so a concatenated line yields all its records, and the lock-free adopt event_seeder carries a documented duplicate probe (ADR-045 blocks importing the shared leaf). Extends the PR #399 triage contract to the audit trail.) | 2026-07-18 |
 | evt-5a2ddb30 | grade_snapshot | — | 2026-07-18 |
 | evt-7a6fa40a | work_completed | iterate (iterate: scanner-agnostic accepted-risk register (trg-15a8e267, item 4)) | 2026-07-18 |
+| evt-06f743dd | grade_snapshot | — | 2026-07-18 |
+| evt-43acdff8 | work_completed | iterate (iterate: requirements golden corpus freezing discovery + parser behaviour) | 2026-07-18 |
 | evt-a2835609 | grade_snapshot | — | 2026-07-18 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 331
-- **Last iterate**: change — Record-boundary recovery + newline-termination guard on shipwright_events.jsonl: record_event.append_event and append_event_idempotent probe ends_without_newline before appending, lib/config.read_events delegates to read_jsonl_records so a concatenated line yields all its records, and the lock-free adopt event_seeder carries a documented duplicate probe (ADR-045 blocks importing the shared leaf). Extends the PR #399 triage contract to the audit trail. (2026-07-18)
+- **Last iterate**: change — iterate: scanner-agnostic accepted-risk register (trg-15a8e267, item 4) (2026-07-18)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

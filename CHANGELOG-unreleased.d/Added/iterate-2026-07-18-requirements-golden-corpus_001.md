@@ -1,0 +1,1 @@
+Requirements golden corpus (`integration-tests/requirements_corpus/`) freezing the current behaviour of all 15 requirement-discovery walks and all 5 FR-table parsers across 10 fixtures, so the catalog refactor's behaviour-preserving claim can be verified instead of trusted.
