@@ -1,17 +1,17 @@
 # Commit Change Log
 
 Generated: 2026-07-18T17:04:22.088722+00:00
-Total commits: 1166
+Total commits: 1171
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 335
-    "feat" : 323
-    "chore" : 246
+    "feat" : 324
+    "chore" : 249
     "docs" : 145
-    "refactor" : 68
+    "refactor" : 69
     "test" : 28
     "ci" : 11
     "other" : 9
@@ -24,7 +24,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-18 | triage | enforce record termination and recover concatenated records | 9ca66e7644f2 |
+| 2026-07-18 | triage | enforce record termination and recover concatenated records (#399) | 7a34d1adc132 |
 | 2026-07-18 | fr-gate | reject declared requirement ids that exist in no spec (#398) | cad7dd0152be |
 | 2026-07-18 | churn | admit test-traceability.json to the merge-conflict allowlist (#394) | 7b771b962d41 |
 | 2026-07-17 | churn | stage ci-security.json in the regenerate follow-up commit (#389) | fe29df0b7683 |
@@ -360,10 +360,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 323 commits
+### Features (feat) — 324 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-18 | iterate | CI supply-chain risk flag with a recorded-acknowledgement gate | 96cdda88e051 |
 | 2026-07-18 | traceability | resolve tagged FR ids through the spec FR-Fold-Map (#397) | 4fe2d680ae1e |
 | 2026-07-18 | fr-authoring | plain-language capability-level FR rules + advisory hygiene audit (#395) | 29d09188e1dd |
 | 2026-07-17 | agent-docs | canonical run_id changelog anchor + shape gate; kill aggregator ADR dup (#391) | 00174d952230 |
@@ -688,11 +689,14 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 246 commits
+### Chores (chore) — 249 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-18 | triage | sweep 15 outbox append(s) into branch | 53d240e752b7 |
+| 2026-07-18 | churn | background producer appends (grade snapshot + compliance finding) | c97440884e5f |
+| 2026-07-18 | triage | deliver 3 orphaned records from the merged iterate worktree (#402) | 56ee1c0e2387 |
+| 2026-07-18 | churn | regenerate derived snapshots after main merge | d1d433df4079 |
+| 2026-07-18 | triage | sweep 11 outbox append(s) into branch | ec9f91db20c4 |
 | 2026-07-18 | security | by-design nosemgrep suppression for the layer-coverage loader (#396) | 6cfd0e84655a |
 | 2026-07-18 | test-hygiene | resolve 51 pre-existing skipped-test findings (STEP 2) (#393) | 490a624e39f8 |
 | 2026-07-18 | traceability | dismiss STEP 3 FR-unmapped review card + record accepted-state policy (#392) | 9bff5d72718b |
@@ -1089,10 +1093,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 68 commits
+### Refactoring (refactor) — 69 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-18 | tests | split test_triage_repair.py under the 300-LOC gate (#400) | c741f46bcf80 |
 | 2026-07-15 | iterate | parallelise the F0 verification gate without weakening it (#371) | 0befc7d075be |
 | 2026-07-07 | coverage | route the monorepo's own diff-coverage gate through the shared action (Stage 3) (#340) | 863dd8aec9cb |
 | 2026-07-07 | coverage | extract the diff-coverage gate into a shared composite action (Stage 1) (#338) | 546ae678f711 |
@@ -1235,7 +1240,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1166 |
+| Total commits | 1171 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1166 |
+| Human-authored commits | 1171 |
 

@@ -1,19 +1,19 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-18-outbox-newline-corruption"
+run_id: "iterate-2026-07-18-ci-supplychain-risk-flag"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-18T17:04:27.470053+00:00"
+timestamp: "2026-07-18T17:20:32.125204+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-18 17:04:27 UTC
+> Auto-generated 2026-07-18 17:20:32 UTC
 
 ## Session Info
 
-- **Session ID**: 583f972d-6945-4147-8ab7-dcc583aab8d5
-- **Timestamp**: 2026-07-18 17:04:27 UTC
+- **Session ID**: f15cf408-1257-4860-b0d5-cb049ffe3344
+- **Timestamp**: 2026-07-18 17:20:32 UTC
 - **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
@@ -29,10 +29,9 @@ timestamp: "2026-07-18T17:04:27.470053+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/outbox-newline-corruption
-- **Run ID**: iterate-2026-07-18-outbox-newline-corruption
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-18-outbox-newline-corruption.md
-- **Complexity**: medium (`prior_source: history`, n=20)
+- **Branch**: iterate/ci-supplychain-risk-flag
+- **Run ID**: `iterate-2026-07-18-ci-supplychain-risk-flag`
+- **Spec**: .shipwright/planning/iterate/2026-07-18-ci-supplychain-risk-flag.md
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -51,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/outbox-newline-corruption
-- **Last Commit**: ca56a164 Merge remote-tracking branch 'origin/main' into iterate/outbox-newline-corruption
+- **Branch**: iterate/ci-supplychain-risk-flag
+- **Last Commit**: cea80a0b Merge remote-tracking branch 'origin/main' into iterate/ci-supplychain-risk-flag
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +67,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-9f5dc340 | grade_snapshot | — | 2026-07-18 |
-| evt-3d1c18b7 | work_completed | iterate (iterate: FR-existence gate — declared requirement ids must exist) | 2026-07-18 |
+| evt-a2835609 | grade_snapshot | — | 2026-07-18 |
 | evt-695d77cd | grade_snapshot | — | 2026-07-18 |
 | evt-14ef5fcb | work_completed | iterate (iterate: enforce record termination + recover record boundaries on the triage log) | 2026-07-18 |
-| evt-7518638a | grade_snapshot | — | 2026-07-18 |
+| evt-0f5f02a1 | grade_snapshot | — | 2026-07-18 |
+| evt-9f5dc340 | grade_snapshot | — | 2026-07-18 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 328
-- **Last iterate**: change — iterate: FR-existence gate — declared requirement ids must exist (2026-07-18)
+- **Total work events**: 329
+- **Last iterate**: change — iterate: enforce record termination + recover record boundaries on the triage log (2026-07-18)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
