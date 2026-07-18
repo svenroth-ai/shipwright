@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-18-churn-allowlist-test-traceability",
+    "run_id": "iterate-2026-07-18-fr-authoring-rules",
     "date": "2026-07-18",
     "unit": {
       "status": "passed",
-      "passed": 6812,
-      "total": 6812
+      "passed": 7908,
+      "total": 7908
     },
     "integration": {
       "status": "passed",
@@ -23,65 +23,183 @@
       "total": 0
     },
     "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "not_run"
     },
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [],
+    "degraded": [
+      "classify_complexity reported risk flag 'touches_auth' — FALSE POSITIVE. The classifier matches risk keywords against the message prose, and the substring 'auth' occurs inside 'FR-authoring'. No auth file is in the diff; the risk_detectors.py diff-predicates are authoritative and F11 recomputes them. Overridden deliberately.",
+      "External code review: first invocation returned a truncated Gemini response and an OpenAI 'NoneType' error. Retried; the retry succeeded with both providers (2/2) and its findings were acted on. Recorded because the first attempt was reported as reviews_succeeded=1 with degraded=false, which understates it.",
+      "Local-only test-environment failures, NOT regressions and NOT caused by this diff: shipwright-security (3) needs semgrep/gitleaks/trivy on PATH and shipwright-grade (4) needs recorded empirical fixtures. Both suites are fully green without CI=true (470 passed/3 skipped and 393 passed/5 skipped); the CI-discipline rule promotes those environment skips to hard failures when CI=true is set locally. Neither plugin contains a file touched by this diff.",
+      "CodeQL flagged a REAL high-severity py/redos in this diff's own new code (group_i_detectors._FILE_PATH_RE: `[\\w./-]*\\w\\.(ext)` overlaps its own class). Root-fixed by anchoring on the extension (linear, no leading quantifier) and by removing the same overlap class from _PASCAL_RE — NOT suppressed. Regression-tested and re-probed for accuracy. A second, MEDIUM semgrep alert (non-literal-import in shared/scripts/tools/verifiers/_layer_coverage_regen.py) is PRE-EXISTING and outside this diff."
+    ],
     "surface_verification": {
       "surface": "none",
       "tests_run": 0,
       "exit_code": 0,
-      "justification": "Framework merge-tooling completeness fix: admits .shipwright/compliance/test-traceability.json to the churn allowlist + regenerate-staging + integrate rollback (mirror of the ci-security.json CR-1). No product/source, API, store, SSE/WS or UI code touched, so spec_impact is none and the E2E/cross-layer gates do not fire. Verified end-to-end by real-git merge-conflict integration tests (resolve + rollback) in the Python suite."
+      "justification": "Framework-internal change: an agent-authoring rulebook plus prompt/reference edits in adopt/project/iterate, and a new advisory compliance audit group. No product source, API route, store, SSE/WS handler, message contract or UI code is touched, so the backend-affects-frontend rule does not fire and there is no runtime surface to drive. Verified instead by the empirical probes recorded in the iterate spec, including running the detectors against the real webui spec before and after its human cleanup (66 rows/92% dirty -> 29 rows/0% dirty, zero false positives) and a mutation probe proving the drift guard fires."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "conflicted test-traceability.json is resolvable (not blocking) in classify/complete_merge",
+          "behavior": "name fence flags HTTP verb / ADR / iterate slug / file path / snake_case symbol",
           "disposition": "tested",
-          "evidence": "test_test_traceability_forward_staging.py::test_test_traceability_in_allowlist_not_blocking PASSED"
+          "evidence": "test_audit_group_i_detectors.py::test_name_flags_* (5) PASSED"
         },
         {
-          "behavior": "regenerate records + STAGES test-traceability.json when _update_compliance rewrites it",
+          "behavior": "clean capability name produces no finding",
           "disposition": "tested",
-          "evidence": "test_test_traceability_forward_staging.py::test_regenerate_stages_test_traceability_when_rewritten PASSED"
+          "evidence": "test_audit_group_i_detectors.py::test_clean_capability_name_is_silent PASSED"
         },
         {
-          "behavior": "regenerate does not phantom-stage an unchanged test-traceability.json",
+          "behavior": "description fence flags file path and camelCase symbol",
           "disposition": "tested",
-          "evidence": "test_test_traceability_forward_staging.py::test_regenerate_does_not_stage_unchanged_test_traceability PASSED"
+          "evidence": "test_audit_group_i_detectors.py::test_description_flags_* PASSED"
         },
         {
-          "behavior": "a real two-sided merge conflict on test-traceability.json RESOLVES through integrate_main (regenerated content reaches the follow-up commit, clean tree) instead of aborting",
+          "behavior": "plain prose with a parenthetical gloss passes clean",
           "disposition": "tested",
-          "evidence": "test_test_traceability_forward_staging.py::test_test_traceability_fresh_scan_reaches_followup_commit PASSED",
-          "category": "integration"
+          "evidence": "test_audit_group_i_detectors.py::test_description_allows_plain_prose_with_gloss PASSED"
         },
         {
-          "behavior": "integrate_main rollback restores test-traceability.json on a post-regen failure (no dirty residue)",
+          "behavior": "platform words (iOS/iPadOS) are not treated as code symbols",
           "disposition": "tested",
-          "evidence": "test_integrate_main.py::test_integrate_rollback_restores_test_traceability_on_regen_failure PASSED",
-          "category": "integration"
+          "evidence": "test_audit_group_i_detectors.py::test_platform_names_are_not_code_symbols PASSED"
         },
         {
-          "behavior": "hooks-and-pipeline churn table stays 1:1 with CHURN_ALLOWLIST both directions",
+          "behavior": "PascalCase symbols flagged; Title Case prose is not",
           "disposition": "tested",
-          "evidence": "test_churn_merge_doc_sync.py::test_doc_table_matches_churn_allowlist_both_directions PASSED"
+          "evidence": "test_audit_group_i_detectors.py::test_description_flags_pascal_case_symbol + test_capitalised_prose_is_not_a_pascal_symbol PASSED"
+        },
+        {
+          "behavior": "every fold verb the rulebook names is detected",
+          "disposition": "tested",
+          "evidence": "test_audit_group_i_detectors.py::test_fold_candidate_covers_every_verb_the_rulebook_lists PASSED"
+        },
+        {
+          "behavior": "'Phase N of' in domain prose is not a fold candidate",
+          "disposition": "tested",
+          "evidence": "test_audit_group_i_detectors.py::test_domain_phase_prose_is_not_a_fold_candidate PASSED"
+        },
+        {
+          "behavior": "header-driven scan reads greenfield / adopt / Area table shapes",
+          "disposition": "tested",
+          "evidence": "test_audit_group_i.py::test_scan_greenfield_* + test_scan_adopt_* + test_scan_tolerates_area_column PASSED"
+        },
+        {
+          "behavior": "Removed Requirements rows are excluded from prose linting",
+          "disposition": "tested",
+          "evidence": "test_audit_group_i.py::test_scan_skips_removed_requirements + test_retired_rows_are_not_linted_for_prose PASSED"
+        },
+        {
+          "behavior": "Source column (legitimate file paths) is never linted",
+          "disposition": "tested",
+          "evidence": "test_audit_group_i.py::test_scan_adopt_splits_name_and_description PASSED"
+        },
+        {
+          "behavior": "I1 skips (not passes) when the spec shape has no Name column",
+          "disposition": "tested",
+          "evidence": "test_audit_group_i.py::test_clean_greenfield_spec_is_clean PASSED"
+        },
+        {
+          "behavior": "I1 genuinely passes on a clean spec that has a Name column",
+          "disposition": "tested",
+          "evidence": "test_audit_group_i.py::test_clean_adopt_spec_passes_the_name_fence PASSED"
+        },
+        {
+          "behavior": "duplicate FR ID within a split is reported",
+          "disposition": "tested",
+          "evidence": "test_audit_group_i.py::test_duplicate_fr_id_is_reported PASSED"
+        },
+        {
+          "behavior": "reuse of a retired FR number is caught (fr-authoring.md section 4)",
+          "disposition": "tested",
+          "evidence": "test_audit_group_i.py::test_retired_fr_number_must_not_be_reused PASSED"
+        },
+        {
+          "behavior": "absent spec SKIPs rather than fails",
+          "disposition": "tested",
+          "evidence": "test_audit_group_i.py::test_no_spec_skips_rather_than_fails PASSED"
+        },
+        {
+          "behavior": "advisory contract: group I, detective-only, never HIGH",
+          "disposition": "tested",
+          "evidence": "test_audit_group_i.py::test_every_finding_is_detective_only_and_advisory PASSED"
+        },
+        {
+          "behavior": "prose checks never emit fail, so they never flip the audit verdict",
+          "disposition": "tested",
+          "evidence": "test_audit_group_i.py::test_prose_checks_never_flip_the_audit_verdict PASSED"
+        },
+        {
+          "behavior": "preview capped at 5 IDs while the true count is reported",
+          "disposition": "tested",
+          "evidence": "test_audit_group_i.py::test_findings_cap_the_preview_but_report_the_true_count PASSED"
+        },
+        {
+          "behavior": "Group I is registered and runs in the default group set",
+          "disposition": "tested",
+          "evidence": "test_audit_detector.py + test_audit_group_b.py + test_audit_groups_a_d.py (pins updated to A-I) PASSED"
+        },
+        {
+          "behavior": "Group I is inside the Stop-hook full-coverage gate (no false dismiss)",
+          "disposition": "tested",
+          "evidence": "test_audit_compliance_on_stop.py (pins updated to A-I) PASSED"
+        },
+        {
+          "behavior": "rulebook exists, is non-empty, and retains every cited section",
+          "disposition": "tested",
+          "evidence": "test_fr_authoring_refs.py::test_rulebook_* (7) PASSED"
+        },
+        {
+          "behavior": "all four FR-authoring surfaces still cite the rulebook",
+          "disposition": "tested",
+          "evidence": "test_fr_authoring_refs.py::test_fr_authoring_surface_cites_the_rulebook (4 params) PASSED"
+        },
+        {
+          "behavior": "adopt's contradicting guidance stays removed AND the new rule is positively present",
+          "disposition": "tested",
+          "evidence": "test_fr_authoring_refs.py::test_adopt_no_longer_carries_the_contradicting_guidance + test_adopt_positively_states_the_plain_language_rule PASSED"
+        },
+        {
+          "behavior": "both iterate paths still carry the MINT-vs-FOLD gate",
+          "disposition": "tested",
+          "evidence": "test_fr_authoring_refs.py::test_iterate_paths_carry_the_mint_vs_fold_gate (2 params) PASSED"
+        },
+        {
+          "behavior": "agents actually author better FR prose given the new instructions",
+          "disposition": "untestable",
+          "reason_code": "requires-manual-visual-judgment",
+          "evidence": "LLM prose quality has no deterministic oracle. Mitigated structurally: Group I measures the OUTPUT, and the real-spec probe shows it discriminates human-clean from human-dirty specs with zero false positives."
+        },
+        {
+          "behavior": "the audit group registry, the detector's default run set, and the Stop-hook coverage gate agree on the group set — so a newly registered group cannot run while the gate still reports full coverage and dismisses the backlog item",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "shared/tests/test_audit_group_registry_stop_gate_integration.py (3 tests, real registry + real run_all + real coverage_ok) PASSED. Mutation-probed: reverting _EXPECTED_GROUPS to {A..H} fails it, restoring passes — it catches the exact HIGH false-dismiss the review round found."
+        },
+        {
+          "behavior": "the prose detectors run in linear time on pathological input (no ReDoS) — they scan arbitrary spec text, and adopt reverse-engineers that text from a foreign repo, so a hung detector would wedge the whole compliance audit",
+          "disposition": "tested",
+          "evidence": "test_audit_group_i_detectors.py::test_detectors_are_linear_on_pathological_input PASSED (5 hostile inputs incl. 4000-char word runs, < 2s ceiling)"
+        },
+        {
+          "behavior": "the ReDoS fix did not weaken file-path detection, incl. .tsx not read as .ts + x",
+          "disposition": "tested",
+          "evidence": "test_file_path_detection_survived_the_redos_fix + test_tsx_is_not_read_as_ts_plus_x PASSED; real-spec probe re-run unchanged at 45%/93% dirty vs 0%/0% clean"
         }
       ],
       "counts": {
-        "testable": 6,
-        "tested": 6,
-        "untestable": 0,
+        "total": 29,
+        "tested": 28,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 4,
-        "covered_acs": 4
+        "acs": 6,
+        "covered_acs": 6
       }
     }
   },

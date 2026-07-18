@@ -16,6 +16,11 @@ differences:
 ## Step 2: Spec Update — classify the Spec Impact (always — CHANGE)
 
 1. Identify which spec file(s) cover the affected area.
+1a. **MINT-vs-FOLD gate** — identical to FEATURE Step 1a; read
+   `shared/fr-authoring.md` (§3). For CHANGE the answer is almost always
+   **FOLD**: modifying, completing, or polishing an existing capability is
+   MODIFY on its FR, never a new row. Minting a row for a change is how a
+   requirements table decays into a second changelog.
 2. **Classify the spec impact** as one or more of ADD / MODIFY / REMOVE,
    or NONE — same four cases as FEATURE Step 2. For CHANGE the default
    is **MODIFY**.
@@ -26,10 +31,16 @@ differences:
      the modified behavior + any backwards-compatibility / migration
      guarantees. The FR ID goes to F7 `--affected-frs`. Reference the
      run_id + ADR.
+     - Keep the description **plain business language**
+       (`shared/fr-authoring.md` §1) — an edit must not smuggle a file path,
+       symbol, or ADR number into a row that was previously clean. The
+       run_id/ADR provenance belongs in the AC line, not the description.
    - **ADD** (rare for CHANGE) — only when the modification carves out a
-     new user-visible capability alongside the old one: append a new FR
-     table row + an acceptance-criteria block; the new FR ID goes to F7
-     `--new-frs`.
+     genuinely new user-visible capability alongside the old one, and only
+     after the gate above says MINT: append a new FR table row + an
+     acceptance-criteria block; the new FR ID goes to F7 `--new-frs`.
+     Number it deterministically (next free `FR-{split}.NN`, counting live
+     **and** removed rows) and name it as a capability, per FEATURE Step 2.
    - **REMOVE** — the change deletes a user-visible capability: move the
      FR row into a `### Removed Requirements` subsection with the run_id
      and the literal `status: deprecated` (never silently delete).

@@ -40,12 +40,24 @@ Write a **strict JSON object** to `.shipwright/adopt/enrichment.json`:
 
 **Quality leitplanken** (respect these in the inline enrichment):
 
-- **Code > Prose**: if README contradicts the actual folder structure,
-  the code wins. Describe what the code *does*, not what old docs *said*.
+- **`label` + `description` follow `shared/fr-authoring.md`** — they become the
+  Name and Description of an FR, so they are **plain business language**: what
+  the capability does and what it guarantees, in words a product owner
+  understands. No file paths, ADR numbers, HTTP verbs, or code symbols in
+  either field — the route belongs in the `route` field and the file in
+  `Source`, not in the prose. Read that document before writing enrichment.
+  - ❌ `"label": "Pending tool_use list (GET)"`,
+    `"description": "Walks unmatched tool_use ids in the JSONL."`
+  - ✅ `"label": "Pending questions"`,
+    `"description": "Shows every question the assistant is waiting on, so no session sits blocked unnoticed."`
+- **Code > Prose**: if README contradicts the actual folder structure, the code
+  wins. Derive the capability from what the code actually *does* — then state
+  that capability in business language, not as a description of the code.
 - **Don't invent.** If unclear, write `"TBD"` — the Layer-3 review and
   `/shipwright-iterate` will refine.
-- **No marketing copy.** Keep descriptions nüchtern, technical,
-  IREB-compatible.
+- **No marketing copy, and no implementation dump either.** Sober and concrete,
+  IREB-compatible — but readable by a non-engineer. Never drop a behavioural
+  guarantee to sound plainer.
 - **ASCII box diagram style**: match the existing convention used in
   `webui/.shipwright/agent_docs/architecture.md` — plain ASCII box-drawing characters
   (`┌`, `─`, `│`, `└`), no Mermaid. Size: roughly 40–60 lines.

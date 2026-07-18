@@ -116,6 +116,17 @@ Gate — parallel suite runner; verdict-preserving):
   for a parallel-only false green, enforced by
   `test_f0_ci_parity.py::test_ci_stays_SERIAL`.
 
+Refined by `iterate-2026-07-18-fr-authoring-rules` (FR-authoring rules):
+
+- (E) Given an iterate whose change completes, polishes, fixes or extends a
+  capability that already has an FR, when Step 2 classifies the spec impact,
+  then the MINT-vs-FOLD gate routes it to MODIFY — acceptance criteria on the
+  existing FR — instead of appending a new FR row.
+- (E) Given an iterate that does mint a new FR, when it chooses the ID, then it
+  takes the next free number in that split counted over live AND
+  `### Removed Requirements` rows, so a retired number is never reused and the
+  number is never guessed.
+
 ### FR-01.13 — `/shipwright-adopt` (no project-level hook install)
 
 Refined by `iterate-20260505-plugin-hook-registration`. Supersedes
@@ -137,6 +148,14 @@ Refined by `iterate-2026-05-16-backfill-historical-frs` (backfill —
   enforced to match it BEFORE the write — if enforcement fails the write
   is aborted so no secrets are staged.
 
+Refined by `iterate-2026-07-18-fr-authoring-rules` (FR-authoring rules):
+
+- (E) Given Layer-2 semantic enrichment generates a feature `label` and
+  `description`, when they are written, then they follow
+  `shared/fr-authoring.md` — a capability-level name and a plain
+  business-language description — and the superseded "technical / describe what
+  the code does" guidance is no longer present to contradict it.
+
 ### FR-01.02 — `/shipwright-project` (no project-level hook install)
 
 Refined by `iterate-20260505-plugin-hook-registration`. Supersedes
@@ -157,6 +176,14 @@ Refined by `iterate-2026-05-16-spec-impact-gate`:
   `data_collector.collect_requirements`) exclude that subsection from
   live-requirement coverage. Convention documented in
   `plugins/shipwright-project/skills/project/references/spec-generation.md`.
+
+Refined by `iterate-2026-07-18-fr-authoring-rules` (FR-authoring rules):
+
+- (E) Given requirement decomposition writes an FR sentence, when the sentence
+  is authored, then it states the capability in plain language a product owner
+  can sign off without decoding jargon, carries no file path, ADR number, HTTP
+  verb or code symbol, and drops no behavioural guarantee for the sake of
+  plainness.
 
 ### FR-01.01 — `/shipwright-run` (no project-level hook install)
 
@@ -220,6 +247,17 @@ Refined by `iterate-2026-07-01-grade-composition-neutral` (composition-neutral g
   or *broken* — never by a decline in the FR-tagging rate. Traceability control is
   carried by requirement coverage + change reconciliation (both
   composition-independent) and by the write-time FR-gate.
+
+Refined by `iterate-2026-07-18-fr-authoring-rules` (FR-authoring rules):
+
+- (E) Given a spec whose FR names or descriptions carry implementation detail,
+  when the detective audit runs, then Group I reports the count and the offending
+  FR IDs (I1/I2/I3) WITHOUT changing the audit verdict or exit code, so an
+  existing spec can be cleaned up gradually without reddening CI.
+- (E) Given two rows claim the same FR ID within one split — including reuse of a
+  number already retired to `### Removed Requirements` — when the detective audit
+  runs, then Group I check I4 FAILS, because one ID naming two requirements
+  breaks the identity that tests and the event log depend on.
 
 ### FR-01.06 — `/shipwright-test` (boundary coverage report)
 

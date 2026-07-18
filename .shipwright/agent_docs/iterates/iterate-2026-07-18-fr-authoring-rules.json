@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-18-fr-authoring-rules",
+  "date": "2026-07-18T06:41:35.245945Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/fr-authoring-rules",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-18-fr-authoring-rules.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-18-fr-authoring-rules"
+}

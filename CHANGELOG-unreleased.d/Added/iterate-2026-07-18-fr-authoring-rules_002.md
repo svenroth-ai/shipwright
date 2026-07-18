@@ -1,0 +1,1 @@
+Compliance detective audit **Group I — Requirement Hygiene**: flags FR names (I1) and descriptions (I2) carrying implementation detail, change-deltas minted as their own requirement (I3), and duplicate or reused FR IDs (I4). I1-I3 are advisory — reported with counts but never changing the audit verdict, so a spec with legacy prose can be cleaned up gradually; I4 fails.

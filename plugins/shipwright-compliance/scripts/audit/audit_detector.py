@@ -69,7 +69,7 @@ _GROUPS: dict[str, GroupFn] = {}
 def register_group(letter: str, fn: GroupFn) -> None:
     """Register a group check function. Called by Steps 4-8."""
     letter = letter.upper()
-    if letter not in {"A", "B", "C", "D", "E", "F", "G", "H"}:
+    if letter not in {"A", "B", "C", "D", "E", "F", "G", "H", "I"}:
         raise ValueError(f"unknown audit group letter: {letter!r}")
     _GROUPS[letter] = fn
 
@@ -281,7 +281,7 @@ def run_all(
     wanted = (
         {g.upper() for g in only}
         if only
-        else {"A", "B", "C", "D", "E", "F", "G", "H"}
+        else {"A", "B", "C", "D", "E", "F", "G", "H", "I"}
     )
 
     for letter in sorted(wanted):

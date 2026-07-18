@@ -1,9 +1,0 @@
-{
-  "run_id": "iterate-2026-07-06-cross-plugin-cache-heal",
-  "date": "2026-07-07T12:34:16.729743Z",
-  "type": "change",
-  "complexity": "medium",
-  "branch": "iterate/cross-plugin-cache-heal",
-  "tests_passed": true,
-  "adr": "iterate-2026-07-06-cross-plugin-cache-heal"
-}

@@ -1,0 +1,1 @@
+`shared/fr-authoring.md` — one cross-plugin rulebook for writing Functional Requirements: plain business language a non-engineer can sign off, capability altitude (not endpoints or change-deltas), an explicit MINT-vs-FOLD gate, deterministic FR numbering, and a name fence. Cited by `/shipwright-adopt`, `/shipwright-project` and `/shipwright-iterate`.
