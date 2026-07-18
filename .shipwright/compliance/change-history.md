@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-07-18T20:41:06.472191+00:00
-Total commits: 1169
+Generated: 2026-07-18T21:54:37.691902+00:00
+Total commits: 1170
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 335
-    "feat" : 324
+    "feat" : 325
     "chore" : 247
     "docs" : 145
     "refactor" : 69
@@ -360,10 +360,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 324 commits
+### Features (feat) — 325 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-18 | compliance | scanner-agnostic accepted-risk register, gated both directions (#404) | 4a948378b207 |
 | 2026-07-18 | iterate | CI supply-chain risk flag with a recorded-acknowledgement gate (#401) | 7c303a8b3410 |
 | 2026-07-18 | traceability | resolve tagged FR ids through the spec FR-Fold-Map (#397) | 4fe2d680ae1e |
 | 2026-07-18 | fr-authoring | plain-language capability-level FR rules + advisory hygiene audit (#395) | 29d09188e1dd |
@@ -693,7 +694,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-18 | triage | sweep 7 outbox append(s) into branch | 718a05d7d54b |
+| 2026-07-18 | triage | sweep 2 outbox append(s) into branch | 1e6ad04a126f |
 | 2026-07-18 | triage | deliver 3 orphaned records from the merged iterate worktree (#402) | 56ee1c0e2387 |
 | 2026-07-18 | security | by-design nosemgrep suppression for the layer-coverage loader (#396) | 6cfd0e84655a |
 | 2026-07-18 | test-hygiene | resolve 51 pre-existing skipped-test findings (STEP 2) (#393) | 490a624e39f8 |
@@ -1238,7 +1239,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1169 |
+| Total commits | 1170 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1169 |
+| Human-authored commits | 1170 |
 

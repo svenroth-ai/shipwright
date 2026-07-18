@@ -18,6 +18,7 @@ from typing import Any
 
 from .events_amend import apply_amendments  # noqa: F401 — re-exported SSOT
 from .events_log import resolve_events_path
+from .jsonl_records import read_jsonl_records
 
 CONFIG_FILES = {
     "run": "shipwright_run_config.json",
@@ -138,23 +139,37 @@ def collect_all_build_sections(project_root: str | Path) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 def read_events(project_root: str | Path) -> list[dict[str, Any]]:
-    """Read all events from the JSONL log. Tolerant — skips corrupt lines.
+    """Read all events from the JSONL log. Tolerant — RECOVERS concatenated records.
 
     Worktree-aware: resolves the canonical (main-repo) event log via
     ``resolve_events_path`` so the build dashboard renderer, run from inside
     a ``/shipwright-iterate`` worktree at F5b, reads the full event history
     rather than an absent/empty worktree-local copy.
+
+    A line holding several concatenated records yields ALL of them rather than
+    none (iterate-2026-07-18-events-jsonl-record-boundary). This reader used to
+    skip such a line whole, discarding every event on it — on an append-only
+    AUDIT TRAIL, corruption must never read as absence: a dropped
+    ``work_completed`` makes a step that happened read as one that never did.
+
+    The concatenation is reachable without any crash: ``shipwright_events.jsonl``
+    carries ``merge=union`` in .gitattributes, and union merge is line-based, so
+    an unterminated blob on one side is joined to the other side's first line by
+    an ORDINARY MERGE. No write-time lock can guard that, which is why recovery
+    here — not the writer guard — is the load-bearing half.
+
+    Contract + rationale: ``lib/jsonl_records.py``.
     """
     path = resolve_events_path(project_root)
     if not path.exists():
         return []
-    events: list[dict[str, Any]] = []
-    for i, line in enumerate(path.open("r", encoding="utf-8")):
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            events.append(json.loads(line))
-        except json.JSONDecodeError:
-            warnings.warn(f"Corrupt event at line {i + 1} in {EVENT_FILE}, skipping")
-    return events
+    result = read_jsonl_records(path)
+    for frag in result.corrupt:
+        # ASCII-only: surfaces on Windows cp1252 consoles.
+        warnings.warn(
+            f"Corrupt event at {EVENT_FILE}:{frag.line_no} "
+            f"({len(frag.text)} bytes unrecoverable), skipping that fragment; "
+            f"the rest of the line was recovered.",
+            stacklevel=2,
+        )
+    return result.records
