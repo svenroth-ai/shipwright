@@ -1,37 +1,37 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-18-accepted-risk-register"
+run_id: "iterate-2026-07-18-accepted-risk-alert-convergence"
 phase: "iterate"
-reason: "iterate: scanner-agnostic accepted-risk register (trg-15a8e267, item 4)"
-timestamp: "2026-07-18T20:41:12.077490+00:00"
+reason: "iterate: converge accepted risks onto the code-scanning surface (trg-13b8283b)"
+timestamp: "2026-07-18T22:18:16.354557+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-18 20:41:12 UTC
+> Auto-generated 2026-07-18 22:18:16 UTC
 
 ## Session Info
 
-- **Session ID**: 0d0656e7-abfe-4357-934e-8c022b1fac2e
-- **Timestamp**: 2026-07-18 20:41:12 UTC
-- **Reason**: iterate: scanner-agnostic accepted-risk register (trg-15a8e267, item 4)
+- **Session ID**: 1a5c5f62-8d5c-486b-aeca-6de1d4e6d619
+- **Timestamp**: 2026-07-18 22:18:16 UTC
+- **Reason**: iterate: converge accepted risks onto the code-scanning surface (trg-13b8283b)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-18-accepted-risk-register
-- **Date**: 2026-07-18T20:41:06.396378Z
+- **Run ID**: iterate-2026-07-18-accepted-risk-alert-convergence
+- **Date**: 2026-07-18T22:18:10.715526Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/accepted-risk-register
-- **ADR**: iterate-2026-07-18-accepted-risk-register
+- **Branch**: iterate/accepted-risk-alert-convergence
+- **ADR**: iterate-2026-07-18-accepted-risk-alert-convergence
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-18-accepted-risk-register.md
+- **Spec**: .shipwright/planning/iterate/2026-07-18-accepted-risk-alert-convergence.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/accepted-risk-register
-- **Run ID**: `iterate-2026-07-18-accepted-risk-register`
-- **Spec**: .shipwright/planning/iterate/2026-07-18-accepted-risk-register.md
+- **Branch**: iterate/accepted-risk-alert-convergence
+- **Run ID**: `iterate-2026-07-18-accepted-risk-alert-convergence`
+- **Spec**: .shipwright/planning/iterate/2026-07-18-accepted-risk-alert-convergence.md
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -50,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/accepted-risk-register
-- **Last Commit**: 718a05d7 chore(triage): sweep 7 outbox append(s) into branch
+- **Branch**: iterate/accepted-risk-alert-convergence
+- **Last Commit**: e3a65a29 chore(triage): sweep 2 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -67,17 +67,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-6878c083 | grade_snapshot | — | 2026-07-18 |
+| evt-061daf99 | work_completed | iterate (iterate: converge accepted risks onto the code-scanning surface (trg-13b8283b)) | 2026-07-18 |
 | evt-5a2ddb30 | grade_snapshot | — | 2026-07-18 |
 | evt-7a6fa40a | work_completed | iterate (iterate: scanner-agnostic accepted-risk register (trg-15a8e267, item 4)) | 2026-07-18 |
 | evt-a2835609 | grade_snapshot | — | 2026-07-18 |
-| evt-695d77cd | grade_snapshot | — | 2026-07-18 |
-| evt-14ef5fcb | work_completed | iterate (iterate: enforce record termination + recover record boundaries on the triage log) | 2026-07-18 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 330
-- **Last iterate**: change — iterate: scanner-agnostic accepted-risk register (trg-15a8e267, item 4) (2026-07-18)
+- **Total work events**: 331
+- **Last iterate**: change — iterate: converge accepted risks onto the code-scanning surface (trg-13b8283b) (2026-07-18)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

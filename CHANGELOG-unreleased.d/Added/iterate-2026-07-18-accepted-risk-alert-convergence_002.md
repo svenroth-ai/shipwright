@@ -1,0 +1,1 @@
+An accepted risk that expires or is deleted now reopens the alerts it silenced, restoring visibility through the same door it left by. Only alerts carrying this tool's own provenance marker are ever reopened, so a human's dismissal is never reopened or overwritten.

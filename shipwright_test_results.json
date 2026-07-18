@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-18-accepted-risk-register",
-    "date": "2026-07-18",
+    "run_id": "iterate-2026-07-18-accepted-risk-alert-convergence",
+    "date": "2026-07-19",
     "unit": {
       "status": "passed",
-      "passed": 5623,
-      "total": 5624
+      "passed": 4563,
+      "total": 4564
     },
     "integration": {
       "status": "not_run",
@@ -29,114 +29,111 @@
       "status": "not_run"
     },
     "degraded": [
-      "F0 suite RED on ONE pre-existing, foreign failure: test_architecture_md_reflects_arch_impact flags a decision-drop belonging to iterate-2026-07-18-fr-existence-gate (gitignored drops resolve from the MAIN root, so a concurrent iterate's drop reddens this worktree). Verified identical on clean origin/main 7c303a8b - inherited, not introduced.",
-      "unit counts are the two suites measured directly and observed (shared/tests 4423 passed / 11 skipped, incl. the foreign failure; shipwright-compliance 1200 passed / 1 skipped). run_test_suite.py suppresses the output of passing units, so a whole-monorepo aggregate was not observable; no number here is estimated."
+      "F0 suite RED on ONE pre-existing, foreign failure: test_architecture_md_reflects_arch_impact flags a decision-drop belonging to iterate-2026-07-18-fr-existence-gate (gitignored drops resolve from the MAIN root, so a concurrent iterate's drop reddens this worktree). The run_id in the failure is not this run's - inherited, not introduced.",
+      "The triage half of the convergence has ZERO live instances in this repo (0 source=\"security\" items), so it is proven on fixtures, not on live data. Its only live reachability is the pre-acceptance backlog, because ingest-time suppression means an accepted rule normally never becomes a triage item at all. Stated rather than implied by the passing tests.",
+      "The register currently holds 0 github-dismissal entries, so the live `converge` run exercised the read/pagination/identity path against 51 real alerts but matched nothing. The mutation path is proven by fixtures plus the live 422 permission probe, not by a real dismissal.",
+      "External review (GPT-5.4) returned 'block' with 3 real defects: an absent register short-circuited reopen (marked alerts stayed suppressed forever), overlapping entries double-claimed an alert, and an unreadable triage store rendered as 'converged' - the last actively blessed by a test in the first draft. All three are fixed and pinned; recorded because they calibrate how far a self-authored negative-control suite reaches."
     ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest shared/tests/test_accepted_risks_register.py --color=no",
+      "runner": "uv run --with pytest --with pytest-mock pytest shared/tests/test_alert_match.py shared/tests/test_accepted_risk_convergence.py shared/tests/test_github_code_scanning.py shared/tests/test_accepted_risks_converge_cli.py -q",
       "exit_code": 0,
-      "tests_run": 25,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-18-accepted-risk-register/surface_verification.json",
-      "timestamp": "2026-07-18",
-      "justification": "This iterate's user-facing surface is the accepted_risks_cli reconciler. The F0.5 runner drives it end-to-end via subprocess against the REAL repo register and the REAL security.yml - not a fixture - and asserts both the clean path and the fail-closed path. No web/API surface exists in this diff."
+      "tests_run": 124,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\accepted-risk-alert-convergence\\.shipwright\\runs\\iterate-2026-07-18-accepted-risk-alert-convergence\\surface_verification.log",
+      "timestamp": "2026-07-18T22:26:38.157Z",
+      "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "Register: absent -> [], malformed/empty/missing-key/unknown-schema -> RegisterError, explicit `acceptances: []` valid",
+          "behavior": "Alert payload -> match key; every missing key component yields None, never a partial",
           "disposition": "tested",
-          "evidence": "test_accepted_risks.py - 6 passed"
+          "evidence": "test_alert_match.py::TestAlertFromApi - 11 passed"
         },
         {
-          "behavior": "Register: valid document parses; ISO-string `expires` accepted",
+          "behavior": "Line number is excluded from the match key (it drifts on every edit above the finding)",
           "disposition": "tested",
-          "evidence": "test_accepted_risks.py - 2 passed"
+          "evidence": "test_alert_match.py::test_line_number_is_not_part_of_the_key"
         },
         {
-          "behavior": "Per-field validation rejects missing expires / missing rationale_ref / unknown target / unparseable date / filler ref / prose ref / empty id / short statement",
+          "behavior": "Provenance marker round-trips; an unmarked/malformed comment reads as human",
           "disposition": "tested",
-          "evidence": "test_accepted_risks.py - 8 passed (parametrized)"
+          "evidence": "test_alert_match.py::TestProvenance - 7 passed"
         },
         {
-          "behavior": "Duplicate ids rejected; all four rationale_ref forms (ADR-NNN, iterate-run-id, #NNN, DO-NOT #NNN) accepted",
+          "behavior": "Dismissal comment carries statement+ref+expiry; truncation never eats the marker",
           "disposition": "tested",
-          "evidence": "test_accepted_risks.py - 2 passed"
+          "evidence": "test_alert_match.py::TestProvenance - 2 passed"
         },
         {
-          "behavior": "Expiry: due date itself still active, day after expires; expired() filters; today_utc is UTC",
+          "behavior": "Scope validation: tool required, breadth declared, paths/rule-wide mutually exclusive, reason vocabulary",
           "disposition": "tested",
-          "evidence": "test_accepted_risks.py - 3 passed"
+          "evidence": "test_alert_match.py::TestScopeProblem - 12 passed"
         },
         {
-          "behavior": "Decision-ref recognizer stays == the PR #401 ci_supplychain gate (drift pin, both ends)",
+          "behavior": "Matching on (tool, rule, path); rule-wide; cross-tool isolation; ambiguous entry matches nothing",
           "disposition": "tested",
-          "evidence": "test_accepted_risks.py::test_decision_ref_recognizer_matches_the_ci_supplychain_gate"
+          "evidence": "test_alert_match.py::TestEntryMatches - 8 passed"
         },
         {
-          "behavior": "github-dismissal is a valid target but is NOT statically checkable",
+          "behavior": "Triage dedup-key parse incl. colon-bearing check_id; unparseable key matches nothing",
           "disposition": "tested",
-          "evidence": "test_accepted_risks.py::test_github_dismissal_is_not_statically_checkable"
+          "evidence": "test_alert_match.py::TestTriageItemKey - 11 passed"
         },
         {
-          "behavior": "LIVE GATE: this repo's register and its real suppressions agree; nothing past due; register loadable+non-empty; every seeded ref names a recorded decision",
+          "behavior": "Plan dispositions: dismiss / satisfied / human / reopen-on-expiry / reopen-on-removal / stale / ambiguous / expiry boundary",
           "disposition": "tested",
-          "evidence": "test_accepted_risks_register.py - 4 passed (run against the real repo)"
+          "evidence": "test_accepted_risk_convergence.py::TestPlanConvergence - 14 passed"
         },
         {
-          "behavior": "Drift negative controls: unrecorded suppression fails, stale entry fails, matching pair clean, non-static target is not drift, unchecked is reported",
+          "behavior": "No backing entry => never dismissed; non-github targets never reach the alert surface",
           "disposition": "tested",
-          "evidence": "test_accepted_risks_register.py - 5 passed"
+          "evidence": "test_accepted_risk_convergence.py::TestPlanConvergence - 2 passed"
         },
         {
-          "behavior": "Workflow parsing: commented env lines are inert; ${{ }} expressions parse; toggle truthiness matches the producer's own set",
+          "behavior": "Triage surface: match, non-match, expired no-op, GC tokens registered and is_machine_churn true",
           "disposition": "tested",
-          "evidence": "test_accepted_risks_register.py - 7 passed"
+          "evidence": "test_accepted_risk_convergence.py::TestTriageSurface - 4 passed"
         },
         {
-          "behavior": "Trivyignore: classic flat-text form read; YAML form wins over flat",
+          "behavior": "Rendering: every disposition printed; untouched summarised; a clean plan renders nothing",
           "disposition": "tested",
-          "evidence": "test_accepted_risks_register.py - 2 passed"
+          "evidence": "test_accepted_risk_convergence.py::TestRendering - 3 passed"
         },
         {
-          "behavior": "CLI main(): check/expire pass on the real repo; non-zero on drift; exit 2 fail-closed on a malformed register; no-op without a register; expiry and drift reported separately",
+          "behavior": "gh shell: slug validation (10 negative controls), pagination, None != [], PATCH bodies, failure surfaced, explicit UTF-8 decode",
           "disposition": "tested",
-          "evidence": "test_accepted_risks_register.py - 6 passed (subprocess)"
+          "evidence": "test_accepted_risk_convergence.py::TestGhShell - 20 passed"
         },
         {
-          "behavior": "Dashboard correlation: registered+active collapses to ONE row; registered-only flagged; unregistered rendered as drift; audit fields reach the row; expiry vs now",
+          "behavior": "CLI: build_plan, identity abort, failed-listing abort, read-only vs --apply, failed mutation, dispatch, exit 2",
           "disposition": "tested",
-          "evidence": "test_accepted_risk_view.py - 5 passed"
+          "evidence": "test_accepted_risks_converge_cli.py - 19 passed"
         },
         {
-          "behavior": "Dashboard degradation: malformed register announced, absent register is not a degradation",
+          "behavior": "This repo's register: every github-dismissal entry resolvable + marked; converge absent from every workflow",
           "disposition": "tested",
-          "evidence": "test_accepted_risk_view.py - 2 passed"
+          "evidence": "test_accepted_risks_converge_cli.py::TestThisRepoRegister - 3 passed"
         },
         {
-          "behavior": "Trivyignore forms via the view: flat read, YAML scope carried, missing file empty",
+          "behavior": "Overlapping entries CONFLICT and neither acts; a lapse in one does not reopen what the other still covers",
           "disposition": "tested",
-          "evidence": "test_accepted_risk_view.py - 3 passed"
+          "evidence": "test_accepted_risk_convergence.py::TestPlanConvergence - 2 passed (external review GPT #4)"
         },
         {
-          "behavior": "Rendered section: unregistered not laundered into 'accepted'; authority rendered; expired AND unrecorded BOTH reported (composed status); degradation note rendered",
+          "behavior": "Absent vs unreadable triage store are distinct; an unreadable store blocks the converged claim end-to-end",
           "disposition": "tested",
-          "evidence": "test_accepted_risk_view.py - 4 passed"
-        },
-        {
-          "behavior": "Back-compat: parse_accepted_risks still returns {id, expired_at, expired} for the grade re-export bridge",
-          "disposition": "tested",
-          "evidence": "test_ci_security.py::TestAcceptedRisks - 4 passed (pre-existing, unmodified)"
+          "evidence": "test_accepted_risks_converge_cli.py::TestTriageApply + TestCmdConverge - 4 passed (external review GPT #3)"
         }
       ],
       "counts": {
-        "testable": 17,
-        "tested": 17,
+        "testable": 16,
+        "tested": 16,
         "untestable": 0,
         "untested_testable": 0
       },
-      "enumeration_basis": "Every behavior introduced or changed by this diff, grouped into 17 rows over 62 new tests plus 1 pre-existing back-compat row. No 'untestable' rows: all behaviour here is offline and deterministic. The one un-probeable claim (that a maintainer token can PATCH a code-scanning alert) belongs to the deferred --apply work and is carried on trg-13b8283b rather than asserted here."
+      "enumeration_basis": "Every behavior introduced or changed by this diff, grouped into 16 rows over 124 new tests. No 'untestable' rows: all logic here is offline and deterministic, with the gh boundary driven through a single monkeypatched _run seam. The one claim that cannot be asserted in a test - that the token may PATCH a code-scanning alert - is closed by live probe P1 (a 422 body-validation response proves authn+authz passed and mutates nothing), because the only test-shaped version overwrites a real alert comment. Line coverage of the four new modules is 100% (alert_match, alert_convergence, github_code_scanning, tools/accepted_risks_converge). Rows 15-16 were added in response to the external review, which found three real defects my own negative controls did not reach - all of the same family: a state that renders as converged when it is not."
     }
   },
   "coverage": {

@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-18-accepted-risk-alert-convergence",
+  "date": "2026-07-18T22:18:10.715526Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/accepted-risk-alert-convergence",
+  "spec": ".shipwright/planning/iterate/2026-07-18-accepted-risk-alert-convergence.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-18-accepted-risk-alert-convergence"
+}

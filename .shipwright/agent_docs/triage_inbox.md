@@ -1,12 +1,12 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-18T17:20:32.125204Z. Items waiting for triage decision.
+> Auto-generated 2026-07-18T22:18:16.354557Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 334
-- Triage: 7 | Promoted: 1 | Dismissed: 325 | Snoozed: 1
+- Total: 335
+- Triage: 7 | Promoted: 1 | Dismissed: 326 | Snoozed: 1
 
 ## Top 7 items (severity-sorted)
 
@@ -53,10 +53,10 @@
 
 ### Source: securityReview (2 items)
 
-<a id="trg-15a8e267"></a>
-- **CI-Security 1/2: scanner-agnostic accepted-risk register that converges triage AND code-scanning** `id=trg-15a8e267 | severity=medium | kind=improvement → P2/engineering`
-  - CI-Security 1 of 2. Splits items 4 + 2 out of anchor trg-9509c2e8 (webui iterate-2026-07-18-unpin-actions-no-dependabot…
-  - Promote: `triage_promote.py --id trg-15a8e267 --task-ref EXT:<ref>`
+<a id="trg-13b8283b"></a>
+- **CI-Security 1b/2: converge an acceptance onto code-scanning + triage (GAP 2, root cause of #285)** `id=trg-13b8283b | severity=medium | kind=improvement → P2/engineering`
+  - CI-Security 1b of 2. Phase 2 of the split out of trg-15a8e267 (CI-Security 1/2, which delivers the scanner-agnostic acc…
+  - Promote: `triage_promote.py --id trg-13b8283b --task-ref EXT:<ref>`
 
 <a id="trg-0ce59c05"></a>
 - **CI-Security 2/2: ship the action-pinning posture RULE to adopters (templates already correct)** `id=trg-0ce59c05 | severity=low | kind=improvement → P3/engineering`

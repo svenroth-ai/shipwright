@@ -1,0 +1,1 @@
+`gh` output is now decoded as UTF-8 explicitly. `text=True` alone decodes with the locale codec, which is cp1252 on Windows and raises on the first non-Latin-1 byte in an alert body — silently turning every GitHub triage import into a failed fetch.

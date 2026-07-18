@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-18 20:41 UTC | Session: 0d0656e7-abfe-4357-934e-8c022b1fac2e | Run: iterate-2026-07-18-accepted-risk-register
+> Updated: 2026-07-18 22:18 UTC | Session: 1a5c5f62-8d5c-486b-aeca-6de1d4e6d619 | Run: iterate-2026-07-18-accepted-risk-alert-convergence
 
-## Recent Changes (330 iterations)
+## Recent Changes (331 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | iterate: converge accepted risks onto the code-scanning surface (trg-13b8283b) | 0/0 |  | compliance | 2026-07-18 |
 | change | iterate: scanner-agnostic accepted-risk register (trg-15a8e267, item 4) | 0/0 |  | compliance | 2026-07-18 |
 | change | iterate: enforce record termination + recover record boundaries on the triage log | 0/0 |  | FR-01.14 | 2026-07-18 |
 | change | iterate: FR-existence gate — declared requirement ids must exist | 0/0 |  | compliance | 2026-07-18 |
@@ -337,7 +338,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-18 | Unit: 5623/5624 | Smoke: not_run | (iterate)
+Last run: 2026-07-19 | Unit: 4563/4564 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

@@ -274,8 +274,54 @@ being accepted.
 
 **Not covered offline:** a `github-dismissal` acceptance. Its counterpart is live
 GitHub alert state rather than a file, so `check` reports it as *unchecked* (it
-never treats "not checkable here" as "checked and fine"). Converging that surface
-so one acceptance quiets both triage and code scanning is tracked separately.
+never treats "not checkable here" as "checked and fine").
+
+### Converging the live surface
+
+`converge` resolves `github-dismissal` entries against GitHub code scanning, so
+one recorded acceptance quiets the security tab too instead of leaving the repo
+red for a risk somebody consciously accepted:
+
+```bash
+uv run shared/scripts/tools/accepted_risks_cli.py converge --project-root .   # read-only
+uv run shared/scripts/tools/accepted_risks_cli.py converge --project-root . --apply
+```
+
+Read-only is the default; `--apply` is a deliberate, separate act. **It is not
+wired into CI on purpose** — no scheduled job may hold the authority to
+mass-dismiss security alerts, because an automated reconciler is the shape that
+reversed an accepted-risk posture unnoticed in the first place. CI's job is to
+*fail* when the register and reality disagree, which `check` and `expire`
+already do.
+
+An entry declares its breadth explicitly — `scope.tool` plus **either** an
+explicit `scope.paths` allowlist **or** `scope.match: rule-wide`:
+
+```yaml
+  - id: ar-2026-07-19-example
+    target: github-dismissal
+    rule: py/unused-global-variable
+    scope:
+      tool: CodeQL
+      paths: ["shared/scripts/example.py"]
+      # dismissed_reason: "won't fix"     # optional; GitHub's own vocabulary
+    expires: 2027-01-19
+    rationale_ref: ADR-271
+    statement: >-
+      …
+```
+
+An entry that declares neither is **refused, not guessed**: on this repo eight
+unrelated judgments share the rule id `py/unused-global-variable`, and an open
+alert shared it too — a rule-wide match would have swallowed a never-reviewed
+finding. The match key is `(tool, rule, path)`; the line number is deliberately
+excluded, since it drifts on every edit above the finding.
+
+Each dismissal this tool writes carries the marker
+`[shipwright-accepted-risk: <entry-id>]`. **Only marked alerts are ever
+reopened**, so a human's dismissal is never reopened or overwritten — and when
+an acceptance expires or is deleted, its marked alerts are reopened, restoring
+visibility through the same door it left by.
 
 **Where the GH-owned drop applies (two paths).** The owner-scoped predicate lives
 in the shared leaf module `shared/scripts/gh_action_tag_owner.py` so both
