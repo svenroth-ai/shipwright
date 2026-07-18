@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-18T16:54:04.466947Z. Items waiting for triage decision.
+> Auto-generated 2026-07-18T17:04:27.470053Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 327
-- Triage: 10 | Promoted: 1 | Dismissed: 315 | Snoozed: 1
+- Total: 329
+- Triage: 8 | Promoted: 1 | Dismissed: 319 | Snoozed: 1
 
-## Top 10 items (severity-sorted)
+## Top 8 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -32,31 +32,19 @@
     ```
   - Promote: `triage_promote.py --id trg-4a615381 --task-ref EXT:<ref>`
 
-### Source: github (1 item)
+### Source: iterate (2 items)
 
-<a id="trg-eb2d15ea"></a>
-- **GitHub security: 1 shipwright-security finding(s) (medium)** `id=trg-eb2d15ea | severity=medium | kind=improvement → P2/engineering`
-  - Repo svenroth-ai/shipwright \| code-scanning: (unavailable) \| dependabot: (unavailable) \| shipwright-security: 1 medi…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-security
-    
-    Context: the shipwright-security CI workflow reports 1 open finding(s) for svenroth-ai/shipwright (GHAS Code Scanning is not configured).
-    Severity breakdown — shipwright-security: 1 medium.
-    Workflow run: https://github.com/svenroth-ai/shipwright/actions/runs/29619381657
-    Re-scan locally: see docs/security-ci-setup.md
-    Source: triage item gh-security:svenroth-ai/shipwright
-    ```
-  - Promote: `triage_promote.py --id trg-eb2d15ea --task-ref EXT:<ref>`
-
-### Source: iterate (1 item)
+<a id="trg-a20314c2"></a>
+- **shipwright-webui: triage status writer must guarantee a trailing newline before appending** `id=trg-a20314c2 | severity=medium | kind=bug → P2/engineering`
+  - The monorepo append boundary now guarantees the log ends with a newline before appending, and the reader recovers recor…
+  - Promote: `triage_promote.py --id trg-a20314c2 --task-ref EXT:<ref>`
 
 <a id="trg-d1e466aa"></a>
 - **Retire the write-once v1 run-config fields (current_step / completed_steps)** `id=trg-d1e466aa | severity=low | kind=improvement → P3/engineering`
   - Follow-up from iterate-2026-07-14-phase-invocation-mode (external plan review, Gemini #2). The v2 lifecycle never advan…
   - Promote: `triage_promote.py --id trg-d1e466aa --task-ref EXT:<ref>`
 
-### Source: operator (5 items)
+### Source: operator (3 items)
 
 <a id="trg-94337862"></a>
 - **REQ-1 - Iterate: requirements test harness (golden corpus) - run AFTER REQ-0, BEFORE REQ-2** `id=trg-94337862 | severity=high | kind=improvement → P1/engineering`
@@ -68,20 +56,10 @@
   - A record in the triage outbox was written without a trailing newline, so the next writer appended onto the same physica…
   - Promote: `triage_promote.py --id trg-946756d2 --task-ref EXT:<ref>`
 
-<a id="trg-8deb2213"></a>
-- **FR gate accepts requirement ids that do not exist (false green)** `id=trg-8deb2213 | severity=high | kind=bug → P1/engineering`
-  - The finalization FR gate validates only that the declared requirement list is non-empty. is_non_empty_fr_list checks th…
-  - Promote: `triage_promote.py --id trg-8deb2213 --task-ref EXT:<ref>`
-
 <a id="trg-1b764b2c"></a>
 - **REQ-2 - Campaign: requirements catalog (S2-S8) - run AFTER REQ-1** `id=trg-1b764b2c | severity=medium | kind=improvement → P2/engineering`
   - THIRD of three. Order: REQ-0 (FR existence gate) -> REQ-1 (test harness) -> REQ-2 (this campaign). Do NOT start before…
   - Promote: `triage_promote.py --id trg-1b764b2c --task-ref EXT:<ref>`
-
-<a id="trg-16d79da2"></a>
-- **Requirements Catalog campaign: one catalog, one table shape, one discovery path** `id=trg-16d79da2 | severity=medium | kind=improvement → P2/engineering`
-  - Umbrella anchor for the Requirements-Catalog campaign (S0-S8). Full spec + evidence + risk register: Spec/design/2026-0…
-  - Promote: `triage_promote.py --id trg-16d79da2 --task-ref EXT:<ref>`
 
 ### Source: securityReview (1 item)
 

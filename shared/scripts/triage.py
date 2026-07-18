@@ -14,8 +14,11 @@ Promote / Dismiss / Snooze). See the schema for the full field list
 including optional `dedupKey`, `launchPayload`, `frId`, `suiteId`,
 `eventId`.
 
-Status resolution is by **file order** (later valid line wins); the
-reader is tolerant and skips lines that fail JSONDecodeError.
+Status resolution is by **file order** (later valid line wins). The reader
+is tolerant: a line holding several concatenated records (an unterminated
+predecessor let the next writer append onto it) yields ALL of them; only
+undecodable text is skipped, with a warning. Record boundaries + the
+writer's newline guard live in `shared/scripts/lib/jsonl_records.py`.
 
 The module lives at `shared/scripts/triage.py` (outside `lib/`) per
 ADR-045 so it can be imported from `shared/tests/` AND
@@ -52,6 +55,24 @@ def _load_file_lock_cls():
         sys.path.insert(0, scripts_dir)
     from lib.file_lock import FileLock  # noqa: PLC0415
     return FileLock
+
+
+def _load_jsonl_records():
+    """Lazy `lib.jsonl_records` (record-boundary SSoT) — ADR-045 constraint above."""
+    scripts_dir = str(Path(__file__).resolve().parent)  # shared/scripts
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+    from lib import jsonl_records  # noqa: PLC0415
+    return jsonl_records
+
+
+def _load_triage_header():
+    """Lazy `lib.triage_header` — same ADR-045 constraint as above."""
+    scripts_dir = str(Path(__file__).resolve().parent)  # shared/scripts
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+    from lib import triage_header  # noqa: PLC0415
+    return triage_header
 
 
 def __getattr__(name):  # PEP 562 — lazy `triage._FileLock`, no eager lib import
@@ -212,43 +233,17 @@ def _generate_id() -> str:
 # ---------------------------------------------------------------------------
 
 def _has_header(path: Path) -> bool:
-    if not path.exists():
-        return False
-    try:
-        first_raw = path.read_text(encoding="utf-8").split("\n", 1)[0].strip()
-    except OSError:
-        return False
-    if not first_raw:
-        return False
-    try:
-        first = json.loads(first_raw)
-    except json.JSONDecodeError:
-        return False
-    return first.get("schema") == "triage" and "v" in first
+    return _load_triage_header().has_header(path)
 
 
 def _ensure_header(project_root: Path | str) -> None:
     """Create `.shipwright/triage.jsonl` with the schema header if missing.
 
-    Idempotent — never overwrites an existing header. Caller must hold
-    the file lock.
+    Idempotent — never overwrites an existing header. Caller must hold the file lock.
     """
-    path = _triage_path(project_root)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    if _has_header(path):
-        return
-    header = {
-        "v": SCHEMA_VERSION,
-        "schema": "triage",
-        "created": _now_z(),
-    }
-    line = json.dumps(header, ensure_ascii=False, separators=(",", ":")) + "\n"
-    # If file exists but has no header (corrupted bootstrap), prepend; else create.
-    if path.exists() and path.stat().st_size > 0:
-        existing = path.read_text(encoding="utf-8")
-        path.write_text(line + existing, encoding="utf-8")
-    else:
-        path.write_text(line, encoding="utf-8")
+    _load_triage_header().ensure_header(
+        _triage_path(project_root), schema_version=SCHEMA_VERSION, now=_now_z()
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -256,26 +251,25 @@ def _ensure_header(project_root: Path | str) -> None:
 # ---------------------------------------------------------------------------
 
 def _iter_raw_lines_at(path: Path) -> list[dict]:
-    """Tolerant reader for ONE file — skip JSONDecodeError lines, keep order.
+    """Tolerant reader for ONE file — recover concatenated records, keep order.
 
-    ``line.strip()`` already absorbs a trailing ``\\r`` (CRLF probe), so a
-    Windows-written or human-edited outbox line round-trips unchanged.
+    A line holding several concatenated records (a writer left no trailing newline,
+    so the next writer appended onto its line) yields ALL of them rather than none:
+    this reader used to skip such a line whole, silently discarding every record on
+    it. Undecodable text still warns, but its valid neighbours survive and
+    the leaf's ``RecordRead.corrupt`` exposes it as data. Contract + rationale:
+    ``lib/jsonl_records.py`` (iterate-2026-07-18-outbox-newline-corruption).
     """
-    if not path.exists():
-        return []
-    out: list[dict] = []
-    for i, line in enumerate(path.open("r", encoding="utf-8")):
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            out.append(json.loads(line))
-        except json.JSONDecodeError:
-            warnings.warn(
-                f"Corrupt triage line at {path.name}:{i + 1}, skipping",
-                stacklevel=2,
-            )
-    return out
+    result = _load_jsonl_records().read_jsonl_records(path)
+    for frag in result.corrupt:
+        # ASCII-only: surfaces on Windows cp1252 consoles.
+        warnings.warn(
+            f"Corrupt triage record at {path.name}:{frag.line_no} "
+            f"({len(frag.text)} bytes unrecoverable). Run triage_repair.py to "
+            f"quarantine it; the rest of the line was recovered.",
+            stacklevel=2,
+        )
+    return result.records
 
 
 def _append_ids_at(path: Path) -> set[str]:
@@ -318,8 +312,14 @@ def _append_line(project_root: Path | str, line: str, *, to_outbox: bool) -> Non
     else:
         _ensure_header(project_root)
         path = _triage_path(project_root)
+    # Termination guard (iterate-2026-07-18-outbox-newline-corruption): never assume
+    # the PREVIOUS writer left a trailing newline, or two records land on one physical
+    # line. Runs inside the caller's canonical lock (every call site holds it).
+    needs_separator = _load_jsonl_records().ends_without_newline(path)
     # FIX A: gitignored outbox → newline="" keeps LF on all platforms (D2 ADR).
     with open(path, "a", encoding="utf-8", newline="" if to_outbox else None) as fp:
+        if needs_separator:
+            fp.write("\n")
         fp.write(line)
         fp.flush()
         os.fsync(fp.fileno())

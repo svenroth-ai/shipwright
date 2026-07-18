@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-18-outbox-newline-corruption",
+  "date": "2026-07-18T17:04:22.012631Z",
+  "type": "bug",
+  "complexity": "medium",
+  "branch": "iterate/outbox-newline-corruption",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-18-outbox-newline-corruption.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-18-outbox-newline-corruption"
+}

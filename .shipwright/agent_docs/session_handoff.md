@@ -1,37 +1,38 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-18-ci-supplychain-risk-flag"
+run_id: "iterate-2026-07-18-outbox-newline-corruption"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-18T16:54:04.466947+00:00"
+timestamp: "2026-07-18T17:04:27.470053+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-18 16:54:04 UTC
+> Auto-generated 2026-07-18 17:04:27 UTC
 
 ## Session Info
 
-- **Session ID**: f15cf408-1257-4860-b0d5-cb049ffe3344
-- **Timestamp**: 2026-07-18 16:54:04 UTC
+- **Session ID**: 583f972d-6945-4147-8ab7-dcc583aab8d5
+- **Timestamp**: 2026-07-18 17:04:27 UTC
 - **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-18-ci-supplychain-risk-flag
-- **Date**: 2026-07-18T16:53:59.010065Z
-- **Type**: change
+- **Run ID**: iterate-2026-07-18-outbox-newline-corruption
+- **Date**: 2026-07-18T17:04:22.012631Z
+- **Type**: bug
 - **Complexity**: medium
-- **Branch**: iterate/ci-supplychain-risk-flag
-- **ADR**: iterate-2026-07-18-ci-supplychain-risk-flag
+- **Branch**: iterate/outbox-newline-corruption
+- **ADR**: iterate-2026-07-18-outbox-newline-corruption
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-18-ci-supplychain-risk-flag.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-18-outbox-newline-corruption.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/ci-supplychain-risk-flag
-- **Run ID**: `iterate-2026-07-18-ci-supplychain-risk-flag`
-- **Spec**: .shipwright/planning/iterate/2026-07-18-ci-supplychain-risk-flag.md
+- **Branch**: iterate/outbox-newline-corruption
+- **Run ID**: iterate-2026-07-18-outbox-newline-corruption
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-18-outbox-newline-corruption.md
+- **Complexity**: medium (`prior_source: history`, n=20)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -50,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/ci-supplychain-risk-flag
-- **Last Commit**: 9f329dd6 Merge remote-tracking branch 'origin/main' into iterate/ci-supplychain-risk-flag
+- **Branch**: iterate/outbox-newline-corruption
+- **Last Commit**: ca56a164 Merge remote-tracking branch 'origin/main' into iterate/outbox-newline-corruption
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,8 +70,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 |-------|------|--------|------|
 | evt-9f5dc340 | grade_snapshot | — | 2026-07-18 |
 | evt-3d1c18b7 | work_completed | iterate (iterate: FR-existence gate — declared requirement ids must exist) | 2026-07-18 |
-| evt-ec8d3c44 | grade_snapshot | — | 2026-07-18 |
-| evt-b827a6b1 | work_completed | iterate (iterate: CI supply-chain risk flag + acknowledgement gate (trg-9509c2e8 item 3)) | 2026-07-18 |
+| evt-695d77cd | grade_snapshot | — | 2026-07-18 |
+| evt-14ef5fcb | work_completed | iterate (iterate: enforce record termination + recover record boundaries on the triage log) | 2026-07-18 |
 | evt-7518638a | grade_snapshot | — | 2026-07-18 |
 
 ## Recovery

@@ -1,0 +1,1 @@
+`shared/scripts/tools/triage_repair.py` — repairs triage lines already corrupted on disk, splitting concatenated records back onto their own lines and quarantining undecodable text verbatim. Reports by default; `--apply` additionally requires `--writers-quiesced`.
