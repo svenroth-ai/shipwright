@@ -176,7 +176,7 @@ def test_run_audit_skeleton_runs_end_to_end(tmp_path):
     2026-06-10) added Group H to the default set, so ``groups_skipped``
     is empty on a fixture project unless a group's runner skips itself
     internally (e.g. B7 skipping a non-git directory). All eight groups
-    (A-H) must appear under ``groups_run``.
+    (A-I) must appear under ``groups_run``.
     """
     (tmp_path / "shipwright_run_config.json").write_text(
         '{"status": "in_progress"}\n', encoding="utf-8",
@@ -197,7 +197,7 @@ def test_run_audit_skeleton_runs_end_to_end(tmp_path):
     skipped_groups = {s["group"] for s in payload["groups_skipped"]}
     # No groups should fall through to "not-implemented" any more.
     assert skipped_groups == set()
-    assert set(payload["groups_run"]) == {"A", "B", "C", "D", "E", "F", "G", "H"}
+    assert set(payload["groups_run"]) == {"A", "B", "C", "D", "E", "F", "G", "H", "I"}
 
 
 def test_run_audit_rejects_missing_project_root():

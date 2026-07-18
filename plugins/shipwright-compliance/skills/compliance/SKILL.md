@@ -155,8 +155,9 @@ B4 (matching event) to compare against. Coverage for adopted projects
 comes from B7 (commit-on-default-branch ↔ event match) and Group G
 (commit-quality scans), which both run regardless of split status.
 
-All eight detective groups (A–H) are wired — the seven Plan-v7 groups
-(A–G) plus Group H (bloat-policy audit, Campaign A.review). The
+All nine detective groups (A–I) are wired — the seven Plan-v7 groups
+(A–G), Group H (bloat-policy audit, Campaign A.review) and Group I
+(requirement hygiene vs `shared/fr-authoring.md`; I1–I3 advisory, I4 fails). The
 post-Plan-v7 A5 follow-up (CI security workflow integrity) is live. A5 ships in the Group A
 rollup via a composite registry handler that merges A2/A3/A4 (group_a)
 and A5 (group_a5) findings.

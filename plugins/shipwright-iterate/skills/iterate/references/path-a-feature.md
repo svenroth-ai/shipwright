@@ -92,18 +92,49 @@ If no boundaries touched: write `n/a` with one-line justification.}
 ## Step 2: Spec Update — classify the Spec Impact (always)
 
 1. Identify which spec file(s) cover the affected area.
+1a. **MINT-vs-FOLD gate — run this BEFORE choosing ADD.** Read
+   `shared/fr-authoring.md` (§3). Ask: *is this a capability the product
+   did not have before?*
+   - **FOLD → classify MODIFY, do not add a row.** The change *completes,
+     polishes, fixes, extends,* or is *"Phase N of"* something that already
+     exists. Append acceptance-criteria lines to the existing FR instead.
+     Folding is the common case.
+   - **MINT → classify ADD.** Only for a genuinely new, user- or
+     system-observable capability.
+   - A new endpoint, route, or component is **not** by itself a new
+     capability — it is usually the plumbing of one that already has an FR.
+   - Altitude self-check before writing the row: could a non-technical
+     person read the FR *name* as something the product can do? If the name
+     needs a verb like GET/POST, a `snake_case` symbol, an ADR number, or an
+     iterate slug, it is a route or a change — FOLD, don't MINT.
 2. **Classify the spec impact** as one or more of ADD / MODIFY / REMOVE, or
    NONE. Record it in the iterate spec's `## Spec Impact` section
    (medium+) and carry the same FR IDs into F7 (`--spec-impact`,
    `--affected-frs`, `--new-frs`).
-   - **ADD** — a new endpoint, page, flow, or user-visible capability:
-     append a new FR table row + an acceptance-criteria block. The new
-     FR ID goes to F7 `--new-frs` (and `--affected-frs`).
+   - **ADD** — a genuinely new user- or system-observable capability that
+     survived the MINT-vs-FOLD gate: append a new FR table row + an
+     acceptance-criteria block. The new FR ID goes to F7 `--new-frs` (and
+     `--affected-frs`).
+     - **Number it deterministically:** the new FR takes the **next free
+       number in its split** — the highest `FR-{split}.NN` in use plus one,
+       counting **both live and `### Removed Requirements` rows** so a
+       retired number is never reused. Never guess a number. If a parallel
+       iterate already took it, resolve the duplicate at merge — never keep
+       two rows on one ID.
+     - **Name + description follow `shared/fr-authoring.md`:** a capability
+       phrase (~6 words, no verbs/symbols/paths/ADR numbers), and a plain
+       business-language description a product owner can sign off. Put the
+       implementation detail in `architecture.md`, not the row.
    - **MODIFY** — an additive side-effect or changed behavior of an
-     existing FR: update the FR table-row description + append new
+     existing FR, **and every FOLD from the gate above**: update the FR
+     table-row description + append new
      `- (E) Given … when … then …` acceptance-criteria lines covering
      the new behavior + any idempotency / no-op guarantees. The FR ID
      goes to F7 `--affected-frs`. Reference the run_id + ADR.
+     - Keep the description **plain business language**
+       (`shared/fr-authoring.md` §1) — do not let an edit smuggle a file
+       path, symbol, or ADR number into a row that was previously clean.
+       The run_id/ADR provenance belongs in the AC line, not the description.
    - **REMOVE** — the change deletes a user-visible capability: move the
      FR row out of `## 2. Functional Requirements` into a
      `### Removed Requirements` subsection — never silently delete it.

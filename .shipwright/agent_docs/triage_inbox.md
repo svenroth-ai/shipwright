@@ -1,12 +1,12 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-17T22:46:16.286789Z. Items waiting for triage decision.
+> Auto-generated 2026-07-18T06:41:40.904796Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 317
-- Triage: 6 | Promoted: 1 | Dismissed: 309 | Snoozed: 1
+- Total: 319
+- Triage: 6 | Promoted: 1 | Dismissed: 311 | Snoozed: 1
 
 ## Top 6 items (severity-sorted)
 
@@ -32,6 +32,23 @@
     ```
   - Promote: `triage_promote.py --id trg-4a615381 --task-ref EXT:<ref>`
 
+### Source: github (1 item)
+
+<a id="trg-eb2d15ea"></a>
+- **GitHub security: 1 shipwright-security finding(s) (medium)** `id=trg-eb2d15ea | severity=medium | kind=improvement → P2/engineering`
+  - Repo svenroth-ai/shipwright \| code-scanning: (unavailable) \| dependabot: (unavailable) \| shipwright-security: 1 medi…
+  - Launch payload (copy into a new Claude session):
+    ```text
+    /shipwright-security
+    
+    Context: the shipwright-security CI workflow reports 1 open finding(s) for svenroth-ai/shipwright (GHAS Code Scanning is not configured).
+    Severity breakdown — shipwright-security: 1 medium.
+    Workflow run: https://github.com/svenroth-ai/shipwright/actions/runs/29619381657
+    Re-scan locally: see docs/security-ci-setup.md
+    Source: triage item gh-security:svenroth-ai/shipwright
+    ```
+  - Promote: `triage_promote.py --id trg-eb2d15ea --task-ref EXT:<ref>`
+
 ### Source: iterate (1 item)
 
 <a id="trg-d1e466aa"></a>
@@ -46,15 +63,10 @@
   - Follow-up to iterate-2026-06-30-fr-retag-honesty. Introduce sub-FRs (e.g. FR-01.10.x for Control Grade / RTM / SBOM / d…
   - Promote: `triage_promote.py --id trg-cced399c --task-ref EXT:<ref>`
 
-### Source: webui-spec-audit (2 items)
+### Source: webui-spec-audit (1 item)
 
-<a id="trg-44d23d63"></a>
-- **FR descriptions must be plain business language (adopt/project/iterate prompt rule)** `id=trg-44d23d63 | severity=medium | kind=improvement → P2/engineering`
-  - Atomic business requirement: whenever the framework generates or updates a Functional Requirement, its description is p…
-  - Promote: `triage_promote.py --id trg-44d23d63 --task-ref EXT:<ref>`
-
-<a id="trg-8e840ca0"></a>
-- **FR taxonomy: capability-altitude FR minting (adopt) + Mint-vs-Fold gate (iterate) + FR-hygiene lint (compliance)** `id=trg-8e840ca0 | severity=medium | kind=improvement → P2/engineering`
-  - Root cause of badly-scoped, wrongly-numbered FRs in adopted specs: two FR-minting engines with incompatible philosophy.…
-  - Promote: `triage_promote.py --id trg-8e840ca0 --task-ref EXT:<ref>`
+<a id="trg-f7d38388"></a>
+- **Adopt: mint capability-level FRs (route grouping + Area) and unify the greenfield/brownfield spec-table shape** `id=trg-f7d38388 | severity=medium | kind=improvement → P2/engineering`
+  - Deferred remainder of trg-8e840ca0 / trg-44d23d63, split out of iterate-2026-07-18-fr-authoring-rules (which delivered…
+  - Promote: `triage_promote.py --id trg-f7d38388 --task-ref EXT:<ref>`
 

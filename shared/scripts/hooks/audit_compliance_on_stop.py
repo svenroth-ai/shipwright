@@ -21,7 +21,7 @@ auto-dismisses any currently-``triage`` compliance item whose ``check_id``
 is absent from THIS run's failures. The dismiss is *groupless*: a
 crashed/skipped group's findings vanish and its triage items would be
 wrongly dismissed (running only group F would dismiss B7/B2). So we run
-the FULL audit (groups A-H) with ``emit_to_triage=False``, verify every
+the FULL audit (groups A-I) with ``emit_to_triage=False``, verify every
 group ran (no ``import_gate_error``), and ONLY THEN mirror. Partial
 coverage → skip mirroring (never a false dismiss) + stderr diagnostic.
 Strictly safer than ``run_audit.py``'s unconditional emit.
@@ -55,7 +55,7 @@ _DISABLE_ENV = "SHIPWRIGHT_COMPLIANCE_AUDIT_ON_STOP"
 # F20 (deep-audit 2026-06-10): the full-coverage-before-dismiss gate must
 # expect Group H too, now that run_all runs it by default — otherwise the
 # gate would silently accept a report that omitted H's findings.
-_EXPECTED_GROUPS = frozenset({"A", "B", "C", "D", "E", "F", "G", "H"})
+_EXPECTED_GROUPS = frozenset({"A", "B", "C", "D", "E", "F", "G", "H", "I"})
 _MARKER_SUBDIR = "compliance_audit"
 _ROOT_FROM_SHARED = _SCRIPTS_ROOT.parent.parent  # repo root OR cache/shipwright
 
@@ -129,7 +129,7 @@ def _load_audit_api() -> tuple[Callable | None, Callable | None, Callable | None
 
 
 def coverage_ok(report: Any) -> tuple[bool, str]:
-    """Whether ``report`` is safe to mirror: import gate passed AND all A-H ran.
+    """Whether ``report`` is safe to mirror: import gate passed AND all A-I ran.
 
     Anything less means findings are missing and mirroring would wrongly
     auto-dismiss the missing groups' triage items.
@@ -144,7 +144,7 @@ def coverage_ok(report: Any) -> tuple[bool, str]:
             f"incomplete coverage; missing={missing} "
             f"skipped={getattr(report, 'groups_skipped', [])}"
         )
-    return True, "full coverage A-H"
+    return True, "full coverage A-I"
 
 
 def emit_if_full_coverage(

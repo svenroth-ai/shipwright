@@ -26,7 +26,7 @@ After the initial build, daily work happens through `/shipwright-iterate` -- com
 
 For example, `/shipwright-iterate "Add a dark mode toggle"` lands as a failing test written first, the change, your specs and traceability updated to match, and a clean Conventional-Commit PR that is security-scanned and gated on green checks, with nothing you had already settled quietly undone.
 
-Every phase emits events into an append-only log. That log is the single source of truth, and the raw material for audit-ready compliance documentation (traceability matrix, test evidence, SBOM, change history), regenerated automatically as a side effect of every phase completion. Drift that accumulates between sessions (manual edits, force-pushes, content rot that passes mtime checks) is caught on demand via `/shipwright-compliance`: a cross-artifact detective audit across 8 check groups (A–H). You get the compliance paperwork that usually costs weeks of manual work as a byproduct of just building the software.
+Every phase emits events into an append-only log. That log is the single source of truth, and the raw material for audit-ready compliance documentation (traceability matrix, test evidence, SBOM, change history), regenerated automatically as a side effect of every phase completion. Drift that accumulates between sessions (manual edits, force-pushes, content rot that passes mtime checks) is caught on demand via `/shipwright-compliance`: a cross-artifact detective audit across 9 check groups (A–I). You get the compliance paperwork that usually costs weeks of manual work as a byproduct of just building the software.
 
 You can drive all of this from the Claude Code VSCode Extension or CLI terminal, or through the **Shipwright Command Center**: a local web UI with a kanban board across every Shipwright task, live transcripts per task, and a global inbox for agent questions. Instead of hunting through terminal windows or VS Code sessions, one place shows where everything stands. When you launch a new pipeline or iterate from the Command Center, the `claude` command runs in an embedded terminal right on the task page. The Command Center never spawns Claude itself; it follows the session transcript live.
 
@@ -1119,7 +1119,7 @@ Together with preventive Canon and reactive Phase-Quality, it's a three-layer qu
 /shipwright-compliance --format json            # JSON output only
 ```
 
-**What the detective audit checks** (8 groups):
+**What the detective audit checks** (9 groups):
 
 - **A:** Artifact presence + path integrity. `npm run`, `uv run`, `make` commands in READMEs resolve; markdown links resolve; config path fields point to real files. The composite handler also runs **A5** (CI security-workflow integrity) so `.github/workflows/security.yml` parity drift surfaces here.
 - **B:** Config ↔ config ↔ event-log coherence. `project_config.splits[]` matches `.shipwright/planning/NN-*/`; build section test files exist; commits on main have matching `work_completed` events; **B7** reverse-direction git-log scan catches commits without events.
@@ -1129,8 +1129,9 @@ Together with preventive Canon and reactive Phase-Quality, it's a three-layer qu
 - **F:** ADR structural integrity (preventive re-run F1–F3): unique sequential IDs, valid status enum, supersession refs exist. **F4–F7 doc-hygiene detectors** on top: F4 flags ADRs > 60 lines without a `**Details:** [spec-folder link](...)`; F5 reconciles every decision-drop declaring `architecture_impact` against the *text* of `architecture.md` (the same content oracle the F11 `check_architecture_documented` finalize gate uses); F6 caps `CLAUDE.md` at 200 lines; F7 flags > 5 inline `Iterate X (ADR-N)` annotations leaking into CLAUDE.md.
 - **G:** Agent-docs freshness vs. git activity. Conventional-commit scope ↔ architecture.md substring match (with stoplist/alias map), ADR-ID references in commit bodies vs. decision_log.
 - **H:** Bloat-policy detective audit. Walks the codebase against `shipwright_bloat_baseline.json`, flags new crossings of the 300-line source / 400-line runtime-prompt budgets, and surfaces ratchets (existing entries that grew past their frozen `current` value). New crossings render as `info` triage items; ratchets are blocked at commit by the pre-commit hook (see Chapter 9 → Bloat anti-ratchet).
+- **I:** Requirement hygiene vs `shared/fr-authoring.md`. Flags FR names and descriptions carrying implementation detail (file paths, ADR numbers, HTTP verbs, code symbols), rows that only describe a change to another FR (fold candidates), and duplicate/reused FR IDs. I1-I3 are **advisory** — reported with counts but never changing the audit verdict, so a spec with legacy prose can clean up gradually without reddening CI. I4 (duplicate FR ID) fails for real.
 
-> **Detective-only tagging.** Every Group F4–F7 and Group H finding is tagged `SOURCE_DETECTIVE_ONLY` so the audit report distinguishes them from preventive re-runs of F1–F3 / C / B3 / B6. Failing detective checks are mirrored into `.shipwright/triage.jsonl` (source `compliance`) and auto-dismiss when the underlying drift resolves.
+> **Detective-only tagging.** Every Group F4–F7, Group H and Group I finding is tagged `SOURCE_DETECTIVE_ONLY` so the audit report distinguishes them from preventive re-runs of F1–F3 / C / B3 / B6. Failing detective checks are mirrored into `.shipwright/triage.jsonl` (source `compliance`) and auto-dismiss when the underlying drift resolves.
 
 **What it needs (detective audit):**
 - `shipwright_events.jsonl`: primary event source.

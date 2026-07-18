@@ -40,6 +40,20 @@ Write requirements using IREB's sentence template:
 - **SHOULD** = Should-have (maps to MoSCoW "Should")
 - **MAY** = Nice-to-have (maps to MoSCoW "Could")
 
+**The sentence is plain business language** — read `shared/fr-authoring.md`
+before writing requirements. It must name a *capability* the product offers, in
+words a product owner understands, and carry no implementation detail (no file
+paths, ADR numbers, HTTP verbs, or code symbols).
+
+- ❌ The system SHALL expose a POST `/api/leave_request` handler writing to
+  `leave_requests` with a `proper-lockfile` guard.
+- ✅ The system SHALL let an employee request time off for a chosen date range,
+  and SHALL refuse a request that overlaps one they already have.
+
+Both say the same thing. The second one can be signed off by the person who
+asked for the feature. Never drop a guarantee (here: the overlap rule) to make
+a sentence plainer — plain wording, full meaning.
+
 ### ID Schema
 
     {Type}-{Split-Number}.{Sequential-Number}
@@ -87,6 +101,13 @@ Rules:
 - **Be specific:** "The system SHALL authenticate users via email/password"
   not "The system SHALL handle authentication"
 - **Be testable:** Every SHALL/SHOULD must be verifiable
+- **Be readable by a non-engineer:** a product owner who has never seen the
+  code must be able to read the requirement and say what the product does —
+  see `shared/fr-authoring.md`. Specific and plain are not in tension: the *what*
+  gets sharper, the *how* moves to `architecture.md`.
+- **One requirement, one capability:** a route, a bugfix, a polish pass, or a
+  "Phase 2" is not its own requirement — it is acceptance criteria on the
+  capability it belongs to (`fr-authoring.md` §3).
 
 ## Template Structure
 

@@ -1,38 +1,36 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-18-churn-allowlist-test-traceability"
+run_id: "iterate-2026-07-18-fr-authoring-rules"
 phase: "iterate"
-reason: "churn allowlist completeness: test-traceability.json (mirror ci-security CR-1)"
-timestamp: "2026-07-18T05:36:00.768114+00:00"
+reason: "iterate: FR-authoring rules — plain business language + capability altitude"
+timestamp: "2026-07-18T06:57:33.583714+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-18 05:36:00 UTC
+> Auto-generated 2026-07-18 06:57:33 UTC
 
 ## Session Info
 
-- **Session ID**: 1202b22a-3c9e-4c44-b27c-1519865a3d53
-- **Timestamp**: 2026-07-18 05:36:00 UTC
-- **Reason**: churn allowlist completeness: test-traceability.json (mirror ci-security CR-1)
+- **Session ID**: b81cbdd9-0e92-4b90-a7bc-b582277c381a
+- **Timestamp**: 2026-07-18 06:57:33 UTC
+- **Reason**: iterate: FR-authoring rules — plain business language + capability altitude
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-17-test-rot-cleanup
-- **Date**: 2026-07-17T22:37:10.306072Z
+- **Run ID**: iterate-2026-07-18-fr-authoring-rules
+- **Date**: 2026-07-18T06:41:35.245945Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/test-rot-cleanup
-- **ADR**: iterate-2026-07-17-test-rot-cleanup
+- **Branch**: iterate/fr-authoring-rules
+- **ADR**: iterate-2026-07-18-fr-authoring-rules
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-17-test-rot-cleanup.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-18-fr-authoring-rules.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/churn-allowlist-test-traceability
-- **Run ID**: iterate-2026-07-18-churn-allowlist-test-traceability
-- **Spec**: .shipwright/planning/iterate/2026-07-18-churn-allowlist-test-traceability.md
-- **Complexity**: medium (cross_component → integration coverage enforced)
+- **Branch**: iterate/fr-authoring-rules
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-18-fr-authoring-rules.md
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -51,8 +49,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/churn-allowlist-test-traceability
-- **Last Commit**: 80a309da chore(triage): sweep 2 outbox append(s) into branch
+- **Branch**: iterate/fr-authoring-rules
+- **Last Commit**: 063dd3d2 feat(fr-authoring): plain-language capability-level FR rules + advisory hygiene audit
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +66,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-8f153abe | grade_snapshot | — | 2026-07-18 |
+| evt-5f2814df | grade_snapshot | — | 2026-07-18 |
+| evt-07d2258f | work_completed | iterate (iterate: FR-authoring rules — plain business language + capability altitude + advisory hygiene audit) | 2026-07-18 |
 | evt-6fabb1e3 | grade_snapshot | — | 2026-07-18 |
 | evt-a84a5f44 | work_completed | iterate (Admit test-traceability.json to the churn allowlist + regenerate-staging + integrate rollback (mirror ci-security CR-1), so origin/main merges auto-resolve it instead of aborting) | 2026-07-18 |
-| evt-b1410399 | grade_snapshot | — | 2026-07-17 |
-| evt-0cae8393 | grade_snapshot | — | 2026-07-17 |
-| evt-3f23ed5d | grade_snapshot | — | 2026-07-17 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 323
-- **Last iterate**: change — Admit test-traceability.json to the churn allowlist + regenerate-staging + integrate rollback (mirror ci-security CR-1), so origin/main merges auto-resolve it instead of aborting (2026-07-18)
+- **Total work events**: 324
+- **Last iterate**: change — iterate: FR-authoring rules — plain business language + capability altitude + advisory hygiene audit (2026-07-18)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

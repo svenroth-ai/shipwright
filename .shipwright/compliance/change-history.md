@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-07-18T05:35:55.409341+00:00
-Total commits: 1160
+Generated: 2026-07-18T06:41:35.319788+00:00
+Total commits: 1162
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 332
-    "feat" : 321
+    "fix" : 333
+    "feat" : 322
     "chore" : 245
     "docs" : 145
     "refactor" : 68
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 332 commits
+### Fixes (fix) — 333 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-18 | churn | admit test-traceability.json to the merge-conflict allowlist (#394) | 7b771b962d41 |
 | 2026-07-17 | churn | stage ci-security.json in the regenerate follow-up commit (#389) | fe29df0b7683 |
 | 2026-07-15 | iterate | pin finalize_iterate.py stdio to UTF-8 (cp1252 Windows crash aborted the finalize bundle) (#376) | c25d681a72ce |
 | 2026-07-15 | churn | admit ci-security.json to the merge allowlist so iterate merges don't abort (#375) | fc3e48c3de7f |
@@ -357,10 +358,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 321 commits
+### Features (feat) — 322 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-18 | fr-authoring | plain-language capability-level FR rules + advisory hygiene audit | 063dd3d2cc72 |
 | 2026-07-17 | agent-docs | canonical run_id changelog anchor + shape gate; kill aggregator ADR dup (#391) | 00174d952230 |
 | 2026-07-17 | traceability | backfill 189 plugin/shared @FR tags + config-aware TT5 gate (STEP 1) (#390) | a419ce461f8c |
 | 2026-07-16 | compliance | config-driven test_roots for the test_links collector (#387) | 853a45217dc6 |
@@ -687,7 +689,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-18 | triage | sweep 2 outbox append(s) into branch | 80a309da8a09 |
+| 2026-07-18 | triage | sweep 1 outbox append(s) into branch | 488e78387dbb |
 | 2026-07-18 | test-hygiene | resolve 51 pre-existing skipped-test findings (STEP 2) (#393) | 490a624e39f8 |
 | 2026-07-18 | traceability | dismiss STEP 3 FR-unmapped review card + record accepted-state policy (#392) | 9bff5d72718b |
 | 2026-07-17 | compliance | mark shared-lib loader import_module as by-design (semgrep FP) (#388) | fc6957724db1 |
@@ -1229,7 +1231,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1160 |
+| Total commits | 1162 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1160 |
+| Human-authored commits | 1162 |
 

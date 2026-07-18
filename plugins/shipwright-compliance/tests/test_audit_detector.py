@@ -63,12 +63,12 @@ def test_run_all_skips_unregistered_groups(tmp_path):
     )
     report = run_all(tmp_path, run_gate=False)
     assert report.findings == []
-    # F20: the default group set is {A..H} — Group H (bloat-policy
+    # F20: the default group set is {A..I} — Group H (bloat-policy
     # detective audit) MUST be in the default ``wanted`` set, else the
     # post-merge bloat net runs zero checks.
-    assert len(report.groups_skipped) == 8
+    assert len(report.groups_skipped) == 9
     assert {g for g, _r in report.groups_skipped} == {
-        "A", "B", "C", "D", "E", "F", "G", "H"
+        "A", "B", "C", "D", "E", "F", "G", "H", "I"
     }
 
 
@@ -80,12 +80,12 @@ def test_run_all_default_set_includes_group_h(tmp_path):
     bloat detective audit was structurally inert.
     """
     (tmp_path / "shipwright_run_config.json").write_text("{}\n", encoding="utf-8")
-    for letter in ("A", "B", "C", "D", "E", "F", "G", "H"):
+    for letter in ("A", "B", "C", "D", "E", "F", "G", "H", "I"):
         register_group(letter, lambda *a, _g=letter: [_make_finding(group=_g)])
 
     report = run_all(tmp_path, run_gate=False, emit_to_triage=False)
     assert "H" in report.groups_run
-    assert set(report.groups_run) == {"A", "B", "C", "D", "E", "F", "G", "H"}
+    assert set(report.groups_run) == {"A", "B", "C", "D", "E", "F", "G", "H", "I"}
 
 
 def test_run_all_executes_registered_group(tmp_path):

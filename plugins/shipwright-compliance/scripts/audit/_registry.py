@@ -63,3 +63,7 @@ def register_all() -> None:
     # Group H — Bloat-policy detective audit (Campaign A.review).
     from scripts.audit import group_h
     audit_detector.register_group("H", group_h.run)
+
+    # Group I — Requirement hygiene vs shared/fr-authoring.md (advisory).
+    from scripts.audit import group_i
+    audit_detector.register_group("I", group_i.run)

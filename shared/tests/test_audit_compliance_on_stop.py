@@ -44,8 +44,8 @@ class _FakeReport:
 
 
 def _full_report():
-    # F20: full coverage is A-H (run_all runs H by default; gate expects it).
-    return _FakeReport(["A", "B", "C", "D", "E", "F", "G", "H"])
+    # Full coverage is A-I (run_all runs H+I by default; gate expects them).
+    return _FakeReport(["A", "B", "C", "D", "E", "F", "G", "H", "I"])
 
 
 @pytest.fixture
@@ -57,16 +57,16 @@ def project(tmp_path: Path) -> Path:
 
 
 def test_coverage_ok_full_set():
-    ok, reason = hook.coverage_ok(_full_report())  # canonical A-H set
+    ok, reason = hook.coverage_ok(_full_report())  # canonical A-I set
     assert ok is True
     assert "full coverage" in reason.lower()
 
 
 def test_coverage_blocked_on_missing_group():
-    # No G (and no H) — both surface as missing; the gate blocks.
+    # No G, H or I — all three surface as missing; the gate blocks.
     ok, reason = hook.coverage_ok(_FakeReport(["A", "B", "C", "D", "E", "F"]))
     assert ok is False
-    assert "missing=['G', 'H']" in reason
+    assert "missing=['G', 'H', 'I']" in reason
 
 
 def test_coverage_blocked_on_import_gate_error():

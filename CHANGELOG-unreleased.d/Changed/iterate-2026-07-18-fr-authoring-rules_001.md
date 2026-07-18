@@ -1,0 +1,1 @@
+`/shipwright-iterate` Step 2 (both FEATURE and CHANGE paths) now runs a MINT-vs-FOLD gate before classifying spec impact, pins new FR numbers to the next free number in the split (counting removed rows so a retired number is never reused), and fences implementation detail out of FR names. ADD no longer describes 'a new endpoint' as grounds for a new requirement.

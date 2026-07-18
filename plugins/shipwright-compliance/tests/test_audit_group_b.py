@@ -737,7 +737,7 @@ def test_registry_wires_b_alongside_a_c_d_f(tmp_path):
     register_all()
     registered = set(audit_detector.registered_groups().keys())
     # Sub-Iterate C wired E + G; A.review wired H (bloat audit).
-    assert registered == {"A", "B", "C", "D", "E", "F", "G", "H"}
+    assert registered == {"A", "B", "C", "D", "E", "F", "G", "H", "I"}
 
 
 def test_group_b_findings_include_correct_sources(monkeypatch, tmp_path):
