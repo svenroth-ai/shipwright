@@ -5,8 +5,8 @@
 
 ## Status summary
 
-- Total: 333
-- Triage: 7 | Promoted: 1 | Dismissed: 324 | Snoozed: 1
+- Total: 334
+- Triage: 7 | Promoted: 1 | Dismissed: 325 | Snoozed: 1
 
 ## Top 7 items (severity-sorted)
 
@@ -39,13 +39,6 @@
   - Follow-up from iterate-2026-07-14-phase-invocation-mode (external plan review, Gemini #2). The v2 lifecycle never advan…
   - Promote: `triage_promote.py --id trg-d1e466aa --task-ref EXT:<ref>`
 
-### Source: iterate-2026-07-18-requirements-golden-corpus (1 item)
-
-<a id="trg-9532fa83"></a>
-- **Three requirements-parser defects frozen by S1, fixed by campaign step S4** `id=trg-9532fa83 | severity=medium | kind=improvement → P2/engineering`
-  - Three defects in the requirements table parsers, found while building the S1 golden corpus (campaign Requirements Catal…
-  - Promote: `triage_promote.py --id trg-9532fa83 --task-ref EXT:<ref>`
-
 ### Source: operator (2 items)
 
 <a id="trg-94337862"></a>
@@ -58,20 +51,15 @@
   - THIRD of three. Order: REQ-0 (FR existence gate) -> REQ-1 (test harness) -> REQ-2 (this campaign). Do NOT start before…
   - Promote: `triage_promote.py --id trg-1b764b2c --task-ref EXT:<ref>`
 
-### Source: securityReview (1 item)
+### Source: securityReview (2 items)
 
-<a id="trg-9509c2e8"></a>
-- **CI supply-chain guardrails + make an accepted risk actually stick (from webui #285 revert)** `id=trg-9509c2e8 | severity=medium | kind=improvement → P2/engineering`
-  - webui iterate-2026-07-18-unpin-actions-no-dependabot reverted PR #285 (SHA-pinned all first-party GitHub Actions + adde…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    Framework follow-up to webui iterate-2026-07-18-unpin-actions-no-dependabot.
-    Start with item 3 (touches_ci_supplychain in classify_complexity.RISK_TAXONOMY) -
-    smallest diff, and it is the guard that would have caught #285. Then item 2
-    (acceptance must converge triage AND code-scanning), then item 1 (strip hosted
-    services from the shipped CI template), then item 4 (scanner-agnostic accepted-risk
-    register). Leave item 5 unless the others land cheaply. Read the webui ADR first so
-    this does not re-decide the posture - it is already decided and recorded.
-    ```
-  - Promote: `triage_promote.py --id trg-9509c2e8 --task-ref EXT:<ref>`
+<a id="trg-15a8e267"></a>
+- **CI-Security 1/2: scanner-agnostic accepted-risk register that converges triage AND code-scanning** `id=trg-15a8e267 | severity=medium | kind=improvement → P2/engineering`
+  - CI-Security 1 of 2. Splits items 4 + 2 out of anchor trg-9509c2e8 (webui iterate-2026-07-18-unpin-actions-no-dependabot…
+  - Promote: `triage_promote.py --id trg-15a8e267 --task-ref EXT:<ref>`
+
+<a id="trg-0ce59c05"></a>
+- **CI-Security 2/2: ship the action-pinning posture RULE to adopters (templates already correct)** `id=trg-0ce59c05 | severity=low | kind=improvement → P3/engineering`
+  - CI-Security 2 of 2. This is what is LEFT of item 1 in anchor trg-9509c2e8 after verification - most of it turned out to…
+  - Promote: `triage_promote.py --id trg-0ce59c05 --task-ref EXT:<ref>`
 

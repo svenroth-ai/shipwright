@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-07-18T20:17:18.052303+00:00
+Generated: 2026-07-18T20:41:06.472191+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -39,11 +39,13 @@ Latest scan: **2026-07-18** · source `security.yml#29655175859` · critical-gat
 
 Prompt-injection findings: **0**
 
-**Accepted risks** (`.trivyignore.yaml` register):
+**Accepted risks** (`shipwright_accepted_risks.yaml` register):
 
-| CVE / ID | Expires | Status |
-|----------|---------|--------|
-| CVE-2026-54285 | 2026-12-22 | active |
+| ID | Target | Expires | Status | Recorded under |
+|----|--------|---------|--------|----------------|
+| ar-2026-06-22-otel-baggage-dev-only | trivy-ignore | 2026-12-22 | active | iterate-2026-06-22-trivy-risk-accept |
+| ar-2026-07-03-dependabot-cooldown-inert-config | semgrep-rule-exclusion | 2027-01-03 | active | ADR-271 |
+| ar-2026-07-03-gh-owned-mutable-action-tags | semgrep-policy-toggle | 2027-01-03 | active | ADR-271 |
 
 _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict only — no finding detail). The local `.shipwright/securityreports/` is intentionally **not** used (stale/FP-laden). Open high/critical feed the Control Grade's Security dimension._
 

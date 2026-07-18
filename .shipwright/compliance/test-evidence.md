@@ -1,6 +1,6 @@
 # Test Evidence Report
 
-Generated: 2026-07-18T20:17:18.052303+00:00
+Generated: 2026-07-18T20:41:06.472191+00:00
 
 ## Summary
 
@@ -14,7 +14,7 @@ Generated: 2026-07-18T20:17:18.052303+00:00
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | Added a golden corpus that freezes what the requirements machinery does today -- including five behaviours that are wrong on purpose -- so the upcoming catalog refactor can be checked against a real baseline instead of taking its own word for it. | [iterate](traceability-matrix.md#evt-43acdff8) | — | +0 | — | — | 2026-07-18 |
+| 1 | scanner-agnostic accepted-risk register (trg-15a8e267, item 4) | [iterate](traceability-matrix.md#evt-7a6fa40a) | — | +0 | — | — | 2026-07-18 |
 | 2 | enforce record termination + recover record boundaries on the triage log | [iterate](traceability-matrix.md#evt-14ef5fcb) | — | +0 | — | — | 2026-07-18 |
 | 3 | FR-existence gate — declared requirement ids must exist | [iterate](traceability-matrix.md#evt-3d1c18b7) | — | +0 | — | — | 2026-07-18 |
 | 4 | CI supply-chain risk flag + acknowledgement gate (trg-9509c2e8 item 3) | [iterate](traceability-matrix.md#evt-b827a6b1) | — | +0 | — | — | 2026-07-18 |
