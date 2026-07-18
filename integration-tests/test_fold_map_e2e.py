@@ -32,7 +32,6 @@ import pytest
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _COMPLIANCE = _REPO_ROOT / "plugins" / "shipwright-compliance"
-_COLLECTOR = _COMPLIANCE / "scripts" / "lib" / "collectors" / "test_links.py"
 _COMMITTED = _REPO_ROOT / ".shipwright" / "compliance" / "test-traceability.json"
 
 # Runs the real collector the way production does: as its own process, with only the
