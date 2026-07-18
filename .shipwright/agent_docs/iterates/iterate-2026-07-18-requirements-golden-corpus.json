@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-18-requirements-golden-corpus",
+  "date": "2026-07-18T20:17:17.731937Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/requirements-golden-corpus",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-18-requirements-golden-corpus.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-18-requirements-golden-corpus"
+}

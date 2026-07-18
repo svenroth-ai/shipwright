@@ -1,8 +1,8 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-18-accepted-risk-register"
+run_id: "iterate-2026-07-18-requirements-golden-corpus"
 phase: "iterate"
-reason: "iterate: scanner-agnostic accepted-risk register (trg-15a8e267, item 4)"
+reason: "ensure-current pre-merge refresh"
 timestamp: "2026-07-18T20:41:12.077490+00:00"
 ---
 
@@ -12,9 +12,9 @@ timestamp: "2026-07-18T20:41:12.077490+00:00"
 
 ## Session Info
 
-- **Session ID**: 0d0656e7-abfe-4357-934e-8c022b1fac2e
+- **Session ID**: 8e6fa31c-9819-4642-9ae6-d261a2be7a91
 - **Timestamp**: 2026-07-18 20:41:12 UTC
-- **Reason**: iterate: scanner-agnostic accepted-risk register (trg-15a8e267, item 4)
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
@@ -29,9 +29,10 @@ timestamp: "2026-07-18T20:41:12.077490+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/accepted-risk-register
-- **Run ID**: `iterate-2026-07-18-accepted-risk-register`
-- **Spec**: .shipwright/planning/iterate/2026-07-18-accepted-risk-register.md
+- **Branch**: iterate/requirements-golden-corpus
+- **Run ID**: iterate-2026-07-18-requirements-golden-corpus
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-18-requirements-golden-corpus.md
+- **Complexity**: medium (`prior_source: history`, n=20)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -50,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/accepted-risk-register
-- **Last Commit**: 718a05d7 chore(triage): sweep 7 outbox append(s) into branch
+- **Branch**: iterate/requirements-golden-corpus
+- **Last Commit**: ffadb528 Merge remote-tracking branch 'origin/main' into iterate/requirements-golden-corpus
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,14 +70,14 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 |-------|------|--------|------|
 | evt-5a2ddb30 | grade_snapshot | — | 2026-07-18 |
 | evt-7a6fa40a | work_completed | iterate (iterate: scanner-agnostic accepted-risk register (trg-15a8e267, item 4)) | 2026-07-18 |
+| evt-06f743dd | grade_snapshot | — | 2026-07-18 |
+| evt-43acdff8 | work_completed | iterate (iterate: requirements golden corpus freezing discovery + parser behaviour) | 2026-07-18 |
 | evt-a2835609 | grade_snapshot | — | 2026-07-18 |
-| evt-695d77cd | grade_snapshot | — | 2026-07-18 |
-| evt-14ef5fcb | work_completed | iterate (iterate: enforce record termination + recover record boundaries on the triage log) | 2026-07-18 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 330
+- **Total work events**: 331
 - **Last iterate**: change — iterate: scanner-agnostic accepted-risk register (trg-15a8e267, item 4) (2026-07-18)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
