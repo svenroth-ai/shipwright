@@ -47,6 +47,47 @@ def is_non_empty_fr_list(value) -> bool:
     return any(isinstance(x, str) and x.strip() for x in value)
 
 
+def unknown_fr_ids(declared, known) -> list[str]:
+    """Declared FR ids that are absent from ``known``, in declared order.
+
+    S0 of the requirements-catalog campaign. The FR-gate historically checked
+    only that the declared list was *non-empty* (:func:`is_non_empty_fr_list`),
+    so an id naming no requirement anywhere passed; existence was verified only
+    by the non-blocking post-merge detective D2. This is the predicate that
+    closes it.
+
+    **Pure by contract.** ``known`` is supplied by the caller — this module is
+    deliberately stdlib-only and self-contained so the compliance plugin can
+    load it via ``audit_adapters.load_shared_lib`` without binding ``lib`` in
+    ``sys.modules``. Reaching for the filesystem here would re-introduce exactly
+    the coupling that discipline exists to prevent, so spec collection stays at
+    the call sites.
+
+    Blank, whitespace-only and non-string entries are ignored rather than
+    reported: a present-but-empty tag is the no-FR case, which the change_type
+    branch owns. Ids are trimmed before comparison and reported once each,
+    preserving first-seen order so the error message reads deterministically.
+
+    An empty ``known`` yields every declared id. That is intentional — deciding
+    whether "nothing known" means *unverifiable* (allow) or *wrong* (block) is
+    the caller's judgement, not this predicate's.
+    """
+    if not isinstance(declared, list):
+        return []
+    known_set = {str(k).strip() for k in (known or ())}
+    out: list[str] = []
+    seen: set[str] = set()
+    for item in declared:
+        if not isinstance(item, str):
+            continue
+        fr = item.strip()
+        if not fr or fr in known_set or fr in seen:
+            continue
+        seen.add(fr)
+        out.append(fr)
+    return out
+
+
 def is_valid_none_reason(value) -> bool:
     """Validate a ``none_reason``: a trimmed, single-line string ≤ the cap.
 

@@ -1,6 +1,6 @@
 # Test Evidence Report
 
-Generated: 2026-07-18T16:53:59.092383+00:00
+Generated: 2026-07-18T16:11:06.203790+00:00
 
 ## Summary
 
@@ -14,7 +14,7 @@ Generated: 2026-07-18T16:53:59.092383+00:00
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | CI supply-chain risk flag + acknowledgement gate (trg-9509c2e8 item 3) | [iterate](traceability-matrix.md#evt-b827a6b1) | — | +0 | — | — | 2026-07-18 |
+| 1 | FR-existence gate — declared requirement ids must exist | [iterate](traceability-matrix.md#evt-3d1c18b7) | — | +0 | — | — | 2026-07-18 |
 | 2 | suppress non-literal-import FP in the layer-coverage verifier | [iterate](traceability-matrix.md#evt-b58979bd) | — | +0 | — | — | 2026-07-18 |
 | 3 | resolve tagged FR ids through the spec FR-Fold-Map so granular @covers tags survive a taxonomy fold | [iterate](traceability-matrix.md#evt-6236a879) | — | +0 | — | — | 2026-07-18 |
 | 4 | Functional Requirements are now written in plain, non-expert business language and at capability level, with one shared rulebook the adopt, project and iterate skills all follow, plus an advisory compliance check that reports when a requirement drifts back into technical jargon. | [iterate](traceability-matrix.md#evt-07d2258f) | — | +0 | — | — | 2026-07-18 |

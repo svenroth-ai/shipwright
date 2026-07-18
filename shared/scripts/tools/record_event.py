@@ -44,18 +44,27 @@ from lib.config import read_events  # noqa: E402,F401 — re-exported SSOT
 # historical private name so `record_event._FileLock` stays monkeypatchable
 # (F14 lifecycle test) and the `with _FileLock(...)` call sites resolve it.
 from lib.file_lock import FileLock as _FileLock  # noqa: E402
-# SSOT for FR-classification (BP-1). The gate below and the compliance
-# Control-Grade adapter share these so "classified" (gate) and "traced" (grade)
-# can never drift. Aliased to the historical private names so existing call
-# sites + tests (record_event._CHANGE_TYPE_VALUES, ._is_valid_none_reason, …)
-# keep resolving.
+# SSOT for FR-classification (BP-1). The predicates the gates use moved to
+# lib/fr_gates.py with them; only these two are still consumed here.
+# ``_NONE_REASON_MAX_LEN`` is a deliberate re-export — test_fr_classification
+# pins it equal to the SSOT value, which is what stops the CLI's advertised cap
+# from drifting away from the one actually enforced.
 from lib.fr_classification import (  # noqa: E402
-    CHANGE_TYPE_VALUES as _CHANGE_TYPE_VALUES,
-    NONE_REASON_MAX_LEN as _NONE_REASON_MAX_LEN,
-    is_behavior_affecting as _is_behavior_affecting,
-    is_non_empty_fr_list as _is_non_empty_fr_list,
-    is_valid_none_reason as _is_valid_none_reason,
+    CHANGE_TYPE_VALUES as _CHANGE_TYPE_VALUES,  # noqa: F401 — drift-pinned re-export
+    NONE_REASON_MAX_LEN as _NONE_REASON_MAX_LEN,  # noqa: F401 — drift-pinned re-export
     normalize_fr_impact as _normalize_fr_impact,
+)
+# Both FR gates live in lib/fr_gates.py. This file was already over the 300-LOC
+# limit, so the S0 gate was extracted rather than appended — and its sibling
+# classification gate moved with it, which ratchets this file DOWN (~820 -> ~720)
+# instead of merely holding the line. Re-exported under the historical private
+# names so every existing call site and test keeps resolving unchanged.
+from lib.fr_gates import (  # noqa: E402,F401 — re-exported
+    check_fr_existence,
+    collect_known_fr_ids,
+    existence_gate_error as _fr_existence_gate_error,
+    fr_or_change_type_gate_error as _fr_or_change_type_gate_error,
+    run_fr_gates,
 )
 
 SCHEMA_VERSION = 1
@@ -619,122 +628,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return p.parse_args(argv)
 
 
-def _fr_or_change_type_gate_error(event) -> dict | None:
-    """Iterate C.1 (ADR-059) FR-gate. Hard-enforce forward-only.
 
-    Every ``work_completed`` event with ``source == "iterate"`` MUST
-    record either:
 
-    - ``affected_frs`` non-empty list (or ``new_frs`` non-empty list
-      — both forms tie the iterate to one or more FRs), OR
-    - ``change_type`` ∈ ``{docs, tooling, compliance, infra}`` AND
-      ``none_reason`` is a valid one-line justification (see
-      ``_is_valid_none_reason``).
-
-    BP-1 (campaign 2026-06-27) adds one rule: a **behavior-affecting**
-    change (``spec_impact`` ∈ ``{add, modify, remove}``) MUST link an FR
-    — the no-FR ``change_type`` branch is reserved for behavior-preserving
-    changes. Unlike the CLI-only, intent-gated ``_spec_impact_gate_error``,
-    this rule runs at finalize too (F5b parity) and is intent-independent.
-
-    Additional consistency check: if ``change_type`` is present at all
-    (even alongside valid FRs) it must be a recognized value — a malformed
-    value is invalid input regardless of FR presence.
-
-    Hard-rejects otherwise (error dict; ``main`` exits 1, writes nothing).
-    Defensive ``.get()`` lookups mean a directly-constructed event dict
-    missing ``type``/``source`` cleanly bypasses rather than crashing, and
-    pre-gate events still parse (``change_type``/``none_reason`` = None).
-
-    Build events (``source != "iterate"``) and non-work_completed events
-    bypass entirely; Phase 0 pre-classified every existing iterate event so
-    this hard-enforcement is risk-free.
-
-    Scope: the gate runs at the CLI boundary (``record_event.main``)
-    AND, since iterate-2026-06-05-fr-linkage-lifecycle, inside
-    ``finalize_iterate._record_event`` (the worktree F5b / Stop-hook
-    write-path), which calls this same function before its
-    ``append_event`` — that bypass is now closed (ADR-059 parity). The
-    spec-impact gate (``_spec_impact_gate_error``) stays CLI-only.
-
-    Origin: iterate-2026-05-21-c1-fr-gate-finalize.
-    """
-    if not isinstance(event, dict):
-        return None
-    if event.get("type") != "work_completed":
-        return None
-    if event.get("source") != "iterate":
-        return None
-
-    change_type = event.get("change_type")
-    none_reason = event.get("none_reason")
-    has_frs = (
-        _is_non_empty_fr_list(event.get("affected_frs"))
-        or _is_non_empty_fr_list(event.get("new_frs"))
-    )
-
-    # BP-1 (campaign 2026-06-27): a behavior-affecting change (spec_impact ∈
-    # add/modify/remove) MUST link an FR — the no-FR change_type branch is not
-    # available to it. Closes two holes the CLI-only, intent-gated
-    # _spec_impact_gate_error left open: this runs at finalize too (F5b parity)
-    # AND is intent-independent (catches BUG + intent-less events). Without it a
-    # behavior change could dodge FR-linkage by self-labeling "tooling", which
-    # would also starve BP-2's per-FR reconciliation.
-    if _is_behavior_affecting(event.get("spec_impact")) and not has_frs:
-        return {
-            "error": "fr_gate_behavior_affecting_requires_fr",
-            "detail": (
-                f"spec_impact={event.get('spec_impact')!r} is behavior-"
-                "affecting but no --affected-frs/--new-frs was recorded. A "
-                "behavior-affecting change must link the FR(s) it touches; the "
-                "no-FR change_type branch is only for behavior-preserving "
-                "(spec_impact none) changes. See SKILL.md step F4."
-            ),
-        }
-
-    # Defense in depth: if change_type is present at all, the FULL
-    # pair must be valid — both a recognized value AND a non-empty
-    # one-line none_reason. Reviewer-flagged Gemini-M12 (iterate review)
-    # + Gemini-M1 (code review): if the operator bothered to classify
-    # via change_type, the metadata must be internally consistent. FRs
-    # being present too is not a "free pass" to skip the reason.
-    if change_type is not None:
-        if change_type not in _CHANGE_TYPE_VALUES:
-            return {
-                "error": "fr_gate_unclassified",
-                "detail": (
-                    f"change_type={change_type!r} is not one of "
-                    f"{list(_CHANGE_TYPE_VALUES)}. See SKILL.md step F4."
-                ),
-            }
-        if not _is_valid_none_reason(none_reason):
-            return {
-                "error": "fr_gate_unclassified",
-                "detail": (
-                    "change_type is set but none_reason is missing or "
-                    "malformed (require a non-empty single-line string, "
-                    f"max {_NONE_REASON_MAX_LEN} chars, no control chars "
-                    "except tab). See SKILL.md step F4."
-                ),
-            }
-        # Pair is valid — the change_type path provides classification.
-        return None
-
-    # No change_type → must classify via FRs.
-    if has_frs:
-        return None
-
-    return {
-        "error": "fr_gate_unclassified",
-        "detail": (
-            "An iterate work_completed event must record either "
-            "--affected-frs (or --new-frs) with at least one FR, OR "
-            "--change-type ∈ {docs, tooling, compliance, infra} together "
-            "with --none-reason '<one-line justification, max "
-            f"{_NONE_REASON_MAX_LEN} chars, no newlines>'. "
-            "See SKILL.md step F4 (FR capture)."
-        ),
-    }
 
 
 def _spec_impact_gate_error(event: dict) -> dict | None:
@@ -791,6 +686,14 @@ def main(argv: list[str] | None = None) -> int:
     fr_gate_error = _fr_or_change_type_gate_error(event)
     if fr_gate_error is not None:
         print(json.dumps({"success": False, **fr_gate_error}, indent=2))
+        return 1
+
+    # S0 existence gate: the classification gate above proves the change is
+    # *classified*, not that the ids it names denote anything. Runs second so
+    # an unclassified iterate still hears the broader requirement first.
+    existence_error = check_fr_existence(event, project_root, "record_event")
+    if existence_error is not None:
+        print(json.dumps({"success": False, **existence_error}, indent=2))
         return 1
 
     # Spec-impact gate: a FEATURE/CHANGE iterate must name the FRs it touched

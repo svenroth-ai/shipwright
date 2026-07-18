@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-07-18T16:53:59.092383+00:00
+Generated: 2026-07-18T16:11:06.203790+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -17,7 +17,7 @@ Scope: library
 | ✅ | Change traceability | 327/327 changes linked to a commit, ADR or test run | change provenance (SLSA) |
 | ⚠️ | Change reconciliation | 6/8 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
 | ✅ | Security | 0 open high/critical | no open high/critical vulns (NIST SSDF) |
-| ✅ | Size / maintainability discipline | ratchet delta -84 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
+| ✅ | Size / maintainability discipline | ratchet delta -208 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
 | ✅ | Dependency hygiene | 0 unresolved / 11 licenses; 0 copyleft | dependency license & risk (OWASP) |
 
 > 📊 **Test-Health · diff-coverage (Control-Grade input · target ≥80%):** not measured this session — per-PR signal; see the CI "Diff coverage" artifact.
@@ -28,7 +28,7 @@ _Grade = importance-weighted average over the measurable dimensions (n/a exclude
 
 ## 🛡️ CI Security (fail-closed gate)
 
-Latest scan: **2026-07-18** · source `security.yml#29651893311` · critical-gate **✅ PASS**
+Latest scan: **2026-07-18** · source `security.yml#29639579619` · critical-gate **✅ PASS**
 
 | Severity | Count |
 |----------|-------|
@@ -59,10 +59,10 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Iterate tests passing | 46/57 testable changes tested | WARN | 11 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 11 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 10 open | WARN | 10 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Triage open | 8 open | WARN | 8 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit (grandfathered) | 124 | INFO |  |
 | Bloat in allowlist | 155 entries | INFO |  |
-| Bloat ratchet delta | -84 lines | PASS |  |
+| Bloat ratchet delta | -208 lines | PASS |  |
 
 ## Project Velocity
 

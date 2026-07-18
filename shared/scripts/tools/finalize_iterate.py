@@ -218,10 +218,10 @@ def _record_event(
     """
     try:
         from tools.record_event import (
-            _fr_or_change_type_gate_error,
             append_event,
             generate_event_id,
             read_events,
+            run_fr_gates,
         )
     except Exception as exc:
         print(f"[finalize_iterate] event recording failed: {exc}", file=sys.stderr)
@@ -284,10 +284,10 @@ def _record_event(
         # close the bypass that let FR-less iterate work_completed events reach
         # the log via this direct ``append_event`` caller. Runs AFTER the
         # idempotency early-return above (a re-run of an already-recorded run_id
-        # is never re-gated) and BEFORE the write. Reuses the CLI gate verbatim
-        # — single source of truth, do not re-implement. Build events bypass it
-        # (source != "iterate"); this writer only ever emits source="iterate".
-        gate_error = _fr_or_change_type_gate_error(event)
+        # is never re-gated) and BEFORE the write. ``run_fr_gates`` applies BOTH
+        # gates — classified, then ids-exist — so this path cannot wire one and
+        # forget the other. Build events bypass (source != "iterate").
+        gate_error = run_fr_gates(event, project_root, "finalize_iterate")
         if gate_error is not None:
             raise FinalizeGateError(
                 gate_error.get("detail", "FR-gate rejected the work_completed event")
