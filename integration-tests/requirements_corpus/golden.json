@@ -1,0 +1,4610 @@
+{
+  "frozen_bugs": {
+    "_read_me": "These cells are WRONG ON PURPOSE. Do not correct them -- they are the baseline campaign steps S2-S6 are measured against. Full rationale: integration-tests/requirements_corpus/frozen_bugs.py",
+    "bugs": {
+      "FV-1": {
+        "cells": [
+          [
+            "parse.drift_parsers.parse_fr_table",
+            "mixed-shape",
+            ".shipwright/planning/06-reordered/spec.md"
+          ]
+        ],
+        "flipped_by": "S4 (one header-driven row parser -- column order stops being load-bearing, so a zero-row parse of a populated spec becomes impossible)",
+        "what": "A spec that parses to ZERO rows makes traceability check T1 SKIP rather than FAIL."
+      },
+      "FV-2": {
+        "cells": [],
+        "flipped_by": "S6 (one catalog at one path: 'no requirements found' stops being a legitimate state)",
+        "what": "An empty requirement set reads GREEN across the audit plane -- 'no requirements' is treated as 'nothing to audit'."
+      },
+      "FV-3": {
+        "cells": [
+          [
+            "parse.drift_parsers.parse_fr_table",
+            "mixed-shape",
+            ".shipwright/planning/07-header-blind/spec.md"
+          ]
+        ],
+        "flipped_by": "S4 (a header-driven reader selects by column NAME, so a row wider than its header can no longer shift the body)",
+        "what": "The RTM can display the WRONG requirement text."
+      },
+      "FV-4": {
+        "cells": [
+          [
+            "parse.group_i._scan_one_spec",
+            "mixed-shape",
+            ".shipwright/planning/05-fixture-fr/spec.md"
+          ]
+        ],
+        "flipped_by": "S4 (one header-driven reader, one accepted id column)",
+        "what": "Group I silently audits NOTHING when a table header says 'FR' instead of 'ID'."
+      },
+      "FV-5": {
+        "cells": [
+          [
+            "parse.group_i._scan_one_spec",
+            "edge",
+            ".shipwright/planning/01-live/spec.md"
+          ]
+        ],
+        "flipped_by": "S4",
+        "what": "Group I drops requirement rows that appear after any heading."
+      }
+    }
+  },
+  "regenerated_for": "Initial baseline: campaign Requirements Catalog sub-iterate S1 (iterate-2026-07-18-requirements-golden-corpus). Freezes today's behaviour of 15 discovery walks and 5 FR-table parsers INCLUDING five known-wrong behaviours (FV-1..FV-5) so that steps S2-S4 can be checked rather than asserted. Platform-specific tokens (pathlib concrete subclass, path separator, directory-read OSError subclass) are neutralized in the matrix and pinned in dedicated tests instead.",
+  "schema_version": 1,
+  "targets": {
+    "disc._test_links_io.discover_specs": {
+      "fixtures": {
+        "absent": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        },
+        "brownfield-single-split": {
+          "outcome": "returned",
+          "type": "list[Path]",
+          "value": [
+            "<root>/.shipwright/planning/01-adopted/spec.md"
+          ]
+        },
+        "edge": {
+          "outcome": "returned",
+          "type": "list[Path]",
+          "value": [
+            "<root>/.shipwright/agent_docs/spec.md",
+            "<root>/.shipwright/planning/.hidden-split/spec.md",
+            "<root>/.shipwright/planning/01-live/spec.md"
+          ]
+        },
+        "empty": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        },
+        "greenfield-multi-split": {
+          "outcome": "returned",
+          "type": "list[Path]",
+          "value": [
+            "<root>/.shipwright/agent_docs/spec.md",
+            "<root>/.shipwright/planning/01-auth/spec.md",
+            "<root>/.shipwright/planning/02-dashboard/spec.md",
+            "<root>/.shipwright/planning/03-reporting/spec.md"
+          ]
+        },
+        "malformed": {
+          "outcome": "returned",
+          "type": "list[Path]",
+          "value": [
+            "<root>/.shipwright/planning/01-broken/spec.md"
+          ]
+        },
+        "mixed-shape": {
+          "outcome": "returned",
+          "type": "list[Path]",
+          "value": [
+            "<root>/.shipwright/planning/01-greenfield-template/spec.md",
+            "<root>/.shipwright/planning/02-greenfield-example/spec.md",
+            "<root>/.shipwright/planning/03-adopt-disk/spec.md",
+            "<root>/.shipwright/planning/04-adopt-writer/spec.md",
+            "<root>/.shipwright/planning/05-fixture-fr/spec.md",
+            "<root>/.shipwright/planning/06-reordered/spec.md",
+            "<root>/.shipwright/planning/07-header-blind/spec.md"
+          ]
+        },
+        "planning-file": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        },
+        "spec-dir": {
+          "outcome": "returned",
+          "type": "list[Path]",
+          "value": [
+            "<root>/.shipwright/planning/01-spec-is-a-dir/spec.md"
+          ]
+        },
+        "zero-row-parse": {
+          "outcome": "returned",
+          "type": "list[Path]",
+          "value": [
+            "<root>/.shipwright/planning/01-reordered-only/spec.md"
+          ]
+        }
+      },
+      "kind": "invoked"
+    },
+    "disc.adopt_compliance.check_a2_spec_has_frs": {
+      "fixtures": {
+        "absent": {
+          "outcome": "returned",
+          "type": "dict",
+          "unordered_walk": true,
+          "value": {
+            "evidence": "missing .shipwright/planning/ directory",
+            "id": "A2",
+            "name": "A2 .shipwright/planning/<split>/spec.md has >= 1 FR",
+            "provenance": "adopt_spec_check",
+            "status": "FAIL"
+          }
+        },
+        "brownfield-single-split": {
+          "outcome": "returned",
+          "type": "dict",
+          "unordered_walk": true,
+          "value": {
+            "evidence": "FR found in <unordered-pick>",
+            "id": "A2",
+            "name": "A2 .shipwright/planning/<split>/spec.md has >= 1 FR",
+            "provenance": "adopt_spec_check",
+            "status": "PASS"
+          }
+        },
+        "edge": {
+          "outcome": "returned",
+          "type": "dict",
+          "unordered_walk": true,
+          "value": {
+            "evidence": "FR found in <unordered-pick>",
+            "id": "A2",
+            "name": "A2 .shipwright/planning/<split>/spec.md has >= 1 FR",
+            "provenance": "adopt_spec_check",
+            "status": "PASS"
+          }
+        },
+        "empty": {
+          "outcome": "returned",
+          "type": "dict",
+          "unordered_walk": true,
+          "value": {
+            "evidence": "no .shipwright/planning/<split>/spec.md found",
+            "id": "A2",
+            "name": "A2 .shipwright/planning/<split>/spec.md has >= 1 FR",
+            "provenance": "adopt_spec_check",
+            "status": "FAIL"
+          }
+        },
+        "greenfield-multi-split": {
+          "outcome": "returned",
+          "type": "dict",
+          "unordered_walk": true,
+          "value": {
+            "evidence": "FR found in <unordered-pick>",
+            "id": "A2",
+            "name": "A2 .shipwright/planning/<split>/spec.md has >= 1 FR",
+            "provenance": "adopt_spec_check",
+            "status": "PASS"
+          }
+        },
+        "malformed": {
+          "outcome": "returned",
+          "type": "dict",
+          "unordered_walk": true,
+          "value": {
+            "evidence": "FR found in <unordered-pick>",
+            "id": "A2",
+            "name": "A2 .shipwright/planning/<split>/spec.md has >= 1 FR",
+            "provenance": "adopt_spec_check",
+            "status": "PASS"
+          }
+        },
+        "mixed-shape": {
+          "outcome": "returned",
+          "type": "dict",
+          "unordered_walk": true,
+          "value": {
+            "evidence": "FR found in <unordered-pick>",
+            "id": "A2",
+            "name": "A2 .shipwright/planning/<split>/spec.md has >= 1 FR",
+            "provenance": "adopt_spec_check",
+            "status": "PASS"
+          }
+        },
+        "planning-file": {
+          "outcome": "returned",
+          "type": "dict",
+          "unordered_walk": true,
+          "value": {
+            "evidence": "missing .shipwright/planning/ directory",
+            "id": "A2",
+            "name": "A2 .shipwright/planning/<split>/spec.md has >= 1 FR",
+            "provenance": "adopt_spec_check",
+            "status": "FAIL"
+          }
+        },
+        "spec-dir": {
+          "exception": "OSError:not-a-readable-file",
+          "outcome": "raised"
+        },
+        "zero-row-parse": {
+          "outcome": "returned",
+          "type": "dict",
+          "unordered_walk": true,
+          "value": {
+            "evidence": "FR found in <unordered-pick>",
+            "id": "A2",
+            "name": "A2 .shipwright/planning/<split>/spec.md has >= 1 FR",
+            "provenance": "adopt_spec_check",
+            "status": "PASS"
+          }
+        }
+      },
+      "kind": "invoked"
+    },
+    "disc.backfill_test_links.discover_specs": {
+      "fixtures": {
+        "absent": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        },
+        "brownfield-single-split": {
+          "outcome": "returned",
+          "type": "list[Path]",
+          "value": [
+            "<root>/.shipwright/planning/01-adopted/spec.md"
+          ]
+        },
+        "edge": {
+          "outcome": "returned",
+          "type": "list[Path]",
+          "value": [
+            "<root>/.shipwright/agent_docs/spec.md",
+            "<root>/.shipwright/planning/.hidden-split/spec.md",
+            "<root>/.shipwright/planning/01-live/spec.md",
+            "<root>/spec.md"
+          ]
+        },
+        "empty": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        },
+        "greenfield-multi-split": {
+          "outcome": "returned",
+          "type": "list[Path]",
+          "value": [
+            "<root>/.shipwright/agent_docs/spec.md",
+            "<root>/.shipwright/planning/01-auth/spec.md",
+            "<root>/.shipwright/planning/02-dashboard/spec.md",
+            "<root>/.shipwright/planning/03-reporting/spec.md"
+          ]
+        },
+        "malformed": {
+          "outcome": "returned",
+          "type": "list[Path]",
+          "value": [
+            "<root>/.shipwright/planning/01-broken/spec.md"
+          ]
+        },
+        "mixed-shape": {
+          "outcome": "returned",
+          "type": "list[Path]",
+          "value": [
+            "<root>/.shipwright/planning/01-greenfield-template/spec.md",
+            "<root>/.shipwright/planning/02-greenfield-example/spec.md",
+            "<root>/.shipwright/planning/03-adopt-disk/spec.md",
+            "<root>/.shipwright/planning/04-adopt-writer/spec.md",
+            "<root>/.shipwright/planning/05-fixture-fr/spec.md",
+            "<root>/.shipwright/planning/06-reordered/spec.md",
+            "<root>/.shipwright/planning/07-header-blind/spec.md"
+          ]
+        },
+        "planning-file": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        },
+        "spec-dir": {
+          "outcome": "returned",
+          "type": "list[Path]",
+          "value": [
+            "<root>/.shipwright/planning/01-spec-is-a-dir/spec.md"
+          ]
+        },
+        "zero-row-parse": {
+          "outcome": "returned",
+          "type": "list[Path]",
+          "value": [
+            "<root>/.shipwright/planning/01-reordered-only/spec.md"
+          ]
+        }
+      },
+      "kind": "invoked"
+    },
+    "disc.drift_parsers.collect_requirements_from_planning": {
+      "fixtures": {
+        "absent": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        },
+        "brownfield-single-split": {
+          "outcome": "returned",
+          "type": "list[FunctionalRequirement]",
+          "value": [
+            {
+              "id": "FR-01.01",
+              "priority": "Must",
+              "spec_path": ".shipwright/planning/01-adopted/spec.md",
+              "split": "01-adopted",
+              "text": "Orchestrate the full pipeline."
+            },
+            {
+              "id": "FR-01.02",
+              "priority": "Should",
+              "spec_path": ".shipwright/planning/01-adopted/spec.md",
+              "split": "01-adopted",
+              "text": "Deep planning with external review."
+            }
+          ]
+        },
+        "edge": {
+          "outcome": "returned",
+          "type": "list[FunctionalRequirement]",
+          "value": [
+            {
+              "id": "FR-01.01",
+              "priority": "Must",
+              "spec_path": ".shipwright/planning/.hidden-split/spec.md",
+              "split": ".hidden-split",
+              "text": "User can log in"
+            },
+            {
+              "id": "FR-01.02",
+              "priority": "Should",
+              "spec_path": ".shipwright/planning/.hidden-split/spec.md",
+              "split": ".hidden-split",
+              "text": "User can log out"
+            },
+            {
+              "id": "FR-01.01",
+              "priority": "Must",
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live",
+              "text": "Canonical two-digit id"
+            },
+            {
+              "id": "FR-1.1",
+              "priority": "Must",
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live",
+              "text": "Single-digit id"
+            },
+            {
+              "id": "FR-7",
+              "priority": "Must",
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live",
+              "text": "Bare id, no dot"
+            },
+            {
+              "id": "FR-99.99",
+              "priority": "Should",
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live",
+              "text": "High canonical id"
+            },
+            {
+              "id": "FR-001.001",
+              "priority": "May",
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live",
+              "text": "Three-digit id"
+            },
+            {
+              "id": "FR-01.20",
+              "priority": "Must",
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live",
+              "text": "Row after a later heading"
+            },
+            {
+              "id": "FR-01.01",
+              "priority": "Must",
+              "spec_path": ".shipwright/planning/iterate/spec.md",
+              "split": "iterate",
+              "text": "User can log in"
+            },
+            {
+              "id": "FR-01.02",
+              "priority": "Should",
+              "spec_path": ".shipwright/planning/iterate/spec.md",
+              "split": "iterate",
+              "text": "User can log out"
+            }
+          ]
+        },
+        "empty": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        },
+        "greenfield-multi-split": {
+          "outcome": "returned",
+          "type": "list[FunctionalRequirement]",
+          "value": [
+            {
+              "id": "FR-01.01",
+              "priority": "Must",
+              "spec_path": ".shipwright/planning/01-auth/spec.md",
+              "split": "01-auth",
+              "text": "User can log in"
+            },
+            {
+              "id": "FR-01.02",
+              "priority": "Should",
+              "spec_path": ".shipwright/planning/01-auth/spec.md",
+              "split": "01-auth",
+              "text": "User can log out"
+            },
+            {
+              "id": "FR-02.01",
+              "priority": "Must",
+              "spec_path": ".shipwright/planning/02-dashboard/spec.md",
+              "split": "02-dashboard",
+              "text": "Dashboard shows recent activity"
+            },
+            {
+              "id": "FR-02.02",
+              "priority": "May",
+              "spec_path": ".shipwright/planning/02-dashboard/spec.md",
+              "split": "02-dashboard",
+              "text": "Optional analytics panel"
+            },
+            {
+              "id": "FR-03.01",
+              "priority": "Must",
+              "spec_path": ".shipwright/planning/03-reporting/spec.md",
+              "split": "03-reporting",
+              "text": "User can log in"
+            },
+            {
+              "id": "FR-03.02",
+              "priority": "Should",
+              "spec_path": ".shipwright/planning/03-reporting/spec.md",
+              "split": "03-reporting",
+              "text": "User can log out"
+            }
+          ]
+        },
+        "malformed": {
+          "outcome": "returned",
+          "type": "list[FunctionalRequirement]",
+          "value": [
+            {
+              "id": "FR-01.03",
+              "priority": "Should",
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken",
+              "text": "extra"
+            },
+            {
+              "id": "FR-01.01",
+              "priority": "Must",
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken",
+              "text": "duplicate of the first id"
+            }
+          ]
+        },
+        "mixed-shape": {
+          "outcome": "returned",
+          "type": "list[FunctionalRequirement]",
+          "value": [
+            {
+              "id": "FR-01.01",
+              "priority": "Must",
+              "spec_path": ".shipwright/planning/01-greenfield-template/spec.md",
+              "split": "01-greenfield-template",
+              "text": "User can log in"
+            },
+            {
+              "id": "FR-01.02",
+              "priority": "Should",
+              "spec_path": ".shipwright/planning/01-greenfield-template/spec.md",
+              "split": "01-greenfield-template",
+              "text": "User can log out"
+            },
+            {
+              "id": "FR-02.01",
+              "priority": "Must",
+              "spec_path": ".shipwright/planning/02-greenfield-example/spec.md",
+              "split": "02-greenfield-example",
+              "text": "Dashboard shows recent activity"
+            },
+            {
+              "id": "FR-02.02",
+              "priority": "May",
+              "spec_path": ".shipwright/planning/02-greenfield-example/spec.md",
+              "split": "02-greenfield-example",
+              "text": "Optional analytics panel"
+            },
+            {
+              "id": "FR-03.01",
+              "priority": "Must",
+              "spec_path": ".shipwright/planning/03-adopt-disk/spec.md",
+              "split": "03-adopt-disk",
+              "text": "Orchestrate the full pipeline."
+            },
+            {
+              "id": "FR-03.02",
+              "priority": "Should",
+              "spec_path": ".shipwright/planning/03-adopt-disk/spec.md",
+              "split": "03-adopt-disk",
+              "text": "Deep planning with external review."
+            },
+            {
+              "id": "FR-04.01",
+              "priority": "Must",
+              "spec_path": ".shipwright/planning/04-adopt-writer/spec.md",
+              "split": "04-adopt-writer",
+              "text": "Run the test suites."
+            },
+            {
+              "id": "FR-04.02",
+              "priority": "Should",
+              "spec_path": ".shipwright/planning/04-adopt-writer/spec.md",
+              "split": "04-adopt-writer",
+              "text": "Deploy to a target."
+            },
+            {
+              "id": "FR-04.03",
+              "priority": "May",
+              "spec_path": ".shipwright/planning/04-adopt-writer/spec.md",
+              "split": "04-adopt-writer",
+              "text": "Local preview."
+            },
+            {
+              "id": "FR-05.01",
+              "priority": "Must",
+              "spec_path": ".shipwright/planning/05-fixture-fr/spec.md",
+              "split": "05-fixture-fr",
+              "text": "Coverage is reported per layer"
+            },
+            {
+              "id": "FR-07.01",
+              "priority": "Should",
+              "spec_path": ".shipwright/planning/07-header-blind/spec.md",
+              "split": "07-header-blind",
+              "text": "extra"
+            }
+          ]
+        },
+        "planning-file": {
+          "exception": "NotADirectoryError",
+          "outcome": "raised"
+        },
+        "spec-dir": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        },
+        "zero-row-parse": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        }
+      },
+      "kind": "invoked"
+    },
+    "disc.fr_gates.collect_known_fr_ids": {
+      "fixtures": {
+        "absent": {
+          "outcome": "returned",
+          "type": "tuple",
+          "value": [
+            [],
+            false
+          ]
+        },
+        "brownfield-single-split": {
+          "outcome": "returned",
+          "type": "tuple",
+          "value": [
+            [
+              "FR-01.01",
+              "FR-01.02"
+            ],
+            true
+          ]
+        },
+        "edge": {
+          "outcome": "returned",
+          "type": "tuple",
+          "value": [
+            [
+              "FR-001.001",
+              "FR-01.01",
+              "FR-01.02",
+              "FR-01.20",
+              "FR-1.1",
+              "FR-7",
+              "FR-99.99"
+            ],
+            true
+          ]
+        },
+        "empty": {
+          "outcome": "returned",
+          "type": "tuple",
+          "value": [
+            [],
+            false
+          ]
+        },
+        "greenfield-multi-split": {
+          "outcome": "returned",
+          "type": "tuple",
+          "value": [
+            [
+              "FR-01.01",
+              "FR-01.02",
+              "FR-02.01",
+              "FR-02.02",
+              "FR-03.01",
+              "FR-03.02"
+            ],
+            true
+          ]
+        },
+        "malformed": {
+          "outcome": "returned",
+          "type": "tuple",
+          "value": [
+            [
+              "FR-01.01",
+              "FR-01.03"
+            ],
+            true
+          ]
+        },
+        "mixed-shape": {
+          "outcome": "returned",
+          "type": "tuple",
+          "value": [
+            [
+              "FR-01.01",
+              "FR-01.02",
+              "FR-02.01",
+              "FR-02.02",
+              "FR-03.01",
+              "FR-03.02",
+              "FR-04.01",
+              "FR-04.02",
+              "FR-04.03",
+              "FR-05.01",
+              "FR-07.01"
+            ],
+            true
+          ]
+        },
+        "planning-file": {
+          "outcome": "returned",
+          "type": "tuple",
+          "value": [
+            [],
+            false
+          ]
+        },
+        "spec-dir": {
+          "outcome": "returned",
+          "type": "tuple",
+          "value": [
+            [],
+            false
+          ]
+        },
+        "zero-row-parse": {
+          "outcome": "returned",
+          "type": "tuple",
+          "value": [
+            [],
+            true
+          ]
+        }
+      },
+      "kind": "invoked"
+    },
+    "disc.group_i.scan_fr_rows": {
+      "fixtures": {
+        "absent": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        },
+        "brownfield-single-split": {
+          "outcome": "returned",
+          "type": "list[FrRow]",
+          "value": [
+            {
+              "description": "Orchestrate the full pipeline.",
+              "id": "FR-01.01",
+              "name": "/shipwright-run",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-adopted/spec.md",
+              "split": "01-adopted"
+            },
+            {
+              "description": "Deep planning with external review.",
+              "id": "FR-01.02",
+              "name": "/shipwright-plan",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-adopted/spec.md",
+              "split": "01-adopted"
+            }
+          ]
+        },
+        "edge": {
+          "outcome": "returned",
+          "type": "list[FrRow]",
+          "value": [
+            {
+              "description": "User can log in",
+              "id": "FR-01.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/.hidden-split/spec.md",
+              "split": ".hidden-split"
+            },
+            {
+              "description": "User can log out",
+              "id": "FR-01.02",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/.hidden-split/spec.md",
+              "split": ".hidden-split"
+            },
+            {
+              "description": "Canonical two-digit id",
+              "id": "FR-01.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live"
+            },
+            {
+              "description": "Single-digit id",
+              "id": "FR-1.1",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live"
+            },
+            {
+              "description": "High canonical id",
+              "id": "FR-99.99",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live"
+            },
+            {
+              "description": "Three-digit id",
+              "id": "FR-001.001",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live"
+            },
+            {
+              "description": "User can log in",
+              "id": "FR-01.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/iterate/spec.md",
+              "split": "iterate"
+            },
+            {
+              "description": "User can log out",
+              "id": "FR-01.02",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/iterate/spec.md",
+              "split": "iterate"
+            }
+          ]
+        },
+        "empty": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        },
+        "greenfield-multi-split": {
+          "outcome": "returned",
+          "type": "list[FrRow]",
+          "value": [
+            {
+              "description": "User can log in",
+              "id": "FR-01.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-auth/spec.md",
+              "split": "01-auth"
+            },
+            {
+              "description": "User can log out",
+              "id": "FR-01.02",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-auth/spec.md",
+              "split": "01-auth"
+            },
+            {
+              "description": "Dashboard shows recent activity",
+              "id": "FR-02.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/02-dashboard/spec.md",
+              "split": "02-dashboard"
+            },
+            {
+              "description": "Optional analytics panel",
+              "id": "FR-02.02",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/02-dashboard/spec.md",
+              "split": "02-dashboard"
+            },
+            {
+              "description": "User can log in",
+              "id": "FR-03.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/03-reporting/spec.md",
+              "split": "03-reporting"
+            },
+            {
+              "description": "User can log out",
+              "id": "FR-03.02",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/03-reporting/spec.md",
+              "split": "03-reporting"
+            }
+          ]
+        },
+        "malformed": {
+          "outcome": "returned",
+          "type": "list[FrRow]",
+          "value": [
+            {
+              "description": "ragged",
+              "id": "FR-01.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken"
+            },
+            {
+              "description": "no close pipe",
+              "id": "FR-01.02",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken"
+            },
+            {
+              "description": "ok",
+              "id": "FR-01.03",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken"
+            },
+            {
+              "description": "indented row",
+              "id": "FR-01.05",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken"
+            },
+            {
+              "description": "lowercase priority",
+              "id": "FR-01.06",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken"
+            },
+            {
+              "description": "unrecognised priority",
+              "id": "FR-01.07",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken"
+            },
+            {
+              "description": "escaped \\| pipe in text",
+              "id": "FR-01.08",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken"
+            },
+            {
+              "description": "duplicate of the first id",
+              "id": "FR-01.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken"
+            }
+          ]
+        },
+        "mixed-shape": {
+          "outcome": "returned",
+          "type": "list[FrRow]",
+          "value": [
+            {
+              "description": "User can log in",
+              "id": "FR-01.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-greenfield-template/spec.md",
+              "split": "01-greenfield-template"
+            },
+            {
+              "description": "User can log out",
+              "id": "FR-01.02",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-greenfield-template/spec.md",
+              "split": "01-greenfield-template"
+            },
+            {
+              "description": "Dashboard shows recent activity",
+              "id": "FR-02.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/02-greenfield-example/spec.md",
+              "split": "02-greenfield-example"
+            },
+            {
+              "description": "Optional analytics panel",
+              "id": "FR-02.02",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/02-greenfield-example/spec.md",
+              "split": "02-greenfield-example"
+            },
+            {
+              "description": "Orchestrate the full pipeline.",
+              "id": "FR-03.01",
+              "name": "/shipwright-run",
+              "retired": false,
+              "spec_path": ".shipwright/planning/03-adopt-disk/spec.md",
+              "split": "03-adopt-disk"
+            },
+            {
+              "description": "Deep planning with external review.",
+              "id": "FR-03.02",
+              "name": "/shipwright-plan",
+              "retired": false,
+              "spec_path": ".shipwright/planning/03-adopt-disk/spec.md",
+              "split": "03-adopt-disk"
+            },
+            {
+              "description": "Run the test suites.",
+              "id": "FR-04.01",
+              "name": "/shipwright-test",
+              "retired": false,
+              "spec_path": ".shipwright/planning/04-adopt-writer/spec.md",
+              "split": "04-adopt-writer"
+            },
+            {
+              "description": "Deploy to a target.",
+              "id": "FR-04.02",
+              "name": "/shipwright-deploy",
+              "retired": false,
+              "spec_path": ".shipwright/planning/04-adopt-writer/spec.md",
+              "split": "04-adopt-writer"
+            },
+            {
+              "description": "Local preview.",
+              "id": "FR-04.03",
+              "name": "/shipwright-preview",
+              "retired": false,
+              "spec_path": ".shipwright/planning/04-adopt-writer/spec.md",
+              "split": "04-adopt-writer"
+            },
+            {
+              "description": "Reordered table still describes a requirement",
+              "id": "FR-06.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/06-reordered/spec.md",
+              "split": "06-reordered"
+            },
+            {
+              "description": "ok",
+              "id": "FR-07.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/07-header-blind/spec.md",
+              "split": "07-header-blind"
+            }
+          ]
+        },
+        "planning-file": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        },
+        "spec-dir": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        },
+        "zero-row-parse": {
+          "outcome": "returned",
+          "type": "list[FrRow]",
+          "value": [
+            {
+              "description": "Reordered table still describes a requirement",
+              "id": "FR-06.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-reordered-only/spec.md",
+              "split": "01-reordered-only"
+            }
+          ]
+        }
+      },
+      "kind": "invoked"
+    },
+    "disc.group_i.scan_fr_rows_include_retired": {
+      "fixtures": {
+        "absent": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        },
+        "brownfield-single-split": {
+          "outcome": "returned",
+          "type": "list[FrRow]",
+          "value": [
+            {
+              "description": "Orchestrate the full pipeline.",
+              "id": "FR-01.01",
+              "name": "/shipwright-run",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-adopted/spec.md",
+              "split": "01-adopted"
+            },
+            {
+              "description": "Deep planning with external review.",
+              "id": "FR-01.02",
+              "name": "/shipwright-plan",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-adopted/spec.md",
+              "split": "01-adopted"
+            }
+          ]
+        },
+        "edge": {
+          "outcome": "returned",
+          "type": "list[FrRow]",
+          "value": [
+            {
+              "description": "User can log in",
+              "id": "FR-01.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/.hidden-split/spec.md",
+              "split": ".hidden-split"
+            },
+            {
+              "description": "User can log out",
+              "id": "FR-01.02",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/.hidden-split/spec.md",
+              "split": ".hidden-split"
+            },
+            {
+              "description": "Canonical two-digit id",
+              "id": "FR-01.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live"
+            },
+            {
+              "description": "Single-digit id",
+              "id": "FR-1.1",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live"
+            },
+            {
+              "description": "High canonical id",
+              "id": "FR-99.99",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live"
+            },
+            {
+              "description": "Three-digit id",
+              "id": "FR-001.001",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live"
+            },
+            {
+              "description": "Retired capability",
+              "id": "FR-01.09",
+              "name": "",
+              "retired": true,
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live"
+            },
+            {
+              "description": "User can log in",
+              "id": "FR-01.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/iterate/spec.md",
+              "split": "iterate"
+            },
+            {
+              "description": "User can log out",
+              "id": "FR-01.02",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/iterate/spec.md",
+              "split": "iterate"
+            }
+          ]
+        },
+        "empty": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        },
+        "greenfield-multi-split": {
+          "outcome": "returned",
+          "type": "list[FrRow]",
+          "value": [
+            {
+              "description": "User can log in",
+              "id": "FR-01.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-auth/spec.md",
+              "split": "01-auth"
+            },
+            {
+              "description": "User can log out",
+              "id": "FR-01.02",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-auth/spec.md",
+              "split": "01-auth"
+            },
+            {
+              "description": "Dashboard shows recent activity",
+              "id": "FR-02.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/02-dashboard/spec.md",
+              "split": "02-dashboard"
+            },
+            {
+              "description": "Optional analytics panel",
+              "id": "FR-02.02",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/02-dashboard/spec.md",
+              "split": "02-dashboard"
+            },
+            {
+              "description": "User can log in",
+              "id": "FR-03.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/03-reporting/spec.md",
+              "split": "03-reporting"
+            },
+            {
+              "description": "User can log out",
+              "id": "FR-03.02",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/03-reporting/spec.md",
+              "split": "03-reporting"
+            }
+          ]
+        },
+        "malformed": {
+          "outcome": "returned",
+          "type": "list[FrRow]",
+          "value": [
+            {
+              "description": "ragged",
+              "id": "FR-01.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken"
+            },
+            {
+              "description": "no close pipe",
+              "id": "FR-01.02",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken"
+            },
+            {
+              "description": "ok",
+              "id": "FR-01.03",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken"
+            },
+            {
+              "description": "indented row",
+              "id": "FR-01.05",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken"
+            },
+            {
+              "description": "lowercase priority",
+              "id": "FR-01.06",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken"
+            },
+            {
+              "description": "unrecognised priority",
+              "id": "FR-01.07",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken"
+            },
+            {
+              "description": "escaped \\| pipe in text",
+              "id": "FR-01.08",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken"
+            },
+            {
+              "description": "duplicate of the first id",
+              "id": "FR-01.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken"
+            }
+          ]
+        },
+        "mixed-shape": {
+          "outcome": "returned",
+          "type": "list[FrRow]",
+          "value": [
+            {
+              "description": "User can log in",
+              "id": "FR-01.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-greenfield-template/spec.md",
+              "split": "01-greenfield-template"
+            },
+            {
+              "description": "User can log out",
+              "id": "FR-01.02",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-greenfield-template/spec.md",
+              "split": "01-greenfield-template"
+            },
+            {
+              "description": "Dashboard shows recent activity",
+              "id": "FR-02.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/02-greenfield-example/spec.md",
+              "split": "02-greenfield-example"
+            },
+            {
+              "description": "Optional analytics panel",
+              "id": "FR-02.02",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/02-greenfield-example/spec.md",
+              "split": "02-greenfield-example"
+            },
+            {
+              "description": "Orchestrate the full pipeline.",
+              "id": "FR-03.01",
+              "name": "/shipwright-run",
+              "retired": false,
+              "spec_path": ".shipwright/planning/03-adopt-disk/spec.md",
+              "split": "03-adopt-disk"
+            },
+            {
+              "description": "Deep planning with external review.",
+              "id": "FR-03.02",
+              "name": "/shipwright-plan",
+              "retired": false,
+              "spec_path": ".shipwright/planning/03-adopt-disk/spec.md",
+              "split": "03-adopt-disk"
+            },
+            {
+              "description": "Run the test suites.",
+              "id": "FR-04.01",
+              "name": "/shipwright-test",
+              "retired": false,
+              "spec_path": ".shipwright/planning/04-adopt-writer/spec.md",
+              "split": "04-adopt-writer"
+            },
+            {
+              "description": "Deploy to a target.",
+              "id": "FR-04.02",
+              "name": "/shipwright-deploy",
+              "retired": false,
+              "spec_path": ".shipwright/planning/04-adopt-writer/spec.md",
+              "split": "04-adopt-writer"
+            },
+            {
+              "description": "Local preview.",
+              "id": "FR-04.03",
+              "name": "/shipwright-preview",
+              "retired": false,
+              "spec_path": ".shipwright/planning/04-adopt-writer/spec.md",
+              "split": "04-adopt-writer"
+            },
+            {
+              "description": "Reordered table still describes a requirement",
+              "id": "FR-06.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/06-reordered/spec.md",
+              "split": "06-reordered"
+            },
+            {
+              "description": "ok",
+              "id": "FR-07.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/07-header-blind/spec.md",
+              "split": "07-header-blind"
+            }
+          ]
+        },
+        "planning-file": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        },
+        "spec-dir": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        },
+        "zero-row-parse": {
+          "outcome": "returned",
+          "type": "list[FrRow]",
+          "value": [
+            {
+              "description": "Reordered table still describes a requirement",
+              "id": "FR-06.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/01-reordered-only/spec.md",
+              "split": "01-reordered-only"
+            }
+          ]
+        }
+      },
+      "kind": "invoked"
+    },
+    "disc.review_runner.run_review": {
+      "kind": "source_only",
+      "sha256": "41bcfc815a1200ea4279b6b94f20b1db15b5994d1484635d09f897513556b59c",
+      "source_lines": 114
+    },
+    "disc.rtm.collect_external_review_states": {
+      "fixtures": {
+        "absent": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        },
+        "brownfield-single-split": {
+          "outcome": "returned",
+          "type": "list[ExternalReviewState]",
+          "value": [
+            {
+              "findings_count": 0,
+              "provider": null,
+              "reason": null,
+              "self_review_fallback_ran": false,
+              "split": "01-adopted",
+              "status": "missing",
+              "timestamp": ""
+            }
+          ]
+        },
+        "edge": {
+          "outcome": "returned",
+          "type": "list[ExternalReviewState]",
+          "value": [
+            {
+              "findings_count": 0,
+              "provider": null,
+              "reason": null,
+              "self_review_fallback_ran": false,
+              "split": ".hidden-split",
+              "status": "missing",
+              "timestamp": ""
+            },
+            {
+              "findings_count": 0,
+              "provider": null,
+              "reason": null,
+              "self_review_fallback_ran": false,
+              "split": "01-live",
+              "status": "missing",
+              "timestamp": ""
+            },
+            {
+              "findings_count": 0,
+              "provider": null,
+              "reason": null,
+              "self_review_fallback_ran": false,
+              "split": "02-no-spec",
+              "status": "missing",
+              "timestamp": ""
+            },
+            {
+              "findings_count": 0,
+              "provider": null,
+              "reason": null,
+              "self_review_fallback_ran": false,
+              "split": "03-nested",
+              "status": "missing",
+              "timestamp": ""
+            }
+          ]
+        },
+        "empty": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        },
+        "greenfield-multi-split": {
+          "outcome": "returned",
+          "type": "list[ExternalReviewState]",
+          "value": [
+            {
+              "findings_count": 0,
+              "provider": null,
+              "reason": null,
+              "self_review_fallback_ran": false,
+              "split": "01-auth",
+              "status": "missing",
+              "timestamp": ""
+            },
+            {
+              "findings_count": 0,
+              "provider": null,
+              "reason": null,
+              "self_review_fallback_ran": false,
+              "split": "02-dashboard",
+              "status": "missing",
+              "timestamp": ""
+            },
+            {
+              "findings_count": 0,
+              "provider": null,
+              "reason": null,
+              "self_review_fallback_ran": false,
+              "split": "03-reporting",
+              "status": "missing",
+              "timestamp": ""
+            }
+          ]
+        },
+        "malformed": {
+          "outcome": "returned",
+          "type": "list[ExternalReviewState]",
+          "value": [
+            {
+              "findings_count": 0,
+              "provider": null,
+              "reason": null,
+              "self_review_fallback_ran": false,
+              "split": "01-broken",
+              "status": "missing",
+              "timestamp": ""
+            }
+          ]
+        },
+        "mixed-shape": {
+          "outcome": "returned",
+          "type": "list[ExternalReviewState]",
+          "value": [
+            {
+              "findings_count": 0,
+              "provider": null,
+              "reason": null,
+              "self_review_fallback_ran": false,
+              "split": "01-greenfield-template",
+              "status": "missing",
+              "timestamp": ""
+            },
+            {
+              "findings_count": 0,
+              "provider": null,
+              "reason": null,
+              "self_review_fallback_ran": false,
+              "split": "02-greenfield-example",
+              "status": "missing",
+              "timestamp": ""
+            },
+            {
+              "findings_count": 0,
+              "provider": null,
+              "reason": null,
+              "self_review_fallback_ran": false,
+              "split": "03-adopt-disk",
+              "status": "missing",
+              "timestamp": ""
+            },
+            {
+              "findings_count": 0,
+              "provider": null,
+              "reason": null,
+              "self_review_fallback_ran": false,
+              "split": "04-adopt-writer",
+              "status": "missing",
+              "timestamp": ""
+            },
+            {
+              "findings_count": 0,
+              "provider": null,
+              "reason": null,
+              "self_review_fallback_ran": false,
+              "split": "05-fixture-fr",
+              "status": "missing",
+              "timestamp": ""
+            },
+            {
+              "findings_count": 0,
+              "provider": null,
+              "reason": null,
+              "self_review_fallback_ran": false,
+              "split": "06-reordered",
+              "status": "missing",
+              "timestamp": ""
+            },
+            {
+              "findings_count": 0,
+              "provider": null,
+              "reason": null,
+              "self_review_fallback_ran": false,
+              "split": "07-header-blind",
+              "status": "missing",
+              "timestamp": ""
+            }
+          ]
+        },
+        "planning-file": {
+          "exception": "NotADirectoryError",
+          "outcome": "raised"
+        },
+        "spec-dir": {
+          "outcome": "returned",
+          "type": "list[ExternalReviewState]",
+          "value": [
+            {
+              "findings_count": 0,
+              "provider": null,
+              "reason": null,
+              "self_review_fallback_ran": false,
+              "split": "01-spec-is-a-dir",
+              "status": "missing",
+              "timestamp": ""
+            }
+          ]
+        },
+        "zero-row-parse": {
+          "outcome": "returned",
+          "type": "list[ExternalReviewState]",
+          "value": [
+            {
+              "findings_count": 0,
+              "provider": null,
+              "reason": null,
+              "self_review_fallback_ran": false,
+              "split": "01-reordered-only",
+              "status": "missing",
+              "timestamp": ""
+            }
+          ]
+        }
+      },
+      "kind": "invoked"
+    },
+    "disc.rtm.collect_requirements": {
+      "fixtures": {
+        "absent": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        },
+        "brownfield-single-split": {
+          "outcome": "returned",
+          "type": "list[RequirementInfo]",
+          "value": [
+            {
+              "id": "FR-01.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-adopted/spec.md",
+              "split": "01-adopted",
+              "text": "Orchestrate the full pipeline."
+            },
+            {
+              "id": "FR-01.02",
+              "priority": "Should",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-adopted/spec.md",
+              "split": "01-adopted",
+              "text": "Deep planning with external review."
+            }
+          ]
+        },
+        "edge": {
+          "outcome": "returned",
+          "type": "list[RequirementInfo]",
+          "value": [
+            {
+              "id": "FR-01.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/.hidden-split/spec.md",
+              "split": ".hidden-split",
+              "text": "User can log in"
+            },
+            {
+              "id": "FR-01.02",
+              "priority": "Should",
+              "sections": [],
+              "spec_path": ".shipwright/planning/.hidden-split/spec.md",
+              "split": ".hidden-split",
+              "text": "User can log out"
+            },
+            {
+              "id": "FR-01.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live",
+              "text": "Canonical two-digit id"
+            },
+            {
+              "id": "FR-1.1",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live",
+              "text": "Single-digit id"
+            },
+            {
+              "id": "FR-7",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live",
+              "text": "Bare id, no dot"
+            },
+            {
+              "id": "FR-99.99",
+              "priority": "Should",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live",
+              "text": "High canonical id"
+            },
+            {
+              "id": "FR-001.001",
+              "priority": "May",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live",
+              "text": "Three-digit id"
+            },
+            {
+              "id": "FR-01.20",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live",
+              "text": "Row after a later heading"
+            },
+            {
+              "id": "FR-01.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/iterate/spec.md",
+              "split": "iterate",
+              "text": "User can log in"
+            },
+            {
+              "id": "FR-01.02",
+              "priority": "Should",
+              "sections": [],
+              "spec_path": ".shipwright/planning/iterate/spec.md",
+              "split": "iterate",
+              "text": "User can log out"
+            }
+          ]
+        },
+        "empty": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        },
+        "greenfield-multi-split": {
+          "outcome": "returned",
+          "type": "list[RequirementInfo]",
+          "value": [
+            {
+              "id": "FR-01.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-auth/spec.md",
+              "split": "01-auth",
+              "text": "User can log in"
+            },
+            {
+              "id": "FR-01.02",
+              "priority": "Should",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-auth/spec.md",
+              "split": "01-auth",
+              "text": "User can log out"
+            },
+            {
+              "id": "FR-02.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/02-dashboard/spec.md",
+              "split": "02-dashboard",
+              "text": "Dashboard shows recent activity"
+            },
+            {
+              "id": "FR-02.02",
+              "priority": "May",
+              "sections": [],
+              "spec_path": ".shipwright/planning/02-dashboard/spec.md",
+              "split": "02-dashboard",
+              "text": "Optional analytics panel"
+            },
+            {
+              "id": "FR-03.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/03-reporting/spec.md",
+              "split": "03-reporting",
+              "text": "User can log in"
+            },
+            {
+              "id": "FR-03.02",
+              "priority": "Should",
+              "sections": [],
+              "spec_path": ".shipwright/planning/03-reporting/spec.md",
+              "split": "03-reporting",
+              "text": "User can log out"
+            }
+          ]
+        },
+        "malformed": {
+          "outcome": "returned",
+          "type": "list[RequirementInfo]",
+          "value": [
+            {
+              "id": "FR-01.03",
+              "priority": "Should",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken",
+              "text": "extra"
+            },
+            {
+              "id": "FR-01.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken",
+              "text": "duplicate of the first id"
+            }
+          ]
+        },
+        "mixed-shape": {
+          "outcome": "returned",
+          "type": "list[RequirementInfo]",
+          "value": [
+            {
+              "id": "FR-01.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-greenfield-template/spec.md",
+              "split": "01-greenfield-template",
+              "text": "User can log in"
+            },
+            {
+              "id": "FR-01.02",
+              "priority": "Should",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-greenfield-template/spec.md",
+              "split": "01-greenfield-template",
+              "text": "User can log out"
+            },
+            {
+              "id": "FR-02.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/02-greenfield-example/spec.md",
+              "split": "02-greenfield-example",
+              "text": "Dashboard shows recent activity"
+            },
+            {
+              "id": "FR-02.02",
+              "priority": "May",
+              "sections": [],
+              "spec_path": ".shipwright/planning/02-greenfield-example/spec.md",
+              "split": "02-greenfield-example",
+              "text": "Optional analytics panel"
+            },
+            {
+              "id": "FR-03.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/03-adopt-disk/spec.md",
+              "split": "03-adopt-disk",
+              "text": "Orchestrate the full pipeline."
+            },
+            {
+              "id": "FR-03.02",
+              "priority": "Should",
+              "sections": [],
+              "spec_path": ".shipwright/planning/03-adopt-disk/spec.md",
+              "split": "03-adopt-disk",
+              "text": "Deep planning with external review."
+            },
+            {
+              "id": "FR-04.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/04-adopt-writer/spec.md",
+              "split": "04-adopt-writer",
+              "text": "Run the test suites."
+            },
+            {
+              "id": "FR-04.02",
+              "priority": "Should",
+              "sections": [],
+              "spec_path": ".shipwright/planning/04-adopt-writer/spec.md",
+              "split": "04-adopt-writer",
+              "text": "Deploy to a target."
+            },
+            {
+              "id": "FR-04.03",
+              "priority": "May",
+              "sections": [],
+              "spec_path": ".shipwright/planning/04-adopt-writer/spec.md",
+              "split": "04-adopt-writer",
+              "text": "Local preview."
+            },
+            {
+              "id": "FR-05.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/05-fixture-fr/spec.md",
+              "split": "05-fixture-fr",
+              "text": "Coverage is reported per layer"
+            },
+            {
+              "id": "FR-07.01",
+              "priority": "Should",
+              "sections": [],
+              "spec_path": ".shipwright/planning/07-header-blind/spec.md",
+              "split": "07-header-blind",
+              "text": "extra"
+            }
+          ]
+        },
+        "planning-file": {
+          "exception": "NotADirectoryError",
+          "outcome": "raised"
+        },
+        "spec-dir": {
+          "exception": "OSError:not-a-readable-file",
+          "outcome": "raised"
+        },
+        "zero-row-parse": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        }
+      },
+      "kind": "invoked"
+    },
+    "disc.setup_adopt._detect_existing_artifacts": {
+      "fixtures": {
+        "absent": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        },
+        "brownfield-single-split": {
+          "outcome": "returned",
+          "type": "list[str]",
+          "value": [
+            ".shipwright/planning/01-adopted/spec.md"
+          ]
+        },
+        "edge": {
+          "outcome": "returned",
+          "type": "list[str]",
+          "value": [
+            ".shipwright/planning/.hidden-split/spec.md",
+            ".shipwright/planning/01-live/spec.md",
+            ".shipwright/planning/03-nested/deeper/spec.md",
+            ".shipwright/planning/iterate/spec.md",
+            ".shipwright/planning/spec.md"
+          ]
+        },
+        "empty": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        },
+        "greenfield-multi-split": {
+          "outcome": "returned",
+          "type": "list[str]",
+          "value": [
+            ".shipwright/planning/01-auth/spec.md",
+            ".shipwright/planning/02-dashboard/spec.md",
+            ".shipwright/planning/03-reporting/spec.md"
+          ]
+        },
+        "malformed": {
+          "outcome": "returned",
+          "type": "list[str]",
+          "value": [
+            ".shipwright/planning/01-broken/spec.md"
+          ]
+        },
+        "mixed-shape": {
+          "outcome": "returned",
+          "type": "list[str]",
+          "value": [
+            ".shipwright/planning/01-greenfield-template/spec.md",
+            ".shipwright/planning/02-greenfield-example/spec.md",
+            ".shipwright/planning/03-adopt-disk/spec.md",
+            ".shipwright/planning/04-adopt-writer/spec.md",
+            ".shipwright/planning/05-fixture-fr/spec.md",
+            ".shipwright/planning/06-reordered/spec.md",
+            ".shipwright/planning/07-header-blind/spec.md"
+          ]
+        },
+        "planning-file": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        },
+        "spec-dir": {
+          "outcome": "returned",
+          "type": "list[str]",
+          "value": [
+            ".shipwright/planning/01-spec-is-a-dir/spec.md"
+          ]
+        },
+        "zero-row-parse": {
+          "outcome": "returned",
+          "type": "list[str]",
+          "value": [
+            ".shipwright/planning/01-reordered-only/spec.md"
+          ]
+        }
+      },
+      "kind": "invoked"
+    },
+    "disc.setup_design_session.find_specs": {
+      "fixtures": {
+        "absent": {
+          "outcome": "returned",
+          "platform_sep_normalized": true,
+          "type": "list",
+          "value": []
+        },
+        "brownfield-single-split": {
+          "outcome": "returned",
+          "platform_sep_normalized": true,
+          "type": "list[str]",
+          "value": [
+            "01-adopted/spec.md"
+          ]
+        },
+        "edge": {
+          "outcome": "returned",
+          "platform_sep_normalized": true,
+          "type": "list[str]",
+          "value": [
+            ".hidden-split/spec.md",
+            "01-live/spec.md",
+            "03-nested/deeper/spec.md",
+            "iterate/spec.md",
+            "spec.md"
+          ]
+        },
+        "empty": {
+          "outcome": "returned",
+          "platform_sep_normalized": true,
+          "type": "list",
+          "value": []
+        },
+        "greenfield-multi-split": {
+          "outcome": "returned",
+          "platform_sep_normalized": true,
+          "type": "list[str]",
+          "value": [
+            "01-auth/spec.md",
+            "02-dashboard/spec.md",
+            "03-reporting/spec.md"
+          ]
+        },
+        "malformed": {
+          "outcome": "returned",
+          "platform_sep_normalized": true,
+          "type": "list[str]",
+          "value": [
+            "01-broken/spec.md"
+          ]
+        },
+        "mixed-shape": {
+          "outcome": "returned",
+          "platform_sep_normalized": true,
+          "type": "list[str]",
+          "value": [
+            "01-greenfield-template/spec.md",
+            "02-greenfield-example/spec.md",
+            "03-adopt-disk/spec.md",
+            "04-adopt-writer/spec.md",
+            "05-fixture-fr/spec.md",
+            "06-reordered/spec.md",
+            "07-header-blind/spec.md"
+          ]
+        },
+        "planning-file": {
+          "outcome": "returned",
+          "platform_sep_normalized": true,
+          "type": "list",
+          "value": []
+        },
+        "spec-dir": {
+          "outcome": "returned",
+          "platform_sep_normalized": true,
+          "type": "list[str]",
+          "value": [
+            "01-spec-is-a-dir/spec.md"
+          ]
+        },
+        "zero-row-parse": {
+          "outcome": "returned",
+          "platform_sep_normalized": true,
+          "type": "list[str]",
+          "value": [
+            "01-reordered-only/spec.md"
+          ]
+        }
+      },
+      "kind": "invoked"
+    },
+    "disc.spec_parser._iter_spec_files": {
+      "fixtures": {
+        "absent": {
+          "consumed_type": "list",
+          "outcome": "returned",
+          "type": "generator",
+          "value": []
+        },
+        "brownfield-single-split": {
+          "consumed_type": "list[Path]",
+          "outcome": "returned",
+          "type": "generator",
+          "value": [
+            "<root>/.shipwright/planning/01-adopted/spec.md"
+          ]
+        },
+        "edge": {
+          "consumed_type": "list[Path]",
+          "outcome": "returned",
+          "type": "generator",
+          "value": [
+            "<root>/.shipwright/agent_docs/spec.md",
+            "<root>/.shipwright/planning/.hidden-split/spec.md",
+            "<root>/.shipwright/planning/01-live/spec.md",
+            "<root>/.shipwright/planning/iterate/iterate-2026-01-01-example.md",
+            "<root>/.shipwright/planning/iterate/spec.md"
+          ]
+        },
+        "empty": {
+          "consumed_type": "list",
+          "outcome": "returned",
+          "type": "generator",
+          "value": []
+        },
+        "greenfield-multi-split": {
+          "consumed_type": "list[Path]",
+          "outcome": "returned",
+          "type": "generator",
+          "value": [
+            "<root>/.shipwright/agent_docs/spec.md",
+            "<root>/.shipwright/planning/01-auth/spec.md",
+            "<root>/.shipwright/planning/02-dashboard/spec.md",
+            "<root>/.shipwright/planning/03-reporting/spec.md"
+          ]
+        },
+        "malformed": {
+          "consumed_type": "list[Path]",
+          "outcome": "returned",
+          "type": "generator",
+          "value": [
+            "<root>/.shipwright/planning/01-broken/spec.md"
+          ]
+        },
+        "mixed-shape": {
+          "consumed_type": "list[Path]",
+          "outcome": "returned",
+          "type": "generator",
+          "value": [
+            "<root>/.shipwright/planning/01-greenfield-template/spec.md",
+            "<root>/.shipwright/planning/02-greenfield-example/spec.md",
+            "<root>/.shipwright/planning/03-adopt-disk/spec.md",
+            "<root>/.shipwright/planning/04-adopt-writer/spec.md",
+            "<root>/.shipwright/planning/05-fixture-fr/spec.md",
+            "<root>/.shipwright/planning/06-reordered/spec.md",
+            "<root>/.shipwright/planning/07-header-blind/spec.md"
+          ]
+        },
+        "planning-file": {
+          "consumed_type": "list",
+          "outcome": "returned",
+          "type": "generator",
+          "value": []
+        },
+        "spec-dir": {
+          "consumed_type": "list[Path]",
+          "outcome": "returned",
+          "type": "generator",
+          "value": [
+            "<root>/.shipwright/planning/01-spec-is-a-dir/spec.md"
+          ]
+        },
+        "zero-row-parse": {
+          "consumed_type": "list[Path]",
+          "outcome": "returned",
+          "type": "generator",
+          "value": [
+            "<root>/.shipwright/planning/01-reordered-only/spec.md"
+          ]
+        }
+      },
+      "kind": "invoked"
+    },
+    "disc.spec_parser.read_top_level_spec": {
+      "fixtures": {
+        "absent": {
+          "outcome": "returned",
+          "type": "NoneType",
+          "value": null
+        },
+        "brownfield-single-split": {
+          "outcome": "returned",
+          "type": "str",
+          "value": "# Split 01 -- Adopted\n\n## Requirements\n\n| ID | Name | Priority | Description | Source |\n|----|------|----------|-------------|--------|\n| FR-01.01 | /shipwright-run | Must | Orchestrate the full pipeline. | enrichment.json |\n| FR-01.02 | /shipwright-plan | Should | Deep planning with external review. | enrichment.json |\n"
+        },
+        "edge": {
+          "outcome": "returned",
+          "type": "str",
+          "value": "# Project spec\n\nTop-level spec present.\n"
+        },
+        "empty": {
+          "outcome": "returned",
+          "type": "NoneType",
+          "value": null
+        },
+        "greenfield-multi-split": {
+          "outcome": "returned",
+          "type": "str",
+          "value": "# Project spec\n\nTop-level greenfield spec.\n"
+        },
+        "malformed": {
+          "outcome": "returned",
+          "type": "str",
+          "value": "# Split 01 -- Broken\n\n| ID | Requirement | Priority |\n| FR-01.01 | ragged |\n| FR-01.02 | no close pipe | Must\n| FR-01.03 | ok | Should | extra | cells |\nFR-01.04 | not a table row at all | Must |\n  | FR-01.05 | indented row | Must |\n| FR-01.06 | lowercase priority | must |\n| FR-01.07 | unrecognised priority | HIGH |\n| FR-01.08 | escaped \\| pipe in text | Must |\n| FR-01.01 | duplicate of the first ...<+12>"
+        },
+        "mixed-shape": {
+          "outcome": "returned",
+          "type": "str",
+          "value": "# Split 01 -- Auth\n\n## Requirements\n\n| ID | Requirement | Priority | Layers |\n|----|-------------|----------|--------|\n| FR-01.01 | User can log in | Must | unit, e2e |\n| FR-01.02 | User can log out | Should | unit |\n"
+        },
+        "planning-file": {
+          "outcome": "returned",
+          "type": "NoneType",
+          "value": null
+        },
+        "spec-dir": {
+          "outcome": "returned",
+          "type": "NoneType",
+          "value": null
+        },
+        "zero-row-parse": {
+          "outcome": "returned",
+          "type": "str",
+          "value": "# Split 06 -- Reordered columns\n\n| ID | Priority | Requirement | Layers |\n|----|----------|-------------|--------|\n| FR-06.01 | Must | Reordered table still describes a requirement | unit |\n"
+        }
+      },
+      "kind": "invoked"
+    },
+    "disc.state.detect_state": {
+      "fixtures": {
+        "absent": {
+          "exception": "FileNotFoundError",
+          "outcome": "raised"
+        },
+        "brownfield-single-split": {
+          "outcome": "returned",
+          "type": "dict",
+          "value": {
+            "directories_created": true,
+            "interview_complete": false,
+            "manifest_created": false,
+            "resume_step": 7,
+            "splits": [
+              "01-adopted"
+            ],
+            "splits_with_specs": [
+              "01-adopted"
+            ]
+          }
+        },
+        "edge": {
+          "outcome": "returned",
+          "type": "dict",
+          "value": {
+            "directories_created": true,
+            "interview_complete": false,
+            "manifest_created": false,
+            "resume_step": 6,
+            "splits": [
+              "01-live",
+              "02-no-spec",
+              "03-nested"
+            ],
+            "splits_with_specs": [
+              "01-live"
+            ]
+          }
+        },
+        "empty": {
+          "outcome": "returned",
+          "type": "dict",
+          "value": {
+            "directories_created": false,
+            "interview_complete": false,
+            "manifest_created": false,
+            "resume_step": 1,
+            "splits": [],
+            "splits_with_specs": []
+          }
+        },
+        "greenfield-multi-split": {
+          "outcome": "returned",
+          "type": "dict",
+          "value": {
+            "directories_created": true,
+            "interview_complete": false,
+            "manifest_created": false,
+            "resume_step": 7,
+            "splits": [
+              "01-auth",
+              "02-dashboard",
+              "03-reporting"
+            ],
+            "splits_with_specs": [
+              "01-auth",
+              "02-dashboard",
+              "03-reporting"
+            ]
+          }
+        },
+        "malformed": {
+          "outcome": "returned",
+          "type": "dict",
+          "value": {
+            "directories_created": true,
+            "interview_complete": false,
+            "manifest_created": false,
+            "resume_step": 7,
+            "splits": [
+              "01-broken"
+            ],
+            "splits_with_specs": [
+              "01-broken"
+            ]
+          }
+        },
+        "mixed-shape": {
+          "outcome": "returned",
+          "type": "dict",
+          "value": {
+            "directories_created": true,
+            "interview_complete": false,
+            "manifest_created": false,
+            "resume_step": 7,
+            "splits": [
+              "01-greenfield-template",
+              "02-greenfield-example",
+              "03-adopt-disk",
+              "04-adopt-writer",
+              "05-fixture-fr",
+              "06-reordered",
+              "07-header-blind"
+            ],
+            "splits_with_specs": [
+              "01-greenfield-template",
+              "02-greenfield-example",
+              "03-adopt-disk",
+              "04-adopt-writer",
+              "05-fixture-fr",
+              "06-reordered",
+              "07-header-blind"
+            ]
+          }
+        },
+        "planning-file": {
+          "exception": "NotADirectoryError",
+          "outcome": "raised"
+        },
+        "spec-dir": {
+          "outcome": "returned",
+          "type": "dict",
+          "value": {
+            "directories_created": true,
+            "interview_complete": false,
+            "manifest_created": false,
+            "resume_step": 7,
+            "splits": [
+              "01-spec-is-a-dir"
+            ],
+            "splits_with_specs": [
+              "01-spec-is-a-dir"
+            ]
+          }
+        },
+        "zero-row-parse": {
+          "outcome": "returned",
+          "type": "dict",
+          "value": {
+            "directories_created": true,
+            "interview_complete": false,
+            "manifest_created": false,
+            "resume_step": 7,
+            "splits": [
+              "01-reordered-only"
+            ],
+            "splits_with_specs": [
+              "01-reordered-only"
+            ]
+          }
+        }
+      },
+      "kind": "invoked"
+    },
+    "disc.validate_adoption._validate_spec": {
+      "fixtures": {
+        "absent": {
+          "outcome": "returned",
+          "type": "list[str]",
+          "unordered_walk": true,
+          "value": [
+            "missing: .shipwright/planning/ directory"
+          ]
+        },
+        "brownfield-single-split": {
+          "outcome": "returned",
+          "type": "list",
+          "unordered_walk": true,
+          "value": []
+        },
+        "edge": {
+          "outcome": "returned",
+          "type": "list[str]",
+          "unordered_walk": true,
+          "value": [
+            "spec.md has no FR-NN.MM reference: <unordered-pick>"
+          ]
+        },
+        "empty": {
+          "outcome": "returned",
+          "type": "list[str]",
+          "unordered_walk": true,
+          "value": [
+            "missing: .shipwright/planning/<split>/spec.md (no spec found)"
+          ]
+        },
+        "greenfield-multi-split": {
+          "outcome": "returned",
+          "type": "list",
+          "unordered_walk": true,
+          "value": []
+        },
+        "malformed": {
+          "outcome": "returned",
+          "type": "list",
+          "unordered_walk": true,
+          "value": []
+        },
+        "mixed-shape": {
+          "outcome": "returned",
+          "type": "list",
+          "unordered_walk": true,
+          "value": []
+        },
+        "planning-file": {
+          "outcome": "returned",
+          "type": "list[str]",
+          "unordered_walk": true,
+          "value": [
+            "missing: .shipwright/planning/ directory"
+          ]
+        },
+        "spec-dir": {
+          "exception": "OSError:not-a-readable-file",
+          "outcome": "raised"
+        },
+        "zero-row-parse": {
+          "outcome": "returned",
+          "type": "list",
+          "unordered_walk": true,
+          "value": []
+        }
+      },
+      "kind": "invoked"
+    },
+    "parse._backfill_spec_parse.parse_frs": {
+      "fixtures": {
+        "absent": {
+          "per_spec": {}
+        },
+        "brownfield-single-split": {
+          "per_spec": {
+            ".shipwright/planning/01-adopted/spec.md": {
+              "outcome": "returned",
+              "type": "list[FR]",
+              "value": [
+                {
+                  "id": "FR-01.01",
+                  "status": "active",
+                  "text": "Orchestrate the full pipeline."
+                },
+                {
+                  "id": "FR-01.02",
+                  "status": "active",
+                  "text": "Deep planning with external review."
+                }
+              ]
+            }
+          }
+        },
+        "edge": {
+          "per_spec": {
+            ".shipwright/planning/.hidden-split/spec.md": {
+              "outcome": "returned",
+              "type": "list[FR]",
+              "value": [
+                {
+                  "id": "FR-01.01",
+                  "status": "active",
+                  "text": "User can log in"
+                },
+                {
+                  "id": "FR-01.02",
+                  "status": "active",
+                  "text": "User can log out"
+                }
+              ]
+            },
+            ".shipwright/planning/01-live/spec.md": {
+              "outcome": "returned",
+              "type": "list[FR]",
+              "value": [
+                {
+                  "id": "FR-01.01",
+                  "status": "active",
+                  "text": "Canonical two-digit id"
+                },
+                {
+                  "id": "FR-99.99",
+                  "status": "active",
+                  "text": "High canonical id"
+                },
+                {
+                  "id": "FR-01.09",
+                  "status": "removed",
+                  "text": "Retired capability"
+                },
+                {
+                  "id": "FR-01.20",
+                  "status": "active",
+                  "text": "Row after a later heading"
+                }
+              ]
+            },
+            ".shipwright/planning/03-nested/deeper/spec.md": {
+              "outcome": "returned",
+              "type": "list[FR]",
+              "value": [
+                {
+                  "id": "FR-02.01",
+                  "status": "active",
+                  "text": "Dashboard shows recent activity"
+                },
+                {
+                  "id": "FR-02.02",
+                  "status": "active",
+                  "text": "Optional analytics panel"
+                }
+              ]
+            },
+            ".shipwright/planning/iterate/spec.md": {
+              "outcome": "returned",
+              "type": "list[FR]",
+              "value": [
+                {
+                  "id": "FR-01.01",
+                  "status": "active",
+                  "text": "User can log in"
+                },
+                {
+                  "id": "FR-01.02",
+                  "status": "active",
+                  "text": "User can log out"
+                }
+              ]
+            },
+            ".shipwright/planning/spec.md": {
+              "outcome": "returned",
+              "type": "list",
+              "value": []
+            }
+          }
+        },
+        "empty": {
+          "per_spec": {}
+        },
+        "greenfield-multi-split": {
+          "per_spec": {
+            ".shipwright/planning/01-auth/spec.md": {
+              "outcome": "returned",
+              "type": "list[FR]",
+              "value": [
+                {
+                  "id": "FR-01.01",
+                  "status": "active",
+                  "text": "User can log in"
+                },
+                {
+                  "id": "FR-01.02",
+                  "status": "active",
+                  "text": "User can log out"
+                }
+              ]
+            },
+            ".shipwright/planning/02-dashboard/spec.md": {
+              "outcome": "returned",
+              "type": "list[FR]",
+              "value": [
+                {
+                  "id": "FR-02.01",
+                  "status": "active",
+                  "text": "Dashboard shows recent activity"
+                },
+                {
+                  "id": "FR-02.02",
+                  "status": "active",
+                  "text": "Optional analytics panel"
+                }
+              ]
+            },
+            ".shipwright/planning/03-reporting/spec.md": {
+              "outcome": "returned",
+              "type": "list[FR]",
+              "value": [
+                {
+                  "id": "FR-03.01",
+                  "status": "active",
+                  "text": "User can log in"
+                },
+                {
+                  "id": "FR-03.02",
+                  "status": "active",
+                  "text": "User can log out"
+                }
+              ]
+            }
+          }
+        },
+        "malformed": {
+          "per_spec": {
+            ".shipwright/planning/01-broken/spec.md": {
+              "outcome": "returned",
+              "type": "list[FR]",
+              "value": [
+                {
+                  "id": "FR-01.01",
+                  "status": "active",
+                  "text": "ragged"
+                },
+                {
+                  "id": "FR-01.02",
+                  "status": "active",
+                  "text": "no close pipe"
+                },
+                {
+                  "id": "FR-01.03",
+                  "status": "active",
+                  "text": "ok"
+                },
+                {
+                  "id": "FR-01.05",
+                  "status": "active",
+                  "text": "indented row"
+                },
+                {
+                  "id": "FR-01.06",
+                  "status": "active",
+                  "text": "lowercase priority"
+                },
+                {
+                  "id": "FR-01.07",
+                  "status": "active",
+                  "text": "unrecognised priority"
+                },
+                {
+                  "id": "FR-01.08",
+                  "status": "active",
+                  "text": "escaped \\"
+                },
+                {
+                  "id": "FR-01.01",
+                  "status": "active",
+                  "text": "duplicate of the first id"
+                }
+              ]
+            }
+          }
+        },
+        "mixed-shape": {
+          "per_spec": {
+            ".shipwright/planning/01-greenfield-template/spec.md": {
+              "outcome": "returned",
+              "type": "list[FR]",
+              "value": [
+                {
+                  "id": "FR-01.01",
+                  "status": "active",
+                  "text": "User can log in"
+                },
+                {
+                  "id": "FR-01.02",
+                  "status": "active",
+                  "text": "User can log out"
+                }
+              ]
+            },
+            ".shipwright/planning/02-greenfield-example/spec.md": {
+              "outcome": "returned",
+              "type": "list[FR]",
+              "value": [
+                {
+                  "id": "FR-02.01",
+                  "status": "active",
+                  "text": "Dashboard shows recent activity"
+                },
+                {
+                  "id": "FR-02.02",
+                  "status": "active",
+                  "text": "Optional analytics panel"
+                }
+              ]
+            },
+            ".shipwright/planning/03-adopt-disk/spec.md": {
+              "outcome": "returned",
+              "type": "list[FR]",
+              "value": [
+                {
+                  "id": "FR-03.01",
+                  "status": "active",
+                  "text": "Orchestrate the full pipeline."
+                },
+                {
+                  "id": "FR-03.02",
+                  "status": "active",
+                  "text": "Deep planning with external review."
+                }
+              ]
+            },
+            ".shipwright/planning/04-adopt-writer/spec.md": {
+              "outcome": "returned",
+              "type": "list[FR]",
+              "value": [
+                {
+                  "id": "FR-04.01",
+                  "status": "active",
+                  "text": "Run the test suites."
+                },
+                {
+                  "id": "FR-04.02",
+                  "status": "active",
+                  "text": "Deploy to a target."
+                },
+                {
+                  "id": "FR-04.03",
+                  "status": "active",
+                  "text": "Local preview."
+                }
+              ]
+            },
+            ".shipwright/planning/05-fixture-fr/spec.md": {
+              "outcome": "returned",
+              "type": "list[FR]",
+              "value": [
+                {
+                  "id": "FR-05.01",
+                  "status": "active",
+                  "text": "Coverage is reported per layer"
+                }
+              ]
+            },
+            ".shipwright/planning/06-reordered/spec.md": {
+              "outcome": "returned",
+              "type": "list[FR]",
+              "value": [
+                {
+                  "id": "FR-06.01",
+                  "status": "active",
+                  "text": "Reordered table still describes a requirement"
+                }
+              ]
+            },
+            ".shipwright/planning/07-header-blind/spec.md": {
+              "outcome": "returned",
+              "type": "list[FR]",
+              "value": [
+                {
+                  "id": "FR-07.01",
+                  "status": "active",
+                  "text": "ok"
+                }
+              ]
+            }
+          }
+        },
+        "planning-file": {
+          "per_spec": {}
+        },
+        "spec-dir": {
+          "per_spec": {}
+        },
+        "zero-row-parse": {
+          "per_spec": {
+            ".shipwright/planning/01-reordered-only/spec.md": {
+              "outcome": "returned",
+              "type": "list[FR]",
+              "value": [
+                {
+                  "id": "FR-06.01",
+                  "status": "active",
+                  "text": "Reordered table still describes a requirement"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "kind": "invoked"
+    },
+    "parse._requirement_parse.parse_requirements": {
+      "fixtures": {
+        "absent": {
+          "per_spec": {}
+        },
+        "brownfield-single-split": {
+          "per_spec": {
+            ".shipwright/planning/01-adopted/spec.md": {
+              "outcome": "returned",
+              "type": "list[Requirement]",
+              "value": [
+                {
+                  "id": "FR-01.01",
+                  "namespace": "01-adopted",
+                  "priority": "Must",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "defaulted_legacy",
+                  "spec_path": ".shipwright/planning/01-adopted/spec.md",
+                  "status": "active",
+                  "title": "Orchestrate the full pipeline."
+                },
+                {
+                  "id": "FR-01.02",
+                  "namespace": "01-adopted",
+                  "priority": "Should",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "defaulted_legacy",
+                  "spec_path": ".shipwright/planning/01-adopted/spec.md",
+                  "status": "active",
+                  "title": "Deep planning with external review."
+                }
+              ]
+            }
+          }
+        },
+        "edge": {
+          "per_spec": {
+            ".shipwright/planning/.hidden-split/spec.md": {
+              "outcome": "returned",
+              "type": "list[Requirement]",
+              "value": [
+                {
+                  "id": "FR-01.01",
+                  "namespace": ".hidden-split",
+                  "priority": "Must",
+                  "required_layers": [
+                    "unit",
+                    "e2e"
+                  ],
+                  "required_layers_source": "explicit",
+                  "spec_path": ".shipwright/planning/.hidden-split/spec.md",
+                  "status": "active",
+                  "title": "User can log in"
+                },
+                {
+                  "id": "FR-01.02",
+                  "namespace": ".hidden-split",
+                  "priority": "Should",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "explicit",
+                  "spec_path": ".shipwright/planning/.hidden-split/spec.md",
+                  "status": "active",
+                  "title": "User can log out"
+                }
+              ]
+            },
+            ".shipwright/planning/01-live/spec.md": {
+              "outcome": "returned",
+              "type": "list[Requirement]",
+              "value": [
+                {
+                  "id": "FR-01.01",
+                  "namespace": "01-live",
+                  "priority": "Must",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "explicit",
+                  "spec_path": ".shipwright/planning/01-live/spec.md",
+                  "status": "active",
+                  "title": "Canonical two-digit id"
+                },
+                {
+                  "id": "FR-99.99",
+                  "namespace": "01-live",
+                  "priority": "Should",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "explicit",
+                  "spec_path": ".shipwright/planning/01-live/spec.md",
+                  "status": "active",
+                  "title": "High canonical id"
+                },
+                {
+                  "id": "FR-01.09",
+                  "namespace": "01-live",
+                  "priority": "Must",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "explicit",
+                  "spec_path": ".shipwright/planning/01-live/spec.md",
+                  "status": "removed",
+                  "title": "Retired capability"
+                },
+                {
+                  "id": "FR-01.20",
+                  "namespace": "01-live",
+                  "priority": "Must",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "explicit",
+                  "spec_path": ".shipwright/planning/01-live/spec.md",
+                  "status": "active",
+                  "title": "Row after a later heading"
+                }
+              ]
+            },
+            ".shipwright/planning/03-nested/deeper/spec.md": {
+              "outcome": "returned",
+              "type": "list[Requirement]",
+              "value": [
+                {
+                  "id": "FR-02.01",
+                  "namespace": "deeper",
+                  "priority": "Must",
+                  "required_layers": [
+                    "e2e"
+                  ],
+                  "required_layers_source": "inferred_legacy",
+                  "spec_path": ".shipwright/planning/03-nested/deeper/spec.md",
+                  "status": "active",
+                  "title": "Dashboard shows recent activity"
+                },
+                {
+                  "id": "FR-02.02",
+                  "namespace": "deeper",
+                  "priority": "May",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "defaulted_legacy",
+                  "spec_path": ".shipwright/planning/03-nested/deeper/spec.md",
+                  "status": "active",
+                  "title": "Optional analytics panel"
+                }
+              ]
+            },
+            ".shipwright/planning/iterate/spec.md": {
+              "outcome": "returned",
+              "type": "list[Requirement]",
+              "value": [
+                {
+                  "id": "FR-01.01",
+                  "namespace": "iterate",
+                  "priority": "Must",
+                  "required_layers": [
+                    "unit",
+                    "e2e"
+                  ],
+                  "required_layers_source": "explicit",
+                  "spec_path": ".shipwright/planning/iterate/spec.md",
+                  "status": "active",
+                  "title": "User can log in"
+                },
+                {
+                  "id": "FR-01.02",
+                  "namespace": "iterate",
+                  "priority": "Should",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "explicit",
+                  "spec_path": ".shipwright/planning/iterate/spec.md",
+                  "status": "active",
+                  "title": "User can log out"
+                }
+              ]
+            },
+            ".shipwright/planning/spec.md": {
+              "outcome": "returned",
+              "type": "list",
+              "value": []
+            }
+          }
+        },
+        "empty": {
+          "per_spec": {}
+        },
+        "greenfield-multi-split": {
+          "per_spec": {
+            ".shipwright/planning/01-auth/spec.md": {
+              "outcome": "returned",
+              "type": "list[Requirement]",
+              "value": [
+                {
+                  "id": "FR-01.01",
+                  "namespace": "01-auth",
+                  "priority": "Must",
+                  "required_layers": [
+                    "unit",
+                    "e2e"
+                  ],
+                  "required_layers_source": "explicit",
+                  "spec_path": ".shipwright/planning/01-auth/spec.md",
+                  "status": "active",
+                  "title": "User can log in"
+                },
+                {
+                  "id": "FR-01.02",
+                  "namespace": "01-auth",
+                  "priority": "Should",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "explicit",
+                  "spec_path": ".shipwright/planning/01-auth/spec.md",
+                  "status": "active",
+                  "title": "User can log out"
+                }
+              ]
+            },
+            ".shipwright/planning/02-dashboard/spec.md": {
+              "outcome": "returned",
+              "type": "list[Requirement]",
+              "value": [
+                {
+                  "id": "FR-02.01",
+                  "namespace": "02-dashboard",
+                  "priority": "Must",
+                  "required_layers": [
+                    "e2e"
+                  ],
+                  "required_layers_source": "inferred_legacy",
+                  "spec_path": ".shipwright/planning/02-dashboard/spec.md",
+                  "status": "active",
+                  "title": "Dashboard shows recent activity"
+                },
+                {
+                  "id": "FR-02.02",
+                  "namespace": "02-dashboard",
+                  "priority": "May",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "defaulted_legacy",
+                  "spec_path": ".shipwright/planning/02-dashboard/spec.md",
+                  "status": "active",
+                  "title": "Optional analytics panel"
+                }
+              ]
+            },
+            ".shipwright/planning/03-reporting/spec.md": {
+              "outcome": "returned",
+              "type": "list[Requirement]",
+              "value": [
+                {
+                  "id": "FR-03.01",
+                  "namespace": "03-reporting",
+                  "priority": "Must",
+                  "required_layers": [
+                    "unit",
+                    "e2e"
+                  ],
+                  "required_layers_source": "explicit",
+                  "spec_path": ".shipwright/planning/03-reporting/spec.md",
+                  "status": "active",
+                  "title": "User can log in"
+                },
+                {
+                  "id": "FR-03.02",
+                  "namespace": "03-reporting",
+                  "priority": "Should",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "explicit",
+                  "spec_path": ".shipwright/planning/03-reporting/spec.md",
+                  "status": "active",
+                  "title": "User can log out"
+                }
+              ]
+            }
+          }
+        },
+        "malformed": {
+          "per_spec": {
+            ".shipwright/planning/01-broken/spec.md": {
+              "outcome": "returned",
+              "type": "list[Requirement]",
+              "value": [
+                {
+                  "id": "FR-01.02",
+                  "namespace": "01-broken",
+                  "priority": "Must",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "defaulted_legacy",
+                  "spec_path": ".shipwright/planning/01-broken/spec.md",
+                  "status": "active",
+                  "title": "no close pipe"
+                },
+                {
+                  "id": "FR-01.03",
+                  "namespace": "01-broken",
+                  "priority": "Should",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "defaulted_legacy",
+                  "spec_path": ".shipwright/planning/01-broken/spec.md",
+                  "status": "active",
+                  "title": "ok"
+                },
+                {
+                  "id": "FR-01.05",
+                  "namespace": "01-broken",
+                  "priority": "Must",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "defaulted_legacy",
+                  "spec_path": ".shipwright/planning/01-broken/spec.md",
+                  "status": "active",
+                  "title": "indented row"
+                },
+                {
+                  "id": "FR-01.06",
+                  "namespace": "01-broken",
+                  "priority": "Must",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "defaulted_legacy",
+                  "spec_path": ".shipwright/planning/01-broken/spec.md",
+                  "status": "active",
+                  "title": "lowercase priority"
+                },
+                {
+                  "id": "FR-01.07",
+                  "namespace": "01-broken",
+                  "priority": "Must",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "defaulted_legacy",
+                  "spec_path": ".shipwright/planning/01-broken/spec.md",
+                  "status": "active",
+                  "title": "unrecognised priority"
+                },
+                {
+                  "id": "FR-01.08",
+                  "namespace": "01-broken",
+                  "priority": "Must",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "defaulted_legacy",
+                  "spec_path": ".shipwright/planning/01-broken/spec.md",
+                  "status": "active",
+                  "title": "escaped \\"
+                },
+                {
+                  "id": "FR-01.01",
+                  "namespace": "01-broken",
+                  "priority": "Must",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "defaulted_legacy",
+                  "spec_path": ".shipwright/planning/01-broken/spec.md",
+                  "status": "active",
+                  "title": "duplicate of the first id"
+                }
+              ]
+            }
+          }
+        },
+        "mixed-shape": {
+          "per_spec": {
+            ".shipwright/planning/01-greenfield-template/spec.md": {
+              "outcome": "returned",
+              "type": "list[Requirement]",
+              "value": [
+                {
+                  "id": "FR-01.01",
+                  "namespace": "01-greenfield-template",
+                  "priority": "Must",
+                  "required_layers": [
+                    "unit",
+                    "e2e"
+                  ],
+                  "required_layers_source": "explicit",
+                  "spec_path": ".shipwright/planning/01-greenfield-template/spec.md",
+                  "status": "active",
+                  "title": "User can log in"
+                },
+                {
+                  "id": "FR-01.02",
+                  "namespace": "01-greenfield-template",
+                  "priority": "Should",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "explicit",
+                  "spec_path": ".shipwright/planning/01-greenfield-template/spec.md",
+                  "status": "active",
+                  "title": "User can log out"
+                }
+              ]
+            },
+            ".shipwright/planning/02-greenfield-example/spec.md": {
+              "outcome": "returned",
+              "type": "list[Requirement]",
+              "value": [
+                {
+                  "id": "FR-02.01",
+                  "namespace": "02-greenfield-example",
+                  "priority": "Must",
+                  "required_layers": [
+                    "e2e"
+                  ],
+                  "required_layers_source": "inferred_legacy",
+                  "spec_path": ".shipwright/planning/02-greenfield-example/spec.md",
+                  "status": "active",
+                  "title": "Dashboard shows recent activity"
+                },
+                {
+                  "id": "FR-02.02",
+                  "namespace": "02-greenfield-example",
+                  "priority": "May",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "defaulted_legacy",
+                  "spec_path": ".shipwright/planning/02-greenfield-example/spec.md",
+                  "status": "active",
+                  "title": "Optional analytics panel"
+                }
+              ]
+            },
+            ".shipwright/planning/03-adopt-disk/spec.md": {
+              "outcome": "returned",
+              "type": "list[Requirement]",
+              "value": [
+                {
+                  "id": "FR-03.01",
+                  "namespace": "03-adopt-disk",
+                  "priority": "Must",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "defaulted_legacy",
+                  "spec_path": ".shipwright/planning/03-adopt-disk/spec.md",
+                  "status": "active",
+                  "title": "Orchestrate the full pipeline."
+                },
+                {
+                  "id": "FR-03.02",
+                  "namespace": "03-adopt-disk",
+                  "priority": "Should",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "defaulted_legacy",
+                  "spec_path": ".shipwright/planning/03-adopt-disk/spec.md",
+                  "status": "active",
+                  "title": "Deep planning with external review."
+                }
+              ]
+            },
+            ".shipwright/planning/04-adopt-writer/spec.md": {
+              "outcome": "returned",
+              "type": "list[Requirement]",
+              "value": [
+                {
+                  "id": "FR-04.01",
+                  "namespace": "04-adopt-writer",
+                  "priority": "Must",
+                  "required_layers": [
+                    "unit",
+                    "e2e"
+                  ],
+                  "required_layers_source": "explicit",
+                  "spec_path": ".shipwright/planning/04-adopt-writer/spec.md",
+                  "status": "active",
+                  "title": "Run the test suites."
+                },
+                {
+                  "id": "FR-04.02",
+                  "namespace": "04-adopt-writer",
+                  "priority": "Should",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "inferred_legacy",
+                  "spec_path": ".shipwright/planning/04-adopt-writer/spec.md",
+                  "status": "active",
+                  "title": "Deploy to a target."
+                },
+                {
+                  "id": "FR-04.03",
+                  "namespace": "04-adopt-writer",
+                  "priority": "May",
+                  "required_layers": [],
+                  "required_layers_source": "explicit",
+                  "spec_path": ".shipwright/planning/04-adopt-writer/spec.md",
+                  "status": "active",
+                  "title": "Local preview."
+                }
+              ]
+            },
+            ".shipwright/planning/05-fixture-fr/spec.md": {
+              "outcome": "returned",
+              "type": "list[Requirement]",
+              "value": [
+                {
+                  "id": "FR-05.01",
+                  "namespace": "05-fixture-fr",
+                  "priority": "Must",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "explicit",
+                  "spec_path": ".shipwright/planning/05-fixture-fr/spec.md",
+                  "status": "active",
+                  "title": "Coverage is reported per layer"
+                }
+              ]
+            },
+            ".shipwright/planning/06-reordered/spec.md": {
+              "outcome": "returned",
+              "type": "list[Requirement]",
+              "value": [
+                {
+                  "id": "FR-06.01",
+                  "namespace": "06-reordered",
+                  "priority": "Must",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "explicit",
+                  "spec_path": ".shipwright/planning/06-reordered/spec.md",
+                  "status": "active",
+                  "title": "Reordered table still describes a requirement"
+                }
+              ]
+            },
+            ".shipwright/planning/07-header-blind/spec.md": {
+              "outcome": "returned",
+              "type": "list[Requirement]",
+              "value": [
+                {
+                  "id": "FR-07.01",
+                  "namespace": "07-header-blind",
+                  "priority": "Should",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "defaulted_legacy",
+                  "spec_path": ".shipwright/planning/07-header-blind/spec.md",
+                  "status": "active",
+                  "title": "ok"
+                }
+              ]
+            }
+          }
+        },
+        "planning-file": {
+          "per_spec": {}
+        },
+        "spec-dir": {
+          "per_spec": {}
+        },
+        "zero-row-parse": {
+          "per_spec": {
+            ".shipwright/planning/01-reordered-only/spec.md": {
+              "outcome": "returned",
+              "type": "list[Requirement]",
+              "value": [
+                {
+                  "id": "FR-06.01",
+                  "namespace": "01-reordered-only",
+                  "priority": "Must",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "explicit",
+                  "spec_path": ".shipwright/planning/01-reordered-only/spec.md",
+                  "status": "active",
+                  "title": "Reordered table still describes a requirement"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "kind": "invoked"
+    },
+    "parse.drift_parsers.parse_fr_table": {
+      "fixtures": {
+        "absent": {
+          "per_spec": {}
+        },
+        "brownfield-single-split": {
+          "per_spec": {
+            ".shipwright/planning/01-adopted/spec.md": {
+              "outcome": "returned",
+              "type": "list[FunctionalRequirement]",
+              "value": [
+                {
+                  "id": "FR-01.01",
+                  "priority": "Must",
+                  "spec_path": ".shipwright/planning/01-adopted/spec.md",
+                  "split": "01-adopted",
+                  "text": "Orchestrate the full pipeline."
+                },
+                {
+                  "id": "FR-01.02",
+                  "priority": "Should",
+                  "spec_path": ".shipwright/planning/01-adopted/spec.md",
+                  "split": "01-adopted",
+                  "text": "Deep planning with external review."
+                }
+              ]
+            }
+          }
+        },
+        "edge": {
+          "per_spec": {
+            ".shipwright/planning/.hidden-split/spec.md": {
+              "outcome": "returned",
+              "type": "list[FunctionalRequirement]",
+              "value": [
+                {
+                  "id": "FR-01.01",
+                  "priority": "Must",
+                  "spec_path": ".shipwright/planning/.hidden-split/spec.md",
+                  "split": ".hidden-split",
+                  "text": "User can log in"
+                },
+                {
+                  "id": "FR-01.02",
+                  "priority": "Should",
+                  "spec_path": ".shipwright/planning/.hidden-split/spec.md",
+                  "split": ".hidden-split",
+                  "text": "User can log out"
+                }
+              ]
+            },
+            ".shipwright/planning/01-live/spec.md": {
+              "outcome": "returned",
+              "type": "list[FunctionalRequirement]",
+              "value": [
+                {
+                  "id": "FR-01.01",
+                  "priority": "Must",
+                  "spec_path": ".shipwright/planning/01-live/spec.md",
+                  "split": "01-live",
+                  "text": "Canonical two-digit id"
+                },
+                {
+                  "id": "FR-1.1",
+                  "priority": "Must",
+                  "spec_path": ".shipwright/planning/01-live/spec.md",
+                  "split": "01-live",
+                  "text": "Single-digit id"
+                },
+                {
+                  "id": "FR-7",
+                  "priority": "Must",
+                  "spec_path": ".shipwright/planning/01-live/spec.md",
+                  "split": "01-live",
+                  "text": "Bare id, no dot"
+                },
+                {
+                  "id": "FR-99.99",
+                  "priority": "Should",
+                  "spec_path": ".shipwright/planning/01-live/spec.md",
+                  "split": "01-live",
+                  "text": "High canonical id"
+                },
+                {
+                  "id": "FR-001.001",
+                  "priority": "May",
+                  "spec_path": ".shipwright/planning/01-live/spec.md",
+                  "split": "01-live",
+                  "text": "Three-digit id"
+                },
+                {
+                  "id": "FR-01.20",
+                  "priority": "Must",
+                  "spec_path": ".shipwright/planning/01-live/spec.md",
+                  "split": "01-live",
+                  "text": "Row after a later heading"
+                }
+              ]
+            },
+            ".shipwright/planning/03-nested/deeper/spec.md": {
+              "outcome": "returned",
+              "type": "list[FunctionalRequirement]",
+              "value": [
+                {
+                  "id": "FR-02.01",
+                  "priority": "Must",
+                  "spec_path": ".shipwright/planning/03-nested/deeper/spec.md",
+                  "split": "deeper",
+                  "text": "Dashboard shows recent activity"
+                },
+                {
+                  "id": "FR-02.02",
+                  "priority": "May",
+                  "spec_path": ".shipwright/planning/03-nested/deeper/spec.md",
+                  "split": "deeper",
+                  "text": "Optional analytics panel"
+                }
+              ]
+            },
+            ".shipwright/planning/iterate/spec.md": {
+              "outcome": "returned",
+              "type": "list[FunctionalRequirement]",
+              "value": [
+                {
+                  "id": "FR-01.01",
+                  "priority": "Must",
+                  "spec_path": ".shipwright/planning/iterate/spec.md",
+                  "split": "iterate",
+                  "text": "User can log in"
+                },
+                {
+                  "id": "FR-01.02",
+                  "priority": "Should",
+                  "spec_path": ".shipwright/planning/iterate/spec.md",
+                  "split": "iterate",
+                  "text": "User can log out"
+                }
+              ]
+            },
+            ".shipwright/planning/spec.md": {
+              "outcome": "returned",
+              "type": "list",
+              "value": []
+            }
+          }
+        },
+        "empty": {
+          "per_spec": {}
+        },
+        "greenfield-multi-split": {
+          "per_spec": {
+            ".shipwright/planning/01-auth/spec.md": {
+              "outcome": "returned",
+              "type": "list[FunctionalRequirement]",
+              "value": [
+                {
+                  "id": "FR-01.01",
+                  "priority": "Must",
+                  "spec_path": ".shipwright/planning/01-auth/spec.md",
+                  "split": "01-auth",
+                  "text": "User can log in"
+                },
+                {
+                  "id": "FR-01.02",
+                  "priority": "Should",
+                  "spec_path": ".shipwright/planning/01-auth/spec.md",
+                  "split": "01-auth",
+                  "text": "User can log out"
+                }
+              ]
+            },
+            ".shipwright/planning/02-dashboard/spec.md": {
+              "outcome": "returned",
+              "type": "list[FunctionalRequirement]",
+              "value": [
+                {
+                  "id": "FR-02.01",
+                  "priority": "Must",
+                  "spec_path": ".shipwright/planning/02-dashboard/spec.md",
+                  "split": "02-dashboard",
+                  "text": "Dashboard shows recent activity"
+                },
+                {
+                  "id": "FR-02.02",
+                  "priority": "May",
+                  "spec_path": ".shipwright/planning/02-dashboard/spec.md",
+                  "split": "02-dashboard",
+                  "text": "Optional analytics panel"
+                }
+              ]
+            },
+            ".shipwright/planning/03-reporting/spec.md": {
+              "outcome": "returned",
+              "type": "list[FunctionalRequirement]",
+              "value": [
+                {
+                  "id": "FR-03.01",
+                  "priority": "Must",
+                  "spec_path": ".shipwright/planning/03-reporting/spec.md",
+                  "split": "03-reporting",
+                  "text": "User can log in"
+                },
+                {
+                  "id": "FR-03.02",
+                  "priority": "Should",
+                  "spec_path": ".shipwright/planning/03-reporting/spec.md",
+                  "split": "03-reporting",
+                  "text": "User can log out"
+                }
+              ]
+            }
+          }
+        },
+        "malformed": {
+          "per_spec": {
+            ".shipwright/planning/01-broken/spec.md": {
+              "outcome": "returned",
+              "type": "list[FunctionalRequirement]",
+              "value": [
+                {
+                  "id": "FR-01.03",
+                  "priority": "Should",
+                  "spec_path": ".shipwright/planning/01-broken/spec.md",
+                  "split": "01-broken",
+                  "text": "extra"
+                },
+                {
+                  "id": "FR-01.01",
+                  "priority": "Must",
+                  "spec_path": ".shipwright/planning/01-broken/spec.md",
+                  "split": "01-broken",
+                  "text": "duplicate of the first id"
+                }
+              ]
+            }
+          }
+        },
+        "mixed-shape": {
+          "per_spec": {
+            ".shipwright/planning/01-greenfield-template/spec.md": {
+              "outcome": "returned",
+              "type": "list[FunctionalRequirement]",
+              "value": [
+                {
+                  "id": "FR-01.01",
+                  "priority": "Must",
+                  "spec_path": ".shipwright/planning/01-greenfield-template/spec.md",
+                  "split": "01-greenfield-template",
+                  "text": "User can log in"
+                },
+                {
+                  "id": "FR-01.02",
+                  "priority": "Should",
+                  "spec_path": ".shipwright/planning/01-greenfield-template/spec.md",
+                  "split": "01-greenfield-template",
+                  "text": "User can log out"
+                }
+              ]
+            },
+            ".shipwright/planning/02-greenfield-example/spec.md": {
+              "outcome": "returned",
+              "type": "list[FunctionalRequirement]",
+              "value": [
+                {
+                  "id": "FR-02.01",
+                  "priority": "Must",
+                  "spec_path": ".shipwright/planning/02-greenfield-example/spec.md",
+                  "split": "02-greenfield-example",
+                  "text": "Dashboard shows recent activity"
+                },
+                {
+                  "id": "FR-02.02",
+                  "priority": "May",
+                  "spec_path": ".shipwright/planning/02-greenfield-example/spec.md",
+                  "split": "02-greenfield-example",
+                  "text": "Optional analytics panel"
+                }
+              ]
+            },
+            ".shipwright/planning/03-adopt-disk/spec.md": {
+              "outcome": "returned",
+              "type": "list[FunctionalRequirement]",
+              "value": [
+                {
+                  "id": "FR-03.01",
+                  "priority": "Must",
+                  "spec_path": ".shipwright/planning/03-adopt-disk/spec.md",
+                  "split": "03-adopt-disk",
+                  "text": "Orchestrate the full pipeline."
+                },
+                {
+                  "id": "FR-03.02",
+                  "priority": "Should",
+                  "spec_path": ".shipwright/planning/03-adopt-disk/spec.md",
+                  "split": "03-adopt-disk",
+                  "text": "Deep planning with external review."
+                }
+              ]
+            },
+            ".shipwright/planning/04-adopt-writer/spec.md": {
+              "outcome": "returned",
+              "type": "list[FunctionalRequirement]",
+              "value": [
+                {
+                  "id": "FR-04.01",
+                  "priority": "Must",
+                  "spec_path": ".shipwright/planning/04-adopt-writer/spec.md",
+                  "split": "04-adopt-writer",
+                  "text": "Run the test suites."
+                },
+                {
+                  "id": "FR-04.02",
+                  "priority": "Should",
+                  "spec_path": ".shipwright/planning/04-adopt-writer/spec.md",
+                  "split": "04-adopt-writer",
+                  "text": "Deploy to a target."
+                },
+                {
+                  "id": "FR-04.03",
+                  "priority": "May",
+                  "spec_path": ".shipwright/planning/04-adopt-writer/spec.md",
+                  "split": "04-adopt-writer",
+                  "text": "Local preview."
+                }
+              ]
+            },
+            ".shipwright/planning/05-fixture-fr/spec.md": {
+              "outcome": "returned",
+              "type": "list[FunctionalRequirement]",
+              "value": [
+                {
+                  "id": "FR-05.01",
+                  "priority": "Must",
+                  "spec_path": ".shipwright/planning/05-fixture-fr/spec.md",
+                  "split": "05-fixture-fr",
+                  "text": "Coverage is reported per layer"
+                }
+              ]
+            },
+            ".shipwright/planning/06-reordered/spec.md": {
+              "outcome": "returned",
+              "type": "list",
+              "value": []
+            },
+            ".shipwright/planning/07-header-blind/spec.md": {
+              "outcome": "returned",
+              "type": "list[FunctionalRequirement]",
+              "value": [
+                {
+                  "id": "FR-07.01",
+                  "priority": "Should",
+                  "spec_path": ".shipwright/planning/07-header-blind/spec.md",
+                  "split": "07-header-blind",
+                  "text": "extra"
+                }
+              ]
+            }
+          }
+        },
+        "planning-file": {
+          "per_spec": {}
+        },
+        "spec-dir": {
+          "per_spec": {}
+        },
+        "zero-row-parse": {
+          "per_spec": {
+            ".shipwright/planning/01-reordered-only/spec.md": {
+              "outcome": "returned",
+              "type": "list",
+              "value": []
+            }
+          }
+        }
+      },
+      "kind": "invoked"
+    },
+    "parse.group_i._scan_one_spec": {
+      "fixtures": {
+        "absent": {
+          "per_spec": {}
+        },
+        "brownfield-single-split": {
+          "per_spec": {
+            ".shipwright/planning/01-adopted/spec.md": {
+              "outcome": "returned",
+              "type": "list[FrRow]",
+              "value": [
+                {
+                  "description": "Orchestrate the full pipeline.",
+                  "id": "FR-01.01",
+                  "name": "/shipwright-run",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/01-adopted/spec.md",
+                  "split": "01-adopted"
+                },
+                {
+                  "description": "Deep planning with external review.",
+                  "id": "FR-01.02",
+                  "name": "/shipwright-plan",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/01-adopted/spec.md",
+                  "split": "01-adopted"
+                }
+              ]
+            }
+          }
+        },
+        "edge": {
+          "per_spec": {
+            ".shipwright/planning/.hidden-split/spec.md": {
+              "outcome": "returned",
+              "type": "list[FrRow]",
+              "value": [
+                {
+                  "description": "User can log in",
+                  "id": "FR-01.01",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/.hidden-split/spec.md",
+                  "split": ".hidden-split"
+                },
+                {
+                  "description": "User can log out",
+                  "id": "FR-01.02",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/.hidden-split/spec.md",
+                  "split": ".hidden-split"
+                }
+              ]
+            },
+            ".shipwright/planning/01-live/spec.md": {
+              "outcome": "returned",
+              "type": "list[FrRow]",
+              "value": [
+                {
+                  "description": "Canonical two-digit id",
+                  "id": "FR-01.01",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/01-live/spec.md",
+                  "split": "01-live"
+                },
+                {
+                  "description": "Single-digit id",
+                  "id": "FR-1.1",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/01-live/spec.md",
+                  "split": "01-live"
+                },
+                {
+                  "description": "High canonical id",
+                  "id": "FR-99.99",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/01-live/spec.md",
+                  "split": "01-live"
+                },
+                {
+                  "description": "Three-digit id",
+                  "id": "FR-001.001",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/01-live/spec.md",
+                  "split": "01-live"
+                },
+                {
+                  "description": "Retired capability",
+                  "id": "FR-01.09",
+                  "name": "",
+                  "retired": true,
+                  "spec_path": ".shipwright/planning/01-live/spec.md",
+                  "split": "01-live"
+                }
+              ]
+            },
+            ".shipwright/planning/03-nested/deeper/spec.md": {
+              "outcome": "returned",
+              "type": "list[FrRow]",
+              "value": [
+                {
+                  "description": "Dashboard shows recent activity",
+                  "id": "FR-02.01",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/03-nested/deeper/spec.md",
+                  "split": "deeper"
+                },
+                {
+                  "description": "Optional analytics panel",
+                  "id": "FR-02.02",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/03-nested/deeper/spec.md",
+                  "split": "deeper"
+                }
+              ]
+            },
+            ".shipwright/planning/iterate/spec.md": {
+              "outcome": "returned",
+              "type": "list[FrRow]",
+              "value": [
+                {
+                  "description": "User can log in",
+                  "id": "FR-01.01",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/iterate/spec.md",
+                  "split": "iterate"
+                },
+                {
+                  "description": "User can log out",
+                  "id": "FR-01.02",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/iterate/spec.md",
+                  "split": "iterate"
+                }
+              ]
+            },
+            ".shipwright/planning/spec.md": {
+              "outcome": "returned",
+              "type": "list",
+              "value": []
+            }
+          }
+        },
+        "empty": {
+          "per_spec": {}
+        },
+        "greenfield-multi-split": {
+          "per_spec": {
+            ".shipwright/planning/01-auth/spec.md": {
+              "outcome": "returned",
+              "type": "list[FrRow]",
+              "value": [
+                {
+                  "description": "User can log in",
+                  "id": "FR-01.01",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/01-auth/spec.md",
+                  "split": "01-auth"
+                },
+                {
+                  "description": "User can log out",
+                  "id": "FR-01.02",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/01-auth/spec.md",
+                  "split": "01-auth"
+                }
+              ]
+            },
+            ".shipwright/planning/02-dashboard/spec.md": {
+              "outcome": "returned",
+              "type": "list[FrRow]",
+              "value": [
+                {
+                  "description": "Dashboard shows recent activity",
+                  "id": "FR-02.01",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/02-dashboard/spec.md",
+                  "split": "02-dashboard"
+                },
+                {
+                  "description": "Optional analytics panel",
+                  "id": "FR-02.02",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/02-dashboard/spec.md",
+                  "split": "02-dashboard"
+                }
+              ]
+            },
+            ".shipwright/planning/03-reporting/spec.md": {
+              "outcome": "returned",
+              "type": "list[FrRow]",
+              "value": [
+                {
+                  "description": "User can log in",
+                  "id": "FR-03.01",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/03-reporting/spec.md",
+                  "split": "03-reporting"
+                },
+                {
+                  "description": "User can log out",
+                  "id": "FR-03.02",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/03-reporting/spec.md",
+                  "split": "03-reporting"
+                }
+              ]
+            }
+          }
+        },
+        "malformed": {
+          "per_spec": {
+            ".shipwright/planning/01-broken/spec.md": {
+              "outcome": "returned",
+              "type": "list[FrRow]",
+              "value": [
+                {
+                  "description": "ragged",
+                  "id": "FR-01.01",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/01-broken/spec.md",
+                  "split": "01-broken"
+                },
+                {
+                  "description": "no close pipe",
+                  "id": "FR-01.02",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/01-broken/spec.md",
+                  "split": "01-broken"
+                },
+                {
+                  "description": "ok",
+                  "id": "FR-01.03",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/01-broken/spec.md",
+                  "split": "01-broken"
+                },
+                {
+                  "description": "indented row",
+                  "id": "FR-01.05",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/01-broken/spec.md",
+                  "split": "01-broken"
+                },
+                {
+                  "description": "lowercase priority",
+                  "id": "FR-01.06",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/01-broken/spec.md",
+                  "split": "01-broken"
+                },
+                {
+                  "description": "unrecognised priority",
+                  "id": "FR-01.07",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/01-broken/spec.md",
+                  "split": "01-broken"
+                },
+                {
+                  "description": "escaped \\| pipe in text",
+                  "id": "FR-01.08",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/01-broken/spec.md",
+                  "split": "01-broken"
+                },
+                {
+                  "description": "duplicate of the first id",
+                  "id": "FR-01.01",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/01-broken/spec.md",
+                  "split": "01-broken"
+                }
+              ]
+            }
+          }
+        },
+        "mixed-shape": {
+          "per_spec": {
+            ".shipwright/planning/01-greenfield-template/spec.md": {
+              "outcome": "returned",
+              "type": "list[FrRow]",
+              "value": [
+                {
+                  "description": "User can log in",
+                  "id": "FR-01.01",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/01-greenfield-template/spec.md",
+                  "split": "01-greenfield-template"
+                },
+                {
+                  "description": "User can log out",
+                  "id": "FR-01.02",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/01-greenfield-template/spec.md",
+                  "split": "01-greenfield-template"
+                }
+              ]
+            },
+            ".shipwright/planning/02-greenfield-example/spec.md": {
+              "outcome": "returned",
+              "type": "list[FrRow]",
+              "value": [
+                {
+                  "description": "Dashboard shows recent activity",
+                  "id": "FR-02.01",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/02-greenfield-example/spec.md",
+                  "split": "02-greenfield-example"
+                },
+                {
+                  "description": "Optional analytics panel",
+                  "id": "FR-02.02",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/02-greenfield-example/spec.md",
+                  "split": "02-greenfield-example"
+                }
+              ]
+            },
+            ".shipwright/planning/03-adopt-disk/spec.md": {
+              "outcome": "returned",
+              "type": "list[FrRow]",
+              "value": [
+                {
+                  "description": "Orchestrate the full pipeline.",
+                  "id": "FR-03.01",
+                  "name": "/shipwright-run",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/03-adopt-disk/spec.md",
+                  "split": "03-adopt-disk"
+                },
+                {
+                  "description": "Deep planning with external review.",
+                  "id": "FR-03.02",
+                  "name": "/shipwright-plan",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/03-adopt-disk/spec.md",
+                  "split": "03-adopt-disk"
+                }
+              ]
+            },
+            ".shipwright/planning/04-adopt-writer/spec.md": {
+              "outcome": "returned",
+              "type": "list[FrRow]",
+              "value": [
+                {
+                  "description": "Run the test suites.",
+                  "id": "FR-04.01",
+                  "name": "/shipwright-test",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/04-adopt-writer/spec.md",
+                  "split": "04-adopt-writer"
+                },
+                {
+                  "description": "Deploy to a target.",
+                  "id": "FR-04.02",
+                  "name": "/shipwright-deploy",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/04-adopt-writer/spec.md",
+                  "split": "04-adopt-writer"
+                },
+                {
+                  "description": "Local preview.",
+                  "id": "FR-04.03",
+                  "name": "/shipwright-preview",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/04-adopt-writer/spec.md",
+                  "split": "04-adopt-writer"
+                }
+              ]
+            },
+            ".shipwright/planning/05-fixture-fr/spec.md": {
+              "outcome": "returned",
+              "type": "list",
+              "value": []
+            },
+            ".shipwright/planning/06-reordered/spec.md": {
+              "outcome": "returned",
+              "type": "list[FrRow]",
+              "value": [
+                {
+                  "description": "Reordered table still describes a requirement",
+                  "id": "FR-06.01",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/06-reordered/spec.md",
+                  "split": "06-reordered"
+                }
+              ]
+            },
+            ".shipwright/planning/07-header-blind/spec.md": {
+              "outcome": "returned",
+              "type": "list[FrRow]",
+              "value": [
+                {
+                  "description": "ok",
+                  "id": "FR-07.01",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/07-header-blind/spec.md",
+                  "split": "07-header-blind"
+                }
+              ]
+            }
+          }
+        },
+        "planning-file": {
+          "per_spec": {}
+        },
+        "spec-dir": {
+          "per_spec": {}
+        },
+        "zero-row-parse": {
+          "per_spec": {
+            ".shipwright/planning/01-reordered-only/spec.md": {
+              "outcome": "returned",
+              "type": "list[FrRow]",
+              "value": [
+                {
+                  "description": "Reordered table still describes a requirement",
+                  "id": "FR-06.01",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/01-reordered-only/spec.md",
+                  "split": "01-reordered-only"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "kind": "invoked"
+    },
+    "parse.rtm.collect_requirements": {
+      "fixtures": {
+        "absent": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        },
+        "brownfield-single-split": {
+          "outcome": "returned",
+          "type": "list[RequirementInfo]",
+          "value": [
+            {
+              "id": "FR-01.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-adopted/spec.md",
+              "split": "01-adopted",
+              "text": "Orchestrate the full pipeline."
+            },
+            {
+              "id": "FR-01.02",
+              "priority": "Should",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-adopted/spec.md",
+              "split": "01-adopted",
+              "text": "Deep planning with external review."
+            }
+          ]
+        },
+        "edge": {
+          "outcome": "returned",
+          "type": "list[RequirementInfo]",
+          "value": [
+            {
+              "id": "FR-01.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/.hidden-split/spec.md",
+              "split": ".hidden-split",
+              "text": "User can log in"
+            },
+            {
+              "id": "FR-01.02",
+              "priority": "Should",
+              "sections": [],
+              "spec_path": ".shipwright/planning/.hidden-split/spec.md",
+              "split": ".hidden-split",
+              "text": "User can log out"
+            },
+            {
+              "id": "FR-01.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live",
+              "text": "Canonical two-digit id"
+            },
+            {
+              "id": "FR-1.1",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live",
+              "text": "Single-digit id"
+            },
+            {
+              "id": "FR-7",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live",
+              "text": "Bare id, no dot"
+            },
+            {
+              "id": "FR-99.99",
+              "priority": "Should",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live",
+              "text": "High canonical id"
+            },
+            {
+              "id": "FR-001.001",
+              "priority": "May",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live",
+              "text": "Three-digit id"
+            },
+            {
+              "id": "FR-01.20",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live",
+              "text": "Row after a later heading"
+            },
+            {
+              "id": "FR-01.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/iterate/spec.md",
+              "split": "iterate",
+              "text": "User can log in"
+            },
+            {
+              "id": "FR-01.02",
+              "priority": "Should",
+              "sections": [],
+              "spec_path": ".shipwright/planning/iterate/spec.md",
+              "split": "iterate",
+              "text": "User can log out"
+            }
+          ]
+        },
+        "empty": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        },
+        "greenfield-multi-split": {
+          "outcome": "returned",
+          "type": "list[RequirementInfo]",
+          "value": [
+            {
+              "id": "FR-01.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-auth/spec.md",
+              "split": "01-auth",
+              "text": "User can log in"
+            },
+            {
+              "id": "FR-01.02",
+              "priority": "Should",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-auth/spec.md",
+              "split": "01-auth",
+              "text": "User can log out"
+            },
+            {
+              "id": "FR-02.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/02-dashboard/spec.md",
+              "split": "02-dashboard",
+              "text": "Dashboard shows recent activity"
+            },
+            {
+              "id": "FR-02.02",
+              "priority": "May",
+              "sections": [],
+              "spec_path": ".shipwright/planning/02-dashboard/spec.md",
+              "split": "02-dashboard",
+              "text": "Optional analytics panel"
+            },
+            {
+              "id": "FR-03.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/03-reporting/spec.md",
+              "split": "03-reporting",
+              "text": "User can log in"
+            },
+            {
+              "id": "FR-03.02",
+              "priority": "Should",
+              "sections": [],
+              "spec_path": ".shipwright/planning/03-reporting/spec.md",
+              "split": "03-reporting",
+              "text": "User can log out"
+            }
+          ]
+        },
+        "malformed": {
+          "outcome": "returned",
+          "type": "list[RequirementInfo]",
+          "value": [
+            {
+              "id": "FR-01.03",
+              "priority": "Should",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken",
+              "text": "extra"
+            },
+            {
+              "id": "FR-01.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken",
+              "text": "duplicate of the first id"
+            }
+          ]
+        },
+        "mixed-shape": {
+          "outcome": "returned",
+          "type": "list[RequirementInfo]",
+          "value": [
+            {
+              "id": "FR-01.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-greenfield-template/spec.md",
+              "split": "01-greenfield-template",
+              "text": "User can log in"
+            },
+            {
+              "id": "FR-01.02",
+              "priority": "Should",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-greenfield-template/spec.md",
+              "split": "01-greenfield-template",
+              "text": "User can log out"
+            },
+            {
+              "id": "FR-02.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/02-greenfield-example/spec.md",
+              "split": "02-greenfield-example",
+              "text": "Dashboard shows recent activity"
+            },
+            {
+              "id": "FR-02.02",
+              "priority": "May",
+              "sections": [],
+              "spec_path": ".shipwright/planning/02-greenfield-example/spec.md",
+              "split": "02-greenfield-example",
+              "text": "Optional analytics panel"
+            },
+            {
+              "id": "FR-03.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/03-adopt-disk/spec.md",
+              "split": "03-adopt-disk",
+              "text": "Orchestrate the full pipeline."
+            },
+            {
+              "id": "FR-03.02",
+              "priority": "Should",
+              "sections": [],
+              "spec_path": ".shipwright/planning/03-adopt-disk/spec.md",
+              "split": "03-adopt-disk",
+              "text": "Deep planning with external review."
+            },
+            {
+              "id": "FR-04.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/04-adopt-writer/spec.md",
+              "split": "04-adopt-writer",
+              "text": "Run the test suites."
+            },
+            {
+              "id": "FR-04.02",
+              "priority": "Should",
+              "sections": [],
+              "spec_path": ".shipwright/planning/04-adopt-writer/spec.md",
+              "split": "04-adopt-writer",
+              "text": "Deploy to a target."
+            },
+            {
+              "id": "FR-04.03",
+              "priority": "May",
+              "sections": [],
+              "spec_path": ".shipwright/planning/04-adopt-writer/spec.md",
+              "split": "04-adopt-writer",
+              "text": "Local preview."
+            },
+            {
+              "id": "FR-05.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/05-fixture-fr/spec.md",
+              "split": "05-fixture-fr",
+              "text": "Coverage is reported per layer"
+            },
+            {
+              "id": "FR-07.01",
+              "priority": "Should",
+              "sections": [],
+              "spec_path": ".shipwright/planning/07-header-blind/spec.md",
+              "split": "07-header-blind",
+              "text": "extra"
+            }
+          ]
+        },
+        "planning-file": {
+          "exception": "NotADirectoryError",
+          "outcome": "raised"
+        },
+        "spec-dir": {
+          "exception": "OSError:not-a-readable-file",
+          "outcome": "raised"
+        },
+        "zero-row-parse": {
+          "outcome": "returned",
+          "type": "list",
+          "value": []
+        }
+      },
+      "kind": "invoked"
+    }
+  }
+}

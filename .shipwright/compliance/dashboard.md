@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-07-18T22:18:10.805261+00:00
+Generated: 2026-07-18T20:41:06.472191+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -28,13 +28,13 @@ _Grade = importance-weighted average over the measurable dimensions (n/a exclude
 
 ## 🛡️ CI Security (fail-closed gate)
 
-Latest scan: **2026-07-18** · source `security.yml#29662799546` · critical-gate **✅ PASS**
+Latest scan: **2026-07-18** · source `security.yml#29661021478` · critical-gate **✅ PASS**
 
 | Severity | Count |
 |----------|-------|
 | Critical | 0 |
 | High | 0 |
-| Medium | 2 |
+| Medium | 0 |
 | Low | 0 |
 
 Prompt-injection findings: **0**
@@ -61,7 +61,7 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Iterate tests passing | 46/58 testable changes tested | WARN | 12 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 11 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 7 open | WARN | 7 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Triage open | 9 open | WARN | 9 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit (grandfathered) | 123 | INFO |  |
 | Bloat in allowlist | 154 entries | INFO |  |
 | Bloat ratchet delta | -208 lines | PASS |  |

@@ -1,12 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-07-18 22:18 UTC | Session: 1a5c5f62-8d5c-486b-aeca-6de1d4e6d619 | Run: iterate-2026-07-18-accepted-risk-alert-convergence
+> Updated: 2026-07-18 20:41 UTC | Session: 8e6fa31c-9819-4642-9ae6-d261a2be7a91 | Run: iterate-2026-07-18-requirements-golden-corpus
 
 ## Recent Changes (331 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| change | iterate: converge accepted risks onto the code-scanning surface (trg-13b8283b) | 0/0 |  | compliance | 2026-07-18 |
 | change | iterate: scanner-agnostic accepted-risk register (trg-15a8e267, item 4) | 0/0 |  | compliance | 2026-07-18 |
+| change | iterate: requirements golden corpus freezing discovery + parser behaviour | 0/0 |  | tooling | 2026-07-18 |
 | change | iterate: enforce record termination + recover record boundaries on the triage log | 0/0 |  | FR-01.14 | 2026-07-18 |
 | change | iterate: FR-existence gate — declared requirement ids must exist | 0/0 |  | compliance | 2026-07-18 |
 | change | iterate: CI supply-chain risk flag + acknowledgement gate (trg-9509c2e8 item 3) | 0/0 |  | tooling | 2026-07-18 |
@@ -338,7 +338,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-19 | Unit: 4563/4564 | Smoke: not_run | (iterate)
+Last run: 2026-07-18 | Smoke: n/a | (iterate)
 
 ## Pipeline
 
