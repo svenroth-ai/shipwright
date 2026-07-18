@@ -18,9 +18,39 @@ def _utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _ends_without_newline(path: Path) -> bool:
+    """True iff ``path`` exists, is non-empty, and its final byte is not ``\\n``.
+
+    DELIBERATE DUPLICATION of ``shared/scripts/lib/jsonl_records.ends_without_newline``,
+    which is the SSOT for this contract. This plugin CANNOT import it: it ships its
+    own ``scripts/lib/`` package, so ``from lib import jsonl_records`` resolves to
+    THIS package and raises ImportError — the ``sys.modules['lib']`` collision that
+    ADR-045 describes. Verified empirically, not assumed.
+
+    Keep in lock step with the shared leaf; the contract is small and stable
+    (missing / zero-byte -> False, since seeking -1 from an empty file raises).
+    """
+    try:
+        if path.stat().st_size == 0:
+            return False
+        with path.open("rb") as fh:
+            fh.seek(-1, 2)  # 2 == os.SEEK_END
+            return fh.read(1) != b"\n"
+    except (OSError, ValueError):
+        return False
+
+
 def _append_jsonl(path: Path, event: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    # Termination guard (iterate-2026-07-18-events-jsonl-record-boundary): this
+    # writer takes NO lock and appends repeatedly (the adopted event, then N
+    # backfill events), so it must not assume the previous line was terminated —
+    # otherwise two records land on one physical line and a reader without
+    # record-boundary recovery discards BOTH.
+    needs_separator = _ends_without_newline(path)
     with path.open("a", encoding="utf-8") as f:
+        if needs_separator:
+            f.write("\n")
         f.write(json.dumps(event, ensure_ascii=False) + "\n")
 
 
