@@ -124,7 +124,9 @@ def test_apply_quarantines_unrecoverable_text_verbatim(tmp_path: Path) -> None:
     assert any(e["original"] == '{"truncated":' for e in entries)
 
 
-def test_retry_after_a_crashed_replace_does_not_double_quarantine(tmp_path: Path) -> None:
+def test_retry_after_a_crashed_replace_does_not_double_quarantine(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """The real retry: quarantine succeeded, the replace then failed, so the
     fragment is STILL on disk and the next run re-processes it.
 
@@ -144,13 +146,10 @@ def test_retry_after_a_crashed_replace_does_not_double_quarantine(tmp_path: Path
         boom["n"] += 1
         raise OSError("simulated crash after quarantine, before replace")
 
-    original = tr.durable_atomic_write
-    tr.durable_atomic_write = exploding_write
-    try:
-        with pytest.raises(OSError):
-            main(["--project-root", str(project), "--apply", "--writers-quiesced"])
-    finally:
-        tr.durable_atomic_write = original
+    monkeypatch.setattr(tr, "durable_atomic_write", exploding_write)
+    with pytest.raises(OSError):
+        main(["--project-root", str(project), "--apply", "--writers-quiesced"])
+    monkeypatch.undo()  # restore before the retry below re-runs the real write
 
     assert boom["n"] == 1
     first = [ln for ln in q.read_text(encoding="utf-8").splitlines() if ln.strip()]
@@ -276,7 +275,7 @@ def test_clean_corpus_is_a_noop(tmp_path: Path) -> None:
     assert outbox.read_bytes() == before
 
 
-def test_apply_scans_inside_the_lock(tmp_path: Path) -> None:
+def test_apply_scans_inside_the_lock(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Scanning outside the lock lets a cooperating writer append between the read
     and the atomic replace; the stale snapshot then overwrites that record."""
     import tools.triage_repair as tr
@@ -286,6 +285,7 @@ def test_apply_scans_inside_the_lock(tmp_path: Path) -> None:
     order: list[str] = []
 
     real_lock_cls = tr.triage._load_file_lock_cls()
+    real_scan = tr.scan_path
 
     class SpyLock:
         def __init__(self, path):
@@ -299,40 +299,28 @@ def test_apply_scans_inside_the_lock(tmp_path: Path) -> None:
             order.append("unlock")
             return self._inner.__exit__(*exc)
 
-    real_scan = tr.scan_path
-
     def spy_scan(path):
         order.append("scan")
         return real_scan(path)
 
-    tr.triage._load_file_lock_cls = lambda: SpyLock
-    tr.scan_path = spy_scan
-    try:
-        assert main(["--project-root", str(project), "--apply", "--writers-quiesced"]) == 0
-    finally:
-        tr.triage._load_file_lock_cls = real_lock_cls.__self__ if hasattr(
-            real_lock_cls, "__self__") else (lambda: real_lock_cls)
-        tr.scan_path = real_scan
+    monkeypatch.setattr(tr.triage, "_load_file_lock_cls", lambda: SpyLock)
+    monkeypatch.setattr(tr, "scan_path", spy_scan)
+
+    assert main(["--project-root", str(project), "--apply", "--writers-quiesced"]) == 0
 
     assert order[0] == "lock", f"scan must happen inside the lock, got {order}"
     assert "scan" in order and order.index("scan") < order.index("unlock")
 
 
-def test_report_mode_takes_no_lock(tmp_path: Path) -> None:
+def test_report_mode_takes_no_lock(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Report mode is read-only; taking the canonical lock would block producers."""
     import tools.triage_repair as tr
 
     project = _project(tmp_path)
     _corrupt_outbox(project)
-    taken: list[str] = []
 
     def boom_lock():
         raise AssertionError("report mode must not take the lock")
 
-    real = tr.triage._load_file_lock_cls
-    tr.triage._load_file_lock_cls = boom_lock
-    try:
-        assert main(["--project-root", str(project)]) == 1
-    finally:
-        tr.triage._load_file_lock_cls = real
-    assert taken == []
+    monkeypatch.setattr(tr.triage, "_load_file_lock_cls", boom_lock)
+    assert main(["--project-root", str(project)]) == 1
