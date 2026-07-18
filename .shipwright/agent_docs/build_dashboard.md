@@ -1,11 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-07-18 16:11 UTC | Session: 29a26685-f650-4a1d-a048-e9730774350b | Run: iterate-2026-07-18-fr-existence-gate
+> Updated: 2026-07-18 17:04 UTC | Session: 583f972d-6945-4147-8ab7-dcc583aab8d5 | Run: iterate-2026-07-18-outbox-newline-corruption
 
-## Recent Changes (327 iterations)
+## Recent Changes (328 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
 | change | iterate: FR-existence gate — declared requirement ids must exist | 0/0 |  | compliance | 2026-07-18 |
+| change | iterate: enforce record termination + recover record boundaries on the triage log | 0/0 |  | FR-01.14 | 2026-07-18 |
 | change | iterate: suppress non-literal-import FP in the layer-coverage verifier | 0/0 |  | tooling | 2026-07-18 |
 | change | iterate: resolve tagged FR ids through the spec FR-Fold-Map so granular @covers tags survive a taxonomy fold | 0/0 |  | compliance | 2026-07-18 |
 | change | iterate: FR-authoring rules — plain business language + capability altitude + advisory hygiene audit | 0/0 |  | FR-01.02, FR-01.10, FR-01.11 | 2026-07-18 |
@@ -334,7 +335,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-18 | Smoke: not_run | (iterate)
+Last run: 2026-07-18 | Unit: 4334/4338 | Integration: 2/2 | E2E: 2/2 | Smoke: n/a | (iterate)
 
 ## Pipeline
 
