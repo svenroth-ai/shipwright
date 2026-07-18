@@ -1,0 +1,1 @@
+Changing a GitHub Actions workflow, a dependency-updater config or a composite action now requires a short written note saying which recorded decision the change agrees with — the finalization stops without it. The note is tied to that specific change, so an older note cannot silently cover a new one.
