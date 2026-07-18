@@ -1,21 +1,20 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-18-fr-fold-map-resolution",
+    "run_id": "iterate-2026-07-18-outbox-newline-corruption",
     "date": "2026-07-18",
     "unit": {
       "status": "passed",
-      "passed": 8475,
-      "total": 8475
+      "passed": 4334,
+      "total": 4338,
+      "note": "4 pre-existing cross-plugin sys.path failures in test_setup_writes_canonical.py; clean origin/main shows 5 on the identical invocation (ADR-044/ADR-045)."
     },
     "integration": {
       "status": "passed",
-      "passed": 234,
-      "total": 234
+      "passed": 2,
+      "total": 2
     },
     "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "n/a"
     },
     "e2e": {
       "status": "passed",
@@ -23,202 +22,308 @@
       "total": 2
     },
     "design_fidelity": {
-      "status": "not_run"
+      "status": "n/a"
     },
     "smoke": {
-      "status": "not_run"
+      "status": "n/a"
     },
-    "degraded": [],
+    "degraded": [
+      "4 pre-existing cross-plugin sys.path-pollution failures in shared/tests/test_setup_writes_canonical.py (ADR-044/ADR-045). Verified pre-existing: clean origin/main fails 5 on the same invocation, this branch fails 4. Not introduced by this iterate."
+    ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest integration-tests/test_fold_map_e2e.py -q",
+      "runner": "uv run pytest integration-tests/test_outbox_newline_corruption_e2e.py -q",
       "exit_code": 0,
       "tests_run": 2,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\fr-fold-map-resolution\\.shipwright\\runs\\iterate-2026-07-18-fr-fold-map-resolution\\surface_verification.log",
-      "timestamp": "2026-07-18T09:01:37.352Z",
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\outbox-newline-corruption\\.shipwright\\runs\\iterate-2026-07-18-outbox-newline-corruption\\surface_verification.log",
+      "timestamp": "2026-07-18T16:58:29.680Z",
       "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "Folded tag binds to the surviving FR, no orphan, resolved_from recorded (AC1)",
+          "behavior": "Missing file is safely appendable (no leading newline)",
           "disposition": "tested",
-          "evidence": "test_test_links_fold_map.py::test_folded_tag_binds_to_survivor_and_produces_no_orphan PASSED"
+          "evidence": "test_jsonl_records.py::test_missing_file_is_safely_appendable PASSED"
         },
         {
-          "behavior": "D-orphan passes on a fold-resolved tag (AC6)",
+          "behavior": "Zero-byte file is safely appendable",
           "disposition": "tested",
-          "evidence": "test_test_links_fold_map.py::test_D_orphan_passes_on_a_fold_resolved_tag PASSED"
+          "evidence": "test_jsonl_records.py::test_zero_byte_file_is_safely_appendable PASSED"
         },
         {
-          "behavior": "A live-FR tag is never redirected by a fold-map (AC2)",
+          "behavior": "LF-terminated file needs no separator",
           "disposition": "tested",
-          "evidence": "test_test_links_fold_map.py::test_a_live_fr_tag_is_not_redirected_by_a_fold_map PASSED"
+          "evidence": "test_jsonl_records.py::test_terminated_file_needs_no_separator PASSED"
         },
         {
-          "behavior": "An active-but-folded id keeps its own coverage obligation",
+          "behavior": "CRLF-terminated file counts as terminated",
           "disposition": "tested",
-          "evidence": "test_fr_fold_map_hardening.py::test_active_folded_id_keeps_its_own_coverage_and_ignores_its_fold_entry PASSED"
+          "evidence": "test_jsonl_records.py::test_crlf_terminated_file_counts_as_terminated PASSED"
         },
         {
-          "behavior": "Chain resolves to the first active id, through removed/absent intermediates",
+          "behavior": "Unterminated file is detected",
           "disposition": "tested",
-          "evidence": "test_fr_fold_map_hardening.py::test_chain_resolves_through_a_REMOVED_intermediate_to_an_active_terminal PASSED"
+          "evidence": "test_jsonl_records.py::test_unterminated_file_is_detected PASSED"
         },
         {
-          "behavior": "Cycle fails closed and terminates (AC3)",
+          "behavior": "Append onto unterminated OUTBOX does not concatenate",
           "disposition": "tested",
-          "evidence": "test_fr_fold_map.py::test_cycle_fails_closed_and_terminates + ::test_depth_cap_terminates_a_long_chain PASSED"
+          "evidence": "test_triage_newline_integrity.py::test_append_onto_unterminated_outbox_does_not_concatenate PASSED"
         },
         {
-          "behavior": "Dangling / removed survivor fails closed (AC3)",
+          "behavior": "Append onto unterminated TRACKED store does not concatenate",
           "disposition": "tested",
-          "evidence": "test_fr_fold_map.py::test_dangling_survivor_fails_closed + test_fr_fold_map_hardening.py::test_chain_whose_terminal_is_removed_fails_closed PASSED"
+          "evidence": "test_triage_newline_integrity.py::test_append_onto_unterminated_tracked_store_does_not_concatenate PASSED"
         },
         {
-          "behavior": "Conflicting survivor (cross-spec AND intra-spec) drops the edge (AC3)",
+          "behavior": "Guard is a no-op on the healthy path (no blank line)",
           "disposition": "tested",
-          "evidence": "test_fr_fold_map.py::test_conflicting_survivors_drop_the_edge_fail_closed + test_fr_fold_map_hardening.py::test_intra_spec_duplicate_conflicting_rows_drop_the_edge PASSED"
+          "evidence": "test_triage_newline_integrity.py::test_append_onto_terminated_file_adds_no_blank_line PASSED"
         },
         {
-          "behavior": "Unparsable / self-fold rows recorded, not swallowed (AC3)",
+          "behavior": "First append to an absent outbox is unaffected",
           "disposition": "tested",
-          "evidence": "test_fr_fold_map.py::test_unparsable_row_is_recorded_not_swallowed + ::test_self_fold_is_dropped_and_recorded PASSED"
+          "evidence": "test_triage_newline_integrity.py::test_first_append_to_absent_outbox_is_unaffected PASSED"
         },
         {
-          "behavior": "Defect vocabulary is closed; every emitted kind is declared",
+          "behavior": "Prevention holds end-to-end after the fix",
           "disposition": "tested",
-          "evidence": "test_fr_fold_map.py::test_every_emitted_defect_kind_is_in_the_closed_vocabulary PASSED"
+          "evidence": "integration-tests/test_outbox_newline_corruption_e2e.py::test_next_append_after_the_fix_cannot_concatenate PASSED"
         },
         {
-          "behavior": "One cycle = one defect (no per-member or per-tag amplification)",
+          "behavior": "Single record round-trips unchanged",
           "disposition": "tested",
-          "evidence": "test_fr_fold_map_hardening.py::test_cycle_is_recorded_as_a_defect_exactly_once_not_once_per_member + ::test_a_cycle_does_not_also_spawn_dangling_survivor_noise PASSED"
+          "evidence": "test_jsonl_records.py::test_single_record_round_trips PASSED"
         },
         {
-          "behavior": "Fold rows are never parsed as active requirements, backticked or not (AC4)",
+          "behavior": "Two concatenated records both recovered (the observed incident)",
           "disposition": "tested",
-          "evidence": "test_test_links_fold_map.py::test_fold_rows_never_become_active_requirements[2 params] PASSED"
+          "evidence": "test_jsonl_records.py::test_two_concatenated_records_both_recovered PASSED"
         },
         {
-          "behavior": "Fold-map section bounds: sibling heading closes, sub-heading does not, repeats parsed, EOF",
+          "behavior": "JSON whitespace between concatenated records is skipped",
           "disposition": "tested",
-          "evidence": "test_fr_fold_map_hardening.py::test_a_following_requirement_table_is_not_swallowed_by_the_section + 3 sibling cases PASSED"
+          "evidence": "test_jsonl_records.py::test_whitespace_between_concatenated_records_is_skipped PASSED"
         },
         {
-          "behavior": "Manifest with fold data is v2-schema-valid and round-trips through disk (AC5)",
+          "behavior": "Valid prefix survives an unrecoverable tail (partial recovery)",
           "disposition": "tested",
-          "evidence": "test_test_links_fold_map.py::test_manifest_with_fold_data_is_v2_schema_valid + ::test_manifest_round_trips_through_json_unchanged PASSED"
+          "evidence": "test_jsonl_records.py::test_valid_prefix_survives_an_unrecoverable_tail PASSED"
         },
         {
-          "behavior": "A repo without a fold-map emits NO new keys - byte-identical manifest (AC5)",
+          "behavior": "Wholly unrecoverable line yields no records and full remainder",
           "disposition": "tested",
-          "evidence": "test_test_links_fold_map.py::test_a_repo_without_a_fold_map_emits_NO_new_keys + integration-tests/test_fold_map_e2e.py::test_this_monorepo_regenerates_a_byte_identical_manifest PASSED",
-          "category": "integration"
+          "evidence": "test_jsonl_records.py::test_wholly_unrecoverable_line_yields_no_records_and_full_remainder PASSED"
         },
         {
-          "behavior": "D-orphan surfaces fold defects as LOW hygiene; MEDIUM reserved for real orphans (AC6)",
+          "behavior": "Non-dict JSON is a fragment, not a record",
           "disposition": "tested",
-          "evidence": "test_test_links_fold_map.py::test_fold_defects_alone_are_LOW_hygiene_not_a_medium_failure PASSED"
+          "evidence": "test_jsonl_records.py::test_non_dict_json_is_a_fragment_not_a_record PASSED"
         },
         {
-          "behavior": "Backfill honours a folded tag as survivor coverage and proposes no re-tag (AC7)",
+          "behavior": "Blank line is formatting, not corruption",
           "disposition": "tested",
-          "evidence": "test_backfill_fold_map.py::test_folded_tag_is_honoured_as_coverage_of_the_survivor PASSED"
+          "evidence": "test_jsonl_records.py::test_blank_line_is_not_corruption PASSED"
         },
         {
-          "behavior": "Backfill and collector agree on the same fold across a real process boundary",
+          "behavior": "Reader recovers the observed corruption",
           "disposition": "tested",
-          "evidence": "test_backfill_fold_map.py::test_backfill_and_collector_agree_on_the_same_fold[2 params] PASSED",
-          "category": "integration"
+          "evidence": "test_jsonl_records.py::test_reader_recovers_the_observed_corruption PASSED"
         },
         {
-          "behavior": "End-to-end through the real collector subprocess, as update_compliance invokes it",
+          "behavior": "Reader preserves order across recovered and clean lines",
           "disposition": "tested",
-          "evidence": "integration-tests/test_fold_map_e2e.py::test_folded_tag_resolves_end_to_end_through_the_real_collector PASSED (F0.5 surface_verification exit_code=0, tests_run=2)",
-          "category": "integration"
+          "evidence": "test_jsonl_records.py::test_reader_preserves_order_across_recovered_and_clean_lines PASSED"
         },
         {
-          "behavior": "Parser never raises on degenerate input",
+          "behavior": "Missing file reads empty",
           "disposition": "tested",
-          "evidence": "test_fr_fold_map.py::test_parser_never_raises_on_degenerate_input[5 params] PASSED"
+          "evidence": "test_jsonl_records.py::test_missing_file_reads_empty PASSED"
         },
         {
-          "behavior": "Defects are deterministically ordered and content is merge-order independent",
+          "behavior": "Reader recovers both records through the triage API",
           "disposition": "tested",
-          "evidence": "test_fr_fold_map_hardening.py::test_defects_are_deterministically_ordered_regardless_of_merge_order + test_fr_fold_map_review_findings.py::test_conflicting_survivor_content_is_identical_in_either_merge_order PASSED"
+          "evidence": "test_triage_newline_integrity.py::test_reader_recovers_both_records_from_one_physical_line PASSED"
         },
         {
-          "behavior": "Defect carries line number + bounded raw; a lowercase id is a loud defect",
+          "behavior": "Dismissal on a corrupted line propagates to read_all_items (user-visible symptom)",
           "disposition": "tested",
-          "evidence": "test_fr_fold_map_hardening.py::test_defect_carries_line_number_and_bounded_raw + ::test_lowercase_id_is_a_LOUD_defect_not_a_silent_normalisation PASSED"
+          "evidence": "test_triage_newline_integrity.py::test_dismissal_on_a_corrupted_line_propagates PASSED"
         },
         {
-          "behavior": "load_shared_lib wins on sys.path PRECEDENCE, restores the path, never shadows a plugin lib",
+          "behavior": "Unrecoverable line does not hide its valid neighbours",
           "disposition": "tested",
-          "evidence": "test_lib_loader_precedence.py (7 cases) PASSED"
+          "evidence": "test_triage_newline_integrity.py::test_unrecoverable_line_does_not_hide_its_valid_neighbours PASSED"
         },
         {
-          "behavior": "Module extractions preserve every historical import path",
+          "behavior": "Full incident reproduced and resolved end-to-end",
           "disposition": "tested",
-          "evidence": "F0 suite GREEN 18/18 units - parse_frs/FR/tokenize/jaccard still import from their original modules"
+          "evidence": "integration-tests/test_outbox_newline_corruption_e2e.py::test_the_reported_incident_end_to_end PASSED"
         },
         {
-          "behavior": "RETIREMENT BEATS FOLDING: a removed FR is never fold-rescued, so the F11 removal gate stays HARD",
+          "behavior": "Unrecoverable text is returned as data (RecordRead.corrupt) with path and line_no",
           "disposition": "tested",
-          "evidence": "test_test_links_fold_map_hardening.py::test_removing_an_fr_and_folding_it_does_NOT_rescue_its_dead_tags + test_backfill_fold_map.py::test_a_removed_folded_id_is_not_rescued_by_the_backfill_engine PASSED"
+          "evidence": "test_jsonl_records.py::test_reader_reports_unrecoverable_text_as_data PASSED"
         },
         {
-          "behavior": "A genuinely folded (absent) id is still rescued - the retirement guard is not over-broad",
+          "behavior": "Leaf library never prints (reporting is at the command boundary)",
           "disposition": "tested",
-          "evidence": "test_test_links_fold_map_hardening.py::test_a_genuinely_folded_id_absent_from_the_table_is_still_rescued PASSED"
+          "evidence": "test_jsonl_records.py::test_leaf_never_prints PASSED"
         },
         {
-          "behavior": "Orphan reason names the terminal: fr_removed vs fr_absent",
+          "behavior": "Invalid UTF-8 degrades to a fragment instead of blacking out every reader",
           "disposition": "tested",
-          "evidence": "test_test_links_fold_map_hardening.py::test_a_chain_ending_at_a_REMOVED_survivor_reports_fr_removed + ::test_a_chain_to_nowhere_still_reports_fr_absent PASSED"
+          "evidence": "test_jsonl_records.py::test_invalid_utf8_degrades_to_a_fragment_instead_of_raising PASSED"
         },
         {
-          "behavior": "A healthy chain through a dead intermediate emits NO defect (no false-red)",
+          "behavior": "Deeply nested blob does not escape as RecursionError",
           "disposition": "tested",
-          "evidence": "test_test_links_fold_map_hardening.py::test_a_chain_through_a_removed_intermediate_resolves_with_NO_defect PASSED"
+          "evidence": "test_jsonl_records.py::test_deeply_nested_blob_does_not_raise_recursionerror PASSED"
         },
         {
-          "behavior": "Three specs claiming one folded id yield exactly ONE conflict defect",
+          "behavior": "Unicode whitespace is not accepted between records",
           "disposition": "tested",
-          "evidence": "test_fr_fold_map_review_findings.py::test_three_specs_claiming_one_id_yield_ONE_conflict_defect PASSED"
+          "evidence": "test_jsonl_records.py::test_unicode_whitespace_is_not_accepted_between_records PASSED"
         },
         {
-          "behavior": "A row with BOTH ids malformed is reported; the real header row still is not",
+          "behavior": "Scan reports a concatenated line",
           "disposition": "tested",
-          "evidence": "test_fr_fold_map_review_findings.py::test_a_row_with_both_ids_malformed_is_still_reported + ::test_the_real_header_row_is_still_not_a_defect PASSED"
+          "evidence": "test_triage_repair.py::test_scan_reports_a_concatenated_line PASSED"
         },
         {
-          "behavior": "A cycle does not swallow the folded-id status diagnostic",
+          "behavior": "Scan is clean on a healthy file",
           "disposition": "tested",
-          "evidence": "test_fr_fold_map_review_findings.py::test_a_cycle_does_not_swallow_the_folded_id_status_diagnostic PASSED"
+          "evidence": "test_triage_repair.py::test_scan_is_clean_on_a_healthy_file PASSED"
         },
         {
-          "behavior": "One test with a folded AND a direct tag yields one link with direct provenance (no cross-node aliasing)",
+          "behavior": "Scan flags an unterminated file (latent corruption)",
           "disposition": "tested",
-          "evidence": "test_test_links_fold_map_hardening.py::test_a_folded_and_a_direct_tag_on_one_test_yield_one_link_with_direct_provenance PASSED"
+          "evidence": "test_triage_repair.py::test_scan_flags_an_unterminated_file PASSED"
         },
         {
-          "behavior": "The fold-skip in BOTH FR-table parsers is non-vacuous",
+          "behavior": "Scan separates unrecoverable text from recovered records",
           "disposition": "tested",
-          "evidence": "test_backfill_fold_map.py::test_an_UNBACKTICKED_fold_table_is_not_read_as_live_requirements PASSED - MUTATION-VERIFIED: disabling the skip fails exactly this test"
+          "evidence": "test_triage_repair.py::test_scan_separates_unrecoverable_text PASSED"
+        },
+        {
+          "behavior": "Report mode never mutates",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_report_mode_never_mutates PASSED"
+        },
+        {
+          "behavior": "Report mode takes no lock (read-only, must not block producers)",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_report_mode_takes_no_lock PASSED"
+        },
+        {
+          "behavior": "--apply requires --writers-quiesced (inode-swap safety)",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_apply_requires_the_quiesced_acknowledgement PASSED"
+        },
+        {
+          "behavior": "--apply splits the line and preserves BOTH records",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_apply_splits_the_line_and_preserves_both_records PASSED"
+        },
+        {
+          "behavior": "--apply terminates an unterminated file",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_apply_terminates_an_unterminated_file PASSED"
+        },
+        {
+          "behavior": "--apply quarantines unrecoverable text verbatim (never dropped)",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_apply_quarantines_unrecoverable_text_verbatim PASSED"
+        },
+        {
+          "behavior": "Retry after a crashed replace does not double-quarantine (content-hash dedupe)",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_retry_after_a_crashed_replace_does_not_double_quarantine PASSED"
+        },
+        {
+          "behavior": "Repeated identical fragments quarantine once within a run",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_repeated_identical_fragments_quarantine_once PASSED"
+        },
+        {
+          "behavior": "Second run on a repaired file is a clean no-op",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_second_run_on_a_repaired_file_is_clean PASSED"
+        },
+        {
+          "behavior": "Scan happens INSIDE the lock under --apply (no TOCTOU)",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_apply_scans_inside_the_lock PASSED"
+        },
+        {
+          "behavior": "CRLF tracked log is not reflowed to LF (no whole-file diff on merge=union)",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_crlf_tracked_log_is_not_reflowed_to_lf PASSED"
+        },
+        {
+          "behavior": "Healthy lines are preserved byte-for-byte (no re-serialization)",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_healthy_lines_are_preserved_byte_for_byte PASSED"
+        },
+        {
+          "behavior": "File with invalid UTF-8 is reported but never rewritten",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_file_with_invalid_utf8_is_reported_but_not_rewritten PASSED"
+        },
+        {
+          "behavior": "Wholly unrecoverable file is not emptied (schema header survives)",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_wholly_unrecoverable_file_is_not_emptied PASSED"
+        },
+        {
+          "behavior": "Repaired file reads back identically through the public API",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_repaired_file_reads_back_through_the_public_api PASSED"
+        },
+        {
+          "behavior": "Clean corpus is a no-op",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_clean_corpus_is_a_noop PASSED"
+        },
+        {
+          "behavior": "Reader leaks no file handle",
+          "disposition": "tested",
+          "evidence": "test_jsonl_records.py::test_reader_leaks_no_file_handle PASSED"
+        },
+        {
+          "behavior": "Round-trip preserves unicode through repair",
+          "disposition": "tested",
+          "evidence": "test_triage_newline_integrity.py::test_round_trip_preserves_unicode_through_repair PASSED"
+        },
+        {
+          "behavior": "Round-trip survives a CRLF tracked store",
+          "disposition": "tested",
+          "evidence": "test_triage_newline_integrity.py::test_round_trip_survives_a_crlf_tracked_store PASSED"
+        },
+        {
+          "behavior": "Round-trip append-then-read is lossless for every field",
+          "disposition": "tested",
+          "evidence": "test_triage_newline_integrity.py::test_round_trip_append_then_read_is_lossless_for_every_field PASSED"
+        },
+        {
+          "behavior": "triage.py stays at its ADR-100 bloat baseline of 704 lines (header cluster extracted)",
+          "disposition": "tested",
+          "evidence": "wc -l shared/scripts/triage.py == 704; uvx ruff@0.15.15 check . clean"
+        },
+        {
+          "behavior": "Cross-primitive write race between this repo's fcntl/msvcrt byte-lock and the webui's directory-based proper-lockfile",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "note": "The two primitives do not compose (documented in the webui triage-write.ts header). This is WHY --writers-quiesced exists; the guard itself is tested by test_apply_requires_the_quiesced_acknowledgement. Webui-side fix tracked as triage trg-a20314c2."
         }
       ],
       "counts": {
-        "testable": 33,
-        "tested": 33,
-        "untestable": 0,
+        "total": 55,
+        "tested": 54,
+        "untestable": 1,
         "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 7,
-        "covered_acs": 7
       }
     }
   },

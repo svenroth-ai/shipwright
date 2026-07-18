@@ -1,37 +1,38 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-18-fr-fold-map-resolution"
+run_id: "iterate-2026-07-18-outbox-newline-corruption"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-18T09:10:19.724932+00:00"
+reason: "iterate: enforce record termination + recover record boundaries on the triage log"
+timestamp: "2026-07-18T17:04:27.470053+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-18 09:10:19 UTC
+> Auto-generated 2026-07-18 17:04:27 UTC
 
 ## Session Info
 
-- **Session ID**: 3b3d60c1-1bff-42d2-bb57-037c86798a90
-- **Timestamp**: 2026-07-18 09:10:19 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: 583f972d-6945-4147-8ab7-dcc583aab8d5
+- **Timestamp**: 2026-07-18 17:04:27 UTC
+- **Reason**: iterate: enforce record termination + recover record boundaries on the triage log
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-18-fr-fold-map-resolution
-- **Date**: 2026-07-18T09:10:14.140286Z
-- **Type**: change
+- **Run ID**: iterate-2026-07-18-outbox-newline-corruption
+- **Date**: 2026-07-18T17:04:22.012631Z
+- **Type**: bug
 - **Complexity**: medium
-- **Branch**: iterate/fr-fold-map-resolution
-- **ADR**: iterate-2026-07-18-fr-fold-map-resolution
+- **Branch**: iterate/outbox-newline-corruption
+- **ADR**: iterate-2026-07-18-outbox-newline-corruption
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-18-fr-fold-map-resolution.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-18-outbox-newline-corruption.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/fr-fold-map-resolution
-- **Run ID**: `iterate-2026-07-18-fr-fold-map-resolution`
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-18-fr-fold-map-resolution.md
+- **Branch**: iterate/outbox-newline-corruption
+- **Run ID**: iterate-2026-07-18-outbox-newline-corruption
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-18-outbox-newline-corruption.md
+- **Complexity**: medium (`prior_source: history`, n=20)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -50,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/fr-fold-map-resolution
-- **Last Commit**: 8a0c73b3 Merge remote-tracking branch 'origin/main' into iterate/fr-fold-map-resolution
+- **Branch**: iterate/outbox-newline-corruption
+- **Last Commit**: 53d240e7 chore(triage): sweep 15 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -67,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-695d77cd | grade_snapshot | — | 2026-07-18 |
+| evt-14ef5fcb | work_completed | iterate (iterate: enforce record termination + recover record boundaries on the triage log) | 2026-07-18 |
+| evt-7518638a | grade_snapshot | — | 2026-07-18 |
 | evt-bcfaff37 | grade_snapshot | — | 2026-07-18 |
 | evt-b58979bd | work_completed | iterate (iterate: suppress non-literal-import FP in the layer-coverage verifier) | 2026-07-18 |
-| evt-c5a8b243 | grade_snapshot | — | 2026-07-18 |
-| evt-6236a879 | work_completed | iterate (iterate: resolve tagged FR ids through the spec FR-Fold-Map so granular @covers tags survive a taxonomy fold) | 2026-07-18 |
-| evt-8f153abe | grade_snapshot | — | 2026-07-18 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 326
-- **Last iterate**: change — iterate: suppress non-literal-import FP in the layer-coverage verifier (2026-07-18)
+- **Total work events**: 327
+- **Last iterate**: change — iterate: enforce record termination + recover record boundaries on the triage log (2026-07-18)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
