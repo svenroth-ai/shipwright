@@ -1,6 +1,6 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-07-18T17:04:22.088722+00:00 (dependency versions resolved from uv.lock)
+Generated: 2026-07-18T20:17:18.052303+00:00 (dependency versions resolved from uv.lock)
 
 ## Summary
 
@@ -9,7 +9,7 @@ Generated: 2026-07-18T17:04:22.088722+00:00 (dependency versions resolved from u
 | Runtime dependencies | 6 (deduplicated) |
 | Dev dependencies | 5 |
 | Total packages | 11 |
-| Licenses resolved | 11 / 11 |
+| Licenses resolved | 6 / 11 |
 | Unique licenses | 3 (Apache-2.0, MIT, PSFL) |
 | Copyleft licenses | 0 |
 
@@ -17,9 +17,10 @@ Generated: 2026-07-18T17:04:22.088722+00:00 (dependency versions resolved from u
 
 ```mermaid
 pie title License Distribution (all 11 packages)
-    "MIT" : 6
-    "Apache-2.0" : 4
+    "Apache-2.0" : 3
+    "MIT" : 2
     "PSFL" : 1
+    "unknown" : 5
 ```
 
 ## Runtime Dependencies
@@ -37,13 +38,13 @@ pie title License Distribution (all 11 packages)
 
 | Package | Version | License |
 |---------|---------|---------|
-| diff-cover | 10.3.0 | Apache-2.0 |
-| pytest | 9.0.3 | MIT |
-| pytest | 9.1.1 | MIT |
-| pytest-cov | 7.1.0 | MIT |
-| pytest-mock | 3.15.1 | MIT |
+| diff-cover | 10.3.0 | - |
+| pytest | 9.0.3 | - |
+| pytest | 9.1.1 | - |
+| pytest-cov | 7.1.0 | - |
+| pytest-mock | 3.15.1 | - |
 
 ## License Compliance
 
-No license concerns: all 11 packages resolved (0 unknown, 0 copyleft).
+**5 dependency(ies) could not be resolved in this scan** - license unverified; verify before distribution.
 

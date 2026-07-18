@@ -1,121 +1,167 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-18-ci-supplychain-risk-flag",
+    "run_id": "iterate-2026-07-18-requirements-golden-corpus",
     "date": "2026-07-18",
     "unit": {
-      "status": "passed",
-      "passed": 8416,
-      "total": 8416
+      "status": "pass",
+      "note": "F0 full suite: 4374 passed, 11 skipped, 26 deselected. 2 failures triaged: test_artifact_path_canon[planning-migrated] was REAL (bare 'planning/' in four prose comments) and is fixed; test_architecture_md_reflects_arch_impact is the known main-root false-fail on ANOTHER iterate's gitignored decision drop (iterate-2026-07-18-fr-existence-gate), not this run's. CI round 1 went red on test_artifact_path_canon for a bare directory-name literal in a guard test: the canon gate scans only GIT-TRACKED files, so a newly split-out module is invisible to it locally until the commit stages it. Fixed by deriving the name from the corpus constant; re-verified with the file tracked. CI round 3 exposed the real lesson: the baseline was carrying THREE platform-specific tokens, not one. The adversarial review caught path separators; the same root cause survived in the type field (pathlib instantiates WindowsPath vs PosixPath) and would have surfaced again in the exception field (reading a directory raises PermissionError on Windows, IsADirectoryError on Linux). Fixed the CLASS: platform tokens are neutralized in the matrix, each platform-dependent fact is pinned in a dedicated test so the normalization launders nothing, and a guard test now forbids any such token from re-entering the baseline."
     },
     "integration": {
-      "status": "passed",
-      "passed": 234,
-      "total": 234
+      "status": "pass",
+      "note": "285 passed, 2 deselected. 49 of them are this iterate's new requirements-corpus suites."
     },
     "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "n/a",
+      "note": "no database in this repo"
     },
     "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "n/a",
+      "note": "no UI or runtime surface: the diff is test-only and adds no route, component, or executable entry point."
     },
     "design_fidelity": {
-      "status": "not_run"
+      "status": "n/a",
+      "note": "no UI"
     },
     "smoke": {
-      "status": "not_run"
+      "status": "n/a",
+      "note": "no server"
     },
-    "degraded": [],
+    "mutation_verification": {
+      "status": "pass",
+      "note": "The harness was validated by mutating production and checking it bites. Mutation A (parser accepts lowercase priority) initially SURVIVED, exposing a real corpus gap -- no fixture carried a lowercase priority. Gap closed; A is now caught and transitively catches fr_gates. Mutation B (body column 2 vs 4) caught, naming both affected targets. Production restored clean (git diff --stat shared/ empty)."
+    },
+    "degraded": [
+      {
+        "condition": "test_architecture_md_reflects_arch_impact fails locally",
+        "reason": "Known meta-test false-fail: it resolves gitignored decision-drops from the MAIN root, so it reddens on OTHER in-flight iterates' drops. The named drop (iterate-2026-07-18-fr-existence-gate) belongs to REQ-0, not this run. No action taken by design."
+      },
+      {
+        "condition": "review_runner's inline walk is not behaviourally frozen",
+        "reason": "The walk sits inside run_review, which calls an external LLM (reason_code: requires-external-nondeterministic-service). Compensating control: the golden file records a sha256 of the enclosing function plus its line count, so any edit to it is a baseline diff the S2 reviewer must explain."
+      }
+    ],
     "surface_verification": {
-      "surface": "cli",
-      "runner": "pytest",
+      "surface": "none",
+      "tests_run": 0,
       "exit_code": 0,
-      "tests_run": 17,
-      "evidence_path": "shared/tests/test_record_ci_supplychain_ack.py",
-      "timestamp": "2026-07-18",
-      "justification": "The user-facing surface this iterate adds is the record_ci_supplychain_ack CLI. It is driven end-to-end through rec.main([...]) against a real git worktree, then verified by the F11 gate reading the committed tree — the same working-tree -> commit boundary a real iterate crosses. No web/UI surface exists in this diff."
+      "justification": "Test-only diff. No production file is modified (git diff --name-only shows integration-tests/ and .shipwright/planning/ only), so there is no runtime surface to drive. The harness's own correctness is verified empirically by mutation testing rather than by asserting it passes -- see mutation_verification."
     },
     "test_completeness": {
       "status": "complete",
+      "complexity": "medium",
       "behaviors": [
         {
-          "behavior": "Detector fires on .github/workflows/**, dependabot.y(a)ml, .github/actions/** and renovate configs; near-misses (docs/.github/..., .github/workflow/, .github/dependabot.json) do not; deletions and renames trigger",
+          "behavior": "all 15 discovery paths pinned per fixture",
           "disposition": "tested",
-          "evidence": "test_ci_supplychain_detector.py — 16 passed"
+          "evidence": "test_target_behaviour_matches_the_frozen_baseline[disc.*] (16 registry entries)"
         },
         {
-          "behavior": "Gate FAILS when a CI file is touched with no acknowledgement",
+          "behavior": "all 5 parsers pinned per fixture",
           "disposition": "tested",
-          "evidence": "test_fails_when_ci_touched_without_any_ack PASSED"
+          "evidence": "test_target_behaviour_matches_the_frozen_baseline[parse.*]"
         },
         {
-          "behavior": "Gate PASSES with a valid run- and content-bound acknowledgement",
+          "behavior": "registry holds exactly the claimed inventory, no duplicates",
           "disposition": "tested",
-          "evidence": "test_passes_with_a_valid_bound_ack PASSED"
+          "evidence": "test_registry_holds_exactly_the_claimed_inventory"
         },
         {
-          "behavior": "An acknowledgement from a different run is rejected (stale-ack false-green found by external review)",
+          "behavior": "every registry source path resolves (forward drift)",
           "disposition": "tested",
-          "evidence": "test_rejects_ack_from_a_different_run PASSED"
+          "evidence": "test_every_registry_source_file_exists"
         },
         {
-          "behavior": "An acknowledgement whose fingerprint covers a different CI path set is rejected (acking a workflow tweak cannot license a dependabot.yml revival)",
+          "behavior": "every declared realm is used (reverse drift)",
           "disposition": "tested",
-          "evidence": "test_rejects_ack_whose_fingerprint_matches_a_different_change PASSED"
+          "evidence": "test_every_realm_is_actually_used"
         },
         {
-          "behavior": "Editing a CI file AFTER recording invalidates the acknowledgement (content-blindness found by code review)",
+          "behavior": "group_i stays isolated from the compliance collectors",
           "disposition": "tested",
-          "evidence": "test_ack_is_invalidated_when_the_ci_file_changes_after_recording PASSED; test_fingerprint_changes_when_ci_file_content_changes PASSED"
+          "evidence": "test_group_i_is_isolated_from_the_collectors"
         },
         {
-          "behavior": "Filler cannot satisfy the gate: empty/short statement, reference-free consistent_with",
+          "behavior": "an import failure never reads as 'no findings'",
           "disposition": "tested",
-          "evidence": "test_rejects_filler_statement, test_rejects_consistent_with_that_names_no_recorded_decision PASSED"
+          "evidence": "test_no_target_failed_to_import"
         },
         {
-          "behavior": "A corrupt or non-object results file is reported explicitly, never as 'missing acknowledgement'",
+          "behavior": "golden schema version is pinned",
           "disposition": "tested",
-          "evidence": "test_corrupt_results_file_is_reported_explicitly PASSED"
+          "evidence": "test_golden_schema_version_matches"
         },
         {
-          "behavior": "Outside a git repo the gate SKIPs; inside a repo an absent --commit fails CLOSED (the one-flag bypass found by code review)",
+          "behavior": "whole-file baseline currency (frozen_bugs rebuilt, not self-sourced)",
           "disposition": "tested",
-          "evidence": "test_non_repo_skips_but_missing_commit_inside_a_repo_fails_closed PASSED"
+          "evidence": "test_golden_file_is_byte_current"
         },
         {
-          "behavior": "git-quoted non-ASCII paths are still detected (the `^` anchor is not defeated by a leading quote)",
+          "behavior": "baseline is platform-portable (no OS-separator paths)",
           "disposition": "tested",
-          "evidence": "test_quoted_non_ascii_path_still_detected PASSED"
+          "evidence": "test_golden_baseline_carries_no_os_separator_paths"
         },
         {
-          "behavior": "Verifier pattern copy == SSoT in BOTH directions, and both implementations agree across a 13-path matrix",
+          "behavior": "the OS-separator behaviour itself is pinned",
           "disposition": "tested",
-          "evidence": "test_ci_supplychain_patterns_sync.py — 3 passed"
+          "evidence": "test_platform_separator_behaviour_is_pinned"
         },
         {
-          "behavior": "Writer CLI produces an acknowledgement the gate accepts across the working-tree -> committed-tree boundary, preserves sibling keys (coverage.total), and refuses when no CI file is touched",
+          "behavior": "FV-1 frozen; its two causes kept apart; T1 can still FAIL",
           "disposition": "tested",
-          "evidence": "test_record_ci_supplychain_ack.py — 4 passed"
+          "evidence": "test_fv1_* (4 tests incl. a control)"
         },
         {
-          "behavior": "SKILL.md keeps the explicit 'never read as pin everything' caveat and never instructs SHA-pinning",
+          "behavior": "FV-2 frozen across D-group, Group I and the positive-claim site",
           "disposition": "tested",
-          "evidence": "test_taxonomy_entry_exists_and_does_not_mandate_pinning PASSED"
+          "evidence": "test_fv2_* (3 tests)"
+        },
+        {
+          "behavior": "FV-3 / FV-4 / FV-5 frozen",
+          "disposition": "tested",
+          "evidence": "test_fv3_*, test_fv4_*, test_fv5_*"
+        },
+        {
+          "behavior": "both unsorted walks track enumeration order",
+          "disposition": "tested",
+          "evidence": "test_unsorted_walk_tracks_enumeration_order, test_unsorted_walk_a2_tracks_enumeration_order"
+        },
+        {
+          "behavior": "every frozen bug names its flipping step",
+          "disposition": "tested",
+          "evidence": "test_every_frozen_bug_names_its_flipping_step"
+        },
+        {
+          "behavior": "frozen-bug cells resolve in the matrix",
+          "disposition": "tested",
+          "evidence": "test_frozen_bug_cells_exist_in_the_matrix"
+        },
+        {
+          "behavior": "the corpus discriminates per fixture (not just globally)",
+          "disposition": "tested",
+          "evidence": "test_corpus_discriminates_between_targets"
+        },
+        {
+          "behavior": "planning-as-file still splits raise/degrade",
+          "disposition": "tested",
+          "evidence": "test_planning_as_a_file_still_splits_the_targets"
+        },
+        {
+          "behavior": "harness runs in CI and is not marked slow",
+          "disposition": "tested",
+          "evidence": "placement in integration-tests/; CI step runs it under -m 'not slow' only; 49 tests in ~3.8s"
+        },
+        {
+          "behavior": "review_runner's inline discovery walk",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "evidence": "Walk is inline inside run_review, which calls an external LLM. Registered invoke:source_only; the golden file freezes a sha256 of the enclosing function so an edit is still a baseline diff."
         }
       ],
       "counts": {
-        "testable": 13,
-        "tested": 13,
-        "untestable": 0,
+        "total": 21,
+        "tested": 20,
+        "untestable": 1,
         "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 6,
-        "covered_acs": 6
       }
     }
   },
