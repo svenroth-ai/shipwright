@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-18-fr-authoring-rules",
+    "run_id": "iterate-2026-07-18-fr-fold-map-resolution",
     "date": "2026-07-18",
     "unit": {
       "status": "passed",
-      "passed": 7908,
-      "total": 7908
+      "passed": 8475,
+      "total": 8475
     },
     "integration": {
       "status": "passed",
-      "passed": 2,
-      "total": 2
+      "passed": 234,
+      "total": 234
     },
     "pgtap": {
       "status": "not_run",
@@ -18,9 +18,9 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 2,
+      "total": 2
     },
     "design_fidelity": {
       "status": "not_run"
@@ -28,178 +28,197 @@
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [
-      "classify_complexity reported risk flag 'touches_auth' — FALSE POSITIVE. The classifier matches risk keywords against the message prose, and the substring 'auth' occurs inside 'FR-authoring'. No auth file is in the diff; the risk_detectors.py diff-predicates are authoritative and F11 recomputes them. Overridden deliberately.",
-      "External code review: first invocation returned a truncated Gemini response and an OpenAI 'NoneType' error. Retried; the retry succeeded with both providers (2/2) and its findings were acted on. Recorded because the first attempt was reported as reviews_succeeded=1 with degraded=false, which understates it.",
-      "Local-only test-environment failures, NOT regressions and NOT caused by this diff: shipwright-security (3) needs semgrep/gitleaks/trivy on PATH and shipwright-grade (4) needs recorded empirical fixtures. Both suites are fully green without CI=true (470 passed/3 skipped and 393 passed/5 skipped); the CI-discipline rule promotes those environment skips to hard failures when CI=true is set locally. Neither plugin contains a file touched by this diff.",
-      "CodeQL flagged a REAL high-severity py/redos in this diff's own new code (group_i_detectors._FILE_PATH_RE: `[\\w./-]*\\w\\.(ext)` overlaps its own class). Root-fixed by anchoring on the extension (linear, no leading quantifier) and by removing the same overlap class from _PASCAL_RE — NOT suppressed. Regression-tested and re-probed for accuracy. A second, MEDIUM semgrep alert (non-literal-import in shared/scripts/tools/verifiers/_layer_coverage_regen.py) is PRE-EXISTING and outside this diff."
-    ],
+    "degraded": [],
     "surface_verification": {
-      "surface": "none",
-      "tests_run": 0,
+      "surface": "cli",
+      "runner": "uv run pytest integration-tests/test_fold_map_e2e.py -q",
       "exit_code": 0,
-      "justification": "Framework-internal change: an agent-authoring rulebook plus prompt/reference edits in adopt/project/iterate, and a new advisory compliance audit group. No product source, API route, store, SSE/WS handler, message contract or UI code is touched, so the backend-affects-frontend rule does not fire and there is no runtime surface to drive. Verified instead by the empirical probes recorded in the iterate spec, including running the detectors against the real webui spec before and after its human cleanup (66 rows/92% dirty -> 29 rows/0% dirty, zero false positives) and a mutation probe proving the drift guard fires."
+      "tests_run": 2,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\fr-fold-map-resolution\\.shipwright\\runs\\iterate-2026-07-18-fr-fold-map-resolution\\surface_verification.log",
+      "timestamp": "2026-07-18T09:01:37.352Z",
+      "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "name fence flags HTTP verb / ADR / iterate slug / file path / snake_case symbol",
+          "behavior": "Folded tag binds to the surviving FR, no orphan, resolved_from recorded (AC1)",
           "disposition": "tested",
-          "evidence": "test_audit_group_i_detectors.py::test_name_flags_* (5) PASSED"
+          "evidence": "test_test_links_fold_map.py::test_folded_tag_binds_to_survivor_and_produces_no_orphan PASSED"
         },
         {
-          "behavior": "clean capability name produces no finding",
+          "behavior": "D-orphan passes on a fold-resolved tag (AC6)",
           "disposition": "tested",
-          "evidence": "test_audit_group_i_detectors.py::test_clean_capability_name_is_silent PASSED"
+          "evidence": "test_test_links_fold_map.py::test_D_orphan_passes_on_a_fold_resolved_tag PASSED"
         },
         {
-          "behavior": "description fence flags file path and camelCase symbol",
+          "behavior": "A live-FR tag is never redirected by a fold-map (AC2)",
           "disposition": "tested",
-          "evidence": "test_audit_group_i_detectors.py::test_description_flags_* PASSED"
+          "evidence": "test_test_links_fold_map.py::test_a_live_fr_tag_is_not_redirected_by_a_fold_map PASSED"
         },
         {
-          "behavior": "plain prose with a parenthetical gloss passes clean",
+          "behavior": "An active-but-folded id keeps its own coverage obligation",
           "disposition": "tested",
-          "evidence": "test_audit_group_i_detectors.py::test_description_allows_plain_prose_with_gloss PASSED"
+          "evidence": "test_fr_fold_map_hardening.py::test_active_folded_id_keeps_its_own_coverage_and_ignores_its_fold_entry PASSED"
         },
         {
-          "behavior": "platform words (iOS/iPadOS) are not treated as code symbols",
+          "behavior": "Chain resolves to the first active id, through removed/absent intermediates",
           "disposition": "tested",
-          "evidence": "test_audit_group_i_detectors.py::test_platform_names_are_not_code_symbols PASSED"
+          "evidence": "test_fr_fold_map_hardening.py::test_chain_resolves_through_a_REMOVED_intermediate_to_an_active_terminal PASSED"
         },
         {
-          "behavior": "PascalCase symbols flagged; Title Case prose is not",
+          "behavior": "Cycle fails closed and terminates (AC3)",
           "disposition": "tested",
-          "evidence": "test_audit_group_i_detectors.py::test_description_flags_pascal_case_symbol + test_capitalised_prose_is_not_a_pascal_symbol PASSED"
+          "evidence": "test_fr_fold_map.py::test_cycle_fails_closed_and_terminates + ::test_depth_cap_terminates_a_long_chain PASSED"
         },
         {
-          "behavior": "every fold verb the rulebook names is detected",
+          "behavior": "Dangling / removed survivor fails closed (AC3)",
           "disposition": "tested",
-          "evidence": "test_audit_group_i_detectors.py::test_fold_candidate_covers_every_verb_the_rulebook_lists PASSED"
+          "evidence": "test_fr_fold_map.py::test_dangling_survivor_fails_closed + test_fr_fold_map_hardening.py::test_chain_whose_terminal_is_removed_fails_closed PASSED"
         },
         {
-          "behavior": "'Phase N of' in domain prose is not a fold candidate",
+          "behavior": "Conflicting survivor (cross-spec AND intra-spec) drops the edge (AC3)",
           "disposition": "tested",
-          "evidence": "test_audit_group_i_detectors.py::test_domain_phase_prose_is_not_a_fold_candidate PASSED"
+          "evidence": "test_fr_fold_map.py::test_conflicting_survivors_drop_the_edge_fail_closed + test_fr_fold_map_hardening.py::test_intra_spec_duplicate_conflicting_rows_drop_the_edge PASSED"
         },
         {
-          "behavior": "header-driven scan reads greenfield / adopt / Area table shapes",
+          "behavior": "Unparsable / self-fold rows recorded, not swallowed (AC3)",
           "disposition": "tested",
-          "evidence": "test_audit_group_i.py::test_scan_greenfield_* + test_scan_adopt_* + test_scan_tolerates_area_column PASSED"
+          "evidence": "test_fr_fold_map.py::test_unparsable_row_is_recorded_not_swallowed + ::test_self_fold_is_dropped_and_recorded PASSED"
         },
         {
-          "behavior": "Removed Requirements rows are excluded from prose linting",
+          "behavior": "Defect vocabulary is closed; every emitted kind is declared",
           "disposition": "tested",
-          "evidence": "test_audit_group_i.py::test_scan_skips_removed_requirements + test_retired_rows_are_not_linted_for_prose PASSED"
+          "evidence": "test_fr_fold_map.py::test_every_emitted_defect_kind_is_in_the_closed_vocabulary PASSED"
         },
         {
-          "behavior": "Source column (legitimate file paths) is never linted",
+          "behavior": "One cycle = one defect (no per-member or per-tag amplification)",
           "disposition": "tested",
-          "evidence": "test_audit_group_i.py::test_scan_adopt_splits_name_and_description PASSED"
+          "evidence": "test_fr_fold_map_hardening.py::test_cycle_is_recorded_as_a_defect_exactly_once_not_once_per_member + ::test_a_cycle_does_not_also_spawn_dangling_survivor_noise PASSED"
         },
         {
-          "behavior": "I1 skips (not passes) when the spec shape has no Name column",
+          "behavior": "Fold rows are never parsed as active requirements, backticked or not (AC4)",
           "disposition": "tested",
-          "evidence": "test_audit_group_i.py::test_clean_greenfield_spec_is_clean PASSED"
+          "evidence": "test_test_links_fold_map.py::test_fold_rows_never_become_active_requirements[2 params] PASSED"
         },
         {
-          "behavior": "I1 genuinely passes on a clean spec that has a Name column",
+          "behavior": "Fold-map section bounds: sibling heading closes, sub-heading does not, repeats parsed, EOF",
           "disposition": "tested",
-          "evidence": "test_audit_group_i.py::test_clean_adopt_spec_passes_the_name_fence PASSED"
+          "evidence": "test_fr_fold_map_hardening.py::test_a_following_requirement_table_is_not_swallowed_by_the_section + 3 sibling cases PASSED"
         },
         {
-          "behavior": "duplicate FR ID within a split is reported",
+          "behavior": "Manifest with fold data is v2-schema-valid and round-trips through disk (AC5)",
           "disposition": "tested",
-          "evidence": "test_audit_group_i.py::test_duplicate_fr_id_is_reported PASSED"
+          "evidence": "test_test_links_fold_map.py::test_manifest_with_fold_data_is_v2_schema_valid + ::test_manifest_round_trips_through_json_unchanged PASSED"
         },
         {
-          "behavior": "reuse of a retired FR number is caught (fr-authoring.md section 4)",
+          "behavior": "A repo without a fold-map emits NO new keys - byte-identical manifest (AC5)",
           "disposition": "tested",
-          "evidence": "test_audit_group_i.py::test_retired_fr_number_must_not_be_reused PASSED"
+          "evidence": "test_test_links_fold_map.py::test_a_repo_without_a_fold_map_emits_NO_new_keys + integration-tests/test_fold_map_e2e.py::test_this_monorepo_regenerates_a_byte_identical_manifest PASSED",
+          "category": "integration"
         },
         {
-          "behavior": "absent spec SKIPs rather than fails",
+          "behavior": "D-orphan surfaces fold defects as LOW hygiene; MEDIUM reserved for real orphans (AC6)",
           "disposition": "tested",
-          "evidence": "test_audit_group_i.py::test_no_spec_skips_rather_than_fails PASSED"
+          "evidence": "test_test_links_fold_map.py::test_fold_defects_alone_are_LOW_hygiene_not_a_medium_failure PASSED"
         },
         {
-          "behavior": "advisory contract: group I, detective-only, never HIGH",
+          "behavior": "Backfill honours a folded tag as survivor coverage and proposes no re-tag (AC7)",
           "disposition": "tested",
-          "evidence": "test_audit_group_i.py::test_every_finding_is_detective_only_and_advisory PASSED"
+          "evidence": "test_backfill_fold_map.py::test_folded_tag_is_honoured_as_coverage_of_the_survivor PASSED"
         },
         {
-          "behavior": "prose checks never emit fail, so they never flip the audit verdict",
+          "behavior": "Backfill and collector agree on the same fold across a real process boundary",
           "disposition": "tested",
-          "evidence": "test_audit_group_i.py::test_prose_checks_never_flip_the_audit_verdict PASSED"
+          "evidence": "test_backfill_fold_map.py::test_backfill_and_collector_agree_on_the_same_fold[2 params] PASSED",
+          "category": "integration"
         },
         {
-          "behavior": "preview capped at 5 IDs while the true count is reported",
+          "behavior": "End-to-end through the real collector subprocess, as update_compliance invokes it",
           "disposition": "tested",
-          "evidence": "test_audit_group_i.py::test_findings_cap_the_preview_but_report_the_true_count PASSED"
+          "evidence": "integration-tests/test_fold_map_e2e.py::test_folded_tag_resolves_end_to_end_through_the_real_collector PASSED (F0.5 surface_verification exit_code=0, tests_run=2)",
+          "category": "integration"
         },
         {
-          "behavior": "Group I is registered and runs in the default group set",
+          "behavior": "Parser never raises on degenerate input",
           "disposition": "tested",
-          "evidence": "test_audit_detector.py + test_audit_group_b.py + test_audit_groups_a_d.py (pins updated to A-I) PASSED"
+          "evidence": "test_fr_fold_map.py::test_parser_never_raises_on_degenerate_input[5 params] PASSED"
         },
         {
-          "behavior": "Group I is inside the Stop-hook full-coverage gate (no false dismiss)",
+          "behavior": "Defects are deterministically ordered and content is merge-order independent",
           "disposition": "tested",
-          "evidence": "test_audit_compliance_on_stop.py (pins updated to A-I) PASSED"
+          "evidence": "test_fr_fold_map_hardening.py::test_defects_are_deterministically_ordered_regardless_of_merge_order + test_fr_fold_map_review_findings.py::test_conflicting_survivor_content_is_identical_in_either_merge_order PASSED"
         },
         {
-          "behavior": "rulebook exists, is non-empty, and retains every cited section",
+          "behavior": "Defect carries line number + bounded raw; a lowercase id is a loud defect",
           "disposition": "tested",
-          "evidence": "test_fr_authoring_refs.py::test_rulebook_* (7) PASSED"
+          "evidence": "test_fr_fold_map_hardening.py::test_defect_carries_line_number_and_bounded_raw + ::test_lowercase_id_is_a_LOUD_defect_not_a_silent_normalisation PASSED"
         },
         {
-          "behavior": "all four FR-authoring surfaces still cite the rulebook",
+          "behavior": "load_shared_lib wins on sys.path PRECEDENCE, restores the path, never shadows a plugin lib",
           "disposition": "tested",
-          "evidence": "test_fr_authoring_refs.py::test_fr_authoring_surface_cites_the_rulebook (4 params) PASSED"
+          "evidence": "test_lib_loader_precedence.py (7 cases) PASSED"
         },
         {
-          "behavior": "adopt's contradicting guidance stays removed AND the new rule is positively present",
+          "behavior": "Module extractions preserve every historical import path",
           "disposition": "tested",
-          "evidence": "test_fr_authoring_refs.py::test_adopt_no_longer_carries_the_contradicting_guidance + test_adopt_positively_states_the_plain_language_rule PASSED"
+          "evidence": "F0 suite GREEN 18/18 units - parse_frs/FR/tokenize/jaccard still import from their original modules"
         },
         {
-          "behavior": "both iterate paths still carry the MINT-vs-FOLD gate",
+          "behavior": "RETIREMENT BEATS FOLDING: a removed FR is never fold-rescued, so the F11 removal gate stays HARD",
           "disposition": "tested",
-          "evidence": "test_fr_authoring_refs.py::test_iterate_paths_carry_the_mint_vs_fold_gate (2 params) PASSED"
+          "evidence": "test_test_links_fold_map_hardening.py::test_removing_an_fr_and_folding_it_does_NOT_rescue_its_dead_tags + test_backfill_fold_map.py::test_a_removed_folded_id_is_not_rescued_by_the_backfill_engine PASSED"
         },
         {
-          "behavior": "agents actually author better FR prose given the new instructions",
-          "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "evidence": "LLM prose quality has no deterministic oracle. Mitigated structurally: Group I measures the OUTPUT, and the real-spec probe shows it discriminates human-clean from human-dirty specs with zero false positives."
+          "behavior": "A genuinely folded (absent) id is still rescued - the retirement guard is not over-broad",
+          "disposition": "tested",
+          "evidence": "test_test_links_fold_map_hardening.py::test_a_genuinely_folded_id_absent_from_the_table_is_still_rescued PASSED"
         },
         {
-          "behavior": "the audit group registry, the detector's default run set, and the Stop-hook coverage gate agree on the group set — so a newly registered group cannot run while the gate still reports full coverage and dismisses the backlog item",
+          "behavior": "Orphan reason names the terminal: fr_removed vs fr_absent",
           "disposition": "tested",
-          "category": "integration",
-          "evidence": "shared/tests/test_audit_group_registry_stop_gate_integration.py (3 tests, real registry + real run_all + real coverage_ok) PASSED. Mutation-probed: reverting _EXPECTED_GROUPS to {A..H} fails it, restoring passes — it catches the exact HIGH false-dismiss the review round found."
+          "evidence": "test_test_links_fold_map_hardening.py::test_a_chain_ending_at_a_REMOVED_survivor_reports_fr_removed + ::test_a_chain_to_nowhere_still_reports_fr_absent PASSED"
         },
         {
-          "behavior": "the prose detectors run in linear time on pathological input (no ReDoS) — they scan arbitrary spec text, and adopt reverse-engineers that text from a foreign repo, so a hung detector would wedge the whole compliance audit",
+          "behavior": "A healthy chain through a dead intermediate emits NO defect (no false-red)",
           "disposition": "tested",
-          "evidence": "test_audit_group_i_detectors.py::test_detectors_are_linear_on_pathological_input PASSED (5 hostile inputs incl. 4000-char word runs, < 2s ceiling)"
+          "evidence": "test_test_links_fold_map_hardening.py::test_a_chain_through_a_removed_intermediate_resolves_with_NO_defect PASSED"
         },
         {
-          "behavior": "the ReDoS fix did not weaken file-path detection, incl. .tsx not read as .ts + x",
+          "behavior": "Three specs claiming one folded id yield exactly ONE conflict defect",
           "disposition": "tested",
-          "evidence": "test_file_path_detection_survived_the_redos_fix + test_tsx_is_not_read_as_ts_plus_x PASSED; real-spec probe re-run unchanged at 45%/93% dirty vs 0%/0% clean"
+          "evidence": "test_fr_fold_map_review_findings.py::test_three_specs_claiming_one_id_yield_ONE_conflict_defect PASSED"
+        },
+        {
+          "behavior": "A row with BOTH ids malformed is reported; the real header row still is not",
+          "disposition": "tested",
+          "evidence": "test_fr_fold_map_review_findings.py::test_a_row_with_both_ids_malformed_is_still_reported + ::test_the_real_header_row_is_still_not_a_defect PASSED"
+        },
+        {
+          "behavior": "A cycle does not swallow the folded-id status diagnostic",
+          "disposition": "tested",
+          "evidence": "test_fr_fold_map_review_findings.py::test_a_cycle_does_not_swallow_the_folded_id_status_diagnostic PASSED"
+        },
+        {
+          "behavior": "One test with a folded AND a direct tag yields one link with direct provenance (no cross-node aliasing)",
+          "disposition": "tested",
+          "evidence": "test_test_links_fold_map_hardening.py::test_a_folded_and_a_direct_tag_on_one_test_yield_one_link_with_direct_provenance PASSED"
+        },
+        {
+          "behavior": "The fold-skip in BOTH FR-table parsers is non-vacuous",
+          "disposition": "tested",
+          "evidence": "test_backfill_fold_map.py::test_an_UNBACKTICKED_fold_table_is_not_read_as_live_requirements PASSED - MUTATION-VERIFIED: disabling the skip fails exactly this test"
         }
       ],
       "counts": {
-        "total": 29,
-        "tested": 28,
-        "untestable": 1,
+        "testable": 33,
+        "tested": 33,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 6,
-        "covered_acs": 6
+        "acs": 7,
+        "covered_acs": 7
       }
     }
   },

@@ -1,36 +1,37 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-18-fr-authoring-rules"
+run_id: "iterate-2026-07-18-fr-fold-map-resolution"
 phase: "iterate"
-reason: "iterate: FR-authoring rules — plain business language + capability altitude"
-timestamp: "2026-07-18T06:57:33.583714+00:00"
+reason: "iterate: resolve tagged FR ids through the spec FR-Fold-Map so granular @covers tags survive a taxonomy fold"
+timestamp: "2026-07-18T09:10:19.724932+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-18 06:57:33 UTC
+> Auto-generated 2026-07-18 09:10:19 UTC
 
 ## Session Info
 
-- **Session ID**: b81cbdd9-0e92-4b90-a7bc-b582277c381a
-- **Timestamp**: 2026-07-18 06:57:33 UTC
-- **Reason**: iterate: FR-authoring rules — plain business language + capability altitude
+- **Session ID**: 3b3d60c1-1bff-42d2-bb57-037c86798a90
+- **Timestamp**: 2026-07-18 09:10:19 UTC
+- **Reason**: iterate: resolve tagged FR ids through the spec FR-Fold-Map so granular @covers tags survive a taxonomy fold
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-18-fr-authoring-rules
-- **Date**: 2026-07-18T06:41:35.245945Z
+- **Run ID**: iterate-2026-07-18-fr-fold-map-resolution
+- **Date**: 2026-07-18T09:10:14.140286Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/fr-authoring-rules
-- **ADR**: iterate-2026-07-18-fr-authoring-rules
+- **Branch**: iterate/fr-fold-map-resolution
+- **ADR**: iterate-2026-07-18-fr-fold-map-resolution
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-18-fr-authoring-rules.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-18-fr-fold-map-resolution.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/fr-authoring-rules
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-18-fr-authoring-rules.md
+- **Branch**: iterate/fr-fold-map-resolution
+- **Run ID**: `iterate-2026-07-18-fr-fold-map-resolution`
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-18-fr-fold-map-resolution.md
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -49,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/fr-authoring-rules
-- **Last Commit**: 063dd3d2 feat(fr-authoring): plain-language capability-level FR rules + advisory hygiene audit
+- **Branch**: iterate/fr-fold-map-resolution
+- **Last Commit**: c62e7233 wip: F5/F2/F3a artifacts
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -66,17 +67,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-c5a8b243 | grade_snapshot | — | 2026-07-18 |
+| evt-6236a879 | work_completed | iterate (iterate: resolve tagged FR ids through the spec FR-Fold-Map so granular @covers tags survive a taxonomy fold) | 2026-07-18 |
 | evt-8f153abe | grade_snapshot | — | 2026-07-18 |
 | evt-5f2814df | grade_snapshot | — | 2026-07-18 |
 | evt-07d2258f | work_completed | iterate (iterate: FR-authoring rules — plain business language + capability altitude + advisory hygiene audit) | 2026-07-18 |
-| evt-6fabb1e3 | grade_snapshot | — | 2026-07-18 |
-| evt-a84a5f44 | work_completed | iterate (Admit test-traceability.json to the churn allowlist + regenerate-staging + integrate rollback (mirror ci-security CR-1), so origin/main merges auto-resolve it instead of aborting) | 2026-07-18 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 324
-- **Last iterate**: change — iterate: FR-authoring rules — plain business language + capability altitude + advisory hygiene audit (2026-07-18)
+- **Total work events**: 325
+- **Last iterate**: change — iterate: resolve tagged FR ids through the spec FR-Fold-Map so granular @covers tags survive a taxonomy fold (2026-07-18)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

@@ -1,0 +1,1 @@
+Shared compliance modules now load reliably regardless of which plugin's code is on the import path first — previously a shared module could fail to load with `ModuleNotFoundError` depending on the order tests happened to run in.

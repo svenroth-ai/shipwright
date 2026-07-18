@@ -39,33 +39,35 @@ Orphan categories (Spec §11-R4) — never brand every unmapped test stale:
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass, field
 
 AUTO_WRITE_THRESHOLD = 0.90
-TITLE_MIN = 0.30            # below this, title similarity is noise
-TITLE_CAP = 0.70           # title similarity can never reach the auto-write floor
-LLM_CAP = 0.60             # nor can the LLM leg
+LLM_CAP = 0.60             # the LLM leg can never reach the auto-write floor either
 _CONF = {"path_fr_token": 0.98, "unique_split": 0.95, "unique_commit": 0.90}
 _DETERMINISTIC = frozenset(_CONF)
 
-_STOPWORDS = frozenset({
-    "test", "tests", "the", "a", "an", "to", "of", "and", "or", "is", "are", "be",
-    "can", "should", "when", "then", "with", "for", "in", "on", "at", "it", "its",
-    "that", "this", "as", "by", "from", "into", "user", "users", "does", "do",
-})
-_TOKEN_RE = re.compile(r"[a-z0-9]+")
+# The fuzzy title-similarity leg lives in its own module; re-exported here because
+# callers (and __all__) have always imported these names from backfill_signals.
+try:  # flat import off shared/scripts/lib on sys.path (tool + tests).
+    from _backfill_title_sim import TITLE_CAP, TITLE_MIN, jaccard, title_scores, tokenize
+except ImportError:  # loaded as a package (lib.backfill_signals).
+    from ._backfill_title_sim import (  # type: ignore
+        TITLE_CAP, TITLE_MIN, jaccard, title_scores, tokenize,
+    )
 
 
-def tokenize(text: str) -> set[str]:
-    """Lower-case alphanumeric tokens minus stopwords (title-similarity input)."""
-    return {t for t in _TOKEN_RE.findall(text.lower()) if t not in _STOPWORDS and len(t) > 2}
+def _resolve_fold():
+    """The shared fold resolver, imported lazily and BOTH ways (ADR-045).
 
-
-def jaccard(a: set[str], b: set[str]) -> float:
-    if not a or not b:
-        return 0.0
-    return len(a & b) / len(a | b)
+    Lazy so ``fr_fold_map`` is not a load-time dependency of the cascade; dual-form so it
+    works whether this module was imported flat (``backfill_signals``) or as a package
+    (``lib.backfill_signals``) — a flat-only import silently breaks the package path.
+    """
+    try:
+        from fr_fold_map import resolve_fold
+    except ImportError:
+        from .fr_fold_map import resolve_fold  # type: ignore
+    return resolve_fold
 
 
 def split_of_fr(fr_id: str) -> str:
@@ -106,10 +108,28 @@ class Ctx:
     adjudicator: object | None = None
     use_llm: bool = False
     split_convention: bool = False   # trust a bare NN- filename as a split id
+    fold_map: object | None = None   # merged ## FR-Fold-Map (folded id -> survivor)
+
+    def resolve_tag(self, fr: str) -> tuple[str | None, str | None]:
+        """``(survivor, terminal)`` for a tagged id. ``survivor`` None ⇒ rescues nothing.
+
+        Delegates to the SHARED ``fr_fold_map.resolve_fold`` rather than re-deriving the
+        walk, so this engine and the compliance collector can never disagree about what a
+        folded tag means (pinned by a cross-consumer test). ``terminal`` — the id the walk
+        stopped at — lets the caller name an unrescued tag honestly: a chain ending at a
+        RETIRED FR is ``fr_removed``, not ``fr_absent``."""
+        if fr in self.active_ids:
+            return fr, fr
+        if fr in self.removed_ids:
+            return None, fr   # retirement beats folding — see fr_fold_map's module note
+        if self.fold_map is None or not getattr(self.fold_map, "edges", None):
+            return None, None
+        res = _resolve_fold()(self.fold_map, fr, is_active=lambda f: f in self.active_ids)
+        return res.survivor, res.terminal
 
 
 def build_ctx(frs, *, commit_frs=None, adjudicator=None, use_llm=False,
-              split_convention=False) -> Ctx:
+              split_convention=False, fold_map=None) -> Ctx:
     frs_by_id = {fr.id: fr for fr in frs}
     active = {fr.id for fr in frs if fr.status == "active"}
     removed = {fr.id for fr in frs if fr.status == "removed"}
@@ -117,7 +137,7 @@ def build_ctx(frs, *, commit_frs=None, adjudicator=None, use_llm=False,
     for fid in active:
         split_index.setdefault(split_of_fr(fid), []).append(fid)
     return Ctx(frs_by_id, active, removed, split_index, commit_frs or {},
-               adjudicator, use_llm, split_convention)
+               adjudicator, use_llm, split_convention, fold_map)
 
 
 def _merge(cands: dict[str, Candidate], fr: str, conf: float, signal: str) -> None:
@@ -131,17 +151,7 @@ def _merge(cands: dict[str, Candidate], fr: str, conf: float, signal: str) -> No
 
 
 def _title_scores(record, ctx: Ctx, only_ids: set) -> list[tuple[str, float]]:
-    name_tokens = tokenize(record.name)
-    scored = []
-    for fid in only_ids:
-        fr = ctx.frs_by_id.get(fid)
-        if fr is None:
-            continue
-        sim = jaccard(name_tokens, tokenize(fr.text))
-        if sim >= TITLE_MIN:
-            scored.append((fid, min(sim, TITLE_CAP)))
-    scored.sort(key=lambda x: (-x[1], x[0]))
-    return scored
+    return title_scores(record.name, ctx.frs_by_id, only_ids)
 
 
 def _run_llm(record, ctx: Ctx, candidate_ids: list[str]) -> Candidate | None:
@@ -178,15 +188,23 @@ def resolve_test(record, ctx: Ctx) -> Resolution:
     res = Resolution(test_id=record.test_id)
 
     # Signal (a): explicit existing tags. Honour live ones; NEVER re-write
-    # (idempotent). EVERY dead tag becomes its own confirmed orphan so TT7/TT8
-    # triage sees all of them — even a mixed live/dead or multi-dead test.
+    # (idempotent). A tag naming a FOLDED id is honoured as coverage of its surviving
+    # FR (``## FR-Fold-Map``) rather than branded a confirmed orphan — otherwise a spec
+    # taxonomy fold would make the engine both report false orphans AND propose a
+    # redundant re-tag of a test that is already correctly labelled. Only a tag that
+    # rescues nothing becomes its own confirmed orphan, so TT7/TT8 triage still sees
+    # every genuinely dead one — even on a mixed live/dead or multi-dead test.
     if record.is_tagged:
-        res.honoured = [f for f in record.existing_frs if f in ctx.active_ids]
         for fr in record.existing_frs:
-            if fr not in ctx.active_ids:
+            survivor, terminal = ctx.resolve_tag(fr)
+            if survivor is None:
+                # Name it by what the tag points AT: a chain ending at a retired FR is
+                # `fr_removed`, not the misleading `fr_absent` the folded id implies.
                 res.orphans.append({
                     "category": "confirmed_orphan", "tagged_fr": fr,
-                    "reason": _dead_reason(ctx, fr)})
+                    "reason": _dead_reason(ctx, terminal or fr)})
+            elif survivor not in res.honoured:
+                res.honoured.append(survivor)
         return res
 
     # Untagged: run the deterministic-first cascade. Candidates against a LIVE FR

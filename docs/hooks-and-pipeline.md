@@ -134,7 +134,7 @@ artifact has exactly one documented resolution strategy:
 | `.shipwright/compliance/traceability-matrix.md` | **regenerate** |
 | `.shipwright/compliance/change-history.md` | **regenerate** |
 | `.shipwright/compliance/ci-security.json` | **regenerate** (structured CI-security summary; best-effort refresh from the latest `security.yml` run, else the mainline `--theirs` placeholder stands) |
-| `.shipwright/compliance/test-traceability.json` | **regenerate** (structured requirement→test traceability snapshot from the `test_links` collector; re-derived by the same `_update_compliance --phase iterate` producer, else the `--theirs` placeholder stands) |
+| `.shipwright/compliance/test-traceability.json` | **regenerate** (structured requirement→test traceability snapshot from the `test_links` collector; re-derived by the same `_update_compliance --phase iterate` producer, else the `--theirs` placeholder stands). **Fold-map resolution (iterate-2026-07-18-fr-fold-map-resolution):** when a spec declares a `## FR-Fold-Map`, a tag on a folded FR id is filed against its surviving FR (link carries `resolved_from`) instead of orphaning, and the manifest additionally carries `fold_map` + `fold_defects`. Those three keys are **omitted entirely** when the repo declares no fold-map, so a project without one regenerates a byte-identical artifact and this row's merge behaviour is unchanged. |
 | `.shipwright/agent_docs/build_dashboard.md` | **regenerate** |
 | `.shipwright/agent_docs/session_handoff.md` | **regenerate** |
 | `.shipwright/agent_docs/triage_inbox.md` | **regenerate** |

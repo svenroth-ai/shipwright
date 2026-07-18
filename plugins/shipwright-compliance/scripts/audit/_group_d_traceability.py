@@ -16,10 +16,12 @@ stays ADVISORY and the remedy is deferred to TT5 rather than crediting a false-g
 
 - **``D-orphan``.** Surfaces ``manifest.orphans`` fail-closed: ``confirmed_orphan`` → MEDIUM,
   ``possible_orphan`` (incl. a tag fanned onto a collision id) → LOW, an **unknown category**
-  → LOW (never silently dropped), ``unmapped`` → informational, and ``invalid_tags`` (a
-  malformed ``@covers`` typo that silently under-covers) → LOW hygiene. The pass branch fires
-  ONLY when there is nothing to surface. The diff-scoped "bare tag removal on a *changed*
-  test = HARD" gate needs base+head and is TT5's F11 job.
+  → LOW (never silently dropped), ``unmapped`` → informational, ``invalid_tags`` → LOW
+  hygiene, and ``fold_defects`` → LOW hygiene (a broken ``## FR-Fold-Map`` means some tag did
+  NOT reach its survivor — silent under-coverage of the same class). A tag on a *healthy*
+  folded id is no longer an orphan at all: the collector resolves it to the surviving FR.
+  The pass branch fires ONLY when there is nothing to surface. The diff-scoped "bare tag
+  removal on a *changed* test = HARD" gate needs base+head and is TT5's F11 job.
 
 - **``D-layer``.** An active FR whose ``required_layers`` include a layer with no
   executed-passing tagged test (``coverage[layer] != "ok"``; R1). Severity routing:
@@ -28,8 +30,8 @@ stays ADVISORY and the remedy is deferred to TT5 rather than crediting a false-g
   (``inferred_legacy`` / ``defaulted_legacy``) → ADVISORY (the pre-TT8 monorepo valve);
   a **collision (fan-out) id** → ADVISORY regardless of provenance and DEFERRED to TT5 (its
   ``ok`` is never credited — fail-closed vs false-green — but a HARD block would be a
-  false-red: a collision explicit FR is structurally unsatisfiable under un-namespaced tags,
-  whose remedy = namespaced/per-split tags = TT5). ``invalid_layers`` → HARD hygiene.
+  false-red: such an FR is structurally unsatisfiable under un-namespaced tags, whose
+  remedy = namespaced/per-split tags = TT5). ``invalid_layers`` → HARD hygiene.
 """
 
 from __future__ import annotations
@@ -41,6 +43,15 @@ from scripts.audit._group_d_manifest import (
     fanned_possible_orphans,
     load_manifest,
     manifest_present,
+)
+from scripts.audit._group_d_render import (
+    fold_defect_line,
+    invalid_layer_line,
+    invalid_tag_line,
+    layer_gap_line,
+    orphan_line,
+    suggest_layer,
+    suggest_orphan,
 )
 from scripts.audit.audit_adapters import Finding, SOURCE_DETECTIVE_ONLY
 
@@ -59,27 +70,11 @@ def _max_sev(sevs: set[str]) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _suggest_orphan(fr: str | None) -> str:
-    # The specific test path stays in *evidence* (untrusted repo content), never in this
-    # copy-paste command — a test id with a quote/shell metachar would break it. ``fr`` is
-    # schema-pinned ``FR-\d{2}\.\d{2}`` (or None), so it is safe to interpolate.
-    target = f"for {fr} " if fr else ""
-    return (
-        f"/shipwright-iterate --type change \"retarget or retire the orphaned "
-        f"test(s) {target}— see .shipwright/compliance/test-traceability.json\""
-    )
-
-
-def _orphan_line(o: dict, tag: str) -> str:
-    fr = o.get("tagged_fr")
-    target = f"→ {fr}" if fr else "(no live FR)"
-    return f"{o.get('test', '?')} {target} ({o.get('reason', '')}) [{tag}]"
-
-
 def check_orphan(manifest: dict) -> tuple[str, str, str, list[str], str | None]:
     """(status, severity, detail, evidence, suggested_cmd) for D-orphan."""
     orphans = manifest.get("orphans") or []
     invalid_tags = manifest.get("invalid_tags") or []
+    fold_defects = manifest.get("fold_defects") or []
     confirmed = [o for o in orphans if o.get("category") == "confirmed_orphan"]
     possible = [o for o in orphans if o.get("category") == "possible_orphan"]
     unmapped = [o for o in orphans if o.get("category") == "unmapped"]
@@ -90,22 +85,23 @@ def check_orphan(manifest: dict) -> tuple[str, str, str, list[str], str | None]:
     possible = possible + other + fanned
 
     # Clean pass ONLY when nothing needs surfacing. ``unmapped`` alone is informational
-    # (R4 — not a stale-feature accusation), but invalid_tags is a real hygiene defect.
-    if not confirmed and not possible and not invalid_tags:
+    # (R4 — not a stale-feature accusation), but invalid_tags is a real hygiene defect —
+    # and so is a broken fold-map: every one of its defects means some tag did NOT get
+    # resolved to its survivor, so leaving it invisible would hide silent under-coverage.
+    if not confirmed and not possible and not invalid_tags and not fold_defects:
         if unmapped:
             return ("pass", "LOW",
                     f"{len(unmapped)} unmapped test(s) (informational — not orphans)",
-                    [_orphan_line(o, "unmapped") for o in unmapped], None)
+                    [orphan_line(o, "unmapped") for o in unmapped], None)
         return ("pass", "MEDIUM", "no test is tagged with a removed/absent FR", [], None)
 
     severity = "MEDIUM" if confirmed else "LOW"
     evidence = (
-        [_orphan_line(o, "confirmed") for o in confirmed]
-        + [_orphan_line(o, "possible") for o in possible]
-        + [f"{iv.get('test', '?')}: malformed tag {iv.get('raw', '')!r} "
-           f"({iv.get('reason', 'invalid')}) — silent under-coverage [invalid_tag]"
-           for iv in invalid_tags]
-        + [_orphan_line(o, "unmapped") for o in unmapped]
+        [orphan_line(o, "confirmed") for o in confirmed]
+        + [orphan_line(o, "possible") for o in possible]
+        + [invalid_tag_line(iv) for iv in invalid_tags]
+        + [fold_defect_line(fd) for fd in fold_defects]
+        + [orphan_line(o, "unmapped") for o in unmapped]
     )
     parts: list[str] = []
     if confirmed:
@@ -114,11 +110,13 @@ def check_orphan(manifest: dict) -> tuple[str, str, str, list[str], str | None]:
         parts.append(f"{len(possible)} possible (heuristic / ambiguous fan-out)")
     if invalid_tags:
         parts.append(f"{len(invalid_tags)} malformed @FR tag(s)")
+    if fold_defects:
+        parts.append(f"{len(fold_defects)} FR-Fold-Map defect(s)")
     head = confirmed[0] if confirmed else (possible[0] if possible else None)
     ref = (f"; e.g. {head.get('test', '?')} → {head.get('tagged_fr')}") if head else ""
     detail = "test-tag defects — " + "; ".join(parts) + ref
     return ("fail", severity, detail, evidence,
-            _suggest_orphan(head.get("tagged_fr") if head else None))
+            suggest_orphan(head.get("tagged_fr") if head else None))
 
 
 # ---------------------------------------------------------------------------
@@ -159,14 +157,7 @@ def check_layer(manifest: dict) -> tuple[str, str, str, list[str], str | None]:
             else:
                 advisory.append(gap)                 # known legacy → advisory
 
-    def _line(g: tuple, tag: str) -> str:
-        disp, layer, priority, reason, source = g
-        return f"{disp} [{layer}] ({priority}) — {reason} [{tag}, {source}]"
-
-    inv_lines = [
-        f"{iv.get('fr', '?')} invalid Layers cell {iv.get('raw', '')!r} [HARD, explicit]"
-        for iv in invalid
-    ]
+    inv_lines = [invalid_layer_line(iv) for iv in invalid]
 
     if hard or invalid:
         sevs = {_PRIORITY_TO_SEVERITY.get(p, "LOW") for (_, _, p, _, _) in hard}
@@ -180,13 +171,9 @@ def check_layer(manifest: dict) -> tuple[str, str, str, list[str], str | None]:
         if advisory:
             parts.append(f"{len(advisory)} advisory gap(s)")
         detail = "post-rollout coverage gaps — " + "; ".join(parts)
-        evidence = ([_line(g, "HARD") for g in hard] + inv_lines
-                    + [_line(g, "advisory") for g in advisory])
-        suggest = (
-            "/shipwright-iterate --type change \"add an executed-passing test at the "
-            "missing layer(s) — see .shipwright/compliance/audit-report.md\""
-        )
-        return "fail", _max_sev(sevs), detail, evidence, suggest
+        evidence = ([layer_gap_line(g, "HARD") for g in hard] + inv_lines
+                    + [layer_gap_line(g, "advisory") for g in advisory])
+        return "fail", _max_sev(sevs), detail, evidence, suggest_layer()
 
     if advisory:  # no HARD gaps → pass, but surface the advisory (legacy + collision) gaps
         n_amb = sum(1 for g in advisory if g[3] == "ambiguous_fanout")
@@ -194,7 +181,8 @@ def check_layer(manifest: dict) -> tuple[str, str, str, list[str], str | None]:
             f"no explicit FR is missing a required layer; {len(advisory)} advisory gap(s) "
             f"({n_amb} ambiguous fan-out — deferred to TT5; rest pre-rollout legacy)"
         )
-        return ("pass", "LOW", detail, [_line(g, "advisory") for g in advisory], None)
+        return ("pass", "LOW", detail,
+                [layer_gap_line(g, "advisory") for g in advisory], None)
     return "pass", "LOW", "every active FR is covered at its required layers", [], None
 
 

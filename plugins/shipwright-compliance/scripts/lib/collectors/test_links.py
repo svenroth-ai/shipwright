@@ -26,6 +26,7 @@ import argparse
 import json
 from pathlib import Path
 
+from . import _test_links_fold as foldwire
 from . import _test_links_io as io
 from ._lib_loader import load_shared_lib
 from ._requirement_parse import parse_requirements
@@ -52,7 +53,7 @@ def _cov_status(links: list[dict]) -> str:
     return "ok" if passing else "MISSING"
 
 
-def _make_link(hit, layer: str, evidence: dict) -> dict:
+def _make_link(hit, layer: str, evidence: dict, *, resolved_from: str = "") -> dict:
     ev = evidence.get(hit.test, {})
     # Normalize to the frozen closed vocab FAIL-CLOSED — an out-of-vocab evidence value
     # (TT-EV owns the full contract) degrades to a non-enabled/not-run value so a forged
@@ -60,7 +61,7 @@ def _make_link(hit, layer: str, evidence: dict) -> dict:
     # no evidence at all keeps status "enabled" but executed "not_run" (⇒ not ok).
     status = ev.get("status", "enabled")
     executed = ev.get("executed", "not_run")
-    return {
+    link = {
         "id": hit.test,
         "path": hit.test,
         "layer": layer,
@@ -68,6 +69,12 @@ def _make_link(hit, layer: str, evidence: dict) -> dict:
         "executed": executed if executed in _EXECUTED_VOCAB else "not_run",
         "tag_source": hit.tag_source,
     }
+    # Provenance ONLY, and only when a fold was actually used — the link is filed against
+    # the surviving FR, so `resolved_from` records the folded id the source literally
+    # carries. Omitted otherwise so a repo with no fold-map emits a byte-identical link.
+    if resolved_from:
+        link["resolved_from"] = resolved_from
+    return link
 
 
 def build_manifest(
@@ -94,18 +101,19 @@ def build_manifest(
     # 1. Requirements from every spec (namespaced by the spec's parent dir).
     requirements: dict = {}          # manifest key → Requirement
     by_display_id: dict[str, list] = {}
-    spec_texts: list[str] = []
     invalid_layers: list = []        # FRs whose Layers cell has no valid canonical layer
-    for spec in spec_files:
-        text = Path(spec).read_text(encoding="utf-8", errors="ignore")
-        spec_texts.append(text)
+    entries = foldwire.spec_entries(spec_files, project_root, io.rel)
+    spec_texts = [text for text, _ in entries]
+    for (text, rel_spec), spec in zip(entries, spec_files):
         namespace = Path(spec).resolve().parent.name
-        rel_spec = io.rel(spec, project_root)
         for req in parse_requirements(
             text, namespace=namespace, spec_path=rel_spec, invalid_layers=invalid_layers,
         ):
             requirements[req.key] = req
             by_display_id.setdefault(req.id, []).append(req)
+
+    # Each spec's ``## FR-Fold-Map`` alias table (folded id → surviving capability FR).
+    fold_ctx = foldwire.build_fold_context(entries, by_display_id)
 
     # 2. Tags + test enumeration across every test file.
     hits: list = []
@@ -135,15 +143,38 @@ def build_manifest(
         tagged_ids.add(h.test)
         matches = by_display_id.get(h.fr_id, [])
         active = [r for r in matches if r.is_active]
+        # FALLBACK ONLY (never an override): a tag naming a LIVE FR binds there and the
+        # fold-map is not consulted. Only a tag that would otherwise orphan is offered to
+        # the map, so a granular tag survives a later taxonomy fold instead of turning
+        # into a confirmed orphan (webui #287: 66 FRs → 29 capabilities ⇒ 419 orphans).
+        resolved_from = terminal = ""
+        if not active:
+            active, resolved_from, terminal = foldwire.resolve_binding(
+                fold_ctx, h.fr_id, by_display_id)
         if active:
             layer = layer_by_test.get(h.test, io.detect_layer(h.test.split("::")[0]))
-            link = _make_link(h, layer, evidence)
+            link = _make_link(h, layer, evidence, resolved_from=resolved_from)
             for r in active:
                 bucket = tests_by_key.setdefault(r.key, {}).setdefault(layer, [])
-                if not any(l["id"] == link["id"] and l["tag_source"] == link["tag_source"] for l in bucket):
-                    bucket.append(link)
+                dup = next((l for l in bucket if l["id"] == link["id"]
+                            and l["tag_source"] == link["tag_source"]), None)
+                if dup is None:
+                    # A COPY per bucket: a collision display id files one hit into several
+                    # requirement nodes, and sharing one dict would let the supersede
+                    # branch below mutate a sibling node's link by aliasing.
+                    bucket.append(dict(link))
+                elif not resolved_from:
+                    # The same test also carries a DIRECT tag for this FR. The direct
+                    # binding is the truer provenance, so it supersedes the fold-resolved
+                    # one rather than adding a second link for the same (test, source).
+                    dup.pop("resolved_from", None)
         else:
-            reason = "fr_removed" if matches else "fr_absent"
+            # Classify by what the tag actually points AT. The tagged id itself is the
+            # first answer; failing that, the id the fold walk stopped at — so a tag whose
+            # survivor was RETIRED reads `fr_removed` rather than the misleading
+            # `fr_absent` ("this FR never existed") the folded id alone would imply.
+            dead = matches or (by_display_id.get(terminal) if terminal else None)
+            reason = "fr_removed" if dead else "fr_absent"
             orphans.append({
                 "test": h.test, "tagged_fr": h.fr_id,
                 "reason": reason, "category": "confirmed_orphan",
@@ -197,6 +228,10 @@ def build_manifest(
         # surfaced here so the finding can name the bad raw token (Spec §11-R4).
         "invalid_layers": invalid_layers,
         "untagged_tests": sorted(all_test_ids - tagged_ids),
+        # `fold_map` / `fold_defects` are present ONLY when the repo actually declares a
+        # fold-map, so a project without one emits a byte-identical manifest (this
+        # artifact is committed churn — an empty key would diff on every regen).
+        **fold_ctx.as_manifest_fields(),
     }
 
 

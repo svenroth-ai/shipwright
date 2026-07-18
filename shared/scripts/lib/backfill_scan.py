@@ -27,15 +27,18 @@ try:  # flat import off shared/scripts/lib on sys.path (tool + tests).
     from fr_tag_grammar import parse_source
     from fr_tag_grammar import _TEST_DECL_RE  # the ONE shared decl matcher (no divergence)
     from requirement_model import CANONICAL_FR_RE
+    # Re-exported: the spec FR-table parser moved to its own module when fold-map
+    # awareness pushed this file past the 300-LOC cap. Import path unchanged for callers.
+    from _backfill_spec_parse import FR, parse_frs  # noqa: F401
 except ImportError:  # loaded as a package (lib.backfill_scan).
     from .fr_tag_grammar import parse_source, _TEST_DECL_RE  # type: ignore
     from .requirement_model import CANONICAL_FR_RE  # type: ignore
+    from ._backfill_spec_parse import FR, parse_frs  # type: ignore # noqa: F401
 
 # A canonical FR token anywhere in a path/filename (signal b — exact).
 _PATH_FR_RE = re.compile(r"FR-\d{2}\.\d{2}")
 # The RTM split-prefix convention: a leading ``NN-`` on the filename ↔ split NN.
 _SPLIT_PREFIX_RE = re.compile(r"^(\d{2})-")
-_HEADING_RE = re.compile(r"^(#{1,6})\s+(\S.*?)\s*$")
 
 _PY_SUFFIXES = (".py",)
 _TS_SUFFIXES = (".ts", ".tsx", ".js", ".jsx", ".mts", ".cts")
@@ -45,16 +48,6 @@ _PRUNE_DIRS = frozenset({
     "build", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".tox", ".next",
 })
 _INTEGRATION_DIRS = frozenset({"integration", "integration-tests"})
-_TITLE_COLS = ("description", "name", "text", "requirement", "title")
-
-
-@dataclass(frozen=True)
-class FR:
-    """One functional requirement as the backfill engine needs it (id/text/status)."""
-
-    id: str
-    text: str
-    status: str  # "active" | "removed"
 
 
 @dataclass
@@ -169,55 +162,6 @@ def scan_tests(roots: list[Path], base: Path) -> list[TestRecord]:
                 existing_frs=list(by_test.get(test_id, [])),
             ))
     return records
-
-
-def _row_cells(line: str) -> list[str] | None:
-    s = line.strip()
-    if not s.startswith("|"):
-        return None
-    return [c.strip() for c in s.strip("|").split("|")]
-
-
-def parse_frs(spec_text: str) -> list[FR]:
-    """Parse a spec.md FR table into ``FR`` records — active AND removed rows.
-
-    Unlike ``drift_parsers.parse_fr_table`` (which drops removed rows), the
-    backfill engine needs the removed set to categorise ``confirmed`` /
-    ``possible`` orphans, so this loop keeps both with a ``status``.
-    """
-    out: list[FR] = []
-    in_removed = False
-    removed_level = 0
-    header: dict[str, int] | None = None
-    for line in spec_text.splitlines():
-        h = _HEADING_RE.match(line)
-        if h:
-            level = len(h.group(1))
-            if h.group(2).strip().lower().startswith("removed requirements"):
-                in_removed, removed_level = True, level
-            elif in_removed and level <= removed_level:
-                in_removed = False
-            continue
-        cells = _row_cells(line)
-        if not cells or len(cells) < 2:
-            continue
-        if not CANONICAL_FR_RE.match(cells[0]):
-            low = [c.lower() for c in cells]
-            if "priority" in low:
-                header = {n: i for i, n in enumerate(low)}
-            continue
-        fr_id = cells[0]
-        text = ""
-        if header:
-            for n in _TITLE_COLS:      # _TITLE_COLS never contains "priority"
-                idx = header.get(n)
-                if idx is not None and idx < len(cells):
-                    text = cells[idx]
-                    break
-        if not text:
-            text = cells[1] if len(cells) > 1 else ""
-        out.append(FR(id=fr_id, text=text, status="removed" if in_removed else "active"))
-    return out
 
 
 def _load_events_fr_by_commit(project_root: Path) -> dict[str, set[str]]:

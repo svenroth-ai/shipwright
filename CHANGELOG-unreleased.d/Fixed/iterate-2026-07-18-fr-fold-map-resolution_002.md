@@ -1,0 +1,1 @@
+A requirements table that lists fold aliases without backticks is no longer misread as declaring those old IDs as live requirements (which would have demanded test coverage for requirements that no longer exist).
