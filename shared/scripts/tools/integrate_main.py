@@ -31,7 +31,12 @@ from pathlib import Path
 _SCRIPTS_DIR = Path(__file__).resolve().parent.parent  # shared/scripts
 sys.path.insert(0, str(_SCRIPTS_DIR))
 
-from lib.churn_merge import CI_SECURITY_SUMMARY, DERIVED_MDS, is_campaign_status  # noqa: E402
+from lib.churn_merge import (  # noqa: E402
+    CI_SECURITY_SUMMARY,
+    DERIVED_MDS,
+    TEST_TRACEABILITY,
+    is_campaign_status,
+)
 from tools import resolve_churn_conflicts as rcc  # noqa: E402
 
 
@@ -177,7 +182,7 @@ def integrate(
             # status.json touched this pass (campaign S3) to the just-made merge
             # commit, so a partial regeneration never leaves a dirty tree.
             restorable = [
-                p for p in sorted(DERIVED_MDS | {CI_SECURITY_SUMMARY})
+                p for p in sorted(DERIVED_MDS | {CI_SECURITY_SUMMARY, TEST_TRACEABILITY})
                 if (project_root / p).exists()
             ]
             restorable += [

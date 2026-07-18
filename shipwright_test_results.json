@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-17-test-rot-cleanup",
-    "date": "2026-07-17",
+    "run_id": "iterate-2026-07-18-churn-allowlist-test-traceability",
+    "date": "2026-07-18",
     "unit": {
       "status": "passed",
-      "passed": 6807,
-      "total": 6807
+      "passed": 6812,
+      "total": 6812
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 2,
+      "total": 2
     },
     "pgtap": {
       "status": "not_run",
@@ -35,57 +35,53 @@
       "surface": "none",
       "tests_run": 0,
       "exit_code": 0,
-      "justification": "Test-hygiene cleanup: resolves 51 pre-existing skipped-test inventory findings (CI-guard conversions, allow-markers, 2 dead-decorator removals, 1 no-op-stub delete) + one adopt-lib skip-inventory scanner refinement. Test-only edits + one scanner scope change; NO product/source, API, store, SSE/WS or UI code touched, so spec_impact is none and the E2E/cross-layer gates do not fire. Verified via the Python suites (shared/tests 4412, adopt 415, iterate 476, grade 385, compliance 1119) + the exact producing scanner re-run (repo_wide_skip_inventory: 51 -> 0) + ruff."
+      "justification": "Framework merge-tooling completeness fix: admits .shipwright/compliance/test-traceability.json to the churn allowlist + regenerate-staging + integrate rollback (mirror of the ci-security.json CR-1). No product/source, API, store, SSE/WS or UI code touched, so spec_impact is none and the E2E/cross-layer gates do not fire. Verified end-to-end by real-git merge-conflict integration tests (resolve + rollback) in the Python suite."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "git/uv/coverage skips loud-fail in CI (body-level guard) instead of silently skipping (CI-GUARD)",
+          "behavior": "conflicted test-traceability.json is resolvable (not blocking) in classify/complete_merge",
           "disposition": "tested",
-          "evidence": "converted suites run unconditionally where the binary exists: test_check_agent_doc_budget.py (15) + test_hooks_json_registration.py (12) + test_combine_coverage.py (13) PASSED"
+          "evidence": "test_test_traceability_forward_staging.py::test_test_traceability_in_allowlist_not_blocking PASSED"
         },
         {
-          "behavior": "grade _strict()->is_ci() rename makes the scanner recognize the already-correct CI-gated-fail guard, behavior unchanged",
+          "behavior": "regenerate records + STAGES test-traceability.json when _update_compliance rewrites it",
           "disposition": "tested",
-          "evidence": "test_empirical.py collects clean (12) + inventory drops the two sites; tuple order irrelevant for `in`"
+          "evidence": "test_test_traceability_forward_staging.py::test_regenerate_stages_test_traceability_when_rewritten PASSED"
         },
         {
-          "behavior": "stale skipif(not vite-hono.json.exists()) removed -> the 2 tests run unconditionally (REMOVE-DEAD)",
+          "behavior": "regenerate does not phantom-stage an unchanged test-traceability.json",
           "disposition": "tested",
-          "evidence": "test_stack_detector_multi_service.py 11 PASSED (both previously-skipped tests now run green); vite-hono.json confirmed present"
+          "evidence": "test_test_traceability_forward_staging.py::test_regenerate_does_not_stage_unchanged_test_traceability PASSED"
         },
         {
-          "behavior": "28 genuinely-conditional skips carry an allow-silent-skip marker; the inventory is silent on them but suites still skip correctly locally",
+          "behavior": "a real two-sided merge conflict on test-traceability.json RESOLVES through integrate_main (regenerated content reaches the follow-up commit, clean tree) instead of aborting",
           "disposition": "tested",
-          "evidence": "repo_wide_skip_inventory == 0 (exercises _line_is_suppressed on every marker incl. the 2 multi-line block-comment markers) + touched suites green with only the correct conditional skips"
+          "evidence": "test_test_traceability_forward_staging.py::test_test_traceability_fresh_scan_reaches_followup_commit PASSED",
+          "category": "integration"
         },
         {
-          "behavior": "no-op pass stub deleted; its scenario stays covered at the cmd_start layer (DELETE, no coverage lost)",
+          "behavior": "integrate_main rollback restores test-traceability.json on a post-regen failure (no dirty residue)",
           "disposition": "tested",
-          "evidence": "test_start_port_busy_no_state_errors_no_kill PASSES + zero references to the deleted test id; the stub was @pytest.mark.skip + pass (zero runtime coverage before/after)"
+          "evidence": "test_integrate_main.py::test_integrate_rollback_restores_test_traceability_on_regen_failure PASSED",
+          "category": "integration"
         },
         {
-          "behavior": "a fixtures/ dir UNDER a tests/ tree is pruned from the inventory; a fixtures/ dir OUTSIDE a tests tree is still scanned (SCANNER-FIX, narrowed)",
+          "behavior": "hooks-and-pipeline churn table stays 1:1 with CHURN_ALLOWLIST both directions",
           "disposition": "tested",
-          "category": "integration",
-          "evidence": "new test_traceability_baseline.py::test_enumerate_prunes_fixtures_only_under_a_tests_tree asserts both directions (real rot under top-level fixtures/ still flagged; tests/fixtures data silent)"
-        },
-        {
-          "behavior": "full pre-existing skip inventory clears end-to-end",
-          "disposition": "tested",
-          "evidence": "repo_wide_skip_inventory over the worktree: 51 -> 0 (falsifiable asymptote)"
+          "evidence": "test_churn_merge_doc_sync.py::test_doc_table_matches_churn_allowlist_both_directions PASSED"
         }
       ],
       "counts": {
-        "testable": 7,
-        "tested": 7,
+        "testable": 6,
+        "tested": 6,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 5,
-        "covered_acs": 5
+        "acs": 4,
+        "covered_acs": 4
       }
     }
   },

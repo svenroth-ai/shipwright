@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-17-test-rot-cleanup"
+run_id: "iterate-2026-07-18-churn-allowlist-test-traceability"
 phase: "iterate"
-reason: "STEP 2 test-rot cleanup: 51 pre-existing skipped-test findings resolved (CI-guard / marker / remove / delete) + adopt fixtures-prune scoped to tests/"
-timestamp: "2026-07-17T22:37:15.623237+00:00"
+reason: "churn allowlist completeness: test-traceability.json (mirror ci-security CR-1)"
+timestamp: "2026-07-18T05:36:00.768114+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-17 22:37:15 UTC
+> Auto-generated 2026-07-18 05:36:00 UTC
 
 ## Session Info
 
-- **Session ID**: 06448ac1-5d4a-4305-a0a0-46637780c199
-- **Timestamp**: 2026-07-17 22:37:15 UTC
-- **Reason**: STEP 2 test-rot cleanup: 51 pre-existing skipped-test findings resolved (CI-guard / marker / remove / delete) + adopt fixtures-prune scoped to tests/
+- **Session ID**: 1202b22a-3c9e-4c44-b27c-1519865a3d53
+- **Timestamp**: 2026-07-18 05:36:00 UTC
+- **Reason**: churn allowlist completeness: test-traceability.json (mirror ci-security CR-1)
 
 ## Last Iterate
 
@@ -29,10 +29,10 @@ timestamp: "2026-07-17T22:37:15.623237+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/test-rot-cleanup
-- **Run ID**: iterate-2026-07-17-test-rot-cleanup
-- **Spec**: .shipwright/planning/iterate/2026-07-17-test-rot-cleanup.md
-- **Complexity**: medium (history-calibrated; 0 risk flags)
+- **Branch**: iterate/churn-allowlist-test-traceability
+- **Run ID**: iterate-2026-07-18-churn-allowlist-test-traceability
+- **Spec**: .shipwright/planning/iterate/2026-07-18-churn-allowlist-test-traceability.md
+- **Complexity**: medium (cross_component → integration coverage enforced)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -51,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/test-rot-cleanup
-- **Last Commit**: 26f4d700 chore(triage): sweep 5 outbox append(s) into branch
+- **Branch**: iterate/churn-allowlist-test-traceability
+- **Last Commit**: 80a309da chore(triage): sweep 2 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-233db575 | grade_snapshot | — | 2026-07-17 |
-| evt-f09df6a1 | work_completed | iterate (STEP 2 test-rot cleanup: 51 pre-existing skipped-test findings resolved (CI-guard / marker / remove / delete) + adopt fixtures-prune scoped to tests/) | 2026-07-17 |
-| evt-1672af39 | grade_snapshot | — | 2026-07-17 |
-| evt-92ef6ad0 | grade_snapshot | — | 2026-07-17 |
-| evt-a49e415c | work_completed | iterate (Stage ci-security.json in the churn regenerate follow-up commit (close #375 CR-1 forward-staging gap)) | 2026-07-17 |
+| evt-6fabb1e3 | grade_snapshot | — | 2026-07-18 |
+| evt-a84a5f44 | work_completed | iterate (Admit test-traceability.json to the churn allowlist + regenerate-staging + integrate rollback (mirror ci-security CR-1), so origin/main merges auto-resolve it instead of aborting) | 2026-07-18 |
+| evt-b1410399 | grade_snapshot | — | 2026-07-17 |
+| evt-0cae8393 | grade_snapshot | — | 2026-07-17 |
+| evt-3f23ed5d | grade_snapshot | — | 2026-07-17 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 320
-- **Last iterate**: change — STEP 2 test-rot cleanup: 51 pre-existing skipped-test findings resolved (CI-guard / marker / remove / delete) + adopt fixtures-prune scoped to tests/ (2026-07-17)
+- **Total work events**: 323
+- **Last iterate**: change — Admit test-traceability.json to the churn allowlist + regenerate-staging + integrate rollback (mirror ci-security CR-1), so origin/main merges auto-resolve it instead of aborting (2026-07-18)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
