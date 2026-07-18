@@ -50,24 +50,12 @@ _DETERMINISTIC = frozenset(_CONF)
 # callers (and __all__) have always imported these names from backfill_signals.
 try:  # flat import off shared/scripts/lib on sys.path (tool + tests).
     from _backfill_title_sim import TITLE_CAP, TITLE_MIN, jaccard, title_scores, tokenize
+    from _backfill_fold import resolve_tag as _fold_resolve_tag
 except ImportError:  # loaded as a package (lib.backfill_signals).
     from ._backfill_title_sim import (  # type: ignore
         TITLE_CAP, TITLE_MIN, jaccard, title_scores, tokenize,
     )
-
-
-def _resolve_fold():
-    """The shared fold resolver, imported lazily and BOTH ways (ADR-045).
-
-    Lazy so ``fr_fold_map`` is not a load-time dependency of the cascade; dual-form so it
-    works whether this module was imported flat (``backfill_signals``) or as a package
-    (``lib.backfill_signals``) — a flat-only import silently breaks the package path.
-    """
-    try:
-        from fr_fold_map import resolve_fold
-    except ImportError:
-        from .fr_fold_map import resolve_fold  # type: ignore
-    return resolve_fold
+    from ._backfill_fold import resolve_tag as _fold_resolve_tag  # type: ignore
 
 
 def split_of_fr(fr_id: str) -> str:
@@ -117,15 +105,10 @@ class Ctx:
         walk, so this engine and the compliance collector can never disagree about what a
         folded tag means (pinned by a cross-consumer test). ``terminal`` — the id the walk
         stopped at — lets the caller name an unrescued tag honestly: a chain ending at a
-        RETIRED FR is ``fr_removed``, not ``fr_absent``."""
-        if fr in self.active_ids:
-            return fr, fr
-        if fr in self.removed_ids:
-            return None, fr   # retirement beats folding — see fr_fold_map's module note
-        if self.fold_map is None or not getattr(self.fold_map, "edges", None):
-            return None, None
-        res = _resolve_fold()(self.fold_map, fr, is_active=lambda f: f in self.active_ids)
-        return res.survivor, res.terminal
+        RETIRED FR is ``fr_removed``, not ``fr_absent``. Rule order (active → removed →
+        walk) lives in ``_backfill_fold.resolve_tag``."""
+        return _fold_resolve_tag(fr, active_ids=self.active_ids,
+                                 removed_ids=self.removed_ids, fold_map=self.fold_map)
 
 
 def build_ctx(frs, *, commit_frs=None, adjudicator=None, use_llm=False,
