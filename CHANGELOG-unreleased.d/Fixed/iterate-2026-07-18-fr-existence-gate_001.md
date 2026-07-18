@@ -1,0 +1,1 @@
+The finalization requirement gate now rejects a declared requirement id that exists in no spec. Previously any non-empty text passed and a non-existent id was only reported after merge, by a non-blocking check.

@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-18T09:10:19.724932Z. Items waiting for triage decision.
+> Auto-generated 2026-07-18T09:12:25.498668Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 320
-- Triage: 7 | Promoted: 1 | Dismissed: 311 | Snoozed: 1
+- Total: 321
+- Triage: 8 | Promoted: 1 | Dismissed: 311 | Snoozed: 1
 
-## Top 7 items (severity-sorted)
+## Top 8 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -56,7 +56,12 @@
   - Follow-up from iterate-2026-07-14-phase-invocation-mode (external plan review, Gemini #2). The v2 lifecycle never advan…
   - Promote: `triage_promote.py --id trg-d1e466aa --task-ref EXT:<ref>`
 
-### Source: manual (1 item)
+### Source: manual (2 items)
+
+<a id="trg-5f6a4f74"></a>
+- **WebUI: render resolved_from provenance for fold-resolved test links** `id=trg-5f6a4f74 | severity=low | kind=improvement → P3/engineering`
+  - The traceability manifest can now file a test link against a surviving FR while the source tag names the folded id, rec…
+  - Promote: `triage_promote.py --id trg-5f6a4f74 --task-ref EXT:<ref>`
 
 <a id="trg-cced399c"></a>
 - **Decompose FR-01.10 / FR-01.07 into sub-FRs for precise feature traceability** `id=trg-cced399c | severity=low | kind=improvement → P3/engineering`

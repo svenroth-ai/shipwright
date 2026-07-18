@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-18-fr-existence-gate",
+  "date": "2026-07-18T16:11:06.125067Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/fr-existence-gate",
+  "spec": ".shipwright/planning/iterate/2026-07-18-fr-existence-gate.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-18-fr-existence-gate"
+}

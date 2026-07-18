@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-07-18T09:10:14.221914+00:00
+Generated: 2026-07-18T16:11:06.203790+00:00
 Total commits: 1163
 
 ## Commit Distribution
@@ -362,7 +362,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-18 | traceability | resolve tagged FR ids through the spec FR-Fold-Map | 1c082a49cc91 |
+| 2026-07-18 | traceability | resolve tagged FR ids through the spec FR-Fold-Map (#397) | 4fe2d680ae1e |
 | 2026-07-18 | fr-authoring | plain-language capability-level FR rules + advisory hygiene audit (#395) | 29d09188e1dd |
 | 2026-07-17 | agent-docs | canonical run_id changelog anchor + shape gate; kill aggregator ADR dup (#391) | 00174d952230 |
 | 2026-07-17 | traceability | backfill 189 plugin/shared @FR tags + config-aware TT5 gate (STEP 1) (#390) | a419ce461f8c |
