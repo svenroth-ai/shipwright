@@ -44,6 +44,8 @@ from lib.config import read_events  # noqa: E402,F401 — re-exported SSOT
 # historical private name so `record_event._FileLock` stays monkeypatchable
 # (F14 lifecycle test) and the `with _FileLock(...)` call sites resolve it.
 from lib.file_lock import FileLock as _FileLock  # noqa: E402
+# Writer-side newline probe — the record-boundary SSOT shared with triage.py.
+from lib.jsonl_records import ends_without_newline  # noqa: E402
 # SSOT for FR-classification (BP-1). The predicates the gates use moved to
 # lib/fr_gates.py with them; only these two are still consumed here.
 # ``_NONE_REASON_MAX_LEN`` is a deliberate re-export — test_fr_classification
@@ -382,7 +384,16 @@ def append_event(project_root: Path, event: dict) -> str:
     line = json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n"
 
     with _FileLock(lock_path):
+        # Termination guard (iterate-2026-07-18-events-jsonl-record-boundary,
+        # mirroring `triage.py _append_line`): never assume the PREVIOUS writer
+        # left a trailing newline, or two records land on one physical line.
+        # The lock does NOT make this redundant — triage held the very same
+        # FileLock class and still needed the guard, because the other writers
+        # (event_seeder, an operator edit, a git union merge) do not take it.
+        needs_separator = ends_without_newline(path)
         with open(path, "a", encoding="utf-8") as fp:
+            if needs_separator:
+                fp.write("\n")
             fp.write(line)
             fp.flush()
             os.fsync(fp.fileno())
@@ -429,7 +440,12 @@ def append_event_idempotent(
                 if split_id is not None:
                     skip["splitId"] = split_id
                 return None, skip
+        # Same termination guard as `append_event` — probed AFTER the dedup
+        # checks so a skipped duplicate never touches the file at all.
+        needs_separator = ends_without_newline(path)
         with open(path, "a", encoding="utf-8") as fp:
+            if needs_separator:
+                fp.write("\n")
             fp.write(line)
             fp.flush()
             os.fsync(fp.fileno())

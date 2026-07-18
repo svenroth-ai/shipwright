@@ -1,169 +1,119 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-18-requirements-golden-corpus",
+    "run_id": "iterate-2026-07-18-events-jsonl-record-boundary",
     "date": "2026-07-18",
     "unit": {
       "status": "pass",
-      "note": "F0 full suite: 4374 passed, 11 skipped, 26 deselected. 2 failures triaged: test_artifact_path_canon[planning-migrated] was REAL (bare 'planning/' in four prose comments) and is fixed; test_architecture_md_reflects_arch_impact is the known main-root false-fail on ANOTHER iterate's gitignored decision drop (iterate-2026-07-18-fr-existence-gate), not this run's. CI round 1 went red on test_artifact_path_canon for a bare directory-name literal in a guard test: the canon gate scans only GIT-TRACKED files, so a newly split-out module is invisible to it locally until the commit stages it. Fixed by deriving the name from the corpus constant; re-verified with the file tracked. CI round 3 exposed the real lesson: the baseline was carrying THREE platform-specific tokens, not one. The adversarial review caught path separators; the same root cause survived in the type field (pathlib instantiates WindowsPath vs PosixPath) and would have surfaced again in the exception field (reading a directory raises PermissionError on Windows, IsADirectoryError on Linux). Fixed the CLASS: platform tokens are neutralized in the matrix, each platform-dependent fact is pinned in a dedicated test so the normalization launders nothing, and a guard test now forbids any such token from re-entering the baseline."
+      "passed": 4901,
+      "total": 4902,
+      "note": "All THREE test roots CI runs were executed locally (shared/tests, shared/scripts/tests, shared/scripts/tools/tests): 4456 + 197 + 248 passed. An earlier run covered only shared/tests and missed a wording assertion in shared/scripts/tools/tests/test_record_event.py, which CI caught - the local run now mirrors the CI loop. test_events_log.py::test_latest_event_dt_skips_corrupt_lines and ::test_latest_event_dt_all_corrupt_returns_none pass UNCHANGED: they pin skip-on-WHOLLY-undecodable, which this change preserves. The behaviour change is strictly additive."
     },
     "integration": {
       "status": "pass",
-      "note": "285 passed, 2 deselected. 49 of them are this iterate's new requirements-corpus suites."
+      "passed": 9,
+      "total": 9,
+      "note": "shared/tests/test_events_newline_integrity.py - end-to-end through the REAL record_event writers and the REAL config.read_events reader, plus the adopt plugin's lock-free event_seeder loaded from its own path."
     },
     "pgtap": {
-      "status": "n/a",
-      "note": "no database in this repo"
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "e2e": {
-      "status": "n/a",
-      "note": "no UI or runtime surface: the diff is test-only and adds no route, component, or executable entry point."
+      "status": "not_run",
+      "passed": 0,
+      "total": 0,
+      "note": "No UI or HTTP surface: this is a Python library/CLI boundary. The equivalent end-to-end proof is the integration layer above, which drives the real writers and reader rather than a re-implementation."
     },
     "design_fidelity": {
-      "status": "n/a",
-      "note": "no UI"
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "smoke": {
-      "status": "n/a",
-      "note": "no server"
-    },
-    "mutation_verification": {
       "status": "pass",
-      "note": "The harness was validated by mutating production and checking it bites. Mutation A (parser accepts lowercase priority) initially SURVIVED, exposing a real corpus gap -- no fixture carried a lowercase priority. Gap closed; A is now caught and transitively catches fr_gates. Mutation B (body column 2 vs 4) caught, naming both affected targets. Production restored clean (git diff --stat shared/ empty)."
+      "note": "record_event append + config.read_events round-trip exercised directly by the integrity suite."
     },
-    "degraded": [
-      {
-        "condition": "test_architecture_md_reflects_arch_impact fails locally",
-        "reason": "Known meta-test false-fail: it resolves gitignored decision-drops from the MAIN root, so it reddens on OTHER in-flight iterates' drops. The named drop (iterate-2026-07-18-fr-existence-gate) belongs to REQ-0, not this run. No action taken by design."
-      },
-      {
-        "condition": "review_runner's inline walk is not behaviourally frozen",
-        "reason": "The walk sits inside run_review, which calls an external LLM (reason_code: requires-external-nondeterministic-service). Compensating control: the golden file records a sha256 of the enclosing function plus its line count, so any edit to it is a baseline diff the S2 reviewer must explain."
-      }
-    ],
     "surface_verification": {
-      "surface": "none",
-      "tests_run": 0,
+      "surface": "cli",
+      "runner": "uv run --with pytest pytest shared/tests/test_events_newline_integrity.py",
       "exit_code": 0,
-      "justification": "Test-only diff. No production file is modified (git diff --name-only shows integration-tests/ and .shipwright/planning/ only), so there is no runtime surface to drive. The harness's own correctness is verified empirically by mutation testing rather than by asserting it passes -- see mutation_verification."
+      "tests_run": 9,
+      "timestamp": "2026-07-18",
+      "justification": "The changed surface is a Python append/read boundary with no UI and no HTTP endpoint. It is driven through its PUBLIC API - tools.record_event.append_event and lib.config.read_events - against real temp-dir event logs, including the concatenated-line shape an ordinary git union merge produces. The adopt plugin's second, lock-free writer is loaded from its own file path so the ADR-045 import barrier is exercised as it really is, not stubbed."
     },
     "test_completeness": {
       "status": "complete",
-      "complexity": "medium",
       "behaviors": [
         {
-          "behavior": "all 15 discovery paths pinned per fixture",
+          "behavior": "append_event onto an unterminated log does not concatenate",
           "disposition": "tested",
-          "evidence": "test_target_behaviour_matches_the_frozen_baseline[disc.*] (16 registry entries)"
+          "evidence": "test_events_newline_integrity.py::test_append_onto_unterminated_log_does_not_concatenate PASSED (was RED)"
         },
         {
-          "behavior": "all 5 parsers pinned per fixture",
+          "behavior": "append onto an already-terminated log injects no blank line",
           "disposition": "tested",
-          "evidence": "test_target_behaviour_matches_the_frozen_baseline[parse.*]"
+          "evidence": "::test_append_onto_terminated_log_injects_no_blank_line PASSED"
         },
         {
-          "behavior": "registry holds exactly the claimed inventory, no duplicates",
+          "behavior": "append onto a missing or zero-byte log injects no leading newline",
           "disposition": "tested",
-          "evidence": "test_registry_holds_exactly_the_claimed_inventory"
+          "evidence": "::test_append_onto_missing_and_empty_log_injects_no_leading_newline PASSED"
         },
         {
-          "behavior": "every registry source path resolves (forward drift)",
+          "behavior": "read_events recovers BOTH records from a concatenated line",
           "disposition": "tested",
-          "evidence": "test_every_registry_source_file_exists"
+          "evidence": "::test_read_events_recovers_both_records_from_a_concatenated_line PASSED (was RED)"
         },
         {
-          "behavior": "every declared realm is used (reverse drift)",
+          "behavior": "read_events recovers partially - valid record kept, remainder reported",
           "disposition": "tested",
-          "evidence": "test_every_realm_is_actually_used"
+          "evidence": "::test_read_events_recovers_partially_and_keeps_the_valid_record PASSED (was RED)"
         },
         {
-          "behavior": "group_i stays isolated from the compliance collectors",
+          "behavior": "recovered records keep wire order across lines (last-wins projections depend on it)",
           "disposition": "tested",
-          "evidence": "test_group_i_is_isolated_from_the_collectors"
+          "evidence": "::test_read_events_preserves_wire_order_across_recovered_lines PASSED (was RED)"
         },
         {
-          "behavior": "an import failure never reads as 'no findings'",
+          "behavior": "a wholly undecodable line is still skipped, not fatal (no regression)",
           "disposition": "tested",
-          "evidence": "test_no_target_failed_to_import"
+          "evidence": "::test_read_events_still_tolerates_a_wholly_undecodable_line PASSED; test_events_log.py:213/:278 unchanged"
         },
         {
-          "behavior": "golden schema version is pinned",
+          "behavior": "read_events releases the file handle (explicit context manager)",
           "disposition": "tested",
-          "evidence": "test_golden_schema_version_matches"
+          "evidence": "::test_read_events_releases_the_file_handle PASSED - recorded honestly as a hygiene guard, it passed pre-fix too"
         },
         {
-          "behavior": "whole-file baseline currency (frozen_bugs rebuilt, not self-sourced)",
+          "behavior": "the lock-free adopt event_seeder also terminates before appending",
           "disposition": "tested",
-          "evidence": "test_golden_file_is_byte_current"
+          "evidence": "::test_adoption_seeder_does_not_concatenate_onto_an_unterminated_log PASSED, loading the plugin module by path"
         },
         {
-          "behavior": "baseline is platform-portable (no OS-separator paths)",
+          "behavior": "append_event_idempotent probes only AFTER dedup, so a skipped duplicate never touches the file",
           "disposition": "tested",
-          "evidence": "test_golden_baseline_carries_no_os_separator_paths"
-        },
-        {
-          "behavior": "the OS-separator behaviour itself is pinned",
-          "disposition": "tested",
-          "evidence": "test_platform_separator_behaviour_is_pinned"
-        },
-        {
-          "behavior": "FV-1 frozen; its two causes kept apart; T1 can still FAIL",
-          "disposition": "tested",
-          "evidence": "test_fv1_* (4 tests incl. a control)"
-        },
-        {
-          "behavior": "FV-2 frozen across D-group, Group I and the positive-claim site",
-          "disposition": "tested",
-          "evidence": "test_fv2_* (3 tests)"
-        },
-        {
-          "behavior": "FV-3 / FV-4 / FV-5 frozen",
-          "disposition": "tested",
-          "evidence": "test_fv3_*, test_fv4_*, test_fv5_*"
-        },
-        {
-          "behavior": "both unsorted walks track enumeration order",
-          "disposition": "tested",
-          "evidence": "test_unsorted_walk_tracks_enumeration_order, test_unsorted_walk_a2_tracks_enumeration_order"
-        },
-        {
-          "behavior": "every frozen bug names its flipping step",
-          "disposition": "tested",
-          "evidence": "test_every_frozen_bug_names_its_flipping_step"
-        },
-        {
-          "behavior": "frozen-bug cells resolve in the matrix",
-          "disposition": "tested",
-          "evidence": "test_frozen_bug_cells_exist_in_the_matrix"
-        },
-        {
-          "behavior": "the corpus discriminates per fixture (not just globally)",
-          "disposition": "tested",
-          "evidence": "test_corpus_discriminates_between_targets"
-        },
-        {
-          "behavior": "planning-as-file still splits raise/degrade",
-          "disposition": "tested",
-          "evidence": "test_planning_as_a_file_still_splits_the_targets"
-        },
-        {
-          "behavior": "harness runs in CI and is not marked slow",
-          "disposition": "tested",
-          "evidence": "placement in integration-tests/; CI step runs it under -m 'not slow' only; 49 tests in ~3.8s"
-        },
-        {
-          "behavior": "review_runner's inline discovery walk",
-          "disposition": "untestable",
-          "reason_code": "requires-external-nondeterministic-service",
-          "evidence": "Walk is inline inside run_review, which calls an external LLM. Registered invoke:source_only; the golden file freezes a sha256 of the enclosing function so an edit is still a baseline diff."
+          "evidence": "covered by shared/tests/test_record_event_lifecycle_integrity.py dedup cases, re-run green in the full suite",
+          "category": "integration"
         }
       ],
       "counts": {
-        "total": 21,
-        "tested": 20,
-        "untestable": 1,
+        "testable": 10,
+        "tested": 10,
+        "untestable": 0,
         "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
       }
-    }
+    },
+    "degraded": [
+      {
+        "condition": "pre_existing_test_failure",
+        "detail": "LOCAL-ONLY failure, invisible to CI: shared/tests/test_architecture_md_reflects_arch_impact.py fails on an UNRELATED, FOREIGN decision drop (iterate-2026-07-18-fr-existence-gate, impact=convention) that has no conventions.md entry. That drop is UNTRACKED and lives in the developer main tree gitignored decision-drops dir, which a fresh CI clone does not have - so CI passes this test. It belongs to another unfinished iterate: not caused by, and not fixable within, this run. Verified: after adding THIS run architecture.md entry, this run_id no longer appears in the failure list; only the foreign drop remains."
+      }
+    ]
   },
   "coverage": {
     "total": 80.2,

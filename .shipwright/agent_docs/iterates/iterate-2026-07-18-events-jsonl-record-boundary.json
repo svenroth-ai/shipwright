@@ -1,0 +1,9 @@
+{
+  "run_id": "iterate-2026-07-18-events-jsonl-record-boundary",
+  "date": "2026-07-18T21:53:20.371053Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/events-jsonl-record-boundary",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-18-events-jsonl-record-boundary"
+}

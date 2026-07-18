@@ -89,7 +89,7 @@ class TestCorruptionTolerance:
             '{"v":1,"id":"evt-good0002","ts":"T","type":"phase_completed","phase":"p"}\n',
             encoding="utf-8",
         )
-        with pytest.warns(match="Corrupt event at line 2"):
+        with pytest.warns(match=r"Corrupt event at shipwright_events\.jsonl:2"):
             events = read_events(project)
         assert len(events) == 2
         assert events[0]["id"] == "evt-good0001"

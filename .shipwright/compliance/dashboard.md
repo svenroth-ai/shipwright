@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-07-18T20:41:06.472191+00:00
+Generated: 2026-07-18T21:54:37.691902+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -17,7 +17,7 @@ Scope: library
 | ✅ | Change traceability | 331/331 changes linked to a commit, ADR or test run | change provenance (SLSA) |
 | ⚠️ | Change reconciliation | 7/8 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
 | ✅ | Security | 0 open high/critical | no open high/critical vulns (NIST SSDF) |
-| ✅ | Size / maintainability discipline | ratchet delta -208 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
+| ✅ | Size / maintainability discipline | ratchet delta -192 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
 | ✅ | Dependency hygiene | 0 unresolved / 11 licenses; 0 copyleft | dependency license & risk (OWASP) |
 
 > 📊 **Test-Health · diff-coverage (Control-Grade input · target ≥80%):** not measured this session — per-PR signal; see the CI "Diff coverage" artifact.
@@ -64,7 +64,7 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Triage open | 9 open | WARN | 9 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit (grandfathered) | 123 | INFO |  |
 | Bloat in allowlist | 154 entries | INFO |  |
-| Bloat ratchet delta | -208 lines | PASS |  |
+| Bloat ratchet delta | -192 lines | PASS |  |
 
 ## Project Velocity
 
