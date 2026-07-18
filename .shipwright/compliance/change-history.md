@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-07-17T22:37:10.398298+00:00
+Generated: 2026-07-18T05:35:55.409341+00:00
 Total commits: 1160
 
 ## Commit Distribution
@@ -687,9 +687,9 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-18 | test-hygiene | resolve 51 pre-existing skipped-test findings (STEP 2) | df1d6cea02d9 |
+| 2026-07-18 | triage | sweep 2 outbox append(s) into branch | 80a309da8a09 |
+| 2026-07-18 | test-hygiene | resolve 51 pre-existing skipped-test findings (STEP 2) (#393) | 490a624e39f8 |
 | 2026-07-18 | traceability | dismiss STEP 3 FR-unmapped review card + record accepted-state policy (#392) | 9bff5d72718b |
-| 2026-07-17 | triage | sweep 5 outbox append(s) into branch | 26f4d700515f |
 | 2026-07-17 | compliance | mark shared-lib loader import_module as by-design (semgrep FP) (#388) | fc6957724db1 |
 | 2026-07-16 | traceability | retrofit monorepo tests with @FR tags + webui handoff brief (TT8) (#386) | 2c85758ee6bc |
 | 2026-07-12 | review | default external-review GPT model to gpt-5.6-terra-pro (#366) | 4b71eec6aaa4 |

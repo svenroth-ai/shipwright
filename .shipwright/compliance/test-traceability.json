@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
   "collector_version": "test_links/1.0.0",
-  "generated_at": "2026-07-17T22:37:10.398298+00:00",
-  "source_commit": "748226fe26ecf1b133fe84a230b465f47f2f265c",
+  "generated_at": "2026-07-18T05:35:55.409341+00:00",
+  "source_commit": "80a309da8a095fb6fa8624c7c7beaebfdd2eb5ff",
   "spec_hash": "sha256:c8944f86bcd4737b474e245f4b79800f37db76da0b3515b6eec98fecdcd11adb",
   "requirements": {
     "01-adopted::FR-01.01": {
@@ -6963,6 +6963,7 @@
     "shared/tests/test_integrate_main.py::test_integrate_aborts_and_restores_on_source_conflict",
     "shared/tests/test_integrate_main.py::test_integrate_resolves_and_audit_finds_followup",
     "shared/tests/test_integrate_main.py::test_integrate_rollback_restores_ci_security_on_regen_failure",
+    "shared/tests/test_integrate_main.py::test_integrate_rollback_restores_test_traceability_on_regen_failure",
     "shared/tests/test_integrate_main.py::test_integrate_validates_events_on_clean_union_merge",
     "shared/tests/test_integrate_main_commit_failures.py::test_integrate_returns_abort_incomplete_when_merge_abort_double_faults",
     "shared/tests/test_integrate_main_commit_failures.py::test_integrate_returns_followup_commit_failed_when_followup_blocked",
@@ -7814,6 +7815,10 @@
     "shared/tests/test_test_hygiene.py::test_skip_or_fail_on_missing_binary_available",
     "shared/tests/test_test_hygiene.py::test_skip_or_fail_on_missing_binary_ci_fails",
     "shared/tests/test_test_hygiene.py::test_skip_or_fail_on_missing_binary_local_skips",
+    "shared/tests/test_test_traceability_forward_staging.py::test_regenerate_does_not_stage_unchanged_test_traceability",
+    "shared/tests/test_test_traceability_forward_staging.py::test_regenerate_stages_test_traceability_when_rewritten",
+    "shared/tests/test_test_traceability_forward_staging.py::test_test_traceability_fresh_scan_reaches_followup_commit",
+    "shared/tests/test_test_traceability_forward_staging.py::test_test_traceability_in_allowlist_not_blocking",
     "shared/tests/test_traceability_checks.py::test_phase_quality_dispatches_traceability",
     "shared/tests/test_traceability_checks.py::test_phase_quality_traceability_empty_for_uncovered",
     "shared/tests/test_traceability_checks.py::test_run_dispatch_iterate",

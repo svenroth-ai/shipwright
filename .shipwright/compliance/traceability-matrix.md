@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-17T22:37:10.398298+00:00
+Generated: 2026-07-18T05:35:55.409341+00:00
 
 ## Requirements Coverage
 
@@ -28,6 +28,7 @@ Generated: 2026-07-17T22:37:10.398298+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-a84a5f44"></a>Admit test-traceability.json to the churn allowlist + regenerate-staging + integrate rollback (mirror ci-security CR-1), so origin/main merges auto-resolve it instead of aborting | iterate | change |  | — | — | 2026-07-18 |
 | <a id="evt-f09df6a1"></a>STEP 2 test-rot cleanup: 51 pre-existing skipped-test findings resolved (CI-guard / marker / remove / delete) + adopt fixtures-prune scoped to tests/ | iterate | change |  | — | — | 2026-07-17 |
 | <a id="evt-e848e205"></a>Decided the ~6,800 framework tests without a requirement tag are expected and fine, closed the review reminder, and wrote down why. | iterate | change |  | 17/17 | — | 2026-07-17 |
 | <a id="evt-3ef91172"></a>backfill plugin/shared @FR tags + config-aware TT5 gate | iterate | change |  | — | — | 2026-07-17 |
@@ -357,7 +358,7 @@ Generated: 2026-07-17T22:37:10.398298+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 322 |
+| Iterate changes | 323 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |

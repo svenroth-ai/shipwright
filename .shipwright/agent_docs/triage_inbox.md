@@ -1,12 +1,12 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-17T22:03:26.464116Z. Items waiting for triage decision.
+> Auto-generated 2026-07-17T22:46:16.286789Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 316
-- Triage: 6 | Promoted: 1 | Dismissed: 308 | Snoozed: 1
+- Total: 317
+- Triage: 6 | Promoted: 1 | Dismissed: 309 | Snoozed: 1
 
 ## Top 6 items (severity-sorted)
 
@@ -46,14 +46,12 @@
   - Follow-up to iterate-2026-06-30-fr-retag-honesty. Introduce sub-FRs (e.g. FR-01.10.x for Control Grade / RTM / SBOM / d…
   - Promote: `triage_promote.py --id trg-cced399c --task-ref EXT:<ref>`
 
-### Source: traceability-followup (1 item)
+### Source: webui-spec-audit (2 items)
 
-<a id="trg-6b4b6a33"></a>
-- **STEP 2: Test-rot cleanup - triage 50 skipped/.only tests (quarantine-with-expiry or delete)** `id=trg-6b4b6a33 | severity=medium | kind=maintenance → P2/engineering`
-  - ORDERED STEP 2 (independent of STEP 1; can run any time). === FIX-NOW: if run as an iterate, YOU (the agent) are the re…
-  - Promote: `triage_promote.py --id trg-6b4b6a33 --task-ref EXT:<ref>`
-
-### Source: webui-spec-audit (1 item)
+<a id="trg-44d23d63"></a>
+- **FR descriptions must be plain business language (adopt/project/iterate prompt rule)** `id=trg-44d23d63 | severity=medium | kind=improvement → P2/engineering`
+  - Atomic business requirement: whenever the framework generates or updates a Functional Requirement, its description is p…
+  - Promote: `triage_promote.py --id trg-44d23d63 --task-ref EXT:<ref>`
 
 <a id="trg-8e840ca0"></a>
 - **FR taxonomy: capability-altitude FR minting (adopt) + Mint-vs-Fold gate (iterate) + FR-hygiene lint (compliance)** `id=trg-8e840ca0 | severity=medium | kind=improvement → P2/engineering`
