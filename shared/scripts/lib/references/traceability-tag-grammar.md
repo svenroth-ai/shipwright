@@ -70,3 +70,36 @@ P1 only records them.
 
 `pytest_marker` · `covers_comment` · `native_tag` · `title_suffix`
 (SSoT: `fr_tag_grammar.TAG_SOURCES`, mirrored by the manifest `tag_source` enum).
+
+## Folded FR ids — `## FR-Fold-Map`
+
+A spec clean-up may **fold** a fine-grained FR into the broader capability FR that now
+owns it. Folded ids are never retired; the spec records them in an alias table so old
+references keep resolving — **including your test tags, which you do not have to rewrite:**
+
+```markdown
+## FR-Fold-Map
+
+| Folded ID | → Survivor | Reason | Was (original name) |
+|-----------|-----------|--------|---------------------|
+| `FR-01.44` | `FR-01.28` | delta | Embedded terminal appearance |
+```
+
+A tag on `FR-01.44` then counts as coverage of `FR-01.28`, and the link records
+`resolved_from: "FR-01.44"` so an auditor can see why. Rules worth knowing:
+
+- **Fallback, never override.** A tag naming a *live* FR always binds to that FR; the
+  fold-map is consulted only for a tag that would otherwise orphan. An id that is both
+  active and listed as folded keeps its own coverage obligation (its fold entry is inert).
+- **Terminal decides.** A chain `A → B → C` resolves to `C` if `C` is active, passing
+  through `B` whether or not `B` is still live.
+- **Broken edges fail closed.** A cycle, a survivor that is removed or absent, the same id
+  folded to two different survivors, or a malformed row → the tag keeps its orphan status
+  and a typed entry lands in the manifest's `fold_defects` (surfaced by D-orphan as LOW
+  hygiene). The fold-map can rescue a tag; it can never invent coverage.
+- **Ids are case-sensitive** here exactly as in a tag: `fr-01.44` is an `unparsable_row`
+  defect, not a silent match.
+- Fold-map rows are **never** read as live requirements — backticked or not.
+
+SSoT: `fr_fold_map` (`FOLD_DEFECT_KINDS`, `resolve_fold`), shared by the TT1 collector
+and the backfill engine so the two cannot disagree.

@@ -52,7 +52,16 @@ def test_golden_bindings_and_tag_sources_match_the_parser():
                 link_pairs.add((req["id"], link["path"]))
     orphan_pairs = {(o["tagged_fr"], o["test"]) for o in golden["orphans"]}
 
-    # every parser binding is accounted for as either a coverage link or an orphan, and vice versa
+    # Every parser binding is accounted for as either a coverage link or an orphan, and
+    # vice versa.
+    #
+    # NOTE (iterate-2026-07-18-fr-fold-map-resolution): this equality assumes the fixture
+    # spec declares NO `## FR-Fold-Map`. `parser_pairs` keys on the id the SOURCE TAG
+    # carries, while `link_pairs` keys on the requirement the link is filed under — a fold
+    # makes those deliberately different (the link moves to the survivor and records
+    # `resolved_from`). If a golden fixture ever gains a fold-map, resolve the tag id
+    # through it before comparing rather than "fixing" the golden; the invariant is what
+    # needs the extra step, not the data.
     assert parser_pairs == link_pairs | orphan_pairs
     # each coverage link matches a real parser hit INCLUDING its tag_source
     assert link_triples <= parser_triples

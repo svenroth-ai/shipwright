@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-18-fr-fold-map-resolution",
+  "date": "2026-07-18T09:10:14.140286Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/fr-fold-map-resolution",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-18-fr-fold-map-resolution.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-18-fr-fold-map-resolution"
+}

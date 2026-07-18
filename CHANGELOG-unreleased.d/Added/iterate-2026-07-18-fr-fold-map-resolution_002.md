@@ -1,0 +1,1 @@
+A broken fold table is now reported instead of silently ignored: loops, an alias pointing at a retired or non-existent requirement, the same ID folded two different ways, and malformed rows each keep the affected test flagged and appear as a `fold_defects` entry in the traceability report.

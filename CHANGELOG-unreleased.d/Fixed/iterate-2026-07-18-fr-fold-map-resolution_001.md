@@ -1,0 +1,1 @@
+Retiring a requirement can no longer be quietly waved through by also adding a fold row for it: tests still labelled with a removed requirement are still reported, so removing a feature continues to force a decision about its tests.

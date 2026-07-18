@@ -44,6 +44,7 @@ if str(_LIB) not in sys.path:
 
 import backfill_scan as scan  # noqa: E402
 import backfill_signals as sig  # noqa: E402
+import fr_fold_map as fold  # noqa: E402
 from backfill_write import apply_writes  # noqa: E402
 
 ENGINE_VERSION = "backfill_test_links/1.0.0"
@@ -92,15 +93,23 @@ def run_backfill(
         test_roots = _default_test_roots(project_root)
 
     frs: list = []
+    fold_maps: list = []
     for spec in spec_files:
-        frs.extend(scan.parse_frs(Path(spec).read_text(encoding="utf-8", errors="ignore")))
+        text = Path(spec).read_text(encoding="utf-8", errors="ignore")
+        frs.extend(scan.parse_frs(text))
+        # A spec may fold fine-grained FRs into a capability FR; an existing tag on a
+        # folded id still names real coverage, so the engine must resolve it rather than
+        # report a false orphan and propose a redundant re-tag.
+        fold_maps.append(fold.parse_fold_map(text, spec_path=str(spec)))
+    fold_map = fold.merge_fold_maps(fold_maps)
 
     records = scan.scan_tests(test_roots, project_root)
     if commit_frs is None:
         commit_frs = scan.introducing_commit_map(
             project_root, sorted({r.rel_path for r in records}))
     ctx = sig.build_ctx(frs, commit_frs=commit_frs, adjudicator=adjudicator,
-                        use_llm=use_llm, split_convention=split_convention)
+                        use_llm=use_llm, split_convention=split_convention,
+                        fold_map=fold_map)
 
     writes: list[tuple] = []
     proposals: list[dict] = []

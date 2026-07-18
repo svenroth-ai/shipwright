@@ -35,13 +35,26 @@ def load_shared_lib(name: str):
     saved = {k: v for k, v in sys.modules.items() if k == "lib" or k.startswith("lib.")}
     for key in saved:
         sys.modules.pop(key, None)
-    if str(_SHARED_SCRIPTS) not in sys.path:
-        sys.path.insert(0, str(_SHARED_SCRIPTS))
+    # PRECEDENCE, not mere presence. ``lib`` is a REGULAR package (every plugin's
+    # scripts/lib has an __init__.py), so ``import lib.X`` binds to exactly the FIRST
+    # ``lib`` on sys.path — merely checking "shared/scripts is somewhere on the path" is
+    # not enough. Once another plugin's scripts dir sits ahead of it, ``lib`` resolves to
+    # THAT plugin and every shared-only module raises ModuleNotFoundError. It stayed
+    # latent because the early call sites cached their module while the ordering still
+    # happened to favour shared; a call made later in the same session did not.
+    saved_path = list(sys.path)
+    shared = str(_SHARED_SCRIPTS)
+    sys.path.insert(0, shared)
     try:
-        # `name` is always a hardcoded module identifier from first-party callers
-        # (fixed set: requirement_model, drift_parsers, fr_tag_grammar, events_log,
-        # security_workflow, fr_classification, bloat_baseline, architecture_doc,
-        # events_amend) — no untrusted input reaches it, and the f-string is
+        # `name` is always a hardcoded module identifier from first-party callers. The
+        # ACTUAL fixed set for THIS loader is three: requirement_model, fr_tag_grammar,
+        # fr_fold_map (the collector package). The audit groups' drift_parsers /
+        # bloat_baseline / events_log / … go through the unrelated
+        # `audit_adapters.load_shared_lib`, which loads by file location under a sentinel
+        # name and never had the `lib`-precedence problem. Keep them there: this loader
+        # RESTORES sys.path on exit, so a module that mutates sys.path at import time
+        # (bloat_baseline does) would silently lose that insertion here.
+        # No untrusted input reaches it, and the f-string is
         # confined to the first-party ``lib.*`` namespace. import_module by package
         # name (not spec_from_file_location) is required so shared modules' relative
         # imports (e.g. fr_tag_grammar's ``from .requirement_model``) resolve.
@@ -50,6 +63,13 @@ def load_shared_lib(name: str):
         _CACHE[name] = module
         return module
     finally:
+        # Restore the caller's exact path, then re-add shared/scripts at the END if it
+        # was not already there — preserving the historical "it is now importable" side
+        # effect while guaranteeing it can never SHADOW a plugin's own ``lib`` for a
+        # later bare ``from lib.X import …``. Front-precedence is scoped to the import.
+        sys.path[:] = saved_path
+        if shared not in sys.path:
+            sys.path.append(shared)
         for key in [k for k in sys.modules if k == "lib" or k.startswith("lib.")]:
             sys.modules.pop(key, None)
         sys.modules.update(saved)

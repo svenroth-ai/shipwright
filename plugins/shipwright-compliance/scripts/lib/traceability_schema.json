@@ -76,6 +76,24 @@
         "type": "string",
         "minLength": 1
       }
+    },
+    "fold_map": {
+      "type": "object",
+      "description": "The merged '## FR-Fold-Map' alias table in force: folded FR id -> its surviving capability FR. Optional + additive, and OMITTED ENTIRELY when the repo declares no fold-map, so a project without one emits a byte-identical manifest. A tag on a folded id is filed against the survivor (see testLink.resolved_from) instead of orphaning.",
+      "propertyNames": {
+        "pattern": "^FR-\\d{2}\\.\\d{2}$"
+      },
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^FR-\\d{2}\\.\\d{2}$"
+      }
+    },
+    "fold_defects": {
+      "type": "array",
+      "description": "Fold-map hygiene problems (cycle, conflicting/dangling/removed survivor, self-fold, unparsable row, folded id still active). Each fails CLOSED upstream — the affected tag keeps its orphan status — and is surfaced here so a broken alias table is loud rather than silently under-resolving. Omitted when empty.",
+      "items": {
+        "$ref": "#/$defs/foldDefect"
+      }
     }
   },
   "$defs": {
@@ -235,6 +253,53 @@
         "tag_source": {
           "enum": ["pytest_marker", "covers_comment", "native_tag", "title_suffix"],
           "description": "Which grammar form bound this tag (fr_tag_grammar.TAG_SOURCES)."
+        },
+        "resolved_from": {
+          "type": "string",
+          "pattern": "^FR-\\d{2}\\.\\d{2}$",
+          "description": "PROVENANCE ONLY. Present when the source tag named a FOLDED id and was resolved through fold_map to the surviving FR this link is filed under. The requirement this link covers is always the survivor (the node the link sits in); resolved_from records the id the test source literally carries, so an auditor reading @covers(\"FR-01.44\") can see why it counts toward FR-01.28. Omitted for a direct (non-folded) tag."
+        }
+      }
+    },
+    "foldDefect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "folded"],
+      "properties": {
+        "kind": {
+          "enum": [
+            "unparsable_row",
+            "self_fold",
+            "conflicting_survivor",
+            "cycle",
+            "folded_id_still_active",
+            "folded_id_removed",
+            "dangling_survivor",
+            "removed_survivor"
+          ],
+          "description": "Closed vocabulary (fr_fold_map.FOLD_DEFECT_KINDS), pinned by a drift-guard test."
+        },
+        "folded": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The folded id the defect is about (or '?' for an unparsable row). For a cycle, the smallest member id, so one loop yields one stable entry."
+        },
+        "survivor": {
+          "type": "string",
+          "description": "The survivor id the edge pointed at, when parseable."
+        },
+        "spec_path": {
+          "type": "string",
+          "description": "Relative path to the spec.md the fold-map row lives in."
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "1-based source line of the offending row, so the defect is actionable."
+        },
+        "raw": {
+          "type": "string",
+          "description": "Bounded, whitespace-flattened source row (<=160 chars). Repo-controlled text — a renderer MUST escape it."
         }
       }
     },

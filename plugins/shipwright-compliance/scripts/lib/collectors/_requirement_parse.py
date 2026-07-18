@@ -127,12 +127,20 @@ def parse_requirements(
     the gate and silently discard the author's intent (mirror of TT1 ``invalid_tags``).
     """
     rm = _load_model()
+    # Lines inside a ``## FR-Fold-Map`` section are ALIAS records, not requirements.
+    # Skipping them is load-bearing, not cosmetic: webui's fold table only avoids being
+    # parsed as 37 live FRs because its ids happen to be backticked. An author writing
+    # the same table unbackticked would resurrect every folded id as an active
+    # requirement demanding its own coverage — a large, baffling false-red.
+    fold_lines = load_shared_lib("fr_fold_map").fold_map_line_numbers(content)
     reqs: list = []
     colmap: dict[str, int] | None = None
     in_removed = False
     removed_level = 0
 
-    for line in content.splitlines():
+    for lineno, line in enumerate(content.splitlines()):
+        if lineno in fold_lines:
+            continue
         heading = _MD_HEADING_RE.match(line)
         if heading:
             level = len(heading.group(1))
