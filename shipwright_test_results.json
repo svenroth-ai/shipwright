@@ -1,100 +1,330 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-18-fr-existence-gate",
+    "run_id": "iterate-2026-07-18-outbox-newline-corruption",
     "date": "2026-07-18",
     "unit": {
-      "passed": 4310,
-      "failed": 0,
-      "skipped": 15,
-      "command": "uv run pytest shared/tests/ -q"
+      "status": "passed",
+      "passed": 4334,
+      "total": 4338,
+      "note": "4 pre-existing cross-plugin sys.path failures in test_setup_writes_canonical.py; clean origin/main shows 5 on the identical invocation (ADR-044/ADR-045)."
     },
     "integration": {
-      "passed": 234,
-      "failed": 0,
-      "command": "uv run pytest integration-tests/ -q"
+      "status": "passed",
+      "passed": 2,
+      "total": 2
     },
     "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "n/a"
     },
     "e2e": {
-      "status": "n/a",
-      "reason": "no user-facing surface; gate is a write-path predicate"
+      "status": "passed",
+      "passed": 2,
+      "total": 2
     },
     "design_fidelity": {
-      "status": "not_run"
+      "status": "n/a"
     },
     "smoke": {
-      "status": "not_run"
+      "status": "n/a"
     },
     "degraded": [
-      {
-        "condition": "integration-tests collection error when both test trees run in ONE pytest invocation",
-        "impact": "pre-existing sys.path pollution, reproduced on unmodified main; suites run separately",
-        "action": "not caused by this change; left as-is"
-      }
+      "4 pre-existing cross-plugin sys.path-pollution failures in shared/tests/test_setup_writes_canonical.py (ADR-044/ADR-045). Verified pre-existing: clean origin/main fails 5 on the same invocation, this branch fails 4. Not introduced by this iterate."
     ],
     "surface_verification": {
-      "surface": "none",
-      "justification": "no runtime surface: the change is a gate predicate on two event write paths, exercised by unit + integration tests",
-      "tests_run": 0,
-      "exit_code": 0
+      "surface": "cli",
+      "runner": "uv run pytest integration-tests/test_outbox_newline_corruption_e2e.py -q",
+      "exit_code": 0,
+      "tests_run": 2,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\outbox-newline-corruption\\.shipwright\\runs\\iterate-2026-07-18-outbox-newline-corruption\\surface_verification.log",
+      "timestamp": "2026-07-18T16:58:29.680Z",
+      "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
-      "enumeration_basis": {
-        "acs": 6,
-        "covered_acs": 6
-      },
-      "counts": {
-        "total": 8,
-        "tested": 8,
-        "untestable": 0,
-        "untested_testable": 0
-      },
       "behaviors": [
         {
-          "behavior": "Unknown affected_frs id blocked",
+          "behavior": "Missing file is safely appendable (no leading newline)",
           "disposition": "tested",
-          "evidence": "test_unknown_affected_fr_is_blocked"
+          "evidence": "test_jsonl_records.py::test_missing_file_is_safely_appendable PASSED"
         },
         {
-          "behavior": "Unknown new_frs id blocked",
+          "behavior": "Zero-byte file is safely appendable",
           "disposition": "tested",
-          "evidence": "test_unknown_new_fr_is_blocked"
+          "evidence": "test_jsonl_records.py::test_zero_byte_file_is_safely_appendable PASSED"
         },
         {
-          "behavior": "Error names every offender, blames no known id",
+          "behavior": "LF-terminated file needs no separator",
           "disposition": "tested",
-          "evidence": "test_error_names_every_offending_id"
+          "evidence": "test_jsonl_records.py::test_terminated_file_needs_no_separator PASSED"
         },
         {
-          "behavior": "Known ids pass; no-FR change_type branch untouched",
+          "behavior": "CRLF-terminated file counts as terminated",
           "disposition": "tested",
-          "evidence": "test_known_ids_pass, test_no_fr_change_type_branch_untouched"
+          "evidence": "test_jsonl_records.py::test_crlf_terminated_file_counts_as_terminated PASSED"
         },
         {
-          "behavior": "Absent planning dir does not block",
+          "behavior": "Unterminated file is detected",
           "disposition": "tested",
-          "evidence": "test_absent_planning_dir_does_not_block"
+          "evidence": "test_jsonl_records.py::test_unterminated_file_is_detected PASSED"
         },
         {
-          "behavior": "Zero parsed requirements warns but does not block",
+          "behavior": "Append onto unterminated OUTBOX does not concatenate",
           "disposition": "tested",
-          "evidence": "test_zero_parsed_requirements_does_not_block, test_spec_present_but_unparseable_is_found_with_no_ids"
+          "evidence": "test_triage_newline_integrity.py::test_append_onto_unterminated_outbox_does_not_concatenate PASSED"
         },
         {
-          "behavior": "Both write paths actually invoke the gates",
+          "behavior": "Append onto unterminated TRACKED store does not concatenate",
           "disposition": "tested",
-          "evidence": "test_finalize_path_runs_both_gates, test_cli_path_runs_the_existence_gate"
+          "evidence": "test_triage_newline_integrity.py::test_append_onto_unterminated_tracked_store_does_not_concatenate PASSED"
         },
         {
-          "behavior": "One entry point applies BOTH gates",
+          "behavior": "Guard is a no-op on the healthy path (no blank line)",
           "disposition": "tested",
-          "evidence": "test_combined_entry_point_applies_both_gates"
+          "evidence": "test_triage_newline_integrity.py::test_append_onto_terminated_file_adds_no_blank_line PASSED"
+        },
+        {
+          "behavior": "First append to an absent outbox is unaffected",
+          "disposition": "tested",
+          "evidence": "test_triage_newline_integrity.py::test_first_append_to_absent_outbox_is_unaffected PASSED"
+        },
+        {
+          "behavior": "Prevention holds end-to-end after the fix",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_outbox_newline_corruption_e2e.py::test_next_append_after_the_fix_cannot_concatenate PASSED"
+        },
+        {
+          "behavior": "Single record round-trips unchanged",
+          "disposition": "tested",
+          "evidence": "test_jsonl_records.py::test_single_record_round_trips PASSED"
+        },
+        {
+          "behavior": "Two concatenated records both recovered (the observed incident)",
+          "disposition": "tested",
+          "evidence": "test_jsonl_records.py::test_two_concatenated_records_both_recovered PASSED"
+        },
+        {
+          "behavior": "JSON whitespace between concatenated records is skipped",
+          "disposition": "tested",
+          "evidence": "test_jsonl_records.py::test_whitespace_between_concatenated_records_is_skipped PASSED"
+        },
+        {
+          "behavior": "Valid prefix survives an unrecoverable tail (partial recovery)",
+          "disposition": "tested",
+          "evidence": "test_jsonl_records.py::test_valid_prefix_survives_an_unrecoverable_tail PASSED"
+        },
+        {
+          "behavior": "Wholly unrecoverable line yields no records and full remainder",
+          "disposition": "tested",
+          "evidence": "test_jsonl_records.py::test_wholly_unrecoverable_line_yields_no_records_and_full_remainder PASSED"
+        },
+        {
+          "behavior": "Non-dict JSON is a fragment, not a record",
+          "disposition": "tested",
+          "evidence": "test_jsonl_records.py::test_non_dict_json_is_a_fragment_not_a_record PASSED"
+        },
+        {
+          "behavior": "Blank line is formatting, not corruption",
+          "disposition": "tested",
+          "evidence": "test_jsonl_records.py::test_blank_line_is_not_corruption PASSED"
+        },
+        {
+          "behavior": "Reader recovers the observed corruption",
+          "disposition": "tested",
+          "evidence": "test_jsonl_records.py::test_reader_recovers_the_observed_corruption PASSED"
+        },
+        {
+          "behavior": "Reader preserves order across recovered and clean lines",
+          "disposition": "tested",
+          "evidence": "test_jsonl_records.py::test_reader_preserves_order_across_recovered_and_clean_lines PASSED"
+        },
+        {
+          "behavior": "Missing file reads empty",
+          "disposition": "tested",
+          "evidence": "test_jsonl_records.py::test_missing_file_reads_empty PASSED"
+        },
+        {
+          "behavior": "Reader recovers both records through the triage API",
+          "disposition": "tested",
+          "evidence": "test_triage_newline_integrity.py::test_reader_recovers_both_records_from_one_physical_line PASSED"
+        },
+        {
+          "behavior": "Dismissal on a corrupted line propagates to read_all_items (user-visible symptom)",
+          "disposition": "tested",
+          "evidence": "test_triage_newline_integrity.py::test_dismissal_on_a_corrupted_line_propagates PASSED"
+        },
+        {
+          "behavior": "Unrecoverable line does not hide its valid neighbours",
+          "disposition": "tested",
+          "evidence": "test_triage_newline_integrity.py::test_unrecoverable_line_does_not_hide_its_valid_neighbours PASSED"
+        },
+        {
+          "behavior": "Full incident reproduced and resolved end-to-end",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_outbox_newline_corruption_e2e.py::test_the_reported_incident_end_to_end PASSED"
+        },
+        {
+          "behavior": "Unrecoverable text is returned as data (RecordRead.corrupt) with path and line_no",
+          "disposition": "tested",
+          "evidence": "test_jsonl_records.py::test_reader_reports_unrecoverable_text_as_data PASSED"
+        },
+        {
+          "behavior": "Leaf library never prints (reporting is at the command boundary)",
+          "disposition": "tested",
+          "evidence": "test_jsonl_records.py::test_leaf_never_prints PASSED"
+        },
+        {
+          "behavior": "Invalid UTF-8 degrades to a fragment instead of blacking out every reader",
+          "disposition": "tested",
+          "evidence": "test_jsonl_records.py::test_invalid_utf8_degrades_to_a_fragment_instead_of_raising PASSED"
+        },
+        {
+          "behavior": "Deeply nested blob does not escape as RecursionError",
+          "disposition": "tested",
+          "evidence": "test_jsonl_records.py::test_deeply_nested_blob_does_not_raise_recursionerror PASSED"
+        },
+        {
+          "behavior": "Unicode whitespace is not accepted between records",
+          "disposition": "tested",
+          "evidence": "test_jsonl_records.py::test_unicode_whitespace_is_not_accepted_between_records PASSED"
+        },
+        {
+          "behavior": "Scan reports a concatenated line",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_scan_reports_a_concatenated_line PASSED"
+        },
+        {
+          "behavior": "Scan is clean on a healthy file",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_scan_is_clean_on_a_healthy_file PASSED"
+        },
+        {
+          "behavior": "Scan flags an unterminated file (latent corruption)",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_scan_flags_an_unterminated_file PASSED"
+        },
+        {
+          "behavior": "Scan separates unrecoverable text from recovered records",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_scan_separates_unrecoverable_text PASSED"
+        },
+        {
+          "behavior": "Report mode never mutates",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_report_mode_never_mutates PASSED"
+        },
+        {
+          "behavior": "Report mode takes no lock (read-only, must not block producers)",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_report_mode_takes_no_lock PASSED"
+        },
+        {
+          "behavior": "--apply requires --writers-quiesced (inode-swap safety)",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_apply_requires_the_quiesced_acknowledgement PASSED"
+        },
+        {
+          "behavior": "--apply splits the line and preserves BOTH records",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_apply_splits_the_line_and_preserves_both_records PASSED"
+        },
+        {
+          "behavior": "--apply terminates an unterminated file",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_apply_terminates_an_unterminated_file PASSED"
+        },
+        {
+          "behavior": "--apply quarantines unrecoverable text verbatim (never dropped)",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_apply_quarantines_unrecoverable_text_verbatim PASSED"
+        },
+        {
+          "behavior": "Retry after a crashed replace does not double-quarantine (content-hash dedupe)",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_retry_after_a_crashed_replace_does_not_double_quarantine PASSED"
+        },
+        {
+          "behavior": "Repeated identical fragments quarantine once within a run",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_repeated_identical_fragments_quarantine_once PASSED"
+        },
+        {
+          "behavior": "Second run on a repaired file is a clean no-op",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_second_run_on_a_repaired_file_is_clean PASSED"
+        },
+        {
+          "behavior": "Scan happens INSIDE the lock under --apply (no TOCTOU)",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_apply_scans_inside_the_lock PASSED"
+        },
+        {
+          "behavior": "CRLF tracked log is not reflowed to LF (no whole-file diff on merge=union)",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_crlf_tracked_log_is_not_reflowed_to_lf PASSED"
+        },
+        {
+          "behavior": "Healthy lines are preserved byte-for-byte (no re-serialization)",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_healthy_lines_are_preserved_byte_for_byte PASSED"
+        },
+        {
+          "behavior": "File with invalid UTF-8 is reported but never rewritten",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_file_with_invalid_utf8_is_reported_but_not_rewritten PASSED"
+        },
+        {
+          "behavior": "Wholly unrecoverable file is not emptied (schema header survives)",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_wholly_unrecoverable_file_is_not_emptied PASSED"
+        },
+        {
+          "behavior": "Repaired file reads back identically through the public API",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_repaired_file_reads_back_through_the_public_api PASSED"
+        },
+        {
+          "behavior": "Clean corpus is a no-op",
+          "disposition": "tested",
+          "evidence": "test_triage_repair.py::test_clean_corpus_is_a_noop PASSED"
+        },
+        {
+          "behavior": "Reader leaks no file handle",
+          "disposition": "tested",
+          "evidence": "test_jsonl_records.py::test_reader_leaks_no_file_handle PASSED"
+        },
+        {
+          "behavior": "Round-trip preserves unicode through repair",
+          "disposition": "tested",
+          "evidence": "test_triage_newline_integrity.py::test_round_trip_preserves_unicode_through_repair PASSED"
+        },
+        {
+          "behavior": "Round-trip survives a CRLF tracked store",
+          "disposition": "tested",
+          "evidence": "test_triage_newline_integrity.py::test_round_trip_survives_a_crlf_tracked_store PASSED"
+        },
+        {
+          "behavior": "Round-trip append-then-read is lossless for every field",
+          "disposition": "tested",
+          "evidence": "test_triage_newline_integrity.py::test_round_trip_append_then_read_is_lossless_for_every_field PASSED"
+        },
+        {
+          "behavior": "triage.py stays at its ADR-100 bloat baseline of 704 lines (header cluster extracted)",
+          "disposition": "tested",
+          "evidence": "wc -l shared/scripts/triage.py == 704; uvx ruff@0.15.15 check . clean"
+        },
+        {
+          "behavior": "Cross-primitive write race between this repo's fcntl/msvcrt byte-lock and the webui's directory-based proper-lockfile",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "note": "The two primitives do not compose (documented in the webui triage-write.ts header). This is WHY --writers-quiesced exists; the guard itself is tested by test_apply_requires_the_quiesced_acknowledgement. Webui-side fix tracked as triage trg-a20314c2."
         }
-      ]
+      ],
+      "counts": {
+        "total": 55,
+        "tested": 54,
+        "untestable": 1,
+        "untested_testable": 0
+      }
     }
   },
   "coverage": {

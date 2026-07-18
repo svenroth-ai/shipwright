@@ -1,0 +1,1 @@
+Triage log: a record written without a trailing newline let the next writer append onto the same line, and the reader discarded BOTH records — so an operator's dismissal could silently fail to propagate. Writers now guarantee termination and readers recover all records on a shared line.

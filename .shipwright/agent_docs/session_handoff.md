@@ -1,36 +1,38 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-18-fr-existence-gate"
+run_id: "iterate-2026-07-18-outbox-newline-corruption"
 phase: "iterate"
-reason: "iterate: FR-existence gate — declared requirement ids must exist"
-timestamp: "2026-07-18T16:11:11.897795+00:00"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-07-18T17:04:27.470053+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-18 16:11:11 UTC
+> Auto-generated 2026-07-18 17:04:27 UTC
 
 ## Session Info
 
-- **Session ID**: 29a26685-f650-4a1d-a048-e9730774350b
-- **Timestamp**: 2026-07-18 16:11:11 UTC
-- **Reason**: iterate: FR-existence gate — declared requirement ids must exist
+- **Session ID**: 583f972d-6945-4147-8ab7-dcc583aab8d5
+- **Timestamp**: 2026-07-18 17:04:27 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-18-fr-existence-gate
-- **Date**: 2026-07-18T16:11:06.125067Z
-- **Type**: change
+- **Run ID**: iterate-2026-07-18-outbox-newline-corruption
+- **Date**: 2026-07-18T17:04:22.012631Z
+- **Type**: bug
 - **Complexity**: medium
-- **Branch**: iterate/fr-existence-gate
-- **ADR**: iterate-2026-07-18-fr-existence-gate
+- **Branch**: iterate/outbox-newline-corruption
+- **ADR**: iterate-2026-07-18-outbox-newline-corruption
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-18-fr-existence-gate.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-18-outbox-newline-corruption.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/fr-existence-gate
-- **Spec**: .shipwright/planning/iterate/2026-07-18-fr-existence-gate.md
+- **Branch**: iterate/outbox-newline-corruption
+- **Run ID**: iterate-2026-07-18-outbox-newline-corruption
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-18-outbox-newline-corruption.md
+- **Complexity**: medium (`prior_source: history`, n=20)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -49,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/fr-existence-gate
-- **Last Commit**: 4fe2d680 feat(traceability): resolve tagged FR ids through the spec FR-Fold-Map (#397)
+- **Branch**: iterate/outbox-newline-corruption
+- **Last Commit**: ca56a164 Merge remote-tracking branch 'origin/main' into iterate/outbox-newline-corruption
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,14 +70,14 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 |-------|------|--------|------|
 | evt-9f5dc340 | grade_snapshot | — | 2026-07-18 |
 | evt-3d1c18b7 | work_completed | iterate (iterate: FR-existence gate — declared requirement ids must exist) | 2026-07-18 |
+| evt-695d77cd | grade_snapshot | — | 2026-07-18 |
+| evt-14ef5fcb | work_completed | iterate (iterate: enforce record termination + recover record boundaries on the triage log) | 2026-07-18 |
 | evt-7518638a | grade_snapshot | — | 2026-07-18 |
-| evt-bcfaff37 | grade_snapshot | — | 2026-07-18 |
-| evt-b58979bd | work_completed | iterate (iterate: suppress non-literal-import FP in the layer-coverage verifier) | 2026-07-18 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 327
+- **Total work events**: 328
 - **Last iterate**: change — iterate: FR-existence gate — declared requirement ids must exist (2026-07-18)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

@@ -355,6 +355,32 @@ per-finding mapping):
   triggers that source's legacy migration (preserves the ADR-052
   fail-soft invariant).
 
+Refined by `iterate-2026-07-18-outbox-newline-corruption` (record-boundary
+integrity — an operator dismissal must not be lost to a malformed line):
+
+- (E) Given a writer appends to `.shipwright/triage.jsonl` or the per-tree
+  `.shipwright/triage.outbox.jsonl`, when the file does not already end with a
+  newline, then the writer terminates it first — so a record can never be
+  concatenated onto its predecessor's physical line. Missing and zero-byte files
+  are appendable as-is; a CRLF-terminated file already counts as terminated.
+- (E) Given a physical line nonetheless holds several concatenated records, when
+  any consumer reads the store, then ALL of them are recovered in wire order —
+  previously the whole line was skipped, silently discarding every record on it,
+  so an operator dismissal read as "still open" while the operator believed the
+  item closed.
+- (E) Given text on such a line genuinely cannot be decoded, when it is read, then
+  the valid records around it still resolve and the undecodable remainder is
+  surfaced as data (`RecordRead.corrupt`) rather than being indistinguishable
+  from absence. Invalid UTF-8 degrades the affected line only; it never fails the
+  whole read closed.
+- (E) Given lines already corrupted on disk, when `tools/triage_repair.py --apply
+  --writers-quiesced` runs, then each is split back onto its own line preserving
+  BOTH records, undecodable text is quarantined verbatim before the source is
+  replaced, and a file whose bytes cannot be preserved is reported and left
+  untouched. Reporting is the default; the quiesce acknowledgement is required
+  because the atomic replace swaps the inode and the WebUI writer does not share
+  the lock primitive.
+
 Refined by `iterate-2026-05-21-security-artifact-producer` (parallel
 artifact ingestion path for the `gh-security` action-unit — closes the
 Triage Inbox gap on private repos without GHAS):
