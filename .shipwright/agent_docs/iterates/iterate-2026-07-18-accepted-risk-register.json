@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-18-accepted-risk-register",
+  "date": "2026-07-18T20:41:06.396378Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/accepted-risk-register",
+  "spec": ".shipwright/planning/iterate/2026-07-18-accepted-risk-register.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-18-accepted-risk-register"
+}

@@ -1,0 +1,89 @@
+# Shipwright accepted-risk register — the single human-authored record of every
+# consciously accepted security finding in THIS repo.
+#
+# Why this file exists: the only accepted-risk due date the framework had was
+# `expired_at` inside `.trivyignore.yaml`, a Trivy SCA ignore file. A Semgrep or
+# CI-posture acceptance had nowhere to record an expiry, so a Semgrep decision
+# ended up registered inside a Trivy ignore file just to get one. This register
+# is scanner-agnostic. (trg-15a8e267, item 4 of trg-9509c2e8.)
+#
+# This file RECORDS acceptances; it does not APPLY them. The scanner wiring stays
+# where it is (`.trivyignore.yaml` is still Trivy's --ignorefile input, the
+# SHIPWRIGHT_SEMGREP_* env vars are still read from security.yml). A
+# both-directions drift gate keeps the two in lockstep:
+#
+#     uv run shared/scripts/tools/accepted_risks_cli.py check --project-root .
+#
+# Enforced in CI by shared/tests/test_accepted_risks_register.py:
+#   - every source-controlled suppression must have an entry here, and
+#   - every entry here must match a real suppression, and
+#   - an entry past its `expires` date FAILS the build.
+#
+# Fields (all required unless noted):
+#   id             stable, human-readable, unique
+#   target         trivy-ignore | semgrep-rule-exclusion | semgrep-policy-toggle
+#                  | github-dismissal   (only the first three are checkable offline)
+#   rule           the scanner-native identifier this acceptance is keyed to.
+#                  For `semgrep-policy-toggle` this is the ENV VAR NAME that
+#                  carries the policy, because that is the exact thing the drift
+#                  gate can match on.
+#   expires        YYYY-MM-DD re-review date. The date itself is still active;
+#                  the day AFTER it, the build goes red. Evaluated in UTC.
+#   rationale_ref  a RECORDED decision: ADR-NNN, an iterate-YYYY-MM-DD-slug run
+#                  id, #NNN, or DO-NOT #NNN. Prose like "TODO" is rejected.
+#   statement      why this is accepted rather than fixed.
+#   scope          optional mapping narrowing the acceptance.
+#
+# This is NOT a place to silence a real, reachable finding. Prefer a root
+# remediation whenever one exists (shared/constitution.md, ADR-239).
+
+schema: 1
+
+acceptances:
+  - id: ar-2026-06-22-otel-baggage-dev-only
+    target: trivy-ignore
+    rule: CVE-2026-54285
+    scope:
+      paths:
+        - "plugins/shipwright-test/scripts/perf/package-lock.json"
+    expires: 2026-12-22
+    rationale_ref: iterate-2026-06-22-trivy-risk-accept
+    statement: >-
+      @opentelemetry/core 1.30.1 unbounded memory allocation in W3C Baggage
+      propagation. Transitive and dev-only: it reaches this repo solely through
+      the Lighthouse perf-runner (lighthouse -> @sentry/node -> @opentelemetry/*),
+      whose Sentry OTel tracing is never initialized, and the runner drives Chrome
+      with no untrusted Baggage header input, so the vulnerable path is not
+      reachable. The only fix (2.8.0) is a MAJOR bump the pinned tree refuses.
+      Re-fix when lighthouse ships an OTel-2.x dependency tree. Operational entry
+      lives in .trivyignore.yaml (Trivy's --ignorefile input).
+
+  - id: ar-2026-07-03-dependabot-cooldown-inert-config
+    target: semgrep-rule-exclusion
+    rule: package_managers.dependabot.dependabot-missing-cooldown.dependabot-missing-cooldown
+    expires: 2027-01-03
+    rationale_ref: ADR-271
+    statement: >-
+      .github/dependabot.yml is DORMANT by decision (open-pull-requests-limit: 0
+      on every ecosystem), so it opens zero pull requests. A cooldown window on a
+      config that never proposes an update is meaningless, and the rule fires 14
+      times per scan. Suppressed at the producer rather than dismissed weekly in
+      triage, because a dismissal re-surfaces from each fresh scan.
+
+  - id: ar-2026-07-03-gh-owned-mutable-action-tags
+    target: semgrep-policy-toggle
+    rule: SHIPWRIGHT_SEMGREP_ACCEPT_GH_OWNED_ACTION_TAGS
+    scope:
+      owner: [actions, github]
+      suppresses_rule: >-
+        yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
+    expires: 2027-01-03
+    rationale_ref: ADR-271
+    statement: >-
+      GitHub-owned actions (actions/*, github/*) stay on mutable major tags by
+      framework decision; SHA-pinning them requires a hosted dependency updater to
+      avoid tag rot, and the framework declines hosted services for PORTABILITY,
+      not cost. Re-affirmed 2026-07-18 by the webui ADR
+      iterate-2026-07-18-unpin-actions-no-dependabot after PR #285 reversed it
+      unnoticed. The channel is OWNER-SCOPED: an unpinned THIRD-PARTY action is
+      still flagged, which is the supply-chain guard the rule exists for.

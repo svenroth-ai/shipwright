@@ -31,7 +31,7 @@ ids already live in the committed ``.trivyignore.yaml``.
 from __future__ import annotations
 
 import json
-from datetime import date, datetime
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -146,59 +146,17 @@ def write_ci_security(project_root: Path | str, summary: dict) -> Path:
     return path
 
 
-def _coerce_date(value: Any) -> date | None:
-    """Best-effort ``date`` from a YAML date or an ISO ``YYYY-MM-DD`` string."""
-    if isinstance(value, datetime):
-        return value.date()
-    if isinstance(value, date):
-        return value
-    if isinstance(value, str):
-        try:
-            return date.fromisoformat(value.strip()[:10])
-        except ValueError:
-            return None
-    return None
-
-
-def parse_accepted_risks(
-    project_root: Path | str, *, now: date
-) -> list[dict[str, Any]]:
-    """Parse the ``.trivyignore.yaml`` accepted-risk register.
-
-    Returns one row per documented acceptance — ``{id, expired_at, expired}`` —
-    with ``expired`` computed against ``now``. Tolerant of a missing/empty/
-    malformed register (returns ``[]``); an entry without an ``id`` is skipped.
-    """
-    root = Path(project_root)
-    doc: Any = None
-    for name in _TRIVYIGNORE_NAMES:
-        path = root / name
-        if path.exists():
-            # Lazy (see module-top note): import PyYAML only when a register
-            # file actually exists, so the cross-plugin import chain — and any
-            # repo without a .trivyignore.yaml — never needs the dependency.
-            import yaml
-            try:
-                doc = yaml.safe_load(path.read_text(encoding="utf-8"))
-            except (OSError, yaml.YAMLError):
-                return []
-            break
-    if not isinstance(doc, dict):
-        return []
-    rows: list[dict[str, Any]] = []
-    for entry in doc.get("vulnerabilities") or []:
-        if not isinstance(entry, dict) or not entry.get("id"):
-            continue
-        parsed = _coerce_date(entry.get("expired_at"))
-        expired_at = entry.get("expired_at")
-        rows.append({
-            "id": str(entry["id"]),
-            "expired_at": (
-                parsed.isoformat() if parsed
-                else (str(expired_at) if expired_at else "")),
-            "expired": bool(parsed and parsed < now),
-        })
-    return rows
+# The accepted-risk view moved to its own module when this file approached the
+# 300-line cap, and was widened there: it now correlates the scanner-agnostic
+# register (`shipwright_accepted_risks.yaml`) with the operational suppressions,
+# reads the classic flat `.trivyignore` the scanner also honours, and surfaces
+# the `statement` / `rationale_ref` an auditor needs. Re-exported so existing
+# callers (and the grade re-export bridge) are unchanged.
+from .accepted_risk_view import (  # noqa: F401
+    _coerce_date,
+    accepted_risk_rows,
+    parse_accepted_risks,
+)
 
 
 def _gate_badge(summary: dict) -> str:
@@ -243,18 +201,37 @@ def render_ci_security(project_root: Path | str, *, now: date) -> list[str]:
         "",
     ])
 
-    accepted = parse_accepted_risks(project_root, now=now)
+    accepted, degraded_note = accepted_risk_rows(project_root, now=now)
+    if degraded_note:
+        # Never let an unreadable register render as "nothing accepted".
+        lines.extend([f"> ⚠️ Accepted-risk register: {degraded_note}", ""])
     if accepted:
         lines.extend([
-            "**Accepted risks** (`.trivyignore.yaml` register):",
+            "**Accepted risks** (`shipwright_accepted_risks.yaml` register):",
             "",
-            "| CVE / ID | Expires | Status |",
-            "|----------|---------|--------|",
+            "| ID | Target | Expires | Status | Recorded under |",
+            "|----|--------|---------|--------|----------------|",
         ])
         for row in accepted:
-            status = "⚠️ EXPIRED — re-review" if row["expired"] else "active"
+            # Status is COMPOSED, not a single winner: a suppression can be both
+            # unrecorded and past due, and reporting only the first would hide
+            # the other. Facts accumulate; severity orders them.
+            flags = []
+            if row["source"] == "unregistered":
+                # Suppressed but not recorded: that is drift, not an accepted
+                # risk. Rendering it as "active" would launder it into one.
+                flags.append("❌ UNRECORDED — no register entry")
+            if row["expired"]:
+                flags.append("⚠️ EXPIRED — re-review")
+            if not flags:
+                flags.append(
+                    "recorded (suppression not verified here)"
+                    if row["source"] == "registered" else "active")
+            status = " · ".join(flags)
             lines.append(
-                f"| {row['id']} | {row['expired_at'] or '—'} | {status} |")
+                f"| {row['id']} | {row['target'] or '—'} | "
+                f"{row['expires'] or '—'} | {status} | "
+                f"{row['rationale_ref'] or '—'} |")
         lines.append("")
 
     footer = (

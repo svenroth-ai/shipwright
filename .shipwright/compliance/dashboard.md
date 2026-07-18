@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-07-18T17:04:22.088722+00:00
+Generated: 2026-07-18T20:41:06.472191+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -12,9 +12,9 @@ Scope: library
 
 | | Dimension | Signal | Anchor |
 |---|-----------|--------|--------|
-| ✅ | Requirement traceability | 14/15 FRs covered; 329/329 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
+| ✅ | Requirement traceability | 14/15 FRs covered; 330/330 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
 | ✅ | Test health | latest full suite 5936/5936 (2026-07-16) | automated tests pass (OpenSSF Scorecard) |
-| ✅ | Change traceability | 329/329 changes linked to a commit, ADR or test run | change provenance (SLSA) |
+| ✅ | Change traceability | 330/330 changes linked to a commit, ADR or test run | change provenance (SLSA) |
 | ⚠️ | Change reconciliation | 7/8 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
 | ✅ | Security | 0 open high/critical | no open high/critical vulns (NIST SSDF) |
 | ✅ | Size / maintainability discipline | ratchet delta -208 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
@@ -22,13 +22,13 @@ Scope: library
 
 > 📊 **Test-Health · diff-coverage (Control-Grade input · target ≥80%):** not measured this session — per-PR signal; see the CI "Diff coverage" artifact.
 
-Verified from: `shipwright_events.jsonl (329 events, 2026-05-02 → 2026-07-18)`
+Verified from: `shipwright_events.jsonl (330 events, 2026-05-02 → 2026-07-18)`
 
 _Grade = importance-weighted average over the measurable dimensions (n/a excluded from the denominator), modeled on OpenSSF Scorecard. Age is neutral; only unreconciled change and net growth are control failures. Each Anchor names the open standard the dimension follows — see the guide's Control-Grade dimensions table._
 
 ## 🛡️ CI Security (fail-closed gate)
 
-Latest scan: **2026-07-18** · source `security.yml#29654198720` · critical-gate **✅ PASS**
+Latest scan: **2026-07-18** · source `security.yml#29655175859` · critical-gate **✅ PASS**
 
 | Severity | Count |
 |----------|-------|
@@ -39,11 +39,13 @@ Latest scan: **2026-07-18** · source `security.yml#29654198720` · critical-gat
 
 Prompt-injection findings: **0**
 
-**Accepted risks** (`.trivyignore.yaml` register):
+**Accepted risks** (`shipwright_accepted_risks.yaml` register):
 
-| CVE / ID | Expires | Status |
-|----------|---------|--------|
-| CVE-2026-54285 | 2026-12-22 | active |
+| ID | Target | Expires | Status | Recorded under |
+|----|--------|---------|--------|----------------|
+| ar-2026-06-22-otel-baggage-dev-only | trivy-ignore | 2026-12-22 | active | iterate-2026-06-22-trivy-risk-accept |
+| ar-2026-07-03-dependabot-cooldown-inert-config | semgrep-rule-exclusion | 2027-01-03 | active | ADR-271 |
+| ar-2026-07-03-gh-owned-mutable-action-tags | semgrep-policy-toggle | 2027-01-03 | active | ADR-271 |
 
 _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict only — no finding detail). The local `.shipwright/securityreports/` is intentionally **not** used (stale/FP-laden). Open high/critical feed the Control Grade's Security dimension._
 
@@ -52,21 +54,21 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Metric | Value | Status | Why warn? |
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
-| Work events (iterate) | 329 changes | INFO |  |
+| Work events (iterate) | 330 changes | INFO |  |
 | Recent changes traced to an FR | 3/30 (10%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
-| All unit tests passing | 5936/5936 | PASS | +14 change(s) since last full suite |
+| All unit tests passing | 5936/5936 | PASS | +15 change(s) since last full suite |
 | Architecture decisions | 327 ADRs | INFO |  |
 | Iterate tests passing | 46/58 testable changes tested | WARN | 12 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 11 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 10 open | WARN | 10 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Triage open | 7 open | WARN | 7 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit (grandfathered) | 123 | INFO |  |
 | Bloat in allowlist | 154 entries | INFO |  |
 | Bloat ratchet delta | -208 lines | PASS |  |
 
 ## Project Velocity
 
-- Iterate: 329 changes (2026-05-02 → 2026-07-18)
+- Iterate: 330 changes (2026-05-02 → 2026-07-18)
 - Last activity: 2026-07-18
 
 ## External LLM Review Evidence

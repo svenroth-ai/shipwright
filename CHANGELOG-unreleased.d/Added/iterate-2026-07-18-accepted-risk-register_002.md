@@ -1,0 +1,1 @@
+`accepted_risks_cli check` / `expire` reconcile the register against the suppressions actually in place, in both directions: a suppression nobody recorded fails, and so does a record whose suppression is gone. Both run in CI, so an expiry can no longer be ignored.
