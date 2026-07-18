@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-07-18T06:41:35.319788+00:00
+Generated: 2026-07-18T09:03:21.735990+00:00
 Total commits: 1162
 
 ## Commit Distribution
@@ -362,7 +362,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-18 | fr-authoring | plain-language capability-level FR rules + advisory hygiene audit | 063dd3d2cc72 |
+| 2026-07-18 | fr-authoring | plain-language capability-level FR rules + advisory hygiene audit (#395) | 29d09188e1dd |
 | 2026-07-17 | agent-docs | canonical run_id changelog anchor + shape gate; kill aggregator ADR dup (#391) | 00174d952230 |
 | 2026-07-17 | traceability | backfill 189 plugin/shared @FR tags + config-aware TT5 gate (STEP 1) (#390) | a419ce461f8c |
 | 2026-07-16 | compliance | config-driven test_roots for the test_links collector (#387) | 853a45217dc6 |
@@ -689,7 +689,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-18 | triage | sweep 1 outbox append(s) into branch | 488e78387dbb |
+| 2026-07-18 | triage | sweep 1 outbox append(s) into branch | 9cb4a44639fe |
 | 2026-07-18 | test-hygiene | resolve 51 pre-existing skipped-test findings (STEP 2) (#393) | 490a624e39f8 |
 | 2026-07-18 | traceability | dismiss STEP 3 FR-unmapped review card + record accepted-state policy (#392) | 9bff5d72718b |
 | 2026-07-17 | compliance | mark shared-lib loader import_module as by-design (semgrep FP) (#388) | fc6957724db1 |

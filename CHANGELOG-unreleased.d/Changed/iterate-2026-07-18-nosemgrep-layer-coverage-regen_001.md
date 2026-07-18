@@ -1,0 +1,1 @@
+Marked the collector loader's `importlib.import_module` call in the layer-coverage verifier as a by-design dynamic import, so the security scan no longer reports it as a medium finding (the imported module names are a fixed internal list, not user input).
