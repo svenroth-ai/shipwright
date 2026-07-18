@@ -18,6 +18,7 @@ Stable surface
 * :func:`touches_build_files` / :data:`TOUCHES_BUILD_FILE_PATTERNS`
 * :func:`is_io_boundary_change` / :data:`IO_BOUNDARY_FILE_PATTERNS`
 * :func:`is_cross_component_change` / :data:`CROSS_COMPONENT_FILE_PATTERNS`
+* :func:`is_ci_supplychain_change` / :data:`CI_SUPPLYCHAIN_FILE_PATTERNS`
 """
 
 from __future__ import annotations
@@ -129,6 +130,56 @@ def is_cross_component_change(changed_files: list[str] | None) -> bool:
     for path in changed_files:
         normalized = path.replace("\\", "/")
         for pattern in CROSS_COMPONENT_FILE_PATTERNS:
+            if re.search(pattern, normalized):
+                return True
+    return False
+
+
+# The CI trust boundary: the files that decide WHICH third-party code runs with
+# repository credentials. Changing them fired zero risk flags before
+# iterate-2026-07-18-ci-supplychain-risk-flag — proven twice live (webui #285 ran
+# a full medium iterate with `risk_flags: []`, and its revert reproduced it).
+# SSoT; the F11 verifier keeps a drift-pinned copy (no cross-plugin import, ADR-044).
+#
+# Anchored at `^` on purpose: paths come from `git diff --name-only` and are
+# repo-relative, so `docs/.github/workflows/x.yml` is NOT this repo's CI boundary.
+# Deliberately EXCLUDES shared/templates/github-actions/* — the shipped templates
+# are the adopters' trust boundary and belong to triage trg-9509c2e8 item 1;
+# folding them in here would blur what this flag means.
+CI_SUPPLYCHAIN_FILE_PATTERNS = (
+    r"^\.github/workflows/.+\.ya?ml$",
+    r"^\.github/dependabot\.ya?ml$",
+    r"^\.github/actions/.+$",
+    # Any hosted dependency-updater config, not just Dependabot: reintroducing the
+    # posture under a different filename must not escape the gate.
+    r"^\.github/renovate\.json5?$",
+    r"^renovate\.json5?$",
+    r"^\.renovaterc(\.json)?$",
+)
+
+
+def _normalize_ci_path(path: str) -> str:
+    """Repo-relative POSIX path. `git` quotes non-ASCII paths by default
+    (core.quotePath), and a leading quote would defeat the `^` anchor."""
+    norm = path.replace("\\", "/").strip()
+    if len(norm) >= 2 and norm.startswith('"') and norm.endswith('"'):
+        norm = norm[1:-1]
+    return norm
+
+
+def is_ci_supplychain_change(changed_files: list[str] | None) -> bool:
+    """Return True if any changed file is part of the CI supply-chain trust
+    boundary (workflows, the dependency-updater config, composite actions).
+
+    Diff-driven — caller passes `git diff --name-only` output. Deletions and both
+    sides of a rename appear there as plain paths, so this never touches the
+    filesystem: a DELETED security workflow must trigger just like an edited one.
+    Mirrors is_cross_component_change."""
+    if not changed_files:
+        return False
+    for path in changed_files:
+        normalized = _normalize_ci_path(path)
+        for pattern in CI_SUPPLYCHAIN_FILE_PATTERNS:
             if re.search(pattern, normalized):
                 return True
     return False

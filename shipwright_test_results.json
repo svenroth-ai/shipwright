@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-18-fr-fold-map-resolution",
+    "run_id": "iterate-2026-07-18-ci-supplychain-risk-flag",
     "date": "2026-07-18",
     "unit": {
       "status": "passed",
-      "passed": 8475,
-      "total": 8475
+      "passed": 8416,
+      "total": 8416
     },
     "integration": {
       "status": "passed",
@@ -18,9 +18,9 @@
       "total": 0
     },
     "e2e": {
-      "status": "passed",
-      "passed": 2,
-      "total": 2
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "design_fidelity": {
       "status": "not_run"
@@ -31,194 +31,91 @@
     "degraded": [],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest integration-tests/test_fold_map_e2e.py -q",
+      "runner": "pytest",
       "exit_code": 0,
-      "tests_run": 2,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\fr-fold-map-resolution\\.shipwright\\runs\\iterate-2026-07-18-fr-fold-map-resolution\\surface_verification.log",
-      "timestamp": "2026-07-18T09:01:37.352Z",
-      "attempts": 1
+      "tests_run": 17,
+      "evidence_path": "shared/tests/test_record_ci_supplychain_ack.py",
+      "timestamp": "2026-07-18",
+      "justification": "The user-facing surface this iterate adds is the record_ci_supplychain_ack CLI. It is driven end-to-end through rec.main([...]) against a real git worktree, then verified by the F11 gate reading the committed tree — the same working-tree -> commit boundary a real iterate crosses. No web/UI surface exists in this diff."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "Folded tag binds to the surviving FR, no orphan, resolved_from recorded (AC1)",
+          "behavior": "Detector fires on .github/workflows/**, dependabot.y(a)ml, .github/actions/** and renovate configs; near-misses (docs/.github/..., .github/workflow/, .github/dependabot.json) do not; deletions and renames trigger",
           "disposition": "tested",
-          "evidence": "test_test_links_fold_map.py::test_folded_tag_binds_to_survivor_and_produces_no_orphan PASSED"
+          "evidence": "test_ci_supplychain_detector.py — 16 passed"
         },
         {
-          "behavior": "D-orphan passes on a fold-resolved tag (AC6)",
+          "behavior": "Gate FAILS when a CI file is touched with no acknowledgement",
           "disposition": "tested",
-          "evidence": "test_test_links_fold_map.py::test_D_orphan_passes_on_a_fold_resolved_tag PASSED"
+          "evidence": "test_fails_when_ci_touched_without_any_ack PASSED"
         },
         {
-          "behavior": "A live-FR tag is never redirected by a fold-map (AC2)",
+          "behavior": "Gate PASSES with a valid run- and content-bound acknowledgement",
           "disposition": "tested",
-          "evidence": "test_test_links_fold_map.py::test_a_live_fr_tag_is_not_redirected_by_a_fold_map PASSED"
+          "evidence": "test_passes_with_a_valid_bound_ack PASSED"
         },
         {
-          "behavior": "An active-but-folded id keeps its own coverage obligation",
+          "behavior": "An acknowledgement from a different run is rejected (stale-ack false-green found by external review)",
           "disposition": "tested",
-          "evidence": "test_fr_fold_map_hardening.py::test_active_folded_id_keeps_its_own_coverage_and_ignores_its_fold_entry PASSED"
+          "evidence": "test_rejects_ack_from_a_different_run PASSED"
         },
         {
-          "behavior": "Chain resolves to the first active id, through removed/absent intermediates",
+          "behavior": "An acknowledgement whose fingerprint covers a different CI path set is rejected (acking a workflow tweak cannot license a dependabot.yml revival)",
           "disposition": "tested",
-          "evidence": "test_fr_fold_map_hardening.py::test_chain_resolves_through_a_REMOVED_intermediate_to_an_active_terminal PASSED"
+          "evidence": "test_rejects_ack_whose_fingerprint_matches_a_different_change PASSED"
         },
         {
-          "behavior": "Cycle fails closed and terminates (AC3)",
+          "behavior": "Editing a CI file AFTER recording invalidates the acknowledgement (content-blindness found by code review)",
           "disposition": "tested",
-          "evidence": "test_fr_fold_map.py::test_cycle_fails_closed_and_terminates + ::test_depth_cap_terminates_a_long_chain PASSED"
+          "evidence": "test_ack_is_invalidated_when_the_ci_file_changes_after_recording PASSED; test_fingerprint_changes_when_ci_file_content_changes PASSED"
         },
         {
-          "behavior": "Dangling / removed survivor fails closed (AC3)",
+          "behavior": "Filler cannot satisfy the gate: empty/short statement, reference-free consistent_with",
           "disposition": "tested",
-          "evidence": "test_fr_fold_map.py::test_dangling_survivor_fails_closed + test_fr_fold_map_hardening.py::test_chain_whose_terminal_is_removed_fails_closed PASSED"
+          "evidence": "test_rejects_filler_statement, test_rejects_consistent_with_that_names_no_recorded_decision PASSED"
         },
         {
-          "behavior": "Conflicting survivor (cross-spec AND intra-spec) drops the edge (AC3)",
+          "behavior": "A corrupt or non-object results file is reported explicitly, never as 'missing acknowledgement'",
           "disposition": "tested",
-          "evidence": "test_fr_fold_map.py::test_conflicting_survivors_drop_the_edge_fail_closed + test_fr_fold_map_hardening.py::test_intra_spec_duplicate_conflicting_rows_drop_the_edge PASSED"
+          "evidence": "test_corrupt_results_file_is_reported_explicitly PASSED"
         },
         {
-          "behavior": "Unparsable / self-fold rows recorded, not swallowed (AC3)",
+          "behavior": "Outside a git repo the gate SKIPs; inside a repo an absent --commit fails CLOSED (the one-flag bypass found by code review)",
           "disposition": "tested",
-          "evidence": "test_fr_fold_map.py::test_unparsable_row_is_recorded_not_swallowed + ::test_self_fold_is_dropped_and_recorded PASSED"
+          "evidence": "test_non_repo_skips_but_missing_commit_inside_a_repo_fails_closed PASSED"
         },
         {
-          "behavior": "Defect vocabulary is closed; every emitted kind is declared",
+          "behavior": "git-quoted non-ASCII paths are still detected (the `^` anchor is not defeated by a leading quote)",
           "disposition": "tested",
-          "evidence": "test_fr_fold_map.py::test_every_emitted_defect_kind_is_in_the_closed_vocabulary PASSED"
+          "evidence": "test_quoted_non_ascii_path_still_detected PASSED"
         },
         {
-          "behavior": "One cycle = one defect (no per-member or per-tag amplification)",
+          "behavior": "Verifier pattern copy == SSoT in BOTH directions, and both implementations agree across a 13-path matrix",
           "disposition": "tested",
-          "evidence": "test_fr_fold_map_hardening.py::test_cycle_is_recorded_as_a_defect_exactly_once_not_once_per_member + ::test_a_cycle_does_not_also_spawn_dangling_survivor_noise PASSED"
+          "evidence": "test_ci_supplychain_patterns_sync.py — 3 passed"
         },
         {
-          "behavior": "Fold rows are never parsed as active requirements, backticked or not (AC4)",
+          "behavior": "Writer CLI produces an acknowledgement the gate accepts across the working-tree -> committed-tree boundary, preserves sibling keys (coverage.total), and refuses when no CI file is touched",
           "disposition": "tested",
-          "evidence": "test_test_links_fold_map.py::test_fold_rows_never_become_active_requirements[2 params] PASSED"
+          "evidence": "test_record_ci_supplychain_ack.py — 4 passed"
         },
         {
-          "behavior": "Fold-map section bounds: sibling heading closes, sub-heading does not, repeats parsed, EOF",
+          "behavior": "SKILL.md keeps the explicit 'never read as pin everything' caveat and never instructs SHA-pinning",
           "disposition": "tested",
-          "evidence": "test_fr_fold_map_hardening.py::test_a_following_requirement_table_is_not_swallowed_by_the_section + 3 sibling cases PASSED"
-        },
-        {
-          "behavior": "Manifest with fold data is v2-schema-valid and round-trips through disk (AC5)",
-          "disposition": "tested",
-          "evidence": "test_test_links_fold_map.py::test_manifest_with_fold_data_is_v2_schema_valid + ::test_manifest_round_trips_through_json_unchanged PASSED"
-        },
-        {
-          "behavior": "A repo without a fold-map emits NO new keys - byte-identical manifest (AC5)",
-          "disposition": "tested",
-          "evidence": "test_test_links_fold_map.py::test_a_repo_without_a_fold_map_emits_NO_new_keys + integration-tests/test_fold_map_e2e.py::test_this_monorepo_regenerates_a_byte_identical_manifest PASSED",
-          "category": "integration"
-        },
-        {
-          "behavior": "D-orphan surfaces fold defects as LOW hygiene; MEDIUM reserved for real orphans (AC6)",
-          "disposition": "tested",
-          "evidence": "test_test_links_fold_map.py::test_fold_defects_alone_are_LOW_hygiene_not_a_medium_failure PASSED"
-        },
-        {
-          "behavior": "Backfill honours a folded tag as survivor coverage and proposes no re-tag (AC7)",
-          "disposition": "tested",
-          "evidence": "test_backfill_fold_map.py::test_folded_tag_is_honoured_as_coverage_of_the_survivor PASSED"
-        },
-        {
-          "behavior": "Backfill and collector agree on the same fold across a real process boundary",
-          "disposition": "tested",
-          "evidence": "test_backfill_fold_map.py::test_backfill_and_collector_agree_on_the_same_fold[2 params] PASSED",
-          "category": "integration"
-        },
-        {
-          "behavior": "End-to-end through the real collector subprocess, as update_compliance invokes it",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fold_map_e2e.py::test_folded_tag_resolves_end_to_end_through_the_real_collector PASSED (F0.5 surface_verification exit_code=0, tests_run=2)",
-          "category": "integration"
-        },
-        {
-          "behavior": "Parser never raises on degenerate input",
-          "disposition": "tested",
-          "evidence": "test_fr_fold_map.py::test_parser_never_raises_on_degenerate_input[5 params] PASSED"
-        },
-        {
-          "behavior": "Defects are deterministically ordered and content is merge-order independent",
-          "disposition": "tested",
-          "evidence": "test_fr_fold_map_hardening.py::test_defects_are_deterministically_ordered_regardless_of_merge_order + test_fr_fold_map_review_findings.py::test_conflicting_survivor_content_is_identical_in_either_merge_order PASSED"
-        },
-        {
-          "behavior": "Defect carries line number + bounded raw; a lowercase id is a loud defect",
-          "disposition": "tested",
-          "evidence": "test_fr_fold_map_hardening.py::test_defect_carries_line_number_and_bounded_raw + ::test_lowercase_id_is_a_LOUD_defect_not_a_silent_normalisation PASSED"
-        },
-        {
-          "behavior": "load_shared_lib wins on sys.path PRECEDENCE, restores the path, never shadows a plugin lib",
-          "disposition": "tested",
-          "evidence": "test_lib_loader_precedence.py (7 cases) PASSED"
-        },
-        {
-          "behavior": "Module extractions preserve every historical import path",
-          "disposition": "tested",
-          "evidence": "F0 suite GREEN 18/18 units - parse_frs/FR/tokenize/jaccard still import from their original modules"
-        },
-        {
-          "behavior": "RETIREMENT BEATS FOLDING: a removed FR is never fold-rescued, so the F11 removal gate stays HARD",
-          "disposition": "tested",
-          "evidence": "test_test_links_fold_map_hardening.py::test_removing_an_fr_and_folding_it_does_NOT_rescue_its_dead_tags + test_backfill_fold_map.py::test_a_removed_folded_id_is_not_rescued_by_the_backfill_engine PASSED"
-        },
-        {
-          "behavior": "A genuinely folded (absent) id is still rescued - the retirement guard is not over-broad",
-          "disposition": "tested",
-          "evidence": "test_test_links_fold_map_hardening.py::test_a_genuinely_folded_id_absent_from_the_table_is_still_rescued PASSED"
-        },
-        {
-          "behavior": "Orphan reason names the terminal: fr_removed vs fr_absent",
-          "disposition": "tested",
-          "evidence": "test_test_links_fold_map_hardening.py::test_a_chain_ending_at_a_REMOVED_survivor_reports_fr_removed + ::test_a_chain_to_nowhere_still_reports_fr_absent PASSED"
-        },
-        {
-          "behavior": "A healthy chain through a dead intermediate emits NO defect (no false-red)",
-          "disposition": "tested",
-          "evidence": "test_test_links_fold_map_hardening.py::test_a_chain_through_a_removed_intermediate_resolves_with_NO_defect PASSED"
-        },
-        {
-          "behavior": "Three specs claiming one folded id yield exactly ONE conflict defect",
-          "disposition": "tested",
-          "evidence": "test_fr_fold_map_review_findings.py::test_three_specs_claiming_one_id_yield_ONE_conflict_defect PASSED"
-        },
-        {
-          "behavior": "A row with BOTH ids malformed is reported; the real header row still is not",
-          "disposition": "tested",
-          "evidence": "test_fr_fold_map_review_findings.py::test_a_row_with_both_ids_malformed_is_still_reported + ::test_the_real_header_row_is_still_not_a_defect PASSED"
-        },
-        {
-          "behavior": "A cycle does not swallow the folded-id status diagnostic",
-          "disposition": "tested",
-          "evidence": "test_fr_fold_map_review_findings.py::test_a_cycle_does_not_swallow_the_folded_id_status_diagnostic PASSED"
-        },
-        {
-          "behavior": "One test with a folded AND a direct tag yields one link with direct provenance (no cross-node aliasing)",
-          "disposition": "tested",
-          "evidence": "test_test_links_fold_map_hardening.py::test_a_folded_and_a_direct_tag_on_one_test_yield_one_link_with_direct_provenance PASSED"
-        },
-        {
-          "behavior": "The fold-skip in BOTH FR-table parsers is non-vacuous",
-          "disposition": "tested",
-          "evidence": "test_backfill_fold_map.py::test_an_UNBACKTICKED_fold_table_is_not_read_as_live_requirements PASSED - MUTATION-VERIFIED: disabling the skip fails exactly this test"
+          "evidence": "test_taxonomy_entry_exists_and_does_not_mandate_pinning PASSED"
         }
       ],
       "counts": {
-        "testable": 33,
-        "tested": 33,
+        "testable": 13,
+        "tested": 13,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 7,
-        "covered_acs": 7
+        "acs": 6,
+        "covered_acs": 6
       }
     }
   },

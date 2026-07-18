@@ -309,6 +309,29 @@ the F11 verifier `check_integration_coverage` RECOMPUTES the flag from the diff
 (merge-base..HEAD), not an agent-reported value, and STOPs without the behavior.
 The verifier keeps a drift-pinned local pattern copy so it never cross-plugin-imports.
 
+**The CI trust boundary needs an acknowledgement, not more review
+(iterate-2026-07-18-ci-supplychain-risk-flag, triage `trg-9509c2e8`).** Nothing in
+the taxonomy covered `.github/workflows/**` or `.github/dependabot.yml` — the files
+deciding *which third-party code runs with repository credentials*. Proven twice
+live: webui PR #285 reversed an accepted-risk posture while recording
+`risk_flags: []` through a full medium iterate (external plan review, code review,
+confidence calibration), and its revert reproduced the same blind spot on the same
+7 files. Mandatory review was therefore explicitly REJECTED as the enforcement —
+#285 already had more review than it would impose. The `touches_ci_supplychain`
+flag (`risk_detectors.CI_SUPPLYCHAIN_FILE_PATTERNS`) instead requires
+`iterate_latest.ci_supplychain_ack`, written by
+`shared/scripts/tools/record_ci_supplychain_ack.py` and naming the recorded posture
+decision the change is consistent with. NON-dodgeable: the F11 verifier
+`check_ci_supplychain_ack` RECOMPUTES the flag from the diff, applies at EVERY
+complexity (a complexity floor would be the obvious dodge), fails CLOSED when the
+diff is unobtainable, and binds the ack to the run id **plus** a fingerprint of
+this diff's CI paths — so a leftover ack cannot license a later change. The
+fingerprint deliberately covers only the CI paths, not the whole diff, because the
+ack is written before F6 while verification runs against the tree that also carries
+the finalization churn. The flag forces the change to be *reasoned about and
+recorded*; it must never be read as "pin everything" (GitHub-owned actions stay on
+mutable tags by framework decision, third-party stay SHA-pinned).
+
 **Curated agent-docs use `merge=union`, not regeneration
 (iterate-2026-06-12-union-curated-agent-docs).** The serial-integrate fix above
 auto-resolves the *regenerated* churn snapshots, but `.shipwright/agent_docs/architecture.md`

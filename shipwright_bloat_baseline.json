@@ -305,8 +305,8 @@
     {
       "path": "plugins/shipwright-iterate/scripts/lib/classify_complexity.py",
       "limit": 300,
-      "current": 330,
-      "state": "grandfathered",
+      "current": 208,
+      "state": "ok",
       "adr": null
     },
     {

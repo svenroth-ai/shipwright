@@ -1,37 +1,37 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-18-fr-fold-map-resolution"
+run_id: "iterate-2026-07-18-ci-supplychain-risk-flag"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-18T09:10:19.724932+00:00"
+reason: "iterate: CI supply-chain risk flag + acknowledgement gate (trg-9509c2e8 item 3)"
+timestamp: "2026-07-18T16:54:04.466947+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-18 09:10:19 UTC
+> Auto-generated 2026-07-18 16:54:04 UTC
 
 ## Session Info
 
-- **Session ID**: 3b3d60c1-1bff-42d2-bb57-037c86798a90
-- **Timestamp**: 2026-07-18 09:10:19 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: f15cf408-1257-4860-b0d5-cb049ffe3344
+- **Timestamp**: 2026-07-18 16:54:04 UTC
+- **Reason**: iterate: CI supply-chain risk flag + acknowledgement gate (trg-9509c2e8 item 3)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-18-fr-fold-map-resolution
-- **Date**: 2026-07-18T09:10:14.140286Z
+- **Run ID**: iterate-2026-07-18-ci-supplychain-risk-flag
+- **Date**: 2026-07-18T16:53:59.010065Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/fr-fold-map-resolution
-- **ADR**: iterate-2026-07-18-fr-fold-map-resolution
+- **Branch**: iterate/ci-supplychain-risk-flag
+- **ADR**: iterate-2026-07-18-ci-supplychain-risk-flag
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-18-fr-fold-map-resolution.md
+- **Spec**: .shipwright/planning/iterate/2026-07-18-ci-supplychain-risk-flag.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/fr-fold-map-resolution
-- **Run ID**: `iterate-2026-07-18-fr-fold-map-resolution`
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-18-fr-fold-map-resolution.md
+- **Branch**: iterate/ci-supplychain-risk-flag
+- **Run ID**: `iterate-2026-07-18-ci-supplychain-risk-flag`
+- **Spec**: .shipwright/planning/iterate/2026-07-18-ci-supplychain-risk-flag.md
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -50,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/fr-fold-map-resolution
-- **Last Commit**: 8a0c73b3 Merge remote-tracking branch 'origin/main' into iterate/fr-fold-map-resolution
+- **Branch**: iterate/ci-supplychain-risk-flag
+- **Last Commit**: ec9f91db chore(triage): sweep 11 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -67,17 +67,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-ec8d3c44 | grade_snapshot | — | 2026-07-18 |
+| evt-b827a6b1 | work_completed | iterate (iterate: CI supply-chain risk flag + acknowledgement gate (trg-9509c2e8 item 3)) | 2026-07-18 |
+| evt-7518638a | grade_snapshot | — | 2026-07-18 |
 | evt-bcfaff37 | grade_snapshot | — | 2026-07-18 |
 | evt-b58979bd | work_completed | iterate (iterate: suppress non-literal-import FP in the layer-coverage verifier) | 2026-07-18 |
-| evt-c5a8b243 | grade_snapshot | — | 2026-07-18 |
-| evt-6236a879 | work_completed | iterate (iterate: resolve tagged FR ids through the spec FR-Fold-Map so granular @covers tags survive a taxonomy fold) | 2026-07-18 |
-| evt-8f153abe | grade_snapshot | — | 2026-07-18 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 326
-- **Last iterate**: change — iterate: suppress non-literal-import FP in the layer-coverage verifier (2026-07-18)
+- **Total work events**: 327
+- **Last iterate**: change — iterate: CI supply-chain risk flag + acknowledgement gate (trg-9509c2e8 item 3) (2026-07-18)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

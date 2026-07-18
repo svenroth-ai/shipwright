@@ -50,7 +50,14 @@ from .agent_doc_budget_check import check_agent_doc_budget  # noqa: E402,F401 �
 from .agent_doc_shape_check import check_agent_doc_shape  # noqa: E402,F401 — re-exported
 from .common import CheckResult, Severity  # noqa: E402
 from .git_helpers import _commit_changed_paths, _git_available, _run_git  # noqa: E402
+from .ci_supplychain import check_ci_supplychain_ack  # noqa: E402
 from .integration_coverage import check_integration_coverage  # noqa: E402
+# Re-exported so the drift-pin test ``test_ci_supplychain_patterns_sync`` keeps
+# resolving ``ic._CI_SUPPLYCHAIN_PATTERNS`` / ``ic._is_ci_supplychain``.
+from .ci_supplychain import (  # noqa: E402, F401 — re-exported surface
+    _CI_SUPPLYCHAIN_PATTERNS,
+    _is_ci_supplychain,
+)
 # Re-exported so the drift-pin test ``test_cross_component_patterns_sync`` keeps
 # resolving ``ic._CROSS_COMPONENT_PATTERNS`` / ``ic._is_cross_component`` after
 # the integration-coverage gate moved to its own module.
@@ -1092,6 +1099,7 @@ def run_all_checks(
         ),
         check_architecture_documented(project_root, run_id),
         check_integration_coverage(project_root, run_id, commit_hash),
+        check_ci_supplychain_ack(project_root, run_id, commit_hash),
         check_removal_coverage(project_root, run_id, commit_hash),
         check_cross_layer_coverage(project_root, run_id, commit_hash),
         check_agent_doc_budget(project_root, run_id, commit_hash),
