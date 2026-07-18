@@ -34,10 +34,19 @@ def matrix():
 
 
 def _probe(name: str, fixture: str):
+    """Fail the test loudly if the probe crashes -- never silently pass.
+
+    Raises rather than calling ``pytest.fail`` so the function has exactly one
+    exit path per branch. ``pytest.fail`` does raise, but nothing in the
+    signature says so, and a reader (or a static analyser) sees a branch that
+    falls through and returns ``None`` -- which on a harness whose whole point
+    is "a crashed probe must never read as a passing check" is the wrong shape
+    to leave lying around.
+    """
     try:
         return probe(name, fixture)
     except ProbeFailed as exc:
-        pytest.fail(str(exc))
+        raise AssertionError(str(exc)) from exc
 
 
 # ---------------------------------------------------------------------------

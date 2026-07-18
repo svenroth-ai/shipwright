@@ -251,3 +251,8 @@ FIXTURES: dict[str, dict[str, str]] = {
 }
 
 FIXTURE_NAMES: tuple[str, ...] = tuple(FIXTURES)
+
+# Declared because every name here is consumed by OTHER modules (the realm
+# collector, the matrix tests) and none is referenced within this file --
+# without __all__ that reads as dead module-level state.
+__all__ = ["DIR", "FILE", "PLANNING", "AGENT_SPEC", "FIXTURES", "FIXTURE_NAMES"]
