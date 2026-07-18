@@ -34,6 +34,18 @@
 #   statement      why this is accepted rather than fixed.
 #   scope          optional mapping narrowing the acceptance.
 #
+# For `github-dismissal`, `scope` is REQUIRED and must declare its breadth —
+# `tool` (CodeQL / Scorecard / ...) plus EITHER an explicit `paths` allowlist OR
+# `match: rule-wide`. An entry that declares neither is refused, not guessed: on
+# this repo 8 unrelated judgments share the rule id `py/unused-global-variable`,
+# and an open alert shared it too, so a rule-wide match would have swallowed a
+# never-reviewed finding. Resolve these against live GitHub with:
+#
+#     uv run shared/scripts/tools/accepted_risks_cli.py converge --project-root .
+#
+# Read-only unless `--apply`. Deliberately not wired into CI — no scheduled job
+# may hold the authority to mass-dismiss security alerts.
+#
 # This is NOT a place to silence a real, reachable finding. Prefer a root
 # remediation whenever one exists (shared/constitution.md, ADR-239).
 

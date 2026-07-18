@@ -5,7 +5,6 @@ Sub-iterate B of campaign ``2026-06-05-track-triage-jsonl`` — a one-off
 maintenance tool run **before** ``.shipwright/triage.jsonl`` becomes
 git-tracked (sub-iterate C), so the churn produced by background producers
 does not enter permanent history.
-
 Policy (decided 2026-06-05): **machine-churn ONLY**. The dismissed pile is
 ~half *human-curated* (hand-written reasons: re-prioritisations, "resolved
 by PR #N", supersessions) — that is real audit history and is **kept**. An
@@ -15,7 +14,6 @@ by a background producer (``statusBy`` in the producer set) AND its
 must hold, so a human dismissal that happens to reuse a token survives.
 
 ``promoted`` and open (``triage``/``snoozed``) items are never dropped.
-
 The triage store is an append-only event log (``append`` + ``status``
 events, both carrying ``id``). "Dropping" an item means rewriting the log
 without that item's lines — a destructive compaction. Therefore:
@@ -51,6 +49,7 @@ MACHINE_DISMISSERS = frozenset({
     "complianceBacklog",
     "phaseQualityBacklog",  # phase_quality _triage_bundle producer
     "testEvidence",         # shipwright-compliance test_evidence producer
+    "acceptedRiskConverger",  # tools/accepted_risks_converge (register -> surfaces)
 })
 
 # Exact machine auto-resolve tokens. A human free-text reason (even one that
@@ -67,6 +66,7 @@ MACHINE_REASONS = frozenset({
     "phaseQualityRefreshed",  # F30: stale-signature phase-quality rollup superseded (phase_quality/_triage_bundle ~L268)
     "testEvidenceResolved",
     "prChecksResolved",  # github_triage PR-CI: a tracked PR's failing checks went green (resolve_pr_ci, by=githubImporter). prMerged/prClosed are terminal lifecycle markers, kept as history (not *Resolved churn).
+    "acceptedRiskResolved",  # accepted_risks_converge: a local-scanner finding is covered by a register acceptance. Recurring — ingest suppression cannot retract an item filed BEFORE the acceptance, and each re-scan refiles it once dismissed, so this is churn and must be GC'd.
 })
 
 

@@ -47,7 +47,6 @@ from typing import Any
 #: canonical literal (not Path()/"compliance"/...) so the artifact-path-canon
 #: AST lint sees the ``.shipwright/`` prefix.
 SUMMARY_REL = Path(".shipwright/compliance/ci-security.json")
-_TRIVYIGNORE_NAMES = (".trivyignore.yaml", ".trivyignore.yml")
 _BUCKETS = ("critical", "high", "medium", "low")
 #: Bumped if the summary shape changes (lets future readers degrade safely).
 SCHEMA_VERSION = 1

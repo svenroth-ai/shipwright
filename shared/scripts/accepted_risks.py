@@ -28,8 +28,8 @@ the state this register exists to make impossible.
 **Absent is not malformed** (external review, GPT #8). An absent register is a
 legacy or fresh repo and reads as empty; a present-but-malformed one fails
 closed. Collapsing the two would let one broken edit read as "all entries
-removed" and, downstream in the convergence phase (``trg-13b8283b``), license a
-mass-dismissal off a truncated file.
+removed" and, downstream in ``alert_convergence``, license a mass-dismissal off
+a truncated file.
 """
 
 from __future__ import annotations

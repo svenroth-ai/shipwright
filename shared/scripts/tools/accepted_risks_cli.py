@@ -7,23 +7,30 @@ the scanner wiring (``.trivyignore*``, the ``SHIPWRIGHT_SEMGREP_*`` env vars in
 works if something proves they agree — otherwise the register is documentation
 that drifts, which is the failure mode it was built to end.
 
-Two subcommands, both read-only:
+Three subcommands; the two offline ones are read-only:
 
-``check``   both directions. A suppression with no register entry is an
-            UNRECORDED acceptance (nobody knows why it is there or when to
-            re-review it). A register entry with no suppression is a STALE
-            record (it claims something is accepted that no longer is).
-``expire``  fails when an acceptance is past its re-review date.
+``check``    both directions. A suppression with no register entry is an
+             UNRECORDED acceptance (nobody knows why it is there or when to
+             re-review it). A register entry with no suppression is a STALE
+             record (it claims something is accepted that no longer is).
+``expire``   fails when an acceptance is past its re-review date.
+``converge`` resolves ``github-dismissal`` entries against LIVE GitHub
+             code-scanning state. Read-only unless ``--apply`` is passed.
 
 Both are wired into ``shared/tests/test_accepted_risks_register.py`` so they run
 on the path CI already requires. A gate nothing invokes constrains nothing — the
 external review caught exactly that in this iterate's first draft.
 
-**``github-dismissal`` entries are NOT checked here** and are reported as
-unchecked. Their counterpart is live GitHub alert state, not a file, so an
-offline gate cannot see them; converging that surface is ``trg-13b8283b``.
+**``github-dismissal`` entries are NOT checked by ``check``** and are reported
+as unchecked there. Their counterpart is live GitHub alert state, not a file, so
+the offline gate cannot see them — ``converge`` is where they are resolved.
 Printing what was skipped is deliberate — a gate that silently narrows its own
 scope reads as "all clear".
+
+``converge`` is NOT wired into CI, and that is the design, not an omission. No
+scheduled job may hold the authority to mass-dismiss security alerts; an
+automated reconciler is the shape that produced webui #285. CI's job is to fail
+when register and reality disagree — which ``check`` and ``expire`` already do.
 """
 
 from __future__ import annotations
@@ -43,6 +50,7 @@ from accepted_risks import (  # noqa: E402
     register_exists,
     today_utc,
 )
+from github_code_scanning import RepoIdentityError  # noqa: E402
 from accepted_risk_scan import (  # noqa: E402
     ACCEPT_GH_ACTION_TAGS_ENV,
     EXCLUDE_RULES_ENV,
@@ -134,7 +142,8 @@ def cmd_check(project_root: Path) -> int:
     for entry in result["unchecked"]:
         print(
             f"  UNCHECKED  {entry.target}: {entry.rule} ({entry.id}) - "
-            "counterpart is live GitHub state, not a file; see trg-13b8283b."
+            "counterpart is live GitHub state, not a file. Resolve it with: "
+            "accepted_risks_cli.py converge --project-root ."
         )
 
     problems = _format_check(result)
@@ -172,19 +181,37 @@ def main(argv: list[str] | None = None) -> int:
         description="Reconcile the accepted-risk register against real suppressions."
     )
     parser.add_argument(
-        "command", choices=("check", "expire"), help="check drift / check expiry"
+        "command", choices=("check", "expire", "converge"),
+        help="check drift / check expiry / converge the live security surface",
     )
     parser.add_argument("--project-root", default=".", help="repo root")
+    parser.add_argument(
+        "--apply", action="store_true",
+        help="converge only: actually dismiss/reopen. Dry-run is the default, "
+             "and no scheduled job may hold this authority.",
+    )
     args = parser.parse_args(argv)
 
     project_root = Path(args.project_root).resolve()
     try:
         if args.command == "check":
             return cmd_check(project_root)
+        if args.command == "converge":
+            # Imported lazily: `check`/`expire` are offline gates that run in
+            # CI, and must not acquire a `gh`-shaped import at module load.
+            from tools.accepted_risks_converge import (  # noqa: PLC0415
+                cmd_converge,
+            )
+            return cmd_converge(project_root, apply=args.apply)
         return cmd_expire(project_root)
     except RegisterError as exc:
         # Fail closed: an unreadable register is never "no acceptances".
         print(f"accepted-risks: register is invalid - {exc}", file=sys.stderr)
+        return 2
+    except RepoIdentityError as exc:
+        # Fail closed: an unresolvable repo or an incomplete listing is never
+        # "converged" — that is precisely the reading that licenses inaction.
+        print(f"accepted-risks: {exc}", file=sys.stderr)
         return 2
 
 

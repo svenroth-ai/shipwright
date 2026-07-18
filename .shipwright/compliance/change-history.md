@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-07-18T20:41:06.472191+00:00
-Total commits: 1171
+Generated: 2026-07-18T22:18:10.805261+00:00
+Total commits: 1174
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 335
-    "feat" : 325
-    "chore" : 247
+    "fix" : 336
+    "feat" : 326
+    "chore" : 248
     "docs" : 145
     "refactor" : 69
     "test" : 29
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 335 commits
+### Fixes (fix) — 336 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-19 | events | recover concatenated records on the append-only event log (#405) | 94d0332831d5 |
 | 2026-07-18 | triage | enforce record termination and recover concatenated records (#399) | 7a34d1adc132 |
 | 2026-07-18 | fr-gate | reject declared requirement ids that exist in no spec (#398) | cad7dd0152be |
 | 2026-07-18 | churn | admit test-traceability.json to the merge-conflict allowlist (#394) | 7b771b962d41 |
@@ -360,10 +361,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 325 commits
+### Features (feat) — 326 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-19 | compliance | converge accepted risks onto the code-scanning surface | faa6a1f8eb27 |
 | 2026-07-18 | compliance | scanner-agnostic accepted-risk register, gated both directions (#404) | 4a948378b207 |
 | 2026-07-18 | iterate | CI supply-chain risk flag with a recorded-acknowledgement gate (#401) | 7c303a8b3410 |
 | 2026-07-18 | traceability | resolve tagged FR ids through the spec FR-Fold-Map (#397) | 4fe2d680ae1e |
@@ -690,11 +692,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 247 commits
+### Chores (chore) — 248 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-18 | triage | sweep 4 outbox append(s) into branch | 0bcb647e4f65 |
+| 2026-07-19 | churn | regenerate derived snapshots after main merge | 08e0cb30cd44 |
+| 2026-07-18 | triage | sweep 2 outbox append(s) into branch | e3a65a293c93 |
 | 2026-07-18 | triage | deliver 3 orphaned records from the merged iterate worktree (#402) | 56ee1c0e2387 |
 | 2026-07-18 | security | by-design nosemgrep suppression for the layer-coverage loader (#396) | 6cfd0e84655a |
 | 2026-07-18 | test-hygiene | resolve 51 pre-existing skipped-test findings (STEP 2) (#393) | 490a624e39f8 |
@@ -1170,7 +1173,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-18 | requirements | golden corpus freezing discovery + parser behaviour, bugs included | 6e4dee1f6ff0 |
+| 2026-07-19 | requirements | golden corpus freezing discovery + parser behaviour, bugs included (#403) | 76d97ec06fe6 |
 | 2026-07-08 | run | single-session E2E integration + cross-surface capstone (SS7) (#352) | aa385b3dcd02 |
 | 2026-07-06 | coverage | replay the diff-coverage gate against the last 5 real monorepo PRs (#329) | ccb22388bb9b |
 | 2026-07-05 | grade | import engine_bridge normally in authoritative tests (#321) | 4d21fdc9ba1a |
@@ -1240,7 +1243,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1171 |
+| Total commits | 1174 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1171 |
+| Human-authored commits | 1174 |
 

@@ -1,0 +1,1 @@
+Dead `_TRIVYIGNORE_NAMES` constant in `ci_security.py`, left behind by the Phase-1 extraction of the widened view into `accepted_risk_scan.py`. It was the repo's only open code-scanning alert, and it was a fix rather than a risk to accept.

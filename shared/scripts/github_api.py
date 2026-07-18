@@ -77,7 +77,7 @@ def _gh_api(path: str, *, paginate: bool = False) -> Any | None:
         cmd.append("--paginate")
     try:
         result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=_TIMEOUT_SECONDS,
+            cmd, capture_output=True, text=True, timeout=_TIMEOUT_SECONDS, encoding="utf-8", errors="replace",  # noqa: E501 - locale codec (cp1252) mangles alert bodies on Windows; one line to hold github_api.py at its anti-ratchet ceiling
         )
     except (OSError, subprocess.SubprocessError):
         return None

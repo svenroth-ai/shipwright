@@ -1,18 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-18-events-jsonl-record-boundary",
-    "date": "2026-07-18",
+    "run_id": "iterate-2026-07-18-accepted-risk-alert-convergence",
+    "date": "2026-07-19",
     "unit": {
-      "status": "pass",
-      "passed": 4901,
-      "total": 4902,
-      "note": "All THREE test roots CI runs were executed locally (shared/tests, shared/scripts/tests, shared/scripts/tools/tests): 4456 + 197 + 248 passed. An earlier run covered only shared/tests and missed a wording assertion in shared/scripts/tools/tests/test_record_event.py, which CI caught - the local run now mirrors the CI loop. test_events_log.py::test_latest_event_dt_skips_corrupt_lines and ::test_latest_event_dt_all_corrupt_returns_none pass UNCHANGED: they pin skip-on-WHOLLY-undecodable, which this change preserves. The behaviour change is strictly additive."
+      "status": "passed",
+      "passed": 4563,
+      "total": 4564
     },
     "integration": {
-      "status": "pass",
-      "passed": 9,
-      "total": 9,
-      "note": "shared/tests/test_events_newline_integrity.py - end-to-end through the REAL record_event writers and the REAL config.read_events reader, plus the adopt plugin's lock-free event_seeder loaded from its own path."
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -22,98 +20,121 @@
     "e2e": {
       "status": "not_run",
       "passed": 0,
-      "total": 0,
-      "note": "No UI or HTTP surface: this is a Python library/CLI boundary. The equivalent end-to-end proof is the integration layer above, which drives the real writers and reader rather than a re-implementation."
-    },
-    "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
       "total": 0
     },
-    "smoke": {
-      "status": "pass",
-      "note": "record_event append + config.read_events round-trip exercised directly by the integrity suite."
+    "design_fidelity": {
+      "status": "not_run"
     },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [
+      "F0 suite RED on ONE pre-existing, foreign failure: test_architecture_md_reflects_arch_impact flags a decision-drop belonging to iterate-2026-07-18-fr-existence-gate (gitignored drops resolve from the MAIN root, so a concurrent iterate's drop reddens this worktree). The run_id in the failure is not this run's - inherited, not introduced.",
+      "The triage half of the convergence has ZERO live instances in this repo (0 source=\"security\" items), so it is proven on fixtures, not on live data. Its only live reachability is the pre-acceptance backlog, because ingest-time suppression means an accepted rule normally never becomes a triage item at all. Stated rather than implied by the passing tests.",
+      "The register currently holds 0 github-dismissal entries, so the live `converge` run exercised the read/pagination/identity path against 51 real alerts but matched nothing. The mutation path is proven by fixtures plus the live 422 permission probe, not by a real dismissal.",
+      "External review (GPT-5.4) returned 'block' with 3 real defects: an absent register short-circuited reopen (marked alerts stayed suppressed forever), overlapping entries double-claimed an alert, and an unreadable triage store rendered as 'converged' - the last actively blessed by a test in the first draft. All three are fixed and pinned; recorded because they calibrate how far a self-authored negative-control suite reaches."
+    ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --with pytest pytest shared/tests/test_events_newline_integrity.py",
+      "runner": "uv run --with pytest --with pytest-mock pytest shared/tests/test_alert_match.py shared/tests/test_accepted_risk_convergence.py shared/tests/test_github_code_scanning.py shared/tests/test_accepted_risks_converge_cli.py -q",
       "exit_code": 0,
-      "tests_run": 9,
-      "timestamp": "2026-07-18",
-      "justification": "The changed surface is a Python append/read boundary with no UI and no HTTP endpoint. It is driven through its PUBLIC API - tools.record_event.append_event and lib.config.read_events - against real temp-dir event logs, including the concatenated-line shape an ordinary git union merge produces. The adopt plugin's second, lock-free writer is loaded from its own file path so the ADR-045 import barrier is exercised as it really is, not stubbed."
+      "tests_run": 124,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\accepted-risk-alert-convergence\\.shipwright\\runs\\iterate-2026-07-18-accepted-risk-alert-convergence\\surface_verification.log",
+      "timestamp": "2026-07-18T22:26:38.157Z",
+      "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "append_event onto an unterminated log does not concatenate",
+          "behavior": "Alert payload -> match key; every missing key component yields None, never a partial",
           "disposition": "tested",
-          "evidence": "test_events_newline_integrity.py::test_append_onto_unterminated_log_does_not_concatenate PASSED (was RED)"
+          "evidence": "test_alert_match.py::TestAlertFromApi - 11 passed"
         },
         {
-          "behavior": "append onto an already-terminated log injects no blank line",
+          "behavior": "Line number is excluded from the match key (it drifts on every edit above the finding)",
           "disposition": "tested",
-          "evidence": "::test_append_onto_terminated_log_injects_no_blank_line PASSED"
+          "evidence": "test_alert_match.py::test_line_number_is_not_part_of_the_key"
         },
         {
-          "behavior": "append onto a missing or zero-byte log injects no leading newline",
+          "behavior": "Provenance marker round-trips; an unmarked/malformed comment reads as human",
           "disposition": "tested",
-          "evidence": "::test_append_onto_missing_and_empty_log_injects_no_leading_newline PASSED"
+          "evidence": "test_alert_match.py::TestProvenance - 7 passed"
         },
         {
-          "behavior": "read_events recovers BOTH records from a concatenated line",
+          "behavior": "Dismissal comment carries statement+ref+expiry; truncation never eats the marker",
           "disposition": "tested",
-          "evidence": "::test_read_events_recovers_both_records_from_a_concatenated_line PASSED (was RED)"
+          "evidence": "test_alert_match.py::TestProvenance - 2 passed"
         },
         {
-          "behavior": "read_events recovers partially - valid record kept, remainder reported",
+          "behavior": "Scope validation: tool required, breadth declared, paths/rule-wide mutually exclusive, reason vocabulary",
           "disposition": "tested",
-          "evidence": "::test_read_events_recovers_partially_and_keeps_the_valid_record PASSED (was RED)"
+          "evidence": "test_alert_match.py::TestScopeProblem - 12 passed"
         },
         {
-          "behavior": "recovered records keep wire order across lines (last-wins projections depend on it)",
+          "behavior": "Matching on (tool, rule, path); rule-wide; cross-tool isolation; ambiguous entry matches nothing",
           "disposition": "tested",
-          "evidence": "::test_read_events_preserves_wire_order_across_recovered_lines PASSED (was RED)"
+          "evidence": "test_alert_match.py::TestEntryMatches - 8 passed"
         },
         {
-          "behavior": "a wholly undecodable line is still skipped, not fatal (no regression)",
+          "behavior": "Triage dedup-key parse incl. colon-bearing check_id; unparseable key matches nothing",
           "disposition": "tested",
-          "evidence": "::test_read_events_still_tolerates_a_wholly_undecodable_line PASSED; test_events_log.py:213/:278 unchanged"
+          "evidence": "test_alert_match.py::TestTriageItemKey - 11 passed"
         },
         {
-          "behavior": "read_events releases the file handle (explicit context manager)",
+          "behavior": "Plan dispositions: dismiss / satisfied / human / reopen-on-expiry / reopen-on-removal / stale / ambiguous / expiry boundary",
           "disposition": "tested",
-          "evidence": "::test_read_events_releases_the_file_handle PASSED - recorded honestly as a hygiene guard, it passed pre-fix too"
+          "evidence": "test_accepted_risk_convergence.py::TestPlanConvergence - 14 passed"
         },
         {
-          "behavior": "the lock-free adopt event_seeder also terminates before appending",
+          "behavior": "No backing entry => never dismissed; non-github targets never reach the alert surface",
           "disposition": "tested",
-          "evidence": "::test_adoption_seeder_does_not_concatenate_onto_an_unterminated_log PASSED, loading the plugin module by path"
+          "evidence": "test_accepted_risk_convergence.py::TestPlanConvergence - 2 passed"
         },
         {
-          "behavior": "append_event_idempotent probes only AFTER dedup, so a skipped duplicate never touches the file",
+          "behavior": "Triage surface: match, non-match, expired no-op, GC tokens registered and is_machine_churn true",
           "disposition": "tested",
-          "evidence": "covered by shared/tests/test_record_event_lifecycle_integrity.py dedup cases, re-run green in the full suite",
-          "category": "integration"
+          "evidence": "test_accepted_risk_convergence.py::TestTriageSurface - 4 passed"
+        },
+        {
+          "behavior": "Rendering: every disposition printed; untouched summarised; a clean plan renders nothing",
+          "disposition": "tested",
+          "evidence": "test_accepted_risk_convergence.py::TestRendering - 3 passed"
+        },
+        {
+          "behavior": "gh shell: slug validation (10 negative controls), pagination, None != [], PATCH bodies, failure surfaced, explicit UTF-8 decode",
+          "disposition": "tested",
+          "evidence": "test_accepted_risk_convergence.py::TestGhShell - 20 passed"
+        },
+        {
+          "behavior": "CLI: build_plan, identity abort, failed-listing abort, read-only vs --apply, failed mutation, dispatch, exit 2",
+          "disposition": "tested",
+          "evidence": "test_accepted_risks_converge_cli.py - 19 passed"
+        },
+        {
+          "behavior": "This repo's register: every github-dismissal entry resolvable + marked; converge absent from every workflow",
+          "disposition": "tested",
+          "evidence": "test_accepted_risks_converge_cli.py::TestThisRepoRegister - 3 passed"
+        },
+        {
+          "behavior": "Overlapping entries CONFLICT and neither acts; a lapse in one does not reopen what the other still covers",
+          "disposition": "tested",
+          "evidence": "test_accepted_risk_convergence.py::TestPlanConvergence - 2 passed (external review GPT #4)"
+        },
+        {
+          "behavior": "Absent vs unreadable triage store are distinct; an unreadable store blocks the converged claim end-to-end",
+          "disposition": "tested",
+          "evidence": "test_accepted_risks_converge_cli.py::TestTriageApply + TestCmdConverge - 4 passed (external review GPT #3)"
         }
       ],
       "counts": {
-        "testable": 10,
-        "tested": 10,
+        "testable": 16,
+        "tested": 16,
         "untestable": 0,
         "untested_testable": 0
       },
-      "enumeration_basis": {
-        "acs": 3,
-        "covered_acs": 3
-      }
-    },
-    "degraded": [
-      {
-        "condition": "pre_existing_test_failure",
-        "detail": "LOCAL-ONLY failure, invisible to CI: shared/tests/test_architecture_md_reflects_arch_impact.py fails on an UNRELATED, FOREIGN decision drop (iterate-2026-07-18-fr-existence-gate, impact=convention) that has no conventions.md entry. That drop is UNTRACKED and lives in the developer main tree gitignored decision-drops dir, which a fresh CI clone does not have - so CI passes this test. It belongs to another unfinished iterate: not caused by, and not fixable within, this run. Verified: after adding THIS run architecture.md entry, this run_id no longer appears in the failure list; only the foreign drop remains."
-      }
-    ]
+      "enumeration_basis": "Every behavior introduced or changed by this diff, grouped into 16 rows over 124 new tests. No 'untestable' rows: all logic here is offline and deterministic, with the gh boundary driven through a single monkeypatched _run seam. The one claim that cannot be asserted in a test - that the token may PATCH a code-scanning alert - is closed by live probe P1 (a 422 body-validation response proves authn+authz passed and mutates nothing), because the only test-shaped version overwrites a real alert comment. Line coverage of the four new modules is 100% (alert_match, alert_convergence, github_code_scanning, tools/accepted_risks_converge). Rows 15-16 were added in response to the external review, which found three real defects my own negative controls did not reach - all of the same family: a state that renders as converged when it is not."
+    }
   },
   "coverage": {
     "total": 80.2,
