@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-07-18T16:11:06.203790+00:00
-Total commits: 1163
+Generated: 2026-07-18T16:53:59.092383+00:00
+Total commits: 1166
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 333
-    "feat" : 323
-    "chore" : 245
+    "fix" : 334
+    "feat" : 324
+    "chore" : 246
     "docs" : 145
     "refactor" : 68
     "test" : 28
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 333 commits
+### Fixes (fix) — 334 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-18 | fr-gate | reject declared requirement ids that exist in no spec (#398) | cad7dd0152be |
 | 2026-07-18 | churn | admit test-traceability.json to the merge-conflict allowlist (#394) | 7b771b962d41 |
 | 2026-07-17 | churn | stage ci-security.json in the regenerate follow-up commit (#389) | fe29df0b7683 |
 | 2026-07-15 | iterate | pin finalize_iterate.py stdio to UTF-8 (cp1252 Windows crash aborted the finalize bundle) (#376) | c25d681a72ce |
@@ -358,10 +359,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 323 commits
+### Features (feat) — 324 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-18 | iterate | CI supply-chain risk flag with a recorded-acknowledgement gate | 96cdda88e051 |
 | 2026-07-18 | traceability | resolve tagged FR ids through the spec FR-Fold-Map (#397) | 4fe2d680ae1e |
 | 2026-07-18 | fr-authoring | plain-language capability-level FR rules + advisory hygiene audit (#395) | 29d09188e1dd |
 | 2026-07-17 | agent-docs | canonical run_id changelog anchor + shape gate; kill aggregator ADR dup (#391) | 00174d952230 |
@@ -686,10 +688,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 245 commits
+### Chores (chore) — 246 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-18 | triage | sweep 11 outbox append(s) into branch | ec9f91db20c4 |
 | 2026-07-18 | security | by-design nosemgrep suppression for the layer-coverage loader (#396) | 6cfd0e84655a |
 | 2026-07-18 | test-hygiene | resolve 51 pre-existing skipped-test findings (STEP 2) (#393) | 490a624e39f8 |
 | 2026-07-18 | traceability | dismiss STEP 3 FR-unmapped review card + record accepted-state policy (#392) | 9bff5d72718b |
@@ -1232,7 +1235,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1163 |
+| Total commits | 1166 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1163 |
+| Human-authored commits | 1166 |
 

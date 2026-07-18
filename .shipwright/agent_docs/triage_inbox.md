@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-18T09:12:25.498668Z. Items waiting for triage decision.
+> Auto-generated 2026-07-18T16:54:04.466947Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 321
-- Triage: 8 | Promoted: 1 | Dismissed: 311 | Snoozed: 1
+- Total: 327
+- Triage: 10 | Promoted: 1 | Dismissed: 315 | Snoozed: 1
 
-## Top 8 items (severity-sorted)
+## Top 10 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -56,29 +56,47 @@
   - Follow-up from iterate-2026-07-14-phase-invocation-mode (external plan review, Gemini #2). The v2 lifecycle never advan…
   - Promote: `triage_promote.py --id trg-d1e466aa --task-ref EXT:<ref>`
 
-### Source: manual (2 items)
+### Source: operator (5 items)
 
-<a id="trg-5f6a4f74"></a>
-- **WebUI: render resolved_from provenance for fold-resolved test links** `id=trg-5f6a4f74 | severity=low | kind=improvement → P3/engineering`
-  - The traceability manifest can now file a test link against a surviving FR while the source tag names the folded id, rec…
-  - Promote: `triage_promote.py --id trg-5f6a4f74 --task-ref EXT:<ref>`
+<a id="trg-94337862"></a>
+- **REQ-1 - Iterate: requirements test harness (golden corpus) - run AFTER REQ-0, BEFORE REQ-2** `id=trg-94337862 | severity=high | kind=improvement → P1/engineering`
+  - SECOND of three. Order: REQ-0 (FR existence gate) -> REQ-1 (this) -> REQ-2 (campaign trg-1b764b2c). This is the safety…
+  - Promote: `triage_promote.py --id trg-94337862 --task-ref EXT:<ref>`
 
-<a id="trg-cced399c"></a>
-- **Decompose FR-01.10 / FR-01.07 into sub-FRs for precise feature traceability** `id=trg-cced399c | severity=low | kind=improvement → P3/engineering`
-  - Follow-up to iterate-2026-06-30-fr-retag-honesty. Introduce sub-FRs (e.g. FR-01.10.x for Control Grade / RTM / SBOM / d…
-  - Promote: `triage_promote.py --id trg-cced399c --task-ref EXT:<ref>`
+<a id="trg-946756d2"></a>
+- **Triage outbox: missing trailing newline concatenates two records, silently dropping one** `id=trg-946756d2 | severity=high | kind=bug → P1/engineering`
+  - A record in the triage outbox was written without a trailing newline, so the next writer appended onto the same physica…
+  - Promote: `triage_promote.py --id trg-946756d2 --task-ref EXT:<ref>`
 
-### Source: webui-spec-audit (1 item)
+<a id="trg-8deb2213"></a>
+- **FR gate accepts requirement ids that do not exist (false green)** `id=trg-8deb2213 | severity=high | kind=bug → P1/engineering`
+  - The finalization FR gate validates only that the declared requirement list is non-empty. is_non_empty_fr_list checks th…
+  - Promote: `triage_promote.py --id trg-8deb2213 --task-ref EXT:<ref>`
 
-<a id="trg-f7d38388"></a>
-- **Adopt: mint capability-level FRs (route grouping + Area) and unify the greenfield/brownfield spec-table shape** `id=trg-f7d38388 | severity=medium | kind=improvement → P2/engineering`
-  - Deferred remainder of trg-8e840ca0 / trg-44d23d63, split out of iterate-2026-07-18-fr-authoring-rules (which delivered…
-  - Promote: `triage_promote.py --id trg-f7d38388 --task-ref EXT:<ref>`
+<a id="trg-1b764b2c"></a>
+- **REQ-2 - Campaign: requirements catalog (S2-S8) - run AFTER REQ-1** `id=trg-1b764b2c | severity=medium | kind=improvement → P2/engineering`
+  - THIRD of three. Order: REQ-0 (FR existence gate) -> REQ-1 (test harness) -> REQ-2 (this campaign). Do NOT start before…
+  - Promote: `triage_promote.py --id trg-1b764b2c --task-ref EXT:<ref>`
 
-### Source: webui-traceability-handoff (1 item)
+<a id="trg-16d79da2"></a>
+- **Requirements Catalog campaign: one catalog, one table shape, one discovery path** `id=trg-16d79da2 | severity=medium | kind=improvement → P2/engineering`
+  - Umbrella anchor for the Requirements-Catalog campaign (S0-S8). Full spec + evidence + risk register: Spec/design/2026-0…
+  - Promote: `triage_promote.py --id trg-16d79da2 --task-ref EXT:<ref>`
 
-<a id="trg-0c14afe6"></a>
-- **Fold-aware traceability: resolve @covers folded FR IDs via FR-Fold-Map before orphan-flagging** `id=trg-0c14afe6 | severity=medium | kind=improvement → P2/engineering`
-  - The test_links collector, D-orphan (_group_d_traceability) and backfill_scan read only survivor FR-table rows and do NO…
-  - Promote: `triage_promote.py --id trg-0c14afe6 --task-ref EXT:<ref>`
+### Source: securityReview (1 item)
+
+<a id="trg-9509c2e8"></a>
+- **CI supply-chain guardrails + make an accepted risk actually stick (from webui #285 revert)** `id=trg-9509c2e8 | severity=medium | kind=improvement → P2/engineering`
+  - webui iterate-2026-07-18-unpin-actions-no-dependabot reverted PR #285 (SHA-pinned all first-party GitHub Actions + adde…
+  - Launch payload (copy into a new Claude session):
+    ```text
+    Framework follow-up to webui iterate-2026-07-18-unpin-actions-no-dependabot.
+    Start with item 3 (touches_ci_supplychain in classify_complexity.RISK_TAXONOMY) -
+    smallest diff, and it is the guard that would have caught #285. Then item 2
+    (acceptance must converge triage AND code-scanning), then item 1 (strip hosted
+    services from the shipped CI template), then item 4 (scanner-agnostic accepted-risk
+    register). Leave item 5 unless the others land cheaply. Read the webui ADR first so
+    this does not re-decide the posture - it is already decided and recorded.
+    ```
+  - Promote: `triage_promote.py --id trg-9509c2e8 --task-ref EXT:<ref>`
 

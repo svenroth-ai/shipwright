@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-18T16:11:06.203790+00:00
+Generated: 2026-07-18T16:53:59.092383+00:00
 
 ## Requirements Coverage
 
@@ -15,7 +15,7 @@ Generated: 2026-07-18T16:11:06.203790+00:00
 | [FR-01.07](../../.shipwright/planning/01-adopted/spec.md#fr-0107)<a id="rtm-fr-0107"></a> | Security scanning chain (Aikido + Semgrep + Trivy + Gitleaks) with automated remediation loop and per-scanner exclude lists. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7), [evt-07b1fe9c](#evt-07b1fe9c) +2 | 225/225 → 4955/4967 | 2026-06-30 ([iter](#evt-f90c7126)) | ✅ | COVERED | MISSING | — | — |
 | [FR-01.08](../../.shipwright/planning/01-adopted/spec.md#fr-0108)<a id="rtm-fr-0108"></a> | Deploy to configured targets with smoke testing and rollback; Jelastic (Infomaniak) shipped, Vercel + compose-VPS profiles documented as stubs. | Should | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7) | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | — | COVERED | MISSING | — | — |
 | [FR-01.09](../../.shipwright/planning/01-adopted/spec.md#fr-0109)<a id="rtm-fr-0109"></a> | Parse Conventional Commits from git history, generate Keep-a-Changelog entries, create version tags, open release PRs. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-530b0980](#evt-530b0980), [evt-ddb23fe7](#evt-ddb23fe7) | 225/225 → 19/19 | 2026-05-03 ([iter](#evt-530b0980)) | — | COVERED | MISSING | — | — |
-| [FR-01.10](../../.shipwright/planning/01-adopted/spec.md#fr-0110)<a id="rtm-fr-0110"></a> | Generate audit-ready compliance documentation (RTM, test evidence, change history, SBOM) and run on-demand cross-artifact detective audit. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-30338dac](#evt-30338dac), [evt-a3888caf](#evt-a3888caf) +18 | 225/225 → 4964/4976 | 2026-07-01 ([iter](#evt-a2c95dc8)) | ⚠️ needs re-verification | FAIL → [trg-cced399c](../agent_docs/triage_inbox.md#trg-cced399c) | MISSING | — | — |
+| [FR-01.10](../../.shipwright/planning/01-adopted/spec.md#fr-0110)<a id="rtm-fr-0110"></a> | Generate audit-ready compliance documentation (RTM, test evidence, change history, SBOM) and run on-demand cross-artifact detective audit. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-30338dac](#evt-30338dac), [evt-a3888caf](#evt-a3888caf) +18 | 225/225 → 4964/4976 | 2026-07-01 ([iter](#evt-a2c95dc8)) | ⚠️ needs re-verification | COVERED | MISSING | — | — |
 | [FR-01.11](../../.shipwright/planning/01-adopted/spec.md#fr-0111)<a id="rtm-fr-0111"></a> | Complexity-adaptive SDLC for ongoing changes — auto-detects intent and complexity, scales from quick fix to structured feature with specs, plans, reviews, tests; every feature/change classifies its spec impact (ADD/MODIFY/REMOVE/NONE), enforced at finalization. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-6c637864](#evt-6c637864), [evt-baaf4b0e](#evt-baaf4b0e), [evt-ca7b7d64](#evt-ca7b7d64) +18 | 225/225 → 54/54 | 2026-07-14 ([iter](#evt-5dc16a45)) | ⚠️ needs re-verification | COVERED | MISSING | MISSING | — |
 | [FR-01.12](../../.shipwright/planning/01-adopted/spec.md#fr-0112)<a id="rtm-fr-0112"></a> | Local browser preview — start dev server for the target project and show the URL. | May | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7) | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | — | COVERED | — | — | MISSING |
 | [FR-01.13](../../.shipwright/planning/01-adopted/spec.md#fr-0113)<a id="rtm-fr-0113"></a> | Onboard an existing (brownfield) repository into the Shipwright SDLC; analyzes codebase, generates CLAUDE.md, agent_docs, planning specs, compliance artifacts, suggest_iterate hook, and an E2E baseline; scaffolds `.env.local` with the profile's framework keys. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-273bbb54](#evt-273bbb54), [evt-b0b9c422](#evt-b0b9c422), [evt-aab7ddbd](#evt-aab7ddbd) +6 | 225/225 → 304/304 | 2026-05-16 ([iter](#evt-38e36ac6)) | ⚠️ needs re-verification | COVERED | MISSING | — | — |
@@ -28,6 +28,7 @@ Generated: 2026-07-18T16:11:06.203790+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-b827a6b1"></a>CI supply-chain risk flag + acknowledgement gate (trg-9509c2e8 item 3) | iterate | change |  | — | — | 2026-07-18 |
 | <a id="evt-3d1c18b7"></a>FR-existence gate — declared requirement ids must exist | iterate | change |  | — | — | 2026-07-18 |
 | <a id="evt-6236a879"></a>resolve tagged FR ids through the spec FR-Fold-Map so granular @covers tags survive a taxonomy fold | iterate | change |  | — | — | 2026-07-18 |
 | <a id="evt-b58979bd"></a>suppress non-literal-import FP in the layer-coverage verifier | iterate | change |  | — | — | 2026-07-18 |
@@ -362,7 +363,7 @@ Generated: 2026-07-18T16:11:06.203790+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 327 |
+| Iterate changes | 328 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |
@@ -381,8 +382,4 @@ Generated: 2026-07-18T16:11:06.203790+00:00
 - [FR-01.11](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-07d2258f` (2026-07-18)
 - [FR-01.13](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-07d2258f` (2026-07-18)
 - [FR-01.15](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run
-
-### FRs with open triage items
-
-- [FR-01.10](../../.shipwright/planning/01-adopted/spec.md): FAIL → [trg-cced399c](../agent_docs/triage_inbox.md#trg-cced399c)
 
