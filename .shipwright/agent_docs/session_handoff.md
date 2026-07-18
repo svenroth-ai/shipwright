@@ -1,34 +1,37 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-18-nosemgrep-layer-coverage-regen"
+run_id: "iterate-2026-07-18-fr-fold-map-resolution"
 phase: "iterate"
-reason: "iterate: suppress non-literal-import FP in the layer-coverage verifier"
-timestamp: "2026-07-18T09:03:28.926965+00:00"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-07-18T09:10:19.724932+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-18 09:03:28 UTC
+> Auto-generated 2026-07-18 09:10:19 UTC
 
 ## Session Info
 
-- **Session ID**: f15cf408-1257-4860-b0d5-cb049ffe3344
-- **Timestamp**: 2026-07-18 09:03:28 UTC
-- **Reason**: iterate: suppress non-literal-import FP in the layer-coverage verifier
+- **Session ID**: 3b3d60c1-1bff-42d2-bb57-037c86798a90
+- **Timestamp**: 2026-07-18 09:10:19 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-18-nosemgrep-layer-coverage-regen
-- **Date**: 2026-07-18T09:03:21.658361Z
+- **Run ID**: iterate-2026-07-18-fr-fold-map-resolution
+- **Date**: 2026-07-18T09:10:14.140286Z
 - **Type**: change
-- **Complexity**: small
-- **Branch**: iterate/nosemgrep-layer-coverage-regen
-- **ADR**: iterate-2026-07-18-nosemgrep-layer-coverage-regen
+- **Complexity**: medium
+- **Branch**: iterate/fr-fold-map-resolution
+- **ADR**: iterate-2026-07-18-fr-fold-map-resolution
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-18-fr-fold-map-resolution.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/nosemgrep-layer-coverage-regen
+- **Branch**: iterate/fr-fold-map-resolution
+- **Run ID**: `iterate-2026-07-18-fr-fold-map-resolution`
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-18-fr-fold-map-resolution.md
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -47,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/nosemgrep-layer-coverage-regen
-- **Last Commit**: 9cb4a446 chore(triage): sweep 1 outbox append(s) into branch
+- **Branch**: iterate/fr-fold-map-resolution
+- **Last Commit**: 8a0c73b3 Merge remote-tracking branch 'origin/main' into iterate/fr-fold-map-resolution
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -66,14 +69,14 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 |-------|------|--------|------|
 | evt-bcfaff37 | grade_snapshot | — | 2026-07-18 |
 | evt-b58979bd | work_completed | iterate (iterate: suppress non-literal-import FP in the layer-coverage verifier) | 2026-07-18 |
+| evt-c5a8b243 | grade_snapshot | — | 2026-07-18 |
+| evt-6236a879 | work_completed | iterate (iterate: resolve tagged FR ids through the spec FR-Fold-Map so granular @covers tags survive a taxonomy fold) | 2026-07-18 |
 | evt-8f153abe | grade_snapshot | — | 2026-07-18 |
-| evt-5f2814df | grade_snapshot | — | 2026-07-18 |
-| evt-07d2258f | work_completed | iterate (iterate: FR-authoring rules — plain business language + capability altitude + advisory hygiene audit) | 2026-07-18 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 325
+- **Total work events**: 326
 - **Last iterate**: change — iterate: suppress non-literal-import FP in the layer-coverage verifier (2026-07-18)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

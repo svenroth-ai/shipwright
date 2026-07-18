@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-07-18T09:03:21.735990+00:00
-Total commits: 1162
+Generated: 2026-07-18T09:10:14.221914+00:00
+Total commits: 1163
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 333
-    "feat" : 322
+    "feat" : 323
     "chore" : 245
     "docs" : 145
     "refactor" : 68
@@ -358,10 +358,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 322 commits
+### Features (feat) — 323 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-18 | traceability | resolve tagged FR ids through the spec FR-Fold-Map | 1c082a49cc91 |
 | 2026-07-18 | fr-authoring | plain-language capability-level FR rules + advisory hygiene audit (#395) | 29d09188e1dd |
 | 2026-07-17 | agent-docs | canonical run_id changelog anchor + shape gate; kill aggregator ADR dup (#391) | 00174d952230 |
 | 2026-07-17 | traceability | backfill 189 plugin/shared @FR tags + config-aware TT5 gate (STEP 1) (#390) | a419ce461f8c |
@@ -689,7 +690,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-18 | triage | sweep 1 outbox append(s) into branch | 9cb4a44639fe |
+| 2026-07-18 | security | by-design nosemgrep suppression for the layer-coverage loader (#396) | 6cfd0e84655a |
 | 2026-07-18 | test-hygiene | resolve 51 pre-existing skipped-test findings (STEP 2) (#393) | 490a624e39f8 |
 | 2026-07-18 | traceability | dismiss STEP 3 FR-unmapped review card + record accepted-state policy (#392) | 9bff5d72718b |
 | 2026-07-17 | compliance | mark shared-lib loader import_module as by-design (semgrep FP) (#388) | fc6957724db1 |
@@ -1231,7 +1232,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1162 |
+| Total commits | 1163 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1162 |
+| Human-authored commits | 1163 |
 
