@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-18-nosemgrep-layer-coverage-regen",
+  "date": "2026-07-18T09:03:21.658361Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/nosemgrep-layer-coverage-regen",
+  "spec": "",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-18-nosemgrep-layer-coverage-regen"
+}

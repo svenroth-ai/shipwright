@@ -1,36 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-18-fr-authoring-rules"
+run_id: "iterate-2026-07-18-nosemgrep-layer-coverage-regen"
 phase: "iterate"
-reason: "iterate: FR-authoring rules — plain business language + capability altitude"
-timestamp: "2026-07-18T06:57:33.583714+00:00"
+reason: "iterate: suppress non-literal-import FP in the layer-coverage verifier"
+timestamp: "2026-07-18T09:03:28.926965+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-18 06:57:33 UTC
+> Auto-generated 2026-07-18 09:03:28 UTC
 
 ## Session Info
 
-- **Session ID**: b81cbdd9-0e92-4b90-a7bc-b582277c381a
-- **Timestamp**: 2026-07-18 06:57:33 UTC
-- **Reason**: iterate: FR-authoring rules — plain business language + capability altitude
+- **Session ID**: f15cf408-1257-4860-b0d5-cb049ffe3344
+- **Timestamp**: 2026-07-18 09:03:28 UTC
+- **Reason**: iterate: suppress non-literal-import FP in the layer-coverage verifier
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-18-fr-authoring-rules
-- **Date**: 2026-07-18T06:41:35.245945Z
+- **Run ID**: iterate-2026-07-18-nosemgrep-layer-coverage-regen
+- **Date**: 2026-07-18T09:03:21.658361Z
 - **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/fr-authoring-rules
-- **ADR**: iterate-2026-07-18-fr-authoring-rules
+- **Complexity**: small
+- **Branch**: iterate/nosemgrep-layer-coverage-regen
+- **ADR**: iterate-2026-07-18-nosemgrep-layer-coverage-regen
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-18-fr-authoring-rules.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/fr-authoring-rules
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-18-fr-authoring-rules.md
+- **Branch**: iterate/nosemgrep-layer-coverage-regen
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -49,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/fr-authoring-rules
-- **Last Commit**: 063dd3d2 feat(fr-authoring): plain-language capability-level FR rules + advisory hygiene audit
+- **Branch**: iterate/nosemgrep-layer-coverage-regen
+- **Last Commit**: 9cb4a446 chore(triage): sweep 1 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -66,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-bcfaff37 | grade_snapshot | — | 2026-07-18 |
+| evt-b58979bd | work_completed | iterate (iterate: suppress non-literal-import FP in the layer-coverage verifier) | 2026-07-18 |
 | evt-8f153abe | grade_snapshot | — | 2026-07-18 |
 | evt-5f2814df | grade_snapshot | — | 2026-07-18 |
 | evt-07d2258f | work_completed | iterate (iterate: FR-authoring rules — plain business language + capability altitude + advisory hygiene audit) | 2026-07-18 |
-| evt-6fabb1e3 | grade_snapshot | — | 2026-07-18 |
-| evt-a84a5f44 | work_completed | iterate (Admit test-traceability.json to the churn allowlist + regenerate-staging + integrate rollback (mirror ci-security CR-1), so origin/main merges auto-resolve it instead of aborting) | 2026-07-18 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 324
-- **Last iterate**: change — iterate: FR-authoring rules — plain business language + capability altitude + advisory hygiene audit (2026-07-18)
+- **Total work events**: 325
+- **Last iterate**: change — iterate: suppress non-literal-import FP in the layer-coverage verifier (2026-07-18)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

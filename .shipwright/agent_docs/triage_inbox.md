@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-18T06:41:40.904796Z. Items waiting for triage decision.
+> Auto-generated 2026-07-18T09:03:28.926965Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 319
-- Triage: 6 | Promoted: 1 | Dismissed: 311 | Snoozed: 1
+- Total: 320
+- Triage: 7 | Promoted: 1 | Dismissed: 311 | Snoozed: 1
 
-## Top 6 items (severity-sorted)
+## Top 7 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -69,4 +69,11 @@
 - **Adopt: mint capability-level FRs (route grouping + Area) and unify the greenfield/brownfield spec-table shape** `id=trg-f7d38388 | severity=medium | kind=improvement → P2/engineering`
   - Deferred remainder of trg-8e840ca0 / trg-44d23d63, split out of iterate-2026-07-18-fr-authoring-rules (which delivered…
   - Promote: `triage_promote.py --id trg-f7d38388 --task-ref EXT:<ref>`
+
+### Source: webui-traceability-handoff (1 item)
+
+<a id="trg-0c14afe6"></a>
+- **Fold-aware traceability: resolve @covers folded FR IDs via FR-Fold-Map before orphan-flagging** `id=trg-0c14afe6 | severity=medium | kind=improvement → P2/engineering`
+  - The test_links collector, D-orphan (_group_d_traceability) and backfill_scan read only survivor FR-table rows and do NO…
+  - Promote: `triage_promote.py --id trg-0c14afe6 --task-ref EXT:<ref>`
 

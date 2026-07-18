@@ -72,6 +72,8 @@ def _load_collector() -> tuple | None:
         sys.modules.pop(key, None)
     sys.path.insert(0, plugin_str)  # force precedence over any sibling-plugin `scripts`
     try:
+        # ``_COLLECTOR_MODULES`` is a frozen module-level tuple of first-party literals: no arg, config or env var steers this import, and semgrep just does not trace the loop variable back to it. That tuple IS the whitelist the rule's own hint asks for.
+        # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
         mods = tuple(importlib.import_module(name) for name in _COLLECTOR_MODULES)
         _COLLECTOR = mods
         return _COLLECTOR

@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-18 06:57 UTC | Session: b81cbdd9-0e92-4b90-a7bc-b582277c381a | Run: iterate-2026-07-18-fr-authoring-rules
+> Updated: 2026-07-18 09:03 UTC | Session: f15cf408-1257-4860-b0d5-cb049ffe3344 | Run: iterate-2026-07-18-nosemgrep-layer-coverage-regen
 
-## Recent Changes (324 iterations)
+## Recent Changes (325 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | iterate: suppress non-literal-import FP in the layer-coverage verifier | 0/0 |  | tooling | 2026-07-18 |
 | change | iterate: FR-authoring rules — plain business language + capability altitude + advisory hygiene audit | 0/0 |  | FR-01.02, FR-01.10, FR-01.11 | 2026-07-18 |
 | change | Admit test-traceability.json to the churn allowlist + regenerate-staging + integrate rollback (mirror ci-security CR-1), so origin/main merges auto-resolve it instead of aborting | 0/0 |  | infra | 2026-07-18 |
 | change | STEP 3: dismiss the FR-unmapped review card (trg-0942da1f); record accepted-state policy for framework-internal untagged tests (ADR 106). | 17/17 |  | compliance | 2026-07-17 |
@@ -331,7 +332,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-18 | Unit: 7908/7908 | Integration: 2/2 | Smoke: not_run | (iterate)
+Last run: 2026-07-18 | Unit: 8416/8416 | Integration: 234/234 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

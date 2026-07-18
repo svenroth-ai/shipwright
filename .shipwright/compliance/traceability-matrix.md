@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-18T06:41:35.319788+00:00
+Generated: 2026-07-18T09:03:21.735990+00:00
 
 ## Requirements Coverage
 
@@ -28,6 +28,7 @@ Generated: 2026-07-18T06:41:35.319788+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-b58979bd"></a>suppress non-literal-import FP in the layer-coverage verifier | iterate | change |  | — | — | 2026-07-18 |
 | <a id="evt-07d2258f"></a>Functional Requirements are now written in plain, non-expert business language and at capability level, with one shared rulebook the adopt, project and iterate skills all follow, plus an advisory compliance check that reports when a requirement drifts back into technical jargon. | iterate | change | [FR-01.02](#rtm-fr-0102), [FR-01.10](#rtm-fr-0110), [FR-01.11](#rtm-fr-0111) +1 | — | — | 2026-07-18 |
 | <a id="evt-a84a5f44"></a>Admit test-traceability.json to the churn allowlist + regenerate-staging + integrate rollback (mirror ci-security CR-1), so origin/main merges auto-resolve it instead of aborting | iterate | change |  | — | — | 2026-07-18 |
 | <a id="evt-f09df6a1"></a>STEP 2 test-rot cleanup: 51 pre-existing skipped-test findings resolved (CI-guard / marker / remove / delete) + adopt fixtures-prune scoped to tests/ | iterate | change |  | — | — | 2026-07-17 |
@@ -359,7 +360,7 @@ Generated: 2026-07-18T06:41:35.319788+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 324 |
+| Iterate changes | 325 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |
