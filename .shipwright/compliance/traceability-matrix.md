@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-18T09:10:14.221914+00:00
+Generated: 2026-07-18T16:11:06.203790+00:00
 
 ## Requirements Coverage
 
@@ -28,6 +28,7 @@ Generated: 2026-07-18T09:10:14.221914+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-3d1c18b7"></a>FR-existence gate — declared requirement ids must exist | iterate | change |  | — | — | 2026-07-18 |
 | <a id="evt-6236a879"></a>resolve tagged FR ids through the spec FR-Fold-Map so granular @covers tags survive a taxonomy fold | iterate | change |  | — | — | 2026-07-18 |
 | <a id="evt-b58979bd"></a>suppress non-literal-import FP in the layer-coverage verifier | iterate | change |  | — | — | 2026-07-18 |
 | <a id="evt-07d2258f"></a>Functional Requirements are now written in plain, non-expert business language and at capability level, with one shared rulebook the adopt, project and iterate skills all follow, plus an advisory compliance check that reports when a requirement drifts back into technical jargon. | iterate | change | [FR-01.02](#rtm-fr-0102), [FR-01.10](#rtm-fr-0110), [FR-01.11](#rtm-fr-0111) +1 | — | — | 2026-07-18 |
@@ -361,7 +362,7 @@ Generated: 2026-07-18T09:10:14.221914+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 326 |
+| Iterate changes | 327 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |

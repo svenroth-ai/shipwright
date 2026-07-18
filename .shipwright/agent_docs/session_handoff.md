@@ -1,37 +1,36 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-18-fr-fold-map-resolution"
+run_id: "iterate-2026-07-18-fr-existence-gate"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-18T09:10:19.724932+00:00"
+reason: "iterate: FR-existence gate — declared requirement ids must exist"
+timestamp: "2026-07-18T16:11:11.897795+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-18 09:10:19 UTC
+> Auto-generated 2026-07-18 16:11:11 UTC
 
 ## Session Info
 
-- **Session ID**: 3b3d60c1-1bff-42d2-bb57-037c86798a90
-- **Timestamp**: 2026-07-18 09:10:19 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: 29a26685-f650-4a1d-a048-e9730774350b
+- **Timestamp**: 2026-07-18 16:11:11 UTC
+- **Reason**: iterate: FR-existence gate — declared requirement ids must exist
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-18-fr-fold-map-resolution
-- **Date**: 2026-07-18T09:10:14.140286Z
+- **Run ID**: iterate-2026-07-18-fr-existence-gate
+- **Date**: 2026-07-18T16:11:06.125067Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/fr-fold-map-resolution
-- **ADR**: iterate-2026-07-18-fr-fold-map-resolution
+- **Branch**: iterate/fr-existence-gate
+- **ADR**: iterate-2026-07-18-fr-existence-gate
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-18-fr-fold-map-resolution.md
+- **Spec**: .shipwright/planning/iterate/2026-07-18-fr-existence-gate.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/fr-fold-map-resolution
-- **Run ID**: `iterate-2026-07-18-fr-fold-map-resolution`
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-18-fr-fold-map-resolution.md
+- **Branch**: iterate/fr-existence-gate
+- **Spec**: .shipwright/planning/iterate/2026-07-18-fr-existence-gate.md
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -50,8 +49,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/fr-fold-map-resolution
-- **Last Commit**: 8a0c73b3 Merge remote-tracking branch 'origin/main' into iterate/fr-fold-map-resolution
+- **Branch**: iterate/fr-existence-gate
+- **Last Commit**: 4fe2d680 feat(traceability): resolve tagged FR ids through the spec FR-Fold-Map (#397)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -67,17 +66,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-9f5dc340 | grade_snapshot | — | 2026-07-18 |
+| evt-3d1c18b7 | work_completed | iterate (iterate: FR-existence gate — declared requirement ids must exist) | 2026-07-18 |
+| evt-7518638a | grade_snapshot | — | 2026-07-18 |
 | evt-bcfaff37 | grade_snapshot | — | 2026-07-18 |
 | evt-b58979bd | work_completed | iterate (iterate: suppress non-literal-import FP in the layer-coverage verifier) | 2026-07-18 |
-| evt-c5a8b243 | grade_snapshot | — | 2026-07-18 |
-| evt-6236a879 | work_completed | iterate (iterate: resolve tagged FR ids through the spec FR-Fold-Map so granular @covers tags survive a taxonomy fold) | 2026-07-18 |
-| evt-8f153abe | grade_snapshot | — | 2026-07-18 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 326
-- **Last iterate**: change — iterate: suppress non-literal-import FP in the layer-coverage verifier (2026-07-18)
+- **Total work events**: 327
+- **Last iterate**: change — iterate: FR-existence gate — declared requirement ids must exist (2026-07-18)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

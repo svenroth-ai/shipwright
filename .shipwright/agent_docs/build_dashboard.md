@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-18 09:10 UTC | Session: 3b3d60c1-1bff-42d2-bb57-037c86798a90 | Run: iterate-2026-07-18-fr-fold-map-resolution
+> Updated: 2026-07-18 16:11 UTC | Session: 29a26685-f650-4a1d-a048-e9730774350b | Run: iterate-2026-07-18-fr-existence-gate
 
-## Recent Changes (326 iterations)
+## Recent Changes (327 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | iterate: FR-existence gate — declared requirement ids must exist | 0/0 |  | compliance | 2026-07-18 |
 | change | iterate: suppress non-literal-import FP in the layer-coverage verifier | 0/0 |  | tooling | 2026-07-18 |
 | change | iterate: resolve tagged FR ids through the spec FR-Fold-Map so granular @covers tags survive a taxonomy fold | 0/0 |  | compliance | 2026-07-18 |
 | change | iterate: FR-authoring rules — plain business language + capability altitude + advisory hygiene audit | 0/0 |  | FR-01.02, FR-01.10, FR-01.11 | 2026-07-18 |
@@ -333,7 +334,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-18 | Unit: 8475/8475 | Integration: 234/234 | E2E: 2/2 | Smoke: not_run | (iterate)
+Last run: 2026-07-18 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
