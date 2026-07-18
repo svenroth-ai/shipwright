@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-07-18T09:10:14.221914+00:00
-Total commits: 1164
+Generated: 2026-07-18T09:03:21.735990+00:00
+Total commits: 1162
 
 ## Commit Distribution
 
@@ -13,8 +13,8 @@ pie title Commit Types
     "docs" : 145
     "refactor" : 68
     "test" : 28
-    "other" : 11
     "ci" : 11
+    "other" : 9
     "build" : 1
 ```
 
@@ -689,7 +689,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-18 | triage | sweep 1 outbox append(s) into branch | ddfb7989ffdd |
+| 2026-07-18 | triage | sweep 1 outbox append(s) into branch | 9cb4a44639fe |
 | 2026-07-18 | test-hygiene | resolve 51 pre-existing skipped-test findings (STEP 2) (#393) | 490a624e39f8 |
 | 2026-07-18 | traceability | dismiss STEP 3 FR-unmapped review card + record accepted-state policy (#392) | 9bff5d72718b |
 | 2026-07-17 | compliance | mark shared-lib loader import_module as by-design (semgrep FP) (#388) | fc6957724db1 |
@@ -1191,22 +1191,6 @@ pie title Commit Types
 | 2026-04-11 | — | complete test phase — 299 unit tests, 5 E2E tests, smoke PASS | e843d458942d |
 | 2026-04-11 | e2e | set up Playwright with E2E specs and smoke test results | cba0fd6e9012 |
 
-### Other (other) — 11 commits
-
-| Date | Scope | Description | Commit |
-|------|-------|-------------|--------|
-| 2026-07-18 | — | wip: F5/F2/F3a artifacts | c62e72338d61 |
-| 2026-07-18 | — | wip: fr-fold-map resolution (pre-finalization checkpoint) | 5dbf4896372c |
-| 2026-07-15 | — | fix(phases)!: detect invocation mode from the dispatch token, not the never-advanced v1 current_step (#372) | d76970e82cf4 |
-| 2026-07-14 | — | refactor(run)!: single_session is the sole pipeline mode; remove the external per-phase-session engine (#369) | aef19f2c1668 |
-| 2026-04-24 | — | feat!: extract WebUI into own repo (shipwright-webui) — v0.4.0 | 47cacebb2a24 |
-| 2026-04-23 | — | iterate 3.9 — E2E spec backlog cleanup + TaskCard menu-bubbling fix (#9) | 514ec0b55a92 |
-| 2026-04-22 | — | iterate 3.8 — post-iterate-3 cleanup (E2E + scrollbar gutter) (#8) | 8a1950a50ee1 |
-| 2026-04-17 | — | poc: assistant-ui migration probe (branch poc/assistant-ui-migration) | 742468d29706 |
-| 2026-04-04 | — | Revert "docs: add Integrated Learnings section to README" | 9ede83209202 |
-| 2026-04-04 | — | Revert "fix: rename skill dirs to full plugin name for clean slash-command display" | 1545b4b2c522 |
-| 2026-03-21 | — | revert: restore full skill names in SKILL.md frontmatter | 05c0d5ce7566 |
-
 ### CI/CD (ci) — 11 commits
 
 | Date | Scope | Description | Commit |
@@ -1223,6 +1207,20 @@ pie title Commit Types
 | 2026-05-31 | — | run shared/ test suites in CI via per-dir invocations | eb68b567899d |
 | 2026-05-31 | integration | gate integration-tests step on failure; fix F821 in events-log test | 83d68709d125 |
 
+### Other (other) — 9 commits
+
+| Date | Scope | Description | Commit |
+|------|-------|-------------|--------|
+| 2026-07-15 | — | fix(phases)!: detect invocation mode from the dispatch token, not the never-advanced v1 current_step (#372) | d76970e82cf4 |
+| 2026-07-14 | — | refactor(run)!: single_session is the sole pipeline mode; remove the external per-phase-session engine (#369) | aef19f2c1668 |
+| 2026-04-24 | — | feat!: extract WebUI into own repo (shipwright-webui) — v0.4.0 | 47cacebb2a24 |
+| 2026-04-23 | — | iterate 3.9 — E2E spec backlog cleanup + TaskCard menu-bubbling fix (#9) | 514ec0b55a92 |
+| 2026-04-22 | — | iterate 3.8 — post-iterate-3 cleanup (E2E + scrollbar gutter) (#8) | 8a1950a50ee1 |
+| 2026-04-17 | — | poc: assistant-ui migration probe (branch poc/assistant-ui-migration) | 742468d29706 |
+| 2026-04-04 | — | Revert "docs: add Integrated Learnings section to README" | 9ede83209202 |
+| 2026-04-04 | — | Revert "fix: rename skill dirs to full plugin name for clean slash-command display" | 1545b4b2c522 |
+| 2026-03-21 | — | revert: restore full skill names in SKILL.md frontmatter | 05c0d5ce7566 |
+
 ### Build (build) — 1 commits
 
 | Date | Scope | Description | Commit |
@@ -1233,7 +1231,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1164 |
+| Total commits | 1162 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1164 |
+| Human-authored commits | 1162 |
 

@@ -1,6 +1,6 @@
 # Test Evidence Report
 
-Generated: 2026-07-18T09:10:14.221914+00:00
+Generated: 2026-07-18T09:03:21.735990+00:00
 
 ## Summary
 
@@ -14,7 +14,7 @@ Generated: 2026-07-18T09:10:14.221914+00:00
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | resolve tagged FR ids through the spec FR-Fold-Map so granular @covers tags survive a taxonomy fold | [iterate](traceability-matrix.md#evt-6236a879) | — | +0 | — | — | 2026-07-18 |
+| 1 | suppress non-literal-import FP in the layer-coverage verifier | [iterate](traceability-matrix.md#evt-b58979bd) | — | +0 | — | — | 2026-07-18 |
 | 2 | Functional Requirements are now written in plain, non-expert business language and at capability level, with one shared rulebook the adopt, project and iterate skills all follow, plus an advisory compliance check that reports when a requirement drifts back into technical jargon. | [iterate](traceability-matrix.md#evt-07d2258f) | — | +0 | — | — | 2026-07-18 |
 | 3 | Admit test-traceability.json to the churn allowlist + regenerate-staging + integrate rollback (mirror ci-security CR-1), so origin/main merges auto-resolve it instead of aborting | [iterate](traceability-matrix.md#evt-a84a5f44) | — | +0 | — | — | 2026-07-18 |
 | 4 | Decided the ~6,800 framework tests without a requirement tag are expected and fine, closed the review reminder, and wrote down why. | [iterate](traceability-matrix.md#evt-e848e205) | unit | +0 | 17/17 | PASS | 2026-07-17 |
