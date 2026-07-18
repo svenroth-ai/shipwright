@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-07-18T17:04:22.088722+00:00
+Generated: 2026-07-18T16:11:06.203790+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -8,16 +8,16 @@ Scope: library
 
 > **Controlled, minor gaps. Primarily capped by change reconciliation.**
 
-### Control Grade: **B** (85/100) — Controlled, minor gaps.
+### Control Grade: **B** (87/100) — Controlled, minor gaps.
 
 | | Dimension | Signal | Anchor |
 |---|-----------|--------|--------|
 | ✅ | Requirement traceability | 14/15 FRs covered; 327/327 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
 | ✅ | Test health | latest full suite 5936/5936 (2026-07-16) | automated tests pass (OpenSSF Scorecard) |
 | ✅ | Change traceability | 327/327 changes linked to a commit, ADR or test run | change provenance (SLSA) |
-| ⚠️ | Change reconciliation | 7/8 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
+| ⚠️ | Change reconciliation | 6/8 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
 | ✅ | Security | 0 open high/critical | no open high/critical vulns (NIST SSDF) |
-| ✅ | Size / maintainability discipline | ratchet delta -111 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
+| ✅ | Size / maintainability discipline | ratchet delta -208 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
 | ✅ | Dependency hygiene | 0 unresolved / 11 licenses; 0 copyleft | dependency license & risk (OWASP) |
 
 > 📊 **Test-Health · diff-coverage (Control-Grade input · target ≥80%):** not measured this session — per-PR signal; see the CI "Diff coverage" artifact.
@@ -28,7 +28,7 @@ _Grade = importance-weighted average over the measurable dimensions (n/a exclude
 
 ## 🛡️ CI Security (fail-closed gate)
 
-Latest scan: **2026-07-18** · source `security.yml#29651893311` · critical-gate **✅ PASS**
+Latest scan: **2026-07-18** · source `security.yml#29639579619` · critical-gate **✅ PASS**
 
 | Severity | Count |
 |----------|-------|
@@ -53,16 +53,16 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
 | Work events (iterate) | 327 changes | INFO |  |
-| Recent changes traced to an FR | 4/30 (13%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
+| Recent changes traced to an FR | 3/30 (10%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
 | All unit tests passing | 5936/5936 | PASS | +12 change(s) since last full suite |
 | Architecture decisions | 327 ADRs | INFO |  |
-| Iterate tests passing | 46/58 testable changes tested | WARN | 12 testable change(s) without tests — see test-evidence.md |
+| Iterate tests passing | 46/57 testable changes tested | WARN | 11 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 11 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
 | Triage open | 8 open | WARN | 8 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit (grandfathered) | 124 | INFO |  |
 | Bloat in allowlist | 155 entries | INFO |  |
-| Bloat ratchet delta | -111 lines | PASS |  |
+| Bloat ratchet delta | -208 lines | PASS |  |
 
 ## Project Velocity
 
