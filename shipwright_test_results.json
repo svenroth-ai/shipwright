@@ -99,7 +99,8 @@
           "behavior": "INTEGRATION: a real union merge PROPAGATES a concatenated line and does NOT create one; every reader then sees all runs",
           "ac": "AC7",
           "disposition": "tested",
-          "evidence": "integration-tests/test_events_record_boundary_merge_integration.py (3 cases, incl. both mechanism directions)"
+          "evidence": "integration-tests/test_events_record_boundary_merge_integration.py (3 cases, incl. both mechanism directions)",
+          "category": "integration"
         },
         {
           "behavior": "three latent uncaught crashes in events_log (bare scalar; undecodable bytes in both functions)",

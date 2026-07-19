@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-19T06:10:14.398395+00:00
+Generated: 2026-07-19T07:12:01.841222+00:00
 
 ## Requirements Coverage
 
@@ -28,6 +28,7 @@ Generated: 2026-07-19T06:10:14.398395+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-50e902ef"></a>Eleven event-log readers now recover records that share one physical line, instead of discarding every record on it — including the F11 oracle whose failure made finalization fail for correctly-recorded runs. | iterate | change |  | — | — | 2026-07-19 |
 | <a id="evt-5c18465d"></a>Cleared the open size-baseline and decision-record findings that were sitting in the way of the requirements-catalog campaign — and deliberately left one entry alone, because tightening it would have blocked another iterate that is still running. | iterate | change |  | — | — | 2026-07-19 |
 | <a id="evt-16c0251e"></a>ship the action-pinning posture rule to adopters (trg-0ce59c05) | iterate | change |  | — | — | 2026-07-19 |
 | <a id="evt-061daf99"></a>converge accepted risks onto the code-scanning surface (trg-13b8283b) | iterate | change |  | — | — | 2026-07-18 |
@@ -370,7 +371,7 @@ Generated: 2026-07-19T06:10:14.398395+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 335 |
+| Iterate changes | 336 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |
