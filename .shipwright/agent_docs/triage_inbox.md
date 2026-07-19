@@ -1,12 +1,12 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-18T22:36:05.056466Z. Items waiting for triage decision.
+> Auto-generated 2026-07-18T23:19:00.375648Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 337
-- Triage: 9 | Promoted: 1 | Dismissed: 326 | Snoozed: 1
+- Total: 339
+- Triage: 9 | Promoted: 1 | Dismissed: 328 | Snoozed: 1
 
 ## Top 9 items (severity-sorted)
 
@@ -17,7 +17,7 @@
   - Scope the Shipwright marketplace correctly instead of enabling all ~14 plugins at user scope (they currently load /ship…
   - Promote: `triage_promote.py --id trg-57317128 --task-ref EXT:<ref>`
 
-### Source: compliance (1 item)
+### Source: compliance (3 items)
 
 <a id="trg-ebe6705b"></a>
 - **Compliance: 5 open finding(s)** `id=trg-ebe6705b | severity=high | kind=compliance → P1/compliance`
@@ -31,6 +31,16 @@
     Each finding + hint is listed in this item's detail.
     ```
   - Promote: `triage_promote.py --id trg-ebe6705b --task-ref EXT:<ref>`
+
+<a id="trg-ebd64fc1"></a>
+- **Remaining shipwright_events.jsonl readers still drop concatenated records** `id=trg-ebd64fc1 | severity=medium | kind=bug → P2/compliance`
+  - iterate-2026-07-18-events-jsonl-record-boundary (PR #405) fixed the WRITERS (record_event.append_event/_idempotent, ado…
+  - Promote: `triage_promote.py --id trg-ebd64fc1 --task-ref EXT:<ref>`
+
+<a id="trg-a97f51c1"></a>
+- **phase_timings sidecar append has no newline guard (lower risk: no union merge)** `id=trg-a97f51c1 | severity=low | kind=bug → P3/compliance`
+  - shared/scripts/lib/iterate_phase_groups.py:115 appends to .shipwright/agent_docs/iterates/<run_id>.phase_timings.jsonl…
+  - Promote: `triage_promote.py --id trg-a97f51c1 --task-ref EXT:<ref>`
 
 ### Source: iterate (1 item)
 
@@ -51,24 +61,14 @@
   - Three defects in the requirements table parsers, found while building the S1 golden corpus (campaign Requirements Catal…
   - Promote: `triage_promote.py --id trg-9532fa83 --task-ref EXT:<ref>`
 
-### Source: operator (2 items)
-
-<a id="trg-94337862"></a>
-- **REQ-1 - Iterate: requirements test harness (golden corpus) - run AFTER REQ-0, BEFORE REQ-2** `id=trg-94337862 | severity=high | kind=improvement → P1/engineering`
-  - SECOND of three. Order: REQ-0 (FR existence gate) -> REQ-1 (this) -> REQ-2 (campaign trg-1b764b2c). This is the safety…
-  - Promote: `triage_promote.py --id trg-94337862 --task-ref EXT:<ref>`
+### Source: operator (1 item)
 
 <a id="trg-1b764b2c"></a>
 - **REQ-2 - Campaign: requirements catalog (S2-S8) - run AFTER REQ-1** `id=trg-1b764b2c | severity=medium | kind=improvement → P2/engineering`
   - THIRD of three. Order: REQ-0 (FR existence gate) -> REQ-1 (test harness) -> REQ-2 (this campaign). Do NOT start before…
   - Promote: `triage_promote.py --id trg-1b764b2c --task-ref EXT:<ref>`
 
-### Source: securityReview (2 items)
-
-<a id="trg-13b8283b"></a>
-- **CI-Security 1b/2: converge an acceptance onto code-scanning + triage (GAP 2, root cause of #285)** `id=trg-13b8283b | severity=medium | kind=improvement → P2/engineering`
-  - CI-Security 1b of 2. Phase 2 of the split out of trg-15a8e267 (CI-Security 1/2, which delivers the scanner-agnostic acc…
-  - Promote: `triage_promote.py --id trg-13b8283b --task-ref EXT:<ref>`
+### Source: securityReview (1 item)
 
 <a id="trg-0ce59c05"></a>
 - **CI-Security 2/2: ship the action-pinning posture RULE to adopters (templates already correct)** `id=trg-0ce59c05 | severity=low | kind=improvement → P3/engineering`

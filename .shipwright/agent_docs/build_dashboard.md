@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-18 22:36 UTC | Session: 1a5c5f62-8d5c-486b-aeca-6de1d4e6d619 | Run: iterate-2026-07-18-accepted-risk-alert-convergence
+> Updated: 2026-07-19 05:34 UTC | Session: 1a5c5f62-8d5c-486b-aeca-6de1d4e6d619 | Run: iterate-2026-07-19-adopter-pinning-posture-rule
 
-## Recent Changes (333 iterations)
+## Recent Changes (334 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | iterate: ship the action-pinning posture rule to adopters (trg-0ce59c05) | 0/0 |  | compliance | 2026-07-19 |
 | change | Record-boundary recovery + newline-termination guard on shipwright_events.jsonl: record_event.append_event and append_event_idempotent probe ends_without_newline before appending, lib/config.read_events delegates to read_jsonl_records so a concatenated line yields all its records, and the lock-free adopt event_seeder carries a documented duplicate probe (ADR-045 blocks importing the shared leaf). Extends the PR #399 triage contract to the audit trail. | 0/0 |  | tooling | 2026-07-18 |
 | change | iterate: converge accepted risks onto the code-scanning surface (trg-13b8283b) | 0/0 |  | compliance | 2026-07-18 |
 | change | iterate: scanner-agnostic accepted-risk register (trg-15a8e267, item 4) | 0/0 |  | compliance | 2026-07-18 |
@@ -340,7 +341,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-19 | Unit: 4563/4564 | Smoke: not_run | (iterate)
+Last run: 2026-07-19 | Unit: 4609/4610 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

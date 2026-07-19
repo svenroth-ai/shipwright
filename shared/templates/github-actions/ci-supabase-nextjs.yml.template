@@ -108,25 +108,18 @@ jobs:
         with:
           coverage-files: coverage/cobertura-coverage.xml
 
-  # Security and deployment jobs run only on Linux:
-  #   - Trivy / Gitleaks install via Debian apt-get (Linux-only)
-  #   - Deployment runners are Linux-pinned by infrastructure
-  security:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    needs: test
-    permissions:
-      contents: read
-      security-events: write
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Aikido security scan
-        uses: AikidoSec/github-actions-wf@v1
-        with:
-          secret-key: ${{ secrets.AIKIDO_SECRET_KEY }}
-
+  # Security scanning is NOT a job here. It lives in `.github/workflows/
+  # security.yml`, which /shipwright-adopt scaffolds independently of this CI
+  # template (Trivy + Gitleaks + Semgrep, no third-party service account).
+  #
+  # This job used to run `AikidoSec/github-actions-wf@v1`. That action no longer
+  # exists (the repository 404s), so the job could never have run for anyone
+  # adopting this template, and it additionally demanded an AIKIDO_SECRET_KEY
+  # secret nobody holds. Removed rather than pinned: a reference that cannot
+  # resolve has no SHA to pin, and shipwright-security already covers this.
+  #
+  # Deployment jobs run only on Linux — deployment runners are Linux-pinned by
+  # infrastructure.
   deploy-dev:
     if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest

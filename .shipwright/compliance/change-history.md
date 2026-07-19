@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-07-18T22:18:10.805261+00:00
-Total commits: 1174
+Generated: 2026-07-19T05:34:48.576358+00:00
+Total commits: 1173
 
 ## Commit Distribution
 
@@ -9,7 +9,7 @@ Total commits: 1174
 pie title Commit Types
     "fix" : 336
     "feat" : 326
-    "chore" : 248
+    "chore" : 247
     "docs" : 145
     "refactor" : 69
     "test" : 29
@@ -365,7 +365,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-19 | compliance | converge accepted risks onto the code-scanning surface | faa6a1f8eb27 |
+| 2026-07-19 | compliance | converge accepted risks onto the code-scanning surface (#406) | de9cd073b991 |
 | 2026-07-18 | compliance | scanner-agnostic accepted-risk register, gated both directions (#404) | 4a948378b207 |
 | 2026-07-18 | iterate | CI supply-chain risk flag with a recorded-acknowledgement gate (#401) | 7c303a8b3410 |
 | 2026-07-18 | traceability | resolve tagged FR ids through the spec FR-Fold-Map (#397) | 4fe2d680ae1e |
@@ -692,12 +692,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 248 commits
+### Chores (chore) — 247 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-19 | churn | regenerate derived snapshots after main merge | 08e0cb30cd44 |
-| 2026-07-18 | triage | sweep 2 outbox append(s) into branch | e3a65a293c93 |
+| 2026-07-19 | triage | sweep 4 outbox append(s) into branch | 052378dc829b |
 | 2026-07-18 | triage | deliver 3 orphaned records from the merged iterate worktree (#402) | 56ee1c0e2387 |
 | 2026-07-18 | security | by-design nosemgrep suppression for the layer-coverage loader (#396) | 6cfd0e84655a |
 | 2026-07-18 | test-hygiene | resolve 51 pre-existing skipped-test findings (STEP 2) (#393) | 490a624e39f8 |
@@ -1243,7 +1242,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1174 |
+| Total commits | 1173 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1174 |
+| Human-authored commits | 1173 |
 

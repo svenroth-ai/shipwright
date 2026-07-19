@@ -1,0 +1,1 @@
+A guard over every shipped workflow template that fails in **both** directions — unpinning a third-party action, or SHA-pinning a GitHub-owned one. Both were watched going red on a deliberately mutated template. The `uses:` parser fails closed on quoted (`"a/b@v1"`) and dynamic (`a/b@${{ inputs.v }}`) values, which an earlier draft skipped silently.
