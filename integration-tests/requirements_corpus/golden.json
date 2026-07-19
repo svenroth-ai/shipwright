@@ -53,7 +53,7 @@
       }
     }
   },
-  "regenerated_for": "S2 (iterate-2026-07-19-one-discovery-function): exactly ONE cell changed, and it is the only cell that CAN change under this sub-iterate. disc.review_runner.run_review is frozen by a source sha256 rather than by invocation -- its walk is inline in a function that calls an external LLM -- so routing it through the shared planning_discovery.iter_spec_files(recursive=True, sort=False) necessarily moves the hash even though the behaviour is identical: same unsorted rglob, same first-match break, same silent-empty on an absent or non-directory planning path. source_lines is unchanged at 114. The other 14 discovery cells and all 5 parser cells ARE invocable, and every one of them stayed byte-identical across the same commit that rewrote all 15 call sites. That is the evidence the extraction preserved behaviour; this stamp is not a substitute for it.",
+  "regenerated_for": "S3: Requirement.namespace became a read-only property derived from the FR id (manifest v3), so the corpus serializer -- which walks dataclasses.fields() -- no longer surfaces it. 38 cells lose their \"namespace\": \"<directory-name>\" entry in the single target parse._requirement_parse.parse_requirements. Zero additions; no spec_path or split cell moved, so every id-only target is untouched.",
   "schema_version": 1,
   "targets": {
     "disc._test_links_io.discover_specs": {
@@ -2869,7 +2869,6 @@
               "value": [
                 {
                   "id": "FR-01.01",
-                  "namespace": "01-adopted",
                   "priority": "Must",
                   "required_layers": [
                     "unit"
@@ -2881,7 +2880,6 @@
                 },
                 {
                   "id": "FR-01.02",
-                  "namespace": "01-adopted",
                   "priority": "Should",
                   "required_layers": [
                     "unit"
@@ -2903,7 +2901,6 @@
               "value": [
                 {
                   "id": "FR-01.01",
-                  "namespace": ".hidden-split",
                   "priority": "Must",
                   "required_layers": [
                     "unit",
@@ -2916,7 +2913,6 @@
                 },
                 {
                   "id": "FR-01.02",
-                  "namespace": ".hidden-split",
                   "priority": "Should",
                   "required_layers": [
                     "unit"
@@ -2934,7 +2930,6 @@
               "value": [
                 {
                   "id": "FR-01.01",
-                  "namespace": "01-live",
                   "priority": "Must",
                   "required_layers": [
                     "unit"
@@ -2946,7 +2941,6 @@
                 },
                 {
                   "id": "FR-99.99",
-                  "namespace": "01-live",
                   "priority": "Should",
                   "required_layers": [
                     "unit"
@@ -2958,7 +2952,6 @@
                 },
                 {
                   "id": "FR-01.09",
-                  "namespace": "01-live",
                   "priority": "Must",
                   "required_layers": [
                     "unit"
@@ -2970,7 +2963,6 @@
                 },
                 {
                   "id": "FR-01.20",
-                  "namespace": "01-live",
                   "priority": "Must",
                   "required_layers": [
                     "unit"
@@ -2988,7 +2980,6 @@
               "value": [
                 {
                   "id": "FR-02.01",
-                  "namespace": "deeper",
                   "priority": "Must",
                   "required_layers": [
                     "e2e"
@@ -3000,7 +2991,6 @@
                 },
                 {
                   "id": "FR-02.02",
-                  "namespace": "deeper",
                   "priority": "May",
                   "required_layers": [
                     "unit"
@@ -3018,7 +3008,6 @@
               "value": [
                 {
                   "id": "FR-01.01",
-                  "namespace": "iterate",
                   "priority": "Must",
                   "required_layers": [
                     "unit",
@@ -3031,7 +3020,6 @@
                 },
                 {
                   "id": "FR-01.02",
-                  "namespace": "iterate",
                   "priority": "Should",
                   "required_layers": [
                     "unit"
@@ -3061,7 +3049,6 @@
               "value": [
                 {
                   "id": "FR-01.01",
-                  "namespace": "01-auth",
                   "priority": "Must",
                   "required_layers": [
                     "unit",
@@ -3074,7 +3061,6 @@
                 },
                 {
                   "id": "FR-01.02",
-                  "namespace": "01-auth",
                   "priority": "Should",
                   "required_layers": [
                     "unit"
@@ -3092,7 +3078,6 @@
               "value": [
                 {
                   "id": "FR-02.01",
-                  "namespace": "02-dashboard",
                   "priority": "Must",
                   "required_layers": [
                     "e2e"
@@ -3104,7 +3089,6 @@
                 },
                 {
                   "id": "FR-02.02",
-                  "namespace": "02-dashboard",
                   "priority": "May",
                   "required_layers": [
                     "unit"
@@ -3122,7 +3106,6 @@
               "value": [
                 {
                   "id": "FR-03.01",
-                  "namespace": "03-reporting",
                   "priority": "Must",
                   "required_layers": [
                     "unit",
@@ -3135,7 +3118,6 @@
                 },
                 {
                   "id": "FR-03.02",
-                  "namespace": "03-reporting",
                   "priority": "Should",
                   "required_layers": [
                     "unit"
@@ -3157,7 +3139,6 @@
               "value": [
                 {
                   "id": "FR-01.02",
-                  "namespace": "01-broken",
                   "priority": "Must",
                   "required_layers": [
                     "unit"
@@ -3169,7 +3150,6 @@
                 },
                 {
                   "id": "FR-01.03",
-                  "namespace": "01-broken",
                   "priority": "Should",
                   "required_layers": [
                     "unit"
@@ -3181,7 +3161,6 @@
                 },
                 {
                   "id": "FR-01.05",
-                  "namespace": "01-broken",
                   "priority": "Must",
                   "required_layers": [
                     "unit"
@@ -3193,7 +3172,6 @@
                 },
                 {
                   "id": "FR-01.06",
-                  "namespace": "01-broken",
                   "priority": "Must",
                   "required_layers": [
                     "unit"
@@ -3205,7 +3183,6 @@
                 },
                 {
                   "id": "FR-01.07",
-                  "namespace": "01-broken",
                   "priority": "Must",
                   "required_layers": [
                     "unit"
@@ -3217,7 +3194,6 @@
                 },
                 {
                   "id": "FR-01.08",
-                  "namespace": "01-broken",
                   "priority": "Must",
                   "required_layers": [
                     "unit"
@@ -3229,7 +3205,6 @@
                 },
                 {
                   "id": "FR-01.01",
-                  "namespace": "01-broken",
                   "priority": "Must",
                   "required_layers": [
                     "unit"
@@ -3251,7 +3226,6 @@
               "value": [
                 {
                   "id": "FR-01.01",
-                  "namespace": "01-greenfield-template",
                   "priority": "Must",
                   "required_layers": [
                     "unit",
@@ -3264,7 +3238,6 @@
                 },
                 {
                   "id": "FR-01.02",
-                  "namespace": "01-greenfield-template",
                   "priority": "Should",
                   "required_layers": [
                     "unit"
@@ -3282,7 +3255,6 @@
               "value": [
                 {
                   "id": "FR-02.01",
-                  "namespace": "02-greenfield-example",
                   "priority": "Must",
                   "required_layers": [
                     "e2e"
@@ -3294,7 +3266,6 @@
                 },
                 {
                   "id": "FR-02.02",
-                  "namespace": "02-greenfield-example",
                   "priority": "May",
                   "required_layers": [
                     "unit"
@@ -3312,7 +3283,6 @@
               "value": [
                 {
                   "id": "FR-03.01",
-                  "namespace": "03-adopt-disk",
                   "priority": "Must",
                   "required_layers": [
                     "unit"
@@ -3324,7 +3294,6 @@
                 },
                 {
                   "id": "FR-03.02",
-                  "namespace": "03-adopt-disk",
                   "priority": "Should",
                   "required_layers": [
                     "unit"
@@ -3342,7 +3311,6 @@
               "value": [
                 {
                   "id": "FR-04.01",
-                  "namespace": "04-adopt-writer",
                   "priority": "Must",
                   "required_layers": [
                     "unit",
@@ -3355,7 +3323,6 @@
                 },
                 {
                   "id": "FR-04.02",
-                  "namespace": "04-adopt-writer",
                   "priority": "Should",
                   "required_layers": [
                     "unit"
@@ -3367,7 +3334,6 @@
                 },
                 {
                   "id": "FR-04.03",
-                  "namespace": "04-adopt-writer",
                   "priority": "May",
                   "required_layers": [],
                   "required_layers_source": "explicit",
@@ -3383,7 +3349,6 @@
               "value": [
                 {
                   "id": "FR-05.01",
-                  "namespace": "05-fixture-fr",
                   "priority": "Must",
                   "required_layers": [
                     "unit"
@@ -3401,7 +3366,6 @@
               "value": [
                 {
                   "id": "FR-06.01",
-                  "namespace": "06-reordered",
                   "priority": "Must",
                   "required_layers": [
                     "unit"
@@ -3419,7 +3383,6 @@
               "value": [
                 {
                   "id": "FR-07.01",
-                  "namespace": "07-header-blind",
                   "priority": "Should",
                   "required_layers": [
                     "unit"
@@ -3447,7 +3410,6 @@
               "value": [
                 {
                   "id": "FR-06.01",
-                  "namespace": "01-reordered-only",
                   "priority": "Must",
                   "required_layers": [
                     "unit"

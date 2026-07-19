@@ -91,7 +91,7 @@ REALMS: dict[str, dict] = {
 # project_root   fn(Path(root))
 # planning_dir   fn(Path(root)/".shipwright"/"planning")
 # text           fn(spec_text)
-# text_kw        fn(spec_text, namespace=..., spec_path=...)
+# text_kw        fn(spec_text, spec_path=...)
 # text_split     fn(spec_text, split, spec_path)
 # path_split     fn(Path(spec), split, spec_path)
 

@@ -3,21 +3,20 @@
 Traceability campaign TT1 (foundation, data-only). Reads ``@FR`` tags across pytest +
 Playwright + Vitest via the frozen ``fr_tag_grammar`` reference parser, joins them to the
 FR table (Layers column, active + removed) and per-test execution evidence, and emits
-``.shipwright/compliance/test-traceability.json`` (schema v2). This is the missing
+``.shipwright/compliance/test-traceability.json`` (schema v3). This is the missing
 *backward* link (test → FR) and the per-layer join the aggregate event count cannot
 express. No gates flip here — the committed artifact is derived / RTM-visibility only;
 enforcing gates (TT5) regenerate base+head themselves (R3).
 
-Filesystem-facing helpers (which files are tests, layer detection, spec/evidence
-discovery, provenance) live in ``_test_links_io.py``; this module is the pure
-tag → FR → manifest assembly plus the ``update_compliance`` wiring.
+This module is the pure tag → FR → manifest assembly plus the ``update_compliance``
+wiring. Filesystem-facing helpers live in ``_test_links_io``; the requirement index and
+its v3 key-collapse handling in ``_test_links_requirements``; fold-map wiring in
+``_test_links_fold``.
 
 KNOWN LIMITATION (un-namespaced tag fan-out) — the frozen ``@FR-XX.YY`` grammar carries
 NO spec namespace, so a hit is filed into EVERY active requirement sharing that display
-id: in a multi-split repo where two splits both declare ``FR-03.01``, one tagged test
-marks coverage ``ok`` for both (a potential false-green). This is inherent to the frozen
-grammar and is left as-is here (data only); TT2's RTM + TT5's gate MUST account for it
-(e.g. by preferring same-split resolution) before relying on per-split coverage.
+id (a potential false-green). Inherent to the frozen grammar and left as-is here (data
+only); TT2's RTM + TT5's gate MUST account for it before relying on per-split coverage.
 """
 
 from __future__ import annotations
@@ -29,8 +28,11 @@ from pathlib import Path
 from . import _test_links_fold as foldwire
 from . import _test_links_io as io
 from ._lib_loader import load_shared_lib
-from ._requirement_parse import parse_requirements
 from ._suite_tags import propagate_suite_tags
+from ._test_links_requirements import (
+    assert_keys_derive_from_ids,
+    build_requirement_index,
+)
 
 COLLECTOR_VERSION = "test_links/1.0.0"
 _DEFAULT_TS = "1970-01-01T00:00:00+00:00"
@@ -89,7 +91,7 @@ def build_manifest(
     source_commit: str = io._ZERO_SHA,
     collector_version: str = COLLECTOR_VERSION,
 ) -> dict:
-    """Build the schema-v2 traceability manifest (pure; no writes)."""
+    """Build the schema-v3 traceability manifest (pure; no writes)."""
     grammar = _load_grammar()
     project_root = Path(project_root)
     evidence = evidence or {}
@@ -98,19 +100,13 @@ def build_manifest(
     if test_roots is None:
         test_roots = [project_root]
 
-    # 1. Requirements from every spec (namespaced by the spec's parent dir).
-    requirements: dict = {}          # manifest key → Requirement
-    by_display_id: dict[str, list] = {}
-    invalid_layers: list = []        # FRs whose Layers cell has no valid canonical layer
+    # 1. Requirements from every spec. The key namespace derives from each FR's own id
+    #    (v3) — nothing reads the spec's parent directory, which is what used to make
+    #    every manifest key hostage to a rename. See _test_links_requirements for the
+    #    key-collapse handling that id-derivation makes possible.
     entries = foldwire.spec_entries(spec_files, project_root, io.rel)
-    spec_texts = [text for text, _ in entries]
-    for (text, rel_spec), spec in zip(entries, spec_files):
-        namespace = Path(spec).resolve().parent.name
-        for req in parse_requirements(
-            text, namespace=namespace, spec_path=rel_spec, invalid_layers=invalid_layers,
-        ):
-            requirements[req.key] = req
-            by_display_id.setdefault(req.id, []).append(req)
+    index = build_requirement_index(entries)
+    requirements, by_display_id = index.by_key, index.by_display_id
 
     # Each spec's ``## FR-Fold-Map`` alias table (folded id → surviving capability FR).
     fold_ctx = foldwire.build_fold_context(entries, by_display_id)
@@ -208,11 +204,11 @@ def build_manifest(
         }
 
     return {
-        "schema_version": 2,
+        "schema_version": 3,
         "collector_version": collector_version,
         "generated_at": generated_at,
         "source_commit": source_commit,
-        "spec_hash": io.spec_hash(spec_texts),
+        "spec_hash": io.spec_hash([text for text, _ in entries]),
         "requirements": req_nodes,
         "orphans": orphans,
         # A frozen-grammar edge (e.g. covers("")) yields raw="" which the schema forbids
@@ -223,10 +219,9 @@ def build_manifest(
              "reason": getattr(iv, "reason", "") or "non_canonical_fr_id"}
             for iv in invalid
         ],
-        # FRs whose explicitly-headed Layers cell resolved to zero valid layers
-        # (author typo/synonym). Kept `explicit` so D-layer's hard gate still fires;
-        # surfaced here so the finding can name the bad raw token (Spec §11-R4).
-        "invalid_layers": invalid_layers,
+        # FRs whose explicitly-headed Layers cell resolved to zero valid layers. Kept
+        # `explicit` upstream so D-layer's hard gate still fires (Spec §11-R4).
+        "invalid_layers": index.invalid_layers,
         "untagged_tests": sorted(all_test_ids - tagged_ids),
         # `fold_map` / `fold_defects` are present ONLY when the repo actually declares a
         # fold-map, so a project without one emits a byte-identical manifest (this
@@ -236,9 +231,13 @@ def build_manifest(
 
 
 def _validate_manifest(manifest: dict) -> None:
-    """Fail-closed write-time schema check: raise if the assembled manifest is not
-    v2-schema-valid, so producer/schema drift blows up loud in regen instead of
-    silently shipping a corrupt artifact."""
+    """Fail-closed write-time check: raise unless the manifest is v3-schema-valid AND
+    every key agrees with its own node's id, so producer/schema drift blows up loud in
+    regen instead of silently shipping a corrupt artifact.
+
+    The schema's ``^\\d{2}::FR-XX.YY$`` pattern constrains the key's SHAPE but cannot
+    express that the two halves AGREE, so ``assert_keys_derive_from_ids`` carries that
+    half (see ``_test_links_requirements``)."""
     import jsonschema  # noqa: PLC0415 — compliance dep; lazy so non-compliance imports stay light
 
     schema_path = Path(__file__).resolve().parents[1] / "traceability_schema.json"
@@ -246,8 +245,9 @@ def _validate_manifest(manifest: dict) -> None:
     errors = list(jsonschema.Draft202012Validator(schema).iter_errors(manifest))
     if errors:
         raise ValueError(
-            "test-traceability manifest failed v2-schema validation: " + errors[0].message
+            "test-traceability manifest failed v3-schema validation: " + errors[0].message
         )
+    assert_keys_derive_from_ids(manifest)
 
 
 def generate_file(project_root, data=None) -> Path:

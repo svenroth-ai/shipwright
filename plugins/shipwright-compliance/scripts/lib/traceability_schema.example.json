@@ -1,11 +1,11 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "collector_version": "test_links/0.0.0-contract",
   "generated_at": "2026-07-15T00:00:00+00:00",
   "source_commit": "0000000000000000000000000000000000000000",
   "spec_hash": "sha256:contract-example",
   "requirements": {
-    "01-adopted::FR-01.03": {
+    "01::FR-01.03": {
       "id": "FR-01.03",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
       "title": "User can sign in",
@@ -40,7 +40,7 @@
         "e2e": "MISSING"
       }
     },
-    "02-legacy::FR-02.01": {
+    "02::FR-02.01": {
       "id": "FR-02.01",
       "spec_path": ".shipwright/planning/02-legacy/spec.md",
       "title": "Copy the launch command to the clipboard",

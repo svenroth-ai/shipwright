@@ -148,3 +148,42 @@ def test_cli_phase_compliance_does_not_stamp(synthetic_project):
     payload = json.loads(result.stdout)
     assert "audit_staleness" not in payload
     assert _MARKER not in audit_md.read_text(encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# One collector's authoring defect must not dark the whole dashboard (S3)
+# ---------------------------------------------------------------------------
+
+
+def test_a_duplicate_fr_id_does_not_abort_the_other_reports(synthetic_project):
+    """`test_links` is 3rd in PHASE_REPORTS['iterate'], and the generators run in list
+    order inside one loop. Before the guard, a raise from it aborted the loop before
+    change_history, sbom and dashboard were written: an adopter with one duplicated FR
+    id in one spec got a bare traceback, exit 1, no JSON, and NO compliance artifacts
+    at all. The refusal to publish an incomplete manifest is correct; taking every other
+    report down with it is not."""
+    planning = synthetic_project / ".shipwright" / "planning"
+    table = ("# S\n\n| ID | Requirement | Priority | Layers |\n| --- | --- | --- | --- |\n"
+             "| FR-03.01 | Live | Must | unit |\n")
+    for split in ("01-a", "02-b"):                     # same ACTIVE id in two splits
+        (planning / split).mkdir(parents=True, exist_ok=True)
+        (planning / split / "spec.md").write_text(table, encoding="utf-8")
+
+    result = subprocess.run(
+        [sys.executable, str(UPDATE_SCRIPT),
+         "--project-root", str(synthetic_project), "--phase", "iterate"],
+        capture_output=True, text=True, encoding="utf-8",
+    )
+
+    # Loud: non-zero exit and a machine-readable reason naming the collector...
+    assert result.returncode == 1, result.stdout + result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["success"] is False
+    errors = payload["generator_errors"]
+    assert [e["report"] for e in errors] == ["test_links"]
+    assert errors[0]["error"] == "DuplicateRequirementId"
+    assert "FR-03.01" in errors[0]["detail"]
+    # ...but NOT fatal: every other report in the phase still wrote.
+    written = " ".join(payload["updated_reports"])
+    for still_expected in ("change-history", "sbom", "dashboard"):
+        assert still_expected in written, f"{still_expected} was darked by one collector"

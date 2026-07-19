@@ -75,10 +75,10 @@ def _strip_spec_path(reqs: dict) -> dict:
 
 # --- AC4: schema validity ------------------------------------------------
 
-def test_manifest_validates_against_v2_schema(app_manifest, validator):
+def test_manifest_validates_against_v3_schema(app_manifest, validator):
     errors = list(validator.iter_errors(app_manifest))
     assert not errors, errors
-    assert app_manifest["schema_version"] == 2
+    assert app_manifest["schema_version"] == 3
     assert app_manifest["collector_version"].startswith("test_links/")
     assert app_manifest["spec_hash"].startswith("sha256:")
 
@@ -124,7 +124,7 @@ def test_all_three_runners_and_layers_represented(app_manifest):
 # --- AC3: skipped != covered, untagged bucket, orphan --------------------
 
 def test_skipped_e2e_is_missing_not_covered(app_manifest):
-    fr = app_manifest["requirements"]["app::FR-03.01"]
+    fr = app_manifest["requirements"]["03::FR-03.01"]
     assert fr["coverage"]["e2e"] == "MISSING"          # its only e2e test is skipped (R1)
     assert fr["coverage"]["unit"] == "ok"
     assert fr["tests"]["e2e"][0]["status"] == "skipped"
@@ -143,7 +143,7 @@ def test_removed_fr_test_is_a_confirmed_orphan(app_manifest):
     assert orphans[0]["reason"] == "fr_removed"
     assert orphans[0]["category"] == "confirmed_orphan"
     # the removed FR keeps no live tests (they belong in orphans, not coverage)
-    assert app_manifest["requirements"]["app::FR-03.09"]["tests"] == {}
+    assert app_manifest["requirements"]["03::FR-03.09"]["tests"] == {}
 
 
 # --- AC2: suite propagation + multi-tag + malformed tolerated ------------
@@ -274,7 +274,7 @@ def test_generate_file_writes_valid_manifest(tmp_path, validator):
     out = generate_file(tmp_path)
     manifest = _load(out)
     assert not list(validator.iter_errors(manifest))
-    fr = manifest["requirements"]["01-demo::FR-07.01"]
+    fr = manifest["requirements"]["07::FR-07.01"]
     assert any("tests/test_health.py::test_health" == link["path"] for link in fr["tests"]["unit"])
     assert not any("stray" in u for u in manifest["untagged_tests"])
 

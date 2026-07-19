@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://shipwright.dev/schemas/test-traceability.v2.schema.json",
-  "title": "Test-Traceability Manifest v2",
-  "description": "Generated compliance artifact (.shipwright/compliance/test-traceability.json) joining requirements to their tagged tests per layer, with per-test execution evidence. Frozen contract for the requirement->test traceability campaign (Spec test-traceability-across-layers.md sec 11). The committed artifact is derived/RTM-visibility only; enforcing gates regenerate base+head themselves (R3).",
+  "$id": "https://shipwright.dev/schemas/test-traceability.v3.schema.json",
+  "title": "Test-Traceability Manifest v3",
+  "description": "Generated compliance artifact (.shipwright/compliance/test-traceability.json) joining requirements to their tagged tests per layer, with per-test execution evidence. Frozen contract for the requirement->test traceability campaign (Spec test-traceability-across-layers.md sec 11). The committed artifact is derived/RTM-visibility only; enforcing gates regenerate base+head themselves (R3). v3: the requirement key namespace derives from the FR id's group digits (01::FR-01.03) instead of the spec's parent directory name (01-adopted::FR-01.03), so a directory rename no longer rewrites every key. Requirement INNER fields are unchanged from v2.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -18,7 +18,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": 2,
+      "const": 3,
       "description": "Pinned manifest schema version. Travels with requirement_model.MODEL_VERSION."
     },
     "collector_version": {
@@ -42,9 +42,9 @@
     },
     "requirements": {
       "type": "object",
-      "description": "Requirements keyed by namespace::FR-XX.YY (spec-provenance namespaced, R4/R5).",
+      "description": "Requirements keyed by namespace::FR-XX.YY, where the namespace is the FR id's group digits (v3: 01::FR-01.03). The pattern pins the namespace to exactly two digits, so an obviously path-derived namespace (01-adopted::FR-01.03) fails validation at write time. Shape alone cannot express that the two halves AGREE (01::FR-02.03 matches it) -- collectors._test_links_requirements.assert_keys_derive_from_ids carries that half.",
       "propertyNames": {
-        "pattern": "^.+::FR-\\d{2}\\.\\d{2}$"
+        "pattern": "^\\d{2}::FR-\\d{2}\\.\\d{2}$"
       },
       "additionalProperties": {
         "$ref": "#/$defs/requirement"

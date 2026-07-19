@@ -1,11 +1,11 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "collector_version": "test_links/0.0.0-contract",
   "generated_at": "2026-07-15T00:00:00+00:00",
   "source_commit": "1111111111111111111111111111111111111111",
   "spec_hash": "sha256:app-fixture",
   "requirements": {
-    "app::FR-03.01": {
+    "03::FR-03.01": {
       "id": "FR-03.01",
       "spec_path": "mini_repos/app/spec.md",
       "title": "User can sign in",
@@ -40,7 +40,7 @@
         "e2e": "MISSING"
       }
     },
-    "app::FR-03.02": {
+    "03::FR-03.02": {
       "id": "FR-03.02",
       "spec_path": "mini_repos/app/spec.md",
       "title": "Dashboard shows live orders",
@@ -64,7 +64,7 @@
         "e2e": "ok"
       }
     },
-    "app::FR-03.03": {
+    "03::FR-03.03": {
       "id": "FR-03.03",
       "spec_path": "mini_repos/app/spec.md",
       "title": "Persist an order to the database",
@@ -107,7 +107,7 @@
         "integration": "ok"
       }
     },
-    "app::FR-03.09": {
+    "03::FR-03.09": {
       "id": "FR-03.09",
       "spec_path": "mini_repos/app/spec.md",
       "title": "Copy the launch command to the clipboard",

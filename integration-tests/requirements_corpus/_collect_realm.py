@@ -88,7 +88,9 @@ def _parser_cells(fn, target: dict, root: Path) -> dict:
         elif conv == "text_split":
             call = lambda t=text, s=split, r=rel: fn(t, s, r)  # noqa: E731
         elif conv == "text_kw":
-            call = lambda t=text, s=split, r=rel: fn(t, namespace=s, spec_path=r)  # noqa: E731
+            # No `namespace=`: manifest v3 derives it from each row's FR id, so the
+            # split directory is no longer an input to the parser (campaign S3).
+            call = lambda t=text, r=rel: fn(t, spec_path=r)  # noqa: E731
         elif conv == "path_split":
             call = lambda p=spec, s=split, r=rel: fn(p, s, r)  # noqa: E731
         else:

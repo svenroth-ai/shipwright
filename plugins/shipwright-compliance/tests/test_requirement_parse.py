@@ -47,7 +47,7 @@ def _by_id(reqs, fr_id):
 
 
 def test_4col_explicit_layers_and_provenance():
-    reqs = parse_requirements(_4COL, namespace="app", spec_path="spec.md")
+    reqs = parse_requirements(_4COL, spec_path="spec.md")
     assert {r.id for r in reqs} == {"FR-01.01", "FR-01.02", "FR-01.03", "FR-01.09"}
     r1 = _by_id(reqs, "FR-01.01")
     assert r1.required_layers == ("unit", "e2e") and r1.required_layers_source == "explicit"
@@ -61,7 +61,7 @@ def test_4col_explicit_layers_and_provenance():
 
 
 def test_removed_section_marks_status_removed():
-    reqs = parse_requirements(_4COL, namespace="app", spec_path="spec.md")
+    reqs = parse_requirements(_4COL, spec_path="spec.md")
     removed = _by_id(reqs, "FR-01.09")
     assert removed.status == "removed" and removed.is_active is False
     assert removed.required_layers == ("e2e",)
@@ -70,7 +70,7 @@ def test_removed_section_marks_status_removed():
 
 
 def test_5col_adopt_shape_reads_description_as_title_not_layers():
-    reqs = parse_requirements(_5COL, namespace="01-adopted", spec_path="spec.md")
+    reqs = parse_requirements(_5COL, spec_path="spec.md")
     r1 = _by_id(reqs, "FR-02.01")
     # the Description cell is the title — NOT mistaken for a Layers value
     assert r1.title == "Persist rows to the database"
@@ -83,9 +83,14 @@ def test_5col_adopt_shape_reads_description_as_title_not_layers():
 
 
 def test_namespaced_key_and_spec_path():
-    reqs = parse_requirements(_5COL, namespace="01-adopted", spec_path=".shipwright/planning/01-adopted/spec.md")
+    """v3: the key namespace comes from the FR id's group digits (``FR-02.01`` -> ``02``),
+    while ``spec_path`` still records WHERE the row was found. The directory in that path
+    (``01-adopted``) deliberately disagrees with the namespace — proving the key no longer
+    reads it."""
+    reqs = parse_requirements(_5COL, spec_path=".shipwright/planning/01-adopted/spec.md")
     r1 = _by_id(reqs, "FR-02.01")
-    assert r1.key == "01-adopted::FR-02.01"
+    assert r1.key == "02::FR-02.01"
+    assert r1.namespace == "02"
     assert r1.spec_path == ".shipwright/planning/01-adopted/spec.md"
 
 
@@ -102,7 +107,7 @@ _GREENFIELD = """# Spec
 
 
 def test_greenfield_requirement_col_with_explicit_integration_layer():
-    reqs = parse_requirements(_GREENFIELD, namespace="03", spec_path="spec.md")
+    reqs = parse_requirements(_GREENFIELD, spec_path="spec.md")
     r1 = _by_id(reqs, "FR-03.01")
     assert r1.title == "The system SHALL persist orders to the database"
     assert r1.required_layers == ("unit", "integration")
@@ -112,7 +117,7 @@ def test_greenfield_requirement_col_with_explicit_integration_layer():
 def test_greenfield_empty_layers_is_legacy_provenance_not_explicit():
     # AC3: an FR authored without the field must NOT read as "explicit" — the two
     # regimes (post-rollout omission vs legacy-missing) must stay distinguishable.
-    reqs = parse_requirements(_GREENFIELD, namespace="03", spec_path="spec.md")
+    reqs = parse_requirements(_GREENFIELD, spec_path="spec.md")
     r2 = _by_id(reqs, "FR-03.02")
     assert r2.required_layers_source == "inferred_legacy"   # "dashboard" ⇒ e2e
     assert r2.required_layers == ("e2e",)
@@ -147,7 +152,7 @@ def test_nonempty_but_noncanonical_layers_cell_is_flagged_not_demoted():
     # escape the gate and discard the author's intended integration layer).
     invalid: list = []
     reqs = parse_requirements(
-        _INVALID_LAYERS, namespace="09", spec_path="s.md", invalid_layers=invalid)
+        _INVALID_LAYERS, spec_path="s.md", invalid_layers=invalid)
     r = _by_id(reqs, "FR-09.03")
     assert r.required_layers == ()                 # "int"/"db" are not canonical layers
     assert r.required_layers_source == "explicit"  # kept explicit, NOT demoted to legacy
@@ -170,13 +175,13 @@ def test_only_the_exact_inferred_marker_downgrades_not_auto_or_adopt():
         "| FR-09.05 | Store orders | Must | unit, e2e (auto) |\n"
         "| FR-09.06 | Store items | Must | unit, e2e (inferred) |\n"
     )
-    reqs = parse_requirements(spec, namespace="09", spec_path="s.md")
+    reqs = parse_requirements(spec, spec_path="s.md")
     assert _by_id(reqs, "FR-09.05").required_layers_source == "explicit"        # (auto) not downgraded
     assert _by_id(reqs, "FR-09.06").required_layers_source == "inferred_legacy"  # (inferred) advisory
 
 
 def test_adopt_inferred_marker_reads_as_advisory_not_explicit():
-    reqs = parse_requirements(_ADOPT_INFERRED, namespace="01-adopted", spec_path="spec.md")
+    reqs = parse_requirements(_ADOPT_INFERRED, spec_path="spec.md")
     r1 = _by_id(reqs, "FR-04.01")
     assert r1.required_layers == ("unit", "e2e")
     assert r1.required_layers_source == "inferred_legacy"   # NOT "explicit"
@@ -196,7 +201,7 @@ _NOISY = """# Spec
 def test_layers_are_normalized_lowercased_deduped_and_unknown_dropped():
     # AC1 robustness: an author-typed Layers cell is case-folded, de-duplicated, and
     # non-layer tokens (foo/none) are dropped — the manifest never carries junk.
-    reqs = parse_requirements(_NOISY, namespace="05", spec_path="spec.md")
+    reqs = parse_requirements(_NOISY, spec_path="spec.md")
     r = _by_id(reqs, "FR-05.01")
     assert r.required_layers == ("e2e", "unit")   # order preserved, deduped, valid-only
     assert r.required_layers_source == "explicit"

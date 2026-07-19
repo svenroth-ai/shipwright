@@ -1,0 +1,1 @@
+Traceability manifest schema 2 -> 3: requirement keys now derive their namespace from the FR id (01::FR-01.03) instead of the spec's directory name (01-adopted::FR-01.03), so renaming a split no longer rewrites every key. Every requirement's inner fields are unchanged.

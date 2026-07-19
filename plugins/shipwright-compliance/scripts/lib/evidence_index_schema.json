@@ -9,7 +9,7 @@
   "properties": {
     "schema_version": {
       "const": 2,
-      "description": "Pinned evidence-index schema version. Travels with the manifest v2 schema."
+      "description": "Pinned evidence-index schema version. Independent of the test-traceability manifest schema (v3 since campaign S3) -- this index has its own version line."
     },
     "_comment": {
       "type": "string",

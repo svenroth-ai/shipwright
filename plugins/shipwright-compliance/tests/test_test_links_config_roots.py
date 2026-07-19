@@ -184,7 +184,7 @@ def test_plugin_dir_tagged_test_round_trips_and_fixtures_are_fenced(tmp_path):
     manifest = json.loads(out.read_text(encoding="utf-8"))
 
     assert not list(_validator().iter_errors(manifest))          # schema-valid artifact on disk
-    fr = manifest["requirements"]["01-demo::FR-07.01"]
+    fr = manifest["requirements"]["07::FR-07.01"]
     links = fr["tests"].get("unit", [])
     assert any(l["path"] == "plugins/demo/tests/test_widget.py::test_widget" for l in links), links
     # the excluded fixture's FR-99.99 tag never fanned an orphan into the real manifest
@@ -216,7 +216,7 @@ def test_describe_it_inside_a_python_string_is_not_a_suite_tag(tmp_path):
     manifest = build_manifest(tmp_path, spec_files=[split / "spec.md"], test_roots=[tmp_path],
                               evidence={}, enumerate_untagged=True)
     # FR-07.01 exists but the tag lived only in a Python string → no link, no orphan
-    assert manifest["requirements"]["01-demo::FR-07.01"]["tests"] == {}
+    assert manifest["requirements"]["07::FR-07.01"]["tests"] == {}
     assert manifest["orphans"] == []
     # the real Python test is still enumerated as untagged (honest scan)
     assert "tests/test_embed.py::test_builds_from_the_embedded_ts" in manifest["untagged_tests"]

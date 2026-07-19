@@ -11,8 +11,21 @@ manifest schema pins (layers, statuses, provenance), and the two pure helpers th
 build and split the manifest's namespaced requirement key. No spec files are read
 here — collectors construct :class:`Requirement` instances from their own parse.
 
-``MODEL_VERSION`` tracks the manifest ``schema_version`` (both are ``2``): a change
+``MODEL_VERSION`` tracks the manifest ``schema_version`` (both are ``3``): a change
 to this model's shape is a manifest schema bump.
+
+**v3 — the namespace derives from the requirement id, not from the file path.**
+``namespace`` used to be whatever the caller passed (in practice the spec's parent
+DIRECTORY name, e.g. ``01-adopted``), so every manifest key was hostage to a
+directory rename. It is now a read-only property computed from the id's group
+digits (``FR-01.03`` -> ``01``), which no rename can move. The composite keys DO
+change value (``01-adopted::FR-01.01`` -> ``01::FR-01.01``); the schema bump is
+what announces that. Every requirement's INNER fields are untouched.
+
+Consequence worth knowing: the key is now a pure function of the id, so two specs
+declaring the same FR id no longer get distinct keys. That collision is a spec
+defect, and the collector FAILS CLOSED on it — publishing a manifest that silently
+dropped one of the two would conceal exactly the traceability gap it exists to show.
 """
 
 from __future__ import annotations
@@ -22,7 +35,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 # The model version travels with the manifest schema_version — bump together.
-MODEL_VERSION = 2
+MODEL_VERSION = 3
 
 # ---------------------------------------------------------------------------
 # Closed vocabularies (mirrored by traceability_schema.json — keep in sync)
@@ -66,24 +79,54 @@ def is_layer(value: str) -> bool:
     return value in LAYERS
 
 
+def namespace_for_id(fr_id: str) -> str:
+    """The manifest-key namespace for ``fr_id`` — its GROUP digits (``FR-01.03`` -> ``01``).
+
+    The slice is safe precisely because the line above pins the canonical shape
+    ``FR-XX.YY``, so the group digits are always at ``[3:5]`` — deriving them from
+    the already-frozen :data:`CANONICAL_FR_RE` rather than a second regex that
+    could drift away from it.
+
+    Raises ``ValueError`` on a non-canonical id. That is not a defensive nicety:
+    a requirement whose id is not canonical has no derivable namespace, so a
+    silent fallback would invent a key. Every production construction site parses
+    ids through ``is_canonical_fr`` first, so this cannot fire on a parsed spec.
+    """
+    if not is_canonical_fr(fr_id):
+        raise ValueError(
+            f"cannot derive a namespace from non-canonical requirement id {fr_id!r} "
+            "(expected the canonical FR-XX.YY machine token)"
+        )
+    return fr_id[3:5]
+
+
 @dataclass(frozen=True)
 class Requirement:
     """One functional requirement, in the shape every traceability consumer shares.
 
-    ``namespace`` is the manifest-key namespace (the spec's *split* id, e.g.
-    ``01-adopted``) so two splits can each own an ``FR-01.03`` without collision;
-    ``spec_path`` is the full relative path to the ``spec.md`` the FR lives in.
+    ``spec_path`` is the full relative path to the ``spec.md`` the FR lives in —
+    provenance, and the only field that tracks WHERE the requirement was found.
     The manifest key is ``namespace :: id`` (see :func:`namespaced_key`).
+
+    ``namespace`` is deliberately a read-only PROPERTY, not a field (v3). As a
+    field it was the caller's to choose, and every caller chose the spec's parent
+    directory name — which is why a directory rename rewrote every manifest key.
+    Deriving it makes that impossible to get wrong: there is no longer an argument
+    a call site could pass a path into.
     """
 
     id: str                                       # "FR-01.03" (display / canonical)
-    namespace: str                                # "01-adopted" (manifest-key namespace)
     spec_path: str = ""                           # ".shipwright/planning/01-adopted/spec.md"
     title: str = ""
     priority: Priority = "Must"
     status: RequirementStatus = "active"
     required_layers: tuple[Layer, ...] = ()
     required_layers_source: RequiredLayersSource = "defaulted_legacy"
+
+    @property
+    def namespace(self) -> str:
+        """The manifest-key namespace, derived from :attr:`id` (``FR-01.03`` -> ``01``)."""
+        return namespace_for_id(self.id)
 
     @property
     def key(self) -> str:
@@ -96,12 +139,18 @@ class Requirement:
 
 
 def namespaced_key(namespace: str, fr_id: str) -> str:
-    """Build the manifest requirement key ``namespace::fr_id``.
-
-    The manifest keys requirements by ``spec-provenance :: FR-id`` so the same
-    display id in two splits stays distinct (Spec §11 ``01-adopted::FR-01.03``).
-    """
+    """Build the manifest requirement key ``namespace::fr_id`` (v3: ``01::FR-01.03``)."""
     return f"{namespace}{KEY_DELIMITER}{fr_id}"
+
+
+def key_for_id(fr_id: str) -> str:
+    """The full v3 manifest key for ``fr_id`` — ``namespace_for_id(id) :: id``.
+
+    The one helper a manifest CONSUMER should use to look a requirement up, so no
+    consumer reconstructs the key from a directory name (which is what made the
+    lookup path-fragile before v3).
+    """
+    return namespaced_key(namespace_for_id(fr_id), fr_id)
 
 
 def split_namespaced_key(key: str) -> tuple[str, str]:
@@ -129,6 +178,8 @@ __all__ = [
     "Requirement",
     "is_canonical_fr",
     "is_layer",
+    "namespace_for_id",
     "namespaced_key",
+    "key_for_id",
     "split_namespaced_key",
 ]

@@ -35,7 +35,7 @@ def _node(disp, *, status="active", layers=("e2e",), source="explicit",
 
 def _manifest(nodes: dict, *, spec_hash="sha256:x", orphans=None, untagged=None):
     return {
-        "schema_version": 2, "spec_hash": spec_hash, "requirements": nodes,
+        "schema_version": 3, "spec_hash": spec_hash, "requirements": nodes,
         "orphans": orphans or [], "invalid_tags": [], "invalid_layers": [],
         "untagged_tests": untagged or [],
     }

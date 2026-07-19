@@ -1,11 +1,11 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "collector_version": "test_links/1.0.0",
-  "generated_at": "2026-07-19T11:41:43.232169+00:00",
-  "source_commit": "940fdf9796d6417e7bb0783670891d26fe8038a7",
+  "generated_at": "2026-07-19T23:48:35.466580+00:00",
+  "source_commit": "26d702be5fd9d3bdb9513d3a65db8c1b29f193e2",
   "spec_hash": "sha256:1431856a8394fdbf29ed9a37a63e0c672023cba3423463af891a698ff67ea835",
   "requirements": {
-    "01-adopted::FR-01.01": {
+    "01::FR-01.01": {
       "id": "FR-01.01",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
       "title": "Orchestrate the full Shipwright SDLC pipeline — drives project, plan, build, test, security, deploy, changelog, and compliance phases end-to-end.",
@@ -20,7 +20,7 @@
         "unit": "MISSING"
       }
     },
-    "01-adopted::FR-01.02": {
+    "01::FR-01.02": {
       "id": "FR-01.02",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
       "title": "Decompose project requirements (IREB) into well-scoped planning units; generate initial CLAUDE.md and `.shipwright/agent_docs` for the target project.",
@@ -35,7 +35,7 @@
         "unit": "MISSING"
       }
     },
-    "01-adopted::FR-01.03": {
+    "01::FR-01.03": {
       "id": "FR-01.03",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
       "title": "AI-assisted deep planning with research, optional interview, external dual-LLM review (Gemini + GPT in parallel), TDD-first approach; produces section files consumable by /shipwright-build.",
@@ -50,7 +50,7 @@
         "unit": "MISSING"
       }
     },
-    "01-adopted::FR-01.04": {
+    "01::FR-01.04": {
       "id": "FR-01.04",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
       "title": "Generate UI mockups from IREB specs as standalone HTML screens and user flows; iteratable via chat.",
@@ -65,7 +65,7 @@
         "e2e": "MISSING"
       }
     },
-    "01-adopted::FR-01.05": {
+    "01::FR-01.05": {
       "id": "FR-01.05",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
       "title": "Implement code from /shipwright-plan sections with TDD (red-green-refactor), code review, Conventional Commits, feature-branch git workflow.",
@@ -80,7 +80,7 @@
         "unit": "MISSING"
       }
     },
-    "01-adopted::FR-01.06": {
+    "01::FR-01.06": {
       "id": "FR-01.06",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
       "title": "Run unit tests, E2E tests (Playwright), smoke tests, and security scans for Shipwright projects; emit a boundary-coverage report flagging serialized-format producer/consumer pairs that lack a round-trip test.",
@@ -322,7 +322,7 @@
         "unit": "MISSING"
       }
     },
-    "01-adopted::FR-01.07": {
+    "01::FR-01.07": {
       "id": "FR-01.07",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
       "title": "Security scanning chain (Aikido + Semgrep + Trivy + Gitleaks) with automated remediation loop and per-scanner exclude lists.",
@@ -337,7 +337,7 @@
         "unit": "MISSING"
       }
     },
-    "01-adopted::FR-01.08": {
+    "01::FR-01.08": {
       "id": "FR-01.08",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
       "title": "Deploy to configured targets with smoke testing and rollback; Jelastic (Infomaniak) shipped, Vercel + compose-VPS profiles documented as stubs.",
@@ -352,7 +352,7 @@
         "unit": "MISSING"
       }
     },
-    "01-adopted::FR-01.09": {
+    "01::FR-01.09": {
       "id": "FR-01.09",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
       "title": "Parse Conventional Commits from git history, generate Keep-a-Changelog entries, create version tags, open release PRs.",
@@ -426,7 +426,7 @@
         "unit": "MISSING"
       }
     },
-    "01-adopted::FR-01.10": {
+    "01::FR-01.10": {
       "id": "FR-01.10",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
       "title": "Generate audit-ready compliance documentation (RTM, test evidence, change history, SBOM) and run on-demand cross-artifact detective audit.",
@@ -441,7 +441,7 @@
         "unit": "MISSING"
       }
     },
-    "01-adopted::FR-01.11": {
+    "01::FR-01.11": {
       "id": "FR-01.11",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
       "title": "Complexity-adaptive SDLC for ongoing changes — auto-detects intent and complexity, scales from quick fix to structured feature with specs, plans, reviews, tests; every feature/change classifies its spec impact (ADD/MODIFY/REMOVE/NONE), enforced at finalization.",
@@ -974,7 +974,7 @@
         "integration": "MISSING"
       }
     },
-    "01-adopted::FR-01.12": {
+    "01::FR-01.12": {
       "id": "FR-01.12",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
       "title": "Local browser preview — start dev server for the target project and show the URL.",
@@ -989,7 +989,7 @@
         "e2e": "MISSING"
       }
     },
-    "01-adopted::FR-01.13": {
+    "01::FR-01.13": {
       "id": "FR-01.13",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
       "title": "Onboard an existing (brownfield) repository into the Shipwright SDLC; analyzes codebase, generates CLAUDE.md, agent_docs, planning specs, compliance artifacts, suggest_iterate hook, and an E2E baseline; scaffolds `.env.local` with the profile's framework keys.",
@@ -1127,7 +1127,7 @@
         "unit": "MISSING"
       }
     },
-    "01-adopted::FR-01.14": {
+    "01::FR-01.14": {
       "id": "FR-01.14",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
       "title": "Pre-backlog triage buffer — findings from local hooks/scans/audits and from GitHub's automated runs (code-scanning, Dependabot, secret-scanning alerts, failed CI runs) land in a per-project `.shipwright/triage.jsonl` store via idempotent producers and surface in the Command Center WebUI Triage tab with operator-driven promote/dismiss, keeping the ExternalTask list curated instead of flooded.",
@@ -1769,7 +1769,7 @@
         "unit": "MISSING"
       }
     },
-    "01-adopted::FR-01.15": {
+    "01::FR-01.15": {
       "id": "FR-01.15",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
       "title": "The two artifacts the Command Center WebUI renders field-for-field — `/shipwright-grade`'s report view-model (`grade.py --format json`) and `/shipwright-adopt`'s `.shipwright/adopt/snapshot.json` — are versioned output contracts (`schema_version`, `major.minor`: major = breaking, the consumer must refuse to render; minor = additive, the consumer keeps working). Each producer's SKILL.md states the contract and names the consumer, and a contract gate per producer diffs the emitted payload against the fixture published on `origin/main` and fails until the bump that diff obliges has been performed — so a shape change cannot reach the consumer silently.",
@@ -3235,6 +3235,7 @@
     "plugins/shipwright-compliance/tests/test_grade_snapshot_regen.py::test_not_gradeable_repo_emits_nothing",
     "plugins/shipwright-compliance/tests/test_grade_snapshot_regen.py::test_snapshot_grade_matches_dashboard",
     "plugins/shipwright-compliance/tests/test_group_cf_fixture_loop_capture.py::test_each_fixture_check_binds_its_own_id",
+    "plugins/shipwright-compliance/tests/test_group_d_hardening.py::test_active_plus_removed_is_not_a_collision_and_keeps_the_live_node",
     "plugins/shipwright-compliance/tests/test_group_d_hardening.py::test_d1_absent_manifest_fallback_has_no_note",
     "plugins/shipwright-compliance/tests/test_group_d_hardening.py::test_d1_explicit_source_requires_link",
     "plugins/shipwright-compliance/tests/test_group_d_hardening.py::test_dlayer_active_active_collision_ok_not_credited",
@@ -3249,6 +3250,8 @@
     "plugins/shipwright-compliance/tests/test_group_d_hardening.py::test_out_of_vocab_source_is_rejected_on_read_and_d1_falls_back",
     "plugins/shipwright-compliance/tests/test_group_d_hardening.py::test_r1_skipped_evidence_makes_explicit_layer_hard_fail",
     "plugins/shipwright-compliance/tests/test_group_d_hardening.py::test_rtm_renders_collision_ok_as_ambiguous",
+    "plugins/shipwright-compliance/tests/test_group_d_hardening.py::test_the_collided_fixture_is_schema_valid_so_the_guard_is_reachable",
+    "plugins/shipwright-compliance/tests/test_group_d_hardening.py::test_two_specs_sharing_an_id_fail_closed_instead_of_dropping_a_node",
     "plugins/shipwright-compliance/tests/test_group_d_traceability.py::test_group_d_run_emits_traceability_findings_end_to_end",
     "plugins/shipwright-compliance/tests/test_group_d_traceability.py::test_layer_explicit_missing_layer_fails_by_priority",
     "plugins/shipwright-compliance/tests/test_group_d_traceability.py::test_layer_fanout_collision_ok_is_not_credited_but_advisory",
@@ -3372,8 +3375,11 @@
     "plugins/shipwright-compliance/tests/test_rtm_layer_columns.py::test_collision_display_id_renders_ambiguous_not_ok",
     "plugins/shipwright-compliance/tests/test_rtm_layer_columns.py::test_header_has_layer_columns",
     "plugins/shipwright-compliance/tests/test_rtm_layer_columns.py::test_legend_decodes_layer_columns",
-    "plugins/shipwright-compliance/tests/test_rtm_layer_columns.py::test_namespaced_key_resolves_this_rows_split",
+    "plugins/shipwright-compliance/tests/test_rtm_layer_columns.py::test_local_key_derivation_matches_the_shared_model",
+    "plugins/shipwright-compliance/tests/test_rtm_layer_columns.py::test_namespaced_key_resolves_this_rows_own_node",
+    "plugins/shipwright-compliance/tests/test_rtm_layer_columns.py::test_node_whose_id_disagrees_with_its_key_is_still_a_collision",
     "plugins/shipwright-compliance/tests/test_rtm_layer_columns.py::test_pre_existing_positional_columns_unshifted",
+    "plugins/shipwright-compliance/tests/test_rtm_layer_columns.py::test_row_resolves_after_its_split_directory_is_renamed",
     "plugins/shipwright-compliance/tests/test_rtm_layer_columns.py::test_unit_ok_e2e_missing_renders_glyphs_not_numbers",
     "plugins/shipwright-compliance/tests/test_rtm_reconciled_column.py::test_age_alone_never_flags",
     "plugins/shipwright-compliance/tests/test_rtm_reconciled_column.py::test_behavior_touch_reverified_is_check",
@@ -3538,7 +3544,7 @@
     "plugins/shipwright-compliance/tests/test_test_links_collector.py::test_malformed_tag_is_recorded_not_crashed",
     "plugins/shipwright-compliance/tests/test_test_links_collector.py::test_manifest_orphans_invalid_untagged_match_golden",
     "plugins/shipwright-compliance/tests/test_test_links_collector.py::test_manifest_requirements_match_golden",
-    "plugins/shipwright-compliance/tests/test_test_links_collector.py::test_manifest_validates_against_v2_schema",
+    "plugins/shipwright-compliance/tests/test_test_links_collector.py::test_manifest_validates_against_v3_schema",
     "plugins/shipwright-compliance/tests/test_test_links_collector.py::test_multiline_describe_signature_still_propagates",
     "plugins/shipwright-compliance/tests/test_test_links_collector.py::test_multiple_tags_per_test",
     "plugins/shipwright-compliance/tests/test_test_links_collector.py::test_nested_describes_both_apply",
@@ -3601,6 +3607,24 @@
     "plugins/shipwright-compliance/tests/test_traceability.py::test_synthetic_backfill_source_excluded",
     "plugins/shipwright-compliance/tests/test_traceability.py::test_tested_feature_counts_on_both_sides",
     "plugins/shipwright-compliance/tests/test_traceability.py::test_zero_recent_is_info_not_a_freeze_warn",
+    "plugins/shipwright-compliance/tests/test_traceability_contract.py::test_a_fixture_exists_for_the_declared_version",
+    "plugins/shipwright-compliance/tests/test_traceability_contract.py::test_a_numerically_named_directory_cannot_smuggle_a_path_namespace",
+    "plugins/shipwright-compliance/tests/test_traceability_contract.py::test_active_first_then_removed",
+    "plugins/shipwright-compliance/tests/test_traceability_contract.py::test_an_id_derived_key_passes",
+    "plugins/shipwright-compliance/tests/test_traceability_contract.py::test_every_documented_field_is_on_the_wire",
+    "plugins/shipwright-compliance/tests/test_traceability_contract.py::test_keys_are_group_digits_not_the_split_directory",
+    "plugins/shipwright-compliance/tests/test_traceability_contract.py::test_keys_survive_a_split_directory_rename",
+    "plugins/shipwright-compliance/tests/test_traceability_contract.py::test_neither_error_is_a_valueerror",
+    "plugins/shipwright-compliance/tests/test_traceability_contract.py::test_published_fixtures_are_frozen_against_main",
+    "plugins/shipwright-compliance/tests/test_traceability_contract.py::test_removed_first_then_active",
+    "plugins/shipwright-compliance/tests/test_traceability_contract.py::test_spec_path_still_records_where_the_row_was_found",
+    "plugins/shipwright-compliance/tests/test_traceability_contract.py::test_the_fixture_declares_the_version_its_filename_claims",
+    "plugins/shipwright-compliance/tests/test_traceability_contract.py::test_the_live_manifest_matches_the_fixture_for_that_version",
+    "plugins/shipwright-compliance/tests/test_traceability_contract.py::test_the_pin_has_no_unpinned_arrays",
+    "plugins/shipwright-compliance/tests/test_traceability_contract.py::test_the_regen_swallow_clause_does_not_catch_them",
+    "plugins/shipwright-compliance/tests/test_traceability_contract.py::test_the_shape_change_forces_the_bump_it_obliges",
+    "plugins/shipwright-compliance/tests/test_traceability_contract.py::test_two_rows_in_ONE_spec_sharing_an_id_also_raise",
+    "plugins/shipwright-compliance/tests/test_traceability_contract.py::test_two_specs_claiming_one_id_raise_and_name_both",
     "plugins/shipwright-compliance/tests/test_traceability_fixtures.py::test_catalog_paths_all_resolve",
     "plugins/shipwright-compliance/tests/test_traceability_fixtures.py::test_covers_marker_registered",
     "plugins/shipwright-compliance/tests/test_traceability_fixtures.py::test_diffs_load_with_expected_verdicts",
@@ -3618,6 +3642,7 @@
     "plugins/shipwright-compliance/tests/test_traceability_fixtures.py::test_schema_rejects_malformed",
     "plugins/shipwright-compliance/tests/test_traceability_fixtures.py::test_schema_requires_coverage_for_every_required_layer",
     "plugins/shipwright-compliance/tests/test_traceability_llm_adapter.py::test_llm_adapter_replays_offline_and_refuses_bodies",
+    "plugins/shipwright-compliance/tests/test_update_compliance_phases.py::test_a_duplicate_fr_id_does_not_abort_the_other_reports",
     "plugins/shipwright-compliance/tests/test_update_compliance_phases.py::test_cli_phase_adopt_exits_zero",
     "plugins/shipwright-compliance/tests/test_update_compliance_phases.py::test_cli_phase_compliance_does_not_stamp",
     "plugins/shipwright-compliance/tests/test_update_compliance_phases.py::test_cli_phase_iterate_stamps_audit_staleness",
@@ -7926,8 +7951,12 @@
     "shared/tests/test_requirement_model.py::test_is_canonical_fr",
     "shared/tests/test_requirement_model.py::test_layers_are_the_closed_vocabulary",
     "shared/tests/test_requirement_model.py::test_model_version_tracks_manifest_schema_version",
+    "shared/tests/test_requirement_model.py::test_namespace_derives_from_the_id_not_the_path",
+    "shared/tests/test_requirement_model.py::test_namespace_is_not_a_constructor_field",
+    "shared/tests/test_requirement_model.py::test_namespace_survives_a_spec_path_change",
     "shared/tests/test_requirement_model.py::test_namespaced_key_round_trips",
     "shared/tests/test_requirement_model.py::test_namespaced_key_splits_on_last_delimiter",
+    "shared/tests/test_requirement_model.py::test_non_canonical_id_has_no_derivable_namespace",
     "shared/tests/test_requirement_model.py::test_required_layers_source_vocabulary",
     "shared/tests/test_requirement_model.py::test_requirement_key_and_status",
     "shared/tests/test_resolve_churn_campaign_status.py::test_campaign_status_md_conflict_blocks_touching_nothing",

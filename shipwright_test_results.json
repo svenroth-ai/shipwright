@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-19-one-discovery-function",
-    "date": "2026-07-19",
+    "run_id": "iterate-2026-07-20-namespace-from-requirement-id",
+    "date": "2026-07-20",
     "unit": {
       "status": "passed",
-      "passed": 4666,
-      "total": 4666
+      "passed": 6719,
+      "total": 6719
     },
     "integration": {
       "status": "passed",
@@ -29,162 +29,130 @@
       "status": "not_run"
     },
     "degraded": [
-      "classify_complexity flagged risk_flag `touches_auth`, a PROSE false positive: the sub-iterate spec text names the `01-auth` corpus fixture split. No auth code is touched. `touches_io_boundary` IS genuine (golden.json). The diff-predicates in risk_detectors.py are authoritative and F11 recomputes.",
-      "The external CODE review returned only ONE usable leg. Gemini's response was a degenerate internal-monologue fragment ('if it ends, where is the sort? ...') rather than findings, so that leg produced no reviewable output. Its one substantive question -- whether setup_design_session still sorts -- is answered: `return sorted(specs)` is unchanged and simply sat outside the diff context. OpenAI's leg returned 2 findings, both dispositioned in the ADR. Recorded rather than re-rolled so the thin review coverage is visible.",
-      "The ADR-header cluster extraction into shared/scripts/lib/adr_headers.py was NOT in the sub-iterate scope. It was forced: the anti-ratchet pre-commit gate BLOCKED the commit because the mandatory ADR-045 loader pushed drift_parsers.py from 523 to 533, and the bloat-exception template refuses an exception unless the file is an honest Ousterhout 'deep module' -- drift_parsers is a five-cluster grab-bag, so the template's own instruction is 'split the file instead'. It removes a public import path from lib.drift_parsers with no compatibility shim; see the ADR for why a shim is technically impossible there.",
-      "spec_parser.py lands at EXACTLY its 350-line baseline, with zero headroom. The next line added to that file will block a commit. It is a genuine ceiling, not a near-miss that was rounded away.",
-      "Code review (ADR-029 Step 3.7) returned NOT CLEAR and the merge was held. One finding was FALSIFIED rather than fixed: a claimed ordering regression in read_top_level_spec rested on PurePath.__lt__ comparing a joined string, but it compares a PARTS LIST on 3.11.15/3.12/3.13, so sorting split dirs and sorting full spec.md paths are provably equivalent for a constant trailing filename. Verified on the repo interpreter across 4 proper-prefix pairs on both PurePosixPath and PureWindowsPath before declining the change. Its second-order point WAS valid and is fixed: no corpus fixture holds a proper-prefix split pair, so the axis is now pinned by unit test instead of left to a vacuous byte-identical claim.",
-      "Two pieces of the new module shipped DEAD in the reviewed commit and were removed, not documented away: planning_dir() was exported with zero callers while ~13 sites still built the path inline, and the filename= knob was never passed by anything while its docstring pointed at a call site that deliberately does not use it. The shared leaf now exports only what is reached.",
-      "CI went RED on the review-round commit for exactly the landmine the brief named: the artifact-path-canon lint scans git-TRACKED files only, so the new shared/tests/test_planning_discovery.py was invisible to it. I re-ran the content lints after F0 but BEFORE staging the new file, which is a false green. Fixed by rebuilding the fixtures on the canonical <root>/.shipwright/planning shape (not by marking lines or widening ALLOWLIST['planning'], either of which would have weakened the gate repo-wide), and the lints are now re-run after git add. Recorded because S3-S7 each add files and will hit this unless the F-phase order changes: content lints belong after the LAST artifact is staged."
+      "The external CODE review returned only ONE usable leg. Gemini's response was a truncated internal-monologue fragment that began mid-sentence and cut off inside a code block, not findings -- the same degenerate mode seen on S2. Recorded rather than re-rolled so the thin code-review coverage stays visible. OpenAI's leg returned one medium finding (an epoch generated_at in the committed manifest), fixed by regenerating through the real update_compliance path. The PLAN review had BOTH legs substantive, and the coordinator's own review round found 6 further defects.",
+      "classify_complexity returned estimate=small with risk flags touches_rls + touches_migrations. Both are PROSE false positives -- the classifier matches the description text, not the diff; no RLS policy and no SQL migration is touched. Executed at the briefed medium level (external plan review AND code review cascade both ran). risk_detectors.py diff-predicates are authoritative and F11 recomputes.",
+      "unit=6719 is the SUM of the four suites re-run and verified for this change (shared/tests 4661, shipwright-compliance 1246, shipwright-adopt 427, shipwright-grade 385). The prior entry 4666 counted the shared suite alone; the wider number is recorded because this change edits fixtures in three plugins.",
+      "The internal reviewer cascade (spec-reviewer / code-reviewer / doubt-reviewer) is DELEGATED to the campaign orchestrator: this runner has no Agent tool. The orchestrator's code review returned 6 defects, all fixed in this same commit.",
+      "KNOWN GAP handed to S4, not closed here: only the '## Removed Requirements' heading sets status=removed. The inline '**REMOVED** by' marker this repo actually uses (SPEC 2.5, 01-adopted/spec.md:198) is unrecognised, so an inline-removed row parses as ACTIVE and would hit the duplicate rule as the hardest collision form. Pre-existing parser behaviour; S4 (one header-driven parser) owns it."
     ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest integration-tests/test_requirements_corpus_matrix.py integration-tests/test_requirements_corpus_registry.py integration-tests/test_requirements_corpus_found_defects.py integration-tests/test_requirements_corpus_false_verdicts.py -q",
+      "runner": "uv run pytest plugins/shipwright-compliance/tests/test_traceability_contract.py plugins/shipwright-compliance/tests/test_group_d_hardening.py plugins/shipwright-compliance/tests/test_rtm_layer_columns.py plugins/shipwright-compliance/tests/test_update_compliance_phases.py -q --color=no",
       "exit_code": 0,
       "tests_run": 51,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-19-one-discovery-function/surface_verification.json",
-      "note": "The corpus suites ARE the behavioural surface for this iterate: they re-derive all 15 discovery walks and 5 parsers across 10 fixtures in one subprocess per import realm, and compare against the S1 golden baseline."
+      "evidence_path": ".shipwright/runs/iterate-2026-07-20-namespace-from-requirement-id/surface_verification.json",
+      "note": "The behavioural surface is the manifest key form plus the blast radius of refusing to write it. Four suites drive it: the contract gate (rename survival, key/id agreement, duplicate fail-closed, frozen fixture + disarm detector), the Group-D ambiguity guard, the RTM layer columns, and the update_compliance loop guard. Scoped to ONE plugin tree because mixing plugin and shared test dirs in a single pytest run trips the conftest name collision (exit 3)."
     },
     "test_completeness": {
       "status": "complete",
       "counts": {
-        "total": 22,
-        "tested": 22,
+        "total": 17,
+        "tested": 17,
         "untestable": 0,
         "untested_testable": 0
       },
       "behaviors": [
         {
-          "behavior": "all 15 discovery call sites delegate to the shared walk",
+          "behavior": "namespace derives from the FR id's group digits",
           "ac": "AC1",
           "disposition": "tested",
-          "evidence": "integration-tests/test_requirements_corpus_matrix.py (15 walks x 10 fixtures, byte-compared to golden.json)"
+          "evidence": "shared/tests/test_requirement_model.py::test_namespace_derives_from_the_id_not_the_path"
         },
         {
-          "behavior": "golden.json stays byte-identical except the one source-hash cell",
+          "behavior": "no call site can pass a path-derived namespace",
+          "ac": "AC1",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_model.py::test_namespace_is_not_a_constructor_field"
+        },
+        {
+          "behavior": "a non-canonical id has no derivable namespace (no invented key)",
+          "ac": "AC1",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_model.py::test_non_canonical_id_has_no_derivable_namespace"
+        },
+        {
+          "behavior": "every requirement's inner fields are unchanged vs v2",
           "ac": "AC2",
           "disposition": "tested",
-          "evidence": "uv run integration-tests/requirements_corpus/regen_golden.py --check -> 'golden.json is current'"
+          "evidence": "empirical probe: regenerated the real monorepo manifest and compared node-by-node against the committed v2 one across id/tests/coverage/required_layers/required_layers_source/title/status/priority/spec_path -> zero differences, while all 15 keys moved"
         },
         {
-          "behavior": "corpus suites pass unchanged",
+          "behavior": "schema_version is 3 and travels with MODEL_VERSION",
           "ac": "AC3",
           "disposition": "tested",
-          "evidence": "integration-tests/test_requirements_corpus_{matrix,registry,found_defects,false_verdicts}.py (51 passed)"
+          "evidence": "shared/tests/test_requirement_model.py::test_model_version_tracks_manifest_schema_version"
         },
         {
-          "behavior": "registry.py source paths all still resolve",
+          "behavior": "a frozen v3 contract fixture exists and matches the live manifest",
+          "ac": "AC3",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_traceability_contract.py::TestPublishedFixture"
+        },
+        {
+          "behavior": "published fixtures are frozen against origin/main",
+          "ac": "AC3",
+          "disposition": "tested",
+          "evidence": "TestTheGate::test_published_fixtures_are_frozen_against_main, plus a negative-control probe: modifying a published fixture returns a reason (ARMED); restoring it returns None"
+        },
+        {
+          "behavior": "keys survive a split-directory rename",
           "ac": "AC4",
           "disposition": "tested",
-          "evidence": "integration-tests/test_requirements_corpus_registry.py::test_every_registry_source_file_exists"
+          "evidence": "test_traceability_contract.py::test_keys_survive_a_split_directory_rename (two fixture trees differing only in directory name) + test_rtm_layer_columns.py::test_row_resolves_after_its_split_directory_is_renamed"
         },
         {
-          "behavior": "spec_parser._iter_spec_files is still a generator",
+          "behavior": "spec_path still records where the row was found",
+          "ac": "AC4",
+          "disposition": "tested",
+          "evidence": "test_traceability_contract.py::test_spec_path_still_records_where_the_row_was_found"
+        },
+        {
+          "behavior": "golden corpus diffs are explained; id-only targets do not move",
           "ac": "AC5",
           "disposition": "tested",
-          "evidence": "test_requirements_corpus_matrix.py -- golden cell records \"type\": \"generator\""
+          "evidence": "regen_golden.py --check: 38 removals of the \"namespace\" cell in the single target parse._requirement_parse.parse_requirements, zero additions, and zero spec_path or split cells moved -- so no id-only target changed."
         },
         {
-          "behavior": "the 3 unsorted walks still track enumeration order",
-          "ac": "AC6",
+          "behavior": "two specs claiming one v3 key fail closed instead of dropping a requirement",
+          "ac": "external-review",
           "disposition": "tested",
-          "evidence": "test_requirements_corpus_matrix.py::test_unsorted_walk_tracks_enumeration_order{,_a2}"
+          "evidence": "test_traceability_contract.py::TestDuplicateIdsFailClosed (cross-spec AND same-spec) + test_group_d_hardening.py::test_two_specs_sharing_an_id_fail_closed_instead_of_dropping_a_node"
         },
         {
-          "behavior": "state.detect_state keeps its planning-dir signature",
-          "ac": "AC7",
+          "behavior": "a key whose namespace disagrees with its node id is rejected at write time",
+          "ac": "external-review",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-project/tests/test_state.py (6 passed) + golden cell disc.state.detect_state"
+          "evidence": "test_traceability_contract.py::TestKeyAgreesWithItsNodeId plus an end-to-end probe through _validate_manifest rejecting both 01-adopted::FR-03.01 and the shape-valid-but-wrong 02::FR-03.01"
         },
         {
-          "behavior": "guard='exists' still raises NotADirectoryError on a planning FILE",
-          "ac": "AC8",
+          "behavior": "a tombstone row alongside a live row is NOT a collision, and the ACTIVE node survives regardless of spec discovery order",
+          "ac": "coordinator-review",
           "disposition": "tested",
-          "evidence": "golden 'planning-file' fixture: 4 walks record the exception, 11 degrade"
+          "evidence": "test_group_d_hardening.py::test_active_plus_removed_is_not_a_collision_and_keeps_the_live_node + test_traceability_contract.py::TestActiveWinsTheKeyRegardlessOfOrder (both orders)"
         },
         {
-          "behavior": "require='is_file' still rejects a DIRECTORY named spec.md",
-          "ac": "AC9",
+          "behavior": "one collector refusing to write does not dark the other reports",
+          "ac": "coordinator-review",
           "disposition": "tested",
-          "evidence": "golden 'spec-dir' fixture: fr_gates + group_i diverge from the other 13"
+          "evidence": "test_update_compliance_phases.py::test_a_duplicate_fr_id_does_not_abort_the_other_reports -- drives the real CLI: exit 1 + generator_errors naming test_links, while change-history, sbom and dashboard still write"
         },
         {
-          "behavior": "include_iterate=False still excludes iterate/ for exactly 3 walks",
-          "ac": "AC10",
+          "behavior": "both integrity errors escape _layer_coverage_regen's except (OSError, ValueError) so F11 names the real cause",
+          "ac": "coordinator-review",
           "disposition": "tested",
-          "evidence": "golden 'edge' fixture values for backfill_test_links, _test_links_io, rtm.collect_external_review_states"
+          "evidence": "test_traceability_contract.py::TestIntegrityErrorsReachTheOperator -- exercises the literal swallow clause, not just the class hierarchy"
         },
         {
-          "behavior": "recursive=True still descends and still matches a loose planning/spec.md",
-          "ac": "AC11",
+          "behavior": "the ambiguity-guard fixture is schema-VALID, so the path it pins is reachable through load_manifest",
+          "ac": "coordinator-review",
           "disposition": "tested",
-          "evidence": "golden 'edge' fixture: 5 rglob walks list 03-nested/deeper/spec.md and spec.md"
+          "evidence": "test_group_d_hardening.py::test_the_collided_fixture_is_schema_valid_so_the_guard_is_reachable -- the old '02-b::' key failed propertyNames, so load_manifest returned None and D-layer/D-orphan SKIPped while the tests passed"
         },
         {
-          "behavior": "setup_design_session still returns OS-separator relative strings",
-          "ac": "AC12",
+          "behavior": "the contract gate cannot silently disarm itself by a renamed CONTRACTS_DIR/STEM, and the bump SIZE is enforced",
+          "ac": "coordinator-review",
           "disposition": "tested",
-          "evidence": "test_requirements_corpus_matrix.py platform_sep test + golden platform_sep_normalized cell"
-        },
-        {
-          "behavior": "behaviour preserved repo-wide (no removed test coverage)",
-          "ac": "AC13",
-          "disposition": "tested",
-          "evidence": "behavior_snapshot.py verify -> VERIFIED, 290 green, no count drop"
-        },
-        {
-          "behavior": "the loader resolves planning_discovery under standalone CLI invocation",
-          "ac": "AC14",
-          "disposition": "tested",
-          "evidence": "F0.5 probe: setup_adopt.py / validate_adoption.py / setup-design-session.py run with PYTHONPATH unset, no ImportError"
-        },
-        {
-          "behavior": "the ADR cluster keeps its behaviour after extraction",
-          "ac": "AC15",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_adr_headers.py (6 passed, moved verbatim)"
-        },
-        {
-          "behavior": "no consumer of the moved ADR symbols is left stale",
-          "ac": "AC16",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_verifiers_adopt.py + compliance suite (1222 passed) + repo-wide grep sweep"
-        },
-        {
-          "behavior": "drift_parsers stays loadable via audit_adapters file-location load",
-          "ac": "AC17",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests (1222 passed) exercising group_a/d/g"
-        },
-        {
-          "behavior": "no path normalization or symlink behaviour was introduced",
-          "ac": "AC18",
-          "disposition": "tested",
-          "evidence": "grep: no resolve()/os.walk/normpath in planning_discovery.py; corpus values unchanged"
-        },
-        {
-          "behavior": "sorting split dirs equals sorting full spec.md paths for proper-prefix split names",
-          "ac": "AC19",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_planning_discovery.py::test_sorting_split_dirs_equals_sorting_full_spec_paths (4 pairs) + ::test_prefix_pairs_are_a_real_trap_for_string_sorting"
-        },
-        {
-          "behavior": "both ValueError guards reject an out-of-range guard/require value",
-          "ac": "AC20",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_planning_discovery.py::test_invalid_guard_rejected, ::test_invalid_require_rejected"
-        },
-        {
-          "behavior": "guard='none' raises FileNotFoundError on absent and NotADirectoryError on a planning FILE",
-          "ac": "AC21",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_planning_discovery.py::test_guard_none_raises_on_absent_and_on_a_planning_file"
-        },
-        {
-          "behavior": "the helper's own parameter matrix is covered independently of the 15 call sites",
-          "ac": "AC22",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_planning_discovery.py (19 tests); non-vacuity confirmed by mutation, 5/5 seeded mutants killed"
+          "evidence": "test_traceability_contract.py::test_the_shape_change_forces_the_bump_it_obliges (CE.require_bump + a stem-scoped disarm detector); probe confirms the detector FIRES for a stem published on main but absent under the configured constants"
         }
       ]
     }

@@ -124,10 +124,27 @@ def main() -> int:
     sbom_triage_result: dict | None = None
     test_evidence_triage_result: dict | None = None
     grade_snapshot_result: dict | None = None
+    generator_errors: list[dict] = []
     for report_name in reports_to_update:
         gen_fn = GENERATORS.get(report_name)
         if gen_fn:
-            path = gen_fn(project_root, data)
+            # One collector refusing to write MUST NOT dark the rest of the dashboard.
+            # The generators run in list order, so an uncaught raise from an early one
+            # (e.g. test_links refusing to publish an incomplete manifest when a spec
+            # declares an FR id twice) would abort the loop before change_history, sbom
+            # and dashboard were written — an adopter would get a bare traceback, exit 1,
+            # no JSON, and no compliance artifacts at all for an authoring defect in one
+            # spec. Record the failure, keep going, and report it in the result payload
+            # so it is loud without being fatal to everything downstream.
+            try:
+                path = gen_fn(project_root, data)
+            except Exception as exc:  # noqa: BLE001 — one report's failure is not all reports'
+                generator_errors.append({
+                    "report": report_name,
+                    "error": type(exc).__name__,
+                    "detail": str(exc),
+                })
+                continue
             updated.append(str(path.relative_to(project_root)))
             # Iterate B.2 (ADR-056): when the SBOM is regenerated, emit
             # one ``source="sbom"`` triage item per workspace that still
@@ -192,10 +209,15 @@ def main() -> int:
             audit_staleness_result = {"stamped": False, "reason": str(exc)}
 
     output = {
-        "success": True,
+        "success": not generator_errors,
         "phase": phase,
         "updated_reports": updated,
     }
+    if generator_errors:
+        # Reported, and non-zero on exit, but only AFTER every other report was
+        # given its chance to write — a defect in one spec must not leave the
+        # operator with no dashboard at all.
+        output["generator_errors"] = generator_errors
     if audit_staleness_result is not None:
         output["audit_staleness"] = audit_staleness_result
     if sbom_triage_result is not None:
@@ -207,7 +229,7 @@ def main() -> int:
     if ci_security_result is not None:
         output["ci_security"] = ci_security_result
     print(json.dumps(output, indent=2))
-    return 0
+    return 1 if generator_errors else 0
 
 
 if __name__ == "__main__":

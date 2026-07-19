@@ -188,7 +188,7 @@ def test_inferred_marker_roundtrip_binds_adopt_emit_to_compliance_read():
         project_name="RT", split_name="01-adopted", product_description="x",
         features=features, qr_items=[], constraints=[],
     )
-    reqs = parse_requirements(md, namespace="01-adopted", spec_path="spec.md")
+    reqs = parse_requirements(md, spec_path="spec.md")
     by = {r.id: r for r in reqs}
     # the emitted `(inferred)` marker must read as advisory, NOT the explicit hard gate
     assert by["FR-01.01"].required_layers_source == "inferred_legacy"

@@ -68,6 +68,14 @@ def find_ambiguous_frs(spec_text: str, namespace: str) -> list[dict]:
     unattended, they resolve against the fixture. Header-aware (reads BOTH the 4-col
     traceability + 6-col adopt shapes); classifies cell authorship only. Rows under
     ``## Removed Requirements`` are skipped.
+
+    **``namespace`` is the SPLIT-NAME here, and that is deliberate — do not "fix" it.**
+    The emitted ``key`` (``app::FR-03.02``) looks like a traceability-manifest key and is
+    not one: it never joins the manifest. It is the lookup key of the adopt *decisions*
+    map (``load_decisions`` → ``answers``), a user-authored file that operators and
+    fixtures already have on disk. Campaign S3 moved the MANIFEST key to an id-derived
+    namespace (``03::FR-03.02``); applying that here would silently stop matching every
+    existing predeclared decision file. The two key forms diverge on purpose.
     """
     out: list[dict] = []
     layers_idx: int | None = None
