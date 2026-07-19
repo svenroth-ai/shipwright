@@ -1,0 +1,1 @@
+Four source files that had grown just past the 300-line limit are now recorded in the size baseline instead of going unregistered, so the check that guards against files quietly growing reports cleanly again and those four cannot grow further without a deliberate decision.
