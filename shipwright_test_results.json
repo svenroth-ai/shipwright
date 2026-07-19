@@ -1,93 +1,92 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-19-adopter-pinning-posture-rule",
+    "run_id": "iterate-2026-07-19-compliance-prework",
     "date": "2026-07-19",
     "unit": {
-      "status": "passed",
-      "passed": 4609,
-      "total": 4610
+      "status": "pass",
+      "note": "F0 full suite GREEN — 18 units, 1.7 min."
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "pass",
+      "note": "covered by the F0 suite"
     },
     "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "n/a",
+      "note": "no database"
     },
     "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "n/a",
+      "note": "no runtime surface: a baseline JSON entry and a documentation line"
     },
     "design_fidelity": {
-      "status": "not_run"
+      "status": "n/a",
+      "note": "no UI"
     },
     "smoke": {
-      "status": "not_run"
+      "status": "n/a",
+      "note": "no server"
     },
     "degraded": [
-      "F0 suite RED on ONE pre-existing, foreign failure: test_architecture_md_reflects_arch_impact flags a decision-drop belonging to iterate-2026-07-18-fr-existence-gate (gitignored drops resolve from the MAIN root, so a concurrent iterate's drop reddens this worktree). The run_id in the failure is not this run's - inherited, not introduced.",
-      "The triage card trg-0ce59c05 asserted 'VERIFIED ALREADY CORRECT (do not redo)' for shared/templates/. That premise was FALSE in two of three respects (setup-uv unpinned in the shipped template while the monorepo pins it for itself; AikidoSec/github-actions-wf 404s entirely). Scope was widened with explicit user approval to fix the state, because the requested guard would otherwise have been red on its own PR.",
-      "The CI supply-chain ack gate does NOT fire for this diff: CI_SUPPLYCHAIN_FILE_PATTERNS matches only this repo's .github/**, while the diff edits shipped templates under shared/templates/. An edit to a shipped CI template changes every future adopter's trust boundary but escapes the ack. Filed as its own card; the concrete drift mode is blocked by the new hard guard."
+      {
+        "condition": "Group H2 still reports one entry",
+        "reason": "shared/scripts/tools/verifiers/common.py is held at its recorded 771 instead of being tightened to 766. The in-flight iterate events-record-boundary-readers takes that file to 768, so tightening it here would block that PR on the anti-ratchet. Deliberate; it tightens once that work lands."
+      },
+      {
+        "condition": "Compliance D/D1 and D/D3 (FR-01.15) are NOT addressed",
+        "reason": "Both say FR-01.15 was promised via new_frs and never reaffirmed by a later event. The only way to clear them from this iterate would be to declare affected_frs: [FR-01.15] — which would be FALSE, because this change does not touch the cross-repo output contract. The findings are telling the truth and must clear when real work touches that requirement, not by an accurate-looking declaration."
+      },
+      {
+        "condition": "complexity declared small, classifier said medium",
+        "reason": "The classifier's own scope signal is 'trivial'; 'medium' comes from the history prior, not from this change. Two files, no code path, no behaviour. Recorded because a downgrade must never be silent — note that it dodges no gate here: the cross-layer gate has nothing to evaluate on a diff with no FR or spec delta."
+      }
     ],
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --with pytest --with pytest-mock pytest shared/tests/test_action_pinning_posture.py shared/tests/test_ci_workflow_convention.py shared/tests/test_claude_md_template.py -q",
+      "surface": "none",
+      "tests_run": 0,
       "exit_code": 0,
-      "tests_run": 66,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\adopter-pinning-posture-rule\\.shipwright\\runs\\iterate-2026-07-19-adopter-pinning-posture-rule\\surface_verification.log",
-      "timestamp": "2026-07-19T05:33:37.734Z",
-      "attempts": 1
+      "justification": "No runtime surface. The diff is one entry set in shipwright_bloat_baseline.json plus one bullet in conventions.md. Verification is the Group H audit itself plus the two meta-tests that consume these artifacts."
     },
     "test_completeness": {
       "status": "complete",
+      "complexity": "small",
       "behaviors": [
         {
-          "behavior": "Third-party action not pinned to a full 40-char SHA fails, per shipped template",
+          "behavior": "Four files that drifted over the 300-line limit are registered in the baseline, so Group H1 passes and the anti-ratchet is armed on them",
           "disposition": "tested",
-          "evidence": "test_action_pinning_posture.py - watched RED on a deliberately mutated template, then restored"
+          "evidence": "group_h.run() → H1 pass: 'all 156 oversize file(s) are listed in baseline'"
         },
         {
-          "behavior": "A GitHub-owned action that IS SHA-pinned fails (the direction that actually gets reversed)",
+          "behavior": "Nine baseline entries whose recorded size was looser than the file are tightened to the real count (ratchet down only, never up)",
           "disposition": "tested",
-          "evidence": "test_action_pinning_posture.py - watched RED on a deliberately mutated template"
+          "evidence": "group_h.run() → H2 residual is 1 entry, deliberately held (see below)"
         },
         {
-          "behavior": "Guard is non-vacuous: templates found and >=10 `uses:` entries scanned",
+          "behavior": "The one entry an in-flight iterate would grow past is NOT tightened",
           "disposition": "tested",
-          "evidence": "test_templates_exist_so_this_guard_is_not_vacuous"
+          "evidence": "measured the events-record-boundary worktree: common.py is 768 there vs the 766 a tightening would pin — held at 771. group_d shrinks to 449, so tightening it to 464 is safe and was applied."
         },
         {
-          "behavior": "No hosted dependency-updater config (Dependabot OR Renovate) is shipped to adopters",
+          "behavior": "REQ-0's arch-impact drop has its obliged conventions.md bullet, so the routing check passes",
           "disposition": "tested",
-          "evidence": "test_no_dependency_updater_config_is_shipped_to_adopters"
+          "evidence": "test_architecture_md_reflects_arch_impact.py — 5 passed (was failing)"
         },
         {
-          "behavior": "The posture rule reaches claude-md-template.md with all five normative claims intact",
+          "behavior": "The new conventions.md entry is inside the one-line budget",
           "disposition": "tested",
-          "evidence": "test_the_posture_rule_reaches_adopters_not_just_the_state - fails naming whichever claim disappeared"
+          "evidence": "test_agent_doc_entry_rules.py — 13 passed (535 chars ≤ 600)"
         },
         {
-          "behavior": "Quoted, dynamic, comment-suffixed and bare `uses:` forms are all extracted (6 shapes)",
+          "behavior": "No product behaviour changes",
           "disposition": "tested",
-          "evidence": "TestParserCannotBeEvaded - external review GPT high"
-        },
-        {
-          "behavior": "Third-party evasions fail CLOSED; a quoted GitHub-owned SHA-pin is still caught",
-          "disposition": "tested",
-          "evidence": "TestParserCannotBeEvaded - 5 negative controls"
+          "evidence": "F0 full suite GREEN, 18 units, 1.7 min; ruff clean; diff is one JSON baseline + one documentation line"
         }
       ],
       "counts": {
-        "testable": 7,
-        "tested": 7,
+        "total": 6,
+        "tested": 6,
         "untestable": 0,
         "untested_testable": 0
-      },
-      "enumeration_basis": "Every behavior introduced by this diff, grouped into 7 rows over 28 tests. No 'untestable' rows: all behaviour is a text assertion over tracked files. Both guard directions were driven RED on a mutated real template and restored from git, so the gate is proven on the bug it exists to catch rather than asserted. Rows 6-7 exist because the external review found the first-cut parser silently skipped quoted and dynamic `uses:` values - they evaded BOTH direction checks while the non-vacuity count still passed."
+      }
     }
   },
   "coverage": {
