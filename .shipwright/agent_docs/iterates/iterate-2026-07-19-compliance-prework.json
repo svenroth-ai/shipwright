@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-19-compliance-prework",
+  "date": "2026-07-19T06:10:14.307772Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/compliance-prework",
+  "spec": "n/a (small)",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-19-compliance-prework"
+}

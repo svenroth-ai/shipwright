@@ -204,13 +204,10 @@ def _committed_blob_has_event(content: str, commit_hash: str, run_id: str) -> bo
     """True iff ``content`` (a committed events.jsonl blob) carries a matching
     ``work_completed`` event — by ``adr_id == run_id`` (primary) or
     ``commit == commit_hash`` (fallback)."""
-    # Record boundaries via the shared SSoT (iterate-2026-07-19-…-readers). This
-    # is the F11 ``check_events_has_commit`` ORACLE, so the failure was
-    # operator-facing and inverted: if the iterate's own ``work_completed`` was
-    # the SECOND record on a concatenated line, the line was skipped whole, the
-    # event read as absent, and F11 FAILED FINALIZATION for a run that had in
-    # fact recorded everything correctly. Takes a str blob (a committed
-    # ``git show`` payload), so it splits per line rather than reading a path.
+    # Shared record-boundary SSoT (iterate-2026-07-19-…-readers). This is the F11
+    # ``check_events_has_commit`` ORACLE and its failure was INVERTED: a
+    # ``work_completed`` SECOND on a concatenated line read as absent, so F11
+    # FAILED FINALIZATION for a correctly-recorded run. Splits per line (a blob).
     for line in content.splitlines():
         line = line.strip()
         if not line:
@@ -857,9 +854,7 @@ def _find_work_event_by_commit(project_root: Path, commit_hash: str) -> dict | N
     events_path = resolve_events_path(project_root)
     if not events_path.exists():
         return None
-    # Shared record-boundary SSoT (iterate-2026-07-19-…-readers). The previous
-    # parse also had no ``isinstance`` guard, so a bare JSON scalar reached
-    # ``evt.get(...)`` and crashed; only objects are records.
+    # Shared SSoT; the old parse had no ``isinstance`` guard (scalar -> crash).
     try:
         records = read_jsonl_records(events_path).records
     except OSError:
@@ -892,10 +887,8 @@ def _find_work_event_by_run_id(project_root: Path, run_id: str) -> dict | None:
     if not events_path.exists():
         return None
     matched: dict | None = None
-    # Shared record-boundary SSoT (iterate-2026-07-19-…-readers) — the third
-    # site in this file, adjacent to and identical with the other two. Converting
-    # only the two that a review happened to name would reproduce this bug's own
-    # root cause: "the fix reached only the call sites that were rewritten."
+    # Shared SSoT — the THIRD site here, adjacent and identical to the other two;
+    # converting only the reviewed two would repeat this bug's own root cause.
     try:
         records = read_jsonl_records(events_path).records
     except OSError:

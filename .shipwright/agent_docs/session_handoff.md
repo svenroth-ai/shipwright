@@ -1,44 +1,40 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-19-events-record-boundary-readers"
+run_id: "iterate-2026-07-19-compliance-prework"
 phase: "iterate"
-reason: "iterate: event-log record-boundary recovery across the audit + traceability read path"
-timestamp: "2026-07-19T07:12:07.667826+00:00"
+reason: "iterate: compliance prework before the requirements-catalog campaign"
+timestamp: "2026-07-19T06:10:19.889602+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-19 07:12:07 UTC
+> Auto-generated 2026-07-19 06:10:19 UTC
 
 ## Session Info
 
-- **Session ID**: 605b268a-5de5-46b1-851b-548fd925ee1d
-- **Timestamp**: 2026-07-19 07:12:07 UTC
-- **Reason**: iterate: event-log record-boundary recovery across the audit + traceability read path
+- **Session ID**: 8e6fa31c-9819-4642-9ae6-d261a2be7a91
+- **Timestamp**: 2026-07-19 06:10:19 UTC
+- **Reason**: iterate: compliance prework before the requirements-catalog campaign
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-19-events-record-boundary-readers
-- **Date**: 2026-07-19T07:12:01.751274Z
-- **Type**: bug
-- **Complexity**: medium
-- **Branch**: iterate/events-record-boundary-readers
-- **ADR**: iterate-2026-07-19-events-record-boundary-readers
+- **Run ID**: iterate-2026-07-19-compliance-prework
+- **Date**: 2026-07-19T06:10:14.307772Z
+- **Type**: change
+- **Complexity**: small
+- **Branch**: iterate/compliance-prework
+- **ADR**: iterate-2026-07-19-compliance-prework
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-19-events-record-boundary-readers.md
+- **Spec**: n/a (small)
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/events-record-boundary-readers
-- **Run ID**: iterate-2026-07-19-events-record-boundary-readers
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-19-events-record-boundary-readers.md
-- **Complexity**: medium
+- **Branch**: iterate/compliance-prework
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/events-record-boundary-readers
-- **Last Commit**: 443268d6 chore(triage): sweep 5 outbox append(s) into branch
+- **Branch**: iterate/compliance-prework
+- **Last Commit**: 9cd31961 chore(triage): sweep 4 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-144556e6 | grade_snapshot | — | 2026-07-19 |
-| evt-50e902ef | work_completed | iterate (iterate: event-log record-boundary recovery across the audit + traceability read path) | 2026-07-19 |
+| evt-7a612300 | grade_snapshot | — | 2026-07-19 |
+| evt-5c18465d | work_completed | iterate (iterate: compliance prework before the requirements-catalog campaign) | 2026-07-19 |
+| evt-c3513d1c | grade_snapshot | — | 2026-07-19 |
+| evt-16c0251e | work_completed | iterate (iterate: ship the action-pinning posture rule to adopters (trg-0ce59c05)) | 2026-07-19 |
 | evt-6a67eebe | grade_snapshot | — | 2026-07-18 |
-| evt-f39eefda | grade_snapshot | — | 2026-07-18 |
-| evt-76b4cd89 | grade_snapshot | — | 2026-07-18 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 334
-- **Last iterate**: change — iterate: event-log record-boundary recovery across the audit + traceability read path (2026-07-19)
+- **Total work events**: 335
+- **Last iterate**: change — iterate: compliance prework before the requirements-catalog campaign (2026-07-19)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

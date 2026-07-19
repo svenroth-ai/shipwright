@@ -1,0 +1,1 @@
+`astral-sh/setup-uv` is now SHA-pinned in the shipped CI template, to the same commit the framework already pinned for its own workflows. The framework had been holding itself to a stricter standard than it shipped.

@@ -349,9 +349,9 @@ def test_pipeline_ci_scaffold_python_monorepo_profile(tmp_path: Path) -> None:
     assert payload["ci_workflow"]["wrote"] is True
     ci_text = ci_wf.read_text(encoding="utf-8")
     assert "python-plugin-monorepo profile" in ci_text
-    # setup-uv@v3 is the external-review #G1 fix that makes the template
-    # actually run on a fresh GitHub Actions runner.
-    assert "astral-sh/setup-uv@v3" in ci_text
+    # setup-uv (external-review #G1) must be present; asserted by ACTION not ref
+    # — astral-sh is third-party, so the ref is a SHA that moves when re-pinned.
+    assert "astral-sh/setup-uv@" in ci_text
     assert "windows-latest" in ci_text
 
 
