@@ -17,7 +17,6 @@ where the collector scans only conventional roots.
 from __future__ import annotations
 
 import ast
-import json
 import re
 import subprocess
 from dataclasses import dataclass, field
@@ -169,20 +168,24 @@ def _load_events_fr_by_commit(project_root: Path) -> dict[str, set[str]]:
     # join — pinned by shared/tests/test_events_log_ssot.py.
     try:
         from events_log import resolve_events_path
+        from jsonl_records import read_jsonl_records
     except ImportError:  # loaded as a package (lib.backfill_scan)
         from .events_log import resolve_events_path  # type: ignore
+        from .jsonl_records import read_jsonl_records  # type: ignore
     path = resolve_events_path(project_root)
     result: dict[str, set[str]] = {}
     if not path.exists():
         return result
-    for line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            event = json.loads(line)
-        except json.JSONDecodeError:
-            continue
+    # Record boundaries via the shared SSoT (iterate-2026-07-19-…-readers). The
+    # previous line-at-a-time parse dropped EVERY record on a physical line
+    # holding more than one, so a concatenated line lost both records'
+    # ``affected_frs`` — "corruption reads as absence" on the traceability
+    # surface, where it silently un-links an FR from the commit that covered it.
+    try:
+        records = read_jsonl_records(path).records
+    except OSError:
+        return result
+    for event in records:
         commit = event.get("commit")
         frs = event.get("affected_frs")
         if commit and frs:

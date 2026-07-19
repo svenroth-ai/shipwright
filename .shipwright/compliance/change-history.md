@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-07-19T06:10:14.398395+00:00
-Total commits: 1174
+Generated: 2026-07-19T07:12:01.841222+00:00
+Total commits: 1177
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 336
+    "fix" : 337
     "feat" : 327
-    "chore" : 247
+    "chore" : 249
     "docs" : 145
     "refactor" : 69
     "test" : 29
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 336 commits
+### Fixes (fix) — 337 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-19 | events | recover concatenated records across the audit read path | ea0577a5e37b |
 | 2026-07-19 | events | recover concatenated records on the append-only event log (#405) | 94d0332831d5 |
 | 2026-07-18 | triage | enforce record termination and recover concatenated records (#399) | 7a34d1adc132 |
 | 2026-07-18 | fr-gate | reject declared requirement ids that exist in no spec (#398) | cad7dd0152be |
@@ -693,11 +694,13 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 247 commits
+### Chores (chore) — 249 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-19 | triage | sweep 4 outbox append(s) into branch | 9cd319611b1f |
+| 2026-07-19 | iterate | record post-merge suite state and the three gate catches | a6ddc5b55b00 |
+| 2026-07-19 | compliance | register four size crossings, ratchet nine entries, record the missing convention (#408) | 37fe1346b5df |
+| 2026-07-19 | triage | sweep 5 outbox append(s) into branch | 443268d68d1f |
 | 2026-07-18 | triage | deliver 3 orphaned records from the merged iterate worktree (#402) | 56ee1c0e2387 |
 | 2026-07-18 | security | by-design nosemgrep suppression for the layer-coverage loader (#396) | 6cfd0e84655a |
 | 2026-07-18 | test-hygiene | resolve 51 pre-existing skipped-test findings (STEP 2) (#393) | 490a624e39f8 |
@@ -1243,7 +1246,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1174 |
+| Total commits | 1177 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1174 |
+| Human-authored commits | 1177 |
 

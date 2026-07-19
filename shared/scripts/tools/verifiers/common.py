@@ -43,6 +43,7 @@ from lib.drift_parsers import (  # noqa: E402
     find_gaps_in_adr_ids,
     parse_adr_headers,
 )
+from lib.jsonl_records import read_jsonl_records  # noqa: E402
 
 
 # Canonical home of the agent_docs artifact set, relative to project_root.
@@ -135,30 +136,31 @@ def read_run_config(project_root: Path) -> dict[str, Any]:
 
 
 def read_events_jsonl(project_root: Path) -> list[dict[str, Any]]:
-    """Return all valid JSON-object lines from ``shipwright_events.jsonl``.
+    """Return all valid JSON-object RECORDS from ``shipwright_events.jsonl``.
 
-    Malformed lines are silently skipped. Callers that need strict
+    Malformed input is silently skipped. Callers that need strict
     validation should use ``shared/scripts/tools/validate_event_log.py``.
+
+    Record boundaries are recovered via the shared SSoT
+    (iterate-2026-07-19-…-readers): several records may share one physical line
+    after a ``merge=union`` merge joins an unterminated blob to the next side,
+    and the previous line-at-a-time parse discarded ALL of them. On an
+    append-only audit trail a dropped ``work_completed`` makes a step that
+    happened read as one that never did — and these records feed the F11
+    verifiers.
     """
-    path = project_root / "shipwright_events.jsonl"  # G5 (iterate-2026-06-13-shc-read-events): NOT unified with record_event/lib.config read_events — verifiers read this LITERAL path (no resolve_events_path worktree redirect) + stay silent (errors=ignore) so corruption surfaces as a CheckResult, not a warning.
+    path = project_root / "shipwright_events.jsonl"  # G5 (iterate-2026-06-13-shc-read-events): NOT unified with record_event/lib.config read_events — verifiers read this LITERAL path (no resolve_events_path worktree redirect) + stay silent so corruption surfaces as a CheckResult, not a warning.
     if not path.exists():
         return []
-    out: list[dict[str, Any]] = []
     try:
-        content = path.read_text(encoding="utf-8", errors="ignore")
+        result = read_jsonl_records(path)
     except OSError:
         return []
-    for raw in content.splitlines():
-        raw = raw.strip()
-        if not raw:
-            continue
-        try:
-            obj = json.loads(raw)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(obj, dict):
-            out.append(obj)
-    return out
+    # G5, second half: `result.corrupt` is DISCARDED deliberately. The shared
+    # parser never prints — it returns corruption as data — so silence here is
+    # the caller's choice to make, and the verifiers' contract is that
+    # corruption reaches the operator as a CheckResult, never as a warning.
+    return list(result.records)
 
 
 def read_decision_log(project_root: Path) -> str:

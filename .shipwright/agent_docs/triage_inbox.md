@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-19T06:10:19.889602Z. Items waiting for triage decision.
+> Auto-generated 2026-07-19T07:26:56.726320Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 342
-- Triage: 9 | Promoted: 1 | Dismissed: 331 | Snoozed: 1
+- Total: 343
+- Triage: 10 | Promoted: 1 | Dismissed: 331 | Snoozed: 1
 
-## Top 9 items (severity-sorted)
+## Top 10 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -60,7 +60,12 @@
   - CI_SUPPLYCHAIN_FILE_PATTERNS (risk_detectors.py:149) matches only THIS repo's .github/**. An edit to shared/templates/g…
   - Promote: `triage_promote.py --id trg-6e8121e7 --task-ref EXT:<ref>`
 
-### Source: iterate (1 item)
+### Source: iterate (2 items)
+
+<a id="trg-360e494f"></a>
+- **Event-log readers: remaining sites still parse one record per physical line** `id=trg-360e494f | severity=medium | kind=improvement → P2/engineering`
+  - iterate-2026-07-19-events-record-boundary-readers converted 11 read sites to the shared record-boundary SSoT (lib/jsonl…
+  - Promote: `triage_promote.py --id trg-360e494f --task-ref EXT:<ref>`
 
 <a id="trg-d1e466aa"></a>
 - **Retire the write-once v1 run-config fields (current_step / completed_steps)** `id=trg-d1e466aa | severity=low | kind=improvement → P3/engineering`

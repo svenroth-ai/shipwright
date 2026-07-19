@@ -21,11 +21,11 @@ D1 dropped it (BP-1, all-time coverage); D3/D4 are time-invariant.
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Any, Iterable
 
 from scripts.audit import _group_d_traceability as _traceability
+from scripts.audit._events_read import load_events
 from scripts.audit.audit_adapters import (
     SOURCE_DETECTIVE_ONLY,
     Finding,
@@ -57,26 +57,11 @@ def _suggest(check_id: str, label: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _load_events(project_root: Path) -> list[dict] | None:
-    """Read ``shipwright_events.jsonl`` line by line. Return ``None`` when
-    the file is absent. Malformed lines are skipped (event log is append-
-    only and the audit must not crash on a single bad row)."""
-    path = project_root / "shipwright_events.jsonl"
-    if not path.exists():
-        return None
-    out: list[dict] = []
-    try:
-        for line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                out.append(json.loads(line))
-            except json.JSONDecodeError:
-                continue
-    except OSError:
-        return None
-    return out
+# Shared with Group B — one event-log read policy, record-boundary aware
+# (iterate-2026-07-19-…-readers). ``None`` on absent/unreadable, malformed input
+# skipped (the audit must not crash on a bad row), and records that share one
+# physical line after a union merge are RECOVERED rather than discarded whole.
+_load_events = load_events
 
 
 def _load_spec_frs(project_root: Path) -> list[drift_parsers.FunctionalRequirement]:

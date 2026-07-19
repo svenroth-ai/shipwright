@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-19-events-record-boundary-readers",
+  "date": "2026-07-19T07:12:01.751274Z",
+  "type": "bug",
+  "complexity": "medium",
+  "branch": "iterate/events-record-boundary-readers",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-19-events-record-boundary-readers.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-19-events-record-boundary-readers"
+}

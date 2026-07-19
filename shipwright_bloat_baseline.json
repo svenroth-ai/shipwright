@@ -137,14 +137,14 @@
     {
       "path": "plugins/shipwright-compliance/scripts/audit/group_b.py",
       "limit": 300,
-      "current": 545,
+      "current": 534,
       "state": "exception",
       "adr": "ADR-095"
     },
     {
       "path": "plugins/shipwright-compliance/scripts/audit/group_d.py",
       "limit": 300,
-      "current": 464,
+      "current": 449,
       "state": "exception",
       "adr": "ADR-096"
     },
@@ -739,7 +739,7 @@
     {
       "path": "shared/scripts/tools/verifiers/common.py",
       "limit": 300,
-      "current": 771,
+      "current": 768,
       "state": "grandfathered",
       "adr": null
     },

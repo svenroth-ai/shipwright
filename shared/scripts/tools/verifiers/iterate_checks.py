@@ -40,6 +40,7 @@ from lib.architecture_doc import (  # noqa: E402
     scan_drops,
 )
 from lib.events_log import resolve_events_path, resolve_main_repo_root  # noqa: E402
+from lib.jsonl_records import read_jsonl_records, split_records  # noqa: E402
 from lib.iterate_entry import (  # noqa: E402
     find_entry_by_run_id,
     read_iterate_entries,
@@ -203,20 +204,22 @@ def _committed_blob_has_event(content: str, commit_hash: str, run_id: str) -> bo
     """True iff ``content`` (a committed events.jsonl blob) carries a matching
     ``work_completed`` event — by ``adr_id == run_id`` (primary) or
     ``commit == commit_hash`` (fallback)."""
+    # Shared record-boundary SSoT (iterate-2026-07-19-…-readers). This is the F11
+    # ``check_events_has_commit`` ORACLE and its failure was INVERTED: a
+    # ``work_completed`` SECOND on a concatenated line read as absent, so F11
+    # FAILED FINALIZATION for a correctly-recorded run. Splits per line (a blob).
     for line in content.splitlines():
         line = line.strip()
         if not line:
             continue
-        try:
-            evt = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if not isinstance(evt, dict) or evt.get("type") != "work_completed":
-            continue
-        if run_id and evt.get("adr_id") == run_id:
-            return True
-        if commit_hash and str(evt.get("commit", "") or "") == commit_hash:
-            return True
+        records, _remainder = split_records(line)
+        for evt in records:
+            if evt.get("type") != "work_completed":
+                continue
+            if run_id and evt.get("adr_id") == run_id:
+                return True
+            if commit_hash and str(evt.get("commit", "") or "") == commit_hash:
+                return True
     return False
 
 
@@ -851,14 +854,12 @@ def _find_work_event_by_commit(project_root: Path, commit_hash: str) -> dict | N
     events_path = resolve_events_path(project_root)
     if not events_path.exists():
         return None
-    for line in events_path.read_text(encoding="utf-8", errors="ignore").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            evt = json.loads(line)
-        except json.JSONDecodeError:
-            continue
+    # Shared SSoT; the old parse had no ``isinstance`` guard (scalar -> crash).
+    try:
+        records = read_jsonl_records(events_path).records
+    except OSError:
+        return None
+    for evt in records:
         if evt.get("type") == "work_completed" and evt.get("commit") == commit_hash:
             return evt
     return None
@@ -886,14 +887,13 @@ def _find_work_event_by_run_id(project_root: Path, run_id: str) -> dict | None:
     if not events_path.exists():
         return None
     matched: dict | None = None
-    for line in events_path.read_text(encoding="utf-8", errors="ignore").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            evt = json.loads(line)
-        except json.JSONDecodeError:
-            continue
+    # Shared SSoT — the THIRD site here, adjacent and identical to the other two;
+    # converting only the reviewed two would repeat this bug's own root cause.
+    try:
+        records = read_jsonl_records(events_path).records
+    except OSError:
+        return None
+    for evt in records:
         if evt.get("type") != "work_completed":
             continue
         if evt.get("adr_id") == run_id:

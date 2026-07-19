@@ -1,0 +1,1 @@
+Four latent crash paths in the event-log readers: a bare JSON scalar line raised `AttributeError` in `events_log` and the `iterate_checks` lookups, and undecodable bytes raised `UnicodeDecodeError` past an `except OSError` that could never catch it.

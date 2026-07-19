@@ -1,0 +1,1 @@
+Event-log readers no longer discard records that share one physical line. Eleven readers — the compliance change-history collector, the Group B/D audits, FR-traceability backfill, boundary-coverage reporting and the F11 verifiers — now delegate record-boundary parsing to the shared SSoT, so a `work_completed` that is present on disk stops reading as absent.

@@ -1,92 +1,168 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-19-compliance-prework",
+    "run_id": "iterate-2026-07-19-events-record-boundary-readers",
     "date": "2026-07-19",
     "unit": {
-      "status": "pass",
-      "note": "F0 full suite GREEN — 18 units, 1.7 min."
+      "status": "passed",
+      "passed": 4636,
+      "total": 4636
     },
     "integration": {
-      "status": "pass",
-      "note": "covered by the F0 suite"
+      "status": "passed",
+      "passed": 290,
+      "total": 290
     },
     "pgtap": {
-      "status": "n/a",
-      "note": "no database"
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "e2e": {
-      "status": "n/a",
-      "note": "no runtime surface: a baseline JSON entry and a documentation line"
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "design_fidelity": {
-      "status": "n/a",
-      "note": "no UI"
+      "status": "not_run"
     },
     "smoke": {
-      "status": "n/a",
-      "note": "no server"
+      "status": "not_run"
     },
     "degraded": [
-      {
-        "condition": "Group H2 still reports one entry",
-        "reason": "shared/scripts/tools/verifiers/common.py is held at its recorded 771 instead of being tightened to 766. The in-flight iterate events-record-boundary-readers takes that file to 768, so tightening it here would block that PR on the anti-ratchet. Deliberate; it tightens once that work lands."
-      },
-      {
-        "condition": "Compliance D/D1 and D/D3 (FR-01.15) are NOT addressed",
-        "reason": "Both say FR-01.15 was promised via new_frs and never reaffirmed by a later event. The only way to clear them from this iterate would be to declare affected_frs: [FR-01.15] — which would be FALSE, because this change does not touch the cross-repo output contract. The findings are telling the truth and must clear when real work touches that requirement, not by an accurate-looking declaration."
-      },
-      {
-        "condition": "complexity declared small, classifier said medium",
-        "reason": "The classifier's own scope signal is 'trivial'; 'medium' comes from the history prior, not from this change. Two files, no code path, no behaviour. Recorded because a downgrade must never be silent — note that it dodges no gate here: the cross-layer gate has nothing to evaluate on a diff with no FR or spec delta."
-      }
+      "RESOLVED at F11. F0 ran RED on ONE pre-existing FOREIGN failure - test_architecture_md_reflects_arch_impact flagged a decision-drop belonging to iterate-2026-07-18-fr-existence-gate, because gitignored decision-drops resolve from the MAIN root and a concurrent iterate's drop reddens this worktree. It was inherited, not introduced, and CI never saw it (.gitignore:173). The F11 merge of origin/main brought that iterate's documentation in, and the post-merge suite is fully green (4636 passed, 0 failed). Recorded rather than deleted so the F0 result stays auditable.",
+      "SCOPE IS DELIBERATELY INCOMPLETE - the defect class is NOT closed. The brief enumerated six read sites; Stage-2 code review found a 7th and 8th and pointed at the verifier package; an exhaustive sweep found the rest. ELEVEN are fixed here, FIVE remain live on the pre-fix idiom (adopt/validate_adoption, grade/routing, phase_quality/_resolution, verifiers/adopt_compliance, run/observability). Filed as trg-360e494f with exact locations. Deferred to keep the diff reviewable, not because they are believed harmless - and note the enumeration was already wrong twice, at six and at eight.",
+      "The predecessor's stated reachability mechanism (union merge CREATES a concatenated line by joining an unterminated blob to the next side) was NOT reproducible on git 2.54 across five scenarios - git tracks the missing newline as a diff property and reconciles it. The verified mechanism is that union merge PROPAGATES an existing concatenation into main. The fix is unchanged; only the justification is corrected. Pinned in BOTH directions by the integration test so the discredited claim cannot silently return.",
+      "finalized_run_ids' corrupt policy was left UNCHANGED against the advice of both external reviewers (each rated it HIGH). Widening None to cover unrecoverable fragments contradicts a pinned test (test_arch_drift_event_scope.test_finalized_run_ids_skips_corrupt_lines) and the function's documented contract, and is a policy change rather than record recovery. Filed as an open follow-up rather than settled inside a defect repair.",
+      "F0.5 FAILED on its first attempt (exit 3) and the failure was real: this iterate's own integration test used an in-process `from scripts.lib.collectors import ...` that is ambiguous between the repo-root `scripts/` and the compliance plugin's `scripts/` - the same ADR-045 collision class the iterate is about, one namespace level up. Fixed by running the tier-B readers as their own process, verified non-vacuous, re-run green. The gate caught a defect a green local suite had hidden.",
+      "The F6 commit was BLOCKED by the anti-ratchet pre-commit hook: appending the site-8 cases inline pushed test_boundary_coverage_report.py from 774 to 809. Resolved by extracting them to test_boundary_coverage_event_log.py, not by bumping the baseline. Separately, the F11 merge surfaced that upstream #408 had ratcheted iterate_checks.py to 1109; this branch's +7 comment lines breached it, so the comments were condensed back to exactly 1109 rather than raising the ceiling."
     ],
     "surface_verification": {
-      "surface": "none",
-      "tests_run": 0,
+      "surface": "cli",
+      "runner": "uv run python -m pytest integration-tests/test_events_record_boundary_merge_integration.py shared/tests/test_iterate_checks_record_boundary.py shared/tests/test_events_log_load_contexts.py shared/tests/test_events_reader_record_boundary.py -q",
       "exit_code": 0,
-      "justification": "No runtime surface. The diff is one entry set in shipwright_bloat_baseline.json plus one bullet in conventions.md. Verification is the Group H audit itself plus the two meta-tests that consume these artifacts."
+      "tests_run": 29,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-19-events-record-boundary-readers/surface_verification.json",
+      "note": "The FIRST F0.5 attempt failed (exit 3) and caught a real defect in this iterate's own integration test: an in-process `from scripts.lib.collectors import ...` was ambiguous between the repo-root `scripts/` and the compliance plugin's `scripts/` - the same ADR-045 collision class this iterate is about, one namespace level up. Fixed by running the tier-B readers as their own process (the production shape, mirroring test_fold_map_e2e), verified non-vacuous, then re-run green."
     },
     "test_completeness": {
       "status": "complete",
-      "complexity": "small",
-      "behaviors": [
-        {
-          "behavior": "Four files that drifted over the 300-line limit are registered in the baseline, so Group H1 passes and the anti-ratchet is armed on them",
-          "disposition": "tested",
-          "evidence": "group_h.run() → H1 pass: 'all 156 oversize file(s) are listed in baseline'"
-        },
-        {
-          "behavior": "Nine baseline entries whose recorded size was looser than the file are tightened to the real count (ratchet down only, never up)",
-          "disposition": "tested",
-          "evidence": "group_h.run() → H2 residual is 1 entry, deliberately held (see below)"
-        },
-        {
-          "behavior": "The one entry an in-flight iterate would grow past is NOT tightened",
-          "disposition": "tested",
-          "evidence": "measured the events-record-boundary worktree: common.py is 768 there vs the 766 a tightening would pin — held at 771. group_d shrinks to 449, so tightening it to 464 is safe and was applied."
-        },
-        {
-          "behavior": "REQ-0's arch-impact drop has its obliged conventions.md bullet, so the routing check passes",
-          "disposition": "tested",
-          "evidence": "test_architecture_md_reflects_arch_impact.py — 5 passed (was failing)"
-        },
-        {
-          "behavior": "The new conventions.md entry is inside the one-line budget",
-          "disposition": "tested",
-          "evidence": "test_agent_doc_entry_rules.py — 13 passed (535 chars ≤ 600)"
-        },
-        {
-          "behavior": "No product behaviour changes",
-          "disposition": "tested",
-          "evidence": "F0 full suite GREEN, 18 units, 1.7 min; ruff clean; diff is one JSON baseline + one documentation line"
-        }
-      ],
       "counts": {
-        "total": 6,
-        "tested": 6,
+        "total": 18,
+        "tested": 18,
         "untestable": 0,
         "untested_testable": 0
-      }
+      },
+      "behaviors": [
+        {
+          "behavior": "latest_event_dt recovers all records from a concatenated line",
+          "ac": "AC1",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_reader_record_boundary.py::test_latest_event_dt_recovers_both_records_from_a_concatenated_line"
+        },
+        {
+          "behavior": "finalized_run_ids recovers all run_ids from a concatenated line",
+          "ac": "AC2",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_reader_record_boundary.py::test_finalized_run_ids_recovers_both_records_from_a_concatenated_line"
+        },
+        {
+          "behavior": "finalized_run_ids keeps its pre-existing fragment policy (skip the fragment, keep what decoded; None reserved for absent/unreadable)",
+          "ac": "AC2",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_reader_record_boundary.py::test_finalized_run_ids_skips_a_fragment_and_keeps_what_decoded"
+        },
+        {
+          "behavior": "verifiers.read_events_jsonl recovers records AND preserves both G5 properties (literal path, silent on corruption)",
+          "ac": "AC3",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_reader_record_boundary.py::test_read_events_jsonl_stays_silent_on_corruption + ::test_read_events_jsonl_reads_the_literal_path_without_worktree_redirect"
+        },
+        {
+          "behavior": "change_history recovers, keeps warning, does not echo raw event data, releases the file handle",
+          "ac": "AC4",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_event_log_record_boundary.py::test_change_history_recovers_both_records + ::test_change_history_releases_the_file_handle"
+        },
+        {
+          "behavior": "group_b/group_d recover, preserve None-on-absent, and stay SILENT",
+          "ac": "AC5",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_event_log_record_boundary.py::test_group_loaders_stay_silent_on_corruption"
+        },
+        {
+          "behavior": "recovery is partial, never all-or-nothing",
+          "ac": "AC6",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_reader_record_boundary.py::test_recovery_is_partial_not_all_or_nothing"
+        },
+        {
+          "behavior": "INTEGRATION: a real union merge PROPAGATES a concatenated line and does NOT create one; every reader then sees all runs",
+          "ac": "AC7",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_events_record_boundary_merge_integration.py (3 cases, incl. both mechanism directions)",
+          "category": "integration"
+        },
+        {
+          "behavior": "three latent uncaught crashes in events_log (bare scalar; undecodable bytes in both functions)",
+          "ac": "AC8",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_reader_record_boundary.py::test_latest_event_dt_does_not_crash_on_a_bare_scalar_line + ::test_readers_do_not_crash_on_undecodable_bytes"
+        },
+        {
+          "behavior": "Tier-B loaders resolve jsonl_records to the SHARED module, through the real audit entry points",
+          "ac": "AC9",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_event_log_record_boundary.py::test_audit_loader_resolves_the_shared_module_not_a_plugin_local_copy + ::test_group_modules_import_through_their_real_entry_point_path"
+        },
+        {
+          "behavior": "every converted reader returns only JSON objects (the non-dict crash class)",
+          "ac": "AC10",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_event_log_record_boundary.py::test_group_loaders_skip_a_bare_scalar_line + shared/tests/test_events_reader_record_boundary.py::test_read_events_jsonl_skips_a_bare_scalar_line"
+        },
+        {
+          "behavior": "load_events returns None on OSError, not only on absence",
+          "ac": "AC11",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_event_log_record_boundary.py::test_group_loaders_return_none_on_an_unreadable_log"
+        },
+        {
+          "behavior": "change_history warns for a bare scalar line (widened unrecoverable set at a site that already warns)",
+          "ac": "AC12",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_event_log_record_boundary.py::test_change_history_warns_for_a_bare_scalar_line"
+        },
+        {
+          "behavior": "backfill_scan recovers the commit -> affected_frs map (traceability surface)",
+          "ac": "AC13",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_reader_record_boundary.py::test_backfill_scan_recovers_fr_links_from_a_concatenated_line"
+        },
+        {
+          "behavior": "boundary_coverage_report recovers records and returns only objects",
+          "ac": "AC14",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_load_events_recovers_records_sharing_one_physical_line"
+        },
+        {
+          "behavior": "events_log import contract: three load contexts, no sys.modules pollution, per-copy sentinel key, ImportError-not-OSError on a missing sibling",
+          "ac": "AC15",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_log_load_contexts.py (3 cases; both hardening behaviours verified non-vacuous by removing them)"
+        },
+        {
+          "behavior": "F11 check_events_has_commit oracle finds an event that is SECOND on a concatenated line, and still reports genuine absence",
+          "ac": "AC16",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_iterate_checks_record_boundary.py::test_committed_blob_finds_an_event_that_is_second_on_a_line + ::test_committed_blob_still_reports_absence_for_an_unrelated_run"
+        },
+        {
+          "behavior": "iterate_checks on-disk lookups recover a second record and no longer crash on a bare scalar",
+          "ac": "AC17",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_iterate_checks_record_boundary.py::test_find_work_event_by_run_id_recovers_a_second_record + ::test_on_disk_lookups_do_not_crash_on_a_bare_scalar_line"
+        }
+      ]
     }
   },
   "coverage": {

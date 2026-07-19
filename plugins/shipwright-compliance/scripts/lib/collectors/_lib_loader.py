@@ -47,13 +47,21 @@ def load_shared_lib(name: str):
     sys.path.insert(0, shared)
     try:
         # `name` is always a hardcoded module identifier from first-party callers. The
-        # ACTUAL fixed set for THIS loader is three: requirement_model, fr_tag_grammar,
-        # fr_fold_map (the collector package). The audit groups' drift_parsers /
-        # bloat_baseline / events_log / … go through the unrelated
+        # ACTUAL fixed set for THIS loader is four: requirement_model, fr_tag_grammar,
+        # fr_fold_map and jsonl_records (the collector package). The audit groups'
+        # drift_parsers / bloat_baseline / events_log / … go through the unrelated
         # `audit_adapters.load_shared_lib`, which loads by file location under a sentinel
         # name and never had the `lib`-precedence problem. Keep them there: this loader
         # RESTORES sys.path on exit, so a module that mutates sys.path at import time
         # (bloat_baseline does) would silently lose that insertion here.
+        #
+        # `jsonl_records` (added iterate-2026-07-19-…-readers, for
+        # `change_history._read_event_log`) is safe under that same rule BECAUSE it is a
+        # neutral leaf: it imports json/dataclasses/pathlib only and mutates no sys.path,
+        # so the restore-on-exit cannot strand it. The audit-side callers of the very
+        # same shared module still go through `audit_adapters` — see
+        # `scripts/audit/_events_read.py` — which keeps this split intact rather than
+        # blurring it.
         # No untrusted input reaches it, and the f-string is
         # confined to the first-party ``lib.*`` namespace. import_module by package
         # name (not spec_from_file_location) is required so shared modules' relative
