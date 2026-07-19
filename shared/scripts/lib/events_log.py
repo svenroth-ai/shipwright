@@ -45,9 +45,72 @@ pins the two to the same answer; both resolve to the per-tree
 
 from __future__ import annotations
 
-import json
 from datetime import datetime, timezone
 from pathlib import Path
+
+# Record-boundary SSoT, imported to survive THREE load contexts (each verified
+# empirically; full rationale in the iterate spec's Mini-plan, AC15):
+#
+#   1. package member ``lib.events_log`` — relative import works.
+#   2. by file location under a sentinel name (``audit_adapters.load_shared_lib``,
+#      Group F) — no parent package.
+#   3. flat, ``shared/scripts/lib`` on sys.path (``backfill_test_links.py`` ->
+#      ``backfill_scan`` -> flat ``from events_log import …``); no package either.
+#
+# Contexts 2+3 share the by-path fallback. Two by-NAME fallbacks were tried and
+# both broke production: ``from lib.jsonl_records`` binds ``sys.modules['lib']``
+# to shared during the sentinel exec (``load_shared_lib`` never restores it, so
+# later compliance-local ``from lib.X`` raises — the same trap
+# ``resolve_main_repo_root`` below documents), and ``from jsonl_records`` needs
+# ``shared/scripts/lib`` itself on sys.path, which no loader inserts, taking the
+# F5 detective dark. By-path touches no namespace and reads no sys.path state, so
+# it can neither pollute a caller nor go dark — and it resolves COPY-LOCALLY, so
+# a plugin-cache copy binds its own sibling instead of reaching into the repo.
+#
+# ONE SOURCE FILE, SEVERAL RUNTIME OBJECTS: this object differs from
+# ``lib.jsonl_records``, ``shared.scripts.lib.jsonl_records`` and
+# ``audit_adapters``' copy. Consumers duck-type, so that is safe — but
+# ``isinstance(x, RecordRead)`` across the boundary is silently False.
+try:
+    from .jsonl_records import read_jsonl_records
+except ImportError:  # contexts 2 + 3 — see above.
+    import hashlib as _hashlib
+    import importlib.util as _importlib_util
+    import sys as _sys
+
+    _jr_path = Path(__file__).resolve().parent / "jsonl_records.py"
+    # Key the cache on the resolved DIRECTORY, not on a bare constant: two copies
+    # of this file in one process (worktree + plugin cache — the very drift the
+    # copy-local resolution above guards) would otherwise share the first copy's
+    # parser under one sentinel name.
+    _JR_SENTINEL = "_shipwright_events_log_jsonl_records_" + _hashlib.sha256(
+        str(_jr_path.parent).encode("utf-8")
+    ).hexdigest()[:12]
+    _jr_mod = _sys.modules.get(_JR_SENTINEL)
+    if _jr_mod is None:
+        # `.is_file()` is the REAL existence check: `spec_from_file_location`
+        # does not stat, so a missing file still yields a valid spec with a
+        # SourceFileLoader and `exec_module` would raise FileNotFoundError — an
+        # OSError escaping this `except ImportError` handler, invisible to
+        # callers that guard the import with `except ImportError`.
+        if not _jr_path.is_file():
+            raise ImportError(f"cannot locate the shared record-boundary leaf: {_jr_path}")
+        _jr_spec = _importlib_util.spec_from_file_location(_JR_SENTINEL, _jr_path)
+        if _jr_spec is None or _jr_spec.loader is None:  # pragma: no cover - defensive
+            raise ImportError(f"cannot load a spec for {_jr_path}")
+        _jr_mod = _importlib_util.module_from_spec(_jr_spec)
+        # Register BEFORE exec_module: `jsonl_records` defines @dataclass types,
+        # and stdlib `dataclasses` resolves `cls.__module__` through sys.modules
+        # at CLASS-CREATION time. Without this the exec dies with
+        # "'NoneType' object has no attribute '__dict__'". The identical
+        # requirement is documented in audit_adapters.load_shared_lib.
+        _sys.modules[_JR_SENTINEL] = _jr_mod
+        try:
+            _jr_spec.loader.exec_module(_jr_mod)
+        except Exception:
+            _sys.modules.pop(_JR_SENTINEL, None)
+            raise
+    read_jsonl_records = _jr_mod.read_jsonl_records
 
 EVENT_FILE = "shipwright_events.jsonl"
 
@@ -163,36 +226,33 @@ def latest_event_dt(project_root: Path | str) -> datetime | None:
 
     latest: datetime | None = None
     try:
-        with path.open("r", encoding="utf-8") as fh:
-            for line in fh:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    event = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-                ts_raw = event.get("ts")
-                if not isinstance(ts_raw, str):
-                    continue
-                try:
-                    # `Z` suffix is ISO8601-valid but not accepted by
-                    # `fromisoformat` until Python 3.11. Normalise.
-                    normalised = ts_raw.replace("Z", "+00:00")
-                    dt = datetime.fromisoformat(normalised)
-                except ValueError:
-                    continue
-                # Coerce to UTC: naive datetimes are interpreted as UTC
-                # (the event-log convention); aware datetimes are
-                # converted via astimezone.
-                if dt.tzinfo is None:
-                    dt = dt.replace(tzinfo=timezone.utc)
-                else:
-                    dt = dt.astimezone(timezone.utc)
-                if latest is None or dt > latest:
-                    latest = dt
+        result = read_jsonl_records(path)
     except OSError:
         return None
+    # PARTIAL recovery is the right policy for THIS caller: the value drives a
+    # rendered "data as of" banner, so a stale-but-present timestamp beats a
+    # blank one, and skipping corrupt input silently is already the documented
+    # contract above. `finalized_run_ids` deliberately differs — see there.
+    for event in result.records:
+        ts_raw = event.get("ts")
+        if not isinstance(ts_raw, str):
+            continue
+        try:
+            # `Z` suffix is ISO8601-valid but not accepted by
+            # `fromisoformat` until Python 3.11. Normalise.
+            normalised = ts_raw.replace("Z", "+00:00")
+            dt = datetime.fromisoformat(normalised)
+        except ValueError:
+            continue
+        # Coerce to UTC: naive datetimes are interpreted as UTC
+        # (the event-log convention); aware datetimes are
+        # converted via astimezone.
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        else:
+            dt = dt.astimezone(timezone.utc)
+        if latest is None or dt > latest:
+            latest = dt
 
     return latest
 
@@ -206,25 +266,35 @@ def finalized_run_ids(project_root: Path | str) -> set[str] | None:
     in the shared main-rooted ``decision-drops`` dir (documented only on the
     sibling's unmerged branch). ``None`` (ownership undeterminable) → callers
     fail open to whole-set checking (conservative for a drift gate: never weaker,
-    never crash-on-read). Existing-but-empty → empty set; corrupt/blank skipped.
+    never crash-on-read). Existing-but-empty → empty set; blank lines skipped.
+
+    Concatenated records are RECOVERED (iterate-2026-07-19-…-readers): a
+    union-merge-joined line used to yield the EMPTY SET here — not ``None`` —
+    which reads as the confident claim "this tree finalized no runs" and scopes
+    the drift gate to nothing. A fail-open gate failing open by accident.
+
+    An unrecoverable FRAGMENT is still skipped, and the run_ids that did decode
+    are still returned. That asymmetry is deliberate and pre-dates this change:
+    ``None`` is reserved for absent-or-unreadable, and "one bad row must not
+    take down the audit" is the documented contract (pinned by
+    ``test_arch_drift_event_scope.test_finalized_run_ids_skips_corrupt_lines``).
+    Widening ``None`` to cover fragments was considered during external review
+    and REJECTED here as a policy change riding along in a defect repair — it
+    belongs in its own iterate, reasoned about on its own terms.
     """
     path = resolve_events_path(project_root)
     if not path.exists():
         return None
-    run_ids: set[str] = set()
     try:
-        with path.open("r", encoding="utf-8") as fh:
-            for line in fh:
-                try:
-                    event = json.loads(line)
-                except json.JSONDecodeError:
-                    continue  # corrupt or blank line
-                if not isinstance(event, dict):
-                    continue
-                for key in ("adr_id", "run_id"):
-                    val = event.get(key)
-                    if isinstance(val, str) and val:
-                        run_ids.add(val)
+        result = read_jsonl_records(path)
     except OSError:
         return None  # unreadable → undeterminable, same as absent → fail open
+    run_ids: set[str] = set()
+    # `read_jsonl_records` yields only JSON objects, so the historical
+    # `isinstance(event, dict)` guard is now structurally guaranteed.
+    for event in result.records:
+        for key in ("adr_id", "run_id"):
+            val = event.get(key)
+            if isinstance(val, str) and val:
+                run_ids.add(val)
     return run_ids

@@ -1,42 +1,44 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-18-accepted-risk-alert-convergence"
+run_id: "iterate-2026-07-19-events-record-boundary-readers"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-18T22:36:05.056466+00:00"
+reason: "iterate: event-log record-boundary recovery across the audit + traceability read path"
+timestamp: "2026-07-19T07:12:07.667826+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-18 22:36:05 UTC
+> Auto-generated 2026-07-19 07:12:07 UTC
 
 ## Session Info
 
-- **Session ID**: 1a5c5f62-8d5c-486b-aeca-6de1d4e6d619
-- **Timestamp**: 2026-07-18 22:36:05 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: 605b268a-5de5-46b1-851b-548fd925ee1d
+- **Timestamp**: 2026-07-19 07:12:07 UTC
+- **Reason**: iterate: event-log record-boundary recovery across the audit + traceability read path
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-18-accepted-risk-alert-convergence
-- **Date**: 2026-07-18T22:18:10.715526Z
-- **Type**: change
+- **Run ID**: iterate-2026-07-19-events-record-boundary-readers
+- **Date**: 2026-07-19T07:12:01.751274Z
+- **Type**: bug
 - **Complexity**: medium
-- **Branch**: iterate/accepted-risk-alert-convergence
-- **ADR**: iterate-2026-07-18-accepted-risk-alert-convergence
+- **Branch**: iterate/events-record-boundary-readers
+- **ADR**: iterate-2026-07-19-events-record-boundary-readers
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-18-accepted-risk-alert-convergence.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-19-events-record-boundary-readers.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/accepted-risk-alert-convergence
-- **Run ID**: `iterate-2026-07-18-accepted-risk-alert-convergence`
-- **Spec**: .shipwright/planning/iterate/2026-07-18-accepted-risk-alert-convergence.md
+- **Branch**: iterate/events-record-boundary-readers
+- **Run ID**: iterate-2026-07-19-events-record-boundary-readers
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-19-events-record-boundary-readers.md
+- **Complexity**: medium
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -50,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/accepted-risk-alert-convergence
-- **Last Commit**: 8cfddce1 Merge remote-tracking branch 'origin/main' into iterate/accepted-risk-alert-convergence
+- **Branch**: iterate/events-record-boundary-readers
+- **Last Commit**: 443268d6 chore(triage): sweep 5 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -67,17 +69,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-144556e6 | grade_snapshot | — | 2026-07-19 |
+| evt-50e902ef | work_completed | iterate (iterate: event-log record-boundary recovery across the audit + traceability read path) | 2026-07-19 |
+| evt-6a67eebe | grade_snapshot | — | 2026-07-18 |
 | evt-f39eefda | grade_snapshot | — | 2026-07-18 |
 | evt-76b4cd89 | grade_snapshot | — | 2026-07-18 |
-| evt-66ae4d09 | grade_snapshot | — | 2026-07-18 |
-| evt-9726e6a6 | work_completed | iterate (Record-boundary recovery + newline-termination guard on shipwright_events.jsonl: record_event.append_event and append_event_idempotent probe ends_without_newline before appending, lib/config.read_events delegates to read_jsonl_records so a concatenated line yields all its records, and the lock-free adopt event_seeder carries a documented duplicate probe (ADR-045 blocks importing the shared leaf). Extends the PR #399 triage contract to the audit trail.) | 2026-07-18 |
-| evt-6878c083 | grade_snapshot | — | 2026-07-18 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 333
-- **Last iterate**: change — Record-boundary recovery + newline-termination guard on shipwright_events.jsonl: record_event.append_event and append_event_idempotent probe ends_without_newline before appending, lib/config.read_events delegates to read_jsonl_records so a concatenated line yields all its records, and the lock-free adopt event_seeder carries a documented duplicate probe (ADR-045 blocks importing the shared leaf). Extends the PR #399 triage contract to the audit trail. (2026-07-18)
+- **Total work events**: 334
+- **Last iterate**: change — iterate: event-log record-boundary recovery across the audit + traceability read path (2026-07-19)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

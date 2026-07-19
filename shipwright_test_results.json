@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-18-accepted-risk-alert-convergence",
+    "run_id": "iterate-2026-07-19-events-record-boundary-readers",
     "date": "2026-07-19",
     "unit": {
       "status": "passed",
-      "passed": 4563,
-      "total": 4564
+      "passed": 4607,
+      "total": 4608
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 290,
+      "total": 290
     },
     "pgtap": {
       "status": "not_run",
@@ -29,111 +29,137 @@
       "status": "not_run"
     },
     "degraded": [
-      "F0 suite RED on ONE pre-existing, foreign failure: test_architecture_md_reflects_arch_impact flags a decision-drop belonging to iterate-2026-07-18-fr-existence-gate (gitignored drops resolve from the MAIN root, so a concurrent iterate's drop reddens this worktree). The run_id in the failure is not this run's - inherited, not introduced.",
-      "The triage half of the convergence has ZERO live instances in this repo (0 source=\"security\" items), so it is proven on fixtures, not on live data. Its only live reachability is the pre-acceptance backlog, because ingest-time suppression means an accepted rule normally never becomes a triage item at all. Stated rather than implied by the passing tests.",
-      "The register currently holds 0 github-dismissal entries, so the live `converge` run exercised the read/pagination/identity path against 51 real alerts but matched nothing. The mutation path is proven by fixtures plus the live 422 permission probe, not by a real dismissal.",
-      "External review (GPT-5.4) returned 'block' with 3 real defects: an absent register short-circuited reopen (marked alerts stayed suppressed forever), overlapping entries double-claimed an alert, and an unreadable triage store rendered as 'converged' - the last actively blessed by a test in the first draft. All three are fixed and pinned; recorded because they calibrate how far a self-authored negative-control suite reaches."
+      "F0 suite RED on ONE pre-existing, FOREIGN failure: test_architecture_md_reflects_arch_impact flags a decision-drop belonging to iterate-2026-07-18-fr-existence-gate. Gitignored decision-drops resolve from the MAIN root, so a concurrent iterate's drop reddens this worktree. The run_id in the failure is not this run's - inherited, not introduced. CI never sees it (.gitignore:173 excludes the decision-drops dir).",
+      "SCOPE IS DELIBERATELY INCOMPLETE - the defect class is NOT closed. The brief enumerated six read sites; Stage-2 code review found a 7th and 8th and pointed at the verifier package; an exhaustive sweep found the rest. ELEVEN are fixed here, FIVE remain live on the pre-fix idiom (adopt/validate_adoption, grade/routing, phase_quality/_resolution, verifiers/adopt_compliance, run/observability). Filed as trg-360e494f with exact locations. Deferred to keep the diff reviewable, not because they are believed harmless - and note the enumeration was already wrong twice, at six and at eight.",
+      "The predecessor's stated reachability mechanism (union merge CREATES a concatenated line by joining an unterminated blob to the next side) was NOT reproducible on git 2.54 across five scenarios - git tracks the missing newline as a diff property and reconciles it. The verified mechanism is that union merge PROPAGATES an existing concatenation into main. The fix is unchanged; only the justification is corrected. Pinned in BOTH directions by the integration test so the discredited claim cannot silently return.",
+      "finalized_run_ids' corrupt policy was left UNCHANGED against the advice of both external reviewers (each rated it HIGH). Widening None to cover unrecoverable fragments contradicts a pinned test (test_arch_drift_event_scope.test_finalized_run_ids_skips_corrupt_lines) and the function's documented contract, and is a policy change rather than record recovery. Filed as an open follow-up rather than settled inside a defect repair."
     ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --with pytest --with pytest-mock pytest shared/tests/test_alert_match.py shared/tests/test_accepted_risk_convergence.py shared/tests/test_github_code_scanning.py shared/tests/test_accepted_risks_converge_cli.py -q",
+      "runner": "uv run python -m pytest integration-tests/test_events_record_boundary_merge_integration.py shared/tests/test_iterate_checks_record_boundary.py shared/tests/test_events_log_load_contexts.py shared/tests/test_events_reader_record_boundary.py -q",
       "exit_code": 0,
-      "tests_run": 124,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\accepted-risk-alert-convergence\\.shipwright\\runs\\iterate-2026-07-18-accepted-risk-alert-convergence\\surface_verification.log",
-      "timestamp": "2026-07-18T22:26:38.157Z",
-      "attempts": 1
+      "tests_run": 29,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-19-events-record-boundary-readers/surface_verification.json",
+      "note": "The FIRST F0.5 attempt failed (exit 3) and caught a real defect in this iterate's own integration test: an in-process `from scripts.lib.collectors import ...` was ambiguous between the repo-root `scripts/` and the compliance plugin's `scripts/` - the same ADR-045 collision class this iterate is about, one namespace level up. Fixed by running the tier-B readers as their own process (the production shape, mirroring test_fold_map_e2e), verified non-vacuous, then re-run green."
     },
     "test_completeness": {
       "status": "complete",
-      "behaviors": [
-        {
-          "behavior": "Alert payload -> match key; every missing key component yields None, never a partial",
-          "disposition": "tested",
-          "evidence": "test_alert_match.py::TestAlertFromApi - 11 passed"
-        },
-        {
-          "behavior": "Line number is excluded from the match key (it drifts on every edit above the finding)",
-          "disposition": "tested",
-          "evidence": "test_alert_match.py::test_line_number_is_not_part_of_the_key"
-        },
-        {
-          "behavior": "Provenance marker round-trips; an unmarked/malformed comment reads as human",
-          "disposition": "tested",
-          "evidence": "test_alert_match.py::TestProvenance - 7 passed"
-        },
-        {
-          "behavior": "Dismissal comment carries statement+ref+expiry; truncation never eats the marker",
-          "disposition": "tested",
-          "evidence": "test_alert_match.py::TestProvenance - 2 passed"
-        },
-        {
-          "behavior": "Scope validation: tool required, breadth declared, paths/rule-wide mutually exclusive, reason vocabulary",
-          "disposition": "tested",
-          "evidence": "test_alert_match.py::TestScopeProblem - 12 passed"
-        },
-        {
-          "behavior": "Matching on (tool, rule, path); rule-wide; cross-tool isolation; ambiguous entry matches nothing",
-          "disposition": "tested",
-          "evidence": "test_alert_match.py::TestEntryMatches - 8 passed"
-        },
-        {
-          "behavior": "Triage dedup-key parse incl. colon-bearing check_id; unparseable key matches nothing",
-          "disposition": "tested",
-          "evidence": "test_alert_match.py::TestTriageItemKey - 11 passed"
-        },
-        {
-          "behavior": "Plan dispositions: dismiss / satisfied / human / reopen-on-expiry / reopen-on-removal / stale / ambiguous / expiry boundary",
-          "disposition": "tested",
-          "evidence": "test_accepted_risk_convergence.py::TestPlanConvergence - 14 passed"
-        },
-        {
-          "behavior": "No backing entry => never dismissed; non-github targets never reach the alert surface",
-          "disposition": "tested",
-          "evidence": "test_accepted_risk_convergence.py::TestPlanConvergence - 2 passed"
-        },
-        {
-          "behavior": "Triage surface: match, non-match, expired no-op, GC tokens registered and is_machine_churn true",
-          "disposition": "tested",
-          "evidence": "test_accepted_risk_convergence.py::TestTriageSurface - 4 passed"
-        },
-        {
-          "behavior": "Rendering: every disposition printed; untouched summarised; a clean plan renders nothing",
-          "disposition": "tested",
-          "evidence": "test_accepted_risk_convergence.py::TestRendering - 3 passed"
-        },
-        {
-          "behavior": "gh shell: slug validation (10 negative controls), pagination, None != [], PATCH bodies, failure surfaced, explicit UTF-8 decode",
-          "disposition": "tested",
-          "evidence": "test_accepted_risk_convergence.py::TestGhShell - 20 passed"
-        },
-        {
-          "behavior": "CLI: build_plan, identity abort, failed-listing abort, read-only vs --apply, failed mutation, dispatch, exit 2",
-          "disposition": "tested",
-          "evidence": "test_accepted_risks_converge_cli.py - 19 passed"
-        },
-        {
-          "behavior": "This repo's register: every github-dismissal entry resolvable + marked; converge absent from every workflow",
-          "disposition": "tested",
-          "evidence": "test_accepted_risks_converge_cli.py::TestThisRepoRegister - 3 passed"
-        },
-        {
-          "behavior": "Overlapping entries CONFLICT and neither acts; a lapse in one does not reopen what the other still covers",
-          "disposition": "tested",
-          "evidence": "test_accepted_risk_convergence.py::TestPlanConvergence - 2 passed (external review GPT #4)"
-        },
-        {
-          "behavior": "Absent vs unreadable triage store are distinct; an unreadable store blocks the converged claim end-to-end",
-          "disposition": "tested",
-          "evidence": "test_accepted_risks_converge_cli.py::TestTriageApply + TestCmdConverge - 4 passed (external review GPT #3)"
-        }
-      ],
       "counts": {
-        "testable": 16,
-        "tested": 16,
+        "total": 18,
+        "tested": 18,
         "untestable": 0,
         "untested_testable": 0
       },
-      "enumeration_basis": "Every behavior introduced or changed by this diff, grouped into 16 rows over 124 new tests. No 'untestable' rows: all logic here is offline and deterministic, with the gh boundary driven through a single monkeypatched _run seam. The one claim that cannot be asserted in a test - that the token may PATCH a code-scanning alert - is closed by live probe P1 (a 422 body-validation response proves authn+authz passed and mutates nothing), because the only test-shaped version overwrites a real alert comment. Line coverage of the four new modules is 100% (alert_match, alert_convergence, github_code_scanning, tools/accepted_risks_converge). Rows 15-16 were added in response to the external review, which found three real defects my own negative controls did not reach - all of the same family: a state that renders as converged when it is not."
+      "behaviors": [
+        {
+          "behavior": "latest_event_dt recovers all records from a concatenated line",
+          "ac": "AC1",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_reader_record_boundary.py::test_latest_event_dt_recovers_both_records_from_a_concatenated_line"
+        },
+        {
+          "behavior": "finalized_run_ids recovers all run_ids from a concatenated line",
+          "ac": "AC2",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_reader_record_boundary.py::test_finalized_run_ids_recovers_both_records_from_a_concatenated_line"
+        },
+        {
+          "behavior": "finalized_run_ids keeps its pre-existing fragment policy (skip the fragment, keep what decoded; None reserved for absent/unreadable)",
+          "ac": "AC2",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_reader_record_boundary.py::test_finalized_run_ids_skips_a_fragment_and_keeps_what_decoded"
+        },
+        {
+          "behavior": "verifiers.read_events_jsonl recovers records AND preserves both G5 properties (literal path, silent on corruption)",
+          "ac": "AC3",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_reader_record_boundary.py::test_read_events_jsonl_stays_silent_on_corruption + ::test_read_events_jsonl_reads_the_literal_path_without_worktree_redirect"
+        },
+        {
+          "behavior": "change_history recovers, keeps warning, does not echo raw event data, releases the file handle",
+          "ac": "AC4",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_event_log_record_boundary.py::test_change_history_recovers_both_records + ::test_change_history_releases_the_file_handle"
+        },
+        {
+          "behavior": "group_b/group_d recover, preserve None-on-absent, and stay SILENT",
+          "ac": "AC5",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_event_log_record_boundary.py::test_group_loaders_stay_silent_on_corruption"
+        },
+        {
+          "behavior": "recovery is partial, never all-or-nothing",
+          "ac": "AC6",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_reader_record_boundary.py::test_recovery_is_partial_not_all_or_nothing"
+        },
+        {
+          "behavior": "INTEGRATION: a real union merge PROPAGATES a concatenated line and does NOT create one; every reader then sees all runs",
+          "ac": "AC7",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_events_record_boundary_merge_integration.py (3 cases, incl. both mechanism directions)"
+        },
+        {
+          "behavior": "three latent uncaught crashes in events_log (bare scalar; undecodable bytes in both functions)",
+          "ac": "AC8",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_reader_record_boundary.py::test_latest_event_dt_does_not_crash_on_a_bare_scalar_line + ::test_readers_do_not_crash_on_undecodable_bytes"
+        },
+        {
+          "behavior": "Tier-B loaders resolve jsonl_records to the SHARED module, through the real audit entry points",
+          "ac": "AC9",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_event_log_record_boundary.py::test_audit_loader_resolves_the_shared_module_not_a_plugin_local_copy + ::test_group_modules_import_through_their_real_entry_point_path"
+        },
+        {
+          "behavior": "every converted reader returns only JSON objects (the non-dict crash class)",
+          "ac": "AC10",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_event_log_record_boundary.py::test_group_loaders_skip_a_bare_scalar_line + shared/tests/test_events_reader_record_boundary.py::test_read_events_jsonl_skips_a_bare_scalar_line"
+        },
+        {
+          "behavior": "load_events returns None on OSError, not only on absence",
+          "ac": "AC11",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_event_log_record_boundary.py::test_group_loaders_return_none_on_an_unreadable_log"
+        },
+        {
+          "behavior": "change_history warns for a bare scalar line (widened unrecoverable set at a site that already warns)",
+          "ac": "AC12",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_event_log_record_boundary.py::test_change_history_warns_for_a_bare_scalar_line"
+        },
+        {
+          "behavior": "backfill_scan recovers the commit -> affected_frs map (traceability surface)",
+          "ac": "AC13",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_reader_record_boundary.py::test_backfill_scan_recovers_fr_links_from_a_concatenated_line"
+        },
+        {
+          "behavior": "boundary_coverage_report recovers records and returns only objects",
+          "ac": "AC14",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_load_events_recovers_records_sharing_one_physical_line"
+        },
+        {
+          "behavior": "events_log import contract: three load contexts, no sys.modules pollution, per-copy sentinel key, ImportError-not-OSError on a missing sibling",
+          "ac": "AC15",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_log_load_contexts.py (3 cases; both hardening behaviours verified non-vacuous by removing them)"
+        },
+        {
+          "behavior": "F11 check_events_has_commit oracle finds an event that is SECOND on a concatenated line, and still reports genuine absence",
+          "ac": "AC16",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_iterate_checks_record_boundary.py::test_committed_blob_finds_an_event_that_is_second_on_a_line + ::test_committed_blob_still_reports_absence_for_an_unrelated_run"
+        },
+        {
+          "behavior": "iterate_checks on-disk lookups recover a second record and no longer crash on a bare scalar",
+          "ac": "AC17",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_iterate_checks_record_boundary.py::test_find_work_event_by_run_id_recovers_a_second_record + ::test_on_disk_lookups_do_not_crash_on_a_bare_scalar_line"
+        }
+      ]
     }
   },
   "coverage": {

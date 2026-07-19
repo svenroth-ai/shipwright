@@ -40,6 +40,7 @@ from typing import Iterable
 # owns the sys.path bootstrap; no path-walk or `sys.path.insert` here.
 # ---------------------------------------------------------------------------
 from shared.contracts.iterate import is_io_boundary_change  # noqa: E402
+from shared.scripts.lib.jsonl_records import read_jsonl_records  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -236,21 +237,20 @@ def scan_specs(project_root: Path) -> list[SpecBoundaries]:
 
 
 def _load_events(events_path: Path) -> list[dict]:
+    """Read the event log, recovering records that share one physical line.
+
+    Delegates to the shared record-boundary SSoT (iterate-2026-07-19-…-readers).
+    The previous line-at-a-time parse discarded EVERY record on a concatenated
+    line, and appended ``json.loads(line)`` with no ``isinstance`` guard, so a
+    bare JSON scalar entered the list as a non-dict and crashed the first
+    downstream ``.get()``. Only JSON objects are records.
+    """
     if not events_path.exists():
         return []
-    events: list[dict] = []
     try:
-        for line in events_path.read_text(encoding="utf-8", errors="replace").splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                events.append(json.loads(line))
-            except json.JSONDecodeError:
-                continue
+        return list(read_jsonl_records(events_path).records)
     except OSError:
         return []
-    return events
 
 
 def _spec_slug(spec_path: Path) -> str:

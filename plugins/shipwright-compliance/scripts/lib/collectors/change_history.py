@@ -10,12 +10,12 @@ Iterate Campaign B (B2): split out of ``data_collector.py``.
 
 from __future__ import annotations
 
-import json
 import re
 import subprocess
 import warnings
 from pathlib import Path
 
+from ._lib_loader import load_shared_lib
 from ._types import CommitEntry, TestRunEvent, WorkEvent
 
 
@@ -113,20 +113,34 @@ def _read_event_log(project_root: Path) -> list[dict]:
     ``project_root / EVENT_FILE`` join) so collection from inside a worktree
     reads the worktree's own committed copy — the same file the F5b producer
     wrote and F6 committed.
+
+    RECORD BOUNDARIES (iterate-2026-07-19-…-readers). Several records may share
+    one physical line: ``shipwright_events.jsonl`` carries ``merge=union``, union
+    merge is line-based, and so an ordinary merge of two worktrees joins an
+    unterminated blob's last line to the next side's first line. The previous
+    line-at-a-time parse discarded EVERY record on such a line, which on an
+    append-only audit trail makes a step that happened read as one that never
+    did. Recovery delegates to the shared SSoT ``lib/jsonl_records`` — reached
+    via ``load_shared_lib`` because a bare ``from lib import jsonl_records``
+    resolves to THIS plugin's own ``lib`` package and raises ImportError
+    (ADR-045).
+
+    The warning is kept (this site warns today) but reports only WHERE and HOW
+    MUCH — never the fragment text, which would echo raw event data into CI logs.
+    The old ``path.open(...)`` also leaked its file handle on every read; the
+    shared reader uses a context manager.
     """
     path = _resolve_events_path(project_root)
     if not path.exists():
         return []
-    events: list[dict] = []
-    for i, line in enumerate(path.open("r", encoding="utf-8")):
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            events.append(json.loads(line))
-        except json.JSONDecodeError:
-            warnings.warn(f"Corrupt event at line {i + 1} in {EVENT_FILE}, skipping")
-    return events
+    result = load_shared_lib("jsonl_records").read_jsonl_records(path)
+    for frag in result.corrupt:
+        # ASCII-only: surfaces on Windows cp1252 consoles.
+        warnings.warn(
+            f"Corrupt event at {EVENT_FILE}:{frag.line_no} "
+            f"({len(frag.text)} bytes unrecoverable), skipping that fragment"
+        )
+    return list(result.records)
 
 
 def _apply_amendments(events: list[dict]) -> list[dict]:

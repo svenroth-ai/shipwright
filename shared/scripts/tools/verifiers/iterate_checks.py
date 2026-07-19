@@ -40,6 +40,7 @@ from lib.architecture_doc import (  # noqa: E402
     scan_drops,
 )
 from lib.events_log import resolve_events_path, resolve_main_repo_root  # noqa: E402
+from lib.jsonl_records import read_jsonl_records, split_records  # noqa: E402
 from lib.iterate_entry import (  # noqa: E402
     find_entry_by_run_id,
     read_iterate_entries,
@@ -203,20 +204,25 @@ def _committed_blob_has_event(content: str, commit_hash: str, run_id: str) -> bo
     """True iff ``content`` (a committed events.jsonl blob) carries a matching
     ``work_completed`` event — by ``adr_id == run_id`` (primary) or
     ``commit == commit_hash`` (fallback)."""
+    # Record boundaries via the shared SSoT (iterate-2026-07-19-…-readers). This
+    # is the F11 ``check_events_has_commit`` ORACLE, so the failure was
+    # operator-facing and inverted: if the iterate's own ``work_completed`` was
+    # the SECOND record on a concatenated line, the line was skipped whole, the
+    # event read as absent, and F11 FAILED FINALIZATION for a run that had in
+    # fact recorded everything correctly. Takes a str blob (a committed
+    # ``git show`` payload), so it splits per line rather than reading a path.
     for line in content.splitlines():
         line = line.strip()
         if not line:
             continue
-        try:
-            evt = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if not isinstance(evt, dict) or evt.get("type") != "work_completed":
-            continue
-        if run_id and evt.get("adr_id") == run_id:
-            return True
-        if commit_hash and str(evt.get("commit", "") or "") == commit_hash:
-            return True
+        records, _remainder = split_records(line)
+        for evt in records:
+            if evt.get("type") != "work_completed":
+                continue
+            if run_id and evt.get("adr_id") == run_id:
+                return True
+            if commit_hash and str(evt.get("commit", "") or "") == commit_hash:
+                return True
     return False
 
 
@@ -851,14 +857,14 @@ def _find_work_event_by_commit(project_root: Path, commit_hash: str) -> dict | N
     events_path = resolve_events_path(project_root)
     if not events_path.exists():
         return None
-    for line in events_path.read_text(encoding="utf-8", errors="ignore").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            evt = json.loads(line)
-        except json.JSONDecodeError:
-            continue
+    # Shared record-boundary SSoT (iterate-2026-07-19-…-readers). The previous
+    # parse also had no ``isinstance`` guard, so a bare JSON scalar reached
+    # ``evt.get(...)`` and crashed; only objects are records.
+    try:
+        records = read_jsonl_records(events_path).records
+    except OSError:
+        return None
+    for evt in records:
         if evt.get("type") == "work_completed" and evt.get("commit") == commit_hash:
             return evt
     return None
@@ -886,14 +892,15 @@ def _find_work_event_by_run_id(project_root: Path, run_id: str) -> dict | None:
     if not events_path.exists():
         return None
     matched: dict | None = None
-    for line in events_path.read_text(encoding="utf-8", errors="ignore").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            evt = json.loads(line)
-        except json.JSONDecodeError:
-            continue
+    # Shared record-boundary SSoT (iterate-2026-07-19-…-readers) — the third
+    # site in this file, adjacent to and identical with the other two. Converting
+    # only the two that a review happened to name would reproduce this bug's own
+    # root cause: "the fix reached only the call sites that were rewritten."
+    try:
+        records = read_jsonl_records(events_path).records
+    except OSError:
+        return None
+    for evt in records:
         if evt.get("type") != "work_completed":
             continue
         if evt.get("adr_id") == run_id:

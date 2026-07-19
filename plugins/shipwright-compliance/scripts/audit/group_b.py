@@ -40,6 +40,7 @@ from scripts.audit.audit_adapters import (
     import_iterate12_checks,
 )
 from scripts.audit import git_log_scan
+from scripts.audit._events_read import load_events
 
 
 # ---------------------------------------------------------------------------
@@ -69,23 +70,11 @@ def _load_json(path: Path) -> dict | None:
     return data if isinstance(data, dict) else None
 
 
-def _load_events(project_root: Path) -> list[dict] | None:
-    path = project_root / "shipwright_events.jsonl"
-    if not path.exists():
-        return None
-    out: list[dict] = []
-    try:
-        for line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                out.append(json.loads(line))
-            except json.JSONDecodeError:
-                continue
-    except OSError:
-        return None
-    return out
+# Shared with Group D — one event-log read policy, record-boundary aware
+# (iterate-2026-07-19-…-readers). This was a byte-identical duplicate of
+# ``group_d._load_events``, and both dropped every record on a
+# union-merge-concatenated line.
+_load_events = load_events
 
 
 # ---------------------------------------------------------------------------

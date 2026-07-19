@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-07-18T22:18:10.805261+00:00
+Generated: 2026-07-19T07:12:01.841222+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -12,23 +12,23 @@ Scope: library
 
 | | Dimension | Signal | Anchor |
 |---|-----------|--------|--------|
-| ✅ | Requirement traceability | 14/15 FRs covered; 333/333 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
+| ✅ | Requirement traceability | 14/15 FRs covered; 334/334 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
 | ✅ | Test health | latest full suite 5936/5936 (2026-07-16) | automated tests pass (OpenSSF Scorecard) |
-| ✅ | Change traceability | 333/333 changes linked to a commit, ADR or test run | change provenance (SLSA) |
+| ✅ | Change traceability | 334/334 changes linked to a commit, ADR or test run | change provenance (SLSA) |
 | ⚠️ | Change reconciliation | 7/8 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
 | ✅ | Security | 0 open high/critical | no open high/critical vulns (NIST SSDF) |
-| ✅ | Size / maintainability discipline | ratchet delta -192 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
+| ✅ | Size / maintainability discipline | ratchet delta -152 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
 | ✅ | Dependency hygiene | 0 unresolved / 11 licenses; 0 copyleft | dependency license & risk (OWASP) |
 
 > 📊 **Test-Health · diff-coverage (Control-Grade input · target ≥80%):** not measured this session — per-PR signal; see the CI "Diff coverage" artifact.
 
-Verified from: `shipwright_events.jsonl (333 events, 2026-05-02 → 2026-07-18)`
+Verified from: `shipwright_events.jsonl (334 events, 2026-05-02 → 2026-07-19)`
 
 _Grade = importance-weighted average over the measurable dimensions (n/a excluded from the denominator), modeled on OpenSSF Scorecard. Age is neutral; only unreconciled change and net growth are control failures. Each Anchor names the open standard the dimension follows — see the guide's Control-Grade dimensions table._
 
 ## 🛡️ CI Security (fail-closed gate)
 
-Latest scan: **2026-07-18** · source `security.yml#29663835479` · critical-gate **✅ PASS**
+Latest scan: **2026-07-19** · source `security.yml#29676204080` · critical-gate **✅ PASS**
 
 | Severity | Count |
 |----------|-------|
@@ -54,9 +54,9 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Metric | Value | Status | Why warn? |
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
-| Work events (iterate) | 333 changes | INFO |  |
+| Work events (iterate) | 334 changes | INFO |  |
 | Recent changes traced to an FR | 2/30 (7%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
-| All unit tests passing | 5936/5936 | PASS | +18 change(s) since last full suite |
+| All unit tests passing | 5936/5936 | PASS | +19 change(s) since last full suite |
 | Architecture decisions | 327 ADRs | INFO |  |
 | Iterate tests passing | 46/58 testable changes tested | WARN | 12 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 11 packages | INFO |  |
@@ -64,12 +64,12 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Triage open | 9 open | WARN | 9 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit (grandfathered) | 123 | INFO |  |
 | Bloat in allowlist | 154 entries | INFO |  |
-| Bloat ratchet delta | -192 lines | PASS |  |
+| Bloat ratchet delta | -152 lines | PASS |  |
 
 ## Project Velocity
 
-- Iterate: 333 changes (2026-05-02 → 2026-07-18)
-- Last activity: 2026-07-18
+- Iterate: 334 changes (2026-05-02 → 2026-07-19)
+- Last activity: 2026-07-19
 
 ## External LLM Review Evidence
 

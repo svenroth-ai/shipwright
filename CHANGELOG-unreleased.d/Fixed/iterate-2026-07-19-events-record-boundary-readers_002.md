@@ -1,0 +1,1 @@
+The F11 `check_events_has_commit` gate no longer fails finalization for a correctly-recorded run. Its oracle skipped any physical line holding more than one record, so an iterate whose `work_completed` landed second on such a line read as never recorded.
