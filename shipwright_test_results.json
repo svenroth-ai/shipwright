@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-19-events-record-boundary-readers",
+    "run_id": "iterate-2026-07-19-one-discovery-function",
     "date": "2026-07-19",
     "unit": {
       "status": "passed",
-      "passed": 4636,
-      "total": 4636
+      "passed": 4666,
+      "total": 4666
     },
     "integration": {
       "status": "passed",
@@ -29,138 +29,162 @@
       "status": "not_run"
     },
     "degraded": [
-      "RESOLVED at F11. F0 ran RED on ONE pre-existing FOREIGN failure - test_architecture_md_reflects_arch_impact flagged a decision-drop belonging to iterate-2026-07-18-fr-existence-gate, because gitignored decision-drops resolve from the MAIN root and a concurrent iterate's drop reddens this worktree. It was inherited, not introduced, and CI never saw it (.gitignore:173). The F11 merge of origin/main brought that iterate's documentation in, and the post-merge suite is fully green (4636 passed, 0 failed). Recorded rather than deleted so the F0 result stays auditable.",
-      "SCOPE IS DELIBERATELY INCOMPLETE - the defect class is NOT closed. The brief enumerated six read sites; Stage-2 code review found a 7th and 8th and pointed at the verifier package; an exhaustive sweep found the rest. ELEVEN are fixed here, FIVE remain live on the pre-fix idiom (adopt/validate_adoption, grade/routing, phase_quality/_resolution, verifiers/adopt_compliance, run/observability). Filed as trg-360e494f with exact locations. Deferred to keep the diff reviewable, not because they are believed harmless - and note the enumeration was already wrong twice, at six and at eight.",
-      "The predecessor's stated reachability mechanism (union merge CREATES a concatenated line by joining an unterminated blob to the next side) was NOT reproducible on git 2.54 across five scenarios - git tracks the missing newline as a diff property and reconciles it. The verified mechanism is that union merge PROPAGATES an existing concatenation into main. The fix is unchanged; only the justification is corrected. Pinned in BOTH directions by the integration test so the discredited claim cannot silently return.",
-      "finalized_run_ids' corrupt policy was left UNCHANGED against the advice of both external reviewers (each rated it HIGH). Widening None to cover unrecoverable fragments contradicts a pinned test (test_arch_drift_event_scope.test_finalized_run_ids_skips_corrupt_lines) and the function's documented contract, and is a policy change rather than record recovery. Filed as an open follow-up rather than settled inside a defect repair.",
-      "F0.5 FAILED on its first attempt (exit 3) and the failure was real: this iterate's own integration test used an in-process `from scripts.lib.collectors import ...` that is ambiguous between the repo-root `scripts/` and the compliance plugin's `scripts/` - the same ADR-045 collision class the iterate is about, one namespace level up. Fixed by running the tier-B readers as their own process, verified non-vacuous, re-run green. The gate caught a defect a green local suite had hidden.",
-      "The F6 commit was BLOCKED by the anti-ratchet pre-commit hook: appending the site-8 cases inline pushed test_boundary_coverage_report.py from 774 to 809. Resolved by extracting them to test_boundary_coverage_event_log.py, not by bumping the baseline. Separately, the F11 merge surfaced that upstream #408 had ratcheted iterate_checks.py to 1109; this branch's +7 comment lines breached it, so the comments were condensed back to exactly 1109 rather than raising the ceiling."
+      "classify_complexity flagged risk_flag `touches_auth`, a PROSE false positive: the sub-iterate spec text names the `01-auth` corpus fixture split. No auth code is touched. `touches_io_boundary` IS genuine (golden.json). The diff-predicates in risk_detectors.py are authoritative and F11 recomputes.",
+      "The external CODE review returned only ONE usable leg. Gemini's response was a degenerate internal-monologue fragment ('if it ends, where is the sort? ...') rather than findings, so that leg produced no reviewable output. Its one substantive question -- whether setup_design_session still sorts -- is answered: `return sorted(specs)` is unchanged and simply sat outside the diff context. OpenAI's leg returned 2 findings, both dispositioned in the ADR. Recorded rather than re-rolled so the thin review coverage is visible.",
+      "The ADR-header cluster extraction into shared/scripts/lib/adr_headers.py was NOT in the sub-iterate scope. It was forced: the anti-ratchet pre-commit gate BLOCKED the commit because the mandatory ADR-045 loader pushed drift_parsers.py from 523 to 533, and the bloat-exception template refuses an exception unless the file is an honest Ousterhout 'deep module' -- drift_parsers is a five-cluster grab-bag, so the template's own instruction is 'split the file instead'. It removes a public import path from lib.drift_parsers with no compatibility shim; see the ADR for why a shim is technically impossible there.",
+      "spec_parser.py lands at EXACTLY its 350-line baseline, with zero headroom. The next line added to that file will block a commit. It is a genuine ceiling, not a near-miss that was rounded away.",
+      "Code review (ADR-029 Step 3.7) returned NOT CLEAR and the merge was held. One finding was FALSIFIED rather than fixed: a claimed ordering regression in read_top_level_spec rested on PurePath.__lt__ comparing a joined string, but it compares a PARTS LIST on 3.11.15/3.12/3.13, so sorting split dirs and sorting full spec.md paths are provably equivalent for a constant trailing filename. Verified on the repo interpreter across 4 proper-prefix pairs on both PurePosixPath and PureWindowsPath before declining the change. Its second-order point WAS valid and is fixed: no corpus fixture holds a proper-prefix split pair, so the axis is now pinned by unit test instead of left to a vacuous byte-identical claim.",
+      "Two pieces of the new module shipped DEAD in the reviewed commit and were removed, not documented away: planning_dir() was exported with zero callers while ~13 sites still built the path inline, and the filename= knob was never passed by anything while its docstring pointed at a call site that deliberately does not use it. The shared leaf now exports only what is reached.",
+      "CI went RED on the review-round commit for exactly the landmine the brief named: the artifact-path-canon lint scans git-TRACKED files only, so the new shared/tests/test_planning_discovery.py was invisible to it. I re-ran the content lints after F0 but BEFORE staging the new file, which is a false green. Fixed by rebuilding the fixtures on the canonical <root>/.shipwright/planning shape (not by marking lines or widening ALLOWLIST['planning'], either of which would have weakened the gate repo-wide), and the lints are now re-run after git add. Recorded because S3-S7 each add files and will hit this unless the F-phase order changes: content lints belong after the LAST artifact is staged."
     ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run python -m pytest integration-tests/test_events_record_boundary_merge_integration.py shared/tests/test_iterate_checks_record_boundary.py shared/tests/test_events_log_load_contexts.py shared/tests/test_events_reader_record_boundary.py -q",
+      "runner": "uv run pytest integration-tests/test_requirements_corpus_matrix.py integration-tests/test_requirements_corpus_registry.py integration-tests/test_requirements_corpus_found_defects.py integration-tests/test_requirements_corpus_false_verdicts.py -q",
       "exit_code": 0,
-      "tests_run": 29,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-19-events-record-boundary-readers/surface_verification.json",
-      "note": "The FIRST F0.5 attempt failed (exit 3) and caught a real defect in this iterate's own integration test: an in-process `from scripts.lib.collectors import ...` was ambiguous between the repo-root `scripts/` and the compliance plugin's `scripts/` - the same ADR-045 collision class this iterate is about, one namespace level up. Fixed by running the tier-B readers as their own process (the production shape, mirroring test_fold_map_e2e), verified non-vacuous, then re-run green."
+      "tests_run": 51,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-19-one-discovery-function/surface_verification.json",
+      "note": "The corpus suites ARE the behavioural surface for this iterate: they re-derive all 15 discovery walks and 5 parsers across 10 fixtures in one subprocess per import realm, and compare against the S1 golden baseline."
     },
     "test_completeness": {
       "status": "complete",
       "counts": {
-        "total": 18,
-        "tested": 18,
+        "total": 22,
+        "tested": 22,
         "untestable": 0,
         "untested_testable": 0
       },
       "behaviors": [
         {
-          "behavior": "latest_event_dt recovers all records from a concatenated line",
+          "behavior": "all 15 discovery call sites delegate to the shared walk",
           "ac": "AC1",
           "disposition": "tested",
-          "evidence": "shared/tests/test_events_reader_record_boundary.py::test_latest_event_dt_recovers_both_records_from_a_concatenated_line"
+          "evidence": "integration-tests/test_requirements_corpus_matrix.py (15 walks x 10 fixtures, byte-compared to golden.json)"
         },
         {
-          "behavior": "finalized_run_ids recovers all run_ids from a concatenated line",
+          "behavior": "golden.json stays byte-identical except the one source-hash cell",
           "ac": "AC2",
           "disposition": "tested",
-          "evidence": "shared/tests/test_events_reader_record_boundary.py::test_finalized_run_ids_recovers_both_records_from_a_concatenated_line"
+          "evidence": "uv run integration-tests/requirements_corpus/regen_golden.py --check -> 'golden.json is current'"
         },
         {
-          "behavior": "finalized_run_ids keeps its pre-existing fragment policy (skip the fragment, keep what decoded; None reserved for absent/unreadable)",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_events_reader_record_boundary.py::test_finalized_run_ids_skips_a_fragment_and_keeps_what_decoded"
-        },
-        {
-          "behavior": "verifiers.read_events_jsonl recovers records AND preserves both G5 properties (literal path, silent on corruption)",
+          "behavior": "corpus suites pass unchanged",
           "ac": "AC3",
           "disposition": "tested",
-          "evidence": "shared/tests/test_events_reader_record_boundary.py::test_read_events_jsonl_stays_silent_on_corruption + ::test_read_events_jsonl_reads_the_literal_path_without_worktree_redirect"
+          "evidence": "integration-tests/test_requirements_corpus_{matrix,registry,found_defects,false_verdicts}.py (51 passed)"
         },
         {
-          "behavior": "change_history recovers, keeps warning, does not echo raw event data, releases the file handle",
+          "behavior": "registry.py source paths all still resolve",
           "ac": "AC4",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_event_log_record_boundary.py::test_change_history_recovers_both_records + ::test_change_history_releases_the_file_handle"
+          "evidence": "integration-tests/test_requirements_corpus_registry.py::test_every_registry_source_file_exists"
         },
         {
-          "behavior": "group_b/group_d recover, preserve None-on-absent, and stay SILENT",
+          "behavior": "spec_parser._iter_spec_files is still a generator",
           "ac": "AC5",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_event_log_record_boundary.py::test_group_loaders_stay_silent_on_corruption"
+          "evidence": "test_requirements_corpus_matrix.py -- golden cell records \"type\": \"generator\""
         },
         {
-          "behavior": "recovery is partial, never all-or-nothing",
+          "behavior": "the 3 unsorted walks still track enumeration order",
           "ac": "AC6",
           "disposition": "tested",
-          "evidence": "shared/tests/test_events_reader_record_boundary.py::test_recovery_is_partial_not_all_or_nothing"
+          "evidence": "test_requirements_corpus_matrix.py::test_unsorted_walk_tracks_enumeration_order{,_a2}"
         },
         {
-          "behavior": "INTEGRATION: a real union merge PROPAGATES a concatenated line and does NOT create one; every reader then sees all runs",
+          "behavior": "state.detect_state keeps its planning-dir signature",
           "ac": "AC7",
           "disposition": "tested",
-          "evidence": "integration-tests/test_events_record_boundary_merge_integration.py (3 cases, incl. both mechanism directions)",
-          "category": "integration"
+          "evidence": "plugins/shipwright-project/tests/test_state.py (6 passed) + golden cell disc.state.detect_state"
         },
         {
-          "behavior": "three latent uncaught crashes in events_log (bare scalar; undecodable bytes in both functions)",
+          "behavior": "guard='exists' still raises NotADirectoryError on a planning FILE",
           "ac": "AC8",
           "disposition": "tested",
-          "evidence": "shared/tests/test_events_reader_record_boundary.py::test_latest_event_dt_does_not_crash_on_a_bare_scalar_line + ::test_readers_do_not_crash_on_undecodable_bytes"
+          "evidence": "golden 'planning-file' fixture: 4 walks record the exception, 11 degrade"
         },
         {
-          "behavior": "Tier-B loaders resolve jsonl_records to the SHARED module, through the real audit entry points",
+          "behavior": "require='is_file' still rejects a DIRECTORY named spec.md",
           "ac": "AC9",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_event_log_record_boundary.py::test_audit_loader_resolves_the_shared_module_not_a_plugin_local_copy + ::test_group_modules_import_through_their_real_entry_point_path"
+          "evidence": "golden 'spec-dir' fixture: fr_gates + group_i diverge from the other 13"
         },
         {
-          "behavior": "every converted reader returns only JSON objects (the non-dict crash class)",
+          "behavior": "include_iterate=False still excludes iterate/ for exactly 3 walks",
           "ac": "AC10",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_event_log_record_boundary.py::test_group_loaders_skip_a_bare_scalar_line + shared/tests/test_events_reader_record_boundary.py::test_read_events_jsonl_skips_a_bare_scalar_line"
+          "evidence": "golden 'edge' fixture values for backfill_test_links, _test_links_io, rtm.collect_external_review_states"
         },
         {
-          "behavior": "load_events returns None on OSError, not only on absence",
+          "behavior": "recursive=True still descends and still matches a loose planning/spec.md",
           "ac": "AC11",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_event_log_record_boundary.py::test_group_loaders_return_none_on_an_unreadable_log"
+          "evidence": "golden 'edge' fixture: 5 rglob walks list 03-nested/deeper/spec.md and spec.md"
         },
         {
-          "behavior": "change_history warns for a bare scalar line (widened unrecoverable set at a site that already warns)",
+          "behavior": "setup_design_session still returns OS-separator relative strings",
           "ac": "AC12",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_event_log_record_boundary.py::test_change_history_warns_for_a_bare_scalar_line"
+          "evidence": "test_requirements_corpus_matrix.py platform_sep test + golden platform_sep_normalized cell"
         },
         {
-          "behavior": "backfill_scan recovers the commit -> affected_frs map (traceability surface)",
+          "behavior": "behaviour preserved repo-wide (no removed test coverage)",
           "ac": "AC13",
           "disposition": "tested",
-          "evidence": "shared/tests/test_events_reader_record_boundary.py::test_backfill_scan_recovers_fr_links_from_a_concatenated_line"
+          "evidence": "behavior_snapshot.py verify -> VERIFIED, 290 green, no count drop"
         },
         {
-          "behavior": "boundary_coverage_report recovers records and returns only objects",
+          "behavior": "the loader resolves planning_discovery under standalone CLI invocation",
           "ac": "AC14",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-test/tests/test_boundary_coverage_report.py::test_load_events_recovers_records_sharing_one_physical_line"
+          "evidence": "F0.5 probe: setup_adopt.py / validate_adoption.py / setup-design-session.py run with PYTHONPATH unset, no ImportError"
         },
         {
-          "behavior": "events_log import contract: three load contexts, no sys.modules pollution, per-copy sentinel key, ImportError-not-OSError on a missing sibling",
+          "behavior": "the ADR cluster keeps its behaviour after extraction",
           "ac": "AC15",
           "disposition": "tested",
-          "evidence": "shared/tests/test_events_log_load_contexts.py (3 cases; both hardening behaviours verified non-vacuous by removing them)"
+          "evidence": "shared/tests/test_adr_headers.py (6 passed, moved verbatim)"
         },
         {
-          "behavior": "F11 check_events_has_commit oracle finds an event that is SECOND on a concatenated line, and still reports genuine absence",
+          "behavior": "no consumer of the moved ADR symbols is left stale",
           "ac": "AC16",
           "disposition": "tested",
-          "evidence": "shared/tests/test_iterate_checks_record_boundary.py::test_committed_blob_finds_an_event_that_is_second_on_a_line + ::test_committed_blob_still_reports_absence_for_an_unrelated_run"
+          "evidence": "shared/tests/test_verifiers_adopt.py + compliance suite (1222 passed) + repo-wide grep sweep"
         },
         {
-          "behavior": "iterate_checks on-disk lookups recover a second record and no longer crash on a bare scalar",
+          "behavior": "drift_parsers stays loadable via audit_adapters file-location load",
           "ac": "AC17",
           "disposition": "tested",
-          "evidence": "shared/tests/test_iterate_checks_record_boundary.py::test_find_work_event_by_run_id_recovers_a_second_record + ::test_on_disk_lookups_do_not_crash_on_a_bare_scalar_line"
+          "evidence": "plugins/shipwright-compliance/tests (1222 passed) exercising group_a/d/g"
+        },
+        {
+          "behavior": "no path normalization or symlink behaviour was introduced",
+          "ac": "AC18",
+          "disposition": "tested",
+          "evidence": "grep: no resolve()/os.walk/normpath in planning_discovery.py; corpus values unchanged"
+        },
+        {
+          "behavior": "sorting split dirs equals sorting full spec.md paths for proper-prefix split names",
+          "ac": "AC19",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_planning_discovery.py::test_sorting_split_dirs_equals_sorting_full_spec_paths (4 pairs) + ::test_prefix_pairs_are_a_real_trap_for_string_sorting"
+        },
+        {
+          "behavior": "both ValueError guards reject an out-of-range guard/require value",
+          "ac": "AC20",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_planning_discovery.py::test_invalid_guard_rejected, ::test_invalid_require_rejected"
+        },
+        {
+          "behavior": "guard='none' raises FileNotFoundError on absent and NotADirectoryError on a planning FILE",
+          "ac": "AC21",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_planning_discovery.py::test_guard_none_raises_on_absent_and_on_a_planning_file"
+        },
+        {
+          "behavior": "the helper's own parameter matrix is covered independently of the 15 call sites",
+          "ac": "AC22",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_planning_discovery.py (19 tests); non-vacuity confirmed by mutation, 5/5 seeded mutants killed"
         }
       ]
     }

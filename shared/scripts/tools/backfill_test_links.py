@@ -46,6 +46,7 @@ import backfill_scan as scan  # noqa: E402
 import backfill_signals as sig  # noqa: E402
 import fr_fold_map as fold  # noqa: E402
 from backfill_write import apply_writes  # noqa: E402
+from planning_discovery import iter_spec_files  # noqa: E402
 
 ENGINE_VERSION = "backfill_test_links/1.0.0"
 _REPORT_DIRNAME = ".shipwright/backfill"
@@ -58,10 +59,7 @@ def discover_specs(project_root: Path) -> list[Path]:
     if top.exists():
         out.append(top)
     planning = project_root / ".shipwright" / "planning"
-    if planning.is_dir():
-        for d in sorted(planning.iterdir()):
-            if d.is_dir() and d.name != "iterate" and (d / "spec.md").exists():
-                out.append(d / "spec.md")
+    out.extend(iter_spec_files(planning, include_iterate=False))
     root_spec = project_root / "spec.md"
     if root_spec.exists():
         out.append(root_spec)

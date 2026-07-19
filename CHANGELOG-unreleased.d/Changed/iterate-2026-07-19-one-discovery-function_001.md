@@ -1,0 +1,1 @@
+All 15 `.shipwright/planning/` spec-discovery walks now delegate to one shared, parameterized helper (`shared/scripts/lib/planning_discovery.py`) instead of carrying fifteen subtly different private copies. Behaviour is unchanged and machine-verified byte-for-byte against the requirements golden corpus.

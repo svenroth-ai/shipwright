@@ -16,6 +16,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from ._lib_loader import load_shared_lib
+
 _ZERO_SHA = "0" * 40
 _PY_SUFFIXES = (".py",)
 _TS_SUFFIXES = (".ts", ".tsx", ".js", ".jsx", ".mts", ".cts")
@@ -134,10 +136,8 @@ def discover_specs(project_root: Path) -> list[Path]:
     if top.exists():
         out.append(top)
     planning = project_root / ".shipwright" / "planning"
-    if planning.is_dir():
-        for d in sorted(planning.iterdir()):
-            if d.is_dir() and d.name != "iterate" and (d / "spec.md").exists():
-                out.append(d / "spec.md")
+    iter_spec_files = load_shared_lib("planning_discovery").iter_spec_files
+    out.extend(iter_spec_files(planning, include_iterate=False))
     return out
 
 

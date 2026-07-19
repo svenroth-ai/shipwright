@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-19-one-discovery-function",
+  "date": "2026-07-19T11:41:43.148917Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/campaign-S2-one-discovery-function",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-19-one-discovery-function.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-19-one-discovery-function"
+}

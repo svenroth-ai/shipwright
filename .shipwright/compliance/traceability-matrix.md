@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-19T07:12:01.841222+00:00
+Generated: 2026-07-19T11:41:43.232169+00:00
 
 ## Requirements Coverage
 
@@ -15,7 +15,7 @@ Generated: 2026-07-19T07:12:01.841222+00:00
 | [FR-01.07](../../.shipwright/planning/01-adopted/spec.md#fr-0107)<a id="rtm-fr-0107"></a> | Security scanning chain (Aikido + Semgrep + Trivy + Gitleaks) with automated remediation loop and per-scanner exclude lists. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7), [evt-07b1fe9c](#evt-07b1fe9c) +2 | 225/225 → 4955/4967 | 2026-06-30 ([iter](#evt-f90c7126)) | ✅ | COVERED | MISSING | — | — |
 | [FR-01.08](../../.shipwright/planning/01-adopted/spec.md#fr-0108)<a id="rtm-fr-0108"></a> | Deploy to configured targets with smoke testing and rollback; Jelastic (Infomaniak) shipped, Vercel + compose-VPS profiles documented as stubs. | Should | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7) | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | — | COVERED | MISSING | — | — |
 | [FR-01.09](../../.shipwright/planning/01-adopted/spec.md#fr-0109)<a id="rtm-fr-0109"></a> | Parse Conventional Commits from git history, generate Keep-a-Changelog entries, create version tags, open release PRs. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-530b0980](#evt-530b0980), [evt-ddb23fe7](#evt-ddb23fe7) | 225/225 → 19/19 | 2026-05-03 ([iter](#evt-530b0980)) | — | COVERED | MISSING | — | — |
-| [FR-01.10](../../.shipwright/planning/01-adopted/spec.md#fr-0110)<a id="rtm-fr-0110"></a> | Generate audit-ready compliance documentation (RTM, test evidence, change history, SBOM) and run on-demand cross-artifact detective audit. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-30338dac](#evt-30338dac), [evt-a3888caf](#evt-a3888caf) +18 | 225/225 → 4964/4976 | 2026-07-01 ([iter](#evt-a2c95dc8)) | ⚠️ needs re-verification | FAIL → [trg-9532fa83](../agent_docs/triage_inbox.md#trg-9532fa83) | MISSING | — | — |
+| [FR-01.10](../../.shipwright/planning/01-adopted/spec.md#fr-0110)<a id="rtm-fr-0110"></a> | Generate audit-ready compliance documentation (RTM, test evidence, change history, SBOM) and run on-demand cross-artifact detective audit. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-30338dac](#evt-30338dac), [evt-a3888caf](#evt-a3888caf) +18 | 225/225 → 4964/4976 | 2026-07-01 ([iter](#evt-a2c95dc8)) | ⚠️ needs re-verification | FAIL → [trg-8bf97fd4](../agent_docs/triage_inbox.md#trg-8bf97fd4), FAIL → [trg-9532fa83](../agent_docs/triage_inbox.md#trg-9532fa83), FAIL → [trg-eb19ada4](../agent_docs/triage_inbox.md#trg-eb19ada4) | MISSING | — | — |
 | [FR-01.11](../../.shipwright/planning/01-adopted/spec.md#fr-0111)<a id="rtm-fr-0111"></a> | Complexity-adaptive SDLC for ongoing changes — auto-detects intent and complexity, scales from quick fix to structured feature with specs, plans, reviews, tests; every feature/change classifies its spec impact (ADD/MODIFY/REMOVE/NONE), enforced at finalization. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-6c637864](#evt-6c637864), [evt-baaf4b0e](#evt-baaf4b0e), [evt-ca7b7d64](#evt-ca7b7d64) +18 | 225/225 → 54/54 | 2026-07-14 ([iter](#evt-5dc16a45)) | ⚠️ needs re-verification | COVERED | MISSING | MISSING | — |
 | [FR-01.12](../../.shipwright/planning/01-adopted/spec.md#fr-0112)<a id="rtm-fr-0112"></a> | Local browser preview — start dev server for the target project and show the URL. | May | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7) | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | — | COVERED | — | — | MISSING |
 | [FR-01.13](../../.shipwright/planning/01-adopted/spec.md#fr-0113)<a id="rtm-fr-0113"></a> | Onboard an existing (brownfield) repository into the Shipwright SDLC; analyzes codebase, generates CLAUDE.md, agent_docs, planning specs, compliance artifacts, suggest_iterate hook, and an E2E baseline; scaffolds `.env.local` with the profile's framework keys. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-273bbb54](#evt-273bbb54), [evt-b0b9c422](#evt-b0b9c422), [evt-aab7ddbd](#evt-aab7ddbd) +6 | 225/225 → 304/304 | 2026-05-16 ([iter](#evt-38e36ac6)) | ⚠️ needs re-verification | COVERED | MISSING | — | — |
@@ -28,6 +28,7 @@ Generated: 2026-07-19T07:12:01.841222+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-ec05d680"></a>one shared spec-discovery walk for all 15 call sites | iterate | change |  | — | — | 2026-07-19 |
 | <a id="evt-50e902ef"></a>Eleven event-log readers now recover records that share one physical line, instead of discarding every record on it — including the F11 oracle whose failure made finalization fail for correctly-recorded runs. | iterate | change |  | — | — | 2026-07-19 |
 | <a id="evt-5c18465d"></a>Cleared the open size-baseline and decision-record findings that were sitting in the way of the requirements-catalog campaign — and deliberately left one entry alone, because tightening it would have blocked another iterate that is still running. | iterate | change |  | — | — | 2026-07-19 |
 | <a id="evt-16c0251e"></a>ship the action-pinning posture rule to adopters (trg-0ce59c05) | iterate | change |  | — | — | 2026-07-19 |
@@ -371,7 +372,7 @@ Generated: 2026-07-19T07:12:01.841222+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 336 |
+| Iterate changes | 337 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |
@@ -394,5 +395,5 @@ Generated: 2026-07-19T07:12:01.841222+00:00
 
 ### FRs with open triage items
 
-- [FR-01.10](../../.shipwright/planning/01-adopted/spec.md): FAIL → [trg-9532fa83](../agent_docs/triage_inbox.md#trg-9532fa83)
+- [FR-01.10](../../.shipwright/planning/01-adopted/spec.md): FAIL → [trg-8bf97fd4](../agent_docs/triage_inbox.md#trg-8bf97fd4), FAIL → [trg-9532fa83](../agent_docs/triage_inbox.md#trg-9532fa83), FAIL → [trg-eb19ada4](../agent_docs/triage_inbox.md#trg-eb19ada4)
 

@@ -1,0 +1,1 @@
+ADR-header parsing moved from `shared/scripts/lib/drift_parsers.py` to a new `shared/scripts/lib/adr_headers.py`. Anything importing `parse_adr_headers`, `ADRHeader`, `ADR_VALID_STATUSES`, `extract_adr_id_number`, `find_duplicate_adr_ids` or `find_gaps_in_adr_ids` from `lib.drift_parsers` must import from `lib.adr_headers` instead - there is no compatibility alias.

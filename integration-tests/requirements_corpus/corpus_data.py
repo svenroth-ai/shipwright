@@ -234,8 +234,12 @@ FIXTURES: dict[str, dict[str, str]] = {
         AGENT_SPEC: "# Project spec\n\nTop-level spec present.\n",
         "spec.md": "# Repo-root spec\n\nOnly backfill_test_links looks here.\n",
         f"{PLANNING}/01-live/spec.md": _ID_STRICTNESS,
-        # Hidden split: excluded only by the two walks that use glob/rglob,
-        # and accidentally so -- pathlib's * does not match a leading dot.
+        # Hidden split: included by ALL 15 walks. pathlib's glob/rglob DO match
+        # a leading dot (unlike the shell and unlike the stdlib glob module), so
+        # the glob-based walks see it exactly like the iterdir-based ones. An
+        # earlier comment here claimed the opposite; the matrix disagrees --
+        # ".hidden-split/spec.md" is in the recorded value of every walk that
+        # returns paths. Corrected in S2 against the baseline, not from memory.
         f"{PLANNING}/.hidden-split/spec.md": _GREENFIELD_TEMPLATE,
         # iterate/: 3 walks exclude it, 4 include it, 1 yields EVERY *.md.
         f"{PLANNING}/iterate/spec.md": _GREENFIELD_TEMPLATE,

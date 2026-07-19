@@ -11,10 +11,24 @@ Checkpoints:
 """
 
 import re
+import sys
 from pathlib import Path
 from typing import TypedDict
 
 from .config import SessionFilename
+
+
+def _discovery():
+    # Shared planning walk, loaded by FILE LOCATION under a sentinel name so no
+    # ambiguous ``lib``/``scripts`` package is ever bound (ADR-045).
+    mod = sys.modules.get("_shipwright_planning_discovery")
+    if mod is None:
+        import importlib.util
+        path = Path(__file__).resolve().parents[4] / "shared/scripts/lib/planning_discovery.py"
+        spec = importlib.util.spec_from_file_location("_shipwright_planning_discovery", path)
+        sys.modules["_shipwright_planning_discovery"] = mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    return mod
 
 
 class DetectStateResult(TypedDict):
@@ -48,11 +62,15 @@ def detect_state(planning_dir: Path | str) -> DetectStateResult:
     interview_complete = (planning_dir / SessionFilename.INTERVIEW).exists()
     manifest_created = (planning_dir / SessionFilename.MANIFEST).exists()
 
+    # guard="none": an absent planning dir raises FileNotFoundError, as it
+    # always did — this is the only call site with no pre-check at all.
+    # sort=False then sorted(key=get_split_index) reproduces the original
+    # ordering exactly (sorted is stable, so ties keep iterdir order).
     splits = sorted(
         [
             d.name
-            for d in planning_dir.iterdir()
-            if d.is_dir() and is_valid_split_dir(d.name)
+            for d in _discovery().iter_split_dirs(planning_dir, guard="none", sort=False)
+            if is_valid_split_dir(d.name)
         ],
         key=get_split_index,
     )

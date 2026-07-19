@@ -16,19 +16,14 @@ from pathlib import Path
 import pytest
 
 from lib.drift_parsers import (
-    ADRHeader,
     build_paths_from_entries,
     collect_requirements_from_planning,
-    extract_adr_id_number,
     extract_dev_blocks,
     extract_structure_block,
-    find_duplicate_adr_ids,
-    find_gaps_in_adr_ids,
     find_nearest_makefile,
     find_nearest_package_json,
     find_nearest_pyproject_toml,
     load_gitignore,
-    parse_adr_headers,
     parse_fr_table,
     parse_make_refs,
     parse_npm_run_refs,
@@ -347,62 +342,6 @@ def test_parse_fr_table_h2_removed_requirements_also_excluded():
     )
     frs = parse_fr_table(md, split="01", spec_path="x")
     assert {f.id for f in frs} == {"FR-01.01"}
-
-
-# ---------------------------------------------------------------------------
-# ADR parser
-# ---------------------------------------------------------------------------
-
-def test_parse_adr_headers_handles_compact_format():
-    md = (
-        "# Decision Log\n\n"
-        "### ADR-001: First decision\n"
-        "- **Status:** accepted\n\n"
-        "### ADR-002: Second decision\n"
-        "- **Status:** superseded\n"
-        "- **Supersedes:** ADR-001\n"
-    )
-    headers = parse_adr_headers(md)
-    assert len(headers) == 2
-    assert headers[0].id == "ADR-001"
-    assert headers[0].status == "accepted"
-    assert headers[1].supersedes == ("ADR-001",)
-
-
-def test_parse_adr_headers_handles_old_format():
-    md = "## ADR-042 | 2026-04-13 | foo | Commit abcd1234\n### Status: accepted\n"
-    headers = parse_adr_headers(md)
-    assert len(headers) == 1
-    assert headers[0].id == "ADR-042"
-
-
-def test_extract_adr_id_number_parses_and_rejects():
-    assert extract_adr_id_number("ADR-027") == 27
-    assert extract_adr_id_number("ADR-") is None
-    assert extract_adr_id_number("not an id") is None
-
-
-def test_find_duplicate_adr_ids_detects_repeats():
-    headers = [
-        ADRHeader("ADR-001", "a", 1),
-        ADRHeader("ADR-002", "b", 2),
-        ADRHeader("ADR-001", "a-dup", 3),
-    ]
-    assert find_duplicate_adr_ids(headers) == ["ADR-001"]
-
-
-def test_find_gaps_in_adr_ids_detects_missing():
-    headers = [
-        ADRHeader("ADR-023", "a", 1),
-        ADRHeader("ADR-025", "b", 2),
-        ADRHeader("ADR-027", "c", 3),
-    ]
-    assert find_gaps_in_adr_ids(headers) == [24, 26]
-
-
-def test_find_gaps_in_adr_ids_no_gaps():
-    headers = [ADRHeader("ADR-001", "a", 1), ADRHeader("ADR-002", "b", 2)]
-    assert find_gaps_in_adr_ids(headers) == []
 
 
 # ---------------------------------------------------------------------------

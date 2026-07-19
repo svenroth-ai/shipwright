@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-19 07:26 UTC | Session: 605b268a-5de5-46b1-851b-548fd925ee1d | Run: iterate-2026-07-19-events-record-boundary-readers
+> Updated: 2026-07-19 12:37 UTC | Session: 85c973ff-4812-4db0-acc1-935ed32ee51b | Run: iterate-2026-07-19-one-discovery-function
 
-## Recent Changes (336 iterations)
+## Recent Changes (337 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | iterate: one shared spec-discovery walk for all 15 call sites | 0/0 |  | tooling | 2026-07-19 |
 | change | iterate: compliance prework before the requirements-catalog campaign | 0/0 |  | compliance | 2026-07-19 |
 | change | iterate: ship the action-pinning posture rule to adopters (trg-0ce59c05) | 0/0 |  | compliance | 2026-07-19 |
 | change | iterate: event-log record-boundary recovery across the audit + traceability read path | 0/0 |  | tooling | 2026-07-19 |
@@ -343,7 +344,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-19 | Unit: 4636/4636 | Integration: 290/290 | Smoke: not_run | (iterate)
+Last run: 2026-07-19 | Unit: 4666/4666 | Integration: 290/290 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

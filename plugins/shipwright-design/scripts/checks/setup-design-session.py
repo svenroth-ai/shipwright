@@ -27,15 +27,28 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from lib.screen_registry import scan_designs_dir
 
 
+def _discovery():
+    # Shared planning walk, loaded by FILE LOCATION under a sentinel name so no
+    # ambiguous ``lib``/``scripts`` package is ever bound (ADR-045).
+    mod = sys.modules.get("_shipwright_planning_discovery")
+    if mod is None:
+        import importlib.util
+        path = Path(__file__).resolve().parents[4] / "shared/scripts/lib/planning_discovery.py"
+        spec = importlib.util.spec_from_file_location("_shipwright_planning_discovery", path)
+        sys.modules["_shipwright_planning_discovery"] = mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    return mod
+
+
 def find_specs(project_root: Path) -> list[str]:
     """Find all spec.md files from shipwright-project output."""
     planning = project_root / ".shipwright" / "planning"
     specs = []
 
-    if not planning.is_dir():
-        return specs
-
-    for spec_file in planning.rglob("spec.md"):
+    # sort=False, then sorted() on the STRINGS. Path ordering is case-insensitive
+    # on Windows while str ordering is not, so sorting here rather than in the
+    # helper is what keeps this call site's output identical.
+    for spec_file in _discovery().iter_spec_files(planning, recursive=True, sort=False):
         relative = spec_file.relative_to(planning)
         specs.append(str(relative))
 

@@ -35,7 +35,7 @@ _SHARED_SCRIPTS = Path(__file__).resolve().parent.parent.parent
 if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 
-from lib.drift_parsers import (  # noqa: E402
+from lib.adr_headers import (  # noqa: E402
     ADR_VALID_STATUSES,
     ADRHeader,
     extract_adr_id_number,

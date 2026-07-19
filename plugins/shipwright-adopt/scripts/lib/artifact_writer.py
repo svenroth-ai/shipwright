@@ -282,7 +282,7 @@ def _render_decision_log(
     )
     # ADR heading is H3 to match Shipwright's compact-form canon
     # (`shared/scripts/tools/write_decision_log.py` and the H3 form
-    # parsed by `shared/scripts/lib/drift_parsers.py:parse_adr_headers`).
+    # parsed by `shared/scripts/lib/adr_headers.py:parse_adr_headers`).
     # Sub-sections move to H4 to preserve hierarchy under the H3 ADR.
     header = f"""# Decision Log — {project_name}
 {harvest_note}

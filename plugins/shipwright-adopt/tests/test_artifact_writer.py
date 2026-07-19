@@ -157,7 +157,7 @@ def test_write_agent_docs_retroactive_adrs_continue_from_max_plus_one(
 
 def test_render_decision_log_emits_h3_adoption_heading() -> None:
     """Adopt's output uses H3 (`### ADR-NNN:`) so it round-trips through
-    Shipwright's compact-form canon parser (`drift_parsers.parse_adr_headers`).
+    Shipwright's compact-form canon parser (`adr_headers.parse_adr_headers`).
     Before this fix adopt wrote H2 with colon — a format neither the
     compact (H3-colon) nor the verbose (H2-pipes) regex matched, leaving
     downstream G3 / F1 / F2 / F3 audits blind to the adoption ADR."""

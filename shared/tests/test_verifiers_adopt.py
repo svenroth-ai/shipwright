@@ -121,7 +121,7 @@ def test_adopt_render_roundtrips_through_parse_adr_headers() -> None:
     import subprocess
     import sys
 
-    from scripts.lib.drift_parsers import parse_adr_headers
+    from scripts.lib.adr_headers import parse_adr_headers
 
     repo_root = Path(__file__).resolve().parents[2]
     adopt_scripts = repo_root / "plugins" / "shipwright-adopt" / "scripts"

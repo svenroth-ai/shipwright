@@ -5,10 +5,10 @@
 
 ## Status summary
 
-- Total: 343
-- Triage: 10 | Promoted: 1 | Dismissed: 331 | Snoozed: 1
+- Total: 348
+- Triage: 13 | Promoted: 1 | Dismissed: 333 | Snoozed: 1
 
-## Top 10 items (severity-sorted)
+## Top 13 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -19,18 +19,18 @@
 
 ### Source: compliance (1 item)
 
-<a id="trg-ebe6705b"></a>
-- **Compliance: 5 open finding(s)** `id=trg-ebe6705b | severity=high | kind=compliance → P1/compliance`
-  - 5 open compliance finding(s): D/D1, D/D3, F/F5, H/H1, H/H2  - D/D1: Spec FR coverage in events — uncovered FRs — Must:…
+<a id="trg-b1dda91d"></a>
+- **Compliance: 2 open finding(s)** `id=trg-b1dda91d | severity=high | kind=compliance → P1/compliance`
+  - 2 open compliance finding(s): D/D1, D/D3  - D/D1: Spec FR coverage in events — uncovered FRs — Must: FR-01.15 \| hint:…
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-compliance
     
-    Context: 5 open compliance finding(s): D/D1, D/D3, F/F5, H/H1, H/H2.
+    Context: 2 open compliance finding(s): D/D1, D/D3.
     Dashboard: .shipwright/compliance/dashboard.md
     Each finding + hint is listed in this item's detail.
     ```
-  - Promote: `triage_promote.py --id trg-ebe6705b --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-b1dda91d --task-ref EXT:<ref>`
 
 ### Source: github (1 item)
 
@@ -84,10 +84,29 @@
   - Three defects in the requirements table parsers, found while building the S1 golden corpus (campaign Requirements Catal…
   - Promote: `triage_promote.py --id trg-9532fa83 --task-ref EXT:<ref>`
 
+### Source: iterate-2026-07-19-compliance-prework (2 items)
+
+<a id="trg-8bf97fd4"></a>
+- **S2b: converge the requirement-discovery filter semantics (~10 call-site decisions)** `id=trg-8bf97fd4 | severity=medium | kind=improvement → P2/engineering`
+  - The tail of campaign step S2, not a new campaign - file it now so it is not lost between "S2 merged" and "somebody noti…
+  - Promote: `triage_promote.py --id trg-8bf97fd4 --task-ref EXT:<ref>`
+
+<a id="trg-eb19ada4"></a>
+- **REQ-3: make the Layers column authoritative - establish the missing test links first** `id=trg-eb19ada4 | severity=medium | kind=improvement → P2/engineering`
+  - The substantive half of the requirements work, deliberately left open by the catalog campaign (REQ-2).  After REQ-2 the…
+  - Promote: `triage_promote.py --id trg-eb19ada4 --task-ref EXT:<ref>`
+
 ### Source: operator (1 item)
 
 <a id="trg-1b764b2c"></a>
 - **REQ-2 - Campaign: requirements catalog (S2-S8) - run AFTER REQ-1** `id=trg-1b764b2c | severity=medium | kind=improvement → P2/engineering`
   - THIRD of three. Order: REQ-0 (FR existence gate) -> REQ-1 (test harness) -> REQ-2 (this campaign). Do NOT start before…
   - Promote: `triage_promote.py --id trg-1b764b2c --task-ref EXT:<ref>`
+
+### Source: webui-mission-campaign (1 item)
+
+<a id="trg-dd48a810"></a>
+- **sub-iterate-runner finalizes without F3 decision-drop / F5c iterate record, and F11 does not catch it** `id=trg-dd48a810 | severity=high | kind=bug → P1/engineering`
+  - Evidence from webui campaign 2026-07-18-mission-artifacts (4 sub-iterates, all run by the sub-iterate-runner subagent u…
+  - Promote: `triage_promote.py --id trg-dd48a810 --task-ref EXT:<ref>`
 

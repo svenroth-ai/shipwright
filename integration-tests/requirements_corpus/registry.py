@@ -108,7 +108,10 @@ DISCOVERY: tuple[dict, ...] = (
         "realm": "shared_lib", "module": "spec_parser",
         "attr": "read_top_level_spec", "invoke": "project_root",
         "source": "shared/scripts/lib/spec_parser.py",
-        "note": "Returns FILE TEXT, not paths. glob('*/spec.md') skips dotdirs.",
+        "note": "Returns FILE TEXT, not paths. Delegates with the default "
+                "guard='is_dir', which reproduces glob's silent-empty on an "
+                "absent or non-directory planning path. (Its old comment "
+                "claimed glob skips dotdirs -- it does not; see corpus_data.)",
     },
     {
         "id": "disc.spec_parser._iter_spec_files",

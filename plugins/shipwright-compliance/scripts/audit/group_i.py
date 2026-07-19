@@ -35,7 +35,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from scripts.audit.audit_adapters import SOURCE_DETECTIVE_ONLY, Finding
+from scripts.audit.audit_adapters import (
+    SOURCE_DETECTIVE_ONLY,
+    Finding,
+    load_shared_lib,
+)
 
 # Detectors live in the pure sibling module; re-exported here so callers and
 # tests keep a single entry point (`group_i.name_violations`, …).
@@ -154,14 +158,16 @@ def scan_fr_rows(project_root: Path, *, include_retired: bool = False) -> list[F
     ``### Removed Requirements`` rows too.
     """
     planning = project_root / ".shipwright" / "planning"
-    if not planning.is_dir():
-        return []
     rows: list[FrRow] = []
-    for split_dir in sorted(p for p in planning.iterdir() if p.is_dir()):
-        spec = split_dir / "spec.md"
-        if spec.is_file():
-            rel = f".shipwright/planning/{split_dir.name}/spec.md"
-            rows.extend(_scan_one_spec(spec, split_dir.name, rel))
+    # require="is_file" is this call site's divergence from the majority's
+    # "exists": a *directory* named spec.md is not scanned. Sorting before vs
+    # after the is_dir filter is equivalent (one shared parent), so the shared
+    # helper's sort-first order matches the previous filter-first one.
+    iter_spec_files = load_shared_lib("planning_discovery").iter_spec_files
+    for spec in iter_spec_files(planning, require="is_file"):
+        split_name = spec.parent.name
+        rel = f".shipwright/planning/{split_name}/spec.md"
+        rows.extend(_scan_one_spec(spec, split_name, rel))
     return rows if include_retired else [r for r in rows if not r.retired]
 
 
