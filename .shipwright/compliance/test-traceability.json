@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
   "collector_version": "test_links/1.0.0",
-  "generated_at": "2026-07-18T22:18:10.805261+00:00",
-  "source_commit": "8cfddce1ceff11e91744ffc409b4bfbc1ce29963",
+  "generated_at": "2026-07-19T05:34:48.576358+00:00",
+  "source_commit": "052378dc829bce69ef9fd4883f45b24584c5863e",
   "spec_hash": "sha256:1431856a8394fdbf29ed9a37a63e0c672023cba3423463af891a698ff67ea835",
   "requirements": {
     "01-adopted::FR-01.01": {
@@ -5534,6 +5534,14 @@
     "shared/tests/test_accepted_risks_register.py::test_unrecorded_suppression_fails",
     "shared/tests/test_accepted_risks_register.py::test_workflow_with_actions_expressions_is_parsed",
     "shared/tests/test_accepted_risks_register.py::test_yaml_trivyignore_wins_over_flat",
+    "shared/tests/test_action_pinning_posture.py::test_a_quoted_github_owned_sha_pin_is_still_caught",
+    "shared/tests/test_action_pinning_posture.py::test_github_owned_actions_stay_on_mutable_tags",
+    "shared/tests/test_action_pinning_posture.py::test_no_dependency_updater_config_is_shipped_to_adopters",
+    "shared/tests/test_action_pinning_posture.py::test_quoted_dynamic_and_bare_forms_are_all_extracted",
+    "shared/tests/test_action_pinning_posture.py::test_templates_exist_so_this_guard_is_not_vacuous",
+    "shared/tests/test_action_pinning_posture.py::test_the_posture_rule_reaches_adopters_not_just_the_state",
+    "shared/tests/test_action_pinning_posture.py::test_third_party_actions_are_sha_pinned",
+    "shared/tests/test_action_pinning_posture.py::test_third_party_evasions_are_caught_not_skipped",
     "shared/tests/test_agent_doc_budget.py::test_claude_md_growth_crlf_parity",
     "shared/tests/test_agent_doc_budget.py::test_claude_md_growth_custom_cap",
     "shared/tests/test_agent_doc_budget.py::test_claude_md_growth_exactly_at_cap_clean",

@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-18-accepted-risk-alert-convergence",
+    "run_id": "iterate-2026-07-19-adopter-pinning-posture-rule",
     "date": "2026-07-19",
     "unit": {
       "status": "passed",
-      "passed": 4563,
-      "total": 4564
+      "passed": 4609,
+      "total": 4610
     },
     "integration": {
       "status": "not_run",
@@ -30,110 +30,64 @@
     },
     "degraded": [
       "F0 suite RED on ONE pre-existing, foreign failure: test_architecture_md_reflects_arch_impact flags a decision-drop belonging to iterate-2026-07-18-fr-existence-gate (gitignored drops resolve from the MAIN root, so a concurrent iterate's drop reddens this worktree). The run_id in the failure is not this run's - inherited, not introduced.",
-      "The triage half of the convergence has ZERO live instances in this repo (0 source=\"security\" items), so it is proven on fixtures, not on live data. Its only live reachability is the pre-acceptance backlog, because ingest-time suppression means an accepted rule normally never becomes a triage item at all. Stated rather than implied by the passing tests.",
-      "The register currently holds 0 github-dismissal entries, so the live `converge` run exercised the read/pagination/identity path against 51 real alerts but matched nothing. The mutation path is proven by fixtures plus the live 422 permission probe, not by a real dismissal.",
-      "External review (GPT-5.4) returned 'block' with 3 real defects: an absent register short-circuited reopen (marked alerts stayed suppressed forever), overlapping entries double-claimed an alert, and an unreadable triage store rendered as 'converged' - the last actively blessed by a test in the first draft. All three are fixed and pinned; recorded because they calibrate how far a self-authored negative-control suite reaches."
+      "The triage card trg-0ce59c05 asserted 'VERIFIED ALREADY CORRECT (do not redo)' for shared/templates/. That premise was FALSE in two of three respects (setup-uv unpinned in the shipped template while the monorepo pins it for itself; AikidoSec/github-actions-wf 404s entirely). Scope was widened with explicit user approval to fix the state, because the requested guard would otherwise have been red on its own PR.",
+      "The CI supply-chain ack gate does NOT fire for this diff: CI_SUPPLYCHAIN_FILE_PATTERNS matches only this repo's .github/**, while the diff edits shipped templates under shared/templates/. An edit to a shipped CI template changes every future adopter's trust boundary but escapes the ack. Filed as its own card; the concrete drift mode is blocked by the new hard guard."
     ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --with pytest --with pytest-mock pytest shared/tests/test_alert_match.py shared/tests/test_accepted_risk_convergence.py shared/tests/test_github_code_scanning.py shared/tests/test_accepted_risks_converge_cli.py -q",
+      "runner": "uv run --with pytest --with pytest-mock pytest shared/tests/test_action_pinning_posture.py shared/tests/test_ci_workflow_convention.py shared/tests/test_claude_md_template.py -q",
       "exit_code": 0,
-      "tests_run": 124,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\accepted-risk-alert-convergence\\.shipwright\\runs\\iterate-2026-07-18-accepted-risk-alert-convergence\\surface_verification.log",
-      "timestamp": "2026-07-18T22:26:38.157Z",
+      "tests_run": 66,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\adopter-pinning-posture-rule\\.shipwright\\runs\\iterate-2026-07-19-adopter-pinning-posture-rule\\surface_verification.log",
+      "timestamp": "2026-07-19T05:33:37.734Z",
       "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "Alert payload -> match key; every missing key component yields None, never a partial",
+          "behavior": "Third-party action not pinned to a full 40-char SHA fails, per shipped template",
           "disposition": "tested",
-          "evidence": "test_alert_match.py::TestAlertFromApi - 11 passed"
+          "evidence": "test_action_pinning_posture.py - watched RED on a deliberately mutated template, then restored"
         },
         {
-          "behavior": "Line number is excluded from the match key (it drifts on every edit above the finding)",
+          "behavior": "A GitHub-owned action that IS SHA-pinned fails (the direction that actually gets reversed)",
           "disposition": "tested",
-          "evidence": "test_alert_match.py::test_line_number_is_not_part_of_the_key"
+          "evidence": "test_action_pinning_posture.py - watched RED on a deliberately mutated template"
         },
         {
-          "behavior": "Provenance marker round-trips; an unmarked/malformed comment reads as human",
+          "behavior": "Guard is non-vacuous: templates found and >=10 `uses:` entries scanned",
           "disposition": "tested",
-          "evidence": "test_alert_match.py::TestProvenance - 7 passed"
+          "evidence": "test_templates_exist_so_this_guard_is_not_vacuous"
         },
         {
-          "behavior": "Dismissal comment carries statement+ref+expiry; truncation never eats the marker",
+          "behavior": "No hosted dependency-updater config (Dependabot OR Renovate) is shipped to adopters",
           "disposition": "tested",
-          "evidence": "test_alert_match.py::TestProvenance - 2 passed"
+          "evidence": "test_no_dependency_updater_config_is_shipped_to_adopters"
         },
         {
-          "behavior": "Scope validation: tool required, breadth declared, paths/rule-wide mutually exclusive, reason vocabulary",
+          "behavior": "The posture rule reaches claude-md-template.md with all five normative claims intact",
           "disposition": "tested",
-          "evidence": "test_alert_match.py::TestScopeProblem - 12 passed"
+          "evidence": "test_the_posture_rule_reaches_adopters_not_just_the_state - fails naming whichever claim disappeared"
         },
         {
-          "behavior": "Matching on (tool, rule, path); rule-wide; cross-tool isolation; ambiguous entry matches nothing",
+          "behavior": "Quoted, dynamic, comment-suffixed and bare `uses:` forms are all extracted (6 shapes)",
           "disposition": "tested",
-          "evidence": "test_alert_match.py::TestEntryMatches - 8 passed"
+          "evidence": "TestParserCannotBeEvaded - external review GPT high"
         },
         {
-          "behavior": "Triage dedup-key parse incl. colon-bearing check_id; unparseable key matches nothing",
+          "behavior": "Third-party evasions fail CLOSED; a quoted GitHub-owned SHA-pin is still caught",
           "disposition": "tested",
-          "evidence": "test_alert_match.py::TestTriageItemKey - 11 passed"
-        },
-        {
-          "behavior": "Plan dispositions: dismiss / satisfied / human / reopen-on-expiry / reopen-on-removal / stale / ambiguous / expiry boundary",
-          "disposition": "tested",
-          "evidence": "test_accepted_risk_convergence.py::TestPlanConvergence - 14 passed"
-        },
-        {
-          "behavior": "No backing entry => never dismissed; non-github targets never reach the alert surface",
-          "disposition": "tested",
-          "evidence": "test_accepted_risk_convergence.py::TestPlanConvergence - 2 passed"
-        },
-        {
-          "behavior": "Triage surface: match, non-match, expired no-op, GC tokens registered and is_machine_churn true",
-          "disposition": "tested",
-          "evidence": "test_accepted_risk_convergence.py::TestTriageSurface - 4 passed"
-        },
-        {
-          "behavior": "Rendering: every disposition printed; untouched summarised; a clean plan renders nothing",
-          "disposition": "tested",
-          "evidence": "test_accepted_risk_convergence.py::TestRendering - 3 passed"
-        },
-        {
-          "behavior": "gh shell: slug validation (10 negative controls), pagination, None != [], PATCH bodies, failure surfaced, explicit UTF-8 decode",
-          "disposition": "tested",
-          "evidence": "test_accepted_risk_convergence.py::TestGhShell - 20 passed"
-        },
-        {
-          "behavior": "CLI: build_plan, identity abort, failed-listing abort, read-only vs --apply, failed mutation, dispatch, exit 2",
-          "disposition": "tested",
-          "evidence": "test_accepted_risks_converge_cli.py - 19 passed"
-        },
-        {
-          "behavior": "This repo's register: every github-dismissal entry resolvable + marked; converge absent from every workflow",
-          "disposition": "tested",
-          "evidence": "test_accepted_risks_converge_cli.py::TestThisRepoRegister - 3 passed"
-        },
-        {
-          "behavior": "Overlapping entries CONFLICT and neither acts; a lapse in one does not reopen what the other still covers",
-          "disposition": "tested",
-          "evidence": "test_accepted_risk_convergence.py::TestPlanConvergence - 2 passed (external review GPT #4)"
-        },
-        {
-          "behavior": "Absent vs unreadable triage store are distinct; an unreadable store blocks the converged claim end-to-end",
-          "disposition": "tested",
-          "evidence": "test_accepted_risks_converge_cli.py::TestTriageApply + TestCmdConverge - 4 passed (external review GPT #3)"
+          "evidence": "TestParserCannotBeEvaded - 5 negative controls"
         }
       ],
       "counts": {
-        "testable": 16,
-        "tested": 16,
+        "testable": 7,
+        "tested": 7,
         "untestable": 0,
         "untested_testable": 0
       },
-      "enumeration_basis": "Every behavior introduced or changed by this diff, grouped into 16 rows over 124 new tests. No 'untestable' rows: all logic here is offline and deterministic, with the gh boundary driven through a single monkeypatched _run seam. The one claim that cannot be asserted in a test - that the token may PATCH a code-scanning alert - is closed by live probe P1 (a 422 body-validation response proves authn+authz passed and mutates nothing), because the only test-shaped version overwrites a real alert comment. Line coverage of the four new modules is 100% (alert_match, alert_convergence, github_code_scanning, tools/accepted_risks_converge). Rows 15-16 were added in response to the external review, which found three real defects my own negative controls did not reach - all of the same family: a state that renders as converged when it is not."
+      "enumeration_basis": "Every behavior introduced by this diff, grouped into 7 rows over 28 tests. No 'untestable' rows: all behaviour is a text assertion over tracked files. Both guard directions were driven RED on a mutated real template and restored from git, so the gate is proven on the bug it exists to catch rather than asserted. Rows 6-7 exist because the external review found the first-cut parser silently skipped quoted and dynamic `uses:` values - they evaded BOTH direction checks while the non-vacuity count still passed."
     }
   },
   "coverage": {

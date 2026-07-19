@@ -82,6 +82,34 @@ remediation commands — follow them, do not skip or delete it. The file
 auto-clears when the next SessionStart runs cleanly. Per-artefact migration
 guides live in the Shipwright repo under `docs/migrations/`.
 
+## GitHub Actions pinning — DO NOT "fix" this
+
+The workflows in `.github/workflows/` pin third-party actions to a full commit
+SHA, and leave **GitHub-owned** actions (`actions/*`, `github/*`) on mutable
+major tags (`@v4`). That asymmetry is deliberate. Do not "harden" it by pinning
+everything.
+
+**Why.** SHA-pinning trades a supply-chain risk for a maintenance one: a pinned
+SHA never receives security patches, so it needs an automated updater to avoid
+rotting. This project deliberately runs **no hosted dependency updater** — for
+**portability**, not cost. That reasoning holds even where such a service is
+free, so "but it's free" does not reopen it. GitHub-owned actions are the one
+publisher whose mutable tags are trustworthy enough to carry that trade; every
+other publisher is not, which is why third-party actions **are** SHA-pinned.
+
+**What this means in practice:**
+
+- Adding a third-party action → pin it to a full 40-character commit SHA, with
+  the human-readable version in a trailing comment (`@71345be…  # v4`).
+- Adding a GitHub-owned action → use the major tag (`@v4`). Pinning it to a SHA
+  is a regression, not an improvement.
+- Never add a dependency-updater config (`dependabot.yml` or equivalent).
+
+If you believe this posture is wrong, raise it — do not silently invert it in a
+PR. A well-meant "let's pin everything for supply-chain safety" is exactly how
+this decision has been reversed before, in a repo that had the state right and
+had never written down the reason.
+
 ## Asking the user questions (plain language)
 
 When you ask the user a question — a clarification, a choice between options,

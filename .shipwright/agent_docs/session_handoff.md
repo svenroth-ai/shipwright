@@ -1,37 +1,37 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-18-accepted-risk-alert-convergence"
+run_id: "iterate-2026-07-19-adopter-pinning-posture-rule"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-18T22:36:05.056466+00:00"
+reason: "iterate: ship the action-pinning posture rule to adopters (trg-0ce59c05)"
+timestamp: "2026-07-19T05:34:53.774077+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-18 22:36:05 UTC
+> Auto-generated 2026-07-19 05:34:53 UTC
 
 ## Session Info
 
 - **Session ID**: 1a5c5f62-8d5c-486b-aeca-6de1d4e6d619
-- **Timestamp**: 2026-07-18 22:36:05 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Timestamp**: 2026-07-19 05:34:53 UTC
+- **Reason**: iterate: ship the action-pinning posture rule to adopters (trg-0ce59c05)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-18-accepted-risk-alert-convergence
-- **Date**: 2026-07-18T22:18:10.715526Z
+- **Run ID**: iterate-2026-07-19-adopter-pinning-posture-rule
+- **Date**: 2026-07-19T05:34:48.491844Z
 - **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/accepted-risk-alert-convergence
-- **ADR**: iterate-2026-07-18-accepted-risk-alert-convergence
+- **Complexity**: small
+- **Branch**: iterate/adopter-pinning-posture-rule
+- **ADR**: iterate-2026-07-19-adopter-pinning-posture-rule
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-18-accepted-risk-alert-convergence.md
+- **Spec**: .shipwright/planning/iterate/2026-07-19-adopter-pinning-posture-rule.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/accepted-risk-alert-convergence
-- **Run ID**: `iterate-2026-07-18-accepted-risk-alert-convergence`
-- **Spec**: .shipwright/planning/iterate/2026-07-18-accepted-risk-alert-convergence.md
+- **Branch**: iterate/adopter-pinning-posture-rule
+- **Run ID**: `iterate-2026-07-19-adopter-pinning-posture-rule`
+- **Spec**: .shipwright/planning/iterate/2026-07-19-adopter-pinning-posture-rule.md
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -50,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/accepted-risk-alert-convergence
-- **Last Commit**: 8cfddce1 Merge remote-tracking branch 'origin/main' into iterate/accepted-risk-alert-convergence
+- **Branch**: iterate/adopter-pinning-posture-rule
+- **Last Commit**: 052378dc chore(triage): sweep 4 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -67,17 +67,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-c3513d1c | grade_snapshot | — | 2026-07-19 |
+| evt-16c0251e | work_completed | iterate (iterate: ship the action-pinning posture rule to adopters (trg-0ce59c05)) | 2026-07-19 |
+| evt-6a67eebe | grade_snapshot | — | 2026-07-18 |
 | evt-f39eefda | grade_snapshot | — | 2026-07-18 |
 | evt-76b4cd89 | grade_snapshot | — | 2026-07-18 |
-| evt-66ae4d09 | grade_snapshot | — | 2026-07-18 |
-| evt-9726e6a6 | work_completed | iterate (Record-boundary recovery + newline-termination guard on shipwright_events.jsonl: record_event.append_event and append_event_idempotent probe ends_without_newline before appending, lib/config.read_events delegates to read_jsonl_records so a concatenated line yields all its records, and the lock-free adopt event_seeder carries a documented duplicate probe (ADR-045 blocks importing the shared leaf). Extends the PR #399 triage contract to the audit trail.) | 2026-07-18 |
-| evt-6878c083 | grade_snapshot | — | 2026-07-18 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 333
-- **Last iterate**: change — Record-boundary recovery + newline-termination guard on shipwright_events.jsonl: record_event.append_event and append_event_idempotent probe ends_without_newline before appending, lib/config.read_events delegates to read_jsonl_records so a concatenated line yields all its records, and the lock-free adopt event_seeder carries a documented duplicate probe (ADR-045 blocks importing the shared leaf). Extends the PR #399 triage contract to the audit trail. (2026-07-18)
+- **Total work events**: 334
+- **Last iterate**: change — iterate: ship the action-pinning posture rule to adopters (trg-0ce59c05) (2026-07-19)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

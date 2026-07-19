@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-19-adopter-pinning-posture-rule",
+  "date": "2026-07-19T05:34:48.491844Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/adopter-pinning-posture-rule",
+  "spec": ".shipwright/planning/iterate/2026-07-19-adopter-pinning-posture-rule.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-19-adopter-pinning-posture-rule"
+}

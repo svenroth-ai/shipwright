@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-18T22:18:10.805261+00:00
+Generated: 2026-07-19T05:34:48.576358+00:00
 
 ## Requirements Coverage
 
@@ -28,6 +28,7 @@ Generated: 2026-07-18T22:18:10.805261+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-16c0251e"></a>ship the action-pinning posture rule to adopters (trg-0ce59c05) | iterate | change |  | — | — | 2026-07-19 |
 | <a id="evt-061daf99"></a>converge accepted risks onto the code-scanning surface (trg-13b8283b) | iterate | change |  | — | — | 2026-07-18 |
 | <a id="evt-9726e6a6"></a>Record-boundary recovery + newline-termination guard on shipwright_events.jsonl: record_event.append_event and append_event_idempotent probe ends_without_newline before appending, lib/config.read_events delegates to read_jsonl_records so a concatenated line yields all its records, and the lock-free adopt event_seeder carries a documented duplicate probe (ADR-045 blocks importing the shared leaf). Extends the PR #399 triage contract to the audit trail. | iterate | change |  | — | — | 2026-07-18 |
 | <a id="evt-7a6fa40a"></a>scanner-agnostic accepted-risk register (trg-15a8e267, item 4) | iterate | change |  | — | — | 2026-07-18 |
@@ -368,7 +369,7 @@ Generated: 2026-07-18T22:18:10.805261+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 333 |
+| Iterate changes | 334 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |
