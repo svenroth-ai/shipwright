@@ -24,6 +24,20 @@ import sys
 from pathlib import Path
 
 
+def _discovery():
+    # Shared planning walk, loaded by FILE LOCATION under a sentinel name so no
+    # ambiguous ``lib``/``scripts`` package is ever bound (ADR-045). Lazy: this
+    # script is also loaded standalone, where sys.path holds neither tree.
+    mod = sys.modules.get("_shipwright_planning_discovery")
+    if mod is None:
+        import importlib.util
+        path = Path(__file__).resolve().parents[4] / "shared/scripts/lib/planning_discovery.py"
+        spec = importlib.util.spec_from_file_location("_shipwright_planning_discovery", path)
+        sys.modules["_shipwright_planning_discovery"] = mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    return mod
+
+
 REQUIRED_CONFIGS = [
     "shipwright_run_config.json",
     "shipwright_project_config.json",
@@ -67,7 +81,10 @@ def _validate_spec(project_root: Path) -> list[str]:
     planning = project_root / ".shipwright" / "planning"
     if not planning.is_dir():
         return ["missing: .shipwright/planning/ directory"]
-    specs = list(planning.rglob("spec.md"))
+    # sort=False: which spec gets validated is filesystem-iteration-order
+    # dependent. Pinned by ``test_unsorted_walk_tracks_enumeration_order``;
+    # adding a sort would be a behaviour change, not a cleanup.
+    specs = list(_discovery().iter_spec_files(planning, recursive=True, sort=False))
     if not specs:
         return ["missing: .shipwright/planning/<split>/spec.md (no spec found)"]
     spec = specs[0]

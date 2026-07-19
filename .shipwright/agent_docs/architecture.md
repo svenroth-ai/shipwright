@@ -72,6 +72,7 @@ convention violation.
 
 **How phases communicate.** Four channels, all rooted in the target project:
 
+- **iterate-2026-07-19-one-discovery-function** (2026-07-19): Component - new shared leaf `lib/planning_discovery.py` is the SINGLE walk over `.shipwright/planning/`; all 15 discovery call sites across 6 import realms delegate to it, each passing the flags (`guard`/`sort`/`include_iterate`/`recursive`/`require`) reproducing its own behaviour, so the divergence is explicit in one place instead of invisible in fifteen. Byte-identical per the S1 golden corpus. `lib/adr_headers.py` split out of `drift_parsers` to hold its ceiling. -> decision_log (Run-ID).
 - **`SHIPWRIGHT_SESSION_ID`** — one unified session id across every plugin in a
   run, so hooks and artifacts written by different phases correlate.
 - **`shipwright_*_config.json`** — the per-phase config files written into the

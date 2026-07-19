@@ -24,6 +24,20 @@ import sys
 from pathlib import Path
 
 
+def _discovery():
+    # Shared planning walk, loaded by FILE LOCATION under a sentinel name so no
+    # ambiguous ``lib``/``scripts`` package is ever bound (ADR-045). Lazy: this
+    # script is also loaded standalone, where sys.path holds neither tree.
+    mod = sys.modules.get("_shipwright_planning_discovery")
+    if mod is None:
+        import importlib.util
+        path = Path(__file__).resolve().parents[4] / "shared/scripts/lib/planning_discovery.py"
+        spec = importlib.util.spec_from_file_location("_shipwright_planning_discovery", path)
+        sys.modules["_shipwright_planning_discovery"] = mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    return mod
+
+
 def _is_git_repo(root: Path) -> bool:
     try:
         result = subprocess.run(
@@ -97,13 +111,12 @@ def _detect_existing_artifacts(project_root: Path) -> list[str]:
         if (project_root / rel).is_file():
             found.append(rel)
     planning = project_root / ".shipwright" / "planning"
-    if planning.is_dir():
-        for spec in sorted(planning.rglob("spec.md")):
-            try:
-                rel = spec.relative_to(project_root).as_posix()
-            except ValueError:
-                continue
-            found.append(rel)
+    for spec in _discovery().iter_spec_files(planning, recursive=True):
+        try:
+            rel = spec.relative_to(project_root).as_posix()
+        except ValueError:
+            continue
+        found.append(rel)
     return found
 
 

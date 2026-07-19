@@ -45,7 +45,7 @@ from scripts.audit.audit_adapters import (
 from scripts.audit import git_log_scan
 
 
-drift_parsers = load_shared_lib("drift_parsers")
+adr_headers = load_shared_lib("adr_headers")
 
 
 # ---------------------------------------------------------------------------
@@ -265,7 +265,7 @@ def _read_decision_log_ids(project_root: Path) -> set[str]:
         content = candidate.read_text(encoding="utf-8", errors="ignore")
     except OSError:
         return set()
-    headers = drift_parsers.parse_adr_headers(content)
+    headers = adr_headers.parse_adr_headers(content)
     return {h.id for h in headers}
 
 

@@ -1,44 +1,40 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-19-events-record-boundary-readers"
+run_id: "iterate-2026-07-19-one-discovery-function"
 phase: "iterate"
-reason: "iterate: event-log record-boundary recovery across the audit + traceability read path"
-timestamp: "2026-07-19T07:26:56.726320+00:00"
+reason: "iterate finalization"
+timestamp: "2026-07-19T12:37:34.501426+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-19 07:26:56 UTC
+> Auto-generated 2026-07-19 12:37:34 UTC
 
 ## Session Info
 
-- **Session ID**: 605b268a-5de5-46b1-851b-548fd925ee1d
-- **Timestamp**: 2026-07-19 07:26:56 UTC
-- **Reason**: iterate: event-log record-boundary recovery across the audit + traceability read path
+- **Session ID**: 85c973ff-4812-4db0-acc1-935ed32ee51b
+- **Timestamp**: 2026-07-19 12:37:34 UTC
+- **Reason**: iterate finalization
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-19-events-record-boundary-readers
-- **Date**: 2026-07-19T07:12:01.751274Z
-- **Type**: bug
+- **Run ID**: iterate-2026-07-19-one-discovery-function
+- **Date**: 2026-07-19T11:41:43.148917Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/events-record-boundary-readers
-- **ADR**: iterate-2026-07-19-events-record-boundary-readers
+- **Branch**: iterate/campaign-S2-one-discovery-function
+- **ADR**: iterate-2026-07-19-one-discovery-function
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-19-events-record-boundary-readers.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-19-one-discovery-function.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/events-record-boundary-readers
-- **Run ID**: iterate-2026-07-19-events-record-boundary-readers
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-19-events-record-boundary-readers.md
-- **Complexity**: medium
-- **External Review Marker**: missing
+- **Branch**: iterate/campaign-S2-one-discovery-function
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-19T11:36:14)
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/events-record-boundary-readers
-- **Last Commit**: a6ddc5b5 chore(iterate): record post-merge suite state and the three gate catches
+- **Branch**: iterate/campaign-S2-one-discovery-function
+- **Last Commit**: 940fdf97 refactor(shared): one parameterized planning-discovery walk for all 15 call sites
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-3b934f75 | grade_snapshot | — | 2026-07-19 |
+| evt-9457076b | grade_snapshot | — | 2026-07-19 |
+| evt-f944de6d | grade_snapshot | — | 2026-07-19 |
+| evt-ec05d680 | work_completed | iterate (iterate: one shared spec-discovery walk for all 15 call sites) | 2026-07-19 |
 | evt-e8c35f10 | grade_snapshot | — | 2026-07-19 |
-| evt-7a612300 | grade_snapshot | — | 2026-07-19 |
-| evt-5c18465d | work_completed | iterate (iterate: compliance prework before the requirements-catalog campaign) | 2026-07-19 |
-| evt-c3513d1c | grade_snapshot | — | 2026-07-19 |
-| evt-16c0251e | work_completed | iterate (iterate: ship the action-pinning posture rule to adopters (trg-0ce59c05)) | 2026-07-19 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 336
-- **Last iterate**: change — iterate: compliance prework before the requirements-catalog campaign (2026-07-19)
+- **Total work events**: 337
+- **Last iterate**: change — iterate: one shared spec-discovery walk for all 15 call sites (2026-07-19)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

@@ -53,7 +53,7 @@
       }
     }
   },
-  "regenerated_for": "Initial baseline: campaign Requirements Catalog sub-iterate S1 (iterate-2026-07-18-requirements-golden-corpus). Freezes today's behaviour of 15 discovery walks and 5 FR-table parsers INCLUDING five known-wrong behaviours (FV-1..FV-5) so that steps S2-S4 can be checked rather than asserted. Platform-specific tokens (pathlib concrete subclass, path separator, directory-read OSError subclass) are neutralized in the matrix and pinned in dedicated tests instead.",
+  "regenerated_for": "S2 (iterate-2026-07-19-one-discovery-function): exactly ONE cell changed, and it is the only cell that CAN change under this sub-iterate. disc.review_runner.run_review is frozen by a source sha256 rather than by invocation -- its walk is inline in a function that calls an external LLM -- so routing it through the shared planning_discovery.iter_spec_files(recursive=True, sort=False) necessarily moves the hash even though the behaviour is identical: same unsorted rglob, same first-match break, same silent-empty on an absent or non-directory planning path. source_lines is unchanged at 114. The other 14 discovery cells and all 5 parser cells ARE invocable, and every one of them stayed byte-identical across the same commit that rewrote all 15 call sites. That is the evidence the extraction preserved behaviour; this stamp is not a substitute for it.",
   "schema_version": 1,
   "targets": {
     "disc._test_links_io.discover_specs": {
@@ -1436,7 +1436,7 @@
     },
     "disc.review_runner.run_review": {
       "kind": "source_only",
-      "sha256": "41bcfc815a1200ea4279b6b94f20b1db15b5994d1484635d09f897513556b59c",
+      "sha256": "150ce84f70b301e8ae12fb5c0d5c82ff328cc954a06b2e630fa96e86ba244c65",
       "source_lines": 114
     },
     "disc.rtm.collect_external_review_states": {

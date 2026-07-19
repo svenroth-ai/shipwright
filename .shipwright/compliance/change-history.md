@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-07-19T07:12:01.841222+00:00
-Total commits: 1177
+Generated: 2026-07-19T11:41:43.232169+00:00
+Total commits: 1176
 
 ## Commit Distribution
 
@@ -9,9 +9,9 @@ Total commits: 1177
 pie title Commit Types
     "fix" : 337
     "feat" : 327
-    "chore" : 249
+    "chore" : 247
     "docs" : 145
-    "refactor" : 69
+    "refactor" : 70
     "test" : 29
     "ci" : 11
     "other" : 9
@@ -24,7 +24,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-19 | events | recover concatenated records across the audit read path | ea0577a5e37b |
+| 2026-07-19 | events | recover concatenated records across the audit read path (#409) | 1fceca45a7e3 |
 | 2026-07-19 | events | recover concatenated records on the append-only event log (#405) | 94d0332831d5 |
 | 2026-07-18 | triage | enforce record termination and recover concatenated records (#399) | 7a34d1adc132 |
 | 2026-07-18 | fr-gate | reject declared requirement ids that exist in no spec (#398) | cad7dd0152be |
@@ -694,13 +694,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 249 commits
+### Chores (chore) — 247 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-19 | iterate | record post-merge suite state and the three gate catches | a6ddc5b55b00 |
 | 2026-07-19 | compliance | register four size crossings, ratchet nine entries, record the missing convention (#408) | 37fe1346b5df |
-| 2026-07-19 | triage | sweep 5 outbox append(s) into branch | 443268d68d1f |
 | 2026-07-18 | triage | deliver 3 orphaned records from the merged iterate worktree (#402) | 56ee1c0e2387 |
 | 2026-07-18 | security | by-design nosemgrep suppression for the layer-coverage loader (#396) | 6cfd0e84655a |
 | 2026-07-18 | test-hygiene | resolve 51 pre-existing skipped-test findings (STEP 2) (#393) | 490a624e39f8 |
@@ -1098,10 +1096,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 69 commits
+### Refactoring (refactor) — 70 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-19 | shared | one parameterized planning-discovery walk for all 15 call sites | 940fdf9796d6 |
 | 2026-07-18 | tests | split test_triage_repair.py under the 300-LOC gate (#400) | c741f46bcf80 |
 | 2026-07-15 | iterate | parallelise the F0 verification gate without weakening it (#371) | 0befc7d075be |
 | 2026-07-07 | coverage | route the monorepo's own diff-coverage gate through the shared action (Stage 3) (#340) | 863dd8aec9cb |
@@ -1246,7 +1245,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1177 |
+| Total commits | 1176 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1177 |
+| Human-authored commits | 1176 |
 

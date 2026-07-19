@@ -20,6 +20,7 @@ import json
 import re
 from pathlib import Path
 
+from ._lib_loader import load_shared_lib
 from ._types import (
     DecisionEntry,
     ExternalReviewState,
@@ -175,19 +176,16 @@ _MD_HEADING_RE = re.compile(r"^(#{1,6})\s+(\S.*?)\s*$")
 def collect_requirements(project_root: Path) -> list[RequirementInfo]:
     """Parse functional requirements from .shipwright/planning/*/spec.md files."""
     planning_dir = project_root / ".shipwright" / "planning"
-    if not planning_dir.exists():
-        return []
 
     requirements: list[RequirementInfo] = []
 
-    for split_dir in sorted(planning_dir.iterdir()):
-        if not split_dir.is_dir():
-            continue
-        spec_path = split_dir / "spec.md"
-        if not spec_path.exists():
-            continue
-
-        split_name = split_dir.name
+    # guard="exists" preserves this walk raising NotADirectoryError on a
+    # planning FILE. Its claimed mirror, drift_parsers, swallows the read_text
+    # OSError that follows; this one has no try/except at all. Both divergences
+    # are frozen here, not reconciled (campaign S2b owns that).
+    iter_spec_files = load_shared_lib("planning_discovery").iter_spec_files
+    for spec_path in iter_spec_files(planning_dir, guard="exists"):
+        split_name = spec_path.parent.name
         rel_spec = f".shipwright/planning/{split_name}/spec.md"
         content = spec_path.read_text(encoding="utf-8")
 
@@ -228,18 +226,14 @@ def collect_external_review_states(project_root: Path) -> list[ExternalReviewSta
     marker are reported with status="missing" so compliance can flag them.
     """
     planning_dir = project_root / ".shipwright" / "planning"
-    if not planning_dir.exists():
-        return []
 
     states: list[ExternalReviewState] = []
-    for split_dir in sorted(planning_dir.iterdir()):
-        if not split_dir.is_dir():
-            continue
-        # Skip the iterate/ sub-dir — iterate runs produce run-scoped markers
-        # that are audited separately via events, not per-split RTM rows.
-        if split_dir.name == "iterate":
-            continue
-
+    # Split DIRS, not spec files: this is the only call site that emits a row
+    # for a split that LACKS its target file, so it cannot enumerate the files.
+    # include_iterate=False — iterate runs produce run-scoped markers that are
+    # audited separately via events, not per-split RTM rows.
+    iter_split_dirs = load_shared_lib("planning_discovery").iter_split_dirs
+    for split_dir in iter_split_dirs(planning_dir, guard="exists", include_iterate=False):
         marker_path = split_dir / "external_review_state.json"
         if not marker_path.exists():
             states.append(ExternalReviewState(split=split_dir.name, status="missing"))

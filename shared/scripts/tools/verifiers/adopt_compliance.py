@@ -40,6 +40,7 @@ from lib.phase_quality import (  # noqa: E402
     STATUS_WARN,
     make_finding,
 )
+from lib.planning_discovery import iter_spec_files  # noqa: E402
 
 
 REQUIRED_CONFIGS = [
@@ -89,7 +90,11 @@ def check_a2_spec_has_frs(project_root: Path) -> dict[str, Any]:
     if not planning.is_dir():
         return make_finding("A2", STATUS_FAIL, "missing .shipwright/planning/ directory",
                             name=name, provenance="adopt_spec_check")
-    specs = list(planning.rglob("spec.md"))
+    # sort=False: this walk is filesystem-order-dependent, so which spec wins
+    # the "FR found in ..." message is not deterministic. Pinned by
+    # ``test_unsorted_walk_tracks_enumeration_order_a2``; adding a sort here
+    # would be a behaviour change, not a cleanup.
+    specs = list(iter_spec_files(planning, recursive=True, sort=False))
     if not specs:
         return make_finding("A2", STATUS_FAIL, "no .shipwright/planning/<split>/spec.md found",
                             name=name, provenance="adopt_spec_check")

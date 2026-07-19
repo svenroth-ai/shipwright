@@ -12,6 +12,20 @@ from pathlib import Path
 from typing import Any
 
 
+def _discovery():
+    # Shared planning walk, loaded by FILE LOCATION under a sentinel name so no
+    # ambiguous ``lib``/``scripts`` package is ever bound (ADR-045). Lazy: this
+    # module is also loaded by path, where sys.path holds neither tree.
+    mod = sys.modules.get("_shipwright_planning_discovery")
+    if mod is None:
+        import importlib.util
+        path = Path(__file__).resolve().parents[4] / "shared/scripts/lib/planning_discovery.py"
+        spec = importlib.util.spec_from_file_location("_shipwright_planning_discovery", path)
+        sys.modules["_shipwright_planning_discovery"] = mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    return mod
+
+
 def _locate_llm_review() -> Path | None:
     here = Path(__file__).resolve()
     for ancestor in [here, *here.parents]:
@@ -97,12 +111,12 @@ def run_review(
         p = project_root / rel
         if p.exists():
             parts.append(f"## {rel}\n\n{p.read_text(encoding='utf-8')}\n")
-    # Add first split spec
+    # Add first split spec. sort=False: which split is sampled is
+    # filesystem-iteration-order dependent, as it always was.
     planning = project_root / ".shipwright" / "planning"
-    if planning.is_dir():
-        for spec in planning.rglob("spec.md"):
-            parts.append(f"## {spec.relative_to(project_root).as_posix()}\n\n{spec.read_text(encoding='utf-8')}\n")
-            break
+    for spec in _discovery().iter_spec_files(planning, recursive=True, sort=False):
+        parts.append(f"## {spec.relative_to(project_root).as_posix()}\n\n{spec.read_text(encoding='utf-8')}\n")
+        break
     content = "\n\n---\n\n".join(parts)
 
     context = (

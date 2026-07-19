@@ -571,7 +571,7 @@
     {
       "path": "shared/scripts/lib/drift_parsers.py",
       "limit": 300,
-      "current": 523,
+      "current": 409,
       "state": "grandfathered",
       "adr": null
     },
@@ -851,7 +851,7 @@
     {
       "path": "shared/tests/test_drift_parsers.py",
       "limit": 300,
-      "current": 449,
+      "current": 388,
       "state": "grandfathered",
       "adr": null
     },

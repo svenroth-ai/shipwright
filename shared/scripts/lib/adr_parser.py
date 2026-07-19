@@ -1,6 +1,6 @@
 """ADR body parser for the Phase-Quality Q1 "ADR substance" check.
 
-Complements ``lib.drift_parsers.parse_adr_headers`` (which only extracts
+Complements ``lib.adr_headers.parse_adr_headers`` (which only extracts
 id, title, status, supersedes) with a body-section extractor so Q1 can
 measure whether the latest ADR has a non-trivial Context, Decision and
 Consequences section. Q1 is Tier-2 heuristic — the thresholds are
@@ -38,7 +38,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Iterable
 
-from .drift_parsers import ADRHeader, parse_adr_headers
+from .adr_headers import ADRHeader, parse_adr_headers
 
 
 # Matches bullet-form labels like "- **Context:** ..." or

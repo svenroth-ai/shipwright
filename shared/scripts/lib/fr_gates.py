@@ -53,14 +53,19 @@ def collect_known_fr_ids(project_root) -> tuple[frozenset[str], bool]:
     """
     try:
         from lib.drift_parsers import collect_requirements_from_planning
+        from lib.planning_discovery import iter_spec_files
     except Exception:
         return frozenset(), False
 
     try:
         planning = Path(project_root) / _PLANNING
-        specs_found = planning.is_dir() and any(
-            (d / "spec.md").is_file() for d in planning.iterdir() if d.is_dir()
-        )
+        # require="is_file" (not the majority's "exists") is this call site's own
+        # divergence: a *directory* named spec.md does not count as a spec here.
+        # sort=False keeps raw iterdir order, and the generator still
+        # short-circuits on the first hit exactly as the old ``any()`` did.
+        specs_found = next(
+            iter_spec_files(planning, sort=False, require="is_file"), None
+        ) is not None
         if not specs_found:
             return frozenset(), False
         ids = {

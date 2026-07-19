@@ -39,6 +39,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
+# Package import is safe here (unlike drift_parsers): every consumer reaches this
+# module as ``lib.spec_parser``, so ``lib`` is always the SHARED package (ADR-045).
+from lib.planning_discovery import iter_spec_files, iter_split_dirs
+
 
 # ---------------------------------------------------------------------------
 # FR heading parser
@@ -208,8 +212,8 @@ def read_top_level_spec(project_root: Path) -> str | None:
     location has a spec.
 
     The fallback fixes S1 — and every S-check sharing this reader (S4,
-    ``top_level_spec_is_non_empty``) — for adopted (brownfield) projects,
-    whose spec never lives under ``agent_docs/``.
+    ``top_level_spec_is_non_empty``) — for adopted (brownfield) projects, whose
+    spec never lives under ``agent_docs/``.
     """
     path = project_root / _AGENT_DOCS_DIRNAME / "spec.md"
     if path.exists():
@@ -219,7 +223,7 @@ def read_top_level_spec(project_root: Path) -> str | None:
             return None
     # Adopt layout: the spec lives under a planning split, not agent_docs.
     planning = project_root / _PLANNING_DIRNAME
-    for candidate in sorted(planning.glob("*/spec.md")):
+    for candidate in iter_spec_files(planning):   # was sorted(glob("*/spec.md"))
         try:
             return candidate.read_text(encoding="utf-8", errors="ignore")
         except OSError:
@@ -280,12 +284,8 @@ def _iter_spec_files(project_root: Path) -> Iterable[Path]:
         yield top
 
     planning = project_root / _PLANNING_DIRNAME
-    if not planning.is_dir():
-        return
-
-    for split_dir in sorted(planning.iterdir()):
-        if not split_dir.is_dir():
-            continue
+    # Still a generator (corpus records "generator"); iterate/ stays special-cased.
+    for split_dir in iter_split_dirs(planning):
         if split_dir.name == "iterate":
             for iter_spec in sorted(split_dir.glob("*.md")):
                 yield iter_spec
