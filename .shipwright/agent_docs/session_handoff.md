@@ -1,8 +1,8 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-20-accepted-risk-adopter-converge"
+run_id: "iterate-2026-07-20-runner-finalization-integrity"
 phase: "iterate"
-reason: "F11 re-refresh after #419: iterate-2026-07-20-accepted-risk-adopter-converge"
+reason: "F11 refresh: catch up to origin/main d9aa64b3"
 timestamp: "2026-07-20T22:10:05.470232+00:00"
 ---
 
@@ -12,9 +12,9 @@ timestamp: "2026-07-20T22:10:05.470232+00:00"
 
 ## Session Info
 
-- **Session ID**: c2a98c2f-740b-4818-b8ae-e5b87528ef06
+- **Session ID**: 059b5006-0551-4c91-acfc-252b276f1794
 - **Timestamp**: 2026-07-20 22:10:05 UTC
-- **Reason**: F11 re-refresh after #419: iterate-2026-07-20-accepted-risk-adopter-converge
+- **Reason**: F11 refresh: catch up to origin/main d9aa64b3
 
 ## Last Iterate
 
@@ -28,7 +28,10 @@ timestamp: "2026-07-20T22:10:05.470232+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/accepted-risk-adopter-converge
+- **Branch**: iterate/runner-finalization-integrity
+- **Run ID**: `iterate-2026-07-20-runner-finalization-integrity`
+- **Spec**: .shipwright/planning/iterate/2026-07-20-runner-finalization-integrity.md
+- **Complexity**: medium (history-calibrated; risk floor medium)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -47,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/accepted-risk-adopter-converge
-- **Last Commit**: 10b60d94 Merge remote-tracking branch 'origin/main' into iterate/accepted-risk-adopter-converge
+- **Branch**: iterate/runner-finalization-integrity
+- **Last Commit**: 76c5a353 Merge remote-tracking branch 'origin/main' into iterate/runner-finalization-integrity
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -73,7 +76,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 347
+- **Total work events**: 348
 - **Last iterate**: change — Document operator-run converge for adopted repos + guard test (2026-07-20)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
