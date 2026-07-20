@@ -1,39 +1,44 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-20-flaky-idempotency-banner"
+run_id: "iterate-2026-07-20-events-record-boundary-remainder"
 phase: "iterate"
-reason: "F11 pre-merge refresh: iterate-2026-07-20-flaky-idempotency-banner"
-timestamp: "2026-07-20T21:50:43.320024+00:00"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-07-20T21:58:37.223294+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-20 21:50:43 UTC
+> Auto-generated 2026-07-20 21:58:37 UTC
 
 ## Session Info
 
-- **Session ID**: 6c3536fe-0c2c-41bb-89a5-ec4014b6c5ee
-- **Timestamp**: 2026-07-20 21:50:43 UTC
-- **Reason**: F11 pre-merge refresh: iterate-2026-07-20-flaky-idempotency-banner
+- **Session ID**: 98ffa9f7-2bcb-4083-af41-097ff497bb0f
+- **Timestamp**: 2026-07-20 21:58:37 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-20-flaky-idempotency-banner
-- **Date**: 2026-07-20T21:50:37.517499Z
+- **Run ID**: iterate-2026-07-20-events-record-boundary-remainder
+- **Date**: 2026-07-20T21:58:31.436121Z
 - **Type**: bug
-- **Complexity**: small
-- **Branch**: iterate/flaky-idempotency-banner
-- **ADR**: iterate-2026-07-20-flaky-idempotency-banner
+- **Complexity**: medium
+- **Branch**: iterate/2026-07-20-events-record-boundary-remainder
+- **ADR**: iterate-2026-07-20-events-record-boundary-remainder
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/2026-07-20-events-record-boundary-remainder.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/flaky-idempotency-banner
+- **Branch**: iterate/2026-07-20-events-record-boundary-remainder
+- **Run ID**: iterate-2026-07-20-events-record-boundary-remainder
+- **Spec**: .shipwright/planning/iterate/2026-07-20-events-record-boundary-remainder.md
+- **Complexity**: medium
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -47,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/flaky-idempotency-banner
-- **Last Commit**: 88e7a984 Merge remote-tracking branch 'origin/main' into iterate/flaky-idempotency-banner
+- **Branch**: iterate/2026-07-20-events-record-boundary-remainder
+- **Last Commit**: 9365114f Merge remote-tracking branch 'origin/main' into iterate/2026-07-20-events-record-boundary-remainder
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -73,7 +78,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 345
+- **Total work events**: 346
 - **Last iterate**: bug — adopt FR-id cap: canonical group rollover past 99 detected features (2026-07-20)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
