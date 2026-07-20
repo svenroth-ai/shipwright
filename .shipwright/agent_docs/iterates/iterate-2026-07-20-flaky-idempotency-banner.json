@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-20-flaky-idempotency-banner",
+  "date": "2026-07-20T21:50:37.517499Z",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/flaky-idempotency-banner",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-07-20-flaky-idempotency-banner"
+}

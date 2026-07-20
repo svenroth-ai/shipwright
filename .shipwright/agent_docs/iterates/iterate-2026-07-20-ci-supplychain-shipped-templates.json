@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-20-ci-supplychain-shipped-templates",
+  "date": "2026-07-20T21:42:23.901005Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/ci-supplychain-shipped-templates",
+  "spec": "",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-20-ci-supplychain-shipped-templates"
+}

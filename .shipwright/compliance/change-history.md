@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-07-20T21:58:31.531129+00:00
-Total commits: 1181
+Generated: 2026-07-20T21:50:37.610785+00:00
+Total commits: 1184
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 337
-    "feat" : 328
+    "fix" : 339
+    "feat" : 329
     "chore" : 247
     "docs" : 145
     "refactor" : 74
@@ -20,10 +20,12 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 337 commits
+### Fixes (fix) — 339 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-20 | finalize | stop flaky idempotency test reddening PRs across a UTC minute boundary | bb04761801a3 |
+| 2026-07-20 | adopt | roll FR-id group over past 99 so generated ids stay canonical (FR-01.13) (#416) | 5c9c4b316f05 |
 | 2026-07-19 | events | recover concatenated records across the audit read path (#409) | 1fceca45a7e3 |
 | 2026-07-19 | events | recover concatenated records on the append-only event log (#405) | 94d0332831d5 |
 | 2026-07-18 | triage | enforce record termination and recover concatenated records (#399) | 7a34d1adc132 |
@@ -362,10 +364,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 328 commits
+### Features (feat) — 329 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-20 | iterate | extend the CI supply-chain ack gate to shipped CI templates (#417) | c6975f4e612c |
 | 2026-07-20 | traceability | answer "which changes touched this requirement" from the event log (campaign S7) (#415) | 18905d576514 |
 | 2026-07-19 | templates | ship the action-pinning posture RULE to adopters, gated both ways (#407) | e336197ca8e9 |
 | 2026-07-19 | compliance | converge accepted risks onto the code-scanning surface (#406) | de9cd073b991 |
@@ -1250,7 +1253,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1181 |
+| Total commits | 1184 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1181 |
+| Human-authored commits | 1184 |
 
