@@ -108,6 +108,22 @@ _HEADER_BLIND = """# Split 07 -- Header-blind mis-extraction
 | FR-07.01 | ok | Should | extra | cells |
 """
 
+# The SIXTH shape, and the one every producer emits after S5: the converged
+# target. It is in the corpus because the harness's job is to pin what the 15
+# discovery paths and the reader actually meet in production, and after this
+# campaign that is this table -- the seven above are all history. Carries one
+# row per Basis outcome the vocabulary distinguishes (known / other-with-reason
+# / malformed) and both Layers provenances, so a change to either rule shows up
+# as a golden diff rather than only in the S5 unit tests.
+_CONVERGED = """# Split 08 -- Converged shape
+
+| ID | Area | Name | Priority | Description | Basis | Layers |
+|---|---|---|---|---|---|---|
+| FR-08.01 | Reporting | Coverage report | Must | Shows coverage per layer | code | unit (inferred) |
+| FR-08.02 | Reporting | Export | Should | Writes a CSV export | other: vendor doc | unit, integration |
+| FR-08.03 | Reporting | Trend chart | May | Renders a trend chart | enrichment.json | e2e (inferred) |
+"""
+
 # The lowercase/unrecognised-priority rows probe the PRIORITY VOCABULARY axis.
 # It used to divide the parsers three ways: drift_parsers/rtm required an
 # exact-case Must|Should|May in data column 3 and DROPPED the whole row
@@ -239,6 +255,7 @@ FIXTURES: dict[str, dict[str, str]] = {
         f"{PLANNING}/05-fixture-fr/spec.md": _FIXTURE_FR_HEADER,
         f"{PLANNING}/06-reordered/spec.md": _REORDERED,
         f"{PLANNING}/07-header-blind/spec.md": _HEADER_BLIND,
+        f"{PLANNING}/08-converged/spec.md": _CONVERGED,
     },
 
     # Every axis on which the 15 walks disagree, in one tree.

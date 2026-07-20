@@ -41,6 +41,21 @@ differences:
      acceptance-criteria block; the new FR ID goes to F7 `--new-frs`.
      Number it deterministically (next free `FR-{split}.NN`, counting live
      **and** removed rows) and name it as a capability, per FEATURE Step 2.
+     - **The row has seven cells:**
+       `| ID | Area | Name | Priority | Description | Basis | Layers |`.
+       `Basis` is ONE value from `interview` / `code` / `observed` / `tests`
+       / `assumed` / `other: <reason>` — anything else, including a blank
+       cell, is a hard audit failure.
+     - **`Layers` can hard-abort this iterate.** A **bare** cell
+       (`unit, e2e`) is a binding declaration: any named layer without an
+       executed-passing `@FR`-tagged test becomes a HARD coverage failure
+       and finalization exits non-zero, with no bypass. A newly added FR
+       always counts as behaviour-changed in the iterate that adds it, so a
+       bare cell on an FR whose tests do not exist yet **aborts the run**.
+       Write the bare form only if the tests land in THIS iterate; otherwise
+       write `unit, e2e (inferred)`, which is advisory and is the honest form
+       when the layers have not been verified. See `shared/fr-authoring.md`
+       §4a.
    - **REMOVE** — the change deletes a user-visible capability: move the
      FR row into a `### Removed Requirements` subsection with the run_id
      and the literal `status: deprecated` (never silently delete).

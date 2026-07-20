@@ -128,12 +128,51 @@ Rules:
 
 ## 2. Functional Requirements
 
-| ID | Requirement | Priority | Layers |
-|----|-------------|----------|--------|
-| FR-{NN}.01 | The system SHALL ... | Must | unit, e2e |
-| FR-{NN}.02 | The system SHALL ... | Must | unit, integration |
-| FR-{NN}.03 | The system SHOULD ... | Should | unit |
-| FR-{NN}.04 | The system MAY ... | May | unit |
+| ID | Area | Name | Priority | Description | Basis | Layers |
+|---|---|---|---|---|---|---|
+| FR-{NN}.01 | {Area} | {Short capability name} | Must | The system SHALL ... | interview | unit, e2e |
+| FR-{NN}.02 | {Area} | {Short capability name} | Must | The system SHALL ... | interview | unit, integration |
+| FR-{NN}.03 | {Area} | {Short capability name} | Should | The system SHOULD ... | assumed | unit |
+| FR-{NN}.04 | {Area} | {Short capability name} | May | The system MAY ... | assumed | unit |
+
+This header is the **one converged shape**, emitted byte-identically by
+`/shipwright-project` and `/shipwright-adopt`. Do not add, drop, rename or
+reorder a column: the reader resolves columns by name, so a renamed column is
+not a cosmetic choice — it is a column that no longer exists.
+
+**`Area`** is the requirement's capability group, **rendered from the group digit
+of its ID** — `FR-03.xx` belongs to split `03-…`, and the Area cell is that
+split's name. It is a display label, never a second grouping axis: if you find
+yourself choosing an Area that disagrees with the ID's group, the ID is
+authoritative and the requirement is filed in the wrong split.
+
+Add `### {Area}` sub-sections **only when one split genuinely holds more than one
+area**. A greenfield split already carries its grouping in the ID, so in the
+normal case the sections would restate what the IDs already say.
+
+**`Name`** is a short capability name (2–5 words, a noun phrase — "Password
+reset", not "The system SHALL reset passwords"). **`Description`** carries the
+full Rupp/IREB sentence. They are separate columns because the name fence in
+`shared/fr-authoring.md` §5 applies to the name only.
+
+**`Basis`** records **how we know this requirement**, from a closed vocabulary:
+
+| Value | Meaning |
+|---|---|
+| `interview` | a human told us |
+| `code` | read from source |
+| `observed` | seen in the running application |
+| `tests` | derived from existing tests |
+| `assumed` | **nobody confirmed this — needs checking** |
+| `other` | special case; add the reason as `other: <reason>` |
+
+`assumed` is the load-bearing value, and the one to reach for when you are
+tempted to guess. Its whole job is to stop a guess from later reading as
+established fact — if an interviewee could not recall *why* a limit is 90 and you
+wrote down a plausible number, that requirement's basis is `assumed`, not
+`interview`. A value outside this vocabulary is a hard error (it is a typo, not a
+special case); `other` never blocks. Known values take no qualifier: write
+`code`, not `code (auth.ts)` — the file path is exactly what this column replaced.
 
 **`Layers`** declares the test layers this requirement MUST be covered at, from
 `{unit, integration, e2e}` — the set compliance checks per-layer coverage against
@@ -148,6 +187,41 @@ Comma-separate multiple layers. The column is **backward-compatible**: an FR aut
 without it still parses — a UI-worded FR defaults to `e2e`, everything else to `unit` —
 but a requirement created after this field ships SHOULD declare it explicitly, so its
 provenance reads as author-chosen rather than legacy-inferred.
+
+**Write the layers bare when the requirement is one you are about to build.** A
+bare cell is an author's declaration, and compliance treats it as binding: a
+missing layer becomes a hard coverage failure rather than a warning. That is the
+intended contract for a requirement a human wrote — you are stating what this
+must be tested at, and in the normal flow the tests follow immediately, because
+`/shipwright-project` feeds `/shipwright-build`, which is TDD.
+
+**When you are auto-deriving a cell from the defaults above rather than deciding
+it, mark it `(inferred)`** — see the next paragraph. The defaults are a starting
+guess about a requirement nobody has planned tests for yet, and a guess written
+bare is a binding claim you cannot back.
+
+You will also see cells ending in `(inferred)`, e.g. `unit, e2e (inferred)`.
+**That marker means "nobody has verified these layers", and it keeps the
+requirement advisory** — reported, never blocking. It is *usually* written by a
+tool (`/shipwright-adopt` for reverse-engineered requirements, and migrations),
+because a tool is usually what produces an unverified guess — but the marker
+describes the cell's **standing**, not who typed it.
+
+So: **declare bare when you know, mark `(inferred)` when you do not.** Writing
+`(inferred)` by hand for layers you have not established is honest and is the
+form that does not hard-block; writing a bare cell you have not established
+asserts a binding requirement you cannot back. See `shared/fr-authoring.md` §4a,
+which is the binding rulebook for this column.
+
+**Do not reach for `Basis: assumed` to express "I don't know the layers".** They
+are different columns answering different questions: `Basis` records how we know
+the **requirement**; `Layers` records what it must be **tested** at. A
+requirement can be `Basis: interview` (a human told us, plainly) and still have
+entirely unverified layers.
+
+Only the literal word `inferred` in parentheses counts — `(auto)` or `(guess)` do
+not, and a cell marked that way is read as a binding declaration. Mind the
+space: `unit (inferred)` parses, `unit(inferred)` silently yields no layers.
 
 ### Acceptance Criteria
 
@@ -256,14 +330,23 @@ application. Users can sign up, log in, and access features based on their role.
 
 ## 2. Functional Requirements
 
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| FR-01.01 | The system SHALL allow users to register with email and password | Must |
-| FR-01.02 | The system SHALL authenticate users via email/password and return a session token | Must |
-| FR-01.03 | The system SHALL support password reset via email link | Must |
-| FR-01.04 | The system SHALL enforce role-based access control (admin, member) | Must |
-| FR-01.05 | The system SHOULD rate-limit login attempts to 5 per minute per IP | Should |
-| FR-01.06 | The system MAY support "remember me" for extended sessions | May |
+| ID | Area | Name | Priority | Description | Basis | Layers |
+|---|---|---|---|---|---|---|
+| FR-01.01 | Authentication | User registration | Must | The system SHALL allow users to register with email and password | interview | unit, integration, e2e |
+| FR-01.02 | Authentication | User login | Must | The system SHALL authenticate users via email/password and return a session token | interview | unit, integration, e2e |
+| FR-01.03 | Authentication | Password reset | Must | The system SHALL support password reset via email link | interview | unit, integration, e2e |
+| FR-01.04 | Authentication | Role-based access | Must | The system SHALL enforce role-based access control (admin, member) | interview | unit, e2e |
+| FR-01.05 | Authentication | Login rate limiting | Should | The system SHOULD rate-limit login attempts to 5 per minute per IP | assumed | unit |
+| FR-01.06 | Authentication | Remember me | May | The system MAY support "remember me" for extended sessions | assumed | unit, e2e (inferred) |
+
+Both `Layers` forms appear above on purpose — copying either should be a choice,
+not an accident:
+
+- **FR-01.01–.05 are bare** — binding declarations. This is the recommended form:
+  you are building these, so the tests land with them. Until they do, the missing
+  layer hard-aborts finalization.
+- **FR-01.06 carries `(inferred)`** — advisory, for a `May` capability whose
+  layers nobody has verified yet. Reported, never blocking.
 
 ### Acceptance Criteria
 

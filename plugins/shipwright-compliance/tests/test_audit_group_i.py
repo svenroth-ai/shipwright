@@ -121,10 +121,15 @@ def _by_id(findings):
 
 def test_clean_greenfield_spec_is_clean(tmp_path):
     findings = _by_id(_run(_spec(tmp_path, _GREENFIELD)))
-    assert set(findings) == {"I1", "I2", "I3", "I4"}
+    # I5 (Basis vocabulary) joined the group in campaign S5.
+    assert set(findings) == {"I1", "I2", "I3", "I4", "I5"}
     # Greenfield has no Name column, so the §5 fence is inapplicable, NOT passing.
     assert findings["I1"].status == "skip"
     assert "not applicable" in findings["I1"].detail
+    # Same shape of answer for I5: this fixture predates the Basis column, so the
+    # vocabulary is inapplicable rather than satisfied.
+    assert findings["I5"].status == "skip"
+    assert "no Basis column" in findings["I5"].detail
     assert all(findings[c].status == "pass" for c in ("I2", "I3", "I4"))
 
 

@@ -16,6 +16,21 @@ from pathlib import Path
 from tools.generate_adoption_artifacts import generate
 
 
+def _fr_basis(spec_text: str) -> dict[str, str]:
+    """Name → Basis cell, read through the shared FR-table reader.
+
+    Campaign S5 replaced the `Source` column (a file path) with `Basis` (how we
+    know this requirement), so a source path no longer appears in the spec at
+    all — see decision D3.
+    """
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "shared" / "scripts" / "lib"))
+    from fr_table_reader import read_active_fr_rows
+
+    return {row.name: row.basis_cell for row in read_active_fr_rows(spec_text)}
+
+
 def _git_init(root: Path) -> None:
     subprocess.run(["git", "init", "-q"], cwd=root, check=True)
     subprocess.run(["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "--allow-empty", "-m", "init", "-q"], cwd=root, check=True)
@@ -85,9 +100,17 @@ def test_ast_features_survive_when_crawl_finds_only_frontend(tmp_path: Path) -> 
     assert "Home" in spec_text
     # 5 distinct FR rows = the union, not the post-drop 2
     assert spec_text.count("FR-01.") >= 5
-    # Source files from AST should also be referenced
-    assert "server/src/index.ts" in spec_text
-    assert "server/src/sessions.ts" in spec_text
+    # The AST origin is still recorded — but as `Basis: code` rather than as a
+    # source-file path. Campaign S5 dropped the `Source` column (decision D3: a
+    # path is implementation detail, and it answered "where we looked" rather
+    # than "how we know"). `code` is that same fact in the new vocabulary, and
+    # it distinguishes the AST-derived rows from the crawl-derived ones, which
+    # the path never did on its own.
+    basis = _fr_basis(spec_text)
+    assert basis["/api/sessions"] == "code"
+    assert basis["/api/users"] == "code"
+    assert basis["Dashboard"] == "observed"
+    assert basis["Home"] == "observed"
 
 
 def test_overlapping_routes_keep_both_origins(tmp_path: Path) -> None:
@@ -114,8 +137,11 @@ def test_overlapping_routes_keep_both_origins(tmp_path: Path) -> None:
         "expected /dashboard to appear at most a few times (one FR row + section), "
         f"got {spec_text.count('/dashboard')}"
     )
-    # The source_file from AST should still be referenced
-    assert "src/pages/dashboard.tsx" in spec_text
+    # The AST origin still wins over the crawl one. Both origins reached this
+    # row, and `basis_for` prefers `source_file` over `url` because reading the
+    # code is the stronger evidence — so `code`, not `observed`, is what a
+    # merged row records. (The source-file PATH is gone; see D3.)
+    assert _fr_basis(spec_text)["/dashboard"] == "code"
 
 
 def test_no_routes_falls_back_to_ast_only(tmp_path: Path) -> None:

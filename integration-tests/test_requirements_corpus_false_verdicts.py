@@ -137,17 +137,29 @@ def test_fv2_group_d_guards_skip_on_empty_requirements():
 
 
 def test_fv2_group_i_skips_every_check_on_empty():
-    """FROZEN-BUG (FV-2): all four Group I checks skip on zero rows.
+    """FROZEN-BUG (FV-2): every Group I check skips on zero rows.
 
     Note Group I is green-by-construction twice over: I1-I3 are advisory and
-    emit 'pass' instead of 'fail' even on the non-empty path, so only I4 can
-    ever redden the audit.
+    emit 'pass' instead of 'fail' even on the non-empty path, so only I4 and I5
+    can ever redden the audit.
+
+    **PARTIALLY ADDRESSED BY S5, deliberately not flipped.** The verdict is
+    still 'skip' -- Group I is detective-only and a repo with no requirements
+    must not redden CI, so that half is correct and stays. What S5 changed is
+    that the skip now names WHICH of six states produced it, so "no spec on
+    disk" (this fixture) is no longer worded identically to "a well-formed table
+    whose every id was declined". The silence FV-2 describes was the conflation,
+    not the skip; see test_audit_group_i_states.py for the six states.
+
+    I5 (Basis vocabulary) joined the group in S5.
 
     Flipped by: S6.
     """
     findings = _probe("group_i_empty", "absent")
-    assert {f["check_id"] for f in findings} == {"I1", "I2", "I3", "I4"}
+    assert {f["check_id"] for f in findings} == {"I1", "I2", "I3", "I4", "I5"}
     assert {f["status"] for f in findings} == {"skip"}  # FROZEN-BUG (FV-2)
+    # The state is now named rather than generic -- S5's half of FV-2.
+    assert all("no spec.md found" in f["detail"] for f in findings)
 
 
 def test_fv2_empty_manifest_asserts_positive_coverage():
