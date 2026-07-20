@@ -15,9 +15,28 @@ grade it did not compute.
 
 from __future__ import annotations
 
-import json
+import sys
 from dataclasses import dataclass
 from pathlib import Path
+
+
+def _jsonl_records():
+    # Shared record-boundary reader, loaded by FILE LOCATION under a sentinel name
+    # so grade's plugin-local ``lib`` is never shadowed (ADR-045). Registered in
+    # ``sys.modules`` BEFORE ``exec_module`` because ``jsonl_records`` defines
+    # ``@dataclass`` types and stdlib ``dataclasses`` resolves ``cls.__module__``
+    # through ``sys.modules`` at class-creation time.
+    # Consumer-specific sentinel (NOT a bare shared name): two plugins loading the
+    # SSoT under one process must not collide on a single sys.modules key, where a
+    # different checkout's copy could win (external review, OpenAI #2).
+    mod = sys.modules.get("_shipwright_grade_jsonl_records")
+    if mod is None:
+        import importlib.util
+        path = Path(__file__).resolve().parents[4] / "shared/scripts/lib/jsonl_records.py"
+        spec = importlib.util.spec_from_file_location("_shipwright_grade_jsonl_records", path)
+        sys.modules["_shipwright_grade_jsonl_records"] = mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    return mod
 
 # Recognised states of a target's `.shipwright/` directory.
 STATE_ABSENT = "absent"
@@ -90,15 +109,22 @@ def _newest_work_commit(events_text: str) -> tuple[bool, str]:
     recorded commits that never match HEAD, but its newest event carries
     ``commit == ""`` — so we (correctly) decline to judge it stale.
     """
-    for line in reversed(events_text.splitlines()):
+    # Record-boundary recovery via the shared SSoT (see _jsonl_records): the newest
+    # work_completed can sit second on a merge=union concatenated line, where the
+    # pre-fix per-line json.loads dropped it and an OLDER commit won — false-flagging
+    # the target STALE (iterate-2026-07-20-events-record-boundary-remainder). Records
+    # are flattened in wire order, then scanned in reverse for the newest. A leading
+    # partial line from the bounded tail read still fails to decode and is skipped.
+    split_records = _jsonl_records().split_records
+    records: list[dict] = []
+    for line in events_text.splitlines():
         line = line.strip()
         if not line:
             continue
-        try:
-            obj = json.loads(line)
-        except (ValueError, TypeError):
-            continue
-        if isinstance(obj, dict) and obj.get("type") == "work_completed":
+        recs, _remainder = split_records(line)
+        records.extend(recs)
+    for obj in reversed(records):
+        if obj.get("type") == "work_completed":
             commit = obj.get("commit")
             return True, commit.strip() if isinstance(commit, str) else ""
     return False, ""

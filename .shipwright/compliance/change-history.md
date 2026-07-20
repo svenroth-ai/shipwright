@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-07-20T22:04:12.277111+00:00
-Total commits: 1185
+Generated: 2026-07-20T22:08:18.851913+00:00
+Total commits: 1188
 
 ## Commit Distribution
 
@@ -9,8 +9,8 @@ Total commits: 1185
 pie title Commit Types
     "fix" : 340
     "feat" : 329
-    "chore" : 247
-    "docs" : 145
+    "chore" : 249
+    "docs" : 146
     "refactor" : 74
     "test" : 29
     "ci" : 11
@@ -24,7 +24,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-21 | iterate | run F3+F5c reliably in the sub-iterate-runner and forbid direct decision_log writes | 33b5e0b5d35d |
+| 2026-07-21 | events | recover record boundaries in the remaining event-log authority readers (#419) | 0cd30df86818 |
 | 2026-07-21 | finalize | stop flaky idempotency test reddening PRs across a UTC minute boundary (#418) | 4062797efa16 |
 | 2026-07-20 | adopt | roll FR-id group over past 99 so generated ids stay canonical (FR-01.13) (#416) | 5c9c4b316f05 |
 | 2026-07-19 | events | recover concatenated records across the audit read path (#409) | 1fceca45a7e3 |
@@ -699,10 +699,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 247 commits
+### Chores (chore) — 249 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-21 | iterate | F11 session-handoff refresh + background event snapshot | 592ab74cbcf3 |
+| 2026-07-21 | churn | regenerate derived snapshots after main merge | 2afca421d501 |
 | 2026-07-19 | compliance | register four size crossings, ratchet nine entries, record the missing convention (#408) | 37fe1346b5df |
 | 2026-07-18 | triage | deliver 3 orphaned records from the merged iterate worktree (#402) | 56ee1c0e2387 |
 | 2026-07-18 | security | by-design nosemgrep suppression for the layer-coverage loader (#396) | 6cfd0e84655a |
@@ -951,10 +953,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 145 commits
+### Documentation (docs) — 146 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-21 | security | document operator-run converge for adopted repos | edc026f714d6 |
 | 2026-07-09 | constitution | require plain-language questions to the user (#354) | f879a73a4903 |
 | 2026-07-09 | claude-md | guide plain-language phrasing for questions to the user | 4daaa7d44b49 |
 | 2026-07-02 | planning | phased diff/patch-coverage roadmap (trg-8fdebda3) (#305) | 892001e73858 |
@@ -1254,7 +1257,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1185 |
+| Total commits | 1188 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1185 |
+| Human-authored commits | 1188 |
 
