@@ -1,20 +1,12 @@
----
-canon_generated: true
-run_id: "iterate-2026-07-20-accepted-risk-adopter-converge"
-phase: "iterate"
-reason: "F11 pre-merge refresh: iterate-2026-07-20-accepted-risk-adopter-converge"
-timestamp: "2026-07-20T22:08:24.857300+00:00"
----
-
 # Session Handoff
 
-> Auto-generated 2026-07-20 22:08:24 UTC
+> Auto-generated 2026-07-20 22:10:05 UTC
 
 ## Session Info
 
 - **Session ID**: c2a98c2f-740b-4818-b8ae-e5b87528ef06
-- **Timestamp**: 2026-07-20 22:08:24 UTC
-- **Reason**: F11 pre-merge refresh: iterate-2026-07-20-accepted-risk-adopter-converge
+- **Timestamp**: 2026-07-20 22:10:05 UTC
+- **Reason**: iterate completion: iterate-2026-07-20-accepted-risk-adopter-converge
 
 ## Last Iterate
 
@@ -48,7 +40,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Git State
 
 - **Branch**: iterate/accepted-risk-adopter-converge
-- **Last Commit**: ce885584 Merge remote-tracking branch 'origin/main' into iterate/accepted-risk-adopter-converge
+- **Last Commit**: 2afca421 chore(churn): regenerate derived snapshots after main merge
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,11 +56,11 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-429d92bb | grade_snapshot | — | 2026-07-20 |
 | evt-9af6a842 | grade_snapshot | — | 2026-07-20 |
 | evt-eaa519ea | work_completed | iterate (Document operator-run converge for adopted repos + guard test) | 2026-07-20 |
 | evt-ec752311 | grade_snapshot | — | 2026-07-20 |
 | evt-3f54c795 | work_completed | iterate (adopt FR-id cap: canonical group rollover past 99 detected features) | 2026-07-20 |
-| evt-42a87085 | grade_snapshot | — | 2026-07-20 |
 
 ## Recovery
 
