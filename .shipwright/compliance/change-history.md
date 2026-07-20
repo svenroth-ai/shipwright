@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-07-20T22:08:18.851913+00:00
+Generated: 2026-07-20T21:58:31.531129+00:00
 Total commits: 1185
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 339
+    "fix" : 340
     "feat" : 329
     "chore" : 247
-    "docs" : 146
+    "docs" : 145
     "refactor" : 74
     "test" : 29
     "ci" : 11
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 339 commits
+### Fixes (fix) — 340 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-21 | events | recover record boundaries in the remaining event-log authority readers | 402b5e0cc091 |
 | 2026-07-21 | finalize | stop flaky idempotency test reddening PRs across a UTC minute boundary (#418) | 4062797efa16 |
 | 2026-07-20 | adopt | roll FR-id group over past 99 so generated ids stay canonical (FR-01.13) (#416) | 5c9c4b316f05 |
 | 2026-07-19 | events | recover concatenated records across the audit read path (#409) | 1fceca45a7e3 |
@@ -950,11 +951,10 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 146 commits
+### Documentation (docs) — 145 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-21 | security | document operator-run converge for adopted repos | edc026f714d6 |
 | 2026-07-09 | constitution | require plain-language questions to the user (#354) | f879a73a4903 |
 | 2026-07-09 | claude-md | guide plain-language phrasing for questions to the user | 4daaa7d44b49 |
 | 2026-07-02 | planning | phased diff/patch-coverage roadmap (trg-8fdebda3) (#305) | 892001e73858 |

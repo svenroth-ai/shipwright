@@ -1,31 +1,44 @@
+---
+canon_generated: true
+run_id: "iterate-2026-07-20-events-record-boundary-remainder"
+phase: "iterate"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-07-20T21:58:37.223294+00:00"
+---
+
 # Session Handoff
 
-> Auto-generated 2026-07-20 22:10:05 UTC
+> Auto-generated 2026-07-20 21:58:37 UTC
 
 ## Session Info
 
-- **Session ID**: c2a98c2f-740b-4818-b8ae-e5b87528ef06
-- **Timestamp**: 2026-07-20 22:10:05 UTC
-- **Reason**: iterate completion: iterate-2026-07-20-accepted-risk-adopter-converge
+- **Session ID**: 98ffa9f7-2bcb-4083-af41-097ff497bb0f
+- **Timestamp**: 2026-07-20 21:58:37 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-20-accepted-risk-adopter-converge
-- **Date**: 2026-07-20T22:08:18.754499Z
-- **Type**: change
-- **Complexity**: small
-- **Branch**: iterate/accepted-risk-adopter-converge
-- **ADR**: iterate-2026-07-20-accepted-risk-adopter-converge
+- **Run ID**: iterate-2026-07-20-events-record-boundary-remainder
+- **Date**: 2026-07-20T21:58:31.436121Z
+- **Type**: bug
+- **Complexity**: medium
+- **Branch**: iterate/2026-07-20-events-record-boundary-remainder
+- **ADR**: iterate-2026-07-20-events-record-boundary-remainder
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/2026-07-20-events-record-boundary-remainder.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/accepted-risk-adopter-converge
+- **Branch**: iterate/2026-07-20-events-record-boundary-remainder
+- **Run ID**: iterate-2026-07-20-events-record-boundary-remainder
+- **Spec**: .shipwright/planning/iterate/2026-07-20-events-record-boundary-remainder.md
+- **Complexity**: medium
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -39,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/accepted-risk-adopter-converge
-- **Last Commit**: 2afca421 chore(churn): regenerate derived snapshots after main merge
+- **Branch**: iterate/2026-07-20-events-record-boundary-remainder
+- **Last Commit**: 9365114f Merge remote-tracking branch 'origin/main' into iterate/2026-07-20-events-record-boundary-remainder
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -56,17 +69,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-429d92bb | grade_snapshot | — | 2026-07-20 |
-| evt-9af6a842 | grade_snapshot | — | 2026-07-20 |
-| evt-eaa519ea | work_completed | iterate (Document operator-run converge for adopted repos + guard test) | 2026-07-20 |
 | evt-ec752311 | grade_snapshot | — | 2026-07-20 |
 | evt-3f54c795 | work_completed | iterate (adopt FR-id cap: canonical group rollover past 99 detected features) | 2026-07-20 |
+| evt-42a87085 | grade_snapshot | — | 2026-07-20 |
+| evt-923835b8 | work_completed | iterate (Extend CI_SUPPLYCHAIN_FILE_PATTERNS to shared/templates/github-actions/) | 2026-07-20 |
+| evt-1fc1c3e4 | grade_snapshot | — | 2026-07-20 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 346
-- **Last iterate**: change — Document operator-run converge for adopted repos + guard test (2026-07-20)
+- **Last iterate**: bug — adopt FR-id cap: canonical group rollover past 99 detected features (2026-07-20)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

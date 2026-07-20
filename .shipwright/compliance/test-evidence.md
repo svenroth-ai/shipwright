@@ -1,6 +1,6 @@
 # Test Evidence Report
 
-Generated: 2026-07-20T22:08:18.851913+00:00
+Generated: 2026-07-20T21:58:31.531129+00:00
 
 ## Summary
 
@@ -14,10 +14,10 @@ Generated: 2026-07-20T22:08:18.851913+00:00
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | Shipwright's security guide now explains how a project that adopted Shipwright clears an accepted security risk from its GitHub code-scanning — a person runs the converge command from a Shipwright checkout, pointed at the adopted project. | [iterate](traceability-matrix.md#evt-eaa519ea) | unit | +0 | 4708/4708 | PASS | 2026-07-20 |
-| 2 | When an onboarded project exposes more than 99 pages, the tool no longer produces a broken requirement number — it rolls over to the next requirement group so every generated id stays valid. | [iterate](traceability-matrix.md#evt-3f54c795) | unit | +0 | 6/6 | PASS | 2026-07-20 |
-| 3 | Editing one of Shipwright's shipped CI workflow templates now trips the CI supply-chain acknowledgement gate, the same as editing this repo's own workflow files. | [iterate](traceability-matrix.md#evt-923835b8) | unit | +0 | 5207/5207 | PASS | 2026-07-20 |
-| 4 | fix flaky finalize idempotency test (banner minute drift, trg-183a304a) | [iterate](traceability-matrix.md#evt-fa21005e) | — | +0 | — | — | 2026-07-20 |
+| 1 | When an onboarded project exposes more than 99 pages, the tool no longer produces a broken requirement number — it rolls over to the next requirement group so every generated id stays valid. | [iterate](traceability-matrix.md#evt-3f54c795) | unit | +0 | 6/6 | PASS | 2026-07-20 |
+| 2 | Editing one of Shipwright's shipped CI workflow templates now trips the CI supply-chain acknowledgement gate, the same as editing this repo's own workflow files. | [iterate](traceability-matrix.md#evt-923835b8) | unit | +0 | 5207/5207 | PASS | 2026-07-20 |
+| 3 | fix flaky finalize idempotency test (banner minute drift, trg-183a304a) | [iterate](traceability-matrix.md#evt-fa21005e) | — | +0 | — | — | 2026-07-20 |
+| 4 | close event-log record-boundary reader remainder (authority readers) | [iterate](traceability-matrix.md#evt-9bebfcd7) | — | +0 | — | — | 2026-07-20 |
 | 5 | You can now ask which recorded changes touched a given requirement and get an ordered answer, instead of reading a hand-maintained history inside the requirement that went stale there. Checking that query against the history just removed from the catalog also showed the change log is not the complete record it was assumed to be: three changes shipped without ever being recorded against the requirement they affected, and most changes carry no requirement link at all, so every answer now states how much of the record it is speaking for and points at the commit history for the rest. | [iterate](traceability-matrix.md#evt-d140cd35) | unit | +0 | 9458/9486 | PASS (28 skipped) | 2026-07-20 |
 | 6 | One requirements catalog, stated once in plain language, with explicit deep-link anchors that actually resolve. | [iterate](traceability-matrix.md#evt-65d388b4) | — | +0 | — | — | 2026-07-20 |
 | 7 | converge the FR table shape (campaign S5) | [iterate](traceability-matrix.md#evt-3b2c22ed) | — | +0 | — | — | 2026-07-20 |
@@ -367,36 +367,36 @@ _Synthesized from per-iterate **unit** results — Integration / pgTAP / E2E / S
 
 | Run | Trigger | Unit | Integration | pgTAP | E2E | Smoke | Date |
 |-----|---------|------|-------------|-------|-----|-------|------|
-| 1 | iterate | 3749/3749 | — | — | — | — | 2026-07-08 |
-| 2 | iterate | 438/438 | — | — | — | — | 2026-07-08 |
-| 3 | iterate | 3751/3763 | — | — | — | — | 2026-07-09 |
-| 4 | iterate | 69/69 | — | — | — | — | 2026-07-10 |
-| 5 | iterate | 4749/4749 | — | — | — | — | 2026-07-10 |
-| 6 | iterate | 7/7 | — | — | — | — | 2026-07-10 |
-| 7 | iterate | 17/17 | — | — | — | — | 2026-07-10 |
-| 8 | iterate | 28/28 | — | — | — | — | 2026-07-11 |
-| 9 | iterate | 22/22 | — | — | — | — | 2026-07-11 |
-| 10 | iterate | 37/37 | — | — | — | — | 2026-07-12 |
-| 11 | iterate | 33/33 | — | — | — | — | 2026-07-14 |
-| 12 | iterate | 54/54 | — | — | — | — | 2026-07-14 |
-| 13 | iterate | 42/42 | — | — | — | — | 2026-07-15 |
-| 14 | iterate | 143/143 | — | — | — | — | 2026-07-15 |
-| 15 | iterate | 41/41 | — | — | — | — | 2026-07-15 |
-| 16 | iterate | 1009/1009 | — | — | — | — | 2026-07-15 |
-| 17 | iterate | 1047/1047 | — | — | — | — | 2026-07-15 |
-| 18 | iterate | 1060/1060 | — | — | — | — | 2026-07-16 |
-| 19 | iterate | 1090/1090 | — | — | — | — | 2026-07-16 |
-| 20 | iterate | 4572/4572 | — | — | — | — | 2026-07-16 |
-| 21 | iterate | 4164/4164 | — | — | — | — | 2026-07-16 |
-| 22 | iterate | 4597/4597 | — | — | — | — | 2026-07-16 |
-| 23 | iterate | 5697/5697 | — | — | — | — | 2026-07-16 |
-| 24 | iterate | 5936/5936 | — | — | — | — | 2026-07-16 |
-| 25 | iterate | 1119/1119 | — | — | — | — | 2026-07-16 |
-| 26 | iterate | 17/17 | — | — | — | — | 2026-07-17 |
-| 27 | iterate | 9458/9486 | — | — | — | — | 2026-07-20 |
-| 28 | iterate | 5207/5207 | — | — | — | — | 2026-07-20 |
-| 29 | iterate | 6/6 | — | — | — | — | 2026-07-20 |
-| 30 | iterate | 4708/4708 | — | — | — | — | 2026-07-20 |
+| 1 | iterate | 417/417 | — | — | — | — | 2026-07-07 |
+| 2 | iterate | 3749/3749 | — | — | — | — | 2026-07-08 |
+| 3 | iterate | 438/438 | — | — | — | — | 2026-07-08 |
+| 4 | iterate | 3751/3763 | — | — | — | — | 2026-07-09 |
+| 5 | iterate | 69/69 | — | — | — | — | 2026-07-10 |
+| 6 | iterate | 4749/4749 | — | — | — | — | 2026-07-10 |
+| 7 | iterate | 7/7 | — | — | — | — | 2026-07-10 |
+| 8 | iterate | 17/17 | — | — | — | — | 2026-07-10 |
+| 9 | iterate | 28/28 | — | — | — | — | 2026-07-11 |
+| 10 | iterate | 22/22 | — | — | — | — | 2026-07-11 |
+| 11 | iterate | 37/37 | — | — | — | — | 2026-07-12 |
+| 12 | iterate | 33/33 | — | — | — | — | 2026-07-14 |
+| 13 | iterate | 54/54 | — | — | — | — | 2026-07-14 |
+| 14 | iterate | 42/42 | — | — | — | — | 2026-07-15 |
+| 15 | iterate | 143/143 | — | — | — | — | 2026-07-15 |
+| 16 | iterate | 41/41 | — | — | — | — | 2026-07-15 |
+| 17 | iterate | 1009/1009 | — | — | — | — | 2026-07-15 |
+| 18 | iterate | 1047/1047 | — | — | — | — | 2026-07-15 |
+| 19 | iterate | 1060/1060 | — | — | — | — | 2026-07-16 |
+| 20 | iterate | 1090/1090 | — | — | — | — | 2026-07-16 |
+| 21 | iterate | 4572/4572 | — | — | — | — | 2026-07-16 |
+| 22 | iterate | 4164/4164 | — | — | — | — | 2026-07-16 |
+| 23 | iterate | 4597/4597 | — | — | — | — | 2026-07-16 |
+| 24 | iterate | 5697/5697 | — | — | — | — | 2026-07-16 |
+| 25 | iterate | 5936/5936 | — | — | — | — | 2026-07-16 |
+| 26 | iterate | 1119/1119 | — | — | — | — | 2026-07-16 |
+| 27 | iterate | 17/17 | — | — | — | — | 2026-07-17 |
+| 28 | iterate | 9458/9486 | — | — | — | — | 2026-07-20 |
+| 29 | iterate | 5207/5207 | — | — | — | — | 2026-07-20 |
+| 30 | iterate | 6/6 | — | — | — | — | 2026-07-20 |
 
 ## Code Review Evidence
 
