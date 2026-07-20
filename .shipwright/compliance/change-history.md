@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-07-20T11:22:19.047213+00:00
-Total commits: 1180
+Generated: 2026-07-20T13:52:23.364484+00:00
+Total commits: 1181
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 337
-    "feat" : 327
+    "feat" : 328
     "chore" : 247
     "docs" : 145
     "refactor" : 74
@@ -362,10 +362,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 327 commits
+### Features (feat) — 328 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-20 | traceability | answer "which changes touched this requirement" from the event log (campaign S7) | cf65591ef3e9 |
 | 2026-07-19 | templates | ship the action-pinning posture RULE to adopters, gated both ways (#407) | e336197ca8e9 |
 | 2026-07-19 | compliance | converge accepted risks onto the code-scanning surface (#406) | de9cd073b991 |
 | 2026-07-18 | compliance | scanner-agnostic accepted-risk register, gated both directions (#404) | 4a948378b207 |
@@ -1100,7 +1101,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-20 | requirements | one catalog, stated once in plain language (campaign S6) | b9d54ec0ef84 |
+| 2026-07-20 | requirements | one catalog, stated once in plain language (campaign S6) (#414) | be2561caccd3 |
 | 2026-07-20 | requirements | one FR-table shape from both generators (campaign S5) (#413) | 5eef5076242c |
 | 2026-07-20 | shared | one header-driven FR-table reader replaces five parsers (#412) | 227a525e4549 |
 | 2026-07-20 | compliance | derive the traceability namespace from the FR id (schema 2 to 3) (#411) | 121d850e81e5 |
@@ -1249,7 +1250,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1180 |
+| Total commits | 1181 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1180 |
+| Human-authored commits | 1181 |
 

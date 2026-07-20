@@ -274,10 +274,16 @@ the record of how each capability got there.
   migrate: the planning document that produced the change, kept under the
   project's planning tree, and the durable migration write-ups kept under the
   documentation tree.
-- **Which changes touched a given requirement, and when**: query the
-  append-only event log. Every completed change records the requirements it
-  affected and the ones it introduced, so the answer is derived rather than
-  transcribed — and therefore cannot go stale here.
+- **Which changes touched a given requirement, and when**: run
+  `uv run shared/scripts/tools/fr_history.py <FR-id>`. It derives the answer
+  from the append-only event log, so it cannot go stale here the way transcribed
+  history did. It is **not** a complete record: a change appears only if it
+  recorded the requirement it touched, and most have not. The command reports
+  that coverage next to every answer, a
+  requirement nothing has touched says so instead of showing an empty list, and
+  an id that names no requirement is reported as unknown rather than as an empty
+  history. Changes it cannot account for are still in the commit history and in
+  the planning document that produced them.
 - **Which tests cover a given requirement**: the generated traceability matrix
   and the requirement-to-test manifest produced by the compliance phase.
 

@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-19-traceability-derived-view",
+  "date": "2026-07-20T13:53:21.973834Z",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/2026-07-19-traceability-derived-view",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/2026-07-19-traceability-derived-view-miniplan.md",
+  "adr": "iterate-2026-07-19-traceability-derived-view"
+}

@@ -4363,3 +4363,17 @@ shipwright/
 - **Consequences:** Coverage is now execution-backed: enabled+pass => ok, skipped/missing/fail => MISSING. The committed index is derived/RTM-visibility only (R3); enforcing gates (TT2/TT5) regenerate base+head and consume the waiver primitive layer_satisfied.
 - **Rejected:** Wiring reporter flags into surface_verification.py (runner-agnostic by contract; deferred to TT5). Wiping the index on a no-report regen (would thrash the manifest; the fresh-evidence guard in generate_file is the surgical fix).
 - **Details:** [2026-07-15-execution-evidence.md](../planning/iterate/2026-07-15-execution-evidence.md)
+
+---
+
+### ADR-328: Change history as a query over the event log, measured against what it replaced
+- **Date:** 2026-07-20
+- **Section:** Iterate → campaign S7 derived traceability
+- **Run-ID:** iterate-2026-07-19-traceability-derived-view
+- **Context:** Campaign decision D4 removed the 'Refined by <run_id>' prose from the requirements catalog because that history was said to live already in commits, the changelog and shipwright_events.jsonl. S6 executed the removal and left the catalog pointing at the event log with no query. Whether the claim was true had never been measured.
+- **Decision:** Ship the query as a library plus a CLI (uv run shared/scripts/tools/fr_history.py <FR-id>), named from the catalog so a reader can reach it, and verify it against the deleted prose recovered from pre-S6 commit 5eef5076 rather than from a summary of what was removed. Answer in three states: found / no_recorded_changes / unknown_requirement (exit 3).
+- **Commit:** pending
+- **Rationale:** The verification is the deliverable; the query is the means. The removed blocks named ten (requirement, run id) pairs across nine distinct run ids; five pairs are returned verbatim, one is present under its pre-run-id ADR-030 label, and four are absent -- three distinct run ids, one of which was named by both requirements. D4's disjunction survives (all three are in commit messages and planning docs) but the event log is not the complete index D4 implied, and S7's acceptance criterion is NOT met.
+- **Consequences:** The gap is pinned in both directions so it can neither drift nor silently re-green. The CLI reports coverage (61 of 342, 18 percent) beside every answer and points at the commit log for what it cannot account for. The catalog's false claim of complete coverage is removed. Retired requirements stay answerable; amendment folding is pinned to the compliance collector's.
+- **Rejected:** Writing reconciliation events for the three missing run ids (forges the audit trail; amending D4/S7 is an operator decision). Unioning git log --grep into the query (scope creep). An event-schema alias field for ADR-030 (invents a mapping the data lacks). Rendering into the RTM (churn artifact on the final campaign PR).
+- **Details:** [110-change-history-as-a-derived-view.md](../planning/adr/110-change-history-as-a-derived-view.md)

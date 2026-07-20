@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-20T11:22:19.047213+00:00
+Generated: 2026-07-20T13:52:23.364484+00:00
 
 ## Requirements Coverage
 
@@ -15,7 +15,7 @@ Generated: 2026-07-20T11:22:19.047213+00:00
 | [FR-01.07](../../.shipwright/planning/01-adopted/spec.md#fr-0107)<a id="rtm-fr-0107"></a> | Scan the project for vulnerabilities, leaked secrets and unsafe dependencies with several independent scanners, then drive the fixes to completion; each scanner keeps its own list of accepted exceptions. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7), [evt-07b1fe9c](#evt-07b1fe9c) +2 | 225/225 → 4955/4967 | 2026-06-30 ([iter](#evt-f90c7126)) | ✅ | COVERED | MISSING | — | — |
 | [FR-01.08](../../.shipwright/planning/01-adopted/spec.md#fr-0108)<a id="rtm-fr-0108"></a> | Deploy the project to a configured hosting target, prove it is alive with a smoke test, and roll back when it is not. Jelastic (Infomaniak) is shipped; Vercel and a container-on-a-server target are documented as stubs. | Should | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7) | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | — | COVERED | MISSING | — | — |
 | [FR-01.09](../../.shipwright/planning/01-adopted/spec.md#fr-0109)<a id="rtm-fr-0109"></a> | Turn the commit history into a release note a human can read, tag the release, and open the release pull request. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-530b0980](#evt-530b0980), [evt-ddb23fe7](#evt-ddb23fe7) | 225/225 → 19/19 | 2026-05-03 ([iter](#evt-530b0980)) | — | COVERED | MISSING | — | — |
-| [FR-01.10](../../.shipwright/planning/01-adopted/spec.md#fr-0110)<a id="rtm-fr-0110"></a> | Produce audit-ready evidence — which requirement is covered by which test, what changed when, and what the project depends on — and run an on-demand cross-check that reports where that evidence disagrees with reality. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-30338dac](#evt-30338dac), [evt-a3888caf](#evt-a3888caf) +20 | 225/225 → 4964/4976 | 2026-07-01 ([iter](#evt-a2c95dc8)) | ⚠️ needs re-verification | FAIL → [trg-8bf97fd4](../agent_docs/triage_inbox.md#trg-8bf97fd4), FAIL → [trg-9532fa83](../agent_docs/triage_inbox.md#trg-9532fa83), FAIL → [trg-eb19ada4](../agent_docs/triage_inbox.md#trg-eb19ada4) | MISSING | — | — |
+| [FR-01.10](../../.shipwright/planning/01-adopted/spec.md#fr-0110)<a id="rtm-fr-0110"></a> | Produce audit-ready evidence — which requirement is covered by which test, what changed when, and what the project depends on — and run an on-demand cross-check that reports where that evidence disagrees with reality. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-30338dac](#evt-30338dac), [evt-a3888caf](#evt-a3888caf) +21 | 225/225 → 9458/9486 | 2026-07-20 ([iter](#evt-d140cd35)) | ✅ | FAIL → [trg-8bf97fd4](../agent_docs/triage_inbox.md#trg-8bf97fd4), FAIL → [trg-9532fa83](../agent_docs/triage_inbox.md#trg-9532fa83), FAIL → [trg-eb19ada4](../agent_docs/triage_inbox.md#trg-eb19ada4) | MISSING | — | — |
 | [FR-01.11](../../.shipwright/planning/01-adopted/spec.md#fr-0111)<a id="rtm-fr-0111"></a> | Handle an ongoing change at the depth it deserves: detect what kind of change it is and how big, then scale from a quick fix to a fully specified feature with plans, reviews and tests. Every feature or change records whether it adds, modifies, removes or leaves the requirements untouched, and that record is enforced before the change can be finished. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-6c637864](#evt-6c637864), [evt-baaf4b0e](#evt-baaf4b0e), [evt-ca7b7d64](#evt-ca7b7d64) +18 | 225/225 → 54/54 | 2026-07-14 ([iter](#evt-5dc16a45)) | ⚠️ needs re-verification | COVERED | MISSING | MISSING | — |
 | [FR-01.12](../../.shipwright/planning/01-adopted/spec.md#fr-0112)<a id="rtm-fr-0112"></a> | Start the project locally and hand back the address to open in a browser. | May | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7) | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | — | COVERED | — | — | MISSING |
 | [FR-01.13](../../.shipwright/planning/01-adopted/spec.md#fr-0113)<a id="rtm-fr-0113"></a> | Bring an existing codebase under Shipwright: read what is already there, write the starting guidance, derive an initial requirements catalog and compliance evidence, and lay down a baseline end-to-end test. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-273bbb54](#evt-273bbb54), [evt-b0b9c422](#evt-b0b9c422), [evt-aab7ddbd](#evt-aab7ddbd) +7 | 225/225 → 304/304 | 2026-05-16 ([iter](#evt-38e36ac6)) | ⚠️ needs re-verification | COVERED | MISSING | — | — |
@@ -28,6 +28,7 @@ Generated: 2026-07-20T11:22:19.047213+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-d140cd35"></a>You can now ask which recorded changes touched a given requirement and get an ordered answer, instead of reading a hand-maintained history inside the requirement that went stale there. Checking that query against the history just removed from the catalog also showed the change log is not the complete record it was assumed to be: three changes shipped without ever being recorded against the requirement they affected, and most changes carry no requirement link at all, so every answer now states how much of the record it is speaking for and points at the commit history for the rest. | iterate | feature | [FR-01.10](#rtm-fr-0110) | 9458/9486 | — | 2026-07-20 |
 | <a id="evt-65d388b4"></a>One requirements catalog, stated once in plain language, with explicit deep-link anchors that actually resolve. | iterate | change | [FR-01.10](#rtm-fr-0110) | — | — | 2026-07-20 |
 | <a id="evt-3b2c22ed"></a>converge the FR table shape (campaign S5) | iterate | change | [FR-01.02](#rtm-fr-0102), [FR-01.10](#rtm-fr-0110), [FR-01.13](#rtm-fr-0113) | — | — | 2026-07-20 |
 | <a id="evt-a0790d64"></a>Requirement tables are now read by one header-driven parser instead of five that disagreed, so a reordered, renamed or extended table no longer makes requirements vanish from the compliance report. | iterate | change |  | — | — | 2026-07-20 |
@@ -376,7 +377,7 @@ Generated: 2026-07-20T11:22:19.047213+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 341 |
+| Iterate changes | 342 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |
@@ -391,7 +392,6 @@ Generated: 2026-07-20T11:22:19.047213+00:00
 
 - [FR-01.01](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-a5b70713` (2026-07-14)
 - [FR-01.02](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-3b2c22ed` (2026-07-20)
-- [FR-01.10](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-65d388b4` (2026-07-20)
 - [FR-01.11](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-07d2258f` (2026-07-18)
 - [FR-01.13](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-3b2c22ed` (2026-07-20)
 - [FR-01.14](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-14ef5fcb` (2026-07-18)
