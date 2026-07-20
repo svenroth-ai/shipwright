@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-19-traceability-derived-view"
+run_id: "iterate-2026-07-20-runner-finalization-integrity"
 phase: "iterate"
-reason: "iterate: change history as a derived query over the event log (campaign S7)"
-timestamp: "2026-07-20T19:44:40.687357+00:00"
+reason: "iterate: runner finalization integrity"
+timestamp: "2026-07-20T22:04:18.280344+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-20 19:44:40 UTC
+> Auto-generated 2026-07-20 22:04:18 UTC
 
 ## Session Info
 
-- **Session ID**: 85c973ff-4812-4db0-acc1-935ed32ee51b
-- **Timestamp**: 2026-07-20 19:44:40 UTC
-- **Reason**: iterate: change history as a derived query over the event log (campaign S7)
+- **Session ID**: 059b5006-0551-4c91-acfc-252b276f1794
+- **Timestamp**: 2026-07-20 22:04:18 UTC
+- **Reason**: iterate: runner finalization integrity
 
 ## Last Iterate
 
@@ -29,7 +29,10 @@ timestamp: "2026-07-20T19:44:40.687357+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/2026-07-19-traceability-derived-view
+- **Branch**: iterate/runner-finalization-integrity
+- **Run ID**: `iterate-2026-07-20-runner-finalization-integrity`
+- **Spec**: .shipwright/planning/iterate/2026-07-20-runner-finalization-integrity.md
+- **Complexity**: medium (history-calibrated; risk floor medium)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/2026-07-19-traceability-derived-view
-- **Last Commit**: cf65591e feat(traceability): answer "which changes touched this requirement" from the event log (campaign S7)
+- **Branch**: iterate/runner-finalization-integrity
+- **Last Commit**: 18905d57 feat(traceability): answer "which changes touched this requirement" from the event log (campaign S7) (#415)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-7143f99e | grade_snapshot | — | 2026-07-20 |
+| evt-f195d222 | work_completed | iterate (sub-iterate-runner finalization integrity: F3/F5c reliability + no-direct-decision_log F11 gate) | 2026-07-20 |
 | evt-df28837c | grade_snapshot | — | 2026-07-20 |
 | evt-d9555025 | grade_snapshot | — | 2026-07-20 |
 | evt-83f52f9d | grade_snapshot | — | 2026-07-20 |
-| evt-0b770051 | grade_snapshot | — | 2026-07-20 |
-| evt-1cd72ca7 | grade_snapshot | — | 2026-07-20 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 342
-- **Last iterate**: feature — iterate: change history as a query over the event log (campaign S7) + measurement of what the S6 compaction actually left recoverable (2026-07-20)
+- **Total work events**: 343
+- **Last iterate**: change — sub-iterate-runner finalization integrity: F3/F5c reliability + no-direct-decision_log F11 gate (2026-07-20)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

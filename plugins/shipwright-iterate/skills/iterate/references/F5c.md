@@ -32,8 +32,14 @@ the count is recorded on run config as
 surface it.
 
 Retention: keep the 50 most recent entry files per project (sorted by
-ISO date, run_id tiebreaker). Older entries preserved in
-`shipwright_events.jsonl`.
+ISO date, run_id tiebreaker). This is a **bounded window, by design** — on a
+full directory each append evicts the oldest entry file (a tracked `git rm` in
+the same commit). The evicted run is **not** lost: it survives in git history
+and, permanently, in the append-only `shipwright_events.jsonl` (`work_completed`
+events are never evicted). **Consumer rule:** anything that must show the FULL
+iterate history (e.g. the WebUI Mission Requirement artifact) reads
+`shipwright_events.jsonl`, NOT this directory — `iterates/<run_id>.json` is a
+50-run recency cache, not the historical record.
 
 Note: the commit hash is intentionally NOT stored here. Look it up in
 `shipwright_events.jsonl` by `run_id` (F7 records the real commit

@@ -1,0 +1,1 @@
+F11 iterate gate check_iterate_no_direct_decision_log — an iterate that writes decision_log.md directly now fails closed (ADRs are recorded as decision-drops); paired with a stricter ADR-identity check that rejects an empty/placeholder decision-drop.
