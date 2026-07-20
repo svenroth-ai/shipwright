@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-20-events-record-boundary-remainder",
+  "date": "2026-07-20T21:58:31.436121Z",
+  "type": "bug",
+  "complexity": "medium",
+  "branch": "iterate/2026-07-20-events-record-boundary-remainder",
+  "spec": ".shipwright/planning/iterate/2026-07-20-events-record-boundary-remainder.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-20-events-record-boundary-remainder"
+}

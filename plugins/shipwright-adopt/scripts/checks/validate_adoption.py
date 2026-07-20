@@ -38,6 +38,25 @@ def _discovery():
     return mod
 
 
+def _jsonl_records():
+    # Shared record-boundary reader, loaded by FILE LOCATION under a sentinel name
+    # so the plugin-local ``lib`` is never shadowed (ADR-045) — same shape as
+    # ``_discovery()``. Registered in ``sys.modules`` BEFORE ``exec_module`` because
+    # ``jsonl_records`` defines ``@dataclass`` types and stdlib ``dataclasses``
+    # resolves ``cls.__module__`` through ``sys.modules`` at class-creation time.
+    # Consumer-specific sentinel (NOT a bare shared name): two plugins loading the
+    # SSoT under one process must not collide on a single sys.modules key, where a
+    # different checkout's copy could win (external review, OpenAI #2).
+    mod = sys.modules.get("_shipwright_adopt_jsonl_records")
+    if mod is None:
+        import importlib.util
+        path = Path(__file__).resolve().parents[4] / "shared/scripts/lib/jsonl_records.py"
+        spec = importlib.util.spec_from_file_location("_shipwright_adopt_jsonl_records", path)
+        sys.modules["_shipwright_adopt_jsonl_records"] = mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    return mod
+
+
 REQUIRED_CONFIGS = [
     "shipwright_run_config.json",
     "shipwright_project_config.json",
@@ -98,17 +117,14 @@ def _validate_events(project_root: Path) -> list[str]:
     events_path = project_root / "shipwright_events.jsonl"
     if not events_path.exists():
         return ["missing: shipwright_events.jsonl"]
-    adopted_count = 0
-    for line in events_path.read_text(encoding="utf-8", errors="ignore").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            ev = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if ev.get("type") == "adopted":
-            adopted_count += 1
+    # Record-boundary recovery via the shared SSoT (see _jsonl_records): an
+    # 'adopted' event second on a merge=union concatenated line previously read as
+    # absent (iterate-2026-07-20-events-record-boundary-remainder). Only JSON
+    # objects are returned, so a bare scalar line no longer crashes .get().
+    adopted_count = sum(
+        1 for ev in _jsonl_records().read_jsonl_records(events_path).records
+        if ev.get("type") == "adopted"
+    )
     if adopted_count == 0:
         return ["shipwright_events.jsonl: no 'adopted' event found"]
     if adopted_count > 1:

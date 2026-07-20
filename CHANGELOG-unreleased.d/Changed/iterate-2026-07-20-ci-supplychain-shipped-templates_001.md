@@ -1,0 +1,1 @@
+The CI supply-chain acknowledgement gate (`touches_ci_supplychain`) now also covers shipped CI templates under `shared/templates/github-actions/`, so an iterate that edits an adopter workflow template must record the posture acknowledgement.

@@ -51,6 +51,8 @@ _CI_SUPPLYCHAIN_PATTERNS = (
     r"^\.github/renovate\.json5?$",
     r"^renovate\.json5?$",
     r"^\.renovaterc(\.json)?$",
+    # Shipped CI templates — the adopters' trust boundary (trg-6e8121e7).
+    r"^shared/templates/github-actions/.+$",
 )
 
 

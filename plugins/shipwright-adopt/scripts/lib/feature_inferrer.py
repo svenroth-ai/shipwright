@@ -11,6 +11,11 @@ import re
 from pathlib import Path
 from typing import Any
 
+try:  # tool context: generate_adoption_artifacts puts lib/ on sys.path
+    from fr_id_sequence import canonical_fr_id
+except ImportError:  # test / package context: scripts/ on sys.path, lib is a package
+    from lib.fr_id_sequence import canonical_fr_id
+
 
 def _is_excluded(rel_path: str, excludes: set[str]) -> bool:
     return any(rel_path == e or rel_path.startswith(e + "/") for e in excludes)
@@ -175,7 +180,7 @@ def infer_features_ast(
         if key in seen:
             continue
         seen.add(key)
-        # Auto-assign an FR-ID in sequence
-        item["fr_id"] = f"FR-01.{len(deduped) + 1:02d}"
+        # Auto-assign an FR-ID in sequence (rolls FR-01.99 -> FR-02.01 past 99)
+        item["fr_id"] = canonical_fr_id(len(deduped) + 1)
         deduped.append(item)
     return deduped

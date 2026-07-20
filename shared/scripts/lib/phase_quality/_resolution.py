@@ -30,6 +30,7 @@ from ._constants import PLUGIN_TO_PHASE  # noqa: E402
 # the marker set lives in exactly one place.
 from lib.project_root import is_shipwright_project  # noqa: E402
 from lib.events_log import resolve_events_path  # noqa: E402
+from lib.jsonl_records import read_jsonl_records  # noqa: E402
 # Engagement predicate lives in _triage_bundle; importing it here is one-way and
 # acyclic (_triage_bundle does not import _resolution) and keeps
 # resolve_engaged_phases next to the other session-state resolvers.
@@ -160,18 +161,14 @@ def resolve_run_id(project_root: Path, session_id: str) -> str:
     events_path = project_root / "shipwright_events.jsonl"
     if events_path.exists():
         try:
-            content = events_path.read_text(encoding="utf-8", errors="ignore")
             latest_run_id: str | None = None
-            for raw in content.splitlines():
-                raw = raw.strip()
-                if not raw:
-                    continue
-                try:
-                    obj = json.loads(raw)
-                except json.JSONDecodeError:
-                    continue
-                if not isinstance(obj, dict):
-                    continue
+            # Record-boundary recovery via the shared SSoT: a merge=union merge can
+            # leave two records on one physical line, and the pre-fix per-line
+            # json.loads dropped BOTH — silently falling through to the session-id
+            # fallback and mis-attributing every audit row keyed on the resolved run
+            # (iterate-2026-07-20-events-record-boundary-remainder). read_jsonl_records
+            # returns only JSON objects, in wire order, so latest-wins is preserved.
+            for obj in read_jsonl_records(events_path).records:
                 if obj.get("type") == "run_started":
                     rid = obj.get("run_id") or obj.get("id")
                     if isinstance(rid, str) and rid:

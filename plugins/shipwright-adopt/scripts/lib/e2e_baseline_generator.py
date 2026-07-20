@@ -15,6 +15,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+try:  # tool context: generate_adoption_artifacts puts lib/ on sys.path
+    from fr_id_sequence import canonical_fr_id
+except ImportError:  # test / package context: scripts/ on sys.path, lib is a package
+    from lib.fr_id_sequence import canonical_fr_id
+
 
 def _escape_ts_string(s: str) -> str:
     """Escape a string for safe embedding in a TypeScript single-quoted literal."""
@@ -58,7 +63,7 @@ def _render_one_test(route: dict[str, Any], fr_id: str) -> str:
 def render_baseline_spec(routes: list[dict[str, Any]]) -> str:
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     tests = "\n".join(
-        _render_one_test(route, f"FR-01.{i + 1:02d}") for i, route in enumerate(routes)
+        _render_one_test(route, canonical_fr_id(i + 1)) for i, route in enumerate(routes)
     )
     if not tests:
         tests = "// No routes crawled — baseline suite empty.\n"

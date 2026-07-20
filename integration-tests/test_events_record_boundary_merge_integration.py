@@ -36,7 +36,10 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_REPO_ROOT / "shared" / "scripts"))
 _COMPLIANCE = _REPO_ROOT / "plugins" / "shipwright-compliance"
 
+from lib.churn_merge import validate_events_text  # noqa: E402
 from lib.events_log import finalized_run_ids, latest_event_dt  # noqa: E402
+from lib.phase_quality import STATUS_PASS  # noqa: E402
+from tools.verifiers.adopt_compliance import check_a7_adopted_event  # noqa: E402
 from tools.verifiers.common import read_events_jsonl  # noqa: E402
 
 # Reads the event log through the three compliance-side readers with ONLY the
@@ -202,3 +205,39 @@ def test_all_readers_recover_both_records_after_a_real_union_merge(tmp_path: Pat
     seen = json.loads(proc.stdout)
     for reader, ids in seen.items():
         assert expected_ids <= set(ids), f"{reader} lost records: {ids}"
+
+
+# ---------------------------------------------------------------------------
+# AC7 (part-2 remainder) — the merge VALIDATOR and a converted READER compose
+# ---------------------------------------------------------------------------
+
+def test_validator_and_reader_compose_after_a_real_union_merge(tmp_path: Path) -> None:
+    """``churn_merge.validate_events_text`` (the ``integrate_main`` gate) and the
+    converted ``check_a7_adopted_event`` reader BOTH see the run after a real
+    ``merge=union`` merge propagates a concatenated line.
+
+    Pre-fix this is the paired false failure: the validator reported a spurious
+    ``check_events_has_commit`` failure (the run's ``work_completed`` sat second on
+    the joined line and never matched ``require_run_id``) while the A7 reader
+    reported the ``adopted`` event as absent — both for records demonstrably on
+    disk in the merged tree.
+    """
+    adopted = {"id": "evt-adopted", "type": "adopted"}
+    work = {"id": "evt-work", "type": "work_completed",
+            "adr_id": "iterate-merged", "run_id": "iterate-merged", "commit": ""}
+    repo = tmp_path / "compose2"
+    log = _merge_two_sides(
+        repo,
+        # Side A holds the ``adopted`` event and this run's ``work_completed`` on
+        # ONE physical line (work_completed second — the inverted case).
+        side_a=json.dumps({"id": "evt-base"}) + "\n" + json.dumps(adopted) + json.dumps(work) + "\n",
+        side_b=json.dumps({"id": "evt-base"}) + "\n" + json.dumps(_B1) + "\n",
+    )
+    assert [ln for ln in _physical_lines(log) if "}{" in ln], "the concatenated line must survive the merge"
+
+    # The validator: no false check_events_has_commit failure for the run.
+    merged_text = log.read_text(encoding="utf-8")
+    assert validate_events_text(merged_text, require_run_id="iterate-merged") == []
+
+    # The reader: exactly one recovered ``adopted`` event -> A7 PASSes.
+    assert check_a7_adopted_event(repo)["status"] == STATUS_PASS

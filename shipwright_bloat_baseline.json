@@ -879,7 +879,7 @@
     {
       "path": "shared/tests/test_finalize_iterate.py",
       "limit": 300,
-      "current": 464,
+      "current": 445,
       "state": "exception",
       "adr": "ADR-096"
     },

@@ -14,6 +14,7 @@ import json
 # Triage-log validation lives in lib.triage_validate (extracted so this module
 # stays under the 300-LOC guideline). Re-exported so the historical
 # `from lib.churn_merge import validate_triage_text` import path is unchanged.
+from lib.jsonl_records import split_records
 from lib.triage_validate import (  # noqa: F401  (re-export surface)
     TriageValidation,
     classify_triage_text,
@@ -223,29 +224,40 @@ def dedup_triage_lines(lines: list[str]) -> tuple[list[str], list[str]]:
 def validate_events_text(text: str, *, require_run_id: str | None = None) -> list[str]:
     """Return a list of error strings (empty = valid).
 
-    Checks: (a) every non-blank line parses as JSON; (b) if ``require_run_id``
-    is given, a ``work_completed`` event whose ``adr_id`` == that run id exists
-    (so F11 ``check_events_has_commit`` stays green). Folds G5/O4/O5.
+    Checks: (a) every non-blank line decodes as a sequence of one or more JSON
+    OBJECTS (records) — a merge=union concatenation of valid records is recovered
+    and is NOT an error; only an unrecoverable remainder (or a non-object line) is
+    reported; (b) if ``require_run_id`` is given, a ``work_completed`` event whose
+    ``adr_id`` == that run id exists (so F11 ``check_events_has_commit`` stays
+    green). Folds G5/O4/O5.
     """
     errors: list[str] = []
     run_id_seen = False
     for n, line in enumerate(text.splitlines(), start=1):
-        if not line.strip():
+        stripped = line.strip()
+        if not stripped:
             continue
-        try:
-            obj = json.loads(line)
-        except json.JSONDecodeError as exc:
+        # Record-boundary recovery via the shared SSoT: AC7 of
+        # iterate-2026-07-19-…-readers pins that a merge=union merge can leave two
+        # records on one physical line and propagate it into main. The pre-fix
+        # per-line json.loads reported such a line as "not valid JSON" AND missed a
+        # require_run_id match sitting on it — a FALSE check_events_has_commit
+        # failure during integrate_main (fixed here,
+        # iterate-2026-07-20-events-record-boundary-remainder). A fully-recoverable
+        # concatenation is a union artefact, not corruption; only an unrecoverable
+        # remainder is still reported (check (a) preserved).
+        records, remainder = split_records(stripped)
+        for obj in records:
+            if (
+                require_run_id
+                and obj.get("type") == "work_completed"
+                and obj.get("adr_id") == require_run_id
+            ):
+                run_id_seen = True
+        if remainder:
             errors.append(
-                f"line {n}: not valid JSON ({exc.msg}) — union may have corrupted a historic line"
+                f"line {n}: not valid JSON (unrecoverable fragment) — union may have corrupted a historic line"
             )
-            continue
-        if (
-            require_run_id
-            and isinstance(obj, dict)
-            and obj.get("type") == "work_completed"
-            and obj.get("adr_id") == require_run_id
-        ):
-            run_id_seen = True
     if require_run_id and not run_id_seen:
         errors.append(
             f"this run's work_completed event (adr_id={require_run_id}) is absent — "

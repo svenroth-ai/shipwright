@@ -1,0 +1,1 @@
+Event-log readers in the adopt, grade and compliance-verifier paths, plus the churn-merge integrate-main validator, now recover records that share one physical line after a union merge — so a record sitting second on a concatenated line (an adoption event, a run's work_completed, the newest work commit) is no longer read as absent.
