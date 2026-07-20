@@ -218,6 +218,7 @@ def generate(
     from config_writer import write_all  # type: ignore
     from artifact_writer import write_agent_docs, write_claude_md, write_spec  # type: ignore
     from event_seeder import seed_adopted_event, seed_backfill_events  # type: ignore
+    from fr_id_sequence import canonical_fr_id  # type: ignore
     # suggest_iterate hook is plugin-owned (registered in
     # plugins/shipwright-iterate/hooks/hooks.json under UserPromptSubmit);
     # no project-level installation is performed here.
@@ -359,10 +360,9 @@ def generate(
         _record_ac(feat, enrich)
         merged_features.append(feat)
 
-    # Assign FR IDs after the union is known — preserves the 1..N sequence
-    # the spec template expects.
+    # Assign FR IDs over the known union (rolls FR-01.99 -> FR-02.01 past 99).
     for i, feat in enumerate(merged_features, start=1):
-        feat["fr_id"] = f"FR-01.{i:02d}"
+        feat["fr_id"] = canonical_fr_id(i)
 
     # Fix 5: mine sibling test files for ACs when enrichment didn't supply
     # any. Enrichment > tests > "TBD" — never overwrite a non-empty
