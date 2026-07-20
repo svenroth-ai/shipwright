@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-07-20T21:50:37.610785+00:00
+Generated: 2026-07-20T22:10:07.422159+00:00
 Total commits: 1184
 
 ## Commit Distribution
@@ -24,7 +24,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-20 | finalize | stop flaky idempotency test reddening PRs across a UTC minute boundary | bb04761801a3 |
+| 2026-07-21 | finalize | stop flaky idempotency test reddening PRs across a UTC minute boundary (#418) | 4062797efa16 |
 | 2026-07-20 | adopt | roll FR-id group over past 99 so generated ids stay canonical (FR-01.13) (#416) | 5c9c4b316f05 |
 | 2026-07-19 | events | recover concatenated records across the audit read path (#409) | 1fceca45a7e3 |
 | 2026-07-19 | events | recover concatenated records on the append-only event log (#405) | 94d0332831d5 |

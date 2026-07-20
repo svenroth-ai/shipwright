@@ -1,17 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-20-flaky-idempotency-banner",
-    "date": "2026-07-20",
+    "run_id": "iterate-2026-07-21-fr-history-skip-hardfail",
+    "date": "2026-07-21",
     "unit": {
-      "status": "passed",
-      "passed": 4704,
-      "total": 4715,
-      "skipped": 11
-    },
-    "integration": {
       "status": "not_run",
       "passed": 0,
       "total": 0
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 403,
+      "total": 403
     },
     "pgtap": {
       "status": "not_run",
@@ -34,12 +33,12 @@
     "degraded": [
       {
         "type": "complexity_override",
-        "detail": "classify_complexity estimated 'medium' from message prose (signals.prior_source=keyword) but risk_flags=[] and the diff is test-only (shared/tests + bloat baseline, no runtime/FR change); downgraded to 'small' per diff-authoritative classification."
+        "detail": "classify_complexity estimated 'medium' (prior_source=history, median of last 20 runs) and flagged risk 'touches_billing' — a prose false-positive: the message said 'shallow checkouts' and 'checkout' is a touches_billing keyword (risk_taxonomy.py). The diff touches zero billing paths (one integration test file), so the authoritative risk set is []. Classified as 'small' change per diff-authoritative rule; no mandatory review required."
       }
     ],
     "surface_verification": {
       "surface": "none",
-      "justification": "Test-only change: dashboard-idempotency assertion, extraction into a sibling test module, and a bloat-baseline ratchet-down. No runtime code, API route, store mutation, SSE/WS handler, message contract, or UI-consumed code touched — there is no web or CLI surface to exercise.",
+      "justification": "Test-only change: two pytest.skip hatches in one integration test hardened into hard fetch-depth failures, plus two meta-tests. No runtime code, API route, store mutation, SSE/WS handler, message contract, or UI-consumed code touched — no web or CLI surface to exercise.",
       "tests_run": 0,
       "exit_code": 0
     },
@@ -47,19 +46,19 @@
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "finalize dashboard render is byte-idempotent across two runs, excluding the wall-clock '> Updated:' banner minute",
+          "behavior": "the absent-run-id reachability check raises a hard AssertionError naming 'fetch-depth: 0' (not pytest.skip) when a commit is unreachable",
           "disposition": "tested",
-          "evidence": "shared/tests/test_finalize_iterate_idempotency.py::test_run_is_idempotent PASSED"
+          "evidence": "integration-tests/test_fr_change_history_recovers_compacted_history.py::test_absent_run_id_check_hard_fails_on_unreachable_commit PASSED"
         },
         {
-          "behavior": "when the banner minute advances between two runs (minute-boundary straddle), the dashboard body + Session/Run banner suffix stay identical while the full byte-string differs",
+          "behavior": "the pre-S6 provenance check raises a hard AssertionError naming 'fetch-depth: 0' (not pytest.skip) when PRE_S6_COMMIT is unreachable",
           "disposition": "tested",
-          "evidence": "shared/tests/test_finalize_iterate_idempotency.py::test_run_is_idempotent_even_when_banner_minute_advances PASSED"
+          "evidence": "integration-tests/test_fr_change_history_recovers_compacted_history.py::test_pre_s6_source_check_hard_fails_on_unreachable_commit PASSED"
         },
         {
-          "behavior": "the idempotency cluster lives in a sub-300 sibling module and the ADR-096 exception file (test_finalize_iterate.py) ratchets down to 445 LOC",
+          "behavior": "on a full-history checkout both checks still pass unchanged (referenced commits reachable → no skip, no raise)",
           "disposition": "tested",
-          "evidence": "shared/scripts/hooks/anti_ratchet_check.py --staged exit 0; wc -l test_finalize_iterate.py = 445 <= baseline 445"
+          "evidence": "integration-tests/test_fr_change_history_recovers_compacted_history.py::test_the_absent_run_ids_did_real_work_that_was_never_recorded and ::test_the_recovery_source_is_the_pre_s6_catalog_not_a_summary_of_it PASSED (integration F0: 403 passed)"
         }
       ],
       "counts": {
@@ -68,7 +67,7 @@
         "untestable": 0,
         "untested_testable": 0
       },
-      "note": "Pure-tooling iterate; no FR behavior delta, so the cross-layer execution-evidence gate does not fire. All introduced behaviors are testable and tested."
+      "note": "Pure-tooling test-hardening iterate; no FR behavior delta, so the cross-layer execution-evidence gate does not fire."
     }
   },
   "coverage": {

@@ -1,34 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-20-flaky-idempotency-banner"
+run_id: "iterate-2026-07-21-fr-history-skip-hardfail"
 phase: "iterate"
-reason: "F11 pre-merge refresh: iterate-2026-07-20-flaky-idempotency-banner"
-timestamp: "2026-07-20T21:50:43.320024+00:00"
+reason: "iterate: harden two fr-history shallow-clone skip hatches into hard fetch-depth failures (trg-3a131594)"
+timestamp: "2026-07-20T22:10:15.358951+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-20 21:50:43 UTC
+> Auto-generated 2026-07-20 22:10:15 UTC
 
 ## Session Info
 
 - **Session ID**: 6c3536fe-0c2c-41bb-89a5-ec4014b6c5ee
-- **Timestamp**: 2026-07-20 21:50:43 UTC
-- **Reason**: F11 pre-merge refresh: iterate-2026-07-20-flaky-idempotency-banner
+- **Timestamp**: 2026-07-20 22:10:15 UTC
+- **Reason**: iterate: harden two fr-history shallow-clone skip hatches into hard fetch-depth failures (trg-3a131594)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-20-flaky-idempotency-banner
-- **Date**: 2026-07-20T21:50:37.517499Z
-- **Type**: bug
+- **Run ID**: iterate-2026-07-21-fr-history-skip-hardfail
+- **Date**: 2026-07-20T22:10:07.235993Z
+- **Type**: change
 - **Complexity**: small
-- **Branch**: iterate/flaky-idempotency-banner
-- **ADR**: iterate-2026-07-20-flaky-idempotency-banner
+- **Branch**: iterate/fr-history-skip-hardfail
+- **ADR**: iterate-2026-07-21-fr-history-skip-hardfail
 - **Tests passed**: True
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/flaky-idempotency-banner
+- **Branch**: iterate/fr-history-skip-hardfail
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -47,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/flaky-idempotency-banner
-- **Last Commit**: 88e7a984 Merge remote-tracking branch 'origin/main' into iterate/flaky-idempotency-banner
+- **Branch**: iterate/fr-history-skip-hardfail
+- **Last Commit**: 4062797e fix(finalize): stop flaky idempotency test reddening PRs across a UTC minute boundary (#418)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-477d6fa3 | grade_snapshot | — | 2026-07-20 |
+| evt-bcb0aa95 | work_completed | iterate (iterate: harden two fr-history shallow-clone skip hatches into hard fetch-depth failures (trg-3a131594)) | 2026-07-20 |
 | evt-ec752311 | grade_snapshot | — | 2026-07-20 |
 | evt-3f54c795 | work_completed | iterate (adopt FR-id cap: canonical group rollover past 99 detected features) | 2026-07-20 |
 | evt-42a87085 | grade_snapshot | — | 2026-07-20 |
-| evt-923835b8 | work_completed | iterate (Extend CI_SUPPLYCHAIN_FILE_PATTERNS to shared/templates/github-actions/) | 2026-07-20 |
-| evt-1fc1c3e4 | grade_snapshot | — | 2026-07-20 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 345
-- **Last iterate**: bug — adopt FR-id cap: canonical group rollover past 99 detected features (2026-07-20)
+- **Total work events**: 346
+- **Last iterate**: change — iterate: harden two fr-history shallow-clone skip hatches into hard fetch-depth failures (trg-3a131594) (2026-07-20)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

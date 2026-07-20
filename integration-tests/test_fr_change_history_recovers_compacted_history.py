@@ -135,7 +135,15 @@ def test_the_absent_run_ids_did_real_work_that_was_never_recorded(fr_id):
             cwd=_REPO, capture_output=True, text=True,
         )
         if proc.returncode != 0:
-            pytest.skip(f"commit {commit} unreachable in this checkout (shallow clone?)")
+            raise AssertionError(  # never pytest.skip -- a shallow clone must fail loud
+                f"{run_id}: commit {commit} is unreachable in this checkout. This "
+                f"check proves the absent run ids did real work that was never "
+                f"recorded; skipping it would report green while verifying nothing "
+                f"on a shallow clone (the same fail-open class the S7 review closed "
+                f"in test_fr_history_recovery_provenance.py).\n"
+                f"Remedy: give the checkout full history (actions/checkout with "
+                f"`fetch-depth: 0`, or `git fetch --unshallow`)."
+            )
         assert proc.stdout.strip() == "commit", (
             f"{run_id}: {commit} is recorded as the commit proving this work "
             f"happened, but it is not a commit object."
@@ -188,7 +196,14 @@ def test_the_recovery_source_is_the_pre_s6_catalog_not_a_summary_of_it():
         cwd=_REPO, capture_output=True, text=True, encoding="utf-8",
     )
     if proc.returncode != 0:
-        pytest.skip(f"{PRE_S6_COMMIT} unreachable in this checkout (shallow clone?)")
+        raise AssertionError(  # never pytest.skip -- mirrors _fr_history_docs.pre_s6_sections
+            f"cannot read the pre-S6 catalog at {PRE_S6_COMMIT}: this check "
+            f"re-derives the recovered run ids from that commit, so it cannot run "
+            f"without it — and skipping it would report green while verifying "
+            f"nothing on a shallow clone.\n"
+            f"Remedy: give the checkout full history (actions/checkout with "
+            f"`fetch-depth: 0`, or `git fetch --unshallow`)."
+        )
 
     blocks = [ln for ln in proc.stdout.splitlines() if "Refined by" in ln]
     assert len(blocks) >= 20, (
@@ -207,3 +222,61 @@ def test_the_recovery_source_is_the_pre_s6_catalog_not_a_summary_of_it():
         f"appear in that file: {absent}. The expectations were not read from "
         f"the source they claim."
     )
+
+
+# ---------------------------------------------------------------------------
+# The two checks above fail HARD (never pytest.skip) when a commit is
+# unreachable, so a shallow clone reports an actionable red naming the remedy
+# instead of vanishing them silently (trg-3a131594). The unreachable branch
+# never runs on a full checkout, so it is DRIVEN here: point each check at an
+# unreachable commit and require a hard AssertionError. `pytest.skip` raises
+# `Skipped` (a BaseException), so a reintroduced skip would propagate and skip
+# THESE tests — reporting green while asserting nothing. Catching BaseException
+# converts that back into a red. Mirrors
+# test_fr_history_recovery_provenance.py::test_an_unreachable_pre_s6_commit_fails_rather_than_skipping.
+# ---------------------------------------------------------------------------
+
+_UNREACHABLE_SHA = "0" * 40
+
+
+def test_absent_run_id_check_hard_fails_on_unreachable_commit(monkeypatch):
+    """A reintroduced skip on the absent-run-id check must not pass silently."""
+    import test_fr_change_history_recovers_compacted_history as mod
+
+    fr = mod._FRS[0]
+    monkeypatch.setitem(mod.NOT_IN_EVENT_LOG, fr, {"iterate-unreachable": _UNREACHABLE_SHA})
+    try:
+        mod.test_the_absent_run_ids_did_real_work_that_was_never_recorded(fr)
+    except AssertionError as exc:
+        assert "fetch-depth" in str(exc), (
+            "the failure must name the remedy (fetch-depth: 0), not just fail"
+        )
+    except BaseException as exc:  # noqa: BLE001 - a reintroduced skip is Skipped
+        pytest.fail(
+            f"expected a hard AssertionError, got {type(exc).__name__}: {exc}. "
+            f"If this is a Skipped, the skip hatch is back and the check vanishes "
+            f"silently on a shallow clone."
+        )
+    else:
+        pytest.fail("the absent-run-id check accepted an unreachable commit")
+
+
+def test_pre_s6_source_check_hard_fails_on_unreachable_commit(monkeypatch):
+    """Same guard for the provenance check that reads the pre-S6 catalog."""
+    import test_fr_change_history_recovers_compacted_history as mod
+
+    monkeypatch.setattr(mod, "PRE_S6_COMMIT", _UNREACHABLE_SHA)
+    try:
+        mod.test_the_recovery_source_is_the_pre_s6_catalog_not_a_summary_of_it()
+    except AssertionError as exc:
+        assert "fetch-depth" in str(exc), (
+            "the failure must name the remedy (fetch-depth: 0), not just fail"
+        )
+    except BaseException as exc:  # noqa: BLE001 - a reintroduced skip is Skipped
+        pytest.fail(
+            f"expected a hard AssertionError, got {type(exc).__name__}: {exc}. "
+            f"A reintroduced skip would vanish this provenance check on a shallow "
+            f"clone."
+        )
+    else:
+        pytest.fail("the pre-S6 provenance check accepted an unreachable commit")
