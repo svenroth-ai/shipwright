@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-20 19:44 UTC | Session: 85c973ff-4812-4db0-acc1-935ed32ee51b | Run: iterate-2026-07-19-traceability-derived-view
+> Updated: 2026-07-20 21:42 UTC | Session: c2a98c2f-740b-4818-b8ae-e5b87528ef06 | Run: iterate-2026-07-20-ci-supplychain-shipped-templates
 
-## Recent Changes (342 iterations)
+## Recent Changes (343 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Extend CI_SUPPLYCHAIN_FILE_PATTERNS to shared/templates/github-actions/ | 5207/5207 |  | tooling | 2026-07-20 |
 | feature | iterate: change history as a query over the event log (campaign S7) + measurement of what the S6 compaction actually left recoverable | 9458/9486 |  | FR-01.10 | 2026-07-20 |
 | change | iterate: merge the requirements into one catalog (campaign S6) | 0/0 |  | FR-01.10 | 2026-07-20 |
 | change | iterate: converge the FR table shape (campaign S5) | 0/0 |  | FR-01.02, FR-01.10, FR-01.13 | 2026-07-20 |
@@ -349,7 +350,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-19 | Unit: 9204/9232 | Integration: 405/405 | Smoke: not_run | (iterate)
+Last run: 2026-07-20 | Unit: 5207/5207 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
