@@ -1,38 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-20-runner-finalization-integrity"
+run_id: "iterate-2026-07-20-flaky-idempotency-banner"
 phase: "iterate"
-reason: "iterate: runner finalization integrity"
-timestamp: "2026-07-20T22:04:18.280344+00:00"
+reason: "F11 pre-merge refresh: iterate-2026-07-20-flaky-idempotency-banner"
+timestamp: "2026-07-20T21:50:43.320024+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-20 22:04:18 UTC
+> Auto-generated 2026-07-20 21:50:43 UTC
 
 ## Session Info
 
-- **Session ID**: 059b5006-0551-4c91-acfc-252b276f1794
-- **Timestamp**: 2026-07-20 22:04:18 UTC
-- **Reason**: iterate: runner finalization integrity
+- **Session ID**: 6c3536fe-0c2c-41bb-89a5-ec4014b6c5ee
+- **Timestamp**: 2026-07-20 21:50:43 UTC
+- **Reason**: F11 pre-merge refresh: iterate-2026-07-20-flaky-idempotency-banner
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-19-traceability-derived-view
-- **Date**: 2026-07-20T13:53:21.973834Z
-- **Type**: feature
-- **Complexity**: medium
-- **Branch**: iterate/2026-07-19-traceability-derived-view
-- **ADR**: iterate-2026-07-19-traceability-derived-view
+- **Run ID**: iterate-2026-07-20-flaky-idempotency-banner
+- **Date**: 2026-07-20T21:50:37.517499Z
+- **Type**: bug
+- **Complexity**: small
+- **Branch**: iterate/flaky-idempotency-banner
+- **ADR**: iterate-2026-07-20-flaky-idempotency-banner
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-19-traceability-derived-view-miniplan.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/runner-finalization-integrity
-- **Run ID**: `iterate-2026-07-20-runner-finalization-integrity`
-- **Spec**: .shipwright/planning/iterate/2026-07-20-runner-finalization-integrity.md
-- **Complexity**: medium (history-calibrated; risk floor medium)
+- **Branch**: iterate/flaky-idempotency-banner
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -51,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/runner-finalization-integrity
-- **Last Commit**: 18905d57 feat(traceability): answer "which changes touched this requirement" from the event log (campaign S7) (#415)
+- **Branch**: iterate/flaky-idempotency-banner
+- **Last Commit**: 88e7a984 Merge remote-tracking branch 'origin/main' into iterate/flaky-idempotency-banner
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-7143f99e | grade_snapshot | — | 2026-07-20 |
-| evt-f195d222 | work_completed | iterate (sub-iterate-runner finalization integrity: F3/F5c reliability + no-direct-decision_log F11 gate) | 2026-07-20 |
-| evt-df28837c | grade_snapshot | — | 2026-07-20 |
-| evt-d9555025 | grade_snapshot | — | 2026-07-20 |
-| evt-83f52f9d | grade_snapshot | — | 2026-07-20 |
+| evt-ec752311 | grade_snapshot | — | 2026-07-20 |
+| evt-3f54c795 | work_completed | iterate (adopt FR-id cap: canonical group rollover past 99 detected features) | 2026-07-20 |
+| evt-42a87085 | grade_snapshot | — | 2026-07-20 |
+| evt-923835b8 | work_completed | iterate (Extend CI_SUPPLYCHAIN_FILE_PATTERNS to shared/templates/github-actions/) | 2026-07-20 |
+| evt-1fc1c3e4 | grade_snapshot | — | 2026-07-20 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 343
-- **Last iterate**: change — sub-iterate-runner finalization integrity: F3/F5c reliability + no-direct-decision_log F11 gate (2026-07-20)
+- **Total work events**: 345
+- **Last iterate**: bug — adopt FR-id cap: canonical group rollover past 99 detected features (2026-07-20)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
