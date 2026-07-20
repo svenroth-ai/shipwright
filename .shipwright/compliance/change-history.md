@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-07-20T21:58:31.531129+00:00
-Total commits: 1185
+Generated: 2026-07-20T22:10:07.422159+00:00
+Total commits: 1186
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 340
+    "fix" : 341
     "feat" : 329
     "chore" : 247
     "docs" : 145
@@ -20,11 +20,12 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 340 commits
+### Fixes (fix) — 341 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-21 | events | recover record boundaries in the remaining event-log authority readers | 402b5e0cc091 |
+| 2026-07-21 | traceability | fail loud on shallow clone instead of skipping fr-history checks | be738046fa0d |
+| 2026-07-21 | events | recover record boundaries in the remaining event-log authority readers (#419) | 0cd30df86818 |
 | 2026-07-21 | finalize | stop flaky idempotency test reddening PRs across a UTC minute boundary (#418) | 4062797efa16 |
 | 2026-07-20 | adopt | roll FR-id group over past 99 so generated ids stay canonical (FR-01.13) (#416) | 5c9c4b316f05 |
 | 2026-07-19 | events | recover concatenated records across the audit read path (#409) | 1fceca45a7e3 |
@@ -1254,7 +1255,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1185 |
+| Total commits | 1186 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1185 |
+| Human-authored commits | 1186 |
 

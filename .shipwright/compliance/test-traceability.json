@@ -1,8 +1,8 @@
 {
   "schema_version": 3,
   "collector_version": "test_links/1.0.0",
-  "generated_at": "2026-07-20T21:58:31.531129+00:00",
-  "source_commit": "9365114fe042e5eb371cfe4c0da8ecf2910c4ca3",
+  "generated_at": "2026-07-20T22:10:07.422159+00:00",
+  "source_commit": "018cf6301a0d1e1a658e191f348ccca954929e4e",
   "spec_hash": "sha256:d86c863159c71a252ede90b8b470937b6160e5187c32849bbb04474d22c944ad",
   "requirements": {
     "01::FR-01.01": {
@@ -1856,8 +1856,10 @@
     "integration-tests/test_events_record_boundary_merge_integration.py::test_validator_and_reader_compose_after_a_real_union_merge",
     "integration-tests/test_fold_map_e2e.py::test_folded_tag_resolves_end_to_end_through_the_real_collector",
     "integration-tests/test_fold_map_e2e.py::test_this_monorepo_regenerates_a_byte_identical_manifest",
+    "integration-tests/test_fr_change_history_recovers_compacted_history.py::test_absent_run_id_check_hard_fails_on_unreachable_commit",
     "integration-tests/test_fr_change_history_recovers_compacted_history.py::test_every_exactly_recovered_run_id_is_returned_by_the_query",
     "integration-tests/test_fr_change_history_recovers_compacted_history.py::test_pre_run_id_changes_are_present_under_their_adr_label",
+    "integration-tests/test_fr_change_history_recovers_compacted_history.py::test_pre_s6_source_check_hard_fails_on_unreachable_commit",
     "integration-tests/test_fr_change_history_recovers_compacted_history.py::test_the_absent_run_ids_did_real_work_that_was_never_recorded",
     "integration-tests/test_fr_change_history_recovers_compacted_history.py::test_the_measured_gap_in_d4s_claim_stays_visible",
     "integration-tests/test_fr_change_history_recovers_compacted_history.py::test_the_published_counts_match_the_tables",

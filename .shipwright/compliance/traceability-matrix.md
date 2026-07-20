@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-20T21:58:31.531129+00:00
+Generated: 2026-07-20T22:10:07.422159+00:00
 
 ## Requirements Coverage
 
@@ -28,6 +28,7 @@ Generated: 2026-07-20T21:58:31.531129+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-bcb0aa95"></a>harden two fr-history shallow-clone skip hatches into hard fetch-depth failures (trg-3a131594) | iterate | change |  | — | — | 2026-07-20 |
 | <a id="evt-9bebfcd7"></a>close event-log record-boundary reader remainder (authority readers) | iterate | change |  | — | — | 2026-07-20 |
 | <a id="evt-fa21005e"></a>fix flaky finalize idempotency test (banner minute drift, trg-183a304a) | iterate | change |  | — | — | 2026-07-20 |
 | <a id="evt-923835b8"></a>Editing one of Shipwright's shipped CI workflow templates now trips the CI supply-chain acknowledgement gate, the same as editing this repo's own workflow files. | iterate | change |  | 5207/5207 | — | 2026-07-20 |
@@ -381,7 +382,7 @@ Generated: 2026-07-20T21:58:31.531129+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 346 |
+| Iterate changes | 347 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |
