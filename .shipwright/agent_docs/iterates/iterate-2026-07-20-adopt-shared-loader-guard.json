@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-20-adopt-shared-loader-guard",
+  "date": "2026-07-20T22:13:56.541351Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/adopt-shared-loader-guard",
+  "spec": ".shipwright/planning/iterate/2026-07-20-adopt-shared-loader-guard.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-20-adopt-shared-loader-guard"
+}

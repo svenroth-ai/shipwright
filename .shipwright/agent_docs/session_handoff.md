@@ -1,42 +1,44 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-20-runner-finalization-integrity"
+run_id: "iterate-2026-07-20-adopt-shared-loader-guard"
 phase: "iterate"
-reason: "F11 refresh: catch up to origin/main d9aa64b3"
-timestamp: "2026-07-20T22:10:05.470232+00:00"
+reason: "F11 re-refresh: integrate #420"
+timestamp: "2026-07-20T22:13:56.299243+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-20 22:10:05 UTC
+> Auto-generated 2026-07-20 22:13:56 UTC
 
 ## Session Info
 
-- **Session ID**: 059b5006-0551-4c91-acfc-252b276f1794
-- **Timestamp**: 2026-07-20 22:10:05 UTC
-- **Reason**: F11 refresh: catch up to origin/main d9aa64b3
+- **Session ID**: df7a692d-7b6d-43aa-8e3a-2c40b36092eb
+- **Timestamp**: 2026-07-20 22:13:56 UTC
+- **Reason**: F11 re-refresh: integrate #420
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-20-accepted-risk-adopter-converge
-- **Date**: 2026-07-20T22:08:18.754499Z
+- **Run ID**: iterate-2026-07-20-adopt-shared-loader-guard
+- **Date**: 2026-07-20T22:13:56.541351Z
 - **Type**: change
-- **Complexity**: small
-- **Branch**: iterate/accepted-risk-adopter-converge
-- **ADR**: iterate-2026-07-20-accepted-risk-adopter-converge
+- **Complexity**: medium
+- **Branch**: iterate/adopt-shared-loader-guard
+- **ADR**: iterate-2026-07-20-adopt-shared-loader-guard
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/2026-07-20-adopt-shared-loader-guard.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/runner-finalization-integrity
-- **Run ID**: `iterate-2026-07-20-runner-finalization-integrity`
-- **Spec**: .shipwright/planning/iterate/2026-07-20-runner-finalization-integrity.md
-- **Complexity**: medium (history-calibrated; risk floor medium)
+- **Branch**: iterate/adopt-shared-loader-guard
+- **Run ID**: iterate-2026-07-20-adopt-shared-loader-guard
+- **Spec**: .shipwright/planning/iterate/2026-07-20-adopt-shared-loader-guard.md
+- **Complexity**: medium
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -50,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/runner-finalization-integrity
-- **Last Commit**: 76c5a353 Merge remote-tracking branch 'origin/main' into iterate/runner-finalization-integrity
+- **Branch**: iterate/adopt-shared-loader-guard
+- **Last Commit**: 6bed0fd5 Merge remote-tracking branch 'origin/main' into iterate/adopt-shared-loader-guard
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -71,7 +73,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 | evt-429d92bb | grade_snapshot | — | 2026-07-20 |
 | evt-9af6a842 | grade_snapshot | — | 2026-07-20 |
 | evt-eaa519ea | work_completed | iterate (Document operator-run converge for adopted repos + guard test) | 2026-07-20 |
-| evt-ec752311 | grade_snapshot | — | 2026-07-20 |
+| evt-4d5466ac | grade_snapshot | — | 2026-07-20 |
 
 ## Recovery
 

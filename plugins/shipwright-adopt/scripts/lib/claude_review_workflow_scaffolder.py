@@ -18,28 +18,20 @@ ScaffoldResult logic lives in one place.
 
 from __future__ import annotations
 
-import importlib.util
 from pathlib import Path
+
+try:  # tool context: lib/ is on sys.path (setup_adopt/_load_lib)
+    from shared_loader import load_shared_module
+except ImportError:  # test / package context: scripts/ on sys.path, lib is a package
+    from lib.shared_loader import load_shared_module
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 
-
-def _load_module(path: Path, alias: str):
-    spec = importlib.util.spec_from_file_location(alias, path)
-    if spec is None or spec.loader is None:
-        raise FileNotFoundError(f"could not load module from {path}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-_CI_WORKFLOW = _load_module(
-    _REPO_ROOT / "shared" / "scripts" / "lib" / "ci_workflow.py",
-    "_shipwright_adopt_claude_review_constants",
+_CI_WORKFLOW = load_shared_module(
+    "scripts/lib/ci_workflow.py", "_shipwright_adopt_claude_review_constants"
 )
-_HELPER = _load_module(
-    _REPO_ROOT / "shared" / "scripts" / "lib" / "workflow_scaffold_helper.py",
-    "_shipwright_adopt_claude_review_helper",
+_HELPER = load_shared_module(
+    "scripts/lib/workflow_scaffold_helper.py", "_shipwright_adopt_claude_review_helper"
 )
 
 CLAUDE_REVIEW_TEMPLATE_PATH: str = _CI_WORKFLOW.CLAUDE_REVIEW_TEMPLATE_PATH

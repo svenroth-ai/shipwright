@@ -1,16 +1,16 @@
 # Project Activity Dashboard
-> Updated: 2026-07-20 22:10 UTC | Session: 059b5006-0551-4c91-acfc-252b276f1794 | Run: iterate-2026-07-20-runner-finalization-integrity
+> Updated: 2026-07-20 22:13 UTC | Session: df7a692d-7b6d-43aa-8e3a-2c40b36092eb | Run: iterate-2026-07-20-adopt-shared-loader-guard
 
 ## Recent Changes (348 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
 | change | Document operator-run converge for adopted repos + guard test | 4708/4708 |  | docs | 2026-07-20 |
+| change | adopt shared-loader guard: one guarded loader for the eight scaffolders | 5/5 |  | FR-01.13 | 2026-07-20 |
 | bug | adopt FR-id cap: canonical group rollover past 99 detected features | 6/6 |  | FR-01.13 | 2026-07-20 |
 | change | Extend CI_SUPPLYCHAIN_FILE_PATTERNS to shared/templates/github-actions/ | 5207/5207 |  | tooling | 2026-07-20 |
 | change | iterate: fix flaky finalize idempotency test (banner minute drift, trg-183a304a) | 0/0 |  | tooling | 2026-07-20 |
 | change | iterate: close event-log record-boundary reader remainder (authority readers) | 0/0 |  | tooling | 2026-07-20 |
-| change | sub-iterate-runner finalization integrity: F3/F5c reliability + no-direct-decision_log F11 gate | 4712/4723 |  | tooling | 2026-07-20 |
 | feature | iterate: change history as a query over the event log (campaign S7) + measurement of what the S6 compaction actually left recoverable | 9458/9486 |  | FR-01.10 | 2026-07-20 |
 | change | iterate: merge the requirements into one catalog (campaign S6) | 0/0 |  | FR-01.10 | 2026-07-20 |
 | change | iterate: converge the FR table shape (campaign S5) | 0/0 |  | FR-01.02, FR-01.10, FR-01.13 | 2026-07-20 |
@@ -355,7 +355,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-20 | Unit: 4712/4723 | Integration: 3/3 | Smoke: not_run | (iterate)
+Last run: 2026-07-20 | Unit: 5/5 | Integration: 10/10 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

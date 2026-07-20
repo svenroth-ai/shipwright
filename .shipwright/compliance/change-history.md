@@ -1,17 +1,17 @@
 # Commit Change Log
 
-Generated: 2026-07-20T22:08:18.851913+00:00
+Generated: 2026-07-20T22:13:50.533361+00:00
 Total commits: 1188
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 341
+    "fix" : 340
     "feat" : 329
     "chore" : 248
     "docs" : 146
-    "refactor" : 74
+    "refactor" : 75
     "test" : 29
     "ci" : 11
     "other" : 9
@@ -20,12 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 341 commits
+### Fixes (fix) — 340 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
 | 2026-07-21 | events | recover record boundaries in the remaining event-log authority readers (#419) | 0cd30df86818 |
-| 2026-07-21 | iterate | run F3+F5c reliably in the sub-iterate-runner and forbid direct decision_log writes | 33b5e0b5d35d |
 | 2026-07-21 | finalize | stop flaky idempotency test reddening PRs across a UTC minute boundary (#418) | 4062797efa16 |
 | 2026-07-20 | adopt | roll FR-id group over past 99 so generated ids stay canonical (FR-01.13) (#416) | 5c9c4b316f05 |
 | 2026-07-19 | events | recover concatenated records across the audit read path (#409) | 1fceca45a7e3 |
@@ -704,7 +703,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-21 | churn | regenerate derived snapshots after main merge | 07aca6966bc1 |
+| 2026-07-21 | churn | regenerate derived snapshots after main merge | aa26a452c7c2 |
 | 2026-07-19 | compliance | register four size crossings, ratchet nine entries, record the missing convention (#408) | 37fe1346b5df |
 | 2026-07-18 | triage | deliver 3 orphaned records from the merged iterate worktree (#402) | 56ee1c0e2387 |
 | 2026-07-18 | security | by-design nosemgrep suppression for the layer-coverage loader (#396) | 6cfd0e84655a |
@@ -1104,10 +1103,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 74 commits
+### Refactoring (refactor) — 75 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-21 | adopt | route the eight scaffolders through one guarded shared/ loader (FR-01.13) | 58d1bb7bc517 |
 | 2026-07-20 | requirements | one catalog, stated once in plain language (campaign S6) (#414) | be2561caccd3 |
 | 2026-07-20 | requirements | one FR-table shape from both generators (campaign S5) (#413) | 5eef5076242c |
 | 2026-07-20 | shared | one header-driven FR-table reader replaces five parsers (#412) | 227a525e4549 |
