@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-20T21:50:37.610785+00:00
+Generated: 2026-07-20T22:08:18.851913+00:00
 
 ## Requirements Coverage
 
@@ -28,6 +28,7 @@ Generated: 2026-07-20T21:50:37.610785+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-eaa519ea"></a>Shipwright's security guide now explains how a project that adopted Shipwright clears an accepted security risk from its GitHub code-scanning — a person runs the converge command from a Shipwright checkout, pointed at the adopted project. | iterate | change |  | 4708/4708 | — | 2026-07-20 |
 | <a id="evt-fa21005e"></a>fix flaky finalize idempotency test (banner minute drift, trg-183a304a) | iterate | change |  | — | — | 2026-07-20 |
 | <a id="evt-923835b8"></a>Editing one of Shipwright's shipped CI workflow templates now trips the CI supply-chain acknowledgement gate, the same as editing this repo's own workflow files. | iterate | change |  | 5207/5207 | — | 2026-07-20 |
 | <a id="evt-3f54c795"></a>When an onboarded project exposes more than 99 pages, the tool no longer produces a broken requirement number — it rolls over to the next requirement group so every generated id stays valid. | iterate | bug | [FR-01.13](#rtm-fr-0113) | 6/6 | — | 2026-07-20 |
@@ -380,7 +381,7 @@ Generated: 2026-07-20T21:50:37.610785+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 345 |
+| Iterate changes | 346 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |

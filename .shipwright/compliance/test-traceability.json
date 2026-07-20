@@ -1,8 +1,8 @@
 {
   "schema_version": 3,
   "collector_version": "test_links/1.0.0",
-  "generated_at": "2026-07-20T21:50:37.610785+00:00",
-  "source_commit": "88e7a9849a7c0d1883743d9d574ab838cee4e1e6",
+  "generated_at": "2026-07-20T22:08:18.851913+00:00",
+  "source_commit": "ce8855840d8427f2f4062393a4f0d975ca724ae0",
   "spec_hash": "sha256:d86c863159c71a252ede90b8b470937b6160e5187c32849bbb04474d22c944ad",
   "requirements": {
     "01::FR-01.01": {
@@ -5669,6 +5669,9 @@
     "shared/tests/test_accepted_risks.py::test_unknown_schema_fails_closed",
     "shared/tests/test_accepted_risks.py::test_unreadable_register_fails_closed",
     "shared/tests/test_accepted_risks.py::test_valid_register_parses",
+    "shared/tests/test_accepted_risks_adopter_converge.py::test_each_adopted_root_resolves_to_its_own_identity",
+    "shared/tests/test_accepted_risks_adopter_converge.py::test_identity_and_register_come_from_the_targeted_root_not_cwd",
+    "shared/tests/test_accepted_risks_adopter_converge.py::test_security_ci_setup_documents_operator_run_converge_for_adopters",
     "shared/tests/test_accepted_risks_cli.py::test_absent_workflow_yields_no_env",
     "shared/tests/test_accepted_risks_cli.py::test_check_names_what_it_did_not_check",
     "shared/tests/test_accepted_risks_cli.py::test_check_reports_clean_repo",
