@@ -1,35 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-20-adopt-fr-id-cap"
+run_id: "iterate-2026-07-20-ci-supplychain-shipped-templates"
 phase: "iterate"
-reason: "iterate: adopt FR-id cap"
-timestamp: "2026-07-20T21:29:19.773182+00:00"
+reason: "F11 pre-merge refresh: iterate-2026-07-20-ci-supplychain-shipped-templates"
+timestamp: "2026-07-20T21:42:29.883654+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-20 21:29:19 UTC
+> Auto-generated 2026-07-20 21:42:29 UTC
 
 ## Session Info
 
-- **Session ID**: df7a692d-7b6d-43aa-8e3a-2c40b36092eb
-- **Timestamp**: 2026-07-20 21:29:19 UTC
-- **Reason**: iterate: adopt FR-id cap
+- **Session ID**: c2a98c2f-740b-4818-b8ae-e5b87528ef06
+- **Timestamp**: 2026-07-20 21:42:29 UTC
+- **Reason**: F11 pre-merge refresh: iterate-2026-07-20-ci-supplychain-shipped-templates
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-19-traceability-derived-view
-- **Date**: 2026-07-20T13:53:21.973834Z
-- **Type**: feature
-- **Complexity**: medium
-- **Branch**: iterate/2026-07-19-traceability-derived-view
-- **ADR**: iterate-2026-07-19-traceability-derived-view
+- **Run ID**: iterate-2026-07-20-ci-supplychain-shipped-templates
+- **Date**: 2026-07-20T21:42:23.901005Z
+- **Type**: change
+- **Complexity**: small
+- **Branch**: iterate/ci-supplychain-shipped-templates
+- **ADR**: iterate-2026-07-20-ci-supplychain-shipped-templates
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-19-traceability-derived-view-miniplan.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/adopt-fr-id-cap
+- **Branch**: iterate/ci-supplychain-shipped-templates
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/adopt-fr-id-cap
-- **Last Commit**: 18905d57 feat(traceability): answer "which changes touched this requirement" from the event log (campaign S7) (#415)
+- **Branch**: iterate/ci-supplychain-shipped-templates
+- **Last Commit**: 79614a2a Merge remote-tracking branch 'origin/main' into iterate/ci-supplychain-shipped-templates
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -67,14 +66,14 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 |-------|------|--------|------|
 | evt-ec752311 | grade_snapshot | — | 2026-07-20 |
 | evt-3f54c795 | work_completed | iterate (adopt FR-id cap: canonical group rollover past 99 detected features) | 2026-07-20 |
+| evt-42a87085 | grade_snapshot | — | 2026-07-20 |
+| evt-923835b8 | work_completed | iterate (Extend CI_SUPPLYCHAIN_FILE_PATTERNS to shared/templates/github-actions/) | 2026-07-20 |
 | evt-df28837c | grade_snapshot | — | 2026-07-20 |
-| evt-d9555025 | grade_snapshot | — | 2026-07-20 |
-| evt-83f52f9d | grade_snapshot | — | 2026-07-20 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 343
+- **Total work events**: 344
 - **Last iterate**: bug — adopt FR-id cap: canonical group rollover past 99 detected features (2026-07-20)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

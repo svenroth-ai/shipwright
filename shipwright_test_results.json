@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-20-adopt-fr-id-cap",
+    "run_id": "iterate-2026-07-20-ci-supplychain-shipped-templates",
     "date": "2026-07-20",
     "unit": {
       "status": "passed",
-      "passed": 6,
-      "total": 6
+      "passed": 5207,
+      "total": 5207
     },
     "integration": {
       "status": "not_run",
@@ -18,7 +18,7 @@
       "total": 0
     },
     "e2e": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
@@ -30,55 +30,50 @@
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [
-      {
-        "condition": "external_llm_review_unavailable",
-        "detail": "OPENAI_API_KEY absent; a code-reviewer subagent reviewed the diff instead of external_review.py"
-      }
-    ],
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "runner": "none (pure library change; covered by F0 unit tests)",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-20-ci-supplychain-shipped-templates/surface_verification.json",
+      "timestamp": "2026-07-20T21:37:13.819Z",
+      "justification": "Pure framework library change: broadens the CI-supplychain risk-detector's file-match set (CI_SUPPLYCHAIN_FILE_PATTERNS) and its drift-pinned verifier copy. No web/UI/API/CLI-app surface exists to drive; behavior is fully covered by unit tests at F0 (test_ci_supplychain_detector + test_ci_supplychain_patterns_sync + test_check_ci_supplychain_ack)."
+    },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "canonical_fr_id rolls the group over at 99 (FR-01.99 -> FR-02.01) instead of emitting FR-01.100",
+          "behavior": "an edit to a shipped CI template (shared/templates/github-actions/**) trips is_ci_supplychain_change",
           "disposition": "tested",
-          "evidence": "test_fr_id_sequence.py::test_rolls_group_over_at_100_instead_of_emitting_fr_01_100 PASSED"
+          "evidence": "test_ci_supplychain_detector.py::test_ci_supplychain_paths_trigger[shared/templates/github-actions/*.template] PASSED"
         },
         {
-          "behavior": "sub-100 sequence is byte-identical to the previous f\"FR-01.{n:02d}\"",
+          "behavior": "a shared/templates path OUTSIDE github-actions, and a docs-nested copy, do NOT trip",
           "disposition": "tested",
-          "evidence": "test_fr_id_sequence.py::test_sub_100_sequence_is_unchanged PASSED"
+          "evidence": "test_ci_supplychain_detector.py::test_near_misses_do_not_trigger PASSED"
         },
         {
-          "behavior": "every id from 1..9801 satisfies the canonical FR-\\d{2}.\\d{2} grammar",
+          "behavior": "the verifier _CI_SUPPLYCHAIN_PATTERNS stays byte-equal to the SSoT (both directions)",
           "disposition": "tested",
-          "evidence": "test_fr_id_sequence.py::test_every_id_up_to_the_ceiling_is_canonical PASSED"
+          "evidence": "test_ci_supplychain_patterns_sync.py::test_verifier_copy_equals_ssot_both_directions PASSED"
         },
         {
-          "behavior": "non-positive sequence is rejected with ValueError",
+          "behavior": "SSoT detector and verifier copy return the same verdict across the path matrix incl. the template path",
           "disposition": "tested",
-          "evidence": "test_fr_id_sequence.py::test_non_positive_sequence_rejected PASSED"
+          "evidence": "test_ci_supplychain_patterns_sync.py::test_ssot_and_detector_agree PASSED"
         },
         {
-          "behavior": "overflow beyond group 99 (>9801 features) is rejected rather than emitting a non-canonical id",
+          "behavior": "the ack gate recomputes CI paths from the new pattern set without regressing existing behavior",
           "disposition": "tested",
-          "evidence": "test_fr_id_sequence.py::test_overflow_beyond_group_99_rejected PASSED"
-        },
-        {
-          "behavior": "real call site e2e_baseline_generator emits only canonical ids with >99 routes",
-          "disposition": "tested",
-          "evidence": "test_fr_id_sequence.py::test_e2e_baseline_spec_ids_canonical_past_99 PASSED"
+          "evidence": "test_check_ci_supplychain_ack.py (13 tests) PASSED"
         }
       ],
       "counts": {
-        "testable": 6,
-        "tested": 6,
+        "testable": 5,
+        "tested": 5,
         "untestable": 0,
         "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 6,
-        "covered_acs": 6
       }
     }
   },
