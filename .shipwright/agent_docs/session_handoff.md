@@ -1,40 +1,44 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-19-traceability-derived-view"
+run_id: "iterate-2026-07-20-events-record-boundary-remainder"
 phase: "iterate"
-reason: "iterate: change history as a derived query over the event log (campaign S7)"
-timestamp: "2026-07-20T19:44:40.687357+00:00"
+reason: "iterate: close event-log record-boundary reader remainder (authority readers)"
+timestamp: "2026-07-20T21:58:37.223294+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-20 19:44:40 UTC
+> Auto-generated 2026-07-20 21:58:37 UTC
 
 ## Session Info
 
-- **Session ID**: 85c973ff-4812-4db0-acc1-935ed32ee51b
-- **Timestamp**: 2026-07-20 19:44:40 UTC
-- **Reason**: iterate: change history as a derived query over the event log (campaign S7)
+- **Session ID**: 98ffa9f7-2bcb-4083-af41-097ff497bb0f
+- **Timestamp**: 2026-07-20 21:58:37 UTC
+- **Reason**: iterate: close event-log record-boundary reader remainder (authority readers)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-19-traceability-derived-view
-- **Date**: 2026-07-20T13:53:21.973834Z
-- **Type**: feature
+- **Run ID**: iterate-2026-07-20-events-record-boundary-remainder
+- **Date**: 2026-07-20T21:58:31.436121Z
+- **Type**: bug
 - **Complexity**: medium
-- **Branch**: iterate/2026-07-19-traceability-derived-view
-- **ADR**: iterate-2026-07-19-traceability-derived-view
+- **Branch**: iterate/2026-07-20-events-record-boundary-remainder
+- **ADR**: iterate-2026-07-20-events-record-boundary-remainder
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-19-traceability-derived-view-miniplan.md
+- **Spec**: .shipwright/planning/iterate/2026-07-20-events-record-boundary-remainder.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/2026-07-19-traceability-derived-view
+- **Branch**: iterate/2026-07-20-events-record-boundary-remainder
+- **Run ID**: iterate-2026-07-20-events-record-boundary-remainder
+- **Spec**: .shipwright/planning/iterate/2026-07-20-events-record-boundary-remainder.md
+- **Complexity**: medium
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -48,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/2026-07-19-traceability-derived-view
-- **Last Commit**: cf65591e feat(traceability): answer "which changes touched this requirement" from the event log (campaign S7)
+- **Branch**: iterate/2026-07-20-events-record-boundary-remainder
+- **Last Commit**: 18905d57 feat(traceability): answer "which changes touched this requirement" from the event log (campaign S7) (#415)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +69,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-e870edcc | grade_snapshot | — | 2026-07-20 |
+| evt-9bebfcd7 | work_completed | iterate (iterate: close event-log record-boundary reader remainder (authority readers)) | 2026-07-20 |
 | evt-df28837c | grade_snapshot | — | 2026-07-20 |
 | evt-d9555025 | grade_snapshot | — | 2026-07-20 |
 | evt-83f52f9d | grade_snapshot | — | 2026-07-20 |
-| evt-0b770051 | grade_snapshot | — | 2026-07-20 |
-| evt-1cd72ca7 | grade_snapshot | — | 2026-07-20 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 342
-- **Last iterate**: feature — iterate: change history as a query over the event log (campaign S7) + measurement of what the S6 compaction actually left recoverable (2026-07-20)
+- **Total work events**: 343
+- **Last iterate**: change — iterate: close event-log record-boundary reader remainder (authority readers) (2026-07-20)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

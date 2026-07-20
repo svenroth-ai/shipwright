@@ -41,6 +41,7 @@ from lib.phase_quality import (  # noqa: E402
     make_finding,
 )
 from lib.planning_discovery import iter_spec_files  # noqa: E402
+from lib.jsonl_records import read_jsonl_records  # noqa: E402
 
 
 REQUIRED_CONFIGS = [
@@ -211,17 +212,14 @@ def check_a7_adopted_event(project_root: Path) -> dict[str, Any]:
     if not events.exists():
         return make_finding("A7", STATUS_FAIL, "missing shipwright_events.jsonl",
                             name=name, provenance="adopt_event_check")
-    adopted = 0
-    for line in events.read_text(encoding="utf-8", errors="ignore").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            ev = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if ev.get("type") == "adopted":
-            adopted += 1
+    # Record-boundary recovery via the shared SSoT: an 'adopted' event sitting
+    # second on a merge=union concatenated line read as absent, FAILing A7 for a
+    # repo that adopted correctly (the inverted failure mode,
+    # iterate-2026-07-20-events-record-boundary-remainder). read_jsonl_records
+    # returns only JSON objects, so a bare scalar line no longer crashes .get().
+    adopted = sum(
+        1 for ev in read_jsonl_records(events).records if ev.get("type") == "adopted"
+    )
     if adopted == 0:
         return make_finding("A7", STATUS_FAIL, "no 'adopted' event found",
                             name=name,
