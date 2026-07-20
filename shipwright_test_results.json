@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-20-adopt-fr-id-cap",
+    "run_id": "iterate-2026-07-20-adopt-shared-loader-guard",
     "date": "2026-07-20",
     "unit": {
       "status": "passed",
-      "passed": 6,
-      "total": 6
+      "passed": 5,
+      "total": 5
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 10,
+      "total": 10
     },
     "pgtap": {
       "status": "not_run",
@@ -32,53 +32,58 @@
     },
     "degraded": [
       {
-        "condition": "external_llm_review_unavailable",
-        "detail": "OPENAI_API_KEY absent; a code-reviewer subagent reviewed the diff instead of external_review.py"
+        "condition": "external_llm_review_via_codex",
+        "detail": "OPENAI_API_KEY absent; external medium+ review ran through the Codex runtime (GPT-5.4) + an internal code-reviewer subagent instead of external_review.py"
       }
     ],
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-07-20T22:12:19.942Z",
+      "attempts": 0,
+      "justification": "Pure Python plugin-internal refactor of adopt's shared-module import path (consolidating eight unguarded spec_from_file_location loaders behind one guarded helper). No startable web/API/CLI surface is produced or consumed: adopt scaffolders are library functions exercised by the plugin unit suite (462 tests green), and the monorepo ships no web service (the Command Center WebUI is a separate repo). No backend-affects-frontend edge."
+    },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "canonical_fr_id rolls the group over at 99 (FR-01.99 -> FR-02.01) instead of emitting FR-01.100",
+          "behavior": "missing shared/ tree raises a named ImportError, not a bare FileNotFoundError",
           "disposition": "tested",
-          "evidence": "test_fr_id_sequence.py::test_rolls_group_over_at_100_instead_of_emitting_fr_01_100 PASSED"
+          "evidence": "test_shared_loader.py::test_missing_shared_file_raises_importerror_not_filenotfound PASSED"
         },
         {
-          "behavior": "sub-100 sequence is byte-identical to the previous f\"FR-01.{n:02d}\"",
+          "behavior": "a failing exec_module does not poison the cache (sentinel popped; second call re-raises)",
           "disposition": "tested",
-          "evidence": "test_fr_id_sequence.py::test_sub_100_sequence_is_unchanged PASSED"
+          "evidence": "test_shared_loader.py::test_no_cache_poison_on_exec_failure PASSED"
         },
         {
-          "behavior": "every id from 1..9801 satisfies the canonical FR-\\d{2}.\\d{2} grammar",
+          "behavior": "a successful load returns the module and caches it (repeat call is a cache hit, same object)",
           "disposition": "tested",
-          "evidence": "test_fr_id_sequence.py::test_every_id_up_to_the_ceiling_is_canonical PASSED"
+          "evidence": "test_shared_loader.py::test_successful_load_returns_module_and_caches PASSED"
         },
         {
-          "behavior": "non-positive sequence is rejected with ValueError",
+          "behavior": "the module is registered BEFORE exec so a self-referential shared module (@dataclass __module__) can load",
           "disposition": "tested",
-          "evidence": "test_fr_id_sequence.py::test_non_positive_sequence_rejected PASSED"
+          "evidence": "test_shared_loader.py::test_registers_before_exec_so_a_shared_module_resolves_its_own_name PASSED"
         },
         {
-          "behavior": "overflow beyond group 99 (>9801 features) is rejected rather than emitting a non-canonical id",
+          "behavior": "all eight rewired scaffolders still resolve their shared symbol on a normal install",
           "disposition": "tested",
-          "evidence": "test_fr_id_sequence.py::test_overflow_beyond_group_99_rejected PASSED"
-        },
-        {
-          "behavior": "real call site e2e_baseline_generator emits only canonical ids with >99 routes",
-          "disposition": "tested",
-          "evidence": "test_fr_id_sequence.py::test_e2e_baseline_spec_ids_canonical_past_99 PASSED"
+          "evidence": "test_shared_loader.py::test_every_rewired_scaffolder_still_resolves_its_shared_symbol PASSED + full adopt suite 462 green"
         }
       ],
       "counts": {
-        "testable": 6,
-        "tested": 6,
+        "testable": 5,
+        "tested": 5,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 6,
-        "covered_acs": 6
+        "acs": 4,
+        "covered_acs": 4
       }
     }
   },

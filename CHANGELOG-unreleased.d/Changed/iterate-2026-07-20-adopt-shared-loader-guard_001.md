@@ -1,0 +1,1 @@
+Adopt's scaffolders now load their shared helpers through one guarded loader that raises a clear ImportError (not a bare FileNotFoundError) when the shipwright shared/ tree is missing, and no longer risk a poisoned module cache on a failed load.

@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-20T21:29:13.319219+00:00
+Generated: 2026-07-20T22:13:50.533361+00:00
 
 ## Requirements Coverage
 
@@ -18,7 +18,7 @@ Generated: 2026-07-20T21:29:13.319219+00:00
 | [FR-01.10](../../.shipwright/planning/01-adopted/spec.md#fr-0110)<a id="rtm-fr-0110"></a> | Produce audit-ready evidence — which requirement is covered by which test, what changed when, and what the project depends on — and run an on-demand cross-check that reports where that evidence disagrees with reality. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-30338dac](#evt-30338dac), [evt-a3888caf](#evt-a3888caf) +21 | 225/225 → 9458/9486 | 2026-07-20 ([iter](#evt-d140cd35)) | ✅ | FAIL → [trg-8bf97fd4](../agent_docs/triage_inbox.md#trg-8bf97fd4), FAIL → [trg-9532fa83](../agent_docs/triage_inbox.md#trg-9532fa83), FAIL → [trg-eb19ada4](../agent_docs/triage_inbox.md#trg-eb19ada4) | MISSING | — | — |
 | [FR-01.11](../../.shipwright/planning/01-adopted/spec.md#fr-0111)<a id="rtm-fr-0111"></a> | Handle an ongoing change at the depth it deserves: detect what kind of change it is and how big, then scale from a quick fix to a fully specified feature with plans, reviews and tests. Every feature or change records whether it adds, modifies, removes or leaves the requirements untouched, and that record is enforced before the change can be finished. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-6c637864](#evt-6c637864), [evt-baaf4b0e](#evt-baaf4b0e), [evt-ca7b7d64](#evt-ca7b7d64) +18 | 225/225 → 54/54 | 2026-07-14 ([iter](#evt-5dc16a45)) | ⚠️ needs re-verification | COVERED | MISSING | MISSING | — |
 | [FR-01.12](../../.shipwright/planning/01-adopted/spec.md#fr-0112)<a id="rtm-fr-0112"></a> | Start the project locally and hand back the address to open in a browser. | May | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7) | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | — | COVERED | — | — | MISSING |
-| [FR-01.13](../../.shipwright/planning/01-adopted/spec.md#fr-0113)<a id="rtm-fr-0113"></a> | Bring an existing codebase under Shipwright: read what is already there, write the starting guidance, derive an initial requirements catalog and compliance evidence, and lay down a baseline end-to-end test. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-273bbb54](#evt-273bbb54), [evt-b0b9c422](#evt-b0b9c422), [evt-aab7ddbd](#evt-aab7ddbd) +8 | 225/225 → 6/6 | 2026-07-20 ([iter](#evt-3f54c795)) | ✅ | COVERED | MISSING | — | — |
+| [FR-01.13](../../.shipwright/planning/01-adopted/spec.md#fr-0113)<a id="rtm-fr-0113"></a> | Bring an existing codebase under Shipwright: read what is already there, write the starting guidance, derive an initial requirements catalog and compliance evidence, and lay down a baseline end-to-end test. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-273bbb54](#evt-273bbb54), [evt-b0b9c422](#evt-b0b9c422), [evt-aab7ddbd](#evt-aab7ddbd) +9 | 225/225 → 5/5 | 2026-07-20 ([iter](#evt-e9bfacd4)) | ✅ | COVERED | MISSING | — | — |
 | [FR-01.14](../../.shipwright/planning/01-adopted/spec.md#fr-0114)<a id="rtm-fr-0114"></a> | Collect findings from local checks and from the code host's automated scans into one per-project buffer the operator works through — each finding recorded once, and each either promoted into real work or dismissed — so the actual task list stays curated instead of flooded. | Must | [evt-3f488ddc](#evt-3f488ddc), [evt-32f2f1f4](#evt-32f2f1f4), [evt-84dbdf5e](#evt-84dbdf5e), [evt-e14e5f26](#evt-e14e5f26) +6 | 1642/1649 → 3629/3641 | 2026-07-03 ([iter](#evt-5755f932)) | ⚠️ needs re-verification | COVERED | MISSING | — | — |
 | [FR-01.15](../../.shipwright/planning/01-adopted/spec.md#fr-0115)<a id="rtm-fr-0115"></a> | The two payloads the companion application renders field for field are versioned output contracts: a breaking change obliges the consumer to refuse the payload, an additive one leaves it working. Each producer states its contract and names its consumer, and a gate compares what it emits against the shape last published and fails until the version has been raised — so a shape change cannot reach the consumer silently. | Must | — | — | — | ⚠️ needs re-verification | NOT VERIFIED | — | — | MISSING |
 
@@ -28,6 +28,7 @@ Generated: 2026-07-20T21:29:13.319219+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-e9bfacd4"></a>Onboarding an existing repo now fails with a clear, named error instead of a confusing crash if the shipwright shared toolset is missing, and a failed load can no longer leave a broken helper cached. | iterate | change | [FR-01.13](#rtm-fr-0113) | 5/5 | — | 2026-07-20 |
 | <a id="evt-3f54c795"></a>When an onboarded project exposes more than 99 pages, the tool no longer produces a broken requirement number — it rolls over to the next requirement group so every generated id stays valid. | iterate | bug | [FR-01.13](#rtm-fr-0113) | 6/6 | — | 2026-07-20 |
 | <a id="evt-d140cd35"></a>You can now ask which recorded changes touched a given requirement and get an ordered answer, instead of reading a hand-maintained history inside the requirement that went stale there. Checking that query against the history just removed from the catalog also showed the change log is not the complete record it was assumed to be: three changes shipped without ever being recorded against the requirement they affected, and most changes carry no requirement link at all, so every answer now states how much of the record it is speaking for and points at the commit history for the rest. | iterate | feature | [FR-01.10](#rtm-fr-0110) | 9458/9486 | — | 2026-07-20 |
 | <a id="evt-65d388b4"></a>One requirements catalog, stated once in plain language, with explicit deep-link anchors that actually resolve. | iterate | change | [FR-01.10](#rtm-fr-0110) | — | — | 2026-07-20 |
@@ -378,7 +379,7 @@ Generated: 2026-07-20T21:29:13.319219+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 343 |
+| Iterate changes | 344 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |

@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-07-20T21:29:13.319219+00:00
-Total commits: 1181
+Generated: 2026-07-20T22:13:50.533361+00:00
+Total commits: 1182
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 337
+    "fix" : 338
     "feat" : 328
     "chore" : 247
     "docs" : 145
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 337 commits
+### Fixes (fix) — 338 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-20 | adopt | roll FR-id group over past 99 so generated ids stay canonical (FR-01.13) (#416) | 5c9c4b316f05 |
 | 2026-07-19 | events | recover concatenated records across the audit read path (#409) | 1fceca45a7e3 |
 | 2026-07-19 | events | recover concatenated records on the append-only event log (#405) | 94d0332831d5 |
 | 2026-07-18 | triage | enforce record termination and recover concatenated records (#399) | 7a34d1adc132 |
@@ -1250,7 +1251,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1181 |
+| Total commits | 1182 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1181 |
+| Human-authored commits | 1182 |
 
