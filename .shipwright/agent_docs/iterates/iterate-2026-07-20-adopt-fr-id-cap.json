@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-20-adopt-fr-id-cap",
+  "date": "2026-07-20T21:30:35.989944Z",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/adopt-fr-id-cap",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-07-20-adopt-fr-id-cap"
+}
