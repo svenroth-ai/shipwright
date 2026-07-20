@@ -1,12 +1,13 @@
 # Project Activity Dashboard
-> Updated: 2026-07-20 22:13 UTC | Session: 059b5006-0551-4c91-acfc-252b276f1794 | Run: iterate-2026-07-20-runner-finalization-integrity
+> Updated: 2026-07-20 22:13 UTC | Session: 6c3536fe-0c2c-41bb-89a5-ec4014b6c5ee | Run: iterate-2026-07-21-fr-history-skip-hardfail
 
-## Recent Changes (349 iterations)
+## Recent Changes (350 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
 | change | Document operator-run converge for adopted repos + guard test | 4708/4708 |  | docs | 2026-07-20 |
 | change | adopt shared-loader guard: one guarded loader for the eight scaffolders | 5/5 |  | FR-01.13 | 2026-07-20 |
+| change | iterate: harden two fr-history shallow-clone skip hatches into hard fetch-depth failures (trg-3a131594) | 0/0 |  | tooling | 2026-07-20 |
 | bug | adopt FR-id cap: canonical group rollover past 99 detected features | 6/6 |  | FR-01.13 | 2026-07-20 |
 | change | Extend CI_SUPPLYCHAIN_FILE_PATTERNS to shared/templates/github-actions/ | 5207/5207 |  | tooling | 2026-07-20 |
 | change | iterate: fix flaky finalize idempotency test (banner minute drift, trg-183a304a) | 0/0 |  | tooling | 2026-07-20 |
@@ -356,7 +357,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-20 | Unit: 4712/4723 | Integration: 3/3 | Smoke: not_run | (iterate)
+Last run: 2026-07-21 | Integration: 403/403 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
