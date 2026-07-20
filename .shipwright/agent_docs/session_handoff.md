@@ -1,34 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-20-accepted-risk-adopter-converge"
+run_id: "iterate-2026-07-20-flaky-idempotency-banner"
 phase: "iterate"
-reason: "iterate: document operator-run converge for adopted repos"
-timestamp: "2026-07-20T22:08:24.857300+00:00"
+reason: "F11 pre-merge refresh: iterate-2026-07-20-flaky-idempotency-banner"
+timestamp: "2026-07-20T21:50:43.320024+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-20 22:08:24 UTC
+> Auto-generated 2026-07-20 21:50:43 UTC
 
 ## Session Info
 
-- **Session ID**: c2a98c2f-740b-4818-b8ae-e5b87528ef06
-- **Timestamp**: 2026-07-20 22:08:24 UTC
-- **Reason**: iterate: document operator-run converge for adopted repos
+- **Session ID**: 6c3536fe-0c2c-41bb-89a5-ec4014b6c5ee
+- **Timestamp**: 2026-07-20 21:50:43 UTC
+- **Reason**: F11 pre-merge refresh: iterate-2026-07-20-flaky-idempotency-banner
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-20-accepted-risk-adopter-converge
-- **Date**: 2026-07-20T22:08:18.754499Z
-- **Type**: change
+- **Run ID**: iterate-2026-07-20-flaky-idempotency-banner
+- **Date**: 2026-07-20T21:50:37.517499Z
+- **Type**: bug
 - **Complexity**: small
-- **Branch**: iterate/accepted-risk-adopter-converge
-- **ADR**: iterate-2026-07-20-accepted-risk-adopter-converge
+- **Branch**: iterate/flaky-idempotency-banner
+- **ADR**: iterate-2026-07-20-flaky-idempotency-banner
 - **Tests passed**: True
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/accepted-risk-adopter-converge
+- **Branch**: iterate/flaky-idempotency-banner
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -47,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/accepted-risk-adopter-converge
-- **Last Commit**: c6975f4e feat(iterate): extend the CI supply-chain ack gate to shipped CI templates (#417)
+- **Branch**: iterate/flaky-idempotency-banner
+- **Last Commit**: 88e7a984 Merge remote-tracking branch 'origin/main' into iterate/flaky-idempotency-banner
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-9af6a842 | grade_snapshot | — | 2026-07-20 |
-| evt-eaa519ea | work_completed | iterate (Document operator-run converge for adopted repos + guard test) | 2026-07-20 |
 | evt-ec752311 | grade_snapshot | — | 2026-07-20 |
 | evt-3f54c795 | work_completed | iterate (adopt FR-id cap: canonical group rollover past 99 detected features) | 2026-07-20 |
 | evt-42a87085 | grade_snapshot | — | 2026-07-20 |
+| evt-923835b8 | work_completed | iterate (Extend CI_SUPPLYCHAIN_FILE_PATTERNS to shared/templates/github-actions/) | 2026-07-20 |
+| evt-1fc1c3e4 | grade_snapshot | — | 2026-07-20 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 345
-- **Last iterate**: change — Document operator-run converge for adopted repos + guard test (2026-07-20)
+- **Last iterate**: bug — adopt FR-id cap: canonical group rollover past 99 detected features (2026-07-20)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
