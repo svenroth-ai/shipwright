@@ -1,0 +1,1 @@
+Iterate finalization no longer silently loses the per-run ADR or iterate-entry record: the sub-iterate-runner contract now runs F3 (decision-drop) and F5c (iterate entry) as mandatory steps and self-verifies them before push.

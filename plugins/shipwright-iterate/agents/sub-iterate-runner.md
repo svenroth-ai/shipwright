@@ -253,55 +253,46 @@ The `reviews.confidence_calibration` field in the result-JSON contract
 records what fired, the number of probes, and whether the asymptote
 was reached.
 
-### Step 4: Finalization (F0–F6)
+### Step 4: Finalization (F0–F6 + self-verify)
 
-Run the standard iterate finalization steps:
-- **F0:** Fresh verification gate (run full test suite)
-- **F1:** Drift check (`artifact_sync.py`)
-- **F2:** Browser Verify (MANDATORY when frontend files changed).
+Standard iterate finalization. **F3 (decision-drop) and F5c (iterate entry) are as mandatory
+as F5b** — separate steps `finalize_iterate.py` does NOT perform; F6-verify checks all three ran.
 
-  Same gate semantics as `shipwright-build` Step 8. Reuses the shared detector.
-
-  1. Detect frontend changes since the iterate branch start:
-     ```bash
-     uv run "{shared_root}/scripts/lib/detect_frontend_changes.py" \
-       --cwd {project_root} --since "$(git merge-base HEAD {branch_name})"
-     ```
-     If `has_frontend_changes == false`, skip to F3.
-
-  2. Resolve dev server via the same fallback chain as build Step 8
-     (`profile.dev_server` → `shipwright_build_config.json#dev_url` → autodetect
-     from `package.json` → escalate).
-
-  3. Run:
-     ```bash
-     uv run "{shared_root}/scripts/dev_server.py" start --profile {profile} --cwd {project_root}
-     uv run "{shared_root}/scripts/playwright_setup.py" --cwd {project_root}
-     uv run "{shared_root}/scripts/browser_verify.py" --cwd {project_root}
-     ```
-
-  4. On JS errors: inline retry loop (this agent has no Agent tool, so no
-     subagent handoff). Max 3 attempts — each attempt: read the screenshot at
-     `{project_root}/e2e/screenshots/browser-verify.png`, inspect
-     `console_errors` and `dom_snippet` from the result JSON, apply a targeted
-     fix using Edit/Bash, re-run browser_verify. If still failing after 3
-     attempts, mark this sub-iterate as failed: write to `result.json`
-     (`status: "failed"`, `error: "browser-verify failed after 3 retries"`,
-     include `console_errors` and last screenshot path in the debug log) and
-     DO NOT commit. The campaign orchestrator aggregates — no AskUserQuestion
-     from inside the sub-iterate-runner.
-- **F3:** Decision log (`write_decision_log.py`)
-- **F4:** Changelog bullet (append to `[Unreleased]` in CHANGELOG.md)
-- **F5b:** Finalize — one `finalize_iterate.py` call records the
-  `work_completed` event (idempotent per run_id) + regenerates compliance
-  MDs / dashboard / handoff: `uv run
-  "{shared_root}/scripts/tools/finalize_iterate.py" --project-root
-  "{project_root}" --run-id "{run_id}" --event-extras-json "$extras"`.
-  `$extras` = the classification fields from `references/F5b.md` **plus
-  the campaign identity stamp** `"campaign": "{basename of campaign_path}"`
-  + `"sub_iterate_id": "{sub_iterate_id}"` (both in this brief; `run_id` =
-  `iterate-{YYYY-MM-DD}-{slug}` — stamped events make per-sub status projectable).
-- **F6:** Commit (Conventional Commits format)
+- **F0:** Fresh verification gate (full test suite).
+- **F1:** Drift check (`artifact_sync.py`).
+- **F2:** Browser Verify (MANDATORY when frontend changed; same gate as `shipwright-build` Step 8).
+  Detect via `detect_frontend_changes.py --since "$(git merge-base HEAD {branch_name})"` — if none,
+  skip to F3. Else resolve the dev server (`profile.dev_server` → `shipwright_build_config.json#dev_url`
+  → `package.json` autodetect → escalate) and run `dev_server.py start` → `playwright_setup.py` →
+  `browser_verify.py`. On JS errors: inline retry (no Agent tool), max 3 (screenshot + `console_errors`
+  → fix → re-run); still failing → `result.json` `status:"failed"` + DO NOT commit (orchestrator aggregates).
+- **F3 (MANDATORY — decision-DROP, NOT `write_decision_log.py`):** record the ADR as a per-run
+  drop keyed by `run_id` via `write_decision_drop.py` — exact command + 500-char field caps in
+  `references/F3.md`. An iterate NEVER appends to `decision_log.md` directly (two worktrees would
+  collide on `max(ADR)+1`; the F11 gate `check_iterate_no_direct_decision_log` fails it). The
+  `ADR-NNN` is assigned at `/shipwright-changelog` release.
+- **F4:** Changelog bullet (append to `[Unreleased]` in CHANGELOG.md).
+- **F5b:** `finalize_iterate.py` records the `work_completed` event (idempotent per run_id) +
+  regenerates compliance MDs / dashboard / handoff: `uv run
+  "{shared_root}/scripts/tools/finalize_iterate.py" --project-root "{project_root}" --run-id
+  "{run_id}" --event-extras-json "$extras"`. `$extras` = the `references/F5b.md` classification
+  fields **plus the campaign stamp** `"campaign":"{basename of campaign_path}"` +
+  `"sub_iterate_id":"{sub_iterate_id}"`.
+- **F5c (MANDATORY — iterate entry):** append the per-iterate record via `append_iterate_entry.py`
+  (exact `--entry-json` shape in `references/F5c.md`). `finalize_iterate.py` (F5b) does NOT write
+  it — omitting F5c is what dropped `iterates/<run_id>.json` for 3 of 4 sub-iterates in
+  `2026-07-18-mission-artifacts`. `adr` MUST be the bare `run_id` (not `ADR-NNN`).
+- **F6:** Commit (Conventional Commits). Explicit `git add` per-path (never `-A`; include
+  `shipwright_events.jsonl` when tracked). Footer: `Run-ID: {run_id}` + `Co-Authored-By: Claude <noreply@anthropic.com>`.
+- **F6-verify (MANDATORY — do NOT skip):** run the SAME F11 verifier the orchestrator runs, against
+  your OWN commit — a red result is a build failure. NEVER push or return `status:"complete"` on red
+  (that is how 4 sub-iterates reported "clean F11" with their F3 drop + F5c entry silently missing):
+  ```bash
+  uv run "{shared_root}/scripts/tools/verify_iterate_finalization.py" --run-id "{run_id}" \
+    --project-root "{project_root}" --commit "$(git -C "{project_root}" rev-parse HEAD)"
+  ```
+  A non-zero exit names the missing artifact — fix it, amend into the SAME F6 commit, re-verify until
+  green, then proceed to Step 5. Record the outcome in `result.json.finalization`.
 
 **Skip F12 (Release Prompt)** — the campaign loop handles this once at the end.
 
@@ -334,6 +325,11 @@ Success:
   "decisions": [
     {"title": "Use TOTP for MFA", "rationale": "Industry standard, no SMS costs"}
   ],
+  "finalization": {
+    "f3_decision_drop": "written",
+    "f5c_iterate_entry": "written",
+    "verifier": {"status": "green", "exit_code": 0}
+  },
   "reviews": {
     "plan": {"status": "completed | skipped_complexity_below_threshold | skipped_user_opt_out | skipped_config_disabled | missing_keys", "provider": "openrouter | null", "findings_count": 0},
     "self_review": {"status": "completed", "items_failed": 0, "items_passed": 7},
@@ -343,6 +339,10 @@ Success:
   }
 }
 ```
+
+The `finalization` field is **required**: it records that F3, F5c, and the F6-verify
+self-verifier ran. `verifier.exit_code` MUST be `0` for a `status:"complete"` result — a
+non-zero verifier means finalization is incomplete; fix + re-verify before reporting success.
 
 The `reviews` field is **optional** for backwards-compat with
 historical result.json files (A/B/C/D/E in campaign

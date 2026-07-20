@@ -1,8 +1,8 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-21-fr-history-skip-hardfail"
+run_id: "iterate-2026-07-20-runner-finalization-integrity"
 phase: "iterate"
-reason: "F11 re-refresh: origin advanced (#420,#423)"
+reason: "F11 refresh: catch up 1 behind"
 timestamp: "2026-07-20T22:13:56.299243+00:00"
 ---
 
@@ -12,9 +12,9 @@ timestamp: "2026-07-20T22:13:56.299243+00:00"
 
 ## Session Info
 
-- **Session ID**: 6c3536fe-0c2c-41bb-89a5-ec4014b6c5ee
+- **Session ID**: 059b5006-0551-4c91-acfc-252b276f1794
 - **Timestamp**: 2026-07-20 22:13:56 UTC
-- **Reason**: F11 re-refresh: origin advanced (#420,#423)
+- **Reason**: F11 refresh: catch up 1 behind
 
 ## Last Iterate
 
@@ -29,7 +29,10 @@ timestamp: "2026-07-20T22:13:56.299243+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/fr-history-skip-hardfail
+- **Branch**: iterate/runner-finalization-integrity
+- **Run ID**: `iterate-2026-07-20-runner-finalization-integrity`
+- **Spec**: .shipwright/planning/iterate/2026-07-20-runner-finalization-integrity.md
+- **Complexity**: medium (history-calibrated; risk floor medium)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/fr-history-skip-hardfail
-- **Last Commit**: 065df94a Merge remote-tracking branch 'origin/main' into iterate/fr-history-skip-hardfail
+- **Branch**: iterate/runner-finalization-integrity
+- **Last Commit**: c65e5667 Merge remote-tracking branch 'origin/main' into iterate/runner-finalization-integrity
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read

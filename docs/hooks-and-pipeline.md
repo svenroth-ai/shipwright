@@ -2153,6 +2153,26 @@ authoritative prevention layer. Replaced the dead, mtime-only
 `check_architecture_reviewed` + the unreachable `run_cross_artifact_checks`
 wrapper. Origin: iterate-2026-06-06-arch-drift-detector.
 
+**No-direct-`decision_log.md` gate (iterate, F11).**
+`check_iterate_no_direct_decision_log` in `iterate_checks.py` FAILS the F11
+verifier (ERROR) when an iterate's own changes (recomputed from
+`merge-base..HEAD`, the same diff view as the `cross_component` gate) modified
+`.shipwright/agent_docs/decision_log.md`. An iterate records its ADR as a
+decision-DROP (`write_decision_drop.py`, F3); the sequential `ADR-NNN` is
+assigned only at `/shipwright-changelog` release time by
+`aggregate_decisions.py`. Two parallel iterates each appending to
+`decision_log.md` would compute `max(ADR)+1` in their own worktree and silently
+collide on the number — the race the drop pattern exists to prevent. The
+release-time aggregation write is a changelog commit, not an iterate commit, so
+this iterate verifier never runs against it. Paired with a tightened
+`check_adr_in_iterate_history`: a run-id ADR identity is now accepted **only**
+when the decision-drop actually CARRIES the ADR (parses + `run_id` match +
+non-empty `decision`) or a `**Run-ID:**` line for the run is present in
+`decision_log.md` — an empty/placeholder drop (a silently-lost ADR) no longer
+passes. The `sub-iterate-runner` contract executes F3 + F5c as mandatory steps
+and self-runs this verifier before push (Step 4b). Origin:
+iterate-2026-07-20-runner-finalization-integrity.
+
 **Non-FR change classification (Phase 0a prep, Iterate C.1 enforce).**
 `record_event.py` accepts two additional optional fields on `work_completed`:
 `--change-type {docs|tooling|compliance|infra}` and `--none-reason "..."`.
@@ -2418,7 +2438,7 @@ shared/scripts/tools/
   verifiers/
     __init__.py
     common.py                      # CheckResult, readers, generic C1–C5, ADR F1/F2/F3
-    iterate_checks.py              # iterate finalization checks (5 @12.0 + F0.5 surface + spec-impact gate)
+    iterate_checks.py              # iterate finalization checks (5 @12.0 + F0.5 surface + spec-impact + no-direct-decision_log gates)
     runtime_checks.py              # Zombie-task replay check                     — 12.0b
     project_checks.py              # Project phase-own + canon + phase_history   — 12.1
     design_checks.py               # Design phase-own + canon (skip C4)          — 12.2

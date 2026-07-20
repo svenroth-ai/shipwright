@@ -23,10 +23,14 @@ date from a bare `(YYYY-MM-DD)` OR the run-id slug, so a bold-lead entry no long
 slips the budget.
 
 ### For decisions (pattern chosen, convention corrected)
-Use `write_decision_log.py --architecture-impact convention` — creates a proper
-ADR and auto-appends a **one-line** pointer to `conventions.md ## Convention
-Updates` (routing per `references/F2.md`). Put the substance in the ADR fields /
-`--spec-ref`, not in the bullet.
+Record the ADR as the **F3 decision-DROP** (`write_decision_drop.py`, keyed by
+`run_id`) with `--architecture-impact convention` — **not** `write_decision_log.py`.
+An iterate never appends to `decision_log.md` directly (two parallel worktrees would
+collide on the ADR number; the F11 verifier `check_iterate_no_direct_decision_log`
+fails the run if the commit touches it). Add the matching **one-line** pointer under
+`conventions.md ## Convention Updates` at **F2** (routing per `references/F2.md`); the
+`ADR-NNN` is assigned at `/shipwright-changelog` release. Put the substance in the ADR
+fields / `--spec-ref`, not in the bullet.
 
 ### For observations (gotchas, framework quirks, infra insights)
 Append ONE compact line to `.shipwright/agent_docs/conventions.md` under
