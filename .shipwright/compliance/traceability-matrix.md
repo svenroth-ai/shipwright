@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-20T21:42:23.996908+00:00
+Generated: 2026-07-20T21:50:37.610785+00:00
 
 ## Requirements Coverage
 
@@ -28,6 +28,7 @@ Generated: 2026-07-20T21:42:23.996908+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-fa21005e"></a>fix flaky finalize idempotency test (banner minute drift, trg-183a304a) | iterate | change |  | — | — | 2026-07-20 |
 | <a id="evt-923835b8"></a>Editing one of Shipwright's shipped CI workflow templates now trips the CI supply-chain acknowledgement gate, the same as editing this repo's own workflow files. | iterate | change |  | 5207/5207 | — | 2026-07-20 |
 | <a id="evt-3f54c795"></a>When an onboarded project exposes more than 99 pages, the tool no longer produces a broken requirement number — it rolls over to the next requirement group so every generated id stays valid. | iterate | bug | [FR-01.13](#rtm-fr-0113) | 6/6 | — | 2026-07-20 |
 | <a id="evt-d140cd35"></a>You can now ask which recorded changes touched a given requirement and get an ordered answer, instead of reading a hand-maintained history inside the requirement that went stale there. Checking that query against the history just removed from the catalog also showed the change log is not the complete record it was assumed to be: three changes shipped without ever being recorded against the requirement they affected, and most changes carry no requirement link at all, so every answer now states how much of the record it is speaking for and points at the commit history for the rest. | iterate | feature | [FR-01.10](#rtm-fr-0110) | 9458/9486 | — | 2026-07-20 |
@@ -379,7 +380,7 @@ Generated: 2026-07-20T21:42:23.996908+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 344 |
+| Iterate changes | 345 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |
