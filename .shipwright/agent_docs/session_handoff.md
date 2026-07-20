@@ -1,44 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-20-adopt-shared-loader-guard"
+run_id: "iterate-2026-07-20-accepted-risk-adopter-converge"
 phase: "iterate"
-reason: "F11 pre-merge refresh: iterate-2026-07-20-adopt-shared-loader-guard"
-timestamp: "2026-07-20T22:13:56.299243+00:00"
+reason: "F11 re-refresh after #419: iterate-2026-07-20-accepted-risk-adopter-converge"
+timestamp: "2026-07-20T22:10:05.470232+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-20 22:13:56 UTC
+> Auto-generated 2026-07-20 22:10:05 UTC
 
 ## Session Info
 
-- **Session ID**: df7a692d-7b6d-43aa-8e3a-2c40b36092eb
-- **Timestamp**: 2026-07-20 22:13:56 UTC
-- **Reason**: F11 pre-merge refresh: iterate-2026-07-20-adopt-shared-loader-guard
+- **Session ID**: c2a98c2f-740b-4818-b8ae-e5b87528ef06
+- **Timestamp**: 2026-07-20 22:10:05 UTC
+- **Reason**: F11 re-refresh after #419: iterate-2026-07-20-accepted-risk-adopter-converge
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-20-adopt-shared-loader-guard
-- **Date**: 2026-07-20T22:13:56.541351Z
+- **Run ID**: iterate-2026-07-20-accepted-risk-adopter-converge
+- **Date**: 2026-07-20T22:08:18.754499Z
 - **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/adopt-shared-loader-guard
-- **ADR**: iterate-2026-07-20-adopt-shared-loader-guard
+- **Complexity**: small
+- **Branch**: iterate/accepted-risk-adopter-converge
+- **ADR**: iterate-2026-07-20-accepted-risk-adopter-converge
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-20-adopt-shared-loader-guard.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/adopt-shared-loader-guard
-- **Run ID**: iterate-2026-07-20-adopt-shared-loader-guard
-- **Spec**: .shipwright/planning/iterate/2026-07-20-adopt-shared-loader-guard.md
-- **Complexity**: medium
+- **Branch**: iterate/accepted-risk-adopter-converge
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/adopt-shared-loader-guard
-- **Last Commit**: 58f8fb20 Merge remote-tracking branch 'origin/main' into iterate/adopt-shared-loader-guard
+- **Branch**: iterate/accepted-risk-adopter-converge
+- **Last Commit**: 10b60d94 Merge remote-tracking branch 'origin/main' into iterate/accepted-risk-adopter-converge
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -70,16 +65,16 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 | Event | Type | Source | Date |
 |-------|------|--------|------|
 | evt-dd32a165 | grade_snapshot | — | 2026-07-20 |
-| evt-4d5466ac | grade_snapshot | — | 2026-07-20 |
-| evt-e9bfacd4 | work_completed | iterate (adopt shared-loader guard: one guarded loader for the eight scaffolders) | 2026-07-20 |
+| evt-429d92bb | grade_snapshot | — | 2026-07-20 |
+| evt-9af6a842 | grade_snapshot | — | 2026-07-20 |
+| evt-eaa519ea | work_completed | iterate (Document operator-run converge for adopted repos + guard test) | 2026-07-20 |
 | evt-ec752311 | grade_snapshot | — | 2026-07-20 |
-| evt-3f54c795 | work_completed | iterate (adopt FR-id cap: canonical group rollover past 99 detected features) | 2026-07-20 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 347
-- **Last iterate**: change — adopt shared-loader guard: one guarded loader for the eight scaffolders (2026-07-20)
+- **Last iterate**: change — Document operator-run converge for adopted repos + guard test (2026-07-20)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

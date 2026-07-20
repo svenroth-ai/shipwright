@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-07-20T22:13:50.533361+00:00
+Generated: 2026-07-20T22:08:18.851913+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -55,10 +55,10 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
 | Work events (iterate) | 347 changes | INFO |  |
-| Recent changes traced to an FR | 7/30 (23%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
+| Recent changes traced to an FR | 6/30 (20%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
 | All unit tests passing | 5207/5207 | PASS | +3 change(s) since last full suite |
 | Architecture decisions | 328 ADRs | INFO |  |
-| Iterate tests passing | 49/63 testable changes tested | WARN | 14 testable change(s) without tests — see test-evidence.md |
+| Iterate tests passing | 48/62 testable changes tested | WARN | 14 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 11 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
 | Triage open | 15 open | WARN | 15 actionable item(s) — see ../agent_docs/triage_inbox.md |
@@ -78,7 +78,6 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | 01-adopted | missing | — | 0 | no | — |
 | adr | missing | — | 0 | no | — |
 | campaigns | missing | — | 0 | no | — |
-| handoffs | missing | — | 0 | no | — |
 
 ## 🔎 Consistency Audit
 

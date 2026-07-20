@@ -1,6 +1,6 @@
 # Test Evidence Report
 
-Generated: 2026-07-20T22:13:50.533361+00:00
+Generated: 2026-07-20T22:08:18.851913+00:00
 
 ## Summary
 
@@ -14,7 +14,7 @@ Generated: 2026-07-20T22:13:50.533361+00:00
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | Onboarding an existing repo now fails with a clear, named error instead of a confusing crash if the shipwright shared toolset is missing, and a failed load can no longer leave a broken helper cached. | [iterate](traceability-matrix.md#evt-e9bfacd4) | unit | +0 | 5/5 | PASS | 2026-07-20 |
+| 1 | Shipwright's security guide now explains how a project that adopted Shipwright clears an accepted security risk from its GitHub code-scanning — a person runs the converge command from a Shipwright checkout, pointed at the adopted project. | [iterate](traceability-matrix.md#evt-eaa519ea) | unit | +0 | 4708/4708 | PASS | 2026-07-20 |
 | 2 | When an onboarded project exposes more than 99 pages, the tool no longer produces a broken requirement number — it rolls over to the next requirement group so every generated id stays valid. | [iterate](traceability-matrix.md#evt-3f54c795) | unit | +0 | 6/6 | PASS | 2026-07-20 |
 | 3 | Editing one of Shipwright's shipped CI workflow templates now trips the CI supply-chain acknowledgement gate, the same as editing this repo's own workflow files. | [iterate](traceability-matrix.md#evt-923835b8) | unit | +0 | 5207/5207 | PASS | 2026-07-20 |
 | 4 | fix flaky finalize idempotency test (banner minute drift, trg-183a304a) | [iterate](traceability-matrix.md#evt-fa21005e) | — | +0 | — | — | 2026-07-20 |
@@ -397,7 +397,7 @@ _Synthesized from per-iterate **unit** results — Integration / pgTAP / E2E / S
 | 27 | iterate | 9458/9486 | — | — | — | — | 2026-07-20 |
 | 28 | iterate | 5207/5207 | — | — | — | — | 2026-07-20 |
 | 29 | iterate | 6/6 | — | — | — | — | 2026-07-20 |
-| 30 | iterate | 5/5 | — | — | — | — | 2026-07-20 |
+| 30 | iterate | 4708/4708 | — | — | — | — | 2026-07-20 |
 
 ## Code Review Evidence
 
