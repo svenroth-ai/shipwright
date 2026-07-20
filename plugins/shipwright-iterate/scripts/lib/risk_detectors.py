@@ -143,9 +143,10 @@ def is_cross_component_change(changed_files: list[str] | None) -> bool:
 #
 # Anchored at `^` on purpose: paths come from `git diff --name-only` and are
 # repo-relative, so `docs/.github/workflows/x.yml` is NOT this repo's CI boundary.
-# Deliberately EXCLUDES shared/templates/github-actions/* — the shipped templates
-# are the adopters' trust boundary and belong to triage trg-9509c2e8 item 1;
-# folding them in here would blur what this flag means.
+# INCLUDES shared/templates/github-actions/* — the shipped CI templates are the
+# ADOPTERS' trust boundary, so an edit that rewrites what runs in every future
+# adopted repo must be reasoned about too (trg-6e8121e7 closes the gap the hard
+# test in iterate-2026-07-19-adopter-pinning-posture-rule deliberately left open).
 CI_SUPPLYCHAIN_FILE_PATTERNS = (
     r"^\.github/workflows/.+\.ya?ml$",
     r"^\.github/dependabot\.ya?ml$",
@@ -155,6 +156,10 @@ CI_SUPPLYCHAIN_FILE_PATTERNS = (
     r"^\.github/renovate\.json5?$",
     r"^renovate\.json5?$",
     r"^\.renovaterc(\.json)?$",
+    # Shipped CI templates — the adopters' trust boundary (not this repo's own
+    # .github). Any file under the dir, across extensions (.yml.template,
+    # .toml.template): editing one changes every future adopted repo's CI.
+    r"^shared/templates/github-actions/.+$",
 )
 
 

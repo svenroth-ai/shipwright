@@ -27,6 +27,13 @@ TRIGGERS = [
     ".github/actions/diff-coverage-gate/action.yml",
     # Windows-style separators must normalize.
     ".github\\workflows\\ci.yml",
+    # Shipped CI templates are the ADOPTERS' trust boundary: an edit here rewrites
+    # every future adopted repo's CI, so it must trip the ack gate too (trg-6e8121e7).
+    # The whole directory counts, across extensions (.yml.template, .toml.template).
+    "shared/templates/github-actions/security.yml.template",
+    "shared/templates/github-actions/codeql.yml.template",
+    "shared/templates/github-actions/gitleaks.toml.template",
+    "shared\\templates\\github-actions\\ci-vite-hono.yml.template",
 ]
 
 NEAR_MISSES = [
@@ -34,7 +41,8 @@ NEAR_MISSES = [
     ".github/workflow/x.yml",          # singular dir - not the real one
     ".github/dependabot.json",         # wrong extension
     ".github/CODEOWNERS",              # .github but not the CI trust boundary
-    "shared/templates/github-actions/security.yml.template",  # item 1's scope
+    "docs/shared/templates/github-actions/x.yml.template",  # not the repo-root shared dir
+    "shared/templates/rules/migrations.md.template",         # shared/templates, not github-actions
     "src/app/page.tsx",
 ]
 
