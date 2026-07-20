@@ -91,8 +91,10 @@ def test_removal_retarget_but_keeps_dead_tag_fails(tmp_path):
     both = ("import pytest\n\n\n@pytest.mark.covers(\"FR-03.03\", \"FR-03.05\")\n"
             "def test_persist():\n    assert True\n")
     spec_head = _SPEC_REMOVED.replace(
-        "| FR | Description | Priority | Layers |\n|----|----|----|----|\n\n## Removed",
+        "|----|----|----|----|\n\n## Removed",
+        "|----|----|----|----|\n"
         "| FR-03.05 | Persist v2 | Should | integration |\n\n## Removed",
+        1,
     )
     base = _build(tmp_path / "b", _SPEC_ACTIVE, {_TESTPATH: _TEST_TAGGED})
     head = _build(tmp_path / "h", spec_head, {_TESTPATH: both})
@@ -112,8 +114,10 @@ def test_removal_bare_tag_removal_fails(tmp_path):
 
 def test_removal_retarget_passes(tmp_path):
     spec_head = _SPEC_REMOVED.replace(
-        "| FR | Description | Priority | Layers |\n|----|----|----|----|\n\n## Removed",
+        "|----|----|----|----|\n\n## Removed",
+        "|----|----|----|----|\n"
         "| FR-03.05 | Persist v2 | Should | integration |\n\n## Removed",
+        1,
     )
     base = _build(tmp_path / "b", _SPEC_ACTIVE, {_TESTPATH: _TEST_TAGGED})
     head = _build(tmp_path / "h", spec_head, {_TESTPATH: _TEST_RETARGET})

@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-19T23:48:35.466580+00:00
+Generated: 2026-07-20T03:48:42.648681+00:00
 
 ## Requirements Coverage
 
@@ -28,6 +28,7 @@ Generated: 2026-07-19T23:48:35.466580+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-a0790d64"></a>Requirement tables are now read by one header-driven parser instead of five that disagreed, so a reordered, renamed or extended table no longer makes requirements vanish from the compliance report. | iterate | change |  | — | — | 2026-07-20 |
 | <a id="evt-e028eaf9"></a>derive the traceability manifest namespace from the requirement id (schema 2 to 3) | iterate | refactor |  | — | — | 2026-07-19 |
 | <a id="evt-ec05d680"></a>one shared spec-discovery walk for all 15 call sites | iterate | change |  | — | — | 2026-07-19 |
 | <a id="evt-50e902ef"></a>Eleven event-log readers now recover records that share one physical line, instead of discarding every record on it — including the F11 oracle whose failure made finalization fail for correctly-recorded runs. | iterate | change |  | — | — | 2026-07-19 |
@@ -373,7 +374,7 @@ Generated: 2026-07-19T23:48:35.466580+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 338 |
+| Iterate changes | 339 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |

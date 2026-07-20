@@ -142,42 +142,20 @@ def collect_decision_log(project_root: Path) -> list[DecisionEntry]:
     return entries
 
 
-# Accepts the 3-data-column Greenfield format
-#   | FR-01.01 | login | Must |
-# the 5-data-column /shipwright-adopt format
-#   | FR-01.01 | /shipwright-run | Must | Orchestrate ... | enrichment.json |
-# and 6+-column adopt specs that append further columns (e.g. an inference
-# Confidence score) after Source:
-#   | FR-01.01 | /shipwright-run | Must | Orchestrate ... | enrichment.json | 0.82 |
-# Capture groups (always present): 1=ID, 2=col2 (Text or Name), 3=Priority.
-# Optional groups (5-col+ only): 4=Description, 5=Source.
-# Any columns beyond Source are matched and discarded.
-# The semantic FR body is group(4) when present, else group(2). See ADR-031.
-_FR_TABLE_RE = re.compile(
-    r"^\|\s*(FR-[\d.]+)\s*\|\s*([^|]+?)\s*\|\s*(Must|Should|May)\s*\|"
-    r"(?:\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|)?"  # optional Description (4) + Source (5)
-    # Any number of further columns, ignored. Each iteration consumes one
-    # pipe-terminated cell: `[^|]*\|`. The earlier form `(?:\s*[^|]*?\s*\|)*`
-    # overlapped `\s` with `[^|]`, backtracking exponentially on rows with many
-    # ` |` cells that fail `$` (CodeQL py/redos). Same language, linear time.
-    r"(?:[^|]*\|)*\s*$"
-)
-
-# Rows inside a `## Removed Requirements` / `### Removed Requirements`
-# section are FR rows a REMOVE-classified iterate retired. They must NOT
-# count as live requirements — otherwise the RTM keeps reporting a deleted
-# capability as uncovered/failing. The shared FR parser
-# (shared/scripts/lib/drift_parsers.py:parse_fr_table) carries the SAME
-# exclusion loop; keep the two in sync.
-# Origin: iterate-2026-05-16-spec-impact-gate.
-_MD_HEADING_RE = re.compile(r"^(#{1,6})\s+(\S.*?)\s*$")
-
-
 def collect_requirements(project_root: Path) -> list[RequirementInfo]:
-    """Parse functional requirements from .shipwright/planning/*/spec.md files."""
+    """Parse functional requirements from .shipwright/planning/*/spec.md files.
+
+    Rows are read by ``lib.fr_table_reader`` — the one header-driven reader
+    (campaign S4). This function used to carry a copy of the positional regex
+    that was byte-identical to ``drift_parsers``', plus a removed-section loop
+    that was a semantic clone of the same file's; nothing enforced the second
+    half, and the pair produced FV-3 (a row wider than its header shifted the
+    body column, so the RTM rendered the wrong requirement text).
+    """
     planning_dir = project_root / ".shipwright" / "planning"
 
     requirements: list[RequirementInfo] = []
+    read_active_fr_rows = load_shared_lib("fr_table_reader").read_active_fr_rows
 
     # guard="exists" preserves this walk raising NotADirectoryError on a
     # planning FILE. Its claimed mirror, drift_parsers, swallows the read_text
@@ -189,31 +167,16 @@ def collect_requirements(project_root: Path) -> list[RequirementInfo]:
         rel_spec = f".shipwright/planning/{split_name}/spec.md"
         content = spec_path.read_text(encoding="utf-8")
 
-        in_removed = False
-        removed_level = 0
-        for line in content.splitlines():
-            heading = _MD_HEADING_RE.match(line)
-            if heading:
-                level = len(heading.group(1))
-                if heading.group(2).strip().lower().startswith("removed requirements"):
-                    in_removed, removed_level = True, level
-                    continue
-                if in_removed and level <= removed_level:
-                    in_removed = False
-            if in_removed:
-                continue
-            match = _FR_TABLE_RE.match(line)
-            if match:
-                # 5-col format puts the FR body in the Description column
-                # (4); 3-col puts it in the Text column (2). See ADR-031.
-                body = (match.group(4) or match.group(2)).strip()
-                requirements.append(RequirementInfo(
-                    id=match.group(1),
-                    text=body,
-                    priority=match.group(3),
-                    split=split_name,
-                    spec_path=rel_spec,
-                ))
+        requirements.extend(
+            RequirementInfo(
+                id=row.id,
+                text=row.text,
+                priority=row.priority,
+                split=split_name,
+                spec_path=rel_spec,
+            )
+            for row in read_active_fr_rows(content)
+        )
 
     return requirements
 

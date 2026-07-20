@@ -1,9 +1,11 @@
-"""Freeze the TWO false verdicts the campaign SPEC names (FV-1, FV-2).
+"""The TWO false verdicts the campaign SPEC names (FV-1, FV-2).
 
-Campaign "Requirements Catalog" sub-iterate S1. Every assertion in this file
-pins behaviour that is WRONG. That is deliberate: campaign steps S2-S4 claim to
-be behaviour-preserving, and a baseline that quietly corrected the bugs would
-make that claim uncheckable.
+Campaign "Requirements Catalog", written at S1. **FV-1 was flipped by S4**
+(``iterate-2026-07-20-one-header-driven-parser``) and its assertions now pin the
+corrected behaviour; FV-2 is still frozen and belongs to S6, so every FV-2
+assertion below still pins behaviour that is WRONG on purpose. A baseline that
+quietly corrected the bugs would make the campaign's behaviour-preserving claims
+uncheckable.
 
 **If an assertion here fails, do not "fix" it into agreement.** Either you have
 changed the requirements machinery -- in which case say which change and why --
@@ -48,56 +50,61 @@ def _probe(name: str, fixture: str):
 def test_fv1_absent_planning_tree_skips_correctly():
     """A project with no planning tree SHOULD skip. This one is not a bug.
 
-    Pinned separately from the zero-row case on purpose: today T1 cannot tell
-    the two apart, and S4 must flip only the other one. Keeping them apart means
-    the S4 diff shows exactly which cause changed.
+    Pinned separately from the zero-row case on purpose, and the separation did
+    its job: S4 flipped exactly the other one, and this assertion is unchanged
+    across that commit. Keep it that way -- an `absent` project that starts
+    FAILing is a regression, not progress.
     """
     assert _probe("t1", "absent")["status"] == "SKIP"
 
 
-def test_fv1_zero_row_parse_skips_instead_of_failing():
-    """FROZEN-BUG (FV-1): a POPULATED spec that parses to zero rows -> SKIP.
+def test_fv1_zero_row_parse_now_fails_instead_of_skipping():
+    """FLIPPED by S4 (was FROZEN-BUG FV-1): a populated spec now reaches T1.
 
     The `zero-row-parse` fixture holds a real requirement (FR-06.01) in a table
-    whose columns are reordered. ``drift_parsers._FR_TABLE_RE`` pins
-    Must|Should|May to data column 3, so it matches nothing and the collector
-    returns []. ``check_t1_all_spec_frs_mapped`` guards on `if not requirements`
-    -- a plain falsiness test that cannot distinguish "no spec" from "spec I
-    could not read" -- so the FAIL branch below it is unreachable.
+    whose columns are reordered. The old positional regex pinned
+    Must|Should|May to data column 3, matched nothing, and returned [] -- and
+    ``check_t1_all_spec_frs_mapped`` guards on `if not requirements`, a plain
+    falsiness test that cannot distinguish "no spec" from "spec I could not
+    read", so the FAIL branch was unreachable. The requirement existed, the RTM
+    did not cover it, and T1 reported SKIP.
 
-    The requirement exists. The RTM does not cover it. T1 reports SKIP.
+    The header-driven reader parses the row, so the guard is no longer reached
+    and T1 reports the truth: uncovered.
 
-    WRONG. Frozen anyway -- this is the baseline S2-S4 are measured against.
-    Flipped by: S4 (header-driven parser; column order stops being load-bearing).
+    The GUARD is not fixed, only its trigger -- see the "HONEST LIMIT" note on
+    FV-1 in ``requirements_corpus/frozen_bugs.py``. S5 owns making "present but
+    unreadable" distinguishable from "absent".
     """
     finding = _probe("t1", "zero-row-parse")
-    assert finding["status"] == "SKIP"  # FROZEN-BUG (FV-1) -- should be FAIL
-    assert "no FRs found" in finding["evidence"]
+    assert finding["status"] == "FAIL"
+    assert "no FRs found" not in finding["evidence"]
 
 
-def test_fv1_three_distinct_states_are_indistinguishable():
-    """FROZEN-BUG (FV-1): the evidence string cannot tell an operator which.
+def test_fv1_the_populated_state_is_distinguishable_from_the_empty_ones():
+    """FLIPPED by S4 (was FROZEN-BUG FV-1).
 
-    'no requirements tree', 'empty tree' and 'tree with an unparseable spec' are
-    materially different situations. Two are fine; the third means the control
-    plane is blind. All three currently emit the identical verdict AND the
-    identical evidence, so no operator reading the report can tell them apart.
+    'no requirements tree', 'empty tree' and 'tree with a populated spec' are
+    materially different situations. All three used to emit the identical
+    verdict AND the identical evidence, so no operator reading the report could
+    tell them apart.
 
-    Flipped by: S4.
+    The two genuinely-empty states still (correctly) SKIP and still share their
+    evidence -- that pair is NOT a bug and S4 deliberately did not touch it.
+    The third has separated.
     """
     verdicts = {
         fixture: _probe("t1", fixture)
         for fixture in ("absent", "empty", "zero-row-parse")
     }
-    statuses = {f: v["status"] for f, v in verdicts.items()}
-    assert statuses == {
-        "absent": "SKIP", "empty": "SKIP", "zero-row-parse": "SKIP",
+    assert {f: v["status"] for f, v in verdicts.items()} == {
+        "absent": "SKIP", "empty": "SKIP", "zero-row-parse": "FAIL",
     }
-    evidence = {v["evidence"] for v in verdicts.values()}
-    assert len(evidence) == 1, (
-        "the three states became distinguishable -- if this is S4, update the "
-        "FROZEN-BUG comments above in the same commit"
+    assert verdicts["absent"]["evidence"] == verdicts["empty"]["evidence"], (
+        "absent and empty are both legitimately 'nothing to check' -- if these "
+        "diverged, that is S5's work arriving early, not S4's"
     )
+    assert verdicts["zero-row-parse"]["evidence"] != verdicts["absent"]["evidence"]
 
 
 def test_fv1_t1_can_still_fail_when_rows_do_parse():

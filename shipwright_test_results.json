@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-20-namespace-from-requirement-id",
+    "run_id": "iterate-2026-07-20-one-header-driven-parser",
     "date": "2026-07-20",
     "unit": {
       "status": "passed",
-      "passed": 6719,
-      "total": 6719
+      "passed": 8464,
+      "total": 8464
     },
     "integration": {
       "status": "passed",
-      "passed": 290,
-      "total": 290
+      "passed": 332,
+      "total": 332
     },
     "pgtap": {
       "status": "not_run",
@@ -29,130 +29,249 @@
       "status": "not_run"
     },
     "degraded": [
-      "The external CODE review returned only ONE usable leg. Gemini's response was a truncated internal-monologue fragment that began mid-sentence and cut off inside a code block, not findings -- the same degenerate mode seen on S2. Recorded rather than re-rolled so the thin code-review coverage stays visible. OpenAI's leg returned one medium finding (an epoch generated_at in the committed manifest), fixed by regenerating through the real update_compliance path. The PLAN review had BOTH legs substantive, and the coordinator's own review round found 6 further defects.",
-      "classify_complexity returned estimate=small with risk flags touches_rls + touches_migrations. Both are PROSE false positives -- the classifier matches the description text, not the diff; no RLS policy and no SQL migration is touched. Executed at the briefed medium level (external plan review AND code review cascade both ran). risk_detectors.py diff-predicates are authoritative and F11 recomputes.",
-      "unit=6719 is the SUM of the four suites re-run and verified for this change (shared/tests 4661, shipwright-compliance 1246, shipwright-adopt 427, shipwright-grade 385). The prior entry 4666 counted the shared suite alone; the wider number is recorded because this change edits fixtures in three plugins.",
-      "The internal reviewer cascade (spec-reviewer / code-reviewer / doubt-reviewer) is DELEGATED to the campaign orchestrator: this runner has no Agent tool. The orchestrator's code review returned 6 defects, all fixed in this same commit.",
-      "KNOWN GAP handed to S4, not closed here: only the '## Removed Requirements' heading sets status=removed. The inline '**REMOVED** by' marker this repo actually uses (SPEC 2.5, 01-adopted/spec.md:198) is unrecognised, so an inline-removed row parses as ACTIVE and would hit the duplicate rule as the hardest collision form. Pre-existing parser behaviour; S4 (one header-driven parser) owns it."
+      "The external CODE review returned only ONE usable leg. Gemini's response was `feedback: null` -- an empty document, not findings. This is the THIRD consecutive code-mode degeneration (S2, S3, S4), so it is a standing provider defect rather than a one-off; recorded rather than re-rolled so the thin code-review coverage stays visible and is NOT counted as a passing review. The PLAN review had BOTH legs substantive (Gemini 5 findings, GPT 12) and every one is dispositioned in the mini-plan. GPT's code leg returned 2 findings: one false positive caused by my own exclusion of the 156 KB golden.json from the diff sent for review (verified empirically, not asserted), and one real doc/code inconsistency in convergence rule C8, fixed.",
+      "Two independent plan reviewers (Gemini LOW, GPT LOW) rated the `test_group_d_hardening.py` split as scope creep unrelated to S4. They are right in principle. It was kept because the campaign brief instructs S4 to fix it -- S3 left the file at 332 lines with no baseline entry, where CI's anti-ratchet cannot see it and Group H would report it post-merge -- and because a separate commit is not available: the F11 verifier inspects a single commit. Surfaced to the orchestrator rather than silently overridden.",
+      "The outbox sweep at worktree setup reported `protected_status_unplaceable` for trg-b1dda91d: a status line whose append is in main's tracked log but not reachable from this branch. Pre-existing and unrelated to S4; no triage append of mine was dropped. Left for the main-tree reconcile rather than worked around here.",
+      "ROUND 2 (external code review): two blocking findings, both confirmed and fixed. (1) Convergence rules C2+C3+C8 composed into a false-requirement route -- a coverage table keyed by FR id parsed as requirements, reaching DuplicateRequirementId with an unactionable message. Every guard that independently blocked it had been removed by the same change. Reproduced first, then closed with TWO mechanisms (a width bound alone fails the 3-column variant; header-governance alone fails the headerless variant). C6 WITHDRAWN and C8 RE-DECIDED rather than patched around. (2) C1's residual risk was routed to an S5 acceptance criterion that does not cover it -- verified by reading S5 -- so S5's AC was amended and two triage anchors filed in the TRACKED log. Withdrawing C6 also broke the BOM probe (a UTF-8 BOM is not whitespace to str.strip(), so a BOM'd header line never registered as a table row); fixed at the source. Blast radius of the C6 withdrawal was larger than the corpus showed: 9 hand-written test fixtures across 5 files were headerless shorthand and needed real headers. None is a producer shape -- both writers always emit a header -- but the count is worth recording."
     ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest plugins/shipwright-compliance/tests/test_traceability_contract.py plugins/shipwright-compliance/tests/test_group_d_hardening.py plugins/shipwright-compliance/tests/test_rtm_layer_columns.py plugins/shipwright-compliance/tests/test_update_compliance_phases.py -q --color=no",
+      "runner": "uv run pytest integration-tests/test_fr_table_reader_contract.py integration-tests/test_fr_table_reader_boundaries.py integration-tests/test_fr_table_reader_probes.py integration-tests/test_fr_table_reader_load_styles.py integration-tests/test_requirements_corpus_found_defects.py integration-tests/test_requirements_corpus_false_verdicts.py -q --color=no",
       "exit_code": 0,
-      "tests_run": 51,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-20-namespace-from-requirement-id/surface_verification.json",
-      "note": "The behavioural surface is the manifest key form plus the blast radius of refusing to write it. Four suites drive it: the contract gate (rename survival, key/id agreement, duplicate fail-closed, frozen fixture + disarm detector), the Group-D ambiguity guard, the RTM layer columns, and the update_compliance loop guard. Scoped to ONE plugin tree because mixing plugin and shared test dirs in a single pytest run trips the conftest name collision (exit 3)."
+      "tests_run": 92,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-20-one-header-driven-parser/surface_verification.json",
+      "note": "The behavioural surface is the FR-table reader and the five consumers projecting from it. Six suites drive it: the shape contract, the TABLE BOUNDARY suite (added in round 2 -- which tables may be read as requirements at all, after code review found a composition route that admitted false ones), the boundary probes, the import-style matrix across all three ADR-045 load realms, and the two golden-corpus verdict modules pinning which false verdicts flipped and which stayed frozen."
     },
     "test_completeness": {
       "status": "complete",
       "counts": {
-        "total": 17,
-        "tested": 17,
+        "total": 37,
+        "tested": 37,
         "untestable": 0,
         "untested_testable": 0
       },
       "behaviors": [
         {
-          "behavior": "namespace derives from the FR id's group digits",
+          "behavior": "all five parsers agree on the ids a spec declares",
           "ac": "AC1",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_model.py::test_namespace_derives_from_the_id_not_the_path"
+          "evidence": "integration-tests/test_requirements_corpus_found_defects.py::test_the_five_parsers_agree_on_which_ids_a_spec_declares"
         },
         {
-          "behavior": "no call site can pass a path-derived namespace",
+          "behavior": "the reader is a leaf -- no back-edge to any parser it replaced",
           "ac": "AC1",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_model.py::test_namespace_is_not_a_constructor_field"
+          "evidence": "integration-tests/test_fr_table_reader_load_styles.py::test_the_reader_imports_none_of_the_five_parsers_it_replaced"
         },
         {
-          "behavior": "a non-canonical id has no derivable namespace (no invented key)",
-          "ac": "AC1",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_model.py::test_non_canonical_id_has_no_derivable_namespace"
-        },
-        {
-          "behavior": "every requirement's inner fields are unchanged vs v2",
+          "behavior": "all five historical table shapes parse",
           "ac": "AC2",
           "disposition": "tested",
-          "evidence": "empirical probe: regenerated the real monorepo manifest and compared node-by-node against the committed v2 one across id/tests/coverage/required_layers/required_layers_source/title/status/priority/spec_path -> zero differences, while all 15 keys moved"
+          "evidence": "integration-tests/test_fr_table_reader_contract.py::test_every_historical_shape_parses"
         },
         {
-          "behavior": "schema_version is 3 and travels with MODEL_VERSION",
+          "behavior": "column order is no longer load-bearing",
           "ac": "AC3",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_model.py::test_model_version_tracks_manifest_schema_version"
+          "evidence": "integration-tests/test_fr_table_reader_contract.py::test_column_order_is_not_load_bearing"
         },
         {
-          "behavior": "a frozen v3 contract fixture exists and matches the live manifest",
-          "ac": "AC3",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_traceability_contract.py::TestPublishedFixture"
-        },
-        {
-          "behavior": "published fixtures are frozen against origin/main",
-          "ac": "AC3",
-          "disposition": "tested",
-          "evidence": "TestTheGate::test_published_fixtures_are_frozen_against_main, plus a negative-control probe: modifying a published fixture returns a reason (ARMED); restoring it returns None"
-        },
-        {
-          "behavior": "keys survive a split-directory rename",
+          "behavior": "FV-1: a populated spec parsing to zero rows now FAILs T1",
           "ac": "AC4",
           "disposition": "tested",
-          "evidence": "test_traceability_contract.py::test_keys_survive_a_split_directory_rename (two fixture trees differing only in directory name) + test_rtm_layer_columns.py::test_row_resolves_after_its_split_directory_is_renamed"
+          "evidence": "integration-tests/test_requirements_corpus_false_verdicts.py::test_fv1_zero_row_parse_now_fails_instead_of_skipping"
         },
         {
-          "behavior": "spec_path still records where the row was found",
+          "behavior": "FV-3: the body column is the one the header names",
           "ac": "AC4",
           "disposition": "tested",
-          "evidence": "test_traceability_contract.py::test_spec_path_still_records_where_the_row_was_found"
+          "evidence": "integration-tests/test_requirements_corpus_found_defects.py::test_fv3_rtm_displays_the_requirement_text_its_header_names"
         },
         {
-          "behavior": "golden corpus diffs are explained; id-only targets do not move",
+          "behavior": "FV-3: the second occurrence in the malformed fixture is fixed too",
+          "ac": "AC4",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_requirements_corpus_found_defects.py::test_fv3_the_second_occurrence_in_the_malformed_fixture_is_fixed_too"
+        },
+        {
+          "behavior": "FV-4: Group I reads a table whose id column is headed FR",
+          "ac": "AC4",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_requirements_corpus_found_defects.py::test_fv4_group_i_reads_a_table_whose_id_column_is_headed_fr"
+        },
+        {
+          "behavior": "FV-5: every parser keeps rows after a later heading",
+          "ac": "AC4",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_requirements_corpus_found_defects.py::test_fv5_every_parser_keeps_rows_after_a_later_heading"
+        },
+        {
+          "behavior": "a flipped frozen-bug entry records which run flipped it and what it reads now",
+          "ac": "AC4",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_requirements_corpus_found_defects.py::test_a_flipped_entry_records_which_run_flipped_it_and_what_it_reads_now"
+        },
+        {
+          "behavior": "absent planning tree still SKIPs",
           "ac": "AC5",
           "disposition": "tested",
-          "evidence": "regen_golden.py --check: 38 removals of the \"namespace\" cell in the single target parse._requirement_parse.parse_requirements, zero additions, and zero spec_path or split cells moved -- so no id-only target changed."
+          "evidence": "integration-tests/test_requirements_corpus_false_verdicts.py::test_fv1_absent_planning_tree_skips_correctly"
         },
         {
-          "behavior": "two specs claiming one v3 key fail closed instead of dropping a requirement",
-          "ac": "external-review",
+          "behavior": "absent and empty stay indistinguishable from each other; only the populated case separated",
+          "ac": "AC5",
           "disposition": "tested",
-          "evidence": "test_traceability_contract.py::TestDuplicateIdsFailClosed (cross-spec AND same-spec) + test_group_d_hardening.py::test_two_specs_sharing_an_id_fail_closed_instead_of_dropping_a_node"
+          "evidence": "integration-tests/test_requirements_corpus_false_verdicts.py::test_fv1_the_populated_state_is_distinguishable_from_the_empty_ones"
         },
         {
-          "behavior": "a key whose namespace disagrees with its node id is rejected at write time",
-          "ac": "external-review",
+          "behavior": "FV-2 remains frozen (belongs to S6)",
+          "ac": "AC6",
           "disposition": "tested",
-          "evidence": "test_traceability_contract.py::TestKeyAgreesWithItsNodeId plus an end-to-end probe through _validate_manifest rejecting both 01-adopted::FR-03.01 and the shape-valid-but-wrong 02::FR-03.01"
+          "evidence": "integration-tests/test_requirements_corpus_false_verdicts.py::test_fv2_empty_manifest_asserts_positive_coverage"
         },
         {
-          "behavior": "a tombstone row alongside a live row is NOT a collision, and the ACTIVE node survives regardless of spec discovery order",
-          "ac": "coordinator-review",
+          "behavior": "removed rows are marked, not dropped -- the half the retired drift suite never pinned",
+          "ac": "AC7",
           "disposition": "tested",
-          "evidence": "test_group_d_hardening.py::test_active_plus_removed_is_not_a_collision_and_keeps_the_live_node + test_traceability_contract.py::TestActiveWinsTheKeyRegardlessOfOrder (both orders)"
+          "evidence": "integration-tests/test_fr_table_reader_contract.py::test_removed_rows_are_marked_not_dropped"
         },
         {
-          "behavior": "one collector refusing to write does not dark the other reports",
-          "ac": "coordinator-review",
+          "behavior": "a removed section ends at the next same-or-shallower heading",
+          "ac": "AC7",
           "disposition": "tested",
-          "evidence": "test_update_compliance_phases.py::test_a_duplicate_fr_id_does_not_abort_the_other_reports -- drives the real CLI: exit 1 + generator_errors naming test_links, while change-history, sbom and dashboard still write"
+          "evidence": "integration-tests/test_fr_table_reader_contract.py::test_the_removed_section_ends_at_the_next_same_or_shallower_heading"
         },
         {
-          "behavior": "both integrity errors escape _layer_coverage_regen's except (OSError, ValueError) so F11 names the real cause",
-          "ac": "coordinator-review",
+          "behavior": "C1: only the canonical two-digit id is a requirement row",
+          "ac": "AC3",
           "disposition": "tested",
-          "evidence": "test_traceability_contract.py::TestIntegrityErrorsReachTheOperator -- exercises the literal swallow clause, not just the class hierarchy"
+          "evidence": "integration-tests/test_fr_table_reader_contract.py::test_c1_only_the_canonical_two_digit_id_is_a_requirement_row"
         },
         {
-          "behavior": "the ambiguity-guard fixture is schema-VALID, so the path it pins is reachable through load_manifest",
-          "ac": "coordinator-review",
+          "behavior": "C1: id validation is a full match -- near-misses are rejected",
+          "ac": "AC3",
           "disposition": "tested",
-          "evidence": "test_group_d_hardening.py::test_the_collided_fixture_is_schema_valid_so_the_guard_is_reachable -- the old '02-b::' key failed propertyNames, so load_manifest returned None and D-layer/D-orphan SKIPped while the tests passed"
+          "evidence": "integration-tests/test_fr_table_reader_probes.py::test_probe_near_miss_ids_are_not_requirement_rows"
         },
         {
-          "behavior": "the contract gate cannot silently disarm itself by a renamed CONTRACTS_DIR/STEM, and the bump SIZE is enforced",
-          "ac": "coordinator-review",
+          "behavior": "C2: the column map survives a heading and is replaced by a header",
+          "ac": "AC3",
           "disposition": "tested",
-          "evidence": "test_traceability_contract.py::test_the_shape_change_forces_the_bump_it_obliges (CE.require_bump + a stem-scoped disarm detector); probe confirms the detector FIRES for a stem published on main but absent under the configured constants"
+          "evidence": "integration-tests/test_fr_table_reader_contract.py::test_c2_the_column_map_survives_a_heading_and_is_replaced_by_a_header"
+        },
+        {
+          "behavior": "C2: a persisted column map does not capture an unrelated later table",
+          "ac": "AC3",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_table_reader_probes.py::test_probe_a_persisted_column_map_does_not_capture_an_unrelated_table"
+        },
+        {
+          "behavior": "C3: an unrecognised priority is coerced, not fatal",
+          "ac": "AC3",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_table_reader_contract.py::test_c3_an_unrecognised_priority_is_coerced_not_fatal"
+        },
+        {
+          "behavior": "C4: an escaped pipe is content and does not shift columns",
+          "ac": "AC3",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_table_reader_probes.py::test_probe_an_escaped_pipe_does_not_shift_the_priority_column"
+        },
+        {
+          "behavior": "C4: PRODUCER->consumer round-trip through markdown_table.escape_cell",
+          "ac": "AC3",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_table_reader_probes.py::test_producer_consumer_round_trip"
+        },
+        {
+          "behavior": "C5: indentation and a missing closing pipe do not drop a row",
+          "ac": "AC3",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_table_reader_contract.py::test_c5_indentation_and_a_missing_closing_pipe_do_not_drop_a_row"
+        },
+        {
+          "behavior": "C6: a headerless table falls back positionally and never claims explicit layers",
+          "ac": "AC3",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_table_reader_contract.py::test_c6_a_table_with_no_header_at_all_falls_back_positionally"
+        },
+        {
+          "behavior": "C7: fold-map rows are never requirements",
+          "ac": "AC3",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_table_reader_contract.py::test_fold_map_rows_are_never_requirements"
+        },
+        {
+          "behavior": "C8: a thin row is kept with whatever it declares",
+          "ac": "AC3",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_table_reader_probes.py::test_probe_a_thin_row_is_kept_with_whatever_it_declares"
+        },
+        {
+          "behavior": "an inline **REMOVED** marker does not retire the requirement (S3 premise falsified)",
+          "ac": "AC1",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_table_reader_contract.py::test_an_inline_removed_marker_does_not_retire_the_requirement"
+        },
+        {
+          "behavior": "the reader loads and parses identically under every import style (ADR-045)",
+          "ac": "AC1",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_table_reader_load_styles.py::test_the_reader_loads_and_parses_identically_under_every_import_style"
+        },
+        {
+          "behavior": "the RTM still reads every adopt/greenfield shape through its public seam",
+          "ac": "AC2",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_rtm_fr_table_shapes.py"
+        },
+        {
+          "behavior": "a summary/coverage table keyed by FR id yields no requirements (2- and 3-column)",
+          "ac": "AC3",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_table_reader_boundaries.py::test_a_summary_table_keyed_by_fr_id_does_not_yield_requirements"
+        },
+        {
+          "behavior": "C6 withdrawn: a table with no governing header yields nothing and is recorded",
+          "ac": "AC3",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_table_reader_boundaries.py::test_c6_withdrawn_a_table_with_no_header_at_all_yields_nothing"
+        },
+        {
+          "behavior": "C8 re-decided: a row must reach its header's Priority column",
+          "ac": "AC3",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_table_reader_boundaries.py::test_c8_re_decided_a_row_must_reach_its_headers_priority_column"
+        },
+        {
+          "behavior": "closing the route did not re-introduce FV-5 (a heading alone does not end a table)",
+          "ac": "AC4",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_table_reader_boundaries.py::test_fv5_still_holds_a_heading_alone_does_not_end_the_table"
+        },
+        {
+          "behavior": "a separator row does not end a table",
+          "ac": "AC3",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_table_reader_boundaries.py::test_a_separator_row_does_not_end_the_table"
+        },
+        {
+          "behavior": "a non-canonical id row does not end a table (one FR-1.1 must not drop the rest)",
+          "ac": "AC3",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_table_reader_boundaries.py::test_a_non_canonical_id_row_does_not_end_the_table"
+        },
+        {
+          "behavior": "a UTF-8 BOM on the header line does not hide the table",
+          "ac": "AC2",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_table_reader_probes.py::test_probe_bom_directly_before_the_header_row"
+        },
+        {
+          "behavior": "declined rows reach the manifest as invalid_ids with a reason",
+          "ac": "AC1",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_data_collector.py::TestCollectRequirementsRemovedSection::test_a_table_with_no_header_at_all_yields_nothing"
         }
       ]
     }

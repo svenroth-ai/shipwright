@@ -1,0 +1,1 @@
+The traceability matrix could display the wrong requirement text when a table row carried more cells than its header declared, and a compliance check reported "nothing to audit" instead of a failure when it could not read a populated spec.

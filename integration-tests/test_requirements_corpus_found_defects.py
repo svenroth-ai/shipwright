@@ -1,13 +1,14 @@
-"""Freeze the defects found while BUILDING the golden corpus (FV-3, FV-4, FV-5).
+"""The defects found while BUILDING the golden corpus (FV-3, FV-4, FV-5).
 
-Campaign "Requirements Catalog" sub-iterate S1. These three are NOT in the
-campaign SPEC -- the survey turned them up, and they have been added to S4's
-acceptance criteria plus filed as a triage anchor so they cannot be lost if S4
-is descoped. All three are fixed by the same change: S4's single header-driven
-reader.
+Campaign "Requirements Catalog", written at S1. These three were NOT in the
+campaign SPEC -- the survey turned them up, and they were added to S4's
+acceptance criteria plus filed as a triage anchor so they could not be lost if
+S4 were descoped. **All three were flipped by S4** (a single header-driven
+reader), and the assertions below now pin the corrected behaviour together with
+the mechanism each one had, so the golden diff that moved those cells stays
+explained.
 
-Same rule as the SPEC-named verdicts: every assertion here pins behaviour that
-is WRONG, deliberately. Do not correct one into agreement -- see
+Do not "correct" an assertion into agreement with a surprising value -- see
 ``requirements_corpus/frozen_bugs.py``.
 
 @FR-01.10
@@ -23,7 +24,12 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from requirements_corpus.collect import collect_all  # noqa: E402
-from requirements_corpus.frozen_bugs import FROZEN_BUGS, SPEC_NAMED  # noqa: E402
+from requirements_corpus.frozen_bugs import (  # noqa: E402
+    FLIPPED,
+    FROZEN_BUGS,
+    SPEC_NAMED,
+    STILL_FROZEN,
+)
 from requirements_corpus.probe import ProbeFailed, probe  # noqa: E402
 
 
@@ -53,63 +59,109 @@ def _probe(name: str, fixture: str):
 # FV-3/4/5 -- found while building this harness; added to S4's AC + triage
 # ---------------------------------------------------------------------------
 
-def test_fv3_rtm_displays_wrong_requirement_text(matrix):
-    """FROZEN-BUG (FV-3): a row wider than its header shifts the body column.
+def test_fv3_rtm_displays_the_requirement_text_its_header_names(matrix):
+    """FLIPPED by S4 (was FROZEN-BUG FV-3).
 
     The `07-header-blind` spec declares three columns and carries a five-cell
-    row. ``drift_parsers``/``rtm`` are header-blind, so regex group 4 fires and
-    the *fourth* cell is read as the requirement text. The RTM renders "extra"
-    where the requirement says "ok".
-
-    This is live wrong DATA in a shipped audit artifact, not a parse
-    divergence. Not in the campaign SPEC -- found building this harness.
-
-    Flipped by: S4 (selection by column name).
+    row. The old header-blind regex let group 4 fire, so the *fourth* cell was
+    read as the requirement text and the RTM rendered "extra" where the
+    requirement says "ok" -- live wrong DATA in a shipped audit artifact, not a
+    parse divergence. Selection is now by column NAME, so a row wider than its
+    header cannot shift the body.
     """
     rows = matrix["parse.drift_parsers.parse_fr_table"][
         "fixtures"]["mixed-shape"]["per_spec"][
         ".shipwright/planning/07-header-blind/spec.md"]["value"]
-    assert [r["id"] for r in rows] == ["FR-07.01"]
-    assert rows[0]["text"] == "extra"  # FROZEN-BUG (FV-3) -- should be "ok"
+    assert [(r["id"], r["text"]) for r in rows] == [("FR-07.01", "ok")]
 
 
-def test_fv4_group_i_drops_every_row_on_an_fr_header(matrix):
-    """FROZEN-BUG (FV-4): header 'FR' instead of 'ID' -> zero rows, silently.
+def test_fv3_the_second_occurrence_in_the_malformed_fixture_is_fixed_too(matrix):
+    """The same bug had TWO sites in the corpus; only one was described.
 
-    ``group_i._column_map`` requires ``cells[0] == "id"`` exactly. On the
-    traceability-fixture shape it returns None, the mapping stays None, and the
-    whole file is dropped -- after which all four hygiene checks report against
-    zero rows, which is itself green (FV-2). Two bugs compose into silence.
+    `malformed/FR-01.03` is the identical shape (3-column header, 5-cell row).
+    Asserting it separately is what stops a fix that special-cases one fixture
+    from reading as a fix of the class.
+    """
+    # rtm is the one parser registered as a WALK, so its cell is a flat list
+    # over the whole tree rather than a per_spec map (registry.py says so).
+    rows = matrix["parse.rtm.collect_requirements"]["fixtures"]["malformed"]["value"]
+    texts = {r["id"]: r["text"] for r in rows}
+    assert texts["FR-01.03"] == "ok"
 
-    Flipped by: S4.
+
+def test_fv4_group_i_reads_a_table_whose_id_column_is_headed_fr(matrix):
+    """FLIPPED by S4 (was FROZEN-BUG FV-4).
+
+    ``group_i._column_map`` required ``cells[0] == "id"`` exactly. On the
+    traceability-fixture shape it returned None, the mapping stayed None, and
+    the whole file was dropped -- after which all four hygiene checks reported
+    against zero rows, which is itself green (FV-2). Two bugs composed into
+    silence. A header row is now recognised by naming a Priority column, so the
+    id column's own heading is free.
     """
     rows = matrix["parse.group_i._scan_one_spec"][
         "fixtures"]["mixed-shape"]["per_spec"][
         ".shipwright/planning/05-fixture-fr/spec.md"]["value"]
-    assert rows == []  # FROZEN-BUG (FV-4) -- FR-05.01 is right there in the file
+    assert [r["id"] for r in rows] == ["FR-05.01"]
 
 
-def test_fv5_group_i_drops_rows_after_a_later_heading(matrix):
-    """FROZEN-BUG (FV-5): the column mapping resets at EVERY heading.
+def test_fv5_every_parser_keeps_rows_after_a_later_heading(matrix):
+    """FLIPPED by S4 (was FROZEN-BUG FV-5).
 
     In the `edge` fixture, FR-01.20 sits under '## Next' with no repeated header
-    row. group_i loses it; all four other parsers keep it. Pinning the contrast
-    is the point -- it shows the row is well-formed and only this parser is
-    blind to it.
-
-    Flipped by: S4.
+    row. group_i used to reset its column mapping at EVERY heading and lose it
+    while all four other parsers kept it. The contrast is now agreement -- which
+    is the assertion worth keeping, because "all five agree" is the property S4
+    actually delivers.
     """
-    per_spec = matrix
     spec = ".shipwright/planning/01-live/spec.md"
 
     def ids(target):
-        cell = per_spec[target]["fixtures"]["edge"]["per_spec"][spec]
+        cell = matrix[target]["fixtures"]["edge"]["per_spec"][spec]
         return [r["id"] for r in cell["value"]]
 
-    assert "FR-01.20" not in ids("parse.group_i._scan_one_spec")  # FROZEN-BUG
-    assert "FR-01.20" in ids("parse.drift_parsers.parse_fr_table")
-    assert "FR-01.20" in ids("parse._backfill_spec_parse.parse_frs")
-    assert "FR-01.20" in ids("parse._requirement_parse.parse_requirements")
+    for target in (
+        "parse.group_i._scan_one_spec",
+        "parse.drift_parsers.parse_fr_table",
+        "parse._backfill_spec_parse.parse_frs",
+        "parse._requirement_parse.parse_requirements",
+    ):
+        assert "FR-01.20" in ids(target), target
+
+
+def test_the_five_parsers_agree_on_which_ids_a_spec_declares(matrix):
+    """The property S4 exists to establish, asserted directly.
+
+    Every divergence the corpus recorded was ultimately one of five parsers
+    disagreeing about which rows a file contains. ``_backfill`` and
+    ``_requirement_parse`` see removed rows that the two live-only readers
+    filter, so compare on ACTIVE ids only; group_i's default view is live rows
+    as well.
+    """
+    spec = ".shipwright/planning/01-live/spec.md"
+
+    def active_ids(target):
+        cell = matrix[target]["fixtures"]["edge"]
+        # rtm is registered as a WALK, so its cell is a flat list over the whole
+        # tree; the other four are keyed per spec file. Narrow both to one spec.
+        if "per_spec" in cell:
+            rows = cell["per_spec"][spec]["value"]
+        else:
+            rows = [r for r in cell["value"] if r.get("spec_path") == spec]
+        return sorted(
+            r["id"] for r in rows
+            if r.get("status", "active") == "active" and not r.get("retired")
+        )
+
+    reference = active_ids("parse.drift_parsers.parse_fr_table")
+    assert reference, "the edge fixture must declare at least one active FR"
+    for target in (
+        "parse.rtm.collect_requirements",
+        "parse._backfill_spec_parse.parse_frs",
+        "parse._requirement_parse.parse_requirements",
+        "parse.group_i._scan_one_spec",
+    ):
+        assert active_ids(target) == reference, target
 
 
 # ---------------------------------------------------------------------------
@@ -165,6 +217,25 @@ def test_every_frozen_bug_names_its_flipping_step():
     for bug_id, info in FROZEN_BUGS.items():
         assert info["flipped_by"].startswith("S"), bug_id
         assert info["what"] and info["why_not_fixed"], bug_id
+        assert info["state"] in ("frozen", "flipped"), bug_id
+
+
+def test_a_flipped_entry_records_which_run_flipped_it_and_what_it_reads_now():
+    """A flipped entry must not degrade into a deleted one.
+
+    Deleting the record would leave the golden diff that moved those cells
+    unexplained forever -- the same failure mode the frozen entries exist to
+    prevent, displaced in time. So a flip is an EDIT that adds provenance, and
+    this test is what makes that a rule rather than a habit.
+    """
+    assert set(FLIPPED) == {"FV-1", "FV-3", "FV-4", "FV-5"}
+    assert STILL_FROZEN == ("FV-2",), "FV-2 belongs to S6, not S4"
+    for bug_id in FLIPPED:
+        info = FROZEN_BUGS[bug_id]
+        assert info["flipped_in"], bug_id
+        assert info["now"], bug_id
+    for bug_id in STILL_FROZEN:
+        assert "now" not in FROZEN_BUGS[bug_id], bug_id
 
 
 def test_frozen_bug_cells_exist_in_the_matrix(matrix):

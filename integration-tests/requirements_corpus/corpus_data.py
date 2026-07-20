@@ -75,8 +75,9 @@ _ADOPT_WRITER = """# Split 04 -- Adopt writer shape
 """
 
 # Header is ``FR``, not ``ID`` -- the traceability-fixture shape.
-# FROZEN-BUG (FV-4): group_i._column_map requires cells[0] == "id" exactly, so
-# it maps NOTHING here and drops every row in the file. Flipped by S4.
+# WAS FROZEN-BUG (FV-4), FLIPPED BY S4: group_i._column_map required
+# cells[0] == "id" exactly, so it mapped NOTHING here and dropped every row in
+# the file. A header row is now recognised by naming a Priority column.
 _FIXTURE_FR_HEADER = """# Split 05 -- Traceability fixture shape
 
 | FR | Description | Priority | Layers |
@@ -84,10 +85,10 @@ _FIXTURE_FR_HEADER = """# Split 05 -- Traceability fixture shape
 | FR-05.01 | Coverage is reported per layer | Must | unit |
 """
 
-# FROZEN-BUG (FV-1 mechanism): drift_parsers._FR_TABLE_RE pins Must|Should|May
-# to data column 3. Reordering the columns yields ZERO rows from both
-# positional parsers -- and zero rows makes T1 SKIP instead of FAIL. Flipped
-# by S4.
+# WAS FROZEN-BUG (FV-1 mechanism), FLIPPED BY S4: drift_parsers._FR_TABLE_RE
+# pinned Must|Should|May to data column 3, so reordering the columns yielded
+# ZERO rows from both positional parsers -- and zero rows made T1 SKIP instead
+# of FAIL. Column order is no longer load-bearing.
 _REORDERED = """# Split 06 -- Reordered columns
 
 | ID | Priority | Requirement | Layers |
@@ -95,10 +96,11 @@ _REORDERED = """# Split 06 -- Reordered columns
 | FR-06.01 | Must | Reordered table still describes a requirement | unit |
 """
 
-# FROZEN-BUG (FV-3): the header declares three columns but the row carries
-# five. drift_parsers/rtm are header-blind, so regex group 4 fires and the
-# RTM displays "extra" as the requirement text instead of "ok". This is live
-# wrong data in a shipped audit artifact. Flipped by S4.
+# WAS FROZEN-BUG (FV-3), FLIPPED BY S4: the header declares three columns but
+# the row carries five. drift_parsers/rtm were header-blind, so regex group 4
+# fired and the RTM displayed "extra" as the requirement text instead of "ok"
+# -- live wrong data in a shipped audit artifact. Selection is now by column
+# NAME. The `malformed` fixture's FR-01.03 is the same bug's second site.
 _HEADER_BLIND = """# Split 07 -- Header-blind mis-extraction
 
 | ID | Requirement | Priority |
@@ -106,17 +108,26 @@ _HEADER_BLIND = """# Split 07 -- Header-blind mis-extraction
 | FR-07.01 | ok | Should | extra | cells |
 """
 
-# The last two rows probe the PRIORITY VOCABULARY axis, which is load-bearing
-# for the positional parsers: drift_parsers/rtm require an exact-case
-# Must|Should|May in data column 3 and DROP the whole row otherwise, while
-# _requirement_parse silently coerces an unrecognised value to "Must" and
-# group_i/_backfill_spec_parse never read priority at all. Without these rows a
-# change to the priority alternation is invisible to the corpus -- verified by
-# mutation testing during S1, which is how the gap was found.
-# FR-01.08 exercises group_i's _UNESCAPED_PIPE_RE (the only parser that
-# treats `\|` as escaped rather than as a cell boundary), and the repeated
-# FR-01.01 exercises I4 -- the ONLY Group I check that can ever emit `fail`,
-# and therefore the only one whose red path was otherwise unreachable.
+# The lowercase/unrecognised-priority rows probe the PRIORITY VOCABULARY axis.
+# It used to divide the parsers three ways: drift_parsers/rtm required an
+# exact-case Must|Should|May in data column 3 and DROPPED the whole row
+# otherwise, _requirement_parse coerced an unrecognised value to "Must", and
+# group_i/_backfill_spec_parse never read priority at all. S4 converged on
+# coercion -- losing a requirement over a typo is the same silent-loss class the
+# campaign exists to remove. Without these rows the change would have been
+# invisible to the corpus; the gap was found by mutation testing during S1.
+# FR-01.08 probes the escaped pipe. Only group_i honoured `\|` before S4, so the
+# other four truncated the text and broke the round-trip with
+# markdown_table.escape_cell -- the producer that WRITES that escape. The
+# repeated FR-01.01 exercises I4, the ONLY Group I check that can ever emit
+# `fail`. NOTE, S4 second round: the 2-cell "ragged" row is no longer a
+# requirement in ANY parser (convergence rule C8 was re-decided -- a row must
+# reach its header's Priority column -- and it is now recorded in `invalid_ids`
+# instead). So only ONE FR-01.01 row survives here and this fixture no longer
+# reaches I4's duplicate branch. That branch keeps direct coverage in
+# `plugins/shipwright-compliance/tests/test_audit_group_i.py::
+# test_duplicate_fr_id_is_reported`; the loss is a documented reduction in
+# corpus coverage, not an unguarded path. Stated rather than quietly absorbed.
 _MALFORMED = r"""# Split 01 -- Broken
 
 | ID | Requirement | Priority |
@@ -131,11 +142,12 @@ FR-01.04 | not a table row at all | Must |
 | FR-01.01 | duplicate of the first id | Must |
 """
 
-# Exercises the three FR-id strictness tiers in one table:
-#   FR-1.1     loose+medium accept, strict rejects
-#   FR-7       loose accepts (unanchored FR-[\\d.]+), medium+strict reject
-#   FR-99.99   all three accept
-#   FR-001.001 loose+medium accept, strict rejects
+# Exercised the three FR-id strictness tiers in one table. S4 converged them on
+# the STRICTEST (requirement_model.CANONICAL_FR_RE): manifest schema v3 derives
+# a requirement's namespace from the id's group digits, so only the two-digit
+# form makes that derivation total. All five parsers now accept FR-01.01 and
+# FR-99.99 and reject FR-1.1, FR-7 and FR-001.001 -- which is why those three
+# rows stay here rather than being deleted as noise.
 _ID_STRICTNESS = """# Split 01 -- Live
 
 ## Requirements

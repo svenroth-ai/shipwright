@@ -12,6 +12,11 @@ from __future__ import annotations
 
 from lib.drift_parsers import parse_fr_table
 
+# S4 withdrew the headerless positional fallback (convergence rule C6), so the
+# two synthetic pathological rows below need a governing header like any other
+# requirement row. Their subject is scan LINEARITY, not table shape.
+_HEADER = "| ID | Requirement | Priority |\n"
+
 _4COL = """## Functional Requirements
 | ID | Requirement | Priority | Layers |
 |----|-------------|----------|--------|
@@ -64,26 +69,30 @@ def test_6col_adopt_with_layers_body_is_description():
 
 
 def test_trailing_tolerance_is_linear_time_on_a_pathological_row():
-    # The trailing-cell tolerance mirrors rtm.py's ReDoS-hardened `(?:[^|]*\|)*`
-    # matcher; a very long pipe-heavy MATCHING row must resolve fast, not hang.
+    # Originally a ReDoS guard on `(?:[^|]*\|)*`. S4 removed the regex entirely --
+    # the reader splits on unescaped pipes, so the backtracking class is gone by
+    # construction rather than by a hardened pattern. The timing assertion is kept
+    # as the standing guard that no future reader reintroduces a quadratic scan.
     import time
 
     row = "| FR-01.01 | body | Must |" + (" x |" * 4000)
     start = time.perf_counter()
-    reqs = parse_fr_table(row + "\n", split="01", spec_path="s.md")
+    reqs = parse_fr_table(_HEADER + row + "\n", split="01", spec_path="s.md")
     assert time.perf_counter() - start < 1.0
     # a row this long with only-`x` trailing cells still yields the FR (not dropped)
     assert {r.id for r in reqs} == {"FR-01.01"}
 
 
-def test_trailing_tolerance_is_linear_time_on_a_NON_matching_row():
-    # The prior test uses a MATCHING row (ends in `|`) so the regex never backtracks
-    # on failure. This one is the pathological NON-match: a long trailing run with NO
-    # closing pipe, forcing the engine down the `\s*$` failure path. Must stay linear.
+def test_a_row_without_a_closing_pipe_is_kept_not_dropped():
+    # BEHAVIOUR CHANGE, S4 (convergence rule C5). The old regex required a closing
+    # `|` and returned [] here. Three of the five parsers already kept such a row;
+    # dropping a declared requirement over a missing terminator is the same silent
+    # -loss class this campaign exists to remove. Still linear, which is what the
+    # original ReDoS probe was really protecting.
     import time
 
-    row = "| FR-01.01 | body | Must |" + (" y" * 20000)   # no closing pipes → never matches
+    row = "| FR-01.01 | body | Must |" + (" y" * 20000)   # no closing pipe
     start = time.perf_counter()
-    reqs = parse_fr_table(row + "\n", split="01", spec_path="s.md")
+    reqs = parse_fr_table(_HEADER + row + "\n", split="01", spec_path="s.md")
     assert time.perf_counter() - start < 1.0
-    assert reqs == []   # the row does not match the FR-table shape → dropped, no hang
+    assert [(r.id, r.priority) for r in reqs] == [("FR-01.01", "Must")]
