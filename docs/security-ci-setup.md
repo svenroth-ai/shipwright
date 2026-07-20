@@ -347,6 +347,46 @@ covered by `tests/test_semgrep_rule_tailoring.py` (plugin scan) and
 `shared/tests/test_security_findings_gh_tag_drop.py` (artifact ingest), both
 including the third-party still-flagged guard.
 
+#### Adopted repos — operator-run converge
+
+An adopted repo (one scaffolded by `/shipwright-adopt`) does **not** receive a
+copy of `shared/scripts/` — the `converge` CLI is not installed into it, by the
+same rule that keeps it out of CI: no scheduled job, and no per-repo copy, may
+hold the authority to mass-dismiss security alerts. So an adopter accepts a
+code-scanning risk in two steps:
+
+1. **Record it** at the adopted repo root, exactly as above — author
+   `shipwright_accepted_risks.yaml` with a `target: github-dismissal` entry
+   (`scope.tool` plus either `scope.paths` or `scope.match: rule-wide`, an
+   `expires` date, a `rationale_ref`, and a `statement`).
+2. **Converge it** — an operator runs the command *from a Shipwright checkout*,
+   pointing `--project-root` at the adopted repo:
+
+   ```bash
+   # read-only — run from your shipwright/ clone, targeting the adopted repo
+   uv run shared/scripts/tools/accepted_risks_cli.py converge \
+     --project-root /path/to/adopted-repo
+   uv run shared/scripts/tools/accepted_risks_cli.py converge \
+     --project-root /path/to/adopted-repo --apply
+   ```
+
+Repository identity, the register, and the triage store all come from
+`--project-root` (the adopted repo's own `origin` remote), so the dismissal
+lands on the adopted repo, never on the checkout you ran it from — and one
+checkout can reconcile many adopted repos in turn.
+
+This is the *only* reconciliation door for an adopted repo, and the adopter scan
+wiring is why it is needed: an adopted `security.yml` runs **raw** `semgrep scan
+--sarif` and uploads un-tailored SARIF, so an acceptance is applied at *ingest*
+(the Triage item goes quiet) while the GitHub code-scanning alert stays open.
+`converge` is what quiets the security tab to match — on demand, by a person.
+
+An **absent** register in the adopted repo reads as empty: there is nothing to
+dismiss, and anything this tool previously marked is reopened (the same
+loss-of-authority path as an expiry). A **present-but-malformed** register does
+*not* read as empty — it aborts with a non-zero exit rather than silently
+licensing a mass-dismissal off a truncated file.
+
 #### Local parity
 
 `run_scan_and_report.py` (the local interactive flow) produces the same

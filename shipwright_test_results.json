@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-20-events-record-boundary-remainder",
+    "run_id": "iterate-2026-07-20-accepted-risk-adopter-converge",
     "date": "2026-07-20",
     "unit": {
       "status": "passed",
-      "passed": 21,
-      "total": 21
+      "passed": 4708,
+      "total": 4708
     },
     "integration": {
-      "status": "passed",
-      "passed": 4,
-      "total": 4
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -18,111 +18,53 @@
       "total": 0
     },
     "e2e": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "design_fidelity": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [
-      "test_finalize_iterate.py::test_run_is_idempotent failed once under the full shared-suite run (cross-file ordering flake): it passes in isolation and as its own file (20/20), does not import any module this iterate changed, and reproduces independently of this diff."
-    ],
+    "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "runner": "",
+      "runner": "none (docs + test change; covered by F0 unit tests)",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-20-events-record-boundary-remainder/surface_verification.json",
-      "justification": "Internal defect repair: record-boundary delegation in Python event-log readers + churn_merge validator. No web/CLI/API behaviour surface \u2014 every changed function is a pure library reader/validator. No client/**, API route, store mutation, or message contract touched."
+      "evidence_path": ".shipwright/runs/iterate-2026-07-20-accepted-risk-adopter-converge/surface_verification.json",
+      "timestamp": "2026-07-20T22:06:36.436Z",
+      "justification": "Docs + test change: adds the 'Adopted repos — operator-run converge' section to docs/security-ci-setup.md and a guard test (shared/tests/test_accepted_risks_adopter_converge.py). No web/UI/API/CLI-app surface to drive; the converge CLI's cross-repo behavior is covered by unit tests at F0."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "resolve_run_id recovers run_started records from a merge=union concatenated line (latest wins), not the session fallback",
-          "ac": "AC1",
+          "behavior": "docs/security-ci-setup.md documents operator-run converge for adopted repos (author the register at the repo root; run converge --project-root at the adopted repo)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_event_reader_remainder_record_boundary.py::test_resolve_run_id_recovers_run_started_from_a_concatenated_line"
+          "evidence": "test_accepted_risks_adopter_converge.py::TestAdopterDocsArePinned::test_security_ci_setup_documents_operator_run_converge_for_adopters PASSED"
         },
         {
-          "behavior": "check_a7_adopted_event PASSes when the adopted event is second on a concatenated line (inverted failure fixed)",
-          "ac": "AC2",
+          "behavior": "converge resolves repo identity + register from --project-root (the adopted repo), never from cwd, so a mutation lands on the repo whose register authorised it",
           "disposition": "tested",
-          "evidence": "shared/tests/test_event_reader_remainder_record_boundary.py::test_check_a7_counts_adopted_when_it_is_second_on_a_concatenated_line"
+          "evidence": "test_accepted_risks_adopter_converge.py::TestOperatorRunConvergeAgainstAdoptedRepo::test_identity_and_register_come_from_the_targeted_root_not_cwd PASSED"
         },
         {
-          "behavior": "validate_adoption._validate_events recovers the adopted count from a concatenated line (adopt-side parity)",
-          "ac": "AC3",
+          "behavior": "identity tracks each passed root independently, so one operator checkout can converge many adopted repos in turn",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-adopt/tests/test_validate_adoption_record_boundary.py::test_validate_events_recovers_adopted_second_on_a_concatenated_line"
-        },
-        {
-          "behavior": "routing._newest_work_commit returns the newest work_completed when it is second on a concatenated line; not-stale end-to-end",
-          "ac": "AC4",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-grade/tests/test_routing_record_boundary.py::test_newest_work_commit_recovers_the_newest_from_a_concatenated_line"
-        },
-        {
-          "behavior": "recovery stays partial (a valid record ahead of an unrecoverable fragment is still recovered) at every converted site",
-          "ac": "AC5",
-          "disposition": "tested",
-          "evidence": "test_resolve_run_id_skips_a_fragment_and_keeps_what_decoded + test_newest_work_commit_partial_recovery_ignores_a_trailing_fragment + test_validate_events_partial_recovery_keeps_the_adopted_record"
-        },
-        {
-          "behavior": "converted readers return only JSON objects; a bare scalar line is a fragment and no site crashes on .get()",
-          "ac": "AC6",
-          "disposition": "tested",
-          "evidence": "test_check_a7_does_not_crash_on_a_bare_scalar_line + plugins/shipwright-adopt/tests/test_validate_adoption_record_boundary.py::test_validate_events_does_not_crash_on_a_bare_scalar_line"
-        },
-        {
-          "behavior": "churn_merge.validate_events_text finds work_completed second on a concatenated line (no false check_events_has_commit failure in integrate_main)",
-          "ac": "AC-CM1",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_event_reader_remainder_record_boundary.py::test_validate_events_text_finds_work_completed_second_on_a_concatenated_line"
-        },
-        {
-          "behavior": "validate_events_text does not flag a fully-recoverable concatenated line as corrupt, still flags an unrecoverable fragment AND a bare scalar (reporting change pinned)",
-          "ac": "AC-CM2",
-          "disposition": "tested",
-          "evidence": "test_validate_events_text_does_not_flag_a_recoverable_concatenated_line + test_validate_events_text_still_flags_a_genuinely_unrecoverable_fragment + test_validate_events_text_flags_a_bare_scalar_line_as_corrupt"
-        },
-        {
-          "behavior": "the merge VALIDATOR (churn_merge) and a converted READER (check_a7) both observe the run after a real merge=union merge propagates a concatenated line",
-          "ac": "AC7",
-          "category": "integration",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_events_record_boundary_merge_integration.py::test_validator_and_reader_compose_after_a_real_union_merge"
-        },
-        {
-          "behavior": "anti-vacuity: a genuinely absent adopted/run/work event still fails (recovery does not make any gate toothless)",
-          "ac": "AC2/AC-CM1",
-          "disposition": "tested",
-          "evidence": "test_check_a7_still_fails_when_adopted_genuinely_absent + test_validate_events_text_still_reports_absent_run_event + test_validate_events_still_fails_when_adopted_absent"
-        },
-        {
-          "behavior": "a leading partial line from routing's bounded tail read never surfaces as a record / becomes the newest",
-          "ac": "AC4",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-grade/tests/test_routing_record_boundary.py::test_newest_work_commit_skips_a_leading_partial_tail_fragment"
+          "evidence": "test_accepted_risks_adopter_converge.py::TestOperatorRunConvergeAgainstAdoptedRepo::test_each_adopted_root_resolves_to_its_own_identity PASSED"
         }
       ],
       "counts": {
-        "testable": 11,
-        "tested": 11,
+        "testable": 3,
+        "tested": 3,
         "untestable": 0,
         "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 9,
-        "covered_acs": 9
-      },
-      "note": "9 ACs (AC1-AC7 + AC-CM1/AC-CM2). cross_component (churn_merge) integration coverage supplied by the AC7 category:integration behavior. observability.py declined (gitignored telemetry, non-union-merged) introduces no behavior so it is not enumerated."
+      }
     }
   },
   "coverage": {
