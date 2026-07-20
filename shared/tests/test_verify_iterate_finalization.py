@@ -279,7 +279,7 @@ def test_adr_check_passes_with_pending_decision_drop(tmp_path):
     }))
     drops = proj / ".shipwright" / "agent_docs" / "decision-drops"
     drops.mkdir(parents=True)
-    (drops / "iterate-20260515-x_001.json").write_text("{}")
+    (drops / "iterate-20260515-x_001.json").write_text('{"run_id":"iterate-20260515-x","decision":"d"}')
     result = check_adr_in_iterate_history(proj, "iterate-20260515-x")
     assert result.ok is True
     assert "decision-drop" in result.detail
