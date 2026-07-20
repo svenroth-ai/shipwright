@@ -1,6 +1,6 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-07-20T22:10:07.422159+00:00 (dependency versions resolved from uv.lock)
+Generated: 2026-07-20T21:58:31.531129+00:00 (dependency versions resolved from uv.lock)
 
 ## Summary
 
@@ -9,8 +9,8 @@ Generated: 2026-07-20T22:10:07.422159+00:00 (dependency versions resolved from u
 | Runtime dependencies | 6 (deduplicated) |
 | Dev dependencies | 5 |
 | Total packages | 11 |
-| Licenses resolved | 8 / 11 |
-| Unique licenses | 2 (Apache-2.0, MIT) |
+| Licenses resolved | 9 / 11 |
+| Unique licenses | 3 (Apache-2.0, MIT, PSFL) |
 | Copyleft licenses | 0 |
 
 ## License Distribution
@@ -19,14 +19,15 @@ Generated: 2026-07-20T22:10:07.422159+00:00 (dependency versions resolved from u
 pie title License Distribution (all 11 packages)
     "MIT" : 6
     "Apache-2.0" : 2
-    "unknown" : 3
+    "PSFL" : 1
+    "unknown" : 2
 ```
 
 ## Runtime Dependencies
 
 | Package | Version | License |
 |---------|---------|---------|
-| defusedxml | 0.7.1 | - |
+| defusedxml | 0.7.1 | PSFL |
 | google-genai | 1.68.0 | - |
 | jsonschema | 4.26.0 | MIT |
 | openai | 2.30.0 | Apache-2.0 |
@@ -45,5 +46,5 @@ pie title License Distribution (all 11 packages)
 
 ## License Compliance
 
-**3 dependency(ies) could not be resolved in this scan** - license unverified; verify before distribution.
+**2 dependency(ies) could not be resolved in this scan** - license unverified; verify before distribution.
 
