@@ -20,37 +20,20 @@ collision (same technique as ``gitleaks_config_scaffolder``).
 
 from __future__ import annotations
 
-import importlib.util
-import sys
 from pathlib import Path
 from typing import TypedDict
 
-# Layout (identical in dev repo and ~/.claude plugin cache):
-#   <root>/plugins/shipwright-adopt/scripts/lib/<this-file>.py
-#   <root>/shared/scripts/lib/gitattributes_union.py
-# parents[0]=lib, [1]=scripts, [2]=shipwright-adopt, [3]=plugins, [4]=<root>.
-_REPO_ROOT = Path(__file__).resolve().parents[4]
-_UNION_MODULE_FILE = _REPO_ROOT / "shared" / "scripts" / "lib" / "gitattributes_union.py"
+try:  # tool context: lib/ is on sys.path (setup_adopt/_load_lib)
+    from shared_loader import load_shared_module
+except ImportError:  # test / package context: scripts/ on sys.path, lib is a package
+    from lib.shared_loader import load_shared_module
 
-
-def _load_union_module() -> object:
-    spec = importlib.util.spec_from_file_location(
-        "_shipwright_adopt_gitattributes_union", _UNION_MODULE_FILE
-    )
-    if spec is None or spec.loader is None:
-        raise FileNotFoundError(
-            f"could not load gitattributes-union logic from {_UNION_MODULE_FILE}"
-        )
-    module = importlib.util.module_from_spec(spec)
-    # Register before exec so the module's @dataclass can resolve its own
-    # __module__ in sys.modules (PEP-563 string annotations look it up); a
-    # file-path load otherwise leaves it unregistered → AttributeError.
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
-
-
-_UNION = _load_union_module()
+# gitattributes_union's @dataclass resolves its own __module__ during exec, which
+# needs the module registered in sys.modules first; load_shared_module registers
+# before exec (and cleans up on failure) so this resolves — see shared_loader.
+_UNION = load_shared_module(
+    "scripts/lib/gitattributes_union.py", "_shipwright_adopt_gitattributes_union"
+)
 GITATTRIBUTES_PATH: str = _UNION.GITATTRIBUTES_PATH  # type: ignore[attr-defined]
 
 

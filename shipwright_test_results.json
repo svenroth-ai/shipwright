@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-20-accepted-risk-adopter-converge",
+    "run_id": "iterate-2026-07-20-adopt-shared-loader-guard",
     "date": "2026-07-20",
     "unit": {
       "status": "passed",
-      "passed": 4708,
-      "total": 4708
+      "passed": 5,
+      "total": 5
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 10,
+      "total": 10
     },
     "pgtap": {
       "status": "not_run",
@@ -18,7 +18,7 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
@@ -30,40 +30,60 @@
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [],
+    "degraded": [
+      {
+        "condition": "external_llm_review_via_codex",
+        "detail": "OPENAI_API_KEY absent; external medium+ review ran through the Codex runtime (GPT-5.4) + an internal code-reviewer subagent instead of external_review.py"
+      }
+    ],
     "surface_verification": {
       "surface": "none",
-      "runner": "none (docs + test change; covered by F0 unit tests)",
+      "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-20-accepted-risk-adopter-converge/surface_verification.json",
-      "timestamp": "2026-07-20T22:06:36.436Z",
-      "justification": "Docs + test change: adds the 'Adopted repos — operator-run converge' section to docs/security-ci-setup.md and a guard test (shared/tests/test_accepted_risks_adopter_converge.py). No web/UI/API/CLI-app surface to drive; the converge CLI's cross-repo behavior is covered by unit tests at F0."
+      "evidence_path": "",
+      "timestamp": "2026-07-20T22:12:19.942Z",
+      "attempts": 0,
+      "justification": "Pure Python plugin-internal refactor of adopt's shared-module import path (consolidating eight unguarded spec_from_file_location loaders behind one guarded helper). No startable web/API/CLI surface is produced or consumed: adopt scaffolders are library functions exercised by the plugin unit suite (462 tests green), and the monorepo ships no web service (the Command Center WebUI is a separate repo). No backend-affects-frontend edge."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "docs/security-ci-setup.md documents operator-run converge for adopted repos (author the register at the repo root; run converge --project-root at the adopted repo)",
+          "behavior": "missing shared/ tree raises a named ImportError, not a bare FileNotFoundError",
           "disposition": "tested",
-          "evidence": "test_accepted_risks_adopter_converge.py::TestAdopterDocsArePinned::test_security_ci_setup_documents_operator_run_converge_for_adopters PASSED"
+          "evidence": "test_shared_loader.py::test_missing_shared_file_raises_importerror_not_filenotfound PASSED"
         },
         {
-          "behavior": "converge resolves repo identity + register from --project-root (the adopted repo), never from cwd, so a mutation lands on the repo whose register authorised it",
+          "behavior": "a failing exec_module does not poison the cache (sentinel popped; second call re-raises)",
           "disposition": "tested",
-          "evidence": "test_accepted_risks_adopter_converge.py::TestOperatorRunConvergeAgainstAdoptedRepo::test_identity_and_register_come_from_the_targeted_root_not_cwd PASSED"
+          "evidence": "test_shared_loader.py::test_no_cache_poison_on_exec_failure PASSED"
         },
         {
-          "behavior": "identity tracks each passed root independently, so one operator checkout can converge many adopted repos in turn",
+          "behavior": "a successful load returns the module and caches it (repeat call is a cache hit, same object)",
           "disposition": "tested",
-          "evidence": "test_accepted_risks_adopter_converge.py::TestOperatorRunConvergeAgainstAdoptedRepo::test_each_adopted_root_resolves_to_its_own_identity PASSED"
+          "evidence": "test_shared_loader.py::test_successful_load_returns_module_and_caches PASSED"
+        },
+        {
+          "behavior": "the module is registered BEFORE exec so a self-referential shared module (@dataclass __module__) can load",
+          "disposition": "tested",
+          "evidence": "test_shared_loader.py::test_registers_before_exec_so_a_shared_module_resolves_its_own_name PASSED"
+        },
+        {
+          "behavior": "all eight rewired scaffolders still resolve their shared symbol on a normal install",
+          "disposition": "tested",
+          "evidence": "test_shared_loader.py::test_every_rewired_scaffolder_still_resolves_its_shared_symbol PASSED + full adopt suite 462 green"
         }
       ],
       "counts": {
-        "testable": 3,
-        "tested": 3,
+        "testable": 5,
+        "tested": 5,
         "untestable": 0,
         "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
       }
     }
   },
