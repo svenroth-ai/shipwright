@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-07-20T22:08:18.851913+00:00
+Generated: 2026-07-20T22:13:50.533361+00:00
 Total commits: 1188
 
 ## Commit Distribution
@@ -9,9 +9,9 @@ Total commits: 1188
 pie title Commit Types
     "fix" : 340
     "feat" : 329
-    "chore" : 249
+    "chore" : 248
     "docs" : 146
-    "refactor" : 74
+    "refactor" : 75
     "test" : 29
     "ci" : 11
     "other" : 9
@@ -699,12 +699,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 249 commits
+### Chores (chore) — 248 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-21 | iterate | F11 session-handoff refresh + background event snapshot | 592ab74cbcf3 |
-| 2026-07-21 | churn | regenerate derived snapshots after main merge | 2afca421d501 |
+| 2026-07-21 | churn | regenerate derived snapshots after main merge | aa26a452c7c2 |
 | 2026-07-19 | compliance | register four size crossings, ratchet nine entries, record the missing convention (#408) | 37fe1346b5df |
 | 2026-07-18 | triage | deliver 3 orphaned records from the merged iterate worktree (#402) | 56ee1c0e2387 |
 | 2026-07-18 | security | by-design nosemgrep suppression for the layer-coverage loader (#396) | 6cfd0e84655a |
@@ -957,7 +956,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-21 | security | document operator-run converge for adopted repos | edc026f714d6 |
+| 2026-07-21 | security | document operator-run converge for adopted repos (#420) | d9aa64b32f99 |
 | 2026-07-09 | constitution | require plain-language questions to the user (#354) | f879a73a4903 |
 | 2026-07-09 | claude-md | guide plain-language phrasing for questions to the user | 4daaa7d44b49 |
 | 2026-07-02 | planning | phased diff/patch-coverage roadmap (trg-8fdebda3) (#305) | 892001e73858 |
@@ -1104,10 +1103,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 74 commits
+### Refactoring (refactor) — 75 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-21 | adopt | route the eight scaffolders through one guarded shared/ loader (FR-01.13) | 58d1bb7bc517 |
 | 2026-07-20 | requirements | one catalog, stated once in plain language (campaign S6) (#414) | be2561caccd3 |
 | 2026-07-20 | requirements | one FR-table shape from both generators (campaign S5) (#413) | 5eef5076242c |
 | 2026-07-20 | shared | one header-driven FR-table reader replaces five parsers (#412) | 227a525e4549 |

@@ -1,11 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-07-20 22:10 UTC | Session: c2a98c2f-740b-4818-b8ae-e5b87528ef06 | Run: iterate-2026-07-20-accepted-risk-adopter-converge
+> Updated: 2026-07-20 22:13 UTC | Session: df7a692d-7b6d-43aa-8e3a-2c40b36092eb | Run: iterate-2026-07-20-adopt-shared-loader-guard
 
-## Recent Changes (347 iterations)
+## Recent Changes (348 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
 | change | Document operator-run converge for adopted repos + guard test | 4708/4708 |  | docs | 2026-07-20 |
+| change | adopt shared-loader guard: one guarded loader for the eight scaffolders | 5/5 |  | FR-01.13 | 2026-07-20 |
 | bug | adopt FR-id cap: canonical group rollover past 99 detected features | 6/6 |  | FR-01.13 | 2026-07-20 |
 | change | Extend CI_SUPPLYCHAIN_FILE_PATTERNS to shared/templates/github-actions/ | 5207/5207 |  | tooling | 2026-07-20 |
 | change | iterate: fix flaky finalize idempotency test (banner minute drift, trg-183a304a) | 0/0 |  | tooling | 2026-07-20 |
@@ -354,7 +355,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-20 | Unit: 4708/4708 | Smoke: not_run | (iterate)
+Last run: 2026-07-20 | Unit: 5/5 | Integration: 10/10 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
