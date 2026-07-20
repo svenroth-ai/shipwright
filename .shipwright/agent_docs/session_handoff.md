@@ -1,8 +1,8 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-20-adopt-shared-loader-guard"
+run_id: "iterate-2026-07-21-fr-history-skip-hardfail"
 phase: "iterate"
-reason: "F11 re-refresh: integrate #420"
+reason: "F11 re-refresh: origin advanced (#420,#423)"
 timestamp: "2026-07-20T22:13:56.299243+00:00"
 ---
 
@@ -12,9 +12,9 @@ timestamp: "2026-07-20T22:13:56.299243+00:00"
 
 ## Session Info
 
-- **Session ID**: df7a692d-7b6d-43aa-8e3a-2c40b36092eb
+- **Session ID**: 6c3536fe-0c2c-41bb-89a5-ec4014b6c5ee
 - **Timestamp**: 2026-07-20 22:13:56 UTC
-- **Reason**: F11 re-refresh: integrate #420
+- **Reason**: F11 re-refresh: origin advanced (#420,#423)
 
 ## Last Iterate
 
@@ -29,16 +29,12 @@ timestamp: "2026-07-20T22:13:56.299243+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/adopt-shared-loader-guard
-- **Run ID**: iterate-2026-07-20-adopt-shared-loader-guard
-- **Spec**: .shipwright/planning/iterate/2026-07-20-adopt-shared-loader-guard.md
-- **Complexity**: medium
+- **Branch**: iterate/fr-history-skip-hardfail
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/adopt-shared-loader-guard
-- **Last Commit**: 6bed0fd5 Merge remote-tracking branch 'origin/main' into iterate/adopt-shared-loader-guard
+- **Branch**: iterate/fr-history-skip-hardfail
+- **Last Commit**: 065df94a Merge remote-tracking branch 'origin/main' into iterate/fr-history-skip-hardfail
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -78,7 +74,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 348
+- **Total work events**: 349
 - **Last iterate**: change — Document operator-run converge for adopted repos + guard test (2026-07-20)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

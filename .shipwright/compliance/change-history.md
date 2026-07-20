@@ -1,13 +1,13 @@
 # Commit Change Log
 
 Generated: 2026-07-20T22:13:50.533361+00:00
-Total commits: 1188
+Total commits: 1189
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 340
+    "fix" : 341
     "feat" : 329
     "chore" : 248
     "docs" : 146
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 340 commits
+### Fixes (fix) — 341 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-21 | traceability | fail loud on shallow clone instead of skipping fr-history checks | be738046fa0d |
 | 2026-07-21 | events | recover record boundaries in the remaining event-log authority readers (#419) | 0cd30df86818 |
 | 2026-07-21 | finalize | stop flaky idempotency test reddening PRs across a UTC minute boundary (#418) | 4062797efa16 |
 | 2026-07-20 | adopt | roll FR-id group over past 99 so generated ids stay canonical (FR-01.13) (#416) | 5c9c4b316f05 |
@@ -703,7 +704,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-21 | churn | regenerate derived snapshots after main merge | aa26a452c7c2 |
+| 2026-07-21 | churn | regenerate derived snapshots after main merge | 9458f38f267c |
 | 2026-07-19 | compliance | register four size crossings, ratchet nine entries, record the missing convention (#408) | 37fe1346b5df |
 | 2026-07-18 | triage | deliver 3 orphaned records from the merged iterate worktree (#402) | 56ee1c0e2387 |
 | 2026-07-18 | security | by-design nosemgrep suppression for the layer-coverage loader (#396) | 6cfd0e84655a |
@@ -1107,7 +1108,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-21 | adopt | route the eight scaffolders through one guarded shared/ loader (FR-01.13) | 58d1bb7bc517 |
+| 2026-07-21 | adopt | route the eight scaffolders through one guarded shared/ loader (FR-01.13) (#423) | 736fc8d1712c |
 | 2026-07-20 | requirements | one catalog, stated once in plain language (campaign S6) (#414) | be2561caccd3 |
 | 2026-07-20 | requirements | one FR-table shape from both generators (campaign S5) (#413) | 5eef5076242c |
 | 2026-07-20 | shared | one header-driven FR-table reader replaces five parsers (#412) | 227a525e4549 |
@@ -1257,7 +1258,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1188 |
+| Total commits | 1189 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1188 |
+| Human-authored commits | 1189 |
 
