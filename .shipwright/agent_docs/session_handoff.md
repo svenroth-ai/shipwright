@@ -1,8 +1,8 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-20-adopt-shared-loader-guard"
+run_id: "iterate-2026-07-20-runner-finalization-integrity"
 phase: "iterate"
-reason: "F11 re-refresh: integrate #420"
+reason: "F11 refresh: catch up 1 behind"
 timestamp: "2026-07-20T22:13:56.299243+00:00"
 ---
 
@@ -12,9 +12,9 @@ timestamp: "2026-07-20T22:13:56.299243+00:00"
 
 ## Session Info
 
-- **Session ID**: df7a692d-7b6d-43aa-8e3a-2c40b36092eb
+- **Session ID**: 059b5006-0551-4c91-acfc-252b276f1794
 - **Timestamp**: 2026-07-20 22:13:56 UTC
-- **Reason**: F11 re-refresh: integrate #420
+- **Reason**: F11 refresh: catch up 1 behind
 
 ## Last Iterate
 
@@ -29,16 +29,15 @@ timestamp: "2026-07-20T22:13:56.299243+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/adopt-shared-loader-guard
-- **Run ID**: iterate-2026-07-20-adopt-shared-loader-guard
-- **Spec**: .shipwright/planning/iterate/2026-07-20-adopt-shared-loader-guard.md
-- **Complexity**: medium
+- **Branch**: iterate/runner-finalization-integrity
+- **Run ID**: `iterate-2026-07-20-runner-finalization-integrity`
+- **Spec**: .shipwright/planning/iterate/2026-07-20-runner-finalization-integrity.md
+- **Complexity**: medium (history-calibrated; risk floor medium)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/adopt-shared-loader-guard
-- **Last Commit**: 6bed0fd5 Merge remote-tracking branch 'origin/main' into iterate/adopt-shared-loader-guard
+- **Branch**: iterate/runner-finalization-integrity
+- **Last Commit**: c65e5667 Merge remote-tracking branch 'origin/main' into iterate/runner-finalization-integrity
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -78,7 +77,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 348
+- **Total work events**: 349
 - **Last iterate**: change — Document operator-run converge for adopted repos + guard test (2026-07-20)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
