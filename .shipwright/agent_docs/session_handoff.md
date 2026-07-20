@@ -1,37 +1,37 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-20-events-record-boundary-remainder"
+run_id: "iterate-2026-07-20-adopt-shared-loader-guard"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-20T21:58:37.223294+00:00"
+reason: "F11 pre-merge refresh: iterate-2026-07-20-adopt-shared-loader-guard"
+timestamp: "2026-07-20T22:13:56.299243+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-20 21:58:37 UTC
+> Auto-generated 2026-07-20 22:13:56 UTC
 
 ## Session Info
 
-- **Session ID**: 98ffa9f7-2bcb-4083-af41-097ff497bb0f
-- **Timestamp**: 2026-07-20 21:58:37 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: df7a692d-7b6d-43aa-8e3a-2c40b36092eb
+- **Timestamp**: 2026-07-20 22:13:56 UTC
+- **Reason**: F11 pre-merge refresh: iterate-2026-07-20-adopt-shared-loader-guard
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-20-events-record-boundary-remainder
-- **Date**: 2026-07-20T21:58:31.436121Z
-- **Type**: bug
+- **Run ID**: iterate-2026-07-20-adopt-shared-loader-guard
+- **Date**: 2026-07-20T22:13:56.541351Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/2026-07-20-events-record-boundary-remainder
-- **ADR**: iterate-2026-07-20-events-record-boundary-remainder
+- **Branch**: iterate/adopt-shared-loader-guard
+- **ADR**: iterate-2026-07-20-adopt-shared-loader-guard
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-20-events-record-boundary-remainder.md
+- **Spec**: .shipwright/planning/iterate/2026-07-20-adopt-shared-loader-guard.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/2026-07-20-events-record-boundary-remainder
-- **Run ID**: iterate-2026-07-20-events-record-boundary-remainder
-- **Spec**: .shipwright/planning/iterate/2026-07-20-events-record-boundary-remainder.md
+- **Branch**: iterate/adopt-shared-loader-guard
+- **Run ID**: iterate-2026-07-20-adopt-shared-loader-guard
+- **Spec**: .shipwright/planning/iterate/2026-07-20-adopt-shared-loader-guard.md
 - **Complexity**: medium
 - **External Review Marker**: missing
 
@@ -52,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/2026-07-20-events-record-boundary-remainder
-- **Last Commit**: 9365114f Merge remote-tracking branch 'origin/main' into iterate/2026-07-20-events-record-boundary-remainder
+- **Branch**: iterate/adopt-shared-loader-guard
+- **Last Commit**: 58f8fb20 Merge remote-tracking branch 'origin/main' into iterate/adopt-shared-loader-guard
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,17 +69,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-dd32a165 | grade_snapshot | — | 2026-07-20 |
+| evt-4d5466ac | grade_snapshot | — | 2026-07-20 |
+| evt-e9bfacd4 | work_completed | iterate (adopt shared-loader guard: one guarded loader for the eight scaffolders) | 2026-07-20 |
 | evt-ec752311 | grade_snapshot | — | 2026-07-20 |
 | evt-3f54c795 | work_completed | iterate (adopt FR-id cap: canonical group rollover past 99 detected features) | 2026-07-20 |
-| evt-42a87085 | grade_snapshot | — | 2026-07-20 |
-| evt-923835b8 | work_completed | iterate (Extend CI_SUPPLYCHAIN_FILE_PATTERNS to shared/templates/github-actions/) | 2026-07-20 |
-| evt-1fc1c3e4 | grade_snapshot | — | 2026-07-20 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 346
-- **Last iterate**: bug — adopt FR-id cap: canonical group rollover past 99 detected features (2026-07-20)
+- **Total work events**: 347
+- **Last iterate**: change — adopt shared-loader guard: one guarded loader for the eight scaffolders (2026-07-20)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

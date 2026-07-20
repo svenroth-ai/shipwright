@@ -1,8 +1,8 @@
 {
   "schema_version": 3,
   "collector_version": "test_links/1.0.0",
-  "generated_at": "2026-07-20T21:58:31.531129+00:00",
-  "source_commit": "9365114fe042e5eb371cfe4c0da8ecf2910c4ca3",
+  "generated_at": "2026-07-20T22:13:50.533361+00:00",
+  "source_commit": "58f8fb201a73f0225583db0c85457654611590d9",
   "spec_hash": "sha256:d86c863159c71a252ede90b8b470937b6160e5187c32849bbb04474d22c944ad",
   "requirements": {
     "01::FR-01.01": {
@@ -2367,6 +2367,11 @@
     "plugins/shipwright-adopt/tests/test_setup_adopt_existing_artifacts.py::test_existing_artifacts_empty_for_clean_repo",
     "plugins/shipwright-adopt/tests/test_setup_adopt_existing_artifacts.py::test_existing_artifacts_list_does_not_break_ok_field",
     "plugins/shipwright-adopt/tests/test_setup_adopt_existing_artifacts.py::test_existing_artifacts_lists_all_relevant_paths",
+    "plugins/shipwright-adopt/tests/test_shared_loader.py::test_every_rewired_scaffolder_still_resolves_its_shared_symbol",
+    "plugins/shipwright-adopt/tests/test_shared_loader.py::test_missing_shared_file_raises_importerror_not_filenotfound",
+    "plugins/shipwright-adopt/tests/test_shared_loader.py::test_no_cache_poison_on_exec_failure",
+    "plugins/shipwright-adopt/tests/test_shared_loader.py::test_registers_before_exec_so_a_shared_module_resolves_its_own_name",
+    "plugins/shipwright-adopt/tests/test_shared_loader.py::test_successful_load_returns_module_and_caches",
     "plugins/shipwright-adopt/tests/test_skill_references_link.py::test_every_expected_step_reference_exists_and_is_linked",
     "plugins/shipwright-adopt/tests/test_skill_references_link.py::test_every_expected_topical_reference_exists_and_is_linked",
     "plugins/shipwright-adopt/tests/test_skill_references_link.py::test_every_kern_link_resolves",
