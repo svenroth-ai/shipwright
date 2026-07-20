@@ -1,9 +1,9 @@
 {
   "schema_version": 3,
   "collector_version": "test_links/1.0.0",
-  "generated_at": "2026-07-20T03:48:42.648681+00:00",
-  "source_commit": "3ef2847c208f46e5311f9e1880b293ba56909e5b",
-  "spec_hash": "sha256:1431856a8394fdbf29ed9a37a63e0c672023cba3423463af891a698ff67ea835",
+  "generated_at": "2026-07-20T07:20:47.142879+00:00",
+  "source_commit": "e6b0c5a52e4bc66cab36104aa79815c0e94ca5de",
+  "spec_hash": "sha256:56b7e60a53ae5d9560ddfdfb97793322d577093f576b22dd55a24ec0c285f812",
   "requirements": {
     "01::FR-01.01": {
       "id": "FR-01.01",
@@ -14,7 +14,7 @@
       "required_layers": [
         "unit"
       ],
-      "required_layers_source": "defaulted_legacy",
+      "required_layers_source": "inferred_legacy",
       "tests": {},
       "coverage": {
         "unit": "MISSING"
@@ -29,7 +29,7 @@
       "required_layers": [
         "unit"
       ],
-      "required_layers_source": "defaulted_legacy",
+      "required_layers_source": "inferred_legacy",
       "tests": {},
       "coverage": {
         "unit": "MISSING"
@@ -44,7 +44,7 @@
       "required_layers": [
         "unit"
       ],
-      "required_layers_source": "defaulted_legacy",
+      "required_layers_source": "inferred_legacy",
       "tests": {},
       "coverage": {
         "unit": "MISSING"
@@ -74,7 +74,7 @@
       "required_layers": [
         "unit"
       ],
-      "required_layers_source": "defaulted_legacy",
+      "required_layers_source": "inferred_legacy",
       "tests": {},
       "coverage": {
         "unit": "MISSING"
@@ -89,7 +89,7 @@
       "required_layers": [
         "unit"
       ],
-      "required_layers_source": "defaulted_legacy",
+      "required_layers_source": "inferred_legacy",
       "tests": {
         "unit": [
           {
@@ -331,7 +331,7 @@
       "required_layers": [
         "unit"
       ],
-      "required_layers_source": "defaulted_legacy",
+      "required_layers_source": "inferred_legacy",
       "tests": {},
       "coverage": {
         "unit": "MISSING"
@@ -346,7 +346,7 @@
       "required_layers": [
         "unit"
       ],
-      "required_layers_source": "defaulted_legacy",
+      "required_layers_source": "inferred_legacy",
       "tests": {},
       "coverage": {
         "unit": "MISSING"
@@ -361,7 +361,7 @@
       "required_layers": [
         "unit"
       ],
-      "required_layers_source": "defaulted_legacy",
+      "required_layers_source": "inferred_legacy",
       "tests": {
         "unit": [
           {
@@ -435,7 +435,7 @@
       "required_layers": [
         "unit"
       ],
-      "required_layers_source": "defaulted_legacy",
+      "required_layers_source": "inferred_legacy",
       "tests": {},
       "coverage": {
         "unit": "MISSING"
@@ -450,7 +450,7 @@
       "required_layers": [
         "unit"
       ],
-      "required_layers_source": "defaulted_legacy",
+      "required_layers_source": "inferred_legacy",
       "tests": {
         "unit": [
           {
@@ -998,7 +998,7 @@
       "required_layers": [
         "unit"
       ],
-      "required_layers_source": "defaulted_legacy",
+      "required_layers_source": "inferred_legacy",
       "tests": {
         "unit": [
           {
@@ -1136,7 +1136,7 @@
       "required_layers": [
         "unit"
       ],
-      "required_layers_source": "defaulted_legacy",
+      "required_layers_source": "inferred_legacy",
       "tests": {
         "unit": [
           {
@@ -1895,6 +1895,17 @@
     "integration-tests/test_fr_table_reader_probes.py::test_probe_trailing_whitespace_after_the_closing_pipe",
     "integration-tests/test_fr_table_reader_probes.py::test_probe_utf8_bom_at_file_start",
     "integration-tests/test_fr_table_reader_probes.py::test_producer_consumer_round_trip",
+    "integration-tests/test_fr_table_shape_convergence.py::test_an_unmarked_cell_really_would_flip_to_explicit",
+    "integration-tests/test_fr_table_shape_convergence.py::test_every_live_layers_cell_carries_the_marker",
+    "integration-tests/test_fr_table_shape_convergence.py::test_every_live_requirement_carries_its_decided_basis",
+    "integration-tests/test_fr_table_shape_convergence.py::test_every_live_requirement_stays_on_legacy_provenance",
+    "integration-tests/test_fr_table_shape_convergence.py::test_no_persisted_area_cell_disagrees_with_its_own_id",
+    "integration-tests/test_fr_table_shape_convergence.py::test_no_producer_still_emits_the_retired_source_column",
+    "integration-tests/test_fr_table_shape_convergence.py::test_render_layers_round_trips_to_the_provenance_it_promises",
+    "integration-tests/test_fr_table_shape_convergence.py::test_the_adopt_generator_emits_it",
+    "integration-tests/test_fr_table_shape_convergence.py::test_the_greenfield_template_and_example_both_carry_it",
+    "integration-tests/test_fr_table_shape_convergence.py::test_the_live_catalog_carries_the_canonical_header",
+    "integration-tests/test_fr_table_shape_convergence.py::test_the_migration_did_not_change_any_required_layers",
     "integration-tests/test_hook_fanout_consolidation.py::test_audit_phase_from_session_state_not_plugin_root",
     "integration-tests/test_hook_fanout_consolidation.py::test_check_file_size_marker_converges",
     "integration-tests/test_hook_fanout_consolidation.py::test_drift_fanout_emits_once",
@@ -2328,6 +2339,18 @@
     "plugins/shipwright-adopt/tests/test_spec_quality.py::test_tbd_acceptance_draft_does_not_pollute_spec",
     "plugins/shipwright-adopt/tests/test_spec_quality.py::test_test_files_excluded_from_fr_list",
     "plugins/shipwright-adopt/tests/test_spec_quality.py::test_trailing_slash_routes_dedup",
+    "plugins/shipwright-adopt/tests/test_spec_table.py::test_a_crawl_only_feature_is_observed",
+    "plugins/shipwright-adopt/tests/test_spec_table.py::test_a_feature_read_from_source_is_code",
+    "plugins/shipwright-adopt/tests/test_spec_table.py::test_a_feature_with_no_evidence_is_assumed",
+    "plugins/shipwright-adopt/tests/test_spec_table.py::test_a_newline_in_a_description_does_not_break_the_row",
+    "plugins/shipwright-adopt/tests/test_spec_table.py::test_a_pipe_in_a_description_does_not_create_a_column",
+    "plugins/shipwright-adopt/tests/test_spec_table.py::test_a_placeholder_source_file_is_not_evidence",
+    "plugins/shipwright-adopt/tests/test_spec_table.py::test_area_is_rendered_from_the_group_digit",
+    "plugins/shipwright-adopt/tests/test_spec_table.py::test_every_layers_cell_carries_the_inferred_marker",
+    "plugins/shipwright-adopt/tests/test_spec_table.py::test_layers_follow_the_existing_surface_inference",
+    "plugins/shipwright-adopt/tests/test_spec_table.py::test_no_detected_features_still_yields_a_well_formed_table",
+    "plugins/shipwright-adopt/tests/test_spec_table.py::test_source_file_wins_when_both_are_present",
+    "plugins/shipwright-adopt/tests/test_spec_table.py::test_the_table_opens_with_the_canonical_header",
     "plugins/shipwright-adopt/tests/test_stack_detector.py::test_excludes_filter_nested",
     "plugins/shipwright-adopt/tests/test_stack_detector.py::test_missing_manifest",
     "plugins/shipwright-adopt/tests/test_stack_detector.py::test_nextjs_supabase_ts",
@@ -2729,6 +2752,13 @@
     "plugins/shipwright-compliance/tests/test_audit_group_i.py::test_scan_greenfield_uses_requirement_column_as_description",
     "plugins/shipwright-compliance/tests/test_audit_group_i.py::test_scan_skips_removed_requirements",
     "plugins/shipwright-compliance/tests/test_audit_group_i.py::test_scan_tolerates_area_column",
+    "plugins/shipwright-compliance/tests/test_audit_group_i_basis.py::test_a_bare_other_is_still_only_advisory_but_says_so",
+    "plugins/shipwright-compliance/tests/test_audit_group_i_basis.py::test_a_blank_cell_under_a_declared_column_fails",
+    "plugins/shipwright-compliance/tests/test_audit_group_i_basis.py::test_a_malformed_value_does_not_redden_the_other_checks",
+    "plugins/shipwright-compliance/tests/test_audit_group_i_basis.py::test_a_malformed_value_fails_and_names_the_requirement",
+    "plugins/shipwright-compliance/tests/test_audit_group_i_basis.py::test_a_spec_without_a_basis_column_is_skipped_not_scored",
+    "plugins/shipwright-compliance/tests/test_audit_group_i_basis.py::test_known_values_pass",
+    "plugins/shipwright-compliance/tests/test_audit_group_i_basis.py::test_other_is_advisory_and_never_fails",
     "plugins/shipwright-compliance/tests/test_audit_group_i_detectors.py::test_capitalised_prose_is_not_a_pascal_symbol",
     "plugins/shipwright-compliance/tests/test_audit_group_i_detectors.py::test_clean_capability_name_is_silent",
     "plugins/shipwright-compliance/tests/test_audit_group_i_detectors.py::test_description_allows_plain_prose_with_gloss",
@@ -2750,6 +2780,22 @@
     "plugins/shipwright-compliance/tests/test_audit_group_i_detectors.py::test_ordinary_description_is_not_a_fold_candidate",
     "plugins/shipwright-compliance/tests/test_audit_group_i_detectors.py::test_platform_names_are_not_code_symbols",
     "plugins/shipwright-compliance/tests/test_audit_group_i_detectors.py::test_tsx_is_not_read_as_ts_plus_x",
+    "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_a_broken_table_outranks_an_all_retired_one",
+    "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_a_live_row_beside_retired_ones_is_the_normal_state",
+    "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_a_noncanonical_id_with_no_header_is_a_header_problem",
+    "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_a_readable_table_is_the_normal_state",
+    "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_a_recognised_header_outranks_a_missing_one",
+    "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_an_all_retired_spec_is_not_reported_as_having_no_rows",
+    "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_canonical_ids_in_rows_too_narrow_for_their_header",
+    "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_every_state_still_skips_but_says_which",
+    "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_fr_ids_present_but_no_header_names_a_priority_column",
+    "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_header_recognised_but_no_id_is_canonical",
+    "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_no_spec_on_disk",
+    "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_scan_fr_rows_keeps_its_pre_s5_signature",
+    "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_spec_present_but_nothing_fr_shaped",
+    "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_the_catch_all_never_claims_rows_it_did_not_list",
+    "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_the_catch_all_state_still_names_the_rows_it_declined",
+    "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_the_declined_list_quotes_only_the_ids_of_the_deciding_reason",
     "plugins/shipwright-compliance/tests/test_audit_groups_a_d.py::test_a2_flags_missing_make_target",
     "plugins/shipwright-compliance/tests/test_audit_groups_a_d.py::test_a2_flags_missing_npm_script",
     "plugins/shipwright-compliance/tests/test_audit_groups_a_d.py::test_a2_flags_uv_path_refs_that_dont_exist",
@@ -3278,6 +3324,9 @@
     "plugins/shipwright-compliance/tests/test_group_d_hardening.py::test_rtm_renders_collision_ok_as_ambiguous",
     "plugins/shipwright-compliance/tests/test_group_d_hardening.py::test_the_collided_fixture_is_schema_valid_so_the_guard_is_reachable",
     "plugins/shipwright-compliance/tests/test_group_d_hardening.py::test_two_specs_sharing_an_id_fail_closed_instead_of_dropping_a_node",
+    "plugins/shipwright-compliance/tests/test_group_d_invalid_layers.py::test_layer_a_hard_reason_still_decides_when_mixed_with_an_advisory_one",
+    "plugins/shipwright-compliance/tests/test_group_d_invalid_layers.py::test_layer_an_unrecognised_invalid_reason_fails_closed",
+    "plugins/shipwright-compliance/tests/test_group_d_invalid_layers.py::test_layer_marker_glued_is_visible_but_does_not_fail",
     "plugins/shipwright-compliance/tests/test_group_d_provenance_hardening.py::test_d1_absent_manifest_fallback_has_no_note",
     "plugins/shipwright-compliance/tests/test_group_d_provenance_hardening.py::test_d1_explicit_source_requires_link",
     "plugins/shipwright-compliance/tests/test_group_d_provenance_hardening.py::test_dlayer_missing_source_key_is_hard_not_advisory",
@@ -3363,6 +3412,9 @@
     "plugins/shipwright-compliance/tests/test_requirement_parse.py::test_nonempty_but_noncanonical_layers_cell_is_flagged_not_demoted",
     "plugins/shipwright-compliance/tests/test_requirement_parse.py::test_only_the_exact_inferred_marker_downgrades_not_auto_or_adopt",
     "plugins/shipwright-compliance/tests/test_requirement_parse.py::test_removed_section_marks_status_removed",
+    "plugins/shipwright-compliance/tests/test_requirement_parse_marker_cells.py::test_a_glued_inferred_marker_records_the_layer_it_swallowed",
+    "plugins/shipwright-compliance/tests/test_requirement_parse_marker_cells.py::test_a_marked_cell_whose_tokens_are_not_layers_is_recorded",
+    "plugins/shipwright-compliance/tests/test_requirement_parse_marker_cells.py::test_a_typod_layer_beside_a_valid_one_is_not_reported",
     "plugins/shipwright-compliance/tests/test_rtm_fr_table_shapes.py::test_five_column_adopt_row_takes_the_description_as_body",
     "plugins/shipwright-compliance/tests/test_rtm_fr_table_shapes.py::test_non_fr_row_rejected",
     "plugins/shipwright-compliance/tests/test_rtm_fr_table_shapes.py::test_reordered_columns_no_longer_yield_zero_rows",
@@ -6907,6 +6959,15 @@
     "shared/tests/test_fr_authoring_refs.py::test_iterate_paths_carry_the_mint_vs_fold_gate",
     "shared/tests/test_fr_authoring_refs.py::test_rulebook_exists_and_is_non_empty",
     "shared/tests/test_fr_authoring_refs.py::test_rulebook_retains_cited_sections",
+    "shared/tests/test_fr_basis.py::test_a_bare_other_is_advisory_not_malformed",
+    "shared/tests/test_fr_basis.py::test_a_known_value_with_a_qualifier_is_hard_but_says_why",
+    "shared/tests/test_fr_basis.py::test_a_value_outside_the_vocabulary_is_hard",
+    "shared/tests/test_fr_basis.py::test_a_word_merely_starting_with_other_is_not_other",
+    "shared/tests/test_fr_basis.py::test_an_empty_cell_is_empty_not_malformed",
+    "shared/tests/test_fr_basis.py::test_case_whitespace_and_markdown_emphasis_are_tolerated",
+    "shared/tests/test_fr_basis.py::test_every_vocabulary_value_is_known_and_never_blocks",
+    "shared/tests/test_fr_basis.py::test_other_carries_its_reason_whatever_separator_was_used",
+    "shared/tests/test_fr_basis.py::test_the_vocabulary_is_the_one_the_campaign_decided",
     "shared/tests/test_fr_classification.py::test_add_modify_remove_are_behavior_affecting",
     "shared/tests/test_fr_classification.py::test_affected_or_new",
     "shared/tests/test_fr_classification.py::test_all_impact_values_accepted",
@@ -7017,6 +7078,21 @@
     "shared/tests/test_fr_impact_roundtrip.py::test_fr_impact_passes_fr_gate_with_linkage",
     "shared/tests/test_fr_impact_roundtrip.py::test_invalid_impact_value_rejected",
     "shared/tests/test_fr_impact_roundtrip.py::test_invalid_json_rejected",
+    "shared/tests/test_fr_table_shape.py::test_a_duplicate_governed_column_resolves_to_the_first",
+    "shared/tests/test_fr_table_shape.py::test_a_glued_marker_swallows_the_layer_it_touches",
+    "shared/tests/test_fr_table_shape.py::test_a_misfiled_requirement_renders_its_own_group_not_the_folders",
+    "shared/tests/test_fr_table_shape.py::test_a_noncanonical_id_falls_back_to_the_split_label",
+    "shared/tests/test_fr_table_shape.py::test_area_uses_the_split_label_when_the_split_declares_the_ids_group",
+    "shared/tests/test_fr_table_shape.py::test_group_is_read_only_from_the_canonical_id_form",
+    "shared/tests/test_fr_table_shape.py::test_only_the_parenthesised_word_counts_as_the_marker",
+    "shared/tests/test_fr_table_shape.py::test_render_layers_separates_the_marker_with_a_space",
+    "shared/tests/test_fr_table_shape.py::test_render_layers_with_no_layers_still_emits_the_marker",
+    "shared/tests/test_fr_table_shape.py::test_render_layers_without_the_marker_is_an_author_declaration",
+    "shared/tests/test_fr_table_shape.py::test_split_label_is_the_directory_name_without_its_digits",
+    "shared/tests/test_fr_table_shape.py::test_the_canonical_header_is_the_shape_the_campaign_decided",
+    "shared/tests/test_fr_table_shape.py::test_the_header_is_readable_by_the_reader_that_consumes_it",
+    "shared/tests/test_fr_table_shape.py::test_the_marker_is_matched_case_insensitively_and_with_inner_space",
+    "shared/tests/test_fr_table_shape.py::test_the_separator_has_one_cell_per_column",
     "shared/tests/test_fr_tag_grammar.py::test_canonical_fr_id",
     "shared/tests/test_fr_tag_grammar.py::test_covers_comment_binds_only_when_immediately_adjacent",
     "shared/tests/test_fr_tag_grammar.py::test_covers_comment_binds_to_next_test",

@@ -1,0 +1,1 @@
+Compliance check I5 reports a functional requirement whose `Basis` is not one of the allowed values, so a typo is caught instead of silently accepted. `other` is only ever reported as advice and never blocks, and a spec written before this column existed is skipped rather than flagged.

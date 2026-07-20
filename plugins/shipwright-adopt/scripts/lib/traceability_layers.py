@@ -19,7 +19,51 @@ from dataclasses import dataclass
 from pathlib import Path
 
 _FR_ROW_RE = re.compile(r"^FR-\d+\.\d+$")
-_INFERRED_MARKER_RE = re.compile(r"\(\s*inferred\s*\)", re.IGNORECASE)
+
+
+def _shape():
+    """The shared ``Layers``-cell contract, loaded WITHOUT importing ``lib``.
+
+    Campaign S5. This module used to keep its own ``(inferred)`` regex and
+    hand-format the cell as ``f"{...} (inferred)"`` — a third copy of one
+    serialized-format grammar, which is the ADR-024 defect this campaign exists
+    to close. The renderer is now the shared one, so the module cannot drift
+    from the consumer (and cannot lose the load-bearing space).
+
+    Loaded by file location under a sentinel name, exactly as
+    ``adopt_brief_intake`` does, so the module docstring's "imports NO ``lib``
+    package" constraint still holds: nothing binds the name ``lib``.
+
+    Called LAZILY, never at module import, and that is not a style choice. This
+    module is reached unconditionally from ``seed_traceability_baseline``, and
+    the plugins-without-``shared/`` install is a documented state that a
+    fail-open SessionStart hook heals — so a load at import time turns a healable
+    condition into an unimportable module. Every sibling adopt scaffolder loads
+    inside a function for the same reason.
+    """
+    import importlib.util
+    import sys
+
+    sentinel = "_shipwright_adopt_fr_table_shape"
+    if (mod := sys.modules.get(sentinel)) is not None:
+        return mod
+    path = Path(__file__).resolve().parents[4] / "shared/scripts/lib/fr_table_shape.py"
+    # `spec_from_file_location` returns a non-None spec with a non-None loader
+    # for a path that does not exist, so a `spec is None` guard never fires and
+    # the failure surfaces as a bare FileNotFoundError from `exec_module`. Check
+    # the file, and name the dependency in the error.
+    if not path.is_file():
+        raise ImportError(
+            f"shared FR-table shape contract not found at {path} — this plugin "
+            "needs the shipwright `shared/` tree alongside it"
+        )
+    spec = importlib.util.spec_from_file_location(sentinel, path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"could not load spec for {path}")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    sys.modules[sentinel] = mod
+    return mod
 # Split a markdown table row on UNESCAPED pipes only, so a cell containing an escaped
 # pipe (``filter by status \| priority`` — plausible in a reverse-engineered Description)
 # does NOT shift the columns and clobber a neighbour (doubt MED#1). ``\|`` stays in-cell.
@@ -102,7 +146,7 @@ def find_ambiguous_frs(spec_text: str, namespace: str) -> list[dict]:
         if header_count and len(cells) != header_count:
             continue
         cell = cells[layers_idx].strip() if layers_idx is not None and layers_idx < len(cells) else ""
-        if cell and not _INFERRED_MARKER_RE.search(cell):
+        if cell and not _shape().INFERRED_MARKER_RE.search(cell):
             continue  # author-explicit → not ambiguous
         title = cells[1] if len(cells) > 1 else ""
         out.append({"key": f"{namespace}::{cells[0]}", "id": cells[0], "title": title})
@@ -166,7 +210,7 @@ def apply_layer_decisions_to_spec(spec_path: Path, resolutions: list[LayerResolu
             continue
         if (header_count and len(cells) != header_count) or layers_idx >= len(cells):
             continue                                  # mis-columned row → leave it alone
-        new_cell = f"{', '.join(decided[cells[0]])} (inferred)"
+        new_cell = _shape().render_layers(decided[cells[0]], inferred=True)
         if cells[layers_idx] == new_cell:
             continue                                  # already resolved → idempotent no-op
         cells[layers_idx] = new_cell

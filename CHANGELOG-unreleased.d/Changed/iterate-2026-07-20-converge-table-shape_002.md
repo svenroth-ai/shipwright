@@ -1,0 +1,1 @@
+The requirement-hygiene audit now says WHY it found no requirements — no spec file, a spec with no requirements table, a table with no recognisable header, or a table whose requirement IDs are all malformed — instead of reporting the same result for all four. Previously a repository whose IDs were unreadable looked identical to one that simply has no requirements yet.

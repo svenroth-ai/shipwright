@@ -51,6 +51,17 @@ def _load_brief_intake() -> ModuleType:
     sentinel = "_shipwright_adopt_brief_intake"
     if sentinel in sys.modules:
         return sys.modules[sentinel]
+    # `spec_from_file_location` returns a non-None spec with a non-None loader
+    # for a path that does NOT exist, so the guard below cannot catch a missing
+    # file and the failure surfaces as a bare FileNotFoundError out of
+    # `exec_module` — on the documented plugins-without-`shared/` install, that
+    # is what `/shipwright-adopt --brief` would die with. Check the file and
+    # name the dependency instead.
+    if not file_path.is_file():
+        raise ImportError(
+            f"shared brief-intake helper not found at {file_path} — this plugin "
+            "needs the shipwright `shared/` tree alongside it"
+        )
     spec = importlib.util.spec_from_file_location(sentinel, file_path)
     if spec is None or spec.loader is None:
         raise ImportError(f"could not load spec for {file_path}")

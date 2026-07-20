@@ -203,6 +203,8 @@ def test_layer_invalid_layers_is_hard_finding():
     status, sev, detail, ev, cmd = gdt.check_layer(m)
     assert status == "fail"
     assert any("FR-05.02" in e and "int, db" in e for e in ev)
+    # The hard channel is reason-scoped, so its own reason must still tag HARD.
+    assert any("[HARD, explicit]" in e for e in ev)
 
 
 # ---------------------------------------------------------------------------

@@ -37,6 +37,9 @@ REQUIRED_SECTIONS = (
     "## 2. Altitude",
     "## 3. Mint or fold",
     "## 4. Numbering and grouping",
+    # Cited by number from `path-b-change.md` and `spec-generation.md` (campaign
+    # S5) — the row shape plus the Basis/Layers cell rules.
+    "## 4a. The row",
     "## 5. The name",
     "## 7. Enforcement",
 )

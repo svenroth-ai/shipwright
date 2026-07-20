@@ -1,36 +1,37 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-20-one-header-driven-parser"
+run_id: "iterate-2026-07-20-converge-table-shape"
 phase: "iterate"
 reason: "iterate finalization"
-timestamp: "2026-07-20T05:29:59.325876+00:00"
+timestamp: "2026-07-20T09:49:32.816776+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-20 05:29:59 UTC
+> Auto-generated 2026-07-20 09:49:32 UTC
 
 ## Session Info
 
 - **Session ID**: 85c973ff-4812-4db0-acc1-935ed32ee51b
-- **Timestamp**: 2026-07-20 05:29:59 UTC
+- **Timestamp**: 2026-07-20 09:49:32 UTC
 - **Reason**: iterate finalization
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-20-one-header-driven-parser
-- **Date**: 2026-07-20T03:48:42.564031Z
+- **Run ID**: iterate-2026-07-20-converge-table-shape
+- **Date**: 2026-07-20T07:21:06.009070Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/one-header-driven-parser
-- **ADR**: iterate-2026-07-20-one-header-driven-parser
+- **Branch**: iterate/converge-table-shape
+- **ADR**: iterate-2026-07-20-converge-table-shape
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-20-one-header-driven-parser-MINIPLAN.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-20-converge-table-shape.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/one-header-driven-parser
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-20T03:24:53)
+- **Branch**: iterate/converge-table-shape
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-20-converge-table-shape.md
+- **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
@@ -48,8 +49,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/one-header-driven-parser
-- **Last Commit**: 3ef2847c refactor(shared): one header-driven FR-table reader replaces five parsers
+- **Branch**: iterate/converge-table-shape
+- **Last Commit**: e6b0c5a5 refactor(requirements): one FR-table shape from both generators (campaign S5)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +66,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-502c62bb | grade_snapshot | — | 2026-07-20 |
-| evt-06a9d467 | grade_snapshot | — | 2026-07-20 |
-| evt-d8500b78 | grade_snapshot | — | 2026-07-20 |
-| evt-a0790d64 | work_completed | iterate (iterate: one header-driven FR-table reader replaces five parsers (campaign S4)) | 2026-07-20 |
-| evt-ad515d80 | grade_snapshot | — | 2026-07-20 |
+| evt-ec9fc299 | grade_snapshot | — | 2026-07-20 |
+| evt-7d38f305 | grade_snapshot | — | 2026-07-20 |
+| evt-901afec3 | grade_snapshot | — | 2026-07-20 |
+| evt-1024c658 | grade_snapshot | — | 2026-07-20 |
+| evt-8ebeed1d | grade_snapshot | — | 2026-07-20 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 339
-- **Last iterate**: change — iterate: one header-driven FR-table reader replaces five parsers (campaign S4) (2026-07-20)
+- **Total work events**: 340
+- **Last iterate**: change — iterate: converge the FR table shape (campaign S5) (2026-07-20)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

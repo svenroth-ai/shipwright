@@ -68,7 +68,7 @@
       }
     }
   },
-  "regenerated_for": "S4 (iterate-2026-07-20-one-header-driven-parser): the five FR-table parsers collapse into one header-driven reader. FV-1, FV-3, FV-4 and FV-5 flip; FV-2 stays frozen for S6. The remaining movements are the convergence decisions the collapse forced -- one answer each for id strictness, column-map lifetime, invalid priorities, escaped pipes, row recognition, fold-map skipping, and (after external code review found a composition route that admitted false requirements) table governance: a row must sit under a header naming a Priority column and be wide enough to reach it. That last rule WITHDREW the headerless positional fallback and RE-DECIDED the minimum row width, which is why 'malformed'/FR-01.01 'ragged' is no longer a requirement in any parser -- it is recorded in the new invalid_ids accumulator instead. Every moved cell is attributed in ADR-107; absent/empty/greenfield/brownfield/spec-dir/planning-file are untouched.",
+  "regenerated_for": "campaign S5 (iterate-2026-07-20-converge-table-shape): both producers converge on | ID | Area | Name | Priority | Description | Basis | Layers |. Two additive FrRow fields (basis, basis_declared) appear empty on every pre-S5 fixture, and a new 08-converged fixture carries the target shape with one row per Basis outcome and both Layers provenances. No existing fixture changed behaviour.",
   "schema_version": 1,
   "targets": {
     "disc._test_links_io.discover_specs": {
@@ -126,7 +126,8 @@
             "<root>/.shipwright/planning/04-adopt-writer/spec.md",
             "<root>/.shipwright/planning/05-fixture-fr/spec.md",
             "<root>/.shipwright/planning/06-reordered/spec.md",
-            "<root>/.shipwright/planning/07-header-blind/spec.md"
+            "<root>/.shipwright/planning/07-header-blind/spec.md",
+            "<root>/.shipwright/planning/08-converged/spec.md"
           ]
         },
         "planning-file": {
@@ -324,7 +325,8 @@
             "<root>/.shipwright/planning/04-adopt-writer/spec.md",
             "<root>/.shipwright/planning/05-fixture-fr/spec.md",
             "<root>/.shipwright/planning/06-reordered/spec.md",
-            "<root>/.shipwright/planning/07-header-blind/spec.md"
+            "<root>/.shipwright/planning/07-header-blind/spec.md",
+            "<root>/.shipwright/planning/08-converged/spec.md"
           ]
         },
         "planning-file": {
@@ -626,6 +628,27 @@
               "spec_path": ".shipwright/planning/07-header-blind/spec.md",
               "split": "07-header-blind",
               "text": "ok"
+            },
+            {
+              "id": "FR-08.01",
+              "priority": "Must",
+              "spec_path": ".shipwright/planning/08-converged/spec.md",
+              "split": "08-converged",
+              "text": "Shows coverage per layer"
+            },
+            {
+              "id": "FR-08.02",
+              "priority": "Should",
+              "spec_path": ".shipwright/planning/08-converged/spec.md",
+              "split": "08-converged",
+              "text": "Writes a CSV export"
+            },
+            {
+              "id": "FR-08.03",
+              "priority": "May",
+              "spec_path": ".shipwright/planning/08-converged/spec.md",
+              "split": "08-converged",
+              "text": "Renders a trend chart"
             }
           ]
         },
@@ -743,7 +766,10 @@
               "FR-04.03",
               "FR-05.01",
               "FR-06.01",
-              "FR-07.01"
+              "FR-07.01",
+              "FR-08.01",
+              "FR-08.02",
+              "FR-08.03"
             ],
             true
           ]
@@ -789,6 +815,8 @@
           "type": "list[FrRow]",
           "value": [
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Orchestrate the full pipeline.",
               "id": "FR-01.01",
               "name": "/shipwright-run",
@@ -797,6 +825,8 @@
               "split": "01-adopted"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Deep planning with external review.",
               "id": "FR-01.02",
               "name": "/shipwright-plan",
@@ -811,6 +841,8 @@
           "type": "list[FrRow]",
           "value": [
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "User can log in",
               "id": "FR-01.01",
               "name": "",
@@ -819,6 +851,8 @@
               "split": ".hidden-split"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "User can log out",
               "id": "FR-01.02",
               "name": "",
@@ -827,6 +861,8 @@
               "split": ".hidden-split"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Canonical two-digit id",
               "id": "FR-01.01",
               "name": "",
@@ -835,6 +871,8 @@
               "split": "01-live"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "High canonical id",
               "id": "FR-99.99",
               "name": "",
@@ -843,6 +881,8 @@
               "split": "01-live"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Row after a later heading",
               "id": "FR-01.20",
               "name": "",
@@ -851,6 +891,8 @@
               "split": "01-live"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "User can log in",
               "id": "FR-01.01",
               "name": "",
@@ -859,6 +901,8 @@
               "split": "iterate"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "User can log out",
               "id": "FR-01.02",
               "name": "",
@@ -878,6 +922,8 @@
           "type": "list[FrRow]",
           "value": [
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "User can log in",
               "id": "FR-01.01",
               "name": "",
@@ -886,6 +932,8 @@
               "split": "01-auth"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "User can log out",
               "id": "FR-01.02",
               "name": "",
@@ -894,6 +942,8 @@
               "split": "01-auth"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Dashboard shows recent activity",
               "id": "FR-02.01",
               "name": "",
@@ -902,6 +952,8 @@
               "split": "02-dashboard"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Optional analytics panel",
               "id": "FR-02.02",
               "name": "",
@@ -910,6 +962,8 @@
               "split": "02-dashboard"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "User can log in",
               "id": "FR-03.01",
               "name": "",
@@ -918,6 +972,8 @@
               "split": "03-reporting"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "User can log out",
               "id": "FR-03.02",
               "name": "",
@@ -932,6 +988,8 @@
           "type": "list[FrRow]",
           "value": [
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "no close pipe",
               "id": "FR-01.02",
               "name": "",
@@ -940,6 +998,8 @@
               "split": "01-broken"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "ok",
               "id": "FR-01.03",
               "name": "",
@@ -948,6 +1008,8 @@
               "split": "01-broken"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "indented row",
               "id": "FR-01.05",
               "name": "",
@@ -956,6 +1018,8 @@
               "split": "01-broken"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "lowercase priority",
               "id": "FR-01.06",
               "name": "",
@@ -964,6 +1028,8 @@
               "split": "01-broken"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "unrecognised priority",
               "id": "FR-01.07",
               "name": "",
@@ -972,6 +1038,8 @@
               "split": "01-broken"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "escaped | pipe in text",
               "id": "FR-01.08",
               "name": "",
@@ -980,6 +1048,8 @@
               "split": "01-broken"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "duplicate of the first id",
               "id": "FR-01.01",
               "name": "",
@@ -994,6 +1064,8 @@
           "type": "list[FrRow]",
           "value": [
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "User can log in",
               "id": "FR-01.01",
               "name": "",
@@ -1002,6 +1074,8 @@
               "split": "01-greenfield-template"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "User can log out",
               "id": "FR-01.02",
               "name": "",
@@ -1010,6 +1084,8 @@
               "split": "01-greenfield-template"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Dashboard shows recent activity",
               "id": "FR-02.01",
               "name": "",
@@ -1018,6 +1094,8 @@
               "split": "02-greenfield-example"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Optional analytics panel",
               "id": "FR-02.02",
               "name": "",
@@ -1026,6 +1104,8 @@
               "split": "02-greenfield-example"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Orchestrate the full pipeline.",
               "id": "FR-03.01",
               "name": "/shipwright-run",
@@ -1034,6 +1114,8 @@
               "split": "03-adopt-disk"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Deep planning with external review.",
               "id": "FR-03.02",
               "name": "/shipwright-plan",
@@ -1042,6 +1124,8 @@
               "split": "03-adopt-disk"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Run the test suites.",
               "id": "FR-04.01",
               "name": "/shipwright-test",
@@ -1050,6 +1134,8 @@
               "split": "04-adopt-writer"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Deploy to a target.",
               "id": "FR-04.02",
               "name": "/shipwright-deploy",
@@ -1058,6 +1144,8 @@
               "split": "04-adopt-writer"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Local preview.",
               "id": "FR-04.03",
               "name": "/shipwright-preview",
@@ -1066,6 +1154,8 @@
               "split": "04-adopt-writer"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Coverage is reported per layer",
               "id": "FR-05.01",
               "name": "",
@@ -1074,6 +1164,8 @@
               "split": "05-fixture-fr"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Reordered table still describes a requirement",
               "id": "FR-06.01",
               "name": "",
@@ -1082,12 +1174,44 @@
               "split": "06-reordered"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "ok",
               "id": "FR-07.01",
               "name": "",
               "retired": false,
               "spec_path": ".shipwright/planning/07-header-blind/spec.md",
               "split": "07-header-blind"
+            },
+            {
+              "basis": "code",
+              "basis_declared": true,
+              "description": "Shows coverage per layer",
+              "id": "FR-08.01",
+              "name": "Coverage report",
+              "retired": false,
+              "spec_path": ".shipwright/planning/08-converged/spec.md",
+              "split": "08-converged"
+            },
+            {
+              "basis": "other: vendor doc",
+              "basis_declared": true,
+              "description": "Writes a CSV export",
+              "id": "FR-08.02",
+              "name": "Export",
+              "retired": false,
+              "spec_path": ".shipwright/planning/08-converged/spec.md",
+              "split": "08-converged"
+            },
+            {
+              "basis": "enrichment.json",
+              "basis_declared": true,
+              "description": "Renders a trend chart",
+              "id": "FR-08.03",
+              "name": "Trend chart",
+              "retired": false,
+              "spec_path": ".shipwright/planning/08-converged/spec.md",
+              "split": "08-converged"
             }
           ]
         },
@@ -1106,6 +1230,8 @@
           "type": "list[FrRow]",
           "value": [
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Reordered table still describes a requirement",
               "id": "FR-06.01",
               "name": "",
@@ -1130,6 +1256,8 @@
           "type": "list[FrRow]",
           "value": [
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Orchestrate the full pipeline.",
               "id": "FR-01.01",
               "name": "/shipwright-run",
@@ -1138,6 +1266,8 @@
               "split": "01-adopted"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Deep planning with external review.",
               "id": "FR-01.02",
               "name": "/shipwright-plan",
@@ -1152,6 +1282,8 @@
           "type": "list[FrRow]",
           "value": [
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "User can log in",
               "id": "FR-01.01",
               "name": "",
@@ -1160,6 +1292,8 @@
               "split": ".hidden-split"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "User can log out",
               "id": "FR-01.02",
               "name": "",
@@ -1168,6 +1302,8 @@
               "split": ".hidden-split"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Canonical two-digit id",
               "id": "FR-01.01",
               "name": "",
@@ -1176,6 +1312,8 @@
               "split": "01-live"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "High canonical id",
               "id": "FR-99.99",
               "name": "",
@@ -1184,6 +1322,8 @@
               "split": "01-live"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Retired capability",
               "id": "FR-01.09",
               "name": "",
@@ -1192,6 +1332,8 @@
               "split": "01-live"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Row after a later heading",
               "id": "FR-01.20",
               "name": "",
@@ -1200,6 +1342,8 @@
               "split": "01-live"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "User can log in",
               "id": "FR-01.01",
               "name": "",
@@ -1208,6 +1352,8 @@
               "split": "iterate"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "User can log out",
               "id": "FR-01.02",
               "name": "",
@@ -1227,6 +1373,8 @@
           "type": "list[FrRow]",
           "value": [
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "User can log in",
               "id": "FR-01.01",
               "name": "",
@@ -1235,6 +1383,8 @@
               "split": "01-auth"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "User can log out",
               "id": "FR-01.02",
               "name": "",
@@ -1243,6 +1393,8 @@
               "split": "01-auth"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Dashboard shows recent activity",
               "id": "FR-02.01",
               "name": "",
@@ -1251,6 +1403,8 @@
               "split": "02-dashboard"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Optional analytics panel",
               "id": "FR-02.02",
               "name": "",
@@ -1259,6 +1413,8 @@
               "split": "02-dashboard"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "User can log in",
               "id": "FR-03.01",
               "name": "",
@@ -1267,6 +1423,8 @@
               "split": "03-reporting"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "User can log out",
               "id": "FR-03.02",
               "name": "",
@@ -1281,6 +1439,8 @@
           "type": "list[FrRow]",
           "value": [
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "no close pipe",
               "id": "FR-01.02",
               "name": "",
@@ -1289,6 +1449,8 @@
               "split": "01-broken"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "ok",
               "id": "FR-01.03",
               "name": "",
@@ -1297,6 +1459,8 @@
               "split": "01-broken"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "indented row",
               "id": "FR-01.05",
               "name": "",
@@ -1305,6 +1469,8 @@
               "split": "01-broken"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "lowercase priority",
               "id": "FR-01.06",
               "name": "",
@@ -1313,6 +1479,8 @@
               "split": "01-broken"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "unrecognised priority",
               "id": "FR-01.07",
               "name": "",
@@ -1321,6 +1489,8 @@
               "split": "01-broken"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "escaped | pipe in text",
               "id": "FR-01.08",
               "name": "",
@@ -1329,6 +1499,8 @@
               "split": "01-broken"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "duplicate of the first id",
               "id": "FR-01.01",
               "name": "",
@@ -1343,6 +1515,8 @@
           "type": "list[FrRow]",
           "value": [
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "User can log in",
               "id": "FR-01.01",
               "name": "",
@@ -1351,6 +1525,8 @@
               "split": "01-greenfield-template"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "User can log out",
               "id": "FR-01.02",
               "name": "",
@@ -1359,6 +1535,8 @@
               "split": "01-greenfield-template"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Dashboard shows recent activity",
               "id": "FR-02.01",
               "name": "",
@@ -1367,6 +1545,8 @@
               "split": "02-greenfield-example"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Optional analytics panel",
               "id": "FR-02.02",
               "name": "",
@@ -1375,6 +1555,8 @@
               "split": "02-greenfield-example"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Orchestrate the full pipeline.",
               "id": "FR-03.01",
               "name": "/shipwright-run",
@@ -1383,6 +1565,8 @@
               "split": "03-adopt-disk"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Deep planning with external review.",
               "id": "FR-03.02",
               "name": "/shipwright-plan",
@@ -1391,6 +1575,8 @@
               "split": "03-adopt-disk"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Run the test suites.",
               "id": "FR-04.01",
               "name": "/shipwright-test",
@@ -1399,6 +1585,8 @@
               "split": "04-adopt-writer"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Deploy to a target.",
               "id": "FR-04.02",
               "name": "/shipwright-deploy",
@@ -1407,6 +1595,8 @@
               "split": "04-adopt-writer"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Local preview.",
               "id": "FR-04.03",
               "name": "/shipwright-preview",
@@ -1415,6 +1605,8 @@
               "split": "04-adopt-writer"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Coverage is reported per layer",
               "id": "FR-05.01",
               "name": "",
@@ -1423,6 +1615,8 @@
               "split": "05-fixture-fr"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Reordered table still describes a requirement",
               "id": "FR-06.01",
               "name": "",
@@ -1431,12 +1625,44 @@
               "split": "06-reordered"
             },
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "ok",
               "id": "FR-07.01",
               "name": "",
               "retired": false,
               "spec_path": ".shipwright/planning/07-header-blind/spec.md",
               "split": "07-header-blind"
+            },
+            {
+              "basis": "code",
+              "basis_declared": true,
+              "description": "Shows coverage per layer",
+              "id": "FR-08.01",
+              "name": "Coverage report",
+              "retired": false,
+              "spec_path": ".shipwright/planning/08-converged/spec.md",
+              "split": "08-converged"
+            },
+            {
+              "basis": "other: vendor doc",
+              "basis_declared": true,
+              "description": "Writes a CSV export",
+              "id": "FR-08.02",
+              "name": "Export",
+              "retired": false,
+              "spec_path": ".shipwright/planning/08-converged/spec.md",
+              "split": "08-converged"
+            },
+            {
+              "basis": "enrichment.json",
+              "basis_declared": true,
+              "description": "Renders a trend chart",
+              "id": "FR-08.03",
+              "name": "Trend chart",
+              "retired": false,
+              "spec_path": ".shipwright/planning/08-converged/spec.md",
+              "split": "08-converged"
             }
           ]
         },
@@ -1455,6 +1681,8 @@
           "type": "list[FrRow]",
           "value": [
             {
+              "basis": "",
+              "basis_declared": false,
               "description": "Reordered table still describes a requirement",
               "id": "FR-06.01",
               "name": "",
@@ -1653,6 +1881,15 @@
               "reason": null,
               "self_review_fallback_ran": false,
               "split": "07-header-blind",
+              "status": "missing",
+              "timestamp": ""
+            },
+            {
+              "findings_count": 0,
+              "provider": null,
+              "reason": null,
+              "self_review_fallback_ran": false,
+              "split": "08-converged",
               "status": "missing",
               "timestamp": ""
             }
@@ -2006,6 +2243,30 @@
               "spec_path": ".shipwright/planning/07-header-blind/spec.md",
               "split": "07-header-blind",
               "text": "ok"
+            },
+            {
+              "id": "FR-08.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/08-converged/spec.md",
+              "split": "08-converged",
+              "text": "Shows coverage per layer"
+            },
+            {
+              "id": "FR-08.02",
+              "priority": "Should",
+              "sections": [],
+              "spec_path": ".shipwright/planning/08-converged/spec.md",
+              "split": "08-converged",
+              "text": "Writes a CSV export"
+            },
+            {
+              "id": "FR-08.03",
+              "priority": "May",
+              "sections": [],
+              "spec_path": ".shipwright/planning/08-converged/spec.md",
+              "split": "08-converged",
+              "text": "Renders a trend chart"
             }
           ]
         },
@@ -2090,7 +2351,8 @@
             ".shipwright/planning/04-adopt-writer/spec.md",
             ".shipwright/planning/05-fixture-fr/spec.md",
             ".shipwright/planning/06-reordered/spec.md",
-            ".shipwright/planning/07-header-blind/spec.md"
+            ".shipwright/planning/07-header-blind/spec.md",
+            ".shipwright/planning/08-converged/spec.md"
           ]
         },
         "planning-file": {
@@ -2178,7 +2440,8 @@
             "04-adopt-writer/spec.md",
             "05-fixture-fr/spec.md",
             "06-reordered/spec.md",
-            "07-header-blind/spec.md"
+            "07-header-blind/spec.md",
+            "08-converged/spec.md"
           ]
         },
         "planning-file": {
@@ -2270,7 +2533,8 @@
             "<root>/.shipwright/planning/04-adopt-writer/spec.md",
             "<root>/.shipwright/planning/05-fixture-fr/spec.md",
             "<root>/.shipwright/planning/06-reordered/spec.md",
-            "<root>/.shipwright/planning/07-header-blind/spec.md"
+            "<root>/.shipwright/planning/07-header-blind/spec.md",
+            "<root>/.shipwright/planning/08-converged/spec.md"
           ]
         },
         "planning-file": {
@@ -2456,7 +2720,8 @@
               "04-adopt-writer",
               "05-fixture-fr",
               "06-reordered",
-              "07-header-blind"
+              "07-header-blind",
+              "08-converged"
             ],
             "splits_with_specs": [
               "01-greenfield-template",
@@ -2465,7 +2730,8 @@
               "04-adopt-writer",
               "05-fixture-fr",
               "06-reordered",
-              "07-header-blind"
+              "07-header-blind",
+              "08-converged"
             ]
           }
         },
@@ -2888,6 +3154,27 @@
                   "id": "FR-07.01",
                   "status": "active",
                   "text": "ok"
+                }
+              ]
+            },
+            ".shipwright/planning/08-converged/spec.md": {
+              "outcome": "returned",
+              "type": "list[FR]",
+              "value": [
+                {
+                  "id": "FR-08.01",
+                  "status": "active",
+                  "text": "Shows coverage per layer"
+                },
+                {
+                  "id": "FR-08.02",
+                  "status": "active",
+                  "text": "Writes a CSV export"
+                },
+                {
+                  "id": "FR-08.03",
+                  "status": "active",
+                  "text": "Renders a trend chart"
                 }
               ]
             }
@@ -3454,6 +3741,46 @@
                   "title": "ok"
                 }
               ]
+            },
+            ".shipwright/planning/08-converged/spec.md": {
+              "outcome": "returned",
+              "type": "list[Requirement]",
+              "value": [
+                {
+                  "id": "FR-08.01",
+                  "priority": "Must",
+                  "required_layers": [
+                    "unit"
+                  ],
+                  "required_layers_source": "inferred_legacy",
+                  "spec_path": ".shipwright/planning/08-converged/spec.md",
+                  "status": "active",
+                  "title": "Shows coverage per layer"
+                },
+                {
+                  "id": "FR-08.02",
+                  "priority": "Should",
+                  "required_layers": [
+                    "unit",
+                    "integration"
+                  ],
+                  "required_layers_source": "explicit",
+                  "spec_path": ".shipwright/planning/08-converged/spec.md",
+                  "status": "active",
+                  "title": "Writes a CSV export"
+                },
+                {
+                  "id": "FR-08.03",
+                  "priority": "May",
+                  "required_layers": [
+                    "e2e"
+                  ],
+                  "required_layers_source": "inferred_legacy",
+                  "spec_path": ".shipwright/planning/08-converged/spec.md",
+                  "status": "active",
+                  "title": "Renders a trend chart"
+                }
+              ]
             }
           }
         },
@@ -3865,6 +4192,33 @@
                   "text": "ok"
                 }
               ]
+            },
+            ".shipwright/planning/08-converged/spec.md": {
+              "outcome": "returned",
+              "type": "list[FunctionalRequirement]",
+              "value": [
+                {
+                  "id": "FR-08.01",
+                  "priority": "Must",
+                  "spec_path": ".shipwright/planning/08-converged/spec.md",
+                  "split": "08-converged",
+                  "text": "Shows coverage per layer"
+                },
+                {
+                  "id": "FR-08.02",
+                  "priority": "Should",
+                  "spec_path": ".shipwright/planning/08-converged/spec.md",
+                  "split": "08-converged",
+                  "text": "Writes a CSV export"
+                },
+                {
+                  "id": "FR-08.03",
+                  "priority": "May",
+                  "spec_path": ".shipwright/planning/08-converged/spec.md",
+                  "split": "08-converged",
+                  "text": "Renders a trend chart"
+                }
+              ]
             }
           }
         },
@@ -3906,6 +4260,8 @@
               "type": "list[FrRow]",
               "value": [
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "Orchestrate the full pipeline.",
                   "id": "FR-01.01",
                   "name": "/shipwright-run",
@@ -3914,6 +4270,8 @@
                   "split": "01-adopted"
                 },
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "Deep planning with external review.",
                   "id": "FR-01.02",
                   "name": "/shipwright-plan",
@@ -3932,6 +4290,8 @@
               "type": "list[FrRow]",
               "value": [
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "User can log in",
                   "id": "FR-01.01",
                   "name": "",
@@ -3940,6 +4300,8 @@
                   "split": ".hidden-split"
                 },
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "User can log out",
                   "id": "FR-01.02",
                   "name": "",
@@ -3954,6 +4316,8 @@
               "type": "list[FrRow]",
               "value": [
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "Canonical two-digit id",
                   "id": "FR-01.01",
                   "name": "",
@@ -3962,6 +4326,8 @@
                   "split": "01-live"
                 },
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "High canonical id",
                   "id": "FR-99.99",
                   "name": "",
@@ -3970,6 +4336,8 @@
                   "split": "01-live"
                 },
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "Retired capability",
                   "id": "FR-01.09",
                   "name": "",
@@ -3978,6 +4346,8 @@
                   "split": "01-live"
                 },
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "Row after a later heading",
                   "id": "FR-01.20",
                   "name": "",
@@ -3992,6 +4362,8 @@
               "type": "list[FrRow]",
               "value": [
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "Dashboard shows recent activity",
                   "id": "FR-02.01",
                   "name": "",
@@ -4000,6 +4372,8 @@
                   "split": "deeper"
                 },
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "Optional analytics panel",
                   "id": "FR-02.02",
                   "name": "",
@@ -4014,6 +4388,8 @@
               "type": "list[FrRow]",
               "value": [
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "User can log in",
                   "id": "FR-01.01",
                   "name": "",
@@ -4022,6 +4398,8 @@
                   "split": "iterate"
                 },
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "User can log out",
                   "id": "FR-01.02",
                   "name": "",
@@ -4048,6 +4426,8 @@
               "type": "list[FrRow]",
               "value": [
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "User can log in",
                   "id": "FR-01.01",
                   "name": "",
@@ -4056,6 +4436,8 @@
                   "split": "01-auth"
                 },
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "User can log out",
                   "id": "FR-01.02",
                   "name": "",
@@ -4070,6 +4452,8 @@
               "type": "list[FrRow]",
               "value": [
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "Dashboard shows recent activity",
                   "id": "FR-02.01",
                   "name": "",
@@ -4078,6 +4462,8 @@
                   "split": "02-dashboard"
                 },
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "Optional analytics panel",
                   "id": "FR-02.02",
                   "name": "",
@@ -4092,6 +4478,8 @@
               "type": "list[FrRow]",
               "value": [
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "User can log in",
                   "id": "FR-03.01",
                   "name": "",
@@ -4100,6 +4488,8 @@
                   "split": "03-reporting"
                 },
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "User can log out",
                   "id": "FR-03.02",
                   "name": "",
@@ -4118,6 +4508,8 @@
               "type": "list[FrRow]",
               "value": [
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "no close pipe",
                   "id": "FR-01.02",
                   "name": "",
@@ -4126,6 +4518,8 @@
                   "split": "01-broken"
                 },
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "ok",
                   "id": "FR-01.03",
                   "name": "",
@@ -4134,6 +4528,8 @@
                   "split": "01-broken"
                 },
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "indented row",
                   "id": "FR-01.05",
                   "name": "",
@@ -4142,6 +4538,8 @@
                   "split": "01-broken"
                 },
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "lowercase priority",
                   "id": "FR-01.06",
                   "name": "",
@@ -4150,6 +4548,8 @@
                   "split": "01-broken"
                 },
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "unrecognised priority",
                   "id": "FR-01.07",
                   "name": "",
@@ -4158,6 +4558,8 @@
                   "split": "01-broken"
                 },
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "escaped | pipe in text",
                   "id": "FR-01.08",
                   "name": "",
@@ -4166,6 +4568,8 @@
                   "split": "01-broken"
                 },
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "duplicate of the first id",
                   "id": "FR-01.01",
                   "name": "",
@@ -4184,6 +4588,8 @@
               "type": "list[FrRow]",
               "value": [
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "User can log in",
                   "id": "FR-01.01",
                   "name": "",
@@ -4192,6 +4598,8 @@
                   "split": "01-greenfield-template"
                 },
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "User can log out",
                   "id": "FR-01.02",
                   "name": "",
@@ -4206,6 +4614,8 @@
               "type": "list[FrRow]",
               "value": [
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "Dashboard shows recent activity",
                   "id": "FR-02.01",
                   "name": "",
@@ -4214,6 +4624,8 @@
                   "split": "02-greenfield-example"
                 },
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "Optional analytics panel",
                   "id": "FR-02.02",
                   "name": "",
@@ -4228,6 +4640,8 @@
               "type": "list[FrRow]",
               "value": [
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "Orchestrate the full pipeline.",
                   "id": "FR-03.01",
                   "name": "/shipwright-run",
@@ -4236,6 +4650,8 @@
                   "split": "03-adopt-disk"
                 },
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "Deep planning with external review.",
                   "id": "FR-03.02",
                   "name": "/shipwright-plan",
@@ -4250,6 +4666,8 @@
               "type": "list[FrRow]",
               "value": [
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "Run the test suites.",
                   "id": "FR-04.01",
                   "name": "/shipwright-test",
@@ -4258,6 +4676,8 @@
                   "split": "04-adopt-writer"
                 },
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "Deploy to a target.",
                   "id": "FR-04.02",
                   "name": "/shipwright-deploy",
@@ -4266,6 +4686,8 @@
                   "split": "04-adopt-writer"
                 },
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "Local preview.",
                   "id": "FR-04.03",
                   "name": "/shipwright-preview",
@@ -4280,6 +4702,8 @@
               "type": "list[FrRow]",
               "value": [
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "Coverage is reported per layer",
                   "id": "FR-05.01",
                   "name": "",
@@ -4294,6 +4718,8 @@
               "type": "list[FrRow]",
               "value": [
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "Reordered table still describes a requirement",
                   "id": "FR-06.01",
                   "name": "",
@@ -4308,12 +4734,50 @@
               "type": "list[FrRow]",
               "value": [
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "ok",
                   "id": "FR-07.01",
                   "name": "",
                   "retired": false,
                   "spec_path": ".shipwright/planning/07-header-blind/spec.md",
                   "split": "07-header-blind"
+                }
+              ]
+            },
+            ".shipwright/planning/08-converged/spec.md": {
+              "outcome": "returned",
+              "type": "list[FrRow]",
+              "value": [
+                {
+                  "basis": "code",
+                  "basis_declared": true,
+                  "description": "Shows coverage per layer",
+                  "id": "FR-08.01",
+                  "name": "Coverage report",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/08-converged/spec.md",
+                  "split": "08-converged"
+                },
+                {
+                  "basis": "other: vendor doc",
+                  "basis_declared": true,
+                  "description": "Writes a CSV export",
+                  "id": "FR-08.02",
+                  "name": "Export",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/08-converged/spec.md",
+                  "split": "08-converged"
+                },
+                {
+                  "basis": "enrichment.json",
+                  "basis_declared": true,
+                  "description": "Renders a trend chart",
+                  "id": "FR-08.03",
+                  "name": "Trend chart",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/08-converged/spec.md",
+                  "split": "08-converged"
                 }
               ]
             }
@@ -4332,6 +4796,8 @@
               "type": "list[FrRow]",
               "value": [
                 {
+                  "basis": "",
+                  "basis_declared": false,
                   "description": "Reordered table still describes a requirement",
                   "id": "FR-06.01",
                   "name": "",
@@ -4657,6 +5123,30 @@
               "spec_path": ".shipwright/planning/07-header-blind/spec.md",
               "split": "07-header-blind",
               "text": "ok"
+            },
+            {
+              "id": "FR-08.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/08-converged/spec.md",
+              "split": "08-converged",
+              "text": "Shows coverage per layer"
+            },
+            {
+              "id": "FR-08.02",
+              "priority": "Should",
+              "sections": [],
+              "spec_path": ".shipwright/planning/08-converged/spec.md",
+              "split": "08-converged",
+              "text": "Writes a CSV export"
+            },
+            {
+              "id": "FR-08.03",
+              "priority": "May",
+              "sections": [],
+              "spec_path": ".shipwright/planning/08-converged/spec.md",
+              "split": "08-converged",
+              "text": "Renders a trend chart"
             }
           ]
         },

@@ -45,6 +45,7 @@ from scripts.audit._group_d_manifest import (
     manifest_present,
 )
 from scripts.audit._group_d_render import (
+    ADVISORY_LAYER_REASONS,
     fold_defect_line,
     invalid_layer_line,
     invalid_tag_line,
@@ -58,6 +59,10 @@ from scripts.audit.audit_adapters import Finding, SOURCE_DETECTIVE_ONLY
 _PRIORITY_TO_SEVERITY = {"Must": "HIGH", "Should": "MEDIUM", "May": "LOW"}
 _SEV_ORDER = {"LOW": 0, "MEDIUM": 1, "HIGH": 2}
 _LEGACY_SOURCES = frozenset({"inferred_legacy", "defaulted_legacy"})
+
+#: IMPORTED, not restated — see `_group_d_render.ADVISORY_LAYER_REASONS`. Two
+#: literals of this set are what let the verdict and the evidence line disagree.
+_ADVISORY_LAYER_REASONS = ADVISORY_LAYER_REASONS
 _KNOWN_CATEGORIES = frozenset({"confirmed_orphan", "possible_orphan", "unmapped"})
 
 
@@ -127,8 +132,16 @@ def check_orphan(manifest: dict) -> tuple[str, str, str, list[str], str | None]:
 def check_layer(manifest: dict) -> tuple[str, str, str, list[str], str | None]:
     """(status, severity, detail, evidence, suggested_cmd) for D-layer."""
     reqs = manifest.get("requirements") or {}
-    invalid = manifest.get("invalid_layers") or []
     collisions = collision_ids(reqs)
+
+    # `invalid_layers` is a MIXED channel since S5 and is split by REASON before
+    # it reaches a verdict — see `_ADVISORY_LAYER_REASONS`. Fail-CLOSED: the
+    # ADVISORY set is the closed one, so an unrecognised reason blocks.
+    all_invalid = manifest.get("invalid_layers") or []
+    invalid_advisory = [iv for iv in all_invalid
+                        if iv.get("reason") in _ADVISORY_LAYER_REASONS]
+    invalid = [iv for iv in all_invalid
+               if iv.get("reason") not in _ADVISORY_LAYER_REASONS]
 
     hard: list[tuple] = []       # explicit / unknown-provenance gaps (FAIL)
     advisory: list[tuple] = []   # legacy + collision-deferred gaps (WARN, no any_fail)
@@ -158,6 +171,7 @@ def check_layer(manifest: dict) -> tuple[str, str, str, list[str], str | None]:
                 advisory.append(gap)                 # known legacy → advisory
 
     inv_lines = [invalid_layer_line(iv) for iv in invalid]
+    inv_adv_lines = [invalid_layer_line(iv) for iv in invalid_advisory]
 
     if hard or invalid:
         sevs = {_PRIORITY_TO_SEVERITY.get(p, "LOW") for (_, _, p, _, _) in hard}
@@ -170,19 +184,26 @@ def check_layer(manifest: dict) -> tuple[str, str, str, list[str], str | None]:
             parts.append(f"{len(invalid)} invalid-layer declaration(s)")
         if advisory:
             parts.append(f"{len(advisory)} advisory gap(s)")
+        if invalid_advisory:
+            parts.append(f"{len(invalid_advisory)} advisory layer-cell defect(s)")
         detail = "post-rollout coverage gaps — " + "; ".join(parts)
         evidence = ([layer_gap_line(g, "HARD") for g in hard] + inv_lines
-                    + [layer_gap_line(g, "advisory") for g in advisory])
+                    + [layer_gap_line(g, "advisory") for g in advisory] + inv_adv_lines)
         return "fail", _max_sev(sevs), detail, evidence, suggest_layer()
 
-    if advisory:  # no HARD gaps → pass, but surface the advisory (legacy + collision) gaps
+    if advisory or invalid_advisory:
+        # No HARD gaps → pass, but surface the advisory ones (legacy + collision
+        # gaps, and the malformed-but-advisory layer cells such as a glued
+        # `(inferred)` marker). Reported, never blocking.
         n_amb = sum(1 for g in advisory if g[3] == "ambiguous_fanout")
         detail = (
             f"no explicit FR is missing a required layer; {len(advisory)} advisory gap(s) "
             f"({n_amb} ambiguous fan-out — deferred to TT5; rest pre-rollout legacy)"
         )
+        if invalid_advisory:
+            detail += f"; {len(invalid_advisory)} advisory layer-cell defect(s)"
         return ("pass", "LOW", detail,
-                [layer_gap_line(g, "advisory") for g in advisory], None)
+                [layer_gap_line(g, "advisory") for g in advisory] + inv_adv_lines, None)
     return "pass", "LOW", "every active FR is covered at its required layers", [], None
 
 

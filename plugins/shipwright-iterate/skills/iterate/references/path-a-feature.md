@@ -125,6 +125,32 @@ If no boundaries touched: write `n/a` with one-line justification.}
        phrase (~6 words, no verbs/symbols/paths/ADR numbers), and a plain
        business-language description a product owner can sign off. Put the
        implementation detail in `architecture.md`, not the row.
+     - **The row has seven cells:**
+       `| ID | Area | Name | Priority | Description | Basis | Layers |`.
+       `Area` is the split's name (it must match the ID's group digit — if it
+       does not, the FR belongs in a different split). `Basis` is ONE value
+       from `interview` / `code` / `observed` / `tests` / `assumed` /
+       `other: <reason>`; anything else is a hard audit failure, and a blank
+       cell fails too — use `assumed` when nobody has confirmed it.
+     - **`Layers` — read this before you type it. It can hard-abort this
+       iterate.** Two forms, and the choice is binding:
+       - `unit, e2e` **(bare) is a declaration.** Compliance treats it as
+         authoritative: every named layer with no executed-passing
+         `@FR`-tagged test becomes a HARD coverage failure and finalization
+         **exits non-zero**. There is no bypass — no env var, no flag, no
+         label. A newly added FR is always counted as behaviour-changed in
+         the iterate that adds it, so **a bare cell on an FR whose tests do
+         not exist yet aborts the run.**
+       - `unit, e2e (inferred)` is advisory and never blocks.
+       **So: write the bare form only if the tests land in THIS iterate**
+       (which is the normal TDD case, and is the preferred one — declare what
+       you are about to cover). **If the layers are a guess, write
+       `(inferred)`** — the honest cell. Do NOT reach for `Basis: assumed`
+       instead: they are different columns answering different questions
+       (`Basis` = how we know the requirement, `Layers` = what it must be
+       tested at), and a requirement can be `Basis: interview` with entirely
+       unverified layers. Mind the space: `unit (inferred)` parses,
+       `unit(inferred)` silently yields NO required layers.
    - **MODIFY** — an additive side-effect or changed behavior of an
      existing FR, **and every FOLD from the gate above**: update the FR
      table-row description + append new

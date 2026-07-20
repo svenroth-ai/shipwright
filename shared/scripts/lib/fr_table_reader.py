@@ -59,7 +59,6 @@ from __future__ import annotations
 import importlib
 import re
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 
 _SIBLINGS: dict[str, object] = {}
@@ -110,7 +109,10 @@ CANONICAL_FR_RE = _sibling("requirement_model").CANONICAL_FR_RE
 _fold_map_line_numbers = _sibling("fr_fold_map").fold_map_line_numbers
 split_cells = _sibling("_fr_table_cells").split_cells
 
+FrTableRow = _sibling("_fr_table_row").FrTableRow
+
 _cols = _sibling("_fr_table_columns")
+BASIS_COLS = _cols.BASIS_COLS
 DEFAULT_PRIORITY = _cols.DEFAULT_PRIORITY
 LAYERS_COLS = _cols.LAYERS_COLS
 NAME_COLS = _cols.NAME_COLS
@@ -118,6 +120,7 @@ PRIORITIES = _cols.PRIORITIES
 PRIORITY_COLS = _cols.PRIORITY_COLS
 TITLE_COLS = _cols.TITLE_COLS
 normalise_priority = _cols.normalise_priority
+_basis_cell = _cols.basis_cell
 _header_map = _cols.header_map
 _is_separator_row = _cols.is_separator_row
 _layers_cell = _cols.layers_cell
@@ -129,40 +132,6 @@ _REMOVED_HEADING = "removed requirements"
 #: The old loose tier. Used only to tell a malformed requirement row apart from
 #: a table header, and to name what was rejected — never to accept a row.
 _LOOSE_FR_RE = re.compile(r"^FR-[\d.]+$")
-
-
-@dataclass(frozen=True)
-class FrTableRow:
-    """One FR row, with every cell each of the five consumers needs kept apart.
-
-    The consumers deliberately want DIFFERENT projections of the same row —
-    traceability wants one semantic body, Group I's naming fence needs Name and
-    Description kept separate, and the layers provenance rules need to know
-    whether the Layers cell came from a NAMED column or from a positional guess.
-    Collapsing those here would just move the divergence downstream.
-    """
-
-    id: str
-    #: The Name column, or ``""`` when the table has no Name column.
-    name: str
-    #: The requirement's semantic body (Description / Requirement / Text / …).
-    text: str
-    priority: str
-    #: Raw Layers cell — unparsed, because layer semantics are the caller's.
-    layers_cell: str
-    #: True when the governing header actually NAMED a Layers column — the
-    #: difference between an author's declaration and a column that is absent.
-    layers_from_named_col: bool
-    #: ``"active"`` or ``"removed"`` (a ``## Removed Requirements`` section).
-    status: str
-    #: Every cell of the row, escape-resolved, for consumers needing more.
-    cells: tuple[str, ...]
-    #: 0-based line number in the source text.
-    lineno: int
-
-    @property
-    def removed(self) -> bool:
-        return self.status == "removed"
 
 
 def read_fr_rows(content: str, *, rejects: list | None = None) -> list[FrTableRow]:
@@ -215,6 +184,14 @@ def read_fr_rows(content: str, *, rejects: list | None = None) -> list[FrTableRo
             rejects.append({
                 "id": cells[0], "reason": reason,
                 "lineno": lineno, "raw": " | ".join(cells)[:200],
+                # Whether a governing header had been recognised when this row
+                # was declined (campaign S5). Without it a caller cannot tell
+                # "no header names a Priority column" from "the header is fine,
+                # the ids are not" — the two states Group I must report apart,
+                # and the second is exactly the one rule 1's strict id tier
+                # creates. `reason` alone cannot carry it: `non_canonical_id` is
+                # decided BEFORE the map is consulted and so occurs under both.
+                "header_seen": colmap is not None,
             })
 
     for lineno, line in enumerate(content.splitlines()):
@@ -266,6 +243,7 @@ def read_fr_rows(content: str, *, rejects: list | None = None) -> list[FrTableRo
             continue
 
         layers_cell, layers_named = _layers_cell(cells, colmap)
+        basis_cell, basis_named = _basis_cell(cells, colmap)
         rows.append(FrTableRow(
             id=cells[0],
             name=_pick(cells, colmap, NAME_COLS),
@@ -276,6 +254,8 @@ def read_fr_rows(content: str, *, rejects: list | None = None) -> list[FrTableRo
             status="removed" if in_removed else "active",
             cells=tuple(cells),
             lineno=lineno,
+            basis_cell=basis_cell,
+            basis_from_named_col=basis_named,
         ))
     return rows
 
@@ -286,6 +266,7 @@ def read_active_fr_rows(content: str, *, rejects: list | None = None) -> list[Fr
 
 
 __all__ = [
+    "BASIS_COLS",
     "DEFAULT_PRIORITY",
     "FrTableRow",
     "LAYERS_COLS",

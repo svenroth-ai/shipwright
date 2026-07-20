@@ -73,6 +73,34 @@ def _read_spec(project_root: Path, split_name: str = "01-adopted") -> str:
     )
 
 
+def _fr_names(spec_text: str) -> set[str]:
+    """The Name cell of every FR row, read through the shared reader.
+
+    Campaign S5 dropped the `Source` column, so a feature's source-file path no
+    longer appears anywhere in the spec (decision D3: a path is implementation
+    detail). These tests used the path as a proxy for "this feature became a
+    requirement"; the Name cell is the direct answer, and comparing the whole SET
+    is stricter than the substring checks it replaces — `"/api/users" in spec`
+    was also satisfied by a row for `/api/users-test`.
+    """
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "shared" / "scripts" / "lib"))
+    from fr_table_reader import read_active_fr_rows
+
+    return {row.name for row in read_active_fr_rows(spec_text)}
+
+
+def _fr_basis(spec_text: str) -> dict[str, str]:
+    """Name → Basis cell, for asserting HOW a requirement came to be known."""
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "shared" / "scripts" / "lib"))
+    from fr_table_reader import read_active_fr_rows
+
+    return {row.name: row.basis_cell for row in read_active_fr_rows(spec_text)}
+
+
 # ---------------------------------------------------------------------------
 # Sub-Fix 3a: test files filtered from FR list
 # ---------------------------------------------------------------------------
@@ -96,7 +124,9 @@ def test_test_files_excluded_from_fr_list(tmp_path: Path) -> None:
         write_sync=False, backfill_events=False,
     )
     spec = _read_spec(tmp_path)
-    assert "src/api/users.ts" in spec
+    # Exactly the production route becomes a requirement; the three test-file
+    # routes do not. Asserted as a SET, so a stray extra row cannot pass.
+    assert _fr_names(spec) == {"/api/users"}
     assert "users.test.ts" not in spec
     assert "users.spec.ts" not in spec
     assert "__tests__" not in spec
@@ -118,7 +148,7 @@ def test_python_test_files_excluded(tmp_path: Path) -> None:
         write_sync=False, backfill_events=False,
     )
     spec = _read_spec(tmp_path)
-    assert "src/api/health.py" in spec
+    assert _fr_names(spec) == {"/health"}
     assert "tests/test_health.py" not in spec
     assert "conftest.py" not in spec
 

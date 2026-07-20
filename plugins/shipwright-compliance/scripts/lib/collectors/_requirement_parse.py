@@ -24,6 +24,11 @@ five parsers and are now one.
   post-rollout hard gate and silently discard the author's intent — §11-R4 collapse)
 * absent/empty + a UI/flow signal in the title → ``inferred_legacy`` → ``(e2e,)``
 * absent/empty + no signal → ``defaulted_legacy`` → ``(unit,)`` (every FR ⇒ unit)
+* present + a GLUED marker (``unit,e2e(inferred)``) → provenance is correct
+  (advisory — the cell IS tool-derived) but a layer was swallowed by the missing
+  space, so the loss is recorded in ``invalid_layers`` with reason
+  ``marker_glued``. Detected differentially, by re-parsing with the marker split
+  off and comparing; equal means it was already separated.
 
 Rows under a ``## Removed Requirements`` heading are parsed with ``status="removed"``
 (their tagged tests become orphans, never live coverage).
@@ -45,14 +50,22 @@ _UI_FLOW_WORDS: frozenset[str] = frozenset({
 })
 _UI_FLOW_PHRASES: tuple[str, ...] = ("sign in", "sign-in", "log in")
 
-# An adopt-generated Layers cell carries the EXACT `(inferred)` marker (the only
-# token `artifact_writer` ever emits): its layers were derived from the detected
-# surface, not author-chosen, so it reads as advisory (`inferred_legacy`) rather
-# than `explicit` — else a brownfield repo's FRs collapse into the hard-gate regime
-# and drown in MISSING findings (Spec §9 / R4). Matched NARROWLY to `(inferred)`
-# only: a post-rollout author writing e.g. `unit, e2e (auto)` must NOT be silently
-# downgraded out of the hard gate — a plain author cell carries no marker → `explicit`.
-_INFERRED_MARKER_RE = re.compile(r"\(\s*inferred\s*\)", re.IGNORECASE)
+# A machine-emitted Layers cell carries the EXACT `(inferred)` marker: its layers
+# were derived from the detected surface, not author-chosen, so it reads as
+# advisory (`inferred_legacy`) rather than `explicit` — else a brownfield repo's
+# FRs collapse into the hard-gate regime and drown in MISSING findings (Spec §9 /
+# R4). Matched NARROWLY: a post-rollout author writing e.g. `unit, e2e (auto)`
+# must NOT be silently downgraded out of the hard gate — a plain author cell
+# carries no marker → `explicit`.
+#
+# **Imported, not re-declared** (campaign S5). This regex used to be a private
+# copy here while `artifact_writer` hand-formatted the matching string at the
+# other end, so producer and consumer each owned half of one serialized-format
+# contract with nothing holding them together — the ADR-024 defect class. The
+# marker and the renderer that emits it now live in `fr_table_shape`, and this
+# side reads it from there.
+def _marker_re():
+    return load_shared_lib("fr_table_shape").INFERRED_MARKER_RE
 
 
 def _load_model():
@@ -98,6 +111,7 @@ def parse_requirements(
     the gate and silently discard the author's intent (mirror of TT1 ``invalid_tags``).
     """
     rm = _load_model()
+    marker_re = _marker_re()
     reqs: list = []
 
     # Rows the reader declined. Recorded rather than silently dropped: the
@@ -113,7 +127,7 @@ def parse_requirements(
         layers_cell = row.layers_cell
         layers_from_named_col = row.layers_from_named_col
         raw_cell = layers_cell.strip()
-        has_marker = bool(_INFERRED_MARKER_RE.search(layers_cell))
+        has_marker = bool(marker_re.search(layers_cell))
         layers = _parse_layers(layers_cell, rm)
         if layers:
             source = "inferred_legacy" if has_marker else "explicit"
@@ -134,6 +148,69 @@ def parse_requirements(
         else:
             # Empty cell (or an ambiguous positional cell) → legacy inference.
             layers, source = _infer_layers(title)
+
+        # A GLUED marker — `unit,e2e(inferred)` — is prevented at the producer
+        # (`fr_table_shape.render_layers` is the only sanctioned writer) but a
+        # spec.md is hand-edited by design and the iterate ADD path writes rows
+        # by hand, so sanction is not enforcement. The tokeniser splits on
+        # `[,\s/|]+`, so the glued token `e2e(inferred)` is not a layer and the
+        # requirement silently loses e2e while still LOOKING healthy: it keeps
+        # advisory provenance and, before this, recorded nothing anywhere.
+        #
+        # Detected differentially: parse the cell again with the marker split
+        # OFF, and compare. Equal means the marker was already separated;
+        # different means gluing swallowed a layer. That is exact — it needs no
+        # second opinion about what a layer name may contain — and it is silent
+        # on the legitimate bare-marker cell, where both sides parse to ().
+        #
+        # Provenance is deliberately NOT changed: the cell IS tool-derived and
+        # advisory is the right regime for it. Only the loss becomes visible.
+        if has_marker and invalid_layers is not None:
+            body = marker_re.sub(" ", layers_cell)
+            if (unglued := _parse_layers(body, rm)) != layers:
+                invalid_layers.append({
+                    "fr": fr_id, "spec_path": spec_path,
+                    "raw": raw_cell, "reason": "marker_glued",
+                    "lost": [lyr for lyr in unglued if lyr not in layers],
+                })
+            else:
+                # A marked cell whose tokens are not layer names at all —
+                # `ui (inferred)`, `ui, db (inferred)`. The marker keeps it
+                # advisory (correct: it IS tool-derived) and the tokens resolve
+                # to nothing, so the requirement quietly ends up with NO
+                # coverage obligation and, before this, no diagnostic either —
+                # the same silent-loss class as the glued marker, reached by a
+                # different route. The differential above cannot see it because
+                # both sides parse to the same empty tuple.
+                unknown = [t for t in re.split(r"[,\s/|]+", body.strip())
+                           if t and not rm.is_layer(t.lower())]
+                # Only when the cell resolved to NOTHING. **This is a deliberate
+                # trade-off with a real cost, not a free win.**
+                #
+                # It buys: no wrong-cause message on `unit and e2e (inferred)`,
+                # which parses correctly to ("unit","e2e") — the stray "and" is
+                # prose, and reporting it as a lost layer is exactly the
+                # defect class this diagnostic exists to remove.
+                #
+                # It costs: a typo'd layer name ALONGSIDE a valid one is now
+                # silent. `unit, e2ee (inferred)` yields ("unit",), the glued
+                # differential sees nothing (both sides agree), and the dropped
+                # `e2ee` is reported nowhere — the requirement quietly carries
+                # one layer instead of two. Without the guard that case WAS
+                # reported.
+                #
+                # A token in this position is either prose or a misspelling and
+                # nothing about its shape distinguishes them, so one of the two
+                # errors is unavoidable; silence on a partial cell was chosen
+                # over a false report on every correct one. Pinned as a
+                # characterization test (`test_a_typod_layer_beside_a_valid_one_
+                # is_not_reported`) so the blind spot is a recorded decision.
+                if not layers and unknown:
+                    invalid_layers.append({
+                        "fr": fr_id, "spec_path": spec_path,
+                        "raw": raw_cell, "reason": "unknown_layer_token",
+                        "lost": unknown,
+                    })
 
         reqs.append(rm.Requirement(
             id=fr_id, spec_path=spec_path, title=title,

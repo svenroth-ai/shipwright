@@ -115,14 +115,100 @@ split 04"*.
 - If two parallel iterates pick the same number, the duplicate is a **conflict
   to resolve at merge**, not a number to keep. Audit check `I4` flags it.
 
-**Grouping is the split — greenfield needs no `Area` column.** `/shipwright-project`
-already decomposes into splits (`02-task-board/`, `04-terminal/`), so the group
-is carried by the ID and by the file the FR lives in.
+**Grouping is the split, and `Area` is that grouping's display label — not a
+second axis.** `/shipwright-project` already decomposes into splits
+(`02-task-board/`, `04-terminal/`), so the group is carried by the ID.
 
-An `Area` column is a **brownfield repair**: `/shipwright-adopt` puts everything
-it discovers into one split, so the ID alone can no longer express the grouping
-and it has to be restored as a column. Do not add `Area` to a greenfield spec —
-create the right split instead.
+`Area` is **rendered from the ID's group digit**, never stored independently:
+`FR-03.xx` belongs to split `03-…` and its `Area` cell is that split's name.
+Two grouping axes for one fact diverge; a computed label cannot.
+
+- **Every spec carries the `Area` column**, greenfield and brownfield alike —
+  it is part of the one converged table shape (§4a) both generators emit, and
+  the column list is not optional.
+- **What greenfield still does NOT need is `### Area` sub-sections.** Add those
+  only when one split genuinely holds more than one area. A greenfield split
+  already carries its grouping in the ID, so in the normal case the sections
+  would restate what the IDs already say.
+- If you find yourself choosing an `Area` that disagrees with the ID's group,
+  **the ID is authoritative** and the requirement is filed in the wrong split —
+  create the right split rather than relabelling the cell. (The renderer will
+  not follow you: on disagreement it emits `Group NN`, so the inconsistency
+  shows up in the table.)
+
+---
+
+## 4a. The row: one shape, and two cells that are graded
+
+Every FR table, greenfield and brownfield, has one shape:
+
+```
+| ID | Area | Name | Priority | Description | Basis | Layers |
+```
+
+Do not add, drop, rename or reorder a column. Columns are resolved by NAME, so
+a renamed column is not a cosmetic choice — it is a column that stopped existing.
+
+### `Basis` — how we know this requirement
+
+One value, from a closed set. **A value outside it is a hard audit failure**
+(check `I5`), because that is a typo rather than a special case.
+
+| Value | Use when |
+|---|---|
+| `interview` | a human told us |
+| `code` | it was read from source |
+| `observed` | it was seen in the running application |
+| `tests` | it was derived from existing tests |
+| `assumed` | **nobody has confirmed it — it needs checking** |
+| `other` | a genuine special case; write `other: <reason>` |
+
+`assumed` is the one that earns its keep. Reach for it whenever you are
+tempted to guess: if an interviewee could not recall *why* a limit is 90 and
+you wrote down a plausible number, that requirement's basis is `assumed`, not
+`interview`. Recording the guess as a guess is the whole point.
+
+Known values take **no qualifier** — write `code`, never `code (auth.ts)`.
+`other` never blocks; a bare `other` is only nagged for its missing reason. A
+**blank** cell does fail, because declaring the column is opting in and
+`assumed` is always available as the honest answer.
+
+**How the cell is normalised before comparison** (one rule, so producer output
+and a hand-authored spec cannot diverge): surrounding whitespace is trimmed,
+wrapping Markdown emphasis (`` ` ``, `*`, `_`) is stripped, and the result is
+lowercased. So `` `Code` ``, `  code  ` and `**CODE**` are all `code`. Nothing
+else is normalised — comparison is against the exact ASCII tokens above, so a
+Unicode lookalike (a Cyrillic `с` in `сode`) is malformed and **fails loudly**
+rather than being silently accepted. That is the intended direction: this column
+exists to be checkable.
+
+### `Layers` — which test layers this must be covered at
+
+From `{unit, integration, e2e}`, comma-separated. Two forms, and the difference
+is not cosmetic:
+
+| Form | Means | Consequence |
+|---|---|---|
+| `unit, e2e` (bare) | **you are declaring it.** | **Binding.** A missing layer is a HARD coverage failure that exits non-zero — not a warning. |
+| `unit, e2e (inferred)` | **nobody has verified these layers.** Usually a tool wrote it (adopt, a migration), because a tool is usually what produces an unverified guess — but the marker describes the cell's STANDING, not who typed it, and a human may write it honestly. | Advisory. Reported, never blocking. |
+
+**Write the bare form only when the tests exist or you are about to write them
+in the same iterate.** Declaring `unit, e2e` on a requirement with no `@FR`-
+tagged tests hard-fails finalization on the spot, and there is no bypass — no
+env var, no flag, no label. That is intended: a human declaring layers for a
+capability they are building should be held to it.
+
+**When the layers have not been verified, `(inferred)` is the honest cell** and
+it is the one that does not block. `Basis: assumed` expresses the same *kind* of
+honesty about a different fact — do not substitute one for the other: `Basis`
+records how we know the **requirement**, `Layers` records what it must be
+**tested** at. A requirement can be `Basis: interview` and still have entirely
+unverified layers. Only the literal parenthesised word counts — `(auto)` and
+`(guess)` do **not** match and are read as a binding declaration.
+
+Mind the space: `unit (inferred)` is correct, `unit(inferred)` is not — the
+second parses as one unrecognised token and the requirement silently ends up
+with no required layers at all.
 
 ---
 
@@ -130,8 +216,10 @@ create the right split instead.
 
 1. A capability phrase, present tense, from the user's or system's standpoint.
 2. No `GET`/`POST`/`PUT`/`PATCH`/`DELETE`, no `snake_case` symbols, no file
-   paths, no ADR numbers, no iterate slugs. Those go to the Origin column,
-   the acceptance criteria, or `architecture.md`.
+   paths, no ADR numbers, no iterate slugs. Those go to the acceptance
+   criteria or `architecture.md`. **Not** to `Basis` — that column takes one
+   value from a closed vocabulary (§4a) and nothing else; the file path a
+   requirement came from is exactly what it replaced.
 3. About six words. Detail belongs in the description.
 4. One FR, one capability. A name joining two unrelated capabilities with
    "and" is usually two FRs.
@@ -170,13 +258,19 @@ document.
 | `I2` | an FR description carrying implementation detail | advisory |
 | `I3` | an FR that only describes a change to another FR — a fold candidate | advisory |
 | `I4` | the same FR ID used twice in one split, or reuse of a retired number | fails the audit |
+| `I5` | a `Basis` value outside the §4a vocabulary, or a blank cell in a table that declares the column | fails the audit |
 
 **Advisory** means the finding is reported with its count and IDs but does not
 change the audit's verdict or exit code — an existing spec can carry historical
 violations and clean up gradually without reddening CI. Fix them when you next
-touch the row. `I4` is different: two rows claiming one FR ID is an objective
-defect (it breaks the identity that tests and the event log depend on), so it
-fails for real.
+touch the row. `I4` and `I5` are different: two rows claiming one FR ID breaks
+the identity that tests and the event log depend on, and a `Basis` value outside
+a closed vocabulary is a typo rather than a special case. Both fail for real.
+
+`I5` reports `skip` on a spec with no `Basis` column at all — that is every spec
+written before the column existed, and scoring its absent values would make
+adopting the column a breaking change. Within the check, `other` is always
+advisory: an escape hatch that blocks is not one.
 
 `I1` reports `skip` on a spec shape with no Name column — the §5 fence has
 nothing to examine there, and reporting `pass` would be a false green.
