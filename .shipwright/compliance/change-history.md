@@ -1,17 +1,17 @@
 # Commit Change Log
 
-Generated: 2026-07-20T22:10:07.422159+00:00
-Total commits: 1186
+Generated: 2026-07-20T22:13:50.533361+00:00
+Total commits: 1188
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 341
+    "fix" : 340
     "feat" : 329
-    "chore" : 247
-    "docs" : 145
-    "refactor" : 74
+    "chore" : 248
+    "docs" : 146
+    "refactor" : 75
     "test" : 29
     "ci" : 11
     "other" : 9
@@ -20,11 +20,10 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 341 commits
+### Fixes (fix) — 340 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-21 | traceability | fail loud on shallow clone instead of skipping fr-history checks | be738046fa0d |
 | 2026-07-21 | events | recover record boundaries in the remaining event-log authority readers (#419) | 0cd30df86818 |
 | 2026-07-21 | finalize | stop flaky idempotency test reddening PRs across a UTC minute boundary (#418) | 4062797efa16 |
 | 2026-07-20 | adopt | roll FR-id group over past 99 so generated ids stay canonical (FR-01.13) (#416) | 5c9c4b316f05 |
@@ -700,10 +699,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 247 commits
+### Chores (chore) — 248 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-21 | churn | regenerate derived snapshots after main merge | aa26a452c7c2 |
 | 2026-07-19 | compliance | register four size crossings, ratchet nine entries, record the missing convention (#408) | 37fe1346b5df |
 | 2026-07-18 | triage | deliver 3 orphaned records from the merged iterate worktree (#402) | 56ee1c0e2387 |
 | 2026-07-18 | security | by-design nosemgrep suppression for the layer-coverage loader (#396) | 6cfd0e84655a |
@@ -952,10 +952,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 145 commits
+### Documentation (docs) — 146 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-21 | security | document operator-run converge for adopted repos (#420) | d9aa64b32f99 |
 | 2026-07-09 | constitution | require plain-language questions to the user (#354) | f879a73a4903 |
 | 2026-07-09 | claude-md | guide plain-language phrasing for questions to the user | 4daaa7d44b49 |
 | 2026-07-02 | planning | phased diff/patch-coverage roadmap (trg-8fdebda3) (#305) | 892001e73858 |
@@ -1102,10 +1103,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 74 commits
+### Refactoring (refactor) — 75 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-21 | adopt | route the eight scaffolders through one guarded shared/ loader (FR-01.13) | 58d1bb7bc517 |
 | 2026-07-20 | requirements | one catalog, stated once in plain language (campaign S6) (#414) | be2561caccd3 |
 | 2026-07-20 | requirements | one FR-table shape from both generators (campaign S5) (#413) | 5eef5076242c |
 | 2026-07-20 | shared | one header-driven FR-table reader replaces five parsers (#412) | 227a525e4549 |
@@ -1255,7 +1257,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1186 |
+| Total commits | 1188 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1186 |
+| Human-authored commits | 1188 |
 

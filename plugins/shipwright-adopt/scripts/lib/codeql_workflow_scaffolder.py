@@ -20,26 +20,19 @@ one with the other depending on import order.
 
 from __future__ import annotations
 
-import importlib.util
 from pathlib import Path
 from typing import TypedDict
+
+try:  # tool context: lib/ is on sys.path (setup_adopt/_load_lib)
+    from shared_loader import load_shared_module
+except ImportError:  # test / package context: scripts/ on sys.path, lib is a package
+    from lib.shared_loader import load_shared_module
 
 # parents[0]=lib, [1]=scripts, [2]=shipwright-adopt, [3]=plugins, [4]=<root>.
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 
-
-def _load_module(path: Path, alias: str):
-    spec = importlib.util.spec_from_file_location(alias, path)
-    if spec is None or spec.loader is None:
-        raise FileNotFoundError(f"could not load module from {path}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-_CODEQL = _load_module(
-    _REPO_ROOT / "shared" / "scripts" / "lib" / "codeql_workflow.py",
-    "_shipwright_adopt_codeql_workflow_constants",
+_CODEQL = load_shared_module(
+    "scripts/lib/codeql_workflow.py", "_shipwright_adopt_codeql_workflow_constants"
 )
 
 CODEQL_WORKFLOW_PATH: str = _CODEQL.CODEQL_WORKFLOW_PATH

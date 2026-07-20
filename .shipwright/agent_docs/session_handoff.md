@@ -1,39 +1,44 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-21-fr-history-skip-hardfail"
+run_id: "iterate-2026-07-20-adopt-shared-loader-guard"
 phase: "iterate"
-reason: "F11 pre-merge refresh: iterate-2026-07-21-fr-history-skip-hardfail"
-timestamp: "2026-07-20T22:10:15.358951+00:00"
+reason: "F11 re-refresh: integrate #420"
+timestamp: "2026-07-20T22:13:56.299243+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-20 22:10:15 UTC
+> Auto-generated 2026-07-20 22:13:56 UTC
 
 ## Session Info
 
-- **Session ID**: 6c3536fe-0c2c-41bb-89a5-ec4014b6c5ee
-- **Timestamp**: 2026-07-20 22:10:15 UTC
-- **Reason**: F11 pre-merge refresh: iterate-2026-07-21-fr-history-skip-hardfail
+- **Session ID**: df7a692d-7b6d-43aa-8e3a-2c40b36092eb
+- **Timestamp**: 2026-07-20 22:13:56 UTC
+- **Reason**: F11 re-refresh: integrate #420
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-21-fr-history-skip-hardfail
-- **Date**: 2026-07-20T22:10:07.235993Z
+- **Run ID**: iterate-2026-07-20-adopt-shared-loader-guard
+- **Date**: 2026-07-20T22:13:56.541351Z
 - **Type**: change
-- **Complexity**: small
-- **Branch**: iterate/fr-history-skip-hardfail
-- **ADR**: iterate-2026-07-21-fr-history-skip-hardfail
+- **Complexity**: medium
+- **Branch**: iterate/adopt-shared-loader-guard
+- **ADR**: iterate-2026-07-20-adopt-shared-loader-guard
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/2026-07-20-adopt-shared-loader-guard.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/fr-history-skip-hardfail
+- **Branch**: iterate/adopt-shared-loader-guard
+- **Run ID**: iterate-2026-07-20-adopt-shared-loader-guard
+- **Spec**: .shipwright/planning/iterate/2026-07-20-adopt-shared-loader-guard.md
+- **Complexity**: medium
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -47,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/fr-history-skip-hardfail
-- **Last Commit**: 018cf630 Merge remote-tracking branch 'origin/main' into iterate/fr-history-skip-hardfail
+- **Branch**: iterate/adopt-shared-loader-guard
+- **Last Commit**: 6bed0fd5 Merge remote-tracking branch 'origin/main' into iterate/adopt-shared-loader-guard
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,16 +70,16 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 | Event | Type | Source | Date |
 |-------|------|--------|------|
 | evt-dd32a165 | grade_snapshot | — | 2026-07-20 |
-| evt-477d6fa3 | grade_snapshot | — | 2026-07-20 |
-| evt-bcb0aa95 | work_completed | iterate (iterate: harden two fr-history shallow-clone skip hatches into hard fetch-depth failures (trg-3a131594)) | 2026-07-20 |
-| evt-ec752311 | grade_snapshot | — | 2026-07-20 |
-| evt-3f54c795 | work_completed | iterate (adopt FR-id cap: canonical group rollover past 99 detected features) | 2026-07-20 |
+| evt-429d92bb | grade_snapshot | — | 2026-07-20 |
+| evt-9af6a842 | grade_snapshot | — | 2026-07-20 |
+| evt-eaa519ea | work_completed | iterate (Document operator-run converge for adopted repos + guard test) | 2026-07-20 |
+| evt-4d5466ac | grade_snapshot | — | 2026-07-20 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 347
-- **Last iterate**: change — iterate: harden two fr-history shallow-clone skip hatches into hard fetch-depth failures (trg-3a131594) (2026-07-20)
+- **Total work events**: 348
+- **Last iterate**: change — Document operator-run converge for adopted repos + guard test (2026-07-20)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
