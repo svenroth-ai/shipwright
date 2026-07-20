@@ -1,14 +1,14 @@
 {
   "schema_version": 3,
   "collector_version": "test_links/1.0.0",
-  "generated_at": "2026-07-20T07:20:47.142879+00:00",
-  "source_commit": "e6b0c5a52e4bc66cab36104aa79815c0e94ca5de",
-  "spec_hash": "sha256:56b7e60a53ae5d9560ddfdfb97793322d577093f576b22dd55a24ec0c285f812",
+  "generated_at": "2026-07-20T11:22:19.047213+00:00",
+  "source_commit": "b9d54ec0ef8462a2c778278f3bf6668018e2f123",
+  "spec_hash": "sha256:488760babbc859c27e5ea059806165fb24492232a1cce1ddcbb2fb892b48a045",
   "requirements": {
     "01::FR-01.01": {
       "id": "FR-01.01",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
-      "title": "Orchestrate the full Shipwright SDLC pipeline — drives project, plan, build, test, security, deploy, changelog, and compliance phases end-to-end.",
+      "title": "Run the whole delivery pipeline end to end in one conversation — requirements, planning, design, build, test, security, deploy, changelog and compliance — so a change moves from a plain description to delivered work without the operator driving each phase by hand.",
       "priority": "Must",
       "status": "active",
       "required_layers": [
@@ -23,7 +23,7 @@
     "01::FR-01.02": {
       "id": "FR-01.02",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
-      "title": "Decompose project requirements (IREB) into well-scoped planning units; generate initial CLAUDE.md and `.shipwright/agent_docs` for the target project.",
+      "title": "Turn a project description into well-scoped, individually deliverable requirements, and write the starting guidance an assistant needs to work inside that project.",
       "priority": "Must",
       "status": "active",
       "required_layers": [
@@ -38,7 +38,7 @@
     "01::FR-01.03": {
       "id": "FR-01.03",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
-      "title": "AI-assisted deep planning with research, optional interview, external dual-LLM review (Gemini + GPT in parallel), TDD-first approach; produces section files consumable by /shipwright-build.",
+      "title": "Produce an implementation plan from research, an optional interview, and a review by two independent external language models — structured so the build phase can consume it section by section, tests first.",
       "priority": "Must",
       "status": "active",
       "required_layers": [
@@ -53,7 +53,7 @@
     "01::FR-01.04": {
       "id": "FR-01.04",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
-      "title": "Generate UI mockups from IREB specs as standalone HTML screens and user flows; iteratable via chat.",
+      "title": "Turn requirements into clickable mockups — standalone screens and the flows between them — that can be refined by conversation before any production code is written.",
       "priority": "Should",
       "status": "active",
       "required_layers": [
@@ -68,7 +68,7 @@
     "01::FR-01.05": {
       "id": "FR-01.05",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
-      "title": "Implement code from /shipwright-plan sections with TDD (red-green-refactor), code review, Conventional Commits, feature-branch git workflow.",
+      "title": "Implement a planned change test-first — write a failing test, make it pass, then tidy — with code review, conventional commit messages, and one branch per change.",
       "priority": "Must",
       "status": "active",
       "required_layers": [
@@ -83,7 +83,7 @@
     "01::FR-01.06": {
       "id": "FR-01.06",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
-      "title": "Run unit tests, E2E tests (Playwright), smoke tests, and security scans for Shipwright projects; emit a boundary-coverage report flagging serialized-format producer/consumer pairs that lack a round-trip test.",
+      "title": "Run the project's unit, end-to-end and smoke tests, and report which pairs of code that write and read the same stored format have no test proving a value survives the round trip.",
       "priority": "Must",
       "status": "active",
       "required_layers": [
@@ -325,7 +325,7 @@
     "01::FR-01.07": {
       "id": "FR-01.07",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
-      "title": "Security scanning chain (Aikido + Semgrep + Trivy + Gitleaks) with automated remediation loop and per-scanner exclude lists.",
+      "title": "Scan the project for vulnerabilities, leaked secrets and unsafe dependencies with several independent scanners, then drive the fixes to completion; each scanner keeps its own list of accepted exceptions.",
       "priority": "Must",
       "status": "active",
       "required_layers": [
@@ -340,7 +340,7 @@
     "01::FR-01.08": {
       "id": "FR-01.08",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
-      "title": "Deploy to configured targets with smoke testing and rollback; Jelastic (Infomaniak) shipped, Vercel + compose-VPS profiles documented as stubs.",
+      "title": "Deploy the project to a configured hosting target, prove it is alive with a smoke test, and roll back when it is not. Jelastic (Infomaniak) is shipped; Vercel and a container-on-a-server target are documented as stubs.",
       "priority": "Should",
       "status": "active",
       "required_layers": [
@@ -355,7 +355,7 @@
     "01::FR-01.09": {
       "id": "FR-01.09",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
-      "title": "Parse Conventional Commits from git history, generate Keep-a-Changelog entries, create version tags, open release PRs.",
+      "title": "Turn the commit history into a release note a human can read, tag the release, and open the release pull request.",
       "priority": "Must",
       "status": "active",
       "required_layers": [
@@ -429,7 +429,7 @@
     "01::FR-01.10": {
       "id": "FR-01.10",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
-      "title": "Generate audit-ready compliance documentation (RTM, test evidence, change history, SBOM) and run on-demand cross-artifact detective audit.",
+      "title": "Produce audit-ready evidence — which requirement is covered by which test, what changed when, and what the project depends on — and run an on-demand cross-check that reports where that evidence disagrees with reality.",
       "priority": "Must",
       "status": "active",
       "required_layers": [
@@ -444,7 +444,7 @@
     "01::FR-01.11": {
       "id": "FR-01.11",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
-      "title": "Complexity-adaptive SDLC for ongoing changes — auto-detects intent and complexity, scales from quick fix to structured feature with specs, plans, reviews, tests; every feature/change classifies its spec impact (ADD/MODIFY/REMOVE/NONE), enforced at finalization.",
+      "title": "Handle an ongoing change at the depth it deserves: detect what kind of change it is and how big, then scale from a quick fix to a fully specified feature with plans, reviews and tests. Every feature or change records whether it adds, modifies, removes or leaves the requirements untouched, and that record is enforced before the change can be finished.",
       "priority": "Must",
       "status": "active",
       "required_layers": [
@@ -977,7 +977,7 @@
     "01::FR-01.12": {
       "id": "FR-01.12",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
-      "title": "Local browser preview — start dev server for the target project and show the URL.",
+      "title": "Start the project locally and hand back the address to open in a browser.",
       "priority": "May",
       "status": "active",
       "required_layers": [
@@ -992,7 +992,7 @@
     "01::FR-01.13": {
       "id": "FR-01.13",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
-      "title": "Onboard an existing (brownfield) repository into the Shipwright SDLC; analyzes codebase, generates CLAUDE.md, agent_docs, planning specs, compliance artifacts, suggest_iterate hook, and an E2E baseline; scaffolds `.env.local` with the profile's framework keys.",
+      "title": "Bring an existing codebase under Shipwright: read what is already there, write the starting guidance, derive an initial requirements catalog and compliance evidence, and lay down a baseline end-to-end test.",
       "priority": "Must",
       "status": "active",
       "required_layers": [
@@ -1130,7 +1130,7 @@
     "01::FR-01.14": {
       "id": "FR-01.14",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
-      "title": "Pre-backlog triage buffer — findings from local hooks/scans/audits and from GitHub's automated runs (code-scanning, Dependabot, secret-scanning alerts, failed CI runs) land in a per-project `.shipwright/triage.jsonl` store via idempotent producers and surface in the Command Center WebUI Triage tab with operator-driven promote/dismiss, keeping the ExternalTask list curated instead of flooded.",
+      "title": "Collect findings from local checks and from the code host's automated scans into one per-project buffer the operator works through — each finding recorded once, and each either promoted into real work or dismissed — so the actual task list stays curated instead of flooded.",
       "priority": "Must",
       "status": "active",
       "required_layers": [
@@ -1772,7 +1772,7 @@
     "01::FR-01.15": {
       "id": "FR-01.15",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
-      "title": "The two artifacts the Command Center WebUI renders field-for-field — `/shipwright-grade`'s report view-model (`grade.py --format json`) and `/shipwright-adopt`'s `.shipwright/adopt/snapshot.json` — are versioned output contracts (`schema_version`, `major.minor`: major = breaking, the consumer must refuse to render; minor = additive, the consumer keeps working). Each producer's SKILL.md states the contract and names the consumer, and a contract gate per producer diffs the emitted payload against the fixture published on `origin/main` and fails until the bump that diff obliges has been performed — so a shape change cannot reach the consumer silently.",
+      "title": "The two payloads the companion application renders field for field are versioned output contracts: a breaking change obliges the consumer to refuse the payload, an additive one leaves it working. Each producer states its contract and names its consumer, and a gate compares what it emits against the shape last published and fails until the version has been raised — so a shape change cannot reach the consumer silently.",
       "priority": "Must",
       "status": "active",
       "required_layers": [
@@ -1949,12 +1949,24 @@
     "integration-tests/test_removal_survivors_offpath.py::test_gate_policy_is_inert_for_a_standalone_project",
     "integration-tests/test_removal_survivors_offpath.py::test_generic_handoff_still_written_after_the_phase_branch_was_cut",
     "integration-tests/test_removal_survivors_offpath.py::test_phase_completion_fallback_still_fires",
+    "integration-tests/test_requirements_catalog_contract.py::test_all_fifteen_requirements_survive_with_unchanged_ids",
+    "integration-tests/test_requirements_catalog_contract.py::test_every_layers_cell_keeps_the_inferred_marker",
+    "integration-tests/test_requirements_catalog_contract.py::test_every_requirement_has_an_explicit_anchor",
+    "integration-tests/test_requirements_catalog_contract.py::test_every_rtm_deep_link_resolves_end_to_end",
+    "integration-tests/test_requirements_catalog_contract.py::test_no_requirement_text_carries_a_run_id_adr_number_or_path",
+    "integration-tests/test_requirements_catalog_contract.py::test_the_catalog_declares_no_removed_requirements_section",
+    "integration-tests/test_requirements_catalog_contract.py::test_the_catalog_path_is_covered_by_a_registered_artifact_migration",
+    "integration-tests/test_requirements_catalog_parsers.py::test_the_fr_heading_coherence_report_is_knowingly_wrong_here",
+    "integration-tests/test_requirements_catalog_parsers.py::test_the_fr_table_reader_still_sees_exactly_fifteen_requirements",
+    "integration-tests/test_requirements_catalog_parsers.py::test_the_heading_parser_sees_the_same_fifteen",
     "integration-tests/test_requirements_corpus_false_verdicts.py::test_fv1_absent_planning_tree_skips_correctly",
     "integration-tests/test_requirements_corpus_false_verdicts.py::test_fv1_t1_can_still_fail_when_rows_do_parse",
     "integration-tests/test_requirements_corpus_false_verdicts.py::test_fv1_the_populated_state_is_distinguishable_from_the_empty_ones",
     "integration-tests/test_requirements_corpus_false_verdicts.py::test_fv1_zero_row_parse_now_fails_instead_of_skipping",
-    "integration-tests/test_requirements_corpus_false_verdicts.py::test_fv2_empty_manifest_asserts_positive_coverage",
-    "integration-tests/test_requirements_corpus_false_verdicts.py::test_fv2_group_d_guards_skip_on_empty_requirements",
+    "integration-tests/test_requirements_corpus_false_verdicts.py::test_fv2_a_populated_manifest_still_reaches_a_real_verdict",
+    "integration-tests/test_requirements_corpus_false_verdicts.py::test_fv2_d1_d2_d4_still_skip_when_there_is_nothing_at_all_to_compare",
+    "integration-tests/test_requirements_corpus_false_verdicts.py::test_fv2_d2_now_fails_when_an_event_references_a_nonexistent_fr",
+    "integration-tests/test_requirements_corpus_false_verdicts.py::test_fv2_empty_manifest_no_longer_asserts_positive_coverage",
     "integration-tests/test_requirements_corpus_false_verdicts.py::test_fv2_group_i_skips_every_check_on_empty",
     "integration-tests/test_requirements_corpus_found_defects.py::test_a_flipped_entry_records_which_run_flipped_it_and_what_it_reads_now",
     "integration-tests/test_requirements_corpus_found_defects.py::test_every_frozen_bug_names_its_flipping_step",
@@ -2740,10 +2752,14 @@
     "plugins/shipwright-compliance/tests/test_audit_group_i.py::test_adopt_spec_flags_name_and_description",
     "plugins/shipwright-compliance/tests/test_audit_group_i.py::test_clean_adopt_spec_passes_the_name_fence",
     "plugins/shipwright-compliance/tests/test_audit_group_i.py::test_clean_greenfield_spec_is_clean",
+    "plugins/shipwright-compliance/tests/test_audit_group_i.py::test_distinct_fr_ids_across_two_documents_still_pass",
+    "plugins/shipwright-compliance/tests/test_audit_group_i.py::test_duplicate_fr_id_across_two_documents_now_fails",
     "plugins/shipwright-compliance/tests/test_audit_group_i.py::test_duplicate_fr_id_is_reported",
+    "plugins/shipwright-compliance/tests/test_audit_group_i.py::test_duplicate_fr_id_within_one_document_still_fails",
     "plugins/shipwright-compliance/tests/test_audit_group_i.py::test_every_finding_is_detective_only_and_advisory",
     "plugins/shipwright-compliance/tests/test_audit_group_i.py::test_findings_cap_the_preview_but_report_the_true_count",
     "plugins/shipwright-compliance/tests/test_audit_group_i.py::test_fold_candidate_is_reported",
+    "plugins/shipwright-compliance/tests/test_audit_group_i.py::test_i4_display_name_says_catalog_not_split",
     "plugins/shipwright-compliance/tests/test_audit_group_i.py::test_no_spec_skips_rather_than_fails",
     "plugins/shipwright-compliance/tests/test_audit_group_i.py::test_prose_checks_never_flip_the_audit_verdict",
     "plugins/shipwright-compliance/tests/test_audit_group_i.py::test_retired_fr_number_must_not_be_reused",
@@ -2826,7 +2842,6 @@
     "plugins/shipwright-compliance/tests/test_audit_groups_a_d.py::test_d2_flags_stale_fr_on_non_work_completed_event",
     "plugins/shipwright-compliance/tests/test_audit_groups_a_d.py::test_d2_flags_stale_fr_reference",
     "plugins/shipwright-compliance/tests/test_audit_groups_a_d.py::test_d2_passes_when_every_event_fr_exists_in_spec",
-    "plugins/shipwright-compliance/tests/test_audit_groups_a_d.py::test_d2_skips_when_no_spec",
     "plugins/shipwright-compliance/tests/test_audit_groups_a_d.py::test_d3_flags_promised_but_never_touched_fr",
     "plugins/shipwright-compliance/tests/test_audit_groups_a_d.py::test_d3_passes_when_fr_delivered_in_same_event",
     "plugins/shipwright-compliance/tests/test_audit_groups_a_d.py::test_d3_passes_when_promised_frs_were_delivered",
@@ -3315,6 +3330,16 @@
     "plugins/shipwright-compliance/tests/test_grade_snapshot_regen.py::test_not_gradeable_repo_emits_nothing",
     "plugins/shipwright-compliance/tests/test_grade_snapshot_regen.py::test_snapshot_grade_matches_dashboard",
     "plugins/shipwright-compliance/tests/test_group_cf_fixture_loop_capture.py::test_each_fixture_check_binds_its_own_id",
+    "plugins/shipwright-compliance/tests/test_group_d_empty_set_verdicts.py::test_d2_fails_when_no_spec_but_events_still_reference_frs",
+    "plugins/shipwright-compliance/tests/test_group_d_empty_set_verdicts.py::test_d2_still_skips_when_no_spec_and_no_fr_references",
+    "plugins/shipwright-compliance/tests/test_group_d_empty_set_verdicts.py::test_d2_still_skips_when_there_is_no_event_log_at_all",
+    "plugins/shipwright-compliance/tests/test_group_d_empty_set_verdicts.py::test_every_operator_facing_document_matches_d2s_actual_verdict",
+    "plugins/shipwright-compliance/tests/test_group_d_empty_set_verdicts.py::test_zero_requirements_plus_a_tagged_test_yields_a_nonempty_orphan_list",
+    "plugins/shipwright-compliance/tests/test_group_d_empty_state_diagnosis.py::test_a_readable_spec_keeps_the_historical_stale_reference_wording",
+    "plugins/shipwright-compliance/tests/test_group_d_empty_state_diagnosis.py::test_an_all_retired_spec_is_not_reported_as_an_empty_or_broken_table",
+    "plugins/shipwright-compliance/tests/test_group_d_empty_state_diagnosis.py::test_an_unreadable_table_is_not_reported_as_stale_references",
+    "plugins/shipwright-compliance/tests/test_group_d_empty_state_diagnosis.py::test_no_spec_at_all_says_so_rather_than_blaming_the_table",
+    "plugins/shipwright-compliance/tests/test_group_d_empty_state_diagnosis.py::test_the_fail_soft_fallback_degrades_to_the_historical_wording",
     "plugins/shipwright-compliance/tests/test_group_d_hardening.py::test_active_plus_removed_is_not_a_collision_and_keeps_the_live_node",
     "plugins/shipwright-compliance/tests/test_group_d_hardening.py::test_dlayer_active_active_collision_ok_not_credited",
     "plugins/shipwright-compliance/tests/test_group_d_hardening.py::test_dlayer_active_removed_collision_ok_not_credited",
@@ -3336,6 +3361,8 @@
     "plugins/shipwright-compliance/tests/test_group_d_provenance_hardening.py::test_orphan_unknown_category_is_surfaced",
     "plugins/shipwright-compliance/tests/test_group_d_provenance_hardening.py::test_out_of_vocab_source_is_rejected_on_read_and_d1_falls_back",
     "plugins/shipwright-compliance/tests/test_group_d_traceability.py::test_group_d_run_emits_traceability_findings_end_to_end",
+    "plugins/shipwright-compliance/tests/test_group_d_traceability.py::test_layer_all_retired_is_NOT_the_empty_case",
+    "plugins/shipwright-compliance/tests/test_group_d_traceability.py::test_layer_empty_manifest_skips_instead_of_claiming_coverage",
     "plugins/shipwright-compliance/tests/test_group_d_traceability.py::test_layer_explicit_missing_layer_fails_by_priority",
     "plugins/shipwright-compliance/tests/test_group_d_traceability.py::test_layer_fanout_collision_ok_is_not_credited_but_advisory",
     "plugins/shipwright-compliance/tests/test_group_d_traceability.py::test_layer_invalid_layers_is_hard_finding",

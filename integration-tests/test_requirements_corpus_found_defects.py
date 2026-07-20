@@ -228,8 +228,12 @@ def test_a_flipped_entry_records_which_run_flipped_it_and_what_it_reads_now():
     prevent, displaced in time. So a flip is an EDIT that adds provenance, and
     this test is what makes that a rule rather than a habit.
     """
-    assert set(FLIPPED) == {"FV-1", "FV-3", "FV-4", "FV-5"}
-    assert STILL_FROZEN == ("FV-2",), "FV-2 belongs to S6, not S4"
+    assert set(FLIPPED) == {"FV-1", "FV-2", "FV-3", "FV-4", "FV-5"}
+    assert STILL_FROZEN == (), (
+        "S6 flipped FV-2, the last one. The corpus is now a plain regression "
+        "baseline: nothing in it is wrong on purpose any more, so a surprising "
+        "cell is a defect to investigate rather than a frozen bug to respect."
+    )
     for bug_id in FLIPPED:
         info = FROZEN_BUGS[bug_id]
         assert info["flipped_in"], bug_id

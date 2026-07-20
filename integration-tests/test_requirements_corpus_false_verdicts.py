@@ -120,20 +120,45 @@ def test_fv1_t1_can_still_fail_when_rows_do_parse():
 # FV-2 -- an empty requirement set reads GREEN
 # ---------------------------------------------------------------------------
 
-def test_fv2_group_d_guards_skip_on_empty_requirements():
-    """FROZEN-BUG (FV-2): D1/D2/D4 skip rather than fail on zero requirements.
+def test_fv2_d2_now_fails_when_an_event_references_a_nonexistent_fr():
+    """FLIPPED by S6 (was FROZEN-BUG FV-2), the sharpest of the D-group three.
 
-    D2 is the sharpest of the three: with zero spec FRs, EVERY ``affected_frs``
-    reference in the event log is by definition stale -- the maximally red
-    state. The guard returns 'skip'.
+    With zero spec FRs, EVERY ``affected_frs`` reference in the event log is by
+    definition stale -- the maximally red state. D2 nonetheless reported 'skip',
+    because ``if not spec_frs: skip`` sat ABOVE the staleness loop and made the
+    FAIL branch unreachable. Exactly the shape of FV-1: a falsiness guard placed
+    early enough that the check it guards can never run.
 
-    Flipped by: S6.
+    S6 moved the guard BELOW the loop, so it now only fires on the clean branch.
+    Zero spec FRs plus an FR-referencing event FAILs; zero spec FRs plus no
+    references at all still skips, because then there genuinely was nothing to
+    compare -- and it says so rather than claiming every reference resolved.
+    """
+    result = _probe("group_d_empty", "absent")
+    status, severity, detail, _evidence = result["D2_with_refs"]
+    assert status == "fail"
+    assert severity == "MEDIUM"
+    assert "FR-99.99" in detail
+
+
+def test_fv2_d1_d2_d4_still_skip_when_there_is_nothing_at_all_to_compare():
+    """Control for the flip above -- and NOT itself a frozen bug.
+
+    'No requirements and no events' is a real, legitimate state (a project before
+    its first requirements run). Skipping there is correct; what FV-2 named was
+    the false CLAIM, not the absence of a block. Without this assertion the flip
+    above would also pass if D2 had been made unconditionally red, which would
+    trade a false green for a false red.
     """
     result = _probe("group_d_empty", "absent")
     assert [result["D1"][0], result["D2"][0], result["D4"][0]] == [
         "skip", "skip", "skip",
-    ]  # FROZEN-BUG (FV-2)
+    ]
     assert result["D2"][1] == "MEDIUM"
+    # The skip NAMES which empty state produced it (S6): the `absent` fixture
+    # has no planning tree at all, which is a different situation from a spec
+    # whose every row was declined -- and D2 can now FAIL on the latter.
+    assert "no spec.md" in result["D2"][2]
 
 
 def test_fv2_group_i_skips_every_check_on_empty():
@@ -153,7 +178,12 @@ def test_fv2_group_i_skips_every_check_on_empty():
 
     I5 (Basis vocabulary) joined the group in S5.
 
-    Flipped by: S6.
+    **S6 DELIBERATELY DID NOT FLIP THIS.** It flipped the two sites that emitted
+    a positive claim over the empty set (D-orphan / D-layer) and the one whose
+    early guard made its red branch unreachable (D2). Group I is neither: it is
+    detective-only, its skip is honest about examining nothing, and S5 already
+    made it name which of six states produced the skip. Reddening it would be a
+    false red on a repo with no requirements yet, bought for no gain.
     """
     findings = _probe("group_i_empty", "absent")
     assert {f["check_id"] for f in findings} == {"I1", "I2", "I3", "I4", "I5"}
@@ -162,24 +192,49 @@ def test_fv2_group_i_skips_every_check_on_empty():
     assert all("no spec.md found" in f["detail"] for f in findings)
 
 
-def test_fv2_empty_manifest_asserts_positive_coverage():
-    """FROZEN-BUG (FV-2), the sharpest site -- and NOT the one the SPEC names.
+def test_fv2_empty_manifest_no_longer_asserts_positive_coverage():
+    """FLIPPED by S6 (was FROZEN-BUG FV-2), the sharpest site in the family --
+    and NOT the one the campaign SPEC names.
 
-    Every other empty-set guard at least says 'skip'. These two emit **pass**,
-    and the layer check states a positive fact about a set it never examined:
-    "every active FR is covered at its required layers", over zero FRs.
+    Every other empty-set guard at least said 'skip'. These two emitted **pass**,
+    and the layer check stated a positive fact about a set it never examined:
+    "every active FR is covered at its required layers", over zero FRs. A reader
+    of the audit report could not distinguish that from a genuinely fully-covered
+    project. That was the whole of FV-2 in one string.
 
-    A reader of the audit report cannot distinguish this from a genuinely
-    fully-covered project. That is the whole of FV-2 in one string.
+    The argument that carried the flip: this repo already knows how to treat
+    emptiness as a defect -- adopt_compliance A2 FAILs on no specs,
+    campaign_status raises, design_checks returns not-ok -- so the green was a
+    local inconsistency in the requirements plane, not a house style.
 
-    Worth noting this repo already knows how to treat emptiness as a defect --
-    adopt_compliance A2 FAILs on no specs, campaign_status raises,
-    design_checks returns not-ok. So this is a local inconsistency in the
-    requirements plane, not a house style. That is the argument S6 will need.
+    D-layer now skips, and the skip NAMES the state. Deliberately not 'fail': a
+    repo with no requirements yet is legitimate, so a hard verdict would swap a
+    false green for a false red. What is removed is the claim, not the tolerance.
 
-    Flipped by: S6.
+    **D-orphan was deliberately NOT flipped**, though it was pinned alongside
+    D-layer here. Its sentence over an empty requirement set is TRUE rather than
+    vacuous: had any test carried an @FR tag, every one would be absent-FR and
+    would appear in `orphans`, so an empty list means there were no tagged tests
+    -- a claim about the tag universe, which was examined. Flipping it also broke
+    two unrelated pins (`test_orphan_passes_when_no_orphans`,
+    `..._unmapped_alone_is_informational_not_accusation`), which is what surfaced
+    that the two sites were being treated as one defect when they are not.
     """
     result = _probe("d_traceability_empty", "absent")
-    assert result["orphan"][0] == "pass"  # FROZEN-BUG (FV-2)
-    assert result["layer"][0] == "pass"   # FROZEN-BUG (FV-2)
+    assert result["layer"][0] == "skip"
+    assert "nothing was examined" in result["layer"][2]
+    assert "every active FR is covered" not in result["layer"][2]
+    assert result["orphan"][0] == "pass"  # see docstring -- not vacuous
+
+
+def test_fv2_a_populated_manifest_still_reaches_a_real_verdict():
+    """Control: the empty guard must not swallow the populated path.
+
+    Without this, the flip above would also pass if the two checks had been made
+    unconditionally skip -- which would silence the coverage plane completely
+    rather than stopping it lying about the empty set.
+    """
+    result = _probe("d_traceability_populated", "absent")
+    assert result["layer"][0] == "pass"
     assert result["layer"][2] == "every active FR is covered at its required layers"
+    assert result["orphan"][0] == "pass"

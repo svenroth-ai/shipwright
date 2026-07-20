@@ -167,6 +167,65 @@ def test_duplicate_fr_id_is_reported(tmp_path):
     assert "FR-02.01" in findings["I4"].detail
 
 
+# ---------------------------------------------------------------------------
+# I4 — dedup scope. GLOBAL since the requirements-catalog campaign (S6).
+# ---------------------------------------------------------------------------
+
+
+def _two_splits(tmp_path: Path, first: str, second: str) -> Path:
+    _spec(tmp_path, first, split="02-board")
+    _spec(tmp_path, second, split="03-reports")
+    return tmp_path
+
+
+def test_duplicate_fr_id_across_two_documents_now_fails(tmp_path):
+    """FLIPPED by S6: I4 deduped on ``(split, id)``, so this used to PASS.
+
+    The split half was only ever a proxy for "which document holds this row".
+    One ID naming two requirements breaks the identity that tests, the event log
+    and the traceability matrix all depend on — @FR tags are un-namespaced, so a
+    reused number means a tag cannot resolve to one requirement.
+
+    This is the externally visible behaviour change of the step: a downstream
+    repo whose several documents legally reuse numbers newly fails here.
+    """
+    findings = _by_id(_run(_two_splits(tmp_path, _GREENFIELD, _GREENFIELD)))
+    assert findings["I4"].status == "fail"
+    assert "FR-02.01" in findings["I4"].detail
+    assert "FR-02.02" in findings["I4"].detail
+
+
+def test_distinct_fr_ids_across_two_documents_still_pass(tmp_path):
+    """Control: the flip must not make MULTI-DOCUMENT itself the defect.
+
+    Without this, I4 could have been changed to fail on any repo with more than
+    one requirements document and the assertion above would still pass.
+    """
+    other = _GREENFIELD.replace("FR-02.0", "FR-03.0")
+    findings = _by_id(_run(_two_splits(tmp_path, _GREENFIELD, other)))
+    assert findings["I4"].status == "pass"
+
+
+def test_duplicate_fr_id_within_one_document_still_fails(tmp_path):
+    """Control: widening the scope must not drop the case it already caught."""
+    body = _GREENFIELD.replace("| FR-02.02 |", "| FR-02.01 |")
+    findings = _by_id(_run(_two_splits(tmp_path, body, _GREENFIELD.replace(
+        "FR-02.0", "FR-04.0"))))
+    assert findings["I4"].status == "fail"
+    assert "FR-02.01" in findings["I4"].detail
+
+
+def test_i4_display_name_says_catalog_not_split(tmp_path):
+    """The renamed check must not keep describing the narrower old scope.
+
+    A finding that still read "within a split" would tell an operator to look
+    inside one document for a collision that spans two.
+    """
+    findings = _by_id(_run(_spec(tmp_path, _GREENFIELD)))
+    assert findings["I4"].name == "Duplicate FR ID in the catalog"
+    assert "within a split" not in findings["I4"].name
+
+
 def test_no_spec_skips_rather_than_fails(tmp_path):
     findings = _by_id(_run(tmp_path))
     assert all(f.status == "skip" for f in findings.values())

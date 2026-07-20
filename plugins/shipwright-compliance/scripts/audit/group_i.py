@@ -7,7 +7,7 @@ own requirement, and duplicate FR IDs.
 - I1 — FR name carries a verb / symbol / path / ADR number / iterate slug
 - I2 — FR description carries implementation detail
 - I3 — FR only describes a change to another FR (fold candidate)
-- I4 — the same FR ID used twice within one split
+- I4 — the same FR ID used twice anywhere in the catalog
 
 **Advisory by construction, not by luck.** The three prose checks (I1/I2/I3)
 never emit ``status="fail"``, because a failing finding feeds
@@ -161,7 +161,7 @@ _CHECKS: tuple[tuple[str, str, str], ...] = (
     ("I1", "FR name carries implementation detail", "LOW"),
     ("I2", "FR description carries implementation detail", "LOW"),
     ("I3", "FR is a change-delta, not a capability", "LOW"),
-    ("I4", "Duplicate FR ID within a split", "MEDIUM"),
+    ("I4", "Duplicate FR ID in the catalog", "MEDIUM"),
     ("I5", "Malformed Basis value", "MEDIUM"),
 )
 
@@ -266,12 +266,13 @@ def run(
     ]
     folds = [r.id for r in rows if is_fold_candidate(r.description)]
 
-    # I4 must see retired rows: §4 forbids reusing a removed FR's number.
-    all_rows = scan_fr_rows(project_root, include_retired=True)
-    seen: dict[tuple[str, str], int] = {}
-    for r in all_rows:
-        seen[(r.split, r.id)] = seen.get((r.split, r.id), 0) + 1
-    dupes = sorted({fid for (_split, fid), n in seen.items() if n > 1})
+    # I4 must see retired rows: §4 forbids reusing a removed FR's number. Dedup is
+    # GLOBAL, not per-(split, id) — S6: one ID names one requirement across the whole
+    # catalog. Stricter: a repo whose splits legally reuse IDs newly FAILs (see note).
+    seen: dict[str, int] = {}
+    for r in scan_fr_rows(project_root, include_retired=True):
+        seen[r.id] = seen.get(r.id, 0) + 1
+    dupes = sorted({fid for fid, n in seen.items() if n > 1})
 
     # The §5 name fence only applies to tables that HAVE a Name column.
     # Greenfield carries a single Requirement sentence instead, so reporting

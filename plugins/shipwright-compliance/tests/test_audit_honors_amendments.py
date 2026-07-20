@@ -93,6 +93,6 @@ def test_d2_detects_stale_fr_carried_by_amendment(tmp_path):
     ]
     applied = group_d.events_amend.apply_amendments(raw)
     spec_frs = [types.SimpleNamespace(id="FR-001")]
-    status, _sev, detail, _evidence = group_d._check_d2(spec_frs, applied)
+    status, _sev, detail, _evidence = group_d._check_d2(spec_frs, applied, tmp_path)
     assert status == "fail"
     assert "FR-999" in detail

@@ -153,6 +153,47 @@ def test_layer_removed_fr_is_not_evaluated():
     assert status == "pass"  # removed FRs carry no live coverage obligation
 
 
+def test_layer_empty_manifest_skips_instead_of_claiming_coverage():
+    """FLIPPED by the requirements-catalog campaign, S6 (false verdict FV-2).
+
+    ``('pass', 'every active FR is covered at its required layers')`` over a
+    manifest with NO requirements is a positive claim about a set that was never
+    examined, and a reader of the audit report could not tell it apart from a
+    genuinely fully-covered project.
+
+    ``skip``, not ``fail``: a project with no requirements yet is legitimate, so
+    a hard verdict would swap a false green for a false red. Promoting this to a
+    block is explicitly out of scope for the campaign (it needs its own
+    baseline). What is removed is the CLAIM, not the tolerance — and the report
+    renders skip and pass with different markers, so the two states are now
+    distinguishable to the operator.
+    """
+    status, _sev, detail, evidence, cmd = gdt.check_layer(
+        {"schema_version": 3, "requirements": {}})
+    assert status == "skip"
+    assert "nothing was examined" in detail
+    assert "every active FR is covered" not in detail
+    assert evidence == [] and cmd is None
+
+
+def test_layer_all_retired_is_NOT_the_empty_case():
+    """Boundary between S6's new guard and the pre-existing removed-FR rule.
+
+    The guard is scoped to an EMPTY requirement set (``not reqs``), NOT to "no
+    ACTIVE requirement". The wider predicate was tried first and it swallowed
+    this case — where the check DID examine a set and correctly found nothing
+    owed, which is a different statement from having examined nothing at all.
+    Pinned so the distinction cannot be collapsed by a later tidy-up.
+    """
+    m = _manifest([
+        ("01-a", _node("FR-01.05", status="removed", source="explicit",
+                       required=("unit",), coverage={"unit": "n/a"})),
+    ])
+    status, _sev, detail, *_ = gdt.check_layer(m)
+    assert status == "pass"
+    assert "nothing was examined" not in detail
+
+
 # ---------------------------------------------------------------------------
 # D-layer — namespace fan-out fail-closed (carry-forward #1)
 # ---------------------------------------------------------------------------

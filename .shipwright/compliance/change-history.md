@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-07-20T07:20:47.142879+00:00
-Total commits: 1179
+Generated: 2026-07-20T11:22:19.047213+00:00
+Total commits: 1180
 
 ## Commit Distribution
 
@@ -11,7 +11,7 @@ pie title Commit Types
     "feat" : 327
     "chore" : 247
     "docs" : 145
-    "refactor" : 73
+    "refactor" : 74
     "test" : 29
     "ci" : 11
     "other" : 9
@@ -1096,11 +1096,12 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 73 commits
+### Refactoring (refactor) — 74 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-20 | requirements | one FR-table shape from both generators (campaign S5) | e6b0c5a52e4b |
+| 2026-07-20 | requirements | one catalog, stated once in plain language (campaign S6) | b9d54ec0ef84 |
+| 2026-07-20 | requirements | one FR-table shape from both generators (campaign S5) (#413) | 5eef5076242c |
 | 2026-07-20 | shared | one header-driven FR-table reader replaces five parsers (#412) | 227a525e4549 |
 | 2026-07-20 | compliance | derive the traceability namespace from the FR id (schema 2 to 3) (#411) | 121d850e81e5 |
 | 2026-07-19 | shared | one parameterized planning-discovery walk for all 15 call sites (#410) | 11d79f561eb3 |
@@ -1248,7 +1249,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1179 |
+| Total commits | 1180 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1179 |
+| Human-authored commits | 1180 |
 

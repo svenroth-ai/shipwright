@@ -21,13 +21,17 @@ were found while building this harness and are NOT in the SPEC; they were added
 to S4's acceptance criteria and filed as a triage anchor so they could not be
 lost if S4 were descoped.
 
-**Status after S4** (``iterate-2026-07-20-one-header-driven-parser``): FV-1,
-FV-3, FV-4 and FV-5 are flipped. FV-2 remains frozen and belongs to S6.
+**Status after S6** (``iterate-2026-07-19-requirements-merge-catalog``): all five
+are flipped. ``STILL_FROZEN`` is empty, which is the campaign's terminal state --
+the corpus stops being a freeze of known-wrong behaviour and becomes a plain
+regression baseline. Entries are kept, not deleted: a flipped entry is what makes
+its own golden diff explicable years later.
 """
 
 from __future__ import annotations
 
 _S4 = "iterate-2026-07-20-one-header-driven-parser"
+_S6 = "iterate-2026-07-19-requirements-merge-catalog"
 
 FROZEN_BUGS: dict[str, dict] = {
     "FV-1": {
@@ -78,7 +82,7 @@ FROZEN_BUGS: dict[str, dict] = {
         "also_pinned_in": "test_requirements_corpus_false_verdicts.py",
     },
     "FV-2": {
-        "state": "frozen",
+        "state": "flipped",
         "what": "An empty requirement set reads GREEN across the audit plane -- "
                 "'no requirements' is treated as 'nothing to audit'.",
         "mechanism":
@@ -95,6 +99,50 @@ FROZEN_BUGS: dict[str, dict] = {
                          "fixture, which S4 does not touch.",
         "flipped_by": "S6 (one catalog at one path: 'no requirements found' "
                       "stops being a legitimate state)",
+        "flipped_in": _S6,
+        "now":
+            "TWO sites moved, not the four this entry was pinned across -- "
+            "'reads green' turned out to be one label over several unrelated "
+            "situations, and only two of them were actually false. "
+            "(1) D-layer no longer emits ('pass', 'every active FR is covered "
+            "at its required layers') over an EMPTY requirement set; it skips "
+            "with a detail naming the state. That removes the positive CLAIM, "
+            "which is what a reader could not tell apart from a fully-covered "
+            "project. "
+            "(2) D2's `if not spec_frs: skip` guard moved BELOW the staleness "
+            "loop. It had made the maximally-red state unreachable -- with "
+            "zero spec FRs every event FR-ref is stale by definition -- which "
+            "is structurally the same defect as FV-1: a falsiness guard placed "
+            "early enough that the branch it guards can never run. Zero spec "
+            "FRs plus an FR-referencing event now FAILs. "
+            "HONEST LIMIT, twice over. First, the flip is `skip`, not `fail`: "
+            "a repo with no requirements yet is a legitimate state, so a hard "
+            "verdict would swap a false green for a false red. What is removed "
+            "is the claim, not the tolerance -- an operator still has to read "
+            "the skip to learn the plane examined nothing. Second, two of the "
+            "four pinned sites were deliberately left alone, because attempting "
+            "them showed they are not this defect. GROUP I: detective-only, and "
+            "S5 already made its skip name which of six states produced it -- "
+            "reddening it buys nothing and would be a false red on a repo with "
+            "no requirements yet. D-ORPHAN: its sentence over an empty "
+            "requirement set is TRUE, not vacuous -- had any test carried an "
+            "@FR tag, every one would be absent-FR and would land in `orphans`, "
+            "so an empty list means no tagged tests exist. Flipping it broke two "
+            "unrelated pins, which is how that surfaced. "
+            "The D-orphan argument had one falsifier, shipped OPEN at first and "
+            "CLOSED in the review round: whether the COLLECTOR short-circuits "
+            "before classifying tags when it finds no requirements. It does not "
+            "-- `test_links.build_manifest` walks every test file "
+            "unconditionally and every hit falls to `fr_absent` / "
+            "`confirmed_orphan`, so in any manifest the collector ACTUALLY "
+            "produces, an empty requirement set with tagged tests yields a "
+            "non-empty `orphans` and check_orphan never reaches its pass branch. "
+            "(The corpus probe still sees `pass`, because it hands check_orphan "
+            "a synthetic empty manifest directly -- that asserts the FUNCTION's "
+            "contract, which is a separate question from what the collector emits.) "
+            "Now a probe rather than a paragraph: "
+            "test_group_d_empty_set_verdicts.py::"
+            "test_zero_requirements_plus_a_tagged_test_yields_a_nonempty_orphan_list.",
         "cells": [],  # pinned as prose, not as a matrix cell
         "also_pinned_in": "test_requirements_corpus_false_verdicts.py",
     },
@@ -182,12 +230,12 @@ SPEC_NAMED = ("FV-1", "FV-2")
 #: Ids whose baseline cells have been corrected, newest campaign step last.
 #:
 #: **These are METADATA guards, not behavioural ones.** Both are derived from the
-#: ``state`` field in this file, so a test asserting ``STILL_FROZEN == ("FV-2",)``
-#: fails only if someone edits this dict — it cannot notice FV-2's behaviour
-#: changing underneath it. The behavioural freeze is carried entirely by the
-#: three ``test_fv2_*`` assertions in
-#: ``test_requirements_corpus_false_verdicts.py``. S6 flips FV-2: change those
-#: three FIRST and let this tuple follow, never the reverse.
+#: ``state`` field in this file, so a test asserting ``STILL_FROZEN == ()`` fails
+#: only if someone edits this dict — it cannot notice a behaviour changing
+#: underneath it. The behavioural record is carried entirely by the ``test_fv*``
+#: assertions in ``test_requirements_corpus_false_verdicts.py``. S6 flipped FV-2
+#: by changing those FIRST and letting this tuple follow, never the reverse —
+#: which is the order every future flip must also take.
 FLIPPED = tuple(k for k, v in FROZEN_BUGS.items() if v["state"] == "flipped")
 STILL_FROZEN = tuple(k for k, v in FROZEN_BUGS.items() if v["state"] == "frozen")
 

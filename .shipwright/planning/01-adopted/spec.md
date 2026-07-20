@@ -10,21 +10,21 @@ Shipwright is an AI-powered SDLC framework built on Claude Code. It is structure
 
 | ID | Area | Name | Priority | Description | Basis | Layers |
 |---|---|---|---|---|---|---|
-| FR-01.01 | Adopted | /shipwright-run | Must | Orchestrate the full Shipwright SDLC pipeline — drives project, plan, build, test, security, deploy, changelog, and compliance phases end-to-end. | code | unit (inferred) |
-| FR-01.02 | Adopted | /shipwright-project | Must | Decompose project requirements (IREB) into well-scoped planning units; generate initial CLAUDE.md and `.shipwright/agent_docs` for the target project. | code | unit (inferred) |
-| FR-01.03 | Adopted | /shipwright-plan | Must | AI-assisted deep planning with research, optional interview, external dual-LLM review (Gemini + GPT in parallel), TDD-first approach; produces section files consumable by /shipwright-build. | code | unit (inferred) |
-| FR-01.04 | Adopted | /shipwright-design | Should | Generate UI mockups from IREB specs as standalone HTML screens and user flows; iteratable via chat. | code | e2e (inferred) |
-| FR-01.05 | Adopted | /shipwright-build | Must | Implement code from /shipwright-plan sections with TDD (red-green-refactor), code review, Conventional Commits, feature-branch git workflow. | code | unit (inferred) |
-| FR-01.06 | Adopted | /shipwright-test | Must | Run unit tests, E2E tests (Playwright), smoke tests, and security scans for Shipwright projects; emit a boundary-coverage report flagging serialized-format producer/consumer pairs that lack a round-trip test. | code | unit (inferred) |
-| FR-01.07 | Adopted | /shipwright-security | Must | Security scanning chain (Aikido + Semgrep + Trivy + Gitleaks) with automated remediation loop and per-scanner exclude lists. | code | unit (inferred) |
-| FR-01.08 | Adopted | /shipwright-deploy | Should | Deploy to configured targets with smoke testing and rollback; Jelastic (Infomaniak) shipped, Vercel + compose-VPS profiles documented as stubs. | code | unit (inferred) |
-| FR-01.09 | Adopted | /shipwright-changelog | Must | Parse Conventional Commits from git history, generate Keep-a-Changelog entries, create version tags, open release PRs. | code | unit (inferred) |
-| FR-01.10 | Adopted | /shipwright-compliance | Must | Generate audit-ready compliance documentation (RTM, test evidence, change history, SBOM) and run on-demand cross-artifact detective audit. | code | unit (inferred) |
-| FR-01.11 | Adopted | /shipwright-iterate | Must | Complexity-adaptive SDLC for ongoing changes — auto-detects intent and complexity, scales from quick fix to structured feature with specs, plans, reviews, tests; every feature/change classifies its spec impact (ADD/MODIFY/REMOVE/NONE), enforced at finalization. | code | unit (inferred) |
-| FR-01.12 | Adopted | /shipwright-preview | May | Local browser preview — start dev server for the target project and show the URL. | code | e2e (inferred) |
-| FR-01.13 | Adopted | /shipwright-adopt | Must | Onboard an existing (brownfield) repository into the Shipwright SDLC; analyzes codebase, generates CLAUDE.md, agent_docs, planning specs, compliance artifacts, suggest_iterate hook, and an E2E baseline; scaffolds `.env.local` with the profile's framework keys. | code | unit (inferred) |
-| FR-01.14 | Adopted | Triage Inbox | Must | Pre-backlog triage buffer — findings from local hooks/scans/audits and from GitHub's automated runs (code-scanning, Dependabot, secret-scanning alerts, failed CI runs) land in a per-project `.shipwright/triage.jsonl` store via idempotent producers and surface in the Command Center WebUI Triage tab with operator-driven promote/dismiss, keeping the ExternalTask list curated instead of flooded. | code | unit (inferred) |
-| FR-01.15 | Adopted | Cross-repo output contract | Must | The two artifacts the Command Center WebUI renders field-for-field — `/shipwright-grade`'s report view-model (`grade.py --format json`) and `/shipwright-adopt`'s `.shipwright/adopt/snapshot.json` — are versioned output contracts (`schema_version`, `major.minor`: major = breaking, the consumer must refuse to render; minor = additive, the consumer keeps working). Each producer's SKILL.md states the contract and names the consumer, and a contract gate per producer diffs the emitted payload against the fixture published on `origin/main` and fails until the bump that diff obliges has been performed — so a shape change cannot reach the consumer silently. | code | e2e (inferred) |
+| FR-01.01 | Adopted | /shipwright-run | Must | Run the whole delivery pipeline end to end in one conversation — requirements, planning, design, build, test, security, deploy, changelog and compliance — so a change moves from a plain description to delivered work without the operator driving each phase by hand. | code | unit (inferred) |
+| FR-01.02 | Adopted | /shipwright-project | Must | Turn a project description into well-scoped, individually deliverable requirements, and write the starting guidance an assistant needs to work inside that project. | code | unit (inferred) |
+| FR-01.03 | Adopted | /shipwright-plan | Must | Produce an implementation plan from research, an optional interview, and a review by two independent external language models — structured so the build phase can consume it section by section, tests first. | code | unit (inferred) |
+| FR-01.04 | Adopted | /shipwright-design | Should | Turn requirements into clickable mockups — standalone screens and the flows between them — that can be refined by conversation before any production code is written. | code | e2e (inferred) |
+| FR-01.05 | Adopted | /shipwright-build | Must | Implement a planned change test-first — write a failing test, make it pass, then tidy — with code review, conventional commit messages, and one branch per change. | code | unit (inferred) |
+| FR-01.06 | Adopted | /shipwright-test | Must | Run the project's unit, end-to-end and smoke tests, and report which pairs of code that write and read the same stored format have no test proving a value survives the round trip. | code | unit (inferred) |
+| FR-01.07 | Adopted | /shipwright-security | Must | Scan the project for vulnerabilities, leaked secrets and unsafe dependencies with several independent scanners, then drive the fixes to completion; each scanner keeps its own list of accepted exceptions. | code | unit (inferred) |
+| FR-01.08 | Adopted | /shipwright-deploy | Should | Deploy the project to a configured hosting target, prove it is alive with a smoke test, and roll back when it is not. Jelastic (Infomaniak) is shipped; Vercel and a container-on-a-server target are documented as stubs. | code | unit (inferred) |
+| FR-01.09 | Adopted | /shipwright-changelog | Must | Turn the commit history into a release note a human can read, tag the release, and open the release pull request. | code | unit (inferred) |
+| FR-01.10 | Adopted | /shipwright-compliance | Must | Produce audit-ready evidence — which requirement is covered by which test, what changed when, and what the project depends on — and run an on-demand cross-check that reports where that evidence disagrees with reality. | code | unit (inferred) |
+| FR-01.11 | Adopted | /shipwright-iterate | Must | Handle an ongoing change at the depth it deserves: detect what kind of change it is and how big, then scale from a quick fix to a fully specified feature with plans, reviews and tests. Every feature or change records whether it adds, modifies, removes or leaves the requirements untouched, and that record is enforced before the change can be finished. | code | unit (inferred) |
+| FR-01.12 | Adopted | /shipwright-preview | May | Start the project locally and hand back the address to open in a browser. | code | e2e (inferred) |
+| FR-01.13 | Adopted | /shipwright-adopt | Must | Bring an existing codebase under Shipwright: read what is already there, write the starting guidance, derive an initial requirements catalog and compliance evidence, and lay down a baseline end-to-end test. | code | unit (inferred) |
+| FR-01.14 | Adopted | Triage Inbox | Must | Collect findings from local checks and from the code host's automated scans into one per-project buffer the operator works through — each finding recorded once, and each either promoted into real work or dismissed — so the actual task list stays curated instead of flooded. | code | unit (inferred) |
+| FR-01.15 | Adopted | Cross-repo output contract | Must | The two payloads the companion application renders field for field are versioned output contracts: a breaking change obliges the consumer to refuse the payload, an additive one leaves it working. Each producer states its contract and names its consumer, and a gate compares what it emits against the shape last published and fails until the version has been raised — so a shape change cannot reach the consumer silently. | code | e2e (inferred) |
 
 
 ## Quality Requirements
@@ -39,405 +39,248 @@ Shipwright is an AI-powered SDLC framework built on Claude Code. It is structure
 
 ## Acceptance Criteria
 
-Acceptance criteria per FR are placeholders (`TBD`) — refine them with explicit behavior expectations as features evolve via `/shipwright-iterate`.
+Criteria are stated in plain language, one behaviour per line, in the form
+_given … when … then …_. A requirement whose criteria still read `TBD` has not
+been elaborated yet — that is a gap to close, not a statement that the
+capability is unconstrained.
 
-The auto-generated E2E baseline at `e2e/flows/adopted-baseline.spec.ts` (if Playwright crawl succeeded) covers mechanical rendering / visibility checks, not semantic behavior.
+Where a requirement needs more than criteria — a rationale, a rejected
+alternative, a migration path — that detail stays in the planning document that
+produced it, and the requirement links to it. **Which changes touched a
+requirement is not recorded here**: it is answered by querying the append-only
+event log, so the answer cannot rot inside the requirement text. See
+_Where the work detail lives_ at the end of this document.
 
-### FR-01.11 — `/shipwright-iterate` (UserPromptSubmit hook ownership)
+<a id="fr-0101"></a>
+### FR-01.01 — /shipwright-run
 
-Refined by `iterate-20260505-plugin-hook-registration` (see
-`.shipwright/planning/iterate/2026-05-05-plugin-hook-registration.md`).
-Closes the deferred follow-up to ADR-019 / ADR-020.
+- (E) Given any surface the assistant runs on — including editor extensions and
+  desktop chat, neither of which can open a second bound session — when a
+  pipeline run starts, then every phase is driven inside that one conversation,
+  so the run advances instead of stalling at the first phase.
+- (E) Given a run configuration written before one-conversation mode became the
+  only mode, when any command tries to advance that run, then it is refused with
+  a one-line instruction for how to migrate it, and is never silently
+  reinterpreted. The run still opens for reading, so past runs stay inspectable.
+- (E) Given a project is set up for Shipwright, when setup finishes, then no
+  prompt hook is written into the project's own settings — the hook belongs to
+  the plugin, so nothing has to be installed per project.
 
-- (E) Given any project where `shipwright-iterate@shipwright` is enabled
-  in the user's `~/.claude/settings.json::enabledPlugins`, when a user
-  submits a non-slash UserPromptSubmit prompt, then the
-  `suggest_iterate.py` hook fires from
-  `plugins/shipwright-iterate/hooks/hooks.json` (registered as Shape B
-  matcher-group + quoted-path + `--no-project`). Claude Code expands
-  `${CLAUDE_PLUGIN_ROOT}` correctly inside plugin context. No project-
-  level `.claude/settings.json` install is required.
-- (E) Given a project that does NOT carry `shipwright_run_config.json`
-  in its CWD, when the plugin hook fires, then the script's Guard 1
-  short-circuits with `sys.exit(0)` and produces no stdout — the hook
-  is a no-op outside Shipwright projects.
+<a id="fr-0102"></a>
+### FR-01.02 — /shipwright-project
 
-Refined by `iterate-2026-05-16-spec-impact-gate` (spec-impact classification
-+ finalization gate):
+- (E) Given requirement decomposition writes a requirement sentence, when the
+  sentence is authored, then it states the capability in language a product
+  owner can sign off without decoding jargon, carries no file name, no
+  decision-record number, no code symbol and no HTTP verb, and drops no
+  behavioural guarantee for the sake of plainness.
+- (E) Given a change retires a requirement, when the requirements document is
+  updated, then the retired requirement moves into a clearly marked retired
+  section instead of being deleted; coverage reporting stops counting it as
+  live, and its number stays permanently taken.
+- (E) Given a project is set up, when setup finishes, then no prompt hook is
+  written into the project's own settings.
 
-- (E) Given a FEATURE or CHANGE `/shipwright-iterate` run, when it reaches
-  Step 2, then it classifies the spec impact as ADD / MODIFY / REMOVE /
-  NONE and the F7 `record_event.py` call records that classification
-  (`--spec-impact`); `record_event.py` exits 1 (nothing written) for a
-  feature/change iterate event that names no FR and gives no
-  `spec_impact=none` justification.
-- (E) Given a FEATURE/CHANGE iterate whose commit touched no
-  `.shipwright/planning/**/spec.md` file, when the F11 finalization
-  verifier runs `check_spec_impact_recorded`, then the run FAILS unless
-  the F7 event recorded `spec_impact=none` with a non-empty justification.
+<a id="fr-0103"></a>
+### FR-01.03 — /shipwright-plan
 
-Refined by BP-1 (behavior-affecting changes must link an FR):
+- TBD — not yet elaborated.
 
-- (E) Given a `work_completed` iterate event whose `spec_impact` is
-  `add`/`modify`/`remove` (behavior-affecting) and whose `affected_frs`/`new_frs`
-  are both empty, when the `record_event` FR-gate runs (at the CLI AND inside
-  `finalize_iterate`, intent-independently), then the event is rejected
-  (`fr_gate_behavior_affecting_requires_fr`) regardless of `change_type` — the
-  no-FR branch is reserved for behavior-preserving (`spec_impact=none`) work.
+<a id="fr-0104"></a>
+### FR-01.04 — /shipwright-design
 
-Refined by `iterate-2026-05-16-backfill-historical-frs` (backfill — F0.5
-End-to-End Verification Gate; historical events evt-510b8df3 + evt-40c653f7):
+- TBD — not yet elaborated.
 
-- (E) Given a medium+ iterate at finalization, when F0.5 (End-to-End
-  Verification Gate) runs, then the user-erlebbare surface (web | cli |
-  api, or `none` with a recorded justification) is empirically driven
-  through a running stack via `surface_verification.py`; spec-only
-  authorship (`tests_run == 0`) counts as no test and fails the gate.
+<a id="fr-0105"></a>
+### FR-01.05 — /shipwright-build
 
-Refined by `iterate-2026-07-14-f0-parallel-suite` (F0 Fresh Verification
-Gate — parallel suite runner; verdict-preserving):
+- TBD — not yet elaborated.
 
-- (E) Given a project that declares a `suite` block in
-  `shipwright_test_config.json`, when the F0 gate runs via
-  `shared/scripts/tools/run_test_suite.py`, then the discovered test units
-  (the same selection rule as `ci.yml`) execute as parallel processes and
-  the gate returns the **same pass/fail verdict as serial execution** —
-  `pytest-xdist` fan-out is a per-unit opt-in allowlist, never a global
-  `-n auto`.
-- (E) Given a unit that reports a failure only under concurrency, when the
-  runner finishes the parallel pass, then that unit is re-run **serially,
-  without xdist, in a clean temp dir**, and that serial verdict is
-  authoritative — so a race can never cause a false STOP; an infrastructure
-  fault (proven by the absence of the unit's JUnit report) is retried once
-  with the identical command shape and a deterministic fault still fails
+<a id="fr-0106"></a>
+### FR-01.06 — /shipwright-test
+
+- (E) Given code that writes a stored format and other code that reads it, when
+  the test phase runs, then it lists those pairs and flags every pair with no
+  test proving a value survives being written out and read back.
+
+<a id="fr-0107"></a>
+### FR-01.07 — /shipwright-security
+
+- TBD — not yet elaborated.
+
+<a id="fr-0108"></a>
+### FR-01.08 — /shipwright-deploy
+
+- TBD — not yet elaborated.
+
+<a id="fr-0109"></a>
+### FR-01.09 — /shipwright-changelog
+
+- TBD — not yet elaborated.
+
+<a id="fr-0110"></a>
+### FR-01.10 — /shipwright-compliance
+
+- (E) Given a completed change that says it affects behaviour but names no
+  requirement and gives no reason for naming none, when the cross-check audit
+  runs, then it is reported together with a suggested command to fix it, without
+  failing the audit.
+- (E) Given the change log, when requirement traceability is scored, then a
+  change counts as traced if it names a requirement or is a recognised
+  behaviour-preserving change carrying a one-line reason; the share of recent
+  changes that name a requirement is shown for information only, so the workload
+  mix — features versus maintenance — never moves the grade.
+- (E) Given a requirement was covered by a tested change at any point in the
+  past, when the audit runs, then it stays reported as covered; a later edit to
+  the requirements document does not reset that.
+- (E) Given requirement names or descriptions carry implementation detail, when
+  the audit runs, then it reports how many and which ones without changing the
+  verdict or the exit code, so an existing catalog can be cleaned up gradually
+  rather than all at once.
+- (E) Given two rows claim the same requirement ID anywhere in the catalog —
+  including reuse of a number already retired — when the audit runs, then it
+  fails, because one ID naming two requirements breaks the identity that tests
+  and the change log both depend on.
+
+<a id="fr-0111"></a>
+### FR-01.11 — /shipwright-iterate
+
+- (E) Given a change described in ordinary words, when it is picked up, then its
+  kind and its size are detected and the process scales to match — from a quick
+  fix through to a fully specified feature with plan, review and tests.
+- (E) Given a feature or change, when it is classified, then it records whether
+  it adds, modifies, removes or leaves the requirements untouched; a
+  behaviour-affecting change that names no requirement and gives no reason is
+  rejected at the moment it is recorded, whatever kind of change it claims to
+  be.
+- (E) Given a feature or change that touched no requirements document, when it
+  is finished, then finishing fails unless the record says the requirements were
+  deliberately left untouched and says why in one line.
+- (E) Given a change completes, polishes, fixes or extends a capability that
+  already has a requirement, when its requirement impact is classified, then it
+  is routed to modifying that requirement's criteria rather than to adding a new
+  requirement.
+- (E) Given a change does introduce a new requirement, when its number is
+  chosen, then it takes the next free number in that group counted over live and
+  retired requirements alike, so a retired number is never reused and the number
+  is never guessed.
+- (E) Given a change of medium size or larger, when it is finished, then
+  whatever a person can actually see or use — a page, a command, an interface,
+  or an explicitly recorded "none" — is driven through a running system;
+  producing only documents counts as no test and fails the gate.
+- (E) Given a project that declares how its test suite is laid out, when the
+  pre-finish test gate runs, then the test units run as parallel processes and
+  return the same pass-or-fail verdict as running them one after another. A unit
+  that fails only under concurrency is re-run alone in a clean directory and
+  that result is the one that counts, so a race can never falsely stop the work;
+  an infrastructure fault is retried once, and a fault that repeats still fails
   the gate.
-- (E) Given the F0 runner exists, when CI runs, then `.github/workflows/ci.yml`
-  still executes the same units **serially** as the independent cross-check
-  for a parallel-only false green, enforced by
-  `test_f0_ci_parity.py::test_ci_stays_SERIAL`.
+- (E) Given the parallel gate exists, when the shared build service runs, then
+  it still runs the same units one after another, as an independent cross-check
+  against a green that only parallel execution would produce.
+- (E) Given the plugin is enabled, when the user types an ordinary prompt, then
+  the right next step is offered; in a directory that is not a Shipwright
+  project the offer stays silent and changes nothing.
 
-Refined by `iterate-2026-07-18-fr-authoring-rules` (FR-authoring rules):
+<a id="fr-0112"></a>
+### FR-01.12 — /shipwright-preview
 
-- (E) Given an iterate whose change completes, polishes, fixes or extends a
-  capability that already has an FR, when Step 2 classifies the spec impact,
-  then the MINT-vs-FOLD gate routes it to MODIFY — acceptance criteria on the
-  existing FR — instead of appending a new FR row.
-- (E) Given an iterate that does mint a new FR, when it chooses the ID, then it
-  takes the next free number in that split counted over live AND
-  `### Removed Requirements` rows, so a retired number is never reused and the
-  number is never guessed.
+- TBD — not yet elaborated.
 
-### FR-01.13 — `/shipwright-adopt` (no project-level hook install)
+<a id="fr-0113"></a>
+### FR-01.13 — /shipwright-adopt
 
-Refined by `iterate-20260505-plugin-hook-registration`. Supersedes
-the ADR-019 / ADR-020 carrier-shape + quoted-path ACs (the project-
-level installer model is retired entirely; the carrier-shape and
-command-literal mandates survive verbatim inside the plugin
-hooks.json registration owned by FR-01.11).
+- (E) Given an existing codebase, when it is onboarded, then a local secrets
+  file is created carrying the placeholder keys that codebase's stack needs —
+  but only after it is confirmed to be excluded from version control. If that
+  cannot be confirmed the file is not written at all, so no secret is ever
+  staged for commit.
+- (E) Given onboarding derives a requirement's name and description from the
+  code it read, when they are written, then they name a capability and describe
+  it in plain business language, rather than describing what the code does.
+- (E) Given a project is onboarded, when onboarding finishes, then no prompt
+  hook is written into the project's own settings.
 
-- (E) Given a fresh adopt run on a previously-clean target project,
-  when `/shipwright-adopt` completes, then no `UserPromptSubmit`
-  entry referencing `suggest_iterate.py` is written to that project's
-  `.claude/settings.json`. The hook is plugin-owned per FR-01.11.
-
-Refined by `iterate-2026-05-16-backfill-historical-frs` (backfill —
-`.env.local` scaffolding; historical event evt-aab7ddbd):
-
-- (E) Given an adopt run, when scaffolding completes, then `.env.local`
-  is created with the profile's framework keys, and `.gitignore` is
-  enforced to match it BEFORE the write — if enforcement fails the write
-  is aborted so no secrets are staged.
-
-Refined by `iterate-2026-07-18-fr-authoring-rules` (FR-authoring rules):
-
-- (E) Given Layer-2 semantic enrichment generates a feature `label` and
-  `description`, when they are written, then they follow
-  `shared/fr-authoring.md` — a capability-level name and a plain
-  business-language description — and the superseded "technical / describe what
-  the code does" guidance is no longer present to contradict it.
-
-### FR-01.02 — `/shipwright-project` (no project-level hook install)
-
-Refined by `iterate-20260505-plugin-hook-registration`. Supersedes
-the ADR-020 documentation-parity AC.
-
-- (E) The `plugins/shipwright-project/skills/project/SKILL.md` no
-  longer documents a project-level `UserPromptSubmit` install
-  snippet. The phase-router hook is plugin-owned per FR-01.11; the
-  SKILL.md replacement note describes manual cleanup of any pre-
-  2026-05-05 legacy entry users may still carry.
-
-Refined by `iterate-2026-05-16-spec-impact-gate`:
-
-- (E) Given `/shipwright-project` generates a `spec.md`, when a later
-  REMOVE-classified iterate retires an FR, then the FR row moves into a
-  `### Removed Requirements` subsection carrying the run_id and the
-  literal `status: deprecated`; the FR parsers (`drift_parsers.parse_fr_table`,
-  `data_collector.collect_requirements`) exclude that subsection from
-  live-requirement coverage. Convention documented in
-  `plugins/shipwright-project/skills/project/references/spec-generation.md`.
-
-Refined by `iterate-2026-07-18-fr-authoring-rules` (FR-authoring rules):
-
-- (E) Given requirement decomposition writes an FR sentence, when the sentence
-  is authored, then it states the capability in plain language a product owner
-  can sign off without decoding jargon, carries no file path, ADR number, HTTP
-  verb or code symbol, and drops no behavioural guarantee for the sake of
-  plainness.
-
-### FR-01.01 — `/shipwright-run` (no project-level hook install)
-
-Refined by `iterate-20260505-plugin-hook-registration`. Supersedes
-the ADR-020 documentation-parity AC.
-
-- (E) `plugins/shipwright-run/skills/run/SKILL.md` Step 4.5 no
-  longer instructs users to install the `UserPromptSubmit` hook
-  into `.claude/settings.json`. Same plugin-owned model + manual-
-  cleanup note as FR-01.02.
-
-**REMOVED** by `iterate-2026-07-14-remove-multi-session`: the
-multi-session execution mode. `/shipwright-run` is no longer a
-*coordinator* that prints a `claude --session-id` launch card and
-steps aside while each phase runs as its own external bound Claude
-session (claimed/completed by the `phase_session_start` /
-`phase_user_prompt_validate` / `phase_session_stop` hook trio, now
-deleted and deregistered from all 8 phase plugins).
-
-- (E) `single_session` is the SOLE mode: the master **drives** every
-  phase as a phase-runner subagent in ONE conversation, so the
-  pipeline advances on every surface — including the VS Code
-  extension and desktop chat, which cannot spawn a bound session and
-  where the pipeline previously stalled at phase 1.
-- (E) A run is **drivable iff** its config records the explicit
-  literal `mode: "single_session"`. A pre-removal config (the removed
-  literal, or no `mode` at all) is refused by every *advancing* entry
-  point with an actionable one-line migration, and is never silently
-  reinterpreted. It still **loads**, so historical runs stay
-  inspectable. See `docs/migrations/multi-session-to-single-session.md`.
-
-### FR-01.10 — `/shipwright-compliance` (spec-impact inverse-drift audit)
-
-Refined by `iterate-2026-05-16-spec-impact-gate`.
-
-- (E) Given an iterate `work_completed` event with `intent` in
-  (feature, change) whose `affected_frs` and `new_frs` are both empty and
-  that recorded no `spec_impact=none`, when the detective audit runs,
-  then Group D check D5 ("Iterate feature/change events link an FR")
-  reports it as a MEDIUM finding with a suggested remediation command.
-
-Refined by BP-1 (Control-Grade traceability coverage):
-
-- (E) Given the event log, when the Control Verdict block computes the
-  requirement-traceability dimension, then a change counts as *traced* if it is
-  FR-linked OR a satisfied no-FR change (a recognized `change_type` + one-line
-  `none_reason`, behavior-preserving), and the dashboard additionally renders an
-  informational `Recent changes traced to an FR` indicator.
-- (E) Given a spec FR covered by at least one `work_completed` event at any
-  point, when the Group D detective audit runs, then D1 reports it as covered
-  regardless of any later `spec_updated` watermark (coverage is all-time; D5's
-  no-FR exemption matches the `record_event` write-gate exactly).
-
-Refined by `iterate-2026-07-01-grade-composition-neutral` (composition-neutral grade):
-
-- (E) Given the event log, when the Control Grade is computed, then workload
-  composition — the feature-vs-maintenance mix, i.e. the recent FR-tagging rate —
-  does NOT affect the grade: the `Recent changes traced to an FR` indicator is
-  informational (INFO, never WARN), and the headline verdict is capped below
-  "A — full control" only when a load-bearing pillar is *expected but unmeasured*
-  or *broken* — never by a decline in the FR-tagging rate. Traceability control is
-  carried by requirement coverage + change reconciliation (both
-  composition-independent) and by the write-time FR-gate.
-
-Refined by `iterate-2026-07-18-fr-authoring-rules` (FR-authoring rules):
-
-- (E) Given a spec whose FR names or descriptions carry implementation detail,
-  when the detective audit runs, then Group I reports the count and the offending
-  FR IDs (I1/I2/I3) WITHOUT changing the audit verdict or exit code, so an
-  existing spec can be cleaned up gradually without reddening CI.
-- (E) Given two rows claim the same FR ID within one split — including reuse of a
-  number already retired to `### Removed Requirements` — when the detective audit
-  runs, then Group I check I4 FAILS, because one ID naming two requirements
-  breaks the identity that tests and the event log depend on.
-
-### FR-01.06 — `/shipwright-test` (boundary coverage report)
-
-Backfilled by `iterate-2026-05-16-backfill-historical-frs` from historical
-event evt-c4ae8ef7 (campaign iterate-skill-hardening Sub-Iterate D).
-
-- (E) Given a project whose code crosses serialized-format boundaries,
-  when `/shipwright-test` runs, then it emits a boundary-coverage report
-  enumerating producer/consumer pairs and flagging every pair that lacks
-  a producer→file→consumer round-trip test.
-
+<a id="fr-0114"></a>
 ### FR-01.14 — Triage Inbox
 
-Backfilled by `iterate-2026-05-16-backfill-historical-frs` from historical
-events evt-3f488ddc + evt-32f2f1f4 (Iterate 1a) and evt-84dbdf5e (Iterate 2).
+- (E) Given a finding from any local check, scan or audit, when it is recorded,
+  then it lands in the project's triage buffer exactly once for that finding,
+  even when several producers record it at the same moment.
+- (E) Given findings exist, when the operator works through them, then each can
+  be promoted into real work or dismissed — from the command line or from the
+  companion application, with the same recorded result either way — and a
+  promoted finding leaves the buffer.
+- (E) Given the code host's automated scans, when they are imported, then one
+  entry is created per action the operator can take, not one per underlying
+  finding, and each entry carries a ready-to-paste instruction for acting on it.
+  An entry missing that instruction renders a visible failure placeholder rather
+  than degrading quietly.
+- (E) Given a previously imported finding no longer appears, when the import
+  next succeeds, then its entry is closed automatically; an import that failed
+  closes nothing, so a broken fetch can never mass-resolve real findings.
+- (E) Given a leaked-secret alert, when it is imported, then the secret value
+  itself is never written into the buffer, and the entry carries only a rotation
+  checklist and a link.
+- (E) Given the code host's tooling is missing or not signed in, when the import
+  runs, then it finishes quietly without blocking the session.
+- (E) Given the host's own scan results are unavailable, when a recent
+  successful security run has published its results instead, then those are
+  used — and when the host's own results are available the published ones are
+  not read at all, so the two sources are never counted twice.
+- (E) Given published scan results older than the configured freshness window,
+  when the import runs, then they are ignored and nothing is closed
+  automatically — a stale clean scan never resolves a real finding.
+- (E) Given any failure while importing — missing tooling, no run, expired or
+  malformed results — when the import runs, then nothing is recorded, nothing is
+  closed automatically, and the session is never blocked.
+- (E) Given an entry is written, when it is inspected, then it carries only
+  aggregated counts and stable links, never text a scanner controls, and its
+  detail is length-capped.
+- (E) Given anything appends to the buffer, when the file does not already end
+  with a line break, then one is written first, so a record can never be glued
+  onto the end of its predecessor's line. A missing or empty file is appendable
+  as it is.
+- (E) Given a line nevertheless holds several records glued together, when
+  anything reads the buffer, then all of them are recovered in the order they
+  were written. Previously the whole line was skipped, so an operator's
+  dismissal read as still open while the operator believed it closed.
+- (E) Given text on such a line genuinely cannot be decoded, when it is read,
+  then the valid records around it still resolve and the unreadable remainder is
+  surfaced as damaged data rather than being indistinguishable from absence.
+- (E) Given lines already damaged on disk, when the repair is run with writers
+  stopped, then each is split back onto its own line preserving both records,
+  unreadable text is quarantined verbatim before the original is replaced, and a
+  file whose bytes cannot be preserved is reported and left untouched. Reporting
+  is the default; the acknowledgement that writers are stopped is required.
 
-- (E) Given a hook, scan, or audit finding, when a producer calls
-  `append_triage_item_idempotent`, then the item is written to the
-  per-project `.shipwright/triage.jsonl` store exactly once per
-  `dedup_key` — the dedup-scan and the append run inside one lock so
-  concurrent producers cannot double-write.
-- (E) Given triage items exist, when the operator opens the Command
-  Center WebUI Triage tab, then open items are listed and each can be
-  promoted into an ExternalTask or dismissed; a promoted item leaves the
-  triage buffer.
-- (E) Producers wired: storage API + aggregator + 2 producers + scaffolder
-  + promote CLI (Iterate 1a), plus 4 further producers — security,
-  performance, F0.5, and drift (Iterate 2), plus the GitHub findings
-  producer (iterate-2026-05-19-github-triage-importer).
+<a id="fr-0115"></a>
+### FR-01.15 — Cross-repo output contract
 
-Refined by `iterate-2026-05-19-github-triage-importer` (GitHub findings
-producer — un-defers the CI producer deferred under ADR-047):
+- (E) Given one of the two rendered payloads changes shape, when its producer's
+  contract gate runs, then the emitted payload is compared against the shape
+  last published and the gate fails until the version has been raised to match
+  the kind of change.
+- (E) Given a consumer receives a payload whose major version it does not know,
+  when it renders, then it refuses rather than rendering partial data; an
+  additive change leaves it working unchanged.
 
-- (E) Given the `gh` CLI is installed and authenticated, when the throttled
-  `import_github_findings.py` SessionStart hook runs (default once per 6h),
-  then open GitHub code-scanning, Dependabot, and secret-scanning alerts and
-  the latest failed default-branch CI run per workflow are imported into
-  `.shipwright/triage.jsonl` with `source="github"` and stable namespaced
-  dedup keys, exactly once per finding. (Refined by
-  `iterate-2026-05-20-triage-launch-surface` — now action-unit-granular,
-  not per-finding; see below.)
-- (E) Given a previously-imported GitHub finding no longer appears in a
-  successful fetch, when the importer next runs, then its open triage item
-  is auto-dismissed with `reason="githubResolved"` — scoped to the action-
-  unit key prefixes (`gh-security:` / `gh-secrets:` / `gh-ci:`), and only
-  for sources whose fetch succeeded (a failed fetch never mass-resolves).
-- (E) Given a secret-scanning alert, when it is imported, then the raw
-  `secret` value from the API is never written to `.shipwright/triage.jsonl`.
-- (E) Given `gh` is absent or unauthenticated, when the SessionStart hook
-  fires, then it exits 0 without blocking the session (fail-soft).
+## Where the work detail lives
 
-Refined by `iterate-2026-05-20-triage-launch-surface` (triage as launch
-surface — action-units, `launchPayload`, CLI surface; supersedes #39's
-per-finding mapping):
+This catalog states **what the product does**. It deliberately does not carry
+the record of how each capability got there.
 
-- (E) Given a project with open GitHub code-scanning, Dependabot,
-  secret-scanning, and CI findings, when `import_findings` runs
-  successfully, then `.shipwright/triage.jsonl` contains action-unit
-  items keyed by `gh-security:{owner}/{repo}` (collapses code-scanning
-  + Dependabot), `gh-secrets:{owner}/{repo}`, and `gh-ci:{workflow_id}`
-  (one per failing default-branch workflow; sha NOT in the key) — one
-  item per action regardless of the underlying finding count. No
-  per-finding `github:code-scanning:<n>` / `github:dependabot:<n>` /
-  `github:secret-scanning:<n>` items are emitted.
-- (E) Given an action-unit is emitted, when its wire JSON is inspected,
-  then the appended event carries a non-empty deterministic
-  `launchPayload`: `gh-security` starts with `/shipwright-security` +
-  the GitHub security-tab URL; `gh-ci` starts with `/shipwright-iterate
-  --type bug` + the workflow PAGE URL (stable across runs); `gh-secrets`
-  contains a whitelist-only rotation checklist + the secret-scanning
-  tab URL — no slash command, no alert content (no display names, no
-  per-alert URLs, no secret values).
-- (E) Given action-unit items exist in `triage.jsonl`, when
-  `aggregate_triage.py` regenerates `.shipwright/agent_docs/triage_inbox.md`,
-  then each open action-unit item renders its `launchPayload` inside a
-  fenced markdown code block under the item header (operator copies the
-  fence into a new Claude session as the "Fix now" flow). A source=github
-  item missing a `launchPayload` renders a visible loud-failure
-  placeholder (producer bug surfaces, no silent degrade).
-- (E) Given `uv run shared/scripts/tools/triage_cli.py {list|promote
-  <id> --task-ref <ref>|dismiss <id> --reason <reason>}` runs against a
-  project, then the CLI is the first-class operation surface
-  (positional id; the WebUI Triage tab in `shipwright-webui` Iterate B
-  is a thin wrapper over the same `triage_promote.promote` /
-  `triage_promote.dismiss` library helpers — audit-trail status events
-  are byte-identical except for the `by` field).
-- (E) Given a `triage.jsonl` predating this iterate that contains legacy
-  per-finding items with prefixes `github:code-scanning:` /
-  `github:dependabot:` / `github:secret-scanning:` / `github-ci:{wf}:{sha}`,
-  when `import_findings` next runs, then each open legacy item is
-  dismissed exactly once with `reason="schemaMigration"` — gated PER
-  ORIGINAL SOURCE: `github:code-scanning:*` migrates only if
-  `fetch_code_scanning_alerts()` succeeded; `github:dependabot:*` only
-  if `fetch_dependabot_alerts()` succeeded; etc. A failed fetch never
-  triggers that source's legacy migration (preserves the ADR-052
-  fail-soft invariant).
+- **Why a capability is shaped the way it is**, what was rejected, and how to
+  migrate: the planning document that produced the change, kept under the
+  project's planning tree, and the durable migration write-ups kept under the
+  documentation tree.
+- **Which changes touched a given requirement, and when**: query the
+  append-only event log. Every completed change records the requirements it
+  affected and the ones it introduced, so the answer is derived rather than
+  transcribed — and therefore cannot go stale here.
+- **Which tests cover a given requirement**: the generated traceability matrix
+  and the requirement-to-test manifest produced by the compliance phase.
 
-Refined by `iterate-2026-07-18-outbox-newline-corruption` (record-boundary
-integrity — an operator dismissal must not be lost to a malformed line):
-
-- (E) Given a writer appends to `.shipwright/triage.jsonl` or the per-tree
-  `.shipwright/triage.outbox.jsonl`, when the file does not already end with a
-  newline, then the writer terminates it first — so a record can never be
-  concatenated onto its predecessor's physical line. Missing and zero-byte files
-  are appendable as-is; a CRLF-terminated file already counts as terminated.
-- (E) Given a physical line nonetheless holds several concatenated records, when
-  any consumer reads the store, then ALL of them are recovered in wire order —
-  previously the whole line was skipped, silently discarding every record on it,
-  so an operator dismissal read as "still open" while the operator believed the
-  item closed.
-- (E) Given text on such a line genuinely cannot be decoded, when it is read, then
-  the valid records around it still resolve and the undecodable remainder is
-  surfaced as data (`RecordRead.corrupt`) rather than being indistinguishable
-  from absence. Invalid UTF-8 degrades the affected line only; it never fails the
-  whole read closed.
-- (E) Given lines already corrupted on disk, when `tools/triage_repair.py --apply
-  --writers-quiesced` runs, then each is split back onto its own line preserving
-  BOTH records, undecodable text is quarantined verbatim before the source is
-  replaced, and a file whose bytes cannot be preserved is reported and left
-  untouched. Reporting is the default; the quiesce acknowledgement is required
-  because the atomic replace swaps the inode and the WebUI writer does not share
-  the lock primitive.
-
-Refined by `iterate-2026-05-21-security-artifact-producer` (parallel
-artifact ingestion path for the `gh-security` action-unit — closes the
-Triage Inbox gap on private repos without GHAS):
-
-- (E) Given GHAS Code Scanning is unavailable (`fetch_code_scanning_alerts()`
-  returns `None` — typical on private repos without GHAS), and a recent
-  successful run of `.github/workflows/security.yml` on the default
-  branch exists with a downloadable `security-scan-results` artifact
-  whose `findings.json` lists ≥1 finding, when `import_findings` runs,
-  then exactly one `gh-security:{owner}/{repo}` action-unit is appended
-  to `.shipwright/triage.jsonl`: severity = max severity across the
-  artifact's `findings` array (derived by iterating the list — the
-  redundant `by_severity` aggregate is NOT trusted); `detail` shows
-  per-source counts independently for code-scanning / dependabot /
-  shipwright-security with `(unavailable)` only for `None` sources;
-  `launchPayload` starts with `/shipwright-security` + the workflow
-  run's `html_url`.
-- (E) Given Dependabot is enabled on the same repo and
-  `fetch_dependabot_alerts()` succeeds while `fetch_code_scanning_alerts()`
-  returns `None`, when `import_findings` runs, then the artifact-source
-  action-unit renders Dependabot's real counts in `detail`
-  (Dependabot's status is orthogonal to GHAS — it is free and never
-  gates the artifact path).
-- (E) Given GHAS Code Scanning is active
-  (`fetch_code_scanning_alerts()` returns a list), when `import_findings`
-  runs, then the artifact ingestion path is NOT taken — `gh run download`
-  is never invoked and no double-counting between GHAS-uploaded SARIF
-  and the artifact occurs. The action-unit is emitted only from
-  `cs_alerts` + `db_alerts`.
-- (E) Given the workflow's latest successful run on the default branch
-  is older than `SHIPWRIGHT_GITHUB_ARTIFACT_MAX_AGE_DAYS` days (env var,
-  default 14), when `latest_security_workflow_run()` runs, then it
-  returns `None`. The artifact ingestion path is skipped and the
-  auto-resolve pass does NOT mass-resolve previously-open items (a
-  stale clean scan never resolves real findings — ADR-052 invariant).
-- (E) Given the artifact path emitted an action-unit in a previous run
-  and a subsequent fresh successful run yields 0 findings (clean scan,
-  within the freshness window), when `import_findings` next runs, then
-  the previously-open `gh-security:{owner}/{repo}` item is dismissed
-  with `reason="githubResolved"` — same auto-resolve semantics as the
-  GHAS API path.
-- (E) Given the importer ran via the artifact ingestion path, when
-  inspecting `import_findings`'s return dict, then `by_source` carries
-  the key `gh-security:artifact` whose value is the artifact-sourced
-  emission count this run — distinguishing API vs artifact telemetry
-  without changing the persisted action-unit's `source="github"` tag.
-- (E) Given any failure mode in the artifact path (gh missing /
-  unauthenticated, no successful run, run too old, artifact expired,
-  non-zero exit from `gh run download`, malformed `findings.json` —
-  truncated JSON, non-list `findings`, missing keys), when
-  `import_findings` runs, then the helpers return `None`, no emission
-  occurs on the artifact path, the auto-resolve pass does NOT
-  mass-resolve previously-open items, and the SessionStart hook still
-  exits 0 (fail-soft).
-- (E) Given the artifact path emits an action-unit, when its persisted
-  `detail` and `launchPayload` are inspected, then neither carries
-  raw scanner-controlled strings (`rule` identifiers, finding
-  `description` text, `affected_file` paths) — only aggregated counts,
-  the `owner_repo` slug, and the stable workflow run URL. `detail` is
-  capped at 1024 bytes defensively.
+The auto-generated end-to-end baseline (where the crawl succeeded during
+onboarding) covers mechanical rendering and visibility checks, not semantic
+behaviour.
