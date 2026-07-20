@@ -1,18 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-19-traceability-derived-view",
-    "date": "2026-07-19",
+    "run_id": "iterate-2026-07-20-adopt-fr-id-cap",
+    "date": "2026-07-20",
     "unit": {
       "status": "passed",
-      "passed": 9204,
-      "total": 9232,
-      "skipped": 28
+      "passed": 6,
+      "total": 6
     },
     "integration": {
-      "status": "passed",
-      "passed": 405,
-      "total": 405,
-      "skipped": 0
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -20,431 +18,68 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "design_fidelity": {
-      "status": "not_run"
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "smoke": {
       "status": "not_run"
     },
     "degraded": [
-      "S7's OWN ACCEPTANCE CRITERION IS NOT MET, and that is the finding rather than a defect in the implementation. The AC required the query to return at least every run id the S6 compaction removed for FR-01.11 and FR-01.14. Recovered from the pre-S6 commit 5eef5076 (git show, not from the S6 ADR's summary): the blocks named TEN (requirement, run id) pairs across NINE distinct run ids -- iterate-2026-05-16-backfill-historical-frs was named by both requirements. FIVE pairs are returned verbatim, ONE (iterate-20260505-plugin-hook-registration) is present under its pre-run-id label ADR-030 with the correspondence asserted against the event's own description, and FOUR pairs are absent, across THREE distinct run ids -- iterate-2026-05-16-backfill-historical-frs, iterate-2026-05-19-github-triage-importer, iterate-2026-05-20-triage-launch-surface. Each of the three has a commit, so the work shipped and was simply never recorded against the requirement. Campaign decision D4 named three sources (commits, changelog, event log) and the DISJUNCTION survives -- all three are recoverable from commit messages and planning documents -- but the event log is not the complete index D4 implied. Not resolved here: writing reconciliation events would forge the audit trail this campaign exists to protect, and amending D4 or the S7 AC is an operator decision. Pinned in BOTH directions so it can neither drift nor silently re-green.",
-      "The catalog carried a measurably false claim, written by S6: every completed change records the requirements it affected and the ones it introduced. Measured against this tree's own log, 61 of 342 work_completed events carry any FR link (18 percent). Corrected, and the correction is pinned by a test rather than left as prose.",
-      "BOTH external plan-review legs were SUBSTANTIVE -- Gemini produced 4 coherent findings and GPT 9. Recorded explicitly because S2-S5 logged four consecutive degenerate Gemini truncations and S6 logged the first substantive one; two substantive runs in a row means that pattern has now not recurred twice, and the earlier entries should not be read as a standing provider defect. No degenerate leg was counted. Five findings changed code; three were already addressed and are now tested; one was rejected with reason.",
-      "SELF-INFLICTED, caught in self-review after the external round, and the reason the single-read invariant exists: the CLI read the event log TWICE -- once for the history, once for the coverage figure printed directly beneath it -- and presented the pair as one answer. The log is append-only and is appended to WHILE it is read, including by this campaign, so the two reads could describe a state the log was never in. Collapsed to one read and pinned by COUNTING the reads; comparing the values would have passed by luck on a quiet log.",
-      "SELF-INFLICTED, caught by re-reading every docstring against the code as the brief requires: _apply_amendments claimed it was pinned to the same answer by test_fr_change_history_amendment_parity -- a test that did not exist. The claim was invented, not verified. Writing it revealed a second problem, below.",
-      "SELF-INFLICTED, second order: the parity test's FIRST version skipped all seven cases and reported green while asserting nothing. Cause: the compliance collector uses relative imports, so loading it by file path under a sentinel name raises ImportError, which the test caught in a pytest.skip. Rewritten to subprocess isolation (the discipline the S1 corpus established for exactly this realm collision) and given a guard test that fails if the comparison ever stops actually running.",
-      "The module docstring's definition of unknown_requirement went STALE inside this run: the external-review fix made the log outrank the catalog, after which 'the id names no row in any spec' was no longer the condition. Caught in the same re-read pass and corrected to 'no live row AND no event'. Recorded because it is the exact failure mode S6 shipped four times -- an assertion nobody pointed a test at -- and it survived one green suite before being caught.",
-      "write_decision_log.py --architecture-impact crashes with ModuleNotFoundError: lib unless shared/scripts is on PYTHONPATH, AFTER it has already appended the ADR row. F3 was left half-written (decision_log entry present, conventions.md bullet absent) which would have failed F11 check_architecture_documented. Recovered by reverting decision_log.md and re-running with PYTHONPATH set, rather than hand-writing the bullet. Filed as a learning.",
-      "SELF-INFLICTED, caught in the final re-read AFTER the first commit and PR were already published: the shipped ADR, decision-log entry, commit message, PR body and mini-plan all said 'six are returned verbatim'. The table holds FIVE. The number came from subtracting the count of DISTINCT absent run ids (3) from the count of PAIRS (10) -- two different denominators, because iterate-2026-05-16-backfill-historical-frs is named by both requirements and is absent for both. Every test was green throughout, because nothing pointed at the arithmetic. Corrected in all five documents and the counts are now pinned as data against the tables by test_the_published_counts_match_the_tables, which fails if prose and table diverge again.",
-      "SECOND REVIEW ROUND, and the reason this entry exists: the count pin shipped in the FIRST correction READ NO DOCUMENT. It compared PUBLISHED_COUNTS (a Python dict) against the Python tables, while degraded[] asserted it 'fails if prose and table diverge again'. Editing ADR-110's '| Returned verbatim | 5 |' to 6 left the suite green. That is the S6 lesson -- an assertion nobody pointed a test at -- committed INSIDE the fix for an instance of the same lesson. Replaced by checks that open the four shipped documents, plus a detector-fires test and a mutation (P1) reproducing the reviewer's exact edit.",
-      "SELF-INFLICTED, and the worst mechanical error of this run: a scripted de-duplication truncated test_fr_change_history_recovers_compacted_history.py to end-of-file and SILENTLY DELETED THREE TESTS, including the reachability check that covers an acceptance criterion. The suite stayed green -- deleted tests do not fail, they simply stop existing, and nothing in the pipeline notices a shrinking count. Restored, and the reachability test now runs the DOCUMENTED 'uv run <relative path>' form rather than sys.executable with an absolute path.",
-      "REJECTED ON MEASUREMENT, recorded so it is not re-litigated: external review asked for UnicodeDecodeError to be caught alongside OSError in the event-log reader, reasoning correctly that it is a ValueError and would slip past an OSError arm. Probed: read_jsonl_records opens with errors='surrogateescape', so invalid UTF-8 never raises -- it degrades to a counted corrupt fragment. The handler was written, then removed as unreachable, and its test was removed too because it passed by never raising anything. A mutation now targets the fragment counting, which is the guard that actually holds.",
-      "The FR-01.11 six-blocks-vs-five-run-ids gap was real but benign, and had been left unexplained: the sixth block reads 'Refined by BP-1', a baseline-plan identifier that names no run. Resolved from the pre-S6 file rather than from either ADR (a first attempt to count it externally returned 22, because an awk range ran to end-of-file and attributed every later block to one requirement). Nothing was omitted from the recovery, so the headline finding stands -- but the provenance check was one-directional and could not have caught it if something HAD been. It now asserts set equality per requirement section.",
-      "A SECOND live measurement was quietly stale: ADR-110 cites 'commit populated on 71 of 341 events' as the reason no schema field was added. It survived the first correction untouched because nothing read it. Both measurements are now pinned, and the check matches ANY 'N of M' phrase rather than one known string, so a newly published measurement that nobody pinned fails rather than rotting.",
-      "The coverage figure moved from 60/341 to 61/342 DURING this run, because this run's own finalization event is FR-linked. Documents updated. The pin is deliberately MONOTONIC rather than exact: an append-only log only grows, so an equality pin would turn the next unrelated iterate that links an FR red -- a gate punishing correct behaviour. What is asserted is that the snapshot is never above the live log and that the qualitative claim (a MINORITY of changes carry a link) still holds.",
-      "THIRD REVIEW ROUND, blocker: the commit-population check was written as EQUALITY on a growing log (len(events) == 342). Every iterate's F5b appends a work_completed event, so the next merge -- here or ahead of this branch -- would have reddened integration-tests for a change that did nothing wrong. Ten lines below it, a sibling docstring states that an equality pin 'would turn the NEXT unrelated iterate red: a gate punishing correct behaviour', and the constant's own comment says 'Pinned MONOTONICALLY, not by equality'. The right design was written and then defeated in the same file. Both figures are now >=, with the minority claim asserted separately.",
-      "THIRD ROUND, and a repeat in kind: the reachability test -- the SOLE coverage of AC-4, and the one the scripted de-duplication had already deleted once -- gained a pytest.skip when it moved to the documented 'uv run' form. A skipped test fails nothing, exactly like a deleted one, so the near-miss was re-created in a softer form one round after being caught. It now executes UNCONDITIONALLY via sys.executable and ALSO runs the documented form, with missing uv a hard failure and timeouts on both (a nested uv run can block on the venv lock under the parallel F0 runner).",
-      "THIRD ROUND: pre_s6_sections() skipped on a shallow clone, which would have silently deleted all six nodes of the set-equality completeness check -- the fix for the headline finding -- and reported green. The pre-existing hatch was inherited from a single test and multiplied into load-bearing coverage. Now a hard failure naming the remedy (fetch-depth: 0).",
-      "THIRD ROUND: FR-01.14's published reason for its block gap was asserted by NOTHING -- only a 5 == 5 count, which is exactly the check called fragile when arguing for set equality, since FR-01.14 reconciles only by coincidence. With ATTRIBUTIONS_NAMING_NO_RUN_ID['FR-01.14'] empty, the sibling loop ran zero times, so five plain Refined-by blocks would have satisfied every assertion while ADR-110's explanation was false. Now asserts the Backfilled-by marker and the four-distinct-ids-from-Refined-by count.",
-      "THIRD ROUND: a retracted TECHNICAL claim stood as current for a full round. The mini-plan went on saying 'newlines already collapsed by split()' after that was shown false (tty_sanitize preserves \\n and \\t by design; the collapse covered one rendered field of six) -- because the retraction detector matched only COUNT claims while policing the numeric retraction on the same page. A retraction that covers only numbers is half a retraction; the detector now covers both.",
-      "THIRD ROUND: the mutation total was published as '28 across three rounds' while the enumeration listed two rounds and summed to 18. Same unverifiable-published-number class as 'six returned verbatim'. Recounted honestly to 29 (9 + 8 + 1 + 11), enumerated per round, and a test now re-adds the sum and checks every round is present.",
-      "DECIDED, NOT LEFT OPEN: this run's own work_completed event records coverage as '60 of 341' while every document says '61 of 342'. Both are correct -- the event states the measurement as of the moment BEFORE it was appended, and appending it is what moved the count. Left unamended: the log is append-only, and rewriting a true record so it agrees cosmetically with a later one is the class of edit this campaign exists to prevent. The divergence is recorded in ADR-110 under Honest limits instead.",
-      "Pre-existing and now fixed while adjacent: fr_history.py's stderr comment claimed the message was 'kept ASCII-only' while interpolating the user's argv, which strip_control_chars leaves >= 0xA0 intact -- so 'FR-01.01 + an arrow' raised UnicodeEncodeError from the very message explaining the rejection. The comment asserted a property the code did not have; _ascii now gives the code the property rather than the comment being deleted.",
-      "ROUND-4 MUTATION FINDING, self-caught: the first mutation written for the shallow-clone fix (FIX 3) SURVIVED, and correctly so -- it injected a pytest.skip into a branch that only executes when git show fails, which never happens in a full checkout. The mutation proved nothing. Replaced by a direct test that repoints the helper at an unreachable commit. That test then had to be written carefully too: pytest.raises(AssertionError) is insufficient, because pytest.skip raises Skipped (a BaseException), which would propagate and SKIP the guard test rather than fail it -- the same invisibility being guarded against, one level up. It now catches BaseException and converts any non-AssertionError outcome into a failure; verified by reintroducing the hatch and observing a red.",
-      "CODEQL WENT RED ON THE FINAL COMMIT, after three human review rounds had passed the same code. One error + seven warnings + one note. The error is a genuine FALSE POSITIVE (a guard variable bound only in the except-AssertionError branch, the other two branches ending in pytest.fail(), which CodeQL cannot know is NoReturn because it carries no such annotation). Suppression was DECLINED: the assertions moved into the handler that binds the value, which is better code independently of the scanner and leaves the BaseException guard intact.",
-      "The seven CodeQL warnings ('implicit string concatenation, maybe missing a comma?') were ambiguous-but-intentional, and were resolved by REMOVING THE SHAPE rather than annotating it. Hand-wrapped operator output built from adjacent literals inside a list of display lines is precisely what a real missing comma looks like, and a silent merge of two output lines is the defect class this whole change exists to remove. Body text is now one logical string wrapped at runtime; an AST scan of every file this step touched confirms zero adjacent literals remain inside any list/tuple/set display. The renderer moved to lib/fr_history_render.py in the process, since the tool crossed 300 lines.",
-      "The CodeQL NOTE ('except block directly handles BaseException') is left standing deliberately. It is the mechanism that converts a reintroduced pytest.skip into a failure instead of letting it skip the guard against skipping; weakening it to satisfy a notice would reverse the fix it implements.",
-      "ROUND-5 MUTATION FINDING, self-caught and the SECOND of its kind: the mutation written for the shared-wrapping-rule guard SURVIVED, and the reason was that it never applied -- a shell-escaped backslash-n in the search pattern became a real newline, so the replacement matched nothing. Reported as a survivor when it was a no-op. Re-run from a file-based script it kills across 8 of 11 widths. The same class as the round-4 Q1 no-op. Lesson recorded: a surviving mutation must be proven to have APPLIED before it is read as a gap -- the mutate helper now asserts its pattern is present.",
-      "CI CAUGHT WHAT LOCAL F0 COULD NOT: the diff-coverage gate went red at 74% (<80%) on the CodeQL fix commit. Cause: extracting the renderer moved it from tools/ (not measured) into lib/ (measured), and every CLI test drives it by SUBPROCESS -- so it reported 30.3% while being thoroughly exercised. A refactor silently relocated code across the coverage boundary. Fixed by driving _render_text IN-PROCESS across its branches, which is better testing anyway; the three new lib modules are now at 100% each (fr_history_render 30.3 -> 100, fr_change_history 97.7 -> 100 by covering the documented import-degradation fallback, _fr_history_events already 100).",
-      "FINAL ROUND: the AST guard added to enforce 'no display literal may look like a missing comma' was NARROWER THAN ITS OWN CLAIM. It flagged an element only when the literal spanned lines, so the single-line form ['a' 'b', 'c'] was invisible -- and that is the MORE likely accident, since nobody hand-breaks a forty-character string. The module it guarded contained exactly that shape. Detection now counts string TOKENS (which also stops it false-flagging a triple-quoted string, one literal) and covers Dict displays, where the --json payload lives. Broadening it immediately caught two more instances the original could not reach.",
-      "FINAL ROUND, second-order: broadening the detector then OVER-REACHED, flagging parenthesised groups like ('a' 'b') used as dict values. Those are unambiguous -- there is no comma-separated sibling to merge with, and a stray comma inside makes a tuple that fails loudly at the point of use. The real rule is not 'does it span lines' but 'could a dropped comma merge two siblings'. Encoded by checking whether the literal is wrapped in its own parentheses, scanning ACROSS lines (the first attempt checked the same line only, and the opening paren of a wrapped value sits a line above).",
-      "FINAL ROUND: the width sweep did not pin the width. Flipping _fold's '> width' to '>= width' breaks one character early on every line and SURVIVED THE ENTIRE SUITE -- '<=' assertions are satisfied by a short line, and the parity sweep compares two callers of the same _fold, so they drift in lockstep. Fixed by asserting MAXIMALITY: for every line but the last, the first word of the next line must genuinely not have fitted. Verified to kill at 3 of 6 widths.",
-      "FINAL ROUND: extracting the renderer moved change_history_for_fr and _render_text into the same package, where they read as a usable pair, while the queried id was still sanitised only by the CLI. A caller skipping the CLI could emit a raw escape into the heading; the CLI-driven test could not see it. wanted = _clean(fr_id) is behaviour-neutral on a well-formed id and makes the module docstring's 'applied to EVERY field at the boundary' true of the one field it did not cover.",
-      "FINAL ROUND: two hand-maintained lists of 'the files this campaign step owns' had already drifted apart after a single round, each missing a module the other had, inside the campaign's own anti-vacuity machinery. Both are now DERIVED from a filename rule with a completeness assertion, and renamed so they cannot be mistaken for one copy of one list. A glob cannot drift."
+      {
+        "condition": "external_llm_review_unavailable",
+        "detail": "OPENAI_API_KEY absent; a code-reviewer subagent reviewed the diff instead of external_review.py"
+      }
     ],
-    "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --with pytest pytest integration-tests/test_fr_change_history_recovers_compacted_history.py integration-tests/test_fr_history_catalog_contract.py integration-tests/test_fr_history_recovery_provenance.py integration-tests/test_fr_history_published_counts.py integration-tests/test_fr_history_coverage_pins.py integration-tests/test_fr_history_cross_references.py integration-tests/test_fr_history_amendment_parity.py shared/scripts/tests/test_fr_history_cli.py shared/scripts/tests/test_fr_history_cli_safety.py shared/scripts/tests/test_fr_history_render.py -v",
-      "exit_code": 0,
-      "tests_run": 141,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-19-traceability-derived-view/surface_verification.json",
-      "note": "The user-facing surface is a CLI, so the suite drives the REAL command as a subprocess rather than calling the library: the integration leg runs the exact command the catalog tells a reader to run, against THIS repo's real event log and real catalog, and asserts it exits 0 and answers; the CLI leg drives the same executable over fixtures for the three outcomes, the exit-code contract, retired requirements, unreadable fragments and terminal-control-sequence stripping. Non-vacuity is structural rather than asserted: the command did not exist before this change, so every leg that executes it fails on the base tree. Verified additionally by a 17-mutation battery in which every mutation was killed, including one that reverts the single-read invariant."
-    },
     "test_completeness": {
       "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "canonical_fr_id rolls the group over at 99 (FR-01.99 -> FR-02.01) instead of emitting FR-01.100",
+          "disposition": "tested",
+          "evidence": "test_fr_id_sequence.py::test_rolls_group_over_at_100_instead_of_emitting_fr_01_100 PASSED"
+        },
+        {
+          "behavior": "sub-100 sequence is byte-identical to the previous f\"FR-01.{n:02d}\"",
+          "disposition": "tested",
+          "evidence": "test_fr_id_sequence.py::test_sub_100_sequence_is_unchanged PASSED"
+        },
+        {
+          "behavior": "every id from 1..9801 satisfies the canonical FR-\\d{2}.\\d{2} grammar",
+          "disposition": "tested",
+          "evidence": "test_fr_id_sequence.py::test_every_id_up_to_the_ceiling_is_canonical PASSED"
+        },
+        {
+          "behavior": "non-positive sequence is rejected with ValueError",
+          "disposition": "tested",
+          "evidence": "test_fr_id_sequence.py::test_non_positive_sequence_rejected PASSED"
+        },
+        {
+          "behavior": "overflow beyond group 99 (>9801 features) is rejected rather than emitting a non-canonical id",
+          "disposition": "tested",
+          "evidence": "test_fr_id_sequence.py::test_overflow_beyond_group_99_rejected PASSED"
+        },
+        {
+          "behavior": "real call site e2e_baseline_generator emits only canonical ids with >99 routes",
+          "disposition": "tested",
+          "evidence": "test_fr_id_sequence.py::test_e2e_baseline_spec_ids_canonical_past_99 PASSED"
+        }
+      ],
       "counts": {
-        "total": 60,
-        "tested": 60,
+        "testable": 6,
+        "tested": 6,
         "untestable": 0,
         "untested_testable": 0
       },
-      "behaviors": [
-        {
-          "behavior": "every run id the S6 compaction removed that IS returned by the query is returned verbatim",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_change_history_recovers_compacted_history.py::test_every_exactly_recovered_run_id_is_returned_by_the_query"
-        },
-        {
-          "behavior": "a change recorded before run-id-shaped ids is still findable under its ADR-NNN label, and the correspondence is asserted against the event's own description rather than assumed",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_change_history_recovers_compacted_history.py::test_pre_run_id_changes_are_present_under_their_adr_label"
-        },
-        {
-          "behavior": "the three run ids the event log cannot account for stay VISIBLE -- the pin fails in both directions, so neither a backfill nor a regression passes silently",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_change_history_recovers_compacted_history.py::test_the_measured_gap_in_d4s_claim_stays_visible"
-        },
-        {
-          "behavior": "the absent run ids denote real shipped work (each has a commit), so this is a missing RECORD not a stale reference",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_change_history_recovers_compacted_history.py::test_the_absent_run_ids_did_real_work_that_was_never_recorded"
-        },
-        {
-          "behavior": "the expectations are re-derivable from the pre-S6 commit rather than folklore -- guards the METHOD, not just the data",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_change_history_recovers_compacted_history.py::test_the_recovery_source_is_the_pre_s6_catalog_not_a_summary_of_it"
-        },
-        {
-          "behavior": "S6's side of the bargain holds: the catalog no longer carries the run ids it delegated away",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_change_history_recovers_compacted_history.py::test_the_catalog_no_longer_carries_the_run_ids_it_delegated_away"
-        },
-        {
-          "behavior": "the catalog no longer claims complete FR coverage of the event log, which measurement showed to be false",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_change_history_recovers_compacted_history.py::test_the_catalog_does_not_promise_coverage_the_log_does_not_have"
-        },
-        {
-          "behavior": "the command the catalog tells a reader to run exists AND runs -- reachability is executed, not just documented",
-          "ac": "AC4",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_change_history_recovers_compacted_history.py::test_the_command_the_catalog_tells_a_reader_to_run_actually_runs"
-        },
-        {
-          "behavior": "given an FR id, the run ids that touched it are returned ORDERED by instant, not by timestamp string (an 08:00+02:00 event must precede a 07:30Z one)",
-          "ac": "AC1",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_change_history.py::test_events_are_ordered_by_instant_not_by_timestamp_string"
-        },
-        {
-          "behavior": "the order is TOTAL: same-timestamp events tie-break on event id so two runs of one query cannot disagree",
-          "ac": "AC1",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_change_history.py::test_events_sharing_a_timestamp_tie_break_on_event_id"
-        },
-        {
-          "behavior": "an unparseable or missing timestamp sorts last but is STILL REPORTED -- a record is never dropped to keep a sort total",
-          "ac": "AC1",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_change_history.py::test_an_unparseable_timestamp_sorts_last_but_is_still_reported"
-        },
-        {
-          "behavior": "a real requirement with no events reports no_recorded_changes -- a legitimate answer, not an error and not a silent success. Fixture-driven because every requirement in this repo HAS events, so the branch has no live example",
-          "ac": "AC3",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_change_history.py::test_a_real_requirement_with_no_events_is_no_recorded_changes_not_an_error"
-        },
-        {
-          "behavior": "an id that names no live row AND appears in no event is unknown_requirement, never an empty found -- a typo must not read as never touched",
-          "ac": "AC3",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_change_history.py::test_an_id_in_neither_the_catalog_nor_the_log_is_still_unknown"
-        },
-        {
-          "behavior": "a RETIRED requirement stays answerable: the log outranks catalog membership, because the catalog lists only live rows",
-          "ac": "AC3",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_change_history.py::test_an_id_absent_from_the_catalog_but_present_in_the_log_returns_its_history"
-        },
-        {
-          "behavior": "when existence cannot be verified at all, the id is NOT called unknown and in_catalog is not asserted -- the read side is never stricter than the write-side gate that admitted the data",
-          "ac": "AC3",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_change_history.py::test_an_unreadable_catalog_degrades_to_unverified_rather_than_unknown"
-        },
-        {
-          "behavior": "unreadable record fragments are COUNTED and surfaced, so 'no such change' and 'the record could not be read' are distinguishable",
-          "ac": "AC3",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_change_history.py::test_an_unreadable_fragment_is_counted_and_reported"
-        },
-        {
-          "behavior": "a partially written trailing record (the log is appended to while read) does not crash the query and does not hide the readable records",
-          "ac": "AC3",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_change_history.py::test_a_partially_written_trailing_record_does_not_crash_the_query"
-        },
-        {
-          "behavior": "a requirement introduced and never touched again reads as exactly that -- the live FR-01.15 shape compliance D1/D3 report, made legible rather than smoothed away",
-          "ac": "AC3",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_change_history_records.py::test_a_requirement_introduced_and_never_touched_again_reads_as_exactly_that"
-        },
-        {
-          "behavior": "an amendment that adds or removes an FR link moves the answer; the amendment record itself is never reported as a change",
-          "ac": "AC1",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_change_history_records.py::test_an_amendment_that_adds_an_fr_link_is_honoured"
-        },
-        {
-          "behavior": "the event log is read EXACTLY ONCE per query, so the history and the coverage figure beside it come from one snapshot of an append-only log. Asserted by counting reads, not by comparing values, which would pass by luck on a quiet log",
-          "ac": "AC1",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_change_history_records.py::test_the_log_is_read_exactly_once_per_query"
-        },
-        {
-          "behavior": "two records sharing one physical line (union merge is line-based) are both recovered",
-          "ac": "AC1",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_change_history_records.py::test_two_records_sharing_one_physical_line_are_both_recovered"
-        },
-        {
-          "behavior": "the amendment fold is IDENTICAL to the compliance collector's across seven cases, so the RTM and this query cannot report different histories for one requirement -- plus a guard test proving the comparison actually ran",
-          "ac": "AC1",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_history_amendment_parity.py::test_both_implementations_fold_amendments_identically"
-        },
-        {
-          "behavior": "the CLI renders an empty history as 'No recorded changes.' and exits 0, while an unknown id exits 3 with a distinct message -- and neither collides with argparse's usage exit 2",
-          "ac": "AC3, AC4",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_history_cli.py::test_an_unknown_id_does_not_collide_with_a_usage_error"
-        },
-        {
-          "behavior": "a log record cannot forge CLI output: terminal control sequences are stripped and an embedded newline cannot fake an extra entry",
-          "ac": "AC4",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_history_cli.py::test_terminal_control_sequences_in_a_summary_are_stripped"
-        },
-        {
-          "behavior": "the counts published in the ADR, decision log, commit message and PR body match the recovered tables -- pairs and distinct run ids counted separately, because conflating them is how a first draft published six against a table of five",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_change_history_recovers_compacted_history.py::test_the_published_counts_match_the_tables"
-        },
-        {
-          "behavior": "no run id present in the pre-S6 source was left out of the recovered tables -- set EQUALITY per requirement section, closing the direction the original one-directional provenance check could not see",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_history_recovery_provenance.py::test_no_run_id_in_the_source_was_left_out_of_the_tables"
-        },
-        {
-          "behavior": "the published BLOCK count reconciles with the number of run ids recovered, per requirement, with the reason for each gap recorded (FR-01.11's sixth block attributes to BP-1, which names no run)",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_history_recovery_provenance.py::test_the_block_count_reconciles_with_the_number_of_run_ids_recovered"
-        },
-        {
-          "behavior": "the section scoping stops at the next heading rather than running to end-of-file -- the slice that made a first external count return 22",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_history_recovery_provenance.py::test_the_section_scoping_does_not_run_to_end_of_file"
-        },
-        {
-          "behavior": "the shipped DOCUMENTS (ADR, decision log, mini-plan, changelog drop) do not carry the retracted count as a current claim, while still being allowed to quote it as a retraction",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_history_published_counts.py::test_the_shipped_documents_do_not_carry_the_retracted_count"
-        },
-        {
-          "behavior": "the reviewer's exact reproduction -- editing ADR-110's table from 5 to 6 -- is caught",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_history_published_counts.py::test_editing_the_adr_table_to_the_retracted_value_would_be_caught"
-        },
-        {
-          "behavior": "the retraction detector itself would fire, and does NOT fire on the same words presented as a retraction -- the guard cannot go vacuous",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_history_published_counts.py::test_the_retraction_detector_would_actually_fire"
-        },
-        {
-          "behavior": "every 'N of M' measurement quoted over the event log is one of the pinned ones, so an unpinned newly-published measurement fails rather than rotting",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_history_published_counts.py::test_every_measurement_quoted_over_the_event_log_is_current"
-        },
-        {
-          "behavior": "the recorded coverage snapshot is consistent with the live log MONOTONICALLY (never above it; the minority claim still true), so a future FR-linked iterate does not turn this red",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_history_published_counts.py::test_the_recorded_coverage_is_consistent_with_the_live_log"
-        },
-        {
-          "behavior": "an empty history does NOT claim the requirement exists when existence could not be verified -- the fourth instance of the campaign's positive-claim-over-an-empty-set defect",
-          "ac": "AC3",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_history_cli.py::test_an_empty_history_does_not_claim_the_requirement_exists_when_unverified"
-        },
-        {
-          "behavior": "CONTROL: the existence sentence is suppressed by the guard, not deleted -- it still renders when existence WAS verified",
-          "ac": "AC3",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_history_cli.py::test_an_empty_history_does_claim_existence_when_it_was_verified"
-        },
-        {
-          "behavior": "EVERY rendered field is sanitised at the boundary (run id, commit, spec_impact, ts, summary, and the queried id), not only the summary",
-          "ac": "AC4",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_history_cli.py::test_every_rendered_field_is_sanitised_not_just_the_summary"
-        },
-        {
-          "behavior": "a newline in the run id cannot fake an extra numbered entry -- strip_control_chars preserves newlines, so stripping alone was never sufficient",
-          "ac": "AC4",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_history_cli.py::test_a_newline_in_the_run_id_cannot_fake_an_extra_entry"
-        },
-        {
-          "behavior": "an unreadable event log is reported as a failure (exit 4) and never as 'No recorded changes.' -- the swallow one layer above the fragment counting",
-          "ac": "AC3",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_history_cli.py::test_an_unreadable_log_is_reported_as_a_failure_not_as_no_changes"
-        },
-        {
-          "behavior": "undecodable BYTES surface as a counted corrupt fragment rather than an exception -- the measured behaviour that replaced a handler and a test which asserted nothing",
-          "ac": "AC3",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_change_history_reading.py::test_undecodable_bytes_surface_as_a_fragment_not_an_exception"
-        },
-        {
-          "behavior": "CONTROL: a MISSING log is still an ordinary empty answer, not an error -- absent and unreadable stay distinct",
-          "ac": "AC3",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_change_history_reading.py::test_a_missing_log_is_still_an_ordinary_empty_answer"
-        },
-        {
-          "behavior": "the reachability test runs the DOCUMENTED 'uv run <relative path>' form, so it proves the instruction works rather than that the library imports",
-          "ac": "AC4",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_change_history_recovers_compacted_history.py::test_the_command_the_catalog_tells_a_reader_to_run_actually_runs"
-        },
-        {
-          "behavior": "both live measurements are pinned MONOTONICALLY, so the next appended work event -- which every iterate produces -- cannot redden this suite",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_history_published_counts.py::test_the_commit_population_snapshot_is_consistent_with_the_live_log"
-        },
-        {
-          "behavior": "the reachability check for AC-4 executes UNCONDITIONALLY and additionally runs the documented 'uv run' form, with missing uv a hard failure rather than a skip",
-          "ac": "AC4",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_history_catalog_contract.py::test_the_command_the_catalog_tells_a_reader_to_run_actually_runs"
-        },
-        {
-          "behavior": "FR-01.14's published reason for its block gap is asserted against the source: a Backfilled-by marker exists, four distinct run ids are reachable from Refined-by lines alone, and exactly one id is reachable only via Backfilled-by",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_history_recovery_provenance.py::test_fr_0114s_published_reason_for_its_gap_is_asserted"
-        },
-        {
-          "behavior": "the retraction detector covers TECHNICAL claims, not only counts -- and still permits quoting a retracted claim as a retraction",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_history_published_counts.py::test_the_retraction_detector_covers_technical_claims_too"
-        },
-        {
-          "behavior": "the mini-plan's published mutation total equals the per-round figures enumerated beside it, and no round is missing from the breakdown",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_history_published_counts.py::test_the_mini_plans_mutation_arithmetic_adds_up"
-        },
-        {
-          "behavior": "every test name cited in S7 prose is defined somewhere -- closing the dead-pointer CLASS after two instances, while still permitting a name cited precisely because it never existed",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_history_cross_references.py::test_every_test_name_cited_in_prose_actually_exists"
-        },
-        {
-          "behavior": "a non-ASCII requirement id does not crash the stderr message that rejects it, and stays recognisable in it",
-          "ac": "AC4",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_history_cli_safety.py::test_a_non_ascii_id_does_not_crash_the_message_that_rejects_it"
-        },
-        {
-          "behavior": "the exit-4 unreadable-log message is ASCII-safe too, since stderr is deliberately not UTF-8 pinned",
-          "ac": "AC3",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_history_cli_safety.py::test_an_unreadable_log_message_is_also_ascii_safe"
-        },
-        {
-          "behavior": "an unreachable pre-S6 commit makes the provenance helper FAIL, not skip -- and the guard converts a reintroduced pytest.skip into a failure rather than being skipped by it",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_history_recovery_provenance.py::test_an_unreachable_pre_s6_commit_fails_rather_than_skipping"
-        },
-        {
-          "behavior": "the FR-01.14 reason predicates would fail on a fabricated section that disproved the published explanation -- git history cannot be mutated, so the guard is proven against synthetic input instead",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_history_recovery_provenance.py::test_the_fr_0114_reason_check_would_fail_on_a_section_that_disproved_it"
-        },
-        {
-          "behavior": "no list/tuple/set display in any file this step touched contains adjacent string literals -- the shape indistinguishable from a missing comma in operator-facing output",
-          "ac": "AC4",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_history_render.py::test_no_display_list_contains_implicitly_concatenated_literals"
-        },
-        {
-          "behavior": "the summary wrapper and the paragraph wrapper share one rule across a sweep of widths with unevenly-sized words -- a uniform corpus breaks identically at nearby widths and hid an off-by-N",
-          "ac": "AC4",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_history_render.py::test_wrap_and_para_share_one_wrapping_rule"
-        },
-        {
-          "behavior": "the renderer is driven in-process across every branch (listed change, introduced marker, missing timestamp, empty history verified/unverified, retired label, coverage present/full/absent, fragment warning present/absent)",
-          "ac": "AC4",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_history_render.py::test_render_lists_a_change_with_its_details"
-        },
-        {
-          "behavior": "a gate collector that cannot be imported degrades to unverifiable rather than taking the query down, and the log still answers",
-          "ac": "AC3",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_change_history_reading.py::test_an_unimportable_gate_collector_degrades_to_unverifiable"
-        },
-        {
-          "behavior": "the display-literal detector fires on every ambiguous form -- single-line, multi-line, f-string, dict key and dict value -- and not on unambiguous ones (triple-quoted, explicit +, parenthesised group, wrapped parenthesised group)",
-          "ac": "AC4",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_history_display_lists.py::test_the_detector_fires_on_every_concatenated_form"
-        },
-        {
-          "behavior": "the fold fills each line as far as the width allows -- maximality, not merely 'no line exceeds the width', which a one-character-early break satisfies",
-          "ac": "AC4",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_history_render.py::test_fold_fills_each_line_as_far_as_the_width_allows"
-        },
-        {
-          "behavior": "the queried id is sanitised by the LIBRARY, so the query/render pair is safe used directly without the CLI in the path",
-          "ac": "AC4",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_change_history.py::test_the_queried_id_is_sanitised_by_the_library_not_only_by_the_cli"
-        },
-        {
-          "behavior": "CONTROL: sanitising the queried id is behaviour-neutral for a well-formed id, so lookups still match",
-          "ac": "AC4",
-          "disposition": "tested",
-          "evidence": "shared/scripts/tests/test_fr_change_history.py::test_sanitising_the_queried_id_is_behaviour_neutral_for_a_normal_id"
-        },
-        {
-          "behavior": "both 'files this step owns' sets are discovered by a filename rule rather than hand-listed, and each asserts it covers the known modules",
-          "ac": "AC4",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_history_cross_references.py::test_the_prose_source_set_is_discovered_and_not_hand_listed"
-        }
-      ],
-      "note": "No event-schema field was added, and the option was not taken merely because the AC permitted it: every fact the query needs is already on work_completed -- identity (adr_id/run_id, falling back to the event id), time (ts), the FR links, and a human sentence (summary, falling back to description). The genuine weakness is that commit is populated on only 71 of 342 events, which is missing DATA that no new field retrofits. Two behaviours were deliberately NOT tested and are recorded here rather than given a disposition: the exact rendering of an event whose ts carries a non-UTC offset in the printed date column (the ordering it drives IS tested; the 10-character slice is not), and whether a future consumer of --json tolerates the two new fields (no such consumer exists yet -- the contract is new here)."
+      "enumeration_basis": {
+        "acs": 6,
+        "covered_acs": 6
+      }
     }
   },
   "coverage": {

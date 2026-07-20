@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-07-20T13:52:23.364484+00:00
+Generated: 2026-07-20T21:29:13.319219+00:00
 Total commits: 1181
 
 ## Commit Distribution
@@ -366,7 +366,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-20 | traceability | answer "which changes touched this requirement" from the event log (campaign S7) | cf65591ef3e9 |
+| 2026-07-20 | traceability | answer "which changes touched this requirement" from the event log (campaign S7) (#415) | 18905d576514 |
 | 2026-07-19 | templates | ship the action-pinning posture RULE to adopters, gated both ways (#407) | e336197ca8e9 |
 | 2026-07-19 | compliance | converge accepted risks onto the code-scanning surface (#406) | de9cd073b991 |
 | 2026-07-18 | compliance | scanner-agnostic accepted-risk register, gated both directions (#404) | 4a948378b207 |

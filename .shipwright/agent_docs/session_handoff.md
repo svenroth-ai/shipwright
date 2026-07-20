@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-19-traceability-derived-view"
+run_id: "iterate-2026-07-20-adopt-fr-id-cap"
 phase: "iterate"
-reason: "iterate: change history as a derived query over the event log (campaign S7)"
-timestamp: "2026-07-20T19:44:40.687357+00:00"
+reason: "iterate: adopt FR-id cap"
+timestamp: "2026-07-20T21:29:19.773182+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-20 19:44:40 UTC
+> Auto-generated 2026-07-20 21:29:19 UTC
 
 ## Session Info
 
-- **Session ID**: 85c973ff-4812-4db0-acc1-935ed32ee51b
-- **Timestamp**: 2026-07-20 19:44:40 UTC
-- **Reason**: iterate: change history as a derived query over the event log (campaign S7)
+- **Session ID**: df7a692d-7b6d-43aa-8e3a-2c40b36092eb
+- **Timestamp**: 2026-07-20 21:29:19 UTC
+- **Reason**: iterate: adopt FR-id cap
 
 ## Last Iterate
 
@@ -29,7 +29,7 @@ timestamp: "2026-07-20T19:44:40.687357+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/2026-07-19-traceability-derived-view
+- **Branch**: iterate/adopt-fr-id-cap
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/2026-07-19-traceability-derived-view
-- **Last Commit**: cf65591e feat(traceability): answer "which changes touched this requirement" from the event log (campaign S7)
+- **Branch**: iterate/adopt-fr-id-cap
+- **Last Commit**: 18905d57 feat(traceability): answer "which changes touched this requirement" from the event log (campaign S7) (#415)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-ec752311 | grade_snapshot | — | 2026-07-20 |
+| evt-3f54c795 | work_completed | iterate (adopt FR-id cap: canonical group rollover past 99 detected features) | 2026-07-20 |
 | evt-df28837c | grade_snapshot | — | 2026-07-20 |
 | evt-d9555025 | grade_snapshot | — | 2026-07-20 |
 | evt-83f52f9d | grade_snapshot | — | 2026-07-20 |
-| evt-0b770051 | grade_snapshot | — | 2026-07-20 |
-| evt-1cd72ca7 | grade_snapshot | — | 2026-07-20 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 342
-- **Last iterate**: feature — iterate: change history as a query over the event log (campaign S7) + measurement of what the S6 compaction actually left recoverable (2026-07-20)
+- **Total work events**: 343
+- **Last iterate**: bug — adopt FR-id cap: canonical group rollover past 99 detected features (2026-07-20)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
