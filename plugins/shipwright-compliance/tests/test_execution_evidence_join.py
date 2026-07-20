@@ -62,14 +62,14 @@ def manifest_from_raw(raw_index) -> dict:
 def test_green_but_skipped_required_layer_is_MISSING_not_ok(manifest_from_raw):
     # THE regression this campaign exists to catch: FR-03.01's only e2e test is
     # skipped -> coverage.e2e MUST be MISSING even though the run was "green".
-    fr = manifest_from_raw["requirements"]["app::FR-03.01"]
+    fr = manifest_from_raw["requirements"]["03::FR-03.01"]
     assert fr["coverage"]["e2e"] == "MISSING"
     assert fr["coverage"]["unit"] == "ok"          # its unit test really passed
     assert fr["tests"]["e2e"][0]["executed"] == "not_run"
 
 
 def test_executed_pass_required_layer_is_ok(manifest_from_raw):
-    fr = manifest_from_raw["requirements"]["app::FR-03.02"]
+    fr = manifest_from_raw["requirements"]["03::FR-03.02"]
     assert fr["coverage"]["e2e"] == "ok"           # dashboard e2e enabled + pass
 
 
@@ -112,7 +112,7 @@ def test_partial_evidence_omitting_a_required_test_stays_missing(raw_index):
         _APP, spec_files=[_APP / "spec.md"], test_roots=[_APP],
         evidence=partial, enumerate_untagged=True,
     )
-    fr = manifest["requirements"]["app::FR-03.02"]
+    fr = manifest["requirements"]["03::FR-03.02"]
     assert fr["coverage"]["e2e"] == "MISSING"
     assert fr["tests"]["e2e"][0]["executed"] == "not_run"
 
@@ -192,7 +192,7 @@ def test_stale_index_is_not_trusted_when_no_fresh_reports(tmp_path):
     }}), encoding="utf-8")
 
     manifest = _load(generate_file(tmp_path))
-    fr = manifest["requirements"]["01-demo::FR-08.01"]
+    fr = manifest["requirements"]["08::FR-08.01"]
     assert fr["coverage"]["unit"] == "MISSING"                 # stale pass NOT trusted
     assert fr["tests"]["unit"][0]["executed"] == "not_run"
 
@@ -225,6 +225,6 @@ def test_out_of_vocab_status_in_evidence_is_quarantined_not_enabled():
                   {"status": "active", "executed": "pass"}},
         enumerate_untagged=True,
     )
-    fr = manifest["requirements"]["app::FR-03.01"]
+    fr = manifest["requirements"]["03::FR-03.01"]
     assert fr["tests"]["unit"][0]["status"] == "quarantined"   # not "enabled"
     assert fr["coverage"]["unit"] == "MISSING"                 # so no false-green ok

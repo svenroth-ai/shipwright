@@ -1,0 +1,96 @@
+{
+  "schema_version": "3.0",
+  "contract": {
+    "skeleton": {
+      "collector_version": "string",
+      "fold_map": {
+        "FR-03.44": "string"
+      },
+      "generated_at": "string",
+      "invalid_layers": [
+        {
+          "fr": "string",
+          "raw": "string",
+          "reason": "string",
+          "spec_path": "string"
+        }
+      ],
+      "invalid_tags": [
+        {
+          "raw": "string",
+          "reason": "string",
+          "test": "string"
+        }
+      ],
+      "orphans": [
+        {
+          "category": "string",
+          "reason": "string",
+          "tagged_fr": "string",
+          "test": "string"
+        }
+      ],
+      "requirements": {
+        "03::FR-03.01": {
+          "coverage": {
+            "unit": "string"
+          },
+          "id": "string",
+          "priority": "string",
+          "required_layers": [
+            "string"
+          ],
+          "required_layers_source": "string",
+          "spec_path": "string",
+          "status": "string",
+          "tests": {
+            "unit": [
+              {
+                "executed": "string",
+                "id": "string",
+                "layer": "string",
+                "path": "string",
+                "resolved_from": "string",
+                "status": "string",
+                "tag_source": "string"
+              }
+            ]
+          },
+          "title": "string"
+        },
+        "03::FR-03.02": {
+          "coverage": {},
+          "id": "string",
+          "priority": "string",
+          "required_layers": [],
+          "required_layers_source": "string",
+          "spec_path": "string",
+          "status": "string",
+          "tests": {},
+          "title": "string"
+        },
+        "03::FR-03.09": {
+          "coverage": {
+            "unit": "string"
+          },
+          "id": "string",
+          "priority": "string",
+          "required_layers": [
+            "string"
+          ],
+          "required_layers_source": "string",
+          "spec_path": "string",
+          "status": "string",
+          "tests": {},
+          "title": "string"
+        }
+      },
+      "schema_version": "number",
+      "source_commit": "string",
+      "spec_hash": "string",
+      "untagged_tests": [
+        "string"
+      ]
+    }
+  }
+}

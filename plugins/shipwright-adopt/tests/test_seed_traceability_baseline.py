@@ -130,14 +130,14 @@ def test_with_tests_repo_scaffolds_tags_and_populates_baseline(tmp_path: Path):
     # Step F (collector, now wired) emits a POPULATED, layer-aware manifest from the FRs.
     manifest = _run_step_f_manifest(root)
     reqs = manifest["requirements"]
-    assert "01-adopted::FR-01.01" in reqs
+    assert "01::FR-01.01" in reqs
     # O-C6: the baseline manifest carries the real backward test→FR link — the tagged unit
     # test lands under FR-01.01's unit coverage (proves the tag→FR→manifest round-trip, not
     # just that the FR parsed).
-    unit_links = [t["id"] for t in reqs["01-adopted::FR-01.01"]["tests"].get("unit", [])]
-    assert any("test_sign_in" in tid for tid in unit_links), reqs["01-adopted::FR-01.01"]["tests"]
+    unit_links = [t["id"] for t in reqs["01::FR-01.01"]["tests"].get("unit", [])]
+    assert any("test_sign_in" in tid for tid in unit_links), reqs["01::FR-01.01"]["tests"]
     # Adopt FRs are inferred_legacy → D-layer advisory (WARN), never a false hard gate (AC2).
-    assert reqs["01-adopted::FR-01.01"]["required_layers_source"] == "inferred_legacy"
+    assert reqs["01::FR-01.01"]["required_layers_source"] == "inferred_legacy"
     assert any(o["category"] == "confirmed_orphan" for o in manifest["orphans"])
 
 
@@ -168,7 +168,7 @@ def test_zero_test_repo_adopts_cleanly(tmp_path: Path):
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert manifest["orphans"] == []
     assert manifest["untagged_tests"] == []
-    assert manifest["requirements"]["01-adopted::FR-01.01"]["required_layers_source"] \
+    assert manifest["requirements"]["01::FR-01.01"]["required_layers_source"] \
         == "inferred_legacy"
 
 
@@ -191,6 +191,9 @@ def test_predeclared_decisions_resolve_unattended_without_stalling(tmp_path: Pat
     # Both empty-Layers FRs resolved from the fixture; the explicit one is untouched.
     used = result["predeclared_decisions_used"]
     assert used == 2, result["layer_resolutions"]
+    # NOTE: adopt's decisions/resolutions map stays split-name namespaced ("app::") --
+    # it is a separate, user-authored contract. Only the traceability MANIFEST key below
+    # is id-derived ("03::"). The two forms deliberately differ (campaign S3).
     by_key = {r["key"]: r for r in result["layer_resolutions"]}
     assert by_key["app::FR-03.02"]["required_layers"] == ["e2e"]
     assert by_key["app::FR-03.02"]["resolved_from"] == "predeclared_decision"
@@ -201,7 +204,7 @@ def test_predeclared_decisions_resolve_unattended_without_stalling(tmp_path: Pat
     spec_body = (root / ".shipwright" / "planning" / "app" / "spec.md").read_text(encoding="utf-8")
     assert "e2e (inferred)" in spec_body
     manifest = _run_step_f_manifest(root)  # discovers .shipwright/planning/app/spec.md
-    assert manifest["requirements"]["app::FR-03.02"]["required_layers"] == ["e2e"]
+    assert manifest["requirements"]["03::FR-03.02"]["required_layers"] == ["e2e"]
 
 
 def test_orphan_baseline_is_idempotent(tmp_path: Path):

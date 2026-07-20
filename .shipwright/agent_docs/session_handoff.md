@@ -1,36 +1,36 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-19-one-discovery-function"
+run_id: "iterate-2026-07-20-namespace-from-requirement-id"
 phase: "iterate"
-reason: "iterate finalization"
-timestamp: "2026-07-19T12:37:34.501426+00:00"
+reason: "iterate: derive the traceability manifest namespace from the requirement id (schema 2 to 3)"
+timestamp: "2026-07-20T00:40:14.649901+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-19 12:37:34 UTC
+> Auto-generated 2026-07-20 00:40:14 UTC
 
 ## Session Info
 
 - **Session ID**: 85c973ff-4812-4db0-acc1-935ed32ee51b
-- **Timestamp**: 2026-07-19 12:37:34 UTC
-- **Reason**: iterate finalization
+- **Timestamp**: 2026-07-20 00:40:14 UTC
+- **Reason**: iterate: derive the traceability manifest namespace from the requirement id (schema 2 to 3)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-19-one-discovery-function
-- **Date**: 2026-07-19T11:41:43.148917Z
+- **Run ID**: iterate-2026-07-20-namespace-from-requirement-id
+- **Date**: 2026-07-19T23:48:35.387962Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/campaign-S2-one-discovery-function
-- **ADR**: iterate-2026-07-19-one-discovery-function
+- **Branch**: iterate/requirements-namespace-from-id
+- **ADR**: iterate-2026-07-20-namespace-from-requirement-id
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-19-one-discovery-function.md
+- **Spec**: .shipwright/planning/iterate/campaigns/2026-07-18-requirements-catalog/sub-iterates/S3-namespace-from-requirement-id.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/campaign-S2-one-discovery-function
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-19T11:36:14)
+- **Branch**: iterate/requirements-namespace-from-id
+- **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
@@ -48,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/campaign-S2-one-discovery-function
-- **Last Commit**: 940fdf97 refactor(shared): one parameterized planning-discovery walk for all 15 call sites
+- **Branch**: iterate/requirements-namespace-from-id
+- **Last Commit**: 26d702be refactor(compliance): derive the traceability namespace from the FR id (schema 2 to 3)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-3b934f75 | grade_snapshot | — | 2026-07-19 |
-| evt-9457076b | grade_snapshot | — | 2026-07-19 |
-| evt-f944de6d | grade_snapshot | — | 2026-07-19 |
-| evt-ec05d680 | work_completed | iterate (iterate: one shared spec-discovery walk for all 15 call sites) | 2026-07-19 |
-| evt-e8c35f10 | grade_snapshot | — | 2026-07-19 |
+| evt-ad515d80 | grade_snapshot | — | 2026-07-20 |
+| evt-7833d3b7 | grade_snapshot | — | 2026-07-20 |
+| evt-d8999abb | grade_snapshot | — | 2026-07-20 |
+| evt-28963585 | grade_snapshot | — | 2026-07-20 |
+| evt-8e6b8995 | grade_snapshot | — | 2026-07-19 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 337
-- **Last iterate**: change — iterate: one shared spec-discovery walk for all 15 call sites (2026-07-19)
+- **Total work events**: 338
+- **Last iterate**: refactor — iterate: derive the traceability manifest namespace from the requirement id (schema 2 to 3) (2026-07-19)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

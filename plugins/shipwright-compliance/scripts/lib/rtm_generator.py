@@ -509,7 +509,7 @@ def _requirements_coverage_events(data: ComplianceData) -> list[str]:
                 status = rendered
 
         reconciled_cell = _RECONCILED_MARK[rec.status(req.id)]
-        u_cell, i_cell, e_cell = layer_cells(layer_idx, req.split, req.id)  # TT2 layer glyphs
+        u_cell, i_cell, e_cell = layer_cells(layer_idx, req.id)  # TT2 layer glyphs (v3: id-keyed)
         # In-document anchor AFTER the req link (keeps row prefix `| [FR-…]`); Timeline FRs link here.
         anchor = f'<a id="{fr_anchor_id(req.id)}"></a>'
 

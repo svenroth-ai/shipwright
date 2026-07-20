@@ -44,7 +44,7 @@ def validator(schema) -> jsonschema.Draft202012Validator:
 
 def test_schema_is_valid_draft2020(schema):
     jsonschema.Draft202012Validator.check_schema(schema)
-    assert schema["properties"]["schema_version"]["const"] == 2
+    assert schema["properties"]["schema_version"]["const"] == 3
 
 
 def test_golden_example_validates(validator):
@@ -63,11 +63,11 @@ def test_schema_rejects_malformed(validator):
     assert list(validator.iter_errors(bad_version))
 
     bad_id = json.loads(json.dumps(good))
-    bad_id["requirements"]["01-adopted::FR-01.03"]["id"] = "FR-1.3"
+    bad_id["requirements"]["01::FR-01.03"]["id"] = "FR-1.3"
     assert list(validator.iter_errors(bad_id))
 
     bad_exec = json.loads(json.dumps(good))
-    bad_exec["requirements"]["01-adopted::FR-01.03"]["tests"]["unit"][0]["executed"] = "passed"
+    bad_exec["requirements"]["01::FR-01.03"]["tests"]["unit"][0]["executed"] = "passed"
     assert list(validator.iter_errors(bad_exec))
 
     extra = json.loads(json.dumps(good))
@@ -78,14 +78,14 @@ def test_schema_rejects_malformed(validator):
 def test_schema_enforces_skipped_not_covered(validator):
     # coverage 'ok' with a skipped/not_run test at that layer MUST fail (R1, structural).
     bad = _load(_FIX / "golden" / "manifest.json")
-    bad["requirements"]["app::FR-03.01"]["coverage"]["e2e"] = "ok"   # its e2e is skipped/not_run
+    bad["requirements"]["03::FR-03.01"]["coverage"]["e2e"] = "ok"   # its e2e is skipped/not_run
     assert list(validator.iter_errors(bad))
 
 
 def test_schema_enforces_removed_has_no_live_tests(validator):
     # a removed FR keeping live tests MUST fail (its tests belong in orphans[]).
     bad = _load(_FIX / "golden" / "manifest.json")
-    bad["requirements"]["app::FR-03.09"]["tests"] = {
+    bad["requirements"]["03::FR-03.09"]["tests"] = {
         "e2e": [{
             "id": "x", "path": "x::y", "layer": "e2e",
             "status": "enabled", "executed": "pass", "tag_source": "native_tag",
@@ -97,14 +97,14 @@ def test_schema_enforces_removed_has_no_live_tests(validator):
 def test_schema_requires_coverage_for_every_required_layer(validator):
     # a required layer cannot be silently omitted from coverage.
     bad = _load(_FIX / "golden" / "manifest.json")
-    del bad["requirements"]["app::FR-03.02"]["coverage"]["e2e"]   # FR-03.02 requires e2e
+    del bad["requirements"]["03::FR-03.02"]["coverage"]["e2e"]   # FR-03.02 requires e2e
     assert list(validator.iter_errors(bad))
 
 
 def test_schema_enforces_test_link_layer_matches_its_group(validator):
     # unit coverage cannot be claimed from a test link whose own layer is e2e.
     bad = _load(_FIX / "golden" / "manifest.json")
-    bad["requirements"]["app::FR-03.03"]["tests"]["unit"][0]["layer"] = "e2e"
+    bad["requirements"]["03::FR-03.03"]["tests"]["unit"][0]["layer"] = "e2e"
     assert list(validator.iter_errors(bad))
 
 

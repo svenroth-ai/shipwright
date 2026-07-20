@@ -258,7 +258,7 @@ def traceability_findings(project_root: Path) -> list[Finding]:
     manifest = load_manifest(project_root)
     if manifest is None:
         skip = ("skip", "MEDIUM",
-                "test-traceability manifest absent, not v2, or schema-invalid", [], None)
+                "test-traceability manifest absent, not v3, or schema-invalid", [], None)
         return [_finding("D-orphan", skip), _finding("D-layer", skip)]
     out: list[Finding] = []
     for check_id, fn in (("D-orphan", check_orphan), ("D-layer", check_layer)):

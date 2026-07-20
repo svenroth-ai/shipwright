@@ -78,9 +78,9 @@ def _write_manifest(tmp_path, nodes):
     p = tmp_path / ".shipwright" / "compliance" / "test-traceability.json"
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps({
-        "schema_version": 2, "collector_version": "t", "generated_at": "t",
+        "schema_version": 3, "collector_version": "t", "generated_at": "t",
         "source_commit": "x", "spec_hash": "h",
-        "requirements": {f"01-foo::{n['id']}": n for n in nodes},
+        "requirements": {f"{n['id'][3:5]}::{n['id']}": n for n in nodes},
         "orphans": [], "invalid_tags": [], "invalid_layers": [], "untagged_tests": [],
     }), encoding="utf-8")
 

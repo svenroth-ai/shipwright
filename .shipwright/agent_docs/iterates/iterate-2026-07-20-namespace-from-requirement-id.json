@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-20-namespace-from-requirement-id",
+  "date": "2026-07-19T23:48:35.387962Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/requirements-namespace-from-id",
+  "spec": ".shipwright/planning/iterate/campaigns/2026-07-18-requirements-catalog/sub-iterates/S3-namespace-from-requirement-id.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-20-namespace-from-requirement-id"
+}

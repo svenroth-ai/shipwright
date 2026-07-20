@@ -242,6 +242,6 @@ def test_collector_links_a_tagged_test_to_its_fr(tmp_path: Path):
         capture_output=True, text=True, check=False)
     assert proc.returncode == 0, proc.stderr
     manifest = json.loads(proc.stdout)
-    node = manifest["requirements"]["01-adopted::FR-01.01"]
+    node = manifest["requirements"]["01::FR-01.01"]
     unit_ids = [t["id"] for t in node["tests"].get("unit", [])]
     assert any("test_sign_in" in tid for tid in unit_ids), node["tests"]

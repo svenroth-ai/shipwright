@@ -5,7 +5,9 @@ driven layer-coverage logic lives here (Spec §5 / AC1). Reads the committed
 test-traceability manifest (TT1 — derived / RTM-visibility only, R3) and renders a
 coverage-at-layer glyph (``ok`` / ``MISSING`` / ``n/a`` / ``?`` / ``—``) per FR.
 
-Rows are matched to a manifest **node** by the namespaced key ``split::FR-id``. That
+Rows are matched to a manifest **node** by the namespaced key ``namespace::FR-id``, where
+the namespace derives from the FR id itself (manifest v3) — the row's split DIRECTORY is no
+longer part of the lookup, so renaming a split cannot make every RTM row miss. That
 resolves the correct *node*, but the node's coverage VALUE may itself be fanned: the frozen
 un-namespaced ``@FR-XX.YY`` grammar carries no namespace, so a bare tag is filed into every
 node sharing that display id (incl. a ``removed`` occurrence). A display id shared across
@@ -14,15 +16,24 @@ mirroring the ``D-layer`` detective, which fail-closes the identical value as
 ``ambiguous_fanout``. The two must never disagree (RTM green while the gate flags it). The
 false-red remedy (namespaced / per-split tags) is deferred to TT5; here we only avoid the
 false-green.
+
+Under v3 two specs cannot both reach the manifest with one display id: the collector
+fails closed on a duplicate FR id rather than dropping a node (see
+``_test_links_requirements``). Node-counting therefore still sees every share that can
+legally appear here, plus a hand-edited node whose ``id`` disagrees with its key.
 """
 
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 _MANIFEST_REL = ".shipwright/compliance/test-traceability.json"
+_SCHEMA_VERSION = 3
 _LAYERS = ("unit", "integration", "e2e")
+# Canonical id shape, used to slice the key namespace out of the id (v3).
+_CANONICAL_FR_RE = re.compile(r"^FR-\d{2}\.\d{2}$")
 _ABSENT = "—"
 _AMBIGUOUS = "?"
 # Conservative merge precedence when a display id spans namespaces (worst wins).
@@ -40,6 +51,20 @@ class LayerIndex:
         self.collisions = collisions    # display ids shared by >=2 nodes (active or removed)
 
 
+def _key_for_id(fr_id: str) -> str:
+    """The v3 manifest key for ``fr_id`` — ``<group digits>::<id>``.
+
+    A deliberate local copy of ``requirement_model.key_for_id``: this module is kept
+    dependency-light (json + re + pathlib) because it is imported by ``rtm_generator``,
+    and reaching the shared lib from ``scripts.lib`` needs the ADR-045 loader dance.
+    ``test_rtm_layer_columns`` drift-pins the copy against the shared original, so the
+    two cannot diverge silently. Returns "" for a non-canonical id (no derivable key)
+    -- the caller then falls through to the by-id lookup rather than inventing one."""
+    if not _CANONICAL_FR_RE.match(fr_id):
+        return ""
+    return f"{fr_id[3:5]}::{fr_id}"
+
+
 def _merge(into: dict, coverage: dict) -> None:
     """Fold ``coverage`` into ``into`` keeping the worst (most conservative) glyph."""
     for layer in _LAYERS:
@@ -52,7 +77,7 @@ def _merge(into: dict, coverage: dict) -> None:
 
 
 def load_layer_index(project_root: Path) -> LayerIndex:
-    """Build the layer index from the committed v2 manifest (empty on absence)."""
+    """Build the layer index from the committed v3 manifest (empty on absence)."""
     by_key: dict[str, dict[str, str]] = {}
     by_id: dict[str, dict[str, str]] = {}
     seen: dict[str, int] = {}
@@ -63,7 +88,10 @@ def load_layer_index(project_root: Path) -> LayerIndex:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return LayerIndex(by_key, by_id, set())
-    if not isinstance(data, dict) or data.get("schema_version") != 2:
+    # Exactly-v3, mirroring the previous exactly-v2 strictness: a stale v2 manifest
+    # renders "—" (absent) until the next regen rather than being read with v2 key
+    # semantics against v3 lookups, which would silently mismatch every row.
+    if not isinstance(data, dict) or data.get("schema_version") != _SCHEMA_VERSION:
         return LayerIndex(by_key, by_id, set())
     reqs = data.get("requirements")
     if not isinstance(reqs, dict):
@@ -82,14 +110,19 @@ def load_layer_index(project_root: Path) -> LayerIndex:
     return LayerIndex(by_key, by_id, collisions)
 
 
-def layer_cells(index: LayerIndex, split: str, fr_id: str) -> tuple[str, str, str]:
+
+def layer_cells(index: LayerIndex, fr_id: str) -> tuple[str, str, str]:
     """Return ``(unit, integration, e2e)`` glyphs for one RTM row.
 
-    Exact ``split::FR-id`` match first; else a conservative same-id merge; else ``—``. A
-    required-but-uncovered layer reads ``MISSING``. A ``ok`` on a fan-out **collision**
+    Exact ``namespace::FR-id`` match first; else a conservative same-id merge; else ``—``.
+    A required-but-uncovered layer reads ``MISSING``. A ``ok`` on a fan-out **collision**
     display id is rendered ``?`` (ambiguous, not credited) — the RTM must agree with
-    ``D-layer``, which fail-closes the same value."""
-    cells = index.by_key.get(f"{split}::{fr_id}")
+    ``D-layer``, which fail-closes the same value.
+
+    There is no ``split`` argument (manifest v3): the key is built from the FR id alone,
+    so a row can no longer miss its node because the split directory was renamed. Passing
+    the split in was the last place a DIRECTORY name reached a manifest lookup."""
+    cells = index.by_key.get(_key_for_id(fr_id))
     if cells is None:
         cells = index.by_id.get(fr_id)
     if not cells:

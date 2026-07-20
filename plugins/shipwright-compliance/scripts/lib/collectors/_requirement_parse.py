@@ -114,10 +114,15 @@ def _infer_layers(title: str) -> tuple[tuple, str]:
 
 
 def parse_requirements(
-    content: str, *, namespace: str, spec_path: str,
+    content: str, *, spec_path: str,
     invalid_layers: list | None = None,
 ) -> list:
     """Parse every FR row (active + removed) into ``Requirement`` objects.
+
+    There is no ``namespace`` argument (manifest schema v3): the manifest-key
+    namespace derives from each row's own FR id, so a caller can no longer hand in
+    a directory name. Every row reaching the constructor has already passed
+    ``is_canonical_fr``, which is what makes that derivation total.
 
     ``invalid_layers`` (optional out-accumulator) collects diagnostics for FR rows
     whose **explicitly-headed** ``Layers`` cell is non-empty but resolves to ZERO
@@ -201,7 +206,7 @@ def parse_requirements(
             layers, source = _infer_layers(title)
 
         reqs.append(rm.Requirement(
-            id=fr_id, namespace=namespace, spec_path=spec_path, title=title,
+            id=fr_id, spec_path=spec_path, title=title,
             priority=priority, status="removed" if in_removed else "active",
             required_layers=layers, required_layers_source=source,
         ))

@@ -76,7 +76,7 @@ def probe_d_traceability_empty(root: Path, _extra) -> dict:
     """The two sites that emit a POSITIVE claim over the empty set."""
     _paths("compliance")
     from scripts.audit._group_d_traceability import check_layer, check_orphan
-    empty = {"schema_version": 2, "requirements": {}}
+    empty = {"schema_version": 3, "requirements": {}}
     return {"orphan": list(check_orphan(empty)),
             "layer": list(check_layer(empty))}
 

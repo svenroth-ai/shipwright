@@ -37,11 +37,21 @@ def _node(fr_id, *, status="active", priority="Must", source="explicit",
 
 
 def _manifest(reqs, *, orphans=None, invalid_layers=None):
-    keyed = {}
+    """Assemble a v3 manifest from ``(spec-namespace, node)`` pairs.
+
+    The KEY derives from the node's own FR id (v3), not from the namespace. Two entries
+    sharing an id therefore collide on one key — which the real collector refuses to
+    produce at all (it fails closed). A fixture that still wants two such nodes is
+    exercising the HAND-EDITED manifest path, which the node-count collision guard is
+    what remains to cover; the namespace disambiguates those keys so both nodes survive
+    into the dict, exactly as a corrupt-but-parseable artifact on disk would.
+    """
+    keyed: dict = {}
     for ns, node in reqs:
-        keyed[f"{ns}::{node['id']}"] = node
+        key = f"{node['id'][3:5]}::{node['id']}"
+        keyed[key if key not in keyed else f"{ns}::{node['id']}"] = node
     return {
-        "schema_version": 2, "collector_version": "test", "generated_at": "t",
+        "schema_version": 3, "collector_version": "test", "generated_at": "t",
         "source_commit": "x", "spec_hash": "h", "requirements": keyed,
         "orphans": orphans or [], "invalid_tags": [],
         "invalid_layers": invalid_layers or [], "untagged_tests": [],

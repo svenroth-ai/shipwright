@@ -48,7 +48,12 @@ def _write(p: Path, text: str) -> None:
 def _build_collision(tmp_path, *, b_removed: bool):
     """FR-03.01 explicit+active in 01-a; in 02-b either active (active+active) or removed
     (active+removed). One test tagged @FR-03.01 with PASSING evidence, so the fanned link
-    yields ``coverage=ok`` in the active node(s) — the value we must NOT credit."""
+    would yield ``coverage=ok`` in the active node(s) — the value we must NOT credit.
+
+    Since manifest v3, the ACTIVE+ACTIVE form REFUSES to build: both specs claim key
+    ``03::FR-03.01`` and the collector fails closed rather than dropping one. The
+    ACTIVE+REMOVED form still builds — a tombstone is a legitimate state and is excluded
+    from the collision rule (see ``_test_links_requirements``). Both are asserted below."""
     a, b = tmp_path / ".shipwright/planning/01-a", tmp_path / ".shipwright/planning/02-b"
     _write(a / "spec.md", _spec("| FR-03.01 | Live A | Must | unit |\n"))
     if b_removed:
@@ -63,11 +68,46 @@ def _build_collision(tmp_path, *, b_removed: bool):
         test_roots=[tmp_path / "tests"], evidence=evidence)
 
 
+def _collided_manifest(*, b_removed: bool) -> dict:
+    """The manifest the v2 collector USED to emit for ``_build_collision``.
+
+    v3 prevents a generated manifest from ever carrying two ACTIVE nodes on one display
+    id, so the ambiguity guard's remaining job is the HAND-EDITED / stale artifact — which
+    is what this builds. Written out rather than generated precisely because the generator
+    now refuses: pinning it here keeps the fan-out fail-closed behaviour covered instead
+    of letting it quietly become untested when its natural input became unbuildable.
+
+    The second key is ``02::FR-03.01`` — schema-VALID (it matches the v3 propertyNames
+    pattern) but disagreeing with its own node id. A ``02-b::`` key would be far more
+    obviously "hand-edited", and that is exactly why it is wrong here: it fails schema
+    validation, so ``load_manifest`` returns None and D-orphan/D-layer SKIP. These tests
+    call ``check_layer``/``check_orphan`` directly and would still pass — green over a
+    path no real manifest can reach."""
+    link = {"id": "tests/test_cov.py::test_cov", "path": "tests/test_cov.py::test_cov",
+            "layer": "unit", "status": "enabled", "executed": "pass",
+            "tag_source": "pytest_marker"}
+    a = {"id": "FR-03.01", "spec_path": ".shipwright/planning/01-a/spec.md",
+         "title": "Live A", "priority": "Must", "status": "active",
+         "required_layers": ["unit"], "required_layers_source": "explicit",
+         "tests": {"unit": [dict(link)]}, "coverage": {"unit": "ok"}}
+    b = {**a, "spec_path": ".shipwright/planning/02-b/spec.md", "title": "Live B"}
+    if b_removed:
+        b = {**b, "status": "removed", "title": "Old dup",
+             "tests": {}, "coverage": {"unit": "n/a"}}
+    return {
+        "schema_version": 3, "collector_version": "test", "generated_at": "t",
+        "source_commit": "x", "spec_hash": "h",
+        # Two nodes, one display id — only reachable by hand-editing under v3.
+        "requirements": {"03::FR-03.01": a, "02::FR-03.01": b},
+        "orphans": [], "invalid_tags": [], "invalid_layers": [], "untagged_tests": [],
+    }
+
+
 # --- MUST-FIX 2: D-layer does not credit a fanned collision ok (real manifest) ----------
 
 
-def test_dlayer_active_active_collision_ok_not_credited(tmp_path):
-    manifest = _build_collision(tmp_path, b_removed=False)
+def test_dlayer_active_active_collision_ok_not_credited():
+    manifest = _collided_manifest(b_removed=False)
     # sanity: the collector DID fan the passing tag into an active node as coverage ok.
     assert any(n["coverage"].get("unit") == "ok"
                for n in manifest["requirements"].values() if n["id"] == "FR-03.01")
@@ -76,9 +116,9 @@ def test_dlayer_active_active_collision_ok_not_credited(tmp_path):
     assert any("ambiguous_fanout" in e for e in ev)          # NOT silently credited
 
 
-def test_dlayer_active_removed_collision_ok_not_credited(tmp_path):
+def test_dlayer_active_removed_collision_ok_not_credited():
     """Codex CRITICAL — an id ACTIVE in ns-A + REMOVED in ns-B is still a collision."""
-    manifest = _build_collision(tmp_path, b_removed=True)
+    manifest = _collided_manifest(b_removed=True)
     status, sev, detail, ev, cmd = gdt.check_layer(manifest)
     assert status == "pass"
     assert any("ambiguous_fanout" in e for e in ev)
@@ -88,19 +128,62 @@ def test_dlayer_active_removed_collision_ok_not_credited(tmp_path):
 
 
 def test_rtm_renders_collision_ok_as_ambiguous(tmp_path):
-    manifest = _build_collision(tmp_path, b_removed=True)
+    manifest = _collided_manifest(b_removed=True)
     out = tmp_path / ".shipwright/compliance/test-traceability.json"
     _write(out, json.dumps(manifest))
     idx = load_layer_index(tmp_path)
-    unit, _integration, _e2e = layer_cells(idx, "01-a", "FR-03.01")
+    unit, _integration, _e2e = layer_cells(idx, "FR-03.01")
     assert unit == "?"                                       # not the fanned ok
+
+
+def test_the_collided_fixture_is_schema_valid_so_the_guard_is_reachable(tmp_path):
+    """FINDING 3 guard. The two ambiguity tests below call check_layer/check_orphan
+    directly, so a schema-INVALID fixture would let them pass while the real path
+    (load_manifest -> D-layer/D-orphan) SKIPped. Prove the artifact they pin is one
+    load_manifest actually accepts."""
+    _write(tmp_path / ".shipwright/compliance/test-traceability.json",
+           json.dumps(_collided_manifest(b_removed=False)))
+    loaded = gdt.load_manifest(tmp_path)
+    assert loaded is not None, "fixture must be schema-valid or the guard is unreachable"
+    assert sorted(loaded["requirements"]) == ["02::FR-03.01", "03::FR-03.01"]
+
+
+def test_active_plus_removed_is_not_a_collision_and_keeps_the_live_node(tmp_path):
+    """A tombstone in one split alongside a live row in another is a SUPPORTED state
+    (_group_d_manifest: "REMOVED in ns-B is not a same-namespace duplicate"), and the
+    campaign's own convention is that ids are stable and never renumbered (SPEC 3.1) --
+    so "renumber one of the rows" would be wrong advice here. It must build, and the
+    ACTIVE node must be the one that survives."""
+    manifest = _build_collision(tmp_path, b_removed=True)
+    assert list(manifest["requirements"]) == ["03::FR-03.01"]
+    node = manifest["requirements"]["03::FR-03.01"]
+    assert node["status"] == "active"                      # the live row, not the tombstone
+    assert node["spec_path"].endswith("01-a/spec.md")
+
+
+def test_two_specs_sharing_an_id_fail_closed_instead_of_dropping_a_node(tmp_path):
+    """S3 regression guard. Under v2 the two splits produced TWO nodes (distinct
+    path-derived keys). A v3 key is a pure function of the id, so they claim ONE — and
+    resolving that by keeping either one would silently delete a requirement from the
+    artifact whose job is to reveal traceability gaps. Generation must refuse."""
+    import pytest  # noqa: PLC0415
+
+    from scripts.lib.collectors._test_links_requirements import (  # noqa: PLC0415
+        DuplicateRequirementId,
+    )
+    with pytest.raises(DuplicateRequirementId) as excinfo:
+        _build_collision(tmp_path, b_removed=False)
+    message = str(excinfo.value)
+    assert "FR-03.01" in message
+    # Actionable: it must name BOTH specs, or you cannot know which row to renumber.
+    assert "01-a" in message and "02-b" in message
 
 
 # --- MUST-FIX 2a: the fanned test is surfaced as a POSSIBLE orphan -----------------------
 
 
-def test_orphan_fanout_active_removed_surfaced_as_possible(tmp_path):
-    manifest = _build_collision(tmp_path, b_removed=True)
+def test_orphan_fanout_active_removed_surfaced_as_possible():
+    manifest = _collided_manifest(b_removed=True)
     status, sev, detail, ev, cmd = gdt.check_orphan(manifest)
     assert status == "fail"
     assert any("ambiguous_fanout" in e and "test_cov.py" in e for e in ev)
@@ -150,9 +233,10 @@ def _node(fr_id, *, source, coverage):
 
 
 def _manifest(nodes, **extra):
-    m = {"schema_version": 2, "collector_version": "t", "generated_at": "t",
+    # v3 keys derive the namespace from the id's group digits, not a split directory.
+    m = {"schema_version": 3, "collector_version": "t", "generated_at": "t",
          "source_commit": "x", "spec_hash": "h",
-         "requirements": {f"01-a::{n['id']}": n for n in nodes},
+         "requirements": {f"{n['id'][3:5]}::{n['id']}": n for n in nodes},
          "orphans": [], "invalid_tags": [], "invalid_layers": [], "untagged_tests": []}
     m.update(extra)
     return m
