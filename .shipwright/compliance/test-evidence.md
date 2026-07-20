@@ -1,20 +1,20 @@
 # Test Evidence Report
 
-Generated: 2026-07-20T21:42:23.996908+00:00
+Generated: 2026-07-20T21:29:13.319219+00:00
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 343 |
-| Total unit tests (latest full suite) | 5207/5207 (2026-07-20) |
+| Total unit tests (latest full suite) | 9458/9486 (2026-07-20) |
 | New tests from iterations | +220 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | Editing one of Shipwright's shipped CI workflow templates now trips the CI supply-chain acknowledgement gate, the same as editing this repo's own workflow files. | [iterate](traceability-matrix.md#evt-923835b8) | unit | +0 | 5207/5207 | PASS | 2026-07-20 |
+| 1 | When an onboarded project exposes more than 99 pages, the tool no longer produces a broken requirement number — it rolls over to the next requirement group so every generated id stays valid. | [iterate](traceability-matrix.md#evt-3f54c795) | unit | +0 | 6/6 | PASS | 2026-07-20 |
 | 2 | You can now ask which recorded changes touched a given requirement and get an ordered answer, instead of reading a hand-maintained history inside the requirement that went stale there. Checking that query against the history just removed from the catalog also showed the change log is not the complete record it was assumed to be: three changes shipped without ever being recorded against the requirement they affected, and most changes carry no requirement link at all, so every answer now states how much of the record it is speaking for and points at the commit history for the rest. | [iterate](traceability-matrix.md#evt-d140cd35) | unit | +0 | 9458/9486 | PASS (28 skipped) | 2026-07-20 |
 | 3 | One requirements catalog, stated once in plain language, with explicit deep-link anchors that actually resolve. | [iterate](traceability-matrix.md#evt-65d388b4) | — | +0 | — | — | 2026-07-20 |
 | 4 | converge the FR table shape (campaign S5) | [iterate](traceability-matrix.md#evt-3b2c22ed) | — | +0 | — | — | 2026-07-20 |
@@ -393,7 +393,7 @@ _Synthesized from per-iterate **unit** results — Integration / pgTAP / E2E / S
 | 27 | iterate | 1119/1119 | — | — | — | — | 2026-07-16 |
 | 28 | iterate | 17/17 | — | — | — | — | 2026-07-17 |
 | 29 | iterate | 9458/9486 | — | — | — | — | 2026-07-20 |
-| 30 | iterate | 5207/5207 | — | — | — | — | 2026-07-20 |
+| 30 | iterate | 6/6 | — | — | — | — | 2026-07-20 |
 
 ## Code Review Evidence
 
