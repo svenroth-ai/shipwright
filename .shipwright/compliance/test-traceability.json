@@ -1,8 +1,8 @@
 {
   "schema_version": 3,
   "collector_version": "test_links/1.0.0",
-  "generated_at": "2026-07-20T21:50:37.610785+00:00",
-  "source_commit": "88e7a9849a7c0d1883743d9d574ab838cee4e1e6",
+  "generated_at": "2026-07-20T22:04:12.277111+00:00",
+  "source_commit": "49c1656453945c08fa4db9163949e2468d37e294",
   "spec_hash": "sha256:d86c863159c71a252ede90b8b470937b6160e5187c32849bbb04474d22c944ad",
   "requirements": {
     "01::FR-01.01": {
@@ -712,6 +712,38 @@
           {
             "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_skill_section_5b_references_review_steps",
             "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_skill_section_5b_references_review_steps",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_finalization.py::test_runner_doc_documents_f3_drop_and_f5c",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_finalization.py::test_runner_doc_documents_f3_drop_and_f5c",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_finalization.py::test_schema_has_finalization_property",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_finalization.py::test_schema_has_finalization_property",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_finalization.py::test_schema_finalization_field_is_optional",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_finalization.py::test_schema_finalization_field_is_optional",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_finalization.py::test_schema_validates_result_with_finalization_field",
+            "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_finalization.py::test_schema_validates_result_with_finalization_field",
             "layer": "unit",
             "status": "enabled",
             "executed": "not_run",
@@ -6669,6 +6701,12 @@
     "shared/tests/test_decision_drop_ssot.py::test_main_repo_only_allowlist_not_stale",
     "shared/tests/test_decision_drop_ssot.py::test_no_unaccounted_raw_decision_drop_joins",
     "shared/tests/test_decision_drop_ssot.py::test_worktree_reachable_drop_files_use_the_resolver",
+    "shared/tests/test_decision_log_gate.py::test_adr_check_fails_when_decision_drop_is_empty_placeholder",
+    "shared/tests/test_decision_log_gate.py::test_adr_check_fails_when_drop_decision_empty",
+    "shared/tests/test_decision_log_gate.py::test_no_direct_decision_log_fails_when_iterate_writes_it",
+    "shared/tests/test_decision_log_gate.py::test_no_direct_decision_log_ignores_unrelated_decision_log_named_files",
+    "shared/tests/test_decision_log_gate.py::test_no_direct_decision_log_passes_when_untouched",
+    "shared/tests/test_decision_log_gate.py::test_no_direct_decision_log_skips_without_commit",
     "shared/tests/test_dev_server.py::test_clear_state",
     "shared/tests/test_dev_server.py::test_get_config_known_profile",
     "shared/tests/test_dev_server.py::test_get_config_none_profile",
@@ -6943,6 +6981,9 @@
     "shared/tests/test_file_lock.py::test_enter_creates_missing_parent_dir",
     "shared/tests/test_file_lock.py::test_lock_is_reusable_after_release",
     "shared/tests/test_file_lock.py::test_mutual_exclusion_blocks_second_acquirer",
+    "shared/tests/test_finalization_integrity_integration.py::test_forbidden_direct_decision_log_write_fails",
+    "shared/tests/test_finalization_integrity_integration.py::test_happy_path_f3_f5c_compose_green",
+    "shared/tests/test_finalization_integrity_integration.py::test_lost_adr_empty_drop_fails",
     "shared/tests/test_finalize_bundle.py::test_all_steps_ok_runs_in_dependency_order",
     "shared/tests/test_finalize_bundle.py::test_all_steps_receive_the_same_project_root",
     "shared/tests/test_finalize_bundle.py::test_f1_crash_unparseable_stdout_is_failure_not_drift",
