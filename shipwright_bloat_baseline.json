@@ -571,7 +571,7 @@
     {
       "path": "shared/scripts/lib/drift_parsers.py",
       "limit": 300,
-      "current": 409,
+      "current": 383,
       "state": "grandfathered",
       "adr": null
     },

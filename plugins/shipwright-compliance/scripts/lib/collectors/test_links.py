@@ -32,11 +32,11 @@ from ._suite_tags import propagate_suite_tags
 from ._test_links_requirements import (
     assert_keys_derive_from_ids,
     build_requirement_index,
+    build_requirement_nodes,
 )
 
 COLLECTOR_VERSION = "test_links/1.0.0"
 _DEFAULT_TS = "1970-01-01T00:00:00+00:00"
-_LAYER_ORDER = ("unit", "integration", "e2e")
 # Frozen closed vocabularies (mirror traceability_schema.json testLink enums) — a
 # boundary guard so out-of-vocab execution evidence can never ship a schema-invalid link.
 _STATUS_VOCAB = frozenset({"enabled", "skipped", "quarantined", "only"})
@@ -47,12 +47,6 @@ def _load_grammar():
     """Import the frozen ``@FR`` reference parser via the robust shared-lib loader
     (ADR-045: safe even when ``sys.modules['lib']`` is already the compliance-local lib)."""
     return load_shared_lib("fr_tag_grammar")
-
-
-def _cov_status(links: list[dict]) -> str:
-    """'ok' iff a tagged test at this layer is BOTH enabled AND executed=pass (R1)."""
-    passing = any(l["status"] == "enabled" and l["executed"] == "pass" for l in links)
-    return "ok" if passing else "MISSING"
 
 
 def _make_link(hit, layer: str, evidence: dict, *, resolved_from: str = "") -> dict:
@@ -178,30 +172,8 @@ def build_manifest(
     for iv in invalid:
         tagged_ids.add(iv.test)
 
-    # 4. Assemble the requirement nodes (coverage per layer, removed ⇒ n/a).
-    req_nodes: dict = {}
-    for key, req in requirements.items():
-        tests_node: dict = {}
-        coverage: dict = {}
-        if req.is_active:
-            filed = tests_by_key.get(key, {})
-            layers = list(req.required_layers) + [l for l in filed if l not in req.required_layers]
-            for layer in _LAYER_ORDER:
-                if layer in filed:
-                    tests_node[layer] = filed[layer]
-                if layer in layers:
-                    coverage[layer] = _cov_status(filed.get(layer, []))
-        else:
-            for layer in _LAYER_ORDER:
-                if layer in req.required_layers:
-                    coverage[layer] = "n/a"
-        req_nodes[key] = {
-            "id": req.id, "spec_path": req.spec_path, "title": req.title,
-            "priority": req.priority, "status": req.status,
-            "required_layers": list(req.required_layers),
-            "required_layers_source": req.required_layers_source,
-            "tests": tests_node, "coverage": coverage,
-        }
+    # 4. Assemble the requirement nodes (coverage per layer, removed => n/a).
+    req_nodes = build_requirement_nodes(requirements, tests_by_key)
 
     return {
         "schema_version": 3,
@@ -223,9 +195,12 @@ def build_manifest(
         # `explicit` upstream so D-layer's hard gate still fires (Spec §11-R4).
         "invalid_layers": index.invalid_layers,
         "untagged_tests": sorted(all_test_ids - tagged_ids),
-        # `fold_map` / `fold_defects` are present ONLY when the repo actually declares a
-        # fold-map, so a project without one emits a byte-identical manifest (this
-        # artifact is committed churn — an empty key would diff on every regen).
+        # The OMITTED-WHEN-EMPTY keys, all three under one rule: this artifact is
+        # committed churn, so a key that is always empty would diff on every regen
+        # for every clean repo. `invalid_ids` carries the rows the FR-table reader
+        # DECLINED (a drop is reported, never silent); `fold_map`/`fold_defects`
+        # appear only where a fold-map is actually declared.
+        **({"invalid_ids": index.invalid_ids} if index.invalid_ids else {}),
         **fold_ctx.as_manifest_fields(),
     }
 

@@ -20,17 +20,17 @@ is lost; only the verdict is left alone.
 I4 is the exception and DOES fail: two rows claiming one FR ID is an objective
 defect, not a style opinion. No finding is ever HIGH.
 
-**Deliberately does not reuse the shared FR parser.** ``drift_parsers`` and the
-RTM collector are the *authoritative* requirement readers feeding traceability;
-they intentionally collapse the table to one semantic body field. Hygiene needs
-the Name and Description cells kept apart, so this module does its own
-header-driven scan. Nothing downstream consumes it — a scanning mistake here can
-only produce a wrong advisory line, never a traceability defect.
+**Reads rows through the shared ``fr_table_reader``** (campaign S4). It used to
+scan the table itself, on the argument that the authoritative readers collapse
+the table to one semantic body field while hygiene needs Name and Description
+kept apart. That argument held for the row SHAPE and is preserved — ``FrRow``
+still separates them — but it did not justify a separate scan, and the separate
+scan carried two defects of its own (FV-4, FV-5) that went unnoticed precisely
+because nothing downstream consumes this group.
 """
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -50,13 +50,8 @@ from scripts.audit.group_i_detectors import (
 )
 
 
-_FR_ID_RE = re.compile(r"^FR-\d+\.\d+$")
-_HEADING_RE = re.compile(r"^(#{1,6})\s+(\S.*?)\s*$")
-_UNESCAPED_PIPE_RE = re.compile(r"(?<!\\)\|")
-
-
 # ---------------------------------------------------------------------------
-# Row scanner — header-driven so every table shape is read correctly
+# Row scanner — one shared header-driven reader (campaign S4)
 # ---------------------------------------------------------------------------
 
 
@@ -77,77 +72,33 @@ class FrRow:
     retired: bool = False
 
 
-def _split_cells(line: str) -> list[str]:
-    inner = line.strip()
-    if inner.startswith("|"):
-        inner = inner[1:]
-    if inner.endswith("|") and not inner.endswith("\\|"):
-        inner = inner[:-1]
-    return [c.strip() for c in _UNESCAPED_PIPE_RE.split(inner)]
-
-
-def _column_map(cells: list[str]) -> tuple[int | None, int | None] | None:
-    """Map a header row to ``(name_idx, description_idx)``.
-
-    Greenfield tables carry a single ``Requirement`` sentence and no separate
-    name — that column is treated as the description so §1 still applies, and
-    the §5 name fence is skipped rather than misapplied. The ``Source`` column
-    is never mapped: file paths are legitimate there.
-    """
-    low = [c.lower() for c in cells]
-    if not low or low[0] != "id":
-        return None
-    name_idx = low.index("name") if "name" in low else None
-    if "description" in low:
-        return name_idx, low.index("description")
-    for alias in ("requirement", "name"):
-        if alias in low:
-            return None, low.index(alias)
-    return None
-
-
 def _scan_one_spec(path: Path, split: str, spec_path: str) -> list[FrRow]:
+    """Project ``fr_table_reader`` rows onto the Name/Description pair I1–I3 lint.
+
+    Hygiene is the one consumer that needs the Name and Description cells kept
+    APART (the §5 name fence applies to names only), which is why ``FrRow``
+    survives while the scan behind it does not. The scan it replaces carried two
+    defects the shared reader does not: it required the id column to be headed
+    literally ``ID``, so the whole traceability-fixture shape audited as zero
+    rows (FV-4), and it reset its column mapping at EVERY heading, silently
+    dropping every FR row under a later heading (FV-5).
+    """
     try:
         content = path.read_text(encoding="utf-8", errors="ignore")
     except OSError:
         return []
 
-    rows: list[FrRow] = []
-    mapping: tuple[int | None, int | None] | None = None
-    in_removed = False
-    removed_level = 0
-
-    for line in content.splitlines():
-        heading = _HEADING_RE.match(line)
-        if heading:
-            level = len(heading.group(1))
-            if heading.group(2).strip().lower().startswith("removed requirements"):
-                in_removed, removed_level = True, level
-            elif in_removed and level <= removed_level:
-                in_removed = False
-            mapping = None  # a new section starts a new table
-            continue
-        if not line.lstrip().startswith("|"):
-            continue
-
-        cells = _split_cells(line)
-        header = _column_map(cells)
-        if header is not None:
-            mapping = header
-            continue
-        if mapping is None or not cells or not _FR_ID_RE.match(cells[0]):
-            continue
-
-        name_idx, desc_idx = mapping
-        rows.append(FrRow(
-            id=cells[0],
-            name=cells[name_idx] if name_idx is not None and name_idx < len(cells) else "",
-            description=cells[desc_idx] if desc_idx is not None and desc_idx < len(cells) else "",
+    return [
+        FrRow(
+            id=row.id,
+            name=row.name,
+            description=row.text,
             split=split,
             spec_path=spec_path,
-            retired=in_removed,
-        ))
-    return rows
+            retired=row.removed,
+        )
+        for row in load_shared_lib("fr_table_reader").read_fr_rows(content)
+    ]
 
 
 def scan_fr_rows(project_root: Path, *, include_retired: bool = False) -> list[FrRow]:

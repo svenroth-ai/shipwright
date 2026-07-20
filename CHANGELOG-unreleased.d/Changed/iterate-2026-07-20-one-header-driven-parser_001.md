@@ -1,0 +1,1 @@
+Requirement tables in `spec.md` are read by ONE header-driven parser instead of five divergent ones. Columns are now matched by NAME, so reordering a table, renaming the ID column to FR, adding a column, or putting a requirement under a later heading no longer makes rows silently disappear from the traceability report.

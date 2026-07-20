@@ -77,6 +77,13 @@
         "minLength": 1
       }
     },
+    "invalid_ids": {
+      "type": "array",
+      "description": "Rows the FR-table reader declined to treat as requirements, with the reason: `non_canonical_id` (FR-shaped but not the canonical FR-XX.YY form -- e.g. the uncapped `FR-01.100` an adopt run emits past 99 detected routes), `no_governing_header`, or `row_narrower_than_header`. Optional + additive, and OMITTED ENTIRELY when nothing was declined, so a clean repo emits a byte-identical manifest (same churn rule as `fold_map`). Informational -- the reader never raises; this exists so a dropped row is reported rather than silent.",
+      "items": {
+        "$ref": "#/$defs/invalidId"
+      }
+    },
     "fold_map": {
       "type": "object",
       "description": "The merged '## FR-Fold-Map' alias table in force: folded FR id -> its surviving capability FR. Optional + additive, and OMITTED ENTIRELY when the repo declares no fold-map, so a project without one emits a byte-identical manifest. A tag on a folded id is filed against the survivor (see testLink.resolved_from) instead of orphaning.",
@@ -352,6 +359,32 @@
         "reason": {
           "type": "string",
           "description": "Optional diagnostic for why the tag is invalid, e.g. 'non_canonical_fr_id' | 'non_string_arg' (fr_tag_grammar.InvalidTag.reason). Optional so a bare {test, raw} entry still validates."
+        }
+      }
+    },
+    "invalidId": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fr", "raw", "reason"],
+      "properties": {
+        "fr": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The declined row's first cell, verbatim. Deliberately NOT pattern-constrained to the canonical form -- the whole point is that this value is not canonical, so pinning it to FR-XX.YY would make the diagnostic unrepresentable."
+        },
+        "spec_path": {
+          "type": "string",
+          "description": "Relative path to the spec.md the row lives in."
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The declined row's cells, joined, truncated to 200 chars."
+        },
+        "reason": {
+          "type": "string",
+          "enum": ["non_canonical_id", "no_governing_header", "row_narrower_than_header"],
+          "description": "Why the reader declined the row. A closed vocabulary so a new reject class cannot arrive unannounced."
         }
       }
     },

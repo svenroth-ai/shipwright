@@ -32,11 +32,11 @@ def seed_canon_design(
     # Planning FRs — spec.md tables the FR parser consumes
     (root / ".shipwright" / "planning" / "01-auth").mkdir(parents=True)
     (root / ".shipwright" / "planning" / "01-auth" / "spec.md").write_text(
-        "| FR-01.01 | User can log in | Must |\n"
+        "| ID | Requirement | Priority |\n" "| FR-01.01 | User can log in | Must |\n"
     )
     (root / ".shipwright" / "planning" / "02-dashboard").mkdir()
     (root / ".shipwright" / "planning" / "02-dashboard" / "spec.md").write_text(
-        "| FR-02.01 | Show metrics | Must |\n"
+        "| ID | Requirement | Priority |\n" "| FR-02.01 | Show metrics | Must |\n"
     )
 
     # Design manifest with the Screens table
@@ -165,7 +165,7 @@ def test_fr_coverage_fails_on_orphan_fr(tmp_path):
     seed_canon_design(tmp_path)
     # Add a new FR to the spec but don't link it to any screen
     (tmp_path / ".shipwright" / "planning" / "02-dashboard" / "spec.md").write_text(
-        "| FR-02.01 | Show metrics | Must |\n"
+        "| ID | Requirement | Priority |\n" "| FR-02.01 | Show metrics | Must |\n"
         "| FR-02.02 | Export PDF | Should |\n"
     )
     r = check_design_fr_coverage(tmp_path)
@@ -195,7 +195,7 @@ def test_fr_coverage_skips_when_scope_library(tmp_path):
     # FRs exist but the project is scope=library — no UI to map to.
     (tmp_path / ".shipwright" / "planning" / "01-x").mkdir(parents=True)
     (tmp_path / ".shipwright" / "planning" / "01-x" / "spec.md").write_text(
-        "| FR-01.01 | A library API | Must |\n"
+        "| ID | Requirement | Priority |\n" "| FR-01.01 | A library API | Must |\n"
     )
     (tmp_path / "shipwright_run_config.json").write_text(
         json.dumps({"scope": "library"})

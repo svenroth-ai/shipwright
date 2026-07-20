@@ -28,7 +28,8 @@ from scripts.lib.collectors.execution_evidence import (  # noqa: E402
     normalize_index,
     waiver_state,
 )
-from scripts.lib.collectors.test_links import _cov_status, build_manifest, generate_file  # noqa: E402
+from scripts.lib.collectors._test_links_requirements import _cov_status  # noqa: E402
+from scripts.lib.collectors.test_links import build_manifest, generate_file  # noqa: E402
 
 _FIX = _HERE / "fixtures" / "traceability"
 _EV = _FIX / "evidence"

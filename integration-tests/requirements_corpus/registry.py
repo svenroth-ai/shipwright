@@ -240,7 +240,10 @@ PARSERS: tuple[dict, ...] = (
         "realm": "shared_lib", "module": "drift_parsers",
         "attr": "parse_fr_table", "invoke": "text_split",
         "source": "shared/scripts/lib/drift_parsers.py",
-        "note": "POSITIONAL. Pins Must|Should|May to data column 3.",
+        "note": "Was POSITIONAL (pinned Must|Should|May to data column 3, which "
+                "is what made a reordered table parse to zero rows). Since S4 a "
+                "projection of lib.fr_table_reader; owns only the "
+                "FunctionalRequirement shape.",
     },
     {
         "id": "parse._backfill_spec_parse.parse_frs",
@@ -256,26 +259,32 @@ PARSERS: tuple[dict, ...] = (
         "attr": "collect_requirements", "invoke": "project_root",
         "source": "plugins/shipwright-compliance/scripts/lib/collectors/rtm.py",
         "note": "The only parser that cannot be string-driven; it walks. Its "
-                "REGEX is byte-identical to drift_parsers'; the surrounding "
-                "removed-section loop is a semantic clone, not a byte clone, "
-                "and nothing enforces that half stays in sync.",
+                "REGEX used to be byte-identical to drift_parsers' while the "
+                "surrounding removed-section loop was a semantic clone that "
+                "nothing enforced -- the exact split S4 removed by deleting "
+                "both and delegating to lib.fr_table_reader.",
     },
     {
         "id": "parse._requirement_parse.parse_requirements",
         "realm": "compliance", "module": "scripts.lib.collectors._requirement_parse",
         "attr": "parse_requirements", "invoke": "text_kw",
         "source": "plugins/shipwright-compliance/scripts/lib/collectors/_requirement_parse.py",
-        "note": "HEADER-DRIVEN. colmap is never reset -- the first "
-                "priority-bearing header governs the whole file. Invalid "
-                "priorities are silently coerced to 'Must'.",
+        "note": "Since S4 a projection of lib.fr_table_reader; owns only the "
+                "Layers-cell -> required_layers provenance rules. Two of its "
+                "behaviours became the shared rule: the column map is not reset "
+                "at a heading, and an invalid priority is coerced to 'Must' "
+                "rather than dropping the row.",
     },
     {
         "id": "parse.group_i._scan_one_spec",
         "realm": "compliance_audit", "module": "scripts.audit.group_i",
         "attr": "_scan_one_spec", "invoke": "path_split",
         "source": "plugins/shipwright-compliance/scripts/audit/group_i.py",
-        "note": "HEADER-DRIVEN and strict: requires cells[0] == 'id' exactly, "
-                "and resets the mapping at EVERY heading.",
+        "note": "Was header-driven and strict in the two ways that cost it rows: "
+                "it required cells[0] == 'id' exactly (FV-4) and reset the "
+                "mapping at EVERY heading (FV-5). Since S4 a projection of "
+                "lib.fr_table_reader; owns only the Name/Description split the "
+                "naming fence needs.",
     },
 )
 

@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-07-19T23:48:35.466580+00:00
+Generated: 2026-07-20T03:48:42.648681+00:00
 Total commits: 1178
 
 ## Commit Distribution
@@ -9,9 +9,9 @@ Total commits: 1178
 pie title Commit Types
     "fix" : 337
     "feat" : 327
-    "chore" : 248
+    "chore" : 247
     "docs" : 145
-    "refactor" : 71
+    "refactor" : 72
     "test" : 29
     "ci" : 11
     "other" : 9
@@ -694,11 +694,10 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 248 commits
+### Chores (chore) — 247 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-20 | triage | sweep 8 outbox append(s) into branch | a49af9c2abda |
 | 2026-07-19 | compliance | register four size crossings, ratchet nine entries, record the missing convention (#408) | 37fe1346b5df |
 | 2026-07-18 | triage | deliver 3 orphaned records from the merged iterate worktree (#402) | 56ee1c0e2387 |
 | 2026-07-18 | security | by-design nosemgrep suppression for the layer-coverage loader (#396) | 6cfd0e84655a |
@@ -1097,11 +1096,12 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 71 commits
+### Refactoring (refactor) — 72 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-20 | compliance | derive the traceability namespace from the FR id (schema 2 to 3) | 26d702be5fd9 |
+| 2026-07-20 | shared | one header-driven FR-table reader replaces five parsers | 3ef2847c208f |
+| 2026-07-20 | compliance | derive the traceability namespace from the FR id (schema 2 to 3) (#411) | 121d850e81e5 |
 | 2026-07-19 | shared | one parameterized planning-discovery walk for all 15 call sites (#410) | 11d79f561eb3 |
 | 2026-07-18 | tests | split test_triage_repair.py under the 300-LOC gate (#400) | c741f46bcf80 |
 | 2026-07-15 | iterate | parallelise the F0 verification gate without weakening it (#371) | 0befc7d075be |

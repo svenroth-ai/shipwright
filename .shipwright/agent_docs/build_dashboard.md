@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-20 00:40 UTC | Session: 85c973ff-4812-4db0-acc1-935ed32ee51b | Run: iterate-2026-07-20-namespace-from-requirement-id
+> Updated: 2026-07-20 05:29 UTC | Session: 85c973ff-4812-4db0-acc1-935ed32ee51b | Run: iterate-2026-07-20-one-header-driven-parser
 
-## Recent Changes (338 iterations)
+## Recent Changes (339 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | iterate: one header-driven FR-table reader replaces five parsers (campaign S4) | 0/0 |  | compliance | 2026-07-20 |
 | refactor | iterate: derive the traceability manifest namespace from the requirement id (schema 2 to 3) | 0/0 |  | compliance | 2026-07-19 |
 | change | iterate: one shared spec-discovery walk for all 15 call sites | 0/0 |  | tooling | 2026-07-19 |
 | change | iterate: compliance prework before the requirements-catalog campaign | 0/0 |  | compliance | 2026-07-19 |
@@ -345,7 +346,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-20 | Unit: 6719/6719 | Integration: 290/290 | Smoke: not_run | (iterate)
+Last run: 2026-07-20 | Unit: 8464/8464 | Integration: 332/332 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

@@ -37,8 +37,13 @@ def seed_canon_plan(
     split_dir = root / ".shipwright" / "planning" / split
     split_dir.mkdir(parents=True)
 
+    # The header row is required since S4 withdrew the headerless positional
+    # fallback (convergence rule C6) — a bare data row under no header naming a
+    # Priority column is recorded as `no_governing_header`, not read as an FR.
     spec_rows = "\n".join(f"| {fr} | {fr} description | Must |" for fr in frs)
-    (split_dir / "spec.md").write_text(f"# Spec\n\n{spec_rows}\n")
+    (split_dir / "spec.md").write_text(
+        f"# Spec\n\n| ID | Requirement | Priority |\n{spec_rows}\n"
+    )
 
     manifest_body = "\n".join(sections)
     plan_body = (
@@ -206,7 +211,7 @@ def test_section_id_validity_detects_bad_format(tmp_path):
     # seed_canon_plan's file creation would blow up on "foo" missing a prefix.
     split_dir = tmp_path / ".shipwright" / "planning" / "01-auth"
     split_dir.mkdir(parents=True)
-    (split_dir / "spec.md").write_text("| FR-01.01 | x | Must |\n")
+    (split_dir / "spec.md").write_text("| ID | Requirement | Priority |\n" "| FR-01.01 | x | Must |\n")
     (split_dir / "plan.md").write_text(
         "<!-- SECTION_MANIFEST\n01-a\nfoo-bar\nEND_MANIFEST -->\n"
     )
@@ -222,7 +227,7 @@ def test_section_id_validity_detects_bad_format(tmp_path):
 def test_section_id_validity_detects_duplicates(tmp_path):
     split_dir = tmp_path / ".shipwright" / "planning" / "01-auth"
     split_dir.mkdir(parents=True)
-    (split_dir / "spec.md").write_text("| FR-01.01 | x | Must |\n")
+    (split_dir / "spec.md").write_text("| ID | Requirement | Priority |\n" "| FR-01.01 | x | Must |\n")
     (split_dir / "plan.md").write_text(
         "<!-- SECTION_MANIFEST\n01-a\n01-a\n02-b\nEND_MANIFEST -->\n"
     )

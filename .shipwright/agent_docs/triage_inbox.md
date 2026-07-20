@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-20T00:40:14.649901Z. Items waiting for triage decision.
+> Auto-generated 2026-07-20T05:04:09.252962Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 347
-- Triage: 12 | Promoted: 1 | Dismissed: 333 | Snoozed: 1
+- Total: 349
+- Triage: 14 | Promoted: 1 | Dismissed: 333 | Snoozed: 1
 
-## Top 12 items (severity-sorted)
+## Top 14 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -87,6 +87,18 @@
 - **REQ-2 - Campaign: requirements catalog (S2-S8) - run AFTER REQ-1** `id=trg-1b764b2c | severity=medium | kind=improvement → P2/engineering`
   - THIRD of three. Order: REQ-0 (FR existence gate) -> REQ-1 (test harness) -> REQ-2 (this campaign). Do NOT start before…
   - Promote: `triage_promote.py --id trg-1b764b2c --task-ref EXT:<ref>`
+
+### Source: requirements-catalog (2 items)
+
+<a id="trg-5f2037b7"></a>
+- **S5 must surface specs whose rows all fail the canonical FR-id form (zero-row parse, third state)** `id=trg-5f2037b7 | severity=medium | kind=compliance → P2/engineering`
+  - S4 converged the FR-id tier onto the canonical FR-XX.YY form. That creates a state the traceability T1 guard still cann…
+  - Promote: `triage_promote.py --id trg-5f2037b7 --task-ref EXT:<ref>`
+
+<a id="trg-c9669d6a"></a>
+- **Adopt FR-id generation has no cap: more than 99 detected routes emits a non-canonical FR-01.100** `id=trg-c9669d6a | severity=low | kind=bug → P3/engineering`
+  - generate_adoption_artifacts and feature_inferrer both emit f"FR-01.{i:02d}" with no upper bound on i. Past 99 the forma…
+  - Promote: `triage_promote.py --id trg-c9669d6a --task-ref EXT:<ref>`
 
 ### Source: webui-mission-campaign (1 item)
 

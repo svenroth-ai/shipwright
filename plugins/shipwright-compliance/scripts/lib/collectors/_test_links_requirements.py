@@ -77,6 +77,7 @@ class RequirementIndex:
     by_key: dict = field(default_factory=dict)          # manifest key -> Requirement
     by_display_id: dict = field(default_factory=dict)   # "FR-XX.YY" -> [Requirement]
     invalid_layers: list = field(default_factory=list)  # Layers cell with no valid layer
+    invalid_ids: list = field(default_factory=list)     # row declined by the FR-table reader
 
 
 def build_requirement_index(entries) -> RequirementIndex:
@@ -96,6 +97,7 @@ def build_requirement_index(entries) -> RequirementIndex:
     for text, rel_spec in entries:
         for req in parse_requirements(
             text, spec_path=rel_spec, invalid_layers=index.invalid_layers,
+            invalid_ids=index.invalid_ids,
         ):
             prior = index.by_key.get(req.key)
             if prior is not None:
@@ -142,3 +144,52 @@ def assert_keys_derive_from_ids(manifest: dict) -> None:
 
 __all__ = ["ManifestIntegrityError", "DuplicateRequirementId", "KeyNotDerivedFromId",
            "RequirementIndex", "build_requirement_index", "assert_keys_derive_from_ids"]
+
+
+_LAYER_ORDER = ("unit", "integration", "e2e")
+
+
+def _cov_status(links: list[dict]) -> str:
+    """'ok' iff a tagged test at this layer is BOTH enabled AND executed=pass (R1)."""
+    passing = any(l["status"] == "enabled" and l["executed"] == "pass" for l in links)
+    return "ok" if passing else "MISSING"
+
+
+def build_requirement_nodes(requirements: dict, tests_by_key: dict) -> dict:
+    """Shape each requirement into its manifest node (coverage per layer).
+
+    Moved here from ``test_links.build_manifest`` when the ``invalid_ids``
+    accumulator pushed that module past its bloat baseline. The seam is the
+    honest one rather than the convenient one: this module already owns the
+    requirement INDEX, so shaping a requirement's manifest NODE — and the
+    per-layer coverage predicate that shaping depends on — belongs beside it,
+    while ``test_links`` keeps tag collection, fold resolution and assembly.
+
+    A REMOVED requirement reports ``n/a`` at every layer it required rather than
+    MISSING: a tombstone has no tests by definition, so scoring it as uncovered
+    would manufacture a permanent false deficit.
+    """
+    req_nodes: dict = {}
+    for key, req in requirements.items():
+        tests_node: dict = {}
+        coverage: dict = {}
+        if req.is_active:
+            filed = tests_by_key.get(key, {})
+            layers = list(req.required_layers) + [l for l in filed if l not in req.required_layers]
+            for layer in _LAYER_ORDER:
+                if layer in filed:
+                    tests_node[layer] = filed[layer]
+                if layer in layers:
+                    coverage[layer] = _cov_status(filed.get(layer, []))
+        else:
+            for layer in _LAYER_ORDER:
+                if layer in req.required_layers:
+                    coverage[layer] = "n/a"
+        req_nodes[key] = {
+            "id": req.id, "spec_path": req.spec_path, "title": req.title,
+            "priority": req.priority, "status": req.status,
+            "required_layers": list(req.required_layers),
+            "required_layers_source": req.required_layers_source,
+            "tests": tests_node, "coverage": coverage,
+        }
+    return req_nodes

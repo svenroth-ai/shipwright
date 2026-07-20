@@ -5,14 +5,12 @@ Traceability campaign TT1. The one versioned requirement model
 consumer shares; this is the compliance-side parser that *builds* those objects
 from a spec.md. It does not fork the model — it constructs it.
 
-Column-aware, so it reads BOTH shapes Shipwright writes without confusing them
-(the 4th cell means different things in each):
-
-* traceability shape — ``| FR | Description | Priority | Layers |``
-* adopt shape (ADR-031) — ``| ID | Name | Priority | Description | Source |``
-
-The header row's column names drive the mapping (``Layers`` / ``Description`` /
-``Priority``); a spec with no recognisable header falls back to positional cells.
+**Rows come from ``lib.fr_table_reader``** (campaign S4) — this module no longer
+reads markdown at all. What is left here is the part that is genuinely
+compliance's: turning a row's raw ``Layers`` cell into a ``required_layers``
+tuple plus its provenance. The table mechanics (which column is the body, what a
+header row is, what an escaped pipe means) were five inconsistent answers across
+five parsers and are now one.
 
 ``Layers`` column → ``required_layers`` provenance (Spec D2 / R4):
 
@@ -37,8 +35,6 @@ import re
 
 from ._lib_loader import load_shared_lib
 
-_MD_HEADING_RE = re.compile(r"^(#{1,6})\s+(\S.*?)\s*$")
-
 # UI/flow words → a bare FR (no Layers column) is inferred to require e2e. Matched
 # on whole words (not substrings) so "view" never fires on "review"/"overview".
 _UI_FLOW_WORDS: frozenset[str] = frozenset({
@@ -48,11 +44,6 @@ _UI_FLOW_WORDS: frozenset[str] = frozenset({
     "clipboard", "widget", "scroll", "upload", "download", "toast", "wizard",
 })
 _UI_FLOW_PHRASES: tuple[str, ...] = ("sign in", "sign-in", "log in")
-
-# Column-name synonyms, first match wins.
-_TITLE_COLS = ("description", "name", "text", "requirement", "title")
-_PRIORITY_COLS = ("priority",)
-_LAYERS_COLS = ("layers", "layer")
 
 # An adopt-generated Layers cell carries the EXACT `(inferred)` marker (the only
 # token `artifact_writer` ever emits): its layers were derived from the detected
@@ -68,32 +59,6 @@ def _load_model():
     """Import the shared requirement model via the robust shared-lib loader (ADR-045:
     safe even when ``sys.modules['lib']`` is already the compliance-local lib)."""
     return load_shared_lib("requirement_model")
-
-
-def _row_cells(line: str) -> list[str] | None:
-    """Return the stripped inner cells of a markdown table row, or ``None``."""
-    s = line.strip()
-    if not s.startswith("|"):
-        return None
-    return [c.strip() for c in s.strip("|").split("|")]
-
-
-def _header_map(cells: list[str]) -> dict[str, int] | None:
-    """Return a column-name→index map when ``cells`` looks like a table header."""
-    low = [c.lower() for c in cells]
-    if "priority" not in low:
-        return None
-    return {name: i for i, name in enumerate(low)}
-
-
-def _pick(cells: list[str], colmap: dict[str, int] | None,
-          names: tuple[str, ...], default_idx: int) -> str:
-    if colmap:
-        for n in names:
-            idx = colmap.get(n)
-            if idx is not None and idx < len(cells):
-                return cells[idx]
-    return cells[default_idx] if default_idx < len(cells) else ""
 
 
 def _parse_layers(cell: str, rm) -> tuple:
@@ -116,6 +81,7 @@ def _infer_layers(title: str) -> tuple[tuple, str]:
 def parse_requirements(
     content: str, *, spec_path: str,
     invalid_layers: list | None = None,
+    invalid_ids: list | None = None,
 ) -> list:
     """Parse every FR row (active + removed) into ``Requirement`` objects.
 
@@ -132,56 +98,20 @@ def parse_requirements(
     the gate and silently discard the author's intent (mirror of TT1 ``invalid_tags``).
     """
     rm = _load_model()
-    # Lines inside a ``## FR-Fold-Map`` section are ALIAS records, not requirements.
-    # Skipping them is load-bearing, not cosmetic: webui's fold table only avoids being
-    # parsed as 37 live FRs because its ids happen to be backticked. An author writing
-    # the same table unbackticked would resurrect every folded id as an active
-    # requirement demanding its own coverage — a large, baffling false-red.
-    fold_lines = load_shared_lib("fr_fold_map").fold_map_line_numbers(content)
     reqs: list = []
-    colmap: dict[str, int] | None = None
-    in_removed = False
-    removed_level = 0
 
-    for lineno, line in enumerate(content.splitlines()):
-        if lineno in fold_lines:
-            continue
-        heading = _MD_HEADING_RE.match(line)
-        if heading:
-            level = len(heading.group(1))
-            if heading.group(2).strip().lower().startswith("removed requirements"):
-                in_removed, removed_level = True, level
-            elif in_removed and level <= removed_level:
-                in_removed = False
-            continue
-
-        cells = _row_cells(line)
-        if not cells or len(cells) < 3:
-            continue
-        header = _header_map(cells)
-        if header is not None and not rm.is_canonical_fr(cells[0]):
-            colmap = header
-            continue
-        fr_id = cells[0]
-        if not rm.is_canonical_fr(fr_id):
-            continue
-
-        title = _pick(cells, colmap, _TITLE_COLS, 1)
-        priority = _pick(cells, colmap, _PRIORITY_COLS, 2)
-        if priority not in rm.PRIORITIES:
-            priority = "Must"
-        if colmap is not None:
-            # A header exists: read Layers ONLY if the header names it, so the
-            # adopt 5-col Description cell is never mistaken for layers.
-            has_layers = any(n in colmap for n in _LAYERS_COLS)
-            layers_cell = _pick(cells, colmap, _LAYERS_COLS, len(cells)) if has_layers else ""
-            layers_from_named_col = has_layers
-        else:
-            # No header: fall back to the positional 4-col traceability shape. This
-            # cell is AMBIGUOUS (in a headerless adopt row cells[3] is the Description),
-            # so a non-canonical value here is NOT treated as an invalid Layers typo.
-            layers_cell = cells[3] if len(cells) >= 4 else ""
-            layers_from_named_col = False
+    # Rows the reader declined. Recorded rather than silently dropped: the
+    # sharpest case is `generate_adoption_artifacts` emitting `FR-01.{i:02d}`
+    # with no cap on i, so an adopted repo with >99 detected routes emits
+    # `FR-01.100` — accepted by the pre-S4 loose regex, rejected by the
+    # canonical tier, and invisible in the RTM without this.
+    rejects: list = []
+    for row in load_shared_lib("fr_table_reader").read_fr_rows(
+        content, rejects=rejects,
+    ):
+        fr_id, title = row.id, row.text
+        layers_cell = row.layers_cell
+        layers_from_named_col = row.layers_from_named_col
         raw_cell = layers_cell.strip()
         has_marker = bool(_INFERRED_MARKER_RE.search(layers_cell))
         layers = _parse_layers(layers_cell, rm)
@@ -207,9 +137,16 @@ def parse_requirements(
 
         reqs.append(rm.Requirement(
             id=fr_id, spec_path=spec_path, title=title,
-            priority=priority, status="removed" if in_removed else "active",
+            priority=row.priority, status=row.status,
             required_layers=layers, required_layers_source=source,
         ))
+
+    if invalid_ids is not None:
+        invalid_ids.extend(
+            {"fr": r["id"], "spec_path": spec_path,
+             "raw": r["raw"], "reason": r["reason"]}
+            for r in rejects
+        )
     return reqs
 
 

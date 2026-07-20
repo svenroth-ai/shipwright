@@ -187,11 +187,11 @@ def test_collect_requirements_from_planning_walks_splits(tmp_path):
     planning = tmp_path / ".shipwright" / "planning"
     (planning / "01-auth").mkdir(parents=True)
     (planning / "01-auth" / "spec.md").write_text(
-        "| FR-01.01 | login | Must |\n"
+        "| ID | Requirement | Priority |\n" "| FR-01.01 | login | Must |\n"
     )
     (planning / "02-dashboard").mkdir()
     (planning / "02-dashboard" / "spec.md").write_text(
-        "| FR-02.01 | show chart | Should |\n"
+        "| ID | Requirement | Priority |\n" "| FR-02.01 | show chart | Should |\n"
     )
     frs = collect_requirements_from_planning(tmp_path)
     assert {f.id for f in frs} == {"FR-01.01", "FR-02.01"}
@@ -336,7 +336,7 @@ def test_parse_fr_table_resumes_after_removed_section_closes():
 def test_parse_fr_table_h2_removed_requirements_also_excluded():
     """`## Removed Requirements` (h2) excludes its rows just like the h3 form."""
     md = (
-        "| FR-01.01 | live | Must |\n"
+        "| ID | Requirement | Priority |\n" "| FR-01.01 | live | Must |\n"
         "## Removed Requirements\n"
         "| FR-01.99 | dead | Must |\n"
     )

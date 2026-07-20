@@ -304,26 +304,18 @@ def read_package_scripts(package_json_path: str | os.PathLike[str]) -> dict[str,
 # FR table parser (from .shipwright/planning/*/spec.md)
 # ---------------------------------------------------------------------------
 
-# Accepts both the 3-data-column Greenfield format
-#   | FR-01.01 | login | Must |
-# and the 5-data-column /shipwright-adopt format
-#   | FR-01.01 | /shipwright-run | Must | Orchestrate ... | enrichment.json |
-# Capture groups (always present): 1=ID, 2=col2 (Text or Name), 3=Priority.
-# Optional groups (5-col+): 4=Description, 5=Source; any further columns (e.g. the TT3 `Layers` column) are matched + discarded via the linear `(?:[^|]*\|)*` tail (mirrors rtm.py's ReDoS-hardened matcher — no `\s`/`[^|]` overlap) so a row is never DROPPED for carrying them.
-# The semantic FR body is group(4) when present, else group(2). See ADR-031.
-_FR_TABLE_RE = re.compile(
-    r"^\|\s*(FR-[\d.]+)\s*\|\s*([^|]+?)\s*\|\s*(Must|Should|May)\s*\|"
-    r"(?:\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|)?(?:[^|]*\|)*\s*$"
-)
-
-# A spec.md may carry a `## Removed Requirements` (or `### Removed
-# Requirements`) section holding FR rows that a REMOVE-classified iterate
-# retired. Those rows are still valid-looking FR table rows, so the FR
-# parser MUST skip the whole section — otherwise a deleted capability
-# resurfaces in drift checks and RTM coverage forever. The compliance
-# `data_collector.collect_requirements` carries the SAME exclusion loop;
-# keep the two in sync. Origin: iterate-2026-05-16-spec-impact-gate.
-_MD_HEADING_RE = re.compile(r"^(#{1,6})\s+(\S.*?)\s*$")
+def _fr_table_reader():
+    # Same file-location load as _discovery(), and for the same reason: this
+    # module is itself location-loaded by audit/audit_adapters, where no ``lib``
+    # package is bound (ADR-045). fr_table_reader resolves ITS own siblings per
+    # load style, so it is safe under all three.
+    name = "_shipwright_fr_table_reader"
+    if (mod := sys.modules.get(name)) is None:
+        import importlib.util as _u
+        spec = _u.spec_from_file_location(name, Path(__file__).with_name("fr_table_reader.py"))
+        sys.modules[name] = mod = _u.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    return mod
 
 
 @dataclass(frozen=True)
@@ -338,43 +330,25 @@ class FunctionalRequirement:
 def parse_fr_table(content: str, split: str, spec_path: str) -> list[FunctionalRequirement]:
     """Parse a spec.md body and return all *live* FR rows.
 
-    A FR row is a pipe-delimited line of shape
-    ``| FR-XX.YY | text... | Must|Should|May |``. Non-matching lines are
-    ignored, so callers can pass the full file contents.
+    A projection of ``fr_table_reader.read_active_fr_rows`` — this function owns
+    the ``FunctionalRequirement`` shape and nothing else. It used to carry its
+    own regex plus a removed-section loop that was a semantic clone of the RTM
+    collector's, kept in sync by comment only; campaign step S4 removed both.
 
     Rows inside a ``## Removed Requirements`` / ``### Removed Requirements``
-    section are skipped: a REMOVE-classified iterate moves retired FRs there
-    and they must not count as live requirements. The section ends at the
-    next heading of the same or shallower level.
+    section are skipped: a REMOVE-classified iterate moves retired FRs there and
+    they must not count as live requirements.
     """
-    out: list[FunctionalRequirement] = []
-    in_removed = False
-    removed_level = 0
-    for line in content.splitlines():
-        heading = _MD_HEADING_RE.match(line)
-        if heading:
-            level = len(heading.group(1))
-            if heading.group(2).strip().lower().startswith("removed requirements"):
-                in_removed, removed_level = True, level
-                continue
-            if in_removed and level <= removed_level:
-                in_removed = False
-        if in_removed:
-            continue
-        m = _FR_TABLE_RE.match(line)
-        if not m:
-            continue
-        # 5-col format puts the FR body in the Description column (4);
-        # 3-col puts it in the Text column (2). See ADR-031.
-        body = (m.group(4) or m.group(2)).strip()
-        out.append(FunctionalRequirement(
-            id=m.group(1),
-            text=body,
-            priority=m.group(3),
+    return [
+        FunctionalRequirement(
+            id=row.id,
+            text=row.text,
+            priority=row.priority,
             split=split,
             spec_path=spec_path,
-        ))
-    return out
+        )
+        for row in _fr_table_reader().read_active_fr_rows(content)
+    ]
 
 
 # Canonical home of the planning artifact set, relative to project_root.

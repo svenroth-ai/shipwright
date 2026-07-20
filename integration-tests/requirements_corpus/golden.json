@@ -1,6 +1,6 @@
 {
   "frozen_bugs": {
-    "_read_me": "These cells are WRONG ON PURPOSE. Do not correct them -- they are the baseline campaign steps S2-S6 are measured against. Full rationale: integration-tests/requirements_corpus/frozen_bugs.py",
+    "_read_me": "Cells listed under a state='frozen' entry are WRONG ON PURPOSE. Do not correct them -- they are the baseline the remaining campaign steps are measured against. A state='flipped' entry records a baseline that HAS been corrected and by which run. Full rationale: integration-tests/requirements_corpus/frozen_bugs.py",
     "bugs": {
       "FV-1": {
         "cells": [
@@ -11,11 +11,17 @@
           ]
         ],
         "flipped_by": "S4 (one header-driven row parser -- column order stops being load-bearing, so a zero-row parse of a populated spec becomes impossible)",
+        "flipped_in": "iterate-2026-07-20-one-header-driven-parser",
+        "now": "The `zero-row-parse` fixture parses to one requirement (FR-06.01) and T1 FAILs on it. `absent` and `empty` still SKIP, correctly, and their evidence string is now distinguishable from the populated case. HONEST LIMIT: the TRIGGER is removed, not the guard. `if not requirements:` still cannot tell 'no spec' from 'spec I could not read', and S4 opened NEW routes to that state -- a spec whose ids are all non-canonical (`FR-7`, `FR-1.1`), or whose requirements table has no header naming a Priority column, now parses to zero rows. What makes those DIAGNOSABLE rather than silent is the `invalid_ids` accumulator: every declined row is recorded with a reason, published on the manifest, so a zero-row parse can be told apart from an empty repo by looking. CORRECTION (S4 second round, from external code review): this note previously routed the fix to S5's stated AC, which reads '`_column_map` distinguishes no-spec-on-disk from spec-present-no-recognised-header'. That does NOT cover the C1 route -- there the spec IS on disk and the header IS recognised; only the row ids fail. S5's AC has been amended to name the third state explicitly, and a triage anchor filed, so the safety net actually covers the hole it is pointed at.",
+        "state": "flipped",
         "what": "A spec that parses to ZERO rows makes traceability check T1 SKIP rather than FAIL."
       },
       "FV-2": {
         "cells": [],
         "flipped_by": "S6 (one catalog at one path: 'no requirements found' stops being a legitimate state)",
+        "flipped_in": null,
+        "now": null,
+        "state": "frozen",
         "what": "An empty requirement set reads GREEN across the audit plane -- 'no requirements' is treated as 'nothing to audit'."
       },
       "FV-3": {
@@ -27,6 +33,9 @@
           ]
         ],
         "flipped_by": "S4 (a header-driven reader selects by column NAME, so a row wider than its header can no longer shift the body)",
+        "flipped_in": "iterate-2026-07-20-one-header-driven-parser",
+        "now": "Both sites read the body from the column the header NAMES: `07-header-blind/FR-07.01` and `malformed/FR-01.03` now return 'ok'. The second site is worth noting -- the same bug had two occurrences in the corpus and only one was originally described.",
+        "state": "flipped",
         "what": "The RTM can display the WRONG requirement text."
       },
       "FV-4": {
@@ -38,6 +47,9 @@
           ]
         ],
         "flipped_by": "S4 (one header-driven reader, one accepted id column)",
+        "flipped_in": "iterate-2026-07-20-one-header-driven-parser",
+        "now": "A header row is recognised by naming a Priority column, not by its FIRST cell, so the id column may be headed `ID`, `FR`, or anything else. `05-fixture-fr` yields FR-05.01 instead of nothing.",
+        "state": "flipped",
         "what": "Group I silently audits NOTHING when a table header says 'FR' instead of 'ID'."
       },
       "FV-5": {
@@ -49,11 +61,14 @@
           ]
         ],
         "flipped_by": "S4",
+        "flipped_in": "iterate-2026-07-20-one-header-driven-parser",
+        "now": "The column map is set by a header ROW and replaced only by the next header row; headings do not reset it. group_i keeps FR-01.20. This is the rule that replaced BOTH extremes -- group_i's reset-at-every-heading and _requirement_parse's never-reset-at-all were the two ends of the same axis.",
+        "state": "flipped",
         "what": "Group I drops requirement rows that appear after any heading."
       }
     }
   },
-  "regenerated_for": "S3: Requirement.namespace became a read-only property derived from the FR id (manifest v3), so the corpus serializer -- which walks dataclasses.fields() -- no longer surfaces it. 38 cells lose their \"namespace\": \"<directory-name>\" entry in the single target parse._requirement_parse.parse_requirements. Zero additions; no spec_path or split cell moved, so every id-only target is untouched.",
+  "regenerated_for": "S4 (iterate-2026-07-20-one-header-driven-parser): the five FR-table parsers collapse into one header-driven reader. FV-1, FV-3, FV-4 and FV-5 flip; FV-2 stays frozen for S6. The remaining movements are the convergence decisions the collapse forced -- one answer each for id strictness, column-map lifetime, invalid priorities, escaped pipes, row recognition, fold-map skipping, and (after external code review found a composition route that admitted false requirements) table governance: a row must sit under a header naming a Priority column and be wide enough to reach it. That last rule WITHDREW the headerless positional fallback and RE-DECIDED the minimum row width, which is why 'malformed'/FR-01.01 'ragged' is no longer a requirement in any parser -- it is recorded in the new invalid_ids accumulator instead. Every moved cell is attributed in ADR-107; absent/empty/greenfield/brownfield/spec-dir/planning-file are untouched.",
   "schema_version": 1,
   "targets": {
     "disc._test_links_io.discover_specs": {
@@ -387,32 +402,11 @@
               "text": "Canonical two-digit id"
             },
             {
-              "id": "FR-1.1",
-              "priority": "Must",
-              "spec_path": ".shipwright/planning/01-live/spec.md",
-              "split": "01-live",
-              "text": "Single-digit id"
-            },
-            {
-              "id": "FR-7",
-              "priority": "Must",
-              "spec_path": ".shipwright/planning/01-live/spec.md",
-              "split": "01-live",
-              "text": "Bare id, no dot"
-            },
-            {
               "id": "FR-99.99",
               "priority": "Should",
               "spec_path": ".shipwright/planning/01-live/spec.md",
               "split": "01-live",
               "text": "High canonical id"
-            },
-            {
-              "id": "FR-001.001",
-              "priority": "May",
-              "spec_path": ".shipwright/planning/01-live/spec.md",
-              "split": "01-live",
-              "text": "Three-digit id"
             },
             {
               "id": "FR-01.20",
@@ -495,11 +489,46 @@
           "type": "list[FunctionalRequirement]",
           "value": [
             {
+              "id": "FR-01.02",
+              "priority": "Must",
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken",
+              "text": "no close pipe"
+            },
+            {
               "id": "FR-01.03",
               "priority": "Should",
               "spec_path": ".shipwright/planning/01-broken/spec.md",
               "split": "01-broken",
-              "text": "extra"
+              "text": "ok"
+            },
+            {
+              "id": "FR-01.05",
+              "priority": "Must",
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken",
+              "text": "indented row"
+            },
+            {
+              "id": "FR-01.06",
+              "priority": "Must",
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken",
+              "text": "lowercase priority"
+            },
+            {
+              "id": "FR-01.07",
+              "priority": "Must",
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken",
+              "text": "unrecognised priority"
+            },
+            {
+              "id": "FR-01.08",
+              "priority": "Must",
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken",
+              "text": "escaped | pipe in text"
             },
             {
               "id": "FR-01.01",
@@ -585,11 +614,18 @@
               "text": "Coverage is reported per layer"
             },
             {
+              "id": "FR-06.01",
+              "priority": "Must",
+              "spec_path": ".shipwright/planning/06-reordered/spec.md",
+              "split": "06-reordered",
+              "text": "Reordered table still describes a requirement"
+            },
+            {
               "id": "FR-07.01",
               "priority": "Should",
               "spec_path": ".shipwright/planning/07-header-blind/spec.md",
               "split": "07-header-blind",
-              "text": "extra"
+              "text": "ok"
             }
           ]
         },
@@ -604,8 +640,16 @@
         },
         "zero-row-parse": {
           "outcome": "returned",
-          "type": "list",
-          "value": []
+          "type": "list[FunctionalRequirement]",
+          "value": [
+            {
+              "id": "FR-06.01",
+              "priority": "Must",
+              "spec_path": ".shipwright/planning/01-reordered-only/spec.md",
+              "split": "01-reordered-only",
+              "text": "Reordered table still describes a requirement"
+            }
+          ]
         }
       },
       "kind": "invoked"
@@ -636,12 +680,9 @@
           "type": "tuple",
           "value": [
             [
-              "FR-001.001",
               "FR-01.01",
               "FR-01.02",
               "FR-01.20",
-              "FR-1.1",
-              "FR-7",
               "FR-99.99"
             ],
             true
@@ -676,7 +717,12 @@
           "value": [
             [
               "FR-01.01",
-              "FR-01.03"
+              "FR-01.02",
+              "FR-01.03",
+              "FR-01.05",
+              "FR-01.06",
+              "FR-01.07",
+              "FR-01.08"
             ],
             true
           ]
@@ -696,6 +742,7 @@
               "FR-04.02",
               "FR-04.03",
               "FR-05.01",
+              "FR-06.01",
               "FR-07.01"
             ],
             true
@@ -721,7 +768,9 @@
           "outcome": "returned",
           "type": "tuple",
           "value": [
-            [],
+            [
+              "FR-06.01"
+            ],
             true
           ]
         }
@@ -786,14 +835,6 @@
               "split": "01-live"
             },
             {
-              "description": "Single-digit id",
-              "id": "FR-1.1",
-              "name": "",
-              "retired": false,
-              "spec_path": ".shipwright/planning/01-live/spec.md",
-              "split": "01-live"
-            },
-            {
               "description": "High canonical id",
               "id": "FR-99.99",
               "name": "",
@@ -802,8 +843,8 @@
               "split": "01-live"
             },
             {
-              "description": "Three-digit id",
-              "id": "FR-001.001",
+              "description": "Row after a later heading",
+              "id": "FR-01.20",
               "name": "",
               "retired": false,
               "spec_path": ".shipwright/planning/01-live/spec.md",
@@ -891,14 +932,6 @@
           "type": "list[FrRow]",
           "value": [
             {
-              "description": "ragged",
-              "id": "FR-01.01",
-              "name": "",
-              "retired": false,
-              "spec_path": ".shipwright/planning/01-broken/spec.md",
-              "split": "01-broken"
-            },
-            {
               "description": "no close pipe",
               "id": "FR-01.02",
               "name": "",
@@ -939,7 +972,7 @@
               "split": "01-broken"
             },
             {
-              "description": "escaped \\| pipe in text",
+              "description": "escaped | pipe in text",
               "id": "FR-01.08",
               "name": "",
               "retired": false,
@@ -1031,6 +1064,14 @@
               "retired": false,
               "spec_path": ".shipwright/planning/04-adopt-writer/spec.md",
               "split": "04-adopt-writer"
+            },
+            {
+              "description": "Coverage is reported per layer",
+              "id": "FR-05.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/05-fixture-fr/spec.md",
+              "split": "05-fixture-fr"
             },
             {
               "description": "Reordered table still describes a requirement",
@@ -1135,24 +1176,8 @@
               "split": "01-live"
             },
             {
-              "description": "Single-digit id",
-              "id": "FR-1.1",
-              "name": "",
-              "retired": false,
-              "spec_path": ".shipwright/planning/01-live/spec.md",
-              "split": "01-live"
-            },
-            {
               "description": "High canonical id",
               "id": "FR-99.99",
-              "name": "",
-              "retired": false,
-              "spec_path": ".shipwright/planning/01-live/spec.md",
-              "split": "01-live"
-            },
-            {
-              "description": "Three-digit id",
-              "id": "FR-001.001",
               "name": "",
               "retired": false,
               "spec_path": ".shipwright/planning/01-live/spec.md",
@@ -1163,6 +1188,14 @@
               "id": "FR-01.09",
               "name": "",
               "retired": true,
+              "spec_path": ".shipwright/planning/01-live/spec.md",
+              "split": "01-live"
+            },
+            {
+              "description": "Row after a later heading",
+              "id": "FR-01.20",
+              "name": "",
+              "retired": false,
               "spec_path": ".shipwright/planning/01-live/spec.md",
               "split": "01-live"
             },
@@ -1248,14 +1281,6 @@
           "type": "list[FrRow]",
           "value": [
             {
-              "description": "ragged",
-              "id": "FR-01.01",
-              "name": "",
-              "retired": false,
-              "spec_path": ".shipwright/planning/01-broken/spec.md",
-              "split": "01-broken"
-            },
-            {
               "description": "no close pipe",
               "id": "FR-01.02",
               "name": "",
@@ -1296,7 +1321,7 @@
               "split": "01-broken"
             },
             {
-              "description": "escaped \\| pipe in text",
+              "description": "escaped | pipe in text",
               "id": "FR-01.08",
               "name": "",
               "retired": false,
@@ -1388,6 +1413,14 @@
               "retired": false,
               "spec_path": ".shipwright/planning/04-adopt-writer/spec.md",
               "split": "04-adopt-writer"
+            },
+            {
+              "description": "Coverage is reported per layer",
+              "id": "FR-05.01",
+              "name": "",
+              "retired": false,
+              "spec_path": ".shipwright/planning/05-fixture-fr/spec.md",
+              "split": "05-fixture-fr"
             },
             {
               "description": "Reordered table still describes a requirement",
@@ -1720,36 +1753,12 @@
               "text": "Canonical two-digit id"
             },
             {
-              "id": "FR-1.1",
-              "priority": "Must",
-              "sections": [],
-              "spec_path": ".shipwright/planning/01-live/spec.md",
-              "split": "01-live",
-              "text": "Single-digit id"
-            },
-            {
-              "id": "FR-7",
-              "priority": "Must",
-              "sections": [],
-              "spec_path": ".shipwright/planning/01-live/spec.md",
-              "split": "01-live",
-              "text": "Bare id, no dot"
-            },
-            {
               "id": "FR-99.99",
               "priority": "Should",
               "sections": [],
               "spec_path": ".shipwright/planning/01-live/spec.md",
               "split": "01-live",
               "text": "High canonical id"
-            },
-            {
-              "id": "FR-001.001",
-              "priority": "May",
-              "sections": [],
-              "spec_path": ".shipwright/planning/01-live/spec.md",
-              "split": "01-live",
-              "text": "Three-digit id"
             },
             {
               "id": "FR-01.20",
@@ -1841,12 +1850,52 @@
           "type": "list[RequirementInfo]",
           "value": [
             {
+              "id": "FR-01.02",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken",
+              "text": "no close pipe"
+            },
+            {
               "id": "FR-01.03",
               "priority": "Should",
               "sections": [],
               "spec_path": ".shipwright/planning/01-broken/spec.md",
               "split": "01-broken",
-              "text": "extra"
+              "text": "ok"
+            },
+            {
+              "id": "FR-01.05",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken",
+              "text": "indented row"
+            },
+            {
+              "id": "FR-01.06",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken",
+              "text": "lowercase priority"
+            },
+            {
+              "id": "FR-01.07",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken",
+              "text": "unrecognised priority"
+            },
+            {
+              "id": "FR-01.08",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken",
+              "text": "escaped | pipe in text"
             },
             {
               "id": "FR-01.01",
@@ -1943,12 +1992,20 @@
               "text": "Coverage is reported per layer"
             },
             {
+              "id": "FR-06.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/06-reordered/spec.md",
+              "split": "06-reordered",
+              "text": "Reordered table still describes a requirement"
+            },
+            {
               "id": "FR-07.01",
               "priority": "Should",
               "sections": [],
               "spec_path": ".shipwright/planning/07-header-blind/spec.md",
               "split": "07-header-blind",
-              "text": "extra"
+              "text": "ok"
             }
           ]
         },
@@ -1962,8 +2019,17 @@
         },
         "zero-row-parse": {
           "outcome": "returned",
-          "type": "list",
-          "value": []
+          "type": "list[RequirementInfo]",
+          "value": [
+            {
+              "id": "FR-06.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-reordered-only/spec.md",
+              "split": "01-reordered-only",
+              "text": "Reordered table still describes a requirement"
+            }
+          ]
         }
       },
       "kind": "invoked"
@@ -2683,11 +2749,6 @@
               "type": "list[FR]",
               "value": [
                 {
-                  "id": "FR-01.01",
-                  "status": "active",
-                  "text": "ragged"
-                },
-                {
                   "id": "FR-01.02",
                   "status": "active",
                   "text": "no close pipe"
@@ -2715,7 +2776,7 @@
                 {
                   "id": "FR-01.08",
                   "status": "active",
-                  "text": "escaped \\"
+                  "text": "escaped | pipe in text"
                 },
                 {
                   "id": "FR-01.01",
@@ -3201,7 +3262,7 @@
                   "required_layers_source": "defaulted_legacy",
                   "spec_path": ".shipwright/planning/01-broken/spec.md",
                   "status": "active",
-                  "title": "escaped \\"
+                  "title": "escaped | pipe in text"
                 },
                 {
                   "id": "FR-01.01",
@@ -3489,32 +3550,11 @@
                   "text": "Canonical two-digit id"
                 },
                 {
-                  "id": "FR-1.1",
-                  "priority": "Must",
-                  "spec_path": ".shipwright/planning/01-live/spec.md",
-                  "split": "01-live",
-                  "text": "Single-digit id"
-                },
-                {
-                  "id": "FR-7",
-                  "priority": "Must",
-                  "spec_path": ".shipwright/planning/01-live/spec.md",
-                  "split": "01-live",
-                  "text": "Bare id, no dot"
-                },
-                {
                   "id": "FR-99.99",
                   "priority": "Should",
                   "spec_path": ".shipwright/planning/01-live/spec.md",
                   "split": "01-live",
                   "text": "High canonical id"
-                },
-                {
-                  "id": "FR-001.001",
-                  "priority": "May",
-                  "spec_path": ".shipwright/planning/01-live/spec.md",
-                  "split": "01-live",
-                  "text": "Three-digit id"
                 },
                 {
                   "id": "FR-01.20",
@@ -3646,11 +3686,46 @@
               "type": "list[FunctionalRequirement]",
               "value": [
                 {
+                  "id": "FR-01.02",
+                  "priority": "Must",
+                  "spec_path": ".shipwright/planning/01-broken/spec.md",
+                  "split": "01-broken",
+                  "text": "no close pipe"
+                },
+                {
                   "id": "FR-01.03",
                   "priority": "Should",
                   "spec_path": ".shipwright/planning/01-broken/spec.md",
                   "split": "01-broken",
-                  "text": "extra"
+                  "text": "ok"
+                },
+                {
+                  "id": "FR-01.05",
+                  "priority": "Must",
+                  "spec_path": ".shipwright/planning/01-broken/spec.md",
+                  "split": "01-broken",
+                  "text": "indented row"
+                },
+                {
+                  "id": "FR-01.06",
+                  "priority": "Must",
+                  "spec_path": ".shipwright/planning/01-broken/spec.md",
+                  "split": "01-broken",
+                  "text": "lowercase priority"
+                },
+                {
+                  "id": "FR-01.07",
+                  "priority": "Must",
+                  "spec_path": ".shipwright/planning/01-broken/spec.md",
+                  "split": "01-broken",
+                  "text": "unrecognised priority"
+                },
+                {
+                  "id": "FR-01.08",
+                  "priority": "Must",
+                  "spec_path": ".shipwright/planning/01-broken/spec.md",
+                  "split": "01-broken",
+                  "text": "escaped | pipe in text"
                 },
                 {
                   "id": "FR-01.01",
@@ -3767,8 +3842,16 @@
             },
             ".shipwright/planning/06-reordered/spec.md": {
               "outcome": "returned",
-              "type": "list",
-              "value": []
+              "type": "list[FunctionalRequirement]",
+              "value": [
+                {
+                  "id": "FR-06.01",
+                  "priority": "Must",
+                  "spec_path": ".shipwright/planning/06-reordered/spec.md",
+                  "split": "06-reordered",
+                  "text": "Reordered table still describes a requirement"
+                }
+              ]
             },
             ".shipwright/planning/07-header-blind/spec.md": {
               "outcome": "returned",
@@ -3779,7 +3862,7 @@
                   "priority": "Should",
                   "spec_path": ".shipwright/planning/07-header-blind/spec.md",
                   "split": "07-header-blind",
-                  "text": "extra"
+                  "text": "ok"
                 }
               ]
             }
@@ -3795,8 +3878,16 @@
           "per_spec": {
             ".shipwright/planning/01-reordered-only/spec.md": {
               "outcome": "returned",
-              "type": "list",
-              "value": []
+              "type": "list[FunctionalRequirement]",
+              "value": [
+                {
+                  "id": "FR-06.01",
+                  "priority": "Must",
+                  "spec_path": ".shipwright/planning/01-reordered-only/spec.md",
+                  "split": "01-reordered-only",
+                  "text": "Reordered table still describes a requirement"
+                }
+              ]
             }
           }
         }
@@ -3871,24 +3962,8 @@
                   "split": "01-live"
                 },
                 {
-                  "description": "Single-digit id",
-                  "id": "FR-1.1",
-                  "name": "",
-                  "retired": false,
-                  "spec_path": ".shipwright/planning/01-live/spec.md",
-                  "split": "01-live"
-                },
-                {
                   "description": "High canonical id",
                   "id": "FR-99.99",
-                  "name": "",
-                  "retired": false,
-                  "spec_path": ".shipwright/planning/01-live/spec.md",
-                  "split": "01-live"
-                },
-                {
-                  "description": "Three-digit id",
-                  "id": "FR-001.001",
                   "name": "",
                   "retired": false,
                   "spec_path": ".shipwright/planning/01-live/spec.md",
@@ -3899,6 +3974,14 @@
                   "id": "FR-01.09",
                   "name": "",
                   "retired": true,
+                  "spec_path": ".shipwright/planning/01-live/spec.md",
+                  "split": "01-live"
+                },
+                {
+                  "description": "Row after a later heading",
+                  "id": "FR-01.20",
+                  "name": "",
+                  "retired": false,
                   "spec_path": ".shipwright/planning/01-live/spec.md",
                   "split": "01-live"
                 }
@@ -4035,14 +4118,6 @@
               "type": "list[FrRow]",
               "value": [
                 {
-                  "description": "ragged",
-                  "id": "FR-01.01",
-                  "name": "",
-                  "retired": false,
-                  "spec_path": ".shipwright/planning/01-broken/spec.md",
-                  "split": "01-broken"
-                },
-                {
                   "description": "no close pipe",
                   "id": "FR-01.02",
                   "name": "",
@@ -4083,7 +4158,7 @@
                   "split": "01-broken"
                 },
                 {
-                  "description": "escaped \\| pipe in text",
+                  "description": "escaped | pipe in text",
                   "id": "FR-01.08",
                   "name": "",
                   "retired": false,
@@ -4202,8 +4277,17 @@
             },
             ".shipwright/planning/05-fixture-fr/spec.md": {
               "outcome": "returned",
-              "type": "list",
-              "value": []
+              "type": "list[FrRow]",
+              "value": [
+                {
+                  "description": "Coverage is reported per layer",
+                  "id": "FR-05.01",
+                  "name": "",
+                  "retired": false,
+                  "spec_path": ".shipwright/planning/05-fixture-fr/spec.md",
+                  "split": "05-fixture-fr"
+                }
+              ]
             },
             ".shipwright/planning/06-reordered/spec.md": {
               "outcome": "returned",
@@ -4320,36 +4404,12 @@
               "text": "Canonical two-digit id"
             },
             {
-              "id": "FR-1.1",
-              "priority": "Must",
-              "sections": [],
-              "spec_path": ".shipwright/planning/01-live/spec.md",
-              "split": "01-live",
-              "text": "Single-digit id"
-            },
-            {
-              "id": "FR-7",
-              "priority": "Must",
-              "sections": [],
-              "spec_path": ".shipwright/planning/01-live/spec.md",
-              "split": "01-live",
-              "text": "Bare id, no dot"
-            },
-            {
               "id": "FR-99.99",
               "priority": "Should",
               "sections": [],
               "spec_path": ".shipwright/planning/01-live/spec.md",
               "split": "01-live",
               "text": "High canonical id"
-            },
-            {
-              "id": "FR-001.001",
-              "priority": "May",
-              "sections": [],
-              "spec_path": ".shipwright/planning/01-live/spec.md",
-              "split": "01-live",
-              "text": "Three-digit id"
             },
             {
               "id": "FR-01.20",
@@ -4441,12 +4501,52 @@
           "type": "list[RequirementInfo]",
           "value": [
             {
+              "id": "FR-01.02",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken",
+              "text": "no close pipe"
+            },
+            {
               "id": "FR-01.03",
               "priority": "Should",
               "sections": [],
               "spec_path": ".shipwright/planning/01-broken/spec.md",
               "split": "01-broken",
-              "text": "extra"
+              "text": "ok"
+            },
+            {
+              "id": "FR-01.05",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken",
+              "text": "indented row"
+            },
+            {
+              "id": "FR-01.06",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken",
+              "text": "lowercase priority"
+            },
+            {
+              "id": "FR-01.07",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken",
+              "text": "unrecognised priority"
+            },
+            {
+              "id": "FR-01.08",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-broken/spec.md",
+              "split": "01-broken",
+              "text": "escaped | pipe in text"
             },
             {
               "id": "FR-01.01",
@@ -4543,12 +4643,20 @@
               "text": "Coverage is reported per layer"
             },
             {
+              "id": "FR-06.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/06-reordered/spec.md",
+              "split": "06-reordered",
+              "text": "Reordered table still describes a requirement"
+            },
+            {
               "id": "FR-07.01",
               "priority": "Should",
               "sections": [],
               "spec_path": ".shipwright/planning/07-header-blind/spec.md",
               "split": "07-header-blind",
-              "text": "extra"
+              "text": "ok"
             }
           ]
         },
@@ -4562,8 +4670,17 @@
         },
         "zero-row-parse": {
           "outcome": "returned",
-          "type": "list",
-          "value": []
+          "type": "list[RequirementInfo]",
+          "value": [
+            {
+              "id": "FR-06.01",
+              "priority": "Must",
+              "sections": [],
+              "spec_path": ".shipwright/planning/01-reordered-only/spec.md",
+              "split": "01-reordered-only",
+              "text": "Reordered table still describes a requirement"
+            }
+          ]
         }
       },
       "kind": "invoked"
