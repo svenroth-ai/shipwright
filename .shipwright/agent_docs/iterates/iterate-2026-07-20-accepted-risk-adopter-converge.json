@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-20-accepted-risk-adopter-converge",
+  "date": "2026-07-20T22:08:18.754499Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/accepted-risk-adopter-converge",
+  "spec": "",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-20-accepted-risk-adopter-converge"
+}

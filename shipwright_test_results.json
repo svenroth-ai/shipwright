@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-20-ci-supplychain-shipped-templates",
+    "run_id": "iterate-2026-07-20-accepted-risk-adopter-converge",
     "date": "2026-07-20",
     "unit": {
       "status": "passed",
-      "passed": 5207,
-      "total": 5207
+      "passed": 4708,
+      "total": 4708
     },
     "integration": {
       "status": "not_run",
@@ -33,45 +33,35 @@
     "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "runner": "none (pure library change; covered by F0 unit tests)",
+      "runner": "none (docs + test change; covered by F0 unit tests)",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-20-ci-supplychain-shipped-templates/surface_verification.json",
-      "timestamp": "2026-07-20T21:37:13.819Z",
-      "justification": "Pure framework library change: broadens the CI-supplychain risk-detector's file-match set (CI_SUPPLYCHAIN_FILE_PATTERNS) and its drift-pinned verifier copy. No web/UI/API/CLI-app surface exists to drive; behavior is fully covered by unit tests at F0 (test_ci_supplychain_detector + test_ci_supplychain_patterns_sync + test_check_ci_supplychain_ack)."
+      "evidence_path": ".shipwright/runs/iterate-2026-07-20-accepted-risk-adopter-converge/surface_verification.json",
+      "timestamp": "2026-07-20T22:06:36.436Z",
+      "justification": "Docs + test change: adds the 'Adopted repos — operator-run converge' section to docs/security-ci-setup.md and a guard test (shared/tests/test_accepted_risks_adopter_converge.py). No web/UI/API/CLI-app surface to drive; the converge CLI's cross-repo behavior is covered by unit tests at F0."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "an edit to a shipped CI template (shared/templates/github-actions/**) trips is_ci_supplychain_change",
+          "behavior": "docs/security-ci-setup.md documents operator-run converge for adopted repos (author the register at the repo root; run converge --project-root at the adopted repo)",
           "disposition": "tested",
-          "evidence": "test_ci_supplychain_detector.py::test_ci_supplychain_paths_trigger[shared/templates/github-actions/*.template] PASSED"
+          "evidence": "test_accepted_risks_adopter_converge.py::TestAdopterDocsArePinned::test_security_ci_setup_documents_operator_run_converge_for_adopters PASSED"
         },
         {
-          "behavior": "a shared/templates path OUTSIDE github-actions, and a docs-nested copy, do NOT trip",
+          "behavior": "converge resolves repo identity + register from --project-root (the adopted repo), never from cwd, so a mutation lands on the repo whose register authorised it",
           "disposition": "tested",
-          "evidence": "test_ci_supplychain_detector.py::test_near_misses_do_not_trigger PASSED"
+          "evidence": "test_accepted_risks_adopter_converge.py::TestOperatorRunConvergeAgainstAdoptedRepo::test_identity_and_register_come_from_the_targeted_root_not_cwd PASSED"
         },
         {
-          "behavior": "the verifier _CI_SUPPLYCHAIN_PATTERNS stays byte-equal to the SSoT (both directions)",
+          "behavior": "identity tracks each passed root independently, so one operator checkout can converge many adopted repos in turn",
           "disposition": "tested",
-          "evidence": "test_ci_supplychain_patterns_sync.py::test_verifier_copy_equals_ssot_both_directions PASSED"
-        },
-        {
-          "behavior": "SSoT detector and verifier copy return the same verdict across the path matrix incl. the template path",
-          "disposition": "tested",
-          "evidence": "test_ci_supplychain_patterns_sync.py::test_ssot_and_detector_agree PASSED"
-        },
-        {
-          "behavior": "the ack gate recomputes CI paths from the new pattern set without regressing existing behavior",
-          "disposition": "tested",
-          "evidence": "test_check_ci_supplychain_ack.py (13 tests) PASSED"
+          "evidence": "test_accepted_risks_adopter_converge.py::TestOperatorRunConvergeAgainstAdoptedRepo::test_each_adopted_root_resolves_to_its_own_identity PASSED"
         }
       ],
       "counts": {
-        "testable": 5,
-        "tested": 5,
+        "testable": 3,
+        "tested": 3,
         "untestable": 0,
         "untested_testable": 0
       }

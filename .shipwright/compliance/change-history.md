@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-07-20T21:42:23.996908+00:00
+Generated: 2026-07-20T22:08:18.851913+00:00
 Total commits: 1183
 
 ## Commit Distribution
@@ -367,7 +367,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-20 | iterate | extend the CI supply-chain ack gate to shipped CI templates | d6c0de14bbf0 |
+| 2026-07-20 | iterate | extend the CI supply-chain ack gate to shipped CI templates (#417) | c6975f4e612c |
 | 2026-07-20 | traceability | answer "which changes touched this requirement" from the event log (campaign S7) (#415) | 18905d576514 |
 | 2026-07-19 | templates | ship the action-pinning posture RULE to adopters, gated both ways (#407) | e336197ca8e9 |
 | 2026-07-19 | compliance | converge accepted risks onto the code-scanning surface (#406) | de9cd073b991 |

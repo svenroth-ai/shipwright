@@ -1,34 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-20-ci-supplychain-shipped-templates"
+run_id: "iterate-2026-07-20-accepted-risk-adopter-converge"
 phase: "iterate"
-reason: "F11 pre-merge refresh: iterate-2026-07-20-ci-supplychain-shipped-templates"
-timestamp: "2026-07-20T21:42:29.883654+00:00"
+reason: "iterate: document operator-run converge for adopted repos"
+timestamp: "2026-07-20T22:08:24.857300+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-20 21:42:29 UTC
+> Auto-generated 2026-07-20 22:08:24 UTC
 
 ## Session Info
 
 - **Session ID**: c2a98c2f-740b-4818-b8ae-e5b87528ef06
-- **Timestamp**: 2026-07-20 21:42:29 UTC
-- **Reason**: F11 pre-merge refresh: iterate-2026-07-20-ci-supplychain-shipped-templates
+- **Timestamp**: 2026-07-20 22:08:24 UTC
+- **Reason**: iterate: document operator-run converge for adopted repos
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-20-ci-supplychain-shipped-templates
-- **Date**: 2026-07-20T21:42:23.901005Z
+- **Run ID**: iterate-2026-07-20-accepted-risk-adopter-converge
+- **Date**: 2026-07-20T22:08:18.754499Z
 - **Type**: change
 - **Complexity**: small
-- **Branch**: iterate/ci-supplychain-shipped-templates
-- **ADR**: iterate-2026-07-20-ci-supplychain-shipped-templates
+- **Branch**: iterate/accepted-risk-adopter-converge
+- **ADR**: iterate-2026-07-20-accepted-risk-adopter-converge
 - **Tests passed**: True
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/ci-supplychain-shipped-templates
+- **Branch**: iterate/accepted-risk-adopter-converge
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -47,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/ci-supplychain-shipped-templates
-- **Last Commit**: 79614a2a Merge remote-tracking branch 'origin/main' into iterate/ci-supplychain-shipped-templates
+- **Branch**: iterate/accepted-risk-adopter-converge
+- **Last Commit**: c6975f4e feat(iterate): extend the CI supply-chain ack gate to shipped CI templates (#417)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-9af6a842 | grade_snapshot | — | 2026-07-20 |
+| evt-eaa519ea | work_completed | iterate (Document operator-run converge for adopted repos + guard test) | 2026-07-20 |
 | evt-ec752311 | grade_snapshot | — | 2026-07-20 |
 | evt-3f54c795 | work_completed | iterate (adopt FR-id cap: canonical group rollover past 99 detected features) | 2026-07-20 |
 | evt-42a87085 | grade_snapshot | — | 2026-07-20 |
-| evt-923835b8 | work_completed | iterate (Extend CI_SUPPLYCHAIN_FILE_PATTERNS to shared/templates/github-actions/) | 2026-07-20 |
-| evt-df28837c | grade_snapshot | — | 2026-07-20 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 344
-- **Last iterate**: bug — adopt FR-id cap: canonical group rollover past 99 detected features (2026-07-20)
+- **Total work events**: 345
+- **Last iterate**: change — Document operator-run converge for adopted repos + guard test (2026-07-20)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
