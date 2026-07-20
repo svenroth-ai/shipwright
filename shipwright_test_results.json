@@ -1,17 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-20-flaky-idempotency-banner",
+    "run_id": "iterate-2026-07-20-events-record-boundary-remainder",
     "date": "2026-07-20",
     "unit": {
       "status": "passed",
-      "passed": 4704,
-      "total": 4715,
-      "skipped": 11
+      "passed": 21,
+      "total": 21
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 4,
+      "total": 4
     },
     "pgtap": {
       "status": "not_run",
@@ -19,12 +18,12 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "design_fidelity": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
@@ -32,43 +31,98 @@
       "status": "not_run"
     },
     "degraded": [
-      {
-        "type": "complexity_override",
-        "detail": "classify_complexity estimated 'medium' from message prose (signals.prior_source=keyword) but risk_flags=[] and the diff is test-only (shared/tests + bloat baseline, no runtime/FR change); downgraded to 'small' per diff-authoritative classification."
-      }
+      "test_finalize_iterate.py::test_run_is_idempotent failed once under the full shared-suite run (cross-file ordering flake): it passes in isolation and as its own file (20/20), does not import any module this iterate changed, and reproduces independently of this diff."
     ],
     "surface_verification": {
       "surface": "none",
-      "justification": "Test-only change: dashboard-idempotency assertion, extraction into a sibling test module, and a bloat-baseline ratchet-down. No runtime code, API route, store mutation, SSE/WS handler, message contract, or UI-consumed code touched — there is no web or CLI surface to exercise.",
+      "runner": "",
+      "exit_code": 0,
       "tests_run": 0,
-      "exit_code": 0
+      "evidence_path": ".shipwright/runs/iterate-2026-07-20-events-record-boundary-remainder/surface_verification.json",
+      "justification": "Internal defect repair: record-boundary delegation in Python event-log readers + churn_merge validator. No web/CLI/API behaviour surface \u2014 every changed function is a pure library reader/validator. No client/**, API route, store mutation, or message contract touched."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "finalize dashboard render is byte-idempotent across two runs, excluding the wall-clock '> Updated:' banner minute",
+          "behavior": "resolve_run_id recovers run_started records from a merge=union concatenated line (latest wins), not the session fallback",
+          "ac": "AC1",
           "disposition": "tested",
-          "evidence": "shared/tests/test_finalize_iterate_idempotency.py::test_run_is_idempotent PASSED"
+          "evidence": "shared/tests/test_event_reader_remainder_record_boundary.py::test_resolve_run_id_recovers_run_started_from_a_concatenated_line"
         },
         {
-          "behavior": "when the banner minute advances between two runs (minute-boundary straddle), the dashboard body + Session/Run banner suffix stay identical while the full byte-string differs",
+          "behavior": "check_a7_adopted_event PASSes when the adopted event is second on a concatenated line (inverted failure fixed)",
+          "ac": "AC2",
           "disposition": "tested",
-          "evidence": "shared/tests/test_finalize_iterate_idempotency.py::test_run_is_idempotent_even_when_banner_minute_advances PASSED"
+          "evidence": "shared/tests/test_event_reader_remainder_record_boundary.py::test_check_a7_counts_adopted_when_it_is_second_on_a_concatenated_line"
         },
         {
-          "behavior": "the idempotency cluster lives in a sub-300 sibling module and the ADR-096 exception file (test_finalize_iterate.py) ratchets down to 445 LOC",
+          "behavior": "validate_adoption._validate_events recovers the adopted count from a concatenated line (adopt-side parity)",
+          "ac": "AC3",
           "disposition": "tested",
-          "evidence": "shared/scripts/hooks/anti_ratchet_check.py --staged exit 0; wc -l test_finalize_iterate.py = 445 <= baseline 445"
+          "evidence": "plugins/shipwright-adopt/tests/test_validate_adoption_record_boundary.py::test_validate_events_recovers_adopted_second_on_a_concatenated_line"
+        },
+        {
+          "behavior": "routing._newest_work_commit returns the newest work_completed when it is second on a concatenated line; not-stale end-to-end",
+          "ac": "AC4",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-grade/tests/test_routing_record_boundary.py::test_newest_work_commit_recovers_the_newest_from_a_concatenated_line"
+        },
+        {
+          "behavior": "recovery stays partial (a valid record ahead of an unrecoverable fragment is still recovered) at every converted site",
+          "ac": "AC5",
+          "disposition": "tested",
+          "evidence": "test_resolve_run_id_skips_a_fragment_and_keeps_what_decoded + test_newest_work_commit_partial_recovery_ignores_a_trailing_fragment + test_validate_events_partial_recovery_keeps_the_adopted_record"
+        },
+        {
+          "behavior": "converted readers return only JSON objects; a bare scalar line is a fragment and no site crashes on .get()",
+          "ac": "AC6",
+          "disposition": "tested",
+          "evidence": "test_check_a7_does_not_crash_on_a_bare_scalar_line + plugins/shipwright-adopt/tests/test_validate_adoption_record_boundary.py::test_validate_events_does_not_crash_on_a_bare_scalar_line"
+        },
+        {
+          "behavior": "churn_merge.validate_events_text finds work_completed second on a concatenated line (no false check_events_has_commit failure in integrate_main)",
+          "ac": "AC-CM1",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_event_reader_remainder_record_boundary.py::test_validate_events_text_finds_work_completed_second_on_a_concatenated_line"
+        },
+        {
+          "behavior": "validate_events_text does not flag a fully-recoverable concatenated line as corrupt, still flags an unrecoverable fragment AND a bare scalar (reporting change pinned)",
+          "ac": "AC-CM2",
+          "disposition": "tested",
+          "evidence": "test_validate_events_text_does_not_flag_a_recoverable_concatenated_line + test_validate_events_text_still_flags_a_genuinely_unrecoverable_fragment + test_validate_events_text_flags_a_bare_scalar_line_as_corrupt"
+        },
+        {
+          "behavior": "the merge VALIDATOR (churn_merge) and a converted READER (check_a7) both observe the run after a real merge=union merge propagates a concatenated line",
+          "ac": "AC7",
+          "category": "integration",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_events_record_boundary_merge_integration.py::test_validator_and_reader_compose_after_a_real_union_merge"
+        },
+        {
+          "behavior": "anti-vacuity: a genuinely absent adopted/run/work event still fails (recovery does not make any gate toothless)",
+          "ac": "AC2/AC-CM1",
+          "disposition": "tested",
+          "evidence": "test_check_a7_still_fails_when_adopted_genuinely_absent + test_validate_events_text_still_reports_absent_run_event + test_validate_events_still_fails_when_adopted_absent"
+        },
+        {
+          "behavior": "a leading partial line from routing's bounded tail read never surfaces as a record / becomes the newest",
+          "ac": "AC4",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-grade/tests/test_routing_record_boundary.py::test_newest_work_commit_skips_a_leading_partial_tail_fragment"
         }
       ],
       "counts": {
-        "total": 3,
-        "tested": 3,
+        "testable": 11,
+        "tested": 11,
         "untestable": 0,
         "untested_testable": 0
       },
-      "note": "Pure-tooling iterate; no FR behavior delta, so the cross-layer execution-evidence gate does not fire. All introduced behaviors are testable and tested."
+      "enumeration_basis": {
+        "acs": 9,
+        "covered_acs": 9
+      },
+      "note": "9 ACs (AC1-AC7 + AC-CM1/AC-CM2). cross_component (churn_merge) integration coverage supplied by the AC7 category:integration behavior. observability.py declined (gitignored telemetry, non-union-merged) introduces no behavior so it is not enumerated."
     }
   },
   "coverage": {
