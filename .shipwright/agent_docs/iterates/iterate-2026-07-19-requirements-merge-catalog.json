@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-19-requirements-merge-catalog",
+  "date": "2026-07-20T11:22:18.961613Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/requirements-merge-catalog",
+  "spec": ".shipwright/planning/01-adopted/spec.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-19-requirements-merge-catalog"
+}

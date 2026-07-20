@@ -469,3 +469,9 @@
 {"v":1,"id":"evt-901afec3","ts":"2026-07-20T08:58:00.016593+00:00","type":"grade_snapshot","grade":"B","score":85.9,"session":"85c973ff-4812-4db0-acc1-935ed32ee51b"}
 {"v":1,"id":"evt-7d38f305","ts":"2026-07-20T09:28:29.938268+00:00","type":"grade_snapshot","grade":"B","score":85.9,"session":"85c973ff-4812-4db0-acc1-935ed32ee51b"}
 {"v":1,"id":"evt-ec9fc299","ts":"2026-07-20T09:49:32.816776+00:00","type":"grade_snapshot","grade":"B","score":85.9,"session":"85c973ff-4812-4db0-acc1-935ed32ee51b"}
+{"campaign":"2026-07-18-requirements-catalog","sub_iterate_id":"S6","intent":"change","complexity":"medium","spec_impact":"modify","affected_frs":["FR-01.10"],"summary":"One requirements catalog, stated once in plain language, with explicit deep-link anchors that actually resolve.","v":1,"id":"evt-65d388b4","ts":"2026-07-20T11:22:19.047213+00:00","type":"work_completed","source":"iterate","commit":"","adr_id":"iterate-2026-07-19-requirements-merge-catalog","description":"iterate: merge the requirements into one catalog (campaign S6)","session":"85c973ff-4812-4db0-acc1-935ed32ee51b"}
+{"v":1,"id":"evt-9b2aca55","ts":"2026-07-20T11:22:24.555556+00:00","type":"grade_snapshot","grade":"B","score":85.9,"session":"85c973ff-4812-4db0-acc1-935ed32ee51b"}
+{"v":1,"id":"evt-3e0e8a82","ts":"2026-07-20T11:24:45.110048+00:00","type":"grade_snapshot","grade":"B","score":85.9,"session":"85c973ff-4812-4db0-acc1-935ed32ee51b"}
+{"v":1,"id":"evt-5e0495a3","ts":"2026-07-20T12:03:55.961043+00:00","type":"grade_snapshot","grade":"B","score":85.9,"session":"85c973ff-4812-4db0-acc1-935ed32ee51b"}
+{"v":1,"id":"evt-efec7e37","ts":"2026-07-20T12:33:04.991291+00:00","type":"grade_snapshot","grade":"B","score":85.9,"session":"85c973ff-4812-4db0-acc1-935ed32ee51b"}
+{"v":1,"id":"evt-1e9a1554","ts":"2026-07-20T12:51:25.562269+00:00","type":"grade_snapshot","grade":"B","score":85.9,"session":"85c973ff-4812-4db0-acc1-935ed32ee51b"}

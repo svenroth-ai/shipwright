@@ -24,6 +24,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Iterable
 
+from scripts.audit import _group_d_empty_state as _empty_state
 from scripts.audit import _group_d_traceability as _traceability
 from scripts.audit._events_read import load_events
 from scripts.audit.audit_adapters import (
@@ -113,7 +114,7 @@ def _check_d1(
 ) -> tuple[str, str, str, list[str]]:
     """Returns (status, severity, detail, evidence)."""
     if not spec_frs:
-        return "skip", "LOW", "no FR table rows in any spec.md", []
+        return "skip", "LOW", _empty_state.GENERIC, []
     if events is None:
         return "skip", "LOW", "shipwright_events.jsonl not present", []
 
@@ -170,9 +171,8 @@ def _check_d1(
 def _check_d2(
     spec_frs: list[drift_parsers.FunctionalRequirement],
     events: list[dict] | None,
+    project_root: Path,
 ) -> tuple[str, str, str, list[str]]:
-    if not spec_frs:
-        return "skip", "MEDIUM", "no FR table rows in any spec.md", []
     if events is None:
         return "skip", "MEDIUM", "shipwright_events.jsonl not present", []
 
@@ -181,10 +181,10 @@ def _check_d2(
     watermark = _watermark_ts(events)
     in_window = _filter_after_watermark(events, watermark)
 
-    # D2 scans every event with an ``affected_frs`` field, regardless of
-    # event type. Some non-work_completed event types (task_created,
-    # event_amended) can also carry FR references — a stale FR-ID on
-    # those is just as much a drift signal as on a work_completed event.
+    # Every event carrying ``affected_frs`` is scanned, whatever its type: a stale FR-ID
+    # on task_created / event_amended is the same drift signal as on work_completed.
+    # FV-2 (S6): the `if not spec_frs: skip` guard used to sit ABOVE this loop, making the
+    # maximally-red state unreachable (zero spec FRs = every ref stale). Clean branch only.
     stale: dict[str, int] = {}
     for ev in in_window:
         for fr in ev.get("affected_frs", []) or []:
@@ -193,14 +193,11 @@ def _check_d2(
             stale[fr] = stale.get(fr, 0) + 1
 
     if not stale:
+        if not spec_ids:
+            return _empty_state.empty_requirements_skip(project_root)
         return "pass", "MEDIUM", "every event FR-ref exists in the current spec", []
 
-    items = sorted(stale.items(), key=lambda kv: (-kv[1], kv[0]))
-    head = ", ".join(f"{k} (×{v})" for k, v in items[:3])
-    if len(items) > 3:
-        head += f", … (+{len(items) - 3})"
-    detail = f"events reference FR-IDs not in current spec — {head}"
-    evidence = [f"{k}: {v} event(s)" for k, v in items]
+    detail, evidence = _empty_state.stale_ref_report(stale, spec_ids, project_root)
     return "fail", "MEDIUM", detail, evidence
 
 
@@ -284,7 +281,7 @@ def _check_d4(
     follow-up rule once tests are mandatory across the event log.
     """
     if not spec_frs:
-        return "skip", "LOW", "no FR table rows in any spec.md", []
+        return "skip", "LOW", _empty_state.GENERIC, []
     if events is None:
         return "skip", "LOW", "shipwright_events.jsonl not present", []
 
@@ -417,7 +414,7 @@ def run(
 
     plan: list[tuple[str, callable]] = [
         ("D1", lambda: _check_d1(spec_frs, events, project_root)),
-        ("D2", lambda: _check_d2(spec_frs, events)),
+        ("D2", lambda: _check_d2(spec_frs, events, project_root)),
         ("D3", lambda: _check_d3(events)),
         ("D4", lambda: _check_d4(spec_frs, events)),
         ("D5", lambda: _check_d5(events)),

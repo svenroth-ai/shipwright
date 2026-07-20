@@ -17,6 +17,15 @@ _SCHEMA_PATH = Path(__file__).resolve().parents[1] / "lib" / "traceability_schem
 # Pinned to the schema's `const`, which travels with requirement_model.MODEL_VERSION.
 MANIFEST_SCHEMA_VERSION = 3
 
+#: Provenance tokens that keep the PRE-TT8 event-only proof — the single
+#: definition of "legacy-exempt", deliberately not restated per consumer.
+#: D1 (`_group_d_link_proof`) decides with it whether a requirement OWES a
+#: manifest test link; D-layer (`_group_d_traceability`) decides with it
+#: whether a missing link is advisory or HARD. Those are two halves of one
+#: verdict, so a one-sided edit would let D1 credit a requirement that
+#: D-layer hard-fails. Anything NOT in this set routes fail-closed.
+LEGACY_SOURCES = frozenset({"inferred_legacy", "defaulted_legacy"})
+
 
 def _schema_valid(data: dict) -> bool:
     """Validate ``data`` against ``traceability_schema.json`` (MUST-FIX 3).
@@ -117,4 +126,4 @@ def fanned_possible_orphans(manifest: dict) -> list[dict]:
 
 
 __all__ = ["load_manifest", "collision_ids", "fanned_possible_orphans",
-           "MANIFEST_SCHEMA_VERSION"]
+           "LEGACY_SOURCES", "MANIFEST_SCHEMA_VERSION"]

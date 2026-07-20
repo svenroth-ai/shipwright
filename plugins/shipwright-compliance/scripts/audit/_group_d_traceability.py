@@ -3,7 +3,9 @@
 Both consume the TT1 test-traceability manifest (``.shipwright/compliance/
 test-traceability.json``), loaded + schema-validated fail-closed by ``_group_d_manifest``.
 Split out of ``group_d.py`` so that file stays under its ADR-096 anti-ratchet cap;
-``group_d.run`` calls :func:`traceability_findings`.
+``group_d.run`` calls :func:`traceability_findings`. D1's link-proof refinement moved
+on to ``_group_d_link_proof`` in the requirements-catalog campaign (S6) — a pure move,
+re-exported here, so callers and the ``__all__`` surface are unchanged.
 
 Fail-CLOSED is the rule (a false *green* defeats the campaign; a false *red* is merely
 noisy). Where a fully fail-closed HARD verdict would create a false-RED, the detector
@@ -38,11 +40,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from scripts.audit._group_d_link_proof import refine_d1_covered
 from scripts.audit._group_d_manifest import (
+    LEGACY_SOURCES as _LEGACY_SOURCES,
     collision_ids,
     fanned_possible_orphans,
     load_manifest,
-    manifest_present,
 )
 from scripts.audit._group_d_render import (
     ADVISORY_LAYER_REASONS,
@@ -58,12 +61,34 @@ from scripts.audit.audit_adapters import Finding, SOURCE_DETECTIVE_ONLY
 
 _PRIORITY_TO_SEVERITY = {"Must": "HIGH", "Should": "MEDIUM", "May": "LOW"}
 _SEV_ORDER = {"LOW": 0, "MEDIUM": 1, "HIGH": 2}
-_LEGACY_SOURCES = frozenset({"inferred_legacy", "defaulted_legacy"})
 
 #: IMPORTED, not restated — see `_group_d_render.ADVISORY_LAYER_REASONS`. Two
 #: literals of this set are what let the verdict and the evidence line disagree.
 _ADVISORY_LAYER_REASONS = ADVISORY_LAYER_REASONS
 _KNOWN_CATEGORIES = frozenset({"confirmed_orphan", "possible_orphan", "unmapped"})
+
+
+#: FV-2 (requirements-catalog campaign, S6). A manifest that is present and
+#: schema-valid but declares NO requirement at all means the collector walked the
+#: planning tree and found nothing — so D-layer examined nothing, and the sentence
+#: "every active FR is covered at its required layers" is a POSITIVE claim over a
+#: set that was never looked at. A reader cannot tell it apart from a genuinely
+#: fully-covered project. That is the whole of FV-2 in one string.
+#:
+#: ``skip`` rather than ``fail`` on purpose: a repo with no requirements yet is a
+#: real and legitimate state (a project before its first requirements run), so a
+#: hard verdict would trade a false-green for a false-red. What FV-2 names is the
+#: false CLAIM, not the absence of a block — and a skip that says WHICH state
+#: produced it removes the claim without inventing a defect.
+#:
+#: Scoped to ``not reqs`` — an EMPTY requirement set — rather than "no ACTIVE
+#: requirement". The wider predicate also swallowed the case where every
+#: requirement has been retired, which is a different (and separately tested)
+#: behaviour: there the check did examine a set and correctly found nothing owed.
+_EMPTY_SKIP = ("skip", "MEDIUM",
+               "manifest declares no requirement — nothing was examined "
+               "(a green verdict here would be a claim about an empty set)",
+               [], None)
 
 
 def _max_sev(sevs: set[str]) -> str:
@@ -94,6 +119,19 @@ def check_orphan(manifest: dict) -> tuple[str, str, str, list[str], str | None]:
     # and so is a broken fold-map: every one of its defects means some tag did NOT get
     # resolved to its survivor, so leaving it invisible would hide silent under-coverage.
     if not confirmed and not possible and not invalid_tags and not fold_defects:
+        # NOT flipped by FV-2, deliberately. Over an empty requirement set this
+        # branch's sentence is TRUE rather than vacuous: had any test carried an
+        # @FR tag, every one of them would be absent-FR and would appear in
+        # `orphans`, so an empty `orphans` list means there were no tagged tests.
+        # The claim is about the tag universe, which WAS examined.
+        #
+        # That rested on the collector not short-circuiting when it finds no
+        # requirements. It does not — `test_links.build_manifest` walks every
+        # test file unconditionally and every hit falls to the `fr_absent` /
+        # `confirmed_orphan` branch. PROBED, not argued:
+        # test_group_d_empty_set_verdicts.py::
+        # test_zero_requirements_plus_a_tagged_test_yields_a_nonempty_orphan_list
+        # runs the real collector over zero requirements and one tagged test.
         if unmapped:
             return ("pass", "LOW",
                     f"{len(unmapped)} unmapped test(s) (informational — not orphans)",
@@ -204,54 +242,12 @@ def check_layer(manifest: dict) -> tuple[str, str, str, list[str], str | None]:
             detail += f"; {len(invalid_advisory)} advisory layer-cell defect(s)"
         return ("pass", "LOW", detail,
                 [layer_gap_line(g, "advisory") for g in advisory] + inv_adv_lines, None)
+    # FV-2, the sharpest site: this sentence is the only one in the audit plane
+    # that asserts a positive FACT about coverage. Over an empty requirement set
+    # it is vacuously true and indistinguishable from a fully-covered project.
+    if not reqs:
+        return _EMPTY_SKIP
     return "pass", "LOW", "every active FR is covered at its required layers", [], None
-
-
-# ---------------------------------------------------------------------------
-# D1 link-proof (Spec §5 / deliverable: COVERED requires a tested event AND a link)
-# ---------------------------------------------------------------------------
-
-
-def refine_d1_covered(event_tested: set[str], project_root: Path) -> tuple[set[str], str]:
-    """Return ``(covered, note)``. Drop from the event-tested ``covered`` set any FR that
-    ALSO owes a manifest test link but has no *executed-passing* one — the second, SEPARATE
-    proof (Spec §5). The two proofs never collapse: a tested event for FR-A + a tagged test
-    for a *different* FR-B can't cover FR-A (``linked`` keys each FR to its OWN links), and a
-    merely-present but skipped link does NOT satisfy it (R1 — the link must be ``coverage==ok``).
-
-    Fail-closed provenance (MUST-FIX 1): the link is required for ``explicit`` **and any
-    UNKNOWN / missing** provenance token; only a KNOWN legacy source keeps the event-only
-    proof so the pre-TT8 monorepo does not avalanche. A **collision** id is left on the event
-    proof (its link is indeterminate — a HARD drop would be a false-red; D-layer surfaces the
-    ambiguity advisory instead).
-
-    ``note`` (FIX 3 observability): non-empty when the link-proof was skipped because the
-    manifest is PRESENT-but-untrusted (schema-invalid) — a green D1 could then hide a dropped
-    link-proof, so the fallback is made visible. Empty for a trusted manifest OR a genuinely
-    absent one (absent is expected pre-TT8, not a masked regression)."""
-    manifest = load_manifest(project_root)
-    if manifest is None:
-        note = (" [D1 link-proof skipped: manifest PRESENT but untrusted (schema-invalid) —"
-                " event-proof only]" if manifest_present(project_root) else "")
-        return event_tested, note
-    reqs = manifest.get("requirements") or {}
-    collisions = collision_ids(reqs)
-    linked: set[str] = set()
-    requires_link: set[str] = set()
-    for node in reqs.values():
-        if node.get("status") != "active":
-            continue
-        disp = node.get("id")
-        if (node.get("required_layers_source") or "__missing__") not in _LEGACY_SOURCES:
-            requires_link.add(disp)  # explicit OR unknown/missing token → fail-closed
-        if disp not in collisions and any(
-                c == "ok" for c in (node.get("coverage") or {}).values()):
-            linked.add(disp)  # a non-ambiguous executed-passing link (R1)
-    covered = {
-        fr for fr in event_tested
-        if fr not in requires_link or fr in linked or fr in collisions
-    }
-    return covered, ""
 
 
 # ---------------------------------------------------------------------------

@@ -26,7 +26,7 @@ from requirements_corpus.collect import REPO_ROOT  # noqa: E402
 PROBES: dict[str, str] = {
     "t1": "shared_tools", "t2": "shared_tools",
     "group_d_empty": "compliance", "group_i_empty": "compliance",
-    "d_traceability_empty": "compliance",
+    "d_traceability_empty": "compliance", "d_traceability_populated": "compliance",
     "unsorted_seam": "adopt", "unsorted_seam_a2": "shared_tools",
 }
 
@@ -52,13 +52,22 @@ def probe_t2(root: Path, _extra) -> dict:
 
 
 def probe_group_d_empty(root: Path, _extra) -> dict:
-    """The D-group guards, driven with an EMPTY requirement set."""
+    """The D-group guards, driven with an EMPTY requirement set.
+
+    ``D2_with_refs`` added by S6: with zero spec FRs, an event that NAMES an FR is
+    the maximally-red state -- the reference cannot possibly resolve. Without a
+    case that carries such an event, D2's flip is invisible, because the empty
+    event list produces "nothing to compare" either way.
+    """
     _paths("compliance")
     from scripts.audit.group_d import _check_d1, _check_d2, _check_d4
+    referencing = [{"type": "work_completed", "ts": "2026-01-01T00:00:00+00:00",
+                    "affected_frs": ["FR-99.99"], "tests": {"total": 1, "passed": 1}}]
     return {
         "D1": list(_check_d1([], [], root)),
-        "D2": list(_check_d2([], [])),
+        "D2": list(_check_d2([], [], root)),
         "D4": list(_check_d4([], [])),
+        "D2_with_refs": list(_check_d2([], referencing, root)),
     }
 
 
@@ -79,6 +88,23 @@ def probe_d_traceability_empty(root: Path, _extra) -> dict:
     empty = {"schema_version": 3, "requirements": {}}
     return {"orphan": list(check_orphan(empty)),
             "layer": list(check_layer(empty))}
+
+
+def probe_d_traceability_populated(root: Path, _extra) -> dict:
+    """The same two sites over a manifest that DOES declare an active, covered FR.
+
+    The compensating control for S6's empty-set guards: without it, replacing the
+    positive claim with an unconditional skip would satisfy every FV-2 assertion
+    while silencing the coverage plane outright.
+    """
+    _paths("compliance")
+    from scripts.audit._group_d_traceability import check_layer, check_orphan
+    populated = {"schema_version": 3, "requirements": {"01::FR-01.01": {
+        "id": "FR-01.01", "status": "active", "priority": "Must",
+        "required_layers": ["unit"], "required_layers_source": "explicit",
+        "coverage": {"unit": "ok"}}}}
+    return {"orphan": list(check_orphan(populated)),
+            "layer": list(check_layer(populated))}
 
 
 def probe_unsorted_seam(root: Path, extra) -> dict:

@@ -1,17 +1,17 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-20-converge-table-shape",
-    "date": "2026-07-20",
+    "run_id": "iterate-2026-07-19-requirements-merge-catalog",
+    "date": "2026-07-19",
     "unit": {
       "status": "passed",
-      "passed": 8561,
-      "total": 8581,
-      "skipped": 20
+      "passed": 8749,
+      "total": 8763,
+      "skipped": 11
     },
     "integration": {
       "status": "passed",
-      "passed": 345,
-      "total": 345,
+      "passed": 357,
+      "total": 357,
       "skipped": 0
     },
     "pgtap": {
@@ -31,415 +31,247 @@
       "status": "not_run"
     },
     "degraded": [
-      "Gemini's external CODE review leg degenerated again: 612 characters, truncated mid-sentence, no coherent findings. This is the FOURTH consecutive sub-iterate (S2, S3, S4, S5), so it is a standing provider defect rather than a one-off. Recorded rather than re-rolled, and NOT counted as a passing review -- the external code review had ONE usable leg (GPT, 3 findings: two accepted-and-fixed, one false positive caused by my own exclusion of the 156 KB generated golden.json from the diff I sent, verified empirically). The PLAN review had BOTH legs substantive (Gemini 4 findings, GPT 11) and all 13 are dispositioned in ADR-108.",
-      "RESOLVED during the code-review round, recorded because the earlier numbers in this run were reported without it. plugins/shipwright-grade did not COLLECT (ModuleNotFoundError: defusedxml, 10 collection errors) and .shipwright/compliance/sbom.md regressed to 'Licenses resolved 3/11' with 8 packages 'unknown'. ONE root cause: the per-plugin .venv directories did not exist in this worktree, and the SBOM license resolver reads each manifest's own .venv dist-info METADATA (NOT ambient sys.path) by design. Fixed by syncing all 14 plugin venvs, not by declaring it: sbom.md is back to 11/11 resolved, 0 unknown, 3 unique licenses -- identical to the pre-change state -- and shipwright-grade now runs 385 passed / 1 skipped. The unit count above INCLUDES it (8159 -> 8558; the grade suite contributes 385 of that). The SBOM regression was the serious half: it is a shipped compliance artifact and it was reporting 8 licenses as unverified.",
-      "The outbox sweep at worktree setup reported protected_status_unplaceable for trg-b1dda91d and trg-16d374e1: status lines whose appends are in main's tracked log but not reachable from this branch. Pre-existing and unrelated to S5 (same condition S4 recorded); no triage append of mine was dropped. Left for the main-tree reconcile rather than worked around.",
-      "The Removed Requirements table shape was deliberately NOT converged. It carries a different job (Removed by, status), no AC asked for it, and changing it would have been scope creep. It still parses.",
-      "PROCESS NOTE, recorded because it nearly cost a review: this iterate amends into ONE commit and force-pushes, so a SHA reported in a status update ceases to exist at the next amend. I reported 'counts identical, doc-only' scoped to 9645933a..feb5afa0, which was true, but the range nobody had reviewed was bb1bf6cf..feb5afa0 -- the entire fix round produced in response to GPT and Codex, since those legs reviewed the commit BEFORE those fixes and generated them. The coordinator caught it and gated one more review on exactly that range, which found 9 issues including a blocking one. When amending, state the range that has NOT been reviewed, not the range since the last report.",
-      "Eight adopt scaffolders carry the same unguarded shared-module loader fixed in three places here (spec is None / spec.loader is None cannot fire for a missing path, so plugins-without-shared fails as FileNotFoundError instead of a named ImportError): automerge_setup_scaffolder, baseline_generator, ci_workflow_scaffolder, claude_review_workflow_scaffolder, codeql_workflow_scaffolder, gitattributes_scaffolder, gitleaks_config_scaffolder, security_workflow_scaffolder. ALL EIGHT ARE UNTOUCHED BY THIS PR -- merging makes nothing worse. Not folded in: eight unreviewed edits in a round scoped as 'these three, then ship' is the pattern that cost this campaign five review rounds. Found by sweeping for the pattern rather than fixing reported instances, which is how the count went from three to eleven."
+      "F0 is RED with 3 failures, all environmental and all pre-existing: plugins/shipwright-security/tests/test_oss_backend_smoke.py needs semgrep, gitleaks and trivy on PATH, which this machine does not have -- the tests name the CI install step themselves. Verified by stashing the diff and re-running on the base tree, where they fail identically. The 6 test_combine_coverage failures reported earlier in this run are GONE: their cause was the worktree venv lacking the `coverage` module, fixed by provisioning it while repairing the SBOM license resolution. CI is 11/11 green on the runners, which settles the question empirically.",
+      "Gemini's external PLAN review leg was SUBSTANTIVE -- 5 coherent findings. That BREAKS the four-run pattern recorded on S2-S5 (four consecutive degenerate ~600-char truncations). Recorded because the earlier entries would otherwise read as a standing provider defect that has in fact not recurred. Both legs counted; two findings changed the implementation and two were resolved with a test rather than the suggested change.",
+      "SELF-INFLICTED, caught in code review, recorded because the internal notes were right while three SHIPPED documents were wrong. The ADR, the changelog drop and the migration guide all claimed 'the audit exit code is unchanged' and 'neither is a new block'. D2's flip IS a new block: `any_fail` is any(status == 'fail') with no detective-only exemption. The claim was true for D-layer and was carried across to D2 without re-reading the branch. All three corrected, and the guide is now checked against D2's actual verdict by a test so the two cannot drift apart again.",
+      "SELF-INFLICTED, second round, recorded because the FIRST correction of it was itself incomplete. The module written to stop D2 misdiagnosing an empty requirement set MISDIAGNOSED one: it branched on raw any_spec/rejects while its own docstring said to read the classification from group_i, and answered 'spec.md present but its requirements table holds no rows' for a spec whose rows are all RETIRED -- a file that plainly holds rows, which had been read, delivered as a non-zero exit. Group I had classified it correctly as all_rows_retired the whole time. Now consumes SpecScan.state/.detail and owns no classification. Separately, the exit-code correction shipped 2/3: the guide and changelog drop were fixed while ADR-109 went on asserting the retracted claim in Decision and Rationale, and listed 'escalate the empty set to a hard fail' as REJECTED while the diff implemented it for D2. The pin that was supposed to catch this read only ONE of the three documents, so it stayed green. It now reads all three and is verified to bite on the ADR.",
+      "Caught in review round 4, fixed before it could fire: the three-document pin hardcoded a path to a LIVE changelog drop under CHANGELOG-unreleased.d. aggregate_changelog unlinks every processed drop at release, so the next /shipwright-changelog run would have raised FileNotFoundError -- a run-time error, not an assertion with a message -- reddening the release PR from inside an unrelated plugin. It was the only test in the repo reading a committed drop by name; all 47 other references build drops under tmp_path. The changelog leg is now absence-tolerant with the two permanent legs kept strict and a checked>=2 floor, verified both ways empirically."
     ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "python -m pytest integration-tests/test_fr_table_shape_convergence.py shared/tests/test_fr_table_shape.py shared/tests/test_fr_basis.py -q",
+      "runner": "uv run --with pytest pytest integration-tests/test_requirements_catalog_contract.py integration-tests/test_requirements_catalog_parsers.py integration-tests/test_requirements_corpus_false_verdicts.py -v",
       "exit_code": 0,
-      "tests_run": 52,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-20-converge-table-shape/surface_verification.json",
-      "note": "The behavioural surface is the pair of PRODUCERS and the reader that consumes them. The suite drives the producer->file->consumer round trip for both sides of the (inferred) marker, asserts the post-migration provenance census on the real catalog (zero explicit), and includes a counter-probe proving the census guard can actually fail. The runner uses the main-tree interpreter by absolute path because the worktree venv has no pytest and the F0.5 runner executes without a shell."
+      "tests_run": 19,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-19-requirements-merge-catalog/surface_verification.json",
+      "note": "The user-facing surface of this change is the catalog document and the deep links that reach into it, so the suite drives the REAL chain rather than inspecting the file: it reads the generated traceability matrix, takes the link the matrix actually emits, resolves it relative to the matrix's own directory, opens whatever that lands on, and checks the fragment is defined there as an explicit anchor -- for EVERY one of the fifteen links. It also reads the catalog through BOTH production parsers (fr_table_reader and spec_parser.parse_fr_headings) to prove the fifteen per-requirement headings did not become a second parsed representation, and pins the one report about this catalog that is knowingly false. Verified NON-VACUOUS by re-running against the pre-change catalog: 15/15 deep links unresolved and 26 forbidden-token hits."
     },
     "test_completeness": {
       "status": "complete",
       "counts": {
-        "total": 64,
-        "tested": 64,
+        "total": 36,
+        "tested": 36,
         "untestable": 0,
         "untested_testable": 0
       },
       "behaviors": [
         {
-          "behavior": "both producers and the live catalog carry one byte-identical header",
+          "behavior": "all 15 requirement ids survive the merge, unrenumbered",
           "ac": "AC1",
           "disposition": "tested",
-          "evidence": "integration-tests/test_fr_table_shape_convergence.py::test_the_live_catalog_carries_the_canonical_header"
+          "evidence": "integration-tests/test_requirements_catalog_contract.py::test_all_fifteen_requirements_survive_with_unchanged_ids"
         },
         {
-          "behavior": "the greenfield template AND its worked example both carry it",
+          "behavior": "the PRODUCTION parser (not a regex) still reads exactly 15 active rows with unchanged priorities -- the 15 new per-requirement headings did not become a second parsed representation",
           "ac": "AC1",
           "disposition": "tested",
-          "evidence": "integration-tests/test_fr_table_shape_convergence.py::test_the_greenfield_template_and_example_both_carry_it"
+          "evidence": "integration-tests/test_requirements_catalog_contract.py::test_the_production_parser_still_sees_exactly_fifteen_requirements"
         },
         {
-          "behavior": "the adopt generator emits it (rendered through the real producer)",
-          "ac": "AC1",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_table_shape_convergence.py::test_the_adopt_generator_emits_it"
-        },
-        {
-          "behavior": "no producer still emits the retired Source column",
-          "ac": "AC1",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_table_shape_convergence.py::test_no_producer_still_emits_the_retired_source_column"
-        },
-        {
-          "behavior": "the canonical header is readable by the reader that consumes it",
-          "ac": "AC1",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_fr_table_shape.py::test_the_header_is_readable_by_the_reader_that_consumes_it"
-        },
-        {
-          "behavior": "every live Layers cell carries the literal (inferred) marker",
+          "behavior": "no requirement text (table Description or acceptance criterion) carries a run id, a decision-record number or a file path",
           "ac": "AC2",
           "disposition": "tested",
-          "evidence": "integration-tests/test_fr_table_shape_convergence.py::test_every_live_layers_cell_carries_the_marker"
+          "evidence": "integration-tests/test_requirements_catalog_contract.py::test_no_requirement_text_carries_a_run_id_adr_number_or_path"
         },
         {
-          "behavior": "ZERO explicit provenance across all 15 live requirements",
+          "behavior": "every requirement has an explicit <a id=...> anchor, and every anchor is unique",
           "ac": "AC3",
           "disposition": "tested",
-          "evidence": "integration-tests/test_fr_table_shape_convergence.py::test_every_live_requirement_stays_on_legacy_provenance"
+          "evidence": "integration-tests/test_requirements_catalog_contract.py::test_every_requirement_has_an_explicit_anchor"
         },
         {
-          "behavior": "counter-probe: stripping the marker really DOES flip rows to explicit (so the census guard is not vacuous)",
+          "behavior": "EVERY deep link the generated traceability matrix emits resolves end to end: matrix -> relative link -> file on disk -> fragment defined there as an explicit anchor",
           "ac": "AC3",
           "disposition": "tested",
-          "evidence": "integration-tests/test_fr_table_shape_convergence.py::test_an_unmarked_cell_really_would_flip_to_explicit"
+          "evidence": "integration-tests/test_requirements_catalog_contract.py::test_every_rtm_deep_link_resolves_end_to_end"
         },
         {
-          "behavior": "required_layers unchanged per requirement (per-ID, not aggregate)",
+          "behavior": "the catalog did NOT move, and its path is covered by a registered, migrated artifact migration",
+          "ac": "AC4, AC7",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_requirements_catalog_contract.py::test_the_catalog_path_is_covered_by_a_registered_artifact_migration"
+        },
+        {
+          "behavior": "the canon lint passes on the rewritten catalog",
+          "ac": "AC7",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_artifact_path_canon.py::test_no_legacy_artifact_paths[planning-migrated]"
+        },
+        {
+          "behavior": "no Removed Requirements section is declared",
+          "ac": "AC5",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_requirements_catalog_contract.py::test_the_catalog_declares_no_removed_requirements_section"
+        },
+        {
+          "behavior": "every Layers cell keeps the literal (inferred) marker, so provenance stays legacy and no coverage gap hard-blocks",
           "ac": "AC4",
           "disposition": "tested",
-          "evidence": "integration-tests/test_fr_table_shape_convergence.py::test_the_migration_did_not_change_any_required_layers"
+          "evidence": "integration-tests/test_requirements_catalog_contract.py::test_every_layers_cell_keeps_the_inferred_marker"
         },
         {
-          "behavior": "render_layers round-trips to the provenance it promises, both sides of the marker",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_table_shape_convergence.py::test_render_layers_round_trips_to_the_provenance_it_promises"
-        },
-        {
-          "behavior": "the (inferred) marker is separated by a space -- a glued marker yields ZERO layers",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_fr_table_shape.py::test_render_layers_separates_the_marker_with_a_space"
-        },
-        {
-          "behavior": "only the parenthesised word counts: (auto)/(guess)/bare do NOT match",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_fr_table_shape.py::test_only_the_parenthesised_word_counts_as_the_marker"
-        },
-        {
-          "behavior": "the marker matches case-insensitively and with inner space",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_fr_table_shape.py::test_the_marker_is_matched_case_insensitively_and_with_inner_space"
-        },
-        {
-          "behavior": "a bare cell (author declaration) stays explicit -- the hard-gated form",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_fr_table_shape.py::test_render_layers_without_the_marker_is_an_author_declaration"
-        },
-        {
-          "behavior": "every vocabulary value is known and never blocks",
-          "ac": "AC5",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_fr_basis.py::test_every_vocabulary_value_is_known_and_never_blocks"
-        },
-        {
-          "behavior": "a value outside the vocabulary is hard",
-          "ac": "AC5",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_fr_basis.py::test_a_value_outside_the_vocabulary_is_hard"
-        },
-        {
-          "behavior": "other carries its reason whatever separator was used",
-          "ac": "AC5",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_fr_basis.py::test_other_carries_its_reason_whatever_separator_was_used"
-        },
-        {
-          "behavior": "a bare other is advisory, not malformed",
-          "ac": "AC5",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_fr_basis.py::test_a_bare_other_is_advisory_not_malformed"
-        },
-        {
-          "behavior": "a word merely starting with 'other' is not other",
-          "ac": "AC5",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_fr_basis.py::test_a_word_merely_starting_with_other_is_not_other"
-        },
-        {
-          "behavior": "a known value with a qualifier is hard but says why",
-          "ac": "AC5",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_fr_basis.py::test_a_known_value_with_a_qualifier_is_hard_but_says_why"
-        },
-        {
-          "behavior": "I5 fails a malformed Basis and names the requirement",
-          "ac": "AC5",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_audit_group_i_basis.py::test_a_malformed_value_fails_and_names_the_requirement"
-        },
-        {
-          "behavior": "I5: other is advisory and never fails",
-          "ac": "AC5",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_audit_group_i_basis.py::test_other_is_advisory_and_never_fails"
-        },
-        {
-          "behavior": "I5: a blank cell under a DECLARED column fails (external review C1)",
-          "ac": "AC5",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_audit_group_i_basis.py::test_a_blank_cell_under_a_declared_column_fails"
-        },
-        {
-          "behavior": "I5: a spec with no Basis column is skipped, not scored",
-          "ac": "AC5",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_audit_group_i_basis.py::test_a_spec_without_a_basis_column_is_skipped_not_scored"
-        },
-        {
-          "behavior": "I5 failing does not redden the advisory prose checks",
-          "ac": "AC5",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_audit_group_i_basis.py::test_a_malformed_value_does_not_redden_the_other_checks"
-        },
-        {
-          "behavior": "Group I state: no spec on disk",
+          "behavior": "FV-2: D-layer stops claiming 'every active FR is covered' over an EMPTY requirement set and skips with a detail naming the state",
           "ac": "AC6",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_no_spec_on_disk"
+          "evidence": "plugins/shipwright-compliance/tests/test_group_d_traceability.py::test_layer_empty_manifest_skips_instead_of_claiming_coverage"
         },
         {
-          "behavior": "Group I state: spec present but nothing FR-shaped",
+          "behavior": "FV-2 (corpus probe, subprocess-isolated): same flip observed through the harness",
           "ac": "AC6",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_spec_present_but_nothing_fr_shaped"
+          "evidence": "integration-tests/test_requirements_corpus_false_verdicts.py::test_fv2_empty_manifest_no_longer_asserts_positive_coverage"
         },
         {
-          "behavior": "Group I state: FR ids present but no governing header",
+          "behavior": "CONTROL: a populated manifest still reaches a real pass verdict -- the guard did not silence the coverage plane",
           "ac": "AC6",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_fr_ids_present_but_no_header_names_a_priority_column"
+          "evidence": "integration-tests/test_requirements_corpus_false_verdicts.py::test_fv2_a_populated_manifest_still_reaches_a_real_verdict"
         },
         {
-          "behavior": "Group I state: header recognised but no canonical id (the S4-amended state)",
+          "behavior": "BOUNDARY: 'every requirement retired' is NOT the empty case and keeps its pre-existing pass",
           "ac": "AC6",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_header_recognised_but_no_id_is_canonical"
+          "evidence": "plugins/shipwright-compliance/tests/test_group_d_traceability.py::test_layer_all_retired_is_NOT_the_empty_case"
         },
         {
-          "behavior": "Group I state precedence: a recognised header outranks a missing one",
+          "behavior": "FV-2: D2 fails when there are zero spec FRs but an event still references one -- the maximally-red state that was previously unreachable",
           "ac": "AC6",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_a_recognised_header_outranks_a_missing_one"
+          "evidence": "plugins/shipwright-compliance/tests/test_group_d_empty_set_verdicts.py::test_d2_fails_when_no_spec_but_events_still_reference_frs"
         },
         {
-          "behavior": "every state still SKIPs but names which",
+          "behavior": "FV-2 (corpus probe): same D2 flip observed through the harness",
           "ac": "AC6",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_every_state_still_skips_but_says_which"
+          "evidence": "integration-tests/test_requirements_corpus_false_verdicts.py::test_fv2_d2_now_fails_when_an_event_references_a_nonexistent_fr"
         },
         {
-          "behavior": "scan_fr_rows keeps its pre-S5 signature",
+          "behavior": "CONTROL: D2 still skips when there is genuinely nothing to compare",
           "ac": "AC6",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_scan_fr_rows_keeps_its_pre_s5_signature"
+          "evidence": "plugins/shipwright-compliance/tests/test_group_d_empty_set_verdicts.py::test_d2_still_skips_when_no_spec_and_no_fr_references"
         },
         {
-          "behavior": "Area is rendered from the group digit",
-          "ac": "AC7",
+          "behavior": "CONTROL: D2 still skips when there is no event log at all -- the guard that moved did not displace the one above it",
+          "ac": "AC6",
           "disposition": "tested",
-          "evidence": "shared/tests/test_fr_table_shape.py::test_area_uses_the_split_label_when_the_split_declares_the_ids_group"
+          "evidence": "plugins/shipwright-compliance/tests/test_group_d_empty_set_verdicts.py::test_d2_still_skips_when_there_is_no_event_log_at_all"
         },
         {
-          "behavior": "a misfiled requirement renders its OWN group, not the folder's (D7)",
-          "ac": "AC7",
+          "behavior": "CONTROL: D1/D2/D4 all still skip when nothing at all is present",
+          "ac": "AC6",
           "disposition": "tested",
-          "evidence": "shared/tests/test_fr_table_shape.py::test_a_misfiled_requirement_renders_its_own_group_not_the_folders"
+          "evidence": "integration-tests/test_requirements_corpus_false_verdicts.py::test_fv2_d1_d2_d4_still_skip_when_there_is_nothing_at_all_to_compare"
         },
         {
-          "behavior": "a non-canonical id falls back to the split label",
-          "ac": "AC7",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_fr_table_shape.py::test_a_noncanonical_id_falls_back_to_the_split_label"
-        },
-        {
-          "behavior": "Basis: source_file -> code, url-only -> observed, neither -> assumed",
-          "ac": "AC8",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-adopt/tests/test_spec_table.py::test_a_crawl_only_feature_is_observed"
-        },
-        {
-          "behavior": "Basis: source_file wins when both are present",
-          "ac": "AC8",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-adopt/tests/test_spec_table.py::test_source_file_wins_when_both_are_present"
-        },
-        {
-          "behavior": "a PLACEHOLDER source_file is not evidence (regression: the em-dash default)",
-          "ac": "AC8",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-adopt/tests/test_spec_table.py::test_a_placeholder_source_file_is_not_evidence"
-        },
-        {
-          "behavior": "a pipe in a description does not create a column (round-tripped)",
-          "ac": "AC8",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-adopt/tests/test_spec_table.py::test_a_pipe_in_a_description_does_not_create_a_column"
-        },
-        {
-          "behavior": "no detected features still yields a well-formed table",
-          "ac": "AC8",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-adopt/tests/test_spec_table.py::test_no_detected_features_still_yields_a_well_formed_table"
-        },
-        {
-          "behavior": "layers follow the existing surface inference (shape changed, inference did not)",
-          "ac": "AC4",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-adopt/tests/test_spec_table.py::test_layers_follow_the_existing_surface_inference"
-        },
-        {
-          "behavior": "the golden corpus carries the converged shape as fixture 08",
-          "ac": "AC9",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_requirements_corpus_matrix.py (golden.json, split 08-converged)"
-        },
-        {
-          "behavior": "FV-2 stays frozen for Group I, but the skip now names its state",
+          "behavior": "DELIBERATE NON-FLIP: Group I keeps skipping on an empty set (detective-only; reddening it would be a false red)",
           "ac": "AC6",
           "disposition": "tested",
           "evidence": "integration-tests/test_requirements_corpus_false_verdicts.py::test_fv2_group_i_skips_every_check_on_empty"
         },
         {
-          "behavior": "a row too narrow for its header is NOT reported as an id problem (fifth state; the branch reads `reason`, not `header_seen` alone)",
+          "behavior": "DELIBERATE NON-FLIP: D-orphan keeps passing on an empty set (its sentence there is true, not vacuous)",
           "ac": "AC6",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_canonical_ids_in_rows_too_narrow_for_their_header"
+          "evidence": "integration-tests/test_requirements_corpus_false_verdicts.py::test_fv2_empty_manifest_no_longer_asserts_positive_coverage"
         },
         {
-          "behavior": "a non-canonical id with no governing header is a HEADER problem",
-          "ac": "AC6",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_a_noncanonical_id_with_no_header_is_a_header_problem"
-        },
-        {
-          "behavior": "a glued (inferred) marker records the layer it swallowed (marker_glued), while provenance correctly stays advisory",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_requirement_parse.py::test_a_glued_inferred_marker_records_the_layer_it_swallowed"
-        },
-        {
-          "behavior": "a glued marker swallows the layer it touches — pinned as a FACT so the reason render_layers is mandatory cannot decay into style",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_fr_table_shape.py::test_a_glued_marker_swallows_the_layer_it_touches"
-        },
-        {
-          "behavior": "a glued (inferred) marker is VISIBLE but does NOT fail the audit -- the fix for invisibility must not become a blocking path its own docs deny",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_group_d_invalid_layers.py::test_layer_marker_glued_is_visible_but_does_not_fail"
-        },
-        {
-          "behavior": "an unrecognised invalid_layers reason FAILS CLOSED (the advisory set is the closed one, not the hard set)",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_group_d_invalid_layers.py::test_layer_an_unrecognised_invalid_reason_fails_closed"
-        },
-        {
-          "behavior": "a hard reason still decides the verdict when mixed with an advisory one, and both stay in evidence",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_group_d_invalid_layers.py::test_layer_a_hard_reason_still_decides_when_mixed_with_an_advisory_one"
-        },
-        {
-          "behavior": "an all-retired spec is not reported as having no FR-shaped rows",
-          "ac": "AC6",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_an_all_retired_spec_is_not_reported_as_having_no_rows"
-        },
-        {
-          "behavior": "one live row beside retired ones is the normal state",
-          "ac": "AC6",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_a_live_row_beside_retired_ones_is_the_normal_state"
-        },
-        {
-          "behavior": "a broken table outranks an all-retired one (a parse failure is a repair, a retirement is not)",
-          "ac": "AC6",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_a_broken_table_outranks_an_all_retired_one"
-        },
-        {
-          "behavior": "the declined-id list quotes ONLY the ids of the reason that decided the state",
-          "ac": "AC6",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_the_declined_list_quotes_only_the_ids_of_the_deciding_reason"
-        },
-        {
-          "behavior": "a duplicate governed column resolves to the FIRST, so a second Layers column cannot flip a marked cell to explicit",
-          "ac": "AC3",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_fr_table_shape.py::test_a_duplicate_governed_column_resolves_to_the_first"
-        },
-        {
-          "behavior": "Layer/Layers synonyms resolve by COLUMN position, not by synonym-tuple order",
-          "ac": "AC3",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_fr_table_shape.py::test_a_duplicate_governed_column_resolves_to_the_first"
-        },
-        {
-          "behavior": "a marked cell whose tokens are not layer names is recorded (unknown_layer_token), not silently left with no coverage obligation",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_requirement_parse.py::test_a_marked_cell_whose_tokens_are_not_layers_is_recorded"
-        },
-        {
-          "behavior": "every live requirement carries its DECIDED Basis, per FR -- the durable record the throwaway migration script was not",
+          "behavior": "I4 now FAILS on the same requirement id used in two different documents -- the externally visible behaviour change",
           "ac": "AC8",
           "disposition": "tested",
-          "evidence": "integration-tests/test_fr_table_shape_convergence.py::test_every_live_requirement_carries_its_decided_basis"
+          "evidence": "plugins/shipwright-compliance/tests/test_audit_group_i.py::test_duplicate_fr_id_across_two_documents_now_fails"
         },
         {
-          "behavior": "no persisted Area cell disagrees with the value derived from its own id",
-          "ac": "AC7",
+          "behavior": "CONTROL: distinct ids across two documents still pass -- multi-document is not itself the defect",
+          "ac": "AC8",
           "disposition": "tested",
-          "evidence": "integration-tests/test_fr_table_shape_convergence.py::test_no_persisted_area_cell_disagrees_with_its_own_id"
+          "evidence": "plugins/shipwright-compliance/tests/test_audit_group_i.py::test_distinct_fr_ids_across_two_documents_still_pass"
         },
         {
-          "behavior": "the EVIDENCE line agrees with the verdict: an unrecognised reason renders [HARD, unknown], never `advisory` on a line that failed",
-          "ac": "AC2",
+          "behavior": "CONTROL: a duplicate within one document still fails -- widening the scope dropped nothing",
+          "ac": "AC8",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_group_d_invalid_layers.py::test_layer_an_unrecognised_invalid_reason_fails_closed"
+          "evidence": "plugins/shipwright-compliance/tests/test_audit_group_i.py::test_duplicate_fr_id_within_one_document_still_fails"
         },
         {
-          "behavior": "the catch-all no_governing_header state still names the rows it declined (narrowing attribution must not cost attribution)",
+          "behavior": "the renamed I4 finding says 'in the catalog', not 'within a split'",
+          "ac": "AC8",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_audit_group_i.py::test_i4_display_name_says_catalog_not_split"
+        },
+        {
+          "behavior": "frozen_bugs records FV-2 as flipped with provenance, and STILL_FROZEN is now empty",
           "ac": "AC6",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_the_catch_all_state_still_names_the_rows_it_declined"
+          "evidence": "integration-tests/test_requirements_corpus_found_defects.py::test_a_flipped_bug_keeps_its_entry_and_gains_provenance"
         },
         {
-          "behavior": "the mixed-reason wording drops the universal claim entirely, not just one clause of it",
+          "behavior": "the golden baseline is current with respect to the machinery (only the FV-2 metadata block moved; no discovery or parse matrix cell)",
           "ac": "AC6",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_the_declined_list_quotes_only_the_ids_of_the_deciding_reason"
+          "evidence": "integration-tests/requirements_corpus/regen_golden.py --check -> 'golden.json is current.'"
         },
         {
-          "behavior": "the catch-all state never claims rows it did not list -- its id list is complete, so the 'others' suffix must not render",
-          "ac": "AC6",
+          "behavior": "D2's new failure names the TABLE-SHAPE defect when a spec exists but every row was declined, instead of accusing the operator of stale references while naming the FRs the project has",
+          "ac": "review FIX 2",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_audit_group_i_states.py::test_the_catch_all_never_claims_rows_it_did_not_list"
+          "evidence": "plugins/shipwright-compliance/tests/test_group_d_empty_state_diagnosis.py::test_an_unreadable_table_is_not_reported_as_stale_references"
         },
         {
-          "behavior": "CHARACTERIZED BLIND SPOT: a typo'd layer beside a valid one (`unit, e2ee`) is deliberately NOT reported -- the cost of the guard that removes the prose-connective false positive",
-          "ac": "AC2",
+          "behavior": "CONTROL: the other empty state (no spec.md at all) keeps its own distinct diagnosis",
+          "ac": "review FIX 2",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_requirement_parse_marker_cells.py::test_a_typod_layer_beside_a_valid_one_is_not_reported"
+          "evidence": "plugins/shipwright-compliance/tests/test_group_d_empty_state_diagnosis.py::test_no_spec_at_all_says_so_rather_than_blaming_the_table"
+        },
+        {
+          "behavior": "CONTROL: with requirements present and readable, an unresolvable ref IS stale and keeps the historical wording",
+          "ac": "review FIX 2",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_group_d_empty_state_diagnosis.py::test_a_readable_spec_keeps_the_historical_stale_reference_wording"
+        },
+        {
+          "behavior": "the collector does NOT short-circuit on an empty requirement set: zero requirements plus one @FR-tagged test yields a non-empty orphans list -- closing the falsifier S6 first shipped as an open argument",
+          "ac": "review follow-up",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_group_d_empty_set_verdicts.py::test_zero_requirements_plus_a_tagged_test_yields_a_nonempty_orphan_list"
+        },
+        {
+          "behavior": "ALL THREE operator-facing documents (migration guide, changelog drop, ADR-109) match D2's actual verdict, checked against it rather than trusted -- the single-document version of this pin passed while the ADR still asserted the retracted claim. The ephemeral changelog leg tolerates its own absence (drops are consumed at release) while the two PERMANENT legs never may, and a floor asserts at least two documents were actually read.",
+          "ac": "review BLOCKING",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_group_d_empty_set_verdicts.py::test_every_operator_facing_document_matches_d2s_actual_verdict"
+        },
+        {
+          "behavior": "the SECOND production parser over the catalog (spec_parser.parse_fr_headings) sees the same fifteen ids -- the coverage the old test name falsely implied",
+          "ac": "review FIX 3",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_requirements_catalog_parsers.py::test_the_heading_parser_sees_the_same_fifteen"
+        },
+        {
+          "behavior": "the FR-coherence report about this catalog is knowingly wrong (15/15 reported as missing description+acceptance) and the exact count is pinned so a fix forces the record to be updated",
+          "ac": "review FIX 3",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_requirements_catalog_parsers.py::test_the_fr_heading_coherence_report_is_knowingly_wrong_here"
+        },
+        {
+          "behavior": "a spec whose FR rows are ALL RETIRED is not reported as an empty or broken table -- the case the first cut of the empty-state module got wrong by re-deriving a classification Group I already owned",
+          "ac": "review BLOCKING 2",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_group_d_empty_state_diagnosis.py::test_an_all_retired_spec_is_not_reported_as_an_empty_or_broken_table"
+        },
+        {
+          "behavior": "the empty-state classifier's fail-soft path degrades to the historical wording exactly, so a future signature change cannot silently downgrade every D2 message with a green suite",
+          "ac": "review SMALLER",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_group_d_empty_state_diagnosis.py::test_the_fail_soft_fallback_degrades_to_the_historical_wording"
+        },
+        {
+          "behavior": "the document pin survives the release that consumes its changelog drop, without the absence-tolerance degrading into tolerance of checking nothing",
+          "ac": "review round 4 FIX 1",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_group_d_empty_set_verdicts.py::test_every_operator_facing_document_matches_d2s_actual_verdict (checked>=2 floor; verified empirically by removing the drop -> passes, and by removing a permanent doc -> fails)"
         }
-      ]
+      ],
+      "note": "The consuming viewer's exact-anchor matching was originally listed here as an untestable behaviour. Removed on reflection rather than given a reason_code: it is a PREMISE of this change, not a behaviour this change delivers -- and it belongs to another repository's code. What this change delivers is the explicit anchor, which is the strictly stronger condition (it satisfies exact matching whatever the consumer's slug algorithm does), and that IS tested end to end. The premise is recorded under 'Honest limits' in ADR-109 where a reader will look for it. Seven behaviours were added in the review round: three for D2's misdiagnosis of a table-shape defect, one closing the D-orphan falsifier by probe, one tying the shipped migration guide to D2's actual verdict, and two pinning the SECOND parser over this catalog together with the false report it produces."
     }
   },
   "coverage": {

@@ -1,36 +1,27 @@
----
-canon_generated: true
-run_id: "iterate-2026-07-20-converge-table-shape"
-phase: "iterate"
-reason: "iterate finalization"
-timestamp: "2026-07-20T09:49:32.816776+00:00"
----
-
 # Session Handoff
 
-> Auto-generated 2026-07-20 09:49:32 UTC
+> Auto-generated 2026-07-20 12:51:25 UTC
 
 ## Session Info
 
 - **Session ID**: 85c973ff-4812-4db0-acc1-935ed32ee51b
-- **Timestamp**: 2026-07-20 09:49:32 UTC
-- **Reason**: iterate finalization
+- **Timestamp**: 2026-07-20 12:51:25 UTC
+- **Reason**: context compaction
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-20-converge-table-shape
-- **Date**: 2026-07-20T07:21:06.009070Z
+- **Run ID**: iterate-2026-07-19-requirements-merge-catalog
+- **Date**: 2026-07-20T11:22:18.961613Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/converge-table-shape
-- **ADR**: iterate-2026-07-20-converge-table-shape
+- **Branch**: iterate/requirements-merge-catalog
+- **ADR**: iterate-2026-07-19-requirements-merge-catalog
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-20-converge-table-shape.md
+- **Spec**: .shipwright/planning/01-adopted/spec.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/converge-table-shape
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-20-converge-table-shape.md
+- **Branch**: iterate/requirements-merge-catalog
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -49,8 +40,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/converge-table-shape
-- **Last Commit**: e6b0c5a5 refactor(requirements): one FR-table shape from both generators (campaign S5)
+- **Branch**: iterate/requirements-merge-catalog
+- **Last Commit**: b9d54ec0 refactor(requirements): one catalog, stated once in plain language (campaign S6)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -66,17 +57,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-ec9fc299 | grade_snapshot | — | 2026-07-20 |
-| evt-7d38f305 | grade_snapshot | — | 2026-07-20 |
-| evt-901afec3 | grade_snapshot | — | 2026-07-20 |
-| evt-1024c658 | grade_snapshot | — | 2026-07-20 |
-| evt-8ebeed1d | grade_snapshot | — | 2026-07-20 |
+| evt-1e9a1554 | grade_snapshot | — | 2026-07-20 |
+| evt-efec7e37 | grade_snapshot | — | 2026-07-20 |
+| evt-5e0495a3 | grade_snapshot | — | 2026-07-20 |
+| evt-3e0e8a82 | grade_snapshot | — | 2026-07-20 |
+| evt-9b2aca55 | grade_snapshot | — | 2026-07-20 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 340
-- **Last iterate**: change — iterate: converge the FR table shape (campaign S5) (2026-07-20)
+- **Total work events**: 341
+- **Last iterate**: change — iterate: merge the requirements into one catalog (campaign S6) (2026-07-20)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

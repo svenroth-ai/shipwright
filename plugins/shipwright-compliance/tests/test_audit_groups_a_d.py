@@ -557,16 +557,6 @@ def test_d2_flags_stale_fr_on_non_work_completed_event(tmp_path):
     assert "FR-99.99" in d2.detail
 
 
-def test_d2_skips_when_no_spec(tmp_path):
-    _events(tmp_path / "shipwright_events.jsonl", [
-        {"type": "work_completed", "ts": "2026-04-01T00:00:00+00:00",
-         "affected_frs": ["FR-99.99"]},
-    ])
-    findings = group_d.run(tmp_path, _default_config(), None)
-    d2 = next(f for f in findings if f.check_id == "D2")
-    assert d2.status == "skip"
-
-
 # ---------------------------------------------------------------------------
 # Group D — D3: promised FRs (new_frs) never delivered
 # ---------------------------------------------------------------------------
