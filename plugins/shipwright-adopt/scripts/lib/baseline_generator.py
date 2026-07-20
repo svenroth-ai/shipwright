@@ -19,28 +19,17 @@ the rest of the test session.
 
 from __future__ import annotations
 
-import importlib.util
 import sys
 from pathlib import Path
-from types import ModuleType
 
+try:  # tool context: lib/ is on sys.path (setup_adopt/_load_lib)
+    from shared_loader import load_shared_module
+except ImportError:  # test / package context: scripts/ on sys.path, lib is a package
+    from lib.shared_loader import load_shared_module
 
-def _load_bloat_baseline() -> ModuleType:
-    repo_root = Path(__file__).resolve().parents[4]
-    file_path = repo_root / "shared" / "scripts" / "lib" / "bloat_baseline.py"
-    sentinel = "_shipwright_adopt_bloat_baseline"
-    if sentinel in sys.modules:
-        return sys.modules[sentinel]
-    spec = importlib.util.spec_from_file_location(sentinel, file_path)
-    if spec is None or spec.loader is None:
-        raise ImportError(f"could not load spec for {file_path}")
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[sentinel] = module
-    spec.loader.exec_module(module)
-    return module
-
-
-_bb = _load_bloat_baseline()
+_bb = load_shared_module(
+    "scripts/lib/bloat_baseline.py", "_shipwright_adopt_bloat_baseline"
+)
 
 
 def generate(project_root: Path | str) -> Path:

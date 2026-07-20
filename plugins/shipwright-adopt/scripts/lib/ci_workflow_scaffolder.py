@@ -23,13 +23,14 @@ template gap.
 
 from __future__ import annotations
 
-import importlib.util
 from pathlib import Path
 
-# Resolve the shipwright monorepo root and load the convention-lock
-# constants + shared helper by file path. Same layout pattern as
-# security_workflow_scaffolder.py.
-#
+try:  # tool context: lib/ is on sys.path (setup_adopt/_load_lib)
+    from shared_loader import load_shared_module
+except ImportError:  # test / package context: scripts/ on sys.path, lib is a package
+    from lib.shared_loader import load_shared_module
+
+# Resolve the shipwright monorepo root for the workflow template files.
 # Layout (identical in dev repo and ~/.claude plugin cache):
 #   <root>/plugins/shipwright-adopt/scripts/lib/<this-file>.py
 #   <root>/shared/scripts/lib/ci_workflow.py
@@ -37,23 +38,11 @@ from pathlib import Path
 # parents[0]=lib, [1]=scripts, [2]=shipwright-adopt, [3]=plugins, [4]=<root>.
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 
-
-def _load_module(path: Path, alias: str):
-    spec = importlib.util.spec_from_file_location(alias, path)
-    if spec is None or spec.loader is None:
-        raise FileNotFoundError(f"could not load module from {path}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-_CI_WORKFLOW = _load_module(
-    _REPO_ROOT / "shared" / "scripts" / "lib" / "ci_workflow.py",
-    "_shipwright_adopt_ci_workflow_constants",
+_CI_WORKFLOW = load_shared_module(
+    "scripts/lib/ci_workflow.py", "_shipwright_adopt_ci_workflow_constants"
 )
-_HELPER = _load_module(
-    _REPO_ROOT / "shared" / "scripts" / "lib" / "workflow_scaffold_helper.py",
-    "_shipwright_adopt_ci_workflow_helper",
+_HELPER = load_shared_module(
+    "scripts/lib/workflow_scaffold_helper.py", "_shipwright_adopt_ci_workflow_helper"
 )
 
 TEMPLATE_BY_PROFILE: dict[str, str] = _CI_WORKFLOW.TEMPLATE_BY_PROFILE

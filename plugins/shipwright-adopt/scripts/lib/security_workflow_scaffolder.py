@@ -19,10 +19,14 @@ Two non-negotiable invariants:
 
 from __future__ import annotations
 
-import importlib.util
 import shutil
 from pathlib import Path
 from typing import TypedDict
+
+try:  # tool context: lib/ is on sys.path (setup_adopt/_load_lib)
+    from shared_loader import load_shared_module
+except ImportError:  # test / package context: scripts/ on sys.path, lib is a package
+    from lib.shared_loader import load_shared_module
 
 # Resolve the shipwright monorepo root and load the convention-lock
 # constants by file path. Layout (identical in dev repo and ~/.claude
@@ -38,23 +42,10 @@ from typing import TypedDict
 # Loading the constants module by absolute file path under a unique
 # private name avoids the collision entirely.
 _REPO_ROOT = Path(__file__).resolve().parents[4]
-_CONSTANTS_FILE = _REPO_ROOT / "shared" / "scripts" / "lib" / "security_workflow.py"
 
-
-def _load_constants() -> object:
-    spec = importlib.util.spec_from_file_location(
-        "_shipwright_adopt_security_constants", _CONSTANTS_FILE
-    )
-    if spec is None or spec.loader is None:
-        raise FileNotFoundError(
-            f"could not load security-workflow constants from {_CONSTANTS_FILE}"
-        )
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-_CONSTANTS = _load_constants()
+_CONSTANTS = load_shared_module(
+    "scripts/lib/security_workflow.py", "_shipwright_adopt_security_constants"
+)
 TEMPLATE_PATH: str = _CONSTANTS.TEMPLATE_PATH  # type: ignore[attr-defined]
 WORKFLOW_PATH: str = _CONSTANTS.WORKFLOW_PATH  # type: ignore[attr-defined]
 

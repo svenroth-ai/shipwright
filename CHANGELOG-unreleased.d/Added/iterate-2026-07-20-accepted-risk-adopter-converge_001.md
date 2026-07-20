@@ -1,0 +1,1 @@
+Adopter guidance for reconciling accepted security risks onto GitHub code-scanning — an operator runs `converge --project-root <adopted-repo>` from a Shipwright checkout — in `docs/security-ci-setup.md`.
