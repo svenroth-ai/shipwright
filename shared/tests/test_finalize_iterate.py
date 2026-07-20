@@ -95,25 +95,6 @@ def test_run_records_event_with_commit(project, monkeypatch):
     assert "abc123" in events_content
 
 
-def test_run_is_idempotent(project, monkeypatch):
-    monkeypatch.chdir(project)
-    monkeypatch.delenv("SHIPWRIGHT_SESSION_ID", raising=False)
-
-    import sys
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-    from tools.finalize_iterate import run
-
-    result1 = run(project, run_id="test-005", event_extras=_VALID_EXTRAS)
-    dashboard1 = (project / ".shipwright" / "agent_docs" / "build_dashboard.md").read_text(encoding="utf-8")
-
-    result2 = run(project, run_id="test-005", event_extras=_VALID_EXTRAS)
-    dashboard2 = (project / ".shipwright" / "agent_docs" / "build_dashboard.md").read_text(encoding="utf-8")
-
-    assert dashboard1 == dashboard2
-    assert result1["steps"]["dashboard"].get("written")
-    assert result2["steps"]["dashboard"].get("written")
-
-
 def test_run_graceful_without_compliance_dir(tmp_path, monkeypatch):
     """No .shipwright/compliance/ dir should not crash."""
     (tmp_path / "shipwright_run_config.json").write_text("{}", encoding="utf-8")

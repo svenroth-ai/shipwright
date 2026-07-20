@@ -1,11 +1,12 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-20-ci-supplychain-shipped-templates",
+    "run_id": "iterate-2026-07-20-flaky-idempotency-banner",
     "date": "2026-07-20",
     "unit": {
       "status": "passed",
-      "passed": 5207,
-      "total": 5207
+      "passed": 4704,
+      "total": 4715,
+      "skipped": 11
     },
     "integration": {
       "status": "not_run",
@@ -30,51 +31,44 @@
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [],
+    "degraded": [
+      {
+        "type": "complexity_override",
+        "detail": "classify_complexity estimated 'medium' from message prose (signals.prior_source=keyword) but risk_flags=[] and the diff is test-only (shared/tests + bloat baseline, no runtime/FR change); downgraded to 'small' per diff-authoritative classification."
+      }
+    ],
     "surface_verification": {
       "surface": "none",
-      "runner": "none (pure library change; covered by F0 unit tests)",
-      "exit_code": 0,
+      "justification": "Test-only change: dashboard-idempotency assertion, extraction into a sibling test module, and a bloat-baseline ratchet-down. No runtime code, API route, store mutation, SSE/WS handler, message contract, or UI-consumed code touched — there is no web or CLI surface to exercise.",
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-20-ci-supplychain-shipped-templates/surface_verification.json",
-      "timestamp": "2026-07-20T21:37:13.819Z",
-      "justification": "Pure framework library change: broadens the CI-supplychain risk-detector's file-match set (CI_SUPPLYCHAIN_FILE_PATTERNS) and its drift-pinned verifier copy. No web/UI/API/CLI-app surface exists to drive; behavior is fully covered by unit tests at F0 (test_ci_supplychain_detector + test_ci_supplychain_patterns_sync + test_check_ci_supplychain_ack)."
+      "exit_code": 0
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "an edit to a shipped CI template (shared/templates/github-actions/**) trips is_ci_supplychain_change",
+          "behavior": "finalize dashboard render is byte-idempotent across two runs, excluding the wall-clock '> Updated:' banner minute",
           "disposition": "tested",
-          "evidence": "test_ci_supplychain_detector.py::test_ci_supplychain_paths_trigger[shared/templates/github-actions/*.template] PASSED"
+          "evidence": "shared/tests/test_finalize_iterate_idempotency.py::test_run_is_idempotent PASSED"
         },
         {
-          "behavior": "a shared/templates path OUTSIDE github-actions, and a docs-nested copy, do NOT trip",
+          "behavior": "when the banner minute advances between two runs (minute-boundary straddle), the dashboard body + Session/Run banner suffix stay identical while the full byte-string differs",
           "disposition": "tested",
-          "evidence": "test_ci_supplychain_detector.py::test_near_misses_do_not_trigger PASSED"
+          "evidence": "shared/tests/test_finalize_iterate_idempotency.py::test_run_is_idempotent_even_when_banner_minute_advances PASSED"
         },
         {
-          "behavior": "the verifier _CI_SUPPLYCHAIN_PATTERNS stays byte-equal to the SSoT (both directions)",
+          "behavior": "the idempotency cluster lives in a sub-300 sibling module and the ADR-096 exception file (test_finalize_iterate.py) ratchets down to 445 LOC",
           "disposition": "tested",
-          "evidence": "test_ci_supplychain_patterns_sync.py::test_verifier_copy_equals_ssot_both_directions PASSED"
-        },
-        {
-          "behavior": "SSoT detector and verifier copy return the same verdict across the path matrix incl. the template path",
-          "disposition": "tested",
-          "evidence": "test_ci_supplychain_patterns_sync.py::test_ssot_and_detector_agree PASSED"
-        },
-        {
-          "behavior": "the ack gate recomputes CI paths from the new pattern set without regressing existing behavior",
-          "disposition": "tested",
-          "evidence": "test_check_ci_supplychain_ack.py (13 tests) PASSED"
+          "evidence": "shared/scripts/hooks/anti_ratchet_check.py --staged exit 0; wc -l test_finalize_iterate.py = 445 <= baseline 445"
         }
       ],
       "counts": {
-        "testable": 5,
-        "tested": 5,
+        "total": 3,
+        "tested": 3,
         "untestable": 0,
         "untested_testable": 0
-      }
+      },
+      "note": "Pure-tooling iterate; no FR behavior delta, so the cross-layer execution-evidence gate does not fire. All introduced behaviors are testable and tested."
     }
   },
   "coverage": {
