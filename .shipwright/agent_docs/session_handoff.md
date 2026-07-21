@@ -1,44 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-21-codescanning-alert-cleanup"
+run_id: "iterate-2026-07-21-brace-expansion-cve"
 phase: "iterate"
-reason: "iterate: close the five open GitHub code-scanning alerts"
-timestamp: "2026-07-21T05:45:53.165448+00:00"
+reason: "iterate: bump brace-expansion to 2.1.2 (CVE-2026-13149)"
+timestamp: "2026-07-21T22:06:44.810852+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-21 05:45:53 UTC
+> Auto-generated 2026-07-21 22:06:44 UTC
 
 ## Session Info
 
-- **Session ID**: e5bec740-741d-4a4b-907a-e434423b4ee8
-- **Timestamp**: 2026-07-21 05:45:53 UTC
-- **Reason**: iterate: close the five open GitHub code-scanning alerts
+- **Session ID**: 27c99303-5579-4b85-937e-6ab7f4d5ee3f
+- **Timestamp**: 2026-07-21 22:06:44 UTC
+- **Reason**: iterate: bump brace-expansion to 2.1.2 (CVE-2026-13149)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-21-codescanning-alert-cleanup
-- **Date**: 2026-07-21T05:45:47.407662Z
+- **Run ID**: iterate-2026-07-21-brace-expansion-cve
+- **Date**: 2026-07-21T22:06:38.856456Z
 - **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/codescanning-alert-cleanup
-- **ADR**: iterate-2026-07-21-codescanning-alert-cleanup
+- **Complexity**: small
+- **Branch**: iterate/brace-expansion-cve
+- **ADR**: iterate-2026-07-21-brace-expansion-cve
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-21-codescanning-alert-cleanup.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/codescanning-alert-cleanup
-- **Run ID**: iterate-2026-07-21-codescanning-alert-cleanup
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-21-codescanning-alert-cleanup.md
-- **Complexity**: medium
+- **Branch**: iterate/brace-expansion-cve
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/codescanning-alert-cleanup
-- **Last Commit**: d45974db fix(traceability): fail loud on shallow clone instead of skipping fr-history checks (#422)
+- **Branch**: iterate/brace-expansion-cve
+- **Last Commit**: 1cfdbbd9 fix(security): close the five open code-scanning alerts, root-fixing where a root fix exists (#424)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-8e3b71af | grade_snapshot | — | 2026-07-21 |
+| evt-6406a8db | work_completed | iterate (iterate: bump brace-expansion to 2.1.2 (CVE-2026-13149)) | 2026-07-21 |
 | evt-14387bc7 | grade_snapshot | — | 2026-07-21 |
 | evt-36e41db0 | work_completed | iterate (iterate: close the five open GitHub code-scanning alerts) | 2026-07-21 |
 | evt-dd32a165 | grade_snapshot | — | 2026-07-20 |
-| evt-429d92bb | grade_snapshot | — | 2026-07-20 |
-| evt-9af6a842 | grade_snapshot | — | 2026-07-20 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 351
-- **Last iterate**: change — iterate: close the five open GitHub code-scanning alerts (2026-07-21)
+- **Total work events**: 352
+- **Last iterate**: change — iterate: bump brace-expansion to 2.1.2 (CVE-2026-13149) (2026-07-21)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

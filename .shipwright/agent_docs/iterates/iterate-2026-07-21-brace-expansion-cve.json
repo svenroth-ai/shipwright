@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-21-brace-expansion-cve",
+  "date": "2026-07-21T22:06:38.856456Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/brace-expansion-cve",
+  "spec": "",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-21-brace-expansion-cve"
+}
