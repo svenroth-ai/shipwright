@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-21 05:45 UTC | Session: e5bec740-741d-4a4b-907a-e434423b4ee8 | Run: iterate-2026-07-21-codescanning-alert-cleanup
+> Updated: 2026-07-21 22:06 UTC | Session: 27c99303-5579-4b85-937e-6ab7f4d5ee3f | Run: iterate-2026-07-21-brace-expansion-cve
 
-## Recent Changes (351 iterations)
+## Recent Changes (352 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | iterate: bump brace-expansion to 2.1.2 (CVE-2026-13149) | 0/0 |  | tooling | 2026-07-21 |
 | change | iterate: close the five open GitHub code-scanning alerts | 0/0 |  | tooling | 2026-07-21 |
 | change | Document operator-run converge for adopted repos + guard test | 4708/4708 |  | docs | 2026-07-20 |
 | change | adopt shared-loader guard: one guarded loader for the eight scaffolders | 5/5 |  | FR-01.13 | 2026-07-20 |
@@ -358,7 +359,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-21 | Unit: 6023/6023 | Integration: 416/416 | Smoke: not_run | (iterate)
+Last run: 2026-07-21 | Unit: 9126/9126 | Integration: 417/417 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
