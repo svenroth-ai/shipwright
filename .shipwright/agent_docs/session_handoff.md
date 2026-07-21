@@ -1,34 +1,38 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-21-brace-expansion-cve"
+run_id: "iterate-2026-07-21-fr0115-coverage-bloat"
 phase: "iterate"
-reason: "iterate: bump brace-expansion to 2.1.2 (CVE-2026-13149)"
-timestamp: "2026-07-21T22:06:44.810852+00:00"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-07-21T22:41:37.612570+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-21 22:06:44 UTC
+> Auto-generated 2026-07-21 22:41:37 UTC
 
 ## Session Info
 
-- **Session ID**: 27c99303-5579-4b85-937e-6ab7f4d5ee3f
-- **Timestamp**: 2026-07-21 22:06:44 UTC
-- **Reason**: iterate: bump brace-expansion to 2.1.2 (CVE-2026-13149)
+- **Session ID**: 2635282a-8c3e-4568-9bae-d27c6e75bc46
+- **Timestamp**: 2026-07-21 22:41:37 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-21-brace-expansion-cve
-- **Date**: 2026-07-21T22:06:38.856456Z
+- **Run ID**: iterate-2026-07-21-fr0115-coverage-bloat
+- **Date**: 2026-07-21T22:41:30.231077Z
 - **Type**: change
-- **Complexity**: small
-- **Branch**: iterate/brace-expansion-cve
-- **ADR**: iterate-2026-07-21-brace-expansion-cve
+- **Complexity**: medium
+- **Branch**: iterate/fr0115-coverage-bloat
+- **ADR**: iterate-2026-07-21-fr0115-coverage-bloat
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-21-fr0115-coverage-bloat.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/brace-expansion-cve
+- **Branch**: iterate/fr0115-coverage-bloat
+- **Run ID**: `iterate-2026-07-21-fr0115-coverage-bloat`
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-21-fr0115-coverage-bloat.md
+- **Complexity**: medium (history-calibrated; `prior_source: history`, n=20)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -47,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/brace-expansion-cve
-- **Last Commit**: 1cfdbbd9 fix(security): close the five open code-scanning alerts, root-fixing where a root fix exists (#424)
+- **Branch**: iterate/fr0115-coverage-bloat
+- **Last Commit**: afbd5c13 Merge remote-tracking branch 'origin/main' into iterate/fr0115-coverage-bloat
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -66,14 +70,14 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 |-------|------|--------|------|
 | evt-8e3b71af | grade_snapshot | — | 2026-07-21 |
 | evt-6406a8db | work_completed | iterate (iterate: bump brace-expansion to 2.1.2 (CVE-2026-13149)) | 2026-07-21 |
-| evt-14387bc7 | grade_snapshot | — | 2026-07-21 |
-| evt-36e41db0 | work_completed | iterate (iterate: close the five open GitHub code-scanning alerts) | 2026-07-21 |
-| evt-dd32a165 | grade_snapshot | — | 2026-07-20 |
+| evt-622b42cf | grade_snapshot | — | 2026-07-21 |
+| evt-6a61ac10 | work_completed | iterate (iterate: reconcile compliance D1/D3 (FR-01.15 mint coverage) + H2 bloat ratchet) | 2026-07-21 |
+| evt-ca8ff116 | event_amended | — | 2026-07-21 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 352
+- **Total work events**: 353
 - **Last iterate**: change — iterate: bump brace-expansion to 2.1.2 (CVE-2026-13149) (2026-07-21)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-07-21T22:06:38.949592+00:00
-Total commits: 1190
+Generated: 2026-07-21T22:41:30.570002+00:00
+Total commits: 1192
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 343
+    "fix" : 345
     "feat" : 329
     "chore" : 247
     "docs" : 146
@@ -20,10 +20,12 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 343 commits
+### Fixes (fix) — 345 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-22 | compliance | count a tested mint as coverage and delivery (D1/D3) | d16a7e8e2538 |
+| 2026-07-22 | security | bump brace-expansion to 2.1.2 to close CVE-2026-13149 (#425) | b104974978da |
 | 2026-07-21 | security | close the five open code-scanning alerts, root-fixing where a root fix exists (#424) | 1cfdbbd951a2 |
 | 2026-07-21 | traceability | fail loud on shallow clone instead of skipping fr-history checks (#422) | d45974db8ab6 |
 | 2026-07-21 | iterate | run F3+F5c reliably in the sub-iterate-runner and forbid direct decision_log writes (#421) | bb4c8fd886a9 |
@@ -1259,7 +1261,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1190 |
+| Total commits | 1192 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1190 |
+| Human-authored commits | 1192 |
 
