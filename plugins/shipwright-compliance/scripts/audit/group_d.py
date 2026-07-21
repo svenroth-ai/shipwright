@@ -9,7 +9,8 @@ test-traceability manifest) against the project's spec table FRs (via
   — an untested 0/0 commit or a missing link no longer marks it covered; §2 false-green).
   Severity priority-driven: Must=HIGH, Should=MEDIUM, May=LOW.
 - D2 — Stale FR reference: ``affected_frs`` FR-IDs not in the current spec. MEDIUM.
-- D3 — Promised FR (``new_frs``) never reaffirmed via ``affected_frs``. MEDIUM.
+- D3 — Promised FR (``new_frs``) never delivered: no tested mint, and no
+  same-event-or-later ``affected_frs``. MEDIUM.
 - D4 — Latest covering event has ``tests.passed < tests.total``. LOW.
 - D5 — FEATURE/CHANGE iterate event with no FR linkage and no ``spec_impact=none``. MEDIUM.
 - D-orphan / D-layer — manifest-driven (see ``_group_d_traceability``): a test tagged with
@@ -25,6 +26,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from scripts.audit import _group_d_empty_state as _empty_state
+from scripts.audit import _group_d_promise as _promise
 from scripts.audit import _group_d_traceability as _traceability
 from scripts.audit._events_read import load_events
 from scripts.audit.audit_adapters import (
@@ -128,12 +130,21 @@ def _check_d1(
     # FR ALSO needs a real manifest test link (refine_d1_covered), provenance-gated (§9).
     covered: set[str] = set()
     for ev in work_completed:
-        tests = ev.get("tests") or {}
-        if not (isinstance(tests.get("total"), int) and tests["total"] > 0):
+        # isinstance guard: a non-dict ``tests`` in a hand-edited / union-merged
+        # log would otherwise raise AttributeError (D4 guards the same way).
+        tests = ev.get("tests")
+        total = tests.get("total") if isinstance(tests, dict) else None
+        if not (isinstance(total, int) and total > 0):
             continue
-        for fr in ev.get("affected_frs", []) or []:
-            if isinstance(fr, str):
-                covered.add(fr)
+        # ``new_frs`` counts alongside ``affected_frs``: the change that
+        # INTRODUCES an FR most certainly covers it. Reading only the latter
+        # made every minted FR invisible, though the writer has always accepted
+        # ``new_frs`` alone — a reader/writer mismatch, not missing work. The
+        # ``tests.total > 0`` guard above applies to BOTH keys, so TT2 holds.
+        for key in ("affected_frs", "new_frs"):
+            for fr in ev.get(key, []) or []:
+                if isinstance(fr, str):
+                    covered.add(fr)
     covered, _d1_note = _traceability.refine_d1_covered(covered, project_root)
 
     uncovered = [fr for fr in spec_frs if fr.id not in covered]
@@ -209,54 +220,9 @@ def _check_d2(
 def _check_d3(
     events: list[dict] | None,
 ) -> tuple[str, str, str, list[str]]:
-    if events is None:
-        return "skip", "MEDIUM", "shipwright_events.jsonl not present", []
-
-    promised: dict[str, str] = {}  # fr_id -> earliest ts where it appeared in new_frs
-    delivered_after: dict[str, list[str]] = {}  # fr_id -> ts list of affected_frs hits
-
-    for ev in events:
-        if ev.get("type") != "work_completed":
-            continue
-        ts = ev.get("ts")
-        if not isinstance(ts, str):
-            continue
-        for fr in ev.get("new_frs", []) or []:
-            if not isinstance(fr, str):
-                continue
-            if fr not in promised or ts < promised[fr]:
-                promised[fr] = ts
-        for fr in ev.get("affected_frs", []) or []:
-            if not isinstance(fr, str):
-                continue
-            delivered_after.setdefault(fr, []).append(ts)
-
-    if not promised:
-        return "skip", "MEDIUM", "no events introduced FRs via new_frs", []
-
-    pending: list[str] = []
-    for fr_id, promised_ts in promised.items():
-        delivered_ts_list = delivered_after.get(fr_id, [])
-        # ``>=`` (not ``>``): an FR present in both ``new_frs`` and
-        # ``affected_frs`` of the SAME event (ts == promised_ts) — the normal
-        # single-iterate "introduce + deliver" case — counts as delivered.
-        # Strictly-later was the FR-01.33 webui false-positive: a same-event
-        # delivery stayed "pending" forever until some unrelated later event
-        # happened to touch the FR (iterate-2026-06-05-fr-linkage-lifecycle).
-        if any(ts >= promised_ts for ts in delivered_ts_list):
-            continue
-        pending.append(fr_id)
-
-    if not pending:
-        return "pass", "MEDIUM", "every promised FR has a follow-up affected_frs event", []
-
-    pending.sort()
-    head = ", ".join(pending[:5])
-    if len(pending) > 5:
-        head += f", … (+{len(pending) - 5})"
-    detail = f"FRs introduced via new_frs but never reaffirmed — {head}"
-    evidence = [f"{fr_id}: promised on {promised[fr_id]}" for fr_id in pending]
-    return "fail", "MEDIUM", detail, evidence
+    """Body lives in :mod:`_group_d_promise`; kept here for _check_d1.._check_d5
+    symmetry in the plan table below."""
+    return _promise.check_d3(events)
 
 
 # ---------------------------------------------------------------------------

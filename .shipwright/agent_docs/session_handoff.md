@@ -1,44 +1,43 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-21-codescanning-alert-cleanup"
+run_id: "iterate-2026-07-21-fr0115-coverage-bloat"
 phase: "iterate"
-reason: "iterate: close the five open GitHub code-scanning alerts"
-timestamp: "2026-07-21T05:45:53.165448+00:00"
+reason: "iterate: reconcile compliance D1/D3 (FR-01.15 mint coverage) + H2 bloat ratchet"
+timestamp: "2026-07-21T22:41:37.612570+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-21 05:45:53 UTC
+> Auto-generated 2026-07-21 22:41:37 UTC
 
 ## Session Info
 
-- **Session ID**: e5bec740-741d-4a4b-907a-e434423b4ee8
-- **Timestamp**: 2026-07-21 05:45:53 UTC
-- **Reason**: iterate: close the five open GitHub code-scanning alerts
+- **Session ID**: 2635282a-8c3e-4568-9bae-d27c6e75bc46
+- **Timestamp**: 2026-07-21 22:41:37 UTC
+- **Reason**: iterate: reconcile compliance D1/D3 (FR-01.15 mint coverage) + H2 bloat ratchet
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-21-codescanning-alert-cleanup
-- **Date**: 2026-07-21T05:45:47.407662Z
+- **Run ID**: iterate-2026-07-21-fr0115-coverage-bloat
+- **Date**: 2026-07-21T22:41:30.231077Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/codescanning-alert-cleanup
-- **ADR**: iterate-2026-07-21-codescanning-alert-cleanup
+- **Branch**: iterate/fr0115-coverage-bloat
+- **ADR**: iterate-2026-07-21-fr0115-coverage-bloat
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-21-codescanning-alert-cleanup.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-21-fr0115-coverage-bloat.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/codescanning-alert-cleanup
-- **Run ID**: iterate-2026-07-21-codescanning-alert-cleanup
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-21-codescanning-alert-cleanup.md
-- **Complexity**: medium
+- **Branch**: iterate/fr0115-coverage-bloat
+- **Run ID**: `iterate-2026-07-21-fr0115-coverage-bloat`
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-21-fr0115-coverage-bloat.md
+- **Complexity**: medium (history-calibrated; `prior_source: history`, n=20)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/codescanning-alert-cleanup
-- **Last Commit**: d45974db fix(traceability): fail loud on shallow clone instead of skipping fr-history checks (#422)
+- **Branch**: iterate/fr0115-coverage-bloat
+- **Last Commit**: 1cfdbbd9 fix(security): close the five open code-scanning alerts, root-fixing where a root fix exists (#424)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-622b42cf | grade_snapshot | — | 2026-07-21 |
+| evt-6a61ac10 | work_completed | iterate (iterate: reconcile compliance D1/D3 (FR-01.15 mint coverage) + H2 bloat ratchet) | 2026-07-21 |
+| evt-ca8ff116 | event_amended | — | 2026-07-21 |
 | evt-14387bc7 | grade_snapshot | — | 2026-07-21 |
 | evt-36e41db0 | work_completed | iterate (iterate: close the five open GitHub code-scanning alerts) | 2026-07-21 |
-| evt-dd32a165 | grade_snapshot | — | 2026-07-20 |
-| evt-429d92bb | grade_snapshot | — | 2026-07-20 |
-| evt-9af6a842 | grade_snapshot | — | 2026-07-20 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 351
-- **Last iterate**: change — iterate: close the five open GitHub code-scanning alerts (2026-07-21)
+- **Total work events**: 352
+- **Last iterate**: change — iterate: reconcile compliance D1/D3 (FR-01.15 mint coverage) + H2 bloat ratchet (2026-07-21)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

@@ -58,8 +58,11 @@ from lib.tty_sanitize import strip_control_chars
 
 #: ``relation`` values. ``introduced`` is ``new_frs`` — the change that minted
 #: the requirement; ``affected`` is ``affected_frs``. Kept distinct because
-#: "introduced but never touched since" is a real and reportable state (it is
-#: what compliance D1/D3 flag for FR-01.15 today).
+#: minting and revising are genuinely different events in a requirement's life,
+#: and a reader asking "where did this come from" wants the first one named.
+#: (Until iterate-2026-07-21 this comment cited compliance D1/D3 flagging
+#: FR-01.15 as the reason; those checks now count a tested mint as coverage and
+#: delivery, so the distinction stands on its own merit, not on a finding.)
 RELATION_INTRODUCED = "introduced"
 RELATION_AFFECTED = "affected"
 

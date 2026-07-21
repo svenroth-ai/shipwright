@@ -1,0 +1,1 @@
+Compliance D1/D3 no longer report a requirement as uncovered or undelivered merely because it was introduced rather than later revised. A change that mints a requirement and ran tests now counts as covering and delivering it, matching what the write-side FR gate has always accepted.

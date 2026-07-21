@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-21-fr0115-coverage-bloat",
+  "date": "2026-07-21T22:41:30.231077Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/fr0115-coverage-bloat",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-21-fr0115-coverage-bloat.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-21-fr0115-coverage-bloat"
+}

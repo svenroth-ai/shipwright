@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-21 05:45 UTC | Session: e5bec740-741d-4a4b-907a-e434423b4ee8 | Run: iterate-2026-07-21-codescanning-alert-cleanup
+> Updated: 2026-07-21 22:41 UTC | Session: 2635282a-8c3e-4568-9bae-d27c6e75bc46 | Run: iterate-2026-07-21-fr0115-coverage-bloat
 
-## Recent Changes (351 iterations)
+## Recent Changes (352 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | iterate: reconcile compliance D1/D3 (FR-01.15 mint coverage) + H2 bloat ratchet | 6452/6452 |  | FR-01.10, FR-01.15 | 2026-07-21 |
 | change | iterate: close the five open GitHub code-scanning alerts | 0/0 |  | tooling | 2026-07-21 |
 | change | Document operator-run converge for adopted repos + guard test | 4708/4708 |  | docs | 2026-07-20 |
 | change | adopt shared-loader guard: one guarded loader for the eight scaffolders | 5/5 |  | FR-01.13 | 2026-07-20 |
@@ -358,7 +359,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-21 | Unit: 6023/6023 | Integration: 416/416 | Smoke: not_run | (iterate)
+Last run: 2026-07-21 | Unit: 6035/6035 | Integration: 417/417 | Smoke: n/a | (iterate)
 
 ## Pipeline
 

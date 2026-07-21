@@ -1,108 +1,120 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-21-codescanning-alert-cleanup",
+    "run_id": "iterate-2026-07-21-fr0115-coverage-bloat",
     "date": "2026-07-21",
+    "intent": "change",
+    "complexity": "medium",
     "unit": {
+      "passed": 6035,
+      "total": 6035,
       "status": "passed",
-      "passed": 6023,
-      "total": 6023
+      "note": "Full fresh suites at F0: shipwright-compliance 1305 passed / 1 skipped; shared 4730 passed / 15 skipped / 20 deselected. ruff@0.15.15 clean. anti_ratchet_check --worktree: status ok, no ratchets, no stale entries, no new crossings."
     },
     "integration": {
-      "status": "passed",
       "passed": 417,
-      "total": 417
+      "total": 417,
+      "status": "passed",
+      "note": "integration-tests/ green (417 passed, 2 deselected)."
     },
     "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "n/a"
     },
     "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "note": "Producer surface: the real Group-D reader was run against the real 505-event log via the actual audit entry point (group_d.run), not a replica. D1 pass, D2 pass, D3 pass, D5 pass — D1/D3 flipped fail->pass, which is the whole point of the change."
     },
     "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "n/a"
     },
     "smoke": {
-      "status": "not_run"
+      "status": "n/a"
     },
-    "degraded": [],
     "surface_verification": {
-      "surface": "none",
-      "justification": "No runtime surface exists to exercise. Three of the four touched files are test-harness code (probe dispatch table, two test modules); the fourth, shared/scripts/lib/fr_table_reader.py, gains a first-party-name guard plus comments and no parsing behaviour change — proven by its five consumers staying green across all three import realms (compliance 1295, shared 4728, integration 416). No API route, store mutation, SSE/WS handler, message contract, or UI-consumed code is touched. The change's actual output surface is the SCANNER, which is verified directly: semgrep reports 3 findings before and 0 after, repo-wide.",
-      "tests_run": 0,
-      "exit_code": 0
+      "surface": "cli",
+      "runner": "uv run python probe_d.py plugins/shipwright-compliance .",
+      "tests_run": 4,
+      "exit_code": 0,
+      "timestamp": "2026-07-21T00:00:00+00:00",
+      "justification": "The user-facing surface of this change IS the audit verdict a maintainer reads. The runner drives the real group_d.run() over the real event log (amendments folded) and reports all four D-checks; a unit fixture could not show that FR-01.15 specifically stops being flagged."
     },
+    "degraded": [
+      {
+        "condition": "triage sweep-outbox reported protected_status_unplaceable for trg-b1dda91d and trg-16d374e1 at worktree setup",
+        "impact": "none on this change",
+        "detail": "Local main is behind origin, so two triage status appends in main's tracked log are unreachable from this branch. Pre-existing and unrelated to D1/D3/H2; resolved by delivering main (git merge origin/main), not by this iterate."
+      }
+    ],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "probe dispatch resolves each name to its function without indexing globals()",
+          "behavior": "D1 counts a tested mint (new_frs) as coverage",
           "disposition": "tested",
-          "evidence": "integration-tests/test_requirements_corpus_false_verdicts.py + _found_defects.py — 7 probe names driven end-to-end through the subprocess runner, 20 passed"
+          "evidence": "plugins/shipwright-compliance/tests/test_audit_d_mint_coverage.py::test_d1_counts_a_tested_mint_as_coverage PASSED"
         },
         {
-          "behavior": "every probe-table row maps to the correspondingly-named function",
+          "behavior": "D1 refuses an untested mint (TT2 tests.total>0 hardening intact)",
           "disposition": "tested",
-          "evidence": "integration-tests/test_requirements_corpus_probe_table.py::test_every_probe_table_row_resolves_to_its_like_named_function PASSED; mutation-verified ('t1': probe_t2 makes it RED)"
+          "evidence": "…::test_d1_does_not_count_an_untested_mint_as_coverage PASSED"
         },
         {
-          "behavior": "every module-level probe_* function is registered in the table (incl. never-invoked t2)",
+          "behavior": "D3 counts a tested mint as delivery",
           "disposition": "tested",
-          "evidence": "integration-tests/test_requirements_corpus_probe_table.py::test_every_probe_function_is_registered_in_the_table PASSED"
+          "evidence": "…::test_d3_counts_a_tested_mint_as_delivery PASSED (also pins the finding text)"
         },
         {
-          "behavior": "--probe accepts exactly the eight documented names",
+          "behavior": "D3 still flags an untested mint, so the check is not vacuous",
           "disposition": "tested",
-          "evidence": "integration-tests/test_requirements_corpus_probe_table.py::test_the_probe_cli_offers_exactly_the_documented_names PASSED"
+          "evidence": "…::test_d3_does_not_count_an_untested_mint_as_delivery + test_audit_groups_a_d.py::test_d3_still_flags_new_fr_with_no_covering_affected PASSED"
         },
         {
-          "behavior": "the adopt generator still emits the canonical FR-table header after the -c program was hoisted out of the argv list",
+          "behavior": "The manifest link proof still drops an explicit-provenance minted FR with no passing link",
           "disposition": "tested",
-          "evidence": "integration-tests/test_fr_table_shape_convergence.py::test_the_adopt_generator_emits_it PASSED"
+          "evidence": "…::test_d1_still_drops_an_explicit_fr_without_a_passing_link PASSED — added on review; failed twice first (schema v1, then collector_version as int) because load_manifest is fail-closed"
         },
         {
-          "behavior": "a reintroduced pytest.skip inside pre_s6_sections fails the shallow-clone meta-test hard instead of skipping it",
+          "behavior": "An ineligible event type (not work_completed) covers/delivers nothing",
           "disposition": "tested",
-          "evidence": "integration-tests/test_fr_history_skip_guard.py::test_a_reintroduced_skip_makes_the_meta_test_fail_not_skip PASSED — runs the real meta-test in a child pytest with pre_s6_sections patched to skip; asserts '1 failed' and NOT '1 skipped'"
+          "evidence": "…::test_an_ineligible_event_type_never_covers_or_delivers PASSED"
         },
         {
-          "behavior": "a non-Skipped exception from pre_s6_sections propagates instead of being converted to pytest.fail",
+          "behavior": "Documented asymmetry: the affected_frs path carries no test gate",
+          "disposition": "tested",
+          "evidence": "…::test_affected_frs_path_has_no_test_gate PASSED"
+        },
+        {
+          "behavior": "Documented asymmetry: the tests guard is per-event, not per-FR",
+          "disposition": "tested",
+          "evidence": "…::test_guard_is_per_event_not_per_fr PASSED"
+        },
+        {
+          "behavior": "A non-dict tests value does not crash D1/D3",
+          "disposition": "tested",
+          "evidence": "…::test_non_dict_tests_does_not_crash_the_checks PASSED"
+        },
+        {
+          "behavior": "The evt-edcf1064 overlay patches only tests; ts/new_frs/identity intact",
+          "disposition": "tested",
+          "evidence": "…::test_a_tests_only_amendment_preserves_classification_and_timestamp PASSED"
+        },
+        {
+          "behavior": "Five bloat-baseline entries tightened; none loosened",
+          "disposition": "tested",
+          "evidence": "anti_ratchet_check --worktree -> status ok, stale [], new_crossings []; the update script refuses any value above origin/main's recorded number"
+        },
+        {
+          "behavior": "D3 body extraction to _group_d_promise is behavior-preserving",
           "disposition": "untestable",
-          "evidence": "The AssertionError path is exercised by the meta-test itself and the Skipped path by test_fr_history_skip_guard.py; what remains is the ABSENCE of a handler (Python's default propagation), so no branch of this diff is left unexercised.",
+          "evidence": "the 13-test D1/D3 set and the full 1305-test compliance suite pass unchanged across the move; the reviewer additionally diffed the body line-by-line against main",
           "reason_code": "covered-by-existing-test"
         },
         {
-          "behavior": "_ALLOWED_SIBLINGS equals the set of siblings actually imported (no stale entry widening the guard)",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_table_reader_load_styles.py::test_the_declared_sibling_allowlist_matches_what_is_actually_loaded[4 load styles] PASSED; mutation-verified (an unused 'os' entry reddens all four)"
-        },
-        {
-          "behavior": "an undeclared sibling name is refused before reaching importlib.import_module",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_table_reader_load_styles.py::test_an_undeclared_sibling_name_is_refused_before_it_reaches_import[4 load styles] PASSED; mutation-verified; plus test_fr_table_reader_contract.py::test_an_undeclared_sibling_is_refused in-process — the subprocess assertions are invisible to coverage, which the diff-coverage gate caught (the raise showed as an uncovered changed line)"
-        },
-        {
-          "behavior": "Semgrep reports none of non-literal-import / dangerous-globals-use anywhere in the repo",
-          "disposition": "tested",
-          "evidence": "semgrep 1.170.0 --config r/python.lang.security.audit.non-literal-import --config r/python.lang.security.dangerous-globals-use over the repo: 3 findings BEFORE the diff (alerts 1257/1258/1260 at their exact reported lines), 0 AFTER"
-        },
-        {
-          "behavior": "the new _sibling guard breaks no consumer in any import realm",
-          "disposition": "tested",
-          "evidence": "shared/tests 4728 passed + integration-tests 416 passed + plugins/shipwright-compliance 1295 passed, all green"
+          "behavior": "FR-01.10 gains one acceptance criterion",
+          "disposition": "untestable",
+          "evidence": "requirements-corpus and FR-table-shape integration tests (417) pass against the edited catalog; spec prose has no separate executable surface",
+          "reason_code": "covered-by-existing-test"
         }
-      ],
-      "counts": {
-        "total": 11,
-        "tested": 10,
-        "untestable": 1,
-        "untested_testable": 0
-      }
+      ]
     }
   },
   "coverage": {
