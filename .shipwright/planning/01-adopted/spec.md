@@ -181,6 +181,16 @@ _Where the work detail lives_ at the end of this document.
 - (E) Given the plugin is enabled, when the user types an ordinary prompt, then
   the right next step is offered; in a directory that is not a Shipwright
   project the offer stays silent and changes nothing.
+- (E) Given a change is reviewed, when each review pass finishes — the author's
+  own check, the plan review, the code review, the doubt pass and the outside
+  second opinion — then what that pass found is written down for that run and
+  can be read back later, instead of surviving only as prose in a decision note.
+  (iterate-2026-07-21-review-record)
+- (E) Given a review pass did not run, when the change is finished, then the
+  record says so explicitly and gives the reason, and finishing is refused while
+  any pass is left unanswered — so "nothing shown" always means "genuinely did
+  not run" and never "nobody wrote it down". A finished review cannot afterwards
+  be quietly restated. (iterate-2026-07-21-review-record)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — /shipwright-preview

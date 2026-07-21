@@ -1,0 +1,485 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-21-review-record",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": null,
+          "category": "Security Basics",
+          "file": null,
+          "line": null,
+          "finding": "run_id was joined into a filesystem path unvalidated, so an absolute run_id silently replaced project_root and '..' climbed out of the planning dir. Fixed: is_safe_run_id() enforces a single path component at record_dir and in validate_record, with 10 hostile inputs covered.",
+          "suggestion": null,
+          "source": "self-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-21T22:39:06.702106+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 17,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "Approach / Dependency",
+          "file": null,
+          "line": null,
+          "finding": "There is a data pipeline gap between the reviewer agents and the CLI tool. The spec notes that the internal reviewers currently output structured JSON but \"the result exists only as prose in an ADR\", and expressly states it is a non-goal to change what reviewers emit. If the JSON is embedded in a Markdown ADR, the new `record_review_pass.py` tool cannot read it via a simple `--findings-file out.json` unless the LLM manually extracts and writes it to a temp file first (which is highly error-prone).",
+          "suggestion": "Make `review_findings.py` smart enough to extract JSON blocks directly from Markdown files. Have the CLI tool accept the ADR file as the input, parse out the ` ```json ` codeblock containing the reviewer's output, and run the dictionary mapping on that. This completely removes the manual extraction step for the interacting agent.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "Risk",
+          "file": null,
+          "line": null,
+          "finding": "The hard F11 gate will fail in-flight runs. If a campaign is actively iterating and has already passed the review phase when this change lands, it will not have materialized `.shipwright/planning/iterate/<run_id>/reviews.json`. When it attempts to finalize, F11 will blindly fail closed, trapping the run.",
+          "suggestion": "Add a migration/grace threshold to `review_record_check.py`. If `reviews.json` is missing but the legacy shared `.shipwright/planning/iterate/external_review_state.json` file has a timestamp older than this commit, `WARN` rather than `FAIL`, or automatically backfill an \"unknown\" disposition so the run can finalize.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "Edge Case",
+          "file": null,
+          "line": null,
+          "finding": "The fallback state for unparseable prose is unspecified regarding required fields. The spec states unparseable prose yields \"ONE finding carrying the raw text\". However, the target JSON schema requires fields like `severity`, `category`, and `file`.",
+          "suggestion": "Explicitly hardcode the default schema values for the fallback finding (e.g., `severity: null`, `category: \"unparsed\"`, `file: null`, `line: null`, `suggestion: null`) in `review_findings.py` to prevent validation crashes in the webui consumer.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "Reducibility",
+          "file": null,
+          "line": null,
+          "finding": "Spreading the logic across `review_record.py` (~230 LOC) and `review_findings.py` (~200 LOC) is slight over-production. Three static dictionary mappings and one prose splitter do not require their own top-level library module.",
+          "suggestion": "Combine the adapter logic into `review_record.py`. Splitting them adds module boundary overhead for logic that serves exactly one domain and is invoked by exactly one CLI wrapper.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "Security / Edge Case",
+          "file": null,
+          "line": null,
+          "finding": "Potential race condition during directory initialization if tests or parallel agents trigger writes simultaneously. While the file write is protected by an atomic + `file_lock` strategy, directory creation (`os.makedirs`) can throw `FileExistsError` if not handled.",
+          "suggestion": "Ensure the `materialize()` and `upsert_review()` functions use `os.makedirs(dir, exist_ok=True)` before attempting to acquire the file lock.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan assumes that each internal review pass has a reliably available “native JSON” payload at the iterate orchestration layer, but it does not describe how that payload reaches `record_review_pass.py`. The reviewers may return structured JSON in their agent contracts, yet the current lifecycle appears to preserve their output only in ADR prose. Updating prompts to tell an agent to record itself is not equivalent to having the orchestrator capture and persist the actual returned payload.",
+          "suggestion": "Identify the concrete executor/call site for `code-reviewer`, `doubt-reviewer`, and self-review, and specify one data path per pass: capture agent response → validate/extract JSON → invoke the record tool with a file/stdin payload. If agents themselves invoke the tool, specify their working directory, run-ID source, permissions, and failure behavior. Add an integration test that exercises the real orchestration path, not only direct CLI fixture inputs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "“One call … and the two artifacts cannot drift apart” is not true with two separately persisted files. A process can successfully write `reviews.json` and fail before writing the external marker, or vice versa. The ordering is especially important because an immutability rejection must not still overwrite a legacy marker. Atomic writes and locks for one file do not make the pair transactional.",
+          "suggestion": "Perform record validation and terminal-status checks before touching a marker. Define a deterministic write order and recovery behavior for partial success (for example, make the record authoritative and allow a safe idempotent marker-repair operation). Hold a common per-run lock across the operation. Add failure-injection tests for marker-write failure, record-write failure, and a terminal-record reattempt, asserting neither artifact is incorrectly advanced or overwritten.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Moving writers to `<run_id>/external_review_state.json` can break consumers other than `iterate_compliance` and the web UI. The stated compatibility work only makes W2 read the old shared path; it does not preserve a shared-path write for tools, scripts, or adopted projects that still consume it. “In-flight runs” also need the writer and reader to agree on whether a run is old-layout or new-layout.",
+          "suggestion": "Search all repositories/scripts for reads and writes of both marker names, including the old `{run_id}-external-review.json` form. Document the migration compatibility policy explicitly: either dual-write for a bounded transition, or make every known reader support the run-scoped path before changing writers. Add tests for both old-layout and new-layout runs, including the exact `--planning-dir` behavior so the new path is not accidentally nested or named differently.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The external-prose fallback can falsely report findings for a clean review. Under the proposed rule, any unparseable approval/“no issues found” response becomes one raw-text finding, so `findings_count` becomes 1 despite the reviewer finding nothing. This undermines the central artifact’s meaning (“what did it find?”), not just presentation quality.",
+          "suggestion": "Preserve the required raw-text fallback for genuinely unparseable review content, but add explicit handling for the external reviewer’s documented clean/approval format, producing `completed` with `findings: []`. Confirm the external prompt’s exact no-findings form and test it. Also retain the original prose in a non-finding diagnostic/source field if the UI or later audit needs it; do not fabricate a defect merely to avoid a zero-length list.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The record format is described, but the plan does not explicitly require strict validation on both write and read. A gate that merely checks that no entry says `pending` could accept malformed records: missing or extra review types, invalid statuses, blank dispositions, invalid timestamps, a `findings_count` mismatch, malformed finding objects, or an arbitrary `run_id`.",
+          "suggestion": "Make `read_record()` schema-validation authoritative and have the gate treat any schema violation as corrupt. Enforce exactly the five keys, matching key and `review_type`, closed statuses, non-empty disposition for terminal non-completed statuses, `findings_count == len(findings)`, and nullable-field types. Validate the record’s `run_id` against the expected run ID rather than trusting its contents. Add negative tests beyond invalid JSON.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "init`/materialization behavior and concurrent invocation semantics are underspecified. A second `init`, a first `record` racing with `init`, or two review processes recording different types can accidentally replace a populated record with a fresh all-pending record unless initialization is explicitly non-destructive under the same lock.",
+          "suggestion": "Define `init` as create-if-absent only; if a valid record exists, return it without mutation, and if a corrupt one exists, fail rather than replace it. Ensure first-write materialization and upsert occur inside the same per-run lock. Add concurrency/idempotency tests for simultaneous first records and repeated initialization.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed hard gate can be satisfied by marking every review `not_run` with a reason. That may be acceptable as an explicit audit declaration, but it is a material weakening in practice unless the recording commands are constrained by the lifecycle that made the run eligible for those passes. The plan intentionally avoids duplicating the phase matrix in the verifier, but does not identify where invalid `not_run`/`not_applicable` decisions are prevented.",
+          "suggestion": "Keep F11 focused on record completeness, but have the producer enforce a minimal policy based on existing lifecycle decisions: only the orchestrator/call site that decides a pass is skipped should write `not_run`/`not_applicable`, and it should include the applicable phase/size rule in `disposition`. At minimum, reject empty or generic dispositions and test the actual small/trivial/campaign paths so the prompt cannot silently bypass review with arbitrary statuses.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The four adapters need source-specific behavior for valid “no findings” and malformed native payloads. In particular, a successful `code-reviewer` response may contain an empty `review`; a doubt review may have no doubts; self-review may contain passing checklist items only; and source entries can lack a line/file/severity. The mini-plan says the mappings are “trivial,” but does not state which fields are nullable versus required or how malformed reviewer JSON is distinguished from a valid clean review.",
+          "suggestion": "Define adapter contracts explicitly: valid clean source payloads map to zero findings; malformed/missing required source structure fails recording and leaves the type pending; optional location/severity fields normalize to `null`. Include fixtures for clean results, absent locations, multiline fields, malformed JSON, and malformed individual entries.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "This introduces a git-tracked artifact containing raw external-review prose and potentially arbitrary agent-produced text. It may include secrets copied from diffs, file paths, tokens, or hostile HTML/Markdown that the cross-repo web UI later renders. The plan pins serialization but does not address content handling at the producer/consumer boundary.",
+          "suggestion": "Treat findings as untrusted text. Ensure the web UI renders all fields as escaped text rather than HTML/Markdown, and document that the artifact must not contain credentials. If the existing review system can expose secrets, apply the same redaction policy before persistence rather than creating a new durable secret store. Add a serialized finding containing HTML-like text to the boundary test and verify the consumer’s escaping in its follow-up.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The tool writes paths derived from `run_id` and likely accepts input-file paths or stdin for review payloads. Without strict run-ID and path handling, a malformed or user-controlled run ID can escape the planning directory; without input-size limits, a verbose/malicious external response can create excessively large tracked records.",
+          "suggestion": "Validate run IDs against the established iterate-run-ID grammar, resolve and verify all output paths remain beneath the intended planning root, and do not accept arbitrary destination paths. Prefer stdin or a validated input path for payloads, and impose a practical maximum payload/finding size with a clear error. Reuse existing repository path-validation helpers if available rather than adding a new abstraction.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "“Git-tracked, never evicted” requires repository policy support, not just writes to a directory. The plan does not mention checking `.gitignore`, cleanup/retention scripts, generated-artifact conventions, or whether temp-project integration fixtures stage/preserve this new directory.",
+          "suggestion": "Verify that `.shipwright/planning/iterate/<run_id>/reviews.json` is not ignored or cleaned by existing maintenance tooling, and add it to any explicit artifact allowlist/manifest if one exists. Include a test or fixture assertion that the record remains discoverable after the normal iterate cleanup/finalization sequence.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Splitting this into `review_marker.py`, `review_record.py`, `review_findings.py`, and a 180-line CLI is reasonable only if existing libraries do not already provide JSON schema, atomic-write, CLI parsing, and marker helpers. The plan’s new `review_marker.py` is justified by avoiding shape duplication, but it should not duplicate generic IO/locking functionality.",
+          "suggestion": "Keep the three domain modules if they map cleanly to marker compatibility, record lifecycle, and source adaptation, but reuse the repository’s existing locking, atomic JSON, argument parsing, and validation utilities. Avoid adding another generic serialization wrapper solely for this feature.  Overall, the record-per-run design and explicit terminal-state gate are sound and address the stated audit gap directly. The main implementation risk is not the JSON model; it is ensuring the real review orchestration reliably supplies source payloads and that the record/legacy-marker migration remains consistent under failures and existing consumers.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-21T23:17:39.593961+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] Here is the review of the implementation approach for the `iterate-2026-07-21-review-record` change.\n\n### Findings\n\n- **Category:** Approach / Dependency\n- **Severity:** High\n- **Finding:** There is a data pipeline gap between the reviewer agents and the CLI tool. The spec notes that the internal reviewers currently output structured JSON but \"the result exists only as prose in an ADR\", and expressly states it is a non-goal to change what reviewers emit. If the JSON is embedded in a Markdown ADR, the new `record_review_pass.py` tool cannot read it via a simple `--findings-file out.json` unless the LLM manually extracts and writes it to a temp file first (which is highly error-prone). \n- **Suggestion:** Make `review_findings.py` smart enough to extract JSON blocks directly from Markdown files. Have the CLI tool accept the ADR file as the input, parse out the ` ```json ` codeblock containing the reviewer's output, and run the dictionary mapping on that. This completely removes the manual extraction step for the interacting agent.\n\n- **Category:** Risk\n- **Severity:** Medium\n- **Finding:** The hard F11 gate will fail in-flight runs. If a campaign is actively iterating and has already passed the review phase when this change lands, it will not have materialized `.shipwright/planning/iterate/<run_id>/reviews.json`. When it attempts to finalize, F11 will blindly fail closed, trapping the run.\n- **Suggestion:** Add a migration/grace threshold to `review_record_check.py`. If `reviews.json` is missing but the legacy shared `.shipwright/planning/iterate/external_review_state.json` file has a timestamp older than this commit, `WARN` rather than `FAIL`, or automatically backfill an \"unknown\" disposition so the run can finalize.\n\n- **Category:** Edge Case\n- **Severity:** Low\n- **Finding:** The fallback state for unparseable prose is unspecified regarding required fields. The spec states unparseable prose yields \"ONE finding carrying the raw text\". However, the targe […truncated]\n\n[openai] 1. **Category: approach — Severity: high**  \n   **Finding:** The plan assumes that each internal review pass has a reliably available “native JSON” payload at the iterate orchestration layer, but it does not describe how that payload reaches `record_review_pass.py`. The reviewers may return structured JSON in their agent contracts, yet the current lifecycle appears to preserve their output only in ADR prose. Updating prompts to tell an agent to record itself is not equivalent to having the orchestrator capture and persist the actual returned payload.  \n   **Suggestion:** Identify the concrete executor/call site for `code-reviewer`, `doubt-reviewer`, and self-review, and specify one data path per pass: capture agent response → validate/extract JSON → invoke the record tool with a file/stdin payload. If agents themselves invoke the tool, specify their working directory, run-ID source, permissions, and failure behavior. Add an integration test that exercises the real orchestration path, not only direct CLI fixture inputs.\n\n2. **Category: risk — Severity: high**  \n   **Finding:** “One call … and the two artifacts cannot drift apart” is not true with two separately persisted files. A process can successfully write `reviews.json` and fail before writing the external marker, or vice versa. The ordering is especially important because an immutability rejection must not still overwrite a legacy marker. Atomic writes and locks for one file do not make the pair transactional.  \n   **Suggestion:** Perform record validation and terminal-status checks before touching a marker. Define a deterministic write order and recovery behavior for partial success (for example, make the record authoritative and allow a safe idempotent marker-repair operation). Hold a common per-run lock across the operation. Add failure-injection tests for marker-write failure, record-write failure, and a terminal-record reattempt, asserting neither artifact is incorrectly advanced or overwritte […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/review_prose.py",
+          "line": 86,
+          "finding": "_parse_blocks only opens a block on a Category key, so a category-less layout loses every finding while still reporting PARSE_STRUCTURED; the docstring claimed the opposite.",
+          "suggestion": "Open a new block on the first key of any kind and keep the repeated-key rule.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/review_payloads.py",
+          "line": 80,
+          "finding": "Merged parse_status is structured if ANY provider leg parsed, and the raw excerpt is truncated across legs, so one provider's entire review can disappear while the record asserts a clean structured parse.",
+          "suggestion": "Track per-leg status (partial) and give each leg its own excerpt budget.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/record_review_pass.py",
+          "line": 241,
+          "finding": "--marker-status is free-form and written straight to disk, losing the ALLOWED_STATUSES validation that mark-review-state.py enforces.",
+          "suggestion": "Validate against ALLOWED_STATUSES before the record write.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/iterate_compliance.py",
+          "line": 146,
+          "finding": "The run-scoped marker is credited by existence plus mtime alone, making W2's status logic dead code for every run recorded through the new tool.",
+          "suggestion": "Parse and status-check the run-scoped marker with the same branch used for the shared file.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/record_review_pass.py",
+          "line": 104,
+          "finding": "_cmd_init has no error handling and LockTimeout is not a ReviewRecordError, so both escape as tracebacks and break the JSON-on-stdout contract the orchestrator parses.",
+          "suggestion": "Route both through _fail.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": ".shipwright/planning/iterate/iterate-2026-07-21-review-record.md",
+          "line": 179,
+          "finding": "The spec claims 13 external plan-review findings while the artifact this change produced records 17; four findings including both security ones carry no disposition.",
+          "suggestion": "Reconcile the count and disposition the remaining four.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/tools/record_review_pass.py",
+          "line": 157,
+          "finding": "The marker dual-write runs after upsert_and_write released the per-run lock, contradicting the spec's O2 disposition and the mini-plan.",
+          "suggestion": "Write the marker inside the lock, or correct the claim.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/review_finding_shape.py",
+          "line": 50,
+          "finding": "coerce_severity scans for high/medium/low as substrings in priority order, so 'not high' normalizes to high and a qualified severity is overstated.",
+          "suggestion": "Match the leading token with a word boundary.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/review_prose.py",
+          "line": 80,
+          "finding": "The final key's value extends to end-of-text, so trailing prose such as an Overall Assessment section is glued onto the last finding — visible in this run's own first artifact.",
+          "suggestion": "Terminate the last block at the next Markdown heading or horizontal rule.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/record_review_pass.py",
+          "line": 195,
+          "finding": "close-missing catches ImmutableReviewError via its ReviewRecordError base and reports a concurrent close as invalid_entry with exit 2 instead of the documented exit 3.",
+          "suggestion": "Catch ImmutableReviewError explicitly and return EXIT_IMMUTABLE.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/review_prose.py",
+          "line": 98,
+          "finding": "from_external_prose accepts a provider argument it never reads, and the caller dutifully passes it.",
+          "suggestion": "Drop the parameter.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-21T23:02:13.513087+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "reversibility",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F6.md",
+          "line": null,
+          "finding": "Claim under doubt: An empty Review row always means 'genuinely not run' because the record is git-tracked and F11 blocks a missing one — Nothing in the lifecycle stages reviews.json: F6's explicit git add list has .shipwright/planning/iterate/*.md, which cannot match <run_id>/reviews.json, and check_review_record accepted commit_hash but never used it. So F6 commits without it, F11 passes on working-tree presence, the PR merges, the worktree is removed, and the record is gone from the tree the Mission view reads.",
+          "suggestion": "Add the run dir to the F6 staging list AND make check_review_record assert the record is in the HEAD blob, mirroring check_events_has_commit.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary",
+          "file": "shared/scripts/tools/record_review_pass.py",
+          "line": 193,
+          "finding": "Claim under doubt: A completed review cannot be quietly restated, and the record and its marker cannot disagree — _repair_or_reject converted ANY immutability rejection into exit 0 repaired:true whenever --marker-status was present, and rewrote the marker from the new arguments. Recording plan as not_run with --marker-status skipped_config_disabled after it was completed with 17 findings returned success, left the record saying completed, and rewrote both marker copies to say skipped — no --force, exit 0.",
+          "suggestion": "Repair only when the requested status equals the recorded one; otherwise exit 3. Report record_unchanged alongside repaired.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary",
+          "file": "shared/scripts/lib/review_companion.py",
+          "line": 32,
+          "finding": "Claim under doubt: findings_count never misrepresents what the review found (AC5) — AC5's protection lives in parse_status and raw_excerpt, which neither the marker nor the pinned cross-repo ReviewRow carries. A completed review whose prose could not be itemized writes findings_count 0 into the marker, and the existing webui consumer maps that to completed/0/no-note, rendering 'ran and found nothing' for a review that found things. Separately, a provider leg that errored carries no feedback key and was filtered out before the denominator, so one good leg of two reported structured.",
+          "suggestion": "Carry the caveat into the marker reason field, which the consumer already surfaces; count errored legs in the denominator.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary",
+          "file": "shared/scripts/lib/review_findings.py",
+          "line": 85,
+          "finding": "Claim under doubt: The native adapters either parse or raise, so there is no unreadable state to record — Element-level loss: an item whose finding text is missing was silently skipped, so an LLM writing 'issue' instead of 'finding' recorded as completed with findings_count 0 — byte-identical to an honest clean review. _items refuses a MISSING array on exactly this reasoning, then lets the elements inside a present array evaporate to the same state.",
+          "suggestion": "Compare items-in to findings-out and refuse when a non-empty array yields fewer findings.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary",
+          "file": "shared/scripts/lib/review_prose.py",
+          "line": 57,
+          "finding": "Claim under doubt: The prose splitter parses the layout its own system prompt mandates — shared/prompts/code_reviewer/system mandates 'File:line'. A provider following it emits **File:line:** `path:157`; the key matched at File:, so the value became 'line: `path:157`' and the stored path was 'line: `path`'. Present verbatim in this run's own first artifact.",
+          "suggestion": "Recognise the File:line label as one key form; add the real string as a fixture.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "shared/scripts/tools/record_review_pass.py",
+          "line": 206,
+          "finding": "Claim under doubt: close-missing is a safe one-command escape hatch (AC10) — It is blanket, one-way and non-atomic: no type scope, so it permanently asserts 'did not run' for the self-review which always runs; and pending_types was read outside the lock with each type written under its own acquisition, so a mid-loop failure leaves some types permanently closed and the rest open, movable only by --force.",
+          "suggestion": "Add an explicit type scope and write the whole batch under one lock in one record write.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "shared/scripts/tools/record_review_pass.py",
+          "line": 178,
+          "finding": "Claim under doubt: When something fails the tool tells the operator the truth about what landed — The OSError handler wrapped the whole upsert_and_write call but asserted 'the record was written but the marker was not'. An OSError from mkdir, the lock open or the record write reaches it too and reports that the record landed when it did not; the repair command it prints then fails, and with no marker requested it interpolates --marker-status None which argparse rejects.",
+          "suggestion": "Track whether the record write returned and report accordingly; suppress the repair hint when no marker was requested.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-21T23:17:30.095470+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "Spec Compliance / Bug",
+          "file": "shared/scripts/tools/record_review_pass.py",
+          "line": 157,
+          "finding": "The marker write happens after the file lock is released, which directly violates the explicit transactional requirement established in the spec. O2 disposition states: `Validate + immutability check BEFORE any write; record is authoritative and written first; marker write is idempotent and repairable; one per-run lock spans both.` Because `upsert_and_write` manages its own lock internally and releases it before returning, the `_write_markers` call executes outside the lock, allowing race conditions.",
+          "suggestion": "Move the lock acquisition out to the CLI level (`_cmd_",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/tools/record_review_pass.py:140-143",
+          "line": null,
+          "finding": "Recording `plan` or `external_code` does not necessarily dual-write its required marker. `--marker-status` is optional, so a successful terminal review record can be written with no shared or run-scoped `external_review_state.json` marker at all. This violates AC7 and can let F11 pass while existing marker consumers and `iterate_compliance` lack the required evidence.",
+          "suggestion": "Require `--marker-status` for `plan` and `external_code` records, or derive and validate it from the review outcome. Add a test that recording either marker-bearing type without it fails and leaves no terminal record.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "regression",
+          "file": "shared/scripts/tools/record_review_pass.py:82-94",
+          "line": null,
+          "finding": "The new marker-writing path accepts arbitrary `--marker-status` values, whereas the existing `mark-review-state.py` CLI rejects statuses outside its closed `ALLOWED_STATUSES` vocabulary. For example, `record ... --review-type plan --marker-status bogus` writes a marker that existing consumers may not understand. This does not preserve the legacy marker contract “exactly as today.”",
+          "suggestion": "Import `ALLOWED_STATUSES` from `lib.review_marker` and validate `args.marker_status` before writing, preferably via argparse choices plus a defensive runtime check.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/tools/record_review_pass.py:132-148",
+          "line": null,
+          "finding": "The claimed repair path for a marker-write failure does not work as documented. The record is committed before `_write_markers`; if marker writing fails, re-running the same command hits terminal-status immutability in `upsert_and_write()` and exits 3 before reaching marker writing. The emitted instruction to “re-run this command to repair it” is therefore false unless the operator discovers and uses `--force`, which also rewrites the authoritative record.",
+          "suggestion": "Provide a marker-repair operation that validates and reads the existing terminal record without rewriting it, then writes the markers from that record. Alternatively, detect an identical terminal re-record as an idempotent marker-repair request.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/record_review_pass.py:127-148",
+          "line": null,
+          "finding": "The record and marker writes are not protected by the promised common per-run lock. `upsert_and_write()` acquires and releases its lock internally before `_write_markers()` runs. A forced correction or another process can update the record between those operations, after which the first process writes a marker for stale findings/status.",
+          "suggestion": "Move the record validation, terminal check, record write, and both marker writes into one operation holding the same run lock throughout. Preserve the record-first ordering, but do not release the lock between artifacts.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/review_payloads.py:78-79` and `shared/scripts/lib/review_payloads.py:105-106",
+          "line": null,
+          "finding": "AC5 requires that unparseable external-review text be retained, but the implementation stores only the first 4,000 characters in `raw_excerpt`. The checked-in artifact itself demonstrates truncation: its `plan.raw_excerpt` ends mid-review. This loses the audit evidence needed to distinguish and investigate an unstructured response.",
+          "suggestion": "Retain the full raw external text in the record as required, or add a separate full raw payload field/file and make that the preserved audit source. If a size bound is required, it needs to be part of the serialized-format contract rather than silently truncating data.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/review_findings.py:52-53`, `shared/scripts/lib/review_prose.py:91-92`, and `shared/scripts/lib/review_finding_shape.py:43-49",
+          "line": null,
+          "finding": "The feature specifies a full findings list, but adapters silently discard findings after 200 and truncate finding text at 4,000 characters. `findings_count` then accurately counts only the truncated subset, not what the review actually found. This undermines the stated purpose of the artifact and is especially problematic for large external review cascades.",
+          "suggestion": "Preserve all findings and their text, or reject oversized payloads with a clear error before marking the pass completed. Do not silently convert a partial review into an apparently complete record.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/review_findings.py:47-56",
+          "line": null,
+          "finding": "Missing native result arrays are treated as valid clean reviews: `{\"section\":\"x\"}`, `{}`, or `{\"items\": null}` all produce zero findings and can be recorded as `completed`. Only explicit empty arrays are specified as clean in AC11; a missing `review`, `doubts`, or `items` field is malformed reviewer output and should not close a review row as clean.",
+          "suggestion": "Require the relevant array key to be present and to be a list; accept `[]` as the valid clean case. Add CLI-level tests showing malformed native payloads fail and leave the corresponding review pending.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/review_record_schema.py:98-117",
+          "line": null,
+          "finding": "Reader validation is not strict enough for the pinned normalized finding schema. `_validate_finding()` uses `item.get()` for every field other than `finding`, so malformed findings such as `{\"finding\":\"x\"}` are accepted despite lacking required `severity`, `category`, `file`, `line`, `suggestion`, and `source` keys. The same pattern permits missing entry fields such as `parse_status`, `raw_excerpt`, and `completed_at`. A malformed producer can therefore pass F11 and break a cross-repo consumer expecting the documented object shape.",
+          "suggestion": "Require the exact finding key set and validate each declared nullable/non-nullable type; similarly require the complete entry key set. Add negative tests that write records with omitted fields and assert `read_record()` and F11 reject them.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": ".shipwright/planning/iterate/iterate-2026-07-21-review-record/reviews.json:196-229",
+          "line": null,
+          "finding": "The committed record for this run leaves `code`, `doubt`, and `external_code` as `pending`. That contradicts the new lifecycle requirement that every type be explicitly terminal before finalization, and F11 will fail for this run at medium complexity. It also means the feature’s own durable review artifact does not record the internal and external-code review outcomes it was introduced to preserve.",
+          "suggestion": "Record the actual outcomes for all remaining types, or close genuinely skipped passes with `not_run`/`not_applicable` and rule-bearing dispositions before shipping the run artifact.  Overall assessment: ship-with-fixes. The core record/gate implementation is substantial and well-tested in many paths, but marker compatibility/repair and loss or laundering of review evidence currently violate important parts of the specified audit contract.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-21T23:17:39.700769+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] **Category:** Spec Compliance / Bug\n**Severity:** High\n**File:line:** `shared/scripts/tools/record_review_pass.py:157`\n**Finding:** The marker write happens after the file lock is released, which directly violates the explicit transactional requirement established in the spec. O2 disposition states: `Validate + immutability check BEFORE any write; record is authoritative and written first; marker write is idempotent and repairable; one per-run lock spans both.` Because `upsert_and_write` manages its own lock internally and releases it before returning, the `_write_markers` call executes outside the lock, allowing race conditions.\n**Suggestion:** Move the lock acquisition out to the CLI level (`_cmd_\n\n[openai] - Category: spec  \n  Severity: high  \n  File: `shared/scripts/tools/record_review_pass.py:140-143`  \n  Finding: Recording `plan` or `external_code` does not necessarily dual-write its required marker. `--marker-status` is optional, so a successful terminal review record can be written with no shared or run-scoped `external_*review_state.json` marker at all. This violates AC7 and can let F11 pass while existing marker consumers and `iterate_compliance` lack the required evidence.  \n  Suggestion: Require `--marker-status` for `plan` and `external_code` records, or derive and validate it from the review outcome. Add a test that recording either marker-bearing type without it fails and leaves no terminal record.\n\n- Category: regression  \n  Severity: medium  \n  File: `shared/scripts/tools/record_review_pass.py:82-94`  \n  Finding: The new marker-writing path accepts arbitrary `--marker-status` values, whereas the existing `mark-review-state.py` CLI rejects statuses outside its closed `ALLOWED_STATUSES` vocabulary. For example, `record ... --review-type plan --marker-status bogus` writes a marker that existing consumers may not understand. This does not preserve the legacy marker contract “exactly as today.”  \n  Suggestion: Import `ALLOWED_STATUSES` from `lib.review_marker` and validate `args.marker_status` before writing, preferably via argparse choices plus a defensive runtime check.\n\n- Category: bug  \n  Severity: high  \n  File: `shared/scripts/tools/record_review_pass.py:132-148`  \n  Finding: The claimed repair path for a marker-write failure does not work as documented. The record is committed before `_write_markers`; if marker writing fails, re-running the same command hits terminal-status immutability in `upsert_and_write()` and exits 3 before reaching marker writing. The emitted instruction to “re-run this command to repair it” is therefore false unless the operator discovers and uses `--force`, which also rewrites the authoritative record.  \n  Suggesti […truncated]"
+    }
+  }
+}

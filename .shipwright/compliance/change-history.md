@@ -1,29 +1,30 @@
 # Commit Change Log
 
-Generated: 2026-07-21T05:45:47.494285+00:00
-Total commits: 1189
+Generated: 2026-07-21T23:32:39.562944+00:00
+Total commits: 1191
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 342
+    "fix" : 343
     "feat" : 329
     "chore" : 247
     "docs" : 146
     "refactor" : 75
     "test" : 29
     "ci" : 11
-    "other" : 9
+    "other" : 10
     "build" : 1
 ```
 
 ## Changes by Type
 
-### Fixes (fix) — 342 commits
+### Fixes (fix) — 343 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-21 | security | close the five open code-scanning alerts, root-fixing where a root fix exists (#424) | 1cfdbbd951a2 |
 | 2026-07-21 | traceability | fail loud on shallow clone instead of skipping fr-history checks (#422) | d45974db8ab6 |
 | 2026-07-21 | iterate | run F3+F5c reliably in the sub-iterate-runner and forbid direct decision_log writes (#421) | bb4c8fd886a9 |
 | 2026-07-21 | events | recover record boundaries in the remaining event-log authority readers (#419) | 0cd30df86818 |
@@ -1234,10 +1235,11 @@ pie title Commit Types
 | 2026-05-31 | — | run shared/ test suites in CI via per-dir invocations | eb68b567899d |
 | 2026-05-31 | integration | gate integration-tests step on failure; fix F821 in events-log test | 83d68709d125 |
 
-### Other (other) — 9 commits
+### Other (other) — 10 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-22 | — | wip: checkpoint before finalize bundle | 71e255c79a30 |
 | 2026-07-15 | — | fix(phases)!: detect invocation mode from the dispatch token, not the never-advanced v1 current_step (#372) | d76970e82cf4 |
 | 2026-07-14 | — | refactor(run)!: single_session is the sole pipeline mode; remove the external per-phase-session engine (#369) | aef19f2c1668 |
 | 2026-04-24 | — | feat!: extract WebUI into own repo (shipwright-webui) — v0.4.0 | 47cacebb2a24 |
@@ -1258,7 +1260,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1189 |
+| Total commits | 1191 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1189 |
+| Human-authored commits | 1191 |
 

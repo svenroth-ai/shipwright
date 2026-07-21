@@ -186,19 +186,23 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
    `feedback_iterations: 0`. Print a notice and skip external review. Rely on
    the mandatory self-review that already ran.
 
-5. **Write the marker** (all branches) so downstream phases and compliance
-   can see the decision:
+5. **Record the pass** (all branches) so downstream phases, compliance and the
+   Mission view can see both the decision and what the review found:
    ```bash
-   uv run "{shared_root}/scripts/checks/mark-review-state.py" \
-     --planning-dir "{iterate_planning_dir}" \
-     --status "{completed | skipped_user_opt_out | skipped_config_disabled}" \
+   uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
+     --project-root "{project_root}" --run-id "{run_id}" \
+     --review-type plan \
+     --status "{completed | not_run}" \
+     --marker-status "{completed | skipped_user_opt_out | skipped_config_disabled}" \
      --provider "{openrouter | null}" \
-     --findings-count {N} \
-     --reason "{optional reason}"
+     [--from external-review-json --payload-file "{external_review.py stdout}"] \
+     [--disposition "{why it did not run — required for not_run}"]
    ```
-   Iterate writes the marker under its run-scoped planning dir
-   (`.shipwright/planning/iterate/{run_id}-review-state.json` is the recommended
-   location — pass that path as `--planning-dir`).
+   This writes the run's review record AND dual-writes the legacy
+   `external_review_state.json` marker — once under the run-scoped planning dir
+   `.shipwright/planning/iterate/{run_id}/` (what the Mission view reads) and
+   once at the historic shared path (what existing verifiers read). See
+   "Recording each review pass" in [iteration-reviews.md](iteration-reviews.md).
 
 ### Handling results (Branch A)
 - Parse JSON output: `reviews.gemini.feedback` + `reviews.openai.feedback`

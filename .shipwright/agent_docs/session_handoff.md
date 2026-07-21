@@ -1,44 +1,43 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-21-codescanning-alert-cleanup"
+run_id: "iterate-2026-07-21-review-record"
 phase: "iterate"
-reason: "iterate: close the five open GitHub code-scanning alerts"
-timestamp: "2026-07-21T05:45:53.165448+00:00"
+reason: "iterate: persist a per-run record of what every review pass found"
+timestamp: "2026-07-21T23:32:45.194803+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-21 05:45:53 UTC
+> Auto-generated 2026-07-21 23:32:45 UTC
 
 ## Session Info
 
-- **Session ID**: e5bec740-741d-4a4b-907a-e434423b4ee8
-- **Timestamp**: 2026-07-21 05:45:53 UTC
-- **Reason**: iterate: close the five open GitHub code-scanning alerts
+- **Session ID**: dcc0a976-e768-47b5-9797-65838f71f827
+- **Timestamp**: 2026-07-21 23:32:45 UTC
+- **Reason**: iterate: persist a per-run record of what every review pass found
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-21-codescanning-alert-cleanup
-- **Date**: 2026-07-21T05:45:47.407662Z
-- **Type**: change
+- **Run ID**: iterate-2026-07-21-review-record
+- **Date**: 2026-07-21T23:32:39.483479Z
+- **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/codescanning-alert-cleanup
-- **ADR**: iterate-2026-07-21-codescanning-alert-cleanup
+- **Branch**: iterate/review-record
+- **ADR**: iterate-2026-07-21-review-record
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-21-codescanning-alert-cleanup.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-21-review-record.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/codescanning-alert-cleanup
-- **Run ID**: iterate-2026-07-21-codescanning-alert-cleanup
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-21-codescanning-alert-cleanup.md
-- **Complexity**: medium
-- **External Review Marker**: missing
+- **Branch**: iterate/review-record
+- **Run ID**: iterate-2026-07-21-review-record
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-21-review-record.md
+- **Complexity**: medium (history-calibrated, n=20; `prior_source: history`)
+- **External Review Marker**: stale (predates spec (2026-07-21T23:17:39))
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/codescanning-alert-cleanup
-- **Last Commit**: d45974db fix(traceability): fail loud on shallow clone instead of skipping fr-history checks (#422)
+- **Branch**: iterate/review-record
+- **Last Commit**: 71e255c7 wip: checkpoint before finalize bundle
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-89d561d1 | grade_snapshot | — | 2026-07-21 |
+| evt-70b34c98 | work_completed | iterate (iterate: persist a per-run record of what every review pass found) | 2026-07-21 |
 | evt-14387bc7 | grade_snapshot | — | 2026-07-21 |
 | evt-36e41db0 | work_completed | iterate (iterate: close the five open GitHub code-scanning alerts) | 2026-07-21 |
 | evt-dd32a165 | grade_snapshot | — | 2026-07-20 |
-| evt-429d92bb | grade_snapshot | — | 2026-07-20 |
-| evt-9af6a842 | grade_snapshot | — | 2026-07-20 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 351
-- **Last iterate**: change — iterate: close the five open GitHub code-scanning alerts (2026-07-21)
+- **Total work events**: 352
+- **Last iterate**: change — iterate: persist a per-run record of what every review pass found (2026-07-21)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
