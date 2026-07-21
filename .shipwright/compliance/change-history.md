@@ -1,13 +1,13 @@
 # Commit Change Log
 
 Generated: 2026-07-20T22:13:50.533361+00:00
-Total commits: 1190
+Total commits: 1191
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 341
+    "fix" : 342
     "feat" : 329
     "chore" : 249
     "docs" : 146
@@ -20,12 +20,13 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 341 commits
+### Fixes (fix) — 342 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-21 | iterate | run F3+F5c reliably in the sub-iterate-runner and forbid direct decision_log writes (#421) | bb4c8fd886a9 |
+| 2026-07-21 | traceability | fail loud on shallow clone instead of skipping fr-history checks | be738046fa0d |
 | 2026-07-21 | events | recover record boundaries in the remaining event-log authority readers (#419) | 0cd30df86818 |
-| 2026-07-21 | iterate | run F3+F5c reliably in the sub-iterate-runner and forbid direct decision_log writes | 33b5e0b5d35d |
 | 2026-07-21 | finalize | stop flaky idempotency test reddening PRs across a UTC minute boundary (#418) | 4062797efa16 |
 | 2026-07-20 | adopt | roll FR-id group over past 99 so generated ids stay canonical (FR-01.13) (#416) | 5c9c4b316f05 |
 | 2026-07-19 | events | recover concatenated records across the audit read path (#409) | 1fceca45a7e3 |
@@ -704,8 +705,8 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-21 | churn | regenerate derived snapshots after main merge | f7a6d509a2ab |
-| 2026-07-21 | churn | regenerate derived snapshots after main merge | 07aca6966bc1 |
+| 2026-07-21 | churn | regenerate derived snapshots after main merge | c3f3b0357fca |
+| 2026-07-21 | churn | regenerate derived snapshots after main merge | 9458f38f267c |
 | 2026-07-19 | compliance | register four size crossings, ratchet nine entries, record the missing convention (#408) | 37fe1346b5df |
 | 2026-07-18 | triage | deliver 3 orphaned records from the merged iterate worktree (#402) | 56ee1c0e2387 |
 | 2026-07-18 | security | by-design nosemgrep suppression for the layer-coverage loader (#396) | 6cfd0e84655a |
@@ -1259,7 +1260,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1190 |
+| Total commits | 1191 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1190 |
+| Human-authored commits | 1191 |
 

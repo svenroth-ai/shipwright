@@ -29,6 +29,7 @@ Generated: 2026-07-20T22:13:50.533361+00:00
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
 | <a id="evt-e9bfacd4"></a>Onboarding an existing repo now fails with a clear, named error instead of a confusing crash if the shipwright shared toolset is missing, and a failed load can no longer leave a broken helper cached. | iterate | change | [FR-01.13](#rtm-fr-0113) | 5/5 | — | 2026-07-20 |
+| <a id="evt-bcb0aa95"></a>harden two fr-history shallow-clone skip hatches into hard fetch-depth failures (trg-3a131594) | iterate | change |  | — | — | 2026-07-20 |
 | <a id="evt-eaa519ea"></a>Shipwright's security guide now explains how a project that adopted Shipwright clears an accepted security risk from its GitHub code-scanning — a person runs the converge command from a Shipwright checkout, pointed at the adopted project. | iterate | change |  | 4708/4708 | — | 2026-07-20 |
 | <a id="evt-f195d222"></a>Iterate finalization now reliably records each run's decision and change-log entry, and blocks an iterate from editing the shared decision log directly, so no run's record is silently lost. | iterate | change |  | 4712/4723 | — | 2026-07-20 |
 | <a id="evt-9bebfcd7"></a>close event-log record-boundary reader remainder (authority readers) | iterate | change |  | — | — | 2026-07-20 |
@@ -384,7 +385,7 @@ Generated: 2026-07-20T22:13:50.533361+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 349 |
+| Iterate changes | 350 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |

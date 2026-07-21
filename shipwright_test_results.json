@@ -1,20 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-20-runner-finalization-integrity",
-    "date": "2026-07-20",
-    "type": "change",
-    "complexity": "medium",
+    "run_id": "iterate-2026-07-21-fr-history-skip-hardfail",
+    "date": "2026-07-21",
     "unit": {
-      "status": "passed",
-      "passed": 4712,
-      "total": 4723,
-      "skipped": 11
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "integration": {
       "status": "passed",
-      "passed": 3,
-      "total": 3,
-      "skipped": 0
+      "passed": 403,
+      "total": 403
     },
     "pgtap": {
       "status": "not_run",
@@ -27,112 +23,51 @@
       "total": 0
     },
     "design_fidelity": {
-      "status": "not_run"
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "smoke": {
       "status": "not_run"
     },
     "degraded": [
-      "classify_complexity flagged cross_component from the DESCRIPTION prose (pipeline-phase-validator + campaign-runner keywords), which set the medium floor + the integration_coverage enforcement. The F11 check_integration_coverage RECOMPUTES the flag from the diff (merge-base..HEAD), and this diff touches NONE of CROSS_COMPONENT_FILE_PATTERNS (iterate_checks.py / decision_log_gate.py / sub-iterate-runner.md are not in that set), so the gate does not require the integration behavior. A real-scenario integration test (test_finalization_integrity_integration.py, category:integration) was written regardless, because the change genuinely composes the F3 -> F5c -> F11 producers/consumer and is worth proving end-to-end.",
-      "bloat: iterate_checks.py grew past its baseline current (1109) while adding the new gate + the drop-content tightening. Resolved by EXTRACTING the ADR/decision-log integrity cluster (check_adr_in_iterate_history + _drop_carries_adr + check_iterate_no_direct_decision_log) into a new <300-line module verifiers/decision_log_gate.py and re-exporting; iterate_checks.py ratcheted DOWN to 1062 (baseline updated to match). The runner contract doc landed at exactly its grandfathered 479 by condensing F3/F5c to reference references/F3.md + references/F5c.md and tightening the F2 browser-verify prose (all commands preserved) — no bloat-exception ADR needed."
+      {
+        "type": "complexity_override",
+        "detail": "classify_complexity estimated 'medium' (prior_source=history, median of last 20 runs) and flagged risk 'touches_billing' — a prose false-positive: the message said 'shallow checkouts' and 'checkout' is a touches_billing keyword (risk_taxonomy.py). The diff touches zero billing paths (one integration test file), so the authoritative risk set is []. Classified as 'small' change per diff-authoritative rule; no mandatory review required."
+      }
     ],
     "surface_verification": {
       "surface": "none",
-      "justification": "Framework-internal change: the F11 iterate-verifier logic (verifiers/iterate_checks.py + the extracted verifiers/decision_log_gate.py), the sub-iterate-runner contract doc + its result-JSON schema, and the finalization/reference docs. No web/cli/api application surface exists or changed — the monorepo is library-scoped SDLC tooling, and the affected CLIs are internal pipeline steps, not a user-facing product. Verified empirically by the full shared test suite (4712 passed, 11 skipped) + the iterate plugin suite (497 passed) + a real-producer->verifier integration test (test_finalization_integrity_integration.py) that drives write_decision_drop -> append_iterate_entry -> verify_iterate_finalization end-to-end against a real git repo and asserts BOTH the forbidden direct-decision_log.md-write path AND the empty-drop path fail closed.",
+      "justification": "Test-only change: two pytest.skip hatches in one integration test hardened into hard fetch-depth failures, plus two meta-tests. No runtime code, API route, store mutation, SSE/WS handler, message contract, or UI-consumed code touched — no web or CLI surface to exercise.",
       "tests_run": 0,
-      "exit_code": 0,
-      "evidence_path": ".shipwright/planning/iterate/2026-07-20-runner-finalization-integrity.md"
+      "exit_code": 0
     },
     "test_completeness": {
       "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "the absent-run-id reachability check raises a hard AssertionError naming 'fetch-depth: 0' (not pytest.skip) when a commit is unreachable",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_change_history_recovers_compacted_history.py::test_absent_run_id_check_hard_fails_on_unreachable_commit PASSED"
+        },
+        {
+          "behavior": "the pre-S6 provenance check raises a hard AssertionError naming 'fetch-depth: 0' (not pytest.skip) when PRE_S6_COMMIT is unreachable",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_change_history_recovers_compacted_history.py::test_pre_s6_source_check_hard_fails_on_unreachable_commit PASSED"
+        },
+        {
+          "behavior": "on a full-history checkout both checks still pass unchanged (referenced commits reachable → no skip, no raise)",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_change_history_recovers_compacted_history.py::test_the_absent_run_ids_did_real_work_that_was_never_recorded and ::test_the_recovery_source_is_the_pre_s6_catalog_not_a_summary_of_it PASSED (integration F0: 403 passed)"
+        }
+      ],
       "counts": {
-        "total": 13,
-        "tested": 13,
+        "total": 3,
+        "tested": 3,
         "untestable": 0,
         "untested_testable": 0
       },
-      "behaviors": [
-        {
-          "behavior": "(b) run-id ADR identity is accepted only when a decision-drop actually CARRIES the ADR (parses as an object + run_id matches + non-empty decision)",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_verify_iterate_finalization.py::test_adr_check_passes_with_pending_decision_drop"
-        },
-        {
-          "behavior": "(b) an empty/placeholder {} drop (the shape of a silently-lost ADR) is REJECTED, not passed",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_verify_iterate_finalization.py::test_adr_check_fails_when_decision_drop_is_empty_placeholder"
-        },
-        {
-          "behavior": "(b) a drop that parses and matches run_id but has an empty/whitespace decision is still rejected",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_verify_iterate_finalization.py::test_adr_check_fails_when_drop_decision_empty"
-        },
-        {
-          "behavior": "(b) post-aggregation, a **Run-ID:** line for the run in decision_log.md satisfies run-id identity",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_verify_iterate_finalization.py::test_adr_check_passes_when_runid_aggregated_into_log"
-        },
-        {
-          "behavior": "(b) a run-id identity with NEITHER a carrying drop NOR a Run-ID line fails closed",
-          "ac": "AC2",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_verify_iterate_finalization.py::test_adr_check_fails_when_runid_has_no_drop_and_not_in_log"
-        },
-        {
-          "behavior": "(c) an iterate commit that modifies .shipwright/agent_docs/decision_log.md fails the new F11 gate (ERROR)",
-          "ac": "AC3",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_verify_iterate_finalization.py::test_no_direct_decision_log_fails_when_iterate_writes_it"
-        },
-        {
-          "behavior": "(c) an iterate commit that does not touch decision_log.md passes the gate",
-          "ac": "AC3",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_verify_iterate_finalization.py::test_no_direct_decision_log_passes_when_untouched"
-        },
-        {
-          "behavior": "(c) the gate SKIPs (does not fail) when no --commit is supplied or git is unavailable",
-          "ac": "AC3",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_verify_iterate_finalization.py::test_no_direct_decision_log_skips_without_commit"
-        },
-        {
-          "behavior": "(c) the gate is scoped to the exact agent-doc path — a lookalike file merely named decision_log does not trip it",
-          "ac": "AC3",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_verify_iterate_finalization.py::test_no_direct_decision_log_ignores_unrelated_decision_log_named_files"
-        },
-        {
-          "behavior": "(c) the new gate is wired into run_all_checks (the F11 verifier check list) and skips cleanly on the happy path",
-          "ac": "AC3",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_verify_iterate_finalization.py::test_run_all_checks_returns_green_on_happy_path"
-        },
-        {
-          "behavior": "(a) the sub-iterate-runner contract routes F3 through write_decision_drop.py (NOT write_decision_log.py), carries F5c (append_iterate_entry.py) as a mandatory step, and names the no-direct-decision_log F11 gate",
-          "ac": "AC1",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_runner_doc_documents_f3_drop_and_f5c"
-        },
-        {
-          "behavior": "(a) the runner result.json schema admits the OPTIONAL finalization record (f3_decision_drop / f5c_iterate_entry / verifier), and a sample carrying it validates while legacy results without it stay valid",
-          "ac": "AC1",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py::test_schema_has_finalization_property + ::test_schema_validates_result_with_finalization_field + ::test_schema_finalization_field_is_optional"
-        },
-        {
-          "behavior": "INTEGRATION: the real producers compose — write_decision_drop (F3) -> append_iterate_entry (F5c) -> verify_iterate_finalization (F11) go GREEN on a proper run, RED when the iterate commit writes decision_log.md directly, and RED when the drop is an empty placeholder",
-          "ac": "AC1, AC2, AC3",
-          "category": "integration",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_finalization_integrity_integration.py (test_happy_path_f3_f5c_compose_green / test_forbidden_direct_decision_log_write_fails / test_lost_adr_empty_drop_fails)"
-        }
-      ],
-      "note": "AC4 (retention docs made consumer-explicit + the webui follow-up triage anchor trg-92c0c36b) and AC5 (docs/hooks-and-pipeline.md validator registry) are documentation/data outcomes with no executable behavior, so they are not enumerated as testable behaviors. The enumeration covers the three code ACs (AC1 runner contract + schema, AC2 verifier tightening, AC3 new gate); enumeration_basis is intentionally omitted because the AC set mixes code and doc-only criteria. The (b) numbered-ADR backward-compat branch was deliberately left intact (see the spec's rejected alternative) and is still covered by the pre-existing test_adr_check_passes_when_both_config_and_log_align + the dual-mode tests, which stayed green."
+      "note": "Pure-tooling test-hardening iterate; no FR behavior delta, so the cross-layer execution-evidence gate does not fire."
     }
   },
   "coverage": {

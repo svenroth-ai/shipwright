@@ -1,8 +1,8 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-20-runner-finalization-integrity"
+run_id: "iterate-2026-07-21-fr-history-skip-hardfail"
 phase: "iterate"
-reason: "F11 refresh: catch up 1 behind"
+reason: "F11 re-refresh: integrate #421"
 timestamp: "2026-07-20T22:13:56.299243+00:00"
 ---
 
@@ -12,9 +12,9 @@ timestamp: "2026-07-20T22:13:56.299243+00:00"
 
 ## Session Info
 
-- **Session ID**: 059b5006-0551-4c91-acfc-252b276f1794
+- **Session ID**: 6c3536fe-0c2c-41bb-89a5-ec4014b6c5ee
 - **Timestamp**: 2026-07-20 22:13:56 UTC
-- **Reason**: F11 refresh: catch up 1 behind
+- **Reason**: F11 re-refresh: integrate #421
 
 ## Last Iterate
 
@@ -29,10 +29,7 @@ timestamp: "2026-07-20T22:13:56.299243+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/runner-finalization-integrity
-- **Run ID**: `iterate-2026-07-20-runner-finalization-integrity`
-- **Spec**: .shipwright/planning/iterate/2026-07-20-runner-finalization-integrity.md
-- **Complexity**: medium (history-calibrated; risk floor medium)
+- **Branch**: iterate/fr-history-skip-hardfail
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -51,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/runner-finalization-integrity
-- **Last Commit**: c65e5667 Merge remote-tracking branch 'origin/main' into iterate/runner-finalization-integrity
+- **Branch**: iterate/fr-history-skip-hardfail
+- **Last Commit**: 89a0dd98 Merge remote-tracking branch 'origin/main' into iterate/fr-history-skip-hardfail
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -77,7 +74,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 349
+- **Total work events**: 350
 - **Last iterate**: change — Document operator-run converge for adopted repos + guard test (2026-07-20)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
