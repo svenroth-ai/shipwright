@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-21-fr-history-skip-hardfail",
+    "run_id": "iterate-2026-07-21-codescanning-alert-cleanup",
     "date": "2026-07-21",
     "unit": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 6023,
+      "total": 6023
     },
     "integration": {
       "status": "passed",
-      "passed": 403,
-      "total": 403
+      "passed": 417,
+      "total": 417
     },
     "pgtap": {
       "status": "not_run",
@@ -30,15 +30,10 @@
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [
-      {
-        "type": "complexity_override",
-        "detail": "classify_complexity estimated 'medium' (prior_source=history, median of last 20 runs) and flagged risk 'touches_billing' — a prose false-positive: the message said 'shallow checkouts' and 'checkout' is a touches_billing keyword (risk_taxonomy.py). The diff touches zero billing paths (one integration test file), so the authoritative risk set is []. Classified as 'small' change per diff-authoritative rule; no mandatory review required."
-      }
-    ],
+    "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "justification": "Test-only change: two pytest.skip hatches in one integration test hardened into hard fetch-depth failures, plus two meta-tests. No runtime code, API route, store mutation, SSE/WS handler, message contract, or UI-consumed code touched — no web or CLI surface to exercise.",
+      "justification": "No runtime surface exists to exercise. Three of the four touched files are test-harness code (probe dispatch table, two test modules); the fourth, shared/scripts/lib/fr_table_reader.py, gains a first-party-name guard plus comments and no parsing behaviour change — proven by its five consumers staying green across all three import realms (compliance 1295, shared 4728, integration 416). No API route, store mutation, SSE/WS handler, message contract, or UI-consumed code is touched. The change's actual output surface is the SCANNER, which is verified directly: semgrep reports 3 findings before and 0 after, repo-wide.",
       "tests_run": 0,
       "exit_code": 0
     },
@@ -46,28 +41,68 @@
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "the absent-run-id reachability check raises a hard AssertionError naming 'fetch-depth: 0' (not pytest.skip) when a commit is unreachable",
+          "behavior": "probe dispatch resolves each name to its function without indexing globals()",
           "disposition": "tested",
-          "evidence": "integration-tests/test_fr_change_history_recovers_compacted_history.py::test_absent_run_id_check_hard_fails_on_unreachable_commit PASSED"
+          "evidence": "integration-tests/test_requirements_corpus_false_verdicts.py + _found_defects.py — 7 probe names driven end-to-end through the subprocess runner, 20 passed"
         },
         {
-          "behavior": "the pre-S6 provenance check raises a hard AssertionError naming 'fetch-depth: 0' (not pytest.skip) when PRE_S6_COMMIT is unreachable",
+          "behavior": "every probe-table row maps to the correspondingly-named function",
           "disposition": "tested",
-          "evidence": "integration-tests/test_fr_change_history_recovers_compacted_history.py::test_pre_s6_source_check_hard_fails_on_unreachable_commit PASSED"
+          "evidence": "integration-tests/test_requirements_corpus_probe_table.py::test_every_probe_table_row_resolves_to_its_like_named_function PASSED; mutation-verified ('t1': probe_t2 makes it RED)"
         },
         {
-          "behavior": "on a full-history checkout both checks still pass unchanged (referenced commits reachable → no skip, no raise)",
+          "behavior": "every module-level probe_* function is registered in the table (incl. never-invoked t2)",
           "disposition": "tested",
-          "evidence": "integration-tests/test_fr_change_history_recovers_compacted_history.py::test_the_absent_run_ids_did_real_work_that_was_never_recorded and ::test_the_recovery_source_is_the_pre_s6_catalog_not_a_summary_of_it PASSED (integration F0: 403 passed)"
+          "evidence": "integration-tests/test_requirements_corpus_probe_table.py::test_every_probe_function_is_registered_in_the_table PASSED"
+        },
+        {
+          "behavior": "--probe accepts exactly the eight documented names",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_requirements_corpus_probe_table.py::test_the_probe_cli_offers_exactly_the_documented_names PASSED"
+        },
+        {
+          "behavior": "the adopt generator still emits the canonical FR-table header after the -c program was hoisted out of the argv list",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_table_shape_convergence.py::test_the_adopt_generator_emits_it PASSED"
+        },
+        {
+          "behavior": "a reintroduced pytest.skip inside pre_s6_sections fails the shallow-clone meta-test hard instead of skipping it",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_history_skip_guard.py::test_a_reintroduced_skip_makes_the_meta_test_fail_not_skip PASSED — runs the real meta-test in a child pytest with pre_s6_sections patched to skip; asserts '1 failed' and NOT '1 skipped'"
+        },
+        {
+          "behavior": "a non-Skipped exception from pre_s6_sections propagates instead of being converted to pytest.fail",
+          "disposition": "untestable",
+          "evidence": "The AssertionError path is exercised by the meta-test itself and the Skipped path by test_fr_history_skip_guard.py; what remains is the ABSENCE of a handler (Python's default propagation), so no branch of this diff is left unexercised.",
+          "reason_code": "covered-by-existing-test"
+        },
+        {
+          "behavior": "_ALLOWED_SIBLINGS equals the set of siblings actually imported (no stale entry widening the guard)",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_table_reader_load_styles.py::test_the_declared_sibling_allowlist_matches_what_is_actually_loaded[4 load styles] PASSED; mutation-verified (an unused 'os' entry reddens all four)"
+        },
+        {
+          "behavior": "an undeclared sibling name is refused before reaching importlib.import_module",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_table_reader_load_styles.py::test_an_undeclared_sibling_name_is_refused_before_it_reaches_import[4 load styles] PASSED; mutation-verified; plus test_fr_table_reader_contract.py::test_an_undeclared_sibling_is_refused in-process — the subprocess assertions are invisible to coverage, which the diff-coverage gate caught (the raise showed as an uncovered changed line)"
+        },
+        {
+          "behavior": "Semgrep reports none of non-literal-import / dangerous-globals-use anywhere in the repo",
+          "disposition": "tested",
+          "evidence": "semgrep 1.170.0 --config r/python.lang.security.audit.non-literal-import --config r/python.lang.security.dangerous-globals-use over the repo: 3 findings BEFORE the diff (alerts 1257/1258/1260 at their exact reported lines), 0 AFTER"
+        },
+        {
+          "behavior": "the new _sibling guard breaks no consumer in any import realm",
+          "disposition": "tested",
+          "evidence": "shared/tests 4728 passed + integration-tests 416 passed + plugins/shipwright-compliance 1295 passed, all green"
         }
       ],
       "counts": {
-        "total": 3,
-        "tested": 3,
-        "untestable": 0,
+        "total": 11,
+        "tested": 10,
+        "untestable": 1,
         "untested_testable": 0
-      },
-      "note": "Pure-tooling test-hardening iterate; no FR behavior delta, so the cross-layer execution-evidence gate does not fire."
+      }
     }
   },
   "coverage": {

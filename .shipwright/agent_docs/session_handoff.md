@@ -1,40 +1,44 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-21-fr-history-skip-hardfail"
+run_id: "iterate-2026-07-21-codescanning-alert-cleanup"
 phase: "iterate"
-reason: "F11 re-refresh: integrate #421"
-timestamp: "2026-07-20T22:13:56.299243+00:00"
+reason: "iterate: close the five open GitHub code-scanning alerts"
+timestamp: "2026-07-21T05:45:53.165448+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-20 22:13:56 UTC
+> Auto-generated 2026-07-21 05:45:53 UTC
 
 ## Session Info
 
-- **Session ID**: 6c3536fe-0c2c-41bb-89a5-ec4014b6c5ee
-- **Timestamp**: 2026-07-20 22:13:56 UTC
-- **Reason**: F11 re-refresh: integrate #421
+- **Session ID**: e5bec740-741d-4a4b-907a-e434423b4ee8
+- **Timestamp**: 2026-07-21 05:45:53 UTC
+- **Reason**: iterate: close the five open GitHub code-scanning alerts
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-20-adopt-shared-loader-guard
-- **Date**: 2026-07-20T22:13:56.541351Z
+- **Run ID**: iterate-2026-07-21-codescanning-alert-cleanup
+- **Date**: 2026-07-21T05:45:47.407662Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/adopt-shared-loader-guard
-- **ADR**: iterate-2026-07-20-adopt-shared-loader-guard
+- **Branch**: iterate/codescanning-alert-cleanup
+- **ADR**: iterate-2026-07-21-codescanning-alert-cleanup
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-20-adopt-shared-loader-guard.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-21-codescanning-alert-cleanup.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/fr-history-skip-hardfail
+- **Branch**: iterate/codescanning-alert-cleanup
+- **Run ID**: iterate-2026-07-21-codescanning-alert-cleanup
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-21-codescanning-alert-cleanup.md
+- **Complexity**: medium
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -48,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/fr-history-skip-hardfail
-- **Last Commit**: 89a0dd98 Merge remote-tracking branch 'origin/main' into iterate/fr-history-skip-hardfail
+- **Branch**: iterate/codescanning-alert-cleanup
+- **Last Commit**: d45974db fix(traceability): fail loud on shallow clone instead of skipping fr-history checks (#422)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +69,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-14387bc7 | grade_snapshot | — | 2026-07-21 |
+| evt-36e41db0 | work_completed | iterate (iterate: close the five open GitHub code-scanning alerts) | 2026-07-21 |
 | evt-dd32a165 | grade_snapshot | — | 2026-07-20 |
 | evt-429d92bb | grade_snapshot | — | 2026-07-20 |
 | evt-9af6a842 | grade_snapshot | — | 2026-07-20 |
-| evt-eaa519ea | work_completed | iterate (Document operator-run converge for adopted repos + guard test) | 2026-07-20 |
-| evt-4d5466ac | grade_snapshot | — | 2026-07-20 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 350
-- **Last iterate**: change — Document operator-run converge for adopted repos + guard test (2026-07-20)
+- **Total work events**: 351
+- **Last iterate**: change — iterate: close the five open GitHub code-scanning alerts (2026-07-21)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

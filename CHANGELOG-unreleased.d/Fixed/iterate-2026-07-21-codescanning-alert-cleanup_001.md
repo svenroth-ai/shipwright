@@ -1,0 +1,1 @@
+The shallow-clone anti-skip guard in the FR-history provenance meta-test now catches `pytest.skip`'s exception by name rather than swallowing every `BaseException`, so `KeyboardInterrupt` and `SystemExit` are no longer converted into test failures — and the guard itself is exercised for the first time, in a child pytest process.
