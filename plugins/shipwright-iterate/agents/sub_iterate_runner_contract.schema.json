@@ -128,6 +128,21 @@
               }
             }
           }
+        },
+        "finalization": {
+          "type": "object",
+          "description": "Finalization record (iterate-2026-07-20-runner-finalization-integrity). Records that F3 (decision-drop), F5c (iterate entry), and the F6-verify self-verifier ran. Optional for backwards-compat; when present, verifier.exit_code MUST be 0 for a status:complete result.",
+          "properties": {
+            "f3_decision_drop": { "type": "string" },
+            "f5c_iterate_entry": { "type": "string" },
+            "verifier": {
+              "type": "object",
+              "properties": {
+                "status": { "type": "string" },
+                "exit_code": { "type": "integer" }
+              }
+            }
+          }
         }
       },
       "additionalProperties": false

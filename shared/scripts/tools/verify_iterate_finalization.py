@@ -50,6 +50,7 @@ from tools.verifiers.iterate_checks import (  # noqa: E402,F401
     check_cross_layer_coverage,
     check_events_has_commit,
     check_iterate_history_has_run_id,
+    check_iterate_no_direct_decision_log,
     check_removal_coverage,
     check_session_handoff_fresh,
     check_spec_impact_recorded,

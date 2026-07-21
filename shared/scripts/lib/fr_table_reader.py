@@ -63,6 +63,18 @@ from pathlib import Path
 
 _SIBLINGS: dict[str, object] = {}
 
+# The complete set of siblings this module may load. Every call below passes a
+# literal, so the dynamic import is safe by inspection today — but that is a
+# property of the CALL SITES, while the scanner suppressions sit on `_sibling`
+# itself, so a future caller threading in argv or config would inherit them
+# silently. Declaring the set makes the claim a precondition instead of a
+# comment. The reverse direction — no stale entry permitting more than the
+# module uses — is pinned in `test_fr_table_reader_load_styles.py`.
+_ALLOWED_SIBLINGS = frozenset({
+    "requirement_model", "fr_fold_map",
+    "_fr_table_cells", "_fr_table_row", "_fr_table_columns",
+})
+
 
 def _sibling(name: str):
     """Import a ``shared/scripts/lib`` sibling however THIS module was loaded.
@@ -86,8 +98,13 @@ def _sibling(name: str):
     """
     if (mod := _SIBLINGS.get(name)) is not None:
         return mod
+    if name not in _ALLOWED_SIBLINGS:
+        raise ValueError(f"{name!r} is not in _ALLOWED_SIBLINGS")
     package = __package__ or ""
     if package:
+        # Name is constrained to _ALLOWED_SIBLINGS above — first-party module
+        # identifiers only, never untrusted input.
+        # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
         mod = importlib.import_module(f".{name}", package)
     else:
         lib_dir = str(Path(__file__).resolve().parent)

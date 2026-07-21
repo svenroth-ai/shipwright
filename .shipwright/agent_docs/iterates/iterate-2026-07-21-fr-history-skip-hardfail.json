@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-21-fr-history-skip-hardfail",
+  "date": "2026-07-20T22:10:07.235993Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/fr-history-skip-hardfail",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-07-21-fr-history-skip-hardfail"
+}

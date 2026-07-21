@@ -44,7 +44,6 @@ from lib.jsonl_records import read_jsonl_records, split_records  # noqa: E402
 from lib.iterate_entry import (  # noqa: E402
     find_entry_by_run_id,
     read_iterate_entries,
-    sanitize_run_id_for_filename,
 )
 
 from .agent_doc_budget_check import check_agent_doc_budget  # noqa: E402,F401 — re-exported
@@ -52,6 +51,13 @@ from .agent_doc_shape_check import check_agent_doc_shape  # noqa: E402,F401 — 
 from .common import CheckResult, Severity  # noqa: E402
 from .git_helpers import _commit_changed_paths, _git_available, _run_git  # noqa: E402
 from .ci_supplychain import check_ci_supplychain_ack  # noqa: E402
+# ADR / decision-log integrity checks live in their own module (bloat
+# extraction); re-imported here so run_all_checks + the verify_iterate_finalization
+# wrapper + the tests keep resolving them from iterate_checks.
+from .decision_log_gate import (  # noqa: E402, F401 — re-exported surface
+    check_adr_in_iterate_history,
+    check_iterate_no_direct_decision_log,
+)
 from .integration_coverage import check_integration_coverage  # noqa: E402
 # Re-exported so the drift-pin test ``test_ci_supplychain_patterns_sync`` keeps
 # resolving ``ic._CI_SUPPLYCHAIN_PATTERNS`` / ``ic._is_ci_supplychain``.
@@ -258,67 +264,9 @@ def _event_committed_in_head(
     return _committed_blob_has_event(committed, commit_hash, run_id)
 
 
-def check_adr_in_iterate_history(project_root: Path, run_id: str) -> CheckResult:
-    """F3 + F5c consistency — the entry for ``run_id`` carries an ``adr`` field
-    that resolves to a real ADR.
-
-    Two ADR-identity shapes are accepted:
-
-    - ``ADR-NNN`` — a numbered ADR; must be a heading in ``decision_log.md``
-      (the direct-append path used by non-iterate phases).
-    - a run-id — the iterate decision-drop pattern (H). Pre-aggregation the
-      ADR lives as a JSON drop under ``decision-drops/``; post-aggregation it
-      has been folded into ``decision_log.md`` with a ``Run-ID:`` line.
-
-    Entry lookup goes through the merged reader so new-format projects
-    without any legacy array still resolve cleanly.
-    """
-    name = "ADR recorded + present"
-    entry = find_entry_by_run_id(project_root, run_id)
-    if not entry:
-        return CheckResult(name, False, f"run_id={run_id} not in iterate history")
-    adr_id = entry.get("adr")
-    if not adr_id:
-        return CheckResult(name, False, f"iterate_history[{run_id}].adr missing")
-
-    log = project_root / ".shipwright" / "agent_docs" / "decision_log.md"
-    log_content = (
-        log.read_text(encoding="utf-8", errors="ignore") if log.exists() else ""
-    )
-
-    # Run-id ADR identity — the H decision-drop pattern. fullmatch (not
-    # match) so a run-id that merely starts with "adr-" is not misread as a
-    # numbered ADR.
-    if not re.fullmatch(r"(?i)ADR-\d+", adr_id.strip()):
-        # Worktree-aware: iterate F3 writes the decision-drop next to the
-        # MAIN repo (write_decision_drop.drop_dir), but this verifier runs
-        # at F11 with project_root = the iterate worktree. Resolve the drop
-        # dir against the main repo, or the pending-drop branch never
-        # matches and a freshly-written ADR is reported missing.
-        drop_root = resolve_main_repo_root(project_root) or project_root
-        drop_dir = drop_root / ".shipwright" / "agent_docs" / "decision-drops"
-        if drop_dir.is_dir():
-            safe = sanitize_run_id_for_filename(adr_id)
-            if any(p.name.startswith(f"{safe}_") for p in drop_dir.glob("*.json")):
-                return CheckResult(
-                    name, True, f"{adr_id}: decision-drop pending aggregation"
-                )
-        if log_content and re.search(
-            rf"\*\*Run-ID:\*\*\s*{re.escape(adr_id)}\b", log_content
-        ):
-            return CheckResult(
-                name, True, f"{adr_id}: ADR aggregated into decision_log.md"
-            )
-        return CheckResult(
-            name, False, f"{adr_id}: no decision-drop and not in decision_log.md"
-        )
-
-    # Numbered ADR — heading must be present in decision_log.md.
-    if not log.exists():
-        return CheckResult(name, False, f"missing {log.name}")
-    if re.search(rf"### {re.escape(adr_id)}[: ]", log_content):
-        return CheckResult(name, True, f"{adr_id} present in decision_log.md")
-    return CheckResult(name, False, f"{adr_id} NOT found in decision_log.md")
+# ``_drop_carries_adr`` + ``check_adr_in_iterate_history`` moved to
+# ``verifiers/decision_log_gate.py`` (iterate-2026-07-20-runner-finalization-integrity,
+# bloat extraction) and re-imported at the top of this module.
 
 
 def _find_changelog_drop_files(
@@ -1075,6 +1023,10 @@ def check_architecture_documented(project_root: Path, run_id: str) -> CheckResul
     )
 
 
+# ``_is_decision_log_path`` + ``check_iterate_no_direct_decision_log`` moved to
+# ``verifiers/decision_log_gate.py`` (bloat extraction) and re-imported above.
+
+
 # Orchestrator (kept for backwards compat with verify_iterate_finalization.py).
 def run_all_checks(
     project_root: Path,
@@ -1099,6 +1051,7 @@ def run_all_checks(
         ),
         check_architecture_documented(project_root, run_id),
         check_integration_coverage(project_root, run_id, commit_hash),
+        check_iterate_no_direct_decision_log(project_root, run_id, commit_hash),
         check_ci_supplychain_ack(project_root, run_id, commit_hash),
         check_removal_coverage(project_root, run_id, commit_hash),
         check_cross_layer_coverage(project_root, run_id, commit_hash),

@@ -17,10 +17,10 @@ Behavior:
 * The append itself is atomic per file; migration + append + retention
   all happen inside a single ``file_lock`` held on the run-config lock
   file so concurrent same-worktree finalize calls are serialized.
-* Retention drops the oldest entries beyond
-  ``ITERATE_RETENTION`` (50). Retention is applied only **after**
-  migration is complete so first contact with a historic 60-entry array
-  does not throw away 10 rows as a side effect of the upgrade.
+* Retention drops the oldest entries beyond ``ITERATE_RETENTION`` (50) — a
+  BOUNDED window; a consumer needing FULL history reads ``shipwright_events.jsonl``
+  (never evicted), NOT this dir (see F5c.md). Applied only **after** migration
+  so first contact with a historic 60-entry array does not drop 10 rows on upgrade.
 
 CLI:
 

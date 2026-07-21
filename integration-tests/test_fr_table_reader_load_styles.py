@@ -100,16 +100,46 @@ print(json.dumps([
 """
 
 
-def _run(style: str) -> list[dict]:
-    source = _LOADERS[style] + _PROBE.format(spec=_SPEC)
+# Reports the sibling-allowlist state from inside the loaded module. Run as a
+# subprocess like every other probe here: importing the reader in-process would
+# bind `sys.modules['lib']` for the whole session, which is the interference
+# this module exists to keep out.
+_ALLOWLIST_PROBE = """
+import json
+# Snapshot the import-time cache BEFORE probing the guard. `_sibling` memoizes
+# into `_SIBLINGS`, so a guard that wrongly ALLOWS the undeclared name would
+# also insert it here -- and the allowlist-vs-loaded comparison would then agree
+# with itself and pass. Reading first is what keeps the two facts independent.
+loaded = sorted(reader._SIBLINGS)
+try:
+    reader._sibling("os")
+except ValueError as exc:
+    refused = "_ALLOWED_SIBLINGS" in str(exc)
+except Exception:
+    refused = False
+else:
+    refused = False
+print(json.dumps({
+    "loaded": loaded,
+    "declared": sorted(reader._ALLOWED_SIBLINGS),
+    "refused": refused,
+}))
+"""
+
+
+def _run_source(source: str, label: str):
     proc = subprocess.run(
         [sys.executable, "-c", source],
         capture_output=True, text=True, cwd=str(REPO_ROOT), timeout=120,
     )
     assert proc.returncode == 0, (
-        f"{style} load failed:\n{proc.stderr}"
+        f"{label} load failed:\n{proc.stderr}"
     )
     return json.loads(proc.stdout)
+
+
+def _run(style: str) -> list[dict]:
+    return _run_source(_LOADERS[style] + _PROBE.format(spec=_SPEC), style)
 
 
 _EXPECTED = [
@@ -123,6 +153,40 @@ _EXPECTED = [
 @pytest.mark.parametrize("style", sorted(_LOADERS))
 def test_the_reader_loads_and_parses_identically_under_every_import_style(style):
     assert _run(style) == _EXPECTED
+
+
+@pytest.mark.parametrize("style", sorted(_LOADERS))
+def test_the_declared_sibling_allowlist_matches_what_is_actually_loaded(style):
+    """Reverse drift protection for ``_ALLOWED_SIBLINGS``.
+
+    The allowlist is what lets ``_sibling``'s dynamic import carry a scanner
+    suppression honestly: the name can only ever be one of five first-party
+    modules. That argument collapses if the set is allowed to rot — a stale
+    entry silently widens what the guard permits, and nothing else would notice,
+    because an unused entry breaks nothing.
+
+    ``_SIBLINGS`` is the import-time cache, so once the module has loaded it
+    holds exactly the siblings really imported. Equality with the declared set
+    pins both directions at once: no undeclared load, no unused declaration.
+    Checked under every load style because ``_sibling`` takes a DIFFERENT branch
+    per style — the relative-import branch is the one the guard now precedes.
+    """
+    state = _run_source(_LOADERS[style] + _ALLOWLIST_PROBE, style)
+    assert state["loaded"] == state["declared"], (
+        f"{style}: _ALLOWED_SIBLINGS disagrees with what was imported — "
+        f"declared {state['declared']}, loaded {state['loaded']}"
+    )
+
+
+@pytest.mark.parametrize("style", sorted(_LOADERS))
+def test_an_undeclared_sibling_name_is_refused_before_it_reaches_import(style):
+    """The guard bites. Without this, ``_ALLOWED_SIBLINGS`` is documentation."""
+    state = _run_source(_LOADERS[style] + _ALLOWLIST_PROBE, style)
+    assert state["refused"], (
+        f"{style}: _sibling('os') was not refused — an undeclared name can "
+        f"reach import_module, and the nosemgrep suppression there is no longer "
+        f"backed by a closed set"
+    )
 
 
 def test_the_reader_imports_none_of_the_five_parsers_it_replaced():

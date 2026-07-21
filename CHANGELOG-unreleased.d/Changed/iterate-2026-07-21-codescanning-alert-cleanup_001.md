@@ -1,0 +1,1 @@
+The false-verdict probe runner dispatches through an explicit name-to-function table instead of indexing `globals()` with a runtime-built string. The retired form also carried a per-probe realm value that nothing read and that could disagree with the realm each probe actually enters; both directions of the new table are now drift-protected.

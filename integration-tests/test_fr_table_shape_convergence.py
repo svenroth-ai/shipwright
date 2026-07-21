@@ -87,16 +87,24 @@ def test_the_greenfield_template_and_example_both_carry_it() -> None:
     )
 
 
+# Held in a named constant rather than inline in the argv list below. Adjacent
+# string literals inside a list read as a missing comma -- the difference
+# between one program and several arguments is a single character -- so the
+# program is assembled where it is unambiguous and the argv list stays four
+# plain elements.
+_RENDER_ADOPT_FR_TABLE = (
+    "import sys, pathlib\n"
+    "root = pathlib.Path(sys.argv[1])\n"
+    "sys.path.insert(0, str(root / 'plugins' / 'shipwright-adopt' / 'scripts'))\n"
+    "from lib.spec_table import render_fr_table\n"
+    "print(render_fr_table([], split_name='01-adopted'))\n"
+)
+
+
 def test_the_adopt_generator_emits_it() -> None:
     """Rendered through the real producer, not asserted against its source."""
     out = subprocess.run(
-        [sys.executable, "-c",
-         "import sys, pathlib;"
-         "root = pathlib.Path(sys.argv[1]);"
-         "sys.path.insert(0, str(root / 'plugins' / 'shipwright-adopt' / 'scripts'));"
-         "from lib.spec_table import render_fr_table;"
-         "print(render_fr_table([], split_name='01-adopted'))",
-         str(REPO_ROOT)],
+        [sys.executable, "-c", _RENDER_ADOPT_FR_TABLE, str(REPO_ROOT)],
         capture_output=True, text=True, check=True,
     )
     assert out.stdout.splitlines()[0] == FR_TABLE_HEADER
