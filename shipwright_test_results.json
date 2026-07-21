@@ -114,7 +114,17 @@
           "evidence": "requirements-corpus and FR-table-shape integration tests (417) pass against the edited catalog; spec prose has no separate executable surface",
           "reason_code": "covered-by-existing-test"
         }
-      ]
+      ],
+      "counts": {
+        "total": 13,
+        "tested": 11,
+        "untestable": 2,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 6,
+        "covered_acs": 6
+      }
     }
   },
   "coverage": {
