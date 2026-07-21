@@ -1,0 +1,1 @@
+Normalized an inline `__import__("os")` in the shallow-clone skip-guard test to a top-level `import os`, clearing a benign prompt-scan `PY_DYNAMIC_IMPORT` finding at the source instead of suppressing it.

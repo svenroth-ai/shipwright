@@ -1,39 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-21-review-record"
+run_id: "iterate-2026-07-21-prompt-scan-dynamic-import"
 phase: "iterate"
-reason: "iterate: persist a per-run record of what every review pass found"
-timestamp: "2026-07-21T23:32:45.194803+00:00"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-07-21T22:10:46.390579+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-21 23:32:45 UTC
+> Auto-generated 2026-07-21 22:10:46 UTC
 
 ## Session Info
 
-- **Session ID**: dcc0a976-e768-47b5-9797-65838f71f827
-- **Timestamp**: 2026-07-21 23:32:45 UTC
-- **Reason**: iterate: persist a per-run record of what every review pass found
+- **Session ID**: 0c49f59a-af2a-4918-ab08-ee9e5dd6c494
+- **Timestamp**: 2026-07-21 22:10:46 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-21-review-record
-- **Date**: 2026-07-21T23:32:39.483479Z
-- **Type**: feature
-- **Complexity**: medium
-- **Branch**: iterate/review-record
-- **ADR**: iterate-2026-07-21-review-record
+- **Run ID**: iterate-2026-07-21-prompt-scan-dynamic-import
+- **Date**: 2026-07-21T22:10:40.598609Z
+- **Type**: change
+- **Complexity**: trivial
+- **Branch**: iterate/prompt-scan-dynamic-import
+- **ADR**: iterate-2026-07-21-prompt-scan-dynamic-import
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-21-review-record.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/review-record
-- **Run ID**: iterate-2026-07-21-review-record
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-21-review-record.md
-- **Complexity**: medium (history-calibrated, n=20; `prior_source: history`)
-- **External Review Marker**: stale (predates spec (2026-07-21T23:17:39))
+- **Branch**: iterate/prompt-scan-dynamic-import
+- **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
@@ -51,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/review-record
-- **Last Commit**: 71e255c7 wip: checkpoint before finalize bundle
+- **Branch**: iterate/prompt-scan-dynamic-import
+- **Last Commit**: 4f6fb3f4 Merge remote-tracking branch 'origin/main' into iterate/prompt-scan-dynamic-import
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-89d561d1 | grade_snapshot | — | 2026-07-21 |
-| evt-70b34c98 | work_completed | iterate (iterate: persist a per-run record of what every review pass found) | 2026-07-21 |
+| evt-8e3b71af | grade_snapshot | — | 2026-07-21 |
+| evt-6406a8db | work_completed | iterate (iterate: bump brace-expansion to 2.1.2 (CVE-2026-13149)) | 2026-07-21 |
+| evt-d839deb7 | grade_snapshot | — | 2026-07-21 |
+| evt-8f7e1649 | work_completed | iterate (iterate: normalize the inline dynamic import to clear a benign prompt-scan finding) | 2026-07-21 |
 | evt-14387bc7 | grade_snapshot | — | 2026-07-21 |
-| evt-36e41db0 | work_completed | iterate (iterate: close the five open GitHub code-scanning alerts) | 2026-07-21 |
-| evt-dd32a165 | grade_snapshot | — | 2026-07-20 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 352
-- **Last iterate**: change — iterate: persist a per-run record of what every review pass found (2026-07-21)
+- **Total work events**: 353
+- **Last iterate**: change — iterate: bump brace-expansion to 2.1.2 (CVE-2026-13149) (2026-07-21)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

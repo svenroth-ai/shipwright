@@ -1,29 +1,30 @@
 # Commit Change Log
 
-Generated: 2026-07-21T23:32:39.562944+00:00
-Total commits: 1191
+Generated: 2026-07-21T22:10:40.701196+00:00
+Total commits: 1192
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 343
+    "fix" : 344
     "feat" : 329
     "chore" : 247
     "docs" : 146
     "refactor" : 75
-    "test" : 29
+    "test" : 30
     "ci" : 11
-    "other" : 10
+    "other" : 9
     "build" : 1
 ```
 
 ## Changes by Type
 
-### Fixes (fix) — 343 commits
+### Fixes (fix) — 344 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-22 | security | bump brace-expansion to 2.1.2 to close CVE-2026-13149 (#425) | b104974978da |
 | 2026-07-21 | security | close the five open code-scanning alerts, root-fixing where a root fix exists (#424) | 1cfdbbd951a2 |
 | 2026-07-21 | traceability | fail loud on shallow clone instead of skipping fr-history checks (#422) | d45974db8ab6 |
 | 2026-07-21 | iterate | run F3+F5c reliably in the sub-iterate-runner and forbid direct decision_log writes (#421) | bb4c8fd886a9 |
@@ -1185,10 +1186,11 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 29 commits
+### Tests (test) — 30 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-22 | traceability | normalize an inline dynamic import to clear a benign prompt-scan finding | ac9a6f68bd2b |
 | 2026-07-19 | requirements | golden corpus freezing discovery + parser behaviour, bugs included (#403) | 76d97ec06fe6 |
 | 2026-07-08 | run | single-session E2E integration + cross-surface capstone (SS7) (#352) | aa385b3dcd02 |
 | 2026-07-06 | coverage | replay the diff-coverage gate against the last 5 real monorepo PRs (#329) | ccb22388bb9b |
@@ -1235,11 +1237,10 @@ pie title Commit Types
 | 2026-05-31 | — | run shared/ test suites in CI via per-dir invocations | eb68b567899d |
 | 2026-05-31 | integration | gate integration-tests step on failure; fix F821 in events-log test | 83d68709d125 |
 
-### Other (other) — 10 commits
+### Other (other) — 9 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-22 | — | wip: checkpoint before finalize bundle | 71e255c79a30 |
 | 2026-07-15 | — | fix(phases)!: detect invocation mode from the dispatch token, not the never-advanced v1 current_step (#372) | d76970e82cf4 |
 | 2026-07-14 | — | refactor(run)!: single_session is the sole pipeline mode; remove the external per-phase-session engine (#369) | aef19f2c1668 |
 | 2026-04-24 | — | feat!: extract WebUI into own repo (shipwright-webui) — v0.4.0 | 47cacebb2a24 |
@@ -1260,7 +1261,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1191 |
+| Total commits | 1192 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1191 |
+| Human-authored commits | 1192 |
 
