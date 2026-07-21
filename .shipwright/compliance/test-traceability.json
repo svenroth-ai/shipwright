@@ -1,8 +1,8 @@
 {
   "schema_version": 3,
   "collector_version": "test_links/1.0.0",
-  "generated_at": "2026-07-21T05:45:47.494285+00:00",
-  "source_commit": "d45974db8ab622ad2e95ff8afa05e59b5ccb3888",
+  "generated_at": "2026-07-21T22:10:40.701196+00:00",
+  "source_commit": "1cfdbbd951a2f3825b9990d2804f7b0ff966917d",
   "spec_hash": "sha256:d86c863159c71a252ede90b8b470937b6160e5187c32849bbb04474d22c944ad",
   "requirements": {
     "01::FR-01.01": {
@@ -1930,6 +1930,7 @@
     "integration-tests/test_fr_table_reader_boundaries.py::test_fv5_still_holds_a_heading_alone_does_not_end_the_table",
     "integration-tests/test_fr_table_reader_contract.py::test_a_row_wider_than_its_header_does_not_shift_the_body",
     "integration-tests/test_fr_table_reader_contract.py::test_an_inline_removed_marker_does_not_retire_the_requirement",
+    "integration-tests/test_fr_table_reader_contract.py::test_an_undeclared_sibling_is_refused",
     "integration-tests/test_fr_table_reader_contract.py::test_c1_only_the_canonical_two_digit_id_is_a_requirement_row",
     "integration-tests/test_fr_table_reader_contract.py::test_c2_the_column_map_survives_a_heading_and_is_replaced_by_a_header",
     "integration-tests/test_fr_table_reader_contract.py::test_c3_an_unrecognised_priority_is_coerced_not_fatal",

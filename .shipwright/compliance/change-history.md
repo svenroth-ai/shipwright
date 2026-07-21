@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-07-21T05:45:47.494285+00:00
-Total commits: 1189
+Generated: 2026-07-21T22:10:40.701196+00:00
+Total commits: 1190
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 342
+    "fix" : 343
     "feat" : 329
     "chore" : 247
     "docs" : 146
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 342 commits
+### Fixes (fix) — 343 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-21 | security | close the five open code-scanning alerts, root-fixing where a root fix exists (#424) | 1cfdbbd951a2 |
 | 2026-07-21 | traceability | fail loud on shallow clone instead of skipping fr-history checks (#422) | d45974db8ab6 |
 | 2026-07-21 | iterate | run F3+F5c reliably in the sub-iterate-runner and forbid direct decision_log writes (#421) | bb4c8fd886a9 |
 | 2026-07-21 | events | recover record boundaries in the remaining event-log authority readers (#419) | 0cd30df86818 |
@@ -1258,7 +1259,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1189 |
+| Total commits | 1190 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1189 |
+| Human-authored commits | 1190 |
 

@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-21T05:45:47.494285+00:00
+Generated: 2026-07-21T22:10:40.701196+00:00
 
 ## Requirements Coverage
 
@@ -28,6 +28,7 @@ Generated: 2026-07-21T05:45:47.494285+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-8f7e1649"></a>normalize the inline dynamic import to clear a benign prompt-scan finding | iterate | change |  | — | — | 2026-07-21 |
 | <a id="evt-36e41db0"></a>close the five open GitHub code-scanning alerts | iterate | change |  | — | — | 2026-07-21 |
 | <a id="evt-e9bfacd4"></a>Onboarding an existing repo now fails with a clear, named error instead of a confusing crash if the shipwright shared toolset is missing, and a failed load can no longer leave a broken helper cached. | iterate | change | [FR-01.13](#rtm-fr-0113) | 5/5 | — | 2026-07-20 |
 | <a id="evt-bcb0aa95"></a>harden two fr-history shallow-clone skip hatches into hard fetch-depth failures (trg-3a131594) | iterate | change |  | — | — | 2026-07-20 |
@@ -386,7 +387,7 @@ Generated: 2026-07-21T05:45:47.494285+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 351 |
+| Iterate changes | 352 |
 | Requirements total | 15 |
 | Requirements verified | 14/15 |
 | Must-have verified | 11/12 |

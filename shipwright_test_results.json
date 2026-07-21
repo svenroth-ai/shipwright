@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-21-codescanning-alert-cleanup",
+    "run_id": "iterate-2026-07-21-prompt-scan-dynamic-import",
     "date": "2026-07-21",
     "unit": {
       "status": "passed",
-      "passed": 6023,
-      "total": 6023
+      "passed": 5200,
+      "total": 5200
     },
     "integration": {
       "status": "passed",
@@ -30,79 +30,19 @@
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [],
+    "degraded": [
+      "complexity classifier returned medium on a prose keyword, not scope: the message named the path integration-tests/, and 'integration' is a SCOPE_MEDIUM_KEYWORDS member. A keyword-free re-run fell through to the history median (also non-evidence). Overridden to trivial, corroborated by the authoritative diff-driven detectors: touches_build, touches_io_boundary, cross_component and touches_ci_supplychain all False on the one changed file."
+    ],
     "surface_verification": {
       "surface": "none",
-      "justification": "No runtime surface exists to exercise. Three of the four touched files are test-harness code (probe dispatch table, two test modules); the fourth, shared/scripts/lib/fr_table_reader.py, gains a first-party-name guard plus comments and no parsing behaviour change — proven by its five consumers staying green across all three import realms (compliance 1295, shared 4728, integration 416). No API route, store mutation, SSE/WS handler, message contract, or UI-consumed code is touched. The change's actual output surface is the SCANNER, which is verified directly: semgrep reports 3 findings before and 0 after, repo-wide.",
+      "justification": "No runtime surface exists to exercise. The diff is two lines in a single integration test: a top-level 'import os' and '__import__(\"os\").environ' -> 'os.environ'. No API route, store mutation, SSE/WS handler, message contract, or UI-consumed code is touched, and no production module changed at all. The change's actual output surface is the SCANNER, which was verified directly with a negative control: the repo-wide prompt scan reports 1 medium (PY_DYNAMIC_IMPORT at this file:71, byte-identical to the CI finding in run 29805992197) with the original line restored, and 0 findings across 2244 files with the fix applied.",
       "tests_run": 0,
       "exit_code": 0
     },
     "test_completeness": {
-      "status": "complete",
-      "behaviors": [
-        {
-          "behavior": "probe dispatch resolves each name to its function without indexing globals()",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_requirements_corpus_false_verdicts.py + _found_defects.py — 7 probe names driven end-to-end through the subprocess runner, 20 passed"
-        },
-        {
-          "behavior": "every probe-table row maps to the correspondingly-named function",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_requirements_corpus_probe_table.py::test_every_probe_table_row_resolves_to_its_like_named_function PASSED; mutation-verified ('t1': probe_t2 makes it RED)"
-        },
-        {
-          "behavior": "every module-level probe_* function is registered in the table (incl. never-invoked t2)",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_requirements_corpus_probe_table.py::test_every_probe_function_is_registered_in_the_table PASSED"
-        },
-        {
-          "behavior": "--probe accepts exactly the eight documented names",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_requirements_corpus_probe_table.py::test_the_probe_cli_offers_exactly_the_documented_names PASSED"
-        },
-        {
-          "behavior": "the adopt generator still emits the canonical FR-table header after the -c program was hoisted out of the argv list",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_table_shape_convergence.py::test_the_adopt_generator_emits_it PASSED"
-        },
-        {
-          "behavior": "a reintroduced pytest.skip inside pre_s6_sections fails the shallow-clone meta-test hard instead of skipping it",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_history_skip_guard.py::test_a_reintroduced_skip_makes_the_meta_test_fail_not_skip PASSED — runs the real meta-test in a child pytest with pre_s6_sections patched to skip; asserts '1 failed' and NOT '1 skipped'"
-        },
-        {
-          "behavior": "a non-Skipped exception from pre_s6_sections propagates instead of being converted to pytest.fail",
-          "disposition": "untestable",
-          "evidence": "The AssertionError path is exercised by the meta-test itself and the Skipped path by test_fr_history_skip_guard.py; what remains is the ABSENCE of a handler (Python's default propagation), so no branch of this diff is left unexercised.",
-          "reason_code": "covered-by-existing-test"
-        },
-        {
-          "behavior": "_ALLOWED_SIBLINGS equals the set of siblings actually imported (no stale entry widening the guard)",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_table_reader_load_styles.py::test_the_declared_sibling_allowlist_matches_what_is_actually_loaded[4 load styles] PASSED; mutation-verified (an unused 'os' entry reddens all four)"
-        },
-        {
-          "behavior": "an undeclared sibling name is refused before reaching importlib.import_module",
-          "disposition": "tested",
-          "evidence": "integration-tests/test_fr_table_reader_load_styles.py::test_an_undeclared_sibling_name_is_refused_before_it_reaches_import[4 load styles] PASSED; mutation-verified; plus test_fr_table_reader_contract.py::test_an_undeclared_sibling_is_refused in-process — the subprocess assertions are invisible to coverage, which the diff-coverage gate caught (the raise showed as an uncovered changed line)"
-        },
-        {
-          "behavior": "Semgrep reports none of non-literal-import / dangerous-globals-use anywhere in the repo",
-          "disposition": "tested",
-          "evidence": "semgrep 1.170.0 --config r/python.lang.security.audit.non-literal-import --config r/python.lang.security.dangerous-globals-use over the repo: 3 findings BEFORE the diff (alerts 1257/1258/1260 at their exact reported lines), 0 AFTER"
-        },
-        {
-          "behavior": "the new _sibling guard breaks no consumer in any import realm",
-          "disposition": "tested",
-          "evidence": "shared/tests 4728 passed + integration-tests 416 passed + plugins/shipwright-compliance 1295 passed, all green"
-        }
-      ],
-      "counts": {
-        "total": 11,
-        "tested": 10,
-        "untestable": 1,
-        "untested_testable": 0
-      }
+      "status": "n/a",
+      "justification": "n/a at trivial complexity per the Phase Matrix. The diff introduces no new behavior: '__import__(\"os\")' and 'import os' bind the same module object, so there is nothing to enumerate that the existing test does not already pin. That test (test_a_reintroduced_skip_makes_the_meta_test_fail_not_skip) passed before and after, and the scanner delta was proven by negative control rather than asserted.",
+      "behaviors": []
     }
   },
   "coverage": {

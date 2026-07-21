@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-21 05:45 UTC | Session: e5bec740-741d-4a4b-907a-e434423b4ee8 | Run: iterate-2026-07-21-codescanning-alert-cleanup
+> Updated: 2026-07-21 22:10 UTC | Session: 0c49f59a-af2a-4918-ab08-ee9e5dd6c494 | Run: iterate-2026-07-21-prompt-scan-dynamic-import
 
-## Recent Changes (351 iterations)
+## Recent Changes (352 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | iterate: normalize the inline dynamic import to clear a benign prompt-scan finding | 0/0 |  | tooling | 2026-07-21 |
 | change | iterate: close the five open GitHub code-scanning alerts | 0/0 |  | tooling | 2026-07-21 |
 | change | Document operator-run converge for adopted repos + guard test | 4708/4708 |  | docs | 2026-07-20 |
 | change | adopt shared-loader guard: one guarded loader for the eight scaffolders | 5/5 |  | FR-01.13 | 2026-07-20 |
@@ -358,7 +359,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-21 | Unit: 6023/6023 | Integration: 416/416 | Smoke: not_run | (iterate)
+Last run: 2026-07-21 | Unit: 5200/5200 | Integration: 417/417 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
