@@ -1,6 +1,6 @@
 # Test Evidence Report
 
-Generated: 2026-07-21T22:10:40.701196+00:00
+Generated: 2026-07-21T22:06:38.949592+00:00
 
 ## Summary
 
@@ -14,7 +14,7 @@ Generated: 2026-07-21T22:10:40.701196+00:00
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | normalize the inline dynamic import to clear a benign prompt-scan finding | [iterate](traceability-matrix.md#evt-8f7e1649) | — | +0 | — | — | 2026-07-21 |
+| 1 | Closed the high-severity brace-expansion denial-of-service advisory (CVE-2026-13149) by updating that dependency to a patched version in the performance-test tooling's lockfile. | [iterate](traceability-matrix.md#evt-6406a8db) | — | +0 | — | — | 2026-07-21 |
 | 2 | close the five open GitHub code-scanning alerts | [iterate](traceability-matrix.md#evt-36e41db0) | — | +0 | — | — | 2026-07-21 |
 | 3 | Shipwright's security guide now explains how a project that adopted Shipwright clears an accepted security risk from its GitHub code-scanning — a person runs the converge command from a Shipwright checkout, pointed at the adopted project. | [iterate](traceability-matrix.md#evt-eaa519ea) | unit | +0 | 4708/4708 | PASS | 2026-07-20 |
 | 4 | Onboarding an existing repo now fails with a clear, named error instead of a confusing crash if the shipwright shared toolset is missing, and a failed load can no longer leave a broken helper cached. | [iterate](traceability-matrix.md#evt-e9bfacd4) | unit | +0 | 5/5 | PASS | 2026-07-20 |

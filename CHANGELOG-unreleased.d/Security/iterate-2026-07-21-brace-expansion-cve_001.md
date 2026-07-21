@@ -1,0 +1,1 @@
+Bumped the Lighthouse perf-runner's transitive `brace-expansion` dependency from 2.1.0 to 2.1.2, closing CVE-2026-13149 / GHSA-3jxr-9vmj-r5cp (high) — a denial of service via exponential-time expansion of consecutive non-expanding `{}` groups. Fixed at the root rather than added to the accepted-risk register.
