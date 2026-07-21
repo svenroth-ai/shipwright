@@ -48,7 +48,6 @@ import sys
 from pathlib import Path
 
 import pytest
-from _pytest.outcomes import Skipped
 
 _REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_REPO / "shared" / "scripts"))
@@ -232,7 +231,9 @@ def test_the_recovery_source_is_the_pre_s6_catalog_not_a_summary_of_it():
 # never runs on a full checkout, so it is DRIVEN here: point each check at an
 # unreachable commit and require a hard AssertionError. `pytest.skip` raises
 # `Skipped`, so a reintroduced skip would propagate and skip THESE tests —
-# reporting green while asserting nothing. Catching `Skipped` explicitly
+# reporting green while asserting nothing. Catching it by name explicitly
+# (via the supported `pytest.skip.Exception` accessor, not the private
+# `_pytest.outcomes` package, which is free to move between releases)
 # converts that back into a red (any other exception propagates as an ERROR,
 # which is also a failure). Mirrors
 # test_fr_history_recovery_provenance.py::test_an_unreachable_pre_s6_commit_fails_rather_than_skipping.
@@ -253,7 +254,7 @@ def test_absent_run_id_check_hard_fails_on_unreachable_commit(monkeypatch):
         assert "fetch-depth" in str(exc), (
             "the failure must name the remedy (fetch-depth: 0), not just fail"
         )
-    except Skipped:
+    except pytest.skip.Exception:
         pytest.fail(
             "the skip hatch is back: a reintroduced pytest.skip would vanish this "
             "check silently on a shallow clone."
@@ -273,7 +274,7 @@ def test_pre_s6_source_check_hard_fails_on_unreachable_commit(monkeypatch):
         assert "fetch-depth" in str(exc), (
             "the failure must name the remedy (fetch-depth: 0), not just fail"
         )
-    except Skipped:
+    except pytest.skip.Exception:
         pytest.fail(
             "the skip hatch is back: a reintroduced pytest.skip would vanish this "
             "provenance check silently on a shallow clone."

@@ -1,8 +1,8 @@
 {
   "schema_version": 3,
   "collector_version": "test_links/1.0.0",
-  "generated_at": "2026-07-20T22:13:50.533361+00:00",
-  "source_commit": "89a0dd98ee72cbca319a733c3bdee084a5861da0",
+  "generated_at": "2026-07-21T05:45:47.494285+00:00",
+  "source_commit": "d45974db8ab622ad2e95ff8afa05e59b5ccb3888",
   "spec_hash": "sha256:d86c863159c71a252ede90b8b470937b6160e5187c32849bbb04474d22c944ad",
   "requirements": {
     "01::FR-01.01": {
@@ -1921,6 +1921,7 @@
     "integration-tests/test_fr_history_recovery_provenance.py::test_the_fr_0114_reason_check_would_fail_on_a_section_that_disproved_it",
     "integration-tests/test_fr_history_recovery_provenance.py::test_the_reconciliation_covers_every_requirement_that_was_recovered",
     "integration-tests/test_fr_history_recovery_provenance.py::test_the_section_scoping_does_not_run_to_end_of_file",
+    "integration-tests/test_fr_history_skip_guard.py::test_a_reintroduced_skip_makes_the_meta_test_fail_not_skip",
     "integration-tests/test_fr_table_reader_boundaries.py::test_a_non_canonical_id_row_does_not_end_the_table",
     "integration-tests/test_fr_table_reader_boundaries.py::test_a_separator_row_does_not_end_the_table",
     "integration-tests/test_fr_table_reader_boundaries.py::test_a_summary_table_keyed_by_fr_id_does_not_yield_requirements",
@@ -1941,6 +1942,8 @@
     "integration-tests/test_fr_table_reader_contract.py::test_layers_are_read_only_from_a_named_column",
     "integration-tests/test_fr_table_reader_contract.py::test_removed_rows_are_marked_not_dropped",
     "integration-tests/test_fr_table_reader_contract.py::test_the_removed_section_ends_at_the_next_same_or_shallower_heading",
+    "integration-tests/test_fr_table_reader_load_styles.py::test_an_undeclared_sibling_name_is_refused_before_it_reaches_import",
+    "integration-tests/test_fr_table_reader_load_styles.py::test_the_declared_sibling_allowlist_matches_what_is_actually_loaded",
     "integration-tests/test_fr_table_reader_load_styles.py::test_the_reader_imports_none_of_the_five_parsers_it_replaced",
     "integration-tests/test_fr_table_reader_load_styles.py::test_the_reader_loads_and_parses_identically_under_every_import_style",
     "integration-tests/test_fr_table_reader_probes.py::test_probe_a_hash_starting_a_cell_is_not_a_heading",
@@ -2052,6 +2055,9 @@
     "integration-tests/test_requirements_corpus_matrix.py::test_no_target_failed_to_import",
     "integration-tests/test_requirements_corpus_matrix.py::test_planning_as_a_file_still_splits_the_targets",
     "integration-tests/test_requirements_corpus_matrix.py::test_target_behaviour_matches_the_frozen_baseline",
+    "integration-tests/test_requirements_corpus_probe_table.py::test_every_probe_function_is_registered_in_the_table",
+    "integration-tests/test_requirements_corpus_probe_table.py::test_every_probe_table_row_resolves_to_its_like_named_function",
+    "integration-tests/test_requirements_corpus_probe_table.py::test_the_probe_cli_offers_exactly_the_documented_names",
     "integration-tests/test_requirements_corpus_registry.py::test_every_realm_is_actually_used",
     "integration-tests/test_requirements_corpus_registry.py::test_every_registry_source_file_exists",
     "integration-tests/test_requirements_corpus_registry.py::test_every_target_belongs_to_a_declared_realm",

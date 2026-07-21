@@ -23,13 +23,6 @@ if _PKG_PARENT not in sys.path:
 
 from requirements_corpus.collect import REPO_ROOT  # noqa: E402
 
-PROBES: dict[str, str] = {
-    "t1": "shared_tools", "t2": "shared_tools",
-    "group_d_empty": "compliance", "group_i_empty": "compliance",
-    "d_traceability_empty": "compliance", "d_traceability_populated": "compliance",
-    "unsorted_seam": "adopt", "unsorted_seam_a2": "shared_tools",
-}
-
 
 def _paths(realm: str) -> None:
     from requirements_corpus.registry import REALMS
@@ -168,13 +161,39 @@ def probe_unsorted_seam_a2(root: Path, extra) -> dict:
     return out
 
 
+# The probe catalog, as an explicit name -> function table.
+#
+# This was previously a name -> realm dict resolved through
+# ``globals()[f"probe_{name}"]``. Two things were wrong with that. The lookup
+# indexed the whole module namespace with a runtime-built string, which reads as
+# arbitrary-code-execution to a scanner and cannot be checked by anything; and
+# the realm values were read by NOTHING -- each probe hardcodes its own
+# ``_paths("...")`` call -- so the column was free to disagree with the realm
+# actually entered, and no test would have noticed.
+#
+# Naming the functions directly costs one line per probe and buys a table that
+# is checkable: ``test_requirements_corpus_probe_table`` asserts both directions
+# (every row resolves to its like-named function, every ``probe_*`` function has
+# a row), which is what keeps a probe from silently dropping out of the CLI.
+PROBES = {
+    "t1": probe_t1,
+    "t2": probe_t2,
+    "group_d_empty": probe_group_d_empty,
+    "group_i_empty": probe_group_i_empty,
+    "d_traceability_empty": probe_d_traceability_empty,
+    "d_traceability_populated": probe_d_traceability_populated,
+    "unsorted_seam": probe_unsorted_seam,
+    "unsorted_seam_a2": probe_unsorted_seam_a2,
+}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--probe", required=True, choices=sorted(PROBES))
     ap.add_argument("--root", required=True)
     ap.add_argument("--json", default="null")
     args = ap.parse_args()
-    fn = globals()[f"probe_{args.probe}"]
+    fn = PROBES[args.probe]
     result = fn(Path(args.root), json.loads(args.json))
     sys.stdout.reconfigure(encoding="utf-8")
     print(json.dumps(result, default=str, ensure_ascii=False))

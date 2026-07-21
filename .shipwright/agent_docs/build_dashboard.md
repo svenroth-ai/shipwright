@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-20 22:13 UTC | Session: 6c3536fe-0c2c-41bb-89a5-ec4014b6c5ee | Run: iterate-2026-07-21-fr-history-skip-hardfail
+> Updated: 2026-07-21 05:45 UTC | Session: e5bec740-741d-4a4b-907a-e434423b4ee8 | Run: iterate-2026-07-21-codescanning-alert-cleanup
 
-## Recent Changes (350 iterations)
+## Recent Changes (351 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | iterate: close the five open GitHub code-scanning alerts | 0/0 |  | tooling | 2026-07-21 |
 | change | Document operator-run converge for adopted repos + guard test | 4708/4708 |  | docs | 2026-07-20 |
 | change | adopt shared-loader guard: one guarded loader for the eight scaffolders | 5/5 |  | FR-01.13 | 2026-07-20 |
 | change | iterate: harden two fr-history shallow-clone skip hatches into hard fetch-depth failures (trg-3a131594) | 0/0 |  | tooling | 2026-07-20 |
@@ -357,7 +358,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-21 | Integration: 403/403 | Smoke: not_run | (iterate)
+Last run: 2026-07-21 | Unit: 6023/6023 | Integration: 416/416 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

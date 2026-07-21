@@ -189,10 +189,18 @@ def test_an_unreachable_pre_s6_commit_fails_rather_than_skipping(monkeypatch):
     monkeypatch.setattr(docs, "PRE_S6_COMMIT", "0000000000000000000000000000000000000000")
 
     # `pytest.raises(AssertionError)` is NOT sufficient here. `pytest.skip()`
-    # raises `Skipped`, which derives from BaseException, so a reintroduced skip
-    # would propagate and skip THIS test — reporting green rather than red, the
-    # very invisibility being guarded against. Catching BaseException converts
-    # any non-AssertionError outcome into a failure.
+    # raises `Skipped`, which derives from BaseException rather than Exception,
+    # so a reintroduced skip would propagate straight through an
+    # Exception-shaped guard and skip THIS test — reporting green rather than
+    # red, the very invisibility being guarded against. So `Skipped` is caught
+    # BY NAME and converted into a failure.
+    #
+    # `pytest.skip.Exception` is the supported accessor for that class;
+    # importing `_pytest.outcomes.Skipped` reaches into pytest's private
+    # package, which is free to move between releases. Any OTHER exception is
+    # deliberately left to propagate: it surfaces as an ERROR, which is already
+    # red and already visible. A skip is the only outcome that would masquerade
+    # as success, so it is the only one that needs converting.
     #
     # The message assertions live INSIDE the handler that binds `message`,
     # rather than after the try/except. Both other branches end in
@@ -209,11 +217,10 @@ def test_an_unreachable_pre_s6_commit_fails_rather_than_skipping(monkeypatch):
             "clone is only marginally better than a silent skip"
         )
         assert "skipping them would report green" in message
-    except BaseException as exc:  # noqa: BLE001 - see above
+    except pytest.skip.Exception as exc:
         pytest.fail(
-            f"expected a hard AssertionError, got {type(exc).__name__}: {exc}. "
-            f"If this is a Skipped, the skip hatch is back and six checks "
-            f"vanish silently on a shallow clone."
+            f"expected a hard AssertionError, got a skip: {exc}. The skip "
+            f"hatch is back and six checks vanish silently on a shallow clone."
         )
     else:
         pytest.fail("pre_s6_sections() accepted an unreachable commit")

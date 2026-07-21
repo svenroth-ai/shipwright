@@ -286,3 +286,15 @@ def test_layers_are_read_only_from_a_named_column():
         "| FR-01.01 | /run | Must | Orchestrate | enrichment.json |\n"
     )
     assert (row.layers_cell, row.layers_from_named_col) == ("", False)
+
+
+def test_an_undeclared_sibling_is_refused():
+    """`_ALLOWED_SIBLINGS` makes `_sibling`'s scanner suppression a precondition
+    rather than a property of its five literal call sites. Asserted per load
+    style in test_fr_table_reader_load_styles.py too, but that module runs
+    subprocesses by design and coverage cannot see into them.
+    """
+    import fr_table_reader
+
+    with pytest.raises(ValueError, match="_ALLOWED_SIBLINGS"):
+        fr_table_reader._sibling("os")

@@ -51,6 +51,10 @@ def _load(target: dict, repo_root: Path):
         sys.modules[name] = module
         spec.loader.exec_module(module)
     else:
+        # `mod_ref` is target["module"], and every target is a literal row in
+        # requirements_corpus/registry.py — the registry is a static table, not
+        # loaded from disk, env or argv, so no caller-supplied name reaches here.
+        # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
         module = importlib.import_module(mod_ref)
     return getattr(module, target["attr"])
 
