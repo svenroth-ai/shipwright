@@ -1,35 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-21-prompt-scan-dynamic-import"
+run_id: "iterate-2026-07-21-review-record"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-21T22:10:46.390579+00:00"
+timestamp: "2026-07-21T23:32:45.194803+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-21 22:10:46 UTC
+> Auto-generated 2026-07-21 23:32:45 UTC
 
 ## Session Info
 
-- **Session ID**: 0c49f59a-af2a-4918-ab08-ee9e5dd6c494
-- **Timestamp**: 2026-07-21 22:10:46 UTC
+- **Session ID**: dcc0a976-e768-47b5-9797-65838f71f827
+- **Timestamp**: 2026-07-21 23:32:45 UTC
 - **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-21-prompt-scan-dynamic-import
-- **Date**: 2026-07-21T22:10:40.598609Z
-- **Type**: change
-- **Complexity**: trivial
-- **Branch**: iterate/prompt-scan-dynamic-import
-- **ADR**: iterate-2026-07-21-prompt-scan-dynamic-import
+- **Run ID**: iterate-2026-07-21-review-record
+- **Date**: 2026-07-21T23:32:39.483479Z
+- **Type**: feature
+- **Complexity**: medium
+- **Branch**: iterate/review-record
+- **ADR**: iterate-2026-07-21-review-record
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-21-review-record.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/prompt-scan-dynamic-import
-- **External Review Marker**: missing
+- **Branch**: iterate/review-record
+- **Run ID**: iterate-2026-07-21-review-record
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-21-review-record.md
+- **Complexity**: medium (history-calibrated, n=20; `prior_source: history`)
+- **External Review Marker**: stale (predates spec (2026-07-21T23:17:39))
 
 ### Mandatory replay on Resume
 
@@ -47,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/prompt-scan-dynamic-import
-- **Last Commit**: 4f6fb3f4 Merge remote-tracking branch 'origin/main' into iterate/prompt-scan-dynamic-import
+- **Branch**: iterate/review-record
+- **Last Commit**: 169545df Merge remote-tracking branch 'origin/main' into iterate/review-record
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,12 +72,12 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 | evt-6406a8db | work_completed | iterate (iterate: bump brace-expansion to 2.1.2 (CVE-2026-13149)) | 2026-07-21 |
 | evt-d839deb7 | grade_snapshot | — | 2026-07-21 |
 | evt-8f7e1649 | work_completed | iterate (iterate: normalize the inline dynamic import to clear a benign prompt-scan finding) | 2026-07-21 |
-| evt-14387bc7 | grade_snapshot | — | 2026-07-21 |
+| evt-89d561d1 | grade_snapshot | — | 2026-07-21 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 353
+- **Total work events**: 354
 - **Last iterate**: change — iterate: bump brace-expansion to 2.1.2 (CVE-2026-13149) (2026-07-21)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

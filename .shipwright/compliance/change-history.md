@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-07-21T22:10:40.701196+00:00
-Total commits: 1192
+Generated: 2026-07-21T23:32:39.562944+00:00
+Total commits: 1193
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 344
-    "feat" : 329
+    "feat" : 330
     "chore" : 247
     "docs" : 146
     "refactor" : 75
@@ -369,10 +369,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 329 commits
+### Features (feat) — 330 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-22 | iterate | record what every review pass found, per run (FR-01.11) | d988645ffc18 |
 | 2026-07-20 | iterate | extend the CI supply-chain ack gate to shipped CI templates (#417) | c6975f4e612c |
 | 2026-07-20 | traceability | answer "which changes touched this requirement" from the event log (campaign S7) (#415) | 18905d576514 |
 | 2026-07-19 | templates | ship the action-pinning posture RULE to adopters, gated both ways (#407) | e336197ca8e9 |
@@ -1190,7 +1191,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-22 | traceability | normalize an inline dynamic import to clear a benign prompt-scan finding | ac9a6f68bd2b |
+| 2026-07-22 | traceability | normalize an inline dynamic import to clear a benign prompt-scan finding (#426) | 4a0b6d025cb7 |
 | 2026-07-19 | requirements | golden corpus freezing discovery + parser behaviour, bugs included (#403) | 76d97ec06fe6 |
 | 2026-07-08 | run | single-session E2E integration + cross-surface capstone (SS7) (#352) | aa385b3dcd02 |
 | 2026-07-06 | coverage | replay the diff-coverage gate against the last 5 real monorepo PRs (#329) | ccb22388bb9b |
@@ -1261,7 +1262,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1192 |
+| Total commits | 1193 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1192 |
+| Human-authored commits | 1193 |
 
