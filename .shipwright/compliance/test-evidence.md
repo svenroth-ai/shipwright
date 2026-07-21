@@ -1,20 +1,20 @@
 # Test Evidence Report
 
-Generated: 2026-07-21T22:41:30.570002+00:00
+Generated: 2026-07-21T22:06:38.949592+00:00
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 352 |
-| Total unit tests (latest full suite) | 6452/6452 (2026-07-21) |
+| Total unit tests (latest full suite) | 5207/5207 (2026-07-20) |
 | New tests from iterations | +220 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | reconcile compliance D1/D3 (FR-01.15 mint coverage) + H2 bloat ratchet | [iterate](traceability-matrix.md#evt-6a61ac10) | unit | +0 | 6452/6452 | PASS | 2026-07-21 |
+| 1 | Closed the high-severity brace-expansion denial-of-service advisory (CVE-2026-13149) by updating that dependency to a patched version in the performance-test tooling's lockfile. | [iterate](traceability-matrix.md#evt-6406a8db) | — | +0 | — | — | 2026-07-21 |
 | 2 | close the five open GitHub code-scanning alerts | [iterate](traceability-matrix.md#evt-36e41db0) | — | +0 | — | — | 2026-07-21 |
 | 3 | Shipwright's security guide now explains how a project that adopted Shipwright clears an accepted security risk from its GitHub code-scanning — a person runs the converge command from a Shipwright checkout, pointed at the adopted project. | [iterate](traceability-matrix.md#evt-eaa519ea) | unit | +0 | 4708/4708 | PASS | 2026-07-20 |
 | 4 | Onboarding an existing repo now fails with a clear, named error instead of a confusing crash if the shipwright shared toolset is missing, and a failed load can no longer leave a broken helper cached. | [iterate](traceability-matrix.md#evt-e9bfacd4) | unit | +0 | 5/5 | PASS | 2026-07-20 |
@@ -69,7 +69,7 @@ Generated: 2026-07-21T22:41:30.570002+00:00
 | 53 | Pipeline phases now correctly know whether they are part of an orchestrated run, instead of sometimes mistaking a real pipeline run for a one-off manual run. | [iterate](traceability-matrix.md#evt-622c1582) | mixed | +0 | 33/33 | PASS | 2026-07-14 |
 | 54 | Sweep drift/dismiss-loss fix complete; PR pending | [iterate](traceability-matrix.md#evt-a670d8da) | — | +0 | — | — | 2026-07-14 |
 | 55 | iterate complete: multi-session removal | [iterate](traceability-matrix.md#evt-a5b70713) | — | +0 | — | — | 2026-07-14 |
-| 56 | Cross-repo output contracts: shipwright-grade's ReportModel (grade.py --format json) and shipwright-adopt's snapshot.json are rendered field-for-field by the Command Center WebUI. Both now carry a schema_version (major=breaking, the consumer must refuse to render; minor=additive), both SKILL.mds state the contract and name the consumer, and a contract gate per producer diffs the emitted JSON wire-shape against the fixture published on origin/main -- a baseline a PR cannot rewrite -- derives the bump that diff obliges, and fails until it has been performed. Also fixes a dead detector found while pinning the contract: adopt's git.major_refactor_commits returned [] for every repository. | [iterate](traceability-matrix.md#evt-edcf1064) | unit | +0 | 4889/4889 | PASS | 2026-07-14 |
+| 56 | Cross-repo output contracts: shipwright-grade's ReportModel (grade.py --format json) and shipwright-adopt's snapshot.json are rendered field-for-field by the Command Center WebUI. Both now carry a schema_version (major=breaking, the consumer must refuse to render; minor=additive), both SKILL.mds state the contract and name the consumer, and a contract gate per producer diffs the emitted JSON wire-shape against the fixture published on origin/main -- a baseline a PR cannot rewrite -- derives the bump that diff obliges, and fails until it has been performed. Also fixes a dead detector found while pinning the contract: adopt's git.major_refactor_commits returned [] for every repository. | [iterate](traceability-matrix.md#evt-edcf1064) | — | +0 | — | — | 2026-07-14 |
 | 57 | The automatic code-review AI now uses the newer, cheaper GPT-5.6 Terra Pro model on the OpenAI side instead of GPT-5.4; how reviews run is otherwise unchanged. | [iterate](traceability-matrix.md#evt-d1e4d49d) | unit | +0 | 37/37 | PASS | 2026-07-12 |
 | 58 | Widen phase_completed dedup to (phase, splitId) so multi-split phases record per-split ends; promote splitId to a top-level field; de-dup 4 phase-count/latest-ts consumers; plan SKILL emits --split-id. | [iterate](traceability-matrix.md#evt-0a7b22e5) | — | +0 | — | — | 2026-07-11 |
 | 59 | The iterate now records how long each of its 5 steps took, so the Command Center's iterate progress bar can show real time-per-step. | [iterate](traceability-matrix.md#evt-e3cdb1ef) | unit | +0 | 22/22 | PASS | 2026-07-11 |
@@ -373,36 +373,36 @@ _Synthesized from per-iterate **unit** results — Integration / pgTAP / E2E / S
 
 | Run | Trigger | Unit | Integration | pgTAP | E2E | Smoke | Date |
 |-----|---------|------|-------------|-------|-----|-------|------|
-| 1 | iterate | 4749/4749 | — | — | — | — | 2026-07-10 |
-| 2 | iterate | 7/7 | — | — | — | — | 2026-07-10 |
-| 3 | iterate | 17/17 | — | — | — | — | 2026-07-10 |
-| 4 | iterate | 28/28 | — | — | — | — | 2026-07-11 |
-| 5 | iterate | 22/22 | — | — | — | — | 2026-07-11 |
-| 6 | iterate | 37/37 | — | — | — | — | 2026-07-12 |
-| 7 | iterate | 4889/4889 | — | — | — | — | 2026-07-14 |
-| 8 | iterate | 33/33 | — | — | — | — | 2026-07-14 |
-| 9 | iterate | 54/54 | — | — | — | — | 2026-07-14 |
-| 10 | iterate | 42/42 | — | — | — | — | 2026-07-15 |
-| 11 | iterate | 143/143 | — | — | — | — | 2026-07-15 |
-| 12 | iterate | 41/41 | — | — | — | — | 2026-07-15 |
-| 13 | iterate | 1009/1009 | — | — | — | — | 2026-07-15 |
-| 14 | iterate | 1047/1047 | — | — | — | — | 2026-07-15 |
-| 15 | iterate | 1060/1060 | — | — | — | — | 2026-07-16 |
-| 16 | iterate | 1090/1090 | — | — | — | — | 2026-07-16 |
-| 17 | iterate | 4572/4572 | — | — | — | — | 2026-07-16 |
-| 18 | iterate | 4164/4164 | — | — | — | — | 2026-07-16 |
-| 19 | iterate | 4597/4597 | — | — | — | — | 2026-07-16 |
-| 20 | iterate | 5697/5697 | — | — | — | — | 2026-07-16 |
-| 21 | iterate | 5936/5936 | — | — | — | — | 2026-07-16 |
-| 22 | iterate | 1119/1119 | — | — | — | — | 2026-07-16 |
-| 23 | iterate | 17/17 | — | — | — | — | 2026-07-17 |
-| 24 | iterate | 9458/9486 | — | — | — | — | 2026-07-20 |
-| 25 | iterate | 4712/4723 | — | — | — | — | 2026-07-20 |
-| 26 | iterate | 5207/5207 | — | — | — | — | 2026-07-20 |
-| 27 | iterate | 6/6 | — | — | — | — | 2026-07-20 |
-| 28 | iterate | 5/5 | — | — | — | — | 2026-07-20 |
-| 29 | iterate | 4708/4708 | — | — | — | — | 2026-07-20 |
-| 30 | iterate | 6452/6452 | — | — | — | — | 2026-07-21 |
+| 1 | iterate | 3751/3763 | — | — | — | — | 2026-07-09 |
+| 2 | iterate | 69/69 | — | — | — | — | 2026-07-10 |
+| 3 | iterate | 4749/4749 | — | — | — | — | 2026-07-10 |
+| 4 | iterate | 7/7 | — | — | — | — | 2026-07-10 |
+| 5 | iterate | 17/17 | — | — | — | — | 2026-07-10 |
+| 6 | iterate | 28/28 | — | — | — | — | 2026-07-11 |
+| 7 | iterate | 22/22 | — | — | — | — | 2026-07-11 |
+| 8 | iterate | 37/37 | — | — | — | — | 2026-07-12 |
+| 9 | iterate | 33/33 | — | — | — | — | 2026-07-14 |
+| 10 | iterate | 54/54 | — | — | — | — | 2026-07-14 |
+| 11 | iterate | 42/42 | — | — | — | — | 2026-07-15 |
+| 12 | iterate | 143/143 | — | — | — | — | 2026-07-15 |
+| 13 | iterate | 41/41 | — | — | — | — | 2026-07-15 |
+| 14 | iterate | 1009/1009 | — | — | — | — | 2026-07-15 |
+| 15 | iterate | 1047/1047 | — | — | — | — | 2026-07-15 |
+| 16 | iterate | 1060/1060 | — | — | — | — | 2026-07-16 |
+| 17 | iterate | 1090/1090 | — | — | — | — | 2026-07-16 |
+| 18 | iterate | 4572/4572 | — | — | — | — | 2026-07-16 |
+| 19 | iterate | 4164/4164 | — | — | — | — | 2026-07-16 |
+| 20 | iterate | 4597/4597 | — | — | — | — | 2026-07-16 |
+| 21 | iterate | 5697/5697 | — | — | — | — | 2026-07-16 |
+| 22 | iterate | 5936/5936 | — | — | — | — | 2026-07-16 |
+| 23 | iterate | 1119/1119 | — | — | — | — | 2026-07-16 |
+| 24 | iterate | 17/17 | — | — | — | — | 2026-07-17 |
+| 25 | iterate | 9458/9486 | — | — | — | — | 2026-07-20 |
+| 26 | iterate | 4712/4723 | — | — | — | — | 2026-07-20 |
+| 27 | iterate | 5207/5207 | — | — | — | — | 2026-07-20 |
+| 28 | iterate | 6/6 | — | — | — | — | 2026-07-20 |
+| 29 | iterate | 5/5 | — | — | — | — | 2026-07-20 |
+| 30 | iterate | 4708/4708 | — | — | — | — | 2026-07-20 |
 
 ## Code Review Evidence
 
