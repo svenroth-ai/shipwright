@@ -1,23 +1,23 @@
 # Compliance Dashboard
 
-Generated: 2026-07-21T22:41:30.570002+00:00
+Generated: 2026-07-21T22:10:40.701196+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
 ## ✅ Control Verdict
 
-> **Under full control. Primarily capped by change reconciliation.**
+> **Controlled, minor gaps. Primarily capped by change reconciliation.**
 
-### Control Grade: **A** (92/100) — Under full control.
+### Control Grade: **B** (89/100) — Controlled, minor gaps.
 
 | | Dimension | Signal | Anchor |
 |---|-----------|--------|--------|
-| ✅ | Requirement traceability | 15/15 FRs covered; 353/353 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
-| ✅ | Test health | latest full suite 6452/6452 (2026-07-21) | automated tests pass (OpenSSF Scorecard) |
+| ✅ | Requirement traceability | 14/15 FRs covered; 353/353 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
+| ✅ | Test health | latest full suite 5207/5207 (2026-07-20) | automated tests pass (OpenSSF Scorecard) |
 | ✅ | Change traceability | 353/353 changes linked to a commit, ADR or test run | change provenance (SLSA) |
-| ⚠️ | Change reconciliation | 4/8 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
+| ⚠️ | Change reconciliation | 5/8 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
 | ✅ | Security | 0 open high/critical | no open high/critical vulns (NIST SSDF) |
-| ✅ | Size / maintainability discipline | ratchet delta +0 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
+| ✅ | Size / maintainability discipline | ratchet delta -30 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
 | ✅ | Dependency hygiene | 0 unresolved / 11 licenses; 0 copyleft | dependency license & risk (OWASP) |
 
 > 📊 **Test-Health · diff-coverage (Control-Grade input · target ≥80%):** not measured this session — per-PR signal; see the CI "Diff coverage" artifact.
@@ -55,16 +55,16 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
 | Work events (iterate) | 353 changes | INFO |  |
-| Recent changes traced to an FR | 8/30 (27%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
-| All unit tests passing | 6452/6452 | PASS |  |
+| Recent changes traced to an FR | 7/30 (23%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
+| All unit tests passing | 5207/5207 | PASS | +9 change(s) since last full suite |
 | Architecture decisions | 328 ADRs | INFO |  |
-| Iterate tests passing | 51/64 testable changes tested | WARN | 13 testable change(s) without tests — see test-evidence.md |
+| Iterate tests passing | 49/63 testable changes tested | WARN | 14 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 11 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
 | Triage open | 16 open | WARN | 16 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit (grandfathered) | 126 | INFO |  |
-| Bloat in allowlist | 157 entries | INFO |  |
-| Bloat ratchet delta | +0 lines | PASS |  |
+| Bloat in allowlist | 158 entries | INFO |  |
+| Bloat ratchet delta | -30 lines | PASS |  |
 
 ## Project Velocity
 

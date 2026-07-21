@@ -1,18 +1,18 @@
 # Commit Change Log
 
-Generated: 2026-07-21T22:41:30.570002+00:00
+Generated: 2026-07-21T22:10:40.701196+00:00
 Total commits: 1192
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 345
+    "fix" : 344
     "feat" : 329
     "chore" : 247
     "docs" : 146
     "refactor" : 75
-    "test" : 29
+    "test" : 30
     "ci" : 11
     "other" : 9
     "build" : 1
@@ -20,11 +20,10 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 345 commits
+### Fixes (fix) — 344 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-22 | compliance | count a tested mint as coverage and delivery (D1/D3) | d16a7e8e2538 |
 | 2026-07-22 | security | bump brace-expansion to 2.1.2 to close CVE-2026-13149 (#425) | b104974978da |
 | 2026-07-21 | security | close the five open code-scanning alerts, root-fixing where a root fix exists (#424) | 1cfdbbd951a2 |
 | 2026-07-21 | traceability | fail loud on shallow clone instead of skipping fr-history checks (#422) | d45974db8ab6 |
@@ -1187,10 +1186,11 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 29 commits
+### Tests (test) — 30 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-22 | traceability | normalize an inline dynamic import to clear a benign prompt-scan finding | ac9a6f68bd2b |
 | 2026-07-19 | requirements | golden corpus freezing discovery + parser behaviour, bugs included (#403) | 76d97ec06fe6 |
 | 2026-07-08 | run | single-session E2E integration + cross-surface capstone (SS7) (#352) | aa385b3dcd02 |
 | 2026-07-06 | coverage | replay the diff-coverage gate against the last 5 real monorepo PRs (#329) | ccb22388bb9b |
