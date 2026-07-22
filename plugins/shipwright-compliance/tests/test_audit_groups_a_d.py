@@ -8,11 +8,12 @@ Group A — Artifact / path integrity:
 
 Group D — Event-log FR coverage:
 - D1: every FR in spec.md has at least one covering ``work_completed``
-  event with that FR-ID in ``affected_frs``. Severity is priority-driven
-  (Must=HIGH, Should=MEDIUM, May=LOW).
+  event naming that FR-ID in ``affected_frs`` **or** ``new_frs``. Severity is
+  priority-driven (Must=HIGH, Should=MEDIUM, May=LOW).
 - D2: events referencing FR-IDs not present in the current spec.md
-- D3: FRs introduced via an event's ``new_frs`` but never observed in any
-  same-event-or-later ``affected_frs`` (same-event delivery counts)
+- D3: FRs minted via ``new_frs`` on an event that recorded no test totals and
+  never named since in any same-event-or-later ``affected_frs``. The tested-mint
+  delivery rule lives in ``test_audit_d_mint_coverage.py``.
 - D4: most recent covering event has ``tests.passed < tests.total``
 
 Epoch floor (D2 only since BP-1): the latest event carrying a ``spec_updated``
@@ -617,10 +618,13 @@ def test_d3_passes_when_fr_delivered_in_same_event(tmp_path):
 
 
 def test_d3_still_flags_new_fr_with_no_covering_affected(tmp_path):
-    """C3: D3 flags ONLY FRs promised via ``new_frs`` with no covering
-    ``affected_frs`` at all (same-event or later). Re-promised but never
-    affected → still flagged (the relaxation is same-event ``==``, not a
-    blanket pass)."""
+    """D3 flags an FR minted by an UNTESTED change and never affected since.
+
+    C3 (iterate-2026-06-05) relaxed the same-event case; iterate-2026-07-21
+    went further and lets a *tested* mint deliver on its own. ``tested`` is
+    exactly what stops that relaxation from making D3 vacuous — neither event
+    below carries a ``tests`` block, so the promise is still outstanding and
+    D3 must still flag it."""
     _write(
         tmp_path / ".shipwright" / "planning" / "01-foo" / "spec.md",
         _spec_with_frs([("FR-01.50", "x", "Must")]),

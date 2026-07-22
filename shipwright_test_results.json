@@ -1,48 +1,130 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-21-prompt-scan-dynamic-import",
+    "run_id": "iterate-2026-07-21-fr0115-coverage-bloat",
     "date": "2026-07-21",
+    "intent": "change",
+    "complexity": "medium",
     "unit": {
+      "passed": 6035,
+      "total": 6035,
       "status": "passed",
-      "passed": 5200,
-      "total": 5200
+      "note": "Full fresh suites at F0: shipwright-compliance 1305 passed / 1 skipped; shared 4730 passed / 15 skipped / 20 deselected. ruff@0.15.15 clean. anti_ratchet_check --worktree: status ok, no ratchets, no stale entries, no new crossings."
     },
     "integration": {
-      "status": "passed",
       "passed": 417,
-      "total": 417
+      "total": 417,
+      "status": "passed",
+      "note": "integration-tests/ green (417 passed, 2 deselected)."
     },
     "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "n/a"
     },
     "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "note": "Producer surface: the real Group-D reader was run against the real 505-event log via the actual audit entry point (group_d.run), not a replica. D1 pass, D2 pass, D3 pass, D5 pass — D1/D3 flipped fail->pass, which is the whole point of the change."
     },
     "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "n/a"
     },
     "smoke": {
-      "status": "not_run"
+      "status": "n/a"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run python probe_d.py plugins/shipwright-compliance .",
+      "tests_run": 4,
+      "exit_code": 0,
+      "timestamp": "2026-07-21T00:00:00+00:00",
+      "justification": "The user-facing surface of this change IS the audit verdict a maintainer reads. The runner drives the real group_d.run() over the real event log (amendments folded) and reports all four D-checks; a unit fixture could not show that FR-01.15 specifically stops being flagged."
     },
     "degraded": [
-      "complexity classifier returned medium on a prose keyword, not scope: the message named the path integration-tests/, and 'integration' is a SCOPE_MEDIUM_KEYWORDS member. A keyword-free re-run fell through to the history median (also non-evidence). Overridden to trivial, corroborated by the authoritative diff-driven detectors: touches_build, touches_io_boundary, cross_component and touches_ci_supplychain all False on the one changed file."
+      {
+        "condition": "triage sweep-outbox reported protected_status_unplaceable for trg-b1dda91d and trg-16d374e1 at worktree setup",
+        "impact": "none on this change",
+        "detail": "Local main is behind origin, so two triage status appends in main's tracked log are unreachable from this branch. Pre-existing and unrelated to D1/D3/H2; resolved by delivering main (git merge origin/main), not by this iterate."
+      }
     ],
-    "surface_verification": {
-      "surface": "none",
-      "justification": "No runtime surface exists to exercise. The diff is two lines in a single integration test: a top-level 'import os' and '__import__(\"os\").environ' -> 'os.environ'. No API route, store mutation, SSE/WS handler, message contract, or UI-consumed code is touched, and no production module changed at all. The change's actual output surface is the SCANNER, which was verified directly with a negative control: the repo-wide prompt scan reports 1 medium (PY_DYNAMIC_IMPORT at this file:71, byte-identical to the CI finding in run 29805992197) with the original line restored, and 0 findings across 2244 files with the fix applied.",
-      "tests_run": 0,
-      "exit_code": 0
-    },
     "test_completeness": {
-      "status": "n/a",
-      "justification": "n/a at trivial complexity per the Phase Matrix. The diff introduces no new behavior: '__import__(\"os\")' and 'import os' bind the same module object, so there is nothing to enumerate that the existing test does not already pin. That test (test_a_reintroduced_skip_makes_the_meta_test_fail_not_skip) passed before and after, and the scanner delta was proven by negative control rather than asserted.",
-      "behaviors": []
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "D1 counts a tested mint (new_frs) as coverage",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_audit_d_mint_coverage.py::test_d1_counts_a_tested_mint_as_coverage PASSED"
+        },
+        {
+          "behavior": "D1 refuses an untested mint (TT2 tests.total>0 hardening intact)",
+          "disposition": "tested",
+          "evidence": "…::test_d1_does_not_count_an_untested_mint_as_coverage PASSED"
+        },
+        {
+          "behavior": "D3 counts a tested mint as delivery",
+          "disposition": "tested",
+          "evidence": "…::test_d3_counts_a_tested_mint_as_delivery PASSED (also pins the finding text)"
+        },
+        {
+          "behavior": "D3 still flags an untested mint, so the check is not vacuous",
+          "disposition": "tested",
+          "evidence": "…::test_d3_does_not_count_an_untested_mint_as_delivery + test_audit_groups_a_d.py::test_d3_still_flags_new_fr_with_no_covering_affected PASSED"
+        },
+        {
+          "behavior": "The manifest link proof still drops an explicit-provenance minted FR with no passing link",
+          "disposition": "tested",
+          "evidence": "…::test_d1_still_drops_an_explicit_fr_without_a_passing_link PASSED — added on review; failed twice first (schema v1, then collector_version as int) because load_manifest is fail-closed"
+        },
+        {
+          "behavior": "An ineligible event type (not work_completed) covers/delivers nothing",
+          "disposition": "tested",
+          "evidence": "…::test_an_ineligible_event_type_never_covers_or_delivers PASSED"
+        },
+        {
+          "behavior": "Documented asymmetry: the affected_frs path carries no test gate",
+          "disposition": "tested",
+          "evidence": "…::test_affected_frs_path_has_no_test_gate PASSED"
+        },
+        {
+          "behavior": "Documented asymmetry: the tests guard is per-event, not per-FR",
+          "disposition": "tested",
+          "evidence": "…::test_guard_is_per_event_not_per_fr PASSED"
+        },
+        {
+          "behavior": "A non-dict tests value does not crash D1/D3",
+          "disposition": "tested",
+          "evidence": "…::test_non_dict_tests_does_not_crash_the_checks PASSED"
+        },
+        {
+          "behavior": "The evt-edcf1064 overlay patches only tests; ts/new_frs/identity intact",
+          "disposition": "tested",
+          "evidence": "…::test_a_tests_only_amendment_preserves_classification_and_timestamp PASSED"
+        },
+        {
+          "behavior": "Five bloat-baseline entries tightened; none loosened",
+          "disposition": "tested",
+          "evidence": "anti_ratchet_check --worktree -> status ok, stale [], new_crossings []; the update script refuses any value above origin/main's recorded number"
+        },
+        {
+          "behavior": "D3 body extraction to _group_d_promise is behavior-preserving",
+          "disposition": "untestable",
+          "evidence": "the 13-test D1/D3 set and the full 1305-test compliance suite pass unchanged across the move; the reviewer additionally diffed the body line-by-line against main",
+          "reason_code": "covered-by-existing-test"
+        },
+        {
+          "behavior": "FR-01.10 gains one acceptance criterion",
+          "disposition": "untestable",
+          "evidence": "requirements-corpus and FR-table-shape integration tests (417) pass against the edited catalog; spec prose has no separate executable surface",
+          "reason_code": "covered-by-existing-test"
+        }
+      ],
+      "counts": {
+        "total": 13,
+        "tested": 11,
+        "untestable": 2,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 6,
+        "covered_acs": 6
+      }
     }
   },
   "coverage": {

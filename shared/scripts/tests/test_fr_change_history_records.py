@@ -40,10 +40,14 @@ def test_affected_frs_is_reported_as_affected(tmp_path):
 
 
 def test_a_requirement_introduced_and_never_touched_again_reads_as_exactly_that(tmp_path):
-    """The live FR-01.15 shape: one ``introduced``, no ``affected``.
+    """The FR-01.15 shape: one ``introduced``, no ``affected``.
 
-    Compliance D1/D3 report that as a real traceability gap. The query must make
-    it legible, not smooth it into an ordinary history.
+    The query must make that legible rather than smooth it into an ordinary
+    history — a reader asking where a requirement came from wants the minting
+    change named. (This docstring previously justified itself by saying
+    compliance D1/D3 flag the shape as a gap; since iterate-2026-07-21 they do
+    not, because a tested mint now counts as coverage and delivery. The
+    fixture here is an UNTESTED mint, so it is unaffected either way.)
     """
     root = project(tmp_path, [
         work(new_frs=["FR-01.01"], adr_id="run-mint"),
