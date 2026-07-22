@@ -22,6 +22,7 @@ than a comment.
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -68,7 +69,7 @@ def test_a_reintroduced_skip_makes_the_meta_test_fail_not_skip(tmp_path):
          "-p", "_skip_hatch_plugin", "-q", "--no-header", "-p", "no:cacheprovider"],
         cwd=str(REPO_ROOT),
         capture_output=True, text=True, encoding="utf-8",
-        env={**__import__("os").environ,
+        env={**os.environ,
              "PYTHONPATH": str(plugin_dir),
              "PYTHONIOENCODING": "utf-8"},
         timeout=300,

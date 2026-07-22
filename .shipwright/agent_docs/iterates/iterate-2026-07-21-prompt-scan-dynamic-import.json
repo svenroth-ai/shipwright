@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-21-prompt-scan-dynamic-import",
+  "date": "2026-07-21T22:10:40.598609Z",
+  "type": "change",
+  "complexity": "trivial",
+  "branch": "iterate/prompt-scan-dynamic-import",
+  "spec": "",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-21-prompt-scan-dynamic-import"
+}

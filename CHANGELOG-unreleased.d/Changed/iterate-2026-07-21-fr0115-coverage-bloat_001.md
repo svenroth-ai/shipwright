@@ -1,0 +1,1 @@
+Group-D's D3 finding text now names the real condition (minted with no test totals recorded and never named in affected_frs since) instead of the misleading "never delivered", which sent readers hunting for missing work when the evidence was what was missing.

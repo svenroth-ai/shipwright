@@ -25,7 +25,7 @@
     {
       "path": "plugins/shipwright-adopt/scripts/lib/artifact_writer.py",
       "limit": 300,
-      "current": 695,
+      "current": 690,
       "state": "grandfathered",
       "adr": null
     },
@@ -144,7 +144,7 @@
     {
       "path": "plugins/shipwright-compliance/scripts/audit/group_d.py",
       "limit": 300,
-      "current": 449,
+      "current": 412,
       "state": "exception",
       "adr": "ADR-096"
     },
@@ -165,8 +165,8 @@
     {
       "path": "plugins/shipwright-compliance/scripts/lib/collectors/test_links.py",
       "limit": 300,
-      "current": 302,
-      "state": "grandfathered",
+      "current": 277,
+      "state": "ok",
       "adr": null
     },
     {
@@ -221,7 +221,7 @@
     {
       "path": "plugins/shipwright-compliance/tests/test_audit_groups_a_d.py",
       "limit": 300,
-      "current": 789,
+      "current": 783,
       "state": "exception",
       "adr": "ADR-096"
     },
@@ -249,7 +249,7 @@
     {
       "path": "plugins/shipwright-compliance/tests/test_data_collector.py",
       "limit": 300,
-      "current": 1253,
+      "current": 1029,
       "state": "exception",
       "adr": "ADR-092"
     },

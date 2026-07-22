@@ -1,18 +1,18 @@
 # Commit Change Log
 
-Generated: 2026-07-21T05:45:47.494285+00:00
-Total commits: 1189
+Generated: 2026-07-21T22:41:30.570002+00:00
+Total commits: 1195
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 342
+    "fix" : 346
     "feat" : 329
-    "chore" : 247
+    "chore" : 248
     "docs" : 146
     "refactor" : 75
-    "test" : 29
+    "test" : 30
     "ci" : 11
     "other" : 9
     "build" : 1
@@ -20,10 +20,14 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 342 commits
+### Fixes (fix) — 346 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-22 | iterate | add test_completeness counts + enumeration_basis to the ledger | bf9d479d2d18 |
+| 2026-07-22 | compliance | count a tested mint as coverage and delivery (D1/D3) | d16a7e8e2538 |
+| 2026-07-22 | security | bump brace-expansion to 2.1.2 to close CVE-2026-13149 (#425) | b104974978da |
+| 2026-07-21 | security | close the five open code-scanning alerts, root-fixing where a root fix exists (#424) | 1cfdbbd951a2 |
 | 2026-07-21 | traceability | fail loud on shallow clone instead of skipping fr-history checks (#422) | d45974db8ab6 |
 | 2026-07-21 | iterate | run F3+F5c reliably in the sub-iterate-runner and forbid direct decision_log writes (#421) | bb4c8fd886a9 |
 | 2026-07-21 | events | recover record boundaries in the remaining event-log authority readers (#419) | 0cd30df86818 |
@@ -701,10 +705,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 247 commits
+### Chores (chore) — 248 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-22 | churn | regenerate derived snapshots after main merge | 488a78b67cab |
 | 2026-07-19 | compliance | register four size crossings, ratchet nine entries, record the missing convention (#408) | 37fe1346b5df |
 | 2026-07-18 | triage | deliver 3 orphaned records from the merged iterate worktree (#402) | 56ee1c0e2387 |
 | 2026-07-18 | security | by-design nosemgrep suppression for the layer-coverage loader (#396) | 6cfd0e84655a |
@@ -1184,10 +1189,11 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 29 commits
+### Tests (test) — 30 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-22 | traceability | normalize an inline dynamic import to clear a benign prompt-scan finding (#426) | 4a0b6d025cb7 |
 | 2026-07-19 | requirements | golden corpus freezing discovery + parser behaviour, bugs included (#403) | 76d97ec06fe6 |
 | 2026-07-08 | run | single-session E2E integration + cross-surface capstone (SS7) (#352) | aa385b3dcd02 |
 | 2026-07-06 | coverage | replay the diff-coverage gate against the last 5 real monorepo PRs (#329) | ccb22388bb9b |
@@ -1258,7 +1264,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1189 |
+| Total commits | 1195 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1189 |
+| Human-authored commits | 1195 |
 
