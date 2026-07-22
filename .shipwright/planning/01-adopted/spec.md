@@ -133,6 +133,11 @@ _Where the work detail lives_ at the end of this document.
 - (E) Given a requirement was covered by a tested change at any point in the
   past, when the audit runs, then it stays reported as covered; a later edit to
   the requirements document does not reset that.
+- (E) Given a requirement was introduced by a change that ran tests, when the
+  audit runs, then that change counts as both covering and delivering it, so a
+  requirement that was right the first time is never reported as outstanding
+  merely for having needed no revision since; a change that introduces a
+  requirement without running tests still owes both.
 - (E) Given requirement names or descriptions carry implementation detail, when
   the audit runs, then it reports how many and which ones without changing the
   verdict or the exit code, so an existing catalog can be cleaned up gradually

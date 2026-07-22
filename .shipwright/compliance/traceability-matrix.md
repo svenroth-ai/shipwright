@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-21T23:32:39.562944+00:00
+Generated: 2026-07-21T22:41:30.570002+00:00
 
 ## Requirements Coverage
 
@@ -15,12 +15,12 @@ Generated: 2026-07-21T23:32:39.562944+00:00
 | [FR-01.07](../../.shipwright/planning/01-adopted/spec.md#fr-0107)<a id="rtm-fr-0107"></a> | Scan the project for vulnerabilities, leaked secrets and unsafe dependencies with several independent scanners, then drive the fixes to completion; each scanner keeps its own list of accepted exceptions. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7), [evt-07b1fe9c](#evt-07b1fe9c) +2 | 225/225 → 4955/4967 | 2026-06-30 ([iter](#evt-f90c7126)) | ✅ | COVERED | MISSING | — | — |
 | [FR-01.08](../../.shipwright/planning/01-adopted/spec.md#fr-0108)<a id="rtm-fr-0108"></a> | Deploy the project to a configured hosting target, prove it is alive with a smoke test, and roll back when it is not. Jelastic (Infomaniak) is shipped; Vercel and a container-on-a-server target are documented as stubs. | Should | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7) | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | — | COVERED | MISSING | — | — |
 | [FR-01.09](../../.shipwright/planning/01-adopted/spec.md#fr-0109)<a id="rtm-fr-0109"></a> | Turn the commit history into a release note a human can read, tag the release, and open the release pull request. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-530b0980](#evt-530b0980), [evt-ddb23fe7](#evt-ddb23fe7) | 225/225 → 19/19 | 2026-05-03 ([iter](#evt-530b0980)) | — | COVERED | MISSING | — | — |
-| [FR-01.10](../../.shipwright/planning/01-adopted/spec.md#fr-0110)<a id="rtm-fr-0110"></a> | Produce audit-ready evidence — which requirement is covered by which test, what changed when, and what the project depends on — and run an on-demand cross-check that reports where that evidence disagrees with reality. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-30338dac](#evt-30338dac), [evt-a3888caf](#evt-a3888caf) +21 | 225/225 → 9458/9486 | 2026-07-20 ([iter](#evt-d140cd35)) | ✅ | FAIL → [trg-8bf97fd4](../agent_docs/triage_inbox.md#trg-8bf97fd4), FAIL → [trg-9532fa83](../agent_docs/triage_inbox.md#trg-9532fa83), FAIL → [trg-eb19ada4](../agent_docs/triage_inbox.md#trg-eb19ada4) | MISSING | — | — |
-| [FR-01.11](../../.shipwright/planning/01-adopted/spec.md#fr-0111)<a id="rtm-fr-0111"></a> | Handle an ongoing change at the depth it deserves: detect what kind of change it is and how big, then scale from a quick fix to a fully specified feature with plans, reviews and tests. Every feature or change records whether it adds, modifies, removes or leaves the requirements untouched, and that record is enforced before the change can be finished. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-6c637864](#evt-6c637864), [evt-baaf4b0e](#evt-baaf4b0e), [evt-ca7b7d64](#evt-ca7b7d64) +19 | 225/225 → 54/54 | 2026-07-14 ([iter](#evt-5dc16a45)) | ⚠️ needs re-verification | COVERED | MISSING | MISSING | — |
+| [FR-01.10](../../.shipwright/planning/01-adopted/spec.md#fr-0110)<a id="rtm-fr-0110"></a> | Produce audit-ready evidence — which requirement is covered by which test, what changed when, and what the project depends on — and run an on-demand cross-check that reports where that evidence disagrees with reality. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-30338dac](#evt-30338dac), [evt-a3888caf](#evt-a3888caf) +22 | 225/225 → 6452/6452 | 2026-07-21 ([iter](#evt-6a61ac10)) | ✅ | FAIL → [trg-8bf97fd4](../agent_docs/triage_inbox.md#trg-8bf97fd4), FAIL → [trg-9532fa83](../agent_docs/triage_inbox.md#trg-9532fa83), FAIL → [trg-eb19ada4](../agent_docs/triage_inbox.md#trg-eb19ada4) | MISSING | — | — |
+| [FR-01.11](../../.shipwright/planning/01-adopted/spec.md#fr-0111)<a id="rtm-fr-0111"></a> | Handle an ongoing change at the depth it deserves: detect what kind of change it is and how big, then scale from a quick fix to a fully specified feature with plans, reviews and tests. Every feature or change records whether it adds, modifies, removes or leaves the requirements untouched, and that record is enforced before the change can be finished. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-6c637864](#evt-6c637864), [evt-baaf4b0e](#evt-baaf4b0e), [evt-ca7b7d64](#evt-ca7b7d64) +18 | 225/225 → 54/54 | 2026-07-14 ([iter](#evt-5dc16a45)) | ⚠️ needs re-verification | COVERED | MISSING | MISSING | — |
 | [FR-01.12](../../.shipwright/planning/01-adopted/spec.md#fr-0112)<a id="rtm-fr-0112"></a> | Start the project locally and hand back the address to open in a browser. | May | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7) | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | — | COVERED | — | — | MISSING |
 | [FR-01.13](../../.shipwright/planning/01-adopted/spec.md#fr-0113)<a id="rtm-fr-0113"></a> | Bring an existing codebase under Shipwright: read what is already there, write the starting guidance, derive an initial requirements catalog and compliance evidence, and lay down a baseline end-to-end test. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-273bbb54](#evt-273bbb54), [evt-b0b9c422](#evt-b0b9c422), [evt-aab7ddbd](#evt-aab7ddbd) +9 | 225/225 → 5/5 | 2026-07-20 ([iter](#evt-e9bfacd4)) | ✅ | COVERED | MISSING | — | — |
 | [FR-01.14](../../.shipwright/planning/01-adopted/spec.md#fr-0114)<a id="rtm-fr-0114"></a> | Collect findings from local checks and from the code host's automated scans into one per-project buffer the operator works through — each finding recorded once, and each either promoted into real work or dismissed — so the actual task list stays curated instead of flooded. | Must | [evt-3f488ddc](#evt-3f488ddc), [evt-32f2f1f4](#evt-32f2f1f4), [evt-84dbdf5e](#evt-84dbdf5e), [evt-e14e5f26](#evt-e14e5f26) +6 | 1642/1649 → 3629/3641 | 2026-07-03 ([iter](#evt-5755f932)) | ⚠️ needs re-verification | COVERED | MISSING | — | — |
-| [FR-01.15](../../.shipwright/planning/01-adopted/spec.md#fr-0115)<a id="rtm-fr-0115"></a> | The two payloads the companion application renders field for field are versioned output contracts: a breaking change obliges the consumer to refuse the payload, an additive one leaves it working. Each producer states its contract and names its consumer, and a gate compares what it emits against the shape last published and fails until the version has been raised — so a shape change cannot reach the consumer silently. | Must | — | — | — | ⚠️ needs re-verification | NOT VERIFIED | — | — | MISSING |
+| [FR-01.15](../../.shipwright/planning/01-adopted/spec.md#fr-0115)<a id="rtm-fr-0115"></a> | The two payloads the companion application renders field for field are versioned output contracts: a breaking change obliges the consumer to refuse the payload, an additive one leaves it working. Each producer states its contract and names its consumer, and a gate compares what it emits against the shape last published and fails until the version has been raised — so a shape change cannot reach the consumer silently. | Must | [evt-6a61ac10](#evt-6a61ac10) | 6452/6452 | 2026-07-21 ([iter](#evt-6a61ac10)) | ✅ | COVERED | — | — | MISSING |
 
 > **Legend** — *Tests*: `passed/total` of the latest event that ran tests; `first → latest` shows progression across tested runs. *Last tested*: date of that event (`iter` / `build` source); age is informational, **not a penalty**. *Reconciled?*: ✅ behavior-affected FR re-verified since its last change · ⚠️ needs re-verification (behavior changed, not yet re-tested) · — not behavior-touched. *Unit / Integration / E2E* (traceability manifest): `ok` an executed-passing tagged test covers the FR at that layer · `MISSING` the layer is required but has no executed-passing test · `?` ambiguous — the display id is shared across namespaces so the fanned tag is not credited (D-layer defers this to TT5) · `n/a` layer not required · — no manifest entry.
 
@@ -28,7 +28,7 @@ Generated: 2026-07-21T23:32:39.562944+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
-| <a id="evt-70b34c98"></a>persist a per-run record of what every review pass found | iterate | change | [FR-01.11](#rtm-fr-0111) | — | — | 2026-07-21 |
+| <a id="evt-6a61ac10"></a>reconcile compliance D1/D3 (FR-01.15 mint coverage) + H2 bloat ratchet | iterate | change | [FR-01.10](#rtm-fr-0110), [FR-01.15](#rtm-fr-0115) | 6452/6452 | — | 2026-07-21 |
 | <a id="evt-8f7e1649"></a>normalize the inline dynamic import to clear a benign prompt-scan finding | iterate | change |  | — | — | 2026-07-21 |
 | <a id="evt-6406a8db"></a>Closed the high-severity brace-expansion denial-of-service advisory (CVE-2026-13149) by updating that dependency to a patched version in the performance-test tooling's lockfile. | iterate | change |  | — | — | 2026-07-21 |
 | <a id="evt-36e41db0"></a>close the five open GitHub code-scanning alerts | iterate | change |  | — | — | 2026-07-21 |
@@ -85,7 +85,7 @@ Generated: 2026-07-21T23:32:39.562944+00:00
 | <a id="evt-5dc16a45"></a>The pre-commit test gate now runs the test groups at the same time instead of one after another, cutting the wait from about ten minutes to under two, with a safety net that re-checks anything that looks failed so the gate stays exactly as strict. | iterate | change | [FR-01.11](#rtm-fr-0111) | 54/54 | — | 2026-07-14 |
 | <a id="evt-a670d8da"></a>Sweep drift/dismiss-loss fix complete; PR pending | iterate | bug |  | — | — | 2026-07-14 |
 | <a id="evt-a5b70713"></a>iterate complete: multi-session removal | iterate | change | [FR-01.01](#rtm-fr-0101) | — | — | 2026-07-14 |
-| <a id="evt-edcf1064"></a>Cross-repo output contracts: shipwright-grade's ReportModel (grade.py --format json) and shipwright-adopt's snapshot.json are rendered field-for-field by the Command Center WebUI. Both now carry a schema_version (major=breaking, the consumer must refuse to render; minor=additive), both SKILL.mds state the contract and name the consumer, and a contract gate per producer diffs the emitted JSON wire-shape against the fixture published on origin/main -- a baseline a PR cannot rewrite -- derives the bump that diff obliges, and fails until it has been performed. Also fixes a dead detector found while pinning the contract: adopt's git.major_refactor_commits returned [] for every repository. | iterate | change |  | — | — | 2026-07-14 |
+| <a id="evt-edcf1064"></a>Cross-repo output contracts: shipwright-grade's ReportModel (grade.py --format json) and shipwright-adopt's snapshot.json are rendered field-for-field by the Command Center WebUI. Both now carry a schema_version (major=breaking, the consumer must refuse to render; minor=additive), both SKILL.mds state the contract and name the consumer, and a contract gate per producer diffs the emitted JSON wire-shape against the fixture published on origin/main -- a baseline a PR cannot rewrite -- derives the bump that diff obliges, and fails until it has been performed. Also fixes a dead detector found while pinning the contract: adopt's git.major_refactor_commits returned [] for every repository. | iterate | change |  | 4889/4889 | — | 2026-07-14 |
 | <a id="evt-d1e4d49d"></a>The automatic code-review AI now uses the newer, cheaper GPT-5.6 Terra Pro model on the OpenAI side instead of GPT-5.4; how reviews run is otherwise unchanged. | iterate | change |  | 37/37 | — | 2026-07-12 |
 | <a id="evt-e3cdb1ef"></a>The iterate now records how long each of its 5 steps took, so the Command Center's iterate progress bar can show real time-per-step. | iterate | feature |  | 22/22 | — | 2026-07-11 |
 | <a id="evt-0a7b22e5"></a>Widen phase_completed dedup to (phase, splitId) so multi-split phases record per-split ends; promote splitId to a top-level field; de-dup 4 phase-count/latest-ts consumers; plan SKILL emits --split-id. | iterate | change |  | — | — | 2026-07-11 |
@@ -391,22 +391,17 @@ Generated: 2026-07-21T23:32:39.562944+00:00
 | Build sections | 0 |
 | Iterate changes | 354 |
 | Requirements total | 15 |
-| Requirements verified | 14/15 |
-| Must-have verified | 11/12 |
+| Requirements verified | 15/15 |
+| Must-have verified | 12/12 |
 | Total review findings | 66 |
 | Unresolved findings | 24 |
-
-### FRs without tests
-
-- [FR-01.15](../../.shipwright/planning/01-adopted/spec.md) (Must): The two payloads the companion application renders field for field are versioned
 
 ### FRs needing re-verification
 
 - [FR-01.01](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-a5b70713` (2026-07-14)
 - [FR-01.02](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-3b2c22ed` (2026-07-20)
-- [FR-01.11](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-70b34c98` (2026-07-21)
+- [FR-01.11](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-07d2258f` (2026-07-18)
 - [FR-01.14](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-14ef5fcb` (2026-07-18)
-- [FR-01.15](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run
 
 ### FRs with open triage items
 

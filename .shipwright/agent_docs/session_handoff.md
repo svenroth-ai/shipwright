@@ -1,39 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-21-review-record"
+run_id: "iterate-2026-07-21-fr0115-coverage-bloat"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-21T23:32:45.194803+00:00"
+timestamp: "2026-07-21T22:41:37.612570+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-21 23:32:45 UTC
+> Auto-generated 2026-07-21 22:41:37 UTC
 
 ## Session Info
 
-- **Session ID**: dcc0a976-e768-47b5-9797-65838f71f827
-- **Timestamp**: 2026-07-21 23:32:45 UTC
+- **Session ID**: 2635282a-8c3e-4568-9bae-d27c6e75bc46
+- **Timestamp**: 2026-07-21 22:41:37 UTC
 - **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-21-review-record
-- **Date**: 2026-07-21T23:32:39.483479Z
-- **Type**: feature
+- **Run ID**: iterate-2026-07-21-fr0115-coverage-bloat
+- **Date**: 2026-07-21T22:41:30.231077Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/review-record
-- **ADR**: iterate-2026-07-21-review-record
+- **Branch**: iterate/fr0115-coverage-bloat
+- **ADR**: iterate-2026-07-21-fr0115-coverage-bloat
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-21-review-record.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-21-fr0115-coverage-bloat.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/review-record
-- **Run ID**: iterate-2026-07-21-review-record
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-21-review-record.md
-- **Complexity**: medium (history-calibrated, n=20; `prior_source: history`)
-- **External Review Marker**: stale (predates spec (2026-07-21T23:17:39))
+- **Branch**: iterate/fr0115-coverage-bloat
+- **Run ID**: `iterate-2026-07-21-fr0115-coverage-bloat`
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-21-fr0115-coverage-bloat.md
+- **Complexity**: medium (history-calibrated; `prior_source: history`, n=20)
+- **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
@@ -51,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/review-record
-- **Last Commit**: 169545df Merge remote-tracking branch 'origin/main' into iterate/review-record
+- **Branch**: iterate/fr0115-coverage-bloat
+- **Last Commit**: 5f39070d Merge remote-tracking branch 'origin/main' into iterate/fr0115-coverage-bloat
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -72,7 +72,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 | evt-6406a8db | work_completed | iterate (iterate: bump brace-expansion to 2.1.2 (CVE-2026-13149)) | 2026-07-21 |
 | evt-d839deb7 | grade_snapshot | — | 2026-07-21 |
 | evt-8f7e1649 | work_completed | iterate (iterate: normalize the inline dynamic import to clear a benign prompt-scan finding) | 2026-07-21 |
-| evt-89d561d1 | grade_snapshot | — | 2026-07-21 |
+| evt-622b42cf | grade_snapshot | — | 2026-07-21 |
 
 ## Recovery
 
