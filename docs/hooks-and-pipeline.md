@@ -1606,10 +1606,13 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
    `run_all` rewrites a listed check's finding to `skip` (before the triage
    mirror, so it drops out of `any_fail` + the `compliance:backlog` bundle).
    Explicit, per-project declaration — never auto-detected; default `[]` runs
-   every check. The Shipwright framework monorepo disables A5.6/B7/D4/G2 (each
+   every check. The Shipwright framework monorepo disables A5.6/B7/G2 (each
    with a documented reason) as an adopted, multi-component, active-CI repo.
    (BP-1 **re-enabled D1**: now that D1 uses all-time coverage and every FR is
-   event-covered, it passes honestly rather than being suppressed.)
+   event-covered, it passes honestly rather than being suppressed.
+   iterate-2026-07-23-tests-skipped-tracking **re-enabled D4**: it now keys on
+   genuine failures — `total - passed - skipped` — so a host-gated-skip gap no
+   longer reads as a failing build, and D4 passes honestly.)
    Separately, **D5** now exempts iterate events whose `change_type` ∈
    `{tooling,compliance,infra,docs}` (parity with the `record_event` ADR-C.1
    gate), not just `spec_impact=none`.

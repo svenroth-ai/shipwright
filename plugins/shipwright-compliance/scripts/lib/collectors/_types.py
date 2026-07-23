@@ -129,18 +129,17 @@ class WorkEvent:
     tests_passed: int = 0
     tests_total: int = 0
     affected_frs: list[str] = field(default_factory=list)
-    # Build-specific
-    split: str = ""
+    split: str = ""          # build-specific
     section: str = ""
     review_type: str = ""
     review_findings: int = 0
     review_fixed: int = 0
-    # Iterate-specific
-    intent: str = ""     # "feature" | "change" | "bug"
+    intent: str = ""         # iterate-specific — "feature" | "change" | "bug"
     description: str = ""
     new_frs: list[str] = field(default_factory=list)
     tests_new: int = 0
     tests_modified: int = 0
+    tests_skipped: int | None = None  # host-gated skips; None=absent(charitable) vs int=exact
     e2e_run: bool = False
     spec_updated: str = ""
     adr_id: str = ""
@@ -175,6 +174,7 @@ class WorkEvent:
             new_frs=d.get("new_frs") or [],
             tests_new=tests.get("new", 0),
             tests_modified=tests.get("modified", 0),
+            tests_skipped=tests.get("skipped"),  # None (not 0) when absent
             e2e_run=tests.get("e2e_run", False),
             spec_updated=d.get("spec_updated", ""),
             adr_id=d.get("adr_id", ""),

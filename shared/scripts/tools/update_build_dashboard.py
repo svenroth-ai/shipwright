@@ -12,6 +12,7 @@ from lib.config import collect_all_build_sections, read_config, read_events
 from lib.events_log import latest_event_dt
 from event_classification import normalize_intent
 from markdown_table import escape_cell
+from tests_block import skip_suffix  # shared skip-vs-fail SSOT
 
 
 def _deterministic_now(project_root: Path) -> str:
@@ -25,6 +26,7 @@ def _deterministic_now(project_root: Path) -> str:
     if dt is None:
         return "(no events)"
     return dt.strftime("%Y-%m-%d %H:%M UTC")
+
 
 STEP_LABELS = {
     1: "Read spec", 2: "Install deps", 3: "Write tests (red)",
@@ -299,7 +301,7 @@ def _test_status_from_iterate(project_root: Path, latest_event: dict) -> list[st
     tests = latest_event.get("tests", {})
     if tests.get("total", 0) > 0:
         parts = [f"Last run: {latest_event.get('ts', '')[:10]}"]
-        parts.append(f"Tests: {tests.get('passed', 0)}/{tests.get('total', 0)}")
+        parts.append(f"Tests: {tests.get('passed', 0)}/{tests.get('total', 0)}{skip_suffix(tests)}")
         if tests.get("e2e_run"):
             parts.append("(incl. E2E)")
         parts.append("(iterate)")
@@ -346,7 +348,7 @@ def _generate_from_events(project_root: Path, session_id: str | None = None,
             desc = we.get("description", "—")
             tests = we.get("tests", {})
             new_str = f"+{tests.get('new', 0)} new, " if tests.get("new") else ""
-            tests_cell = f"{new_str}{tests.get('passed', 0)}/{tests.get('total', 0)}"
+            tests_cell = f"{new_str}{tests.get('passed', 0)}/{tests.get('total', 0)}{skip_suffix(tests)}"
             commit = we.get("commit", "—")[:7]
             # FRs column: prefer affected_frs; fall back to change_type tag
             # (docs/tooling/compliance/infra) so non-FR iterates show their
@@ -445,7 +447,7 @@ def _generate_from_events(project_root: Path, session_id: str | None = None,
             ])
             for we in secs:
                 tests = we.get("tests", {})
-                tests_cell = f"{tests.get('passed', 0)}/{tests.get('total', 0)}" if tests.get("total") else "—"
+                tests_cell = f"{tests.get('passed', 0)}/{tests.get('total', 0)}{skip_suffix(tests)}" if tests.get("total") else "—"
                 review = we.get("review", {})
                 review_cell = review.get("type", "—").replace("-review", "")
                 commit = we.get("commit", "—")[:7]

@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-23-tests-skipped-tracking",
+  "date": "2026-07-23T07:18:55.049539Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/tests-skipped-tracking",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-23-tests-skipped-tracking.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-23-tests-skipped-tracking"
+}

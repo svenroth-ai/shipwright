@@ -1,0 +1,1 @@
+The compliance detective D4 now keys on genuine failures (`total - passed - skipped`) instead of the raw passed/total gap, and the test-evidence report + build dashboard disclose the skip count even when `passed == total`; `apply_amendments` gains an opt-in `deep=True` deep-merge.

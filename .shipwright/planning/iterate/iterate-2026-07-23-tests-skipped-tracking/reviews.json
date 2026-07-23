@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-23-tests-skipped-tracking",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-23T07:13:42.123178+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-23T07:14:23.510411+00:00",
+      "disposition": "external plan review folded into the stronger external code review (--mode code over the full diff, GPT-5.4 + Gemini-3.1-Pro); iterate ran from a detailed spec straight to implementation",
+      "recorded_by": "iterate",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-23T07:14:04.702927+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": "unstructured",
+      "raw_excerpt": "Internal code-reviewer (opus, adversarial). Findings on the tests.skipped diff:\n\nMEDIUM | test_evidence.py _progression_result | The three readers split present/absent inconsistently: _progression_result used `is None` while D4 _failed_count and dashboard _skip_suffix use `isinstance(int)`. A non-int skipped (reachable via the unvalidated --fields amendment path) crashes test-evidence rendering (total-passed-\"2\" TypeError) while D4 stays charitable — divergence + crash. FIXED: all readers now share the isinstance(int) predicate via the shared tests_block SSOT.\n\nMEDIUM | record_event.py | The cross-field guard did not cover --fields amendment payloads, so a corrupt tests block could land via event_amended and fold onto the target. FIXED: validate_tests_block now runs on fields.tests too.\n\nLOW | record_event.py main() | ValueError from build_event was uncaught (raw traceback, no JSON). FIXED: main() catches ValueError → structured {success:false} + exit 1.\n\nLOW | bool skipped is treated as int (consistent nonsense across readers). Left as-is (validate rejects bool at write); no divergence.\n\nLOW (test gaps) | non-int skipped in D4/renderer, and the build-split dashboard render site, had no coverage. FIXED: added tests.\n\nVerified correct: legacy path byte-identical; _failed_count arithmetic off-by-one-free; deep-merge default byte-identical + no input mutation; D4 re-enable stays green (all 43 real gap-events have skipped absent → charitable); _skip_suffix legacy rows byte-unchanged.\n"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-23T07:14:23.637873+00:00",
+      "disposition": "cross-plugin SSOT imports (the only doubt trigger; no migration/async/irreversible op) are runtime-verified by the full compliance + finalize + broad shared suites across every invocation path; internal code review confirmed no parity break",
+      "recorded_by": "iterate",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-compliance/scripts/lib/test_evidence.py",
+          "line": 462,
+          "finding": "An explicit-skip residual can still render `PASS (baseline)` when `baseline_failure_count > 0` and the residual is within that baseline. AC3 requires an explicit-skip residual (`total - passed - skipped > 0`) to render `FAIL (k failed[, N skipped])`; the explicit count is intended to be exact in contrast to charitable legacy events.",
+          "suggestion": "In the explicit-`tests_skipped` branch, return `FAIL` for every positive `failed` count and do not apply the baseline exemption. Preserve the existing baseline logic only for legacy events where `skipped is None`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "plugins/shipwright-compliance/tests/test_test_evidence.py",
+          "line": 146,
+          "finding": "The new explicit-residual renderer test only uses `baseline=0`, so it does not catch the AC3 violation where an explicit residual is rendered as `PASS (baseline)`. A broken implementation retaining the baseline branch for explicit counts passes all added tests.",
+          "suggestion": "Add a case with, for example, `passed=826`, `total=831`, `skipped=3`, and `baseline=2`, asserting `FAIL (2 failed, 3 skipped)`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "shared/scripts/tools/update_build_dashboard.py",
+          "line": 29,
+          "finding": "_skip_suffix` suppresses an explicitly recorded `tests.skipped: 0`. AC4 says the dashboard must render the skip count when `tests.skipped` is present; unlike legacy absence, explicit zero is meaningful because the present/absent distinction is load-bearing elsewhere.",
+          "suggestion": "Return ` (0 skipped)` for any valid explicit integer skip value, including zero, and return an empty suffix only when the key is absent or invalid. Add dashboard coverage for an explicit zero count.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/record_event.py",
+          "line": 212,
+          "finding": "tests-skipped` accepts negative values. For example, `--tests-passed 10 --tests-total 10 --tests-skipped -1` passes the new cross-field guard, writes an invalid skip count, and later causes readers/D4 to infer a nonexistent failure. A test count cannot be negative.",
+          "suggestion": "Reject negative `tests_skipped` values at the CLI/build-event boundary (and ideally validate passed/total counts consistently), before constructing the event.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_record_event.py",
+          "line": 245,
+          "finding": "The purported CLI round-trip test reads only the raw JSON event through `read_events`; it never constructs `WorkEvent` from that emitted event. The specification explicitly calls for a write → `read_events` → `WorkEvent.from_dict` round trip, and the separate direct model unit test does not validate that full boundary sequence.",
+          "suggestion": "Convert the raw event returned by `read_events` with `WorkEvent.from_dict` and assert `tests_skipped == 3` in this test.  Overall assessment: ship-with-fixes. The core wire-format, D4, and amendment changes are largely implemented, but the explicit-skip renderer currently violates the required failure semantics when a baseline is configured.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter (gpt-5.4 + gemini-3.1-pro)",
+      "completed_at": "2026-07-23T07:14:23.384428+00:00",
+      "disposition": null,
+      "recorded_by": "external-review",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] **Severity: Medium**\n**Category: bug**\n\nIn `plugins/shipwright-compliance/scripts/audit/group_d.py`, the D4 failure check returns a 4-tuple but the formatting in the detail message tries to unpack a 3-tuple fallback (or rather, the code unpacks 4-tuples for the first three but builds the remaining detail improperly, wait... no, let me check the code).\n\n```python\n    failing.sort()\n    head = \", \".join(f\"{fr_id} ({p}/{t}, {f} failed)\" for fr_id, p, t, f in failing[:3])\n    if len(failing) > 3:\n        head += f\", … (+{len(\n\n[openai] - Category: spec\n- Severity: medium\n- File: `plugins/shipwright-compliance/scripts/lib/test_evidence.py:462`\n- Finding: An explicit-skip residual can still render `PASS (baseline)` when `baseline_failure_count > 0` and the residual is within that baseline. AC3 requires an explicit-skip residual (`total - passed - skipped > 0`) to render `FAIL (k failed[, N skipped])`; the explicit count is intended to be exact in contrast to charitable legacy events.\n- Suggestion: In the explicit-`tests_skipped` branch, return `FAIL` for every positive `failed` count and do not apply the baseline exemption. Preserve the existing baseline logic only for legacy events where `skipped is None`.\n\n- Category: test\n- Severity: medium\n- File: `plugins/shipwright-compliance/tests/test_test_evidence.py:146`\n- Finding: The new explicit-residual renderer test only uses `baseline=0`, so it does not catch the AC3 violation where an explicit residual is rendered as `PASS (baseline)`. A broken implementation retaining the baseline branch for explicit counts passes all added tests.\n- Suggestion: Add a case with, for example, `passed=826`, `total=831`, `skipped=3`, and `baseline=2`, asserting `FAIL (2 failed, 3 skipped)`.\n\n- Category: spec\n- Severity: low\n- File: `shared/scripts/tools/update_build_dashboard.py:29`\n- Finding: `_skip_suffix` suppresses an explicitly recorded `tests.skipped: 0`. AC4 says the dashboard must render the skip count when `tests.skipped` is present; unlike legacy absence, explicit zero is meaningful because the present/absent distinction is load-bearing elsewhere.\n- Suggestion: Return ` (0 skipped)` for any valid explicit integer skip value, including zero, and return an empty suffix only when the key is absent or invalid. Add dashboard coverage for an explicit zero count.\n\n- Category: edge-case\n- Severity: low\n- File: `shared/scripts/tools/record_event.py:212`\n- Finding: `--tests-skipped` accepts negative values. For example, `--tests-passed 10 --tests-total 10  […truncated]"
+    }
+  }
+}

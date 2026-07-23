@@ -144,7 +144,7 @@
     {
       "path": "plugins/shipwright-compliance/scripts/audit/group_d.py",
       "limit": 300,
-      "current": 412,
+      "current": 429,
       "state": "exception",
       "adr": "ADR-096"
     },
@@ -193,7 +193,7 @@
     {
       "path": "plugins/shipwright-compliance/scripts/lib/test_evidence.py",
       "limit": 300,
-      "current": 917,
+      "current": 906,
       "state": "grandfathered",
       "adr": null
     },
@@ -704,9 +704,9 @@
     {
       "path": "shared/scripts/tools/record_event.py",
       "limit": 300,
-      "current": 739,
-      "state": "grandfathered",
-      "adr": null
+      "current": 769,
+      "state": "exception",
+      "adr": "ADR-111"
     },
     {
       "path": "shared/scripts/tools/resolve_churn_conflicts.py",
@@ -725,9 +725,9 @@
     {
       "path": "shared/scripts/tools/update_build_dashboard.py",
       "limit": 300,
-      "current": 496,
-      "state": "grandfathered",
-      "adr": null
+      "current": 498,
+      "state": "exception",
+      "adr": "ADR-111"
     },
     {
       "path": "shared/scripts/tools/verifiers/build_checks.py",

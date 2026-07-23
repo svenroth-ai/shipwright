@@ -1,11 +1,11 @@
 {
   "_comment": "Detective-audit overrides for the Shipwright FRAMEWORK monorepo. Shallow-merged over the shipwright-compliance audit defaults by load_audit_config. disabled_checks lists detective checks that are STRUCTURALLY not-applicable to this adopted, multi-component, active-CI framework repo (each rewritten to SKIP, not FAIL). A single FR-driven consumer app keeps all checks on (empty default).",
-  "disabled_checks": ["A5.6", "B7", "D4", "G2"],
+  "disabled_checks": ["A5.6", "B7", "G2"],
   "_disabled_checks_reasons": {
     "A5.6": "Security CI workflow is intentionally ACTIVE (pull_request/schedule) here, not dormant — the dormant-trigger contract targets staged-but-inactive projects.",
     "B7": "Adopted multi-component framework monorepo: most commits are plugin development / merges / chores, not iterate work_completed events — 'every commit since release has a matching event' does not apply.",
-    "D4": "Latest-covering-event test-snapshot freshness. Gating CI blocks merges with failing tests, so main's current test health is always green/authoritative; D4 can therefore only ever surface STALE historical snapshots from the deep event log (e.g. FR-01.01's 2026-05-05 1691/1716, long since green, never re-covered) — not action-units. RTM-corroborated.",
     "G2": "Monorepo uses multi-component conventional-commit scopes (e.g. 'canon', 'build,iterate', 'hooks') that are not split-names in the plan alias-map."
   },
+  "_d4_reenabled": "D4 was disabled because it 'can only ever surface STALE historical snapshots' — a work_completed gap (passed<total) is host-gated SKIPS on a green-at-merge build, not a failing build, so D4 keyed on the raw gap false-flagged (e.g. FR-01.07 4955/4967, long green). iterate-2026-07-23-tests-skipped-tracking fixed the ROOT cause: D4 now keys on genuine failures (total-passed-skipped), treating a skip-count-less gap charitably as skips. D4 passes honestly on this repo, so the suppression is removed — a FUTURE explicit-skip residual (a real Iron-Law violation) now surfaces instead of being hidden.",
   "_d1_reenabled": "D1 was disabled while FR-tagging was frozen (no-FR tooling iterates left FRs un-event-tracked). BP-1 re-enables it: D1 now uses all-time coverage (no spec-update watermark) and every spec FR is covered by an event, so D1 passes honestly instead of being suppressed."
 }
