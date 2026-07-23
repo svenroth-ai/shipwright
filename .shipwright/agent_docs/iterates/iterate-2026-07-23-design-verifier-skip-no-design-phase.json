@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-23-design-verifier-skip-no-design-phase",
+  "date": "2026-07-23T06:42:44.043018Z",
+  "type": "bug",
+  "complexity": "medium",
+  "branch": "iterate/design-verifier-skip-no-design-phase",
+  "spec": ".shipwright/planning/iterate/2026-07-23-design-verifier-skip-no-design-phase.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-23-design-verifier-skip-no-design-phase"
+}

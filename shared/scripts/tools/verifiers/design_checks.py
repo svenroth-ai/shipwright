@@ -64,6 +64,9 @@ DESIGNS_DIR = ".shipwright/designs"
 # Scopes that have no UI surface and therefore cannot have a screen-based
 # design manifest. Both phase-own design checks short-circuit to SKIP for
 # these — the FR→screen contract is structurally inapplicable, not failing.
+# A separate, orthogonal skip (``_design_phase_ran``, applied only by
+# ``check_design_fr_coverage``) covers projects whose design phase never ran
+# at all — e.g. adopted / brownfield repos (triage trg-d26da6f4).
 _NO_UI_SCOPES = frozenset({"library"})
 
 
@@ -71,15 +74,50 @@ def _is_no_ui_scope(project_root: Path) -> bool:
     """Read ``shipwright_run_config.json`` and return True iff ``scope`` is
     a known no-UI value (currently ``library``).
 
-    Fail-closed: missing file, unreadable file, or malformed JSON returns
-    False (check runs normally — never silently skip on broken state).
+    Fail-closed: missing file, unreadable file, malformed JSON, or an
+    undecodable payload returns False (check runs normally — never silently
+    skip on broken state). ``utf-8-sig`` tolerates a hand-edited UTF-8 BOM
+    (WP8/F24 config-reader convention) so a BOM'd ``scope=library`` config is
+    still detected as library rather than false-failing the check.
     """
     cfg = project_root / "shipwright_run_config.json"
     try:
-        data = json.loads(cfg.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+        data = json.loads(cfg.read_text(encoding="utf-8-sig"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         return False
     return isinstance(data, dict) and data.get("scope") in _NO_UI_SCOPES
+
+
+def _design_phase_ran(project_root: Path) -> bool:
+    """Return True iff ``"design"`` is in ``completed_steps`` of
+    ``shipwright_run_config.json`` — i.e. the design phase is part of this
+    project's lifecycle. Adopted (brownfield) projects never run
+    ``/shipwright-design`` (``shipwright-adopt`` seeds ``completed_steps`` as
+    ``[project, plan, build, test]``), so their design-manifest legitimately
+    never existed (triage trg-d26da6f4).
+
+    Fail-loud: a missing / unreadable / malformed / undecodable config, a
+    non-dict payload, or a non-list ``completed_steps`` all return True — a
+    broken config never buys a silent free pass, and a manifest lost AFTER a
+    design phase ran is real drift. ``utf-8-sig`` tolerates a hand-edited BOM
+    (WP8/F24 config-reader convention). Callers MUST gate only the
+    *manifest-missing* branch on this helper, never as a top-level
+    short-circuit: the between-phase validator runs these checks before
+    ``"design"`` is appended to ``completed_steps``, but only once the
+    manifest is present, so a manifest-gated skip preserves its FR-orphan /
+    screen-existence enforcement.
+    """
+    cfg = project_root / "shipwright_run_config.json"
+    try:
+        data = json.loads(cfg.read_text(encoding="utf-8-sig"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return True
+    if not isinstance(data, dict):
+        return True
+    steps = data.get("completed_steps")
+    if not isinstance(steps, list):
+        return True
+    return "design" in steps
 
 
 # ---------------------------------------------------------------------------
@@ -143,7 +181,14 @@ def _parse_screens_table(manifest_body: str) -> list[tuple[str, list[str]]]:
 def check_design_manifest_screens_exist(project_root: Path) -> CheckResult:
     """Every row in the ``## Screens`` table of ``.shipwright/designs/design-manifest.md``
     must point at an existing HTML file on disk. ERROR — downstream test
-    fidelity checks will explode if mockups vanished or were renamed."""
+    fidelity checks will explode if mockups vanished or were renamed.
+
+    Skips only for a no-UI scope (``scope=library``). Unlike
+    ``check_design_fr_coverage`` this check keeps failing loud on an absent
+    manifest: it is not part of the detective audit (only the between-phase
+    validator runs it, and only once mockups exist), so it never fires on an
+    adopted project — and by staying strict it remains the manifest-presence
+    sentinel that catches a design phase which wrote mockups but no manifest."""
     name = "design_manifest screens exist on disk"
     if _is_no_ui_scope(project_root):
         return CheckResult(
@@ -191,8 +236,12 @@ def check_design_fr_coverage(project_root: Path) -> CheckResult:
     Adapted from the shipwright-check plan Group C1 preventive check:
     design phase is where FR↔UI mapping is decided, so it's the right
     place to fail fast on orphan FRs (test-fidelity drift downstream).
-    Skips if there are no planning FRs (early bootstrap, no work to do),
-    or if the project's scope has no UI surface (``scope=library``).
+    Skips if there are no planning FRs (early bootstrap, no work to do), if
+    the project's scope has no UI surface (``scope=library``), or — when the
+    manifest is absent — if the design phase was never part of the project's
+    lifecycle (adopted / brownfield; no ``"design"`` in ``completed_steps``),
+    so the manifest legitimately never existed (triage trg-d26da6f4). An
+    absent manifest AFTER a design phase ran is real drift and still fails.
     """
     name = "design FR coverage (every FR linked to >=1 screen)"
 
@@ -209,6 +258,13 @@ def check_design_fr_coverage(project_root: Path) -> CheckResult:
 
     manifest = project_root / DESIGNS_DIR / "design-manifest.md"
     if not manifest.exists():
+        if not _design_phase_ran(project_root):
+            return CheckResult(
+                name, None,
+                "design phase never ran (no 'design' in completed_steps) — "
+                "FR→screen mapping not applicable",
+                severity=Severity.SKIPPED.value,
+            )
         return CheckResult(name, False, f"{DESIGNS_DIR}/design-manifest.md missing")
     try:
         body = manifest.read_text(encoding="utf-8", errors="ignore")

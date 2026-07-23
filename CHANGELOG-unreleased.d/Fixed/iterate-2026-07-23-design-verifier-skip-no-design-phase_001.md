@@ -1,0 +1,1 @@
+Design compliance check (detective-audit C1) no longer reports a false failure for adopted/brownfield projects that have requirements but never ran the design/mockup phase — the FR→screen coverage check now skips when the design phase is absent from the project lifecycle, mirroring the existing library-scope skip.

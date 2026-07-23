@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-21T23:32:39.562944+00:00
+Generated: 2026-07-23T06:42:44.137080+00:00
 
 ## Requirements Coverage
 
@@ -28,6 +28,7 @@ Generated: 2026-07-21T23:32:39.562944+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-a8a0f759"></a>The automated design check no longer flags a false problem for projects that were adopted into Shipwright and never went through the design/mockup step. | iterate | bug |  | 26/26 | — | 2026-07-23 |
 | <a id="evt-70b34c98"></a>persist a per-run record of what every review pass found | iterate | change | [FR-01.11](#rtm-fr-0111) | — | — | 2026-07-21 |
 | <a id="evt-6a61ac10"></a>reconcile compliance D1/D3 (FR-01.15 mint coverage) + H2 bloat ratchet | iterate | change | [FR-01.10](#rtm-fr-0110), [FR-01.15](#rtm-fr-0115) | 6452/6452 | — | 2026-07-21 |
 | <a id="evt-8f7e1649"></a>normalize the inline dynamic import to clear a benign prompt-scan finding | iterate | change |  | — | — | 2026-07-21 |
@@ -390,7 +391,7 @@ Generated: 2026-07-21T23:32:39.562944+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 355 |
+| Iterate changes | 356 |
 | Requirements total | 15 |
 | Requirements verified | 15/15 |
 | Must-have verified | 12/12 |
