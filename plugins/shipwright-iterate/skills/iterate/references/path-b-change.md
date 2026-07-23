@@ -1,5 +1,15 @@
 # Path B: CHANGE (modify existing behavior)
 
+> **The interview follows the shared elicitation method** (same as FEATURE).
+> Grilling to a shared understanding, one question at a time each with a
+> recommended answer, looking facts up in the code instead of asking, glossary
+> challenge, edge-case stress-tests, and the **coverage checklist that is not
+> finished until every context dimension is answered or recorded `Basis:
+> assumed`** are binding and live in `shared/requirement-elicitation.md`. A
+> CHANGE elicits *how an existing behaviour should differ* — the same coverage
+> guarantee applies to the criteria it adds or edits, so a modified requirement
+> is no less completely grilled than a new one.
+
 Same steps as FEATURE (`references/path-a-feature.md`), with these
 differences:
 

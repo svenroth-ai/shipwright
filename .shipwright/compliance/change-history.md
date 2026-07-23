@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-07-23T07:18:55.135867+00:00
+Generated: 2026-07-23T14:30:38.425746+00:00
 Total commits: 1196
 
 ## Commit Distribution
@@ -375,7 +375,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-23 | compliance | track skipped tests as a first-class field; key D4 on genuine failures (FR-01.10) | b742c848448e |
+| 2026-07-23 | compliance | track skipped tests as a first-class field; key D4 on genuine failures (FR-01.10) (#430) | 355681bdcd4e |
 | 2026-07-23 | iterate | record what every review pass found, per run (FR-01.11) (#428) | 578370ca2e9b |
 | 2026-07-20 | iterate | extend the CI supply-chain ack gate to shipped CI templates (#417) | c6975f4e612c |
 | 2026-07-20 | traceability | answer "which changes touched this requirement" from the event log (campaign S7) (#415) | 18905d576514 |

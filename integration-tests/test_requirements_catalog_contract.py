@@ -31,8 +31,9 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 CATALOG = REPO_ROOT / ".shipwright" / "planning" / "01-adopted" / "spec.md"
 RTM = REPO_ROOT / ".shipwright" / "compliance" / "traceability-matrix.md"
 
-#: The ids the catalog carried before the merge. S6 must not lose or renumber one.
-EXPECTED_IDS = tuple(f"FR-01.{n:02d}" for n in range(1, 16))
+#: The ids the catalog carries. S6 must not lose or renumber one; a later iterate
+#: may append the next free number (FR-01.16 was minted 2026-07-23, REQ-3 Ph1).
+EXPECTED_IDS = tuple(f"FR-01.{n:02d}" for n in range(1, 17))
 
 _EXPLICIT_ANCHOR = re.compile(r'<a\s+id="([^"]+)"\s*>')
 _RTM_FR_LINK = re.compile(r"\[(FR-[\d.]+)\]\(([^)]*spec\.md#[^)]+)\)")
@@ -82,8 +83,9 @@ def _requirement_text(text: str) -> list[tuple[str, str]]:
     return out
 
 
-def test_all_fifteen_requirements_survive_with_unchanged_ids(catalog):
-    """The merge is a merge, not a rewrite: no id lost, added or renumbered."""
+def test_all_requirements_survive_with_unchanged_ids(catalog):
+    """The merge is a merge, not a rewrite: no original id lost or renumbered.
+    New ids are only ever appended at the next free number (FR-01.16, REQ-3)."""
     found = tuple(m.group(1) for m in
                   (_TABLE_ROW.match(ln) for ln in catalog.splitlines()) if m)
     assert found == EXPECTED_IDS
@@ -142,7 +144,7 @@ def test_every_requirement_has_an_explicit_anchor(catalog):
     """
     anchors = _EXPLICIT_ANCHOR.findall(catalog)
     fr_anchors = [a for a in anchors if a.startswith("fr-")]
-    assert fr_anchors == [f"fr-01{n:02d}" for n in range(1, 16)]
+    assert fr_anchors == [f"fr-01{n:02d}" for n in range(1, 17)]
     assert len(set(anchors)) == len(anchors), "duplicate anchor id"
 
 
@@ -216,8 +218,8 @@ def test_every_layers_cell_keeps_the_inferred_marker(catalog):
 
     A ``Layers`` cell without the literal ``(inferred)`` marker flips that
     requirement's provenance to ``explicit``, which routes any coverage gap to a
-    hard ERROR. Ten of the fifteen have no test links at all, so dropping the
-    marker while rewriting the table would hard-block the campaign on gaps
+    hard ERROR. Most of the requirements have no test links at all, so dropping
+    the marker while rewriting the table would hard-block the campaign on gaps
     nobody introduced. Narrow regex on purpose: ``unit, e2e (auto)`` does not
     match and would yield ``explicit``.
     """
