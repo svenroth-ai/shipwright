@@ -1,9 +1,9 @@
 {
   "schema_version": 3,
   "collector_version": "test_links/1.0.0",
-  "generated_at": "2026-07-23T07:18:55.135867+00:00",
-  "source_commit": "fe00162b50ad489b0b29793b4da42c3170fe2f63",
-  "spec_hash": "sha256:cbc74a3da79f09c2f340fb39222f37fa303b7c9cb7340518cbfbd8ccc34f4f54",
+  "generated_at": "2026-07-23T14:30:38.425746+00:00",
+  "source_commit": "355681bdcd4e5e7c5a0540fc0412cb039d6132d2",
+  "spec_hash": "sha256:0ea3561cb61fab96b7075a93b2e391af15adbbc3a98b6363010b513724217a19",
   "requirements": {
     "01::FR-01.01": {
       "id": "FR-01.01",
@@ -1815,6 +1815,21 @@
       "coverage": {
         "e2e": "MISSING"
       }
+    },
+    "01::FR-01.16": {
+      "id": "FR-01.16",
+      "spec_path": ".shipwright/planning/01-adopted/spec.md",
+      "title": "Elicit requirements through one shared, rigorous method wherever they are gathered — a new project, an adopted codebase, or an ongoing change: ask one question at a time, each with a recommended answer, look facts up in the code instead of asking, challenge wording against the project's own glossary, and stress-test with concrete edge cases. Capture the project's domain vocabulary and the reason behind each hard-to-reverse choice as they surface. No requirement is treated as settled until every dimension of its context is either answered or explicitly marked as an unconfirmed assumption.",
+      "priority": "Must",
+      "status": "active",
+      "required_layers": [
+        "unit"
+      ],
+      "required_layers_source": "inferred_legacy",
+      "tests": {},
+      "coverage": {
+        "unit": "MISSING"
+      }
     }
   },
   "orphans": [],
@@ -2019,7 +2034,7 @@
     "integration-tests/test_removal_survivors_offpath.py::test_gate_policy_is_inert_for_a_standalone_project",
     "integration-tests/test_removal_survivors_offpath.py::test_generic_handoff_still_written_after_the_phase_branch_was_cut",
     "integration-tests/test_removal_survivors_offpath.py::test_phase_completion_fallback_still_fires",
-    "integration-tests/test_requirements_catalog_contract.py::test_all_fifteen_requirements_survive_with_unchanged_ids",
+    "integration-tests/test_requirements_catalog_contract.py::test_all_requirements_survive_with_unchanged_ids",
     "integration-tests/test_requirements_catalog_contract.py::test_every_layers_cell_keeps_the_inferred_marker",
     "integration-tests/test_requirements_catalog_contract.py::test_every_requirement_has_an_explicit_anchor",
     "integration-tests/test_requirements_catalog_contract.py::test_every_rtm_deep_link_resolves_end_to_end",
@@ -2027,8 +2042,8 @@
     "integration-tests/test_requirements_catalog_contract.py::test_the_catalog_declares_no_removed_requirements_section",
     "integration-tests/test_requirements_catalog_contract.py::test_the_catalog_path_is_covered_by_a_registered_artifact_migration",
     "integration-tests/test_requirements_catalog_parsers.py::test_the_fr_heading_coherence_report_is_knowingly_wrong_here",
-    "integration-tests/test_requirements_catalog_parsers.py::test_the_fr_table_reader_still_sees_exactly_fifteen_requirements",
-    "integration-tests/test_requirements_catalog_parsers.py::test_the_heading_parser_sees_the_same_fifteen",
+    "integration-tests/test_requirements_catalog_parsers.py::test_the_fr_table_reader_still_sees_every_requirement",
+    "integration-tests/test_requirements_catalog_parsers.py::test_the_heading_parser_sees_the_same_set",
     "integration-tests/test_requirements_corpus_false_verdicts.py::test_fv1_absent_planning_tree_skips_correctly",
     "integration-tests/test_requirements_corpus_false_verdicts.py::test_fv1_t1_can_still_fail_when_rows_do_parse",
     "integration-tests/test_requirements_corpus_false_verdicts.py::test_fv1_the_populated_state_is_distinguishable_from_the_empty_ones",
@@ -8271,6 +8286,17 @@
     "shared/tests/test_repo_root.py::test_main_repo_root_non_git_returns_none_silently",
     "shared/tests/test_repo_root.py::test_main_repo_root_plain_repo",
     "shared/tests/test_repo_root.py::test_main_repo_root_str_project_root_accepted",
+    "shared/tests/test_requirement_elicitation_refs.py::test_context_format_exists_and_is_non_empty",
+    "shared/tests/test_requirement_elicitation_refs.py::test_context_format_retains_cited_sections",
+    "shared/tests/test_requirement_elicitation_refs.py::test_context_format_states_the_glossary_distinction",
+    "shared/tests/test_requirement_elicitation_refs.py::test_elicitation_surface_cites_the_module",
+    "shared/tests/test_requirement_elicitation_refs.py::test_module_attributes_matt_pocock",
+    "shared/tests/test_requirement_elicitation_refs.py::test_module_carries_the_completeness_stop_condition",
+    "shared/tests/test_requirement_elicitation_refs.py::test_module_exists_and_is_non_empty",
+    "shared/tests/test_requirement_elicitation_refs.py::test_module_lists_the_coverage_dimensions",
+    "shared/tests/test_requirement_elicitation_refs.py::test_module_pins_its_internal_cross_references",
+    "shared/tests/test_requirement_elicitation_refs.py::test_module_pins_the_load_bearing_rules_by_sentence",
+    "shared/tests/test_requirement_elicitation_refs.py::test_module_retains_cited_sections",
     "shared/tests/test_requirement_model.py::test_is_canonical_fr",
     "shared/tests/test_requirement_model.py::test_layers_are_the_closed_vocabulary",
     "shared/tests/test_requirement_model.py::test_model_version_tracks_manifest_schema_version",

@@ -4,6 +4,17 @@ Follow the Phase Matrix in SKILL.md Section 6 to determine which steps run.
 Step 7 / Step 7.5 / Step 8 / Step 11a / Step 11b headings are kept inline in
 SKILL.md because they are anchors for several drift-protection tests.
 
+> **The interview (SKILL.md Section G) follows the shared elicitation method.**
+> Grilling to a shared understanding, one question at a time each with a
+> recommended answer, looking facts up in the code instead of asking, challenging
+> terms against the glossary, edge-case stress-tests, and the **coverage
+> checklist that is not finished until every context dimension is answered or
+> recorded `Basis: assumed`** are binding and live in
+> `shared/requirement-elicitation.md`. The Goal and Acceptance Criteria written
+> in Step 1 are the output of that method; for iterate the surface-specific
+> question is the scope of *this* change plus the MINT-vs-FOLD gate (Step 2).
+> Write the criteria under `shared/fr-authoring.md`.
+
 ## Step 1: Iterate Spec (medium+ only)
 
 Create `.shipwright/planning/iterate/{date}-{short-description}.md` using

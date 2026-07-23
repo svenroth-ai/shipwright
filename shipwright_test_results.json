@@ -1,17 +1,19 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-23-tests-skipped-tracking",
+    "run_id": "iterate-2026-07-23-req3-elicitation-module",
     "date": "2026-07-23",
     "unit": {
       "status": "passed",
-      "passed": 6230,
-      "total": 6242,
-      "skipped": 12
+      "passed": 4946,
+      "total": 4961,
+      "skipped": 15,
+      "note": "shared/tests measured directly (4946 passed / 15 skipped / 338s). Full F0 canonical runner: 18/18 test units GREEN, 0 failures \u2014 the per-test aggregate across all 18 isolated units is not persisted by the parallel runner, so this records the largest directly-measured unit plus the authoritative all-green suite result."
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 23,
+      "total": 23,
+      "note": "the three FR-catalog contract guards (contract/parsers/convergence) re-run green at the 16-FR count"
     },
     "pgtap": {
       "status": "not_run",
@@ -33,82 +35,63 @@
     },
     "degraded": [],
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --extra dev pytest shared/tests/test_tests_block.py shared/tests/test_record_event_skipped.py shared/tests/test_events_amend_deep_merge.py shared/tests/test_update_build_dashboard_skipped.py -q -p no:cacheprovider",
+      "surface": "none",
+      "runner": "",
       "exit_code": 0,
-      "tests_run": 43,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\tests-skipped-tracking\\.shipwright\\runs\\iterate-2026-07-23-tests-skipped-tracking\\surface_verification.log",
-      "timestamp": "2026-07-23T07:16:08.516Z",
-      "attempts": 1
+      "tests_run": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-23-req3-elicitation-module/surface_verification.json",
+      "timestamp": "2026-07-23T14:21:15.016Z",
+      "justification": "Framework prompt-docs (shared/requirement-elicitation.md + context-format.md) + a pytest drift guard + an FR mint; no startable user-facing web/cli/api surface. The mechanical oracle is the drift suite test_requirement_elicitation_refs.py, run green in the F0 full suite. No API/store/SSE/UI-consumed code touched, so the Backend-affects-Frontend rule does not fire."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 --tests-skipped writes tests.skipped + CLI round-trip",
+          "behavior": "AC1 \u2014 one binding shared elicitation doc, cited by all four interview surfaces (reverse drift)",
           "disposition": "tested",
-          "evidence": "test_record_event_skipped.py::TestTestsSkippedFlag PASSED"
+          "evidence": "test_requirement_elicitation_refs.py::test_elicitation_surface_cites_the_module (4 params: project/adopt/iterate path-a/path-b) PASSED"
         },
         {
-          "behavior": "AC1 corrupt block rejected: passed+skipped>total, negative, non-int, bool",
+          "behavior": "AC2 \u2014 the \u00a78 coverage checklist + Basis: assumed stop-condition + six dimensions (section-scoped) + never-skipped/not-finished rules are present",
           "disposition": "tested",
-          "evidence": "test_tests_block.py::TestValidateTestsBlock PASSED"
+          "evidence": "test_module_carries_the_completeness_stop_condition + test_module_lists_the_coverage_dimensions (scoped to \u00a78) + test_module_pins_the_load_bearing_rules_by_sentence PASSED"
         },
         {
-          "behavior": "AC2 WorkEvent.from_dict skipped present/absent(None)/zero",
+          "behavior": "AC3 \u2014 the grilling method sections are retained and Matt Pocock is attributed",
           "disposition": "tested",
-          "evidence": "test_skipped_tracking.py::TestWorkEventSkipped PASSED"
+          "evidence": "test_module_retains_cited_sections (12 params) + test_module_attributes_matt_pocock PASSED"
         },
         {
-          "behavior": "AC3 explicit skip rendered at passed==total; residual->FAIL incl. within baseline",
+          "behavior": "AC4 \u2014 the CONTEXT.md format doc exists, retains sections, and states the CONTEXT.md-vs-glossary.md distinction (domain vs framework, 'never merge')",
           "disposition": "tested",
-          "evidence": "test_skipped_tracking.py::TestExplicitSkipRender + test_tests_block.py::TestProgressionResult PASSED"
+          "evidence": "test_context_format_exists_and_is_non_empty + test_context_format_retains_cited_sections (4 params) + test_context_format_states_the_glossary_distinction PASSED"
         },
         {
-          "behavior": "AC3 legacy (skipped absent) rendering byte-unchanged",
+          "behavior": "AC5 \u2014 the drift guard fires in BOTH directions when the docs/citations are absent (mutation probe)",
           "disposition": "tested",
-          "evidence": "test_test_evidence.py::TestSkipAwareResult PASSED"
+          "evidence": "mutation probe: with docs+citations absent the guard produced 25 failures (22 forward, 3 reverse); after authoring docs+citations, 28/28 PASS. Cross-ref pins added (test_module_pins_its_internal_cross_references)."
         },
         {
-          "behavior": "AC4 dashboard renders skip count (iterate + build render sites)",
+          "behavior": "AC6 \u2014 FR-01.16 minted in spec.md with the intended row (Basis: interview, Layers: unit (inferred)), AC block, and the whole-spec count consistently pinned at 16",
           "disposition": "tested",
-          "evidence": "test_update_build_dashboard_skipped.py PASSED"
+          "evidence": "integration-tests: test_fr_table_shape_convergence (FR-01.16 Basis=interview, Layers=['unit']) + catalog_contract/parsers (16-FR count, anchors, RTM deep-link to #fr-0116) PASSED"
         },
         {
-          "behavior": "AC5 D4 keys on failures: charitable/green-with-skips/residual/non-int",
-          "disposition": "tested",
-          "evidence": "test_skipped_tracking.py::TestD4KeysOnFailures + test_audit_groups_a_d.py::test_d4_flags_fr_last_touched_in_failing_build PASSED"
-        },
-        {
-          "behavior": "AC6 apply_amendments deep=True preserves siblings; default shallow unchanged; no input mutation",
-          "disposition": "tested",
-          "evidence": "test_events_amend_deep_merge.py PASSED"
-        },
-        {
-          "behavior": "AC7 full detective audit green with D4 re-enabled (D4 pass on real event log)",
-          "disposition": "tested",
-          "evidence": "run_all audit probe: D4=pass; only pre-existing H1 (record_review_pass.py bloat, #428) remains"
-        },
-        {
-          "behavior": "Reader consistency: record_event/D4/renderers share isinstance(int) predicate; non-int no crash/divergence",
-          "disposition": "tested",
-          "evidence": "test_tests_block.py + test_skipped_tracking.py non-int cases PASSED"
-        },
-        {
-          "behavior": "Finding 2/3: event_amended fields.tests validated; corrupt block -> structured {success:false}+exit 1",
-          "disposition": "tested",
-          "evidence": "test_record_event_skipped.py::TestAmendmentTestsBlockValidation + test_main_rejects_corrupt_block_with_structured_error PASSED"
+          "behavior": "Agent actually elicits full context given the shared prompt (behavioural quality of grilling)",
+          "disposition": "untestable",
+          "reason_code": "requires-manual-visual-judgment",
+          "reason": "no deterministic oracle for LLM prompt-following; mitigated structurally \u2014 the coverage checklist makes COVERAGE the measured output (Basis: assumed marks are audit-visible), and it is dogfooded in Phase 2. Same posture as the fr-authoring 'agents write better FRs' row."
         }
       ],
       "counts": {
-        "testable": 11,
-        "tested": 11,
-        "untestable": 0,
+        "testable": 7,
+        "tested": 6,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 7,
-        "covered_acs": 7
+        "acs": 6,
+        "covered_acs": 6
       }
     }
   },

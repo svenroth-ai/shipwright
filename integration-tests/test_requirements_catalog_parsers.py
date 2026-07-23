@@ -24,8 +24,9 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CATALOG = REPO_ROOT / ".shipwright" / "planning" / "01-adopted" / "spec.md"
 
-#: The ids the catalog carried before the merge. S6 must not lose or renumber one.
-EXPECTED_IDS = tuple(f"FR-01.{n:02d}" for n in range(1, 16))
+#: The ids the catalog carries. S6 must not lose or renumber one; a later iterate
+#: may append the next free number (FR-01.16 was minted 2026-07-23, REQ-3 Ph1).
+EXPECTED_IDS = tuple(f"FR-01.{n:02d}" for n in range(1, 17))
 
 #: ONE sys.path root for the whole module, so every shared module here is
 #: reachable under exactly one identity (`lib.<name>`). Inserting both
@@ -37,14 +38,14 @@ if _SHARED_SCRIPTS not in sys.path:
     sys.path.insert(0, _SHARED_SCRIPTS)
 
 
-def test_the_fr_table_reader_still_sees_exactly_fifteen_requirements():
+def test_the_fr_table_reader_still_sees_every_requirement():
     """Counting table rows with a regex is not enough — read it as the AUDIT does.
 
     **Named for the ONE parser it covers, on purpose.** It was originally called
     ``..._the_production_parser_...``, and that singular was inaccurate: this
     repo has a second production parser over the same file
     (``spec_parser.parse_fr_headings``), and the name implied a coverage this
-    test does not have. See ``test_the_heading_parser_sees_the_same_fifteen``
+    test does not have. See ``test_the_heading_parser_sees_the_same_set``
     and ``test_the_fr_heading_coherence_report_is_knowingly_wrong_here`` below.
 
     S6 gave every requirement a ``### FR-01.NN`` section so each has an anchor to
@@ -63,11 +64,11 @@ def test_the_fr_table_reader_still_sees_exactly_fifteen_requirements():
     assert all(r.status == "active" for r in rows)
     assert [r.priority for r in rows] == [
         "Must", "Must", "Must", "Should", "Must", "Must", "Must", "Should",
-        "Must", "Must", "Must", "May", "Must", "Must", "Must",
-    ], "priorities must survive the merge unchanged"
+        "Must", "Must", "Must", "May", "Must", "Must", "Must", "Must",
+    ], "priorities must survive the merge unchanged (FR-01.16 = Must)"
 
 
-def test_the_heading_parser_sees_the_same_fifteen():
+def test_the_heading_parser_sees_the_same_set():
     """The SECOND production parser over this file — the one the name above hid.
 
     ``spec_parser.parse_fr_headings`` matches ``### FR-01.01 — /shipwright-run``
@@ -91,7 +92,7 @@ def test_the_fr_heading_coherence_report_is_knowingly_wrong_here():
     ``compute_fr_coherence`` calls a requirement "coherent" when its heading is
     followed by ``**Description:**`` and ``**Acceptance Criteria:**`` labelled
     blocks. The catalog states each requirement's description in the TABLE and
-    its criteria as ``- (E) Given … when … then …`` bullets, so all fifteen are
+    its criteria as ``- (E) Given … when … then …`` bullets, so all of them are
     reported as missing both — including the eight that gained real criteria in
     this very step. Pre-S6 the same file produced seven such entries, so the
     merge roughly DOUBLED a false statement, inside the campaign whose thesis is
@@ -129,10 +130,10 @@ def test_the_fr_heading_coherence_report_is_knowingly_wrong_here():
     from lib.spec_parser import parse_fr_headings  # noqa: PLC0415
 
     headings = parse_fr_headings(CATALOG.read_text(encoding="utf-8"))
-    assert len(headings) == 15
+    assert len(headings) == 16
     missing_both = [h.id for h in headings
                     if not h.has_description() and not h.has_acceptance()]
-    assert len(missing_both) == 15, (
+    assert len(missing_both) == 16, (
         "the FR-coherence reading of THIS catalog changed. If the catalog or the "
         "check was fixed, that is good — update this test, the note in "
         "docs/migrations/requirements-catalog-merge.md, and the Honest-limits "

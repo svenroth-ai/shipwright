@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-23T07:18:55.135867+00:00
+Generated: 2026-07-23T14:30:38.425746+00:00
 
 ## Requirements Coverage
 
@@ -21,6 +21,7 @@ Generated: 2026-07-23T07:18:55.135867+00:00
 | [FR-01.13](../../.shipwright/planning/01-adopted/spec.md#fr-0113)<a id="rtm-fr-0113"></a> | Bring an existing codebase under Shipwright: read what is already there, write the starting guidance, derive an initial requirements catalog and compliance evidence, and lay down a baseline end-to-end test. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-273bbb54](#evt-273bbb54), [evt-b0b9c422](#evt-b0b9c422), [evt-aab7ddbd](#evt-aab7ddbd) +9 | 225/225 → 5/5 | 2026-07-20 ([iter](#evt-e9bfacd4)) | ✅ | COVERED | MISSING | — | — |
 | [FR-01.14](../../.shipwright/planning/01-adopted/spec.md#fr-0114)<a id="rtm-fr-0114"></a> | Collect findings from local checks and from the code host's automated scans into one per-project buffer the operator works through — each finding recorded once, and each either promoted into real work or dismissed — so the actual task list stays curated instead of flooded. | Must | [evt-3f488ddc](#evt-3f488ddc), [evt-32f2f1f4](#evt-32f2f1f4), [evt-84dbdf5e](#evt-84dbdf5e), [evt-e14e5f26](#evt-e14e5f26) +6 | 1642/1649 → 3629/3641 | 2026-07-03 ([iter](#evt-5755f932)) | ⚠️ needs re-verification | COVERED | MISSING | — | — |
 | [FR-01.15](../../.shipwright/planning/01-adopted/spec.md#fr-0115)<a id="rtm-fr-0115"></a> | The two payloads the companion application renders field for field are versioned output contracts: a breaking change obliges the consumer to refuse the payload, an additive one leaves it working. Each producer states its contract and names its consumer, and a gate compares what it emits against the shape last published and fails until the version has been raised — so a shape change cannot reach the consumer silently. | Must | [evt-6a61ac10](#evt-6a61ac10) | 6452/6452 | 2026-07-21 ([iter](#evt-6a61ac10)) | ✅ | COVERED | — | — | MISSING |
+| [FR-01.16](../../.shipwright/planning/01-adopted/spec.md#fr-0116)<a id="rtm-fr-0116"></a> | Elicit requirements through one shared, rigorous method wherever they are gathered — a new project, an adopted codebase, or an ongoing change: ask one question at a time, each with a recommended answer, look facts up in the code instead of asking, challenge wording against the project's own glossary, and stress-test with concrete edge cases. Capture the project's domain vocabulary and the reason behind each hard-to-reverse choice as they surface. No requirement is treated as settled until every dimension of its context is either answered or explicitly marked as an unconfirmed assumption. | Must | — | — | — | ✅ | NOT VERIFIED | MISSING | — | — |
 
 > **Legend** — *Tests*: `passed/total` of the latest event that ran tests; `first → latest` shows progression across tested runs. *Last tested*: date of that event (`iter` / `build` source); age is informational, **not a penalty**. *Reconciled?*: ✅ behavior-affected FR re-verified since its last change · ⚠️ needs re-verification (behavior changed, not yet re-tested) · — not behavior-touched. *Unit / Integration / E2E* (traceability manifest): `ok` an executed-passing tagged test covers the FR at that layer · `MISSING` the layer is required but has no executed-passing test · `?` ambiguous — the display id is shared across namespaces so the fanned tag is not credited (D-layer defers this to TT5) · `n/a` layer not required · — no manifest entry.
 
@@ -28,6 +29,7 @@ Generated: 2026-07-23T07:18:55.135867+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-11304ded"></a>Requirement gathering now follows one shared, thorough interview method across the project, adopt and iterate steps, and a new requirement records that guarantee. | iterate | feature |  | 4946/4961 | — | 2026-07-23 |
 | <a id="evt-3a175bfa"></a>Record how many tests were skipped so a green run with host-gated skips is no longer mistaken for a failing build, and switch the audit's failing-build check back on. | iterate | change | [FR-01.10](#rtm-fr-0110) | 6230/6242 | — | 2026-07-23 |
 | <a id="evt-a8a0f759"></a>The automated design check no longer flags a false problem for projects that were adopted into Shipwright and never went through the design/mockup step. | iterate | bug |  | 26/26 | — | 2026-07-23 |
 | <a id="evt-70b34c98"></a>persist a per-run record of what every review pass found | iterate | change | [FR-01.11](#rtm-fr-0111) | — | — | 2026-07-21 |
@@ -392,12 +394,16 @@ Generated: 2026-07-23T07:18:55.135867+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 357 |
-| Requirements total | 15 |
-| Requirements verified | 15/15 |
-| Must-have verified | 12/12 |
+| Iterate changes | 358 |
+| Requirements total | 16 |
+| Requirements verified | 15/16 |
+| Must-have verified | 12/13 |
 | Total review findings | 66 |
 | Unresolved findings | 24 |
+
+### FRs without tests
+
+- [FR-01.16](../../.shipwright/planning/01-adopted/spec.md) (Must): Elicit requirements through one shared, rigorous method wherever they are gather
 
 ### FRs needing re-verification
 

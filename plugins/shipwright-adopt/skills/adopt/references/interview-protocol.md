@@ -34,6 +34,14 @@ This is the **only** content-review beat — do not ask the user to review
 every FR description individually. The Layer-3 `llm_review.py` step
 catches hallucinations afterward.
 
+> **Reconciles with the shared method.** `shared/requirement-elicitation.md`
+> (cited from `step-c-interview.md`) has adopt *confirm the requirements derived
+> from the code* — that means confirming **divergences** (where the code
+> contradicts what the person describes, §6) plus the product-description beat
+> above, **not** a mandatory FR-by-FR read-through. The shared coverage checklist
+> governs *what must be settled per requirement*, not that every derived row is
+> walked one by one.
+
 ## What NOT to ask
 
 - Framework (`next`, `express`, `fastapi`) — inferred from manifests

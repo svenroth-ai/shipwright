@@ -12,8 +12,8 @@ existing. The header is one constant and every producer is compared to it.
 **The hard blocker (SPEC §6.2).** A requirement's provenance becomes ``explicit``
 the moment a header-named ``Layers`` cell is non-empty WITHOUT the literal
 ``(inferred)`` marker, and ``explicit`` routes a coverage gap from advisory to
-hard → ``sys.exit(1)``, unbypassably. Ten of the fifteen live requirements have
-zero test links, so unmarked cells would hard-abort against ten guaranteed gaps.
+hard → ``sys.exit(1)``, unbypassably. Most of the live requirements have
+zero test links, so unmarked cells would hard-abort against guaranteed gaps.
 The census test below is the guard, and the counter-probe beside it proves the
 guard is load-bearing rather than vacuously true.
 
@@ -125,11 +125,11 @@ def test_no_producer_still_emits_the_retired_source_column() -> None:
 def test_every_live_requirement_stays_on_legacy_provenance() -> None:
     """ZERO ``explicit``. If this fails, the next gate run hard-aborts."""
     rows = _census(LIVE_SPEC)
-    assert len(rows) == 15
+    assert len(rows) == 16
     explicit = [r["id"] for r in rows if r["source"] == "explicit"]
     assert explicit == [], (
         f"{len(explicit)} requirement(s) flipped to `explicit` provenance: "
-        f"{explicit}. Ten of fifteen have zero test links, so this hard-aborts "
+        f"{explicit}. Most have zero test links, so this hard-aborts "
         f"the layer-coverage gate (SPEC §6.2). Every Layers cell must carry the "
         f"literal (inferred) marker."
     )
@@ -142,7 +142,7 @@ def test_every_live_layers_cell_carries_the_marker() -> None:
         line for line in LIVE_SPEC.read_text(encoding="utf-8").splitlines()
         if line.startswith("| FR-")
     ]
-    assert len(rows) == 15
+    assert len(rows) == 16
     for line in rows:
         layers_cell = line.rstrip("|").rsplit("|", 1)[-1].strip()
         assert "(inferred)" in layers_cell, f"unmarked Layers cell: {line[:60]}…"
@@ -186,7 +186,10 @@ _PRE_MIGRATION_LAYERS = {
 #: catch a later hand edit that changes ONE row's provenance, and the migration
 #: script that made the decision was a throwaway and is not in the tree. This
 #: fixture is the durable record of it. Raised by external review on this head.
+#: FR-01.16 (minted 2026-07-23, REQ-3 Ph1) is `interview`, not code — the
+#: operator authored the requirement, so its basis is a human decision.
 _EXPECTED_BASIS = {f"FR-01.{n:02d}": "code" for n in range(1, 16)}
+_EXPECTED_BASIS["FR-01.16"] = "interview"
 
 
 def test_every_live_requirement_carries_its_decided_basis() -> None:
@@ -225,7 +228,10 @@ def test_the_migration_did_not_change_any_required_layers() -> None:
     Per requirement, not in aggregate — the AC is that every row kept its value,
     and a distribution check cannot see a swap between two rows.
     """
-    assert {r["id"]: r["layers"] for r in _census(LIVE_SPEC)} == _PRE_MIGRATION_LAYERS
+    # FR-01.16 was minted 2026-07-23 (post-S5), not part of the migration; its
+    # inferred layers are pinned alongside the migrated fifteen.
+    expected = {**_PRE_MIGRATION_LAYERS, "FR-01.16": ["unit"]}
+    assert {r["id"]: r["layers"] for r in _census(LIVE_SPEC)} == expected
 
 
 @pytest.mark.parametrize("layers,inferred,expected_source", [
