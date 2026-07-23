@@ -1,16 +1,16 @@
 {
   "by_severity": {
     "critical": 0,
-    "high": 2,
+    "high": 0,
     "low": 0,
     "medium": 0
   },
   "critical_gate": "pass",
   "degraded": false,
-  "open_high_critical": 2,
+  "open_high_critical": 0,
   "prompt_injection": 0,
-  "scan_date": "2026-07-23T08:47:33Z",
+  "scan_date": "2026-07-23T20:38:52Z",
   "schema": 1,
-  "source": "security.yml#29992378315",
-  "total": 2
+  "source": "security.yml#30042963247",
+  "total": 0
 }

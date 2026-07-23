@@ -4,11 +4,11 @@ Generated: 2026-07-23T14:30:38.425746+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
-## ❌ Control Verdict
+## ✅ Control Verdict
 
-> **Out of control — AI changes you can't verify. Capped: security failing (2 open high/critical).**
+> **Under full control. Primarily capped by change reconciliation.**
 
-### Control Grade: **F** (49/100) — Out of control — AI changes you can't verify.
+### Control Grade: **A** (92/100) — Under full control.
 
 | | Dimension | Signal | Anchor |
 |---|-----------|--------|--------|
@@ -16,7 +16,7 @@ Scope: library
 | ✅ | Test health | latest full suite 4946/4961 (2026-07-23) | automated tests pass (OpenSSF Scorecard) |
 | ✅ | Change traceability | 358/358 changes linked to a commit, ADR or test run | change provenance (SLSA) |
 | ⚠️ | Change reconciliation | 4/9 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
-| ⚠️ | Security | 2 open high/critical | no open high/critical vulns (NIST SSDF) |
+| ✅ | Security | 0 open high/critical | no open high/critical vulns (NIST SSDF) |
 | ✅ | Size / maintainability discipline | ratchet delta +0 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
 | ✅ | Dependency hygiene | 0 unresolved / 11 licenses; 0 copyleft | dependency license & risk (OWASP) |
 
@@ -28,12 +28,12 @@ _Grade = importance-weighted average over the measurable dimensions (n/a exclude
 
 ## 🛡️ CI Security (fail-closed gate)
 
-Latest scan: **2026-07-23** · source `security.yml#29992378315` · critical-gate **✅ PASS**
+Latest scan: **2026-07-23** · source `security.yml#30042963247` · critical-gate **✅ PASS**
 
 | Severity | Count |
 |----------|-------|
 | Critical | 0 |
-| High | 2 |
+| High | 0 |
 | Medium | 0 |
 | Low | 0 |
 
@@ -61,7 +61,7 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Iterate tests passing | 53/67 testable changes tested | WARN | 14 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 11 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 15 open | WARN | 15 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Triage open | 9 open | WARN | 9 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit (grandfathered) | 126 | INFO |  |
 | Bloat in allowlist | 159 entries | INFO |  |
 | Bloat ratchet delta | +0 lines | PASS |  |
@@ -81,7 +81,9 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 
 ## 🔎 Consistency Audit
 
-_Detective cross-artifact audit not run this session — run `/shipwright-compliance` to refresh._
+Detective audit (2026-06-14): **FAIL — drift found** · 51 checks — 38 pass, 1 fail, 12 skip.
+
+_Inlined from `audit-report.json` (a gitignored transient — no external link, so this stays visible on the public repo)._
 
 ## Compliance Artifacts
 
