@@ -1,5 +1,15 @@
 # Interview Protocol
 
+> **Method is shared — this doc adds only the project-specific topics.** The
+> elicitation method itself (relentless grilling to a shared understanding, one
+> question at a time each with a recommended answer, looking facts up instead of
+> asking, challenging terms against the glossary, edge-case stress-tests,
+> capturing `CONTEXT.md` + ADRs, and the **coverage checklist that is not
+> finished until every context dimension is answered or recorded `Basis:
+> assumed`**) is binding and lives in `shared/requirement-elicitation.md`. Follow
+> it. The topics below are `/shipwright-project`'s greenfield additions on top of
+> that method — they extend the shared checklist, they do not replace it.
+
 ## Pre-Phase: Surface Inferred Assumptions First
 
 **Before asking the first clarifying question, list your inferred assumptions
@@ -103,6 +113,14 @@ Stop the interview when you have enough information to:
 2. **Identify dependencies between splits** (if multiple)
 3. **Flag which splits could run in parallel** (if multiple)
 4. **Capture key context and clarifications for /shipwright-plan**
+
+> This is about interview **breadth** — when the split interview has enough to
+> structure the work. It does not compete with the shared per-requirement
+> **coverage** stop-condition, which binds **downstream**, where the FR rows are
+> actually authored (spec-generation): a requirement's row is not settled until
+> each of its context dimensions is answered or recorded `Basis: assumed`
+> (`shared/requirement-elicitation.md` §8). Breadth here, per-requirement depth
+> there — different stages, no conflict.
 
 ## Output
 

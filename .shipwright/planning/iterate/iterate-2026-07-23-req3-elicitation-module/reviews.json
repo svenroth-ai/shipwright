@@ -1,0 +1,295 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-23-req3-elicitation-module",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-23T13:54:10.879231+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "Dependency",
+          "file": null,
+          "line": null,
+          "finding": "The \"Files\" section in the mini-plan is missing files that the \"Confidence Calibration\" section explicitly states need updating. Specifically, the blast-radius probe notes that three integration guards with hardcoded FR-counts were updated (15→16 pins) and the RTM (Requirements Traceability Matrix) was regenerated. These are absent from the implementation ledger.",
+          "suggestion": "Add the integration guard test files (e.g., catalog-contract checks) and the RTM file to your \"Files\" table to ensure they are tracked and included in the upcoming commit/PR.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "Edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Potential \"prompt collision\" for the LLM agents. You are deferring the rewrite of the three local interview flows to Phase 4, but you are injecting the new shared dependency (which contains a hard stop-condition and explicit checklist) into those old flows via citation now. If the current `path-a-feature.md` or `interview-protocol.md` have their own implicit stop-conditions or conflicting steps, the LLM will face contradictory instructions.",
+          "suggestion": "Before citing, do a brief scan of the three local interview files. Add a transitional clarifier where the citation is placed (e.g., \"Note: Follow the workflow below, but use the context checklist and stop-condition defined in `shared/requirement-elicitation.md`\").",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "Risk",
+          "file": null,
+          "line": null,
+          "finding": "The drift test relies on verifying the presence of \"cited section anchors\", \"attribution\", and \"stop-condition wording\" inside markdown files across two repositories. If implemented using exact string matching or fragile regex, routine copy-edits to the docs will unnecessarily fail the build.",
+          "suggestion": "Either parse the markdown structure using a basic AST/markdown library, or wrap the critical assertion boundaries in the markdown files with invisible HTML comments (e.g., `<!-- elicitation-checklist-start -->`).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "Approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan notes that it will checks `docs/guide.md` for shared-modules mentions, which is good diligence, but doesn't mention updating the high-level `README` or `shared/README` (if they exist) to catalogue the new core capability.",
+          "suggestion": "Verify if `shared/` contains an index or README that documents its exports. If so, add a one-liner explaining what `requirement-elicitation.md` and `context-format.md` are so other contributors don't duplicate them.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "A “citation” alone does not necessarily make the shared method binding at runtime. The plan does not specify the citation wording or placement within each interview protocol. A passive “see `shared/requirement-elicitation.md`” link can be ignored by an agent, particularly if it appears outside the procedural steps actually followed during elicitation. Cache synchronization proves the file is distributed, not that the applicable skill instructs the agent to use it.",
+          "suggestion": "Put a short normative instruction at the start of the elicitation procedure in each surface, e.g. “Before declaring elicitation complete, follow the mandatory coverage and stop-condition in …; local questions may add to, not replace, it.” Test for that binding language as well as the reference.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The proposed reverse drift test appears to check that each surface contains the document name, but that is weaker than validating a usable reference. A plain-text mention, a malformed relative link, or a link to a stale copied path would pass a string-presence test while failing the intended integration. This is especially relevant because the referenced content is distributed through a cache/sync mechanism.",
+          "suggestion": "Make each citation a Markdown link using a canonical relative path, and have the test extract or directly assert the exact link target for each source file. Resolve the target relative to the source file and assert that it points to the canonical `shared/requirement-elicitation.md`, rather than only asserting that the filename appears in text.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan’s file list omits the known FR-catalog and traceability consequences of minting `FR-01.16`. The confidence section says FR-count pins in three integration guards were updated and the RTM was regenerated, but neither the affected guard files nor the RTM/source-generation command is listed in the implementation steps. This creates a reproducibility gap and risks a future implementation either failing the suite or manually editing generated traceability output.",
+          "suggestion": "Add the three catalog-contract/pin locations and the RTM generation source/command to the plan explicitly. State which artifacts are generated and must not be hand-edited. Also add the new drift test or an existing catalog test assertion that verifies `FR-01.16` has the intended `Basis: interview`, `Layers: unit`, and required AC block.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "shared/context-format.md` could become an orphaned format document. The plan tests that it exists and distinguishes `CONTEXT.md` from `shared/glossary.md`, but it does not say when elicitation must create or update `CONTEXT.md`, how ambiguities found during grilling are recorded there, or how its results feed the FR/AC output. That weakens AC6’s stated “rationale/CONTEXT.md capture” outcome.",
+          "suggestion": "In `requirement-elicitation.md`, add an explicit output-mapping step: capture domain terms, relationships, and unresolved/flagged ambiguities in target-project `CONTEXT.md`; capture the rationale in the FR material; and turn resolved behavior into assertion-shaped ACs. Cross-link the two shared docs, and pin this required handoff with a focused test assertion.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The planned “how each plugin applies it” section in the shared module risks reintroducing the three divergent flows that the phase deliberately defers consolidating. It duplicates plugin-specific guidance in a shared location, creates a second maintenance point, and could conflict with the local protocol files before Phase 4.",
+          "suggestion": "Keep the shared document universal: method, mandatory checklist, stop condition, output mapping, and question bank. At most include a brief non-procedural note that project/adopt/iterate may add local questions for their respective contexts. Keep actual greenfield/brownfield/change-specific flow details in their current plugin documents until the Phase-4 consolidation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The proposed structural checks can be satisfied by retaining headings or isolated keywords while weakening the actual behavioral contract—for example, preserving a “Fact → look it up” heading without saying what to do when the fact cannot be verified, or retaining `Basis: assumed` without requiring the assumption to be recorded against the relevant coverage dimension.",
+          "suggestion": "Test a small set of normative, stable sentences or structured checklist entries rather than headings alone: one-question-plus-recommendation, verify-or-record-unknown behavior, glossary challenge, edge-case stress test, confirmation before action, and the explicit per-dimension “answered or `Basis: assumed`” completion rule. Avoid brittle prose snapshots; assert the actual mandatory markers.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "docs/guide.md` is listed as “check,” not as a decided action. If it is the established index for shared modules—as the `fr-authoring.md` precedent suggests—leaving its treatment ambiguous can make the new module undiscoverable outside the three cited flows.",
+          "suggestion": "Resolve this before implementation: either add the two documents to the appropriate shared-module index in `docs/guide.md`, or explicitly document why the existing index is not canonical for agent-facing references. Do not leave a conditional file action in the final plan.  There is no material direct security exposure in this change: it adds trusted repository documentation and static tests, with no new input handling, authentication path, or data boundary. The overall design is sound and appropriately small, but it should strengthen the runtime-binding semantics, make the FR/RTM dependency updates explicit, and ensure `CONTEXT.md` is part of the elicitation output flow rather than merely a separately tested template.",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-23T13:57:11.147779+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] Here is the review of your implementation approach for the REQ-3 Phase 1 shared requirement-elicitation module.\n\n### Findings\n\n- **Category:** Dependency\n- **Severity:** Medium\n- **Finding:** The \"Files\" section in the mini-plan is missing files that the \"Confidence Calibration\" section explicitly states need updating. Specifically, the blast-radius probe notes that three integration guards with hardcoded FR-counts were updated (15→16 pins) and the RTM (Requirements Traceability Matrix) was regenerated. These are absent from the implementation ledger. \n- **Suggestion:** Add the integration guard test files (e.g., catalog-contract checks) and the RTM file to your \"Files\" table to ensure they are tracked and included in the upcoming commit/PR.\n\n- **Category:** Edge-case\n- **Severity:** Medium\n- **Finding:** Potential \"prompt collision\" for the LLM agents. You are deferring the rewrite of the three local interview flows to Phase 4, but you are injecting the new shared dependency (which contains a hard stop-condition and explicit checklist) into those old flows via citation now. If the current `path-a-feature.md` or `interview-protocol.md` have their own implicit stop-conditions or conflicting steps, the LLM will face contradictory instructions.\n- **Suggestion:** Before citing, do a brief scan of the three local interview files. Add a transitional clarifier where the citation is placed (e.g., *\"Note: Follow the workflow below, but use the context checklist and stop-condition defined in `shared/requirement-elicitation.md`\"*).\n\n- **Category:** Risk\n- **Severity:** Low\n- **Finding:** The drift test relies on verifying the presence of \"cited section anchors\", \"attribution\", and \"stop-condition wording\" inside markdown files across two repositories. If implemented using exact string matching or fragile regex, routine copy-edits to the docs will unnecessarily fail the build.\n- **Suggestion:** Either parse the markdown structure using a basic AST/markdown library, […truncated]\n\n[openai] 1. **Category: approach**  \n   **Severity: medium**  \n   **Finding:** A “citation” alone does not necessarily make the shared method binding at runtime. The plan does not specify the citation wording or placement within each interview protocol. A passive “see `shared/requirement-elicitation.md`” link can be ignored by an agent, particularly if it appears outside the procedural steps actually followed during elicitation. Cache synchronization proves the file is distributed, not that the applicable skill instructs the agent to use it.  \n   **Suggestion:** Put a short normative instruction at the start of the elicitation procedure in each surface, e.g. “Before declaring elicitation complete, follow the mandatory coverage and stop-condition in …; local questions may add to, not replace, it.” Test for that binding language as well as the reference.\n\n2. **Category: risk**  \n   **Severity: medium**  \n   **Finding:** The proposed reverse drift test appears to check that each surface contains the document name, but that is weaker than validating a usable reference. A plain-text mention, a malformed relative link, or a link to a stale copied path would pass a string-presence test while failing the intended integration. This is especially relevant because the referenced content is distributed through a cache/sync mechanism.  \n   **Suggestion:** Make each citation a Markdown link using a canonical relative path, and have the test extract or directly assert the exact link target for each source file. Resolve the target relative to the source file and assert that it points to the canonical `shared/requirement-elicitation.md`, rather than only asserting that the filename appears in text.\n\n3. **Category: dependency**  \n   **Severity: medium**  \n   **Finding:** The mini-plan’s file list omits the known FR-catalog and traceability consequences of minting `FR-01.16`. The confidence section says FR-count pins in three integration guards were updated and the RTM was regener […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/path-b-change.md",
+          "line": 1,
+          "finding": "Reverse-drift asymmetry: fr-authoring guard pins both path-a and path-b iterate surfaces; the new elicitation guard pinned only path-a. path-b-change (CHANGE->MODIFY) elicits requirement changes yet had no citation.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": ".shipwright/planning/01-adopted/spec.md",
+          "line": 298,
+          "finding": "FR-01.16's 5 ACs carried the run_id suffix, diverging from the FR-01.15 mint precedent and latently tripping the S6 no-run-id-in-requirement-text hygiene rule (escaped only via the multi-line parser blind spot).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-project/skills/project/references/interview-protocol.md",
+          "line": 108,
+          "finding": "Layering tension: project 'When to Stop' gives a weaker stop criterion that never references the shared coverage stop-condition; a reader could treat it as THE stop.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/tests/test_requirement_elicitation_refs.py",
+          "line": 60,
+          "finding": "Module's in-prose refs to context-format.md / fr-authoring.md not drift-pinned; a rename of a referenced doc would leave a dangling reference the forward tests miss.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-23T14:09:32.403092+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "mint-vs-fold",
+          "file": ".shipwright/planning/01-adopted/spec.md",
+          "line": 28,
+          "finding": "Claim under doubt: FR-01.16 is a genuine MINT, not a FOLD or a Quality Requirement. — FR-01.02/11/13 already own 'gather requirements' at each surface; FR-01.16 only constrains HOW WELL they elicit, which reads like a quality attribute (the spec has a Quality Requirements section) or a prose-consolidation refactor (fr-authoring §2 routes that to NONE/an AC).",
+          "suggestion": "ADDRESSED IN WRITING — strengthened the spec 'Why MINT' rebuttal: names the non-owned uniform coverage stop-condition guarantee (each plugin owns elicitation at its surface; none owns the cross-surface completeness guarantee), argues FR-not-QR (a capability the product provides, not a quality attribute of another function), records the operator's explicit MINT decision; sibling to FR-01.14/15 cross-cutting rows.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": "plugins/shipwright-adopt/skills/adopt/references/interview-protocol.md",
+          "line": 33,
+          "finding": "Claim under doubt: The three plugin interview prompts are reconciled with the shared method; no surviving contradiction. — step-c-interview.md:11 tells adopt to 'confirm the requirements derived from the code' while the un-updated sibling interview-protocol.md:33 says 'do not ask the user to review every FR description individually' — an agent reading both is left uncertain how much confirmation adopt owes.",
+          "suggestion": "FIXED — added a reconciliation blockquote to adopt/interview-protocol.md: adopt confirms DIVERGENCES + the product-description beat, not FR-by-FR; the coverage checklist governs what must be settled per requirement, not a row-by-row read-through.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-contract",
+          "file": "plugins/shipwright-project/skills/project/references/interview-protocol.md",
+          "line": 117,
+          "finding": "Claim under doubt: The per-requirement coverage stop-condition binds the /shipwright-project split interview. — The project interview elicits SPLIT structure; individual FR rows are authored downstream by spec-generation, so §8's per-requirement stop-condition is a category mismatch at split-interview time.",
+          "suggestion": "FIXED — tightened the reconciliation: the coverage checklist binds DOWNSTREAM per-requirement authoring; breadth here, per-requirement depth there.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden-coupling",
+          "file": "shared/tests/test_requirement_elicitation_refs.py",
+          "line": 132,
+          "finding": "Claim under doubt: The drift guard cannot false-green while the method is hollowed out. — test_module_lists_the_coverage_dimensions lowercased the WHOLE doc and checked six generic words that also occur outside §8, so the entire §8 table could be deleted and the test still pass.",
+          "suggestion": "ALREADY FIXED (same as external-review GPT finding) — the check now scopes to the section between '## 8. The coverage checklist' and '## 9.' and asserts the Basis: assumed stop-condition inside it.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "faithfulness",
+          "file": "shared/requirement-elicitation.md",
+          "line": 137,
+          "finding": "Claim under doubt: The coverage stop-condition is mechanically meaningful, not unfalsifiable. — A lazy agent satisfies it by marking every dimension 'assumed'; in Phase 1 nothing audits that the six dimensions were walked, so faithfulness rests on prompt-following.",
+          "suggestion": "ACKNOWLEDGED IN WRITING — reviewer concluded it is NOT unfalsifiable (a silently-blank dimension violates it; an assumed one satisfies it, tied to the audited Basis I5). The spec now states Phase 1 binds by prompt only; Phase 3 adds the enforcement. No code change needed.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-23T14:17:48.955376+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "plugins/shipwright-project/skills/project/references/interview-protocol.md",
+          "line": 117,
+          "finding": "Git formatting warnings have been accidentally written directly into the content, splitting words (`d` + `warning: ...` + `imensions`).",
+          "suggestion": "Remove the warning and restore the word to `dimensions`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/context-format.md",
+          "line": 86,
+          "finding": "Git formatting warnings have corrupted the markdown text, turning `CONTEXT-MAP.md` into `Cwarning: in the working copy of 'shared/requirement-elicitation.md', LF will be replaced by CRL",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "regression",
+          "file": ".shipwright/planning/01-adopted/spec.md",
+          "line": 28,
+          "finding": "FR-01.16` is added to the requirements catalog and the catalog-contract tests are updated to expect it, but no corresponding update to `.shipwright/compliance/traceability-matrix.md` is included. `integration-tests/test_requirements_catalog_contract.py` reads that RTM and, with `EXPECTED_IDS` now including `FR-01.16`, its FR-link completeness check will fail unless the RTM contains a link to `spec.md#fr-0116`. This also contradicts the stated verification claim that the RTM was regenerated.",
+          "suggestion": "Regenerate or update `traceability-matrix.md` to add the `FR-01.16` traceability entry and its `spec.md#fr-0116` link, then run the catalog-contract integration tests.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_requirement_elicitation_refs.py:132-137",
+          "line": null,
+          "finding": "test_module_lists_the_coverage_dimensions` searches for the six required dimension words anywhere in the entire document. It would still pass if the actual §8 coverage checklist were removed or no longer contained one or more dimensions, because the same words occur in the introduction, examples, question bank, and other sections. This does not reliably protect AC2’s requirement that the universal checklist itself contain all dimensions.",
+          "suggestion": "Extract the text between `## 8. The coverage checklist` and `## 9.` and assert the six dimension labels occur in that section’s checklist/table, alongside the `Basis: assumed` completion rule.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_requirement_elicitation_refs.py:172-174",
+          "line": null,
+          "finding": "The CONTEXT/glossary distinction drift test only checks that `context-format.md` contains `glossary.md` and `Matt Pocock`. It would pass if the explicit distinction between the target-project domain glossary and Shipwright’s framework vocabulary were deleted and both strings remained in unrelated prose or attribution. Therefore it does not enforce AC4’s named distinction.",
+          "suggestion": "Assert explicit target-project/domain and framework/Shipwright vocabulary language in the distinction section, or assert the required comparison-table row content for both `CONTEXT.md` and `shared/glossary.md`.  Overall assessment: block until the traceability matrix is updated, since the changed catalog expectations likely leave the integration suite failing. The shared documentation itself substantially covers the requested method, but the drift tests should be tightened so they enforce the checklist and glossary-distinction guarantees they claim to protect.",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-23T14:08:57.862739+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] - Category: bug\n- Severity: high\n- File:line: `plugins/shipwright-project/skills/project/references/interview-protocol.md:117`\n- Finding: Git formatting warnings have been accidentally written directly into the content, splitting words (`d` + `warning: ...` + `imensions`).\n- Suggestion: Remove the warning and restore the word to `dimensions`.\n\n- Category: bug\n- Severity: high\n- File:line: `shared/context-format.md:86`\n- Finding: Git formatting warnings have corrupted the markdown text, turning `CONTEXT-MAP.md` into `Cwarning: in the working copy of 'shared/requirement-elicitation.md', LF will be replaced by CRL\n\n[openai] - Category: regression  \n  Severity: medium  \n  File: `.shipwright/planning/01-adopted/spec.md:28`  \n  Finding: `FR-01.16` is added to the requirements catalog and the catalog-contract tests are updated to expect it, but no corresponding update to `.shipwright/compliance/traceability-matrix.md` is included. `integration-tests/test_requirements_catalog_contract.py` reads that RTM and, with `EXPECTED_IDS` now including `FR-01.16`, its FR-link completeness check will fail unless the RTM contains a link to `spec.md#fr-0116`. This also contradicts the stated verification claim that the RTM was regenerated.  \n  Suggestion: Regenerate or update `traceability-matrix.md` to add the `FR-01.16` traceability entry and its `spec.md#fr-0116` link, then run the catalog-contract integration tests.\n\n- Category: test  \n  Severity: medium  \n  File: `shared/tests/test_requirement_elicitation_refs.py:132-137`  \n  Finding: `test_module_lists_the_coverage_dimensions` searches for the six required dimension words anywhere in the entire document. It would still pass if the actual §8 coverage checklist were removed or no longer contained one or more dimensions, because the same words occur in the introduction, examples, question bank, and other sections. This does not reliably protect AC2’s requirement that the universal checklist itself contain all dimensions.  \n  Suggestion: Extract the text between `## 8. The coverage checklist` and `## 9.` and assert the six dimension labels occur in that section’s checklist/table, alongside the `Basis: assumed` completion rule.\n\n- Category: test  \n  Severity: medium  \n  File: `shared/tests/test_requirement_elicitation_refs.py:172-174`  \n  Finding: The CONTEXT/glossary distinction drift test only checks that `context-format.md` contains `glossary.md` and `Matt Pocock`. It would pass if the explicit distinction between the target-project domain glossary and Shipwright’s framework vocabulary were deleted and both strings remained in unrelated  […truncated]"
+    }
+  }
+}

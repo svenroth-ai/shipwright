@@ -25,6 +25,7 @@ Shipwright is an AI-powered SDLC framework built on Claude Code. It is structure
 | FR-01.13 | Adopted | /shipwright-adopt | Must | Bring an existing codebase under Shipwright: read what is already there, write the starting guidance, derive an initial requirements catalog and compliance evidence, and lay down a baseline end-to-end test. | code | unit (inferred) |
 | FR-01.14 | Adopted | Triage Inbox | Must | Collect findings from local checks and from the code host's automated scans into one per-project buffer the operator works through — each finding recorded once, and each either promoted into real work or dismissed — so the actual task list stays curated instead of flooded. | code | unit (inferred) |
 | FR-01.15 | Adopted | Cross-repo output contract | Must | The two payloads the companion application renders field for field are versioned output contracts: a breaking change obliges the consumer to refuse the payload, an additive one leaves it working. Each producer states its contract and names its consumer, and a gate compares what it emits against the shape last published and fails until the version has been raised — so a shape change cannot reach the consumer silently. | code | e2e (inferred) |
+| FR-01.16 | Adopted | Guided requirement elicitation | Must | Elicit requirements through one shared, rigorous method wherever they are gathered — a new project, an adopted codebase, or an ongoing change: ask one question at a time, each with a recommended answer, look facts up in the code instead of asking, challenge wording against the project's own glossary, and stress-test with concrete edge cases. Capture the project's domain vocabulary and the reason behind each hard-to-reverse choice as they surface. No requirement is treated as settled until every dimension of its context is either answered or explicitly marked as an unconfirmed assumption. | interview | unit (inferred) |
 
 
 ## Quality Requirements
@@ -285,6 +286,35 @@ _Where the work detail lives_ at the end of this document.
 - (E) Given a consumer receives a payload whose major version it does not know,
   when it renders, then it refuses rather than rendering partial data; an
   additive change leaves it working unchanged.
+
+<a id="fr-0116"></a>
+### FR-01.16 — Guided requirement elicitation
+
+- (E) Given requirements are gathered anywhere in Shipwright — a new project, an
+  adopted codebase, or an ongoing change — when the interview runs, then it
+  follows one shared method rather than three separate ones: one question is put
+  at a time, each carrying a recommended answer, and a fact that can be read from
+  the code or the tools is looked up instead of being asked.
+- (E) Given a requirement is being elicited, when a term or a boundary is
+  recorded, then the wording is challenged against the project's own domain
+  glossary and stress-tested with at least one concrete edge-case scenario, so a
+  vague word is sharpened before it hardens into a requirement two readers would
+  understand two ways.
+- (E) Given elicitation is under way, when a choice is made that is hard to
+  reverse, surprising without context, and the result of a genuine trade-off,
+  then the reason behind it is captured at that moment as a decision record, and
+  the project's domain vocabulary is kept in a plain glossary that carries no
+  implementation detail.
+- (E) Given a requirement's context is being gathered, when elicitation
+  finishes, then every dimension of that context — its purpose, its boundaries
+  and edge cases, its failure behaviour, its glossary terms, its rationale, and
+  what it explicitly will not do — is either answered or explicitly recorded as
+  an unconfirmed assumption, and nothing is treated as settled while any
+  dimension is left silently unanswered.
+- (E) Given the shared method is defined, when a plugin that elicits
+  requirements is invoked, then it is bound to that one method and may add its
+  own surface-specific questions but cannot skip the shared coverage checklist,
+  so the same depth of questioning holds wherever a requirement is first written.
 
 ## Where the work detail lives
 
