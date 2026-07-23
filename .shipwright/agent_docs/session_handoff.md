@@ -1,39 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-21-review-record"
+run_id: "iterate-2026-07-23-tests-skipped-tracking"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-21T23:34:38.732374+00:00"
+reason: "iterate: first-class tests.skipped tracking + failure-keyed D4"
+timestamp: "2026-07-23T07:19:01.071907+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-21 23:34:38 UTC
+> Auto-generated 2026-07-23 07:19:01 UTC
 
 ## Session Info
 
-- **Session ID**: dcc0a976-e768-47b5-9797-65838f71f827
-- **Timestamp**: 2026-07-21 23:34:38 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: 415d4494-2dda-49f1-9932-c8f88974b90c
+- **Timestamp**: 2026-07-23 07:19:01 UTC
+- **Reason**: iterate: first-class tests.skipped tracking + failure-keyed D4
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-21-review-record
-- **Date**: 2026-07-21T23:32:39.483479Z
-- **Type**: feature
+- **Run ID**: iterate-2026-07-23-tests-skipped-tracking
+- **Date**: 2026-07-23T07:18:55.049539Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/review-record
-- **ADR**: iterate-2026-07-21-review-record
+- **Branch**: iterate/tests-skipped-tracking
+- **ADR**: iterate-2026-07-23-tests-skipped-tracking
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-21-review-record.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-23-tests-skipped-tracking.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/review-record
-- **Run ID**: iterate-2026-07-21-review-record
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-21-review-record.md
-- **Complexity**: medium (history-calibrated, n=20; `prior_source: history`)
-- **External Review Marker**: stale (predates spec (2026-07-21T23:17:39))
+- **Branch**: iterate/tests-skipped-tracking
+- **Run ID**: `iterate-2026-07-23-tests-skipped-tracking`
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-23-tests-skipped-tracking.md
+- **Complexity**: medium (classifier: `estimate=medium`, `prior_source=keyword`, no risk flags)
+- **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
@@ -51,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/review-record
-- **Last Commit**: c22ed6f0 Merge remote-tracking branch 'origin/main' into iterate/review-record
+- **Branch**: iterate/tests-skipped-tracking
+- **Last Commit**: 578370ca feat(iterate): record what every review pass found, per run (FR-01.11) (#428)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-f8f0c714 | grade_snapshot | — | 2026-07-23 |
+| evt-3a175bfa | work_completed | iterate (First-class tests.skipped tracking: --tests-skipped flag + shared tests_block SSOT; D4 keys on genuine failures (charitable when absent) and is re-enabled; test-evidence + dashboard disclose skips; apply_amendments deep-merge opt-in.) | 2026-07-23 |
+| evt-e4740235 | grade_snapshot | — | 2026-07-22 |
 | evt-83ddad20 | grade_snapshot | — | 2026-07-21 |
 | evt-8e3b71af | grade_snapshot | — | 2026-07-21 |
-| evt-6406a8db | work_completed | iterate (iterate: bump brace-expansion to 2.1.2 (CVE-2026-13149)) | 2026-07-21 |
-| evt-d839deb7 | grade_snapshot | — | 2026-07-21 |
-| evt-8f7e1649 | work_completed | iterate (iterate: normalize the inline dynamic import to clear a benign prompt-scan finding) | 2026-07-21 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 355
-- **Last iterate**: change — iterate: bump brace-expansion to 2.1.2 (CVE-2026-13149) (2026-07-21)
+- **Total work events**: 356
+- **Last iterate**: change — First-class tests.skipped tracking: --tests-skipped flag + shared tests_block SSOT; D4 keys on genuine failures (charitable when absent) and is re-enabled; test-evidence + dashboard disclose skips; apply_amendments deep-merge opt-in. (2026-07-23)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

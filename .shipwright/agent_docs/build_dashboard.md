@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-21 23:34 UTC | Session: dcc0a976-e768-47b5-9797-65838f71f827 | Run: iterate-2026-07-21-review-record
+> Updated: 2026-07-23 07:19 UTC | Session: 415d4494-2dda-49f1-9932-c8f88974b90c | Run: iterate-2026-07-23-tests-skipped-tracking
 
-## Recent Changes (355 iterations)
+## Recent Changes (356 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | First-class tests.skipped tracking: --tests-skipped flag + shared tests_block SSOT; D4 keys on genuine failures (charitable when absent) and is re-enabled; test-evidence + dashboard disclose skips; apply_amendments deep-merge opt-in. | 6230/6242 (12 skipped) |  | FR-01.10 | 2026-07-23 |
 | change | iterate: bump brace-expansion to 2.1.2 (CVE-2026-13149) | 0/0 |  | tooling | 2026-07-21 |
 | change | iterate: normalize the inline dynamic import to clear a benign prompt-scan finding | 0/0 |  | tooling | 2026-07-21 |
 | change | iterate: reconcile compliance D1/D3 (FR-01.15 mint coverage) + H2 bloat ratchet | 6452/6452 |  | FR-01.10, FR-01.15 | 2026-07-21 |
@@ -362,7 +363,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-21 | Unit: 6023/6023 | Integration: 417/417 | Smoke: not_run | (iterate)
+Last run: 2026-07-23 | Unit: 6230/6242 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

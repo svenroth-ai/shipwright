@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-07-21T23:32:39.562944+00:00
-Total commits: 1196
+Generated: 2026-07-23T07:18:55.135867+00:00
+Total commits: 1194
 
 ## Commit Distribution
 
@@ -9,7 +9,7 @@ Total commits: 1196
 pie title Commit Types
     "fix" : 345
     "feat" : 330
-    "chore" : 249
+    "chore" : 247
     "docs" : 146
     "refactor" : 75
     "test" : 30
@@ -374,7 +374,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-22 | iterate | record what every review pass found, per run (FR-01.11) | d988645ffc18 |
+| 2026-07-23 | iterate | record what every review pass found, per run (FR-01.11) (#428) | 578370ca2e9b |
 | 2026-07-20 | iterate | extend the CI supply-chain ack gate to shipped CI templates (#417) | c6975f4e612c |
 | 2026-07-20 | traceability | answer "which changes touched this requirement" from the event log (campaign S7) (#415) | 18905d576514 |
 | 2026-07-19 | templates | ship the action-pinning posture RULE to adopters, gated both ways (#407) | e336197ca8e9 |
@@ -705,12 +705,10 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 249 commits
+### Chores (chore) — 247 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-22 | events | record the grade snapshot appended during finalization | 5c93765954c2 |
-| 2026-07-22 | churn | regenerate derived snapshots after main merge | dc3e28645466 |
 | 2026-07-19 | compliance | register four size crossings, ratchet nine entries, record the missing convention (#408) | 37fe1346b5df |
 | 2026-07-18 | triage | deliver 3 orphaned records from the merged iterate worktree (#402) | 56ee1c0e2387 |
 | 2026-07-18 | security | by-design nosemgrep suppression for the layer-coverage loader (#396) | 6cfd0e84655a |
@@ -1265,7 +1263,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1196 |
+| Total commits | 1194 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1196 |
+| Human-authored commits | 1194 |
 

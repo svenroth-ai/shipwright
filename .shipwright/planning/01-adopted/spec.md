@@ -138,6 +138,12 @@ _Where the work detail lives_ at the end of this document.
   requirement that was right the first time is never reported as outstanding
   merely for having needed no revision since; a change that introduces a
   requirement without running tests still owes both.
+- (E) Given a completed change whose test run recorded host-gated skipped tests
+  (folded into the total, so fewer tests passed than ran), when the cross-check
+  audit and the test-evidence report run, then the skipped tests are separated
+  from genuine failures — a green run that merely skipped tests is not reported
+  as landing in a failing build, and the skip count is disclosed even when every
+  executed test passed.
 - (E) Given requirement names or descriptions carry implementation detail, when
   the audit runs, then it reports how many and which ones without changing the
   verdict or the exit code, so an existing catalog can be cleaned up gradually

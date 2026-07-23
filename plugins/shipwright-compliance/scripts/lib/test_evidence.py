@@ -21,6 +21,7 @@ _SHARED_SCRIPTS = Path(__file__).resolve().parents[4] / "shared" / "scripts"
 if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 from markdown_table import escape_cell  # noqa: E402
+from tests_block import progression_result  # noqa: E402 — shared skip-vs-fail SSOT
 
 if TYPE_CHECKING:
     from scripts.lib.data_collector import ComplianceData
@@ -417,21 +418,9 @@ def _test_progression(data: ComplianceData) -> list[str]:
             new_cell = f"+{we.tests_total}" if we.tests_total > 0 else "—"
 
         suite = f"{we.tests_passed}/{we.tests_total}" if we.tests_total > 0 else "—"
-        baseline = data.baseline_failure_count
-        gap = we.tests_total - we.tests_passed
-        if we.tests_total <= 0:
-            result = "—"
-        elif gap <= 0:
-            result = "PASS"
-        elif baseline > 0 and gap <= baseline:
-            result = "PASS (baseline)"
-        else:
-            # A work_completed event records COMPLETED, merged work, which was
-            # green-at-merge (Iron Law). The event wire-format only carries
-            # {passed, total}, so a passed<total gap is SKIPPED tests, not
-            # failures — render skip-aware PASS, not FAIL.
-            # (iterate-2026-06-16-compliance-rendering-fixes)
-            result = f"PASS ({gap} skipped)"
+        result = progression_result(
+            we.tests_passed, we.tests_total, we.tests_skipped, data.baseline_failure_count
+        )
         date = we.timestamp[:10]
 
         lines.append(
