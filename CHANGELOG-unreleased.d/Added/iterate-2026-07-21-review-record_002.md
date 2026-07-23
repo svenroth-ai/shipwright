@@ -1,0 +1,1 @@
+New `record_review_pass.py` tool: `init`, `record`, `close-missing`, `repair-markers` and `show`. It reads a reviewer's reply verbatim — raw JSON or the whole message with its ```json block — so nothing has to be transcribed by hand, and a completed review cannot afterwards be quietly restated.

@@ -52,19 +52,29 @@ Usage:
 import argparse
 import json
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
-REVIEW_STATE_FILE = "external_review_state.json"
-CODE_REVIEW_STATE_FILE = "external_code_review_state.json"
+_SHARED_SCRIPTS = Path(__file__).resolve().parents[1]
+if str(_SHARED_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SHARED_SCRIPTS))
 
-ALLOWED_STATUSES = {
-    "completed",
-    "skipped_user_opt_out",
-    "skipped_config_disabled",
-}
+# The marker shape lives in lib/ so record_review_pass.py can write the same
+# marker without duplicating it. This script stays the CLI it always was.
+from lib.review_marker import (  # noqa: E402
+    ALLOWED_REVIEW_TYPES,
+    ALLOWED_STATUSES,
+    CODE_REVIEW_STATE_FILE,
+    REVIEW_STATE_FILE,
+    build_marker,
+    write_marker,
+)
 
-ALLOWED_REVIEW_TYPES = ("plan", "iterate", "code")
+__all__ = [
+    "ALLOWED_REVIEW_TYPES",
+    "ALLOWED_STATUSES",
+    "CODE_REVIEW_STATE_FILE",
+    "REVIEW_STATE_FILE",
+]
 
 
 def main() -> int:
@@ -105,20 +115,15 @@ def main() -> int:
         }))
         return 2
 
-    marker = {
-        "status": args.status,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "provider": args.provider,
-        "findings_count": args.findings_count,
-        "self_review_fallback_ran": args.self_review_fallback_ran
-            or args.status in {"skipped_user_opt_out", "skipped_config_disabled"},
-        "reason": args.reason,
-        "review_mode": args.review_type,
-    }
-
-    filename = CODE_REVIEW_STATE_FILE if args.review_type == "code" else REVIEW_STATE_FILE
-    out_path = planning_dir / filename
-    out_path.write_text(json.dumps(marker, indent=2) + "\n", encoding="utf-8")
+    marker = build_marker(
+        status=args.status,
+        review_type=args.review_type,
+        provider=args.provider,
+        reason=args.reason,
+        findings_count=args.findings_count,
+        self_review_fallback_ran=args.self_review_fallback_ran,
+    )
+    out_path = write_marker(planning_dir, marker, args.review_type)
 
     print(json.dumps({"success": True, "marker_path": str(out_path), "state": marker}))
     return 0

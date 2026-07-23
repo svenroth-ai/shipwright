@@ -51,6 +51,40 @@ W3_REMEDIATION = (
 )
 
 
+def _w2_status_finding(marker: Path, spec_mtime: float):
+    """Judge one ``external_review_state.json``-shaped marker.
+
+    Returns a finding, or ``None`` when the marker carries a status this gate
+    does not recognise (the caller then falls through to its own FAIL) — an
+    unrecognised status must never read as a pass.
+    """
+    try:
+        state = json.loads(marker.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return make_finding(
+            "W2", STATUS_FAIL, f"{marker.name} malformed",
+            name=W2_NAME, remediation=W2_REMEDIATION,
+        )
+    status = str(state.get("status", ""))
+    if status == "completed":
+        if not spec_mtime or marker.stat().st_mtime >= spec_mtime:
+            return make_finding(
+                "W2", STATUS_PASS, f"{marker.name} status={status}",
+                name=W2_NAME, provenance="unverified_marker",
+            )
+        return make_finding(
+            "W2", STATUS_FAIL, f"{marker.name} older than spec",
+            name=W2_NAME, remediation=W2_REMEDIATION, provenance="unverified_marker",
+        )
+    if status.startswith("skipped_"):
+        reason = state.get("reason") or "<no reason>"
+        return make_finding(
+            "W2", STATUS_PASS, f"status={status} (reason: {reason})",
+            name=W2_NAME, provenance="unverified_marker",
+        )
+    return None
+
+
 _SMALL_COMPLEXITIES: frozenset[str] = frozenset({"small", "tiny", "trivial"})
 
 
@@ -94,7 +128,15 @@ def check_w2_external_review_marker(
     and runs the normal marker logic below.
     """
     planning_dir = project_root / PLANNING_DIRNAME / "iterate"
-    per_run = planning_dir / f"{run_id}-external-review.json"
+    # Two run-specific candidates: the historic `<run_id>-external-review.json`
+    # PAYLOAD (no status field — existence is all it can assert), and the
+    # run-scoped STATUS MARKER `<run_id>/external_review_state.json` that
+    # record_review_pass.py dual-writes (iterate-2026-07-21-review-record).
+    # The shared external_review_state.json below is NOT run-specific and keeps
+    # its existing fallback role unchanged.
+    per_run_payload = planning_dir / f"{run_id}-external-review.json"
+    per_run_marker = planning_dir / run_id / "external_review_state.json"
+    existing_per_run = [p for p in (per_run_payload, per_run_marker) if p.exists()]
     state_file = planning_dir / "external_review_state.json"
 
     # The per-run marker is the only run-specific candidate; the shared
@@ -103,8 +145,7 @@ def check_w2_external_review_marker(
     # Runs before the spec-glob below, which would also crash on an empty
     # run_id (``**.md`` is an invalid pathlib pattern).
     guard = unresolvable_run_id_skip(
-        project_root, run_id,
-        [per_run] if per_run.exists() else [],
+        project_root, run_id, existing_per_run,
         "W2", W2_NAME, provenance="unverified_marker",
     )
     if guard is not None:
@@ -134,56 +175,33 @@ def check_w2_external_review_marker(
     ]
     spec_mtime = max((p.stat().st_mtime for p in spec_files), default=0.0)
 
-    if per_run.exists():
-        if not spec_mtime or per_run.stat().st_mtime >= spec_mtime:
+    # The historic per-run PAYLOAD has no status field, so existence + freshness
+    # is all it can be judged on.
+    if per_run_payload.exists():
+        if not spec_mtime or per_run_payload.stat().st_mtime >= spec_mtime:
             return make_finding(
                 "W2", STATUS_PASS,
-                f"{per_run.name} present",
+                f"{per_run_payload.name} present",
                 name=W2_NAME,
                 provenance="unverified_marker",
             )
         return make_finding(
             "W2", STATUS_FAIL,
-            f"{per_run.name} older than spec (mtime drift)",
+            f"{per_run_payload.name} older than spec (mtime drift)",
             name=W2_NAME,
             remediation=W2_REMEDIATION,
             provenance="unverified_marker",
         )
 
-    if state_file.exists():
-        try:
-            state = json.loads(state_file.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
-            return make_finding(
-                "W2", STATUS_FAIL,
-                "external_review_state.json malformed",
-                name=W2_NAME,
-                remediation=W2_REMEDIATION,
-            )
-        status = str(state.get("status", ""))
-        if status == "completed":
-            if not spec_mtime or state_file.stat().st_mtime >= spec_mtime:
-                return make_finding(
-                    "W2", STATUS_PASS,
-                    f"external_review_state.json status={status}",
-                    name=W2_NAME,
-                    provenance="unverified_marker",
-                )
-            return make_finding(
-                "W2", STATUS_FAIL,
-                "external_review_state.json older than spec",
-                name=W2_NAME,
-                remediation=W2_REMEDIATION,
-                provenance="unverified_marker",
-            )
-        if status.startswith("skipped_"):
-            reason = state.get("reason") or "<no reason>"
-            return make_finding(
-                "W2", STATUS_PASS,
-                f"status={status} (reason: {reason})",
-                name=W2_NAME,
-                provenance="unverified_marker",
-            )
+    # Both remaining candidates are STATUS markers and get the same scrutiny.
+    # The run-scoped one is run-specific evidence and therefore decides alone —
+    # falling back to the run-agnostic shared file after rejecting it would
+    # launder a bad run-scoped marker into a pass.
+    marker = per_run_marker if per_run_marker.exists() else state_file
+    if marker.exists():
+        finding = _w2_status_finding(marker, spec_mtime)
+        if finding is not None:
+            return finding
 
     return make_finding(
         "W2", STATUS_FAIL,

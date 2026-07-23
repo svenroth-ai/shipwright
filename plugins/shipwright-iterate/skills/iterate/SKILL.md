@@ -132,7 +132,7 @@ Print `Run ID / Intent / Complexity (+ reasoning) / Prior source (keyword | hist
 
 | Category | Phases | User can skip? |
 |---|---|---|
-| **Mandatory** | Self-review, unit test, commit, ADR, compliance, test results JSON, iterate_history, Confidence Calibration (medium+), Test Completeness Ledger (medium+) | Never skippable |
+| **Mandatory** | Self-review, unit test, commit, ADR, compliance, test results JSON, iterate_history, Confidence Calibration (medium+), Test Completeness Ledger (medium+), Review Record (small+ — a pass may be closed `not_run`, but never left unanswered) | Never skippable |
 | **Safety-enforced** | Full review (when risk flags), full test suite (when shared infra), down.sql (when migrations), Boundary Probe (when `touches_io_boundary`), Confidence Calibration (small with `touches_io_boundary`), Test Completeness Ledger (small) | Only with explicit risk acknowledgment |
 | **Advisory** | Design check, mini-plan, design fidelity, E2E update, external LLM review, release prompt, Confidence Calibration (trivial / small without `touches_io_boundary`), Test Completeness Ledger (trivial → auto `n/a`) | Freely skippable |
 | **Complexity-gated** | Iterate spec, context scan depth | Adjustable via "make it medium/small" |
@@ -164,7 +164,7 @@ Tests first (outcomes, not internal state; one happy + one error path per AC). I
 
 ### Step 7: Self-Review (always)
 
-See `references/iteration-reviews.md` for the 7-point checklist (item 7: Affected Boundaries). → **Phase Timing:** emit `mark review` at entry.
+See `references/iteration-reviews.md` for the 7-point checklist (item 7: Affected Boundaries). → **Phase Timing:** emit `mark review` at entry. **Record every review pass:** all five types — `self` · `plan` · `code` · `doubt` · `external_code` — close their own row in `.shipwright/planning/iterate/{run_id}/reviews.json` via `shared/scripts/tools/record_review_pass.py` (contract + per-pass table: `references/iteration-reviews.md` → "Recording each review pass"). The F11 verifier `check_review_record` STOPs the run while any type is still `pending` (small+; skipped at trivial), so a pass that did not run is closed EXPLICITLY with a `--disposition` naming the rule. An empty Review row must always mean "genuinely not run", never "nobody wrote it down".
 
 ### Step 7.5: Confidence Calibration (mandatory at medium+, also when `touches_io_boundary`)
 
@@ -225,6 +225,7 @@ See `references/campaign-mode.md` for the full protocol: campaign setup, autonom
 | Test Completeness Ledger | n/a (auto) | always | always | always |
 | Integration Coverage (cross-component) | skip | skip | if `cross_component` | if `cross_component` |
 | Full Code Review | only if risk flags | only if risk flags | always | — |
+| Review Record (all 5 types closed) | n/a (auto) | always | always | always |
 | Browser Verify | if UI | if UI | if UI | — |
 | Smoke Test | if server up | if server up | if server up | — |
 | Unit Test | `--related` | `--related` | full suite | — |

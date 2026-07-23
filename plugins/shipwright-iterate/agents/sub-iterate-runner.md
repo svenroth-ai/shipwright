@@ -95,19 +95,19 @@ Parse the JSON. Then:
   `external_review.feedback_iterations: 0`. Print a notice and skip.
   Record `skipped_config_disabled` in the iterate ADR.
 
-Always write the marker via:
+Always record the pass — writes the review record AND dual-writes the legacy
+marker. **Every pass here records its row** (`self` 3.6, `plan` here,
+`code`+`doubt` 3.7, `external_code` cascade); F11 STOPs while any is `pending`,
+so a skipped pass needs a `--disposition` naming the rule. `reviews.plan` (Step
+6) stays the campaign view. Contract: `references/iteration-reviews.md`.
 
 ```bash
-uv run "{shared_root}/scripts/checks/mark-review-state.py" \
-  --planning-dir "{iterate_planning_dir}" \
-  --review-type iterate \
-  --status "{completed | skipped_user_opt_out | skipped_config_disabled | skipped_complexity_below_threshold}" \
-  --provider "{openrouter | null}" \
-  --findings-count {N}
+uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
+  --project-root "{project_root}" --run-id "{run_id}" --review-type plan \
+  --status "{completed | not_run}" --provider "{openrouter | null}" \
+  --marker-status "{completed | skipped_user_opt_out | skipped_config_disabled}" \
+  [--from external-review-json --payload-file "{stdout}"] [--disposition "{why}"]
 ```
-
-The `reviews.plan` field in the result-JSON contract (Step 6 / Output)
-records what fired and what was deferred.
 
 ### Step 3.6: Self-Review (always, ADR-029 follow-up)
 

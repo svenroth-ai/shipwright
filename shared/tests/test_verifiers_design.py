@@ -251,6 +251,156 @@ def test_fr_coverage_runs_when_run_config_malformed(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# Design-phase-lifecycle skip (trg-d26da6f4)
+# ---------------------------------------------------------------------------
+#
+# An ADOPTED (brownfield) project has FRs but never ran /shipwright-design, so
+# `.shipwright/designs/design-manifest.md` legitimately never exists and
+# `completed_steps` has no "design". The detective-audit check C1
+# (check_design_fr_coverage) must SKIP (structurally inapplicable), not FAIL —
+# mirroring the scope=library escape hatch.
+#
+# The guard is SURGICAL and lives ONLY on check_design_fr_coverage: it fires
+# only on the manifest-missing branch. A design phase that ran (manifest
+# present, or "design" in completed_steps) is fully enforced — a project that
+# ran design then lost its manifest is real drift and still FAILs, and the
+# FR-orphan enforcement stays live for the between-phase validator flow (where
+# completed_steps has no "design" yet but the manifest is present). The sister
+# check check_design_manifest_screens_exist is deliberately NOT guarded (it is
+# not in the detective audit and never runs on an adopted project), so it
+# remains the strict manifest-presence sentinel.
+
+
+def _write_run_config(root: Path, **fields) -> None:
+    (root / "shipwright_run_config.json").write_text(json.dumps(fields))
+
+
+def test_fr_coverage_skips_when_design_phase_never_ran(tmp_path):
+    # Adopted project: FRs present, scope≠library, "design" not in
+    # completed_steps, and no design-manifest.md → SKIP, not FAIL.
+    (tmp_path / ".shipwright" / "planning" / "01-x").mkdir(parents=True)
+    (tmp_path / ".shipwright" / "planning" / "01-x" / "spec.md").write_text(
+        "| ID | Requirement | Priority |\n| FR-01.01 | Log in | Must |\n"
+    )
+    _write_run_config(
+        tmp_path, scope="full_app",
+        completed_steps=["project", "plan", "build", "test"],
+    )
+    # No .shipwright/designs tree at all — the design phase never ran.
+    r = check_design_fr_coverage(tmp_path)
+    assert r.ok is None
+    assert r.is_skipped
+    assert "design phase" in r.detail.lower()
+
+
+def test_fr_coverage_fails_when_manifest_missing_but_design_ran(tmp_path):
+    # Real drift: the design phase DID run ("design" in completed_steps) but the
+    # manifest is gone. That is a genuine regression, not a structural skip.
+    (tmp_path / ".shipwright" / "planning" / "01-x").mkdir(parents=True)
+    (tmp_path / ".shipwright" / "planning" / "01-x" / "spec.md").write_text(
+        "| ID | Requirement | Priority |\n| FR-01.01 | Log in | Must |\n"
+    )
+    _write_run_config(
+        tmp_path, scope="full_app",
+        completed_steps=["project", "design", "plan", "build", "test"],
+    )
+    r = check_design_fr_coverage(tmp_path)
+    assert r.ok is False
+    assert not r.is_skipped
+    assert "missing" in r.detail.lower()
+
+
+def test_fr_coverage_still_enforces_orphans_when_manifest_present_and_design_pending(tmp_path):
+    # Regression guard for the between-phase validator flow: the manifest is
+    # PRESENT (design phase produced it) but "design" is not yet in
+    # completed_steps (validate_phase runs before completed_steps is appended).
+    # The orphan-FR enforcement MUST still fire — the guard is manifest-gated,
+    # not a top-level skip.
+    seed_canon_design(tmp_path)
+    (tmp_path / ".shipwright" / "planning" / "02-dashboard" / "spec.md").write_text(
+        "| ID | Requirement | Priority |\n| FR-02.01 | Show metrics | Must |\n"
+        "| FR-02.02 | Export PDF | Should |\n"
+    )
+    _write_run_config(tmp_path, scope="full_app", completed_steps=["project"])
+    r = check_design_fr_coverage(tmp_path)
+    assert r.ok is False
+    assert "FR-02.02" in r.detail
+
+
+def test_manifest_screens_exist_unguarded_still_fails_on_missing_manifest(tmp_path):
+    # Sister check stays STRICT even for a no-design project: it is never run on
+    # an adopted project, so it keeps failing loud on an absent manifest and
+    # remains the manifest-presence sentinel (mitigates the mockups-present /
+    # manifest-absent window for the FR-coverage check).
+    _write_run_config(
+        tmp_path, scope="full_app",
+        completed_steps=["project", "plan", "build", "test"],
+    )
+    r = check_design_manifest_screens_exist(tmp_path)
+    assert r.ok is False
+    assert not r.is_skipped
+
+
+# ---------------------------------------------------------------------------
+# Config-reader robustness (WP8/F24 convention — external review OpenAI)
+# ---------------------------------------------------------------------------
+#
+# The lifecycle skip decision reads shipwright_run_config.json. That reader
+# must follow the repo config-reader convention: BOM-tolerant (utf-8-sig) and
+# fail-loud (never crash) on an undecodable payload.
+
+
+def test_scope_library_skip_tolerates_utf8_bom_run_config(tmp_path):
+    # _is_no_ui_scope must parse a hand-edited UTF-8-BOM config: a BOM'd
+    # scope=library project still SKIPs (a BOM that broke parsing would drop to
+    # the manifest-missing FAIL — the exact false-C1 this iterate removes).
+    (tmp_path / ".shipwright" / "planning" / "01-x").mkdir(parents=True)
+    (tmp_path / ".shipwright" / "planning" / "01-x" / "spec.md").write_text(
+        "| ID | Requirement | Priority |\n| FR-01.01 | A library API | Must |\n"
+    )
+    (tmp_path / "shipwright_run_config.json").write_bytes(
+        "﻿".encode("utf-8") + json.dumps({"scope": "library"}).encode("utf-8")
+    )
+    r = check_design_fr_coverage(tmp_path)
+    assert r.ok is None
+    assert r.is_skipped
+    assert "library" in r.detail.lower()
+
+
+def test_lifecycle_skip_tolerates_utf8_bom_run_config(tmp_path):
+    # A hand-edited UTF-8-BOM run_config must still be parsed: completed_steps
+    # is read correctly, so a no-design project SKIPs (a BOM that broke parsing
+    # would fail-loud to FAIL instead).
+    (tmp_path / ".shipwright" / "planning" / "01-x").mkdir(parents=True)
+    (tmp_path / ".shipwright" / "planning" / "01-x" / "spec.md").write_text(
+        "| ID | Requirement | Priority |\n| FR-01.01 | Log in | Must |\n"
+    )
+    (tmp_path / "shipwright_run_config.json").write_bytes(
+        "﻿".encode("utf-8")
+        + json.dumps({
+            "scope": "full_app",
+            "completed_steps": ["project", "plan", "build", "test"],
+        }).encode("utf-8")
+    )
+    r = check_design_fr_coverage(tmp_path)
+    assert r.ok is None
+    assert r.is_skipped
+
+
+def test_lifecycle_skip_fails_loud_on_undecodable_run_config(tmp_path):
+    # Invalid (non-UTF-8) bytes must not crash the verifier — fail-loud to a
+    # normal FAIL on the missing manifest.
+    (tmp_path / ".shipwright" / "planning" / "01-x").mkdir(parents=True)
+    (tmp_path / ".shipwright" / "planning" / "01-x" / "spec.md").write_text(
+        "| ID | Requirement | Priority |\n| FR-01.01 | Log in | Must |\n"
+    )
+    (tmp_path / "shipwright_run_config.json").write_bytes(b"\xff\xfe not utf-8 \x9d")
+    r = check_design_fr_coverage(tmp_path)  # must return, not raise
+    assert r.ok is False
+    assert not r.is_skipped
+
+
+# ---------------------------------------------------------------------------
 # run_design_checks orchestrator
 # ---------------------------------------------------------------------------
 

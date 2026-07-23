@@ -1,43 +1,44 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-21-fr0115-coverage-bloat"
+run_id: "iterate-2026-07-23-design-verifier-skip-no-design-phase"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-21T22:41:37.612570+00:00"
+reason: "iterate: design verifier skips projects that never ran the design phase"
+timestamp: "2026-07-23T06:42:49.892025+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-21 22:41:37 UTC
+> Auto-generated 2026-07-23 06:42:49 UTC
 
 ## Session Info
 
-- **Session ID**: 2635282a-8c3e-4568-9bae-d27c6e75bc46
-- **Timestamp**: 2026-07-21 22:41:37 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: 87d8313b-edaf-40fb-a9cd-fa245de13788
+- **Timestamp**: 2026-07-23 06:42:49 UTC
+- **Reason**: iterate: design verifier skips projects that never ran the design phase
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-21-fr0115-coverage-bloat
-- **Date**: 2026-07-21T22:41:30.231077Z
-- **Type**: change
+- **Run ID**: iterate-2026-07-23-design-verifier-skip-no-design-phase
+- **Date**: 2026-07-23T06:42:44.043018Z
+- **Type**: bug
 - **Complexity**: medium
-- **Branch**: iterate/fr0115-coverage-bloat
-- **ADR**: iterate-2026-07-21-fr0115-coverage-bloat
+- **Branch**: iterate/design-verifier-skip-no-design-phase
+- **ADR**: iterate-2026-07-23-design-verifier-skip-no-design-phase
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-21-fr0115-coverage-bloat.md
+- **Spec**: .shipwright/planning/iterate/2026-07-23-design-verifier-skip-no-design-phase.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/fr0115-coverage-bloat
-- **Run ID**: `iterate-2026-07-21-fr0115-coverage-bloat`
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-21-fr0115-coverage-bloat.md
-- **Complexity**: medium (history-calibrated; `prior_source: history`, n=20)
+- **Branch**: iterate/design-verifier-skip-no-design-phase
+- **Run ID**: `iterate-2026-07-23-design-verifier-skip-no-design-phase`
+- **Spec**: .shipwright/planning/iterate/2026-07-23-design-verifier-skip-no-design-phase.md
+- **Complexity**: medium
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -51,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/fr0115-coverage-bloat
-- **Last Commit**: 5f39070d Merge remote-tracking branch 'origin/main' into iterate/fr0115-coverage-bloat
+- **Branch**: iterate/design-verifier-skip-no-design-phase
+- **Last Commit**: 578370ca feat(iterate): record what every review pass found, per run (FR-01.11) (#428)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +69,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-26334e90 | grade_snapshot | — | 2026-07-23 |
+| evt-a8a0f759 | work_completed | iterate (design verifier C1 skips projects that never ran the design phase) | 2026-07-23 |
+| evt-e4740235 | grade_snapshot | — | 2026-07-22 |
+| evt-83ddad20 | grade_snapshot | — | 2026-07-21 |
 | evt-8e3b71af | grade_snapshot | — | 2026-07-21 |
-| evt-6406a8db | work_completed | iterate (iterate: bump brace-expansion to 2.1.2 (CVE-2026-13149)) | 2026-07-21 |
-| evt-d839deb7 | grade_snapshot | — | 2026-07-21 |
-| evt-8f7e1649 | work_completed | iterate (iterate: normalize the inline dynamic import to clear a benign prompt-scan finding) | 2026-07-21 |
-| evt-622b42cf | grade_snapshot | — | 2026-07-21 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 354
-- **Last iterate**: change — iterate: bump brace-expansion to 2.1.2 (CVE-2026-13149) (2026-07-21)
+- **Total work events**: 356
+- **Last iterate**: bug — design verifier C1 skips projects that never ran the design phase (2026-07-23)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

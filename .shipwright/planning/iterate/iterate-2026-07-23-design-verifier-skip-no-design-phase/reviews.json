@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-23-design-verifier-skip-no-design-phase",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-23T06:40:46.434954+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
+      "parse_status": "unstructured",
+      "raw_excerpt": "# Self-Review (7-point)\n\n1. **Meets ACs?** Yes — AC1–AC6 each have a passing test; the fix targets the exact triage root cause (detective-audit C1 false-fail on adopted projects).\n2. **Tests (happy + error per behavior)?** Yes — skip (happy), drift-FAIL (error), regression-guard AC3, sister-check strict, BOM tolerance, undecodable fail-loud.\n3. **Edge cases?** Broken/malformed/undecodable config → fail-loud; non-dict / non-list completed_steps → fail-loud; scope=library precedence preserved; between-phase-validator timing (completed_steps lacks \"design\") handled by manifest-gated placement.\n4. **Security?** No new attack surface; read-only parse of an existing config; no eval/exec/network.\n5. **Error handling?** Fail-loud on every broken-state path; `utf-8-sig` BOM tolerance per WP8/F24 convention.\n6. **YAGNI / scope?** Guard applied ONLY to check_design_fr_coverage (the actual C1 bug); sister check deliberately left unguarded (not in detective audit) to avoid a false-skip regression.\n7. **Affected boundaries?** Reads shipwright_run_config.json (scope, completed_steps) — same boundary as the pre-existing _is_no_ui_scope; no new serialization surface. Consumers: compliance detective audit (group_c C1) and the between-phase validator.\n\nVerdict: ready — no blocking self-review findings.\n"
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-23T06:39:58.091377+00:00",
+      "disposition": "SKILL Step 3.5 external PLAN review folded into the external CODE review (external_review.py --mode code) run post-build against the diff + iterate spec — a superset for a single-file bug fix; the mini-plan lives in the iterate spec.",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "shipwright-build:code-reviewer",
+      "completed_at": "2026-07-23T06:40:46.536758+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
+      "parse_status": "unstructured",
+      "raw_excerpt": "# Internal Code Review (shipwright-build:code-reviewer, opus)\n\n**Verdict:** Functionally correct; all ACs met; regression guard verified; no correctness blocker. Ship once B1 addressed.\n\nVerified end-to-end: step_planning.py runs validate_phase BEFORE completed.append(step) — the timing trap is real, so a top-level guard would neuter enforcement; the manifest-gated placement is reached only when the manifest is absent → during a real design phase the manifest is present and enforcement runs. `_run_canon_checks` ignores skipped results and `check_result_to_finding` maps ok=None → status=skip/LOW, so the adopted-webui C1 finding drops HIGH-fail → skip. Fail-loud enumeration covers all six broken-state paths.\n\n## Findings & resolutions\n\n- **B1 (blocking) — bloat crossing not baselined.** design_checks.py (342) and test_verifiers_design.py (450) cross 300 and were not in shipwright_bloat_baseline.json (every sibling verifier/test is) → would trip Group-H H1 post-merge. **RESOLVED:** both grandfathered in shipwright_bloat_baseline.json at exact newline count; test_bloat_baseline.py + test_anti_ratchet_check.py green.\n- **N1 (non-blocking) — narrow false-skip on the sister check** (mockups present / manifest absent mid-design). **RESOLVED via Option B:** removed the guard from check_design_manifest_screens_exist entirely (it is not in the detective audit and never runs on adopted projects), so it stays strict and remains the manifest-presence sentinel that catches that window. N1 eliminated.\n- **N2 (non-blocking) — config-reader duplication (catalog D).** Considered extracting `_load_run_config`; kept the two helpers separate because they have deliberately OPPOSITE fail directions (fail-closed False vs fail-loud True) — inlining is clearer (reviewer's own G2/G5 caveat). Not applied.\n- **n1 (nit) — `_NO_UI_SCOPES` comment.** **RESOLVED:** added a pointer to the orthogonal `_design_phase_ran` skip.\n\nAll resolutions re-verified: design suite 26/26, shared/tests 4878, compliance 1305, ruff clean.\n"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-23T06:39:58.220110+00:00",
+      "disposition": "build doubt-reviewer is Stage-3 only for migrations / async-concurrency / cross-plugin imports / irreversible ops; this single-file compliance-verifier logic change triggers none.",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-07-23T06:40:46.656612+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[gemini] <no review returned: success>\n\n[openai] <no review returned: success>"
+    }
+  }
+}

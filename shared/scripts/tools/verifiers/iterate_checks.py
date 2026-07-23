@@ -50,7 +50,6 @@ from .agent_doc_budget_check import check_agent_doc_budget  # noqa: E402,F401 �
 from .agent_doc_shape_check import check_agent_doc_shape  # noqa: E402,F401 — re-exported
 from .common import CheckResult, Severity  # noqa: E402
 from .git_helpers import _commit_changed_paths, _git_available, _run_git  # noqa: E402
-from .ci_supplychain import check_ci_supplychain_ack  # noqa: E402
 # ADR / decision-log integrity checks live in their own module (bloat
 # extraction); re-imported here so run_all_checks + the verify_iterate_finalization
 # wrapper + the tests keep resolving them from iterate_checks.
@@ -58,19 +57,19 @@ from .decision_log_gate import (  # noqa: E402, F401 — re-exported surface
     check_adr_in_iterate_history,
     check_iterate_no_direct_decision_log,
 )
-from .integration_coverage import check_integration_coverage  # noqa: E402
-# Re-exported so the drift-pin test ``test_ci_supplychain_patterns_sync`` keeps
-# resolving ``ic._CI_SUPPLYCHAIN_PATTERNS`` / ``ic._is_ci_supplychain``.
+from .review_record_check import check_review_record  # noqa: E402
+# The private names are re-exported so the drift-pin tests
+# ``test_ci_supplychain_patterns_sync`` / ``test_cross_component_patterns_sync``
+# keep resolving ``ic._CI_SUPPLYCHAIN_PATTERNS`` / ``ic._is_cross_component``.
 from .ci_supplychain import (  # noqa: E402, F401 — re-exported surface
     _CI_SUPPLYCHAIN_PATTERNS,
     _is_ci_supplychain,
+    check_ci_supplychain_ack,
 )
-# Re-exported so the drift-pin test ``test_cross_component_patterns_sync`` keeps
-# resolving ``ic._CROSS_COMPONENT_PATTERNS`` / ``ic._is_cross_component`` after
-# the integration-coverage gate moved to its own module.
 from .integration_coverage import (  # noqa: E402, F401 — re-exported surface
     _CROSS_COMPONENT_PATTERNS,
     _is_cross_component,
+    check_integration_coverage,
 )
 # The two enforcing traceability F11 gates (TT5) + the extracted migration check,
 # re-exported from their historical home (`iterate_checks`).
@@ -1051,6 +1050,7 @@ def run_all_checks(
         ),
         check_architecture_documented(project_root, run_id),
         check_integration_coverage(project_root, run_id, commit_hash),
+        check_review_record(project_root, run_id, commit_hash),
         check_iterate_no_direct_decision_log(project_root, run_id, commit_hash),
         check_ci_supplychain_ack(project_root, run_id, commit_hash),
         check_removal_coverage(project_root, run_id, commit_hash),
