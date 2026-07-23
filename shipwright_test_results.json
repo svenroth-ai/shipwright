@@ -1,29 +1,30 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-23-design-verifier-skip-no-design-phase",
+    "run_id": "iterate-2026-07-23-tests-skipped-tracking",
     "date": "2026-07-23",
     "unit": {
       "status": "passed",
-      "passed": 4878,
-      "total": 4893
+      "passed": 6230,
+      "total": 6242,
+      "skipped": 12
     },
     "integration": {
-      "status": "passed",
-      "passed": 9,
-      "total": 9
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "e2e": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "design_fidelity": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
@@ -32,62 +33,82 @@
     },
     "degraded": [],
     "surface_verification": {
-      "surface": "none",
-      "runner": "surface_verification.py --surface none",
+      "surface": "cli",
+      "runner": "uv run --extra dev pytest shared/tests/test_tests_block.py shared/tests/test_record_event_skipped.py shared/tests/test_events_amend_deep_merge.py shared/tests/test_update_build_dashboard_skipped.py -q -p no:cacheprovider",
       "exit_code": 0,
-      "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-23-design-verifier-skip-no-design-phase/surface_verification.json",
-      "timestamp": "2026-07-23T00:00:00Z",
-      "justification": "Pure compliance-verifier logic change (design_checks.py); no startable app/UI/API surface in the shipwright monorepo (the WebUI consumer is a separate repo reading audit JSON). Behaviour verified by shared/tests/test_verifiers_design.py (26) across both consumer flows + compliance Group-C adapters (49)."
+      "tests_run": 43,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\tests-skipped-tracking\\.shipwright\\runs\\iterate-2026-07-23-tests-skipped-tracking\\surface_verification.log",
+      "timestamp": "2026-07-23T07:16:08.516Z",
+      "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1: adopted project (no 'design' in completed_steps) + FRs + no manifest -> check_design_fr_coverage SKIPs (not FAIL)",
+          "behavior": "AC1 --tests-skipped writes tests.skipped + CLI round-trip",
           "disposition": "tested",
-          "evidence": "shared/tests/test_verifiers_design.py::test_fr_coverage_skips_when_design_phase_never_ran PASSED"
+          "evidence": "test_record_event_skipped.py::TestTestsSkippedFlag PASSED"
         },
         {
-          "behavior": "AC2: 'design' in completed_steps + FRs + no manifest -> FAILs (real drift, not skipped)",
+          "behavior": "AC1 corrupt block rejected: passed+skipped>total, negative, non-int, bool",
           "disposition": "tested",
-          "evidence": "test_verifiers_design.py::test_fr_coverage_fails_when_manifest_missing_but_design_ran PASSED"
+          "evidence": "test_tests_block.py::TestValidateTestsBlock PASSED"
         },
         {
-          "behavior": "AC3: manifest present + orphan FR + 'design' not yet in completed_steps (validator flow) -> still FAILs on orphan (guard is manifest-gated, not top-level)",
+          "behavior": "AC2 WorkEvent.from_dict skipped present/absent(None)/zero",
           "disposition": "tested",
-          "evidence": "test_verifiers_design.py::test_fr_coverage_still_enforces_orphans_when_manifest_present_and_design_pending PASSED"
+          "evidence": "test_skipped_tracking.py::TestWorkEventSkipped PASSED"
         },
         {
-          "behavior": "AC4: check_design_manifest_screens_exist stays strict -> still FAILs on missing manifest for a no-design project",
+          "behavior": "AC3 explicit skip rendered at passed==total; residual->FAIL incl. within baseline",
           "disposition": "tested",
-          "evidence": "test_verifiers_design.py::test_manifest_screens_exist_unguarded_still_fails_on_missing_manifest PASSED"
+          "evidence": "test_skipped_tracking.py::TestExplicitSkipRender + test_tests_block.py::TestProgressionResult PASSED"
         },
         {
-          "behavior": "AC5: existing behaviours unchanged (scope=library skip, orphan FAIL, no-FR trivial pass, malformed-config fail-loud) + detective-audit C1 consumer",
+          "behavior": "AC3 legacy (skipped absent) rendering byte-unchanged",
           "disposition": "tested",
-          "evidence": "test_verifiers_design.py full file (26) PASSED; plugins/shipwright-compliance tests/test_audit_groups_c_f.py + test_audit_adapters.py (49) PASSED"
+          "evidence": "test_test_evidence.py::TestSkipAwareResult PASSED"
         },
         {
-          "behavior": "AC6a: BOM'd run_config parsed (scope=library and no-design both SKIP under a UTF-8 BOM)",
+          "behavior": "AC4 dashboard renders skip count (iterate + build render sites)",
           "disposition": "tested",
-          "evidence": "test_verifiers_design.py::test_scope_library_skip_tolerates_utf8_bom_run_config + ::test_lifecycle_skip_tolerates_utf8_bom_run_config PASSED"
+          "evidence": "test_update_build_dashboard_skipped.py PASSED"
         },
         {
-          "behavior": "AC6b: undecodable (non-UTF-8) run_config fails loud (no crash) -> FAIL",
+          "behavior": "AC5 D4 keys on failures: charitable/green-with-skips/residual/non-int",
           "disposition": "tested",
-          "evidence": "test_verifiers_design.py::test_lifecycle_skip_fails_loud_on_undecodable_run_config PASSED"
+          "evidence": "test_skipped_tracking.py::TestD4KeysOnFailures + test_audit_groups_a_d.py::test_d4_flags_fr_last_touched_in_failing_build PASSED"
+        },
+        {
+          "behavior": "AC6 apply_amendments deep=True preserves siblings; default shallow unchanged; no input mutation",
+          "disposition": "tested",
+          "evidence": "test_events_amend_deep_merge.py PASSED"
+        },
+        {
+          "behavior": "AC7 full detective audit green with D4 re-enabled (D4 pass on real event log)",
+          "disposition": "tested",
+          "evidence": "run_all audit probe: D4=pass; only pre-existing H1 (record_review_pass.py bloat, #428) remains"
+        },
+        {
+          "behavior": "Reader consistency: record_event/D4/renderers share isinstance(int) predicate; non-int no crash/divergence",
+          "disposition": "tested",
+          "evidence": "test_tests_block.py + test_skipped_tracking.py non-int cases PASSED"
+        },
+        {
+          "behavior": "Finding 2/3: event_amended fields.tests validated; corrupt block -> structured {success:false}+exit 1",
+          "disposition": "tested",
+          "evidence": "test_record_event_skipped.py::TestAmendmentTestsBlockValidation + test_main_rejects_corrupt_block_with_structured_error PASSED"
         }
       ],
       "counts": {
-        "testable": 7,
-        "tested": 7,
+        "testable": 11,
+        "tested": 11,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 6,
-        "covered_acs": 6
+        "acs": 7,
+        "covered_acs": 7
       }
     }
   },

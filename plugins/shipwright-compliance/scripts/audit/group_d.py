@@ -11,7 +11,9 @@ test-traceability manifest) against the project's spec table FRs (via
 - D2 — Stale FR reference: ``affected_frs`` FR-IDs not in the current spec. MEDIUM.
 - D3 — Promised FR (``new_frs``) never delivered: no tested mint, and no
   same-event-or-later ``affected_frs``. MEDIUM.
-- D4 — Latest covering event has ``tests.passed < tests.total``. LOW.
+- D4 — Latest covering event landed in a FAILING build. Keys on genuine failures
+  (``total - passed - skipped``), not the raw gap — a gap without an explicit
+  ``tests.skipped`` count is host-gated skips, not failures. LOW.
 - D5 — FEATURE/CHANGE iterate event with no FR linkage and no ``spec_impact=none``. MEDIUM.
 - D-orphan / D-layer — manifest-driven (see ``_group_d_traceability``): a test tagged with
   a removed/absent FR; an active FR missing an executed-passing test at a required layer.
@@ -230,11 +232,25 @@ def _check_d3(
 # ---------------------------------------------------------------------------
 
 
+def _failed_count(passed: int, total: int, skipped: object) -> int:
+    """Genuine failures in a work_completed tests block (``total`` counts
+    passed+failed+skipped). Explicit int skipped → ``max(0, total-passed-skipped)``;
+    absent/non-int (every legacy event) → 0, charitable to a green-at-merge gap —
+    what stops D4 false-flagging host-gated skips (iterate-2026-07-23-tests-skipped).
+    Shares the ``isinstance(int)`` predicate with test_evidence + the dashboard."""
+    if isinstance(skipped, int):
+        return max(0, total - passed - skipped)
+    return 0
+
+
 def _check_d4(
     spec_frs: list[drift_parsers.FunctionalRequirement],
     events: list[dict] | None,
 ) -> tuple[str, str, str, list[str]]:
-    """Check that each spec FR's latest covering event has tests.passed >= total.
+    """Flag each spec FR whose latest covering event landed in a FAILING build.
+
+    Keys on genuine failures (``_failed_count``), not the raw passed/total gap —
+    a gap without an explicit skip count is host-gated skips, not a failing build.
 
     Design choice: only ``work_completed`` events are considered as
     "covering" (the test_run / phase_completed event types don't carry
@@ -269,7 +285,7 @@ def _check_d4(
     if not latest_event_for:
         return "skip", "LOW", "no FR has a covering event yet", []
 
-    failing: list[tuple[str, int, int]] = []
+    failing: list[tuple[str, int, int, int]] = []
     for fr_id, ev in latest_event_for.items():
         tests = ev.get("tests")
         if not isinstance(tests, dict):
@@ -278,18 +294,19 @@ def _check_d4(
         total = tests.get("total")
         if not isinstance(passed, int) or not isinstance(total, int):
             continue
-        if passed < total:
-            failing.append((fr_id, passed, total))
+        failed = _failed_count(passed, total, tests.get("skipped"))
+        if failed > 0:
+            failing.append((fr_id, passed, total, failed))
 
     if not failing:
         return "pass", "LOW", "every covered FR's latest event passed its tests", []
 
     failing.sort()
-    head = ", ".join(f"{fr_id} ({p}/{t})" for fr_id, p, t in failing[:3])
+    head = ", ".join(f"{fr_id} ({p}/{t}, {f} failed)" for fr_id, p, t, f in failing[:3])
     if len(failing) > 3:
         head += f", … (+{len(failing) - 3})"
     detail = f"FRs last touched in failing builds — {head}"
-    evidence = [f"{fr_id}: {p}/{t} passed" for fr_id, p, t in failing]
+    evidence = [f"{fr_id}: {f} failed ({p}/{t} passed)" for fr_id, p, t, f in failing]
     return "fail", "LOW", detail, evidence
 
 

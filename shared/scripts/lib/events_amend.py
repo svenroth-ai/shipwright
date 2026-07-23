@@ -17,11 +17,35 @@ from __future__ import annotations
 from typing import Any
 
 
-def apply_amendments(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _deep_merge(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
+    """Recursively overlay ``overlay`` onto ``base`` (both dicts).
+
+    A key that is a dict in BOTH is merged recursively; any other ``overlay``
+    value replaces ``base``'s. Returns a new dict — neither input is mutated.
+    """
+    out = dict(base)
+    for k, v in overlay.items():
+        if isinstance(v, dict) and isinstance(out.get(k), dict):
+            out[k] = _deep_merge(out[k], v)
+        else:
+            out[k] = v
+    return out
+
+
+def apply_amendments(
+    events: list[dict[str, Any]], *, deep: bool = False,
+) -> list[dict[str, Any]]:
     """Overlay ``event_amended`` fields onto their target events.
 
     Amendment entries are removed from the result; their ``fields`` merge onto
     the event whose ``id`` matches ``amends`` (last amendment wins per target).
+
+    ``deep`` (default ``False``): the merge is SHALLOW — a nested object in
+    ``fields`` REPLACES the prior value wholesale, so ``{"tests": {"passed": 5}}``
+    silently drops sibling keys such as ``tests.e2e_run`` / ``tests.skipped``.
+    Pass ``deep=True`` to merge nested dicts recursively, so an amendment
+    correcting one sub-field preserves the untouched siblings. The default stays
+    shallow for byte-identical back-compat with every existing caller.
     """
     amendments: dict[Any, dict] = {}
     for e in events:
@@ -33,6 +57,7 @@ def apply_amendments(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if e.get("type") == "event_amended":
             continue
         if e.get("id") in amendments:
-            e = {**e, **amendments[e["id"]]}
+            overlay = amendments[e["id"]]
+            e = _deep_merge(e, overlay) if deep else {**e, **overlay}
         result.append(e)
     return result

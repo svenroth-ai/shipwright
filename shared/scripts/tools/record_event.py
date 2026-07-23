@@ -36,6 +36,9 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.events_log import resolve_events_path  # noqa: E402
+# Shared skip-vs-fail SSOT (top-level, not under lib/, so the compliance plugin
+# can import it too without a lib-namespace collision — ADR-045).
+from tests_block import validate_tests_block  # noqa: E402
 # Re-export the single tolerant event-log reader (SSOT in lib.config) so module
 # attributes `record_event.read_events` / `from record_event import read_events`
 # keep resolving for callers and the F14 lifecycle test. Direction tools->lib.
@@ -206,8 +209,11 @@ def build_event(args: argparse.Namespace) -> dict:
             tests["new"] = args.tests_new
         if args.tests_modified is not None:
             tests["modified"] = args.tests_modified
+        if args.tests_skipped is not None:
+            tests["skipped"] = args.tests_skipped
         if args.e2e_run is not None:
             tests["e2e_run"] = args.e2e_run
+        validate_tests_block(tests)
         if tests:
             event["tests"] = tests
         # FRs
@@ -328,7 +334,13 @@ def build_event(args: argparse.Namespace) -> dict:
     elif args.type == "event_amended":
         event["amends"] = args.amends
         if args.fields:
-            event["fields"] = json.loads(args.fields)
+            fields = json.loads(args.fields)
+            # An amendment correcting `tests` bypasses the --tests-* flag guards
+            # and folds onto the target via apply_amendments; validate the block
+            # here so the invariant holds on EVERY supported write route.
+            if isinstance(fields.get("tests"), dict):
+                validate_tests_block(fields["tests"])
+            event["fields"] = fields
 
     elif args.type == "compliance_update_failed":
         if args.phase:
@@ -596,6 +608,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--tests-total", type=int, help="Tests total count")
     p.add_argument("--tests-new", type=int, help="New tests added")
     p.add_argument("--tests-modified", type=int, help="Tests modified")
+    p.add_argument("--tests-skipped", type=_non_negative_int,
+                   help="Host-gated skips folded into --tests-total (e.g. a "
+                        "symlink guard that degrades to skip on Windows). Lets D4 "
+                        "and the test-evidence report separate skips from genuine "
+                        "failures rather than reading the passed/total gap.")
     p.add_argument("--e2e-run", type=lambda x: x.lower() == "true", help="E2E tests run (true/false)")
 
     # Review
@@ -635,7 +652,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
     # event_amended
     p.add_argument("--amends", help="ID of event to amend")
-    p.add_argument("--fields", help="JSON string of fields to override")
+    p.add_argument("--fields",
+                   help="JSON object of top-level fields to override. WARNING: "
+                        "amendments SHALLOW-merge (events_amend.apply_amendments), "
+                        "so a nested object REPLACES the prior value — "
+                        "{\"tests\":{\"passed\":5}} drops siblings like "
+                        "tests.e2e_run. Re-send the whole object, or fold via "
+                        "apply_amendments(deep=True).")
 
     # Deduplication
     p.add_argument("--deduplicate-by-commit", action="store_true",
@@ -691,7 +714,14 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     project_root = Path(args.project_root).resolve()
 
-    event = build_event(args)
+    # A corrupt tests block raises ValueError in build_event; surface it as the
+    # same structured {"success": false} + exit 1 the FR gates use (not a traceback).
+    try:
+        event = build_event(args)
+    except ValueError as exc:
+        print(json.dumps({"success": False, "error": "invalid_event",
+                          "detail": str(exc)}, indent=2))
+        return 1
 
     # Iterate C.1 FR-gate (ADR-059): every iterate work_completed event
     # must either name the FRs it touched or classify as

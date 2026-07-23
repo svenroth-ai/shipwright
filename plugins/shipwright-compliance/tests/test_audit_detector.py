@@ -254,10 +254,14 @@ def test_framework_audit_config_disables_expected_checks():
     repo_root = PLUGIN_ROOT.parent.parent
     cfg_path = repo_root / "audit_config.json"
     cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
-    # BP-1 re-enabled D1: all-time coverage + the FR backfill make it pass
-    # honestly, so it is no longer suppressed (D4 stays disabled — its stale
-    # latest-covering-snapshot reason still holds).
-    assert set(cfg["disabled_checks"]) == {"A5.6", "B7", "D4", "G2"}
+    # BP-1 re-enabled D1 (all-time coverage + FR backfill make it pass honestly).
+    # iterate-2026-07-23-tests-skipped-tracking re-enabled D4: its stale-snapshot
+    # reason was rooted in D4 reading a passed/total gap (host-gated skips) as a
+    # failing build; D4 now keys on genuine failures, so it passes honestly and no
+    # longer needs suppression.
+    assert set(cfg["disabled_checks"]) == {"A5.6", "B7", "G2"}
     assert "D1" not in cfg["disabled_checks"]
+    assert "D4" not in cfg["disabled_checks"]
+    assert "_d4_reenabled" in cfg  # the reversal is documented
     # Every disabled check carries a documented reason.
     assert set(cfg["disabled_checks"]) <= set(cfg["_disabled_checks_reasons"])

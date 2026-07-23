@@ -14,7 +14,7 @@ Group D — Event-log FR coverage:
 - D3: FRs minted via ``new_frs`` on an event that recorded no test totals and
   never named since in any same-event-or-later ``affected_frs``. The tested-mint
   delivery rule lives in ``test_audit_d_mint_coverage.py``.
-- D4: most recent covering event has ``tests.passed < tests.total``
+- D4: most recent covering event landed in a failing build (real failures only)
 
 Epoch floor (D2 only since BP-1): the latest event carrying a ``spec_updated``
 field acts as a watermark — older events are excluded so a renamed FR doesn't
@@ -670,7 +670,7 @@ def test_d4_flags_fr_last_touched_in_failing_build(tmp_path):
     _events(tmp_path / "shipwright_events.jsonl", [
         {"type": "work_completed", "ts": "2026-04-01T00:00:00+00:00",
          "affected_frs": ["FR-01.01"],
-         "tests": {"passed": 8, "total": 10}},
+         "tests": {"passed": 6, "total": 10, "skipped": 2}},  # explicit → 2 real failures
     ])
     findings = group_d.run(tmp_path, _default_config(), None)
     d4 = next(f for f in findings if f.check_id == "D4")
