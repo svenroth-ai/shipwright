@@ -744,6 +744,13 @@
       "adr": null
     },
     {
+      "path": "shared/scripts/tools/verifiers/design_checks.py",
+      "limit": 300,
+      "current": 342,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/scripts/tools/verifiers/infrastructure_checks.py",
       "limit": 300,
       "current": 314,
@@ -1076,6 +1083,13 @@
       "path": "shared/tests/test_verifiers_common.py",
       "limit": 300,
       "current": 507,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/tests/test_verifiers_design.py",
+      "limit": 300,
+      "current": 450,
       "state": "grandfathered",
       "adr": null
     },

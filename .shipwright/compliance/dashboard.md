@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-07-23T07:18:55.135867+00:00
+Generated: 2026-07-23T06:42:44.137080+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -13,7 +13,7 @@ Scope: library
 | | Dimension | Signal | Anchor |
 |---|-----------|--------|--------|
 | ✅ | Requirement traceability | 15/15 FRs covered; 356/356 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
-| ✅ | Test health | latest full suite 6230/6242 (2026-07-23) | automated tests pass (OpenSSF Scorecard) |
+| ✅ | Test health | latest full suite 6452/6452 (2026-07-21) | automated tests pass (OpenSSF Scorecard) |
 | ✅ | Change traceability | 356/356 changes linked to a commit, ADR or test run | change provenance (SLSA) |
 | ⚠️ | Change reconciliation | 4/8 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
 | ⚠️ | Security | 2 open high/critical | no open high/critical vulns (NIST SSDF) |
@@ -28,7 +28,7 @@ _Grade = importance-weighted average over the measurable dimensions (n/a exclude
 
 ## 🛡️ CI Security (fail-closed gate)
 
-Latest scan: **2026-07-23** · source `security.yml#29986438690` · critical-gate **✅ PASS**
+Latest scan: **2026-07-23** · source `security.yml#29983214264` · critical-gate **✅ PASS**
 
 | Severity | Count |
 |----------|-------|
@@ -55,15 +55,15 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
 | Work events (iterate) | 356 changes | INFO |  |
-| Recent changes traced to an FR | 9/30 (30%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
-| All unit tests passing | 6230/6242 | WARN | 12/6242 not green in last full suite — see test-evidence.md |
+| Recent changes traced to an FR | 8/30 (27%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
+| All unit tests passing | 6452/6452 | PASS | +2 change(s) since last full suite |
 | Architecture decisions | 328 ADRs | INFO |  |
-| Iterate tests passing | 52/66 testable changes tested | WARN | 14 testable change(s) without tests — see test-evidence.md |
+| Iterate tests passing | 51/65 testable changes tested | WARN | 14 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 11 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 16 open | WARN | 16 actionable item(s) — see ../agent_docs/triage_inbox.md |
-| Bloat over-limit (grandfathered) | 124 | INFO |  |
-| Bloat in allowlist | 157 entries | INFO |  |
+| Triage open | 15 open | WARN | 15 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Bloat over-limit (grandfathered) | 128 | INFO |  |
+| Bloat in allowlist | 159 entries | INFO |  |
 | Bloat ratchet delta | +0 lines | PASS |  |
 
 ## Project Velocity

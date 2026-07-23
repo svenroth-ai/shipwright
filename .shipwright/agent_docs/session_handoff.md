@@ -1,43 +1,44 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-23-tests-skipped-tracking"
+run_id: "iterate-2026-07-23-design-verifier-skip-no-design-phase"
 phase: "iterate"
-reason: "iterate: first-class tests.skipped tracking + failure-keyed D4"
-timestamp: "2026-07-23T07:19:01.071907+00:00"
+reason: "iterate: design verifier skips projects that never ran the design phase"
+timestamp: "2026-07-23T06:42:49.892025+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-23 07:19:01 UTC
+> Auto-generated 2026-07-23 06:42:49 UTC
 
 ## Session Info
 
-- **Session ID**: 415d4494-2dda-49f1-9932-c8f88974b90c
-- **Timestamp**: 2026-07-23 07:19:01 UTC
-- **Reason**: iterate: first-class tests.skipped tracking + failure-keyed D4
+- **Session ID**: 87d8313b-edaf-40fb-a9cd-fa245de13788
+- **Timestamp**: 2026-07-23 06:42:49 UTC
+- **Reason**: iterate: design verifier skips projects that never ran the design phase
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-23-tests-skipped-tracking
-- **Date**: 2026-07-23T07:18:55.049539Z
-- **Type**: change
+- **Run ID**: iterate-2026-07-23-design-verifier-skip-no-design-phase
+- **Date**: 2026-07-23T06:42:44.043018Z
+- **Type**: bug
 - **Complexity**: medium
-- **Branch**: iterate/tests-skipped-tracking
-- **ADR**: iterate-2026-07-23-tests-skipped-tracking
+- **Branch**: iterate/design-verifier-skip-no-design-phase
+- **ADR**: iterate-2026-07-23-design-verifier-skip-no-design-phase
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-23-tests-skipped-tracking.md
+- **Spec**: .shipwright/planning/iterate/2026-07-23-design-verifier-skip-no-design-phase.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/tests-skipped-tracking
-- **Run ID**: `iterate-2026-07-23-tests-skipped-tracking`
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-23-tests-skipped-tracking.md
-- **Complexity**: medium (classifier: `estimate=medium`, `prior_source=keyword`, no risk flags)
+- **Branch**: iterate/design-verifier-skip-no-design-phase
+- **Run ID**: `iterate-2026-07-23-design-verifier-skip-no-design-phase`
+- **Spec**: .shipwright/planning/iterate/2026-07-23-design-verifier-skip-no-design-phase.md
+- **Complexity**: medium
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -51,7 +52,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/tests-skipped-tracking
+- **Branch**: iterate/design-verifier-skip-no-design-phase
 - **Last Commit**: 578370ca feat(iterate): record what every review pass found, per run (FR-01.11) (#428)
 - **Uncommitted Changes**: Yes
 
@@ -68,8 +69,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-f8f0c714 | grade_snapshot | — | 2026-07-23 |
-| evt-3a175bfa | work_completed | iterate (First-class tests.skipped tracking: --tests-skipped flag + shared tests_block SSOT; D4 keys on genuine failures (charitable when absent) and is re-enabled; test-evidence + dashboard disclose skips; apply_amendments deep-merge opt-in.) | 2026-07-23 |
+| evt-26334e90 | grade_snapshot | — | 2026-07-23 |
+| evt-a8a0f759 | work_completed | iterate (design verifier C1 skips projects that never ran the design phase) | 2026-07-23 |
 | evt-e4740235 | grade_snapshot | — | 2026-07-22 |
 | evt-83ddad20 | grade_snapshot | — | 2026-07-21 |
 | evt-8e3b71af | grade_snapshot | — | 2026-07-21 |
@@ -78,7 +79,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 356
-- **Last iterate**: change — First-class tests.skipped tracking: --tests-skipped flag + shared tests_block SSOT; D4 keys on genuine failures (charitable when absent) and is re-enabled; test-evidence + dashboard disclose skips; apply_amendments deep-merge opt-in. (2026-07-23)
+- **Last iterate**: bug — design verifier C1 skips projects that never ran the design phase (2026-07-23)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

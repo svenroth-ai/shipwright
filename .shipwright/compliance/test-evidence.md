@@ -1,20 +1,20 @@
 # Test Evidence Report
 
-Generated: 2026-07-23T07:18:55.135867+00:00
+Generated: 2026-07-23T06:42:44.137080+00:00
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 356 |
-| Total unit tests (latest full suite) | 6230/6242 (2026-07-23) |
+| Total unit tests (latest full suite) | 6452/6452 (2026-07-21) |
 | New tests from iterations | +220 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | Record how many tests were skipped so a green run with host-gated skips is no longer mistaken for a failing build, and switch the audit's failing-build check back on. | [iterate](traceability-matrix.md#evt-3a175bfa) | unit | +0 | 6230/6242 | PASS (12 skipped) | 2026-07-23 |
+| 1 | The automated design check no longer flags a false problem for projects that were adopted into Shipwright and never went through the design/mockup step. | [iterate](traceability-matrix.md#evt-a8a0f759) | unit | +0 | 26/26 | PASS | 2026-07-23 |
 | 2 | Closed the high-severity brace-expansion denial-of-service advisory (CVE-2026-13149) by updating that dependency to a patched version in the performance-test tooling's lockfile. | [iterate](traceability-matrix.md#evt-6406a8db) | — | +0 | — | — | 2026-07-21 |
 | 3 | normalize the inline dynamic import to clear a benign prompt-scan finding | [iterate](traceability-matrix.md#evt-8f7e1649) | — | +0 | — | — | 2026-07-21 |
 | 4 | reconcile compliance D1/D3 (FR-01.15 mint coverage) + H2 bloat ratchet | [iterate](traceability-matrix.md#evt-6a61ac10) | unit | +0 | 6452/6452 | PASS | 2026-07-21 |
@@ -406,7 +406,7 @@ _Synthesized from per-iterate **unit** results — Integration / pgTAP / E2E / S
 | 27 | iterate | 5/5 | — | — | — | — | 2026-07-20 |
 | 28 | iterate | 4708/4708 | — | — | — | — | 2026-07-20 |
 | 29 | iterate | 6452/6452 | — | — | — | — | 2026-07-21 |
-| 30 | iterate | 6230/6242 | — | — | — | — | 2026-07-23 |
+| 30 | iterate | 26/26 | — | — | — | — | 2026-07-23 |
 
 ## Code Review Evidence
 
