@@ -1,14 +1,14 @@
 # Commit Change Log
 
 Generated: 2026-07-23T14:30:38.425746+00:00
-Total commits: 1196
+Total commits: 1198
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 346
-    "feat" : 331
+    "fix" : 347
+    "feat" : 332
     "chore" : 247
     "docs" : 146
     "refactor" : 75
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 346 commits
+### Fixes (fix) — 347 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-23 | deps | bump pyasn1 0.6.3 -> 0.6.4 (CVE-2026-59885, CVE-2026-59886) (#432) | 9ffbae764acd |
 | 2026-07-23 | compliance | design verifier C1 skips projects that never ran the design phase (#429) | c841751a7a8e |
 | 2026-07-22 | compliance | count a tested mint as coverage and delivery (D1/D3) + tighten bloat ratchet (H2) (#427) | 4a93b8a7c023 |
 | 2026-07-22 | security | bump brace-expansion to 2.1.2 to close CVE-2026-13149 (#425) | b104974978da |
@@ -371,10 +372,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 331 commits
+### Features (feat) — 332 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-23 | shared | shared requirement-elicitation method + FR-01.16 (REQ-3 Phase 1) (#431) | 601fafe55276 |
 | 2026-07-23 | compliance | track skipped tests as a first-class field; key D4 on genuine failures (FR-01.10) (#430) | 355681bdcd4e |
 | 2026-07-23 | iterate | record what every review pass found, per run (FR-01.11) (#428) | 578370ca2e9b |
 | 2026-07-20 | iterate | extend the CI supply-chain ack gate to shipped CI templates (#417) | c6975f4e612c |
@@ -1265,7 +1267,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1196 |
+| Total commits | 1198 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1196 |
+| Human-authored commits | 1198 |
 
