@@ -1,129 +1,305 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-21-fr0115-coverage-bloat",
+    "run_id": "iterate-2026-07-21-codescanning-alert-cleanup",
     "date": "2026-07-21",
-    "intent": "change",
-    "complexity": "medium",
     "unit": {
-      "passed": 6035,
-      "total": 6035,
       "status": "passed",
-      "note": "Full fresh suites at F0: shipwright-compliance 1305 passed / 1 skipped; shared 4730 passed / 15 skipped / 20 deselected. ruff@0.15.15 clean. anti_ratchet_check --worktree: status ok, no ratchets, no stale entries, no new crossings."
+      "passed": 6023,
+      "total": 6023
     },
     "integration": {
-      "passed": 417,
-      "total": 417,
       "status": "passed",
-      "note": "integration-tests/ green (417 passed, 2 deselected)."
+      "passed": 417,
+      "total": 417
     },
     "pgtap": {
-      "status": "n/a"
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "e2e": {
-      "status": "passed",
-      "note": "Producer surface: the real Group-D reader was run against the real 505-event log via the actual audit entry point (group_d.run), not a replica. D1 pass, D2 pass, D3 pass, D5 pass — D1/D3 flipped fail->pass, which is the whole point of the change."
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "design_fidelity": {
-      "status": "n/a"
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "smoke": {
-      "status": "n/a"
+      "status": "not_run"
     },
+    "degraded": [],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run python probe_d.py plugins/shipwright-compliance .",
-      "tests_run": 4,
+      "runner": "uv run --with pytest pytest shared/tests/test_record_review_pass_cli.py shared/tests/test_review_record_gate.py -v",
       "exit_code": 0,
-      "timestamp": "2026-07-21T00:00:00+00:00",
-      "justification": "The user-facing surface of this change IS the audit verdict a maintainer reads. The runner drives the real group_d.run() over the real event log (amendments folded) and reports all four D-checks; a unit fixture could not show that FR-01.15 specifically stops being flagged."
+      "tests_run": 42,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\review-record\\.shipwright\\runs\\iterate-2026-07-21-review-record\\surface_verification.log",
+      "timestamp": "2026-07-21T23:26:43.665Z",
+      "attempts": 1
     },
-    "degraded": [
-      {
-        "condition": "triage sweep-outbox reported protected_status_unplaceable for trg-b1dda91d and trg-16d374e1 at worktree setup",
-        "impact": "none on this change",
-        "detail": "Local main is behind origin, so two triage status appends in main's tracked log are unreachable from this branch. Pre-existing and unrelated to D1/D3/H2; resolved by delivering main (git merge origin/main), not by this iterate."
-      }
-    ],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "D1 counts a tested mint (new_frs) as coverage",
+          "behavior": "AC2 the record materializes all five review types as pending",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_audit_d_mint_coverage.py::test_d1_counts_a_tested_mint_as_coverage PASSED"
+          "evidence": "test_review_record.py::test_new_record_materializes_all_five_types_as_pending PASSED"
         },
         {
-          "behavior": "D1 refuses an untested mint (TT2 tests.total>0 hardening intact)",
+          "behavior": "AC1 findings_count is derived from findings, never supplied",
           "disposition": "tested",
-          "evidence": "…::test_d1_does_not_count_an_untested_mint_as_coverage PASSED"
+          "evidence": "test_review_record.py::test_findings_count_is_derived_not_supplied PASSED"
         },
         {
-          "behavior": "D3 counts a tested mint as delivery",
+          "behavior": "AC3 an upsert onto a terminal status is rejected (all 3 terminal statuses)",
           "disposition": "tested",
-          "evidence": "…::test_d3_counts_a_tested_mint_as_delivery PASSED (also pins the finding text)"
+          "evidence": "test_review_record.py::test_upsert_onto_terminal_status_is_rejected[3 params] PASSED"
         },
         {
-          "behavior": "D3 still flags an untested mint, so the check is not vacuous",
+          "behavior": "AC3 --force overrides the immutability guard",
           "disposition": "tested",
-          "evidence": "…::test_d3_does_not_count_an_untested_mint_as_delivery + test_audit_groups_a_d.py::test_d3_still_flags_new_fr_with_no_covering_affected PASSED"
+          "evidence": "test_review_record.py::test_force_overrides_the_immutability_guard PASSED"
         },
         {
-          "behavior": "The manifest link proof still drops an explicit-provenance minted FR with no passing link",
+          "behavior": "AC3 a rejected upsert leaves the file byte-identical",
           "disposition": "tested",
-          "evidence": "…::test_d1_still_drops_an_explicit_fr_without_a_passing_link PASSED — added on review; failed twice first (schema v1, then collector_version as int) because load_manifest is fail-closed"
+          "evidence": "test_review_record.py::test_rejected_upsert_leaves_the_file_byte_identical PASSED"
         },
         {
-          "behavior": "An ineligible event type (not work_completed) covers/delivers nothing",
+          "behavior": "AC2/O5 schema validation rejects missing, unknown, key-mismatched, bad-status, count-mismatch, blank/generic-disposition, foreign run_id and future schema_version",
           "disposition": "tested",
-          "evidence": "…::test_an_ineligible_event_type_never_covers_or_delivers PASSED"
+          "evidence": "test_review_record.py 9 validation tests PASSED"
         },
         {
-          "behavior": "Documented asymmetry: the affected_frs path carries no test gate",
+          "behavior": "Security: run_id must be a single safe path component (traversal + absolute)",
           "disposition": "tested",
-          "evidence": "…::test_affected_frs_path_has_no_test_gate PASSED"
+          "evidence": "test_review_record.py::test_record_dir_refuses_an_unsafe_run_id[10 hostile inputs] PASSED"
         },
         {
-          "behavior": "Documented asymmetry: the tests guard is per-event, not per-FR",
+          "behavior": "AC9 init is create-if-absent, never clobbers a populated record, fails on a corrupt one",
           "disposition": "tested",
-          "evidence": "…::test_guard_is_per_event_not_per_fr PASSED"
+          "evidence": "test_review_record.py::test_init_* (3) PASSED"
         },
         {
-          "behavior": "A non-dict tests value does not crash D1/D3",
+          "behavior": "read_record raises on corrupt/schema-invalid rather than reporting absence",
           "disposition": "tested",
-          "evidence": "…::test_non_dict_tests_does_not_crash_the_checks PASSED"
+          "evidence": "test_review_record.py::test_read_record_raises_on_a_schema_invalid_file PASSED"
         },
         {
-          "behavior": "The evt-edcf1064 overlay patches only tests; ts/new_frs/identity intact",
+          "behavior": "AC4 round-trip fidelity: newlines, both quote chars, non-ASCII, emoji, null severity, cap-length text",
           "disposition": "tested",
-          "evidence": "…::test_a_tests_only_amendment_preserves_classification_and_timestamp PASSED"
+          "evidence": "test_review_record_roundtrip.py::test_record_survives_a_round_trip_unchanged + test_findings_survive_verbatim PASSED"
         },
         {
-          "behavior": "Five bloat-baseline entries tightened; none loosened",
+          "behavior": "AC4 serialization is stable (re-write is byte-identical) and UTF-8 with a trailing newline",
           "disposition": "tested",
-          "evidence": "anti_ratchet_check --worktree -> status ok, stale [], new_crossings []; the update script refuses any value above origin/main's recorded number"
+          "evidence": "test_review_record_roundtrip.py::test_a_second_write_is_byte_identical + test_the_file_is_utf8_json_with_a_trailing_newline PASSED"
         },
         {
-          "behavior": "D3 body extraction to _group_d_promise is behavior-preserving",
+          "behavior": "Cross-repo contract: the on-disk key names are pinned",
+          "disposition": "tested",
+          "evidence": "test_review_record_roundtrip.py::test_the_on_disk_shape_matches_the_pinned_consumer_contract PASSED"
+        },
+        {
+          "behavior": "AC1 the code-reviewer adapter maps its native shape",
+          "disposition": "tested",
+          "evidence": "test_review_findings.py::test_from_code_reviewer_maps_its_native_shape PASSED"
+        },
+        {
+          "behavior": "AC1 the doubt-reviewer adapter keeps both claim and disproof",
+          "disposition": "tested",
+          "evidence": "test_review_findings.py::test_from_doubt_reviewer_maps_lens_and_disproof PASSED"
+        },
+        {
+          "behavior": "AC1 the self-review adapter records only failures and leaves severity null",
+          "disposition": "tested",
+          "evidence": "test_review_findings.py::test_from_self_review_records_only_the_failures + ..._leaves_severity_null_rather_than_inventing_one PASSED"
+        },
+        {
+          "behavior": "AC11 empty native payloads are clean reviews, not errors",
+          "disposition": "tested",
+          "evidence": "test_review_findings.py 3 empty-payload tests PASSED"
+        },
+        {
+          "behavior": "A missing native result array is malformed, not a clean review",
+          "disposition": "tested",
+          "evidence": "test_review_findings.py::test_a_missing_result_array_is_malformed_not_a_clean_review[4 shapes] PASSED"
+        },
+        {
+          "behavior": "Element-level loss is refused: an item with no usable finding text cannot record as clean",
+          "disposition": "tested",
+          "evidence": "test_review_findings.py::test_element_level_loss_is_refused_not_recorded_as_clean[4 shapes] + test_from_code_reviewer_refuses_an_item_with_no_finding_text PASSED"
+        },
+        {
+          "behavior": "An oversized payload is rejected, not silently truncated",
+          "disposition": "tested",
+          "evidence": "test_review_findings.py::test_an_oversized_native_payload_is_rejected_not_truncated PASSED"
+        },
+        {
+          "behavior": "Shortened finding text is explicitly marked as truncated",
+          "disposition": "tested",
+          "evidence": "test_review_findings.py::test_a_long_finding_is_marked_when_shortened PASSED"
+        },
+        {
+          "behavior": "AC5 external prose splits in all three observed layouts",
+          "disposition": "tested",
+          "evidence": "test_review_findings.py::test_external_prose_splits_into_one_finding_per_item[3 layouts] PASSED"
+        },
+        {
+          "behavior": "AC5 a category-less layout still splits into findings",
+          "disposition": "tested",
+          "evidence": "test_review_findings.py::test_a_category_less_layout_still_splits_into_findings PASSED"
+        },
+        {
+          "behavior": "AC5 trailing prose is not glued onto the last finding",
+          "disposition": "tested",
+          "evidence": "test_review_findings.py::test_trailing_prose_is_not_glued_onto_the_last_finding PASSED"
+        },
+        {
+          "behavior": "The prompt-mandated File:line label yields a usable path (real gemini string as fixture)",
+          "disposition": "tested",
+          "evidence": "test_review_findings.py::test_the_mandated_file_line_label_yields_a_usable_path PASSED"
+        },
+        {
+          "behavior": "Severity is read from the leading token, never scanned for as a substring",
+          "disposition": "tested",
+          "evidence": "test_review_findings.py::test_severity_is_read_from_the_leading_token_not_scanned_for[7 cases] PASSED"
+        },
+        {
+          "behavior": "AC5 a clean external review yields zero findings, never one fabricated one",
+          "disposition": "tested",
+          "evidence": "test_review_findings.py::test_a_clean_external_review_yields_zero_findings_not_one_fabricated_one PASSED"
+        },
+        {
+          "behavior": "AC5 unparseable prose is flagged, not silently called clean",
+          "disposition": "tested",
+          "evidence": "test_review_findings.py::test_unparseable_prose_is_flagged_rather_than_silently_called_clean PASSED"
+        },
+        {
+          "behavior": "AC1 payload hand-over accepts raw JSON and a ```json-fenced agent reply",
+          "disposition": "tested",
+          "evidence": "test_review_findings.py::test_extract_json_payload_* (5) PASSED"
+        },
+        {
+          "behavior": "A leg that fails to parse makes the merge partial and its raw text survives",
+          "disposition": "tested",
+          "evidence": "test_record_review_pass_cli.py::test_a_leg_that_fails_to_parse_makes_the_merge_partial PASSED"
+        },
+        {
+          "behavior": "A provider that errored counts toward the parse denominator",
+          "disposition": "tested",
+          "evidence": "test_record_review_pass_cli.py::test_a_provider_that_errored_counts_toward_the_denominator PASSED"
+        },
+        {
+          "behavior": "An unitemizable review cannot reach the marker as a clean zero",
+          "disposition": "tested",
+          "evidence": "test_record_review_pass_cli.py::test_an_unitemizable_review_does_not_reach_the_marker_as_a_clean_zero PASSED"
+        },
+        {
+          "behavior": "AC6 the F11 gate passes when all five are terminal; fails on pending, missing, corrupt, schema-invalid, foreign run_id",
+          "disposition": "tested",
+          "evidence": "test_review_record_gate.py 8 gate tests PASSED"
+        },
+        {
+          "behavior": "AC6 the gate skips at trivial and on unknown complexity, applies from small upwards",
+          "disposition": "tested",
+          "evidence": "test_review_record_gate.py::test_skips_at_trivial_complexity + test_applies_from_small_upwards[3] + test_skips_when_the_complexity_is_unknown PASSED"
+        },
+        {
+          "behavior": "AC6 the failure message lists every outstanding type and the exact command",
+          "disposition": "tested",
+          "evidence": "test_review_record_gate.py::test_the_failure_message_lists_every_outstanding_type PASSED"
+        },
+        {
+          "behavior": "The record must be IN THE COMMIT when tracked, not merely in the worktree (real git repos)",
+          "disposition": "tested",
+          "evidence": "test_review_record_gate.py::test_a_tracked_record_missing_from_the_commit_fails + test_a_committed_record_passes + test_an_untracked_record_skips_the_committed_assertion + test_no_commit_supplied_skips_the_committed_assertion PASSED"
+        },
+        {
+          "behavior": "AC7 markers are dual-written (shared + run-scoped); internal types get none",
+          "disposition": "tested",
+          "evidence": "test_record_review_pass_cli.py::test_a_plan_record_dual_writes_the_legacy_marker + test_a_marker_is_not_written_for_an_internal_type PASSED"
+        },
+        {
+          "behavior": "AC7 W2 status-checks the run-scoped marker, does not launder a bad one via the shared file, and does not regress the historic layout",
+          "disposition": "tested",
+          "evidence": "test_w2_run_scoped_marker.py 7 tests PASSED"
+        },
+        {
+          "behavior": "--marker-status is validated, required when recording a marker type as completed, and required with --force",
+          "disposition": "tested",
+          "evidence": "test_record_review_pass_cli.py::test_an_out_of_vocabulary_marker_status_is_rejected + test_recording_a_marker_type_as_completed_requires_a_marker_status + test_a_not_applicable_marker_type_needs_no_marker_status + test_a_forced_correction_must_also_restate_the_marker PASSED"
+        },
+        {
+          "behavior": "A restatement is rejected (exit 3), not answered with a success repair",
+          "disposition": "tested",
+          "evidence": "test_record_review_pass_cli.py::test_a_restatement_is_rejected_not_answered_with_success PASSED"
+        },
+        {
+          "behavior": "Marker repair rewrites the marker without touching the record; re-running the original command repairs",
+          "disposition": "tested",
+          "evidence": "test_record_review_pass_cli.py::test_repair_markers_* (3) + test_re_running_a_marker_bearing_record_repairs_instead_of_dead_ending PASSED"
+        },
+        {
+          "behavior": "AC3 the CLI exits 3 on immutability and leaves the file byte-identical",
+          "disposition": "tested",
+          "evidence": "test_record_review_pass_cli.py::test_re_recording_a_terminal_type_exits_3 PASSED"
+        },
+        {
+          "behavior": "AC2 a blank or generic disposition is rejected",
+          "disposition": "tested",
+          "evidence": "test_record_review_pass_cli.py::test_a_generic_disposition_is_rejected PASSED"
+        },
+        {
+          "behavior": "AC10 close-missing unblocks a run predating the record, can be scoped with --only, leaves recorded types alone, refuses bulk 'completed' and unknown types",
+          "disposition": "tested",
+          "evidence": "test_record_review_pass_cli.py::test_close_missing_* (5) PASSED"
+        },
+        {
+          "behavior": "A not_run pass records no findings even when handed a payload",
+          "disposition": "tested",
+          "evidence": "test_record_review_pass_cli.py::test_a_not_run_pass_records_no_findings_even_with_a_payload PASSED"
+        },
+        {
+          "behavior": "Every CLI failure exits through the JSON contract (corrupt init, unsafe run_id, lock timeout)",
+          "disposition": "tested",
+          "evidence": "test_record_review_pass_cli.py::test_init_over_a_corrupt_record_reports_json_not_a_traceback + test_an_unsafe_run_id_is_reported_as_json PASSED"
+        },
+        {
+          "behavior": "mark-review-state.py behaviour is unchanged by the lib extraction",
+          "disposition": "tested",
+          "evidence": "test_mark_review_state.py 12 pre-existing tests PASSED"
+        },
+        {
+          "behavior": "The F11 happy-path audit still passes with the new gate wired in",
+          "disposition": "tested",
+          "evidence": "test_audit_e2e_integration.py 10 tests PASSED"
+        },
+        {
+          "behavior": "AC8 integration: the CLI driven across all five review types from real reviewer payload shapes produces a record the F11 gate then passes",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "test_record_review_pass_cli.py::test_recording_all_five_types_makes_the_gate_pass PASSED (subprocess-driven CLI + in-process gate)"
+        },
+        {
+          "behavior": "The prompt contract itself \u2014 an agent actually invoking record_review_pass.py at each review step (SKILL.md, iteration-reviews.md, iteration-planning.md, F11.md, F6.md, sub-iterate-runner.md)",
           "disposition": "untestable",
-          "evidence": "the 13-test D1/D3 set and the full 1305-test compliance suite pass unchanged across the move; the reviewer additionally diffed the body line-by-line against main",
-          "reason_code": "covered-by-existing-test"
-        },
-        {
-          "behavior": "FR-01.10 gains one acceptance criterion",
-          "disposition": "untestable",
-          "evidence": "requirements-corpus and FR-table-shape integration tests (417) pass against the edited catalog; spec prose has no separate executable surface",
-          "reason_code": "covered-by-existing-test"
+          "reason_code": "covered-by-existing-test",
+          "reason": "The structural half \u2014 references resolve, SKILL.md stays within its 300-line budget, no dangling links \u2014 is covered by the shipwright-iterate plugin suite (506 tests, green). Whether a model obeys an instruction is not machine-verifiable; the F11 gate is the runtime enforcement and is itself tested, including the committed-blob assertion that catches an F6 staging omission."
         }
       ],
       "counts": {
-        "total": 13,
-        "tested": 11,
-        "untestable": 2,
+        "testable": 48,
+        "tested": 48,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 6,
-        "covered_acs": 6
+        "acs": 11,
+        "covered_acs": 11
       }
     }
   },

@@ -107,6 +107,30 @@ def _seed(
         f"# Build Dashboard\nrun_id: {run_id}\n", encoding="utf-8"
     )
 
+    # review record — all five types closed, so the review-record gate is green
+    # and the block under test stays the only red flag.
+    review_dir = proj / ".shipwright" / "planning" / "iterate" / run_id
+    review_dir.mkdir(parents=True, exist_ok=True)
+    (review_dir / "reviews.json").write_text(json.dumps({
+        "schema_version": 1,
+        "run_id": run_id,
+        "reviews": {
+            review_type: {
+                "review_type": review_type,
+                "status": "completed",
+                "findings_count": 0,
+                "findings": [],
+                "provider": None,
+                "completed_at": "2026-05-06T07:00:00Z",
+                "disposition": None,
+                "recorded_by": "test-fixture",
+                "parse_status": None,
+                "raw_excerpt": None,
+            }
+            for review_type in ("self", "plan", "code", "doubt", "external_code")
+        },
+    }, indent=2), encoding="utf-8")
+
     # events.jsonl with the commit (we'll pass --commit fakeSHA)
     (proj / "shipwright_events.jsonl").write_text(
         json.dumps({"type": "work_completed", "commit": "abc123def456"}) + "\n",

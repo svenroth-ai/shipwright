@@ -120,6 +120,11 @@ Self-Review:
 Action: {Fix items X, Y before commit / All clear, proceed to commit}
 ```
 
+Then **record the pass** (`--review-type self --from self-review`) per
+"Recording each review pass" below — the same eight items as
+`{"items":[{"name","verdict","note"}]}`. At trivial and small complexity this is
+the ONLY review that runs, so it is the only thing the Review artifact can show.
+
 ---
 
 ## Full Code Review Trigger
@@ -262,19 +267,82 @@ cascade on, and vice versa.
 
 ### Write the cascade marker (all branches)
 
-```bash
-uv run "{shared_root}/scripts/checks/mark-review-state.py" \
-  --planning-dir "{iterate_planning_dir}" \
-  --review-type code \
-  --status "{completed | skipped_user_opt_out | skipped_config_disabled}" \
-  --provider "{openrouter | null}" \
-  --findings-count {N} \
-  --reason "{optional reason — e.g. 'empty_diff', 'user opted out: offline'}"
+Record the pass per **Recording each review pass** below with
+`--review-type external_code --marker-status {completed | skipped_user_opt_out |
+skipped_config_disabled}`. That writes the record AND dual-writes
+`external_code_review_state.json` — distinct from the plan/iterate-step
+`external_review_state.json`. The two markers represent independent gates and
+never collide.
+
+---
+
+## Recording each review pass (MANDATORY — F11 gate)
+
+Every review pass writes its result to the run's review record:
+
+```
+.shipwright/planning/iterate/{run_id}/reviews.json
 ```
 
-This writes `external_code_review_state.json` — distinct from the
-plan/iterate-step `external_review_state.json`. The two markers
-represent independent gates and never collide.
+Five types — `self` · `plan` · `code` · `doubt` · `external_code` — all
+materialized up front, each closed by the pass that owns it. **F11 stops the run
+while any type is still `pending`** (small+; skipped at trivial), so an empty
+Review row in the Mission view always means "genuinely not run", never "nobody
+wrote it down". The reviewers already return structured JSON; before this record
+existed it survived only as ADR prose and was thrown away.
+
+Materialize once, early in the run:
+
+```bash
+uv run "{shared_root}/scripts/tools/record_review_pass.py" init \
+  --project-root "{project_root}" --run-id "{run_id}"
+```
+
+**A pass that RAN** — write the reviewer's reply to a file verbatim (raw JSON,
+or the whole message with its ```json block; both are accepted) and hand it over:
+
+```bash
+uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
+  --project-root "{project_root}" --run-id "{run_id}" \
+  --review-type {self|plan|code|doubt|external_code} --status completed \
+  --from {self-review|code-reviewer|doubt-reviewer|external-review-json|external-prose} \
+  --payload-file "{path to the reply}" \
+  [--provider openrouter] [--marker-status completed]
+```
+
+| Pass | `--review-type` | `--from` | payload |
+|---|---|---|---|
+| Step 7 Self-Review | `self` | `self-review` | `{"items":[{"name","verdict":"pass\|fail\|n/a","note"}]}` — one entry per checklist item |
+| External plan/iterate review (Branch A) | `plan` | `external-review-json` | `external_review.py` stdout, verbatim. Add `--marker-status` |
+| Internal `code-reviewer` (Stage 2) | `code` | `code-reviewer` | the subagent's reply |
+| `doubt-reviewer` (Stage 3) | `doubt` | `doubt-reviewer` | the subagent's reply |
+| External code cascade | `external_code` | `external-review-json` | `external_review.py` stdout. Add `--marker-status` |
+
+**A pass that did NOT run** must say so and name the rule — a bare "skipped" is
+rejected:
+
+```bash
+uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
+  --project-root "{project_root}" --run-id "{run_id}" \
+  --review-type doubt --status {not_run|not_applicable} \
+  --disposition "docs-only diff; the doubt pass is conditional per iteration-reviews.md"
+```
+
+`not_applicable` when the phase matrix says the pass does not apply at this
+complexity or change shape; `not_run` when it applied but was skipped (opt-out,
+missing keys, degraded provider).
+
+**Immutable after completion.** Re-recording a closed type exits `3`; use
+`--force` only to correct a genuinely wrong record.
+
+**A run that predates this record** (mid-flight when it landed) closes
+everything still open in one command:
+
+```bash
+uv run "{shared_root}/scripts/tools/record_review_pass.py" close-missing \
+  --project-root "{project_root}" --run-id "{run_id}" \
+  --status not_run --disposition "predates the per-run review record"
+```
 
 ---
 
