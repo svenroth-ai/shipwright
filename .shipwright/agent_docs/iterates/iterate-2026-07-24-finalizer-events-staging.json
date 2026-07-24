@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-07-24-finalizer-events-staging",
+  "date": "2026-07-24T07:10:20.992889Z",
+  "type": "bug",
+  "complexity": "medium",
+  "branch": "iterate/finalizer-events-staging",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/2026-07-24-finalizer-events-staging.md",
+  "adr": "iterate-2026-07-24-finalizer-events-staging",
+  "summary": "Step 7.5 finalizer stages the full compliance write-set (events.jsonl + config + triage.jsonl), not just the MDs; corrects false idempotency claim."
+}

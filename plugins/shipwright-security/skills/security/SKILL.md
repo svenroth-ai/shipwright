@@ -350,10 +350,10 @@ here for operator awareness) when any of:
 - `os.environ.get("CI")` truthy → CI workflows don't drive interactive commits
 - `os.environ.get("SHIPWRIGHT_NON_INTERACTIVE")` truthy
 
-When `committed=true`, the new commit's body carries
-`Run-ID: security-<scan_id>` so the audit recognizes it as the new
-snapshot baseline. **Idempotent**: a re-invocation with no new
-compliance drift produces no commit.
+When `committed=true`, the commit body carries `Run-ID: security-<scan_id>`
+so the audit recognizes the new snapshot baseline. It stages the **full**
+write-set (MDs + `shipwright_events.jsonl` snapshot + config + `triage.jsonl`)
+so the tree is never left dirty; re-running is safe (a no-op only when nothing changed).
 
 ---
 
