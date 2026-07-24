@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-24-finalizer-events-staging",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-24T06:51:39.087685+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-self-review-7point",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-24T06:51:48.996562+00:00",
+      "disposition": "External plan review (GPT+Gemini) unavailable — no API keys in this environment (degraded); mini-plan self-reviewed and user-approved at the medium approval gate.",
+      "recorded_by": "degraded-no-keys",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-24T06:51:39.208081+00:00",
+      "disposition": null,
+      "recorded_by": "inline-code-review (Agent subagents disabled this session)",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-24T06:51:39.341147+00:00",
+      "disposition": null,
+      "recorded_by": "inline-doubt-review — found triage.jsonl 4th-artifact gap, drove fix",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-24T06:51:49.118376+00:00",
+      "disposition": "External code review (GPT+Gemini) unavailable — no API keys in this environment (degraded). Internal code + doubt review completed inline.",
+      "recorded_by": "degraded-no-keys",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

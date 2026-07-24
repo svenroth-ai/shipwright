@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-23 14:30 UTC | Session: 2ed3c046-002d-4496-908c-0273e0df6c66 | Run: iterate-2026-07-23-req3-elicitation-module
+> Updated: 2026-07-24 07:09 UTC | Session: 3241ba99-53ee-42c5-ab5e-a16610073bdb | Run: iterate-2026-07-24-finalizer-events-staging
 
-## Recent Changes (358 iterations)
+## Recent Changes (359 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Fix finalize_security_compliance (Step 7.5) leaving shipwright_events.jsonl (plus compliance config and a direct triage.jsonl append) dirty after committing. The finalizer now stages the full compliance write-set update_compliance writes, via an explicit FINALIZE_ARTIFACTS list + a real-invocation drift-guard test, mirroring iterate F6. Corrects the false 'idempotent no-op on re-run' claim in the docstring and SKILL.md. | 0/0 |  | tooling | 2026-07-24 |
 | feature | REQ-3 Phase 1: shared requirement-elicitation method (grilling + domain-modeling) + CONTEXT.md format + FR-01.16 mint | 4946/4961 |  |  | 2026-07-23 |
 | bug | design verifier C1 skips projects that never ran the design phase | 26/26 |  | compliance | 2026-07-23 |
 | change | First-class tests.skipped tracking: --tests-skipped flag + shared tests_block SSOT; D4 keys on genuine failures (charitable when absent) and is re-enabled; test-evidence + dashboard disclose skips; apply_amendments deep-merge opt-in. | 6230/6242 (12 skipped) |  | FR-01.10 | 2026-07-23 |
@@ -365,7 +366,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-23 | Unit: 4946/4961 | Integration: 23/23 | Smoke: not_run | (iterate)
+Last run: 2026-07-24 | Unit: 4949/4964 | Integration: 1/1 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

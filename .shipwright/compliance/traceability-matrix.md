@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-23T14:30:38.425746+00:00
+Generated: 2026-07-24T07:09:52.662169+00:00
 
 ## Requirements Coverage
 
@@ -29,6 +29,7 @@ Generated: 2026-07-23T14:30:38.425746+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-57b390e0"></a>Fix finalize_security_compliance (Step 7.5) leaving shipwright_events.jsonl (plus compliance config and a direct triage.jsonl append) dirty after committing. The finalizer now stages the full compliance write-set update_compliance writes, via an explicit FINALIZE_ARTIFACTS list + a real-invocation drift-guard test, mirroring iterate F6. Corrects the false 'idempotent no-op on re-run' claim in the docstring and SKILL.md. | iterate | change |  | — | — | 2026-07-24 |
 | <a id="evt-11304ded"></a>Requirement gathering now follows one shared, thorough interview method across the project, adopt and iterate steps, and a new requirement records that guarantee. | iterate | feature |  | 4946/4961 | — | 2026-07-23 |
 | <a id="evt-3a175bfa"></a>Record how many tests were skipped so a green run with host-gated skips is no longer mistaken for a failing build, and switch the audit's failing-build check back on. | iterate | change | [FR-01.10](#rtm-fr-0110) | 6230/6242 | — | 2026-07-23 |
 | <a id="evt-a8a0f759"></a>The automated design check no longer flags a false problem for projects that were adopted into Shipwright and never went through the design/mockup step. | iterate | bug |  | 26/26 | — | 2026-07-23 |
@@ -394,7 +395,7 @@ Generated: 2026-07-23T14:30:38.425746+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 358 |
+| Iterate changes | 359 |
 | Requirements total | 16 |
 | Requirements verified | 15/16 |
 | Must-have verified | 12/13 |

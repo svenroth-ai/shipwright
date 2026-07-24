@@ -1,97 +1,128 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-23-req3-elicitation-module",
-    "date": "2026-07-23",
+    "run_id": "iterate-2026-07-24-finalizer-events-staging",
+    "date": "2026-07-24",
     "unit": {
       "status": "passed",
-      "passed": 4946,
-      "total": 4961,
+      "passed": 4949,
+      "total": 4964,
       "skipped": 15,
-      "note": "shared/tests measured directly (4946 passed / 15 skipped / 338s). Full F0 canonical runner: 18/18 test units GREEN, 0 failures \u2014 the per-test aggregate across all 18 isolated units is not persisted by the parallel runner, so this records the largest directly-measured unit plus the authoritative all-green suite result."
+      "note": "Change isolated to plugins/shipwright-security (finalizer + tests + 1 SKILL.md line). Directly measured: security plugin 477 passed / 3 skipped; shared/tests 4949 passed / 15 skipped; compliance audit_snapshot 18 passed. Full 18-unit canonical F0 runner not re-run for every plugin — no shared or other-plugin code changed, so these broad suites cover the blast radius. Skips are missing-scanner-binary (security) + environment (shared), which hard-fail in CI."
     },
     "integration": {
       "status": "passed",
-      "passed": 23,
-      "total": 23,
-      "note": "the three FR-catalog contract guards (contract/parsers/convergence) re-run green at the 16-FR count"
+      "passed": 1,
+      "total": 1,
+      "note": "real update_compliance subprocess drift-guard (test_finalize_real_update_compliance_leaves_clean_tree) exercises producer->finalizer->git end to end"
     },
     "pgtap": {
       "status": "not_run",
       "passed": 0,
-      "total": 0
+      "total": 0,
+      "note": "no DB surface"
     },
     "e2e": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
-      "total": 0
+      "total": 0,
+      "note": "surface=none (internal git tooling, no web/API/UI); justified at F0.5"
     },
     "design_fidelity": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
-      "total": 0
+      "total": 0,
+      "note": "no UI"
     },
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [],
+    "degraded": [
+      {
+        "condition": "external_review_unavailable",
+        "detail": "No GPT/Gemini API keys in this environment — plan + external_code review closed not_run (degraded); self/code/doubt review done inline."
+      }
+    ],
     "surface_verification": {
       "surface": "none",
-      "runner": "",
-      "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-23-req3-elicitation-module/surface_verification.json",
-      "timestamp": "2026-07-23T14:21:15.016Z",
-      "justification": "Framework prompt-docs (shared/requirement-elicitation.md + context-format.md) + a pytest drift guard + an FR mint; no startable user-facing web/cli/api surface. The mechanical oracle is the drift suite test_requirement_elicitation_refs.py, run green in the F0 full suite. No API/store/SSE/UI-consumed code touched, so the Backend-affects-Frontend rule does not fire."
+      "exit_code": 0,
+      "justification": "Internal git-committing finalize tooling: no web/API/interactive surface; grade_snapshot schema the WebUI reads is unchanged. Real E2E behavior covered by the real-subprocess drift-guard test at F0."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 \u2014 one binding shared elicitation doc, cited by all four interview surfaces (reverse drift)",
+          "behavior": "full write-set staged -> clean tree after commit",
           "disposition": "tested",
-          "evidence": "test_requirement_elicitation_refs.py::test_elicitation_surface_cites_the_module (4 params: project/adopt/iterate path-a/path-b) PASSED"
+          "evidence": "test_finalize_write_set.py::test_finalize_leaves_clean_tree_after_commit PASSED"
         },
         {
-          "behavior": "AC2 \u2014 the \u00a78 coverage checklist + Basis: assumed stop-condition + six dimensions (section-scoped) + never-skipped/not-finished rules are present",
+          "behavior": "commit carries events.jsonl + config + triage (not just MDs)",
           "disposition": "tested",
-          "evidence": "test_module_carries_the_completeness_stop_condition + test_module_lists_the_coverage_dimensions (scoped to \u00a78) + test_module_pins_the_load_bearing_rules_by_sentence PASSED"
+          "evidence": "test_finalize_write_set.py::test_finalize_commit_includes_events_and_config PASSED"
         },
         {
-          "behavior": "AC3 \u2014 the grilling method sections are retained and Matt Pocock is attributed",
+          "behavior": "event-only regen (MDs unchanged) still commits, no dirty leak",
           "disposition": "tested",
-          "evidence": "test_module_retains_cited_sections (12 params) + test_module_attributes_matt_pocock PASSED"
+          "evidence": "test_finalize_write_set.py::test_finalize_commits_when_only_event_changed PASSED"
         },
         {
-          "behavior": "AC4 \u2014 the CONTEXT.md format doc exists, retains sections, and states the CONTEXT.md-vs-glossary.md distinction (domain vs framework, 'never merge')",
+          "behavior": "direct append to tracked triage.jsonl (no-origin) is staged",
           "disposition": "tested",
-          "evidence": "test_context_format_exists_and_is_non_empty + test_context_format_retains_cited_sections (4 params) + test_context_format_states_the_glossary_distinction PASSED"
+          "evidence": "test_finalize_write_set.py::test_finalize_stages_direct_triage_append PASSED"
         },
         {
-          "behavior": "AC5 \u2014 the drift guard fires in BOTH directions when the docs/citations are absent (mutation probe)",
+          "behavior": "gitignored events.jsonl -> no git add error, tree clean",
           "disposition": "tested",
-          "evidence": "mutation probe: with docs+citations absent the guard produced 25 failures (22 forward, 3 reverse); after authoring docs+citations, 28/28 PASS. Cross-ref pins added (test_module_pins_its_internal_cross_references)."
+          "evidence": "test_finalize_write_set.py::test_finalize_tolerates_gitignored_events_log PASSED"
         },
         {
-          "behavior": "AC6 \u2014 FR-01.16 minted in spec.md with the intended row (Basis: interview, Layers: unit (inferred)), AC block, and the whole-spec count consistently pinned at 16",
+          "behavior": "absent events.jsonl -> no error",
           "disposition": "tested",
-          "evidence": "integration-tests: test_fr_table_shape_convergence (FR-01.16 Basis=interview, Layers=['unit']) + catalog_contract/parsers (16-FR count, anchors, RTM deep-link to #fr-0116) PASSED"
+          "evidence": "test_finalize_write_set.py::test_finalize_tolerates_absent_events_log PASSED"
         },
         {
-          "behavior": "Agent actually elicits full context given the shared prompt (behavioural quality of grilling)",
-          "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "no deterministic oracle for LLM prompt-following; mitigated structurally \u2014 the coverage checklist makes COVERAGE the measured output (Basis: assumed marks are audit-visible), and it is dogfooded in Phase 2. Same posture as the fr-authoring 'agents write better FRs' row."
+          "behavior": "genuinely empty regen -> no commit, tree clean",
+          "disposition": "tested",
+          "evidence": "test_finalize_security_compliance.py::test_finalize_no_commit_when_nothing_written PASSED"
+        },
+        {
+          "behavior": "re-run records its own snapshot; never leaves dirty tree",
+          "disposition": "tested",
+          "evidence": "test_finalize_write_set.py::test_finalize_reruns_safely_without_dirty_leak PASSED"
+        },
+        {
+          "behavior": "commit subject + Run-ID: security-<id> trailer",
+          "disposition": "tested",
+          "evidence": "test_finalize_security_compliance.py::test_finalize_creates_snapshot_commit_with_runid_trailer PASSED"
+        },
+        {
+          "behavior": "commit qualifies as audit snapshot (find_snapshot_commit)",
+          "disposition": "tested",
+          "evidence": "test_finalize_security_compliance.py::test_finalize_commit_qualifies_as_snapshot PASSED"
+        },
+        {
+          "behavior": "real producer -> finalizer leaves clean tree (drift guard)",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "test_finalize_write_set.py::test_finalize_real_update_compliance_leaves_clean_tree PASSED"
+        },
+        {
+          "behavior": "standalone / CI env -> no-op (unchanged skip contract)",
+          "disposition": "tested",
+          "evidence": "test_finalize_security_compliance.py::test_finalize_skips_in_standalone_mode + _in_ci PASSED"
         }
       ],
       "counts": {
-        "testable": 7,
-        "tested": 6,
-        "untestable": 1,
+        "testable": 12,
+        "tested": 12,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 6,
-        "covered_acs": 6
+        "acs": 4,
+        "covered_acs": 4,
+        "note": "fix requirements: stage events.jsonl, stage config, stage triage.jsonl, correct false idempotency doc — all covered"
       }
     }
   },
