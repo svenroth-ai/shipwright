@@ -5,13 +5,25 @@ After Step 7 persists ``shipwright_security_config.json``, this helper:
 
   1. Runs the compliance regen (``update_compliance.py --phase security``)
      so the MDs reflect the post-scan state.
-  2. If anything actually changed under ``.shipwright/compliance/``,
-     stages + creates a snapshot-qualifying commit
+  2. If any of the artifacts ``update_compliance`` writes changed, stages
+     the FULL write-set and creates a snapshot-qualifying commit
      ``chore(compliance): refresh after security scan`` with the body
      trailer ``Run-ID: security-<scan_id>``. The audit's
      ``find_snapshot_commit`` picks it up the same way it picks up
      iterate F6 / adopt Step H commits.
   3. Otherwise: no-op (the regen produced no diff).
+
+``update_compliance.py --phase security`` writes THREE artifact groups, not
+one: the compliance MDs under ``.shipwright/compliance/``, an appended
+``grade_snapshot`` in ``shipwright_events.jsonl`` (``emit_grade_snapshot``
+records one per regen, UNCONDITIONALLY — M-Pre-3), and
+``shipwright_compliance_config.json`` (``phases_covered``). The finalizer
+stages ALL of them (``FINALIZE_ARTIFACTS``), mirroring iterate F6's explicit
+per-path ``git add`` list. Staging only the MDs — as this helper did before
+iterate-2026-07-24-finalizer-events-staging — left the appended event dirty in
+the working tree, which aborts the next ``ensure_current`` pre-merge refresh
+with exit 6 (merge_failed); the ad-hoc recovery, ``git checkout --
+shipwright_events.jsonl``, silently discards the grade snapshot.
 
 **Pipeline mode only.** When ``shipwright_project_config.json`` is absent
 the project is standalone — Step 8 already hands off to
@@ -26,8 +38,10 @@ Returns structured JSON on stdout for the SKILL.md consumer:
 
     {"committed": bool, "reason": "...", "commit_sha": "..."}
 
-Idempotent — a second invocation with a clean tree finds no diff and
-exits without committing.
+Safe to re-run — each invocation records one post-scan compliance snapshot
+(the ``grade_snapshot`` append is unconditional per regen) and NEVER leaves the
+working tree dirty. A re-run is therefore not a strict no-op; only a genuinely
+empty regen (no MD change AND no appended event) makes no commit.
 
 Usage:
     uv run finalize_security_compliance.py --project-root <path> \
@@ -48,6 +62,22 @@ from pathlib import Path
 # module-level constant so tests can override via monkeypatching if
 # layout changes downstream.
 COMPLIANCE_DIR = ".shipwright/compliance"
+
+# The complete set of tracked artifacts ``update_compliance.py --phase
+# security`` may write — the dirty-check and the staging BOTH key on this so
+# the finalizer never leaves part of the regen behind (see module docstring).
+# Explicit per-path list, mirroring iterate F6's ``git add`` block; a path that
+# is absent, unchanged, or gitignored is skipped naturally (it never surfaces in
+# ``git status --porcelain``), so no ``git add`` is attempted for it. Order is
+# cosmetic (git stages regardless).
+FINALIZE_ARTIFACTS = (
+    COMPLIANCE_DIR,                       # dashboard/test-evidence/change-history/sbom + audit-report + ci-security.json
+    "shipwright_events.jsonl",            # grade_snapshot append (one per regen)
+    "shipwright_compliance_config.json",  # phases_covered
+    ".shipwright/triage.jsonl",           # sbom_triage / test_evidence_triage — appends DIRECT to the
+                                          # tracked log only when there is no `origin` remote to route to the
+                                          # gitignored outbox; harmless (never dirty) in the routed case.
+)
 
 # Files that signal "this project went through the orchestrator pipeline".
 # Their presence is what distinguishes pipeline-mode security from
@@ -108,16 +138,40 @@ def _git(args: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
-def _compliance_dirty(project_root: Path) -> bool:
-    """Return True iff any file under ``.shipwright/compliance/`` is dirty.
+def _dirty_artifacts(project_root: Path,
+                     candidates: tuple[str, ...] = FINALIZE_ARTIFACTS) -> list[str]:
+    """Return the subset of ``candidates`` that git reports as dirty.
 
-    Uses ``git status --porcelain -- <dir>`` so the check is git-aware
-    (untracked + modified + deleted all surface as dirty).
+    Uses ``git status --porcelain -- <candidates>`` (git-aware: modified +
+    untracked-not-ignored + deleted all surface). A path that is absent,
+    unchanged, or gitignored-and-untracked never appears in the porcelain
+    output, so it is naturally excluded — this is how the F6 "skip a path only
+    if gitignored / untracked / absent" convention is honoured without a
+    separate ``check-ignore`` probe, and why a downstream project that
+    ``.gitignore``s ``shipwright_events.jsonl`` can never trigger a ``git add``
+    error here. A directory candidate (``.shipwright/compliance``) matches when
+    any file beneath it is dirty. Returns the candidates (not the individual
+    files) so the caller stages by the same paths it declared.
     """
-    proc = _git(["status", "--porcelain", "--", COMPLIANCE_DIR], cwd=project_root)
+    proc = _git(["status", "--porcelain", "--", *candidates], cwd=project_root)
     if proc.returncode != 0:
-        return False
-    return bool(proc.stdout.strip())
+        return []
+    changed: list[str] = []
+    for line in proc.stdout.splitlines():
+        if not line.strip():
+            continue
+        # porcelain v1: two status chars, a space, then the path; a rename is
+        # rendered "old -> new" — the post-rename path is what is staged.
+        path = line[3:]
+        if " -> " in path:
+            path = path.split(" -> ", 1)[1]
+        changed.append(path.strip().strip('"').replace("\\", "/"))
+    hits: list[str] = []
+    for cand in candidates:
+        norm = cand.rstrip("/")
+        if any(ch == norm or ch.startswith(norm + "/") for ch in changed):
+            hits.append(cand)
+    return hits
 
 
 def finalize(project_root: Path, *, scan_id: str) -> dict:
@@ -146,14 +200,16 @@ def finalize(project_root: Path, *, scan_id: str) -> dict:
             "reason": f"update_compliance failed: {regen['error']}",
         }
 
-    if not _compliance_dirty(project_root):
+    dirty = _dirty_artifacts(project_root)
+    if not dirty:
         return {
             "committed": False,
             "reason": "compliance unchanged after security scan — no diff to commit",
         }
 
-    # Stage + commit.
-    add = _git(["add", COMPLIANCE_DIR], cwd=project_root)
+    # Stage the full write-set (only the paths git actually reports dirty, so an
+    # absent / ignored artifact is silently skipped instead of erroring).
+    add = _git(["add", "--", *dirty], cwd=project_root)
     if add.returncode != 0:
         return {
             "committed": False,
@@ -163,8 +219,8 @@ def finalize(project_root: Path, *, scan_id: str) -> dict:
     message = (
         "chore(compliance): refresh after security scan\n"
         "\n"
-        "Updated dashboard/test-evidence/change-history/sbom to reflect "
-        "post-scan state.\n"
+        "Regenerated dashboard/test-evidence/change-history/sbom and recorded "
+        "the post-scan grade snapshot (shipwright_events.jsonl).\n"
         "No FR coverage change (RTM unaffected).\n"
         "\n"
         f"Run-ID: security-{scan_id}\n"
