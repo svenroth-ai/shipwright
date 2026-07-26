@@ -4,7 +4,8 @@ OpenAI review script, used by adopt Layer-3 review + review_assistant_ui_plan).
 Same incompatible-param bug as external_review.py: the direct OpenAI call
 must send ``max_completion_tokens`` (gpt-5.x rejects ``max_tokens``). Also
 locks in that ``run_review`` already reports ``success`` honestly — it is
-``False`` when no leg succeeds, so it never silently no-ops.
+``False`` when no leg succeeds, so it never silently no-ops, and that
+``DEFAULT_MODELS`` does not drift from the shipping config.
 """
 
 import sys
@@ -76,3 +77,23 @@ def test_run_review_success_is_false_when_no_leg_succeeds(monkeypatch):
     result = llm_review.run_review("content", "context")
     assert result["provider"] == "none"
     assert result["success"] is False
+
+
+def test_default_models_match_shipping_config():
+    """DEFAULT_MODELS must not drift from shared/config/external_review.json.
+
+    llm_review falls back to DEFAULT_MODELS whenever a caller passes no
+    ``models`` dict, while external_review.py resolves the same keys from the
+    shipping config. If the two disagree, two callers reviewing the same diff
+    silently use different models. Both sources have now been hand-edited in
+    lockstep twice (gpt-5.4 -> terra-pro, terra-pro -> terra) — pin the
+    invariant instead of relying on the next editor remembering."""
+    import llm_review
+    from external_review_config import load_review_config
+
+    shipped = {
+        key: value
+        for key, value in load_review_config()["models"].items()
+        if not key.startswith("_")
+    }
+    assert llm_review.DEFAULT_MODELS == shipped

@@ -1,8 +1,8 @@
 {
   "schema_version": 3,
   "collector_version": "test_links/1.0.0",
-  "generated_at": "2026-07-24T07:09:52.662169+00:00",
-  "source_commit": "2b644805fb7da3c3ad7ef5053034e71e56ad728f",
+  "generated_at": "2026-07-26T07:06:44.085342+00:00",
+  "source_commit": "5da96ebe856134cd3ef208c47861c4ee7822cf12",
   "spec_hash": "sha256:0ea3561cb61fab96b7075a93b2e391af15adbbc3a98b6363010b513724217a19",
   "requirements": {
     "01::FR-01.01": {
@@ -7910,6 +7910,7 @@
     "shared/tests/test_list_iterate_branches.py::test_unknown_key_is_ignored",
     "shared/tests/test_list_iterate_branches.py::test_unrelated_history_low_confidence",
     "shared/tests/test_list_iterate_branches.py::test_worktree_locked_branch",
+    "shared/tests/test_llm_review.py::test_default_models_match_shipping_config",
     "shared/tests/test_llm_review.py::test_llm_review_openai_uses_max_completion_tokens",
     "shared/tests/test_llm_review.py::test_run_review_success_is_false_when_no_leg_succeeds",
     "shared/tests/test_mark_review_state.py::test_mark_completed",
