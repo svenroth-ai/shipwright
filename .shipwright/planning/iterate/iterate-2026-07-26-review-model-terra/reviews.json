@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-26-review-model-terra",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-26T06:51:03.014445+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-26T06:51:14.511258+00:00",
+      "disposition": "phase matrix (SKILL.md section 6): External LLM Review is 'skip' at small complexity",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-26T06:51:14.611811+00:00",
+      "disposition": "iteration-reviews.md 'When Self-Review is Sufficient': small complexity, no risk flags, diff 27 insertions (<100 lines), no security-sensitive files",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-26T06:51:14.711259+00:00",
+      "disposition": "iteration-reviews.md Stage 3 is conditional on a Stage 2 code-reviewer PASS; the code-reviewer did not fire, and a config-default value swap is not a non-trivial surface",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-26T06:51:14.808892+00:00",
+      "disposition": "iteration-reviews.md External Code-Review Cascade trigger: fires iff the internal code-reviewer fired in this run; it did not",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

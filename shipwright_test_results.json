@@ -1,19 +1,19 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-24-finalizer-events-staging",
-    "date": "2026-07-24",
+    "run_id": "iterate-2026-07-26-review-model-terra",
+    "date": "2026-07-26",
     "unit": {
       "status": "passed",
-      "passed": 4949,
-      "total": 4964,
-      "skipped": 15,
-      "note": "Change isolated to plugins/shipwright-security (finalizer + tests + 1 SKILL.md line). Directly measured: security plugin 477 passed / 3 skipped; shared/tests 4949 passed / 15 skipped; compliance audit_snapshot 18 passed. Full 18-unit canonical F0 runner not re-run for every plugin — no shared or other-plugin code changed, so these broad suites cover the blast radius. Skips are missing-scanner-binary (security) + environment (shared), which hard-fail in CI."
+      "passed": 5548,
+      "total": 5559,
+      "skipped": 11,
+      "note": "Canonical F0 suite runner (run_test_suite.py): 18/18 units PASS in 1.8 min, no RACE warnings. The counts above are the separately measured shared/ blast radius — shared/tests 4948 passed / 11 skipped, shared/scripts/tools/tests 255 passed, shared/scripts/tests 345 passed. The diff touches only shared/config, shared/scripts and shared/tests. Skips are pre-existing environment gates that hard-fail in CI."
     },
     "integration": {
       "status": "passed",
-      "passed": 1,
-      "total": 1,
-      "note": "real update_compliance subprocess drift-guard (test_finalize_real_update_compliance_leaves_clean_tree) exercises producer->finalizer->git end to end"
+      "passed": 417,
+      "total": 417,
+      "note": "integration-tests/ run separately for the count; also PASS as a unit in the canonical F0 suite."
     },
     "pgtap": {
       "status": "not_run",
@@ -25,7 +25,7 @@
       "status": "skipped",
       "passed": 0,
       "total": 0,
-      "note": "surface=none (internal git tooling, no web/API/UI); justified at F0.5"
+      "note": "Phase matrix at small: E2E only if feature+UI or touches_io_boundary — neither applies. The F0.5 cli-surface probe below is the empirical end-to-end evidence."
     },
     "design_fidelity": {
       "status": "skipped",
@@ -36,93 +36,65 @@
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [
-      {
-        "condition": "external_review_unavailable",
-        "detail": "No GPT/Gemini API keys in this environment — plan + external_code review closed not_run (degraded); self/code/doubt review done inline."
-      }
-    ],
+    "degraded": [],
     "surface_verification": {
-      "surface": "none",
-      "tests_run": 0,
+      "surface": "cli",
+      "runner": "uv run <scratchpad>/probe_terra.py",
       "exit_code": 0,
-      "justification": "Internal git-committing finalize tooling: no web/API/interactive surface; grade_snapshot schema the WebUI reads is unchanged. Real E2E behavior covered by the real-subprocess drift-guard test at F0."
+      "tests_run": 2,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-26-review-model-terra/surface_verification.log",
+      "timestamp": "2026-07-26T06:55:29.241Z",
+      "note": "Live probe through the production code path: (1) resolve_model on the shipping config returns openai/gpt-5.6-terra; (2) that model answers a real OpenRouter call (PROBE_OK), proving account access — which the public model list alone does not prove. Synthetic prompt only, no repo content transmitted."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "full write-set staged -> clean tree after commit",
+          "behavior": "llm_review.DEFAULT_MODELS and shared/config/external_review.json agree on every model key (new invariant introduced by this diff)",
           "disposition": "tested",
-          "evidence": "test_finalize_write_set.py::test_finalize_leaves_clean_tree_after_commit PASSED"
+          "evidence": "shared/tests/test_llm_review.py::test_default_models_match_shipping_config PASSED — observed RED before the llm_review.py edit (real red-green, not assumed)"
         },
         {
-          "behavior": "commit carries events.jsonl + config + triage (not just MDs)",
+          "behavior": "the OpenRouter GPT leg resolves to openai/gpt-5.6-terra from the shipping config",
           "disposition": "tested",
-          "evidence": "test_finalize_write_set.py::test_finalize_commit_includes_events_and_config PASSED"
+          "evidence": "F0.5 cli-surface probe CHECK 1 PASS (resolve_model(openrouter_chatgpt) -> openai/gpt-5.6-terra), .shipwright/runs/iterate-2026-07-26-review-model-terra/surface_verification.log"
         },
         {
-          "behavior": "event-only regen (MDs unchanged) still commits, no dirty leak",
+          "behavior": "openai/gpt-5.6-terra actually answers a live review call (the account has access to the model)",
           "disposition": "tested",
-          "evidence": "test_finalize_write_set.py::test_finalize_commits_when_only_event_changed PASSED"
+          "evidence": "F0.5 cli-surface probe CHECK 2 PASS (live call via openrouter returned PROBE_OK), same log"
         },
         {
-          "behavior": "direct append to tracked triage.jsonl (no-origin) is staged",
+          "behavior": "the shipping config still loads and exposes external_review / models / llm_client after the edit",
           "disposition": "tested",
-          "evidence": "test_finalize_write_set.py::test_finalize_stages_direct_triage_append PASSED"
+          "evidence": "shared/tests/test_external_review_config.py::test_load_review_config_real_default PASSED"
         },
         {
-          "behavior": "gitignored events.jsonl -> no git add error, tree clean",
+          "behavior": "resolve_model returns the config value and still honors the SHIPWRIGHT_REVIEW_MODEL_* env overrides",
           "disposition": "tested",
-          "evidence": "test_finalize_write_set.py::test_finalize_tolerates_gitignored_events_log PASSED"
+          "evidence": "shared/tests/test_external_review_config.py — 13 resolve_model tests PASSED (defaults, env overrides, whitespace/empty fallback, invalid key)"
         },
         {
-          "behavior": "absent events.jsonl -> no error",
+          "behavior": "the direct (non-OpenRouter) OpenAI leg sends the configured chatgpt model to the API",
           "disposition": "tested",
-          "evidence": "test_finalize_write_set.py::test_finalize_tolerates_absent_events_log PASSED"
+          "evidence": "shared/tests/test_llm_review.py::test_llm_review_openai_uses_max_completion_tokens PASSED — captures the outbound call built from the passed models dict"
         },
         {
-          "behavior": "genuinely empty regen -> no commit, tree clean",
-          "disposition": "tested",
-          "evidence": "test_finalize_security_compliance.py::test_finalize_no_commit_when_nothing_written PASSED"
-        },
-        {
-          "behavior": "re-run records its own snapshot; never leaves dirty tree",
-          "disposition": "tested",
-          "evidence": "test_finalize_write_set.py::test_finalize_reruns_safely_without_dirty_leak PASSED"
-        },
-        {
-          "behavior": "commit subject + Run-ID: security-<id> trailer",
-          "disposition": "tested",
-          "evidence": "test_finalize_security_compliance.py::test_finalize_creates_snapshot_commit_with_runid_trailer PASSED"
-        },
-        {
-          "behavior": "commit qualifies as audit snapshot (find_snapshot_commit)",
-          "disposition": "tested",
-          "evidence": "test_finalize_security_compliance.py::test_finalize_commit_qualifies_as_snapshot PASSED"
-        },
-        {
-          "behavior": "real producer -> finalizer leaves clean tree (drift guard)",
-          "disposition": "tested",
-          "category": "integration",
-          "evidence": "test_finalize_write_set.py::test_finalize_real_update_compliance_leaves_clean_tree PASSED"
-        },
-        {
-          "behavior": "standalone / CI env -> no-op (unchanged skip contract)",
-          "disposition": "tested",
-          "evidence": "test_finalize_security_compliance.py::test_finalize_skips_in_standalone_mode + _in_ci PASSED"
+          "behavior": "the review-report header written by review_assistant_ui_plan.py names the current GPT model",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "The header line is only emitted by main() after a live OpenRouter review completes; the tool is an ad-hoc one-off campaign driver (its own module docstring calls it 'not part of the pipeline canon') with no test harness and no fixture path that reaches the writer."
         }
       ],
       "counts": {
-        "testable": 12,
-        "tested": 12,
-        "untestable": 0,
+        "testable": 6,
+        "tested": 6,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 4,
-        "covered_acs": 4,
-        "note": "fix requirements: stage events.jsonl, stage config, stage triage.jsonl, correct false idempotency doc — all covered"
+        "acs": 1,
+        "covered_acs": 1
       }
     }
   },

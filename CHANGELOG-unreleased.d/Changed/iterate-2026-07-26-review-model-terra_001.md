@@ -1,0 +1,1 @@
+External LLM review's GPT leg now defaults to gpt-5.6-terra (was gpt-5.6-terra-pro) for both the OpenRouter and direct paths; the Gemini reviewer and the PR-review bot are unchanged. A new drift-guard test keeps llm_review.DEFAULT_MODELS in sync with shared/config/external_review.json. Override per-environment with SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_CHATGPT.

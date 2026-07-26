@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-24 07:09 UTC | Session: 3241ba99-53ee-42c5-ab5e-a16610073bdb | Run: iterate-2026-07-24-finalizer-events-staging
+> Updated: 2026-07-26 07:08 UTC | Session: 34c1dbf5-2b48-4645-a5d3-6f478e843a0b | Run: iterate-2026-07-26-review-model-terra
 
-## Recent Changes (359 iterations)
+## Recent Changes (360 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | external review GPT default -> gpt-5.6-terra | 5548/5559 |  | tooling | 2026-07-26 |
 | change | Fix finalize_security_compliance (Step 7.5) leaving shipwright_events.jsonl (plus compliance config and a direct triage.jsonl append) dirty after committing. The finalizer now stages the full compliance write-set update_compliance writes, via an explicit FINALIZE_ARTIFACTS list + a real-invocation drift-guard test, mirroring iterate F6. Corrects the false 'idempotent no-op on re-run' claim in the docstring and SKILL.md. | 0/0 |  | tooling | 2026-07-24 |
 | feature | REQ-3 Phase 1: shared requirement-elicitation method (grilling + domain-modeling) + CONTEXT.md format + FR-01.16 mint | 4946/4961 |  |  | 2026-07-23 |
 | bug | design verifier C1 skips projects that never ran the design phase | 26/26 |  | compliance | 2026-07-23 |
@@ -366,7 +367,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-24 | Unit: 4949/4964 | Integration: 1/1 | Smoke: not_run | (iterate)
+Last run: 2026-07-26 | Unit: 5548/5559 | Integration: 417/417 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
