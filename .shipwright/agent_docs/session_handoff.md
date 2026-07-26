@@ -1,44 +1,40 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-23-req3-elicitation-module"
+run_id: "iterate-2026-07-26-review-model-terra"
 phase: "iterate"
-reason: "iterate: REQ-3 Phase 1 shared requirement-elicitation module + FR-01.16"
-timestamp: "2026-07-23T14:30:44.626353+00:00"
+reason: "iterate: external review GPT default -> gpt-5.6-terra"
+timestamp: "2026-07-26T07:08:16.568574+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-23 14:30:44 UTC
+> Auto-generated 2026-07-26 07:08:16 UTC
 
 ## Session Info
 
-- **Session ID**: 2ed3c046-002d-4496-908c-0273e0df6c66
-- **Timestamp**: 2026-07-23 14:30:44 UTC
-- **Reason**: iterate: REQ-3 Phase 1 shared requirement-elicitation module + FR-01.16
+- **Session ID**: 34c1dbf5-2b48-4645-a5d3-6f478e843a0b
+- **Timestamp**: 2026-07-26 07:08:16 UTC
+- **Reason**: iterate: external review GPT default -> gpt-5.6-terra
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-23-tests-skipped-tracking
-- **Date**: 2026-07-23T07:18:55.049539Z
+- **Run ID**: iterate-2026-07-26-review-model-terra
+- **Date**: 2026-07-26T07:06:43.997342Z
 - **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/tests-skipped-tracking
-- **ADR**: iterate-2026-07-23-tests-skipped-tracking
+- **Complexity**: small
+- **Branch**: iterate/review-model-terra
+- **ADR**: iterate-2026-07-26-review-model-terra
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-23-tests-skipped-tracking.md
+- **Spec**: none — small complexity, no iterate spec file (Phase Matrix); spec impact NONE
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/req3-elicitation-module
-- **Run ID**: iterate-2026-07-23-req3-elicitation-module
-- **Spec**: .shipwright/planning/iterate/2026-07-23-req3-elicitation-module.md
-- **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-07-23T13:57:11))
+- **Branch**: iterate/review-model-terra
+- **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/req3-elicitation-module
-- **Last Commit**: 355681bd feat(compliance): track skipped tests as a first-class field; key D4 on genuine failures (FR-01.10) (#430)
+- **Branch**: iterate/review-model-terra
+- **Last Commit**: 5da96ebe chore(security): stage full compliance write-set in Step 7.5 finalizer (#434)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-17075aa5 | grade_snapshot | — | 2026-07-23 |
-| evt-11304ded | work_completed | iterate (REQ-3 Phase 1: shared requirement-elicitation method (grilling + domain-modeling) + CONTEXT.md format + FR-01.16 mint) | 2026-07-23 |
-| evt-26334e90 | grade_snapshot | — | 2026-07-23 |
-| evt-a8a0f759 | work_completed | iterate (design verifier C1 skips projects that never ran the design phase) | 2026-07-23 |
-| evt-f8f0c714 | grade_snapshot | — | 2026-07-23 |
+| evt-a5221116 | grade_snapshot | — | 2026-07-26 |
+| evt-0deef4c5 | grade_snapshot | — | 2026-07-26 |
+| evt-9508c7d4 | work_completed | iterate (external review GPT default -> gpt-5.6-terra) | 2026-07-26 |
+| evt-6788fc9e | grade_snapshot | — | 2026-07-24 |
+| evt-57b390e0 | work_completed | iterate (Fix finalize_security_compliance (Step 7.5) leaving shipwright_events.jsonl (plus compliance config and a direct triage.jsonl append) dirty after committing. The finalizer now stages the full compliance write-set update_compliance writes, via an explicit FINALIZE_ARTIFACTS list + a real-invocation drift-guard test, mirroring iterate F6. Corrects the false 'idempotent no-op on re-run' claim in the docstring and SKILL.md.) | 2026-07-24 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 358
-- **Last iterate**: feature — REQ-3 Phase 1: shared requirement-elicitation method (grilling + domain-modeling) + CONTEXT.md format + FR-01.16 mint (2026-07-23)
+- **Total work events**: 360
+- **Last iterate**: change — external review GPT default -> gpt-5.6-terra (2026-07-26)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
