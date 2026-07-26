@@ -125,7 +125,7 @@ def test_no_producer_still_emits_the_retired_source_column() -> None:
 def test_every_live_requirement_stays_on_legacy_provenance() -> None:
     """ZERO ``explicit``. If this fails, the next gate run hard-aborts."""
     rows = _census(LIVE_SPEC)
-    assert len(rows) == 16
+    assert len(rows) == 18
     explicit = [r["id"] for r in rows if r["source"] == "explicit"]
     assert explicit == [], (
         f"{len(explicit)} requirement(s) flipped to `explicit` provenance: "
@@ -142,7 +142,7 @@ def test_every_live_layers_cell_carries_the_marker() -> None:
         line for line in LIVE_SPEC.read_text(encoding="utf-8").splitlines()
         if line.startswith("| FR-")
     ]
-    assert len(rows) == 16
+    assert len(rows) == 18
     for line in rows:
         layers_cell = line.rstrip("|").rsplit("|", 1)[-1].strip()
         assert "(inferred)" in layers_cell, f"unmarked Layers cell: {line[:60]}…"
@@ -190,6 +190,15 @@ _PRE_MIGRATION_LAYERS = {
 #: operator authored the requirement, so its basis is a human decision.
 _EXPECTED_BASIS = {f"FR-01.{n:02d}": "code" for n in range(1, 16)}
 _EXPECTED_BASIS["FR-01.16"] = "interview"
+#: FR-01.17 (minted 2026-07-24, REQ-3 Ph2) — the host-side re-check. Its
+#: behaviour was read out of the workflows, but the decision that it IS a
+#: requirement, and what it covers, is the operator's.
+_EXPECTED_BASIS["FR-01.17"] = "interview"
+#: FR-01.18 (minted 2026-07-26, REQ-3 Ph2) — the repository grader. Same shape
+#: as .17: its behaviour was read out of the code, but the decision that it IS
+#: a requirement, how it is cut, and what it refuses to claim are the
+#: operator's.
+_EXPECTED_BASIS["FR-01.18"] = "interview"
 
 
 def test_every_live_requirement_carries_its_decided_basis() -> None:
@@ -230,7 +239,8 @@ def test_the_migration_did_not_change_any_required_layers() -> None:
     """
     # FR-01.16 was minted 2026-07-23 (post-S5), not part of the migration; its
     # inferred layers are pinned alongside the migrated fifteen.
-    expected = {**_PRE_MIGRATION_LAYERS, "FR-01.16": ["unit"]}
+    expected = {**_PRE_MIGRATION_LAYERS, "FR-01.16": ["unit"],
+                "FR-01.17": ["unit"], "FR-01.18": ["unit"]}
     assert {r["id"]: r["layers"] for r in _census(LIVE_SPEC)} == expected
 
 

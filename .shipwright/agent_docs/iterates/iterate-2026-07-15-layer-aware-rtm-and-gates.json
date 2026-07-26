@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-15-layer-aware-rtm-and-gates",
+  "date": "2026-07-16T08:25:14.821180Z",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/campaign-TT2-layer-aware-rtm-and-gates",
+  "spec": ".shipwright/planning/iterate/iterate-2026-07-15-layer-aware-rtm-and-gates.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-15-layer-aware-rtm-and-gates"
+}

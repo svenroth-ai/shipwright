@@ -10,23 +10,24 @@ Shipwright is an AI-powered SDLC framework built on Claude Code. It is structure
 
 | ID | Area | Name | Priority | Description | Basis | Layers |
 |---|---|---|---|---|---|---|
-| FR-01.01 | Adopted | /shipwright-run | Must | Run the whole delivery pipeline end to end in one conversation — requirements, planning, design, build, test, security, deploy, changelog and compliance — so a change moves from a plain description to delivered work without the operator driving each phase by hand. | code | unit (inferred) |
+| FR-01.01 | Adopted | /shipwright-run | Must | Run the whole delivery pipeline end to end in one conversation — requirements, design, planning, build, test, release notes and hosting, in that order — so a change moves from a plain description to delivered work without the operator driving each phase by hand. Security scanning and audit evidence are deliberately not steps of it: the first runs on its own, the second happens alongside every phase. | code | unit (inferred) |
 | FR-01.02 | Adopted | /shipwright-project | Must | Turn a project description into well-scoped, individually deliverable requirements, and write the starting guidance an assistant needs to work inside that project. | code | unit (inferred) |
-| FR-01.03 | Adopted | /shipwright-plan | Must | Produce an implementation plan from research, an optional interview, and a review by two independent external language models — structured so the build phase can consume it section by section, tests first. | code | unit (inferred) |
+| FR-01.03 | Adopted | /shipwright-plan | Must | Produce an implementation plan from research and an optional interview, structured so the build phase can consume it one section at a time, tests first. No plan reaches the build phase unreviewed: two independent external language models review it by default, and declining them obliges a structured self-review in their place. | code | unit (inferred) |
 | FR-01.04 | Adopted | /shipwright-design | Should | Turn requirements into clickable mockups — standalone screens and the flows between them — that can be refined by conversation before any production code is written. | code | e2e (inferred) |
-| FR-01.05 | Adopted | /shipwright-build | Must | Implement a planned change test-first — write a failing test, make it pass, then tidy — with code review, conventional commit messages, and one branch per change. | code | unit (inferred) |
-| FR-01.06 | Adopted | /shipwright-test | Must | Run the project's unit, end-to-end and smoke tests, and report which pairs of code that write and read the same stored format have no test proving a value survives the round trip. | code | unit (inferred) |
-| FR-01.07 | Adopted | /shipwright-security | Must | Scan the project for vulnerabilities, leaked secrets and unsafe dependencies with several independent scanners, then drive the fixes to completion; each scanner keeps its own list of accepted exceptions. | code | unit (inferred) |
-| FR-01.08 | Adopted | /shipwright-deploy | Should | Deploy the project to a configured hosting target, prove it is alive with a smoke test, and roll back when it is not. Jelastic (Infomaniak) is shipped; Vercel and a container-on-a-server target are documented as stubs. | code | unit (inferred) |
+| FR-01.05 | Adopted | /shipwright-build | Must | Turn one planned section into working code that does what the section specified and matches its design mockup — one section at a time, on its own branch. The engineering discipline it works under — test-first, code review, safe conventional commits — is the framework's, applied here rather than owned here. | code | unit (inferred) |
+| FR-01.06 | Adopted | /shipwright-test | Must | Run the project's tests at every level it has — unit, integration, database, end-to-end and smoke — and produce one record in which each level carries an explicit outcome or a stated reason it did not run. Compare the built screens back to their mockups, hold the project to the performance budgets it declared, and report which of the declared pairs of code that write and read the same stored format appear to have no test covering them. | code | unit (inferred) |
+| FR-01.07 | Adopted | /shipwright-security | Must | Scan the project with several independent checks — flaws in the code, unsafe dependencies, leaked secrets, and attempts to hijack the assistant's own instructions — and report everything they find in one shape, publishing it to the code host's security surface as well. Inside a project the framework already manages, it drives the fixes through to completion; pointed at any other repository it reports what it found and offers to hand the findings over to be worked through. A finding the project formally accepts is recorded in a register kept with the project, so it stays visible instead of quietly disappearing. | code | unit (inferred) |
+| FR-01.08 | Adopted | /shipwright-deploy | Should | Release the project to a configured hosting target and prove it is actually alive before calling it done, treating no answer as a failed release. Every supported target carries a written record of its way back to the previous working state and of what that does about stored data that has already moved on. Jelastic (Infomaniak) is shipped; Vercel and a container-on-a-server target are documented as stubs. | code | unit (inferred) |
 | FR-01.09 | Adopted | /shipwright-changelog | Must | Turn the commit history into a release note a human can read, tag the release, and open the release pull request. | code | unit (inferred) |
 | FR-01.10 | Adopted | /shipwright-compliance | Must | Produce audit-ready evidence — which requirement is covered by which test, what changed when, and what the project depends on — and run an on-demand cross-check that reports where that evidence disagrees with reality. | code | unit (inferred) |
 | FR-01.11 | Adopted | /shipwright-iterate | Must | Handle an ongoing change at the depth it deserves: detect what kind of change it is and how big, then scale from a quick fix to a fully specified feature with plans, reviews and tests. Every feature or change records whether it adds, modifies, removes or leaves the requirements untouched, and that record is enforced before the change can be finished. | code | unit (inferred) |
 | FR-01.12 | Adopted | /shipwright-preview | May | Start the project locally and hand back the address to open in a browser. | code | e2e (inferred) |
 | FR-01.13 | Adopted | /shipwright-adopt | Must | Bring an existing codebase under Shipwright: read what is already there, write the starting guidance, derive an initial requirements catalog and compliance evidence, and lay down a baseline end-to-end test. | code | unit (inferred) |
-| FR-01.14 | Adopted | Triage Inbox | Must | Collect findings from local checks and from the code host's automated scans into one per-project buffer the operator works through — each finding recorded once, and each either promoted into real work or dismissed — so the actual task list stays curated instead of flooded. | code | unit (inferred) |
-| FR-01.15 | Adopted | Cross-repo output contract | Must | The two payloads the companion application renders field for field are versioned output contracts: a breaking change obliges the consumer to refuse the payload, an additive one leaves it working. Each producer states its contract and names its consumer, and a gate compares what it emits against the shape last published and fails until the version has been raised — so a shape change cannot reach the consumer silently. | code | e2e (inferred) |
+| FR-01.14 | Adopted | Triage Inbox | Must | Collect findings from local checks and from the code host's automated scans into one per-project Triage Inbox the operator works through — each finding recorded once, and each one taken into work, deferred or dismissed — so the actual task list stays curated instead of flooded. | code | unit (inferred) |
+| FR-01.15 | Adopted | Cross-repo output contract | Must | Every payload this repository hands to a different repository is a versioned output contract: its shape is published alongside it, the capability producing it states that it has an outside consumer, and a gate compares what is emitted against the shape last published — read from a state the proposed change cannot rewrite — and fails until the version has been raised to match the kind of change. So a shape change can never reach a consumer silently. | code | e2e (inferred) |
 | FR-01.16 | Adopted | Guided requirement elicitation | Must | Elicit requirements through one shared, rigorous method wherever they are gathered — a new project, an adopted codebase, or an ongoing change: ask one question at a time, each with a recommended answer, look facts up in the code instead of asking, challenge wording against the project's own glossary, and stress-test with concrete edge cases. Capture the project's domain vocabulary and the reason behind each hard-to-reverse choice as they surface. No requirement is treated as settled until every dimension of its context is either answered or explicitly marked as an unconfirmed assumption. | interview | unit (inferred) |
-
+| FR-01.17 | Adopted | Independent re-check on the code host | Must | Re-check every proposed change on the code host before it can merge — the project's tests, its lint, its security scans and the host's own code analysis — independently of whatever already ran on the author's machine, and have the change reviewed there automatically rather than on request. A local pass is never accepted in place of the host's. | interview | unit (inferred) |
+| FR-01.18 | Adopted | /shipwright-grade | Should | Give any git repository a control grade from A to F without changing anything in it: derive what can honestly be derived from its history, its tests and its configuration, and score it on the same rubric the framework's own dashboard uses. A dimension that cannot be determined is marked as exactly that and left out of the calculation rather than filled in, and the report says for each judgement whether it was read from the project's own records or estimated from the outside. Nothing about a repository that is not public leaves the machine without two separate consents. | interview | unit (inferred) |
 
 ## Quality Requirements
 
@@ -36,6 +37,7 @@ Shipwright is an AI-powered SDLC framework built on Claude Code. It is structure
 ## Constraints
 
 - **C-01**: Python version: >=3.11
+- **C-02**: The framework installs nothing into a project's own settings. What it needs in order to work there travels with the framework itself, so nothing has to be set up per project and nothing is left behind if a project stops using it.
 
 
 ## Acceptance Criteria
@@ -55,77 +57,445 @@ _Where the work detail lives_ at the end of this document.
 <a id="fr-0101"></a>
 ### FR-01.01 — /shipwright-run
 
+- (E) Given a described change, when the pipeline is run, then the phases are
+  carried out in their fixed order, each one handing what it produced to the
+  next, until what was described exists as delivered work — the operator does not
+  invoke each phase by hand.
+- (E) Given a phase that did not satisfy its own checks, when it is asked to be
+  marked finished, then it is not — the run pauses for a person to decide, so a
+  phase is never quietly counted as done on work that failed its own test.
+- (E) Given a person decides to go ahead regardless, when the phase is marked
+  finished anyway, then what was overridden and why is recorded — so afterwards
+  "passed its checks" and "was waved through" can still be told apart.
+- (E) Given a run that was interrupted part-way, when it is picked up again,
+  then it continues at the phase it had reached rather than starting over, and
+  the document a person reads on returning states which phases are finished and
+  which one was interrupted — the run already knows this; the point is that the
+  person is told without having to ask.
 - (E) Given any surface the assistant runs on — including editor extensions and
   desktop chat, neither of which can open a second bound session — when a
   pipeline run starts, then every phase is driven inside that one conversation,
   so the run advances instead of stalling at the first phase.
+- (E) Given the pipeline has run to the end, when someone asks what it covered,
+  then scanning for vulnerabilities is not among it — that runs on its own
+  schedule and on its own request — and the audit evidence was not a step
+  either but was kept up alongside every phase. A finished pipeline is not a
+  security clearance.
 - (E) Given a run configuration written before one-conversation mode became the
   only mode, when any command tries to advance that run, then it is refused with
   a one-line instruction for how to migrate it, and is never silently
   reinterpreted. The run still opens for reading, so past runs stay inspectable.
-- (E) Given a project is set up for Shipwright, when setup finishes, then no
-  prompt hook is written into the project's own settings — the hook belongs to
-  the plugin, so nothing has to be installed per project.
 
 <a id="fr-0102"></a>
 ### FR-01.02 — /shipwright-project
 
-- (E) Given requirement decomposition writes a requirement sentence, when the
-  sentence is authored, then it states the capability in language a product
-  owner can sign off without decoding jargon, carries no file name, no
-  decision-record number, no code symbol and no HTTP verb, and drops no
-  behavioural guarantee for the sake of plainness.
+- (E) Given a project description and the interview about it, when setup is
+  declared finished, then what exists is a catalogue of requirements, each one
+  scoped so it can be delivered on its own, together with the starting guidance
+  an assistant needs to work inside that project.
+- (E) Given a capability being written up as a requirement, when it cannot be
+  given acceptance criteria that a single delivery would satisfy, then it is too
+  broad and is divided — being unable to enumerate what would settle it is the
+  signal that it names several capabilities at once.
+- (E) Given the project description and the interview, when setup is declared
+  finished, then every capability the person described is present as a
+  requirement — nothing they raised is silently dropped.
+- (E) Given the requirements produced, when they are read back, then none
+  describes work the person did not ask for or confirm, so setup cannot quietly
+  invent scope.
+- (E) Given a requirement is recorded, when setup is declared finished, then it
+  carries acceptance criteria its author has confirmed — no requirement leaves
+  this phase unelaborated, because in a new project the person who could answer
+  is in the conversation and leaving it blank is declining to ask.
+- (E) Given a requirement is recorded, when setup is declared finished, then how
+  we know it is recorded against it, and in a new project that is a person's
+  confirmation — the "unconfirmed assumption" basis does not appear, because
+  here, with the person in the conversation, unconfirmed means unasked — and where the
+  answer genuinely does not exist yet, what would settle it is named, so an
+  honest gap is distinguishable from an unasked question.
+- (E) Given a requirement is recorded, when setup is declared finished, then
+  every angle of its context has been walked and left a trace — its purpose, its
+  boundaries and edge cases, how it behaves when things go wrong, the terms it
+  introduced, the reason behind any hard-to-reverse choice, and what it will
+  deliberately not do — so it is complete because each angle was considered, not
+  because the questions ran out; in a new project none of these is left blank.
+- (E) Given a requirement sentence is authored, when it is written, then it
+  carries no file name, no decision-record number, no code symbol and no HTTP
+  verb.
+- (E) Given a requirement sentence is authored, when it is written, then it
+  states the capability in language a product owner can sign off without
+  decoding jargon, and drops no behavioural guarantee for the sake of plainness.
+- (E) Given terms were sharpened during the interview, when setup is declared
+  finished, then the project's own vocabulary is captured as a context glossary
+  — the project's domain terms, kept separate from the framework's own
+  vocabulary — carrying no implementation detail, so two readers cannot take one
+  word two ways.
+- (E) Given a choice made during setup is hard to reverse and surprising without
+  context, when it is made, then the reason behind it is recorded and reachable
+  from the requirement it shapes.
+- (E) Given setup infers something it was not told — whether this is a web app
+  or a command-line tool, the stack, how data is stored, how people sign in —
+  when the interview begins, then those inferences are stated back for
+  correction before the first clarifying question, so a wrong guess is caught
+  cheaply instead of silently shaping everything after it.
+- (E) Given the requirements, when the project is divided for delivery, then
+  each part has one cohesive purpose and few enough moving pieces to plan in one
+  sitting — or, when the project is genuinely one coherent system, it is
+  deliberately left as a single part, which is a valid outcome and not a
+  failure.
+- (E) Given a project has been set up, when setup is declared finished, then the
+  starting guidance an assistant needs to work correctly inside the project
+  exists, so a fresh session does not have to re-derive the project's shape from
+  the code.
 - (E) Given a change retires a requirement, when the requirements document is
   updated, then the retired requirement moves into a clearly marked retired
   section instead of being deleted; coverage reporting stops counting it as
   live, and its number stays permanently taken.
-- (E) Given a project is set up, when setup finishes, then no prompt hook is
-  written into the project's own settings.
 
 <a id="fr-0103"></a>
 ### FR-01.03 — /shipwright-plan
 
-- TBD — not yet elaborated.
+- (E) Given requirements to implement, when planning is declared finished, then
+  what exists is an implementation plan divided into sections the build phase
+  can take one at a time — not a single undivided document.
+- (E) Given a plan is being produced, when the step in which two independent
+  outside reviewers check it cannot run because no access key is configured,
+  then the run stops and asks whether to add a key or continue without that
+  review — it is never skipped quietly.
+- (E) Given that review step has ended by any route — reviewed, declined by the
+  operator, or switched off in configuration — when the plan is divided into
+  sections, then the route taken is on record, and dividing it refuses to begin
+  while no route has been recorded.
+- (E) Given the requirements the plan is written from, when the plan is declared
+  finished, then every one of them is assigned to at least one section.
+- (E) Given a finished plan, when its sections are checked, then every section
+  traces back to at least one requirement it serves, so a plan cannot quietly
+  add work nobody asked for.
+- (E) Given the sections, when the plan is declared finished, then each
+  one says what it is for, lists at least two implementation steps, and states
+  how it will be tested.
+- (E) Given a section, when someone builds it, then that section together with
+  the prerequisites it names is enough to implement it — a builder does not have
+  to read the other sections to know what to do, because the section names what
+  it depends on, the files it expects to touch, and how it will be tested.
+- (E) Given an outside review raised findings, when the plan is declared
+  finished, then each finding has been either folded into the plan or recorded
+  with the reason it was rejected — a review whose findings were only counted has
+  not been done.
+- (E) Given a project with a user interface, when the plan is declared finished,
+  then it names the end-to-end journeys that must work, so the test phase has
+  something concrete to verify the build against.
+- (E) Given a section that needs something another section produces, when the
+  plan is written, then it names which sections it presupposes, and the order
+  they are numbered in never places a prerequisite after the section that needs
+  it — stating the dependency is what makes the order something that can be
+  checked rather than merely intended.
+- (E) Given a planning session that was interrupted, when it is resumed, then it
+  continues from the step it had reached rather than starting over, and a plan
+  whose review was never recorded is sent back to be reviewed rather than
+  resumed past it.
+- (E) Given a finished plan, when it is handed on, then no production code has
+  been written and no tests have been run — planning stops at the plan.
+- (E) Given design decisions taken during planning that go beyond what the
+  chosen technology stack already settles, when the plan is written, then each
+  is recorded in the project's decision log with its reasoning.
 
 <a id="fr-0104"></a>
 ### FR-01.04 — /shipwright-design
 
-- TBD — not yet elaborated.
+- (E) Given requirements with a user-facing side, when design is declared
+  finished, then every one of them has at least one screen — none is left
+  without a mockup.
+- (E) Given screens have been designed, when design is declared finished, then
+  the design tokens a build needs — colours, typography, spacing — exist as one
+  reusable definition, so the build matches the design instead of guessing at
+  it.
+- (E) Given screens that belong to a single journey, when design is declared
+  finished, then the path between them is shown as a flow, not only the screens
+  in isolation, so the route a user takes can be reviewed before it is built.
+- (E) Given screens covering the user-facing requirements, when the design is
+  approved, then each of those requirements records which screen stands for it,
+  so the build knows what each requirement is meant to look like.
+- (E) Given shared page furniture — navigation, header, footer, branding — when
+  screens are produced, then every screen takes it from one definition, so no
+  two screens disagree, and changing it once updates all of them.
+- (E) Given a generated mockup, when someone opens it, then it displays in a
+  browser on its own — no build step, no server, and no dependency install.
+- (E) Given requirements with a user-facing side, when mockups are produced,
+  then the look and feel is put to a person for approval on a few representative
+  screens before the rest are generated — the phase waits for that approval
+  rather than generating every screen in a style that might be rejected.
+- (E) Given a full set of mockups, when design is asked to finish, then it does
+  so only after a person has reviewed them and approved — design never declares
+  itself finished on its own, and feedback rounds continue until the person
+  approves.
+- (E) Given the operator supplies mockups of their own, when the phase runs,
+  then those are taken as given and only the missing screens are generated —
+  supplied work is never overwritten.
+- (E) Given feedback on a single screen, when it is applied, then only that
+  screen is regenerated and the others are left untouched.
+- (E) Given a round of feedback changes what a screen or a flow *does* — a step
+  added, an option removed, a path through the product reordered — and not merely
+  how it looks, when the design is approved, then the requirement it belongs to is
+  corrected to say so. Design is where flows are rightly rethought, so what is
+  learned there reaches the requirements instead of living only in the mockup.
+- (E) Given the design phase runs, when it produces its output, then what it
+  produces are review mockups, not production code — the build phase writes the
+  real thing, so a mockup is never mistaken for the shipped implementation.
 
 <a id="fr-0105"></a>
 ### FR-01.05 — /shipwright-build
 
-- TBD — not yet elaborated.
+- (E) Given a planned section, when building it is declared finished, then what
+  exists is working code that runs — the section has been turned into part of
+  the product, not into a description of one.
+- (E) Given a request to build, when no planned section is named, then it
+  refuses and says that unplanned changes belong to the change workflow — build
+  works from a plan, one section at a time.
+- (E) Given a planned section, when it is built, then the result does exactly
+  what that section specified — every acceptance criterion the section carries is
+  met, none silently skipped or quietly downgraded, and nothing outside the
+  section's scope is added.
+- (E) Given a section that changes what the user sees and a design mockup exists
+  for it, when it is built, then the mockup is read first and used as the
+  baseline, and the built screen is checked back against it — a mockup is never
+  ignored, and never loosely approximated in place of matching it.
+- (E) Given the approved mockup and the section's own description contradict each
+  other, when that is noticed, then building stops and a person decides — because
+  the mockup is the thing someone actually looked at and judged against real use,
+  the expected outcome is that the requirement is corrected to match it, not that
+  the mockup is quietly overridden or quietly followed.
+- (E) Given a section cannot be built without touching something shared that lies
+  outside it, when that change is made, then it is the smallest one the section
+  needs and it is recorded as belonging to that section — "nothing outside the
+  section" forbids unrequested extra work, not the work the section needs to
+  function.
+- (E) Given a planned section, when build calls it finished, then the section's
+  behaviour is proven by tests that pass — it is never declared done on unproven
+  code.
+- (E) Given a completed section, when it is delivered, then it arrives as one
+  self-contained unit — one section, one branch, one commit — under the
+  framework's delivery discipline (the constitution's how), which build follows
+  rather than restates.
 
 <a id="fr-0106"></a>
 ### FR-01.06 — /shipwright-test
 
-- (E) Given code that writes a stored format and other code that reads it, when
-  the test phase runs, then it lists those pairs and flags every pair with no
-  test proving a value survives being written out and read back.
+- (E) Given a project with tests, when the test phase runs, then the tests are
+  actually executed at every level the project has — unit, integration,
+  database, end-to-end and smoke — and it is their real outcome that is
+  reported, not a summary of what was expected to happen.
+- (E) Given the test phase reports, when its record is read, then every test
+  level the project has carries an explicit outcome — passed, failed, or not run
+  with a stated reason — and for the levels the pipeline itself checks, a skip
+  with no reason given stops the phase from being called complete.
+- (E) Given the phase completes, when the record is read, then it shows tests
+  were run and counted — a record showing nothing executed is never accepted as
+  a passing one. What is checked is the record; that it matches what actually
+  ran rests on the phase writing it honestly.
+- (E) Given a level or check that could not start, or could not reach what it
+  needs to run, when results are reported, then it is recorded as not run, with
+  the reason — never as passed.
+- (E) Given test results that record having been produced outside a pipeline
+  run, when the pipeline asks whether this change was tested, then they are
+  refused and the tests are run again in context — results from elsewhere never
+  stand in once they say so.
+- (E) Given the browser tests have run, when their numbers are recorded, then the
+  numbers are the ones the test tool itself reported, and any difference from
+  what was first written down is corrected and the correction noted.
+- (E) Given a project with no browser tests yet and a plan describing user
+  journeys, when the test phase runs, then runnable tests are written from those
+  journeys instead of the whole browser layer being skipped for want of them.
+- (E) Given a project whose screens were designed as mockups first, when the test
+  phase runs, then each screen is compared back to its mockup and every
+  divergence is named — and a screen that matched before and diverges now is
+  reported as a regression, distinct from one never checked.
+- (E) Given a project with several pages, when the test phase runs, then a
+  pattern used one way on most pages and differently on a few is reported as an
+  outlier, grouped by what caused it.
+- (E) Given a project that declared performance budgets, when the test phase
+  runs, then loading speed and delivered size are measured against those budgets
+  and the result says which budget was exceeded and by how much — the project
+  choosing whether exceeding one warns or stops the run, and an overrun that only
+  warns is still recorded as a follow-up that outlives the run.
+- (E) Given a change that declared pairs of code writing and reading the same
+  stored format, when the coverage report runs, then each declared pair is
+  reported as apparently covered by a test, apparently not covered, or
+  undetermined — offered as an indication, never as proof that a value survives
+  the round trip.
+- (E) Given a change that wrote or read stored formats but declared no such pair,
+  when the coverage report runs, then that change is flagged as a missed
+  declaration.
+- (E) Given the phase completes, when the audit-evidence phase runs, then the
+  per-level results, the browser test report and the coverage report are
+  available to it as recorded evidence.
+- (E) Given a test run that passed, when its result is read as assurance, then it
+  covers no check for vulnerabilities, leaked secrets or unsafe dependencies —
+  those belong to a separate phase this one never starts, so a green test run is
+  never mistaken for a security clearance.
 
 <a id="fr-0107"></a>
 ### FR-01.07 — /shipwright-security
 
-- TBD — not yet elaborated.
+- (E) Given a project to scan, when the scan runs, then it looks for the kinds
+  of weakness that actually put a project at risk: code written so that an
+  attacker can slip their own commands or queries into it, dependencies carrying
+  publicly known vulnerabilities, access credentials committed by accident, and
+  attempts to hijack the assistant's own instructions through the files that
+  configure it.
+- (E) Given a project to scan, when findings are reported, then they arrive in
+  one shape whichever check produced them — the same shape for a flaw in the
+  code, a known-vulnerable dependency, a secret committed by accident, and an
+  attempt to hijack the assistant's own instructions hidden in the files that
+  configure it — so they can be read, counted and acted on together.
+- (E) Given one of those checks fails to run or cannot be reached, when results
+  are reported, then that check is reported as having failed and the run does
+  not report success — a check that did not run is never counted as a clean
+  result.
+- (E) Given no scanner is available at all, when the phase starts, then it stops
+  with setup instructions rather than reporting that nothing was found.
+- (E) Given a finding that exposes a leaked secret, when the report is written,
+  then the secret's value is masked, and the option to keep raw values is
+  refused outright when running unattended in automation.
+- (E) Given a leaked credential is found, when the finding is reported, then it
+  says the credential must be treated as compromised and replaced — removing it
+  from the code is not the fix, because what has been published stays published.
+- (E) Given the run states an overall verdict, when it is read, then the verdict
+  names the severity it acted on and how many findings remain below it — never a
+  bare "passed", which reads as "nothing found" when it means "nothing of the
+  most severe kind".
+- (E) Given findings are handed to a person to work through, when they are
+  presented, then how many there are at each severity is stated and the choice of
+  how far to go is put to that person — the tool never silently decides that the
+  less severe ones do not matter.
+- (E) Given the detailed findings of a scan, when they are written down, then
+  they stay in a place that does not travel with the code — a description of how
+  this project can be attacked never becomes part of what the project publishes.
+- (E) Given a finding the tool fixed by itself, when it is reported as fixed,
+  then the project's tests passed after the fix — "fixed" never means merely
+  "edited".
+- (E) Given a finding that needs human judgement, when the scan is complete,
+  then the report carries the person's decision — fix, decline or defer — and
+  the reason they gave.
+- (E) Given the scan is complete, when the audit-evidence phase runs, then what
+  the scan found is available to it as recorded evidence, in the form the scan
+  itself produced rather than a summary written by hand afterwards.
+- (E) Given a finding the project has consciously accepted, when later scans
+  run, then the acceptance is recorded in a register kept with the project
+  itself, so it stays visible and reviewable rather than the finding quietly
+  disappearing from the results.
+- (E) Given the scan runs on the code host, when it finishes, then its findings
+  are published to the host's own security surface in the format that surface
+  expects, so they appear where a reader already looks for alerts rather than
+  only inside one run's log.
+- (E) Given a project the framework manages, when findings are found, then it
+  drives the fixes through to completion; given any other repository, then it
+  reports what it found and offers to hand the findings over to be worked
+  through, rather than changing code it was not asked to change.
 
 <a id="fr-0108"></a>
 ### FR-01.08 — /shipwright-deploy
 
-- TBD — not yet elaborated.
+- (E) Given a project and a hosting target configured for it, when a release is
+  asked for, then the project is put onto that target and made to run there —
+  and which target that is belongs to the project: more than one kind can be
+  configured, and the phase is not tied to a single hosting company.
+- (E) Given tests that have not passed, when a release to a hosting target is
+  attempted, then it is refused until a person explicitly confirms going ahead
+  anyway — it never proceeds quietly on failing tests.
+- (E) Given the operation has completed, when it is checked, then the running
+  application is contacted to prove it is actually alive, and a failure to
+  answer is treated as a failed release rather than a finished one.
+- (E) Given a release that has failed, when that is established, then the
+  previously working version is put back without a person having to intervene —
+  the way back is part of releasing, not a separate procedure somebody has to
+  know about. *(Stated as the requirement; it does not hold today — the
+  automatic version revert reports success while fetching the current state.
+  Tracked as a critical open defect.)*
+- (E) Given a change to stored data applied along the way, when its own checks
+  report a mismatch afterwards, then the same return-to-previous-state path is
+  offered, and choosing to continue regardless requires a written record naming
+  the failing check and the reason it was overridden.
+- (E) Given any hosting target the product presents as supported, when it is
+  offered, then the way back to the previous working state is written down for
+  that target — which mechanism it uses, and what it does about stored data that
+  has already moved on — in a form checked against a common shape, so the
+  question is answered before the target is offered rather than during an
+  incident.
+- (E) Given the running application is stopped as part of getting back to a
+  working state, when that is done, then what remains for a person to finish is
+  stated plainly — stopping what is broken is reported as stopping it, never as
+  a completed restore.
+- (E) Given a release that has to be undone, when the return to the previous
+  state happens — whether triggered automatically or asked for by a person —
+  then it announces itself and is recorded with its cause; it never happens
+  silently.
+- (E) Given a return to the previous state is requested by a person, when it
+  runs, then it requires explicit confirmation and afterwards proves the
+  restored application is alive.
+- (E) Given the way back to the previous state is attempted, when it does not
+  succeed, then that is reported as a failure of the way back itself — never
+  swallowed, and never reported as if the previous state had been restored.
+- (E) Given a return to a previous version, when it completes, then what came
+  back is the running code — stored data that has already moved forward stays
+  where it is, and how that is handled is answered by the target's own written
+  record, so nobody assumes the data went back too.
 
 <a id="fr-0109"></a>
 ### FR-01.09 — /shipwright-changelog
 
-- TBD — not yet elaborated.
+- (E) Given the work recorded since the last release, when the phase finishes,
+  then three things exist: a release note a person can read without knowing the
+  commit history, a version marking that release, and an open request to deliver
+  it — the release is prepared, not merely described.
+- (E) Given the work recorded since the last release, when release notes are
+  produced, then each entry is grouped by the kind of change it was, in a form a
+  human reads rather than a raw list of commits.
+- (E) Given no work has been recorded since the last release, when a release is
+  attempted, then it says so and stops rather than producing an empty release.
+- (E) Given the kinds of change since the last release, when the next version
+  number is proposed, then a change that breaks compatibility raises the first
+  number, a new capability the second, and anything else the third — except
+  before the first stable release, where a break raises the second number
+  instead, because nothing has been promised as stable yet. A project with no
+  release at all starts at its first pre-stable version.
+- (E) Given several changes were developed in parallel, when their decision
+  records are published at release, then their sequential numbers are assigned at
+  that one point, so two parallel changes can never claim the same number.
+- (E) Given release notes are added to the existing history, when the file is
+  written, then the new release-note section goes above the most recent released one and
+  the document's title and older entries are left intact.
+- (E) Given entries written the older way, straight into the pending release-note section,
+  when a release is assembled, then each one is named back to the operator
+  rather than being folded in silently.
+- (E) Given a release is about to be written, when the operator asks to see it
+  first, then the full result can be previewed without anything on disk being
+  changed.
+- (E) Given the release note is written and the request to deliver it is open,
+  when someone asks whether the release is out, then it is not — preparing a
+  release publishes nothing by itself; that happens only once the request is
+  merged and the release is put onto its target.
 
 <a id="fr-0110"></a>
 ### FR-01.10 — /shipwright-compliance
 
+- (E) Given a project under the framework, when the compliance phase runs, then
+  what exists is evidence someone outside the project can read without access to
+  the running system: which requirement is covered by which test, what changed
+  and when, what the project depends on, and a single page summarising where it
+  stands.
+- (E) Given an evidence document, when it no longer matches the state it was
+  produced from — hand-edited, or only partly regenerated — then it is reported
+  as no longer valid instead of continuing to count as evidence.
 - (E) Given a completed change that says it affects behaviour but names no
   requirement and gives no reason for naming none, when the cross-check audit
   runs, then it is reported together with a suggested command to fix it, without
   failing the audit.
+- (E) Given the evidence is read as a record of the project, when it is relied
+  on, then it covers only what the project actually recorded — a change that
+  recorded nothing about the requirement it touched does not appear, so the
+  evidence is a floor on what is known, never a claim that nothing else
+  happened.
 - (E) Given the change log, when requirement traceability is scored, then a
   change counts as traced if it names a requirement or is a recognised
   behaviour-preserving change carrying a one-line reason; the share of recent
@@ -157,14 +527,18 @@ _Where the work detail lives_ at the end of this document.
 <a id="fr-0111"></a>
 ### FR-01.11 — /shipwright-iterate
 
+- (E) Given a change described in ordinary words for a project already finished,
+  when the change workflow completes, then that change exists in the product —
+  built, tested, reviewed and recorded — without the whole pipeline having to
+  be run again for it.
 - (E) Given a change described in ordinary words, when it is picked up, then its
   kind and its size are detected and the process scales to match — from a quick
   fix through to a fully specified feature with plan, review and tests.
-- (E) Given a feature or change, when it is classified, then it records whether
-  it adds, modifies, removes or leaves the requirements untouched; a
-  behaviour-affecting change that names no requirement and gives no reason is
-  rejected at the moment it is recorded, whatever kind of change it claims to
-  be.
+- (E) Given a feature or a change, when it is classified, then it records whether
+  it adds, modifies, removes or leaves the requirements untouched, and one that
+  names no requirement and gives no reason is rejected at the moment it is
+  recorded. A fix is deliberately outside this: repairing behaviour back to what
+  was intended moves no requirement, so it owes no such record.
 - (E) Given a feature or change that touched no requirements document, when it
   is finished, then finishing fails unless the record says the requirements were
   deliberately left untouched and says why in one line.
@@ -207,11 +581,53 @@ _Where the work detail lives_ at the end of this document.
 <a id="fr-0112"></a>
 ### FR-01.12 — /shipwright-preview
 
-- TBD — not yet elaborated.
+- (E) Given a project with work already built, when a preview is asked for, then
+  the project is running on this machine and the address to open it in a
+  browser is handed back — looking at it costs one request, not a setup.
+- (E) Given a project with nothing built yet, when a preview is requested, then
+  it explains that at least one piece of work must be finished first and stops.
+- (E) Given required settings are missing, when a preview is requested, then the
+  operator is walked through supplying them rather than being told to check the
+  logs.
+- (E) Given the application is already running locally, when a preview is
+  requested again, then the running instance is reused instead of a second one
+  being started.
+- (E) Given the application is running, when the preview is ready, then the
+  address to open in a browser is shown and it keeps running — including past
+  the end of the conversation that started it, so nobody loses the page they are
+  looking at — and the next request recognises it and reuses it rather than
+  failing on an address already in use.
+- (E) Given something else is already answering on that address, when a preview
+  is requested, then only this project's own running instance is ever reused —
+  a stranger's application is never handed back as if it were this one.
+- (E) Given the application fails to start, when the failure is seen, then the
+  cause is investigated and addressed rather than merely reported.
+- (E) Given a new technology stack, when it states how its local server is
+  started, then previewing works for it without any change to the preview
+  capability itself.
+- (E) Given a preview is running, when it is taken as evidence, then it shows
+  the project as it stands on this machine only — it is not a release, and a
+  working preview says nothing about whether the hosted version works.
 
 <a id="fr-0113"></a>
 ### FR-01.13 — /shipwright-adopt
 
+- (E) Given an existing codebase, when it is onboarded, then what exists
+  afterwards is enough for the change workflow to take over: guidance an
+  assistant can work from, a requirements catalogue derived from what the code
+  actually does, audit evidence, and a starting set of tests.
+- (E) Given requirements derived from reading code, when they are written, then
+  each is marked as derived and unconfirmed, and how many there are is reported
+  when onboarding hands over — a catalogue nobody has confirmed never looks like
+  one somebody did.
+- (E) Given onboarding finishes, when it hands over, then it leaves a tracked
+  follow-up to take the derived requirements through the shared questioning
+  method with a person — reading the code is a start and is not enough on its
+  own, and without that follow-up the gap is found years later.
+- (E) Given a codebase that arrives with failing tests, or with capabilities no
+  test covers, when it is onboarded, then those are recorded as inherited rather
+  than counted as this project's own failures — an onboarded project is not
+  required to arrive perfect, only to arrive honestly described.
 - (E) Given an existing codebase, when it is onboarded, then a local secrets
   file is created carrying the placeholder keys that codebase's stack needs —
   but only after it is confirmed to be excluded from version control. If that
@@ -220,19 +636,28 @@ _Where the work detail lives_ at the end of this document.
 - (E) Given onboarding derives a requirement's name and description from the
   code it read, when they are written, then they name a capability and describe
   it in plain business language, rather than describing what the code does.
-- (E) Given a project is onboarded, when onboarding finishes, then no prompt
-  hook is written into the project's own settings.
 
 <a id="fr-0114"></a>
 ### FR-01.14 — Triage Inbox
 
+- (E) Given any check, scan or audit has raised findings for this project, when
+  the operator opens the Triage Inbox, then it holds every one of them — one
+  entry per finding, each stating whether it is still open, already taken into
+  work, deliberately deferred, or dismissed — so "what is still open here?" is
+  answerable in that one place, without asking any of the checks that raised
+  them.
 - (E) Given a finding from any local check, scan or audit, when it is recorded,
-  then it lands in the project's triage buffer exactly once for that finding,
+  then it lands in the project's Triage Inbox exactly once for that finding,
   even when several producers record it at the same moment.
-- (E) Given findings exist, when the operator works through them, then each can
-  be promoted into real work or dismissed — from the command line or from the
-  companion application, with the same recorded result either way — and a
-  promoted finding leaves the buffer.
+- (E) Given findings are waiting, when the operator works through them, then
+  each one is taken into work, dismissed, or deliberately deferred until later
+  — and whichever way that decision was made, the entry afterwards carries the
+  same recorded decision, its reason, and a reference to the work it became,
+  and no longer appears among the open ones.
+- (E) Given a finding is taken into work, when that is done from the Command
+  Center, then the piece of work is created there and linked back to the entry;
+  done from the command line, the operator names work that already exists,
+  because the command line deliberately does not reach into the work list.
 - (E) Given the code host's automated scans, when they are imported, then one
   entry is created per action the operator can take, not one per underlying
   finding, and each entry carries a ready-to-paste instruction for acting on it.
@@ -242,64 +667,129 @@ _Where the work detail lives_ at the end of this document.
   next succeeds, then its entry is closed automatically; an import that failed
   closes nothing, so a broken fetch can never mass-resolve real findings.
 - (E) Given a leaked-secret alert, when it is imported, then the secret value
-  itself is never written into the buffer, and the entry carries only a rotation
-  checklist and a link.
+  itself is never written into the Triage Inbox, and the entry carries only a
+  rotation checklist and a link.
 - (E) Given the code host's tooling is missing or not signed in, when the import
   runs, then it finishes quietly without blocking the session.
-- (E) Given the host's own scan results are unavailable, when a recent
-  successful security run has published its results instead, then those are
-  used — and when the host's own results are available the published ones are
-  not read at all, so the two sources are never counted twice.
+- (E) Given a class of finding the host's own analysis covers, when that
+  analysis is available, then the copy published by a recent successful security
+  run is not read at all, so the two sources are never counted twice; when the
+  analysis is unavailable, that published copy is used in its place.
+- (E) Given a class of finding the host's own analysis never carries, when the
+  import runs, then it is always taken from the published results — otherwise
+  the project would be blind to that whole class exactly while the host's
+  analysis is working.
 - (E) Given published scan results older than the configured freshness window,
   when the import runs, then they are ignored and nothing is closed
   automatically — a stale clean scan never resolves a real finding.
-- (E) Given any failure while importing — missing tooling, no run, expired or
-  malformed results — when the import runs, then nothing is recorded, nothing is
-  closed automatically, and the session is never blocked.
-- (E) Given an entry is written, when it is inspected, then it carries only
-  aggregated counts and stable links, never text a scanner controls, and its
-  detail is length-capped.
-- (E) Given anything appends to the buffer, when the file does not already end
-  with a line break, then one is written first, so a record can never be glued
-  onto the end of its predecessor's line. A missing or empty file is appendable
-  as it is.
-- (E) Given a line nevertheless holds several records glued together, when
-  anything reads the buffer, then all of them are recovered in the order they
-  were written. Previously the whole line was skipped, so an operator's
-  dismissal read as still open while the operator believed it closed.
-- (E) Given text on such a line genuinely cannot be decoded, when it is read,
-  then the valid records around it still resolve and the unreadable remainder is
-  surfaced as damaged data rather than being indistinguishable from absence.
-- (E) Given lines already damaged on disk, when the repair is run with writers
-  stopped, then each is split back onto its own line preserving both records,
-  unreadable text is quarantined verbatim before the original is replaced, and a
-  file whose bytes cannot be preserved is reported and left untouched. Reporting
-  is the default; the acknowledgement that writers are stopped is required.
+- (E) Given a source that cannot be reached — missing tooling, no run, expired
+  or unreadable results — when the import runs, then that source leaves the
+  Triage Inbox exactly as it was: nothing added for it and nothing closed for
+  it, while the sources that did answer are recorded normally. No import failure
+  ever blocks the session.
+- (E) Given a scanner's findings are recorded, when the entry is written, then
+  it carries only aggregated counts and stable links, never the finding text
+  itself, and its detail is length-capped.
+- (E) Given an entry has to carry text the project does not control — the name
+  of a failing check, or the title someone gave a proposed change — when it is
+  shown, then that text cannot take over the display it appears in, and it is
+  length-capped so one entry cannot crowd out the rest.
+- (E) Given several producers record findings at the same moment, when their
+  entries are written, then none can swallow, truncate or hide another: every
+  entry written is one that can afterwards be read back.
+- (E) Given part of the stored record is damaged, when it is read, then the
+  entries around it still resolve and the damaged part is surfaced as damaged
+  data — never as absence, which would read as though nothing had ever been
+  recorded there.
+- (E) Given damaged storage is repaired, when the repair runs, then it reports
+  what it would do and changes nothing until it is explicitly ordered to, keeps
+  a verbatim copy of anything it cannot interpret, and leaves untouched any
+  file whose contents it cannot preserve.
+- (E) Given the Triage Inbox is compacted to keep it readable, when entries are
+  removed, then only findings a background check closed by itself may go; every
+  decision a person made stays as the record of what was decided and why, and
+  nothing still open, deferred or taken into work is ever removed.
+- (E) Given more findings are open than a summarised view shows, when that view
+  is produced, then it states how many it is not showing rather than presenting
+  its excerpt as the whole, and lower-severity entries are set aside rather than
+  dropped.
+- (E) Given the Triage Inbox is taken as a plan, when it is read, then it is
+  explicitly not one: it collects findings and records decisions, it does not
+  schedule work, set priorities by itself, or fix anything — the work list it
+  feeds is a separate place, and a finding nobody has decided on stays open
+  rather than expiring.
 
 <a id="fr-0115"></a>
 ### FR-01.15 — Cross-repo output contract
 
-- (E) Given one of the two rendered payloads changes shape, when its producer's
-  contract gate runs, then the emitted payload is compared against the shape
-  last published and the gate fails until the version has been raised to match
-  the kind of change.
-- (E) Given a consumer receives a payload whose major version it does not know,
-  when it renders, then it refuses rather than rendering partial data; an
-  additive change leaves it working unchanged.
+- (E) Given this repository produces data a different repository reads, when it
+  ships, then the shape of that data is published alongside it as a versioned
+  contract — so the reader can tell from the version alone whether it
+  understands what it received, without having to inspect the data first.
+- (E) Given such a payload changes shape, when its contract gate runs, then the
+  emitted shape is compared against the shape last published and the gate fails
+  until the version has been raised to match the kind of change: removing or
+  retyping anything the reader relies on demands more than merely adding to it.
+- (E) Given the comparison would be worthless if the same change could rewrite
+  what it is compared against, when the gate runs, then the published shape is
+  read from a state the proposed change cannot alter — never from a copy kept
+  beside the code, because editing that copy erases the very evidence the check
+  depends on and leaves the difference looking empty.
+- (E) Given a part of the payload the reader relies on becomes optional, when
+  the gate runs, then that counts as a breaking change even though no field
+  disappeared — the data still parses and the reader still breaks, which is the
+  one kind of change nobody notices in time.
+- (E) Given the published shape was derived from data that never exercised part
+  of it — a list that happened to be empty, a value only ever seen absent — when
+  it is published, then that weakness is stated rather than passing as a full
+  description, so nobody reads "this is always absent" as a promise it was never
+  in a position to make.
+- (E) Given the shape is checked, when it is checked, then it is checked against
+  what the reader actually fetches — the real command and its real output — not
+  only against what the producing code would emit, because everything upstream
+  can be correct while a wrapper, an encoder or a changed invocation alters what
+  finally leaves the building.
+- (E) Given a payload is handed to a different repository, when it is produced,
+  then the capability producing it states plainly that it has an outside reader
+  and what the contract is — a shape nobody declared is a shape nobody will
+  think to version.
+- (E) Given a contract is in force, when it is read, then it binds this side
+  only: it says what is published and how a change to it is announced, and it
+  makes no promise about what the receiving side does with that announcement —
+  how a reader behaves when it meets a version it does not know is the
+  receiving side's own requirement, not this one.
 
 <a id="fr-0116"></a>
 ### FR-01.16 — Guided requirement elicitation
 
+- (E) Given a requirement has been elicited, when the interview ends, then what
+  exists is a requirement its author has confirmed and whose context is
+  completely covered — every dimension either answered or explicitly marked as
+  an unconfirmed guess — so that for any one of them a later reader can name
+  which of three it was: decided by the person, found in the code, or admitted
+  as unknown.
 - (E) Given requirements are gathered anywhere in Shipwright — a new project, an
   adopted codebase, or an ongoing change — when the interview runs, then it
   follows one shared method rather than three separate ones: one question is put
   at a time, each carrying a recommended answer, and a fact that can be read from
   the code or the tools is looked up instead of being asked.
-- (E) Given a requirement is being elicited, when a term or a boundary is
-  recorded, then the wording is challenged against the project's own domain
-  glossary and stress-tested with at least one concrete edge-case scenario, so a
-  vague word is sharpened before it hardens into a requirement two readers would
-  understand two ways.
+- (E) Given the method has parts, when it is run, then it is run in the order the
+  method states, and what the capability produces is named before any analysis
+  begins — criteria written after the analysis inherit its bias, because refusals
+  and edge cases are what stand out while the core capability is too self-evident
+  to write down. A requirement whose first criterion is a refusal is the
+  signature of the order having been skipped.
+- (E) Given a term is sharpened or captured, when it is written down, then it is
+  checked against the terms already recorded rather than merely appended to
+  them — a list that is only ever added to becomes a collision generator, and
+  one word carrying two meanings is introduced by the very person holding the
+  list.
+- (E) Given a requirement is being elicited, when its boundaries are tested, then
+  at least two concrete edge-case scenarios are put **to the person** and what
+  each settled is recorded — answering one's own scenario does not count, because
+  the value lies in the case the other person decides differently than was
+  assumed. Asked for as encouragement rather than as a number, this produced none
+  at all.
 - (E) Given elicitation is under way, when a choice is made that is hard to
   reverse, surprising without context, and the result of a genuine trade-off,
   then the reason behind it is captured at that moment as a decision record, and
@@ -310,13 +800,99 @@ _Where the work detail lives_ at the end of this document.
   and edge cases, its failure behaviour, its glossary terms, its rationale, and
   what it explicitly will not do — is either answered or explicitly recorded as
   an unconfirmed assumption, and nothing is treated as settled while any
-  dimension is left silently unanswered.
-- (E) Given the shared method is defined, when a plugin that elicits
+  dimension is left silently unanswered. A dimension may be marked a guess only
+  where the answer genuinely could not be obtained — never while someone who
+  could have answered it was in the conversation.
+- (E) Given the coverage is complete, when the requirement is about to be
+  written, then the shared understanding is played back and the person confirms
+  it first — that confirmation is the hand-off from their picture of the thing to
+  the recorded one, and without it what gets recorded is the interviewer's guess.
+- (E) Given the shared method is defined, when a capability that elicits
   requirements is invoked, then it is bound to that one method and may add its
-  own surface-specific questions but cannot skip the shared coverage checklist,
-  so the same depth of questioning holds wherever a requirement is first written.
+  own surface-specific questions but cannot skip the shared coverage checklist —
+  and which capabilities those are is established by looking for them, not by
+  consulting a list someone must remember to extend, because the surface added
+  next is precisely the one nobody adds to the list.
+- (E) Given this is read as a guarantee about a particular conversation, when it
+  is read, then it is not one: what can be established is that the method exists
+  whole and that every place gathering requirements is bound to it. Whether the
+  answers were any good, or whether a question was genuinely put to the person
+  rather than answered on their behalf, cannot be established by any check and is
+  never claimed here.
 
-## Where the work detail lives
+<a id="fr-0117"></a>
+### FR-01.17 — Independent re-check on the code host
+
+- (E) Given a change proposed for merge, when the code host picks it up, then
+  the project's tests, its lint, its security checks and the host's own code
+  analysis all run again there — a pass on the author's machine is never
+  accepted in place of that, because nothing about the author's machine can be
+  verified from outside it.
+- (E) Given those checks, when any one of them is failing or has not reported an
+  answer yet, then the change cannot merge — silence counts as not passing, not
+  as passing.
+- (E) Given a change proposed for merge, when it arrives, then it is reviewed on
+  the host automatically, without the author having to ask for a review, and
+  only the person who owns the project can waive that review.
+- (E) Given a review has run, when it reaches a verdict, then the verdict and
+  the reasons behind it are written onto the change itself, where the people
+  deciding whether to merge it will read them — not left in the log of a run
+  nobody opens.
+- (E) Given a change proposed by someone outside the project, when the host runs
+  its checks on it, then those checks never hand that change the project's
+  credentials — an untrusted change is examined, never trusted with the keys to
+  the project it is asking to join.
+- (E) Given the set of checks that must pass before merging is configured outside
+  the project, when it no longer matches the checks the project actually has, then
+  that difference is raised as a tracked follow-up — a check that runs, reports
+  and gates nothing is worse than no check, because it reads as protection.
+- (E) Given a change that alters the checks themselves, when it is examined, then
+  it earns the closest scrutiny available and cannot exempt itself from it —
+  whoever unlocks a door is not the one who decides it may be unlocked.
+
+<a id="fr-0118"></a>
+### FR-01.18 — /shipwright-grade
+
+- (E) Given any git repository, when it is graded, then what exists afterwards
+  is a report giving it a letter grade with, for each dimension, the score, the
+  evidence behind it, and whether that evidence was read from the project's own
+  records or estimated from the outside — and the repository itself is exactly
+  as it was, so it may be pointed at code nobody has permission to change.
+- (E) Given the same repository at the same point in its history, when it is
+  graded again, then the same grade comes out — the judgement is derived rather
+  than formed, so two people comparing notes are comparing the same thing.
+- (E) Given a repository the framework already manages and one it does not, when
+  both are graded, then both are measured against the same rubric by the same
+  engine, so a grade taken from the outside and the framework's own dashboard
+  cannot tell two different stories about the same controls.
+- (E) Given a dimension cannot be determined from what the repository shows,
+  when the grade is computed, then it is marked as not determinable and left out
+  of the calculation entirely — never scored as nothing, never filled in with a
+  guess.
+- (E) Given nothing at all can be measured, when the grade is computed, then the
+  answer is that the repository cannot be graded — not the worst grade. Absence
+  of evidence is not evidence of absence, and an invented bad grade would be
+  exactly as dishonest as an invented good one.
+- (E) Given a control the repository plainly ought to have is missing or broken,
+  when the grade is computed, then the headline grade is capped for that reason
+  and the reason is stated — so a flattering average over the dimensions that
+  happened to be measurable cannot cover for a load-bearing one that is dark.
+- (E) Given dimensions could not be determined, when the report is presented,
+  then they are named as the controls adopting the framework would make visible,
+  rather than quietly dropped — the gaps are the honest part of what is being
+  offered, not something to round away.
+- (E) Given a repository that is not public, when it is graded, then nothing
+  about it leaves the machine unless consent was given twice: once for reaching
+  out at all, and again for doing so on a repository that is not public — so a
+  permission granted broadly never sweeps a private repository along with it.
+- (E) Given anything did leave the machine, when the report is written, then it
+  states exactly what was fetched, so a reader can tell what the grade rests on
+  and what was sent away to find out.
+- (E) Given a grade is quoted as an argument, when it is read, then it claims
+  only which controls a repository visibly has — not that the software works,
+  not that it is safe, and never in place of an examination by a person. Where
+  it works without the project's own records it is an estimate made from the
+  outside and says so, and it recommends nothing and changes nothing.
 
 This catalog states **what the product does**. It deliberately does not carry
 the record of how each capability got there.

@@ -1,14 +1,14 @@
 {
   "schema_version": 3,
   "collector_version": "test_links/1.0.0",
-  "generated_at": "2026-07-26T07:06:44.085342+00:00",
-  "source_commit": "5da96ebe856134cd3ef208c47861c4ee7822cf12",
-  "spec_hash": "sha256:0ea3561cb61fab96b7075a93b2e391af15adbbc3a98b6363010b513724217a19",
+  "generated_at": "2026-07-26T23:36:34.494070+00:00",
+  "source_commit": "cb8d647b120bf3f8dca7e9b5d56a420fc0c9aa89",
+  "spec_hash": "sha256:17e786f76af6598b4abfa55fc22c138b951ba4ba9fc2f499ad975c4c24fbee1d",
   "requirements": {
     "01::FR-01.01": {
       "id": "FR-01.01",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
-      "title": "Run the whole delivery pipeline end to end in one conversation — requirements, planning, design, build, test, security, deploy, changelog and compliance — so a change moves from a plain description to delivered work without the operator driving each phase by hand.",
+      "title": "Run the whole delivery pipeline end to end in one conversation — requirements, design, planning, build, test, release notes and hosting, in that order — so a change moves from a plain description to delivered work without the operator driving each phase by hand. Security scanning and audit evidence are deliberately not steps of it: the first runs on its own, the second happens alongside every phase.",
       "priority": "Must",
       "status": "active",
       "required_layers": [
@@ -38,7 +38,7 @@
     "01::FR-01.03": {
       "id": "FR-01.03",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
-      "title": "Produce an implementation plan from research, an optional interview, and a review by two independent external language models — structured so the build phase can consume it section by section, tests first.",
+      "title": "Produce an implementation plan from research and an optional interview, structured so the build phase can consume it one section at a time, tests first. No plan reaches the build phase unreviewed: two independent external language models review it by default, and declining them obliges a structured self-review in their place.",
       "priority": "Must",
       "status": "active",
       "required_layers": [
@@ -68,7 +68,7 @@
     "01::FR-01.05": {
       "id": "FR-01.05",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
-      "title": "Implement a planned change test-first — write a failing test, make it pass, then tidy — with code review, conventional commit messages, and one branch per change.",
+      "title": "Turn one planned section into working code that does what the section specified and matches its design mockup — one section at a time, on its own branch. The engineering discipline it works under — test-first, code review, safe conventional commits — is the framework's, applied here rather than owned here.",
       "priority": "Must",
       "status": "active",
       "required_layers": [
@@ -83,7 +83,7 @@
     "01::FR-01.06": {
       "id": "FR-01.06",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
-      "title": "Run the project's unit, end-to-end and smoke tests, and report which pairs of code that write and read the same stored format have no test proving a value survives the round trip.",
+      "title": "Run the project's tests at every level it has — unit, integration, database, end-to-end and smoke — and produce one record in which each level carries an explicit outcome or a stated reason it did not run. Compare the built screens back to their mockups, hold the project to the performance budgets it declared, and report which of the declared pairs of code that write and read the same stored format appear to have no test covering them.",
       "priority": "Must",
       "status": "active",
       "required_layers": [
@@ -325,7 +325,7 @@
     "01::FR-01.07": {
       "id": "FR-01.07",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
-      "title": "Scan the project for vulnerabilities, leaked secrets and unsafe dependencies with several independent scanners, then drive the fixes to completion; each scanner keeps its own list of accepted exceptions.",
+      "title": "Scan the project with several independent checks — flaws in the code, unsafe dependencies, leaked secrets, and attempts to hijack the assistant's own instructions — and report everything they find in one shape, publishing it to the code host's security surface as well. Inside a project the framework already manages, it drives the fixes through to completion; pointed at any other repository it reports what it found and offers to hand the findings over to be worked through. A finding the project formally accepts is recorded in a register kept with the project, so it stays visible instead of quietly disappearing.",
       "priority": "Must",
       "status": "active",
       "required_layers": [
@@ -340,7 +340,7 @@
     "01::FR-01.08": {
       "id": "FR-01.08",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
-      "title": "Deploy the project to a configured hosting target, prove it is alive with a smoke test, and roll back when it is not. Jelastic (Infomaniak) is shipped; Vercel and a container-on-a-server target are documented as stubs.",
+      "title": "Release the project to a configured hosting target and prove it is actually alive before calling it done, treating no answer as a failed release. Every supported target carries a written record of its way back to the previous working state and of what that does about stored data that has already moved on. Jelastic (Infomaniak) is shipped; Vercel and a container-on-a-server target are documented as stubs.",
       "priority": "Should",
       "status": "active",
       "required_layers": [
@@ -1162,7 +1162,7 @@
     "01::FR-01.14": {
       "id": "FR-01.14",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
-      "title": "Collect findings from local checks and from the code host's automated scans into one per-project buffer the operator works through — each finding recorded once, and each either promoted into real work or dismissed — so the actual task list stays curated instead of flooded.",
+      "title": "Collect findings from local checks and from the code host's automated scans into one per-project Triage Inbox the operator works through — each finding recorded once, and each one taken into work, deferred or dismissed — so the actual task list stays curated instead of flooded.",
       "priority": "Must",
       "status": "active",
       "required_layers": [
@@ -1804,7 +1804,7 @@
     "01::FR-01.15": {
       "id": "FR-01.15",
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
-      "title": "The two payloads the companion application renders field for field are versioned output contracts: a breaking change obliges the consumer to refuse the payload, an additive one leaves it working. Each producer states its contract and names its consumer, and a gate compares what it emits against the shape last published and fails until the version has been raised — so a shape change cannot reach the consumer silently.",
+      "title": "Every payload this repository hands to a different repository is a versioned output contract: its shape is published alongside it, the capability producing it states that it has an outside consumer, and a gate compares what is emitted against the shape last published — read from a state the proposed change cannot rewrite — and fails until the version has been raised to match the kind of change. So a shape change can never reach a consumer silently.",
       "priority": "Must",
       "status": "active",
       "required_layers": [
@@ -1821,6 +1821,36 @@
       "spec_path": ".shipwright/planning/01-adopted/spec.md",
       "title": "Elicit requirements through one shared, rigorous method wherever they are gathered — a new project, an adopted codebase, or an ongoing change: ask one question at a time, each with a recommended answer, look facts up in the code instead of asking, challenge wording against the project's own glossary, and stress-test with concrete edge cases. Capture the project's domain vocabulary and the reason behind each hard-to-reverse choice as they surface. No requirement is treated as settled until every dimension of its context is either answered or explicitly marked as an unconfirmed assumption.",
       "priority": "Must",
+      "status": "active",
+      "required_layers": [
+        "unit"
+      ],
+      "required_layers_source": "inferred_legacy",
+      "tests": {},
+      "coverage": {
+        "unit": "MISSING"
+      }
+    },
+    "01::FR-01.17": {
+      "id": "FR-01.17",
+      "spec_path": ".shipwright/planning/01-adopted/spec.md",
+      "title": "Re-check every proposed change on the code host before it can merge — the project's tests, its lint, its security scans and the host's own code analysis — independently of whatever already ran on the author's machine, and have the change reviewed there automatically rather than on request. A local pass is never accepted in place of the host's.",
+      "priority": "Must",
+      "status": "active",
+      "required_layers": [
+        "unit"
+      ],
+      "required_layers_source": "inferred_legacy",
+      "tests": {},
+      "coverage": {
+        "unit": "MISSING"
+      }
+    },
+    "01::FR-01.18": {
+      "id": "FR-01.18",
+      "spec_path": ".shipwright/planning/01-adopted/spec.md",
+      "title": "Give any git repository a control grade from A to F without changing anything in it: derive what can honestly be derived from its history, its tests and its configuration, and score it on the same rubric the framework's own dashboard uses. A dimension that cannot be determined is marked as exactly that and left out of the calculation rather than filled in, and the report says for each judgement whether it was read from the project's own records or estimated from the outside. Nothing about a repository that is not public leaves the machine without two separate consents.",
+      "priority": "Should",
       "status": "active",
       "required_layers": [
         "unit"
@@ -5196,18 +5226,11 @@
     "plugins/shipwright-security/tests/test_degraded_scan_surfacing.py::test_pr_mode_renders_banner",
     "plugins/shipwright-security/tests/test_degraded_scan_surfacing.py::test_standard_report_renders_banner",
     "plugins/shipwright-security/tests/test_finalize_security_compliance.py::test_finalize_commit_qualifies_as_snapshot",
-    "plugins/shipwright-security/tests/test_finalize_security_compliance.py::test_finalize_creates_snapshot_commit_with_runid_trailer",
-    "plugins/shipwright-security/tests/test_finalize_security_compliance.py::test_finalize_no_commit_when_nothing_written",
+    "plugins/shipwright-security/tests/test_finalize_security_compliance.py::test_finalize_creates_snapshot_commit_when_compliance_changed",
+    "plugins/shipwright-security/tests/test_finalize_security_compliance.py::test_finalize_idempotent_across_two_runs",
     "plugins/shipwright-security/tests/test_finalize_security_compliance.py::test_finalize_skips_in_ci",
     "plugins/shipwright-security/tests/test_finalize_security_compliance.py::test_finalize_skips_in_standalone_mode",
-    "plugins/shipwright-security/tests/test_finalize_write_set.py::test_finalize_commit_includes_events_and_config",
-    "plugins/shipwright-security/tests/test_finalize_write_set.py::test_finalize_commits_when_only_event_changed",
-    "plugins/shipwright-security/tests/test_finalize_write_set.py::test_finalize_leaves_clean_tree_after_commit",
-    "plugins/shipwright-security/tests/test_finalize_write_set.py::test_finalize_real_update_compliance_leaves_clean_tree",
-    "plugins/shipwright-security/tests/test_finalize_write_set.py::test_finalize_reruns_safely_without_dirty_leak",
-    "plugins/shipwright-security/tests/test_finalize_write_set.py::test_finalize_stages_direct_triage_append",
-    "plugins/shipwright-security/tests/test_finalize_write_set.py::test_finalize_tolerates_absent_events_log",
-    "plugins/shipwright-security/tests/test_finalize_write_set.py::test_finalize_tolerates_gitignored_events_log",
+    "plugins/shipwright-security/tests/test_finalize_security_compliance.py::test_finalize_skips_when_compliance_unchanged",
     "plugins/shipwright-security/tests/test_generate_security_report.py::test_json_output_without_md_output_is_supported",
     "plugins/shipwright-security/tests/test_generate_security_report.py::test_json_output_writes_sidecar_file",
     "plugins/shipwright-security/tests/test_generate_security_report.py::test_json_payload_carries_findings_unchanged",
@@ -7910,7 +7933,6 @@
     "shared/tests/test_list_iterate_branches.py::test_unknown_key_is_ignored",
     "shared/tests/test_list_iterate_branches.py::test_unrelated_history_low_confidence",
     "shared/tests/test_list_iterate_branches.py::test_worktree_locked_branch",
-    "shared/tests/test_llm_review.py::test_default_models_match_shipping_config",
     "shared/tests/test_llm_review.py::test_llm_review_openai_uses_max_completion_tokens",
     "shared/tests/test_llm_review.py::test_run_review_success_is_false_when_no_leg_succeeds",
     "shared/tests/test_mark_review_state.py::test_mark_completed",
@@ -8305,6 +8327,10 @@
     "shared/tests/test_requirement_elicitation_refs.py::test_module_pins_its_internal_cross_references",
     "shared/tests/test_requirement_elicitation_refs.py::test_module_pins_the_load_bearing_rules_by_sentence",
     "shared/tests/test_requirement_elicitation_refs.py::test_module_retains_cited_sections",
+    "shared/tests/test_requirement_elicitation_rigor.py::test_assumed_is_only_for_unobtainable_answers",
+    "shared/tests/test_requirement_elicitation_rigor.py::test_module_carries_the_negative_space_pass",
+    "shared/tests/test_requirement_elicitation_rigor.py::test_module_separates_enforced_from_prompt_only",
+    "shared/tests/test_requirement_elicitation_rigor.py::test_outcome_is_the_spine_and_does_not_displace_the_other_dimensions",
     "shared/tests/test_requirement_model.py::test_is_canonical_fr",
     "shared/tests/test_requirement_model.py::test_layers_are_the_closed_vocabulary",
     "shared/tests/test_requirement_model.py::test_model_version_tracks_manifest_schema_version",

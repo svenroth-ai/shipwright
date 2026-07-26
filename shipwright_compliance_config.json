@@ -25,7 +25,6 @@
   "phases_covered": [
     "iterate",
     "changelog",
-    "design",
-    "security"
+    "design"
   ]
 }
