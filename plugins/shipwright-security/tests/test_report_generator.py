@@ -210,6 +210,11 @@ class TestMainCLI:
         output_file = tmp_path / "report.md"
         argv = [
             "generate_security_report.py",
+            # --project-root is REQUIRED here: main() mirrors findings into
+            # <project_root>/.shipwright/triage.jsonl, and the default "." is the
+            # CWD — which under the plugin's own pytest session is the source
+            # tree. Without this the test wrote triage.jsonl into the repo.
+            "--project-root", str(tmp_path),
             "--input", str(findings_file),
             "--output", str(output_file),
             "--pr-mode",
@@ -243,6 +248,7 @@ class TestMainCLI:
         output_file = tmp_path / "report.md"
         argv = [
             "generate_security_report.py",
+            "--project-root", str(tmp_path),  # see test_reads_input_file
             "--input", str(findings_file),
             "--prompt-risks", str(prompt_file),
             "--output", str(output_file),

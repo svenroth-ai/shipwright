@@ -53,6 +53,12 @@ except (ImportError, ModuleNotFoundError):
 # SSoT cell escaper (F32): escape every scanner/repo cell so `|`/newline can't break the table.
 from markdown_table import escape_cell  # noqa: E402
 
+# Plugin-local libs (coverage manifest + rendering + triage emission).
+sys.path.insert(0, str(PLUGIN_ROOT / "scripts" / "lib"))
+from coverage_report import coverage_banner, coverage_table  # noqa: E402
+from coverage_sanitize import sanitize_coverage  # noqa: E402
+from scan_coverage import with_prompt_injection_row  # noqa: E402
+
 # ---------------------------------------------------------------------------
 # Risk score calculation
 # ---------------------------------------------------------------------------
@@ -103,20 +109,14 @@ RISK_EMOJI = {
 # ---------------------------------------------------------------------------
 
 def load_findings_from_file(path: Path) -> list[dict[str, Any]]:
-    if not path.exists():
-        return []
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return []
-    return data.get("findings", data.get("data", []))
+    """Findings from a scan artifact, or [] when it cannot be read.
 
-
-def load_scan_errors_from_file(path: Path) -> list[dict[str, Any]]:
-    """Read the degraded-scan markers (``scan_errors``) from a findings.json.
-
-    Returns [] when the file is absent/invalid or carries no markers — the
-    report then renders no degraded banner.
+    The non-dict guard matters: a JSON array (a hand-written or
+    wrong-tool ``--prompt-risks`` / ``--input`` file) used to reach
+    ``data.get`` and crash the whole report with an AttributeError. Every other
+    loader here degrades to [] instead of taking the report down with it, and a
+    file we could not read must not be mistaken for a scanned-clean one either —
+    ``_prompt_risks_readable`` is what decides the coverage claim.
     """
     if not path.exists():
         return []
@@ -124,8 +124,62 @@ def load_scan_errors_from_file(path: Path) -> list[dict[str, Any]]:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
         return []
-    errors = data.get("scan_errors") if isinstance(data, dict) else None
-    return errors if isinstance(errors, list) else []
+    if not isinstance(data, dict):
+        return []
+    findings = data.get("findings", data.get("data", []))
+    return findings if isinstance(findings, list) else []
+
+
+def _load_list_key(path: Path, key: str) -> list[dict[str, Any]]:
+    """Read a top-level list field from a findings.json / sidecar.
+
+    Returns [] when the file is absent, unparseable, or carries no such field.
+    """
+    if not path.exists():
+        return []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return []
+    value = data.get(key) if isinstance(data, dict) else None
+    return value if isinstance(value, list) else []
+
+
+def load_scan_errors_from_file(path: Path) -> list[dict[str, Any]]:
+    """Degraded-scan markers (``scan_errors``); [] renders no degraded banner."""
+    return _load_list_key(path, "scan_errors")
+
+
+def _prompt_risks_readable(path: Path) -> bool:
+    """True only when a prompt-risks file exists AND parses to the expected shape.
+
+    A missing or malformed file must NOT let the prompt-injection coverage row
+    claim `covered` — that is the same false-clean signal the manifest exists to
+    remove, just one level up.
+    """
+    if not path.exists():
+        return False
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return False
+    if not isinstance(payload, dict):
+        return False
+    return isinstance(payload.get("findings"), list) or isinstance(
+        payload.get("data"), list)
+
+
+def load_coverage_from_file(path: Path) -> list[dict[str, Any]]:
+    """Coverage manifest (``coverage``) — what the scan actually looked at.
+
+    [] means the producer did not report coverage (a pre-manifest scan), which
+    the report renders as "Coverage not reported" rather than a clean sweep.
+
+    SANITIZED at this boundary: with ``--input`` the manifest is caller-supplied,
+    and its labels reach both a markdown report and the launch payload an agent
+    executes. See ``coverage_sanitize``.
+    """
+    return sanitize_coverage(_load_list_key(path, "coverage"))
 
 
 def load_findings_from_stdin() -> list[dict[str, Any]]:
@@ -197,8 +251,15 @@ def generate_standard_report(
     findings: list[dict[str, Any]],
     repo_name: str = "unknown",
     scan_errors: list[dict[str, Any]] | None = None,
+    coverage: list[dict[str, Any]] | None = None,
 ) -> str:
-    """Generate the full Markdown report (original format, extended slightly)."""
+    """Generate the full Markdown report (original format, extended slightly).
+
+    ``coverage`` is the scan coverage manifest — what this run looked at and,
+    crucially, what it did NOT. It renders as a banner above the findings plus
+    a per-class table, so a report produced on a machine with one scanner
+    installed cannot read as clean for every class.
+    """
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
     severity_counts = Counter(f.get("severity", "unknown") for f in findings)
@@ -213,7 +274,9 @@ def generate_standard_report(
         f"**Risk Level:** {RISK_EMOJI[risk]} {risk}",
         f"**Total Findings:** {len(findings)}",
         "",
+        *coverage_banner(coverage),
         *degraded_banner(scan_errors),
+        *coverage_table(coverage),
         "## Summary",
         "",
         "### By Severity",
@@ -286,6 +349,7 @@ def generate_pr_report(
     findings: list[dict[str, Any]],
     repo_name: str = "unknown",
     scan_errors: list[dict[str, Any]] | None = None,
+    coverage: list[dict[str, Any]] | None = None,
 ) -> str:
     """Compact report optimized for a PR comment."""
     risk = calculate_risk_level(findings)
@@ -298,7 +362,13 @@ def generate_pr_report(
         f"**Risk Level:** {RISK_EMOJI[risk]} **{risk}**",
         f"**Total Findings:** {len(findings)}",
         "",
+        *coverage_banner(coverage),
         *degraded_banner(scan_errors),
+        # The full manifest, not just the banner: a PR reader has to be able to
+        # see WHICH classes were covered, degraded or skipped, otherwise the
+        # compact report re-creates the "reads clean everywhere" problem in the
+        # one place most people actually look.
+        *coverage_table(coverage),
     ]
 
     # Scanner breakdown table
@@ -380,128 +450,14 @@ def generate_pr_report(
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
-# AC-1 of iterate-2026-05-14-triage-producers-2: triage emission
+# Triage emission (iterate-2026-05-14-triage-producers-2 AC-1) lives in
+# scripts/lib/security_triage_emit.py; re-exported here because this module is
+# the historical import site.
 # ---------------------------------------------------------------------------
 
-_SECURITY_KIND_FROM_SEVERITY = {
-    "critical": "bug",
-    "high": "bug",
-    "medium": "improvement",
-    "low": "improvement",
-    "info": "improvement",
-}
-
-_KNOWN_SEVERITIES = ("critical", "high", "medium", "low", "info")
-
-
-def _emit_findings_to_triage(
-    project_root: Path,
-    findings: list[dict[str, Any]],
-    *,
-    run_id: str | None = None,
-    commit: str | None = None,
-) -> int:
-    """Append security findings to ``.shipwright/triage.jsonl`` (best-effort).
-
-    One triage item per finding. ``source="security"``, severity inherited
-    verbatim from the scanner (unrecognized → fallback to ``"medium"``).
-    ``dedup_key=f"{tool}:{check_id}:{file}:{line}"`` makes the same finding
-    on the same line stable across runs; ``match_commit=True`` with a 24h
-    window lets the finding re-fire daily until promoted/dismissed.
-
-    Returns the number of NEW items appended (duplicates are skipped). Any
-    per-finding error is logged to stderr and swallowed — emission never
-    blocks the consolidation path.
-    """
-    if not findings:
-        return 0
-
-    # Lazy import: avoid forcing shared/scripts/ onto sys.path at module
-    # import time. Plugin tests run with a constrained path.
-    try:
-        shared_scripts = (
-            Path(__file__).resolve().parents[4] / "shared" / "scripts"
-        )
-        if str(shared_scripts) not in sys.path:
-            sys.path.insert(0, str(shared_scripts))
-        from triage import append_triage_item_idempotent  # noqa: PLC0415
-    except Exception as exc:  # noqa: BLE001
-        sys.stderr.write(
-            f"[security] triage import failed: "
-            f"{type(exc).__name__}: {exc}\n"
-        )
-        return 0
-
-    appended = 0
-    for f in findings:
-        try:
-            if not isinstance(f, dict):
-                continue
-            tool = str(f.get("source") or "unknown")
-            check_id = str(f.get("rule") or f.get("type") or "unknown")
-            affected_file = str(f.get("affected_file") or f.get("file") or "unknown")
-            line_val = f.get("affected_line") or f.get("line") or "?"
-            description = str(f.get("description") or "")
-
-            if not check_id or check_id == "unknown" or affected_file == "unknown":
-                # Producer cannot build a stable dedup key from this finding
-                # — best-effort skip + stderr (rather than emit a useless
-                # "unknown:unknown:..." key that pollutes the inbox).
-                sys.stderr.write(
-                    f"[security] skipping finding missing rule/file: "
-                    f"{f!r}\n"
-                )
-                continue
-
-            raw_sev = str(f.get("severity") or "").lower()
-            if raw_sev not in _KNOWN_SEVERITIES:
-                # Conservative fallback — never raise into the consolidation
-                # path (which would break the entire report). "medium" is
-                # the operator-useful default.
-                severity = "medium"
-            else:
-                severity = raw_sev
-
-            kind = _SECURITY_KIND_FROM_SEVERITY[severity]
-
-            summary = description.replace("\n", " ").strip()[:80]
-            title = f"[{tool}] {check_id}: {summary}" if summary else \
-                    f"[{tool}] {check_id}"
-            title = title[:160]
-
-            detail_parts = [f"{affected_file}:{line_val}"]
-            if description:
-                detail_parts.append(description)
-            suggested_fix = f.get("suggested_fix") or f.get("remediation")
-            if suggested_fix:
-                detail_parts.append(f"fix: {suggested_fix}")
-            detail = " | ".join(detail_parts)
-
-            evidence_path = f.get("_evidence_path") or f.get("evidence_path")
-
-            new_id = append_triage_item_idempotent(
-                project_root,
-                source="security",
-                severity=severity,
-                kind=kind,
-                title=title,
-                detail=detail,
-                dedup_key=f"{tool}:{check_id}:{affected_file}:{line_val}",
-                evidence_path=str(evidence_path) if evidence_path else None,
-                run_id=run_id,
-                commit=commit,
-                match_commit=True,
-                window_seconds=24 * 3600,
-            )
-            if new_id is not None:
-                appended += 1
-        except Exception as exc:  # noqa: BLE001 — best-effort per-finding
-            sys.stderr.write(
-                f"[security] triage emit failed for finding "
-                f"{f.get('rule', '<no-rule>') if isinstance(f, dict) else '<non-dict>'}: "
-                f"{type(exc).__name__}: {exc}\n"
-            )
-    return appended
+from security_triage_emit import (  # noqa: E402
+    emit_findings_to_triage as _emit_findings_to_triage,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -518,12 +474,18 @@ def build_json_sidecar(
     findings: list[dict[str, Any]],
     repo_name: str = "unknown",
     scan_errors: list[dict[str, Any]] | None = None,
+    coverage: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Compose the machine-readable sidecar payload.
 
     Mirrors the data presented in generate_standard_report so an
     automated consumer (CI, /shipwright-iterate handoff) can read this
     file instead of parsing the markdown.
+
+    ``coverage`` is additive, so ``schema_version`` stays 1 per this payload's
+    own contract ("existing top-level fields stay stable; new fields may be
+    added"). ``scan_compare`` reads it to decide which classes two runs may be
+    compared over.
     """
     errors = list(scan_errors or [])
     by_severity = Counter(f.get("severity", "unknown") for f in findings)
@@ -539,6 +501,7 @@ def build_json_sidecar(
         "by_source": by_source,
         "degraded": bool(errors),
         "scan_errors": errors,
+        "coverage": list(coverage or []),
         "findings": list(findings),
     }
 
@@ -592,10 +555,29 @@ def main() -> int:
     if not scan_errors:
         scan_errors = load_scan_errors_from_file(config_path)
 
-    # Merge prompt-injection findings if provided
+    # Coverage manifest — what the scan looked at. When --input is supplied its
+    # manifest is AUTHORITATIVE, absence included: falling back to the local
+    # config would attach another scan's coverage to these findings, and a
+    # pre-feature input must render "coverage not reported" rather than inherit
+    # a stale claim. Read before the prompt-injection merge so the merge can add
+    # its own row.
+    coverage = (
+        load_coverage_from_file(Path(args.input)) if args.input
+        else load_coverage_from_file(config_path)
+    )
+
+    # Merge prompt-injection findings if provided. `ran` must mean "output was
+    # read", not "a flag was passed": load_findings_from_file returns [] for a
+    # missing/unparseable file, so keying the row off the flag alone would claim
+    # the class was checked when nothing was.
+    prompt_scan_read = False
     if args.prompt_risks:
-        prompt_findings = load_findings_from_file(Path(args.prompt_risks))
-        findings = list(findings) + list(prompt_findings)
+        prompt_scan_read = _prompt_risks_readable(Path(args.prompt_risks))
+        findings = list(findings) + list(
+            load_findings_from_file(Path(args.prompt_risks)))
+    # The prompt-injection scan is a class of its own. Omitting it entirely
+    # reads as clean, so it gets a row either way.
+    coverage = with_prompt_injection_row(coverage, ran=prompt_scan_read)
 
     # Iterate-2 AC-1: mirror findings into .shipwright/triage.jsonl before
     # report rendering. Best-effort — emission failures never block the
@@ -610,15 +592,15 @@ def main() -> int:
 
     # Generate report
     if args.pr_mode:
-        report = generate_pr_report(findings, args.repo, scan_errors)
+        report = generate_pr_report(findings, args.repo, scan_errors, coverage)
     else:
-        report = generate_standard_report(findings, args.repo, scan_errors)
+        report = generate_standard_report(findings, args.repo, scan_errors, coverage)
 
     risk_level = calculate_risk_level(findings)
 
     # Optional machine-readable sidecar (independent of --output / --format).
     if args.json_output:
-        sidecar = build_json_sidecar(findings, args.repo, scan_errors)
+        sidecar = build_json_sidecar(findings, args.repo, scan_errors, coverage)
         sidecar_path = Path(args.json_output)
         sidecar_path.parent.mkdir(parents=True, exist_ok=True)
         sidecar_path.write_text(

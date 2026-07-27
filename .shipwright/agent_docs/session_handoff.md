@@ -1,8 +1,8 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-handoff-tally-and-gate-honesty"
+run_id: "iterate-2026-07-27-security-coverage-manifest"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
+reason: "F11 refresh before merge"
 timestamp: "2026-07-27T18:46:12.605534+00:00"
 ---
 
@@ -12,9 +12,9 @@ timestamp: "2026-07-27T18:46:12.605534+00:00"
 
 ## Session Info
 
-- **Session ID**: a7fa3da4-74bf-406f-b92b-f309691d90f9
+- **Session ID**: 871b1865-c6ae-4724-a105-dc987ddca125
 - **Timestamp**: 2026-07-27 18:46:12 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Reason**: F11 refresh before merge
 
 ## Last Iterate
 
@@ -29,11 +29,8 @@ timestamp: "2026-07-27T18:46:12.605534+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/handoff-tally-and-gate-honesty
-- **Run ID**: iterate-2026-07-27-handoff-tally-and-gate-honesty
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-handoff-tally-and-gate-honesty.md
-- **Complexity**: medium
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T16:51:42)
+- **Branch**: iterate/security-coverage-manifest-part1
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T11:47:40)
 
 ### Mandatory replay on Resume
 
@@ -51,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/handoff-tally-and-gate-honesty
-- **Last Commit**: 594ebec4 Merge remote-tracking branch 'origin/main' into iterate/handoff-tally-and-gate-honesty
+- **Branch**: iterate/security-coverage-manifest-part1
+- **Last Commit**: ac664b35 Merge remote-tracking branch 'origin/main' into iterate/security-coverage-manifest-part1
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -77,7 +74,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 384
+- **Total work events**: 385
 - **Last iterate**: change — iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
