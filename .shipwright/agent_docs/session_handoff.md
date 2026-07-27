@@ -1,39 +1,36 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-disclose-audit-last-run"
+run_id: "iterate-2026-07-27-project-granularity-basis"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T08:29:48.705481+00:00"
+timestamp: "2026-07-27T08:17:34.267156+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 08:29:48 UTC
+> Auto-generated 2026-07-27 08:17:34 UTC
 
 ## Session Info
 
-- **Session ID**: 184abbf4-c486-4d5b-b89a-1dc21aebc3e1
-- **Timestamp**: 2026-07-27 08:29:48 UTC
+- **Session ID**: d25b0a7e-0ae6-43cf-9f0d-0888374ebaee
+- **Timestamp**: 2026-07-27 08:17:34 UTC
 - **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-disclose-audit-last-run
-- **Date**: 2026-07-27T08:29:42.533033Z
+- **Run ID**: iterate-2026-07-27-project-granularity-basis
+- **Date**: 2026-07-27T08:12:42.596562Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/disclose-audit-last-run
-- **ADR**: iterate-2026-07-27-disclose-audit-last-run
+- **Branch**: iterate/req3-project-granularity-basis
+- **ADR**: iterate-2026-07-27-project-granularity-basis
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-disclose-audit-last-run.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-project-granularity-basis.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/disclose-audit-last-run
-- **Run ID**: iterate-2026-07-27-disclose-audit-last-run
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-disclose-audit-last-run.md
-- **Complexity**: medium · **change_type:** change · **spec_impact:** modify (fr-01.10 gains one (e) ac)
-- **External Review Marker**: stale (predates spec (2026-07-27T07:51:33))
+- **Branch**: iterate/req3-project-granularity-basis
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T07:53:44)
 
 ### Mandatory replay on Resume
 
@@ -51,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/disclose-audit-last-run
-- **Last Commit**: 496a530a Merge remote-tracking branch 'origin/main' into iterate/disclose-audit-last-run
+- **Branch**: iterate/req3-project-granularity-basis
+- **Last Commit**: 7b531953 Merge remote-tracking branch 'origin/main' into iterate/req3-project-granularity-basis
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read

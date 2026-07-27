@@ -71,6 +71,18 @@ Examples for Split 01:
 - Use checkbox format: `- [ ] {criterion}`
 - 2-5 criteria per requirement (not more)
 
+**The criteria are also how you find out the requirement is too big.** Read
+`shared/fr-authoring.md` §3a: a capability that cannot be given criteria **a
+single delivery** would satisfy is too broad and gets divided, and being unable
+to enumerate what would settle it is the signal that it names several
+capabilities at once. If the list refuses to end, or each criterion turns out to
+be about a different piece, split the requirement rather than writing vaguer
+criteria. A requirement with **no** criteria at all is reported by audit `I6`.
+
+This is a different question from how big a *split* should be — that one is
+answered by `split-heuristics.md`. A split holds many requirements; sizing the
+split correctly says nothing about whether any one row inside it is right.
+
 ### Removed Requirements
 
 When an iterate REMOVES a user-visible capability, its FR is **never silently
@@ -107,7 +119,9 @@ Rules:
   gets sharper, the *how* moves to `architecture.md`.
 - **One requirement, one capability:** a route, a bugfix, a polish pass, or a
   "Phase 2" is not its own requirement — it is acceptance criteria on the
-  capability it belongs to (`fr-authoring.md` §3).
+  capability it belongs to (`fr-authoring.md` §3). The mirror of that rule is
+  §3a: a row too *broad* to be settled by one delivery is several capabilities
+  and gets divided.
 
 ## Template Structure
 
@@ -132,8 +146,15 @@ Rules:
 |---|---|---|---|---|---|---|
 | FR-{NN}.01 | {Area} | {Short capability name} | Must | The system SHALL ... | interview | unit, e2e |
 | FR-{NN}.02 | {Area} | {Short capability name} | Must | The system SHALL ... | interview | unit, integration |
-| FR-{NN}.03 | {Area} | {Short capability name} | Should | The system SHOULD ... | assumed | unit |
-| FR-{NN}.04 | {Area} | {Short capability name} | May | The system MAY ... | assumed | unit |
+| FR-{NN}.03 | {Area} | {Short capability name} | Should | The system SHOULD ... | interview | unit |
+| FR-{NN}.04 | {Area} | {Short capability name} | May | The system MAY ... | interview | unit |
+
+**Every seeded row reads `interview`, and that is deliberate.** In a new project
+the person who knows is in the conversation, so `interview` is the basis you
+should almost always be able to write. Earlier versions of this template seeded
+`assumed` rows, which put a reader following the template straight into
+violating the phase's own rule against it — copy `interview` and change it only
+when you genuinely could not get the answer (see `Basis` below).
 
 This header is the **one converged shape**, emitted byte-identically by
 `/shipwright-project` and `/shipwright-adopt`. Do not add, drop, rename or
@@ -163,7 +184,7 @@ full Rupp/IREB sentence. They are separate columns because the name fence in
 | `code` | read from source |
 | `observed` | seen in the running application |
 | `tests` | derived from existing tests |
-| `assumed` | **nobody confirmed this — needs checking** |
+| `assumed` | **nobody confirmed this — and what would settle it is named** |
 | `other` | special case; add the reason as `other: <reason>` |
 
 `assumed` is the load-bearing value, and the one to reach for when you are
@@ -173,6 +194,30 @@ wrote down a plausible number, that requirement's basis is `assumed`, not
 `interview`. A value outside this vocabulary is a hard error (it is a typo, not a
 special case); `other` never blocks. Known values take no qualifier: write
 `code`, not `code (auth.ts)` — the file path is exactly what this column replaced.
+
+**In this phase `assumed` is the exception, not a default.** The person who
+could answer is in the conversation, so an unanswered dimension usually means
+*unasked*, and unasked is the failure this phase exists to prevent. Reach for
+`assumed` only where the answer genuinely does not exist yet — nobody has
+decided, or it depends on something not built — and then **name what would
+settle it**: who to ask, or what to try.
+
+Write that settlement as an **acceptance criterion**, never in the `Basis` cell.
+The cell takes one bare vocabulary value and nothing else, so
+`assumed — ask the product owner` is malformed and fails audit `I5` in exactly
+the way `code (auth.ts)` does:
+
+```markdown
+| FR-01.05 | Auth | Login rate limit | Should | The system SHOULD limit repeated
+  failed sign-ins. | assumed | unit |
+```
+
+**FR-01.05: Login rate limit**
+- [ ] Confirm the threshold with the product owner before build — 5/minute is a
+      placeholder nobody has approved.
+
+The binding rules are `shared/fr-authoring.md` §4a and
+`shared/requirement-elicitation.md` §8; this section must not diverge from them.
 
 **`Layers`** declares the test layers this requirement MUST be covered at, from
 `{unit, integration, e2e}` — the set compliance checks per-layer coverage against
@@ -337,7 +382,7 @@ application. Users can sign up, log in, and access features based on their role.
 | FR-01.03 | Authentication | Password reset | Must | The system SHALL support password reset via email link | interview | unit, integration, e2e |
 | FR-01.04 | Authentication | Role-based access | Must | The system SHALL enforce role-based access control (admin, member) | interview | unit, e2e |
 | FR-01.05 | Authentication | Login rate limiting | Should | The system SHOULD rate-limit login attempts to 5 per minute per IP | assumed | unit |
-| FR-01.06 | Authentication | Remember me | May | The system MAY support "remember me" for extended sessions | assumed | unit, e2e (inferred) |
+| FR-01.06 | Authentication | Remember me | May | The system MAY support "remember me" for extended sessions | interview | unit, e2e (inferred) |
 
 Both `Layers` forms appear above on purpose — copying either should be a choice,
 not an accident:
@@ -370,6 +415,20 @@ not an accident:
 - [ ] Admin can access all routes
 - [ ] Member cannot access /admin/* routes
 - [ ] Unauthenticated users are redirected to /login
+
+**FR-01.05: Login rate limiting**
+- [ ] A sixth failed sign-in within a minute from one IP is refused
+- [ ] Confirm the threshold with the product owner before build — 5/minute is a
+      placeholder nobody has approved
+
+**FR-01.06: Remember me**
+- [ ] A returning user with the box ticked is still signed in after 30 days
+- [ ] Leaving it unticked ends the session when the browser closes
+
+The FR-01.05 block is the shape `Basis: assumed` obliges: the cell stays the
+bare vocabulary word, and the **second criterion names what would settle it**.
+Every requirement here carries criteria, including the `Should` and `May` ones
+— a row with none at all is what audit `I6` reports (`fr-authoring.md` §3a).
 
 ### Removed Requirements
 

@@ -1,6 +1,6 @@
 # Test Evidence Report
 
-Generated: 2026-07-27T08:29:42.653170+00:00 · Consistency audit: never run — this evidence has never been cross-checked
+Generated: 2026-07-27T08:12:42.718426+00:00
 
 ## Summary
 
@@ -16,7 +16,7 @@ Generated: 2026-07-27T08:29:42.653170+00:00 · Consistency audit: never run — 
 |---|-------|--------|-------|-----------|-------------|--------|------|
 | 1 | the review gate stops being bypassable (fail-closed + fork review) | [iterate](traceability-matrix.md#evt-78684181) | — | +0 | — | — | 2026-07-27 |
 | 2 | Overriding a phase gate now runs the check anyway and records what it found plus the reason given, and the session handoff states which phases are finished and which one was interrupted. | [iterate](traceability-matrix.md#evt-4794dcc1) | — | +0 | — | — | 2026-07-27 |
-| 3 | compliance evidence discloses when the cross-check last ran | [iterate](traceability-matrix.md#evt-1c7c2446) | — | +0 | — | — | 2026-07-27 |
+| 3 | requirement granularity guidance + advisory I6 check + the Basis-assumed template contradiction | [iterate](traceability-matrix.md#evt-9ad5050b) | — | +0 | — | — | 2026-07-27 |
 | 4 | REQ-3 Phase 2 content round - all 18 requirements walked or minted | [iterate](traceability-matrix.md#evt-ea7203ec) | — | +0 | — | — | 2026-07-26 |
 | 5 | Requirement gathering now follows one shared, thorough interview method across the project, adopt and iterate steps, and a new requirement records that guarantee. | [iterate](traceability-matrix.md#evt-11304ded) | unit | +0 | 4946/4961 | PASS (15 skipped) | 2026-07-23 |
 | 6 | The automated design check no longer flags a false problem for projects that were adopted into Shipwright and never went through the design/mockup step. | [iterate](traceability-matrix.md#evt-a8a0f759) | unit | +0 | 26/26 | PASS | 2026-07-23 |
