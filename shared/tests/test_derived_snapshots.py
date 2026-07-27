@@ -222,3 +222,40 @@ def test_completeness_ledger_reads_the_per_run_entry_after_a_restore(tmp_path) -
     result = check_test_completeness_ledger(tmp_path, run_id)
 
     assert result.ok is True, result.detail
+
+
+def test_integration_coverage_reads_the_per_run_entry_after_a_restore(tmp_path, monkeypatch) -> None:
+    """The same trap, second victim — caught by the gate on its own iterate.
+
+    `check_integration_coverage` also read the ledger from the shared results file,
+    so a cross-component change that HAD its integration test would be failed for
+    lacking it, purely because the file was restored before F11 looked.
+    """
+    import json
+
+    from tools.verifiers import integration_coverage as ic
+
+    run_id = "iterate-2026-07-27-probe"
+    entries = tmp_path / ".shipwright" / "agent_docs" / "iterates"
+    entries.mkdir(parents=True)
+    (entries / f"{run_id}.json").write_text(
+        json.dumps({
+            "run_id": run_id, "type": "change", "complexity": "medium",
+            "test_completeness": {
+                "status": "complete",
+                "behaviors": [
+                    {"behavior": "the pieces compose", "disposition": "tested",
+                     "evidence": "test_x — passed", "category": "integration"}
+                ],
+            },
+        }),
+        encoding="utf-8",
+    )
+    # A cross-component path in the commit, and no shared results file at all.
+    monkeypatch.setattr(ic, "_commit_changed_paths",
+                        lambda *_a, **_k: ["shared/scripts/tools/integrate_main.py"])
+    assert not (tmp_path / "shipwright_test_results.json").exists()
+
+    result = ic.check_integration_coverage(tmp_path, run_id, "deadbeef")
+
+    assert result.ok is True, result.detail
