@@ -1,14 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-merge-state-vocabulary",
+    "run_id": "iterate-2026-07-27-test-phase-record-honesty",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 5560,
-      "total": 5576,
-      "skipped": 16
+      "passed": 7338,
+      "total": 7338
     },
     "integration": {
+      "status": "passed",
+      "passed": 422,
+      "total": 422
+    },
+    "pgtap": {
       "status": "not_run",
       "passed": 0,
       "total": 0
@@ -18,112 +22,185 @@
       "passed": 0,
       "total": 0
     },
-    "smoke": {
-      "status": "not_run"
-    },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
     "design_fidelity": {
       "status": "not_run",
       "passed": 0,
       "total": 0
     },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest shared/tests/test_pr_blockers.py shared/tests/test_pr_blockers_merge_state.py shared/tests/test_watch_pr_delivery.py -v",
+      "runner": "uv run --with pytest pytest plugins/shipwright-test/tests/test_record_honesty_wiring.py plugins/shipwright-test/tests/test_journey_coverage.py plugins/shipwright-test/tests/test_warning_followups.py plugins/shipwright-test/tests/test_playwright_runner_flaky.py -q -p no:cacheprovider",
       "exit_code": 0,
-      "tests_run": 55,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\merge-state-vocabulary\\.shipwright\\runs\\iterate-2026-07-27-merge-state-vocabulary\\surface_verification.log",
-      "timestamp": "2026-07-27T16:31:47.006Z",
+      "tests_run": 61,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\test-phase-record-honesty\\.shipwright\\runs\\iterate-2026-07-27-test-phase-record-honesty\\surface_verification.log",
+      "timestamp": "2026-07-27T08:34:54.777Z",
       "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "a conflicted branch (DIRTY) is named as a cause and asserted blocking",
+          "behavior": "Journeys are parsed per journey from the plan's User Flows section",
           "disposition": "tested",
-          "evidence": "test_pr_blockers_merge_state.py::test_a_conflicted_branch_is_named PASSED"
+          "evidence": "plugins/shipwright-test/tests/test_journey_plan.py \u2014 10 tests PASSED"
         },
         {
-          "behavior": "an out-of-date branch (BEHIND) is named without claiming it blocks",
+          "behavior": "Each planned journey is reported covered or uncovered individually",
           "disposition": "tested",
-          "evidence": "test_pr_blockers_merge_state.py::test_an_out_of_date_branch_is_named_but_not_asserted_blocking PASSED"
+          "evidence": "test_journey_coverage.py::test_a_journey_with_no_spec_is_reported_even_though_other_specs_exist PASSED"
         },
         {
-          "behavior": "a draft is named and blocking; BLOCKED keeps naming itself",
+          "behavior": "Greenfield gaps block the phase; brownfield gaps do not",
           "disposition": "tested",
-          "evidence": "test_pr_blockers_merge_state.py::test_a_draft_is_named_and_blocking PASSED; test_pr_blockers_merge_state.py::test_blocked_keeps_naming_itself_and_blocking PASSED"
+          "evidence": "test_journey_coverage.py::test_greenfield_gaps_block and ::test_brownfield_gaps_do_not_block_and_leave_a_follow_up PASSED"
         },
         {
-          "behavior": "UNSTABLE is named without claiming it blocks",
+          "behavior": "Brownfield journey gaps route to onboarding via the launchPayload field",
           "disposition": "tested",
-          "evidence": "test_pr_blockers_merge_state.py::test_unstable_is_named_without_claiming_it_blocks PASSED"
+          "evidence": "test_journey_coverage.py::test_the_brownfield_follow_up_routes_to_the_onboarding_phase PASSED"
         },
         {
-          "behavior": "a mergeable state (CLEAN / HAS_HOOKS) names nothing and reports nothing unknown",
+          "behavior": "Journey coverage is three-state; no plan / no journeys / no specs never read as covered",
           "disposition": "tested",
-          "evidence": "test_pr_blockers_merge_state.py::test_a_mergeable_state_names_nothing PASSED"
+          "evidence": "test_journey_coverage.py \u2014 3 undetermined/no_specs tests PASSED"
         },
         {
-          "behavior": "a merge state not in the closed vocabulary is unknown, never fine",
+          "behavior": "E2E, consistency and fidelity failures each leave a durable follow-up",
           "disposition": "tested",
-          "evidence": "test_pr_blockers_merge_state.py::test_an_unrecognised_state_is_unknown_not_clean PASSED"
+          "evidence": "test_warning_followups.py \u2014 one test per layer + ::test_all_three_layers_emit_in_one_pass PASSED"
         },
         {
-          "behavior": "an absent or UNKNOWN state stays unknown",
+          "behavior": "A persistent failure stays one follow-up across differing commits",
           "disposition": "tested",
-          "evidence": "test_pr_blockers_merge_state.py::test_unknown_and_absent_states_stay_unknown PASSED"
+          "evidence": "test_warning_followups.py::test_the_same_failure_across_two_commits_stays_one_follow_up PASSED"
         },
         {
-          "behavior": "the merge-state cause composes with thread and required-check causes",
+          "behavior": "A green or skipped warning layer files nothing",
           "disposition": "tested",
-          "evidence": "test_pr_blockers_merge_state.py::test_the_merge_state_cause_composes_with_the_others PASSED"
+          "evidence": "test_warning_followups.py::test_a_green_run_files_nothing and ::test_a_skipped_layer_files_nothing PASSED"
         },
         {
-          "behavior": "the operator line names the observed state, not a fixed BLOCKED phrase",
+          "behavior": "Follow-up emission never raises into the phase or changes an exit code",
           "disposition": "tested",
-          "evidence": "test_pr_blockers_merge_state.py::test_the_observed_state_is_rendered_not_a_fixed_phrase PASSED"
+          "evidence": "test_warning_followups.py::test_a_broken_triage_writer_does_not_raise_into_the_phase PASSED"
         },
         {
-          "behavior": "a conflicted PR is not described as 'still queued'",
+          "behavior": "shipwright_known_failures.json has exactly one reader across test phase and audit",
           "disposition": "tested",
-          "evidence": "test_pr_blockers_merge_state.py::test_the_rendered_line_names_a_conflict_instead_of_a_queue PASSED"
+          "evidence": "plugins/shipwright-compliance/tests/test_known_failures_delegation.py \u2014 7 tests PASSED"
         },
         {
-          "behavior": "a real unresolved-thread cause still renders as a count, not a raw path list",
+          "behavior": "Accepted failures are split from genuine by identity, not by arithmetic",
           "disposition": "tested",
-          "evidence": "test_pr_blockers_merge_state.py::test_a_real_thread_cause_still_renders_as_a_count PASSED — reproduced red against the pre-fix branch order"
+          "evidence": "shared/tests/test_known_failures.py::test_a_declared_failure_that_did_not_fire_does_not_excuse_a_different_one + 5 siblings PASSED"
         },
         {
-          "behavior": "control characters from host-supplied strings never reach the operator line or the JSON",
+          "behavior": "A gap within the declared baseline does not fail the validator",
           "disposition": "tested",
-          "evidence": "test_pr_blockers_merge_state.py::test_control_characters_from_the_host_never_reach_the_line PASSED"
+          "evidence": "shared/tests/test_test_checks_accepted_baseline.py::test_an_unbroken_gap_within_the_declared_baseline_does_not_fail_the_check PASSED"
         },
         {
-          "behavior": "the gh shells stay wired: the GraphQL query is complete and the branch is URL-encoded",
+          "behavior": "An exactly-counted failure is not waived by the baseline (audit parity)",
           "disposition": "tested",
-          "evidence": "test_pr_blockers.py::test_fetch_review_threads_builds_a_complete_query PASSED; ::test_fetch_branch_rules_url_encodes_the_branch PASSED"
+          "evidence": "shared/tests/test_known_failures_audit_parity.py \u2014 21 tests PASSED, incl. ::test_they_agree_that_an_exact_residual_is_not_waived_by_the_baseline"
+        },
+        {
+          "behavior": "Skipped tests do not consume accepted-failure allowance",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_test_checks_accepted_baseline.py \u2014 4 skip tests PASSED"
+        },
+        {
+          "behavior": "An unreadable accepted list excuses nothing and says so",
+          "disposition": "tested",
+          "evidence": "test_test_checks_accepted_baseline.py::test_an_unreadable_baseline_file_never_widens_what_is_excused PASSED"
+        },
+        {
+          "behavior": "Playwright per-test classification follows the normative decision table",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::TestClassifyDecisionTable \u2014 11 rows + 5 edge cases PASSED"
+        },
+        {
+          "behavior": "A retry-pass counts as a pass, is counted separately, and does not block",
+          "disposition": "tested",
+          "evidence": "test_playwright_runner_flaky.py::test_a_retried_and_passed_test_is_a_pass_and_is_counted_as_flaky and ::test_a_flaky_test_does_not_make_the_run_fail PASSED"
+        },
+        {
+          "behavior": "Retries no longer inflate the total nor mark a retried-and-passed test failed",
+          "disposition": "tested",
+          "evidence": "test_playwright_runner_flaky.py::test_retries_no_longer_inflate_the_total PASSED"
+        },
+        {
+          "behavior": "An empty or unrecognised Playwright result is never promoted to a pass",
+          "disposition": "tested",
+          "evidence": "test_playwright_runner_flaky.py::test_no_results_at_all_is_a_failure_not_a_pass and ::test_an_unrecognised_status_is_a_failure_not_a_pass PASSED"
+        },
+        {
+          "behavior": "The greenfield/brownfield adoption signal has one definition",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_known_failures.py \u2014 4 adoption tests PASSED; compliance suite 1325 passed unchanged"
+        },
+        {
+          "behavior": "Control characters are stripped before the record and the dedup key",
+          "disposition": "tested",
+          "evidence": "test_journey_plan.py::test_control_characters_in_a_title_are_stripped, test_warning_followups.py::test_long_titles_are_bounded PASSED"
+        },
+        {
+          "behavior": "Both new CLIs are reachable exactly as the phase prose invokes them",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-test/tests/test_record_honesty_wiring.py \u2014 5 subprocess tests + 2 prose-drift meta-tests PASSED"
+        },
+        {
+          "behavior": "triage.py can append in-process from a plugin's own test session (ADR-045)",
+          "disposition": "tested",
+          "evidence": "the 13 previously-failing tests in test_warning_followups.py / test_journey_coverage.py now PASS; that suite is the regression pin"
+        },
+        {
+          "behavior": "A warning layer that reports a failure it cannot itemize still leaves a follow-up",
+          "disposition": "tested",
+          "evidence": "test_warning_followups.py \u2014 6 tests incl. the per-layer parametrized fallback and the count-only cross-commit dedup"
+        },
+        {
+          "behavior": "The aggregate follow-up does not claim any failure was matched against the accepted list",
+          "disposition": "tested",
+          "evidence": "test_warning_followups.py::test_the_aggregate_item_does_not_claim_anything_was_matched PASSED"
+        },
+        {
+          "behavior": "A legacy multi-attempt pass is reported as a retry-pass, not a first-time pass",
+          "disposition": "tested",
+          "evidence": "test_playwright_runner_flaky.py::test_a_legacy_multi_attempt_pass_is_not_silently_a_first_time_pass PASSED"
+        },
+        {
+          "behavior": "A fully-skipped count-bearing layer is not a failure and files nothing",
+          "disposition": "tested",
+          "evidence": "test_warning_followups.py \u2014 3 parametrized layers + ::test_an_explicit_zero_failed_beats_a_bare_gap PASSED"
+        },
+        {
+          "behavior": "An integer skip COUNT is not read as the boolean layer-skipped flag",
+          "disposition": "tested",
+          "evidence": "test_warning_followups.py::test_a_truthy_skip_COUNT_does_not_read_as_a_skipped_layer and ::test_skips_plus_a_real_failure_still_emits PASSED"
+        },
+        {
+          "behavior": "The printed summary reports known-and-accepted, genuine and retry-passes on separate lines",
+          "disposition": "untestable",
+          "reason_code": "requires-manual-visual-judgment",
+          "reason": "The summary banner is agent-rendered prose in step-5-report-results.md, not code. Every input it must render is tested (identity split, flaky count, accepted-vs-genuine); the wording itself is not mechanisable."
         }
       ],
       "counts": {
-        "testable": 13,
-        "tested": 13,
-        "untestable": 0,
+        "testable": 28,
+        "tested": 28,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 5,
-        "covered_acs": 5
+        "acs": 8,
+        "covered_acs": 8
       }
-    },
-    "degraded": [
-      "Review passes 'code' and 'doubt' recorded not_run: subagent review is disabled for this session by operator configuration. A full external code review ran instead and found a real regression (both legs independently), which was fixed and pinned by a test proven red against the pre-fix code.",
-      "'plan' recorded not_run: external plan review is a medium+ phase and this run is small. The design came from a reproduced failure on PR #462 plus GitHub's documented MergeStateStatus enum, not from speculation."
-    ]
+    }
   },
   "coverage": {
     "total": 80.2,

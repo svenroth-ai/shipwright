@@ -1,0 +1,1 @@
+`/shipwright-test` checks browser-test coverage per planned user journey instead of skipping the check once any spec file exists — a journey added to the plan later is now reported. Greenfield gaps stop the phase; on a project onboarded from an existing codebase they become a tracked follow-up routed to `/shipwright-adopt`.
