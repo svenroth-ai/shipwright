@@ -408,7 +408,7 @@ Source-State: run=iterate-2026-07-27-plan-section-deps
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 368 |
+| Iterate changes | 369 |
 | Requirements total | 18 |
 | Requirements verified | 16/18 |
 | Must-have verified | 13/14 |
