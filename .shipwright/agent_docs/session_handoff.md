@@ -1,36 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-project-granularity-basis"
+run_id: "iterate-2026-07-27-review-gate-failclosed-fork"
 phase: "iterate"
-reason: "iterate: requirement granularity guidance + advisory I6 check + the Basis-assumed template contradiction"
-timestamp: "2026-07-27T08:12:49.739868+00:00"
+reason: "iterate: the review gate stops being bypassable (fail-closed + fork review)"
+timestamp: "2026-07-27T06:59:45.100902+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 08:12:49 UTC
+> Auto-generated 2026-07-27 06:59:45 UTC
 
 ## Session Info
 
-- **Session ID**: d25b0a7e-0ae6-43cf-9f0d-0888374ebaee
-- **Timestamp**: 2026-07-27 08:12:49 UTC
-- **Reason**: iterate: requirement granularity guidance + advisory I6 check + the Basis-assumed template contradiction
+- **Session ID**: 13d5330b-459e-4dde-bd59-76ab801c34ec
+- **Timestamp**: 2026-07-27 06:59:45 UTC
+- **Reason**: iterate: the review gate stops being bypassable (fail-closed + fork review)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-project-granularity-basis
-- **Date**: 2026-07-27T08:12:42.596562Z
+- **Run ID**: iterate-2026-07-27-review-gate-failclosed-fork
+- **Date**: 2026-07-27T06:59:39.306983Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/req3-project-granularity-basis
-- **ADR**: iterate-2026-07-27-project-granularity-basis
+- **Branch**: iterate/review-gate-failclosed-fork
+- **ADR**: iterate-2026-07-27-review-gate-failclosed-fork
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-project-granularity-basis.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-review-gate-failclosed-fork.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/req3-project-granularity-basis
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T07:53:44)
+- **Branch**: iterate/review-gate-failclosed-fork
+- **Run ID**: iterate-2026-07-27-review-gate-failclosed-fork
+- **Spec**: .shipwright/planning/iterate/2026-07-27-review-gate-failclosed-fork.md
+- **Complexity**: medium
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T06:47:38)
 
 ### Mandatory replay on Resume
 
@@ -48,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/req3-project-granularity-basis
-- **Last Commit**: 3dd32d27 chore(triage): sweep 60 outbox append(s) into branch
+- **Branch**: iterate/review-gate-failclosed-fork
+- **Last Commit**: d34443bd chore(triage): sweep 59 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,8 +68,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-d6b0444f | grade_snapshot | — | 2026-07-27 |
-| evt-9ad5050b | work_completed | iterate (iterate: requirement granularity guidance + advisory I6 check + the Basis-assumed template contradiction) | 2026-07-27 |
+| evt-19f53577 | grade_snapshot | — | 2026-07-27 |
+| evt-78684181 | work_completed | iterate (iterate: the review gate stops being bypassable (fail-closed + fork review)) | 2026-07-27 |
 | evt-2055af94 | grade_snapshot | — | 2026-07-26 |
 | evt-ea7203ec | work_completed | iterate (iterate: REQ-3 Phase 2 content round - all 18 requirements walked or minted) | 2026-07-26 |
 | evt-6ff6084f | grade_snapshot | — | 2026-07-26 |
@@ -75,7 +78,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 360
-- **Last iterate**: change — iterate: requirement granularity guidance + advisory I6 check + the Basis-assumed template contradiction (2026-07-27)
+- **Last iterate**: change — iterate: the review gate stops being bypassable (fail-closed + fork review) (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
