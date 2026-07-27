@@ -36,9 +36,9 @@
       "surface": "cli",
       "runner": "uv run --directory plugins/shipwright-compliance pytest tests/test_disclosure_e2e.py -q",
       "exit_code": 0,
-      "tests_run": 4,
+      "tests_run": 5,
       "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\disclose-audit-last-run\\.shipwright\\runs\\iterate-2026-07-27-disclose-audit-last-run\\surface_verification.log",
-      "timestamp": "2026-07-27T08:11:01.950Z",
+      "timestamp": "2026-07-27T08:36:51.328Z",
       "attempts": 1
     },
     "test_completeness": {
