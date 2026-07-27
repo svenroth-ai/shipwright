@@ -8,7 +8,6 @@ from the shipwright-check plan (F1 / F2 / F3).
 from __future__ import annotations
 
 import json
-import time
 from pathlib import Path
 
 
@@ -27,7 +26,6 @@ from tools.verifiers.common import (
     check_adr_supersession_exists,
     check_c1_phase_event_recorded,
     check_c2_dashboard_reflects_phase,
-    check_c3_session_handoff_fresh_after_phase,
     check_c4_decision_log_has_phase_adr,
     check_c5_changelog_unreleased_has_phase_entry,
     format_report,
@@ -268,23 +266,10 @@ def test_c2_warns_when_phase_absent(tmp_path):
     assert r.severity == Severity.WARNING.value
 
 
-def test_c3_passes_when_handoff_is_fresh(tmp_path):
-    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
-    (tmp_path / ".shipwright" / "agent_docs" / "session_handoff.md").write_text("fresh")
-    r = check_c3_session_handoff_fresh_after_phase(tmp_path, "project")
-    assert r.ok is True
-
-
-def test_c3_warns_when_handoff_stale(tmp_path):
-    import os
-    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
-    handoff = tmp_path / ".shipwright" / "agent_docs" / "session_handoff.md"
-    handoff.write_text("old")
-    old = time.time() - 7200
-    os.utime(handoff, (old, old))
-    r = check_c3_session_handoff_fresh_after_phase(tmp_path, "project", max_age_seconds=600)
-    assert r.ok is False
-    assert r.severity == Severity.WARNING.value
+# C3 moved to tools/verifiers/handoff_freshness.py in
+# iterate-2026-07-27-c3-phase-content-key, when it stopped keying on mtime and
+# joined its F11 twin. Its tests — including the two that used to pin the mtime
+# contract here — live in test_handoff_freshness.py.
 
 
 def test_c4_passes_when_adr_mentions_phase_in_title(tmp_path):

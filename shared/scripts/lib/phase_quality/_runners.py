@@ -24,9 +24,11 @@ from tools.verifiers.common import (  # noqa: E402
     Severity,
     check_c1_phase_event_recorded,
     check_c2_dashboard_reflects_phase,
-    check_c3_session_handoff_fresh_after_phase,
     check_c4_decision_log_has_phase_adr,
     check_c5_changelog_unreleased_has_phase_entry,
+)
+from tools.verifiers.handoff_freshness import (  # noqa: E402
+    check_c3_session_handoff_fresh_after_phase,
 )
 
 from ._constants import C4_PHASES, C5_CATEGORY, C5_PHASES, STATUS_FAIL, STATUS_SKIP
@@ -37,13 +39,20 @@ from ._flags import override_reason, skipped_check_ids
 CANON_REMEDIATION: dict[str, str] = {
     "C1": "Run record_event.py --type phase_completed --source <phase>",
     "C2": "Run update_build_dashboard.py --phase <phase>",
-    "C3": "Regenerate session_handoff.md via generate_session_handoff.py --reason '<phase>: ...'",
+    "C3": (
+        "Regenerate session_handoff.md via generate_session_handoff.py "
+        "--canon-marker --phase <phase> (the marker, not the mtime, is what C3 reads)"
+    ),
     "C4": "Add an ADR to .shipwright/agent_docs/decision_log.md via write_decision_log.py",
     "C5": "Prepend an Unreleased bullet via append_changelog_entry.py",
 }
 
 
-def run_canon_checks(phase: str, project_root: Path) -> list[dict[str, Any]]:
+def run_canon_checks(
+    phase: str,
+    project_root: Path,
+    run_id: str = "",
+) -> list[dict[str, Any]]:
     """Run the C1-C5 Canon checks for ``phase`` and return finding dicts.
 
     Thin wrapper around ``tools/verifiers/common.py`` helpers so PR 1
@@ -51,6 +60,14 @@ def run_canon_checks(phase: str, project_root: Path) -> list[dict[str, Any]]:
     modules stay authoritative for the orchestrated path — this wrapper
     only runs the generic C1-C5 so it works uniformly for every plugin
     (including security + compliance which have no phase module).
+
+    ``run_id`` feeds C3, which since
+    iterate-2026-07-27-c3-phase-content-key asks whether the handoff's canon
+    marker names the run being audited rather than how recently the file was
+    written. It is passed through VERBATIM — a degenerate value (``""`` /
+    ``"unknown"``, per ``RUN_ID_SENTINELS``) must reach C3 as itself so the
+    check can report "cannot evaluate". Synthesizing one here would make an
+    unanswerable check look answered.
     """
     skip_ids = skipped_check_ids()
     findings: list[dict[str, Any]] = []
@@ -77,7 +94,9 @@ def run_canon_checks(phase: str, project_root: Path) -> list[dict[str, Any]]:
 
     _emit("C1", check_c1_phase_event_recorded(project_root, phase))
     _emit("C2", check_c2_dashboard_reflects_phase(project_root, phase))
-    _emit("C3", check_c3_session_handoff_fresh_after_phase(project_root, phase))
+    _emit("C3", check_c3_session_handoff_fresh_after_phase(
+        project_root, phase, run_id=run_id,
+    ))
 
     if phase in C4_PHASES:
         _emit("C4", check_c4_decision_log_has_phase_adr(project_root, phase))
