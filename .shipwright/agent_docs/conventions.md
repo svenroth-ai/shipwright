@@ -227,6 +227,7 @@ Python 3.11+ with uv as package manager. All scripts are invoked via uv run. Hoo
 
 ---
 - (2026-07-27) iterate/plan — when a documented promise has no oracle, the fix is usually to change the WRITING, not to add a cleverer check: `SECTION_MANIFEST` numbering was documented as the build order but dependencies were not expressible, so nothing could ever establish it. Making the dependency declarable turned an unverifiable promise into a one-line rule (every dependency is earlier), which also subsumes cycle detection. → iterate-2026-07-27-plan-section-deps
+- (2026-07-27) iterate — a gate that parses LLM output must be validated against real LLM output, not reasoned about: this run's verdict rule was disproven three times by the replies it received (counting the sentinel TOKEN threw away a genuine `reject` from a reviewer quoting the instruction; matching only the LAST line let a two-verdict reply through; counting only WELL-FORMED lines skipped a malformed attempt). Survivor: exactly one purported sentinel LINE, and it must be last; unreadable blocks. → iterate-2026-07-27-plan-verdict-record
 
 ## Contributing
 

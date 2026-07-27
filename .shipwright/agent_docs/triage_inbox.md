@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-27T12:14:34.040370Z. Items waiting for triage decision.
+> Auto-generated 2026-07-27T11:57:30.959539Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
 - Total: 418
-- Triage: 20 | Promoted: 1 | Dismissed: 396 | Snoozed: 1
+- Triage: 21 | Promoted: 1 | Dismissed: 395 | Snoozed: 1
 
-## Top 20 items (severity-sorted)
+## Top 21 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -92,7 +92,7 @@
   - Evidence: `.shipwright/planning/iterate/2026-07-27-project-granularity-basis.md`
   - Promote: `triage_promote.py --id trg-1d7d91d0 --task-ref EXT:<ref>`
 
-### Source: req3-phase2-walk (10 items)
+### Source: req3-phase2-walk (11 items)
 
 <a id="trg-6690d175"></a>
 - **CRITICAL - release-note writer destroys an existing history file it does not recognise** `id=trg-6690d175 | severity=critical | kind=bug → P0/engineering`
@@ -153,4 +153,10 @@
   - OWNS: the compliance dashboard and report renderers. Does NOT own artifact stamping — that moved to its own card so it…
   - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
   - Promote: `triage_promote.py --id trg-a1fd8125 --task-ref EXT:<ref>`
+
+<a id="trg-a8110d84"></a>
+- **project phase: no notion of how big a requirement should be, and the templates contradict the basis rule** `id=trg-a8110d84 | severity=medium | kind=improvement → P2/engineering`
+  - Per-plugin work unit from the FR-01.02 scenario pass. (1) Requirement granularity has no guidance and no check. There i…
+  - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
+  - Promote: `triage_promote.py --id trg-a8110d84 --task-ref EXT:<ref>`
 

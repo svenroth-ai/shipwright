@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-07-27T12:14:28.287189+00:00
-Source-State: run=iterate-2026-07-27-plan-section-deps
-Total commits: 1218
+Generated: 2026-07-27T11:57:25.139011+00:00
+Source-State: run=iterate-2026-07-27-plan-verdict-record
+Total commits: 1219
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 350
-    "feat" : 338
+    "feat" : 339
     "chore" : 255
     "docs" : 147
     "refactor" : 76
@@ -376,10 +376,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 338 commits
+### Features (feat) — 339 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | plan | record which way each reviewer came down, and notice disagreement | b2aa888ab0ce |
 | 2026-07-27 | shared | one reader for the accepted-baseline failures list (FR-01.06) (#453) | f918954ffcdf |
 | 2026-07-27 | iterate | the F0 race warning becomes a tracked follow-up that outlives the run (#439) | ed0b0a346a12 |
 | 2026-07-27 | compliance | produced artifacts name the state they describe (FR-01.10) (#448) | e869a02b60fb |
@@ -723,7 +724,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | triage | sweep 9 outbox append(s) into branch | 137e4e5f7dd1 |
+| 2026-07-27 | triage | sweep 8 outbox append(s) into branch | 48b61b121d99 |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -1288,7 +1289,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1218 |
+| Total commits | 1219 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1218 |
+| Human-authored commits | 1219 |
 

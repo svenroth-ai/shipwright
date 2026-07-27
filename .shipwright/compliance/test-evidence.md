@@ -1,7 +1,7 @@
 # Test Evidence Report
 
-Generated: 2026-07-27T12:14:28.287189+00:00
-Source-State: run=iterate-2026-07-27-plan-section-deps
+Generated: 2026-07-27T11:57:25.139011+00:00
+Source-State: run=iterate-2026-07-27-plan-verdict-record
 
 ## Summary
 
@@ -15,7 +15,7 @@ Source-State: run=iterate-2026-07-27-plan-section-deps
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | section dependencies are declarable, so the numbering is checkable (2 of 3) | [iterate](traceability-matrix.md#evt-8cab1d1d) | — | +0 | — | — | 2026-07-27 |
+| 1 | reviewer verdicts recorded, disagreement is its own outcome (1 of 3) | [iterate](traceability-matrix.md#evt-5ecd7d7e) | — | +0 | — | — | 2026-07-27 |
 | 2 | the review gate stops being bypassable (fail-closed + fork review) | [iterate](traceability-matrix.md#evt-78684181) | — | +0 | — | — | 2026-07-27 |
 | 3 | Overriding a phase gate now runs the check anyway and records what it found plus the reason given, and the session handoff states which phases are finished and which one was interrupted. | [iterate](traceability-matrix.md#evt-4794dcc1) | — | +0 | — | — | 2026-07-27 |
 | 4 | requirement granularity guidance + advisory I6 check + the Basis-assumed template contradiction | [iterate](traceability-matrix.md#evt-9ad5050b) | — | +0 | — | — | 2026-07-27 |

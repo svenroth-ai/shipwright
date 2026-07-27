@@ -1,11 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-27 12:14 UTC | Session: 1ea85a9d-f698-4336-8e01-ea2f4e2ae714 | Run: iterate-2026-07-27-plan-section-deps
+> Updated: 2026-07-27 11:57 UTC | Session: 1ea85a9d-f698-4336-8e01-ea2f4e2ae714 | Run: iterate-2026-07-27-plan-verdict-record
 
 ## Recent Changes (367 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| change | iterate: section dependencies are declarable, so the numbering is checkable (2 of 3) | 0/0 |  | tooling | 2026-07-27 |
+| change | iterate: reviewer verdicts recorded, disagreement is its own outcome (1 of 3) | 0/0 |  | FR-01.03 | 2026-07-27 |
 | change | iterate: the review gate stops being bypassable (fail-closed + fork review) | 0/0 |  | infra | 2026-07-27 |
 | change | iterate: phase-gate override leaves evidence; handoff renders phase status | 0/0 |  | FR-01.01 | 2026-07-27 |
 | change | iterate: requirement granularity guidance + advisory I6 check + the Basis-assumed template contradiction | 0/0 |  | compliance | 2026-07-27 |
@@ -374,7 +374,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-27 | Unit: 5305/5305 | Integration: 422/422 | E2E: 43/43 | Smoke: not_run | (iterate)
+Last run: 2026-07-27 | Unit: 5282/5282 | Integration: 422/422 | E2E: 86/86 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

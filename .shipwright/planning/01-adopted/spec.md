@@ -182,6 +182,14 @@ _Where the work detail lives_ at the end of this document.
   finished, then each finding has been either folded into the plan or recorded
   with the reason it was rejected — a review whose findings were only counted has
   not been done.
+- (E) Given the two outside reviewers reached opposite conclusions about the
+  plan as a whole — one endorsing it, the other saying the approach is wrong —
+  when the review step ends, then that disagreement is recorded as its own
+  outcome and put to the person to decide, and dividing the plan into sections
+  refuses to begin until their decision is on record. The same holds when one
+  reviewer's conclusion could not be read at all, or when only one of the two
+  answered: neither is agreement. Two independent reviewers exist so that
+  disagreement is noticed, which a single count of findings cannot show.
 - (E) Given a project with a user interface, when the plan is declared finished,
   then it names the end-to-end journeys that must work, so the test phase has
   something concrete to verify the build against.

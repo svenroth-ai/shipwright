@@ -1,15 +1,15 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-27T12:14:28.287189+00:00
-Source-State: run=iterate-2026-07-27-plan-section-deps
+Generated: 2026-07-27T11:57:25.139011+00:00
+Source-State: run=iterate-2026-07-27-plan-verdict-record
 
 ## Requirements Coverage
 
 | Requirement | Title | Priority | Verified By | Tests | Last tested | Reconciled? | Status | Unit | Integration | E2E |
 |-------------|-------|----------|-------------|-------|-------------|-------------|--------|------|-------------|-----|
 | [FR-01.01](../../.shipwright/planning/01-adopted/spec.md#fr-0101)<a id="rtm-fr-0101"></a> | Run the whole delivery pipeline end to end in one conversation — requirements, design, planning, build, test, release notes and hosting, in that order — so a change moves from a plain description to delivered work without the operator driving each phase by hand. Security scanning and audit evidence are deliberately not steps of it: the first runs on its own, the second happens alongside every phase. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-b0b9c422](#evt-b0b9c422), [evt-ca7b7d64](#evt-ca7b7d64), [evt-7620210f](#evt-7620210f) +3 | 225/225 → 1691/1716 | 2026-05-05 ([iter](#evt-7620210f)) | ⚠️ needs re-verification | COVERED | MISSING | — | — |
-| [FR-01.02](../../.shipwright/planning/01-adopted/spec.md#fr-0102)<a id="rtm-fr-0102"></a> | Turn a project description into well-scoped, individually deliverable requirements, and write the starting guidance an assistant needs to work inside that project. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-b0b9c422](#evt-b0b9c422), [evt-ca7b7d64](#evt-ca7b7d64), [evt-7620210f](#evt-7620210f) +4 | 225/225 → 140/140 | 2026-05-16 ([iter](#evt-8659999c)) | ⚠️ needs re-verification | FAIL → [trg-1d7d91d0](../agent_docs/triage_inbox.md#trg-1d7d91d0) | MISSING | — | — |
-| [FR-01.03](../../.shipwright/planning/01-adopted/spec.md#fr-0103)<a id="rtm-fr-0103"></a> | Produce an implementation plan from research and an optional interview, structured so the build phase can consume it one section at a time, tests first. No plan reaches the build phase unreviewed: two independent external language models review it by default, and declining them obliges a structured self-review in their place. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7), [evt-ea7203ec](#evt-ea7203ec) | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | ⚠️ needs re-verification | FAIL → [trg-88f721be](../agent_docs/triage_inbox.md#trg-88f721be) | MISSING | — | — |
+| [FR-01.02](../../.shipwright/planning/01-adopted/spec.md#fr-0102)<a id="rtm-fr-0102"></a> | Turn a project description into well-scoped, individually deliverable requirements, and write the starting guidance an assistant needs to work inside that project. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-b0b9c422](#evt-b0b9c422), [evt-ca7b7d64](#evt-ca7b7d64), [evt-7620210f](#evt-7620210f) +4 | 225/225 → 140/140 | 2026-05-16 ([iter](#evt-8659999c)) | ⚠️ needs re-verification | FAIL → [trg-1d7d91d0](../agent_docs/triage_inbox.md#trg-1d7d91d0), FAIL → [trg-a8110d84](../agent_docs/triage_inbox.md#trg-a8110d84) | MISSING | — | — |
+| [FR-01.03](../../.shipwright/planning/01-adopted/spec.md#fr-0103)<a id="rtm-fr-0103"></a> | Produce an implementation plan from research and an optional interview, structured so the build phase can consume it one section at a time, tests first. No plan reaches the build phase unreviewed: two independent external language models review it by default, and declining them obliges a structured self-review in their place. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7), [evt-ea7203ec](#evt-ea7203ec) +1 | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | ⚠️ needs re-verification | FAIL → [trg-88f721be](../agent_docs/triage_inbox.md#trg-88f721be) | MISSING | — | — |
 | [FR-01.04](../../.shipwright/planning/01-adopted/spec.md#fr-0104)<a id="rtm-fr-0104"></a> | Turn requirements into clickable mockups — standalone screens and the flows between them — that can be refined by conversation before any production code is written. | Should | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7), [evt-ea7203ec](#evt-ea7203ec) | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | ⚠️ needs re-verification | FAIL → [trg-e9e5188e](../agent_docs/triage_inbox.md#trg-e9e5188e) | — | — | MISSING |
 | [FR-01.05](../../.shipwright/planning/01-adopted/spec.md#fr-0105)<a id="rtm-fr-0105"></a> | Turn one planned section into working code that does what the section specified and matches its design mockup — one section at a time, on its own branch. The engineering discipline it works under — test-first, code review, safe conventional commits — is the framework's, applied here rather than owned here. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7), [evt-ea7203ec](#evt-ea7203ec) | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | ⚠️ needs re-verification | COVERED | MISSING | — | — |
 | [FR-01.06](../../.shipwright/planning/01-adopted/spec.md#fr-0106)<a id="rtm-fr-0106"></a> | Run the project's tests at every level it has — unit, integration, database, end-to-end and smoke — and produce one record in which each level carries an explicit outcome or a stated reason it did not run. Compare the built screens back to their mockups, hold the project to the performance budgets it declared, and report which of the declared pairs of code that write and read the same stored format appear to have no test covering them. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-c4ae8ef7](#evt-c4ae8ef7), [evt-ddb23fe7](#evt-ddb23fe7) +1 | 225/225 → 19/19 | 2026-05-03 ([iter](#evt-c4ae8ef7)) | ⚠️ needs re-verification | FAIL → [trg-12b4cf3f](../agent_docs/triage_inbox.md#trg-12b4cf3f) | MISSING | — | — |
@@ -32,7 +32,7 @@ Source-State: run=iterate-2026-07-27-plan-section-deps
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
-| <a id="evt-8cab1d1d"></a>section dependencies are declarable, so the numbering is checkable (2 of 3) | iterate | change |  | — | — | 2026-07-27 |
+| <a id="evt-5ecd7d7e"></a>reviewer verdicts recorded, disagreement is its own outcome (1 of 3) | iterate | change | [FR-01.03](#rtm-fr-0103) | — | — | 2026-07-27 |
 | <a id="evt-37719eaa"></a>Evidence documents and test-run records now name which version of the project they describe, not just when they were written. | iterate | change | [FR-01.10](#rtm-fr-0110) | — | — | 2026-07-27 |
 | <a id="evt-2aa40a94"></a>triage defer from the terminal + failing-check detail cap | iterate | change | [FR-01.14](#rtm-fr-0114) | — | — | 2026-07-27 |
 | <a id="evt-a345a59f"></a>hosting rollback uses the target ref, polls liveness to the target's deadline, gates on stored-data drift, and halts loudly when the way back fails | iterate | change | [FR-01.08](#rtm-fr-0108) | — | — | 2026-07-27 |
@@ -422,7 +422,7 @@ Source-State: run=iterate-2026-07-27-plan-section-deps
 
 - [FR-01.01](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-4794dcc1` (2026-07-27)
 - [FR-01.02](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
-- [FR-01.03](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
+- [FR-01.03](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-5ecd7d7e` (2026-07-27)
 - [FR-01.04](../../.shipwright/planning/01-adopted/spec.md) (Should): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
 - [FR-01.05](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
 - [FR-01.06](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
@@ -441,7 +441,7 @@ Source-State: run=iterate-2026-07-27-plan-section-deps
 
 ### FRs with open triage items
 
-- [FR-01.02](../../.shipwright/planning/01-adopted/spec.md): FAIL → [trg-1d7d91d0](../agent_docs/triage_inbox.md#trg-1d7d91d0)
+- [FR-01.02](../../.shipwright/planning/01-adopted/spec.md): FAIL → [trg-1d7d91d0](../agent_docs/triage_inbox.md#trg-1d7d91d0), FAIL → [trg-a8110d84](../agent_docs/triage_inbox.md#trg-a8110d84)
 - [FR-01.03](../../.shipwright/planning/01-adopted/spec.md): FAIL → [trg-88f721be](../agent_docs/triage_inbox.md#trg-88f721be)
 - [FR-01.04](../../.shipwright/planning/01-adopted/spec.md): FAIL → [trg-e9e5188e](../agent_docs/triage_inbox.md#trg-e9e5188e)
 - [FR-01.06](../../.shipwright/planning/01-adopted/spec.md): FAIL → [trg-12b4cf3f](../agent_docs/triage_inbox.md#trg-12b4cf3f)
