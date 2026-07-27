@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-27-changelog-writer-preserve-history",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T11:27:30.778333+00:00",
+      "disposition": "Step 7 self-review: 7-point checklist walked inline; found and fixed a weak duplicate-section assertion ('2' matched tmp_path digits) before the cascade ran.",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T11:28:16.429543+00:00",
+      "disposition": "Stage-1 spec-compliance review of the AC contract (shipwright-build:spec-reviewer, opus). Verdict REJECT: two ledger rows cited tests that do not exist, AC1 still overclaimed byte-preservation at the untested end-of-file arm, CLI refusal arm untested. All fixed; ACs 11/12 added.",
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T11:28:00.808481+00:00",
+      "disposition": "Stage-2 code review (shipwright-build:code-reviewer, opus). 9 findings; high: replace-path deleted trailing link-reference footer / prose. Also BOM, LF-to-CRLF rewrite, non-atomic write, aggregator re-run gap. Fixed 5, 3 recorded as out-of-scope with rationale.",
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T11:28:00.901058+00:00",
+      "disposition": "Stage-3 adversarial review (shipwright-build:doubt-reviewer, opus). Refuted the core claim: FILE_SHAPES[4] lost content on run 2 and run2 != run1. Reproduced empirically before acceptance; fixed via AC11 bounded replace span plus corpus run twice/thrice.",
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-07-27T11:28:16.529522+00:00",
+      "disposition": "external_review.py --mode code, openrouter, 2 providers, not degraded. Found the section-boundary predicate mismatch (tab-headed release swallowed on replace) and the tail-normalisation overclaim. Both fixed; mutation-probed non-vacuous.",
+      "recorded_by": "external_review.py",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

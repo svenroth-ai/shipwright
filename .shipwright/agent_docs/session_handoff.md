@@ -1,8 +1,8 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-adopt-inherited-baseline"
+run_id: "iterate-2026-07-27-changelog-writer-preserve-history"
 phase: "iterate"
-reason: "iterate: inherited failures and coverage gaps are recorded as inherited"
+reason: "ensure-current pre-merge refresh"
 timestamp: "2026-07-27T14:35:23.623868+00:00"
 ---
 
@@ -12,9 +12,9 @@ timestamp: "2026-07-27T14:35:23.623868+00:00"
 
 ## Session Info
 
-- **Session ID**: 98053cc9-0f7c-4be8-b1cc-8b5d8b25d84b
+- **Session ID**: 
 - **Timestamp**: 2026-07-27 14:35:23 UTC
-- **Reason**: iterate: inherited failures and coverage gaps are recorded as inherited
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
@@ -29,11 +29,11 @@ timestamp: "2026-07-27T14:35:23.623868+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/adopt-inherited-baseline
-- **Run ID**: iterate-2026-07-27-adopt-inherited-baseline
-- **Spec**: .shipwright/planning/iterate/2026-07-27-adopt-inherited-baseline.md
-- **Complexity**: medium
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T14:33:44)
+- **Branch**: iterate/changelog-writer-preserve-history
+- **Run ID**: `iterate-2026-07-27-changelog-writer-preserve-history`
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-changelog-writer-preserve-history.md
+- **Complexity**: medium (classifier: `estimate=medium`, `prior_source=history`,
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T11:28:16)
 
 ### Mandatory replay on Resume
 
@@ -51,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/adopt-inherited-baseline
-- **Last Commit**: 8396a0f8 chore(triage): sweep 1 outbox append(s) into branch
+- **Branch**: iterate/changelog-writer-preserve-history
+- **Last Commit**: 386190d3 Merge remote-tracking branch 'origin/main' into iterate/changelog-writer-preserve-history
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -77,7 +77,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 373
+- **Total work events**: 374
 - **Last iterate**: change — iterate: inherited failures and coverage gaps are recorded as inherited (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

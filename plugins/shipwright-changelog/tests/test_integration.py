@@ -63,6 +63,92 @@ def test_full_changelog_flow(git_repo_with_tag):
 
 
 @pytest.mark.integration
+def test_generate_preserves_existing_history(tmp_path):
+    """CLI `generate` must not destroy a hand-written history (trg-6690d175).
+
+    Runs changelog.py as a script, so it also covers the script-mode import
+    path that the in-process unit tests never exercise.
+    """
+    changelog = tmp_path / "CHANGELOG.md"
+    original = (
+        "# Release History\n\nKept by hand since 2019.\n\n"
+        "## [1.0.0] - 2024-01-10\n\n### Added\n- first stable release\n"
+    )
+    changelog.write_text(original, encoding="utf-8")
+
+    commits_file = tmp_path / "commits.json"
+    commits_file.write_text(
+        json.dumps([
+            {"type": "fix", "scope": "api", "description": "handle null",
+             "breaking": False},
+        ]),
+        encoding="utf-8",
+    )
+
+    argv = [
+        sys.executable, str(SCRIPTS / "lib" / "changelog.py"), "generate",
+        "--version", "1.1.0",
+        "--commits-json", str(commits_file),
+        "--changelog-path", str(changelog),
+        "--date", "2026-07-27",
+    ]
+    result = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8")
+    assert result.returncode == 0, result.stderr
+
+    content = changelog.read_text(encoding="utf-8")
+    assert "# Release History" in content
+    assert "Kept by hand since 2019." in content
+    assert "## [1.0.0] - 2024-01-10" in content
+    assert "- first stable release" in content
+    assert content.index("## [1.1.0]") < content.index("## [1.0.0]")
+
+    # Re-running the interrupted release must not duplicate the version.
+    result = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8")
+    assert result.returncode == 0, result.stderr
+    assert changelog.read_text(encoding="utf-8").count("## [1.1.0]") == 1
+
+
+@pytest.mark.integration
+def test_generate_refuses_ambiguous_file_and_leaves_it_untouched(tmp_path):
+    """The CLI must stop and say why, not overwrite what it cannot interpret.
+
+    This is the arm that delivers the spec promise "the release stops and says
+    why"; the library `raise` alone does not reach the operator.
+    """
+    changelog = tmp_path / "CHANGELOG.md"
+    original = (
+        "# Changelog\n\n"
+        "## [1.1.0] - 2026-07-27\n\n### Fixed\n- a\n\n"
+        "## [1.1.0] - 2026-07-27\n\n### Fixed\n- b\n"
+    )
+    changelog.write_text(original, encoding="utf-8")
+
+    commits_file = tmp_path / "commits.json"
+    commits_file.write_text(
+        json.dumps([
+            {"type": "fix", "scope": None, "description": "x", "breaking": False},
+        ]),
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable, str(SCRIPTS / "lib" / "changelog.py"), "generate",
+            "--version", "1.1.0",
+            "--commits-json", str(commits_file),
+            "--changelog-path", str(changelog),
+            "--date", "2026-07-27",
+        ],
+        capture_output=True, text=True, encoding="utf-8",
+    )
+
+    assert result.returncode == 1
+    assert "2 sections" in result.stderr
+    assert json.loads(result.stdout)["success"] is False
+    assert changelog.read_text(encoding="utf-8") == original
+
+
+@pytest.mark.integration
 def test_setup_changelog_detects_state(git_repo_with_tag):
     """Setup script correctly detects last tag and unreleased commits."""
     orig = os.getcwd()

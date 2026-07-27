@@ -1,7 +1,7 @@
 # Project Activity Dashboard
-> Updated: 2026-07-27 14:35 UTC | Session: 98053cc9-0f7c-4be8-b1cc-8b5d8b25d84b | Run: iterate-2026-07-27-adopt-inherited-baseline
+> Updated: 2026-07-27 14:35 UTC | Session: unknown | Run: iterate-2026-07-27-changelog-writer-preserve-history
 
-## Recent Changes (373 iterations)
+## Recent Changes (374 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
@@ -19,6 +19,7 @@
 | change | The F0 suite runner files its own triage entry for a unit red in parallel and green alone, never auto-closes it, and exits 3 if the observation could not be recorded. | 0/0 |  | FR-01.14 | 2026-07-27 |
 | change | iterate: hosting rollback uses the target ref, polls liveness to the target's deadline, gates on stored-data drift, and halts loudly when the way back fails | 0/0 |  | FR-01.08 | 2026-07-27 |
 | change | iterate: compliance evidence discloses when the cross-check last ran | 0/0 |  | FR-01.10 | 2026-07-27 |
+| bug | iterate: changelog writer preserves the history it read | 0/0 |  | FR-01.09 | 2026-07-27 |
 | change | iterate: REQ-3 Phase 2 content round - all 18 requirements walked or minted | 0/0 |  | FR-01.01, FR-01.02, FR-01.03 | 2026-07-26 |
 | feature | REQ-3 Phase 1: shared requirement-elicitation method (grilling + domain-modeling) + CONTEXT.md format + FR-01.16 mint | 4946/4961 |  |  | 2026-07-23 |
 | bug | design verifier C1 skips projects that never ran the design phase | 26/26 |  | compliance | 2026-07-23 |
@@ -380,7 +381,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-27 | Unit: 591/591 | Integration: 418/418 | E2E: 62/62 | Smoke: skipped | (iterate)
+Last run: 2026-07-27 | Unit: 76/76 | Integration: 418/418 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

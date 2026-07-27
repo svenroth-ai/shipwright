@@ -1,7 +1,7 @@
 # Compliance Dashboard
 
-Generated: 2026-07-27T12:52:34.514984+00:00
-Source-State: run=iterate-2026-07-27-name-the-blocker
+Generated: 2026-07-27T14:35:17.696770+00:00
+Source-State: run=iterate-2026-07-27-adopt-inherited-baseline
 Consistency-audit: never run
 Profile: python-plugin-monorepo
 Scope: library
@@ -14,9 +14,9 @@ Scope: library
 
 | | Dimension | Signal | Anchor |
 |---|-----------|--------|--------|
-| ✅ | Requirement traceability | 16/18 FRs covered; 371/371 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
+| ✅ | Requirement traceability | 16/18 FRs covered; 374/374 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
 | ✅ | Test health | latest full suite 4946/4961 (2026-07-23) | automated tests pass (OpenSSF Scorecard) |
-| ✅ | Change traceability | 371/371 changes linked to a commit, ADR or test run | change provenance (SLSA) |
+| ✅ | Change traceability | 374/374 changes linked to a commit, ADR or test run | change provenance (SLSA) |
 | ⚠️ | Change reconciliation | 18/18 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
 | ⚠️ | Security | 3 open high/critical | no open high/critical vulns (NIST SSDF) |
 | ✅ | Size / maintainability discipline | ratchet delta -42 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
@@ -24,13 +24,13 @@ Scope: library
 
 > 📊 **Test-Health · diff-coverage (Control-Grade input · target ≥80%):** not measured this session — per-PR signal; see the CI "Diff coverage" artifact.
 
-Verified from: `shipwright_events.jsonl (371 events, 2026-05-02 → 2026-07-27)`
+Verified from: `shipwright_events.jsonl (374 events, 2026-05-02 → 2026-07-27)`
 
 _Grade = importance-weighted average over the measurable dimensions (n/a excluded from the denominator), modeled on OpenSSF Scorecard. Age is neutral; only unreconciled change and net growth are control failures. Each Anchor names the open standard the dimension follows — see the guide's Control-Grade dimensions table._
 
 ## 🛡️ CI Security (fail-closed gate)
 
-Latest scan: **2026-07-27** · source `security.yml#30267025390` · critical-gate **✅ PASS**
+Latest scan: **2026-07-27** · source `security.yml#30276486297` · critical-gate **✅ PASS**
 
 | Severity | Count |
 |----------|-------|
@@ -56,11 +56,11 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Metric | Value | Status | Why warn? |
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
-| Work events (iterate) | 371 changes | INFO |  |
-| Recent changes traced to an FR | 16/30 (53%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
-| All unit tests passing | 4946/4961 | WARN | 15/4961 not green in last full suite — see test-evidence.md; +13 change(s) since last full suite |
+| Work events (iterate) | 374 changes | INFO |  |
+| Recent changes traced to an FR | 18/30 (60%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
+| All unit tests passing | 4946/4961 | WARN | 15/4961 not green in last full suite — see test-evidence.md; +16 change(s) since last full suite |
 | Architecture decisions | 328 ADRs | INFO |  |
-| Iterate tests passing | 53/76 testable changes tested | WARN | 23 testable change(s) without tests — see test-evidence.md |
+| Iterate tests passing | 53/79 testable changes tested | WARN | 26 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 11 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
 | Triage open | 22 open | WARN | 22 actionable item(s) — see ../agent_docs/triage_inbox.md |
@@ -70,7 +70,7 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 
 ## Project Velocity
 
-- Iterate: 371 changes (2026-05-02 → 2026-07-27)
+- Iterate: 374 changes (2026-05-02 → 2026-07-27)
 - Last activity: 2026-07-27
 
 ## External LLM Review Evidence
