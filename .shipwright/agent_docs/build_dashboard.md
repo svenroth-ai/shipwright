@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-27 06:59 UTC | Session: 13d5330b-459e-4dde-bd59-76ab801c34ec | Run: iterate-2026-07-27-review-gate-failclosed-fork
+> Updated: 2026-07-27 19:37 UTC | Session: 99609ad4-4e4b-47ca-a23f-ccfc53ee7516 | Run: iterate-2026-07-27-checks-that-gate-nothing
 
-## Recent Changes (360 iterations)
+## Recent Changes (361 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | iterate: checks that run, report, and gate nothing (trg-c7e5835b items 3-5) | 0/0 |  | FR-01.17 | 2026-07-27 |
 | change | iterate: the review gate stops being bypassable (fail-closed + fork review) | 0/0 |  | infra | 2026-07-27 |
 | change | iterate: REQ-3 Phase 2 content round - all 18 requirements walked or minted | 0/0 |  | FR-01.01, FR-01.02, FR-01.03 | 2026-07-26 |
 | feature | REQ-3 Phase 1: shared requirement-elicitation method (grilling + domain-modeling) + CONTEXT.md format + FR-01.16 mint | 4946/4961 |  |  | 2026-07-23 |
@@ -367,7 +368,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-27 | Smoke: n/a | (iterate)
+Last run: 2026-07-27 | Unit: 5040/5056 | Integration: 418/418 | Smoke: skipped | (iterate)
 
 ## Pipeline
 

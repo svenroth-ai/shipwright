@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-07-27T06:59:39.392372+00:00
-Total commits: 1208
+Generated: 2026-07-27T19:36:56.452047+00:00
+Total commits: 1209
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 347
+    "fix" : 348
     "feat" : 333
     "chore" : 255
     "docs" : 147
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 347 commits
+### Fixes (fix) — 348 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | ci | the PR review gate stops being bypassable (#437) | ec0c7055046f |
 | 2026-07-23 | deps | bump pyasn1 0.6.3 -> 0.6.4 (CVE-2026-59885, CVE-2026-59886) (#432) | 9ffbae764acd |
 | 2026-07-23 | compliance | design verifier C1 skips projects that never ran the design phase (#429) | c841751a7a8e |
 | 2026-07-22 | compliance | count a tested mint as coverage and delivery (D1/D3) + tighten bloat ratchet (H2) (#427) | 4a93b8a7c023 |
@@ -714,7 +715,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | triage | sweep 59 outbox append(s) into branch | d34443bdb51c |
+| 2026-07-27 | triage | sweep 1 outbox append(s) into branch | 554a1f0211cc |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -1277,7 +1278,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1208 |
+| Total commits | 1209 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1208 |
+| Human-authored commits | 1209 |
 

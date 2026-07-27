@@ -1,0 +1,1 @@
+The security scan states its verdict and what it covers: `critical-gate PASS|FAIL` with a breakdown of critical/high/medium/low across both scan outputs, a severity table in the job summary, and a warning when it passes with open high findings. It still blocks on critical findings only — that has not changed.

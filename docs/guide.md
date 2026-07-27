@@ -522,6 +522,16 @@ gh pr merge --auto --squash --delete-branch <pr-number>
 
 GitHub merges automatically once all Required Checks pass; if a check goes red, the PR waits until you push a fix. `/shipwright-iterate`'s finalization arms this for you on `iterate/*` branches, so day-to-day changes merge hands-free once green.
 
+**5. Check the list again later.** The must-pass set lives in GitHub's settings, not in your repo, so nothing keeps the two in step. Add a workflow and its check runs on every PR while blocking nothing; rename a job and the old name stays required, so every PR waits forever on a result that can no longer arrive. Neither is visible from inside the repo. This reports both:
+
+```bash
+uv run shared/scripts/tools/check_required_checks.py --project-root .
+```
+
+It needs your own `gh` login (the Actions token cannot read a repo's protection settings), which is why it is a command you run rather than a check in CI. It prints what it found and files a triage item on divergence; `--json` prints the raw comparison, and `--branch` checks a branch other than your default one.
+
+A repo that requires **nothing** is a result, not an error: every check you run is listed as gating nothing, which is the most useful thing this can tell you. Only a configuration it could not read at all makes it stop and say so — "I could not look" is never reported as "everything matches", and never as "nothing is required" either.
+
 See the generated `AUTOMERGE_SETUP.md` for your repo's specific check names, and §4.7 / `docs/security-ci-setup.md` for activating the security workflow.
 
 ---

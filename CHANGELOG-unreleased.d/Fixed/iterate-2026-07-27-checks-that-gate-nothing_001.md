@@ -1,0 +1,1 @@
+Two verification scripts that were referenced by no workflow — the cross-repo contract surface and the triage sweep-delivery surface — now run in CI's required job, so a drift they detect blocks the merge instead of going unnoticed.

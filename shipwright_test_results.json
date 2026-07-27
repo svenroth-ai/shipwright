@@ -1,173 +1,211 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-review-gate-failclosed-fork",
+    "run_id": "iterate-2026-07-27-checks-that-gate-nothing",
     "date": "2026-07-27",
     "unit": {
-      "status": "pass",
-      "passed": 6352,
-      "failed": 0,
-      "detail": "shared 4994 + integration 418 + shipwright-security 476 + shipwright-adopt 464"
+      "status": "passed",
+      "passed": 5040,
+      "total": 5056
     },
     "integration": {
-      "status": "pass",
+      "status": "passed",
       "passed": 418,
-      "failed": 0
+      "total": 418
     },
     "pgtap": {
-      "status": "n/a",
-      "reason": "no database in this repo"
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
     },
     "e2e": {
-      "status": "n/a",
-      "reason": "no runnable application surface; CI workflow configuration only"
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
     },
     "design_fidelity": {
-      "status": "n/a",
-      "reason": "no UI"
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
     },
     "smoke": {
-      "status": "n/a",
-      "reason": "no server"
+      "status": "skipped"
     },
     "degraded": [],
     "surface_verification": {
       "surface": "none",
       "tests_run": 0,
       "exit_code": 0,
-      "justification": "This change is GitHub Actions workflow configuration and the scaffolder that ships it. There is no runnable application surface: the executable surface is GitHub's workflow_run engine, which cannot be driven locally. Verification is the 38-assertion parsed-YAML invariant suite plus the 3-profile scaffold->deploy->derive composition test. The residual gap is recorded as behaviour 22 of the completeness ledger and fails CLOSED in production."
+      "justification": "No user-facing surface exists in this diff: two CI workflow steps, one out-of-band operator CLI, tests and docs. This repo ships no web or CLI product surface an E2E run could drive. The equivalent production-time proof was run instead: both newly-wired gates executed green locally before being made blocking, the security gate body was executed over three fixture shapes outside Actions, and the drift producer was run against the live repository."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "oversize diff fails the job instead of skipping the review",
+          "behavior": "Both surface verifiers run in ci.yml required job",
           "disposition": "tested",
-          "evidence": "test_oversize_diff_fails_instead_of_skipping[monorepo,shipped-template] PASSED"
+          "evidence": "test_checks_that_gate.py::test_surface_verifier_runs_in_the_required_job PASSED (2 params)"
         },
         {
-          "behavior": "a reviewer that exits non-zero fails the gate (`|| true` gone)",
+          "behavior": "Neither surface gate is loosened by continue-on-error or pipe-pipe-true",
           "disposition": "tested",
-          "evidence": "test_reviewer_exit_code_is_never_discarded x4 PASSED"
+          "evidence": "test_checks_that_gate.py::test_surface_verifier_is_a_hard_gate PASSED; mutation-probed (planted continue-on-error -> RED)"
         },
         {
-          "behavior": "review output that will not parse fails closed",
+          "behavior": "A gate step naming a missing script fails",
           "disposition": "tested",
-          "evidence": "test_unparseable_review_output_fails_closed x2 PASSED"
+          "evidence": "test_checks_that_gate.py::test_gated_script_exists PASSED"
         },
         {
-          "behavior": "stage 1 holds no secret",
+          "behavior": "A new scripts/verify_*_surface.py wired to nothing fails the build",
           "disposition": "tested",
-          "evidence": "test_stage1_holds_no_secret x2 + TestStage1::test_holds_no_secret PASSED"
+          "evidence": "test_checks_that_gate.py::test_every_surface_verifier_is_wired_to_some_workflow PASSED; probed with a real orphan file -> RED"
         },
         {
-          "behavior": "stage 1 is not fork-guarded",
+          "behavior": "Only executable run: lines count as wiring; a comment mention does not",
           "disposition": "tested",
-          "evidence": "test_stage1_is_not_fork_guarded, TestStage1::test_fork_guard_absent PASSED"
+          "evidence": "test_checks_that_gate.py::test_a_verifier_named_only_in_a_comment_is_still_an_orphan PASSED"
         },
         {
-          "behavior": "stage 1 records the change for audit",
+          "behavior": "The CI-gate guard classifies (gate)-suffixed steps as gates",
           "disposition": "tested",
-          "evidence": "test_stage1_records_the_change_for_audit x2 PASSED"
+          "evidence": "test_checks_that_gate.py::test_the_gate_guard_can_see_the_surface_gates PASSED; probed by removing the keyword -> guard exited 0 on a loosened gate"
         },
         {
-          "behavior": "stage 1 emits no `PR Review` check-run context",
+          "behavior": "The security gate prints a labelled verdict, not a bare count",
           "disposition": "tested",
-          "evidence": "test_stage1_owns_no_pr_review_context x2 PASSED"
+          "evidence": "test_checks_that_gate.py::test_verdict_is_labelled_not_a_bare_count PASSED"
         },
         {
-          "behavior": "stage 1 carries no policy a contributor could edit",
+          "behavior": "Every severity is counted across findings.json AND prompt_risks.json",
           "disposition": "tested",
-          "evidence": "test_stage1_carries_no_policy x2, TestStage1::test_carries_no_policy PASSED"
+          "evidence": "test_checks_that_gate.py::test_every_severity_is_counted_across_both_scan_outputs PASSED; behavioral probe of the extracted step body over 3 fixtures"
         },
         {
-          "behavior": "stage 2 is triggered by stage 1 completing",
+          "behavior": "The severity breakdown reaches the job summary",
           "disposition": "tested",
-          "evidence": "test_stage2_is_triggered_by_workflow_run x2, test_stage2_is_chained_to_stage1 PASSED"
+          "evidence": "test_checks_that_gate.py::test_breakdown_reaches_the_job_summary PASSED"
         },
         {
-          "behavior": "stage 2 never checks out the contributor's code",
+          "behavior": "Reporting can never fail the gate when GITHUB_STEP_SUMMARY is unset",
           "disposition": "tested",
-          "evidence": "test_stage2_never_checks_out_contributor_code x2, TestStage2::test_never_checks_out_the_pr_head PASSED"
+          "evidence": "test_checks_that_gate.py::test_reporting_cannot_fail_the_gate PASSED; shipwright-compliance A5.8 behavioral probe 19 passed"
         },
         {
-          "behavior": "stage 2 takes identity from the trusted workflow_run event",
+          "behavior": "A PASS with open high findings is annotated",
           "disposition": "tested",
-          "evidence": "test_stage2_takes_identity_from_the_trusted_event x2 PASSED"
+          "evidence": "test_checks_that_gate.py::test_passing_with_open_high_findings_is_said_out_loud PASSED"
         },
         {
-          "behavior": "stage 2 never reviews the artifact (contributor-controlled)",
+          "behavior": "The security gate still blocks on critical only",
           "disposition": "tested",
-          "evidence": "test_stage2_never_reviews_the_artifact x2, TestStage2::test_does_not_review_the_artifact PASSED"
+          "evidence": "test_checks_that_gate.py::test_the_gate_itself_still_blocks_on_critical_only PASSED; behavioral probe: prompt-critical -> exit 1"
         },
         {
-          "behavior": "stage 2 derives the tier from API data in default-branch code",
+          "behavior": "Drift is reported in both directions; advisory contexts suppress",
           "disposition": "tested",
-          "evidence": "TestStage2::test_tier_is_decided_here_from_api_data PASSED"
+          "evidence": "test_required_checks_drift.py::test_a_check_nobody_requires_is_unenforced / test_a_required_check_nothing_produces_is_phantom / test_both_directions_are_reported_together / test_advisory_contexts_are_not_drift PASSED"
         },
         {
-          "behavior": "stage 2 refuses an ambiguous PR (one SHA, several open PRs)",
+          "behavior": "Blank and whitespace-only names create no drift",
           "disposition": "tested",
-          "evidence": "test_stage2_refuses_an_ambiguous_pull_request x2 PASSED"
+          "evidence": "test_required_checks_drift.py::test_whitespace_and_blanks_do_not_create_phantom_drift PASSED"
         },
         {
-          "behavior": "stage 2 re-checks the head SHA before blessing it (force-push race)",
+          "behavior": "The dedup key is stable and divergence-specific",
           "disposition": "tested",
-          "evidence": "test_stage2_rechecks_the_head_before_blessing_it x2 PASSED"
+          "evidence": "test_required_checks_drift.py::test_dedup_key_is_stable_and_divergence_specific PASSED"
         },
         {
-          "behavior": "stage 2 posts the verdict onto the PR and the required status",
+          "behavior": "Enumeration covers every workflow, not the five adopt scaffolds",
           "disposition": "tested",
-          "evidence": "test_stage2_posts_the_verdict_onto_the_change x2, TestStage2::test_posts_the_required_context_as_a_status PASSED"
+          "evidence": "test_required_checks_drift.py::test_enumeration_covers_every_workflow_not_just_adopts_five PASSED"
         },
         {
-          "behavior": "least-privilege tokens: stage 1 no write, stage 2 posting job only",
+          "behavior": "A workflow that cannot run on a pull request is not derived",
           "disposition": "tested",
-          "evidence": "test_pr_review_stage1_holds_no_write_scope, test_pr_review_run_only_posting_job_widens, test_stage2_top_level_token_is_read_only x2 PASSED"
+          "evidence": "test_required_checks_drift.py::test_a_workflow_that_cannot_run_on_a_pr_is_not_derived + test_the_monorepos_manual_launch_gate_is_not_reported_as_drift PASSED"
         },
         {
-          "behavior": "the waiver cannot cover a change to the checks themselves",
+          "behavior": "One unparseable workflow does not sink enumeration",
           "disposition": "tested",
-          "evidence": "test_waiver_cannot_cover_a_change_to_the_checks, TestStage2::test_waiver_cannot_cover_a_change_to_the_checks PASSED"
+          "evidence": "test_required_checks_drift.py::test_enumeration_skips_an_unparseable_workflow PASSED"
         },
         {
-          "behavior": "tier logic preserved across the move (labels/sensitive/external)",
+          "behavior": "An empty derived set never reads as in-sync",
           "disposition": "tested",
-          "evidence": "TestStage2::test_tier_is_decided_here_from_api_data, TestStage1 suite PASSED"
+          "evidence": "test_required_checks_drift.py::test_empty_derived_never_reads_as_in_sync + test_enumeration_survives_a_repo_with_no_workflows PASSED"
         },
         {
-          "behavior": "adopt scaffolds BOTH review stages",
+          "behavior": "gh missing or hanging is a controlled error, not a traceback",
           "disposition": "tested",
-          "evidence": "test_stage2_lands_too, test_stage2_existing_file_preserved PASSED"
+          "evidence": "test_check_required_checks_cli.py::test_missing_gh_binary_is_a_controlled_error / test_gh_timeout_is_a_controlled_error / test_missing_gh_exits_2_without_a_traceback PASSED"
         },
         {
-          "behavior": "required-check derivation names the posted status, not a job name",
+          "behavior": "The HTTP status is recovered so 404 is distinguished from 403",
           "disposition": "tested",
-          "evidence": "test_required_check_names_match_deployed_workflows[3 profiles], test_posted_status_contexts_name_known_workflows PASSED"
+          "evidence": "test_check_required_checks_cli.py::test_http_status_is_carried_off_stderr + test_a_failure_with_no_http_code_carries_no_status PASSED"
         },
         {
-          "behavior": "stage 2 executes correctly against live GitHub on a real fork PR",
+          "behavior": "A repo that requires nothing reads as an empty set, not as unreadable",
+          "disposition": "tested",
+          "evidence": "test_check_required_checks_cli.py::test_a_repo_that_requires_nothing_reads_as_empty_not_unreadable + test_empty_configured_set_makes_every_check_unenforced PASSED"
+        },
+        {
+          "behavior": "Contexts come from rulesets and classic protection, unioned",
+          "disposition": "tested",
+          "evidence": "test_check_required_checks_cli.py::test_contexts_come_from_rulesets / test_classic_branch_protection_is_still_read / test_both_mechanisms_union PASSED"
+        },
+        {
+          "behavior": "Neither source readable raises; one readable source is enough",
+          "disposition": "tested",
+          "evidence": "test_check_required_checks_cli.py::test_neither_mechanism_readable_raises / test_one_mechanism_unreadable_does_not_sink_the_other / test_unparseable_response_is_not_read_as_empty PASSED"
+        },
+        {
+          "behavior": "The policy is read for the named branch, not always main",
+          "disposition": "tested",
+          "evidence": "test_check_required_checks_cli.py::test_the_policy_is_read_for_the_named_branch PASSED"
+        },
+        {
+          "behavior": "An unreachable repo exits 2 before any policy lookup",
+          "disposition": "tested",
+          "evidence": "test_check_required_checks_cli.py::test_unreachable_repo_exits_2_before_any_policy_lookup PASSED"
+        },
+        {
+          "behavior": "In-sync exits 0 filing nothing; drift files exactly one item keyed repo-at-branch",
+          "disposition": "tested",
+          "evidence": "test_check_required_checks_cli.py::test_in_sync_repo_exits_0_and_files_nothing + test_drift_files_one_item_keyed_on_repo_and_branch PASSED"
+        },
+        {
+          "behavior": "The posted-status registry rejects a key no consumer visits",
+          "disposition": "tested",
+          "evidence": "test_automerge_readiness.py::test_posted_status_contexts_name_known_workflows PASSED; probed with typo keys"
+        },
+        {
+          "behavior": "The live GitHub ruleset read returns the real must-pass set for this repo",
           "disposition": "untestable",
           "reason_code": "requires-external-nondeterministic-service",
-          "reason": "needs a real fork PR against GitHub with live secrets; no local harness can synthesise a workflow_run event. The first live fork PR is the proof. Until then the gate fails closed, which is the safe direction."
+          "reason": "the real GitHub API cannot be a hermetic test; exercised live at every stage instead, and every decision taken on its response is covered by the mocked host-IO rows above"
         }
       ],
       "counts": {
-        "total": 22,
-        "tested": 21,
+        "testable": 28,
+        "tested": 28,
         "untestable": 1,
         "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 29,
+        "covered_acs": 29
       }
     },
     "ci_supplychain_ack": {
-      "run_id": "iterate-2026-07-27-review-gate-failclosed-fork",
-      "paths_fingerprint": "ef6cf514447be7b15d961fa14b737e0d9cd692124f92107dc14534d45b8fabd8",
-      "consistent_with": "iterate-2026-06-30-workflow-token-permissions",
-      "statement": "Splits the Tier-3 PR review into two workflows. Stage 1 (pull_request, runs on forks) holds NO secret and no write scope; stage 2 (workflow_run, default-branch code) is the only credentialed half and widens solely to statuses:write + pull-requests:write + contents:read, preserving read-only top-level tokens with per-job widening. Adds .github/workflows/pr-review-run.yml. Action-pinning posture unchanged: GitHub-owned actions (checkout@v4, upload-artifact@v4, github-script@v7) stay on mutable tags per the recorded do-not-SHA-pin decision; the only third-party action (astral-sh/setup-uv) remains pinned to a full commit SHA. Net effect on the trust boundary is a REDUCTION: credentials move out of any run whose workflow file the contributor controls, and stage 2 derives tier and diff from the API rather than from contributor-supplied artifact data.",
+      "run_id": "iterate-2026-07-27-checks-that-gate-nothing",
+      "paths_fingerprint": "dfd5ba38e9cb554cd5aeb2094f44763a650a892d5a333cc49377760cd378ec88",
+      "consistent_with": "iterate-2026-07-27-review-gate-failclosed-fork",
+      "statement": "Adds two run: steps invoking in-repo scripts to ci.yml and edits one run: body in security.yml. No action, permission, secret, trigger or external dependency changes, so the pinning posture is untouched: GitHub-owned actions stay on mutable tags, third-party stay SHA-pinned. The trust boundary only tightens - two verifiers that ran nowhere now block, and the security gate reports the severities it does not block on instead of implying it found none.",
       "ci_paths": [
-        ".github/workflows/pr-review-run.yml",
-        ".github/workflows/pr-review.yml",
-        "shared/templates/github-actions/claude-review-run.yml.template",
-        "shared/templates/github-actions/claude-review.yml.template"
+        ".github/workflows/ci.yml",
+        ".github/workflows/security.yml"
       ]
     }
   },
