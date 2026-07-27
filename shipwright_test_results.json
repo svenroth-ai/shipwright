@@ -1,18 +1,14 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-changelog-writer-preserve-history",
+    "run_id": "iterate-2026-07-27-guide-delivery-watch",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 76,
-      "total": 76
+      "passed": 5545,
+      "total": 5561,
+      "skipped": 16
     },
     "integration": {
-      "status": "passed",
-      "passed": 418,
-      "total": 418
-    },
-    "pgtap": {
       "status": "not_run",
       "passed": 0,
       "total": 0
@@ -22,135 +18,36 @@
       "passed": 0,
       "total": 0
     },
-    "design_fidelity": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [],
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --extra dev pytest plugins/shipwright-changelog/tests/test_integration.py -q",
+      "surface": "none",
+      "runner": "",
       "exit_code": 0,
-      "tests_run": 5,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\changelog-writer-preserve-history\\.shipwright\\runs\\iterate-2026-07-27-changelog-writer-preserve-history\\surface_verification.log",
-      "timestamp": "2026-07-27T11:28:44.488Z",
-      "attempts": 1
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-07-27T15:49:23.924Z",
+      "attempts": 0,
+      "justification": "Documentation only: the change edits two prose passages in docs/guide.md and touches no executable code, so there is no behaviour surface to drive. The behaviour being documented (the F11 delivery watch) was verified end-to-end against the live GitHub API in iterate-2026-07-27-name-the-blocker, which shipped it. The internal anchor added here was resolved against the document's own headings."
     },
     "test_completeness": {
-      "status": "complete",
-      "behaviors": [
-        {
-          "behavior": "AC1 no-marker history preserved (title + all entries)",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog.py::test_update_changelog_preserves_file_without_unreleased_marker PASSED"
-        },
-        {
-          "behavior": "AC2 marker-only file keeps pending [Unreleased] bullets",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog.py::test_update_changelog_preserves_pending_unreleased_bullets PASSED"
-        },
-        {
-          "behavior": "AC3 marker+version ordering unchanged",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog.py::test_update_changelog_existing PASSED"
-        },
-        {
-          "behavior": "AC4 absent file created with header + [Unreleased] + entry",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog.py::test_update_changelog_new_file PASSED"
-        },
-        {
-          "behavior": "AC5 re-run is a fixed point; version appears exactly once",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog_preservation.py::test_rerun_never_loses_existing_content (12 shapes) PASSED"
-        },
-        {
-          "behavior": "AC6 revised entry replaces the same version, neighbours intact",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog.py::test_update_changelog_replaces_same_version_section PASSED"
-        },
-        {
-          "behavior": "AC7 entry without a released-version heading refused, file untouched",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog.py::test_update_changelog_rejects_entry_without_released_version[no-version-heading,unreleased-heading] PASSED"
-        },
-        {
-          "behavior": "AC7 multi-section entry refused, file untouched",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog_preservation.py::test_rejects_entry_with_more_than_one_section PASSED"
-        },
-        {
-          "behavior": "AC8 pre-existing duplicate sections refused, file untouched",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog.py::test_update_changelog_refuses_ambiguous_duplicate_sections PASSED"
-        },
-        {
-          "behavior": "AC10 whitespace-variant heading bounds a replaced section",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog.py::test_update_changelog_replacement_stops_at_whitespace_variant_heading PASSED"
-        },
-        {
-          "behavior": "AC11 trailing link-reference footer survives a re-run",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog_preservation.py::test_replace_preserves_trailing_link_reference_footer PASSED"
-        },
-        {
-          "behavior": "AC11 trailing prose survives a re-run",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog_preservation.py::test_replace_preserves_trailing_prose PASSED"
-        },
-        {
-          "behavior": "AC12 UTF-8 BOM preserved and not parser-blinding",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog_preservation.py::test_preserves_utf8_bom PASSED"
-        },
-        {
-          "behavior": "AC12 LF and CRLF files keep their own line endings",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog_preservation.py::test_preserves_lf_line_endings + ::test_preserves_crlf_line_endings PASSED"
-        },
-        {
-          "behavior": "AC12 a failed write leaves the original intact, no orphan temp file",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog_preservation.py::test_failed_write_leaves_the_original_intact PASSED"
-        },
-        {
-          "behavior": "No byte loss across 12 file shapes on insert, re-run and revised re-run",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog_preservation.py::test_insert/test_rerun/test_revised_rerun_never_loses_existing_content (36 cases) PASSED"
-        },
-        {
-          "behavior": "CLI `generate` preserves a hand-written history (script-mode import path)",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_integration.py::test_generate_preserves_existing_history PASSED"
-        },
-        {
-          "behavior": "CLI refusal arm: exit 1, error JSON on stdout, file unchanged",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_integration.py::test_generate_refuses_ambiguous_file_and_leaves_it_untouched PASSED"
-        },
-        {
-          "behavior": "AC9 FR-01.09 gains the re-run (E) criterion in 01-adopted/spec.md",
-          "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "reason": "No gate reads .shipwright/planning/01-adopted/spec.md; the criterion is asserted by inspection at spec.md:468-473 and by F1 artifact sync. The behaviour it describes is covered by the AC5/AC7/AC8 rows above."
-        }
-      ],
-      "counts": {
-        "testable": 18,
-        "tested": 18,
-        "untestable": 1,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 12,
-        "covered_acs": 12
-      }
-    }
+      "status": "n/a",
+      "justification": "Trivial complexity, documentation only: the change edits two prose passages in docs/guide.md and introduces no executable behaviour to enumerate. The behaviour it describes was enumerated and tested in iterate-2026-07-27-name-the-blocker, which shipped it."
+    },
+    "degraded": [
+      "Complexity OVERRIDDEN from the classifier's 'medium' to 'trivial'. The estimate came solely from the history fall-through (prior_source=history, median of the last 20 runs); the classifier's own scope-keyword estimate and safety floor both said trivial, and it reported zero risk flags. The diff is two prose passages in docs/guide.md with no code touched, so the medium ceremony (mini-plan, approval gate, external review, confidence calibration) would have been process applied to nothing."
+    ]
   },
   "coverage": {
     "total": 80.2,
