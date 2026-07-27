@@ -42,9 +42,11 @@ import urllib.request
 
 import deploy_profile
 
-# The shortest request worth making. Only the FIRST attempt may use it to
-# straddle a deadline shorter than itself; every later attempt is capped to the
-# time actually remaining, so the total wait never exceeds `max_wait` after that.
+# The shortest request worth making. This is a FLOOR on the first attempt, not
+# a ceiling on any attempt: a deadline shorter than one second still gets one
+# real request (a check that never asks would be worse than a sub-second
+# overrun). Every LATER attempt is capped to the time actually remaining, so
+# after the first the total wait never exceeds `max_wait`.
 MIN_ATTEMPT_SECONDS = 1.0
 
 

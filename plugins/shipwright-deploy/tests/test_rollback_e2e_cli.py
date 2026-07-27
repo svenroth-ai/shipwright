@@ -28,24 +28,26 @@ TOKEN = "test-token-must-never-be-echoed"
 
 
 class _JelasticStub(http.server.BaseHTTPRequestHandler):
-    """Minimal stand-in for the hosting API that records what it was asked."""
+    """Minimal stand-in for the hosting API that records what it was asked.
 
-    calls: list = []
-    project: dict = {}
-    fail: set = set()
+    State lives on the SERVER instance, never on this class: a handler class is
+    shared by every server in the process, so class attributes would make two
+    concurrently-running tests overwrite each other's recorded calls the moment
+    the suite is run under xdist.
+    """
 
     def do_POST(self):  # noqa: N802 (BaseHTTPRequestHandler API)
         raw = self.rfile.read(int(self.headers.get("Content-Length", 0))).decode("utf-8")
         params = {k: v[0] for k, v in urllib.parse.parse_qs(raw).items()}
         endpoint = self.path.strip("/")
-        type(self).calls.append((endpoint, params))
+        self.server.calls.append((endpoint, params))
 
-        if endpoint in type(self).fail:
+        if endpoint in self.server.fail:
             body = {"result": 4, "error": f"{endpoint} refused by the stub"}
         elif endpoint.endswith("getprojects"):
-            body = {"result": 0, "array": [dict(type(self).project)]}
+            body = {"result": 0, "array": [dict(self.server.project)]}
         elif endpoint.endswith("editproject"):
-            type(self).project = {**type(self).project, "branch": params.get("branch")}
+            self.server.project = {**self.server.project, "branch": params.get("branch")}
             body = {"result": 0}
         else:
             body = {"result": 0}
@@ -63,17 +65,17 @@ class _JelasticStub(http.server.BaseHTTPRequestHandler):
 
 @pytest.fixture
 def host():
-    """Start the stub; yields (base_url, stub class)."""
-    _JelasticStub.calls = []
-    _JelasticStub.fail = set()
-    _JelasticStub.project = {
+    """Start the stub; yields (base_url, the server carrying the recorded calls)."""
+    httpd = http.server.HTTPServer(("127.0.0.1", 0), _JelasticStub)
+    httpd.calls = []
+    httpd.fail = set()
+    httpd.project = {
         "context": "ROOT", "type": "git", "branch": "main",
         "url": "https://example.invalid/app.git", "login": "shipwright-bot",
     }
-    httpd = http.server.HTTPServer(("127.0.0.1", 0), _JelasticStub)
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
     try:
-        yield f"http://127.0.0.1:{httpd.server_address[1]}", _JelasticStub
+        yield f"http://127.0.0.1:{httpd.server_address[1]}", httpd
     finally:
         httpd.shutdown()
         httpd.server_close()

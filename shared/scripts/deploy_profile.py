@@ -63,6 +63,9 @@ def load_profile(path: Path | str) -> dict:
 
 def _positive_int(value, label: str) -> int | None:
     if value is None:
+        # None means "not supplied" all the way through: `pick` reads it as
+        # "no explicit override" and falls through to the profile, then the
+        # default. It is never a validated zero.
         return None
     if isinstance(value, bool) or not isinstance(value, int) or value < 0:
         raise ProfileError(f"{label} must be a non-negative integer, got {value!r}")

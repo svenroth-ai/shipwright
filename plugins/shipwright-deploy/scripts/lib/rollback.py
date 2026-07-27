@@ -38,6 +38,11 @@ from rollback_report import (
 
 # Reach the shared tree the same way every hook does: two levels above the
 # plugin root, which holds in the dev repo and in the plugin cache alike.
+# Intended target: <repo-or-cache-root>/shared/scripts. The chain reads
+# scripts/lib/this-file -> parents[2] = the plugin root -> .parent.parent = the
+# root that holds both `plugins/` and `shared/`. An off-by-one here resolves
+# silently to the wrong directory, so test_smoke_e2e_cli / test_rollback_e2e_cli
+# run this module as a subprocess from an unrelated cwd to prove it resolves.
 _SHARED_SCRIPTS = Path(__file__).resolve().parents[2].parent.parent / "shared" / "scripts"
 if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
