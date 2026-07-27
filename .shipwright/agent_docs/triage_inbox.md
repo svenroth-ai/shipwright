@@ -5,10 +5,10 @@
 
 ## Status summary
 
-- Total: 430
-- Triage: 21 | Promoted: 1 | Dismissed: 407 | Snoozed: 1
+- Total: 431
+- Triage: 22 | Promoted: 1 | Dismissed: 407 | Snoozed: 1
 
-## Top 21 items (severity-sorted)
+## Top 22 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -83,7 +83,12 @@
   - The tail of campaign step S2, not a new campaign - file it now so it is not lost between "S2 merged" and "somebody noti…
   - Promote: `triage_promote.py --id trg-8bf97fd4 --task-ref EXT:<ref>`
 
-### Source: manual (6 items)
+### Source: manual (7 items)
+
+<a id="trg-51f8e2a1"></a>
+- **deferring a triage finding does not yet defer it - make the third decision mean what it says** `id=trg-51f8e2a1 | severity=high | kind=improvement → P1/engineering`
+  - Post-merge review of PR #444 found the CLI defer subcommand records the decision correctly but almost nothing downstrea…
+  - Promote: `triage_promote.py --id trg-51f8e2a1 --task-ref EXT:<ref>`
 
 <a id="trg-2ca796f3"></a>
 - **Release aggregator can write the same version twice on a re-run** `id=trg-2ca796f3 | severity=high | kind=bug → P1/engineering`
