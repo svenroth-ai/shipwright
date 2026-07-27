@@ -1,7 +1,7 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-27T17:16:20.738164+00:00
-Source-State: run=iterate-2026-07-27-pr-review-diff-cap
+Generated: 2026-07-27T17:36:33.332091+00:00
+Source-State: run=iterate-2026-07-27-changelog-aggregator-idempotency
 Consistency-audit: never run
 
 ## Requirements Coverage
@@ -16,7 +16,7 @@ Consistency-audit: never run
 | [FR-01.06](../../.shipwright/planning/01-adopted/spec.md#fr-0106)<a id="rtm-fr-0106"></a> | Run the project's tests at every level it has — unit, integration, database, end-to-end and smoke — and produce one record in which each level carries an explicit outcome or a stated reason it did not run. Compare the built screens back to their mockups, hold the project to the performance budgets it declared, and report which of the declared pairs of code that write and read the same stored format appear to have no test covering them. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-c4ae8ef7](#evt-c4ae8ef7), [evt-ddb23fe7](#evt-ddb23fe7) +1 | 225/225 → 19/19 | 2026-05-03 ([iter](#evt-c4ae8ef7)) | ⚠️ needs re-verification | FAIL → [trg-12b4cf3f](../agent_docs/triage_inbox.md#trg-12b4cf3f) | MISSING | — | — |
 | [FR-01.07](../../.shipwright/planning/01-adopted/spec.md#fr-0107)<a id="rtm-fr-0107"></a> | Scan the project with several independent checks — flaws in the code, unsafe dependencies, leaked secrets, and attempts to hijack the assistant's own instructions — and report everything they find in one shape, publishing it to the code host's security surface as well. Inside a project the framework already manages, it drives the fixes through to completion; pointed at any other repository it reports what it found and offers to hand the findings over to be worked through. A finding the project formally accepts is recorded in a register kept with the project, so it stays visible instead of quietly disappearing. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7), [evt-07b1fe9c](#evt-07b1fe9c) +3 | 225/225 → 4955/4967 | 2026-06-30 ([iter](#evt-f90c7126)) | ⚠️ needs re-verification | COVERED | MISSING | — | — |
 | [FR-01.08](../../.shipwright/planning/01-adopted/spec.md#fr-0108)<a id="rtm-fr-0108"></a> | Release the project to a configured hosting target and prove it is actually alive before calling it done — asking repeatedly until a deadline the target itself sets, so a slow start is not mistaken for a failed release, and treating no answer by then as a failed one. The way back to a previous version puts back the version that was asked for, refuses when stored data has already moved past it, and — if it fails part-way — says plainly that nothing is confirmed running and stops. Every supported target carries a written record of its way back and of what that does about stored data that has already moved on. Jelastic (Infomaniak) is shipped; Vercel and a container-on-a-server target are documented as stubs. | Should | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7), [evt-ea7203ec](#evt-ea7203ec) +1 | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | ⚠️ needs re-verification | COVERED | MISSING | — | — |
-| [FR-01.09](../../.shipwright/planning/01-adopted/spec.md#fr-0109)<a id="rtm-fr-0109"></a> | Turn the commit history into a release note a human can read, tag the release, and open the release pull request. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-530b0980](#evt-530b0980), [evt-ddb23fe7](#evt-ddb23fe7) +2 | 225/225 → 19/19 | 2026-05-03 ([iter](#evt-530b0980)) | ⚠️ needs re-verification | FAIL → [trg-2ca796f3](../agent_docs/triage_inbox.md#trg-2ca796f3) | MISSING | — | — |
+| [FR-01.09](../../.shipwright/planning/01-adopted/spec.md#fr-0109)<a id="rtm-fr-0109"></a> | Turn the commit history into a release note a human can read, tag the release, and open the release pull request. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-530b0980](#evt-530b0980), [evt-ddb23fe7](#evt-ddb23fe7) +3 | 225/225 → 19/19 | 2026-05-03 ([iter](#evt-530b0980)) | ⚠️ needs re-verification | FAIL → [trg-2ca796f3](../agent_docs/triage_inbox.md#trg-2ca796f3) | MISSING | — | — |
 | [FR-01.10](../../.shipwright/planning/01-adopted/spec.md#fr-0110)<a id="rtm-fr-0110"></a> | Produce audit-ready evidence — which requirement is covered by which test, what changed when, and what the project depends on — and run an on-demand cross-check that reports where that evidence disagrees with reality. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-30338dac](#evt-30338dac), [evt-a3888caf](#evt-a3888caf) +26 | 225/225 → 6230/6242 | 2026-07-23 ([iter](#evt-3a175bfa)) | ⚠️ needs re-verification | FAIL → [trg-8bf97fd4](../agent_docs/triage_inbox.md#trg-8bf97fd4) | MISSING | — | — |
 | [FR-01.11](../../.shipwright/planning/01-adopted/spec.md#fr-0111)<a id="rtm-fr-0111"></a> | Handle an ongoing change at the depth it deserves: detect what kind of change it is and how big, then scale from a quick fix to a fully specified feature with plans, reviews and tests. Every feature or change records whether it adds, modifies, removes or leaves the requirements untouched, and that record is enforced before the change can be finished. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-6c637864](#evt-6c637864), [evt-baaf4b0e](#evt-baaf4b0e), [evt-ca7b7d64](#evt-ca7b7d64) +21 | 225/225 → 54/54 | 2026-07-14 ([iter](#evt-5dc16a45)) | ⚠️ needs re-verification | COVERED | MISSING | MISSING | — |
 | [FR-01.12](../../.shipwright/planning/01-adopted/spec.md#fr-0112)<a id="rtm-fr-0112"></a> | Start the project locally and hand back the address to open in a browser. | May | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7), [evt-ea7203ec](#evt-ea7203ec) | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | ⚠️ needs re-verification | COVERED | — | — | MISSING |
@@ -33,6 +33,7 @@ Consistency-audit: never run
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-101fccaa"></a>the release aggregator writes a version once, or says why not | iterate | change | [FR-01.09](#rtm-fr-0109) | — | — | 2026-07-27 |
 | <a id="evt-36d0f887"></a>raise the PR-review diff cap, cut at a file boundary, name what went unreviewed | iterate | change | [FR-01.17](#rtm-fr-0117) | — | — | 2026-07-27 |
 | <a id="evt-e0b8fd18"></a>the phase canon asks whether the handoff belongs to this run | iterate | change | [FR-01.01](#rtm-fr-0101) | — | — | 2026-07-27 |
 | <a id="evt-90ce4f39"></a>document the delivery watch in the guide | iterate | change |  | — | — | 2026-07-27 |
@@ -418,7 +419,7 @@ Consistency-audit: never run
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 378 |
+| Iterate changes | 379 |
 | Requirements total | 18 |
 | Requirements verified | 17/18 |
 | Must-have verified | 14/14 |
@@ -439,7 +440,7 @@ Consistency-audit: never run
 - [FR-01.06](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
 - [FR-01.07](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
 - [FR-01.08](../../.shipwright/planning/01-adopted/spec.md) (Should): behavior changed without a later test run — behavior last touched by `evt-a345a59f` (2026-07-27)
-- [FR-01.09](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-320397d2` (2026-07-27)
+- [FR-01.09](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-101fccaa` (2026-07-27)
 - [FR-01.10](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-37719eaa` (2026-07-27)
 - [FR-01.11](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-368b0d6c` (2026-07-27)
 - [FR-01.12](../../.shipwright/planning/01-adopted/spec.md) (May): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)

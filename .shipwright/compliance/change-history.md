@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-07-27T17:16:20.738164+00:00
-Source-State: run=iterate-2026-07-27-pr-review-diff-cap
+Generated: 2026-07-27T17:36:33.332091+00:00
+Source-State: run=iterate-2026-07-27-changelog-aggregator-idempotency
 Consistency-audit: never run
-Total commits: 1231
+Total commits: 1232
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 354
+    "fix" : 355
     "feat" : 346
     "chore" : 255
     "docs" : 148
@@ -22,11 +22,12 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 354 commits
+### Fixes (fix) — 355 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | security | the PR reviewer stops being defeated by the size of the change | b74d21e3c3ea |
+| 2026-07-27 | changelog | the release aggregator writes a version once, or says why not | 0d71803c32cd |
+| 2026-07-27 | security | the PR reviewer stops being defeated by the size of the change (#470) | 17ca76d7f413 |
 | 2026-07-27 | iterate | the phase canon asks whether the handoff belongs to this run (#467) | 3c82d6332678 |
 | 2026-07-27 | security | the PR reviewer stops reviewing its own prior reviews (#461) | 273e3ef7ab56 |
 | 2026-07-27 | changelog | the release-note writer preserves the history it read (#452) | 97392eeacfa2 |
@@ -736,7 +737,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | triage | sweep 4 outbox append(s) into branch | 9407e8f077e2 |
+| 2026-07-27 | triage | sweep 4 outbox append(s) into branch | 0c6941fcf4d8 |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -1302,7 +1303,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1231 |
+| Total commits | 1232 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1231 |
+| Human-authored commits | 1232 |
 

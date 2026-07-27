@@ -1,11 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-07-27 17:16 UTC | Session: 1ea85a9d-f698-4336-8e01-ea2f4e2ae714 | Run: iterate-2026-07-27-pr-review-diff-cap
+> Updated: 2026-07-27 17:36 UTC | Session: 8a0611d4-b05d-411a-a42a-cc448bc145a7 | Run: iterate-2026-07-27-changelog-aggregator-idempotency
 
-## Recent Changes (378 iterations)
+## Recent Changes (379 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
 | change | iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed | 0/0 |  | FR-01.17 | 2026-07-27 |
+| change | iterate: the release aggregator writes a version once, or says why not | 0/0 |  | FR-01.09 | 2026-07-27 |
 | change | iterate: document the delivery watch in the guide | 0/0 |  | docs | 2026-07-27 |
 | change | iterate: requirement write-back loop — design rounds and build sections declare their requirement impact | 0/0 |  | FR-01.04, FR-01.05 | 2026-07-27 |
 | change | iterate: the phase canon asks whether the handoff belongs to this run | 0/0 |  | FR-01.01 | 2026-07-27 |
@@ -385,7 +386,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-27 | Unit: 6261/6261 | Integration: 422/422 | E2E: 41/41 | Smoke: not_run | (iterate)
+Last run: 2026-07-27 | Unit: 5575/5587 | Integration: 422/422 | E2E: 22/22 | Smoke: skipped | (iterate)
 
 ## Pipeline
 
