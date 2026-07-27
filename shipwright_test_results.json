@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-c3-phase-content-key",
+    "run_id": "iterate-2026-07-27-pr-review-diff-cap",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 7462,
-      "total": 7462
+      "passed": 6261,
+      "total": 6261
     },
     "integration": {
       "status": "passed",
@@ -13,216 +13,140 @@
       "total": 422
     },
     "pgtap": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "e2e": {
       "status": "passed",
-      "passed": 58,
-      "total": 58
+      "passed": 41,
+      "total": 41
     },
     "design_fidelity": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "smoke": {
-      "status": "skipped"
+      "status": "not_run"
     },
-    "degraded": [
-      {
-        "condition": "risk_flag_touches_auth_overridden_as_prose_false_positive",
-        "reason": "classify_complexity matched 'session_handoff' prose in the message, not the diff. risk_detectors recomputed from the real diff: touches_auth absent, cross_component True. Integration coverage delivered for the flag that is actually present."
-      },
-      {
-        "condition": "interview_and_approval_gate_skipped",
-        "reason": "--autonomous against a complete, self-contained brief (follow-up of trg-bd4e75a9)."
-      },
-      {
-        "condition": "internal_code_reviewer_and_doubt_reviewer_subagents_not_dispatched",
-        "reason": "standing session rule forbids invoking the Agent tool unless requested. Covered instead by 3 external CODE rounds on this diff (2 real defects found and fixed: ANSI/control-char leakage into operator output, and is_file() collapsing unreadable into missing), plus the orchestrator Self-Review. Both types closed explicitly in reviews.json with dispositions."
-      },
-      {
-        "condition": "external_review_gemini_leg_degraded_in_3_of_4_rounds",
-        "reason": "gemini returned truncated scratchpad (finish_reason=length) in the plan round and 2 of 3 code rounds, so those are one-model passes. It answered 'approve' in the round it completed. Recorded rather than presented as a clean two-model pass."
-      }
-    ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest shared/tests/test_c3_handoff_freshness.py shared/tests/test_c3_applicability.py shared/tests/test_handoff_freshness_composition.py shared/tests/test_handoff_freshness.py -q",
+      "runner": "uv run pytest plugins/shipwright-security/tests/test_pr_review_script.py plugins/shipwright-security/tests/test_pr_review_truncation.py -q",
       "exit_code": 0,
-      "tests_run": 58,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-27-c3-phase-content-key/surface_verification.json"
+      "tests_run": 41,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\pr-review-diff-cap\\.shipwright\\runs\\iterate-2026-07-27-pr-review-diff-cap\\surface_verification.log",
+      "timestamp": "2026-07-27T17:11:54.637Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "an old handoff naming this run passes — elapsed time is not staleness",
+          "behavior": "the cap still covers the largest real diff measured (467,591 chars, PR #447)",
           "disposition": "tested",
-          "evidence": "test_c3_handoff_freshness.py::test_an_old_handoff_naming_this_run_passes PASSED"
+          "evidence": "test_pr_review_truncation.py::test_the_cap_still_covers_the_largest_real_diff_measured PASSED \u2014 the only test that fails if the cap is lowered back"
         },
         {
-          "behavior": "a brand-new handoff naming another run fails — recency never rescues it",
+          "behavior": "a diff under the cap is returned untouched",
           "disposition": "tested",
-          "evidence": "test_c3_handoff_freshness.py::test_a_brand_new_handoff_naming_another_run_fails PASSED"
+          "evidence": "::test_a_diff_under_the_cap_is_untouched, ::test_exactly_at_the_cap_is_not_truncated PASSED"
         },
         {
-          "behavior": "identical content with different mtime yields an identical verdict",
+          "behavior": "every section kept in the reviewed diff is whole",
           "disposition": "tested",
-          "evidence": "test_c3_handoff_freshness.py::test_the_check_never_consults_mtime PASSED"
+          "evidence": "::test_every_kept_section_is_whole_and_the_rest_are_named PASSED"
         },
         {
-          "behavior": "no mtime / max_age_seconds call survives in the check's source",
+          "behavior": "an over-budget section is skipped; later fitting sections are still reviewed",
           "disposition": "tested",
-          "evidence": "test_c3_handoff_freshness.py::test_the_source_carries_no_mtime_call PASSED"
+          "evidence": "::test_a_huge_file_is_omitted_while_a_small_neighbour_is_reviewed_whole PASSED"
         },
         {
-          "behavior": "a phase with no canon-marker producer is skipped by name, not warned",
+          "behavior": "a file is supplied in part only when no whole section fits",
           "disposition": "tested",
-          "evidence": "test_c3_applicability.py::test_a_phase_with_no_canon_producer_is_skipped_not_warned PASSED (3 cases)"
+          "evidence": "::test_only_when_no_section_fits_is_one_supplied_in_part PASSED"
         },
         {
-          "behavior": "every canon phase is actually evaluated rather than skipped",
+          "behavior": "at most one section is ever partial",
           "disposition": "tested",
-          "evidence": "test_c3_applicability.py::test_every_canon_phase_is_actually_evaluated PASSED (8 cases)"
+          "evidence": "::test_at_most_one_section_is_ever_partial PASSED"
         },
         {
-          "behavior": "C3_CANON_PHASES stays aligned with PLUGIN_TO_PHASE in both directions",
+          "behavior": "a diff with no parseable header still fails closed and invents no paths",
           "disposition": "tested",
-          "evidence": "test_c3_applicability.py::test_c3_canon_phases_align_with_plugin_to_phase PASSED"
+          "evidence": "::test_a_diff_with_no_parseable_header_still_fails_closed PASSED"
         },
         {
-          "behavior": "a passing result names the phase that wrote the handoff",
+          "behavior": "an oversized preamble still respects the cap",
           "disposition": "tested",
-          "evidence": "test_c3_handoff_freshness.py::test_a_passing_result_names_the_writing_phase PASSED"
+          "evidence": "::test_an_oversized_preamble_still_respects_the_cap PASSED"
         },
         {
-          "behavior": "the known bound: another phase of the same run passes, and the detail says so",
+          "behavior": "the reviewed diff never exceeds the cap for any input",
           "disposition": "tested",
-          "evidence": "test_c3_handoff_freshness.py::test_a_handoff_written_by_another_phase_of_this_run_passes_and_says_so PASSED"
+          "evidence": "::test_the_reviewed_diff_never_exceeds_the_cap PASSED (4 cap sizes)"
         },
         {
-          "behavior": "a marker carrying no phase renders a placeholder, not an empty string",
+          "behavior": "an omission whose path cannot be parsed is counted, not silently dropped",
           "disposition": "tested",
-          "evidence": "test_c3_handoff_freshness.py::test_a_marker_without_a_phase_renders_a_placeholder PASSED"
+          "evidence": "::test_an_omission_whose_path_cannot_be_parsed_is_counted_not_dropped PASSED"
         },
         {
-          "behavior": "a missing handoff is not a pass",
+          "behavior": "a partially included file whose own header is unparseable is disclosed too",
           "disposition": "tested",
-          "evidence": "test_c3_handoff_freshness.py::test_a_missing_handoff_is_not_a_pass PASSED"
+          "evidence": "::test_a_partial_file_whose_own_header_is_unparseable_is_still_disclosed PASSED \u2014 regression from the external code review"
         },
         {
-          "behavior": "a handoff with no canon marker is not a pass",
+          "behavior": "a rename reports both ends when omitted",
           "disposition": "tested",
-          "evidence": "test_c3_handoff_freshness.py::test_a_handoff_without_a_canon_marker_is_not_a_pass PASSED"
+          "evidence": "::test_a_rename_reports_both_ends_when_omitted PASSED"
         },
         {
-          "behavior": "non-canon frontmatter is not a marker (canon_generated is what makes it one)",
+          "behavior": "a non-positive cap is rejected",
           "disposition": "tested",
-          "evidence": "test_c3_handoff_freshness.py::test_a_non_canon_frontmatter_block_is_not_a_marker PASSED"
+          "evidence": "::test_a_non_positive_cap_is_rejected PASSED"
         },
         {
-          "behavior": "a marker carrying no run id is not a pass",
+          "behavior": "the PR comment names omitted and partially included files separately",
           "disposition": "tested",
-          "evidence": "test_c3_handoff_freshness.py::test_a_marker_without_a_run_id_is_not_a_pass PASSED"
+          "evidence": "test_pr_review_lib.py::test_the_comment_names_what_went_unreviewed PASSED"
         },
         {
-          "behavior": "a degenerate run id reports 'cannot evaluate' rather than a stale-handoff warn",
+          "behavior": "files that could not be named are disclosed to humans rather than hidden",
           "disposition": "tested",
-          "evidence": "test_c3_handoff_freshness.py::test_a_degenerate_run_id_cannot_evaluate_rather_than_warn PASSED (4 cases)"
+          "evidence": "::test_files_that_could_not_be_named_are_disclosed_not_hidden, ::test_no_parseable_header_says_so_rather_than_implying_nothing_was_lost PASSED"
         },
         {
-          "behavior": "an unreadable handoff is not a pass",
+          "behavior": "the model is told what it is not seeing, bounded and labelled untrusted",
           "disposition": "tested",
-          "evidence": "test_c3_handoff_freshness.py::test_an_unreadable_handoff_is_not_a_pass PASSED"
+          "evidence": "::test_the_model_is_told_which_files_the_cap_left_out, ::test_the_model_is_told_the_file_names_are_untrusted, ::test_model_facing_names_are_bounded_and_sanitised, ::test_unnameable_omissions_reach_the_model_too PASSED"
         },
         {
-          "behavior": "an inaccessible handoff reads as unreadable, not as missing",
+          "behavior": "a hostile PR-controlled path cannot break out of the comment or of stderr",
           "disposition": "tested",
-          "evidence": "test_c3_handoff_freshness.py::test_an_inaccessible_handoff_reads_as_unreadable_not_missing PASSED"
+          "evidence": "::test_a_hostile_path_cannot_break_out_of_the_comment, test_pr_review_script.py::test_an_oversized_diff_names_the_unreviewed_file_in_every_sink PASSED (ANSI escape in a path)"
         },
         {
-          "behavior": "run_id is keyword-only with no default, so a missed caller is a TypeError",
+          "behavior": "the tuple-to-record contract change fails loudly at a stale call site",
           "disposition": "tested",
-          "evidence": "test_c3_handoff_freshness.py::test_run_id_is_keyword_only_and_has_no_default PASSED"
+          "evidence": "test_pr_review_lib.py::test_the_record_cannot_be_unpacked_like_the_old_tuple PASSED"
         },
         {
-          "behavior": "a malformed marker cannot dump its contents into an operator-facing finding",
-          "disposition": "tested",
-          "evidence": "test_c3_handoff_freshness.py::test_a_malformed_marker_does_not_dump_its_contents_into_the_detail PASSED"
-        },
-        {
-          "behavior": "terminal escape sequences never reach a result detail",
-          "disposition": "tested",
-          "evidence": "test_c3_handoff_freshness.py::test_terminal_escapes_in_a_marker_never_reach_the_detail PASSED"
-        },
-        {
-          "behavior": "a whole-run audit answers uniformly across every canon phase",
-          "disposition": "tested",
-          "evidence": "test_c3_applicability.py::test_auditing_a_whole_run_gives_every_canon_phase_the_same_answer PASSED"
-        },
-        {
-          "behavior": "a whole-run audit still skips non-producer phases",
-          "disposition": "tested",
-          "evidence": "test_c3_applicability.py::test_auditing_a_whole_run_still_skips_non_producer_phases PASSED"
-        },
-        {
-          "behavior": "a whole-run audit of a stale handoff warns for every canon phase",
-          "disposition": "tested",
-          "evidence": "test_c3_applicability.py::test_a_whole_run_audit_of_a_stale_handoff_warns_for_every_canon_phase PASSED"
-        },
-        {
-          "behavior": "[integration] real writer output on disk passes C3 through the Stop-hook canon runner",
-          "disposition": "tested",
-          "evidence": "test_handoff_freshness_composition.py::test_the_canon_runner_passes_c3_on_the_real_writers_marker PASSED",
-          "category": "integration"
-        },
-        {
-          "behavior": "[integration] the canon runner warns when the handoff belongs to another run",
-          "disposition": "tested",
-          "evidence": "test_handoff_freshness_composition.py::test_the_canon_runner_warns_when_the_handoff_belongs_to_another_run PASSED",
-          "category": "integration"
-        },
-        {
-          "behavior": "[integration] the canon runner skips C3 for a phase with no producer",
-          "disposition": "tested",
-          "evidence": "test_handoff_freshness_composition.py::test_the_canon_runner_skips_c3_for_a_phase_with_no_producer PASSED",
-          "category": "integration"
-        },
-        {
-          "behavior": "[integration] a degenerate run id reaches C3 as itself through the runner",
-          "disposition": "tested",
-          "evidence": "test_handoff_freshness_composition.py::test_a_degenerate_run_id_reaches_c3_as_itself PASSED",
-          "category": "integration"
-        },
-        {
-          "behavior": "the Stop-hook call site supplies the run id (drift guard on the join)",
-          "disposition": "tested",
-          "evidence": "test_handoff_freshness_composition.py::test_the_stop_hook_call_site_supplies_the_run_id PASSED"
-        },
-        {
-          "behavior": "the F11 twin is unaffected by the shared-reader refactor",
-          "disposition": "tested",
-          "evidence": "test_handoff_freshness.py PASSED (13 tests, unchanged)"
-        },
-        {
-          "behavior": "docs/guide.md and docs/hooks-and-pipeline.md describe the contract the code now meets",
+          "behavior": "a live OpenRouter review of a ~1M-character diff",
           "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "evidence": "docs/guide.md C3 row + docs/hooks-and-pipeline.md 'C3 Freshness — a Content Key, Not mtime'"
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "Needs a real provider call on a real oversized PR. The size arithmetic is pinned deterministically above, and the provider's context limit was probed live (context_length=1000000). The live leg is what the gate itself exercises in CI."
         }
       ],
       "counts": {
-        "testable": 29,
-        "tested": 29,
+        "testable": 18,
+        "tested": 18,
         "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 6,
-        "covered_acs": 6
+        "acs": 7,
+        "covered_acs": 7
       }
     }
   },
@@ -231,5 +155,10 @@
     "measured_tier": "repo",
     "source": "combined coverage.xml (all plugins + shared + integration)",
     "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-07-27-requirement-writeback-loop",
+    "commit": "c30d6ce169253104aec50fe4b822012563fd8e13",
+    "dirty": true
   }
 }

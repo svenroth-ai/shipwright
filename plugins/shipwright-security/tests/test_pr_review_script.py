@@ -1,17 +1,14 @@
 """Tests for scripts/tools/pr_review.py — the Tier-3 PR reviewer (I/O + orchestration).
 
-The script is the OpenRouter-backed reviewer invoked by `.github/workflows/pr-review.yml`
-for Tier-3 PRs (external contributors, sensitive paths, or `needs-review` label). It must:
-
-- fetch the PR diff, call OpenRouter, parse a strict-JSON decision, post a PR comment
-- map the decision to an exit code: 0 = approve/comment, 1 = block, 2 = error
-- dump the raw response (redacted) on a JSON-parse failure and exit 2
-- truncate a > 200k-char diff and FAIL CLOSED on a (partial) truncated review (needs human)
-- never write the OpenRouter API key to logs
-
-The pure helpers (parse/truncate/render/redact/decision-mapping) live in
-pr_review_lib.py and are covered by test_pr_review_lib.py. All network (`urllib`)
-and `gh`-subprocess boundaries are monkeypatched so the suite runs fully offline.
+The OpenRouter-backed reviewer `.github/workflows/pr-review.yml` runs on Tier-3 PRs
+(external contributors, sensitive paths, `needs-review` label). It must fetch the
+diff, call OpenRouter, parse a strict-JSON decision, post a comment, and map that
+decision to an exit code (0 approve/comment, 1 block, 2 error); dump the raw
+response redacted and exit 2 on a parse failure; cut an over-cap diff at a FILE
+BOUNDARY and FAIL CLOSED on the partial review that leaves, naming what went
+unreviewed; and never log the API key. Pure helpers live in pr_review_lib.py /
+pr_review_diff_filter.py with their own test modules; all network and `gh`
+boundaries are monkeypatched, so the suite runs fully offline.
 """
 
 from __future__ import annotations
@@ -32,9 +29,7 @@ import pr_review  # noqa: E402
 FAKE_KEY = "ORTESTKEY-not-a-real-credential-0123456789"
 
 
-# ---------------------------------------------------------------------------
-# File contract
-# ---------------------------------------------------------------------------
+# --- File contract ---
 
 class TestFileContract:
 
@@ -58,9 +53,7 @@ class TestFileContract:
         assert pr_review.DEFAULT_MODEL == "anthropic/claude-sonnet-4.6"
 
 
-# ---------------------------------------------------------------------------
-# _post_openrouter — HTTP boundary (urllib monkeypatched)
-# ---------------------------------------------------------------------------
+# --- _post_openrouter — HTTP boundary (urllib monkeypatched) ---
 
 class TestPostOpenRouter:
 
@@ -95,9 +88,7 @@ class TestPostOpenRouter:
         assert data["choices"][0]["message"]["content"] == '{"decision":"approve"}'
 
 
-# ---------------------------------------------------------------------------
-# call_openrouter — content extraction + error wrapping (_post_openrouter mocked)
-# ---------------------------------------------------------------------------
+# --- call_openrouter — content extraction + error wrapping (_post_openrouter mocked) ---
 
 class TestCallOpenRouter:
 
@@ -128,9 +119,7 @@ class TestCallOpenRouter:
             pr_review.call_openrouter("k", "m", [], 1)
 
 
-# ---------------------------------------------------------------------------
-# gh-CLI wrappers — exit handling (subprocess mocked)
-# ---------------------------------------------------------------------------
+# --- gh-CLI wrappers — exit handling (subprocess mocked) ---
 
 class _Proc:
     def __init__(self, rc, out="", err=""):
@@ -178,9 +167,7 @@ class TestGhWrappers:
         assert "--body" in captured["cmd"]
 
 
-# ---------------------------------------------------------------------------
-# main() orchestration — boundaries monkeypatched
-# ---------------------------------------------------------------------------
+# --- main() orchestration — boundaries monkeypatched ---
 
 def _wire(monkeypatch, *, review_json=None, diff="diff --git a b\n+x\n", raise_call=None):
     """Patch every external boundary; capture posted comment/review state."""
@@ -243,11 +230,9 @@ class TestMainOrchestration:
         assert "rate limited" in err  # raw response dumped to logs
 
     def test_truncation_fails_closed_needs_human(self, monkeypatch):
-        # A truncated (partial) diff means we did NOT see the whole change. For a
-        # required gate on an untrusted PR, a large diff must not bypass review by
-        # size — fail CLOSED (non-zero) even on a partial APPROVE, forcing a
-        # request-changes review state so a human must look. The red required
-        # check is also what lets the gh-pr-ci triage producer surface the PR.
+        # A partial diff means we did NOT see the whole change, so a large diff
+        # must not bypass the gate by size — fail CLOSED even on a partial
+        # APPROVE. Rationale in pr_review_lib.MAX_DIFF_CHARS.
         posted = _wire(
             monkeypatch,
             diff="z" * (pr_review.MAX_DIFF_CHARS + 1000),
@@ -257,8 +242,25 @@ class TestMainOrchestration:
         rc = pr_review.main(ARGV)
         assert rc == pr_review.EXIT_BLOCK
         assert rc != pr_review.EXIT_OK  # the size-bypass is closed
-        assert "truncat" in posted["comment"].lower()
+        assert "review limit" in posted["comment"].lower()
+        # Headerless: honest about being unable to say WHICH files were missed.
+        assert "could not be identified" in posted["comment"]
         assert posted["state"] == "block"  # forced request-changes on truncation
+
+    def test_an_oversized_diff_names_the_unreviewed_file_in_every_sink(
+            self, monkeypatch, capsys):
+        # End to end: the file list survives truncation -> meta -> comment, and
+        # both sinks are sanitised. Diff paths are PR-controlled and CI logs are
+        # read in a terminal.
+        def _s(p, body):
+            return f"diff --git a/{p} b/{p}\n--- a/{p}\n+++ b/{p}\n@@ -1 +1 @@\n{body}\n"
+        posted = _wire(monkeypatch, review_json=json.dumps({"decision": "approve"}),
+                       diff=_s("s.py", "+y")
+                       + _s("b\x1b[31mig.py", "+x" * pr_review.MAX_DIFF_CHARS))
+        assert pr_review.main(ARGV) == pr_review.EXIT_BLOCK
+        assert "ig.py" in posted["comment"]
+        assert "\x1b" not in posted["comment"]
+        assert "\x1b" not in capsys.readouterr().err
 
     def test_api_key_never_logged(self, monkeypatch, capsys):
         # Force the worst path (error message embeds the key) and assert it is
