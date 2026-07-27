@@ -158,15 +158,19 @@ class TestImportDiscipline:
     not the second, which fails far away from the edit that caused it.
     """
 
+    #: Built outside the argv list: four adjacent literals *inside* a list read
+    #: exactly like a missing comma, which is what CodeQL flags there.
+    _PROBE = (
+        "import sys; sys.path.insert(0, sys.argv[1]); "
+        "from lib.collectors import collect_all; "
+        "from lib._audit_disclosure_render import freshness_note; "
+        "print('ok')"
+    )
+
     def test_collectors_import_under_the_bare_lib_package_root(self):
         scripts_dir = Path(__file__).resolve().parents[1] / "scripts"
         result = subprocess.run(
-            [sys.executable, "-c",
-             "import sys; sys.path.insert(0, sys.argv[1]); "
-             "from lib.collectors import collect_all; "
-             "from lib._audit_disclosure_render import freshness_note; "
-             "print('ok')",
-             str(scripts_dir)],
+            [sys.executable, "-c", self._PROBE, str(scripts_dir)],
             capture_output=True, text=True, encoding="utf-8",
         )
         assert result.returncode == 0, result.stderr
