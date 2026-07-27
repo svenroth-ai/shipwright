@@ -1,39 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-rollback-uses-target-ref"
+run_id: "iterate-2026-07-27-triage-defer-ci-cap"
 phase: "iterate"
-reason: "F11 re-refresh after origin/main moved: iterate-2026-07-27-rollback-uses-target-ref"
-timestamp: "2026-07-27T08:23:12.722139+00:00"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-07-27T08:30:58.021874+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 08:23:12 UTC
+> Auto-generated 2026-07-27 08:30:58 UTC
 
 ## Session Info
 
-- **Session ID**: 13f13377-3431-4445-b501-bc754d78d6d3
-- **Timestamp**: 2026-07-27 08:23:12 UTC
-- **Reason**: F11 re-refresh after origin/main moved: iterate-2026-07-27-rollback-uses-target-ref
+- **Session ID**: 8a66b2f1-81e9-4505-8591-b94928ca02f6
+- **Timestamp**: 2026-07-27 08:30:58 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-rollback-uses-target-ref
-- **Date**: 2026-07-27T08:23:06.376669Z
-- **Type**: bug
+- **Run ID**: iterate-2026-07-27-triage-defer-ci-cap
+- **Date**: 2026-07-27T08:30:49.435429Z
+- **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/rollback-uses-target-ref
-- **ADR**: iterate-2026-07-27-rollback-uses-target-ref
+- **Branch**: iterate/triage-defer-ci-cap
+- **ADR**: iterate-2026-07-27-triage-defer-ci-cap
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-rollback-uses-target-ref.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-triage-defer-ci-cap.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/rollback-uses-target-ref
-- **Run ID**: iterate-2026-07-27-rollback-uses-target-ref
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-rollback-uses-target-ref.md
+- **Branch**: iterate/triage-defer-ci-cap
+- **Run ID**: iterate-2026-07-27-triage-defer-ci-cap
+- **Spec**: .shipwright/planning/iterate/2026-07-27-triage-defer-ci-cap.md
 - **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-07-27T07:16:58))
+- **External Review Marker**: stale (predates spec (2026-07-27T07:19:14))
 
 ### Mandatory replay on Resume
 
@@ -52,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/rollback-uses-target-ref
-- **Last Commit**: 2f78d849 Merge remote-tracking branch 'origin/main' into iterate/rollback-uses-target-ref
+- **Branch**: iterate/triage-defer-ci-cap
+- **Last Commit**: 5a48e306 Merge remote-tracking branch 'origin/main' into iterate/triage-defer-ci-cap
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
