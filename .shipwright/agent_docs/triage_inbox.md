@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-27T08:30:58.021874Z. Items waiting for triage decision.
+> Auto-generated 2026-07-27T09:08:48.846142Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
 - Total: 416
-- Triage: 24 | Promoted: 1 | Dismissed: 390 | Snoozed: 1
+- Triage: 23 | Promoted: 1 | Dismissed: 391 | Snoozed: 1
 
-## Top 24 items (severity-sorted)
+## Top 23 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -87,7 +87,7 @@
   - Evidence: `.shipwright/planning/iterate/2026-07-27-project-granularity-basis.md`
   - Promote: `triage_promote.py --id trg-1d7d91d0 --task-ref EXT:<ref>`
 
-### Source: req3-phase2-walk (15 items)
+### Source: req3-phase2-walk (14 items)
 
 <a id="trg-74b945bc"></a>
 - **CRITICAL - going back to a previous version does not use the version you ask for, and reports success** `id=trg-74b945bc | severity=critical | kind=bug → P0/engineering`
@@ -142,12 +142,6 @@
   - OWNS: the test plugin, the test-phase validator branch, and the browser-test result reader. Does NOT own artifact stamp…
   - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
   - Promote: `triage_promote.py --id trg-12b4cf3f --task-ref EXT:<ref>`
-
-<a id="trg-4d5b6a56"></a>
-- **stamp produced artifacts with the state they describe (extracted so it is built once)** `id=trg-4d5b6a56 | severity=high | kind=improvement → P1/engineering`
-  - OWNS: the stamping helper plus its two call sites — the test-results writer and the compliance document renderers. Extr…
-  - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
-  - Promote: `triage_promote.py --id trg-4d5b6a56 --task-ref EXT:<ref>`
 
 <a id="trg-88f721be"></a>
 - **plan phase: disagreement between reviewers is averaged away, and section order cannot be checked** `id=trg-88f721be | severity=high | kind=improvement → P1/engineering`
