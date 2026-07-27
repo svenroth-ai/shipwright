@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-07-27T08:12:42.718426+00:00
+Generated: 2026-07-27T08:43:10.355492+00:00
 Total commits: 1212
 
 ## Commit Distribution
@@ -8,8 +8,8 @@ Total commits: 1212
 ```mermaid
 pie title Commit Types
     "fix" : 349
-    "feat" : 334
-    "chore" : 256
+    "feat" : 335
+    "chore" : 255
     "docs" : 147
     "refactor" : 75
     "test" : 30
@@ -374,11 +374,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 334 commits
+### Features (feat) — 335 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | project | give requirements a size rule, and stop the templates contradicting the basis rule | 81535b7682af |
+| 2026-07-27 | plan | record reviewer disagreement, make section order checkable | e8bbc15a55a2 |
+| 2026-07-27 | project | give requirements a size rule, and stop the templates contradicting the basis rule (#442) | af72103d0e7a |
 | 2026-07-27 | spec | REQ-3 Phase 2 — every requirement now states what it guarantees (#436) | 28491e1c9631 |
 | 2026-07-23 | shared | shared requirement-elicitation method + FR-01.16 (REQ-3 Phase 1) (#431) | 601fafe55276 |
 | 2026-07-23 | compliance | track skipped tests as a first-class field; key D4 on genuine failures (FR-01.10) (#430) | 355681bdcd4e |
@@ -713,12 +714,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 256 commits
+### Chores (chore) — 255 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | 76941a5c72c4 |
-| 2026-07-27 | triage | sweep 60 outbox append(s) into branch | 3dd32d27ea29 |
+| 2026-07-27 | triage | sweep 60 outbox append(s) into branch | ab9936fd0613 |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
