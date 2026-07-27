@@ -17,7 +17,7 @@ Shipwright is an AI-powered SDLC framework built on Claude Code. It is structure
 | FR-01.05 | Adopted | /shipwright-build | Must | Turn one planned section into working code that does what the section specified and matches its design mockup — one section at a time, on its own branch. The engineering discipline it works under — test-first, code review, safe conventional commits — is the framework's, applied here rather than owned here. | code | unit (inferred) |
 | FR-01.06 | Adopted | /shipwright-test | Must | Run the project's tests at every level it has — unit, integration, database, end-to-end and smoke — and produce one record in which each level carries an explicit outcome or a stated reason it did not run. Compare the built screens back to their mockups, hold the project to the performance budgets it declared, and report which of the declared pairs of code that write and read the same stored format appear to have no test covering them. | code | unit (inferred) |
 | FR-01.07 | Adopted | /shipwright-security | Must | Scan the project with several independent checks — flaws in the code, unsafe dependencies, leaked secrets, and attempts to hijack the assistant's own instructions — and report everything they find in one shape, publishing it to the code host's security surface as well. Inside a project the framework already manages, it drives the fixes through to completion; pointed at any other repository it reports what it found and offers to hand the findings over to be worked through. A finding the project formally accepts is recorded in a register kept with the project, so it stays visible instead of quietly disappearing. | code | unit (inferred) |
-| FR-01.08 | Adopted | /shipwright-deploy | Should | Release the project to a configured hosting target and prove it is actually alive before calling it done, treating no answer as a failed release. Every supported target carries a written record of its way back to the previous working state and of what that does about stored data that has already moved on. Jelastic (Infomaniak) is shipped; Vercel and a container-on-a-server target are documented as stubs. | code | unit (inferred) |
+| FR-01.08 | Adopted | /shipwright-deploy | Should | Release the project to a configured hosting target and prove it is actually alive before calling it done — asking repeatedly until a deadline the target itself sets, so a slow start is not mistaken for a failed release, and treating no answer by then as a failed one. The way back to a previous version puts back the version that was asked for, refuses when stored data has already moved past it, and — if it fails part-way — says plainly that nothing is confirmed running and stops. Every supported target carries a written record of its way back and of what that does about stored data that has already moved on. Jelastic (Infomaniak) is shipped; Vercel and a container-on-a-server target are documented as stubs. | code | unit (inferred) |
 | FR-01.09 | Adopted | /shipwright-changelog | Must | Turn the commit history into a release note a human can read, tag the release, and open the release pull request. | code | unit (inferred) |
 | FR-01.10 | Adopted | /shipwright-compliance | Must | Produce audit-ready evidence — which requirement is covered by which test, what changed when, and what the project depends on — and run an on-demand cross-check that reports where that evidence disagrees with reality. | code | unit (inferred) |
 | FR-01.11 | Adopted | /shipwright-iterate | Must | Handle an ongoing change at the depth it deserves: detect what kind of change it is and how big, then scale from a quick fix to a fully specified feature with plans, reviews and tests. Every feature or change records whether it adds, modifies, removes or leaves the requirements untouched, and that record is enforced before the change can be finished. | code | unit (inferred) |
@@ -406,12 +406,28 @@ _Where the work detail lives_ at the end of this document.
 - (E) Given the operation has completed, when it is checked, then the running
   application is contacted to prove it is actually alive, and a failure to
   answer is treated as a failed release rather than a finished one.
+- (E) Given an application that takes a while to start, when it is checked, then
+  it is asked repeatedly until it answers or until a deadline passes, and how
+  long to keep asking is the hosting target's own setting rather than a fixed
+  wait — so a slow start is not mistaken for a failed release. Asking once and
+  giving up is not enough. When no deadline is configured, it is asked once.
 - (E) Given a release that has failed, when that is established, then the
   previously working version is put back without a person having to intervene —
   the way back is part of releasing, not a separate procedure somebody has to
-  know about. *(Stated as the requirement; it does not hold today — the
-  automatic version revert reports success while fetching the current state.
-  Tracked as a critical open defect.)*
+  know about.
+- (E) Given a return to a named previous version, when it runs, then that
+  version is what is sent to the hosting target, and success is reported only
+  when the target has been asked to run it and did not object — never for a
+  version the request never carried. Where the target can be asked which
+  version it is now on, the answer is reported: a version it confirms, a
+  version it cannot confirm (said in those words), or a disagreement, which is
+  a failure.
+- (E) Given stored data has already moved past the version being returned to,
+  when the return is requested, then it is refused and says so — naming what
+  has moved on and what this target does about data — rather than putting the
+  older code in front of a shape it does not know. Proceeding regardless is a
+  deliberate, separately expressed decision. Being unable to tell whether the
+  data has moved on is refused the same way.
 - (E) Given a change to stored data applied along the way, when its own checks
   report a mismatch afterwards, then the same return-to-previous-state path is
   offered, and choosing to continue regardless requires a written record naming
@@ -436,6 +452,12 @@ _Where the work detail lives_ at the end of this document.
 - (E) Given the way back to the previous state is attempted, when it does not
   succeed, then that is reported as a failure of the way back itself — never
   swallowed, and never reported as if the previous state had been restored.
+- (E) Given the way back has failed after it began changing the hosting target,
+  when it reports, then it states plainly that neither the new nor the previous
+  version is confirmed running, what was last attempted and what that found, and
+  what had already been changed — and it stops there rather than carrying on
+  unattended. This is told apart from a refusal made before the target was
+  contacted, which changes nothing and says so.
 - (E) Given a return to a previous version, when it completes, then what came
   back is the running code — stored data that has already moved forward stays
   where it is, and how that is handled is answered by the target's own written

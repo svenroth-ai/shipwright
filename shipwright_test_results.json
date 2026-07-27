@@ -1,16 +1,17 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-23-req3-phase2-content-mono",
+    "run_id": "iterate-2026-07-27-rollback-uses-target-ref",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 9891,
-      "total": 9891
+      "passed": 8980,
+      "total": 9000,
+      "skipped": 20
     },
     "integration": {
       "status": "passed",
-      "passed": 417,
-      "total": 417
+      "passed": 418,
+      "total": 418
     },
     "pgtap": {
       "status": "not_run",
@@ -18,9 +19,9 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 12,
+      "total": 12
     },
     "design_fidelity": {
       "status": "not_run",
@@ -30,70 +31,233 @@
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [],
+    "degraded": [
+      "external code-review cascade: the gemini-3.1-pro-preview leg returned a truncated reasoning fragment instead of a finding list. The run is not marked degraded by the tool (2/2 legs returned), but the leg is recorded here as content-degraded; the one concrete observation it reached before cutting off (_check_health reused the full request timeout) was fixed.",
+      "internal code-reviewer and doubt-reviewer subagents were NOT spawned: an operator standing instruction for this session forbids calling the Agent tool unless explicitly requested. Both are closed as not_run with that disposition in the review record; the external cascade + the 8-point self-review carried the review load."
+    ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest integration-tests/test_requirements_catalog_contract.py integration-tests/test_requirements_catalog_parsers.py integration-tests/test_fr_table_shape_convergence.py -q",
+      "runner": "uv run pytest plugins/shipwright-deploy/tests -v",
       "exit_code": 0,
-      "tests_run": 23,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\req3-phase2-content-mono\\.shipwright\\runs\\iterate-2026-07-23-req3-phase2-content-mono\\surface_verification.log",
-      "timestamp": "2026-07-26T23:23:54.302Z",
+      "tests_run": 102,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-27-rollback-uses-target-ref/surface_verification.json",
+      "timestamp": "2026-07-27T00:00:00Z",
       "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "the catalog carries 18 requirements, each with its own id, anchor, priority, basis and layers cell",
+          "behavior": "the ref is pinned via editproject, and pinned before update",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_contract.py::test_all_requirements_survive_with_unchanged_ids and ::test_every_requirement_has_an_explicit_anchor PASSED"
+          "evidence": "test_rollback.py::test_target_ref_is_sent_to_the_host_before_the_update PASSED"
         },
         {
-          "behavior": "both production parsers read the changed catalog and agree on the same id set",
+          "behavior": "a failed pin never issues the update",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_parsers.py::test_the_fr_table_reader_still_sees_every_requirement and ::test_the_heading_parser_sees_the_same_set PASSED"
+          "evidence": "test_rollback.py::test_pin_failure_never_issues_the_update_and_never_reports_success PASSED"
         },
         {
-          "behavior": "every requirement keeps a resolving deep link from the traceability matrix",
+          "behavior": "no report claims a rollback that did not complete",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_contract.py::test_every_rtm_deep_link_resolves_end_to_end PASSED after regenerating the matrix"
+          "evidence": "test_rollback.py::test_report_never_claims_a_rollback_that_did_not_complete PASSED"
         },
         {
-          "behavior": "no criterion sentence carries a run id, a decision-record number, a path or a source filename",
+          "behavior": "editproject carries the full project object, only branch replaced",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_contract.py forbidden-token scan over every (E) line PASSED"
+          "evidence": "test_rollback.py::test_pin_sends_the_full_project_object_with_only_the_branch_replaced PASSED"
         },
         {
-          "behavior": "the newly minted requirement carries its decided basis and layers, pinned per requirement rather than in aggregate",
+          "behavior": "an unreadable current config refuses instead of writing",
           "disposition": "tested",
-          "evidence": "test_fr_table_shape_convergence.py::test_every_live_requirement_carries_its_decided_basis and ::test_the_migration_did_not_change_any_required_layers PASSED"
+          "evidence": "test_rollback.py::test_unreadable_project_config_refuses_instead_of_writing PASSED"
         },
         {
-          "behavior": "the elicitation module keeps every section and load-bearing sentence the catalog cites",
+          "behavior": "a read-back agreeing with the request reports confirmed",
           "disposition": "tested",
-          "evidence": "test_requirement_elicitation_refs.py + test_requirement_elicitation_rigor.py PASSED (28 cases)"
+          "evidence": "test_rollback.py::test_readback_confirming_the_ref_reports_confirmed PASSED"
         },
         {
-          "behavior": "the glossary stays within its size ceiling and carries no legacy artifact path",
+          "behavior": "a read-back disagreeing is a failure, not a warning",
           "disposition": "tested",
-          "evidence": "test_bloat_defense_artifacts.py::test_glossary_under_loc_limit and test_artifact_path_canon.py PASSED"
+          "evidence": "test_rollback.py::test_readback_returning_a_different_ref_is_a_failure PASSED"
         },
         {
-          "behavior": "the acceptance criteria say what is true of the product",
-          "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "whether a sentence in business language faithfully describes a mechanism is a reading judgement, not an oracle. This is the round's own finding, recorded as FR-01.16 criterion 9 and as campaign decision D7: an LLM may adjudicate a mechanically raised flag, never raise one. Each criterion instead carries an enforcement classification in the AC evidence ledger, and the criteria that CAN be pinned are enumerated above."
+          "behavior": "an unavailable read-back downgrades to unconfirmed and says why",
+          "disposition": "tested",
+          "evidence": "test_rollback.py::test_unavailable_readback_downgrades_the_claim_and_says_why PASSED"
+        },
+        {
+          "behavior": "a raw URLError downgrades rather than escaping unreported",
+          "disposition": "tested",
+          "evidence": "test_rollback.py::test_a_raw_transport_failure_also_downgrades_rather_than_escaping PASSED"
+        },
+        {
+          "behavior": "a parse bug propagates, never masked as an unavailable endpoint",
+          "disposition": "tested",
+          "evidence": "test_rollback.py::test_readback_parse_bug_is_not_swallowed_as_unavailable PASSED"
+        },
+        {
+          "behavior": "refs/heads/x and x compare as the same ref",
+          "disposition": "tested",
+          "evidence": "test_rollback.py::test_refs_heads_prefix_compares_canonically PASSED"
+        },
+        {
+          "behavior": "an update failure names the changed config and the previous ref",
+          "disposition": "tested",
+          "evidence": "test_rollback.py::test_update_failure_reports_the_changed_configuration_and_the_previous_ref PASSED"
+        },
+        {
+          "behavior": "an invalid ref is rejected before any hosting call",
+          "disposition": "tested",
+          "evidence": "test_rollback.py::test_invalid_ref_forms_are_rejected_before_any_host_call PASSED (5 cases)"
+        },
+        {
+          "behavior": "the clone strategy reports stopping, never restoring",
+          "disposition": "tested",
+          "evidence": "test_rollback_clone.py::test_clone_strategy_reports_stopping_not_restoring PASSED"
+        },
+        {
+          "behavior": "a clone stop failure halts and names the state",
+          "disposition": "tested",
+          "evidence": "test_rollback_clone.py::test_clone_stop_failure_halts_and_names_the_state PASSED"
+        },
+        {
+          "behavior": "a refusal makes no claim about what is running",
+          "disposition": "tested",
+          "evidence": "test_rollback_clone.py::test_a_refusal_says_the_target_was_not_touched PASSED"
+        },
+        {
+          "behavior": "CLI argument validation still refuses with the refusal exit code",
+          "disposition": "tested",
+          "evidence": "test_rollback_clone.py::test_git_strategy_requires_target_ref, ::test_clone_strategy_requires_clone_name PASSED"
+        },
+        {
+          "behavior": "drift: no migrations added since the ref is clean",
+          "disposition": "tested",
+          "evidence": "test_data_drift.py::test_no_new_migrations_is_clean PASSED"
+        },
+        {
+          "behavior": "drift: a committed migration added since the ref is drift",
+          "disposition": "tested",
+          "evidence": "test_data_drift.py::test_a_committed_migration_added_since_the_ref_is_drift PASSED"
+        },
+        {
+          "behavior": "drift: an uncommitted migration also counts as drift",
+          "disposition": "tested",
+          "evidence": "test_data_drift.py::test_an_uncommitted_migration_still_counts_as_drift PASSED"
+        },
+        {
+          "behavior": "drift: an unresolvable ref is unknown, never clean",
+          "disposition": "tested",
+          "evidence": "test_data_drift.py::test_an_unresolvable_ref_is_unknown_not_clean PASSED"
+        },
+        {
+          "behavior": "drift: a project without migrations is not-applicable",
+          "disposition": "tested",
+          "evidence": "test_data_drift.py::test_a_project_without_migrations_is_not_applicable PASSED"
+        },
+        {
+          "behavior": "drift: a non-git directory is unknown",
+          "disposition": "tested",
+          "evidence": "test_data_drift.py::test_a_non_git_directory_is_unknown PASSED"
+        },
+        {
+          "behavior": "drift: no project root reports not-checked, never clean",
+          "disposition": "tested",
+          "evidence": "test_data_drift.py::test_no_project_root_reports_not_checked_rather_than_clean PASSED"
+        },
+        {
+          "behavior": "drift: a custom migrations directory is honoured",
+          "disposition": "tested",
+          "evidence": "test_data_drift.py::test_a_migrations_dir_outside_the_default_is_honoured PASSED"
+        },
+        {
+          "behavior": "ref validation accepts and rejects per slash-separated component",
+          "disposition": "tested",
+          "evidence": "test_data_drift.py::test_valid_refs_are_accepted (5), ::test_dangerous_or_malformed_refs_are_rejected (20) PASSED"
+        },
+        {
+          "behavior": "a shell-metacharacter ref never reaches a git subprocess",
+          "disposition": "tested",
+          "evidence": "test_data_drift.py::test_a_shell_metacharacter_ref_never_reaches_git PASSED"
+        },
+        {
+          "behavior": "the gate refuses and names the target's declared data strategy",
+          "disposition": "tested",
+          "evidence": "test_data_drift.py::test_drift_refuses_and_names_the_targets_strategy PASSED"
+        },
+        {
+          "behavior": "--ack-data-drift lifts the refusal",
+          "disposition": "tested",
+          "evidence": "test_data_drift.py::test_acknowledging_the_drift_lifts_the_refusal + E2E ::test_acknowledging_the_drift_proceeds PASSED"
+        },
+        {
+          "behavior": "a none-app-only target skips the stored-data question entirely",
+          "disposition": "tested",
+          "evidence": "test_data_drift.py::test_a_target_whose_data_never_moves_skips_the_question PASSED"
+        },
+        {
+          "behavior": "an undeclared data strategy still refuses and says it is undeclared",
+          "disposition": "tested",
+          "evidence": "test_data_drift.py::test_an_undeclared_strategy_still_refuses_and_says_it_is_undeclared PASSED"
+        },
+        {
+          "behavior": "liveness: with no deadline exactly one request is made",
+          "disposition": "tested",
+          "evidence": "test_smoke_test.py::test_without_a_deadline_exactly_one_request_is_made PASSED"
+        },
+        {
+          "behavior": "liveness: a slow start is waited out, not called a failed release",
+          "disposition": "tested",
+          "evidence": "test_smoke_test.py::test_a_slow_start_is_waited_out_rather_than_called_a_failed_release PASSED"
+        },
+        {
+          "behavior": "liveness: an exhausted deadline fails and records the evidence",
+          "disposition": "tested",
+          "evidence": "test_smoke_test.py::test_an_exhausted_deadline_fails_and_records_the_evidence PASSED"
+        },
+        {
+          "behavior": "liveness: the deadline is never bounded by the request timeout",
+          "disposition": "tested",
+          "evidence": "test_smoke_test.py::test_the_deadline_is_not_overshot_by_a_long_request_timeout, ::test_a_deadline_shorter_than_one_request_still_asks_exactly_once PASSED"
+        },
+        {
+          "behavior": "liveness: the health probe counts against the same deadline",
+          "disposition": "tested",
+          "evidence": "test_smoke_test.py::test_the_health_probe_counts_against_the_same_deadline PASSED"
+        },
+        {
+          "behavior": "liveness: nonsensical durations are rejected as usage errors",
+          "disposition": "tested",
+          "evidence": "test_smoke_test.py::test_nonsensical_durations_are_rejected PASSED (4 cases)"
+        },
+        {
+          "behavior": "profile: the three REAL shipped profiles round-trip into a policy; explicit flags override per field; malformed input is rejected",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_deploy_profile.py 17 PASSED, incl. a guard that fails if the profile glob matches nothing"
+        },
+        {
+          "behavior": "client: getprojects matches on context in a list and raises when none matches; set_vcs_ref preserves every field incl. non-scalars and drops a stale session/envName",
+          "disposition": "tested",
+          "evidence": "test_jelastic_client.py::test_get_vcs_project_picks_the_matching_context_from_a_list, ::test_get_vcs_project_raises_when_no_context_matches, ::test_set_vcs_ref_sends_every_field_back_with_only_branch_replaced, ::test_set_vcs_ref_never_forwards_a_stale_session_or_envname PASSED"
+        },
+        {
+          "behavior": "end to end: profile file -> reader -> CLI subprocess -> real HTTP -> recorded request sequence, from an unrelated cwd, with the token absent from stdout/stderr",
+          "disposition": "tested",
+          "evidence": "test_rollback_e2e_cli.py 8 PASSED + test_smoke_e2e_cli.py 4 PASSED (real HTTP stub, real temp git repo, real subprocesses, no mocking)",
+          "category": "integration"
         }
       ],
       "counts": {
-        "testable": 7,
-        "tested": 7,
-        "untestable": 1,
+        "testable": 40,
+        "tested": 40,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 8,
-        "covered_acs": 8
+        "acs": 15,
+        "covered_acs": 15
       }
     }
   },

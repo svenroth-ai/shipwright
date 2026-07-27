@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-26 23:36 UTC | Session: 170bb5a6-5652-4115-abe3-004f2d2a8ed9 | Run: iterate-2026-07-23-req3-phase2-content-mono
+> Updated: 2026-07-27 08:23 UTC | Session: 13f13377-3431-4445-b501-bc754d78d6d3 | Run: iterate-2026-07-27-rollback-uses-target-ref
 
-## Recent Changes (359 iterations)
+## Recent Changes (360 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | iterate: hosting rollback uses the target ref, polls liveness to the target's deadline, gates on stored-data drift, and halts loudly when the way back fails | 0/0 |  | FR-01.08 | 2026-07-27 |
 | change | iterate: REQ-3 Phase 2 content round - all 18 requirements walked or minted | 0/0 |  | FR-01.01, FR-01.02, FR-01.03 | 2026-07-26 |
 | feature | REQ-3 Phase 1: shared requirement-elicitation method (grilling + domain-modeling) + CONTEXT.md format + FR-01.16 mint | 4946/4961 |  |  | 2026-07-23 |
 | bug | design verifier C1 skips projects that never ran the design phase | 26/26 |  | compliance | 2026-07-23 |
@@ -366,7 +367,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-27 | Unit: 9891/9891 | Integration: 417/417 | Smoke: not_run | (iterate)
+Last run: 2026-07-27 | Unit: 8980/9000 | Integration: 418/418 | E2E: 12/12 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

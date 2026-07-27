@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-26T22:59:21.476876Z. Items waiting for triage decision.
+> Auto-generated 2026-07-27T08:23:12.722139Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 390
-- Triage: 31 | Promoted: 1 | Dismissed: 357 | Snoozed: 1
+- Total: 413
+- Triage: 24 | Promoted: 1 | Dismissed: 387 | Snoozed: 1
 
-## Top 31 items (severity-sorted)
+## Top 24 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -19,96 +19,67 @@
 
 ### Source: compliance (1 item)
 
-<a id="trg-ee9b0ed8"></a>
-- **Compliance: 6 open finding(s)** `id=trg-ee9b0ed8 | severity=high | kind=compliance → P1/compliance`
-  - 6 open compliance finding(s): D/D1, E/E1, E/E3, E/E4, E/E5, H/H1  - D/D1: Spec FR coverage in events — uncovered FRs —…
+<a id="trg-b14f96d9"></a>
+- **Compliance: 10 open finding(s)** `id=trg-b14f96d9 | severity=high | kind=compliance → P1/compliance`
+  - 10 open compliance finding(s): D/D1, D/D3, E/E1, E/E2, E/E3, E/E5, E/E?, E/E?, E/E?, H/H1  - D/D1: Spec FR coverage in…
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-compliance
     
-    Context: 6 open compliance finding(s): D/D1, E/E1, E/E3, E/E4, E/E5, H/H1.
+    Context: 10 open compliance finding(s): D/D1, D/D3, E/E1, E/E2, E/E3, E/E5, E/E?, E/E?, E/E?, H/H1.
     Dashboard: .shipwright/compliance/dashboard.md
     Each finding + hint is listed in this item's detail.
     ```
-  - Promote: `triage_promote.py --id trg-ee9b0ed8 --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-b14f96d9 --task-ref EXT:<ref>`
 
 ### Source: github (1 item)
 
-<a id="trg-daa00ce3"></a>
-- **GitHub security: 2 code-scanning + 0 Dependabot (medium)** `id=trg-daa00ce3 | severity=medium | kind=improvement → P2/engineering`
-  - Repo svenroth-ai/shipwright \| code-scanning: 2 medium \| dependabot: 0 \| see https://github.com/svenroth-ai/shipwrigh…
+<a id="trg-2b5ca5f5"></a>
+- **GitHub security: 1 code-scanning + 0 Dependabot (high)** `id=trg-2b5ca5f5 | severity=high | kind=bug → P1/engineering`
+  - Repo svenroth-ai/shipwright \| code-scanning: 1 high \| dependabot: 0 \| see https://github.com/svenroth-ai/shipwright/…
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-security
     
-    Context: GitHub reports 2 open code-scanning finding(s) and 0 open Dependabot alert(s) for svenroth-ai/shipwright.
-    Severity breakdown — code-scanning: 2 medium; dependabot: 0.
+    Context: GitHub reports 1 open code-scanning finding(s) and 0 open Dependabot alert(s) for svenroth-ai/shipwright.
+    Severity breakdown — code-scanning: 1 high; dependabot: 0.
     Live state: https://github.com/svenroth-ai/shipwright/security
     Source: triage item gh-security:svenroth-ai/shipwright
     ```
-  - Promote: `triage_promote.py --id trg-daa00ce3 --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-2b5ca5f5 --task-ref EXT:<ref>`
 
-### Source: improvement (2 items)
-
-<a id="trg-c1419d00"></a>
-- **CI-Security 3: ship the accepted-risk register + converge to adopted repos** `id=trg-c1419d00 | severity=medium | kind=improvement → P2/engineering`
-  - The third step named as out-of-scope in iterate-2026-07-18-accepted-risk-alert-convergence, whose precondition ('worth…
-  - Promote: `triage_promote.py --id trg-c1419d00 --task-ref EXT:<ref>`
-
-<a id="trg-6e8121e7"></a>
-- **CI supply-chain ack gate is blind to SHIPPED CI templates** `id=trg-6e8121e7 | severity=medium | kind=improvement → P2/engineering`
-  - CI_SUPPLYCHAIN_FILE_PATTERNS (risk_detectors.py:149) matches only THIS repo's .github/**. An edit to shared/templates/g…
-  - Promote: `triage_promote.py --id trg-6e8121e7 --task-ref EXT:<ref>`
-
-### Source: iterate (3 items)
-
-<a id="trg-360e494f"></a>
-- **Event-log readers: remaining sites still parse one record per physical line** `id=trg-360e494f | severity=medium | kind=improvement → P2/engineering`
-  - iterate-2026-07-19-events-record-boundary-readers converted 11 read sites to the shared record-boundary SSoT (lib/jsonl…
-  - Promote: `triage_promote.py --id trg-360e494f --task-ref EXT:<ref>`
-
-<a id="trg-92c0c36b"></a>
-- **WebUI: Mission Requirement artifact should read events.jsonl for full iterate history** `id=trg-92c0c36b | severity=low | kind=improvement → P3/engineering`
-  - The shared iterates/<run_id>.json store is a bounded 50-entry recency window by design (append_iterate_entry retention)…
-  - Promote: `triage_promote.py --id trg-92c0c36b --task-ref EXT:<ref>`
+### Source: iterate (1 item)
 
 <a id="trg-d1e466aa"></a>
 - **Retire the write-once v1 run-config fields (current_step / completed_steps)** `id=trg-d1e466aa | severity=low | kind=improvement → P3/engineering`
   - Follow-up from iterate-2026-07-14-phase-invocation-mode (external plan review, Gemini #2). The v2 lifecycle never advan…
   - Promote: `triage_promote.py --id trg-d1e466aa --task-ref EXT:<ref>`
 
-### Source: iterate-2026-07-18-requirements-golden-corpus (2 items)
-
-<a id="trg-183a304a"></a>
-- **Flaky idempotency test: dashboard render compared across a minute boundary** `id=trg-183a304a | severity=medium | kind=bug → P2/engineering`
-  - shared/tests/test_finalize_iterate.py::test_run_is_idempotent compares two generated dashboard renders for byte equalit…
-  - Promote: `triage_promote.py --id trg-183a304a --task-ref EXT:<ref>`
-
-<a id="trg-9532fa83"></a>
-- **Three requirements-parser defects frozen by S1, fixed by campaign step S4** `id=trg-9532fa83 | severity=medium | kind=improvement → P2/engineering`
-  - Three defects in the requirements table parsers, found while building the S1 golden corpus (campaign Requirements Catal…
-  - Promote: `triage_promote.py --id trg-9532fa83 --task-ref EXT:<ref>`
-
-### Source: iterate-2026-07-19-compliance-prework (2 items)
+### Source: iterate-2026-07-19-compliance-prework (1 item)
 
 <a id="trg-8bf97fd4"></a>
 - **S2b: converge the requirement-discovery filter semantics (~10 call-site decisions)** `id=trg-8bf97fd4 | severity=medium | kind=improvement → P2/engineering`
   - The tail of campaign step S2, not a new campaign - file it now so it is not lost between "S2 merged" and "somebody noti…
   - Promote: `triage_promote.py --id trg-8bf97fd4 --task-ref EXT:<ref>`
 
-<a id="trg-eb19ada4"></a>
-- **REQ-3: make the Layers column authoritative - establish the missing test links first** `id=trg-eb19ada4 | severity=medium | kind=improvement → P2/engineering`
-  - The substantive half of the requirements work, deliberately left open by the catalog campaign (REQ-2).  After REQ-2 the…
-  - Promote: `triage_promote.py --id trg-eb19ada4 --task-ref EXT:<ref>`
+### Source: req3-campaign (3 items)
 
-### Source: operator (1 item)
+<a id="trg-137f48b5"></a>
+- **REQ3.05 [CAMPAIGN AUTONOM] Test-Backfill: fehlende AC-Tests - Monorepo** `id=trg-137f48b5 | severity=medium | kind=improvement → P2/engineering`
+  - Der Coverage-Motor, eigener Anker damit er nicht nachgeschleift wird. Schreibt Tests fuer ACs, die heute keinen beweise…
+  - Promote: `triage_promote.py --id trg-137f48b5 --task-ref EXT:<ref>`
 
-<a id="trg-1b764b2c"></a>
-- **REQ-2 - Campaign: requirements catalog (S2-S8) - run AFTER REQ-1** `id=trg-1b764b2c | severity=medium | kind=improvement → P2/engineering`
-  - THIRD of three. Order: REQ-0 (FR existence gate) -> REQ-1 (test harness) -> REQ-2 (this campaign). Do NOT start before…
-  - Promote: `triage_promote.py --id trg-1b764b2c --task-ref EXT:<ref>`
+<a id="trg-b5bd4a0a"></a>
+- **REQ3.10 [ITERATE] Grader Lead-Magnet: change_reconciliation real machen** `id=trg-b5bd4a0a | severity=medium | kind=improvement → P2/engineering`
+  - Phase 4, interaktiv. Der Grader reserviert change_reconciliation bereits als 'Shipwright-only'-Dimension (kappt kalte R…
+  - Promote: `triage_promote.py --id trg-b5bd4a0a --task-ref EXT:<ref>`
 
-### Source: req3-phase2-walk (15 items)
+<a id="trg-7085d783"></a>
+- **REQ3.04 [CAMPAIGN AUTONOM] Mechanik - Monorepo** `id=trg-7085d783 | severity=medium | kind=improvement → P2/engineering`
+  - Phase 3, AUTONOME Kampagne. Sub-Iterates: Evidenzkette (CI regeneriert Manifest, muss matchen), AC-Identitaet, Manifest…
+  - Promote: `triage_promote.py --id trg-7085d783 --task-ref EXT:<ref>`
+
+### Source: req3-phase2-walk (16 items)
 
 <a id="trg-74b945bc"></a>
 - **CRITICAL - going back to a previous version does not use the version you ask for, and reports success** `id=trg-74b945bc | severity=critical | kind=bug → P0/engineering`
@@ -121,6 +92,12 @@
   - OWNS: the changelog plugin. Independently executable. Supersedes trg-7ad0849b (title only, so the severity is visible w…
   - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
   - Promote: `triage_promote.py --id trg-6690d175 --task-ref EXT:<ref>`
+
+<a id="trg-b95ab887"></a>
+- **REQ3.06 [CAMPAIGN AUTONOM] Enforcement-Liste abarbeiten: Checks bauen fuer prompt-only (mechanisable) - Monorepo** `id=trg-b95ab887 | severity=high | kind=improvement → P1/engineering`
+  - AUTONOME Kampagne. Der Anker, der die Enforcement-Liste des AC-Nachweis-Registers abarbeitet - das Register IST die Arb…
+  - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
+  - Promote: `triage_promote.py --id trg-b95ab887 --task-ref EXT:<ref>`
 
 <a id="trg-c7e5835b"></a>
 - **host checks: gates that gate nothing, plus the verdict label (supersedes trg-2f9865fb)** `id=trg-c7e5835b | severity=high | kind=improvement → P1/engineering`
@@ -199,23 +176,4 @@
   - Per-plugin work unit from the FR-01.02 scenario pass. (1) Requirement granularity has no guidance and no check. There i…
   - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
   - Promote: `triage_promote.py --id trg-a8110d84 --task-ref EXT:<ref>`
-
-### Source: requirements-catalog (2 items)
-
-<a id="trg-5f2037b7"></a>
-- **S5 must surface specs whose rows all fail the canonical FR-id form (zero-row parse, third state)** `id=trg-5f2037b7 | severity=medium | kind=compliance → P2/engineering`
-  - S4 converged the FR-id tier onto the canonical FR-XX.YY form. That creates a state the traceability T1 guard still cann…
-  - Promote: `triage_promote.py --id trg-5f2037b7 --task-ref EXT:<ref>`
-
-<a id="trg-c9669d6a"></a>
-- **Adopt FR-id generation has no cap: more than 99 detected routes emits a non-canonical FR-01.100** `id=trg-c9669d6a | severity=low | kind=bug → P3/engineering`
-  - generate_adoption_artifacts and feature_inferrer both emit f"FR-01.{i:02d}" with no upper bound on i. Past 99 the forma…
-  - Promote: `triage_promote.py --id trg-c9669d6a --task-ref EXT:<ref>`
-
-### Source: webui-mission-campaign (1 item)
-
-<a id="trg-dd48a810"></a>
-- **sub-iterate-runner finalizes without F3 decision-drop / F5c iterate record, and F11 does not catch it** `id=trg-dd48a810 | severity=high | kind=bug → P1/engineering`
-  - Evidence from webui campaign 2026-07-18-mission-artifacts (4 sub-iterates, all run by the sub-iterate-runner subagent u…
-  - Promote: `triage_promote.py --id trg-dd48a810 --task-ref EXT:<ref>`
 

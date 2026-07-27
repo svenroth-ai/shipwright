@@ -1,43 +1,30 @@
 # Commit Change Log
 
-Generated: 2026-07-26T23:36:34.494070+00:00
-Total commits: 1262
+Generated: 2026-07-27T08:23:06.501766+00:00
+Total commits: 1208
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 360
-    "feat" : 354
-    "chore" : 247
-    "docs" : 162
-    "refactor" : 78
+    "fix" : 347
+    "feat" : 333
+    "chore" : 255
+    "docs" : 147
+    "refactor" : 75
     "test" : 30
-    "other" : 19
     "ci" : 11
+    "other" : 9
     "build" : 1
 ```
 
 ## Changes by Type
 
-### Fixes (fix) — 360 commits
+### Fixes (fix) — 347 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | glossary | F0 was red — the glossary IS gated, and I had said it was not | cb8d647b120b |
-| 2026-07-27 | campaign | end-check before finalization — two holes in the enforcement list | 548575248026 |
-| 2026-07-27 | triage | resolve a card collision the supersede carried forward | f93a5bb14619 |
-| 2026-07-27 | spec | the FR-01.16 confidence probe found an inherited falsehood | ca81345af832 |
-| 2026-07-26 | spec | probe on FR-01.01 — out-of-scope criterion, and a stale card list | c6804496dbb4 |
-| 2026-07-26 | triage | restore the orchestrator card — an assumed id had lost it | 308114036dd7 |
-| 2026-07-26 | spec | narrow FR-01.01 criterion 4 — the state exists, only the rendering is missing | d1f9d4dacd09 |
-| 2026-07-26 | spec | retro truth-probe — three criteria read fine and were false | b755d9abb270 |
-| 2026-07-26 | campaign | triage status must be read from the main tree, not the worktree | 8460692635fc |
-| 2026-07-26 | spec | FR-01.09 probe — criterion 4 was factually wrong | 64eac1da43fb |
-| 2026-07-25 | spec | FR-01.07 carried the same two defects the .08 probe found | 3d67c408fdb3 |
-| 2026-07-25 | spec | run the closing steps skipped on .07/.08 — probe, glossary, trim | 3065bdc79588 |
-| 2026-07-25 | spec | FR-01.08 walked — rollback criterion was contradicted by the code | f7432013e241 |
-| 2026-07-25 | spec | drop the per-finding outcome-ledger claim from FR-01.07 | ef2ade3a06c3 |
+| 2026-07-23 | deps | bump pyasn1 0.6.3 -> 0.6.4 (CVE-2026-59885, CVE-2026-59886) (#432) | 9ffbae764acd |
 | 2026-07-23 | compliance | design verifier C1 skips projects that never ran the design phase (#429) | c841751a7a8e |
 | 2026-07-22 | compliance | count a tested mint as coverage and delivery (D1/D3) + tighten bloat ratchet (H2) (#427) | 4a93b8a7c023 |
 | 2026-07-22 | security | bump brace-expansion to 2.1.2 to close CVE-2026-13149 (#425) | b104974978da |
@@ -385,32 +372,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 354 commits
+### Features (feat) — 333 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | spec | mint FR-01.18 — the repository grader had no requirement at all | 101917ab4cf4 |
-| 2026-07-27 | spec | FR-01.16 walked — 5 criteria to 10, walked against what happened here | 16785e2f35cf |
-| 2026-07-27 | spec | FR-01.15 walked — 2 criteria to 8, and the requirement had it backwards | a07e81a2d11b |
-| 2026-07-26 | spec | FR-01.14 walked — 14 criteria to 20, and three of them were false | 562985f4d72d |
-| 2026-07-26 | spec | FR-01.13 walked — and the operator's gut reversed my cross-cutting cut | 001e31a8ddd6 |
-| 2026-07-26 | spec | FR-01.12 walked — 6→9, and no card owed | 017c7b4e4d64 |
-| 2026-07-26 | spec | FR-01.11 walked — the strongest phase, and it reverses a prediction | 67a186aa755c |
-| 2026-07-26 | spec | FR-01.01 walked — the orchestrator's description was wrong three times | 40766dbbbe5e |
-| 2026-07-26 | spec | FR-01.03 scenario pass — retro pass complete | 9274f75ee2a9 |
-| 2026-07-26 | spec | FR-01.02 scenario pass — nothing says how big a requirement should be | c6522fd451ec |
-| 2026-07-26 | spec | FR-01.17 scenario pass — a gate that runs and gates nothing | 9156d6a39cf0 |
-| 2026-07-26 | spec | FR-01.07 scenario pass — 12→15, and one guarantee deliberately declined | 5aab94650ea5 |
-| 2026-07-26 | campaign | .06 scenario pass — two ways a run looks green without being green | 6eb1871f5f23 |
-| 2026-07-26 | spec | FR-01.04 — what the design rounds change never reaches the requirements | c2dd764bdb16 |
-| 2026-07-26 | spec | FR-01.05 scenario pass — the mockup outranks the spec | cfabaaba0620 |
-| 2026-07-26 | spec | FR-01.10 walked — 7→10, the requirement was a bug-fix log | 6bad90d52065 |
-| 2026-07-26 | spec | FR-01.09 walked — 7→9, critical data-loss defect found | 4b97f2a8ee8f |
-| 2026-07-25 | elicitation | fix the module the round proved does not work | 0dbb060676cd |
-| 2026-07-25 | spec | add the central criterion to .02/.03/.05/.06 — systematic defect | f0fc25e1f9a3 |
-| 2026-07-25 | spec | add the CENTRAL criteria .07/.08 were missing entirely | 683bc94da738 |
-| 2026-07-25 | spec | grill FR-01.08 with concrete scenarios — 3 gaps, 1 new criterion | 3f194f9b44e1 |
-| 2026-07-25 | spec | FR-01.07 walked (9→11), FR-01.17 minted — host-side re-check | 3d5d4ba6fce1 |
+| 2026-07-27 | spec | REQ-3 Phase 2 — every requirement now states what it guarantees (#436) | 28491e1c9631 |
 | 2026-07-23 | shared | shared requirement-elicitation method + FR-01.16 (REQ-3 Phase 1) (#431) | 601fafe55276 |
 | 2026-07-23 | compliance | track skipped tests as a first-class field; key D4 on genuine failures (FR-01.10) (#430) | 355681bdcd4e |
 | 2026-07-23 | iterate | record what every review pass found, per run (FR-01.11) (#428) | 578370ca2e9b |
@@ -744,10 +710,18 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 247 commits
+### Chores (chore) — 255 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | triage | sweep 60 outbox append(s) into branch | b08af221e910 |
+| 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
+| 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
+| 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
+| 2026-07-20 | triage | fold 3 main-tree background append(s) | dd3b1522af83 |
+| 2026-07-20 | triage | fold 3 main-tree background append(s) | b9dba215a824 |
+| 2026-07-20 | triage | fold 1 main-tree background append(s) | 6aa68fcdaabd |
+| 2026-07-19 | triage | fold 3 main-tree background append(s) | b232525baf07 |
 | 2026-07-19 | compliance | register four size crossings, ratchet nine entries, record the missing convention (#408) | 37fe1346b5df |
 | 2026-07-18 | triage | deliver 3 orphaned records from the merged iterate worktree (#402) | 56ee1c0e2387 |
 | 2026-07-18 | security | by-design nosemgrep suppression for the layer-coverage loader (#396) | 6cfd0e84655a |
@@ -996,26 +970,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 162 commits
+### Documentation (docs) — 147 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | glossary | capture the cross-repo output contract, and split it from the bloat baseline | 72d4f8e62d01 |
-| 2026-07-26 | campaign | pin the FR-01.14 enforcement rows against a real test search | 15c23a061cc2 |
-| 2026-07-26 | campaign | refresh the handover for a cold resume at the 97%-context pause | 3bc43323e9fa |
-| 2026-07-26 | campaign | point the CONTEXT.md gap at Phase 3 instead of filing a card | c44a17d528cd |
-| 2026-07-26 | glossary | capture the .11 terms — and disambiguate "unit" against four existing senses | d42d58156a07 |
-| 2026-07-26 | campaign | interim state at the 2026-07-25 pause; one shared mechanism cross-referenced | 1399261a0aca |
-| 2026-07-26 | campaign | backfill 13 missing enforcement rows — every criterion now classified | e30da939c5ec |
-| 2026-07-26 | — | move the per-tree triage entry to its right section; make it a rule | 2e48eeebb5ce |
-| 2026-07-26 | campaign | no duplicate cards; the re-verification flags are the worklist | bdcb1906a07f |
-| 2026-07-26 | glossary | capture the .10 terms the probe found missing | 9e78811031b4 |
-| 2026-07-26 | campaign | write the WebUI brief; refresh the handover | 5eede506a075 |
-| 2026-07-26 | campaign | classify every prompt-only row — 36 mechanisable vs 6 judgement | 2a9642e90c02 |
-| 2026-07-25 | campaign | record the bloat decision on the elicitation module | 10f44bdd2015 |
-| 2026-07-25 | glossary | pin Command Center vs WebUI; normalize the catalog | 8ed644e49f51 |
-| 2026-07-24 | project | plan (FR-01.03) signed off; session handover | f8ef7141a462 |
-| 2026-07-24 | project | FR-01.03 revisit proposal against the corrected checklist | fa0a0154f0d4 |
+| 2026-07-27 | campaign | correct the revert attribution in the REQ-3 ledger | ff8825879571 |
 | 2026-07-21 | security | document operator-run converge for adopted repos (#420) | d9aa64b32f99 |
 | 2026-07-09 | constitution | require plain-language questions to the user (#354) | f879a73a4903 |
 | 2026-07-09 | claude-md | guide plain-language phrasing for questions to the user | 4daaa7d44b49 |
@@ -1163,13 +1122,10 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 78 commits
+### Refactoring (refactor) — 75 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-26 | triage | put CRITICAL in the two critical card titles | c5edf70ac9a8 |
-| 2026-07-26 | triage | make every card independently executable — operator builds in parallel | c73aae9cf3ea |
-| 2026-07-26 | triage | bundle 9 cards into 7 — the unit of work is the mechanism | 2b84fcfaff0c |
 | 2026-07-21 | adopt | route the eight scaffolders through one guarded shared/ loader (FR-01.13) (#423) | 736fc8d1712c |
 | 2026-07-20 | requirements | one catalog, stated once in plain language (campaign S6) (#414) | be2561caccd3 |
 | 2026-07-20 | requirements | one FR-table shape from both generators (campaign S5) (#413) | 5eef5076242c |
@@ -1281,30 +1237,6 @@ pie title Commit Types
 | 2026-04-11 | — | complete test phase — 299 unit tests, 5 E2E tests, smoke PASS | e843d458942d |
 | 2026-04-11 | e2e | set up Playwright with E2E specs and smoke test results | cba0fd6e9012 |
 
-### Other (other) — 19 commits
-
-| Date | Scope | Description | Commit |
-|------|-------|-------------|--------|
-| 2026-07-24 | — | wip(test): close the round's own bookkeeping — session log, handover, ledger order | 9ecf6adc82a6 |
-| 2026-07-24 | — | wip(test): catalog describes, triage carries the gap — FR-01.06 15 → 13 criteria | fd9964d5b8b9 |
-| 2026-07-24 | — | wip(test): FR-01.06 completeness probe — +2 criteria (out-of-scope, staleness) | f4b94fd1542a |
-| 2026-07-24 | — | wip(test,shared): FR-01.06 walked — 1 criterion → 13, overclaim removed | 907d54b879e0 |
-| 2026-07-24 | — | wip(build,shared): trim FR-01.05 to phase-specific; discipline → constitution | 69a90e3c0034 |
-| 2026-07-24 | — | wip(design,shared): FR-01.04 signed off; glossary + grill-trace enforcement design | 91ea19d259cb |
-| 2026-07-24 | — | wip(design,plan): FR-01.04 walked; FR-01.03 revisit gaps A/B/C added | 75b663eb42c2 |
-| 2026-07-24 | — | wip(project): FR-01.02 — add the context-dimension-trace criterion | 795e882ef91d |
-| 2026-07-24 | — | wip(project): FR-01.02 /shipwright-project walked on the outcome axis | e6d994a93a9b |
-| 2026-07-24 | — | wip(project): REQ-3 Phase 2 content round — FR-01.03 walked, elicitation module hardened | 265aee7dbac0 |
-| 2026-07-15 | — | fix(phases)!: detect invocation mode from the dispatch token, not the never-advanced v1 current_step (#372) | d76970e82cf4 |
-| 2026-07-14 | — | refactor(run)!: single_session is the sole pipeline mode; remove the external per-phase-session engine (#369) | aef19f2c1668 |
-| 2026-04-24 | — | feat!: extract WebUI into own repo (shipwright-webui) — v0.4.0 | 47cacebb2a24 |
-| 2026-04-23 | — | iterate 3.9 — E2E spec backlog cleanup + TaskCard menu-bubbling fix (#9) | 514ec0b55a92 |
-| 2026-04-22 | — | iterate 3.8 — post-iterate-3 cleanup (E2E + scrollbar gutter) (#8) | 8a1950a50ee1 |
-| 2026-04-17 | — | poc: assistant-ui migration probe (branch poc/assistant-ui-migration) | 742468d29706 |
-| 2026-04-04 | — | Revert "docs: add Integrated Learnings section to README" | 9ede83209202 |
-| 2026-04-04 | — | Revert "fix: rename skill dirs to full plugin name for clean slash-command display" | 1545b4b2c522 |
-| 2026-03-21 | — | revert: restore full skill names in SKILL.md frontmatter | 05c0d5ce7566 |
-
 ### CI/CD (ci) — 11 commits
 
 | Date | Scope | Description | Commit |
@@ -1321,6 +1253,20 @@ pie title Commit Types
 | 2026-05-31 | — | run shared/ test suites in CI via per-dir invocations | eb68b567899d |
 | 2026-05-31 | integration | gate integration-tests step on failure; fix F821 in events-log test | 83d68709d125 |
 
+### Other (other) — 9 commits
+
+| Date | Scope | Description | Commit |
+|------|-------|-------------|--------|
+| 2026-07-15 | — | fix(phases)!: detect invocation mode from the dispatch token, not the never-advanced v1 current_step (#372) | d76970e82cf4 |
+| 2026-07-14 | — | refactor(run)!: single_session is the sole pipeline mode; remove the external per-phase-session engine (#369) | aef19f2c1668 |
+| 2026-04-24 | — | feat!: extract WebUI into own repo (shipwright-webui) — v0.4.0 | 47cacebb2a24 |
+| 2026-04-23 | — | iterate 3.9 — E2E spec backlog cleanup + TaskCard menu-bubbling fix (#9) | 514ec0b55a92 |
+| 2026-04-22 | — | iterate 3.8 — post-iterate-3 cleanup (E2E + scrollbar gutter) (#8) | 8a1950a50ee1 |
+| 2026-04-17 | — | poc: assistant-ui migration probe (branch poc/assistant-ui-migration) | 742468d29706 |
+| 2026-04-04 | — | Revert "docs: add Integrated Learnings section to README" | 9ede83209202 |
+| 2026-04-04 | — | Revert "fix: rename skill dirs to full plugin name for clean slash-command display" | 1545b4b2c522 |
+| 2026-03-21 | — | revert: restore full skill names in SKILL.md frontmatter | 05c0d5ce7566 |
+
 ### Build (build) — 1 commits
 
 | Date | Scope | Description | Commit |
@@ -1331,7 +1277,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1262 |
+| Total commits | 1208 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1262 |
+| Human-authored commits | 1208 |
 
