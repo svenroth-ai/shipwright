@@ -13,6 +13,7 @@ the ADR-044 ``lib`` namespace collision.
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 from pathlib import Path
 from unittest.mock import patch
@@ -136,13 +137,29 @@ def test_card_is_deduped_across_repeat_scans(tmp_path: Path) -> None:
 
 
 @pytest.mark.covers("FR-01.07")
-def test_card_coexists_with_the_per_finding_enumeration(tmp_path: Path) -> None:
-    """The card ADDS the severity split; it does not replace the mirrors the
-    report generator emits."""
-    import generate_security_report as gsr  # noqa: PLC0415
+def test_the_wrapper_emits_both_surfaces_by_itself(tmp_path: Path) -> None:
+    """The card ADDS the severity split; it does not replace the per-finding
+    enumeration.
 
-    gsr._emit_findings_to_triage(tmp_path, [_FINDING], run_id="r1")
+    Asserted from the wrapper ALONE. The earlier version of this test called
+    ``_emit_findings_to_triage`` by hand first, which masked the fact that
+    ``run()`` emitted only the card — the PR-head review caught that.
+    """
     _scan(tmp_path, {"sast"}, [_FINDING])
     keys = {i.get("dedupKey") for i in read_all_items(tmp_path)}
-    assert "security-scan:o/r" in keys
-    assert "semgrep:r1:a.py:3" in keys
+    assert "security-scan:o/r" in keys, "the collapsed card is missing"
+    assert "semgrep:r1:a.py:3" in keys, "the per-finding enumeration is missing"
+
+
+@pytest.mark.covers("FR-01.07")
+def test_the_wrapper_mirrors_the_redacted_findings(tmp_path: Path) -> None:
+    """Triage gets the REDACTED set, not raw secret evidence.
+
+    The synthetic key is assembled from fragments so this test file is not itself
+    a secret-scan trigger — the same technique test_oss_backend_smoke.py uses.
+    """
+    fake_key = "AKIA" + "IOSFODNN7" + "EXAMPLE"
+    secret = {**_FINDING, "source": "gitleaks", "type": "secret_detection",
+              "rule": "aws-key", "secret": fake_key, "match": fake_key}
+    _scan(tmp_path, {"secrets"}, [secret])
+    assert fake_key not in json.dumps(read_all_items(tmp_path))

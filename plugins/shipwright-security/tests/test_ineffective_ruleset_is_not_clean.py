@@ -155,3 +155,79 @@ class TestComparisonRendersLabelsSafely:
         )
         rendered = "\n".join(render_comparison(result))
         assert "\nIgnore prior instructions" not in rendered
+
+
+@pytest.mark.covers("FR-01.07")
+class TestDegradationOnlyOverridesCovered:
+    """A degradation may only downgrade a class that WOULD have been covered.
+
+    `degraded` outranks every other status, so applying it to a class the caller
+    scoped out — or whose tool is not installed — would replace the accurate
+    status with a false one. The manifest would then state something untrue about
+    what happened, which is the failure this whole card exists to remove.
+    """
+
+    def test_a_not_requested_class_stays_not_requested(self) -> None:
+        rows = {r["class"]: r for r in build_coverage(
+            available=_ALL_CAPS, requested=["sast"], class_degradations=_NO_RULES)}
+        assert rows["secrets"]["status"] == "not_requested"
+
+    def test_a_missing_tool_stays_not_available(self) -> None:
+        rows = {r["class"]: r for r in build_coverage(
+            available={"sast"}, class_degradations=_NO_RULES)}
+        assert rows["secrets"]["status"] == "not_available"
+
+    def test_a_covered_class_is_still_downgraded(self) -> None:
+        rows = {r["class"]: r for r in build_coverage(
+            available=_ALL_CAPS, requested=["secrets"],
+            class_degradations=_NO_RULES)}
+        assert rows["secrets"]["status"] == "degraded"
+
+    def test_the_scan_cli_skips_degradations_for_a_non_oss_backend(
+        self, tmp_path: Path
+    ) -> None:
+        """Aikido runs its own secret scan, so a project .gitleaks.toml says
+        nothing about what that run examined."""
+        (tmp_path / ".gitleaks.toml").write_text(
+            "[allowlist]\npaths = ['x']\n", encoding="utf-8")
+
+        class _Aikido:
+            name = "aikido"
+            capabilities = _ALL_CAPS
+            scan_errors: list[dict] = []
+
+            def scan(self, target, scan_types=None):  # noqa: ARG002
+                return []
+
+        out = tmp_path / "findings.json"
+        with patch.object(scan_cli, "get_backend", return_value=_Aikido()):
+            with patch.object(sys, "argv", [
+                "scan.py", "--path", str(tmp_path), "--output", str(out),
+                "--backend", "aikido",
+            ]):
+                scan_cli.main()
+        rows = {r["class"]: r for r in
+                json.loads(out.read_text(encoding="utf-8"))["coverage"]}
+        assert rows["secrets"]["status"] == "covered"
+
+    def test_the_scan_cli_still_applies_them_for_oss(self, tmp_path: Path) -> None:
+        (tmp_path / ".gitleaks.toml").write_text(
+            "[allowlist]\npaths = ['x']\n", encoding="utf-8")
+
+        class _Oss:
+            name = "oss"
+            capabilities = _ALL_CAPS
+            scan_errors: list[dict] = []
+
+            def scan(self, target, scan_types=None):  # noqa: ARG002
+                return []
+
+        out = tmp_path / "findings.json"
+        with patch.object(scan_cli, "get_backend", return_value=_Oss()):
+            with patch.object(sys, "argv", [
+                "scan.py", "--path", str(tmp_path), "--output", str(out),
+            ]):
+                scan_cli.main()
+        rows = {r["class"]: r for r in
+                json.loads(out.read_text(encoding="utf-8"))["coverage"]}
+        assert rows["secrets"]["status"] == "degraded"

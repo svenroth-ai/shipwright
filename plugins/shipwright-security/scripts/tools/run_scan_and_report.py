@@ -63,7 +63,7 @@ from redact import redact_findings  # noqa: E402
 from gitleaks_config import class_degradations as gitleaks_degradations  # noqa: E402
 from scan_coverage import build_coverage  # noqa: E402
 from scan_history import HISTORY_DIRNAME, new_scan_id, prune_history  # noqa: E402
-from security_triage_emit import emit_scan_card  # noqa: E402
+from security_triage_emit import emit_findings_to_triage, emit_scan_card  # noqa: E402
 
 import generate_security_report as gsr  # noqa: E402
 
@@ -259,11 +259,11 @@ def run(*, project_root: Path, repo: str = "unknown", full_evidence: bool = Fals
 
     gitignore_status = _ensure_gitignore_entry(project_root)
 
-    # The card the operator receives and executes: per-severity counts, what
-    # was not checked, and the scope question. Best-effort — a triage failure
-    # never blocks the report that is already on disk.
-    # POSIX separator: the payload is pasted into a shell/prompt, where a
-    # Windows-rendered path would not resolve.
+    # Triage: the per-finding enumeration AND the collapsed card with the
+    # severity split + scope question — alongside each other, never one instead
+    # of the other. Findings are the REDACTED set; both emitters are best-effort.
+    # POSIX separator: the payload is pasted into a shell.
+    emit_findings_to_triage(project_root, findings)
     emit_scan_card(
         project_root, findings, coverage=coverage, repo=repo,
         report_path=f"{REPORTS_DIR}/{LATEST_MD}",

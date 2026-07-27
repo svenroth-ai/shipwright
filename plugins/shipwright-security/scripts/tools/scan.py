@@ -97,8 +97,7 @@ except ImportError as _e:
         raise RuntimeError(f"sarif_writer unavailable: {_SARIF_IMPORT_ERROR}")
 
 
-# Coverage manifest — what this run looked at. DERIVED from the backend's
-# capabilities, so no backend (or mock) can forget it; see scan_coverage.
+# Coverage manifest: DERIVED from capabilities, so nothing can forget it.
 from gitleaks_config import class_degradations as gitleaks_degradations  # noqa: E402
 from coverage_sanitize import sanitize_coverage  # noqa: E402
 from scan_coverage import build_coverage  # noqa: E402
@@ -347,13 +346,14 @@ def main() -> int:
         # Degraded-leg markers (empty for backends/mocks that never set them).
         raw_errors = getattr(backend, "scan_errors", [])
         scan_errors = list(raw_errors) if isinstance(raw_errors, list) else []
+        caps = backend_capabilities if isinstance(
+            backend_capabilities, (set, frozenset, list, tuple)) else ()
+        # OSS-only degradations: Aikido runs its own secret scan, so this repo's
+        # .gitleaks.toml says nothing about what that run examined.
         coverage = build_coverage(
-            available=backend_capabilities
-            if isinstance(backend_capabilities, (set, frozenset, list, tuple))
-            else (),
-            requested=scan_types,
-            scan_errors=scan_errors,
-            class_degradations=gitleaks_degradations(str(target)),
+            available=caps, requested=scan_types, scan_errors=scan_errors,
+            class_degradations=(
+                gitleaks_degradations(str(target)) if backend_name == "oss" else {}),
         )
 
     config = build_config(

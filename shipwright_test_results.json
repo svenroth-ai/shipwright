@@ -4,8 +4,8 @@
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 9730,
-      "total": 9730
+      "passed": 9736,
+      "total": 9736
     },
     "integration": {
       "status": "passed",
@@ -263,11 +263,31 @@
           "behavior": "The comparison reader applies the same untrusted-manifest boundary and renders class labels safely",
           "disposition": "tested",
           "evidence": "test_ineffective_ruleset_is_not_clean.py::TestComparisonRendersLabelsSafely PASSED"
+        },
+        {
+          "behavior": "A degradation only downgrades a class that WOULD have been covered — never a not_requested or not_available one",
+          "disposition": "tested",
+          "evidence": "test_ineffective_ruleset_is_not_clean.py::TestDegradationOnlyOverridesCovered (5) PASSED"
+        },
+        {
+          "behavior": "The gitleaks degradation is OSS-only; an Aikido scan's secrets class is unaffected by this repo's .gitleaks.toml",
+          "disposition": "tested",
+          "evidence": "test_ineffective_ruleset_is_not_clean.py::test_the_scan_cli_skips_degradations_for_a_non_oss_backend + ::test_the_scan_cli_still_applies_them_for_oss PASSED"
+        },
+        {
+          "behavior": "run_scan_and_report emits the per-finding mirrors AND the card, asserted from the wrapper alone",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_security_scan_card.py::test_the_wrapper_emits_both_surfaces_by_itself PASSED (the earlier test masked this by calling the emitter by hand)"
+        },
+        {
+          "behavior": "The wrapper mirrors the REDACTED findings, so raw secret evidence never reaches triage",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_security_scan_card.py::test_the_wrapper_mirrors_the_redacted_findings PASSED"
         }
       ],
       "counts": {
-        "testable": 43,
-        "tested": 43,
+        "testable": 47,
+        "tested": 47,
         "untestable": 1,
         "untested_testable": 0
       },

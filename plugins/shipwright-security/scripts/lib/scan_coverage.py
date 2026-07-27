@@ -167,10 +167,17 @@ def build_coverage(
     degraded = _degraded_by_class(
         scan_errors, {v: k for k, v in tools.items()})
     # A configured-but-ineffective ruleset degrades the class just as a fataled
-    # leg does; an explicit scan_errors marker still wins, since it is evidence
-    # about this specific invocation.
+    # leg does — but ONLY a class that would otherwise be `covered`. A class the
+    # caller scoped out, or whose tool is not installed, was not scanned under
+    # that ruleset at all: reporting it `degraded` would state something false
+    # about what happened, and `degraded` outranks both statuses so the accurate
+    # one would be lost. An explicit scan_errors marker still wins, since it is
+    # evidence about this specific invocation.
     for cls, reason in (class_degradations or {}).items():
-        degraded.setdefault(cls, reason)
+        would_be_covered = cls in available_set and (
+            requested_set is None or cls in requested_set)
+        if would_be_covered:
+            degraded.setdefault(cls, reason)
 
     # The three local classes first, then any extra capability a backend offers.
     classes = list(CLASS_ORDER) + sorted(available_set - set(CLASS_ORDER))
