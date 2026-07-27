@@ -1,8 +1,8 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-triage-defer-ci-cap"
+run_id: "iterate-2026-07-27-rollback-uses-target-ref"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
+reason: "F11 re-refresh: origin/main moved again"
 timestamp: "2026-07-27T08:30:58.021874+00:00"
 ---
 
@@ -12,9 +12,9 @@ timestamp: "2026-07-27T08:30:58.021874+00:00"
 
 ## Session Info
 
-- **Session ID**: 8a66b2f1-81e9-4505-8591-b94928ca02f6
+- **Session ID**: 13f13377-3431-4445-b501-bc754d78d6d3
 - **Timestamp**: 2026-07-27 08:30:58 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Reason**: F11 re-refresh: origin/main moved again
 
 ## Last Iterate
 
@@ -29,11 +29,11 @@ timestamp: "2026-07-27T08:30:58.021874+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/triage-defer-ci-cap
-- **Run ID**: iterate-2026-07-27-triage-defer-ci-cap
-- **Spec**: .shipwright/planning/iterate/2026-07-27-triage-defer-ci-cap.md
+- **Branch**: iterate/rollback-uses-target-ref
+- **Run ID**: iterate-2026-07-27-rollback-uses-target-ref
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-rollback-uses-target-ref.md
 - **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-07-27T07:19:14))
+- **External Review Marker**: stale (predates spec (2026-07-27T07:16:58))
 
 ### Mandatory replay on Resume
 
@@ -52,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/triage-defer-ci-cap
-- **Last Commit**: 5a48e306 Merge remote-tracking branch 'origin/main' into iterate/triage-defer-ci-cap
+- **Branch**: iterate/rollback-uses-target-ref
+- **Last Commit**: f2acdc53 Merge remote-tracking branch 'origin/main' into iterate/rollback-uses-target-ref
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -78,7 +78,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 363
+- **Total work events**: 364
 - **Last iterate**: change — iterate: the review gate stops being bypassable (fail-closed + fork review) (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
