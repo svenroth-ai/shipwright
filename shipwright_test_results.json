@@ -1,16 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-artifact-state-stamping",
+    "run_id": "iterate-2026-07-27-f0-race-triage",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 9641,
-      "total": 9641
+      "passed": 9512,
+      "total": 9534,
+      "skipped": 22
     },
     "integration": {
       "status": "passed",
-      "passed": 418,
-      "total": 418
+      "passed": 419,
+      "total": 419,
+      "skipped": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -30,182 +32,184 @@
     "smoke": {
       "status": "not_run"
     },
-    "tests_skipped": 16,
     "degraded": [
-      {
-        "condition": "external_code_review_partial",
-        "detail": "external_review.py --mode code: the openai leg returned a full 9-finding review; the gemini leg returned status=success with feedback=null, so only one of two external code reviewers actually reported. Recorded rather than counted as two.",
-        "impact": "single-reviewer external code coverage; compensated by the internal code-reviewer and doubt-reviewer passes, both of which found defects the external leg did not"
-      },
-      {
-        "condition": "external_review_output_truncated_on_first_attempt",
-        "detail": "The first --mode code attempt against the full 1691-line diff returned 29 chars (openai) and 504 chars (gemini) \u2014 truncated, not a review. Re-run against a 773-line production-code-only diff. Consequence disclosed: the narrowed slice excluded the wiring and test files, which produced two false 'high' findings (tool wired to nothing / no tests exist).",
-        "impact": "external code review covered production code only; wiring and tests were covered by the two internal reviewers, which read the files on disk"
-      }
+      "classify_complexity risk flag touches_auth is a PROSE false positive - the taxonomy matches the literal 'session' in 'outlives the session'. The diff-driven risk_detectors predicates, which are authoritative, return no flag. Overridden.",
+      "External CODE review: the Gemini leg returned a degraded reply (an unfinished internal monologue, not a review) although transport reported success; recorded as parse_status=partial. The OpenAI leg returned 4 findings, all dispositioned and fixed. The PLAN review round had both legs healthy.",
+      "Review passes 'code' and 'doubt' did not run: a session directive forbids spawning subagents. Both are closed explicitly in the review record naming that rule, and substituted (external code review on the same diff; six negative-control probes for the adversarial role)."
     ],
     "surface_verification": {
-      "surface": "none",
+      "surface": "cli",
+      "runner": "uv run --with pytest --with pytest-mock pytest integration-tests/test_f0_race_followup_e2e.py shared/scripts/tools/tests/test_suite_race_cli.py -q --color=no -p no:cacheprovider",
       "exit_code": 0,
-      "tests_run": 0,
-      "justification": "No startable app surface: the change alters two build-time artifact producers inside the framework's own Python tooling \u2014 no server, no end-user CLI entry point, no UI. Verified instead by the full F0 suite plus three empirical probes that ran the REAL producers end to end (update_compliance.py regenerating all five evidence documents; stamp_test_results.py against the repo's own tracked record; Group E staleness against the stamped documents).",
-      "evidence_path": ".shipwright/runs/iterate-2026-07-27-artifact-state-stamping/surface_verification.json",
-      "timestamp": "2026-07-27T09:20:00.000Z",
+      "tests_run": 11,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\f0-race-triage\\.shipwright\\runs\\iterate-2026-07-27-f0-race-triage\\surface_verification.log",
+      "timestamp": "2026-07-27T07:59:42.087Z",
       "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "the markdown banner round-trips to its abbreviated form",
+          "behavior": "a confirmed race writes a tracked entry with the agreed source/severity/kind/dedup key/runId/commit/suiteId",
           "disposition": "tested",
-          "evidence": "test_source_state.py::TestBannerRoundTrip::test_full_state_round_trips_to_its_abbreviated_form PASSED"
+          "evidence": "test_suite_race_triage.py::test_a_confirmed_race_is_written_to_the_tracked_store PASSED"
         },
         {
-          "behavior": "all three dirty states survive the banner, so a clean tree and an unanswerable one do not render alike",
+          "behavior": "the entry lands in the tracked store, never the gitignored outbox",
           "disposition": "tested",
-          "evidence": "test_source_state.py::test_all_three_dirty_states_survive_the_banner[True/False/None] + ::test_clean_and_unknown_render_differently PASSED"
+          "evidence": "test_suite_race_triage.py::test_a_confirmed_race_is_written_to_the_tracked_store PASSED (asserts the outbox is absent)"
         },
         {
-          "behavior": "the JSON block round-trips exactly, keeping the full 40-hex commit",
+          "behavior": "the store is resolved from --project-root, not the cwd",
           "disposition": "tested",
-          "evidence": "test_source_state.py::TestBlockRoundTrip::test_json_block_round_trips_exactly_including_full_sha PASSED"
+          "evidence": "test_suite_race_triage.py::test_the_store_is_resolved_from_the_passed_root_not_the_cwd PASSED"
         },
         {
-          "behavior": "unresolved fields serialise as null rather than being omitted",
+          "behavior": "a repeat sighting reuses the open card and still surfaces the handle",
           "disposition": "tested",
-          "evidence": "test_source_state.py::test_unresolved_fields_serialise_as_null_not_omitted PASSED"
+          "evidence": "test_suite_race_triage.py::test_a_second_sighting_reuses_the_open_entry_instead_of_spamming PASSED"
         },
         {
-          "behavior": "arbitrary garbage read back yields an empty state, never a half-trusted one",
+          "behavior": "a card the operator closed does NOT suppress a fresh one",
           "disposition": "tested",
-          "evidence": "test_source_state.py::test_from_block_yields_an_empty_state_not_a_half_trusted_one (6 cases) PASSED"
+          "evidence": "test_suite_race_triage.py::test_a_race_after_the_operator_closed_the_card_opens_a_fresh_one PASSED"
         },
         {
-          "behavior": "a run id cannot forge a second banner line",
+          "behavior": "two units racing get one card each",
           "disposition": "tested",
-          "evidence": "test_source_state.py::test_a_forged_newline_cannot_produce_a_second_banner_line PASSED"
+          "evidence": "test_suite_race_triage.py::test_two_units_racing_get_one_entry_each PASSED"
         },
         {
-          "behavior": "a whitespace-bearing run id cannot inject a forged status token",
+          "behavior": "only the test-failure to green-alone class is filed (infra retry, rc 5, hang, red-both-ways, plain green)",
           "disposition": "tested",
-          "evidence": "test_source_state.py::TestExternalReviewRegressions::test_whitespace_bearing_run_ids_are_refused (5 cases) PASSED"
+          "evidence": "test_suite_race_triage.py::test_only_a_confirmed_race_is_filed PASSED (5 parametrized cases)"
         },
         {
-          "behavior": "Unicode control, format and line-separator characters are refused",
+          "behavior": "...and that holds through the CLI, not only the predicate",
           "disposition": "tested",
-          "evidence": "test_source_state.py::test_unicode_control_and_separator_chars_are_refused (4 cases) PASSED"
+          "evidence": "test_suite_race_cli.py::test_an_infra_retry_is_not_filed_end_to_end PASSED"
         },
         {
-          "behavior": "an unsubstituted {run_id} template placeholder is refused rather than stamped",
+          "behavior": "captured test output never reaches the published log",
           "disposition": "tested",
-          "evidence": "test_source_state.py::TestUnsubstitutedPlaceholderRefused (5 cases) PASSED"
+          "evidence": "test_suite_race_triage.py::test_captured_output_never_reaches_the_tracked_log PASSED"
         },
         {
-          "behavior": "a run id containing the word clean or cleanup does not forge a dirty verdict",
+          "behavior": "control characters stripped; title capped after formatting",
           "disposition": "tested",
-          "evidence": "test_source_state.py::TestTokenCollisionRegression (5 cases) PASSED"
+          "evidence": "test_suite_race_triage.py::test_control_characters_and_length_are_neutralised and ::test_the_title_is_capped_after_formatting PASSED"
         },
         {
-          "behavior": "the commit is validated on both sides, and a run id is never read back as a commit",
+          "behavior": "the dedup key is identity and is never truncated (no prefix collision)",
           "disposition": "tested",
-          "evidence": "test_source_state.py::TestCommitIsValidatedOnBothSides (13 cases) PASSED"
+          "evidence": "test_suite_race_triage.py::test_the_dedup_key_is_identity_and_is_never_truncated PASSED"
         },
         {
-          "behavior": "the strip regex is anchored: document body prose, layout blank lines and CRLF all survive",
+          "behavior": "reproduce commands are never truncated",
           "disposition": "tested",
-          "evidence": "test_source_state.py::TestBannerStripRegex (5 cases) PASSED"
+          "evidence": "test_suite_race_triage.py::test_the_reproduce_commands_are_never_truncated PASSED"
         },
         {
-          "behavior": "git resolution distinguishes clean, tracked-modified, untracked-only, and the excluded stamped artifact",
+          "behavior": "commands are shell-quoted and carry the unit's directory",
           "disposition": "tested",
-          "evidence": "test_source_state.py::TestGitResolution (5 cases) PASSED"
+          "evidence": "test_suite_report.py::test_a_command_is_shell_quoted_and_carries_the_units_directory PASSED"
         },
         {
-          "behavior": "git absent, timing out, non-repo or an empty repo all degrade to null instead of raising",
+          "behavior": "the alone-run command is the argv the runner actually re-ran",
           "disposition": "tested",
-          "evidence": "test_source_state.py::TestGitResolution (4 cases) PASSED"
+          "evidence": "test_suite_race_triage.py::test_the_launch_payload_reproduces_both_sides_with_the_real_command PASSED"
         },
         {
-          "behavior": "git is never invoked through a shell and always with a bounded timeout",
+          "behavior": "the parallel command names the real root and run id, not a hard-coded dot",
           "disposition": "tested",
-          "evidence": "test_source_state.py::test_git_is_never_invoked_through_a_shell PASSED"
+          "evidence": "test_suite_report.py::test_the_parallel_command_names_the_root_and_the_run and test_suite_race_cli.py::test_the_recorded_parallel_command_targets_the_run_root PASSED"
         },
         {
-          "behavior": "the stamp writes code-resolved run id, commit and dirty into the test-results record",
+          "behavior": "the card states the cause is undetermined and that it is never auto-closed",
           "disposition": "tested",
-          "evidence": "test_stamp_test_results.py::test_writes_the_block_with_code_resolved_values PASSED"
+          "evidence": "test_suite_race_triage.py::test_the_card_says_what_was_measured_and_claims_no_cause PASSED"
         },
         {
-          "behavior": "every other top-level key keeps its value and its position",
+          "behavior": "an append failure or unimportable triage API is reported, never raised",
           "disposition": "tested",
-          "evidence": "test_stamp_test_results.py::test_every_other_top_level_key_is_preserved_with_its_value + ::test_key_order_is_preserved_and_the_stamp_is_appended PASSED"
+          "evidence": "test_suite_race_triage.py::test_an_append_failure_is_reported_not_raised and ::test_an_unimportable_triage_api_is_reported_not_raised PASSED"
         },
         {
-          "behavior": "the record is serialised in the repo canonical byte form, with no CRLF",
+          "behavior": "a read-back failure after a successful append still counts as recorded",
           "disposition": "tested",
-          "evidence": "test_stamp_test_results.py::test_serialised_in_the_repo_canonical_form PASSED (asserts on read_bytes)"
+          "evidence": "test_suite_race_triage.py::test_a_read_back_failure_after_a_successful_append_is_still_recorded PASSED"
         },
         {
-          "behavior": "stamping twice equals stamping once; a prior block is replaced, never nested",
+          "behavior": "only this producer's OPEN entries resolve a handle",
           "disposition": "tested",
-          "evidence": "test_stamp_test_results.py::TestIdempotency (3 cases) PASSED"
+          "evidence": "test_suite_race_triage.py::test_only_this_producers_open_entries_resolve_a_handle PASSED"
         },
         {
-          "behavior": "a corrupt, array-shaped or missing record is refused and never overwritten",
+          "behavior": "the console names the handle, and shouts when the record was lost",
           "disposition": "tested",
-          "evidence": "test_stamp_test_results.py::TestRefusalAndDegradation (3 cases) PASSED"
+          "evidence": "test_suite_report.py::test_the_console_names_the_durable_handle and ::test_the_console_shouts_when_the_record_was_lost PASSED"
         },
         {
-          "behavior": "a rejected run id stamps null instead of falling back to a plausible wrong one",
+          "behavior": "an infra retry keeps its own note and gets no handle; no retries renders nothing",
           "disposition": "tested",
-          "evidence": "test_stamp_test_results.py::TestRunIdResolutionPrecedence (4 cases) PASSED"
+          "evidence": "test_suite_report.py::test_an_infra_retry_keeps_its_own_note_and_no_handle and ::test_no_retries_renders_nothing PASSED"
         },
         {
-          "behavior": "all five compliance evidence documents carry exactly one Source-State line, directly under Generated",
+          "behavior": "the summary table and a red unit's captured output still print (the reporting move is behaviour-preserving)",
           "disposition": "tested",
-          "evidence": "test_source_state_stamp.py::TestAllFiveRenderers (30 cases) PASSED"
+          "evidence": "test_suite_report.py::test_the_summary_table_tags_every_outcome_and_flags_a_retry, ::test_a_failing_units_captured_output_IS_shown_on_the_console, test_suite_race_cli.py::test_the_summary_still_prints_after_the_refactor PASSED"
         },
         {
-          "behavior": "the run id and the timestamp are read off one work event, so the two header lines cannot disagree",
+          "behavior": "a green suite plus a lost record exits 3",
           "disposition": "tested",
-          "evidence": "test_source_state_stamp.py::TestOneEventForBothFields (9 cases) PASSED"
+          "evidence": "test_suite_race_cli.py::test_a_green_run_that_could_not_record_the_race_exits_three PASSED"
         },
         {
-          "behavior": "Group E staleness cannot newly report a document stale because of the banner, and still detects real body drift",
+          "behavior": "a red suite plus a lost record keeps exit 1 and is still shouted about",
           "disposition": "tested",
-          "evidence": "test_source_state_stamp.py::TestGroupEStalenessUnaffected (5 cases) PASSED; plus an empirical Group E run proving the banner is absent from normalize() output for all five documents"
+          "evidence": "test_suite_race_cli.py::test_a_red_run_keeps_its_own_exit_code PASSED"
         },
         {
-          "behavior": "an ADR reference recorded in adr_id is never labelled as a run",
+          "behavior": "a red sibling unit never skips the recording",
           "disposition": "tested",
-          "evidence": "test_source_state_stamp.py::TestAdrReferenceIsNotARun (9 cases) PASSED"
+          "evidence": "test_suite_race_cli.py::test_a_red_sibling_never_skips_the_recording PASSED"
         },
         {
-          "behavior": "audit_staleness stays importable when loaded by file path from a foreign scripts namespace",
+          "behavior": "a clean run writes nothing and keeps exit 0; a config error still exits 2",
           "disposition": "tested",
-          "evidence": "test_source_state_stamp.py::TestAuditStalenessStaysFilePathLoadable::test_no_module_level_cross_package_import PASSED; plus the real file-path loaders in shipwright-security (6) and shared (5) sessions PASSED"
+          "evidence": "test_suite_race_cli.py::test_a_clean_run_writes_nothing_and_keeps_exit_zero and ::test_a_config_error_still_exits_two_without_touching_the_store PASSED"
         },
         {
-          "behavior": "a repeat render of the same data is byte-identical, so tracked documents do not go permanently dirty",
+          "behavior": "--run-id is optional and its absence is a null field, not a placeholder",
           "disposition": "tested",
-          "evidence": "test_source_state_stamp.py::test_rendering_twice_is_byte_stable (5 cases) PASSED"
+          "evidence": "test_suite_race_cli.py::test_run_id_is_optional_and_its_absence_is_recorded_as_absent PASSED"
         },
         {
-          "behavior": "git C-quotes a non-ASCII porcelain path, which can defeat the dirty exclusion",
-          "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "reason": "The failure direction is fail-safe \u2014 it over-reports modification and can never under-report \u2014 and it is unreachable for the ASCII repo-root path both producers use. Raised by the doubt reviewer, accepted and disclosed in the spec's resolution contract rather than silently relied on; the exclusion mechanism itself is pinned by TestGitResolution."
+          "behavior": "commit resolution on a non-repo root or with git missing yields no commit and no error",
+          "disposition": "tested",
+          "evidence": "test_suite_race_triage.py::test_commit_resolution_on_a_non_repo_root_yields_no_commit and ::test_a_missing_git_binary_yields_no_commit PASSED"
+        },
+        {
+          "behavior": "operator-facing strings stay ASCII in the two NEW modules",
+          "disposition": "tested",
+          "evidence": "test_suite_units.py::test_operator_facing_strings_are_ascii_only PASSED (extended to suite_report + suite_race_triage)"
+        },
+        {
+          "behavior": "the whole production path works against a real flaky unit over three consecutive runs, including the card surviving a later CLEAN parallel run",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "integration-tests/test_f0_race_followup_e2e.py::test_the_runner_records_a_real_race_and_never_auto_closes_it PASSED - drives the real CLI as a subprocess, nothing stubbed"
         }
       ],
       "counts": {
-        "testable": 28,
-        "tested": 27,
-        "untestable": 1,
+        "testable": 30,
+        "tested": 30,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 9,
-        "covered_acs": 9
+        "acs": 14,
+        "covered_acs": 14
       }
     }
   },
@@ -214,10 +218,5 @@
     "measured_tier": "repo",
     "source": "combined coverage.xml (all plugins + shared + integration)",
     "measured_at": "2026-07-04T00:00:00Z"
-  },
-  "source_state": {
-    "run_id": "iterate-2026-07-27-artifact-state-stamping",
-    "commit": "9c8b627471901c2ef9254e3e518ea17c030f4cae",
-    "dirty": true
   }
 }

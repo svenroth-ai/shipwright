@@ -1,6 +1,6 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-artifact-state-stamping"
+run_id: "iterate-2026-07-27-f0-race-triage"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
 timestamp: "2026-07-27T09:08:48.846142+00:00"
@@ -12,7 +12,7 @@ timestamp: "2026-07-27T09:08:48.846142+00:00"
 
 ## Session Info
 
-- **Session ID**: 821e1007-5fc9-403d-9122-21e7ce9dc8e5
+- **Session ID**: b2c673e3-1511-4b06-ac01-92f336846fb0
 - **Timestamp**: 2026-07-27 09:08:48 UTC
 - **Reason**: ensure-current pre-merge refresh
 
@@ -29,11 +29,11 @@ timestamp: "2026-07-27T09:08:48.846142+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/artifact-state-stamping
-- **Run ID**: iterate-2026-07-27-artifact-state-stamping
-- **Spec**: .shipwright/planning/iterate/2026-07-27-artifact-state-stamping.md
+- **Branch**: iterate/f0-race-triage
+- **Run ID**: iterate-2026-07-27-f0-race-triage
+- **Spec**: .shipwright/planning/iterate/2026-07-27-f0-race-triage.md
 - **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-07-27T07:17:44))
+- **External Review Marker**: stale (predates spec (2026-07-27T07:19:42))
 
 ### Mandatory replay on Resume
 
@@ -52,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/artifact-state-stamping
-- **Last Commit**: 83bec3aa Merge remote-tracking branch 'origin/main' into iterate/artifact-state-stamping
+- **Branch**: iterate/f0-race-triage
+- **Last Commit**: 50dc1a54 Merge remote-tracking branch 'origin/main' into iterate/f0-race-triage
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -78,7 +78,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 364
+- **Total work events**: 365
 - **Last iterate**: change — iterate: the review gate stops being bypassable (fail-closed + fork review) (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
