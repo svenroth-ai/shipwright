@@ -55,7 +55,10 @@ differences:
        `| ID | Area | Name | Priority | Description | Basis | Layers |`.
        `Basis` is ONE value from `interview` / `code` / `observed` / `tests`
        / `assumed` / `other: <reason>` — anything else, including a blank
-       cell, is a hard audit failure.
+       cell, is a hard audit failure. `assumed` also obliges you to **name
+       what would settle it** (who to ask, or what to try) as an acceptance
+       criterion — never inside the cell, where a qualifier is malformed
+       (`shared/fr-authoring.md` §4a).
      - **`Layers` can hard-abort this iterate.** A **bare** cell
        (`unit, e2e`) is a binding declaration: any named layer without an
        executed-passing `@FR`-tagged test becomes a HARD coverage failure

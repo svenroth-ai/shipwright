@@ -121,8 +121,9 @@ def _by_id(findings):
 
 def test_clean_greenfield_spec_is_clean(tmp_path):
     findings = _by_id(_run(_spec(tmp_path, _GREENFIELD)))
-    # I5 (Basis vocabulary) joined the group in campaign S5.
-    assert set(findings) == {"I1", "I2", "I3", "I4", "I5"}
+    # I5 (Basis vocabulary) joined the group in campaign S5; I6 (acceptance
+    # criteria) in the REQ-3 granularity round.
+    assert set(findings) == {"I1", "I2", "I3", "I4", "I5", "I6"}
     # Greenfield has no Name column, so the §5 fence is inapplicable, NOT passing.
     assert findings["I1"].status == "skip"
     assert "not applicable" in findings["I1"].detail
@@ -131,6 +132,10 @@ def test_clean_greenfield_spec_is_clean(tmp_path):
     assert findings["I5"].status == "skip"
     assert "no Basis column" in findings["I5"].detail
     assert all(findings[c].status == "pass" for c in ("I2", "I3", "I4"))
+    # This fixture is a bare FR table with no criteria section, so I6 reports
+    # both rows — advisory, never a failure.
+    assert findings["I6"].status == "pass"
+    assert "FR-02.01" in findings["I6"].detail
 
 
 def test_clean_adopt_spec_passes_the_name_fence(tmp_path):

@@ -277,14 +277,15 @@ PARSERS: tuple[dict, ...] = (
     },
     {
         "id": "parse.group_i._scan_one_spec",
-        "realm": "compliance_audit", "module": "scripts.audit.group_i",
+        "realm": "compliance_audit", "module": "scripts.audit.group_i_rows",
         "attr": "_scan_one_spec", "invoke": "path_split",
-        "source": "plugins/shipwright-compliance/scripts/audit/group_i.py",
+        "source": "plugins/shipwright-compliance/scripts/audit/group_i_rows.py",
         "note": "Was header-driven and strict in the two ways that cost it rows: "
                 "it required cells[0] == 'id' exactly (FV-4) and reset the "
                 "mapping at EVERY heading (FV-5). Since S4 a projection of "
                 "lib.fr_table_reader; owns only the Name/Description split the "
-                "naming fence needs.",
+                "naming fence needs. Moved to the `group_i_rows` sibling when I6 "
+                "arrived; the `id` stays as-is — frozen_bugs cites it as a key.",
     },
 )
 
