@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-07-27T08:12:42.718426+00:00
-Total commits: 1212
+Generated: 2026-07-27T08:30:49.617405+00:00
+Total commits: 1213
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 349
-    "feat" : 334
+    "feat" : 335
     "chore" : 256
     "docs" : 147
     "refactor" : 75
@@ -374,11 +374,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 334 commits
+### Features (feat) — 335 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | project | give requirements a size rule, and stop the templates contradicting the basis rule | 81535b7682af |
+| 2026-07-27 | project | give requirements a size rule, and stop the templates contradicting the basis rule (#442) | af72103d0e7a |
+| 2026-07-27 | triage | defer from the terminal; cap the failing-check detail | 172cc2da2cc6 |
 | 2026-07-27 | spec | REQ-3 Phase 2 — every requirement now states what it guarantees (#436) | 28491e1c9631 |
 | 2026-07-23 | shared | shared requirement-elicitation method + FR-01.16 (REQ-3 Phase 1) (#431) | 601fafe55276 |
 | 2026-07-23 | compliance | track skipped tests as a first-class field; key D4 on genuine failures (FR-01.10) (#430) | 355681bdcd4e |
@@ -717,8 +718,8 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | 76941a5c72c4 |
-| 2026-07-27 | triage | sweep 60 outbox append(s) into branch | 3dd32d27ea29 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | feebefac394d |
+| 2026-07-27 | triage | sweep 60 outbox append(s) into branch | 9b6ecb237f1c |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -1281,7 +1282,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1212 |
+| Total commits | 1213 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1212 |
+| Human-authored commits | 1213 |
 
