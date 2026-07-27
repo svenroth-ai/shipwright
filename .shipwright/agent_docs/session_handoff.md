@@ -1,39 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-changelog-writer-preserve-history"
+run_id: "iterate-2026-07-27-merge-state-vocabulary"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T14:35:23.623868+00:00"
+reason: "iterate: the merge state is a vocabulary, not a BLOCKED flag"
+timestamp: "2026-07-27T16:42:49.289585+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 14:35:23 UTC
+> Auto-generated 2026-07-27 16:42:49 UTC
 
 ## Session Info
 
-- **Session ID**: 
-- **Timestamp**: 2026-07-27 14:35:23 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: 9058f47a-25f4-4469-b517-e3b5c91347e0
+- **Timestamp**: 2026-07-27 16:42:49 UTC
+- **Reason**: iterate: the merge state is a vocabulary, not a BLOCKED flag
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-adopt-inherited-baseline
-- **Date**: 2026-07-27T14:35:17.611324Z
-- **Type**: feature
-- **Complexity**: medium
-- **Branch**: iterate/adopt-inherited-baseline
-- **ADR**: iterate-2026-07-27-adopt-inherited-baseline
+- **Run ID**: iterate-2026-07-27-merge-state-vocabulary
+- **Date**: 2026-07-27T16:42:41.562779Z
+- **Type**: change
+- **Complexity**: small
+- **Branch**: iterate/merge-state-vocabulary
+- **ADR**: iterate-2026-07-27-merge-state-vocabulary
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-adopt-inherited-baseline.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/changelog-writer-preserve-history
-- **Run ID**: `iterate-2026-07-27-changelog-writer-preserve-history`
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-changelog-writer-preserve-history.md
-- **Complexity**: medium (classifier: `estimate=medium`, `prior_source=history`,
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T11:28:16)
+- **Branch**: iterate/merge-state-vocabulary
+- **External Review Marker**: skipped_config_disabled (external_review_state.json @ 2026-07-27T16:41:37)
 
 ### Mandatory replay on Resume
 
@@ -51,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/changelog-writer-preserve-history
-- **Last Commit**: 386190d3 Merge remote-tracking branch 'origin/main' into iterate/changelog-writer-preserve-history
+- **Branch**: iterate/merge-state-vocabulary
+- **Last Commit**: 64bf9815 chore(triage): sweep 7 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-ab375fd5 | grade_snapshot | — | 2026-07-27 |
+| evt-d256a84e | work_completed | iterate (iterate: the merge state is a vocabulary, not a BLOCKED flag) | 2026-07-27 |
 | evt-942e3e04 | grade_snapshot | — | 2026-07-27 |
 | evt-f2747703 | work_completed | iterate (iterate: inherited failures and coverage gaps are recorded as inherited) | 2026-07-27 |
 | evt-38795ac5 | grade_snapshot | — | 2026-07-27 |
-| evt-f540a880 | work_completed | iterate (iterate: the four Step-9 gates become code, closing trg-88f721be (3 of 3)) | 2026-07-27 |
-| evt-0b2bb01b | grade_snapshot | — | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 374
-- **Last iterate**: change — iterate: inherited failures and coverage gaps are recorded as inherited (2026-07-27)
+- **Total work events**: 375
+- **Last iterate**: change — iterate: the merge state is a vocabulary, not a BLOCKED flag (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

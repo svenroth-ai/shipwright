@@ -640,6 +640,12 @@ _Where the work detail lives_ at the end of this document.
   that the merge is blocked — rather than only how long it waited. Anything that
   could not be checked is said to be unchecked, never counted as clear.
   (iterate-2026-07-27-name-the-blocker)
+- (E) Given the code host states a reason a change cannot be merged — it
+  conflicts with what it is merging into, it is still a draft, its base has
+  moved on, or the host itself refuses it — when the wait is reported, then that
+  reason is named in words. A state the host reports that is not recognised is
+  reported as not understood rather than as nothing being wrong.
+  (iterate-2026-07-27-merge-state-vocabulary)
 - (E) Given the record of a change is checked for describing the run that is
   finishing, when that check runs, then it is decided by whether the record
   names that run, and never by how recently the file was written — so a run that

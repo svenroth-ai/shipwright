@@ -303,12 +303,28 @@ the watcher returns `pending` it now attaches a `blockers` block from
 /repos/{o}/{r}/rules/branches/{b}` — readable without admin). The probe runs once
 on the way out, not per poll, so a 30-minute watch costs two extra API calls.
 
+**`mergeStateStatus` is a vocabulary, not a flag
+(iterate-2026-07-27-merge-state-vocabulary).** The first cut read it as a
+boolean — `BLOCKED` or nothing — which dropped every other actionable value.
+Using the shipped watcher on a real stuck PR (#462) produced: all required checks
+green, no unresolved thread, `mergeStateStatus: DIRTY`, and the verdict "no
+blocker found … most likely still queued". `_pr_blocker_causes._MERGE_STATES` is
+now a **closed** table — `DIRTY` (conflicts), `BEHIND` (base moved), `DRAFT`,
+`BLOCKED`, `UNSTABLE` (a non-required check is red), against `CLEAN`/`HAS_HOOKS`
+as fine — and **any value not in it is `unknown`**, so a state GitHub adds later
+cannot be read as "nothing is wrong". `blocking` is claimed only where the merge
+is structurally impossible (`BLOCKED`/`DIRTY`/`DRAFT`); `BEHIND` and `UNSTABLE`
+are named without the claim, since whether they block depends on repository
+settings. The operator line reports the state it observed rather than a fixed
+phrase — the old wording announced "BLOCKED" for every blocking state, including
+a PR that merely had conflicts.
+
 Two properties matter more than the list itself. A source that cannot be read —
 an unreadable rules endpoint, a truncated thread page, a repository on classic
 branch protection rather than rulesets — lands in `blockers.unknown` with the
-reason, **never** in "nothing found"; and `blocking` is asserted only when the
-host itself says `BLOCKED`, because an unresolved thread only blocks where the
-repository requires conversation resolution. Terminal verdicts and exit codes
+reason, **never** in "nothing found"; and `blocking` is asserted only where the
+host structurally cannot merge, because an unresolved thread only blocks where
+the repository requires conversation resolution. Terminal verdicts and exit codes
 (0 merged / 2 checks_failed / 3 closed / 4 pending-timeout) are unchanged — the
 probe does not run for them, since they already name their cause. Companion F2 rule: the
 agent-doc 600-char budget gate (`test_agent_doc_entry_rules`) lives in the

@@ -1,7 +1,7 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-07-27T14:35:17.696770+00:00 (dependency versions resolved from uv.lock)
-Source-State: run=iterate-2026-07-27-adopt-inherited-baseline
+Generated: 2026-07-27T16:42:41.701778+00:00 (dependency versions resolved from uv.lock)
+Source-State: run=iterate-2026-07-27-merge-state-vocabulary
 Consistency-audit: never run
 
 ## Summary

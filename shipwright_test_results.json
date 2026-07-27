@@ -1,18 +1,14 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-changelog-writer-preserve-history",
+    "run_id": "iterate-2026-07-27-merge-state-vocabulary",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 76,
-      "total": 76
+      "passed": 5560,
+      "total": 5576,
+      "skipped": 16
     },
     "integration": {
-      "status": "passed",
-      "passed": 418,
-      "total": 418
-    },
-    "pgtap": {
       "status": "not_run",
       "passed": 0,
       "total": 0
@@ -22,135 +18,112 @@
       "passed": 0,
       "total": 0
     },
-    "design_fidelity": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [],
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --extra dev pytest plugins/shipwright-changelog/tests/test_integration.py -q",
+      "runner": "uv run pytest shared/tests/test_pr_blockers.py shared/tests/test_pr_blockers_merge_state.py shared/tests/test_watch_pr_delivery.py -v",
       "exit_code": 0,
-      "tests_run": 5,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\changelog-writer-preserve-history\\.shipwright\\runs\\iterate-2026-07-27-changelog-writer-preserve-history\\surface_verification.log",
-      "timestamp": "2026-07-27T11:28:44.488Z",
+      "tests_run": 55,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\merge-state-vocabulary\\.shipwright\\runs\\iterate-2026-07-27-merge-state-vocabulary\\surface_verification.log",
+      "timestamp": "2026-07-27T16:31:47.006Z",
       "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 no-marker history preserved (title + all entries)",
+          "behavior": "a conflicted branch (DIRTY) is named as a cause and asserted blocking",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog.py::test_update_changelog_preserves_file_without_unreleased_marker PASSED"
+          "evidence": "test_pr_blockers_merge_state.py::test_a_conflicted_branch_is_named PASSED"
         },
         {
-          "behavior": "AC2 marker-only file keeps pending [Unreleased] bullets",
+          "behavior": "an out-of-date branch (BEHIND) is named without claiming it blocks",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog.py::test_update_changelog_preserves_pending_unreleased_bullets PASSED"
+          "evidence": "test_pr_blockers_merge_state.py::test_an_out_of_date_branch_is_named_but_not_asserted_blocking PASSED"
         },
         {
-          "behavior": "AC3 marker+version ordering unchanged",
+          "behavior": "a draft is named and blocking; BLOCKED keeps naming itself",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog.py::test_update_changelog_existing PASSED"
+          "evidence": "test_pr_blockers_merge_state.py::test_a_draft_is_named_and_blocking PASSED; test_pr_blockers_merge_state.py::test_blocked_keeps_naming_itself_and_blocking PASSED"
         },
         {
-          "behavior": "AC4 absent file created with header + [Unreleased] + entry",
+          "behavior": "UNSTABLE is named without claiming it blocks",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog.py::test_update_changelog_new_file PASSED"
+          "evidence": "test_pr_blockers_merge_state.py::test_unstable_is_named_without_claiming_it_blocks PASSED"
         },
         {
-          "behavior": "AC5 re-run is a fixed point; version appears exactly once",
+          "behavior": "a mergeable state (CLEAN / HAS_HOOKS) names nothing and reports nothing unknown",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog_preservation.py::test_rerun_never_loses_existing_content (12 shapes) PASSED"
+          "evidence": "test_pr_blockers_merge_state.py::test_a_mergeable_state_names_nothing PASSED"
         },
         {
-          "behavior": "AC6 revised entry replaces the same version, neighbours intact",
+          "behavior": "a merge state not in the closed vocabulary is unknown, never fine",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog.py::test_update_changelog_replaces_same_version_section PASSED"
+          "evidence": "test_pr_blockers_merge_state.py::test_an_unrecognised_state_is_unknown_not_clean PASSED"
         },
         {
-          "behavior": "AC7 entry without a released-version heading refused, file untouched",
+          "behavior": "an absent or UNKNOWN state stays unknown",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog.py::test_update_changelog_rejects_entry_without_released_version[no-version-heading,unreleased-heading] PASSED"
+          "evidence": "test_pr_blockers_merge_state.py::test_unknown_and_absent_states_stay_unknown PASSED"
         },
         {
-          "behavior": "AC7 multi-section entry refused, file untouched",
+          "behavior": "the merge-state cause composes with thread and required-check causes",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog_preservation.py::test_rejects_entry_with_more_than_one_section PASSED"
+          "evidence": "test_pr_blockers_merge_state.py::test_the_merge_state_cause_composes_with_the_others PASSED"
         },
         {
-          "behavior": "AC8 pre-existing duplicate sections refused, file untouched",
+          "behavior": "the operator line names the observed state, not a fixed BLOCKED phrase",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog.py::test_update_changelog_refuses_ambiguous_duplicate_sections PASSED"
+          "evidence": "test_pr_blockers_merge_state.py::test_the_observed_state_is_rendered_not_a_fixed_phrase PASSED"
         },
         {
-          "behavior": "AC10 whitespace-variant heading bounds a replaced section",
+          "behavior": "a conflicted PR is not described as 'still queued'",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog.py::test_update_changelog_replacement_stops_at_whitespace_variant_heading PASSED"
+          "evidence": "test_pr_blockers_merge_state.py::test_the_rendered_line_names_a_conflict_instead_of_a_queue PASSED"
         },
         {
-          "behavior": "AC11 trailing link-reference footer survives a re-run",
+          "behavior": "a real unresolved-thread cause still renders as a count, not a raw path list",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog_preservation.py::test_replace_preserves_trailing_link_reference_footer PASSED"
+          "evidence": "test_pr_blockers_merge_state.py::test_a_real_thread_cause_still_renders_as_a_count PASSED — reproduced red against the pre-fix branch order"
         },
         {
-          "behavior": "AC11 trailing prose survives a re-run",
+          "behavior": "control characters from host-supplied strings never reach the operator line or the JSON",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog_preservation.py::test_replace_preserves_trailing_prose PASSED"
+          "evidence": "test_pr_blockers_merge_state.py::test_control_characters_from_the_host_never_reach_the_line PASSED"
         },
         {
-          "behavior": "AC12 UTF-8 BOM preserved and not parser-blinding",
+          "behavior": "the gh shells stay wired: the GraphQL query is complete and the branch is URL-encoded",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog_preservation.py::test_preserves_utf8_bom PASSED"
-        },
-        {
-          "behavior": "AC12 LF and CRLF files keep their own line endings",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog_preservation.py::test_preserves_lf_line_endings + ::test_preserves_crlf_line_endings PASSED"
-        },
-        {
-          "behavior": "AC12 a failed write leaves the original intact, no orphan temp file",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog_preservation.py::test_failed_write_leaves_the_original_intact PASSED"
-        },
-        {
-          "behavior": "No byte loss across 12 file shapes on insert, re-run and revised re-run",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog_preservation.py::test_insert/test_rerun/test_revised_rerun_never_loses_existing_content (36 cases) PASSED"
-        },
-        {
-          "behavior": "CLI `generate` preserves a hand-written history (script-mode import path)",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_integration.py::test_generate_preserves_existing_history PASSED"
-        },
-        {
-          "behavior": "CLI refusal arm: exit 1, error JSON on stdout, file unchanged",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_integration.py::test_generate_refuses_ambiguous_file_and_leaves_it_untouched PASSED"
-        },
-        {
-          "behavior": "AC9 FR-01.09 gains the re-run (E) criterion in 01-adopted/spec.md",
-          "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "reason": "No gate reads .shipwright/planning/01-adopted/spec.md; the criterion is asserted by inspection at spec.md:468-473 and by F1 artifact sync. The behaviour it describes is covered by the AC5/AC7/AC8 rows above."
+          "evidence": "test_pr_blockers.py::test_fetch_review_threads_builds_a_complete_query PASSED; ::test_fetch_branch_rules_url_encodes_the_branch PASSED"
         }
       ],
       "counts": {
-        "testable": 18,
-        "tested": 18,
-        "untestable": 1,
+        "testable": 13,
+        "tested": 13,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 12,
-        "covered_acs": 12
+        "acs": 5,
+        "covered_acs": 5
       }
-    }
+    },
+    "degraded": [
+      "Review passes 'code' and 'doubt' recorded not_run: subagent review is disabled for this session by operator configuration. A full external code review ran instead and found a real regression (both legs independently), which was fixed and pinned by a test proven red against the pre-fix code.",
+      "'plan' recorded not_run: external plan review is a medium+ phase and this run is small. The design came from a reproduced failure on PR #462 plus GitHub's documented MergeStateStatus enum, not from speculation."
+    ]
   },
   "coverage": {
     "total": 80.2,
