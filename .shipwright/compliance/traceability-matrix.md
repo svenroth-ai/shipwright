@@ -1,6 +1,7 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-26T23:36:34.494070+00:00
+Generated: 2026-07-27T09:08:42.773123+00:00
+Source-State: run=iterate-2026-07-27-artifact-state-stamping
 
 ## Requirements Coverage
 
@@ -15,7 +16,7 @@ Generated: 2026-07-26T23:36:34.494070+00:00
 | [FR-01.07](../../.shipwright/planning/01-adopted/spec.md#fr-0107)<a id="rtm-fr-0107"></a> | Scan the project with several independent checks — flaws in the code, unsafe dependencies, leaked secrets, and attempts to hijack the assistant's own instructions — and report everything they find in one shape, publishing it to the code host's security surface as well. Inside a project the framework already manages, it drives the fixes through to completion; pointed at any other repository it reports what it found and offers to hand the findings over to be worked through. A finding the project formally accepts is recorded in a register kept with the project, so it stays visible instead of quietly disappearing. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7), [evt-07b1fe9c](#evt-07b1fe9c) +3 | 225/225 → 4955/4967 | 2026-06-30 ([iter](#evt-f90c7126)) | ⚠️ needs re-verification | FAIL → [trg-15a43b6b](../agent_docs/triage_inbox.md#trg-15a43b6b) | MISSING | — | — |
 | [FR-01.08](../../.shipwright/planning/01-adopted/spec.md#fr-0108)<a id="rtm-fr-0108"></a> | Release the project to a configured hosting target and prove it is actually alive before calling it done, treating no answer as a failed release. Every supported target carries a written record of its way back to the previous working state and of what that does about stored data that has already moved on. Jelastic (Infomaniak) is shipped; Vercel and a container-on-a-server target are documented as stubs. | Should | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7), [evt-ea7203ec](#evt-ea7203ec) | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | ⚠️ needs re-verification | FAIL → [trg-74b945bc](../agent_docs/triage_inbox.md#trg-74b945bc) | MISSING | — | — |
 | [FR-01.09](../../.shipwright/planning/01-adopted/spec.md#fr-0109)<a id="rtm-fr-0109"></a> | Turn the commit history into a release note a human can read, tag the release, and open the release pull request. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-530b0980](#evt-530b0980), [evt-ddb23fe7](#evt-ddb23fe7) +1 | 225/225 → 19/19 | 2026-05-03 ([iter](#evt-530b0980)) | ⚠️ needs re-verification | FAIL → [trg-6690d175](../agent_docs/triage_inbox.md#trg-6690d175) | MISSING | — | — |
-| [FR-01.10](../../.shipwright/planning/01-adopted/spec.md#fr-0110)<a id="rtm-fr-0110"></a> | Produce audit-ready evidence — which requirement is covered by which test, what changed when, and what the project depends on — and run an on-demand cross-check that reports where that evidence disagrees with reality. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-30338dac](#evt-30338dac), [evt-a3888caf](#evt-a3888caf) +24 | 225/225 → 6230/6242 | 2026-07-23 ([iter](#evt-3a175bfa)) | ⚠️ needs re-verification | FAIL → [trg-4d5b6a56](../agent_docs/triage_inbox.md#trg-4d5b6a56), FAIL → [trg-8bf97fd4](../agent_docs/triage_inbox.md#trg-8bf97fd4), FAIL → [trg-9532fa83](../agent_docs/triage_inbox.md#trg-9532fa83), FAIL → [trg-a1fd8125](../agent_docs/triage_inbox.md#trg-a1fd8125), FAIL → [trg-eb19ada4](../agent_docs/triage_inbox.md#trg-eb19ada4) | MISSING | — | — |
+| [FR-01.10](../../.shipwright/planning/01-adopted/spec.md#fr-0110)<a id="rtm-fr-0110"></a> | Produce audit-ready evidence — which requirement is covered by which test, what changed when, and what the project depends on — and run an on-demand cross-check that reports where that evidence disagrees with reality. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-30338dac](#evt-30338dac), [evt-a3888caf](#evt-a3888caf) +25 | 225/225 → 6230/6242 | 2026-07-23 ([iter](#evt-3a175bfa)) | ⚠️ needs re-verification | FAIL → [trg-4d5b6a56](../agent_docs/triage_inbox.md#trg-4d5b6a56), FAIL → [trg-8bf97fd4](../agent_docs/triage_inbox.md#trg-8bf97fd4), FAIL → [trg-a1fd8125](../agent_docs/triage_inbox.md#trg-a1fd8125) | MISSING | — | — |
 | [FR-01.11](../../.shipwright/planning/01-adopted/spec.md#fr-0111)<a id="rtm-fr-0111"></a> | Handle an ongoing change at the depth it deserves: detect what kind of change it is and how big, then scale from a quick fix to a fully specified feature with plans, reviews and tests. Every feature or change records whether it adds, modifies, removes or leaves the requirements untouched, and that record is enforced before the change can be finished. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-6c637864](#evt-6c637864), [evt-baaf4b0e](#evt-baaf4b0e), [evt-ca7b7d64](#evt-ca7b7d64) +20 | 225/225 → 54/54 | 2026-07-14 ([iter](#evt-5dc16a45)) | ⚠️ needs re-verification | FAIL → [trg-10597d50](../agent_docs/triage_inbox.md#trg-10597d50) | MISSING | MISSING | — |
 | [FR-01.12](../../.shipwright/planning/01-adopted/spec.md#fr-0112)<a id="rtm-fr-0112"></a> | Start the project locally and hand back the address to open in a browser. | May | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7), [evt-ea7203ec](#evt-ea7203ec) | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | ⚠️ needs re-verification | COVERED | — | — | MISSING |
 | [FR-01.13](../../.shipwright/planning/01-adopted/spec.md#fr-0113)<a id="rtm-fr-0113"></a> | Bring an existing codebase under Shipwright: read what is already there, write the starting guidance, derive an initial requirements catalog and compliance evidence, and lay down a baseline end-to-end test. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-273bbb54](#evt-273bbb54), [evt-b0b9c422](#evt-b0b9c422), [evt-aab7ddbd](#evt-aab7ddbd) +10 | 225/225 → 5/5 | 2026-07-20 ([iter](#evt-e9bfacd4)) | ⚠️ needs re-verification | FAIL → [trg-1aa5a8ab](../agent_docs/triage_inbox.md#trg-1aa5a8ab) | MISSING | — | — |
@@ -31,6 +32,7 @@ Generated: 2026-07-26T23:36:34.494070+00:00
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-37719eaa"></a>Evidence documents and test-run records now name which version of the project they describe, not just when they were written. | iterate | change | [FR-01.10](#rtm-fr-0110) | — | — | 2026-07-27 |
 | <a id="evt-ea7203ec"></a>REQ-3 Phase 2 content round - all 18 requirements walked or minted | iterate | change | [FR-01.01](#rtm-fr-0101), [FR-01.02](#rtm-fr-0102), [FR-01.03](#rtm-fr-0103) +13 | — | — | 2026-07-26 |
 | <a id="evt-11304ded"></a>Requirement gathering now follows one shared, thorough interview method across the project, adopt and iterate steps, and a new requirement records that guarantee. | iterate | feature |  | 4946/4961 | — | 2026-07-23 |
 | <a id="evt-3a175bfa"></a>Record how many tests were skipped so a green run with host-gated skips is no longer mistaken for a failing build, and switch the audit's failing-build check back on. | iterate | change | [FR-01.10](#rtm-fr-0110) | 6230/6242 | — | 2026-07-23 |
@@ -397,7 +399,7 @@ Generated: 2026-07-26T23:36:34.494070+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 359 |
+| Iterate changes | 360 |
 | Requirements total | 18 |
 | Requirements verified | 16/18 |
 | Must-have verified | 13/14 |
@@ -420,7 +422,7 @@ Generated: 2026-07-26T23:36:34.494070+00:00
 - [FR-01.07](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
 - [FR-01.08](../../.shipwright/planning/01-adopted/spec.md) (Should): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
 - [FR-01.09](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
-- [FR-01.10](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
+- [FR-01.10](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-37719eaa` (2026-07-27)
 - [FR-01.11](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
 - [FR-01.12](../../.shipwright/planning/01-adopted/spec.md) (May): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
 - [FR-01.13](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
@@ -440,7 +442,7 @@ Generated: 2026-07-26T23:36:34.494070+00:00
 - [FR-01.07](../../.shipwright/planning/01-adopted/spec.md): FAIL → [trg-15a43b6b](../agent_docs/triage_inbox.md#trg-15a43b6b)
 - [FR-01.08](../../.shipwright/planning/01-adopted/spec.md): FAIL → [trg-74b945bc](../agent_docs/triage_inbox.md#trg-74b945bc)
 - [FR-01.09](../../.shipwright/planning/01-adopted/spec.md): FAIL → [trg-6690d175](../agent_docs/triage_inbox.md#trg-6690d175)
-- [FR-01.10](../../.shipwright/planning/01-adopted/spec.md): FAIL → [trg-4d5b6a56](../agent_docs/triage_inbox.md#trg-4d5b6a56), FAIL → [trg-8bf97fd4](../agent_docs/triage_inbox.md#trg-8bf97fd4), FAIL → [trg-9532fa83](../agent_docs/triage_inbox.md#trg-9532fa83), FAIL → [trg-a1fd8125](../agent_docs/triage_inbox.md#trg-a1fd8125), FAIL → [trg-eb19ada4](../agent_docs/triage_inbox.md#trg-eb19ada4)
+- [FR-01.10](../../.shipwright/planning/01-adopted/spec.md): FAIL → [trg-4d5b6a56](../agent_docs/triage_inbox.md#trg-4d5b6a56), FAIL → [trg-8bf97fd4](../agent_docs/triage_inbox.md#trg-8bf97fd4), FAIL → [trg-a1fd8125](../agent_docs/triage_inbox.md#trg-a1fd8125)
 - [FR-01.11](../../.shipwright/planning/01-adopted/spec.md): FAIL → [trg-10597d50](../agent_docs/triage_inbox.md#trg-10597d50)
 - [FR-01.13](../../.shipwright/planning/01-adopted/spec.md): FAIL → [trg-1aa5a8ab](../agent_docs/triage_inbox.md#trg-1aa5a8ab)
 - [FR-01.14](../../.shipwright/planning/01-adopted/spec.md): FAIL → [trg-813d2305](../agent_docs/triage_inbox.md#trg-813d2305)

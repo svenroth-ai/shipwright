@@ -178,6 +178,68 @@ def collect_events(project_root: Path) -> tuple[list[WorkEvent], list[TestRunEve
     return work_events, test_runs, phase_events
 
 
+#: Rendered in the ``Generated:`` banner when no event has a usable timestamp.
+#: A deterministic, human-readable token rather than an empty string.
+NO_EVENTS = "(no events)"
+
+#: ``adr_id`` is dual-purpose: ``finalize_iterate`` stores the iterate run id there,
+#: but ``record_event.py`` documents ``--adr-id`` as an ADR reference ("ADR-055") and
+#: build-phase events use it that way. Without this guard a build-phase newest event
+#: renders ``Source-State: run=ADR-055`` — naming a decision record as a run.
+_ADR_REF_RE = re.compile(r"^ADR-\d+$", re.IGNORECASE)
+
+
+def run_id_of(event: WorkEvent | None) -> str | None:
+    """Run id recorded on ``event``, or ``None`` when it carries an ADR ref instead.
+
+    ``None`` is the honest answer here: the renderers turn it into ``run=(unknown)``,
+    which is true, rather than printing an ADR id under a field labelled ``run``.
+
+    **What the resulting stamp does and does not mean.** It names the newest *recorded
+    completed change* at render time — which for the iterate producer IS the current
+    run, because ``finalize_iterate`` records ``work_completed`` before regenerating.
+    For the two producers that regenerate these documents outside an iterate (a
+    ``chore(release)`` commit, and the security phase's Step 7.5 finalizer) the newest
+    recorded change is the *previous* iterate's, so the banner names that run, not the
+    regeneration. Reading it as "the tree this file was rendered from" would therefore
+    be wrong. Adding HEAD to the compliance banner is not the fix: a per-commit field
+    would change on every commit and re-open the permanently-dirty tracked-markdown
+    defect that deterministic render timestamps were introduced to close.
+    """
+    if event is None:
+        return None
+    value = (event.adr_id or "").strip()
+    if not value or _ADR_REF_RE.match(value):
+        return None
+    return value
+
+
+def latest_work_event(work_events: list[WorkEvent]) -> WorkEvent | None:
+    """Return the chronologically-latest work event, or ``None``.
+
+    The single resolver behind BOTH provenance header lines a compliance document
+    carries: ``Generated:`` (this event's timestamp) and ``Source-State:`` (this
+    event's ``adr_id``, which is where the run id travels — see
+    ``finalize_iterate.py``, "storing run_id as adr_id").
+
+    One event object, read once, on purpose. Resolving the timestamp and the run id
+    through two independent "latest" queries would let a document's two header
+    lines describe two different events, which is precisely the confusion the
+    stamp exists to remove (card ``trg-4d5b6a56``; external review, edge-case/high).
+
+    Returns ``None`` when no event has a usable timestamp, mirroring
+    :func:`latest_event_timestamp`'s ``"(no events)"`` fallback rather than picking
+    an arbitrary event — the two must not diverge.
+    """
+    latest: WorkEvent | None = None
+    latest_ts = ""
+    for we in work_events or []:
+        ts = we.timestamp
+        if isinstance(ts, str) and ts > latest_ts:
+            latest_ts, latest = ts, we
+    return latest
+
+
 def latest_event_timestamp(work_events: list[WorkEvent]) -> str:
     """Return the latest event timestamp formatted for ``ComplianceData.timestamp``.
 
@@ -188,15 +250,12 @@ def latest_event_timestamp(work_events: list[WorkEvent]) -> str:
     parity test (TestLatestEventTimestamp in test_data_collector.py)
     pins these two to the same answer for any given input.
 
-    Empty input → ``"(no events)"`` literal so the rendered banner is
+    Empty input → :data:`NO_EVENTS` so the rendered banner is
     still a deterministic, human-readable token rather than empty
     string.
+
+    Delegates to :func:`latest_work_event` so the timestamp and the run id in
+    ``Source-State:`` are guaranteed to come off the same event.
     """
-    if not work_events:
-        return "(no events)"
-    latest = ""
-    for we in work_events:
-        ts = we.timestamp
-        if isinstance(ts, str) and ts > latest:
-            latest = ts
-    return latest or "(no events)"
+    latest = latest_work_event(work_events)
+    return latest.timestamp if latest is not None else NO_EVENTS

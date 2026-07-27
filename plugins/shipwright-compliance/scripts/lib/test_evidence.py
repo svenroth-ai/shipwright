@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 from scripts.lib.mermaid import testing_pyramid_diagram
 from scripts.lib._latest_suite import resolve_latest_full_suite  # AR-02
 from scripts.lib.event_display import event_anchor, event_display_name
+from scripts.lib._provenance import provenance_lines
 
 # Cross-cutting markdown helper lives at shared/scripts/markdown_table.py
 # (outside the `lib/` namespace per ADR-045 so it can be imported here
@@ -32,7 +33,7 @@ def generate(data: ComplianceData) -> str:
     lines = [
         "# Test Evidence Report",
         "",
-        f"Generated: {data.timestamp}",
+        *provenance_lines(data),
         "",
     ]
 

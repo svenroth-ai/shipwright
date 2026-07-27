@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-23-req3-phase2-content-mono",
+    "run_id": "iterate-2026-07-27-artifact-state-stamping",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 9891,
-      "total": 9891
+      "passed": 9641,
+      "total": 9641
     },
     "integration": {
       "status": "passed",
-      "passed": 417,
-      "total": 417
+      "passed": 418,
+      "total": 418
     },
     "pgtap": {
       "status": "not_run",
@@ -30,70 +30,182 @@
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [],
+    "tests_skipped": 16,
+    "degraded": [
+      {
+        "condition": "external_code_review_partial",
+        "detail": "external_review.py --mode code: the openai leg returned a full 9-finding review; the gemini leg returned status=success with feedback=null, so only one of two external code reviewers actually reported. Recorded rather than counted as two.",
+        "impact": "single-reviewer external code coverage; compensated by the internal code-reviewer and doubt-reviewer passes, both of which found defects the external leg did not"
+      },
+      {
+        "condition": "external_review_output_truncated_on_first_attempt",
+        "detail": "The first --mode code attempt against the full 1691-line diff returned 29 chars (openai) and 504 chars (gemini) \u2014 truncated, not a review. Re-run against a 773-line production-code-only diff. Consequence disclosed: the narrowed slice excluded the wiring and test files, which produced two false 'high' findings (tool wired to nothing / no tests exist).",
+        "impact": "external code review covered production code only; wiring and tests were covered by the two internal reviewers, which read the files on disk"
+      }
+    ],
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run pytest integration-tests/test_requirements_catalog_contract.py integration-tests/test_requirements_catalog_parsers.py integration-tests/test_fr_table_shape_convergence.py -q",
+      "surface": "none",
       "exit_code": 0,
-      "tests_run": 23,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\req3-phase2-content-mono\\.shipwright\\runs\\iterate-2026-07-23-req3-phase2-content-mono\\surface_verification.log",
-      "timestamp": "2026-07-26T23:23:54.302Z",
+      "tests_run": 0,
+      "justification": "No startable app surface: the change alters two build-time artifact producers inside the framework's own Python tooling \u2014 no server, no end-user CLI entry point, no UI. Verified instead by the full F0 suite plus three empirical probes that ran the REAL producers end to end (update_compliance.py regenerating all five evidence documents; stamp_test_results.py against the repo's own tracked record; Group E staleness against the stamped documents).",
+      "evidence_path": ".shipwright/runs/iterate-2026-07-27-artifact-state-stamping/surface_verification.json",
+      "timestamp": "2026-07-27T09:20:00.000Z",
       "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "the catalog carries 18 requirements, each with its own id, anchor, priority, basis and layers cell",
+          "behavior": "the markdown banner round-trips to its abbreviated form",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_contract.py::test_all_requirements_survive_with_unchanged_ids and ::test_every_requirement_has_an_explicit_anchor PASSED"
+          "evidence": "test_source_state.py::TestBannerRoundTrip::test_full_state_round_trips_to_its_abbreviated_form PASSED"
         },
         {
-          "behavior": "both production parsers read the changed catalog and agree on the same id set",
+          "behavior": "all three dirty states survive the banner, so a clean tree and an unanswerable one do not render alike",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_parsers.py::test_the_fr_table_reader_still_sees_every_requirement and ::test_the_heading_parser_sees_the_same_set PASSED"
+          "evidence": "test_source_state.py::test_all_three_dirty_states_survive_the_banner[True/False/None] + ::test_clean_and_unknown_render_differently PASSED"
         },
         {
-          "behavior": "every requirement keeps a resolving deep link from the traceability matrix",
+          "behavior": "the JSON block round-trips exactly, keeping the full 40-hex commit",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_contract.py::test_every_rtm_deep_link_resolves_end_to_end PASSED after regenerating the matrix"
+          "evidence": "test_source_state.py::TestBlockRoundTrip::test_json_block_round_trips_exactly_including_full_sha PASSED"
         },
         {
-          "behavior": "no criterion sentence carries a run id, a decision-record number, a path or a source filename",
+          "behavior": "unresolved fields serialise as null rather than being omitted",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_contract.py forbidden-token scan over every (E) line PASSED"
+          "evidence": "test_source_state.py::test_unresolved_fields_serialise_as_null_not_omitted PASSED"
         },
         {
-          "behavior": "the newly minted requirement carries its decided basis and layers, pinned per requirement rather than in aggregate",
+          "behavior": "arbitrary garbage read back yields an empty state, never a half-trusted one",
           "disposition": "tested",
-          "evidence": "test_fr_table_shape_convergence.py::test_every_live_requirement_carries_its_decided_basis and ::test_the_migration_did_not_change_any_required_layers PASSED"
+          "evidence": "test_source_state.py::test_from_block_yields_an_empty_state_not_a_half_trusted_one (6 cases) PASSED"
         },
         {
-          "behavior": "the elicitation module keeps every section and load-bearing sentence the catalog cites",
+          "behavior": "a run id cannot forge a second banner line",
           "disposition": "tested",
-          "evidence": "test_requirement_elicitation_refs.py + test_requirement_elicitation_rigor.py PASSED (28 cases)"
+          "evidence": "test_source_state.py::test_a_forged_newline_cannot_produce_a_second_banner_line PASSED"
         },
         {
-          "behavior": "the glossary stays within its size ceiling and carries no legacy artifact path",
+          "behavior": "a whitespace-bearing run id cannot inject a forged status token",
           "disposition": "tested",
-          "evidence": "test_bloat_defense_artifacts.py::test_glossary_under_loc_limit and test_artifact_path_canon.py PASSED"
+          "evidence": "test_source_state.py::TestExternalReviewRegressions::test_whitespace_bearing_run_ids_are_refused (5 cases) PASSED"
         },
         {
-          "behavior": "the acceptance criteria say what is true of the product",
+          "behavior": "Unicode control, format and line-separator characters are refused",
+          "disposition": "tested",
+          "evidence": "test_source_state.py::test_unicode_control_and_separator_chars_are_refused (4 cases) PASSED"
+        },
+        {
+          "behavior": "an unsubstituted {run_id} template placeholder is refused rather than stamped",
+          "disposition": "tested",
+          "evidence": "test_source_state.py::TestUnsubstitutedPlaceholderRefused (5 cases) PASSED"
+        },
+        {
+          "behavior": "a run id containing the word clean or cleanup does not forge a dirty verdict",
+          "disposition": "tested",
+          "evidence": "test_source_state.py::TestTokenCollisionRegression (5 cases) PASSED"
+        },
+        {
+          "behavior": "the commit is validated on both sides, and a run id is never read back as a commit",
+          "disposition": "tested",
+          "evidence": "test_source_state.py::TestCommitIsValidatedOnBothSides (13 cases) PASSED"
+        },
+        {
+          "behavior": "the strip regex is anchored: document body prose, layout blank lines and CRLF all survive",
+          "disposition": "tested",
+          "evidence": "test_source_state.py::TestBannerStripRegex (5 cases) PASSED"
+        },
+        {
+          "behavior": "git resolution distinguishes clean, tracked-modified, untracked-only, and the excluded stamped artifact",
+          "disposition": "tested",
+          "evidence": "test_source_state.py::TestGitResolution (5 cases) PASSED"
+        },
+        {
+          "behavior": "git absent, timing out, non-repo or an empty repo all degrade to null instead of raising",
+          "disposition": "tested",
+          "evidence": "test_source_state.py::TestGitResolution (4 cases) PASSED"
+        },
+        {
+          "behavior": "git is never invoked through a shell and always with a bounded timeout",
+          "disposition": "tested",
+          "evidence": "test_source_state.py::test_git_is_never_invoked_through_a_shell PASSED"
+        },
+        {
+          "behavior": "the stamp writes code-resolved run id, commit and dirty into the test-results record",
+          "disposition": "tested",
+          "evidence": "test_stamp_test_results.py::test_writes_the_block_with_code_resolved_values PASSED"
+        },
+        {
+          "behavior": "every other top-level key keeps its value and its position",
+          "disposition": "tested",
+          "evidence": "test_stamp_test_results.py::test_every_other_top_level_key_is_preserved_with_its_value + ::test_key_order_is_preserved_and_the_stamp_is_appended PASSED"
+        },
+        {
+          "behavior": "the record is serialised in the repo canonical byte form, with no CRLF",
+          "disposition": "tested",
+          "evidence": "test_stamp_test_results.py::test_serialised_in_the_repo_canonical_form PASSED (asserts on read_bytes)"
+        },
+        {
+          "behavior": "stamping twice equals stamping once; a prior block is replaced, never nested",
+          "disposition": "tested",
+          "evidence": "test_stamp_test_results.py::TestIdempotency (3 cases) PASSED"
+        },
+        {
+          "behavior": "a corrupt, array-shaped or missing record is refused and never overwritten",
+          "disposition": "tested",
+          "evidence": "test_stamp_test_results.py::TestRefusalAndDegradation (3 cases) PASSED"
+        },
+        {
+          "behavior": "a rejected run id stamps null instead of falling back to a plausible wrong one",
+          "disposition": "tested",
+          "evidence": "test_stamp_test_results.py::TestRunIdResolutionPrecedence (4 cases) PASSED"
+        },
+        {
+          "behavior": "all five compliance evidence documents carry exactly one Source-State line, directly under Generated",
+          "disposition": "tested",
+          "evidence": "test_source_state_stamp.py::TestAllFiveRenderers (30 cases) PASSED"
+        },
+        {
+          "behavior": "the run id and the timestamp are read off one work event, so the two header lines cannot disagree",
+          "disposition": "tested",
+          "evidence": "test_source_state_stamp.py::TestOneEventForBothFields (9 cases) PASSED"
+        },
+        {
+          "behavior": "Group E staleness cannot newly report a document stale because of the banner, and still detects real body drift",
+          "disposition": "tested",
+          "evidence": "test_source_state_stamp.py::TestGroupEStalenessUnaffected (5 cases) PASSED; plus an empirical Group E run proving the banner is absent from normalize() output for all five documents"
+        },
+        {
+          "behavior": "an ADR reference recorded in adr_id is never labelled as a run",
+          "disposition": "tested",
+          "evidence": "test_source_state_stamp.py::TestAdrReferenceIsNotARun (9 cases) PASSED"
+        },
+        {
+          "behavior": "audit_staleness stays importable when loaded by file path from a foreign scripts namespace",
+          "disposition": "tested",
+          "evidence": "test_source_state_stamp.py::TestAuditStalenessStaysFilePathLoadable::test_no_module_level_cross_package_import PASSED; plus the real file-path loaders in shipwright-security (6) and shared (5) sessions PASSED"
+        },
+        {
+          "behavior": "a repeat render of the same data is byte-identical, so tracked documents do not go permanently dirty",
+          "disposition": "tested",
+          "evidence": "test_source_state_stamp.py::test_rendering_twice_is_byte_stable (5 cases) PASSED"
+        },
+        {
+          "behavior": "git C-quotes a non-ASCII porcelain path, which can defeat the dirty exclusion",
           "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "whether a sentence in business language faithfully describes a mechanism is a reading judgement, not an oracle. This is the round's own finding, recorded as FR-01.16 criterion 9 and as campaign decision D7: an LLM may adjudicate a mechanically raised flag, never raise one. Each criterion instead carries an enforcement classification in the AC evidence ledger, and the criteria that CAN be pinned are enumerated above."
+          "reason_code": "covered-by-existing-test",
+          "reason": "The failure direction is fail-safe \u2014 it over-reports modification and can never under-report \u2014 and it is unreachable for the ASCII repo-root path both producers use. Raised by the doubt reviewer, accepted and disclosed in the spec's resolution contract rather than silently relied on; the exclusion mechanism itself is pinned by TestGitResolution."
         }
       ],
       "counts": {
-        "testable": 7,
-        "tested": 7,
+        "testable": 28,
+        "tested": 27,
         "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 8,
-        "covered_acs": 8
+        "acs": 9,
+        "covered_acs": 9
       }
     }
   },
@@ -102,5 +214,10 @@
     "measured_tier": "repo",
     "source": "combined coverage.xml (all plugins + shared + integration)",
     "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-07-27-artifact-state-stamping",
+    "commit": "9c8b627471901c2ef9254e3e518ea17c030f4cae",
+    "dirty": true
   }
 }

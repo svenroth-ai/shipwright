@@ -1,36 +1,45 @@
+---
+canon_generated: true
+run_id: "iterate-2026-07-27-artifact-state-stamping"
+phase: "iterate"
+reason: "iterate: stamp produced artifacts with the state they describe (FR-01.10)"
+timestamp: "2026-07-27T09:08:48.846142+00:00"
+---
+
 # Session Handoff
 
-> Auto-generated 2026-07-26 23:36:39 UTC
+> Auto-generated 2026-07-27 09:08:48 UTC
 
 ## Session Info
 
-- **Session ID**: 170bb5a6-5652-4115-abe3-004f2d2a8ed9
-- **Timestamp**: 2026-07-26 23:36:39 UTC
-- **Reason**: iterate completion: iterate-2026-07-23-req3-phase2-content-mono
+- **Session ID**: 821e1007-5fc9-403d-9122-21e7ce9dc8e5
+- **Timestamp**: 2026-07-27 09:08:48 UTC
+- **Reason**: iterate: stamp produced artifacts with the state they describe (FR-01.10)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-23-req3-phase2-content-mono
-- **Date**: 2026-07-26T23:36:34.414046Z
-- **Type**: change
-- **Complexity**: large
-- **Branch**: iterate/req3-phase2-content-mono
-- **ADR**: iterate-2026-07-23-req3-phase2-content-mono
+- **Run ID**: iterate-2026-07-27-artifact-state-stamping
+- **Date**: 2026-07-27T09:08:42.675204Z
+- **Type**: feature
+- **Complexity**: medium
+- **Branch**: iterate/artifact-state-stamping
+- **ADR**: iterate-2026-07-27-artifact-state-stamping
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-23-req3-phase2-content-mono.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-artifact-state-stamping.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/req3-phase2-content-mono
-- **Run ID**: iterate-2026-07-23-req3-phase2-content-mono
-- **Spec**: .shipwright/planning/iterate/2026-07-23-req3-phase2-content-mono.md
+- **Branch**: iterate/artifact-state-stamping
+- **Run ID**: iterate-2026-07-27-artifact-state-stamping
+- **Spec**: .shipwright/planning/iterate/2026-07-27-artifact-state-stamping.md
 - **Complexity**: medium
-- **External Review Marker**: missing
+- **External Review Marker**: stale (predates spec (2026-07-27T07:17:44))
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
 - Step 4 — External LLM Review (marker missing/stale)
+- Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
 
@@ -43,9 +52,9 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/req3-phase2-content-mono
-- **Last Commit**: fe5be3c1 feat(spec): REQ-3 Phase 2 — every requirement now states what it guarantees
-- **Uncommitted Changes**: None
+- **Branch**: iterate/artifact-state-stamping
+- **Last Commit**: 9c8b6274 chore(triage): sweep 60 outbox append(s) into branch
+- **Uncommitted Changes**: Yes
 
 ## Config Files to Read
 
@@ -60,17 +69,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-a89512cf | grade_snapshot | — | 2026-07-27 |
+| evt-37719eaa | work_completed | iterate (iterate: stamp produced artifacts with the state they describe (FR-01.10)) | 2026-07-27 |
 | evt-2055af94 | grade_snapshot | — | 2026-07-26 |
 | evt-ea7203ec | work_completed | iterate (iterate: REQ-3 Phase 2 content round - all 18 requirements walked or minted) | 2026-07-26 |
 | evt-6ff6084f | grade_snapshot | — | 2026-07-26 |
-| evt-bb7c91f1 | grade_snapshot | — | 2026-07-24 |
-| evt-17075aa5 | grade_snapshot | — | 2026-07-23 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 359
-- **Last iterate**: change — iterate: REQ-3 Phase 2 content round - all 18 requirements walked or minted (2026-07-26)
+- **Total work events**: 360
+- **Last iterate**: change — iterate: stamp produced artifacts with the state they describe (FR-01.10) (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
