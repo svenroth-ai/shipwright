@@ -1,43 +1,44 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-adopt-derived-catalogue"
+run_id: "iterate-2026-07-27-name-the-blocker"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T12:14:34.040370+00:00"
+reason: "F11 refresh before arming auto-merge"
+timestamp: "2026-07-27T12:52:40.120480+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 12:14:34 UTC
+> Auto-generated 2026-07-27 12:52:40 UTC
 
 ## Session Info
 
-- **Session ID**: 98053cc9-0f7c-4be8-b1cc-8b5d8b25d84b
-- **Timestamp**: 2026-07-27 12:14:34 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: 9058f47a-25f4-4469-b517-e3b5c91347e0
+- **Timestamp**: 2026-07-27 12:52:40 UTC
+- **Reason**: F11 refresh before arming auto-merge
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-plan-section-deps
-- **Date**: 2026-07-27T12:14:28.199191Z
+- **Run ID**: iterate-2026-07-27-name-the-blocker
+- **Date**: 2026-07-27T12:52:34.425553Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/plan-section-deps
-- **ADR**: iterate-2026-07-27-plan-section-deps
+- **Branch**: iterate/name-the-blocker
+- **ADR**: iterate-2026-07-27-name-the-blocker
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-plan-section-deps.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-name-the-blocker.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/adopt-derived-catalogue
-- **Run ID**: iterate-2026-07-27-adopt-derived-catalogue
-- **Spec**: .shipwright/planning/iterate/2026-07-27-adopt-derived-catalogue.md
+- **Branch**: iterate/name-the-blocker
+- **Run ID**: iterate-2026-07-27-name-the-blocker
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-name-the-blocker.md
 - **Complexity**: medium
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T11:49:21)
+- **External Review Marker**: stale (predates spec (2026-07-27T11:55:00))
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -51,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/adopt-derived-catalogue
-- **Last Commit**: 7f35a14e Merge remote-tracking branch 'origin/main' into iterate/adopt-derived-catalogue
+- **Branch**: iterate/name-the-blocker
+- **Last Commit**: ece650cb Merge remote-tracking branch 'origin/main' into iterate/name-the-blocker
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +69,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-38795ac5 | grade_snapshot | — | 2026-07-27 |
+| evt-f540a880 | work_completed | iterate (iterate: the four Step-9 gates become code, closing trg-88f721be (3 of 3)) | 2026-07-27 |
 | evt-0b2bb01b | grade_snapshot | — | 2026-07-27 |
 | evt-5ecd7d7e | work_completed | iterate (iterate: reviewer verdicts recorded, disagreement is its own outcome (1 of 3)) | 2026-07-27 |
 | evt-8039a18b | grade_snapshot | — | 2026-07-27 |
-| evt-8cab1d1d | work_completed | iterate (iterate: section dependencies are declarable, so the numbering is checkable (2 of 3)) | 2026-07-27 |
-| evt-4ab23c76 | grade_snapshot | — | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 369
-- **Last iterate**: change — iterate: reviewer verdicts recorded, disagreement is its own outcome (1 of 3) (2026-07-27)
+- **Total work events**: 371
+- **Last iterate**: change — iterate: the four Step-9 gates become code, closing trg-88f721be (3 of 3) (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

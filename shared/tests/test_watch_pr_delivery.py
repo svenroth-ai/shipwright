@@ -120,3 +120,157 @@ def test_watch_loop_times_out_pending_fails_closed():
         timeout_seconds=10.0, poll_seconds=0,
     )
     assert result["status"] == "pending" and result["timed_out"] is True
+
+
+# ---------------------------------------------------------------------------
+# Named blockers on a pending verdict (iterate-2026-07-27-name-the-blocker)
+# ---------------------------------------------------------------------------
+#
+# PR #439 sat green for ~25 minutes with auto-merge armed while this watcher
+# reported only that it had waited. The cause was one unresolved review thread.
+# A pending verdict now carries the named reasons the PR is not merging; the
+# terminal verdicts and their exit codes are deliberately untouched.
+
+_PENDING = {
+    "state": "OPEN", "mergeStateStatus": "BLOCKED",
+    "url": "https://github.com/o/n/pull/439", "baseRefName": "main",
+    "statusCheckRollup": [_checkrun("ci", "COMPLETED", "SUCCESS")],
+}
+
+
+def _probe_returning(report):
+    seen = {}
+
+    def probe(**kwargs):
+        seen.update(kwargs)
+        return report
+
+    return probe, seen
+
+
+def test_pending_timeout_carries_named_blockers():
+    report = {"merge_state_status": "BLOCKED", "blocking": True,
+              "causes": [{"kind": "unresolved_review_threads", "count": 1}], "unknown": []}
+    probe, _ = _probe_returning(report)
+    ticks = iter([0.0, 999.0])
+
+    result = wpd.watch(
+        "439", fetch=lambda pr, repo: _PENDING, sleep=lambda s: None,
+        now=lambda: next(ticks), timeout_seconds=10.0, poll_seconds=0,
+        probe_blockers=probe,
+    )
+
+    assert result["status"] == "pending" and result["timed_out"] is True
+    assert result["blockers"] == report
+
+
+def test_the_probe_is_told_which_pr_and_branch_to_look_at():
+    """owner / name / number come from the `url` the watcher already fetches, so
+    naming the blocker costs no extra call to resolve the repo."""
+    probe, seen = _probe_returning({"causes": [], "unknown": []})
+    ticks = iter([0.0, 999.0])
+
+    wpd.watch(
+        "439", fetch=lambda pr, repo: _PENDING, sleep=lambda s: None,
+        now=lambda: next(ticks), timeout_seconds=10.0, poll_seconds=0,
+        probe_blockers=probe,
+    )
+
+    assert seen["owner"] == "o" and seen["name"] == "n" and seen["number"] == 439
+    assert seen["branch"] == "main"
+    assert seen["merge_state"] == "BLOCKED"
+
+
+def test_single_poll_mode_also_names_blockers():
+    probe, _ = _probe_returning({"causes": [{"kind": "x"}], "unknown": []})
+    result = wpd.watch("439", fetch=lambda pr, repo: _PENDING, once=True, probe_blockers=probe)
+    assert result["status"] == "pending"
+    assert result["blockers"]["causes"] == [{"kind": "x"}]
+
+
+def test_terminal_verdicts_are_not_probed_and_not_changed():
+    """The contract F11 depends on: merged / closed / checks_failed keep their
+    exact shape and exit codes. A blocker probe on a merged PR is pointless and
+    would be a behaviour change in the one path that already works."""
+    called = {"n": 0}
+
+    def probe(**kwargs):
+        called["n"] += 1
+        return {}
+
+    merged = wpd.watch("1", fetch=lambda pr, repo: {"state": "MERGED", "statusCheckRollup": []},
+                       probe_blockers=probe)
+    failed = wpd.watch(
+        "1", fetch=lambda pr, repo: {"state": "OPEN", "statusCheckRollup": [
+            _checkrun("ci", "COMPLETED", "FAILURE")]},
+        probe_blockers=probe,
+    )
+
+    assert merged == {"status": "merged"}
+    assert failed["status"] == "checks_failed" and "blockers" not in failed
+    assert called["n"] == 0
+
+
+def test_a_probe_that_raises_never_costs_the_verdict():
+    """A diagnostic must not be able to turn a usable pending verdict into a
+    crash — the watcher's job is the verdict; the blocker list is extra."""
+    def boom(**kwargs):
+        raise RuntimeError("graphql exploded")
+
+    result = wpd.watch("439", fetch=lambda pr, repo: _PENDING, once=True, probe_blockers=boom)
+
+    assert result["status"] == "pending"
+    assert result["blockers"]["unknown"][0]["source"] == "probe"
+
+
+def test_an_unparseable_url_degrades_to_unknown_not_a_crash():
+    payload = dict(_PENDING, url="not-a-url")
+    result = wpd.watch("439", fetch=lambda pr, repo: payload, once=True)
+    assert result["status"] == "pending"
+    assert result["blockers"]["unknown"][0]["source"] == "probe"
+
+
+def test_exit_code_for_pending_is_unchanged():
+    assert wpd._exit_code("pending") == 4
+    assert wpd._exit_code("merged") == 0
+    assert wpd._exit_code("checks_failed") == 2
+    assert wpd._exit_code("closed") == 3
+
+
+def test_pending_report_names_the_cause_in_plain_words():
+    """What the operator actually reads. The old line said only that it timed
+    out; this one has to say what is holding the PR up."""
+    result = {
+        "status": "pending", "timed_out": True,
+        "blockers": {
+            "merge_state_status": "BLOCKED", "blocking": True,
+            "causes": [
+                {"kind": "unresolved_review_threads", "count": 2},
+                {"kind": "required_check_never_reported", "checks": ["PR Review"]},
+            ],
+            "unknown": [],
+        },
+    }
+    line = wpd._render_pending(result)
+    assert "BLOCKED" in line
+    assert "unresolved_review_threads: 2" in line
+    assert "required_check_never_reported: PR Review" in line
+
+
+def test_pending_report_says_which_sources_it_could_not_check():
+    result = {
+        "status": "pending", "timed_out": True,
+        "blockers": {"merge_state_status": "", "blocking": False, "causes": [],
+                     "unknown": [{"source": "required_checks", "reason": "unreadable"}]},
+    }
+    line = wpd._render_pending(result)
+    assert "could not check required_checks" in line
+    assert "no blocker found" not in line   # unknown is NOT clean
+
+
+def test_pending_report_with_nothing_found_says_so_without_implying_a_fault():
+    result = {"status": "pending", "timed_out": False,
+              "blockers": {"merge_state_status": "CLEAN", "blocking": False,
+                           "causes": [], "unknown": []}}
+    line = wpd._render_pending(result)
+    assert "no blocker found" in line and "still queued" in line

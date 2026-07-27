@@ -107,6 +107,14 @@ def _emitted_recurring_dismiss_tokens() -> set[str]:
     compliance ``test_evidence.py`` producer that emits ``testEvidenceResolved``,
     ``test_runner.py``, ``test_hygiene.py``) and must be scanned. Real pytest
     files all live under a ``tests/`` directory in this repo.
+
+    A file must also MENTION triage to be a producer
+    (iterate-2026-07-27-name-the-blocker): ``lib/pr_blockers.py`` reads GitHub's
+    ``isResolved`` field while touching no triage, yet matched — and would have
+    put a GitHub field name into the GC vocabulary. Narrowed to the guard's own
+    subject, checked not assumed (all eight token-bearing producers name triage,
+    the non-producer did not); the anchor test below fails loudly if this ever
+    hides a real producer.
     """
     tokens: set[str] = set()
     for root_name in ("shared", "plugins"):
@@ -116,7 +124,10 @@ def _emitted_recurring_dismiss_tokens() -> set[str]:
         for py in root.rglob("*.py"):
             if "tests" in py.parts or py.name == "triage_gc.py":
                 continue
-            tokens.update(_TOKEN_RE.findall(py.read_text(encoding="utf-8", errors="replace")))
+            text = py.read_text(encoding="utf-8", errors="replace")
+            if "triage" not in text.lower():
+                continue
+            tokens.update(_TOKEN_RE.findall(text))
     return tokens
 
 

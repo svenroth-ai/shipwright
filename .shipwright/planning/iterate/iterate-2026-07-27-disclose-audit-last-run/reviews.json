@@ -1,0 +1,212 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-27-disclose-audit-last-run",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T07:51:15.688239+00:00",
+      "disposition": "7-point self-review completed inline in the iterate spec (Self-Review section); all 7 items PASS",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 13,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "Edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Time-math inversion (`ran_at` vs `as_of`). The generated docs use an event-pinned timestamp (`data.timestamp`) as their reference point. The audit run grabs a wall-clock time (`ran_at`). If an operator runs the audit after the last recorded shipwright event, `ran_at` will be newer than `as_of`.",
+          "suggestion": "Ensure the `freshness_note` age calculation explicitly handles `ran_at > as_of`. Bound it to \"just now\" or \"0 days\", otherwise standard relative-time formatters might attempt to print \"in 2 hours\" or crash on negative timedeltas.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "Approach",
+          "file": null,
+          "line": null,
+          "finding": "Overwriting full audit records with partial ones. If `run_audit.py` broadly overwrites the single `last_audit` config key, a user doing a `--only sbom` run on Friday will erase the record of the full audit run from Thursday. The evidence doc will downgrade to saying it was only partially audited.",
+          "suggestion": "Either structure the config state to retain the last full run separately from the last partial run (e.g. `last_audit: { full: {...}, partial: {...} }`), or explicitly document in the ADR that any run blind-overwrites the tracker and operators must run a full audit to restore full evidence.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "Risk",
+          "file": null,
+          "line": null,
+          "finding": "Silent fail-soft on configuration write. The design states \"a recording failure never changes the audit's exit code\" (fail-soft). If the JSON state file is unwriteable (e.g., permissions issue or malformed base JSON), the audit will pass but the dashboard will persistently claim it never ran, confusing the operator.",
+          "suggestion": "While retaining the fail-soft exit code (`0`), ensure the catch block emits a prominent `stderr` warning so the operator is aware the durability constraint (AC-4) failed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "Risk",
+          "file": null,
+          "line": null,
+          "finding": "Unmanaged JSON churn on read-modify-write. Adding `last_audit` to `shipwright_compliance_config.json` via a new file (`audit_disclosure.py`) might introduce format thrashing if it doesn't strictly match the indentation and key-sorting of the existing writer (`update_compliance.py`).",
+          "suggestion": "Guarantee `record_audit_run` uses the exact same JSON dump parameters (indent, sort_keys) as `update_compliance.py`, or ideally, route the write through the same shared config-manager module if one exists.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed “age” calculation is not soundly defined against the chosen reference time. `ran_at` will be the real time at which `run_audit.py` executes, while `data.timestamp` is explicitly event-pinned and may represent an earlier point in history. A normal audit run can therefore yield a negative age (“audit ran after this document’s reference point”), and regenerating from an unchanged event log after an audit changes the document despite the claim that same-event-log regenerations are byte-identical.",
+          "suggestion": "Define the temporal model before implementation. Either: - render the durable audit timestamp as an absolute normalized UTC timestamp and omit relative age when the document reference predates it, or - define a document-generation/reference timestamp that is guaranteed to be at or after the audit record, while updating the determinism contract and its tests accordingly. Treat the config record as an explicit render input in determinism tests; “same event log” alone is no longer sufficient.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "read_last_audit()` collapses an absent record, malformed config, malformed `last_audit`, and missing `ran_at` into `None`. That makes a damaged or manually altered record render as “never run,” which is a materially false statement: it means “the tool cannot establish whether it ran.” This conflicts with the stated objective of making evidence trustworthiness visible.",
+          "suggestion": "Return a tagged result rather than `Optional[AuditRecord]`, for example `absent`, `valid(record)`, and `invalid(reason)`. Render “Consistency audit has never been recorded” only for an absent record; render “Consistency audit record is unreadable/invalid; last-run status is unknown” for malformed state. The dashboard should make this visibly distinguishable and tests should cover malformed JSON, non-object roots, invalid timestamps, and malformed nested fields.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "A read-modify-write of the shared tracked compliance config can lose updates or corrupt state when `run_audit.py` overlaps with `update_compliance.py`, a compliance regeneration, or another process that writes the same file. The plan says to preserve other keys, but preservation in a non-atomic RMW sequence does not protect concurrent writers. This is especially important because this config already mixes settings and generated state.",
+          "suggestion": "Reuse the repository’s established config read/write and locking protocol if one exists; do not introduce a parallel writer implementation in the new module. Otherwise implement atomic replacement (write temp file, fsync as appropriate, replace) and a project-scoped lock covering read-modify-write. Add a concurrent-writer test that verifies both the audit record and an independently updated existing config key survive.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Writing `last_audit` into a tracked file does not by itself satisfy “survives a fresh clone.” It only survives a fresh clone after the changed config is committed and made available to that clone. If `/shipwright-compliance` or direct `run_audit.py` invocation merely leaves a dirty working tree—as diagnostic commands commonly do—then CI and other clones will still report no audit record.",
+          "suggestion": "Confirm and document the lifecycle that persists generated compliance state: which command regenerates/stages it, whether the user must commit it, and whether direct `run_audit.py` is an internal primitive or a supported public entry point. Add an integration test that records an audit, persists the resulting tracked state through the normal workflow, clones/checks out that state in a clean directory, and verifies the disclosure is retained.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Recording only one `last_audit` record means a recent `--only` run overwrites the evidence of the most recent full audit. Although the latest record can say “partial,” a reader loses the useful answer to “when was the whole project last cross-checked?” and could see only a partial run indefinitely.",
+          "suggestion": "Model the distinction explicitly. Keep the latest completed audit record and the latest completed full-scope audit record, or retain a bounded audit-history structure from which both can be rendered. The dashboard can lead with the latest run while separately stating the last full cross-check; evidence headers should never make a partial run look equivalent to a full one. Normalize and validate `--only` scope against the audit’s canonical check identifiers rather than storing arbitrary CLI text.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The dashboard currently derives a richer consistency-audit section from `audit-report.json`, but the proposed durable record contains only a loosely specified `findings`, `any_fail`, `scope`, and aggregate check counts. Rewriting the block risks silently dropping existing useful information or, worse, showing a “clean” or completed-looking result from insufficient metadata.",
+          "suggestion": "Inventory the fields and states rendered by the current `_control_block.py` implementation and define the minimal durable record schema needed to preserve them. At minimum distinguish: completed-with-findings, completed-clean, completed-with-skipped checks, partial completion, and failed-to-complete. Record results from the audit’s structured in-memory outcome, not by re-parsing Markdown or inferring success from `any_fail`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "“Record after the report is written, on every invocation” leaves unclear what happens when the audit aborts before producing a complete result: invalid `--only` values, scanner/tool failures, report-write failures, exceptions, or interruption. Recording such an invocation as a normal audit would falsely freshen the disclosure; recording nothing needs a clear user-facing distinction from “never run.” The proposed fail-soft write also means a completed audit can remain undisclosed without any durable indication of that failure.",
+          "suggestion": "Record only a completed audit result, with an explicit completion/status field. For incomplete executions, preserve the prior successful record and emit a clear runtime warning that the audit did not complete and freshness was not updated. Keep persistence failure from changing the audit’s existing result exit code if required, but make it prominent in stderr/report output and cover it with a test; otherwise AC-4 is not reliably met.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The tolerant reader appears to accept `ran_at` and `scope` from a tracked JSON file and interpolate the generated note into Markdown. A malformed or hostile value committed through a branch can inject misleading Markdown/links or control layout in compliance evidence. This is not a major execution risk, but it undermines the trustworthiness of a security/compliance-facing document.",
+          "suggestion": "Strictly validate `ran_at` as a timezone-aware ISO-8601 timestamp and normalize it before rendering. Validate scope against canonical check names, render only normalized values, and cap/escape any remaining text. Invalid values should produce the explicit “record invalid; status unknown” state rather than being rendered verbatim.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan has acceptance criteria but no concrete regression-test coverage for the new state contract and all five render paths. The “Test Completeness Ledger” is still a placeholder, while this change modifies generated tracked documents and the audit command’s side effects.",
+          "suggestion": "Add focused tests for: no record; valid full record; valid partial record; invalid/unknown record; audit finding/failing audit persistence; persistence-write failure; timestamp ordering/negative-age behavior; and each renderer’s header/dashboard output. Update existing generated-document snapshots or staleness checks using a fixed config fixture so they do not accidentally depend on a developer’s local audit state.  Overall, using the existing tracked compliance config is a reasonable lightweight direction and avoids adding unnecessary artifacts or event-log churn. The approach needs a firmer persistence/concurrency contract and an explicit temporal and malformed-state model before implementation, otherwise the new disclosure can be misleading precisely in the situations it is intended to clarify.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-27T07:51:33.800316+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] Here is a structural review of your implementation plan for the compliance audit disclosure change. \n\n### Findings\n\n- **Category:** Edge-case\n  - **Severity:** Medium\n  - **Finding:** Time-math inversion (`ran_at` vs `as_of`). The generated docs use an event-pinned timestamp (`data.timestamp`) as their reference point. The audit run grabs a wall-clock time (`ran_at`). If an operator runs the audit *after* the last recorded shipwright event, `ran_at` will be newer than `as_of`.\n  - **Suggestion:** Ensure the `freshness_note` age calculation explicitly handles `ran_at > as_of`. Bound it to \"just now\" or \"0 days\", otherwise standard relative-time formatters might attempt to print \"in 2 hours\" or crash on negative timedeltas.\n\n- **Category:** Approach\n  - **Severity:** Medium\n  - **Finding:** Overwriting full audit records with partial ones. If `run_audit.py` broadly overwrites the single `last_audit` config key, a user doing a `--only sbom` run on Friday will erase the record of the full audit run from Thursday. The evidence doc will downgrade to saying it was only partially audited.\n  - **Suggestion:** Either structure the config state to retain the last *full* run separately from the last *partial* run (e.g. `last_audit: { full: {...}, partial: {...} }`), or explicitly document in the ADR that any run blind-overwrites the tracker and operators must run a full audit to restore full evidence.\n\n- **Category:** Risk\n  - **Severity:** Low\n  - **Finding:** Silent fail-soft on configuration write. The design states \"a recording failure never changes the audit's exit code\" (fail-soft). If the JSON state file is unwriteable (e.g., permissions issue or malformed base JSON), the audit will pass but the dashboard will persistently claim it never ran, confusing the operator.\n  - **Suggestion:** While retaining the fail-soft exit code (`0`), ensure the catch block emits a prominent `stderr` warning so the operator is aware the durability constraint (AC-4) failed.\n\n- * […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The proposed “age” calculation is not soundly defined against the chosen reference time. `ran_at` will be the real time at which `run_audit.py` executes, while `data.timestamp` is explicitly event-pinned and may represent an earlier point in history. A normal audit run can therefore yield a negative age (“audit ran after this document’s reference point”), and regenerating from an unchanged event log after an audit changes the document despite the claim that same-event-log regenerations are byte-identical.  \n   **Suggestion:** Define the temporal model before implementation. Either:\n   - render the durable audit timestamp as an absolute normalized UTC timestamp and omit relative age when the document reference predates it, or\n   - define a document-generation/reference timestamp that is guaranteed to be at or after the audit record, while updating the determinism contract and its tests accordingly.  \n   Treat the config record as an explicit render input in determinism tests; “same event log” alone is no longer sufficient.\n\n2. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** `read_last_audit()` collapses an absent record, malformed config, malformed `last_audit`, and missing `ran_at` into `None`. That makes a damaged or manually altered record render as “never run,” which is a materially false statement: it means “the tool cannot establish whether it ran.” This conflicts with the stated objective of making evidence trustworthiness visible.  \n   **Suggestion:** Return a tagged result rather than `Optional[AuditRecord]`, for example `absent`, `valid(record)`, and `invalid(reason)`. Render “Consistency audit has never been recorded” only for an absent record; render “Consistency audit record is unreadable/invalid; last-run status is unknown” for malformed state. The dashboard should make this visibly distinguishable and tests should cover malformed JSON, non-object roots, i […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T07:51:43.079891+00:00",
+      "disposition": "code-reviewer subagent not invoked: this session prohibits the Agent tool. Adversarial coverage carried by the two external code reviewers (Step 3.7), which found and fixed 2 real bugs (C1 upgrade-path data loss, C2 unvalidated counts).",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T07:51:43.199419+00:00",
+      "disposition": "doubt-reviewer subagent not invoked: this session prohibits the Agent tool. Advisory tier per the phase matrix; external code review ran instead.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-compliance/scripts/lib/audit_disclosure.py:236-239",
+          "line": null,
+          "finding": "A partial audit can discard the previously known full-audit date during the transition to the new `last_full_audit` field. The committed config contains only `last_audit` (a full run) and no `last_full_audit`. If the next invocation is `--only A`, this code overwrites `last_audit` and deliberately leaves `last_full_audit` absent. Subsequent renderers therefore report “never fully run,” despite the durable prior full-run record that was present before the partial invocation.",
+          "suggestion": "Before replacing `last_audit` for a partial run, parse the existing `last_audit`; if it is a valid full record and `last_full_audit` is absent/invalid, preserve it into `last_full_audit`. Add a migration-path test starting from a config containing only a full `last_audit`, then run a partial audit.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "plugins/shipwright-compliance/scripts/lib/_audit_disclosure_render.py:111-113",
+          "line": null,
+          "finding": "checks[\"pass\"]`, `checks[\"fail\"]`, and `checks[\"skip\"]` are interpolated directly into dashboard Markdown without validating their type or content. Although producer-generated values are integers, this is tracked and hand-editable config data; a valid integer `total` combined with a string such as `\"0\\n## Injected section\"` for `pass` injects arbitrary Markdown into the generated dashboard. This contradicts the module’s stated intent that stored values are validated before reaching Markdown.",
+          "suggestion": "Validate every displayed check count as a non-negative integer when parsing the record, or coerce invalid counts to `0` in `_checks_sentence`; reject/render the record as unknown if the count structure is malformed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-compliance/tests/test_audit_disclosure.py:75-87",
+          "line": null,
+          "finding": "The test claiming that a partial run preserves the last full run only covers records created by the new writer, where the initial full run already writes `last_full_audit`. It does not cover the actual upgrade state in `shipwright_compliance_config.json`, which has a full `last_audit` but no `last_full_audit`; thus it misses the data-loss behavior above.",
+          "suggestion": "Seed the fixture with only `last_audit` containing a valid full record, invoke `record_audit_run(..., scope=\"A,B\")`, and assert that `last_full_audit` is populated from the original record and rendered as the last full run.  Overall assessment: ship-with-fixes. The main disclosure behavior is implemented and broadly tested, but the first partial audit after deployment can erase the known full-audit freshness, and malformed tracked count data can inject Markdown into the dashboard.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-27T07:51:33.944292+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] false, \"reason\": str(exc)}`. And it says \"Loud, but not fatal.\"\n\nWait! Look at `record_audit_run` in `audit_disclosure.py`:\n```python\ndef record_audit_run(\n    project_root: Path,\n    *,\n    statuses: Iterable[str],\n    any_fail: bool,\n    scope: str = SCOPE_FULL,\n    ran_at: str | None = None,\n) -> dict:\n```\nIt computes `total` as:\n```python\n    statuses = list(statuses)\n    scope = _sanitize_scope(scope) or SCOPE_FULL\n    block = {\n        \"ran_at\": ran_at or datetime.now\n\n[openai] - Category: bug  \n  Severity: medium  \n  File: `plugins/shipwright-compliance/scripts/lib/audit_disclosure.py:236-239`  \n  Finding: A partial audit can discard the previously known full-audit date during the transition to the new `last_full_audit` field. The committed config contains only `last_audit` (a full run) and no `last_full_audit`. If the next invocation is `--only A`, this code overwrites `last_audit` and deliberately leaves `last_full_audit` absent. Subsequent renderers therefore report “never fully run,” despite the durable prior full-run record that was present before the partial invocation.  \n  Suggestion: Before replacing `last_audit` for a partial run, parse the existing `last_audit`; if it is a valid full record and `last_full_audit` is absent/invalid, preserve it into `last_full_audit`. Add a migration-path test starting from a config containing only a full `last_audit`, then run a partial audit.\n\n- Category: security  \n  Severity: medium  \n  File: `plugins/shipwright-compliance/scripts/lib/_audit_disclosure_render.py:111-113`  \n  Finding: `checks[\"pass\"]`, `checks[\"fail\"]`, and `checks[\"skip\"]` are interpolated directly into dashboard Markdown without validating their type or content. Although producer-generated values are integers, this is tracked and hand-editable config data; a valid integer `total` combined with a string such as `\"0\\n## Injected section\"` for `pass` injects arbitrary Markdown into the generated dashboard. This contradicts the module’s stated intent that stored values are validated before reaching Markdown.  \n  Suggestion: Validate every displayed check count as a non-negative integer when parsing the record, or coerce invalid counts to `0` in `_checks_sentence`; reject/render the record as unknown if the count structure is malformed.\n\n- Category: test  \n  Severity: low  \n  File: `plugins/shipwright-compliance/tests/test_audit_disclosure.py:75-87`  \n  Finding: The test claiming that a partial run preserves the last  […truncated]"
+    }
+  }
+}

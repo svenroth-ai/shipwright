@@ -207,6 +207,12 @@ _Where the work detail lives_ at the end of this document.
 - (E) Given design decisions taken during planning that go beyond what the
   chosen technology stack already settles, when the plan is written, then each
   is recorded in the project's decision log with its reasoning.
+- (E) Given one of the outside reviewers answers but does not actually deliver a
+  review — nothing at all, or an answer the provider itself reports as cut off
+  mid-sentence — when the review step reports its result, then that reviewer is
+  recorded as having failed, with the reason, rather than as having reviewed.
+  If neither reviewer delivered, the step fails loudly instead of passing.
+  (iterate-2026-07-27-name-the-blocker)
 
 <a id="fr-0104"></a>
 ### FR-01.04 — /shipwright-design
@@ -530,6 +536,12 @@ _Where the work detail lives_ at the end of this document.
   requirement and gives no reason for naming none, when the cross-check audit
   runs, then it is reported together with a suggested command to fix it, without
   failing the audit.
+- (E) Given the cross-check runs only when someone asks for it — it is on demand
+  by design, with no schedule behind it — when any evidence document is read,
+  then that document states when the cross-check last happened, or states that it
+  never has, so a reader can judge how much the evidence is worth instead of
+  assuming it was checked. A cross-check restricted to part of the project says
+  so, and the answer survives a fresh copy of the project.
 - (E) Given the evidence is read as a record of the project, when it is relied
   on, then it covers only what the project actually recorded — a change that
   recorded nothing about the requirement it touched does not appear, so the
@@ -616,6 +628,24 @@ _Where the work detail lives_ at the end of this document.
   any pass is left unanswered — so "nothing shown" always means "genuinely did
   not run" and never "nobody wrote it down". A finished review cannot afterwards
   be quietly restated. (iterate-2026-07-21-review-record)
+- (E) Given a finished change is waiting on the code host to merge it, when it
+  has not merged, then the report names what is holding it up — conversations
+  still unresolved, required checks that never reported, the host's own verdict
+  that the merge is blocked — rather than only how long it waited. Anything that
+  could not be checked is said to be unchecked, never counted as clear.
+  (iterate-2026-07-27-name-the-blocker)
+- (E) Given the record of a change is checked for describing the run that is
+  finishing, when that check runs, then it is decided by whether the record
+  names that run, and never by how recently the file was written — so a run that
+  spends a long time waiting is not reported as out of date.
+  (iterate-2026-07-27-name-the-blocker)
+- (E) Given a change is recorded by adding a criterion to a requirement that
+  already exists — the way this project asks such changes to be recorded — when
+  it is checked for being tested at the levels that requirement demands, then it
+  is resolved to that requirement and checked, instead of being reported as
+  impossible to determine. A change to the requirements that touches no
+  requirement at all is still reported as undetermined for a person to settle,
+  never passed in silence. (iterate-2026-07-27-name-the-blocker)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — /shipwright-preview
