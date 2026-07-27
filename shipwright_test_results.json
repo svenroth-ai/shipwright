@@ -138,12 +138,12 @@
         {
           "behavior": "gh missing or hanging is a controlled error, not a traceback",
           "disposition": "tested",
-          "evidence": "test_check_required_checks_cli.py::test_missing_gh_binary_is_a_controlled_error / test_gh_timeout_is_a_controlled_error / test_missing_gh_exits_2_without_a_traceback PASSED"
+          "evidence": "test_check_required_checks_io.py::test_missing_gh_binary_is_a_controlled_error / test_gh_timeout_is_a_controlled_error / test_missing_gh_exits_2_without_a_traceback PASSED"
         },
         {
           "behavior": "The HTTP status is recovered so 404 is distinguished from 403",
           "disposition": "tested",
-          "evidence": "test_check_required_checks_cli.py::test_http_status_is_carried_off_stderr + test_a_failure_with_no_http_code_carries_no_status PASSED"
+          "evidence": "test_check_required_checks_io.py::test_http_status_is_carried_off_stderr + test_a_failure_with_no_http_code_carries_no_status PASSED"
         },
         {
           "behavior": "A repo that requires nothing reads as an empty set, not as unreadable",
@@ -185,17 +185,22 @@
           "disposition": "untestable",
           "reason_code": "requires-external-nondeterministic-service",
           "reason": "the real GitHub API cannot be a hermetic test; exercised live at every stage instead, and every decision taken on its response is covered by the mocked host-IO rows above"
+        },
+        {
+          "behavior": "A non-GitHub or malformed origin remote is refused, not guessed at",
+          "disposition": "tested",
+          "evidence": "test_check_required_checks_io.py::test_a_non_github_remote_is_refused_not_guessed_at (3 params) + test_github_remotes_resolve_to_owner_name (4 params) + test_missing_origin_is_refused + test_git_itself_failing_is_a_controlled_error PASSED"
         }
       ],
       "counts": {
-        "testable": 28,
-        "tested": 28,
+        "testable": 29,
+        "tested": 29,
         "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 29,
-        "covered_acs": 29
+        "acs": 30,
+        "covered_acs": 30
       }
     },
     "ci_supplychain_ack": {

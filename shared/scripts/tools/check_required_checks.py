@@ -44,6 +44,7 @@ from triage import append_triage_item_idempotent  # noqa: E402
 
 
 _HTTP_STATUS_RE = re.compile(r"\(HTTP (\d{3})\)")
+_SLUG_RE = re.compile(r"^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$")
 
 
 class GhError(RuntimeError):
@@ -97,8 +98,24 @@ def resolve_repo(project_root: Path) -> str:
     url = out.stdout.strip()
     if not url:
         raise RuntimeError("no `origin` remote — cannot resolve the repository")
+    # `rsplit` on a string that does not contain the separator returns the WHOLE
+    # string, so an SSH alias (`gh:owner/repo`) or a GitHub Enterprise host would
+    # silently yield the raw URL as the "slug" and get sent to `gh api repos/…`.
+    # Say what is wrong instead of guessing at a repository identity.
+    if "github.com" not in url:
+        raise RuntimeError(
+            f"`origin` is {url!r}, which is not a github.com remote — this "
+            f"producer reads GitHub rulesets. Pass `--repo owner/name` if the "
+            f"repository is reachable under a different remote URL."
+        )
     slug = url.rsplit("github.com", 1)[-1].lstrip(":/")
-    return slug[:-4] if slug.endswith(".git") else slug
+    slug = slug[:-4] if slug.endswith(".git") else slug
+    if not _SLUG_RE.match(slug):
+        raise RuntimeError(
+            f"could not read an owner/name out of `origin` ({url!r}) — got "
+            f"{slug!r}. Pass `--repo owner/name` explicitly."
+        )
+    return slug
 
 
 def resolve_default_branch(repo: str) -> str:

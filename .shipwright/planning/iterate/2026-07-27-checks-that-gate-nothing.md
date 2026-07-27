@@ -98,6 +98,14 @@ missing/hanging producing a traceback instead of the documented exit 2.
 4. No tests covered the producer's host I/O or its exit codes — the two bugs above
    passed all 12 original tests. 17 added.
 
+**CI's own PR-Review gate → `CHANGES_REQUESTED`,** on the pushed branch, after
+everything above was green. `resolve_repo` used `url.rsplit("github.com", 1)[-1]`,
+and `rsplit` on a string that does not contain the separator returns the WHOLE
+string — so an SSH host alias (`gh:owner/repo`) or a GitHub Enterprise remote
+became the "slug" and was handed to `gh api repos/<url>`. Now refused with a
+message naming `--repo`. The same review also requires a maintainer to approve
+the two `.github/workflows/**` files by hand; that is a human gate, not a defect.
+
 ## Spec Impact
 
 - **Classification:** NONE — FR-01.17 and its (E) criteria are already on `main`
@@ -166,7 +174,8 @@ missing/hanging producing a traceback instead of the documented exit 2.
   | 26 | An unreachable repo exits 2 before any policy lookup | tested | `test_unreachable_repo_exits_2_before_any_policy_lookup` |
   | 27 | In-sync exits 0 and files nothing; drift files exactly one item | tested | `test_in_sync_repo_exits_0_and_files_nothing`, `test_drift_files_one_item_keyed_on_repo_and_branch` |
   | 28 | The posted-status registry rejects a key no consumer visits | tested | `test_posted_status_contexts_name_known_workflows`; probed with typo'd keys |
-  | 29 | The live GitHub ruleset read returns this repo's real must-pass set | untestable | `reason_code: requires-external-nondeterministic-service` — the real API cannot be a hermetic test; exercised live at every stage instead, and every decision made on its response is covered by rows 22–27 |
+  | 29 | A non-GitHub or malformed `origin` is refused, not guessed at | tested | `test_check_required_checks_io.py::test_a_non_github_remote_is_refused_not_guessed_at` (3 params) + `test_github_remotes_resolve_to_owner_name` (4 params) |
+  | 30 | The live GitHub ruleset read returns this repo's real must-pass set | untestable | `reason_code: requires-external-nondeterministic-service` — the real API cannot be a hermetic test; exercised live at every stage instead, and every decision made on its response is covered by rows 22–27 |
 
 - **Confidence-pattern check:**
   - *Asymptote (depth):* the last two review rounds returned findings of falling
