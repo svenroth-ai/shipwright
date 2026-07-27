@@ -294,7 +294,7 @@ class ComplianceData:
     requirements: list[RequirementInfo] = field(default_factory=list)
     test_file_map: dict[str, list[str]] = field(default_factory=dict)
     external_review_states: list[ExternalReviewState] = field(default_factory=list)
-    # Known / baseline failures
-    known_failures: list[KnownFailure] = field(default_factory=list)
+    known_failures: list[KnownFailure] = field(default_factory=list)  # + baseline
     baseline_failure_count: int = 0
     timestamp: str = ""
+    audit_freshness_note: str = ""  # header disclosure — see lib/audit_disclosure

@@ -1598,8 +1598,18 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
    Writes `.shipwright/compliance/audit-report.md` + `.shipwright/compliance/audit-report.json`
    (both transient/gitignored — the `.json` relocated from the repo root in
    iterate-2026-06-09 so the gitignore canon covers it; stdout stays the stable
-   JSON contract). Does not modify anything unless `--fix` is passed (Group E
-   per-doc regen only).
+   JSON contract). Also records its own run into
+   `shipwright_compliance_config.json` under `last_audit`
+   (`ran_at` / `verdict` / `scope` / `checks`) — tracked, unlike the two reports
+   above, so every compliance document can disclose when the cross-check last
+   happened even on a fresh clone. A `--only` run is recorded as partial. The
+   recording is best-effort and never changes the audit's exit code.
+   Does not otherwise modify anything unless `--fix` is passed (Group E
+   per-doc regen only). The skill then runs `update_compliance.py --phase
+   compliance` (Step 2b), which regenerates **all five** evidence documents —
+   an audit changes the freshness disclosure every one of them carries, so a
+   dashboard-only regen would leave the other four reporting the previous
+   answer at the exact moment the operator asked for the check.
    **Applicability (iterate-2026-05-31 `compliance-check-context-gate`):** a
    repo-root `audit_config.json` may set `disabled_checks: ["B7","D1",…]` —
    detective checks that are structurally not-applicable to the project type.
@@ -1832,7 +1842,7 @@ plan SKILL completes
 | `shipwright_project_config.json` | /shipwright-project | Orchestrator (splits), compliance (requirements), validators |
 | `shipwright_build_config.json` | /shipwright-build, update_section_state.py | Orchestrator (progress), dashboard, compliance, validators |
 | `shipwright_test_results.json` | test-runner subagent | Compliance (test evidence), validators |
-| `shipwright_compliance_config.json` | update_compliance.py | Compliance (phases_covered) |
+| `shipwright_compliance_config.json` | update_compliance.py, run_audit.py (`last_audit`) | Compliance (phases_covered; `last_audit` → the freshness disclosure in every evidence document) |
 | `shipwright_plan_config.json` | /shipwright-plan | Build (section references) |
 | `shipwright_project_session.json` | /shipwright-project | /shipwright-project (session resume state) |
 | `shipwright_plan_session.json` | /shipwright-plan | /shipwright-plan (session resume state) |

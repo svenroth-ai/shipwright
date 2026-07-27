@@ -131,7 +131,7 @@ def generate(data: ComplianceData) -> str:
     lines = [
         "# Requirements Traceability Matrix",
         "",
-        f"Generated: {data.timestamp}",
+        f"Generated: {data.timestamp}{data.audit_freshness_note}",
         "",
     ]
 

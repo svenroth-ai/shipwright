@@ -57,7 +57,7 @@ def generate(data: ComplianceData) -> str:
     lines = [
         "# Software Bill of Materials (SBOM)",
         "",
-        header,
+        header + data.audit_freshness_note,
         "",
     ]
     lines += summary_lines(deps, deduped=data.dependencies_deduped)

@@ -81,6 +81,19 @@ Exit codes:
 - `2` — `--project-root` missing.
 - `3` — iterate-12 import-gate trip. See `audit-report.md → "Import Gate Error"` for the drift detail.
 
+## Step 2b: Refresh the Evidence Documents
+
+```bash
+uv run "{plugin_root}/scripts/tools/update_compliance.py" \
+  --project-root "$(pwd)" --phase compliance
+```
+
+The audit records that it ran (`shipwright_compliance_config.json` → `last_audit`),
+and every evidence document discloses that date on its `Generated:` line. Without
+this step those documents keep reporting the *previous* answer — often "never
+run" — right at the moment the operator asked for the check. Run it after **every**
+audit, including a failing one. It regenerates documents only; it commits nothing.
+
 ## Step 3: Present Results
 
 Parse the JSON stdout (`report.any_fail`, `findings`, `fixes_applied`, `groups_run`, `groups_skipped`).

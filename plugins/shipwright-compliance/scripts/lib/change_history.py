@@ -46,7 +46,7 @@ def generate(data: ComplianceData) -> str:
     lines = [
         "# Commit Change Log",
         "",
-        f"Generated: {data.timestamp}",
+        f"Generated: {data.timestamp}{data.audit_freshness_note}",
         f"Total commits: {len(commits)}",
         "",
     ]

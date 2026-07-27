@@ -110,7 +110,7 @@ def generate(data: ComplianceData) -> str:
         lines.extend(_quality_indicators_legacy(data))
 
     lines.extend(external_review_evidence(data))
-    lines.extend(render_consistency_audit(data.project_root))  # AR-03: inline audit
+    lines.extend(render_consistency_audit(data.project_root, as_of=data.timestamp))  # AR-03
 
     # Compliance artifacts
     artifact_rows = [

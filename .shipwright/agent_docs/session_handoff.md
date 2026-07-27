@@ -1,36 +1,44 @@
+---
+canon_generated: true
+run_id: "iterate-2026-07-27-disclose-audit-last-run"
+phase: "iterate"
+reason: "iterate: compliance evidence discloses when the cross-check last ran"
+timestamp: "2026-07-27T08:29:48.705481+00:00"
+---
+
 # Session Handoff
 
-> Auto-generated 2026-07-26 23:36:39 UTC
+> Auto-generated 2026-07-27 08:29:48 UTC
 
 ## Session Info
 
-- **Session ID**: 170bb5a6-5652-4115-abe3-004f2d2a8ed9
-- **Timestamp**: 2026-07-26 23:36:39 UTC
-- **Reason**: iterate completion: iterate-2026-07-23-req3-phase2-content-mono
+- **Session ID**: 184abbf4-c486-4d5b-b89a-1dc21aebc3e1
+- **Timestamp**: 2026-07-27 08:29:48 UTC
+- **Reason**: iterate: compliance evidence discloses when the cross-check last ran
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-23-req3-phase2-content-mono
-- **Date**: 2026-07-26T23:36:34.414046Z
+- **Run ID**: iterate-2026-07-27-disclose-audit-last-run
+- **Date**: 2026-07-27T08:29:42.533033Z
 - **Type**: change
-- **Complexity**: large
-- **Branch**: iterate/req3-phase2-content-mono
-- **ADR**: iterate-2026-07-23-req3-phase2-content-mono
+- **Complexity**: medium
+- **Branch**: iterate/disclose-audit-last-run
+- **ADR**: iterate-2026-07-27-disclose-audit-last-run
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-23-req3-phase2-content-mono.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-disclose-audit-last-run.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/req3-phase2-content-mono
-- **Run ID**: iterate-2026-07-23-req3-phase2-content-mono
-- **Spec**: .shipwright/planning/iterate/2026-07-23-req3-phase2-content-mono.md
-- **Complexity**: medium
-- **External Review Marker**: missing
+- **Branch**: iterate/disclose-audit-last-run
+- **Run ID**: iterate-2026-07-27-disclose-audit-last-run
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-disclose-audit-last-run.md
+- **Complexity**: medium · **change_type:** change · **spec_impact:** modify (fr-01.10 gains one (e) ac)
+- **External Review Marker**: stale (predates spec (2026-07-27T07:51:33))
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
+- Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
 
@@ -43,9 +51,9 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/req3-phase2-content-mono
-- **Last Commit**: fe5be3c1 feat(spec): REQ-3 Phase 2 — every requirement now states what it guarantees
-- **Uncommitted Changes**: None
+- **Branch**: iterate/disclose-audit-last-run
+- **Last Commit**: abe22bfc chore(triage): sweep 60 outbox append(s) into branch
+- **Uncommitted Changes**: Yes
 
 ## Config Files to Read
 
@@ -60,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-f123dde6 | grade_snapshot | — | 2026-07-27 |
+| evt-1c7c2446 | work_completed | iterate (iterate: compliance evidence discloses when the cross-check last ran) | 2026-07-27 |
 | evt-2055af94 | grade_snapshot | — | 2026-07-26 |
 | evt-ea7203ec | work_completed | iterate (iterate: REQ-3 Phase 2 content round - all 18 requirements walked or minted) | 2026-07-26 |
 | evt-6ff6084f | grade_snapshot | — | 2026-07-26 |
-| evt-bb7c91f1 | grade_snapshot | — | 2026-07-24 |
-| evt-17075aa5 | grade_snapshot | — | 2026-07-23 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 359
-- **Last iterate**: change — iterate: REQ-3 Phase 2 content round - all 18 requirements walked or minted (2026-07-26)
+- **Total work events**: 360
+- **Last iterate**: change — iterate: compliance evidence discloses when the cross-check last ran (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

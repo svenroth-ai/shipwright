@@ -20,6 +20,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from .._audit_disclosure_render import freshness_note
 from ._common import CONFIG_FILES, collect_configs
 from ._license_const import NOT_INSTALLED, UNKNOWN_LICENSE
 from ._types import (
@@ -100,6 +101,8 @@ def collect_all(project_root: Path) -> ComplianceData:
     # and whether any version was resolved from a uv.lock.
     dependencies, deps_deduped, deps_lock_resolved = _collect_dependency_rows(project_root)
 
+    timestamp = latest_event_timestamp(work_events)
+
     return ComplianceData(
         project_root=project_root,
         # Event-sourced
@@ -130,7 +133,12 @@ def collect_all(project_root: Path) -> ComplianceData:
         # Pin to the most recent event's timestamp so two runs against the
         # same events.jsonl produce byte-identical output. Falls back to a
         # stable literal when no events have been recorded yet.
-        timestamp=latest_event_timestamp(work_events),
+        timestamp=timestamp,
+        # Collected once, rendered by every evidence document: when the
+        # on-demand cross-check last ran. Aged against the SAME pinned
+        # reference as the banner above, so the disclosure inherits that
+        # byte-stability instead of re-introducing wall-clock drift.
+        audit_freshness_note=freshness_note(project_root, as_of=timestamp),
     )
 
 
