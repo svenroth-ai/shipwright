@@ -1,8 +1,8 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-guide-delivery-watch"
+run_id: "iterate-2026-07-27-security-coverage-manifest"
 phase: "iterate"
-reason: "unblock #462: base moved, DIRTY"
+reason: "F11 refresh before push"
 timestamp: "2026-07-27T15:50:19.371756+00:00"
 ---
 
@@ -12,9 +12,9 @@ timestamp: "2026-07-27T15:50:19.371756+00:00"
 
 ## Session Info
 
-- **Session ID**: 9058f47a-25f4-4469-b517-e3b5c91347e0
+- **Session ID**: 871b1865-c6ae-4724-a105-dc987ddca125
 - **Timestamp**: 2026-07-27 15:50:19 UTC
-- **Reason**: unblock #462: base moved, DIRTY
+- **Reason**: F11 refresh before push
 
 ## Last Iterate
 
@@ -28,8 +28,8 @@ timestamp: "2026-07-27T15:50:19.371756+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/guide-delivery-watch
-- **External Review Marker**: missing
+- **Branch**: iterate/security-coverage-manifest-part1
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T11:47:40)
 
 ### Mandatory replay on Resume
 
@@ -47,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/guide-delivery-watch
-- **Last Commit**: 622a2e31 Merge remote-tracking branch 'origin/main' into iterate/guide-delivery-watch
+- **Branch**: iterate/security-coverage-manifest-part1
+- **Last Commit**: 88f752e5 Merge remote-tracking branch 'origin/main' into iterate/security-coverage-manifest-part1
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -73,7 +73,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 375
+- **Total work events**: 376
 - **Last iterate**: change — iterate: document the delivery watch in the guide (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
