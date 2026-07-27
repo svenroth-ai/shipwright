@@ -396,6 +396,12 @@ _Where the work detail lives_ at the end of this document.
   are reported, then that check is reported as having failed and the run does
   not report success — a check that did not run is never counted as a clean
   result.
+- (E) Given a machine that has only some of the checks available, when results
+  are reported, then the report names the kinds of weakness that were not
+  looked for at all, and says they are unexamined rather than clean — so a
+  scan run with one check available never reads as a clean result for every
+  kind. A report that cannot say what it examined states that too, rather than
+  implying everything was.
 - (E) Given no scanner is available at all, when the phase starts, then it stops
   with setup instructions rather than reporting that nothing was found.
 - (E) Given a finding that exposes a leaked secret, when the report is written,

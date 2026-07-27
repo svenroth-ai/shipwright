@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-27T19:37:02.681511Z. Items waiting for triage decision.
+> Auto-generated 2026-07-27T18:48:01.092542Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 428
-- Triage: 21 | Promoted: 1 | Dismissed: 405 | Snoozed: 1
+- Total: 427
+- Triage: 22 | Promoted: 1 | Dismissed: 403 | Snoozed: 1
 
-## Top 21 items (severity-sorted)
+## Top 22 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -17,7 +17,7 @@
   - Scope the Shipwright marketplace correctly instead of enabling all ~14 plugins at user scope (they currently load /ship…
   - Promote: `triage_promote.py --id trg-57317128 --task-ref EXT:<ref>`
 
-### Source: compliance (2 items)
+### Source: compliance (1 item)
 
 <a id="trg-a5b167f4"></a>
 - **Compliance: 5 open finding(s)** `id=trg-a5b167f4 | severity=high | kind=compliance → P1/compliance`
@@ -31,19 +31,6 @@
     Each finding + hint is listed in this item's detail.
     ```
   - Promote: `triage_promote.py --id trg-a5b167f4 --task-ref EXT:<ref>`
-
-<a id="trg-b1b635be"></a>
-- **Compliance: 3 open finding(s)** `id=trg-b1b635be | severity=high | kind=compliance → P1/compliance`
-  - 3 open compliance finding(s): D/D1, D/D3, H/H1  - D/D1: Spec FR coverage in events — uncovered FRs — Must: FR-01.17; Sh…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-compliance
-    
-    Context: 3 open compliance finding(s): D/D1, D/D3, H/H1.
-    Dashboard: .shipwright/compliance/dashboard.md
-    Each finding + hint is listed in this item's detail.
-    ```
-  - Promote: `triage_promote.py --id trg-b1b635be --task-ref EXT:<ref>`
 
 ### Source: f0-suite (1 item)
 
@@ -112,7 +99,7 @@
   - The tail of campaign step S2, not a new campaign - file it now so it is not lost between "S2 merged" and "somebody noti…
   - Promote: `triage_promote.py --id trg-8bf97fd4 --task-ref EXT:<ref>`
 
-### Source: manual (4 items)
+### Source: manual (5 items)
 
 <a id="trg-2ca796f3"></a>
 - **Release aggregator can write the same version twice on a re-run** `id=trg-2ca796f3 | severity=high | kind=bug → P1/engineering`
@@ -124,6 +111,11 @@
 - **host checks part 2 follow-up: require the checks that currently gate nothing** `id=trg-9862202d | severity=medium | kind=improvement → P2/engineering`
   - FOLLOW-UP to trg-c7e5835b, do this AFTER the part-2 PR (items 3-5) is merged. The new check_required_checks producer fo…
   - Promote: `triage_promote.py --id trg-9862202d --task-ref EXT:<ref>`
+
+<a id="trg-cc640142"></a>
+- **Iterate PRs touching regenerated artifacts livelock against auto-merge on a busy default branch** `id=trg-cc640142 | severity=medium | kind=improvement → P2/engineering`
+  - An iterate PR that touches regenerated artifacts cannot reliably auto-merge while the default branch is busy. Observed…
+  - Promote: `triage_promote.py --id trg-cc640142 --task-ref EXT:<ref>`
 
 <a id="trg-efca9de7"></a>
 - **shared/tests and integration-tests fail 21 tests when run in one pytest session** `id=trg-efca9de7 | severity=medium | kind=bug → P2/engineering`
@@ -160,7 +152,7 @@
   - Evidence: `.shipwright/planning/iterate/2026-07-27-project-granularity-basis.md`
   - Promote: `triage_promote.py --id trg-1d7d91d0 --task-ref EXT:<ref>`
 
-### Source: req3-phase2-walk (4 items)
+### Source: req3-phase2-walk (5 items)
 
 <a id="trg-b95ab887"></a>
 - **REQ3.06 [CAMPAIGN AUTONOM] Enforcement-Liste abarbeiten: Checks bauen fuer prompt-only (mechanisable) - Monorepo** `id=trg-b95ab887 | severity=high | kind=improvement → P1/engineering`
@@ -173,6 +165,12 @@
   - OWNS: everything under the workflows directory, the shipped workflow templates, and the must-pass-check derivation help…
   - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
   - Promote: `triage_promote.py --id trg-c7e5835b --task-ref EXT:<ref>`
+
+<a id="trg-12b4cf3f"></a>
+- **test phase: make the run record tell the truth (supersedes trg-0516e85e, stamping moved out)** `id=trg-12b4cf3f | severity=high | kind=improvement → P1/engineering`
+  - OWNS: the test plugin, the test-phase validator branch, and the browser-test result reader. Does NOT own artifact stamp…
+  - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
+  - Promote: `triage_promote.py --id trg-12b4cf3f --task-ref EXT:<ref>`
 
 <a id="trg-e9e5188e"></a>
 - **requirement write-back loop: design and build both need the same missing mechanism (supersedes trg-35785118, trg-ed419f…** `id=trg-e9e5188e | severity=high | kind=improvement → P1/engineering`

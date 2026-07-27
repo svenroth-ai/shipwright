@@ -1,38 +1,36 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-checks-that-gate-nothing"
+run_id: "iterate-2026-07-27-security-coverage-manifest"
 phase: "iterate"
-reason: "merge origin/main reconciliation"
-timestamp: "2026-07-27T19:37:02.681511+00:00"
+reason: "F11 refresh before merge"
+timestamp: "2026-07-27T18:46:12.605534+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 19:37:02 UTC
+> Auto-generated 2026-07-27 18:46:12 UTC
 
 ## Session Info
 
-- **Session ID**: 99609ad4-4e4b-47ca-a23f-ccfc53ee7516
-- **Timestamp**: 2026-07-27 19:37:02 UTC
-- **Reason**: merge origin/main reconciliation
+- **Session ID**: 871b1865-c6ae-4724-a105-dc987ddca125
+- **Timestamp**: 2026-07-27 18:46:12 UTC
+- **Reason**: F11 refresh before merge
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-checks-that-gate-nothing
-- **Date**: 2026-07-27T19:36:56.352149Z
-- **Type**: change
+- **Run ID**: iterate-2026-07-27-run-unit-parallel-race
+- **Date**: 2026-07-27T17:38:43.705219Z
+- **Type**: bug
 - **Complexity**: medium
-- **Branch**: iterate/checks-that-gate-nothing
-- **ADR**: iterate-2026-07-27-checks-that-gate-nothing
+- **Branch**: iterate/run-unit-parallel-race
+- **ADR**: iterate-2026-07-27-run-unit-parallel-race
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-checks-that-gate-nothing.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-run-unit-parallel-race.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/checks-that-gate-nothing
-- **Run ID**: iterate-2026-07-27-checks-that-gate-nothing
-- **Spec**: .shipwright/planning/iterate/2026-07-27-checks-that-gate-nothing.md
-- **External Review Marker**: stale (predates spec (2026-07-27T19:22:03))
+- **Branch**: iterate/security-coverage-manifest-part1
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T11:47:40)
 
 ### Mandatory replay on Resume
 
@@ -50,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/checks-that-gate-nothing
-- **Last Commit**: abea11c3 Merge remote-tracking branch 'origin/main' into iterate/checks-that-gate-nothing
+- **Branch**: iterate/security-coverage-manifest-part1
+- **Last Commit**: ac664b35 Merge remote-tracking branch 'origin/main' into iterate/security-coverage-manifest-part1
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read

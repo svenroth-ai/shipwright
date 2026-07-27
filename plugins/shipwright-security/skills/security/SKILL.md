@@ -158,6 +158,13 @@ tracked-files-in-gitignored-paths).
 - Trivy: `trivy fs --format json --scanners vuln --skip-dirs <each-default> {target}`
 - Gitleaks: `gitleaks detect --report-format json -s {target} --report-path <temp-json-report> --config <temp-toml-with-allowlist>` — report goes to a temp FILE the plugin reads back (gitleaks has no stdout-report mode; `--report-path -` writes a literal file named `-`, not stdout)
 
+**Coverage manifest — name what was NOT checked.** A crashing tool already fails
+the run; one that was never installed used to be invisible, so a machine with one
+scanner read clean for every class. Every scan records a row per weakness class
+(`covered`, `degraded`, `not_requested`, `not_available`) into `findings.json` and
+the sidecar. Report the unchecked classes with the findings — nothing examined
+them, so they are not clean.
+
 **For Aikido backend:**
 
 Run the aikido_client script:
@@ -390,33 +397,17 @@ After Step 6 completes for the OSS backend in standalone mode, offer the user a 
 
 ---
 
-## Standalone Mode Commands
+## Standalone Mode Commands (Aikido)
 
-When used outside a Shipwright pipeline, these commands work directly:
+Outside a Shipwright pipeline these work directly. All are
+`uv run --project {plugin_root} {plugin_root}/scripts/lib/aikido_client.py <cmd>`:
 
-### `issues` — List Issues
-```bash
-uv run --project {plugin_root} {plugin_root}/scripts/lib/aikido_client.py issues [--repo owner/repo] [--severity critical,high] [--status open] [--type sast]
-```
-Format output as Markdown table.
-
-### `repos` — List Connected Repos
-```bash
-uv run --project {plugin_root} {plugin_root}/scripts/lib/aikido_client.py repos
-```
-Format as bulleted list.
-
-### `summary` — Dashboard
-```bash
-uv run --project {plugin_root} {plugin_root}/scripts/lib/aikido_client.py summary [--repo owner/repo]
-```
-Format as ASCII dashboard with severity bars.
-
-### `report` — Generate Report
-```bash
-uv run --project {plugin_root} {plugin_root}/scripts/lib/aikido_client.py report --repo owner/repo [--output path.md]
-```
-Write Markdown report to working directory.
+| `<cmd>` | Options | Present as |
+|---|---|---|
+| `issues` | `[--repo owner/repo] [--severity critical,high] [--status open] [--type sast]` | Markdown table |
+| `repos` | — | bulleted list |
+| `summary` | `[--repo owner/repo]` | ASCII dashboard with severity bars |
+| `report` | `--repo owner/repo [--output path.md]` | Markdown report on disk |
 
 ---
 
@@ -435,15 +426,9 @@ Write Markdown report to working directory.
 
 ## Backend Details
 
-### Aikido (Cloud SaaS)
-- **Base URL:** `https://app.aikido.dev/api`
-- **Auth:** OAuth 2.0 Client Credentials → `POST /oauth/token`
-- **Issues:** `GET /issues/export` with filter params
-- **Repos:** `GET /code-repos`
-- **Docs:** See `references/aikido-api.md`
-
-### OSS (Local CLI Tools)
-- **Semgrep:** SAST scanner, auto-updating rules
-- **Trivy:** SCA scanner, auto-updating vulnerability DB
-- **Gitleaks:** Secrets detector
-- **Docs:** See `references/oss-scanners.md`
+- **Aikido (Cloud SaaS)** — OAuth 2.0 client-credentials against
+  `app.aikido.dev/api`. Endpoints, auth flow and response schema:
+  `references/aikido-api.md`.
+- **OSS (local CLI)** — Semgrep (SAST), Trivy (SCA), Gitleaks (secrets), each
+  with auto-updating rules. Install, exclusions and edge cases:
+  `references/oss-scanners.md`.
