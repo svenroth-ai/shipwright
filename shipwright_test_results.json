@@ -1,87 +1,182 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-audit-empty-run-not-recorded",
+    "run_id": "iterate-2026-07-27-pytest-root-composition",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 7052,
-      "total": 7052,
-      "note": "shipwright-compliance 1509 + shared/tests 5543 (-m 'not slow and not cross_plugin'); 13 skipped"
+      "passed": 6643,
+      "total": 6655,
+      "skipped": 12
     },
     "integration": {
       "status": "passed",
       "passed": 422,
-      "total": 422
-    },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "total": 422,
+      "skipped": 0
     },
     "e2e": {
       "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "reason": "library/plugin monorepo \u2014 no web surface in this diff"
+    },
+    "smoke": {
+      "status": "not_run",
+      "reason": "no server surface"
+    },
+    "pgtap": {
+      "status": "not_run",
+      "reason": "no database"
     },
     "design_fidelity": {
       "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "reason": "no UI in this diff"
     },
-    "smoke": {
-      "status": "not_run"
-    },
-    "degraded": [],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --directory plugins/shipwright-compliance pytest tests/test_run_audit_records_run.py -q",
+      "tests_run": 35,
       "exit_code": 0,
-      "tests_run": 5,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\audit-empty-run-not-recorded\\.shipwright\\runs\\iterate-2026-07-27-audit-empty-run-not-recorded\\surface_verification.log",
-      "timestamp": "2026-07-27T16:39:58.287Z",
-      "attempts": 1
+      "runner": "uv run pytest shared/tests/test_pytest_root_guard.py shared/tests/test_pytest_root_discovery.py shared/tests/test_contract_namespace_capture.py -q"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "a run that executed no audit group is not recorded at all",
+          "behavior": "Two-root session is refused before collection",
           "disposition": "tested",
-          "evidence": "test_run_audit_records_run.py::test_a_run_that_executed_no_group_is_not_recorded PASSED (asserts groups_run==[], recorded False, reason no_group_ran, no config written)"
+          "evidence": "shared/tests/test_pytest_root_guard.py::test_multi_root_session_is_refused"
         },
         {
-          "behavior": "an empty run does not displace an earlier real record",
+          "behavior": "Refusal precedes the import errors it replaces",
           "disposition": "tested",
-          "evidence": "test_run_audit_records_run.py::test_an_empty_run_does_not_displace_an_earlier_real_one PASSED (a real 39-check run survives a following --only ZZZ verbatim)"
+          "evidence": "shared/tests/test_pytest_root_guard.py::test_refusal_is_not_a_collection_or_assertion_error"
         },
         {
-          "behavior": "a real run is still recorded exactly as before (no regression)",
+          "behavior": "Refusal names every colliding root",
           "disposition": "tested",
-          "evidence": "test_run_audit_records_run.py::test_a_full_run_is_recorded_in_tracked_state + ::test_a_partial_run_is_recorded_as_partial + ::test_recording_does_not_disturb_an_existing_config PASSED"
+          "evidence": "shared/tests/test_pytest_root_guard.py::test_refusal_message_names_both_roots"
         },
         {
-          "behavior": "the operator is told on stderr that nothing ran and nothing was recorded",
-          "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "reason": "the branch itself is pinned by test_a_run_that_executed_no_group_is_not_recorded, which asserts the recorded:False / reason:no_group_ran payload the warning is printed from. Asserting the console wording would pin phrasing, not behaviour."
+          "behavior": "Refusal gives a command for every root, not just the first two",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pytest_root_guard.py::test_refusal_message_gives_supported_command"
         },
         {
-          "behavior": "the recording branch is measurable, not just exercised: each arm (empty run, real run, recorder failure, recorder raising) runs in-process",
+          "behavior": "Single-root session still collects clean",
           "disposition": "tested",
-          "evidence": "test_run_audit_records_run.py::TestRecordingBranchInProcess (4 tests) PASSED; diff-cover 10.3.0 vs origin/main reports run_audit.py 100%, 0 of 9 changed lines missing (was 0%)"
+          "evidence": "shared/tests/test_pytest_root_guard.py::test_single_root_session_is_untouched"
+        },
+        {
+          "behavior": "Single-root session still executes green",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pytest_root_guard.py::test_single_root_session_still_executes_green"
+        },
+        {
+          "behavior": "Two-root session launched from a subdirectory is refused",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pytest_root_guard.py::test_multi_root_is_refused_from_a_subdirectory"
+        },
+        {
+          "behavior": "A no-positional-argument session is not refused",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pytest_root_guard.py::test_no_argument_session_is_not_refused"
+        },
+        {
+          "behavior": "Collected items are judged as well as the arguments",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pytest_root_guard.py::test_collected_items_are_judged_as_well_as_the_arguments"
+        },
+        {
+          "behavior": "A conftest-name-colliding pair still fails loudly",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pytest_root_guard.py::test_conftest_colliding_pair_still_fails_loudly"
+        },
+        {
+          "behavior": "`pytest .` inside one root is not refused",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pytest_root_guard.py::test_dot_inside_a_root_is_not_refused"
+        },
+        {
+          "behavior": "Parent-path argument spanning roots is refused",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pytest_root_discovery.py::test_parent_path_spanning_roots_is_refused"
+        },
+        {
+          "behavior": "`::` selector is split off before matching",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pytest_root_discovery.py::test_node_id_selector_is_stripped"
+        },
+        {
+          "behavior": "Relative args resolve against the invocation dir",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pytest_root_discovery.py::test_relative_args_resolve_against_the_invocation_dir"
+        },
+        {
+          "behavior": "Vendored tests under .venv/node_modules are not roots",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pytest_root_discovery.py::test_skip_dirs_keep_vendored_tests_out_of_discovery"
+        },
+        {
+          "behavior": "Discovery prunes rather than post-filters",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pytest_root_discovery.py::test_discovery_does_not_descend_into_skipped_dirs"
+        },
+        {
+          "behavior": "Nested fixture tests dirs are not separate roots",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pytest_root_discovery.py::test_fixture_tests_dirs_are_not_roots"
+        },
+        {
+          "behavior": "Every CI root survives alone",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pytest_root_discovery.py::test_every_ci_root_survives_alone"
+        },
+        {
+          "behavior": "Collected-items backstop maps files to their roots",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pytest_root_discovery.py::test_roots_containing_maps_collected_files_to_their_roots"
+        },
+        {
+          "behavior": "Captured scripts.lib raises a named ImportError, not ModuleNotFoundError",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_contract_namespace_capture.py::test_captured_scripts_lib_raises_named_importerror"
+        },
+        {
+          "behavior": "Capture error does not blame the compliance plugin",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_contract_namespace_capture.py::test_capture_error_does_not_blame_the_compliance_plugin"
+        },
+        {
+          "behavior": "Capture error states sys.path order cannot fix it",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_contract_namespace_capture.py::test_capture_error_explains_that_syspath_order_cannot_fix_it"
+        },
+        {
+          "behavior": "Uncaptured process imports the contract normally",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_contract_namespace_capture.py::test_clean_process_imports_contract_normally"
+        },
+        {
+          "behavior": "shared/scripts/tools docstring no longer asserts a false ordering rule",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_contract_namespace_capture.py::test_tools_init_docstring_has_no_false_ordering_claim"
         }
       ],
       "counts": {
-        "testable": 4,
-        "tested": 4,
-        "untestable": 1,
+        "total": 24,
+        "tested": 24,
+        "untestable": 0,
         "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 2,
-        "covered_acs": 2
       }
-    }
+    },
+    "degraded": [
+      {
+        "condition": "classifier_risk_flag_false_positive",
+        "detail": "classify_complexity returned risk_flag 'touches_auth' from message PROSE; risk_detectors.py is diff-authoritative and the diff touches no auth path. Overridden; mandatory review ran regardless."
+      },
+      {
+        "condition": "external_review_partial",
+        "detail": "external_review.py: gemini returned finish_reason=length (truncated) on BOTH the code and iterate passes, so only openai answered. Compensated by three opus subagent reviews (spec/code/doubt)."
+      }
+    ]
   },
   "coverage": {
     "total": 80.2,
