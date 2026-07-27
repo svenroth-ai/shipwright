@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-07-27T15:50:13.106639+00:00
-Source-State: run=iterate-2026-07-27-guide-delivery-watch
+Generated: 2026-07-27T17:36:33.332091+00:00
+Source-State: run=iterate-2026-07-27-changelog-aggregator-idempotency
 Consistency-audit: never run
 Total commits: 1227
 
@@ -732,7 +732,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | triage | sweep 3 outbox append(s) into branch | 54319a446fec |
+| 2026-07-27 | triage | sweep 4 outbox append(s) into branch | 0c6941fcf4d8 |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -992,7 +992,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | guide | the finalization walkthrough ends at delivery, not at arming | bd85c4efb740 |
+| 2026-07-27 | guide | the finalization walkthrough ends at delivery, not at arming (#462) | eea6e1643388 |
 | 2026-07-27 | campaign | correct the revert attribution in the REQ-3 ledger | ff8825879571 |
 | 2026-07-21 | security | document operator-run converge for adopted repos (#420) | d9aa64b32f99 |
 | 2026-07-09 | constitution | require plain-language questions to the user (#354) | f879a73a4903 |

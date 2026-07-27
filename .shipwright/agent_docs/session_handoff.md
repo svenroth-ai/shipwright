@@ -1,35 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-guide-delivery-watch"
+run_id: "iterate-2026-07-27-changelog-aggregator-idempotency"
 phase: "iterate"
-reason: "unblock #462: base moved, DIRTY"
-timestamp: "2026-07-27T15:50:19.371756+00:00"
+reason: "iterate: the release aggregator writes a version once, or says why not"
+timestamp: "2026-07-27T17:36:39.636234+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 15:50:19 UTC
+> Auto-generated 2026-07-27 17:36:39 UTC
 
 ## Session Info
 
-- **Session ID**: 9058f47a-25f4-4469-b517-e3b5c91347e0
-- **Timestamp**: 2026-07-27 15:50:19 UTC
-- **Reason**: unblock #462: base moved, DIRTY
+- **Session ID**: 8a0611d4-b05d-411a-a42a-cc448bc145a7
+- **Timestamp**: 2026-07-27 17:36:39 UTC
+- **Reason**: iterate: the release aggregator writes a version once, or says why not
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-guide-delivery-watch
-- **Date**: 2026-07-27T15:50:13.019923Z
+- **Run ID**: iterate-2026-07-27-changelog-aggregator-idempotency
+- **Date**: 2026-07-27T17:36:33.244347Z
 - **Type**: change
-- **Complexity**: trivial
-- **Branch**: iterate/guide-delivery-watch
-- **ADR**: iterate-2026-07-27-guide-delivery-watch
+- **Complexity**: medium
+- **Branch**: iterate/changelog-aggregator-idempotency
+- **ADR**: iterate-2026-07-27-changelog-aggregator-idempotency
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-changelog-aggregator-idempotency.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/guide-delivery-watch
-- **External Review Marker**: missing
+- **Branch**: iterate/changelog-aggregator-idempotency
+- **Run ID**: `iterate-2026-07-27-changelog-aggregator-idempotency`
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-changelog-aggregator-idempotency.md
+- **Complexity**: medium (classifier: `estimate=medium`, `prior_source=history`,
+- **External Review Marker**: stale (predates spec (2026-07-27T16:31:40))
 
 ### Mandatory replay on Resume
 
@@ -47,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/guide-delivery-watch
-- **Last Commit**: 622a2e31 Merge remote-tracking branch 'origin/main' into iterate/guide-delivery-watch
+- **Branch**: iterate/changelog-aggregator-idempotency
+- **Last Commit**: 0c6941fc chore(triage): sweep 4 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-8c3f8301 | grade_snapshot | — | 2026-07-27 |
+| evt-101fccaa | work_completed | iterate (iterate: the release aggregator writes a version once, or says why not) | 2026-07-27 |
 | evt-76f1beff | grade_snapshot | — | 2026-07-27 |
 | evt-90ce4f39 | work_completed | iterate (iterate: document the delivery watch in the guide) | 2026-07-27 |
 | evt-942e3e04 | grade_snapshot | — | 2026-07-27 |
-| evt-f2747703 | work_completed | iterate (iterate: inherited failures and coverage gaps are recorded as inherited) | 2026-07-27 |
-| evt-38795ac5 | grade_snapshot | — | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 375
-- **Last iterate**: change — iterate: document the delivery watch in the guide (2026-07-27)
+- **Total work events**: 376
+- **Last iterate**: change — iterate: the release aggregator writes a version once, or says why not (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

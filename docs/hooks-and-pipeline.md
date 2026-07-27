@@ -2468,7 +2468,16 @@ lock-serialised tools so every Canon caller lands in a consistent shape:
   (above the first existing `## [version]` heading, not above the title),
   deletes only the drop files that were actually included in the snapshot.
   Warns loudly if legacy `## [Unreleased]` bullets remain so the operator
-  notices split-brain state.
+  notices split-brain state. **Re-runnable** (iterate-2026-07-27-changelog-
+  aggregator-idempotency): the write lands before the drops are consumed, so
+  an interruption in that window leaves the section written AND the drops
+  pending. A re-run whose recorded section says what the drops still say
+  **replaces** it (one version, exactly once) and consumes them; one that
+  disagrees — a partially consumed drop set, a hand edit, or two sections
+  already claiming the version — **refuses** with a non-zero exit, touching
+  neither the changelog nor the drops. Structure comes from the shared
+  `shared/scripts/changelog_sections.py` (top level per ADR-045), the same
+  module the plugin-side writer uses.
 - **`shared/scripts/tools/append_changelog_entry.py`** — still present for
   non-iterate flows that need the legacy `[Unreleased]` append path. Will
   be deprecated once all callers migrate.
