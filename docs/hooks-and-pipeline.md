@@ -1664,10 +1664,13 @@ Writes: `CLAUDE.md`, `.shipwright/agent_docs/{architecture,conventions,decision_
 | E.13 | `.github/workflows/security.yml` | `plugins/shipwright-adopt/scripts/lib/security_workflow_scaffolder.py` | `shared/templates/github-actions/security.yml.template` | No (single template) |
 | E.14 | `.github/workflows/ci.yml` | `plugins/shipwright-adopt/scripts/lib/ci_workflow_scaffolder.py` | profile-mapped via `shared/scripts/lib/ci_workflow.py::TEMPLATE_BY_PROFILE` | **Yes** — picks `ci-supabase-nextjs.yml.template` / `ci-vite-hono.yml.template` / `ci-python-plugin-monorepo.yml.template` based on `snapshot.profile.matched` |
 | E.14b | `.github/workflows/codeql.yml` | `plugins/shipwright-adopt/scripts/lib/codeql_workflow_scaffolder.py` | `shared/templates/github-actions/codeql.yml.template` (single template, **rendered**) | **Yes** — `${SHIPWRIGHT_CODEQL_LANGUAGES}` substituted from `shared/scripts/lib/codeql_workflow.py::CODEQL_LANGUAGES_BY_PROFILE` (`python` / `javascript-typescript`) |
-| E.15 | `.github/workflows/claude-review.yml` | `plugins/shipwright-adopt/scripts/lib/claude_review_workflow_scaffolder.py` | `shared/templates/github-actions/claude-review.yml.template` | No (single template) |
+| E.15 | `.github/workflows/claude-review.yml` (review **stage 1**) | `plugins/shipwright-adopt/scripts/lib/claude_review_workflow_scaffolder.py::scaffold_claude_review_workflow` | `shared/templates/github-actions/claude-review.yml.template` | No (single template) |
+| E.15a | `.github/workflows/claude-review-run.yml` (review **stage 2**) | `plugins/shipwright-adopt/scripts/lib/claude_review_workflow_scaffolder.py::scaffold_claude_review_run_workflow` | `shared/templates/github-actions/claude-review-run.yml.template` | No (single template) |
 | E.15b | `AUTOMERGE_SETUP.md` (repo root) | `plugins/shipwright-adopt/scripts/lib/automerge_setup_scaffolder.py` | `shared/templates/AUTOMERGE_SETUP.md.template` (**rendered** from deployed workflows) | **Yes** — `{PROFILE}` + Required-Check table derived by parsing `.github/workflows/*.yml` via `shared/scripts/lib/automerge_readiness.py` |
 
 All three CI templates ship with the **cross-platform OS matrix** (`ubuntu-latest` + `windows-latest`, `fail-fast: false`) as the convention-locked default. Drift test `shared/tests/test_ci_workflow_convention.py` pins every template against the constants in `shared/scripts/lib/ci_workflow.py`. Adding a new profile: register in `TEMPLATE_BY_PROFILE` AND author the template; the drift test fails loudly until both land. CodeQL ships dormant with `continue-on-error` on the analyze step (green Required Check on a private repo without GitHub Advanced Security); the automerge doc instructs the adopter to activate a dormant workflow's `pull_request:` trigger BEFORE requiring its check (a never-reporting check blocks every PR). Drift tests: `shared/tests/test_codeql_workflow_convention.py`, `shared/tests/test_automerge_readiness.py`.
+
+**The Claude review is two workflows and both must land (E.15 + E.15a, FR-01.17).** Stage 1 fires on `pull_request`, runs on fork PRs, holds **no** credentials, and uploads the diff as the `pr-review-request` artifact. Stage 2 fires on `workflow_run` when stage 1 completes, holds `ANTHROPIC_API_KEY`, reads that artifact strictly as data, and **never checks out the PR head**. The split exists because GitHub withholds secrets from fork-raised `pull_request` runs, so a single-stage reviewer never ran on them at all — and a job skipped for that reason is scored by GitHub as a **passing** required check. Stage 2 is the sole producer of the required `Claude Code Review` context, which it posts as a **commit status** (not a job name): if it never reports, the context is absent, and an absent required context is `pending`, which blocks. Stage 1 alone would prepare a review nothing runs; stage 2 alone would never trigger. `shared/scripts/lib/automerge_readiness.py::POSTED_STATUS_CONTEXTS` teaches the Required-Check derivation that stage 2 contributes a posted status rather than job names, and that its lack of a `pull_request:` trigger is by design rather than dormancy. Drift test: `shared/tests/test_pr_review_fail_closed.py`, which pins the same invariants against the monorepo's own `pr-review.yml` / `pr-review-run.yml`.
 
 Phase-Quality integration: registered as phase `adopt` in `PLUGIN_TO_PHASE`, `C4_PHASES`, and `_WORKFLOW_PHASE_DISPATCH`. The verifier module `shared/scripts/tools/verifiers/adopt_compliance.py` runs A1–A5, A7, A8 canon checks on every Stop hook after adoption completes (A6 retired 2026-05-05 per iterate-20260505-plugin-hook-registration — Claude Code itself enforces the plugin-enabled invariant the check used to assert). A4, A5, A8 are Tier-2 (heuristic, non-blocking); A1–A3, A7 are Tier-1 ERROR on FAIL.
 
@@ -1766,9 +1769,35 @@ Called by `orchestrator.py:update_step()` before marking a phase complete. Retur
 > compat with legacy `completed_steps=["...","compliance"]` entries
 > that went through the phase before the v7 migration.
 
-**Override mechanism:** `--force` flag on `update-step` skips validation (user approved via AskUserQuestion).
+**Override mechanism:** `--force` on `update-step` overrides the **verdict**, never the
+**check**. The validator runs either way; what `--force` changes is that ask-level
+findings no longer pause the run. `--force` **requires** `--force-reason "<why>"`
+(refused otherwise, both at the CLI and in `update_step()` for library callers).
 
-**Flow:** `update-step --status complete` → validator runs → if ASK issues found → returns `status: "needs_validation"` → SKILL.md asks user → user says "continue" → `update-step --status complete --force` → phase completes.
+Each forced completion appends one entry to `shipwright_run_config.json` →
+`validation_overrides[]` — `{step, at, reason, waived, gate_result,
+overridden_issues, inform_count}`, written by
+`orchestrator_pkg/validation_record.py` and declared in
+`shared/schemas/run_config.v2.schema.json`. A step that completes with a clean gate
+and no `--force` writes **no** entry, so the presence of a record is itself the
+signal. `waived: false` / `gate_result: "pass"` means force was used but the gate was
+clean — nothing was actually waived. Retention is capped
+(`MAX_VALIDATION_OVERRIDES`); an eviction bumps `validation_overrides_dropped` so
+truncation is never silent.
+
+> Before iterate-2026-07-27-phase-gate-override-evidence, `--force` skipped
+> `validate_phase` **entirely**: nothing knew what the gate would have said, nothing
+> recorded that an override happened, and inform-level notes were dropped on that
+> path too. Afterwards `completed_steps` said only "this phase completed" — a phase
+> that passed cleanly and one that was waved through left byte-identical state,
+> which FR-01.01 requires to be distinguishable.
+>
+> A validator that *raises* is caught and surfaced as an ask-level `[gate-error]`
+> issue rather than propagating: unforced it pauses fail-closed with a readable
+> reason; forced it completes with the crash recorded as what was overridden. (Force
+> used to be the escape hatch for a broken validator precisely because it skipped it.)
+
+**Flow:** `update-step --status complete` → validator runs → if ASK issues found → returns `status: "needs_validation"` → SKILL.md asks user → user says "continue" → `update-step --status complete --force --force-reason "<why>"` → validator runs again, its findings + the reason land in `validation_overrides[]`, phase completes.
 
 > **`update-step` is INERT in a driven single-session run** (drivability guard,
 > iterate-2026-07-14-phase-invocation-mode, `orchestrator_pkg/cli.py`). The flow above is
@@ -1888,7 +1917,7 @@ Each plugin reads project context at startup to ensure consistency. This table s
 | `.shipwright/planning/adr/<NNN>-<slug>.md` | operator (during iterate F3) | manual edits; never overwritten by tooling. INDEX.md alongside is auto-regenerated by `aggregate_decisions.rebuild_adr_index` at each `/shipwright-changelog` aggregation. |
 | `architecture.md` | project | write_decision_log.py (architecture impact) |
 | `build_dashboard.md` | update_build_dashboard.py | build, test, changelog, deploy, iterate, **Stop hook** (all plugins) |
-| `session_handoff.md` | generate_handoff_on_stop.py | all plugins (Stop hook), **finalize_iterate.py** (iterate) |
+| `session_handoff.md` | generate_handoff_on_stop.py | all plugins (Stop hook), **finalize_iterate.py** (iterate). Section renderers live in `shared/scripts/lib/`: `handoff_iterate.render_iterate_progress` (in-flight ITERATE state) and `handoff_pipeline.render_pipeline_phases` (**`## Pipeline Phases`** — FR-01.01: which phases are finished, which one was interrupted, and the loop's dispatch pointer). The pipeline block is rendered from state the run already holds — `run_config.phase_tasks[]` (authoritative, mutated only via `phase_task_lifecycle`) plus `.shipwright/run_loop_state.json` — and is **absent entirely** for any config without `phase_tasks[]`, so legacy / standalone / adopted handoffs are unchanged. It sits ABOVE the event-derived `## Recovery` tally (which counts distinct `phase_completed` events) and the legacy checkpoint block, because it is the authoritative view of the two. `shared/` must not import from a plugin, so the loop-state path literal is duplicated; `integration-tests/test_handoff_reads_real_loop_state.py` reads the owner's constant in a subprocess and fails if the two drift. |
 | `events.jsonl` | record_event.py | build, iterate, test, deploy, changelog, orchestrator (append-only). Campaign sub-iterates (autonomous runner Step 4 + manual `--campaign`/`--sub-iterate-id`) stamp `campaign` + `sub_iterate_id` into the `work_completed` event via F5b `--event-extras-json` (S1, 2026-06-10) |
 | `test_results.json` | test, iterate | test, iterate |
 | `.shipwright/compliance/*` | compliance plugin | update_compliance.py (all phases trigger), **Stop hook** (all plugins, best-effort), **finalize_iterate.py** (iterate). **AR-10 (2026-06-28, ci-security-dashboard)**: when a phase regenerates the dashboard, `update_compliance.py` first runs the fail-soft network producer `plugins/shipwright-compliance/scripts/tools/refresh_ci_security.py`, which pulls the latest `security.yml` run's `findings.json` (via the shared `github_api` artifact helpers) and rewrites the tracked, public-safe `.shipwright/compliance/ci-security.json` (scan date, findings-by-severity, critical-gate verdict, prompt-injection count). The dashboard reads only that committed summary (deterministic, offline), and `_control_block.build_grade_inputs` lights the Control-Grade Security dimension from it (`open_high_critical` → `security_open_high_critical`; n/a — never a false CRITICAL — when un-ingested). gh-unavailable / no-fresh-run / fetch-failed → the existing summary is left untouched (never blocks a regen, never fabricates a green scan). |

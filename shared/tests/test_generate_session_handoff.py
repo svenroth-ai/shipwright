@@ -3,10 +3,10 @@
 import json
 from datetime import datetime, timedelta, timezone
 
+from lib.handoff_iterate import render_iterate_progress
 from tools.generate_session_handoff import (
     LITERAL_NO_SESSION_ID,
     SESSION_FALLBACK_FILE,
-    _current_iterate_progress,
     generate_handoff,
     resolve_session_id,
 )
@@ -202,7 +202,7 @@ def test_generate_handoff_with_decision_log(project_with_configs):
 
 
 # ---------------------------------------------------------------------------
-# Iterate 14.15 — Resume safeguard: `_current_iterate_progress` must surface
+# Iterate 14.15 — Resume safeguard: `render_iterate_progress` must surface
 # enough evidence for B1 Resume to decide whether External Review is pending.
 # ---------------------------------------------------------------------------
 
@@ -230,8 +230,8 @@ def _write_iterate_spec(
 def test_current_iterate_progress_off_branch_returns_empty(tmp_project):
     """Non-iterate branches produce no section — avoids polluting the handoff
     during normal pipeline work."""
-    assert _current_iterate_progress(tmp_project, {"branch": "main"}) == []
-    assert _current_iterate_progress(tmp_project, {"branch": ""}) == []
+    assert render_iterate_progress(tmp_project, {"branch": "main"}) == []
+    assert render_iterate_progress(tmp_project, {"branch": ""}) == []
 
 
 def test_current_iterate_progress_flags_missing_review_on_medium(tmp_project):
@@ -245,7 +245,7 @@ def test_current_iterate_progress_flags_missing_review_on_medium(tmp_project):
     )
     git_info = {"branch": "iterate/foo", "uncommitted_changes": ""}
 
-    lines = _current_iterate_progress(tmp_project, git_info)
+    lines = render_iterate_progress(tmp_project, git_info)
     text = "\n".join(lines)
 
     assert "## Current Iterate Progress" in text
@@ -276,7 +276,7 @@ def test_current_iterate_progress_fresh_marker_clears_replay(tmp_project):
         encoding="utf-8",
     )
 
-    lines = _current_iterate_progress(tmp_project, {"branch": "iterate/bar"})
+    lines = render_iterate_progress(tmp_project, {"branch": "iterate/bar"})
     text = "\n".join(lines)
 
     assert "External Review Marker" in text and "completed" in text
@@ -310,7 +310,7 @@ def test_current_iterate_progress_stale_shared_marker_is_replay_trigger(tmp_proj
     os.utime(marker, (now - 2 * 86400, now - 2 * 86400))
     os.utime(spec_path, (now, now))
 
-    lines = _current_iterate_progress(tmp_project, {"branch": "iterate/baz"})
+    lines = render_iterate_progress(tmp_project, {"branch": "iterate/baz"})
     text = "\n".join(lines)
 
     assert "stale" in text
@@ -327,7 +327,7 @@ def test_current_iterate_progress_trivial_skips_review_replay(tmp_project):
         branch_tail="qux",
     )
 
-    lines = _current_iterate_progress(tmp_project, {"branch": "iterate/qux"})
+    lines = render_iterate_progress(tmp_project, {"branch": "iterate/qux"})
     text = "\n".join(lines)
 
     assert "External Review Marker" in text and "missing" in text

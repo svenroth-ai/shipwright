@@ -32,6 +32,11 @@ sys.path.insert(
 import orchestrator  # noqa: E402
 from orchestrator_pkg import router as _router  # noqa: E402
 
+# update_step REQUIRES a reason whenever force completes a non-standalone step
+# (FR-01.01 — an override has to record why). These fixtures force to skip
+# artifact validation they do not set up, so that is what they record.
+_FORCE_REASON = "test fixture: no phase artifacts to validate"
+
 
 # ---------------------------------------------------------------------------
 # 1. Public-name surface
@@ -121,7 +126,7 @@ def test_run_compliance_update_dispatch_honors_orchestrator_patch(
     spy = mocker.patch("orchestrator.run_compliance_update", return_value=sentinel)
 
     config = orchestrator.update_step(
-        tmp_project, "project", "complete", force=True,
+        tmp_project, "project", "complete", force=True, force_reason=_FORCE_REASON,
     )
 
     spy.assert_called_once_with(tmp_project, "project")
@@ -200,7 +205,7 @@ def test_two_phase_flow_routes_identically_post_split(tmp_project):
     # Phase 1 — project. Force-complete so we don't hit validation that
     # requires fixture files.
     cfg2 = orchestrator.update_step(
-        tmp_project, "project", "complete", force=True,
+        tmp_project, "project", "complete", force=True, force_reason=_FORCE_REASON,
     )
     assert "project" in cfg2["completed_steps"]
     assert cfg2["current_step"] == "design", (

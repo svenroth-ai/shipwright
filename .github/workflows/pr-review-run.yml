@@ -1,0 +1,223 @@
+name: PR Review Run
+
+# Stage 2 of the two-stage Tier-3 PR review (FR-01.17).
+#
+# Triggered by stage 1 (`pr-review.yml`) completing. Because `workflow_run` runs
+# in the BASE repository's context, this stage has the credentials that a fork's
+# `pull_request` run is denied — which is the whole reason fork PRs previously
+# got no review at all.
+#
+# THE TRUST RULE, and why it is absolute:
+# `pull_request` runs the workflow file FROM THE PR HEAD. A contributor — fork or
+# branch — therefore controls stage 1 completely: its tier decision, its
+# metadata, and the diff it uploads. Nothing stage 1 produces may be treated as
+# authoritative here. An earlier draft of this workflow read `needs_review` from
+# stage 1's artifact and skipped the review when it said `false`; that let a PR
+# declare itself exempt and collect a green `PR Review` status — the exact
+# self-exemption FR-01.17 (E)7 forbids. Caught in external review before merge.
+#
+# So stage 2 derives EVERYTHING it acts on from trusted sources:
+#   1. Identity — PR number resolved from `github.event.workflow_run.head_sha`
+#      (trusted event field) via the API. `workflow_run.pull_requests` is empty
+#      for fork PRs, so it is not used.
+#   2. Authorisation — labels, author and changed paths read from the API, and
+#      the tier rules applied HERE, in default-branch code the contributor
+#      cannot edit.
+#   3. Content — the diff fetched from the API at the trusted head SHA, never
+#      taken from the artifact.
+# The contributor's code is never checked out and never executed: the checkout
+# below takes the base repo, and the diff is only ever read as text.
+#
+# This workflow is the SOLE producer of the required `PR Review` status context.
+# If it never posts — crash, cancellation, missing secret — the context stays
+# absent, and an absent required context is `pending`, which blocks the merge.
+# FR-01.17 (E)2: silence counts as not passing, not as passing.
+
+on:
+  workflow_run:
+    workflows: ["PR Review Prepare"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-review-run-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: Review and post verdict
+    runs-on: ubuntu-latest
+    # Only this job widens, and only to what posting the verdict needs:
+    # statuses:write for the required context, pull-requests:write for the
+    # comment carrying the reasons (FR-01.17 (E)4).
+    permissions:
+      contents: read
+      statuses: write
+      pull-requests: write
+    steps:
+      # Base repo only. No `ref:`, so this is the default branch of the base
+      # repository — the PR head is never checked out.
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        # Third-party action pinned to a full commit SHA (supply-chain
+        # hardening); trailing comment records the human-readable tag.
+        uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39  # v3
+        with:
+          enable-cache: true
+
+      - name: Install Python
+        run: uv python install 3.11
+
+      - name: Resolve pull request from the trusted event
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # A commit can be associated with SEVERAL open PRs. Taking the first
+          # would let us review one PR's diff and post a green status onto a SHA
+          # that satisfies a DIFFERENT PR's gate. Require exactly one open PR
+          # whose CURRENT head is this exact SHA, and fail closed otherwise —
+          # ambiguity here is indistinguishable from an attack.
+          matches=$(gh api "repos/$REPO/commits/$HEAD_SHA/pulls" \
+            | jq --arg sha "$HEAD_SHA" \
+                '[.[] | select(.state == "open") | select(.head.sha == $sha) | .number]')
+          count=$(printf '%s' "$matches" | jq 'length')
+          if [ "$count" -ne 1 ]; then
+            echo "::error::expected exactly one open PR whose head is $HEAD_SHA, found $count — refusing to post a verdict"
+            exit 1
+          fi
+          echo "number=$(printf '%s' "$matches" | jq -r '.[0]')" >> "$GITHUB_OUTPUT"
+
+      # The tier decision lives HERE, not in stage 1, and reads only API data.
+      # Stage 1's copy of these rules would be attacker-editable.
+      - name: Decide the tier from trusted API data
+        id: tier
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        run: |
+          set -euo pipefail
+          pr_json=$(gh api "repos/$REPO/pulls/$PR_NUMBER")
+          author=$(printf '%s' "$pr_json" | jq -r '.user.login')
+          labels=$(printf '%s' "$pr_json" | jq -c '[.labels[].name]')
+          changed=$(gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/files" \
+            --jq '.[].filename')
+
+          # Tier 3a: sensitive paths — plugin hooks/skills/agents, CI workflows,
+          # composite actions, and the workflow templates shipped to adopted
+          # repos. A change to any of these alters the checks themselves.
+          sensitive=false
+          if printf '%s\n' "$changed" | grep -qE '^(plugins/.+/(hooks|skills|agents)/|\.github/workflows/|\.github/actions/|shared/templates/github-actions/)'; then
+            sensitive=true
+          fi
+
+          decide() {
+            echo "needs_review=$1" >> "$GITHUB_OUTPUT"
+            echo "reason=$2" >> "$GITHUB_OUTPUT"
+            echo "tier: $1 ($2)"
+          }
+
+          # FR-01.17 (E)7 — a change that alters the checks themselves cannot
+          # exempt itself: "whoever unlocks a door is not the one who decides it
+          # may be unlocked." Only users with triage/write+ can apply a label, so
+          # a contributor cannot self-waive; this additionally stops a
+          # maintainer's waiver from covering a change to the gate itself.
+          if printf '%s' "$labels" | jq -e 'index("skip-pr-review")' >/dev/null; then
+            if [ "$sensitive" = "true" ]; then
+              echo "::notice::skip-pr-review ignored — this change edits the checks themselves (FR-01.17 (E)7)."
+            else
+              decide false "skip-pr-review label set"; exit 0
+            fi
+          fi
+          if printf '%s' "$labels" | jq -e 'index("needs-review")' >/dev/null; then
+            decide true "needs-review label set"; exit 0
+          fi
+          if [ "$sensitive" = "true" ]; then
+            decide true "sensitive path touched"; exit 0
+          fi
+          # Tier 3b: external contributor (anyone except the maintainer + dependabot)
+          if [ "$author" != "svroch" ] && [ "$author" != "dependabot[bot]" ]; then
+            decide true "external contributor"; exit 0
+          fi
+          decide false "internal PR — Step 8 already reviewed"
+
+      - name: Run Tier-3 PR review
+        id: review
+        if: >-
+          github.event.workflow_run.conclusion == 'success' &&
+          steps.tier.outputs.needs_review == 'true'
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHIPWRIGHT_PR_REVIEW_MODEL: anthropic/claude-sonnet-4.6
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # The diff comes from the API at the trusted head SHA. pr_review.py
+          # fetches it itself via `gh pr diff`; the artifact stage 1 uploaded is
+          # an audit record only and is deliberately not read here.
+          uv run plugins/shipwright-security/scripts/tools/pr_review.py \
+            --pr-number "$PR_NUMBER" \
+            --repo "$REPO" \
+            --prompt-dir shared/prompts/pr_reviewer
+
+      # The verdict is the gate. `always()` so a failed review posts `failure`
+      # rather than leaving the context absent for an ambiguous reason — but an
+      # absent context still blocks, so a crash before this step is safe too.
+      - name: Post the PR Review verdict
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          STAGE1_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          NEEDS_REVIEW: ${{ steps.tier.outputs.needs_review }}
+          TIER_REASON: ${{ steps.tier.outputs.reason }}
+          TIER_OUTCOME: ${{ steps.tier.outcome }}
+          REVIEW_OUTCOME: ${{ steps.review.outcome }}
+        run: |
+          set -euo pipefail
+          # The reviewer fetched the diff by PR NUMBER, which tracks the moving
+          # head; the verdict lands on the immutable event SHA. If the branch was
+          # force-pushed mid-run we reviewed different content than we are about
+          # to bless — and a later restore of this SHA would inherit the green.
+          # Re-check before blessing anything, and fail closed if it moved.
+          if [ -n "${PR_NUMBER:-}" ]; then
+            now=$(gh api "repos/$REPO/pulls/$PR_NUMBER" --jq '.head.sha' || echo "")
+            if [ "$now" != "$HEAD_SHA" ]; then
+              echo "::error::head moved during the run ($HEAD_SHA -> ${now:-unknown}); the review does not describe this commit"
+              gh api "repos/$REPO/statuses/$HEAD_SHA" -f state=failure \
+                -f context="PR Review" \
+                -f description="head moved during review — re-run required" \
+                -f target_url="$RUN_URL" >/dev/null
+              exit 1
+            fi
+          fi
+          if [ "$STAGE1_CONCLUSION" != "success" ]; then
+            state=failure; desc="preparation stage failed — nothing was reviewed"
+          elif [ "$TIER_OUTCOME" != "success" ]; then
+            state=failure; desc="could not determine whether a review was required"
+          elif [ "$NEEDS_REVIEW" != "true" ]; then
+            state=success; desc="$TIER_REASON"
+          elif [ "$REVIEW_OUTCOME" = "success" ]; then
+            state=success; desc="reviewed — no blocking findings"
+          else
+            state=failure; desc="review blocked or did not complete"
+          fi
+          gh api "repos/$REPO/statuses/$HEAD_SHA" \
+            -f state="$state" \
+            -f context="PR Review" \
+            -f description="${desc:0:139}" \
+            -f target_url="$RUN_URL" >/dev/null
+          echo "posted PR Review=$state ($desc)"
+          [ "$state" = "success" ]

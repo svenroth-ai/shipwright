@@ -579,19 +579,19 @@ def generate(
     if codeql_result["wrote"]:
         results["written"].append(codeql_result["path"])
 
-    # Step E.15 — Claude-Review workflow scaffold. Independent Claude Code
-    # review-in-a-different-session pass on PRs — Anthropic Architect
-    # Certification best practice (commit `8aac61d`). Profile-agnostic;
-    # single template lands at .github/workflows/claude-review.yml. Not
-    # dormant: fires on pull_request by design — that's the workflow's
-    # entire purpose.
+    # Step E.15/E.15a — Claude-Review scaffold, BOTH stages (FR-01.17); neither
+    # works alone. Shape + rationale: docs/hooks-and-pipeline.md.
     from claude_review_workflow_scaffolder import (  # type: ignore
+        scaffold_claude_review_run_workflow,
         scaffold_claude_review_workflow,
     )
-    claude_review_result = scaffold_claude_review_workflow(project_root)
-    results["claude_review_workflow"] = claude_review_result
-    if claude_review_result["wrote"]:
-        results["written"].append(claude_review_result["path"])
+    for _key, _fn in (
+            ("claude_review_workflow", scaffold_claude_review_workflow),
+            ("claude_review_run_workflow", scaffold_claude_review_run_workflow)):
+        _res = _fn(project_root)
+        results[_key] = _res
+        if _res["wrote"]:
+            results["written"].append(_res["path"])
 
     # Step E.15b — Automerge-readiness doc. MUST run AFTER every workflow
     # scaffold above: it derives the Required-Check job names by PARSING the
