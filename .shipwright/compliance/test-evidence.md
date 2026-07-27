@@ -1,7 +1,7 @@
 # Test Evidence Report
 
-Generated: 2026-07-27T19:36:56.452047+00:00
-Source-State: run=iterate-2026-07-27-checks-that-gate-nothing
+Generated: 2026-07-27T19:47:47.363461+00:00
+Source-State: run=iterate-2026-07-27-review-floor-not-chained
 Consistency-audit: never run
 
 ## Summary
@@ -16,23 +16,23 @@ Consistency-audit: never run
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | raise the PR-review diff cap, cut at a file boundary, name what went unreviewed | [iterate](traceability-matrix.md#evt-36d0f887) | — | +0 | — | — | 2026-07-27 |
-| 2 | an audit that checked nothing is not recorded | [iterate](traceability-matrix.md#evt-e3d8f519) | — | +0 | — | — | 2026-07-27 |
-| 3 | refuse a multi-root pytest session instead of failing 21 unrelated tests | [iterate](traceability-matrix.md#evt-aea234e3) | — | +0 | — | — | 2026-07-27 |
-| 4 | document the delivery watch in the guide | [iterate](traceability-matrix.md#evt-90ce4f39) | — | +0 | — | — | 2026-07-27 |
-| 5 | requirement write-back loop — design rounds and build sections declare their requirement impact | [iterate](traceability-matrix.md#evt-cf1bab8b) | — | +0 | — | — | 2026-07-27 |
-| 6 | the phase canon asks whether the handoff belongs to this run | [iterate](traceability-matrix.md#evt-e0b8fd18) | — | +0 | — | — | 2026-07-27 |
-| 7 | bounded sharing-violation retry on both sides of the atomic-write boundary | [iterate](traceability-matrix.md#evt-92094b2e) | — | +0 | — | — | 2026-07-27 |
-| 8 | the merge state is a vocabulary, not a BLOCKED flag | [iterate](traceability-matrix.md#evt-d256a84e) | — | +0 | — | — | 2026-07-27 |
-| 9 | The handoff's progress tally stops overstating, the dispatch pointer stops claiming phases are in flight when they are not, and the override record stops asserting a gate passed where no gate exists. | [iterate](traceability-matrix.md#evt-67df62f3) | — | +0 | — | — | 2026-07-27 |
-| 10 | inherited failures and coverage gaps are recorded as inherited | [iterate](traceability-matrix.md#evt-f2747703) | — | +0 | — | — | 2026-07-27 |
-| 11 | the four Step-9 gates become code, closing trg-88f721be (3 of 3) | [iterate](traceability-matrix.md#evt-f540a880) | — | +0 | — | — | 2026-07-27 |
-| 12 | reviewer verdicts recorded, disagreement is its own outcome (1 of 3) | [iterate](traceability-matrix.md#evt-5ecd7d7e) | — | +0 | — | — | 2026-07-27 |
-| 13 | section dependencies are declarable, so the numbering is checkable (2 of 3) | [iterate](traceability-matrix.md#evt-8cab1d1d) | — | +0 | — | — | 2026-07-27 |
-| 14 | name the blocker instead of reporting a weaker signal | [iterate](traceability-matrix.md#evt-368b0d6c) | — | +0 | — | — | 2026-07-27 |
-| 15 | the derived requirements catalogue announces itself | [iterate](traceability-matrix.md#evt-cdd626e1) | — | +0 | — | — | 2026-07-27 |
-| 16 | A security scan now says which kinds of weakness it did not look at, so a machine missing a scanner can no longer produce a report that reads clean for everything. | [iterate](traceability-matrix.md#evt-51c2bffd) | mixed | +0 | 10083/10083 | PASS | 2026-07-27 |
-| 17 | checks that run, report, and gate nothing (trg-c7e5835b items 3-5) | [iterate](traceability-matrix.md#evt-bccbd6ce) | — | +0 | — | — | 2026-07-27 |
+| 1 | the code review becomes a floor, not a chain | [iterate](traceability-matrix.md#evt-53ba0065) | — | +0 | — | — | 2026-07-27 |
+| 2 | raise the PR-review diff cap, cut at a file boundary, name what went unreviewed | [iterate](traceability-matrix.md#evt-36d0f887) | — | +0 | — | — | 2026-07-27 |
+| 3 | an audit that checked nothing is not recorded | [iterate](traceability-matrix.md#evt-e3d8f519) | — | +0 | — | — | 2026-07-27 |
+| 4 | refuse a multi-root pytest session instead of failing 21 unrelated tests | [iterate](traceability-matrix.md#evt-aea234e3) | — | +0 | — | — | 2026-07-27 |
+| 5 | document the delivery watch in the guide | [iterate](traceability-matrix.md#evt-90ce4f39) | — | +0 | — | — | 2026-07-27 |
+| 6 | requirement write-back loop — design rounds and build sections declare their requirement impact | [iterate](traceability-matrix.md#evt-cf1bab8b) | — | +0 | — | — | 2026-07-27 |
+| 7 | the phase canon asks whether the handoff belongs to this run | [iterate](traceability-matrix.md#evt-e0b8fd18) | — | +0 | — | — | 2026-07-27 |
+| 8 | bounded sharing-violation retry on both sides of the atomic-write boundary | [iterate](traceability-matrix.md#evt-92094b2e) | — | +0 | — | — | 2026-07-27 |
+| 9 | the merge state is a vocabulary, not a BLOCKED flag | [iterate](traceability-matrix.md#evt-d256a84e) | — | +0 | — | — | 2026-07-27 |
+| 10 | The handoff's progress tally stops overstating, the dispatch pointer stops claiming phases are in flight when they are not, and the override record stops asserting a gate passed where no gate exists. | [iterate](traceability-matrix.md#evt-67df62f3) | — | +0 | — | — | 2026-07-27 |
+| 11 | inherited failures and coverage gaps are recorded as inherited | [iterate](traceability-matrix.md#evt-f2747703) | — | +0 | — | — | 2026-07-27 |
+| 12 | the four Step-9 gates become code, closing trg-88f721be (3 of 3) | [iterate](traceability-matrix.md#evt-f540a880) | — | +0 | — | — | 2026-07-27 |
+| 13 | reviewer verdicts recorded, disagreement is its own outcome (1 of 3) | [iterate](traceability-matrix.md#evt-5ecd7d7e) | — | +0 | — | — | 2026-07-27 |
+| 14 | section dependencies are declarable, so the numbering is checkable (2 of 3) | [iterate](traceability-matrix.md#evt-8cab1d1d) | — | +0 | — | — | 2026-07-27 |
+| 15 | name the blocker instead of reporting a weaker signal | [iterate](traceability-matrix.md#evt-368b0d6c) | — | +0 | — | — | 2026-07-27 |
+| 16 | the derived requirements catalogue announces itself | [iterate](traceability-matrix.md#evt-cdd626e1) | — | +0 | — | — | 2026-07-27 |
+| 17 | A security scan now says which kinds of weakness it did not look at, so a machine missing a scanner can no longer produce a report that reads clean for everything. | [iterate](traceability-matrix.md#evt-51c2bffd) | mixed | +0 | 10083/10083 | PASS | 2026-07-27 |
 | 18 | the review gate stops being bypassable (fail-closed + fork review) | [iterate](traceability-matrix.md#evt-78684181) | — | +0 | — | — | 2026-07-27 |
 | 19 | Overriding a phase gate now runs the check anyway and records what it found plus the reason given, and the session handoff states which phases are finished and which one was interrupted. | [iterate](traceability-matrix.md#evt-4794dcc1) | — | +0 | — | — | 2026-07-27 |
 | 20 | requirement granularity guidance + advisory I6 check + the Basis-assumed template contradiction | [iterate](traceability-matrix.md#evt-9ad5050b) | — | +0 | — | — | 2026-07-27 |

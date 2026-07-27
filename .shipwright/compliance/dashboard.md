@@ -1,7 +1,7 @@
 # Compliance Dashboard
 
-Generated: 2026-07-27T19:36:56.452047+00:00
-Source-State: run=iterate-2026-07-27-checks-that-gate-nothing
+Generated: 2026-07-27T19:47:47.363461+00:00
+Source-State: run=iterate-2026-07-27-review-floor-not-chained
 Consistency-audit: never run
 Profile: python-plugin-monorepo
 Scope: library
@@ -30,7 +30,7 @@ _Grade = importance-weighted average over the measurable dimensions (n/a exclude
 
 ## 🛡️ CI Security (fail-closed gate)
 
-Latest scan: **2026-07-27** · source `security.yml#30300618520` · critical-gate **✅ PASS**
+Latest scan: **2026-07-27** · source `security.yml#30299684992` · critical-gate **✅ PASS**
 
 | Severity | Count |
 |----------|-------|
@@ -57,13 +57,13 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
 | Work events (iterate) | 386 changes | INFO |  |
-| Recent changes traced to an FR | 22/30 (73%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
+| Recent changes traced to an FR | 21/30 (70%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
 | All unit tests passing | 10083/10083 | PASS | +15 change(s) since last full suite |
 | Architecture decisions | 328 ADRs | INFO |  |
-| Iterate tests passing | 55/88 testable changes tested | WARN | 33 testable change(s) without tests — see test-evidence.md |
+| Iterate tests passing | 55/87 testable changes tested | WARN | 32 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 11 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 22 open | WARN | 22 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Triage open | 21 open | WARN | 21 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit (grandfathered) | 124 | INFO |  |
 | Bloat in allowlist | 159 entries | INFO |  |
 | Bloat ratchet delta | -88 lines | PASS |  |

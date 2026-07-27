@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-27T19:44:26.821323Z. Items waiting for triage decision.
+> Auto-generated 2026-07-27T19:47:53.112213Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 429
-- Triage: 22 | Promoted: 1 | Dismissed: 405 | Snoozed: 1
+- Total: 430
+- Triage: 21 | Promoted: 1 | Dismissed: 407 | Snoozed: 1
 
-## Top 22 items (severity-sorted)
+## Top 21 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -17,7 +17,7 @@
   - Scope the Shipwright marketplace correctly instead of enabling all ~14 plugins at user scope (they currently load /ship…
   - Promote: `triage_promote.py --id trg-57317128 --task-ref EXT:<ref>`
 
-### Source: compliance (2 items)
+### Source: compliance (1 item)
 
 <a id="trg-a5b167f4"></a>
 - **Compliance: 5 open finding(s)** `id=trg-a5b167f4 | severity=high | kind=compliance → P1/compliance`
@@ -31,35 +31,6 @@
     Each finding + hint is listed in this item's detail.
     ```
   - Promote: `triage_promote.py --id trg-a5b167f4 --task-ref EXT:<ref>`
-
-<a id="trg-b1b635be"></a>
-- **Compliance: 3 open finding(s)** `id=trg-b1b635be | severity=high | kind=compliance → P1/compliance`
-  - 3 open compliance finding(s): D/D1, D/D3, H/H1  - D/D1: Spec FR coverage in events — uncovered FRs — Must: FR-01.17; Sh…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-compliance
-    
-    Context: 3 open compliance finding(s): D/D1, D/D3, H/H1.
-    Dashboard: .shipwright/compliance/dashboard.md
-    Each finding + hint is listed in this item's detail.
-    ```
-  - Promote: `triage_promote.py --id trg-b1b635be --task-ref EXT:<ref>`
-
-### Source: f0-suite (1 item)
-
-<a id="trg-7a4c0da7"></a>
-- **[f0] shipwright-run failed in parallel and passed alone - race or flaky test** `id=trg-7a4c0da7 | severity=high | kind=bug → P1/engineering`
-  - shipwright-run: red in parallel (rc 1), GREEN alone (rc 0). It is NOT xdist-allowlisted, so this is inter-unit pollutio…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-iterate --type bug
-    
-    Context: F0 suite card f0-race:shipwright-run. The test unit shipwright-run failed while the units ran side by side and passed when re-run alone, so the gate stayed green and nothing else recorded it.
-    Reproduce alone (expect GREEN): cd plugins/shipwright-run && uv run --with pytest --with pytest-mock pytest tests -q -p no:cacheprovider
-    Reproduce in parallel (expect intermittent RED): uv run shared/scripts/tools/run_test_suite.py --project-root 'C:\01_Development\shipwright\.worktrees\adopt-derived-catalogue'
-    Establish whether it is a race between units or an unreliable test, fix the cause, and close this card. Never weaken or delete the test to make it pass.
-    ```
-  - Promote: `triage_promote.py --id trg-7a4c0da7 --task-ref EXT:<ref>`
 
 ### Source: github (2 items)
 
@@ -112,7 +83,7 @@
   - The tail of campaign step S2, not a new campaign - file it now so it is not lost between "S2 merged" and "somebody noti…
   - Promote: `triage_promote.py --id trg-8bf97fd4 --task-ref EXT:<ref>`
 
-### Source: manual (5 items)
+### Source: manual (6 items)
 
 <a id="trg-2ca796f3"></a>
 - **Release aggregator can write the same version twice on a re-run** `id=trg-2ca796f3 | severity=high | kind=bug → P1/engineering`
@@ -125,15 +96,20 @@
   - FOLLOW-UP to trg-c7e5835b, do this AFTER the part-2 PR (items 3-5) is merged. The new check_required_checks producer fo…
   - Promote: `triage_promote.py --id trg-9862202d --task-ref EXT:<ref>`
 
+<a id="trg-80e3b3cd"></a>
+- **No CI job runs on Windows, so platform-specific defects and fixes are unverified** `id=trg-80e3b3cd | severity=medium | kind=improvement → P2/engineering`
+  - Every workflow in .github/workflows runs on ubuntu-latest, so no CI job ever executes on Windows. Two consequences obse…
+  - Promote: `triage_promote.py --id trg-80e3b3cd --task-ref EXT:<ref>`
+
+<a id="trg-0a294ef3"></a>
+- **A successful atomic-write retry is silent, so degrading contention is unobservable** `id=trg-0a294ef3 | severity=medium | kind=improvement → P2/engineering`
+  - shared/scripts/lib/atomic_write.py retries a Windows sharing violation on both the write and the read side. A retry tha…
+  - Promote: `triage_promote.py --id trg-0a294ef3 --task-ref EXT:<ref>`
+
 <a id="trg-cc640142"></a>
 - **Iterate PRs touching regenerated artifacts livelock against auto-merge on a busy default branch** `id=trg-cc640142 | severity=medium | kind=improvement → P2/engineering`
   - An iterate PR that touches regenerated artifacts cannot reliably auto-merge while the default branch is busy. Observed…
   - Promote: `triage_promote.py --id trg-cc640142 --task-ref EXT:<ref>`
-
-<a id="trg-efca9de7"></a>
-- **shared/tests and integration-tests fail 21 tests when run in one pytest session** `id=trg-efca9de7 | severity=medium | kind=bug → P2/engineering`
-  - Running 'uv run pytest shared/tests integration-tests -m "not slow and not cross_plugin"' as a SINGLE invocation fails…
-  - Promote: `triage_promote.py --id trg-efca9de7 --task-ref EXT:<ref>`
 
 <a id="trg-c6e75011"></a>
 - **shipwright-security tests write an untracked .shipwright/ dir into the repo tree** `id=trg-c6e75011 | severity=low | kind=bug → P3/engineering`
