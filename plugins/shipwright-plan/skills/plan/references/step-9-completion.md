@@ -2,24 +2,38 @@
 
 **Verification (all must pass before "phase complete"):**
 
+Gates 5–8 are one command. Run it and fix what it names — do not eyeball them:
+
+```bash
+uv run --project {plugin_root} {plugin_root}/scripts/checks/check-plan-gates.py \
+  --planning-dir "{planning_dir}" --gate sections
+```
+
+Non-zero exit = STOP. The same four gates run again inside `_validate_plan`
+below, so skipping this only defers the failure to a worse moment.
+
 1. plan.md exists with SECTION_MANIFEST
 2. All declared sections have files
 3. Interview transcript exists
 4. E2E test plan exists (if enabled)
-5. **Section Quality Gate** — for each section file, verify it contains:
-   - Description (what the section implements)
-   - Implementation Steps (at least 2 concrete steps)
-   - Test Strategy (what tests to write)
-   - If any section is missing these → fix before proceeding
-6. **FR Coverage Check** — read the spec's Functional Requirements,
-   verify every FR is assigned to at least one section. If uncovered
-   FRs found → add them to appropriate section or create new section.
-7. **Dependency Order** — every dependency a section declares in
+5. **Section Quality Gate** — each section file says what it is for
+   (`## Overview`), lists **at least 2** implementation steps
+   (`## Implementation Steps`), and states how it will be tested
+   (`## Tests First`).
+6. **FR Coverage Check** — every live requirement in the split's `spec.md` is
+   named by at least one section's `Requirements:` line. An uncovered
+   requirement → assign it to a section, or add one.
+7. **Section Trace Check** — every section names at least one live requirement
+   it serves. A section that serves none is work nobody asked for: remove it,
+   or find the requirement it belongs to.
+8. **Dependency Order** — every dependency a section declares in
    `SECTION_MANIFEST` must appear **earlier** in the manifest than the section
-   naming it. Declaration format: [section-index.md](section-index.md). This
-   one is enforced: `check-sections.py` (Step 7) and the plan phase verifier
-   both fail a numbering that places a prerequisite after its user. A manifest
-   declaring no dependencies promises nothing and passes.
+   naming it. Declaration format: [section-index.md](section-index.md).
+   `check-sections.py` (Step 7) fails this too.
+
+Gates 5–7 are *lenient in the verifier* toward splits written before these
+formats existed (they warn instead of failing), but `check-plan-gates.py` is
+strict: a plan written now complies.
 
 ---
 
@@ -75,8 +89,8 @@ uv run "{shared_root}/scripts/tools/append_phase_history.py" \
 
 # Mark plan phase complete. _validate_plan() now runs the modular
 # plan_checks verifier (plan_config status, section files, FR orphans,
-# section id validity, canon, phase_history) — missing artifacts or
-# drift blocks this call via ask-level issues.
+# section id validity, the four Step-9 gates above, canon, phase_history)
+# — missing artifacts or drift blocks this call via ask-level issues.
 uv run "{plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py" \
   update-step --project-root "$(pwd)" --step plan --status complete
 ```

@@ -1176,7 +1176,7 @@ evidence (plan § 4.5).
 | W2 | iterate | FAIL · SKIP if small or `run_id` unresolvable (audit ctx, mirrors S2/S3) | 1 | `.shipwright/planning/iterate/{run_id}-external-review.json` OR `external_review_state.json` newer than spec |
 | W3 | iterate | FAIL | 1 | `work_completed` event (source=iterate) + `.shipwright/compliance/test-evidence.md` mtime <24h |
 | W4 | test | FAIL | 1 | `shipwright_test_results.json.coverage.total` ≥ `shipwright_test_config.json.coverage.min` (default 70) |
-| W5 | plan | FAIL | 1 | `.shipwright/planning/external_review_state.json` status=`completed` OR `skipped_*` with non-empty reason |
+| W5 | plan | FAIL | 1 | `.shipwright/planning/external_review_state.json` status=`completed` OR `skipped_*` with non-empty reason, **and** no unresolved reviewer disagreement (a contradiction, an unreadable verdict, or a single answering reviewer without a `contradiction_resolution`). Judged by `lib.review_marker.evaluate_review_state` — the same function the plan Step-6 gate and the resume gate call; it RECOMPUTES the disagreement from the recorded verdicts rather than trusting the marker's stored block |
 | W6 | changelog | FAIL | 1 | Wrapper around `changelog_checks.check_git_tag_exists` |
 | W7 | deploy | FAIL | 1 | `shipwright_deploy_config.json.smoke_test_status` OR `test_results.smoke.status` OR latest `test_run` event layer `smoke.status == "pass"` |
 | Sec1 | security (out-of-band) | FAIL | 1 | `.shipwright/compliance/security-scan-report.md` mtime ≥ latest `phase_started[security]`. Audits the standalone `/shipwright-security` skill — runs from the security skill's Stop hook, not as a pipeline gate. |
@@ -1865,7 +1865,7 @@ plan SKILL completes
 | `shipwright_plan_config.json` | /shipwright-plan | Build (section references) |
 | `shipwright_project_session.json` | /shipwright-project | /shipwright-project (session resume state) |
 | `shipwright_plan_session.json` | /shipwright-plan | /shipwright-plan (session resume state) |
-| `external_review_state.json` | /shipwright-plan Step 5, /shipwright-iterate (medium+) | /shipwright-plan Step 6 resume gate, compliance evidence collector |
+| `external_review_state.json` | /shipwright-plan Step 5b, /shipwright-iterate (medium+) — via `mark-review-state.py`, now carrying per-reviewer `verdicts` + derived `contradiction` (`marker_schema: 2`) | /shipwright-plan Step 6 gate (`check-plan-gates.py --gate review`), `setup-planning-session.py` resume gate, compliance `W5`, evidence collector — all three via `evaluate_review_state` |
 | `shipwright_security_config.json` | /shipwright-security | /shipwright-security, compliance (scan results) |
 
 ---
@@ -2478,6 +2478,8 @@ shared/scripts/tools/
     project_checks.py              # Project phase-own + canon + phase_history   — 12.1
     design_checks.py               # Design phase-own + canon (skip C4)          — 12.2
     plan_checks.py                 # Plan phase-own + canon (skip C5) + check-plan C2/C3/C4 imports — 12.2
+    plan_gate_checks.py            # The four Step-9 gates: dependency order, FR coverage,
+                                   #   section->requirement trace, section quality — appended to run_plan_checks
     build_checks.py                # Build phase-own + canon hybrid + check-plan B3/B6 imports      — 12.3
     test_checks.py                 # Test phase-own + canon (skip C4+C5)         — 12.4
     changelog_checks.py            # Changelog canon + git-tag/version Sonder-Checks — 12.4
@@ -2486,6 +2488,10 @@ shared/scripts/tools/
 shared/scripts/lib/
   drift_parsers.py                 # Structure/dev-block/FR/ADR pure parsers
   file_lock.py                     # Cross-platform advisory lock
+  plan_manifest.py                 # SECTION_MANIFEST parser (names + declared dependencies + order rule)
+  plan_section_quality.py          # Section shape + section<->requirement linkage (both directions)
+  review_verdict.py                # Reviewer verdict sentinel + deterministic contradiction compare
+  review_marker.py                 # external_*review_state.json shape + evaluate_review_state (one authority)
 ```
 
 ### Canon Coverage — Iterate 12 Final State
@@ -2504,7 +2510,7 @@ Legend: ✅ present · ⏭ skip by policy · n/a not applicable
 | **runtime** | n/a | n/a | n/a | n/a | n/a | n/a | `runtime_checks.py` (zombie replay) | — |
 | **project** | ✅ | ✅ | ✅ (canon-marker) | ✅ (Step 7) | ✅ | ✅ | `project_checks.py` | `_validate_project` |
 | **design** | ✅ | ✅ | ✅ (canon-marker) | ⏭ transformation | ✅ | ✅ | `design_checks.py` + FR coverage (check-plan C1 import) | `_validate_design` |
-| **plan** | ✅ | ✅ | ✅ (canon-marker) | ✅ (Step 2/5) | ⏭ internal | ✅ | `plan_checks.py` + section-manifest/FR-orphan/section-id (check-plan C2/C3/C4 imports) | `_validate_plan` |
+| **plan** | ✅ | ✅ | ✅ (canon-marker) | ✅ (Step 2/5) | ⏭ internal | ✅ | `plan_checks.py` + section-manifest/FR-orphan/section-id (check-plan C2/C3/C4 imports) + `plan_gate_checks.py` (dependency order, FR coverage, section trace, section quality) | `_validate_plan` |
 | **build** | ✅ per section | ✅ per section | ✅ phase-level | ✅ per section | ✅ phase-level (one bullet per section) | ✅ with `sections[]` sub-array | `build_checks.py` + B3 test-files + B6 commit-sha (check-plan imports) | `_validate_build` |
 | **test** | ✅ (`phase_completed` alongside `test_run`) | ✅ | ✅ (canon-marker) | ⏭ events, not decisions | ⏭ results in `shipwright_test_results.json` | ✅ | `test_checks.py` + `check_test_results_file_fresh` | `_validate_test` |
 | **changelog** | ✅ | ✅ | ✅ (canon-marker) | ⏭ process management | n/a (plugin owns prepend) | ✅ | `changelog_checks.py` + `check_git_tag_exists` + `check_changelog_version_matches_tag` Sonder-Checks | `_validate_changelog` |

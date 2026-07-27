@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-plan-section-deps",
+    "run_id": "iterate-2026-07-27-plan-step9-gates",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 5305,
-      "total": 5305
+      "passed": 5443,
+      "total": 5443
     },
     "integration": {
       "status": "passed",
@@ -19,8 +19,8 @@
     },
     "e2e": {
       "status": "passed",
-      "passed": 43,
-      "total": 43
+      "passed": 16,
+      "total": 16
     },
     "design_fidelity": {
       "status": "not_run",
@@ -33,105 +33,120 @@
     "degraded": [],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --extra dev pytest shared/tests/test_plan_manifest.py shared/tests/test_verifiers_plan_gates.py -v",
+      "runner": "uv run --extra dev pytest plugins/shipwright-plan/tests/test_check_plan_gates.py -v",
       "exit_code": 0,
-      "tests_run": 43,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\plan-section-deps\\.shipwright\\runs\\iterate-2026-07-27-plan-section-deps\\surface_verification.log",
-      "timestamp": "2026-07-27T12:05:25.657Z"
+      "tests_run": 16,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\plan-step9-gates\\.shipwright\\runs\\iterate-2026-07-27-plan-step9-gates\\surface_verification.log",
+      "timestamp": "2026-07-27T12:35:28.407Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "a bare NN-slug manifest parses exactly as before",
+          "behavior": "section shape parsed: purpose, >=2 steps, test strategy, incl. heading synonyms",
           "disposition": "tested",
-          "evidence": "shared/tests/test_plan_manifest.py::test_bare_manifest_still_parses PASSED"
+          "evidence": "shared/tests/test_plan_section_quality.py \u2014 10 tests (purpose/steps/tests synonyms, bullet+numbered steps, empty-body-is-not-a-purpose) PASSED"
         },
         {
-          "behavior": "'NN-slug: dep, dep' declares dependencies",
+          "behavior": "linkage read only from the Requirements: field, never from prose",
           "disposition": "tested",
-          "evidence": "::test_dependencies_are_parsed PASSED"
+          "evidence": "::test_prose_mentioning_an_fr_is_not_a_declaration PASSED"
         },
         {
-          "behavior": "whitespace variants and a trailing comma are tolerated",
+          "behavior": "the Requirements: field tolerates ordinary markdown",
           "disposition": "tested",
-          "evidence": "::test_whitespace_and_trailing_comma_tolerated PASSED (3 cases)"
+          "evidence": "::test_requirements_field_tolerates_markdown PASSED (3 forms)"
         },
         {
-          "behavior": "interior-empty, duplicate, self, undeclared and non-grammar dependencies fail",
+          "behavior": "a token that merely CONTAINS an FR id is malformed, not coverage",
           "disposition": "tested",
-          "evidence": "::test_empty_dependency_token_rejected, ::test_duplicate_dependency_token_rejected, ::test_self_dependency_fails, ::test_dependency_on_an_undeclared_section_fails, ::test_dependency_must_match_the_section_grammar PASSED"
+          "evidence": "::test_a_token_that_merely_contains_an_fr_id_is_malformed_not_coverage, ::test_malformed_tokens_are_reported_as_linkage_errors PASSED"
         },
         {
-          "behavior": "a duplicate section id fails",
+          "behavior": "an empty Requirements: field adopts the format and fails it",
           "disposition": "tested",
-          "evidence": "::test_duplicate_section_id_rejected PASSED"
+          "evidence": "::test_an_empty_requirements_field_counts_as_adopting_but_names_nothing, ::test_an_empty_field_beside_an_absent_one_still_adopts_the_split PASSED"
         },
         {
-          "behavior": "a prerequisite numbered after its user fails",
+          "behavior": "every requirement lands in a section (AC1)",
           "disposition": "tested",
-          "evidence": "::test_prerequisite_after_its_user_fails + test_check_sections.py::test_prerequisite_after_its_user_fails_the_gate + test_verifiers_plan_gates.py::test_prerequisite_after_its_user_fails PASSED"
+          "evidence": "::test_full_coverage_both_ways, ::test_a_requirement_no_section_claims_is_uncovered + test_verifiers_plan_gates.py::test_an_uncovered_requirement_fails PASSED"
         },
         {
-          "behavior": "a cycle cannot satisfy the order rule",
+          "behavior": "every section traces back to a requirement (AC2)",
           "disposition": "tested",
-          "evidence": "::test_a_cycle_cannot_satisfy_the_order_rule PASSED"
+          "evidence": "::test_a_section_claiming_nothing_is_untraced, ::test_a_section_claiming_only_non_live_ids_is_untraced + test_verifiers_plan_gates.py::test_a_section_nobody_asked_for_fails, ::test_a_section_naming_only_a_dead_id_fails_and_says_which PASSED"
         },
         {
-          "behavior": "diagnostics name the manifest line number",
+          "behavior": "a section missing its test strategy fails, and the failure names the heading",
           "disposition": "tested",
-          "evidence": "::test_errors_name_the_manifest_line, ::test_order_errors_name_their_line PASSED"
+          "evidence": "test_verifiers_plan_gates.py::test_a_section_missing_its_test_strategy_fails, test_plan_section_quality.py::test_missing_purpose_is_named, ::test_one_step_is_not_enough, ::test_missing_test_strategy_is_named PASSED"
         },
         {
-          "behavior": "the section-id grammar rejects traversal payloads and malformed ids",
+          "behavior": "a split that never adopted a format warns strict-exempt and names the migration",
           "disposition": "tested",
-          "evidence": "::test_grammar_rejects PASSED (7 cases incl. '../01-auth')"
+          "evidence": "test_verifiers_plan_gates.py::test_a_split_that_never_adopted_the_field_warns (2 checks), ::test_a_split_using_no_recognised_heading_only_warns PASSED"
         },
         {
-          "behavior": "check-sections.py reports dependencies and order errors",
+          "behavior": "one adopting section holds the whole split \u2014 for linkage and for headings",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-plan/tests/test_check_sections.py::test_dependencies_are_reported, ::test_prerequisite_after_its_user_fails_the_gate PASSED"
+          "evidence": "::test_one_adopting_section_holds_the_whole_split_to_the_format, ::test_heading_adoption_is_decided_per_split_not_per_section PASSED"
         },
         {
-          "behavior": "a malformed manifest never reports success from the CLI",
+          "behavior": "a legacy split whose sections are actually complete passes outright",
           "disposition": "tested",
-          "evidence": "test_check_sections.py::test_a_malformed_manifest_never_reports_success PASSED (5 cases)"
+          "evidence": "::test_a_legacy_split_is_not_warned_when_it_is_actually_complete PASSED"
         },
         {
-          "behavior": "a bare manifest passes the CLI gate \u2014 no migration owed",
+          "behavior": "all four gates are registered and EACH blocks phase completion on its own",
           "disposition": "tested",
-          "evidence": "test_check_sections.py::test_bare_manifest_declares_nothing_and_passes PASSED"
+          "evidence": "test_verifiers_plan_gates_wiring.py::test_run_plan_checks_includes_all_four_gates, ::test_each_gate_blocks_phase_completion_on_its_own PASSED (4 cases), ::test_a_clean_plan_trips_none_of_the_four PASSED"
         },
         {
-          "behavior": "the plugin parser and the shared parser agree",
+          "behavior": "the in-session review gate blocks a missing, malformed, undecided or verdict-less marker",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-plan/tests/test_sections.py (8 tests) + shared/tests/test_plan_manifest.py::test_parse_manifest_text_is_the_same_parser PASSED; also probed cross-process (ADR-044 lib collision)"
+          "evidence": "plugins/shipwright-plan/tests/test_check_plan_gates.py::test_no_marker_blocks_section_splitting, ::test_an_undecided_reviewer_disagreement_blocks, ::test_a_malformed_marker_blocks_rather_than_crashing, ::test_a_completed_review_that_recorded_no_verdicts_blocks, ::test_a_marker_whose_stored_block_disagrees_with_its_verdicts_blocks PASSED"
         },
         {
-          "behavior": "the dependency-order gate runs at phase completion and blocks",
+          "behavior": "a recorded decision and a recorded opt-out both unblock the review gate",
           "disposition": "tested",
-          "evidence": "shared/tests/test_verifiers_plan_gates.py::test_the_gate_runs_at_phase_completion, ::test_a_bad_order_blocks_phase_completion, ::test_a_good_order_does_not_block_phase_completion PASSED"
+          "evidence": "::test_recording_the_decision_unblocks_it, ::test_a_recorded_opt_out_still_passes PASSED"
         },
         {
-          "behavior": "section-id validity still catches malformed and duplicate ids via the shared parser",
+          "behavior": "the in-session section gate blocks order, coverage, trace, quality and missing files",
           "disposition": "tested",
-          "evidence": "shared/tests/test_verifiers_plan.py::test_section_id_validity_detects_bad_format, ::test_section_id_validity_detects_duplicates PASSED"
+          "evidence": "::test_a_prerequisite_after_its_user_fails, ::test_an_uncovered_requirement_fails, ::test_a_section_serving_no_requirement_fails, ::test_a_declared_but_unwritten_section_fails, ::test_an_unparseable_manifest_reports_the_parse_errors PASSED"
         },
         {
-          "behavior": "find_planning_split_dirs skips iterate/ and dotdirs",
+          "behavior": "the in-session gate is strict where the verifier is lenient",
           "disposition": "tested",
-          "evidence": "test_verifiers_plan_gates.py::test_find_planning_split_dirs_skips_iterate_and_dotdirs PASSED"
+          "evidence": "::test_an_ill_formed_section_fails_even_in_a_new_plan PASSED"
+        },
+        {
+          "behavior": "--gate runs only what was asked for, and a clean plan passes every gate",
+          "disposition": "tested",
+          "evidence": "::test_gate_selection_runs_only_what_was_asked_for, ::test_a_clean_plan_passes_every_gate, ::test_a_missing_planning_dir_is_a_usage_error PASSED"
+        },
+        {
+          "behavior": "the section-writer prompt and the section template emit what the gates require",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-plan/tests/test_prompts.py + test_skill_references_link.py PASSED"
+        },
+        {
+          "behavior": "a missing or unreadable section file degrades instead of raising",
+          "disposition": "tested",
+          "evidence": "test_plan_section_quality.py::test_a_missing_file_yields_an_empty_section PASSED"
         }
       ],
       "counts": {
-        "testable": 16,
-        "tested": 16,
+        "testable": 19,
+        "tested": 19,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 6,
-        "covered_acs": 6
+        "acs": 7,
+        "covered_acs": 7
       }
     }
   },

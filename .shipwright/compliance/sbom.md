@@ -1,7 +1,7 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-07-27T12:14:28.287189+00:00 (dependency versions resolved from uv.lock)
-Source-State: run=iterate-2026-07-27-plan-section-deps
+Generated: 2026-07-27T12:43:49.972175+00:00 (dependency versions resolved from uv.lock)
+Source-State: run=iterate-2026-07-27-plan-step9-gates
 
 ## Summary
 

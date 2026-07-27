@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-07-27T12:14:28.287189+00:00
-Source-State: run=iterate-2026-07-27-plan-section-deps
+Generated: 2026-07-27T12:43:49.972175+00:00
+Source-State: run=iterate-2026-07-27-plan-step9-gates
 Total commits: 1220
 
 ## Commit Distribution
@@ -380,7 +380,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | plan | let a section name what it presupposes, so the order can be checked | bdb4fcca3e74 |
+| 2026-07-27 | plan | let a section name what it presupposes, so the order can be checked (#457) | 8a93f586a126 |
 | 2026-07-27 | plan | record which way each reviewer came down, and notice disagreement (#456) | d30ee9688d16 |
 | 2026-07-27 | shared | one reader for the accepted-baseline failures list (FR-01.06) (#453) | f918954ffcdf |
 | 2026-07-27 | iterate | the F0 race warning becomes a tracked follow-up that outlives the run (#439) | ed0b0a346a12 |
@@ -725,7 +725,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | triage | sweep 9 outbox append(s) into branch | 137e4e5f7dd1 |
+| 2026-07-27 | triage | sweep 1 outbox append(s) into branch | 43877e25222a |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
