@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-27-no-silent-revert",
+  "date": "2026-07-27T19:44:50.959310Z",
+  "type": "feature",
+  "complexity": "small",
+  "branch": "iterate/no-silent-revert",
+  "spec": "",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-27-no-silent-revert"
+}
