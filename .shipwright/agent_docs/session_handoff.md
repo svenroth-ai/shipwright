@@ -1,35 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-merge-state-vocabulary"
+run_id: "iterate-2026-07-27-pytest-root-composition"
 phase: "iterate"
-reason: "iterate: the merge state is a vocabulary, not a BLOCKED flag"
-timestamp: "2026-07-27T16:42:49.289585+00:00"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-07-27T17:38:49.456380+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 16:42:49 UTC
+> Auto-generated 2026-07-27 17:38:49 UTC
 
 ## Session Info
 
-- **Session ID**: 9058f47a-25f4-4469-b517-e3b5c91347e0
-- **Timestamp**: 2026-07-27 16:42:49 UTC
-- **Reason**: iterate: the merge state is a vocabulary, not a BLOCKED flag
+- **Session ID**: 2a2ccc95-e7ec-4ca6-bcdb-601ae9e9b002
+- **Timestamp**: 2026-07-27 17:38:49 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-merge-state-vocabulary
-- **Date**: 2026-07-27T16:42:41.562779Z
-- **Type**: change
-- **Complexity**: small
-- **Branch**: iterate/merge-state-vocabulary
-- **ADR**: iterate-2026-07-27-merge-state-vocabulary
+- **Run ID**: iterate-2026-07-27-run-unit-parallel-race
+- **Date**: 2026-07-27T17:38:43.705219Z
+- **Type**: bug
+- **Complexity**: medium
+- **Branch**: iterate/run-unit-parallel-race
+- **ADR**: iterate-2026-07-27-run-unit-parallel-race
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-run-unit-parallel-race.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/merge-state-vocabulary
-- **External Review Marker**: skipped_config_disabled (external_review_state.json @ 2026-07-27T16:41:37)
+- **Branch**: iterate/pytest-root-composition
+- **Run ID**: `iterate-2026-07-27-pytest-root-composition`
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-pytest-root-composition.md
+- **Complexity**: medium
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T17:10:30)
 
 ### Mandatory replay on Resume
 
@@ -47,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/merge-state-vocabulary
-- **Last Commit**: 64bf9815 chore(triage): sweep 7 outbox append(s) into branch
+- **Branch**: iterate/pytest-root-composition
+- **Last Commit**: 4942819e Merge remote-tracking branch 'origin/main' into iterate/pytest-root-composition
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-ab375fd5 | grade_snapshot | — | 2026-07-27 |
-| evt-d256a84e | work_completed | iterate (iterate: the merge state is a vocabulary, not a BLOCKED flag) | 2026-07-27 |
-| evt-942e3e04 | grade_snapshot | — | 2026-07-27 |
-| evt-f2747703 | work_completed | iterate (iterate: inherited failures and coverage gaps are recorded as inherited) | 2026-07-27 |
-| evt-38795ac5 | grade_snapshot | — | 2026-07-27 |
+| evt-950798de | grade_snapshot | — | 2026-07-27 |
+| evt-36d0f887 | work_completed | iterate (iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed) | 2026-07-27 |
+| evt-ad7b51e0 | grade_snapshot | — | 2026-07-27 |
+| evt-e3d8f519 | work_completed | iterate (iterate: an audit that checked nothing is not recorded) | 2026-07-27 |
+| evt-024abc36 | grade_snapshot | — | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 375
-- **Last iterate**: change — iterate: the merge state is a vocabulary, not a BLOCKED flag (2026-07-27)
+- **Total work events**: 381
+- **Last iterate**: change — iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

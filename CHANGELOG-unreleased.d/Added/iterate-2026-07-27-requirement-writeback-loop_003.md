@@ -1,0 +1,1 @@
+`/shipwright-build`: a section that cannot be built without touching something shared may now make the smallest change it needs, recorded as belonging to that section — and a new check verifies every file the section changed, created or deleted is either in its own file list or recorded with a reason.

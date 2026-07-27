@@ -85,6 +85,14 @@ _Where the work detail lives_ at the end of this document.
   only mode, when any command tries to advance that run, then it is refused with
   a one-line instruction for how to migrate it, and is never silently
   reinterpreted. The run still opens for reading, so past runs stay inspectable.
+- (E) Given a phase's completion checks ask whether the handover note a person
+  reads on returning is current, when that is decided, then it is decided by
+  whether the note says it belongs to the run being checked — not by how
+  recently the file was written, so a run that spent a long time waiting is
+  never reported as stale. A phase whose work never produces such a note is
+  named as out of scope rather than reported as failing, and a check that cannot
+  reach an answer says which part it could not read instead of passing.
+  (iterate-2026-07-27-c3-phase-content-key)
 
 <a id="fr-0102"></a>
 ### FR-01.02 — /shipwright-project
