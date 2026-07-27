@@ -102,6 +102,9 @@ def test_skill_step_1_carries_the_contradiction_stop_rule():
 
 @pytest.mark.parametrize("path", [SKILL_MD, WRITEBACK], ids=lambda p: p.name)
 def test_contradiction_rule_says_stop_and_asks_a_person(path):
+    # `STOP` is asserted against _read (raw), not _flat (lower-cased): the
+    # all-caps spelling is the signal the prompt uses to mark a hard stop, so
+    # a silent downgrade to "stop" should fail this test.
     assert "STOP" in _read(path)
     flat = _flat(path)
     assert "stop building" in flat
@@ -211,3 +214,18 @@ def test_autonomous_path_declares_and_checks_too():
     text = _read(SECTION_BUILDER)
     assert "record_requirement_impact.py" in text
     assert "check_section_file_attribution.py" in text
+
+
+def test_spec_reviewer_output_schema_carries_the_contradiction_kind():
+    """The rejection is only actionable if the schema names its kind.
+
+    Without this, refactoring the example JSON could drop `contradiction` from
+    the enum while every prose rule above still reads correctly — the reviewer
+    would have nothing to emit and would fall back to a generic verdict.
+    """
+    text = _read(SPEC_REVIEWER)
+    assert "contradiction" in text
+    kinds = _locate(text, '"kind"', SPEC_REVIEWER)
+    assert "contradiction" in text[kinds: kinds + 200], (
+        "the spec-reviewer's output `kind` enum must include `contradiction`"
+    )

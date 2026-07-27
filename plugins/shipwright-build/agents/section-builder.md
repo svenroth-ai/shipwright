@@ -42,12 +42,12 @@ Execute these steps **in order**. Do NOT skip steps.
    - `mockup-to-shadcn-mapping.md` — translation table for mockup HTML → shadcn/ui
 7. **Source-of-truth priority** (rendering conflicts ONLY): Spec > Architecture > Chrome > Mockup > shadcn Rules > Screenshot. **STOP instead when mockup and section description contradict each other about what the screen or flow *does*** (a step in one and absent in the other, a different path through the product) — applying the ladder there silently discards a design a human judged against real use. Report it quoting both sides and let a person decide; the expected resolution is that the requirement is corrected to match the mockup. In autonomous mode this is a **section failure with a reason**, never a coin-flip you resolve yourself. Full rule: `{plugin_root}/skills/build/references/requirement-writeback.md`.
 8. Read `{project_root}/shipwright_build_config.json` for existing config
-5. Run setup script:
+9. Run setup script:
 ```bash
 uv run "{plugin_root}/scripts/checks/setup_implementation_session.py" \
   --file "{section_file}" --plugin-root "{plugin_root}" --session-id "{session_id}"
 ```
-6. Parse JSON output. If `mode == "resume"`, skip to `resume_from_step`.
+10. Parse JSON output. If `mode == "resume"`, skip to `resume_from_step`.
 
 ### Step 2: Create Feature Branch
 
