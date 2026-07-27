@@ -1,40 +1,44 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-project-granularity-basis"
+run_id: "iterate-2026-07-27-rollback-uses-target-ref"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T08:17:34.267156+00:00"
+reason: "F11 re-refresh after origin/main moved: iterate-2026-07-27-rollback-uses-target-ref"
+timestamp: "2026-07-27T08:23:12.722139+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 08:17:34 UTC
+> Auto-generated 2026-07-27 08:23:12 UTC
 
 ## Session Info
 
-- **Session ID**: d25b0a7e-0ae6-43cf-9f0d-0888374ebaee
-- **Timestamp**: 2026-07-27 08:17:34 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: 13f13377-3431-4445-b501-bc754d78d6d3
+- **Timestamp**: 2026-07-27 08:23:12 UTC
+- **Reason**: F11 re-refresh after origin/main moved: iterate-2026-07-27-rollback-uses-target-ref
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-project-granularity-basis
-- **Date**: 2026-07-27T08:12:42.596562Z
-- **Type**: change
+- **Run ID**: iterate-2026-07-27-rollback-uses-target-ref
+- **Date**: 2026-07-27T08:23:06.376669Z
+- **Type**: bug
 - **Complexity**: medium
-- **Branch**: iterate/req3-project-granularity-basis
-- **ADR**: iterate-2026-07-27-project-granularity-basis
+- **Branch**: iterate/rollback-uses-target-ref
+- **ADR**: iterate-2026-07-27-rollback-uses-target-ref
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-project-granularity-basis.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-rollback-uses-target-ref.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/req3-project-granularity-basis
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T07:53:44)
+- **Branch**: iterate/rollback-uses-target-ref
+- **Run ID**: iterate-2026-07-27-rollback-uses-target-ref
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-rollback-uses-target-ref.md
+- **Complexity**: medium
+- **External Review Marker**: stale (predates spec (2026-07-27T07:16:58))
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -48,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/req3-project-granularity-basis
-- **Last Commit**: 7b531953 Merge remote-tracking branch 'origin/main' into iterate/req3-project-granularity-basis
+- **Branch**: iterate/rollback-uses-target-ref
+- **Last Commit**: 2f78d849 Merge remote-tracking branch 'origin/main' into iterate/rollback-uses-target-ref
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -74,7 +78,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 362
+- **Total work events**: 363
 - **Last iterate**: change — iterate: the review gate stops being bypassable (fail-closed + fork review) (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
