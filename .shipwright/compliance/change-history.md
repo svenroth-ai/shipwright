@@ -2,18 +2,18 @@
 
 Generated: 2026-07-27T09:08:42.773123+00:00
 Source-State: run=iterate-2026-07-27-artifact-state-stamping
-Total commits: 1213
+Total commits: 1220
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 349
+    "fix" : 350
     "feat" : 336
-    "chore" : 255
+    "chore" : 258
     "docs" : 147
-    "refactor" : 75
-    "test" : 30
+    "refactor" : 77
+    "test" : 31
     "ci" : 11
     "other" : 9
     "build" : 1
@@ -21,10 +21,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 349 commits
+### Fixes (fix) — 350 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | deploy | rollback uses the version it was given, and stops overclaiming the rest | 3d137f2cc6e9 |
 | 2026-07-27 | run | an override overrides the verdict, never the check (#438) | f6179f6e1ed5 |
 | 2026-07-27 | ci | the PR review gate stops being bypassable (#437) | ec0c7055046f |
 | 2026-07-23 | deps | bump pyasn1 0.6.3 -> 0.6.4 (CVE-2026-59885, CVE-2026-59886) (#432) | 9ffbae764acd |
@@ -379,7 +380,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | compliance | produced artifacts name the state they describe (FR-01.10) | 66714199af06 |
+| 2026-07-27 | compliance | produced artifacts name the state they describe (FR-01.10) (#448) | e869a02b60fb |
 | 2026-07-27 | triage | defer from the terminal; cap the failing-check detail (#444) | 631e08055ebc |
 | 2026-07-27 | project | give requirements a size rule, and stop the templates contradicting the basis rule (#442) | af72103d0e7a |
 | 2026-07-27 | spec | REQ-3 Phase 2 — every requirement now states what it guarantees (#436) | 28491e1c9631 |
@@ -716,11 +717,14 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 255 commits
+### Chores (chore) — 258 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | triage | sweep 60 outbox append(s) into branch | 9c8b62747190 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | e552af18cbb9 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | 1de337630e7e |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | ec929a5a7774 |
+| 2026-07-27 | triage | sweep 60 outbox append(s) into branch | b08af221e910 |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -1128,10 +1132,12 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 75 commits
+### Refactoring (refactor) — 77 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | shared | split git resolution out of source_state (300-LOC compliance) (#451) | 3cdca5cfc884 |
+| 2026-07-27 | deploy | address the PR-review observations on the rollback fix | a61e1978dd40 |
 | 2026-07-21 | adopt | route the eight scaffolders through one guarded shared/ loader (FR-01.13) (#423) | 736fc8d1712c |
 | 2026-07-20 | requirements | one catalog, stated once in plain language (campaign S6) (#414) | be2561caccd3 |
 | 2026-07-20 | requirements | one FR-table shape from both generators (campaign S5) (#413) | 5eef5076242c |
@@ -1208,10 +1214,11 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 30 commits
+### Tests (test) — 31 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | shared | split the source-state suite along its three seams (#449) | ecade7e6225e |
 | 2026-07-22 | traceability | normalize an inline dynamic import to clear a benign prompt-scan finding (#426) | 4a0b6d025cb7 |
 | 2026-07-19 | requirements | golden corpus freezing discovery + parser behaviour, bugs included (#403) | 76d97ec06fe6 |
 | 2026-07-08 | run | single-session E2E integration + cross-surface capstone (SS7) (#352) | aa385b3dcd02 |
@@ -1283,7 +1290,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1213 |
+| Total commits | 1220 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1213 |
+| Human-authored commits | 1220 |
 
