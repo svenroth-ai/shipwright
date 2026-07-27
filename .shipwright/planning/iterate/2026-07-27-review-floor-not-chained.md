@@ -201,12 +201,19 @@ oversize file, which is a ratchet whether or not a baseline entry happens to
 exist for it (none does, so the anti-ratchet hook stayed silent; the Stop-hook
 Iron Law caught it).
 
-The first attempt moved only the new cases out and trimmed the original back to
-495 — one fewer than it started. **That was not enough**, and the gate said so
-again: it blocks on `delta == "crossing" and not in_baseline`, which is a
-property of the file being over the limit at all, not of it having grown. A file
-196 lines over its ceiling with no grandfathering entry is a blocker whoever
-touches it, and "it was already like that" is the deferral the Iron Law names.
+**The first attempt (merged as #478) was reasoned wrongly.** It moved the new
+cases out to `test_record_review_pass_cli_floor.py` (113 lines) and trimmed the
+original back to 495 — one fewer than it started — on the argument that the
+pre-existing crossing was a real finding but not this change's to fix, and that
+taking it on would mean refactoring a file this iterate had no other reason to
+touch.
+
+**That was not enough**, and the gate said so again: it blocks on
+`delta == "crossing" and not in_baseline`, which is a property of the file being
+over the limit **at all**, not of it having grown. A file 196 lines over its
+ceiling with no grandfathering entry is a blocker for whoever touches it, and
+"it was already like that" is precisely the deferral the Iron Law names. The
+first argument was the rationalization, not the reasoning.
 
 So the file is split along **its own section headers** — the seams its author
 already drew, not ones invented for the line count:
