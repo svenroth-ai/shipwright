@@ -1,14 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-guide-delivery-watch",
+    "run_id": "iterate-2026-07-27-requirement-writeback-loop",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 5545,
-      "total": 5561,
-      "skipped": 16
+      "passed": 5300,
+      "total": 5300
     },
     "integration": {
+      "status": "passed",
+      "passed": 418,
+      "total": 418
+    },
+    "pgtap": {
       "status": "not_run",
       "passed": 0,
       "total": 0
@@ -18,41 +22,309 @@
       "passed": 0,
       "total": 0
     },
-    "smoke": {
-      "status": "not_run"
-    },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
     "design_fidelity": {
       "status": "not_run",
       "passed": 0,
       "total": 0
     },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
     "surface_verification": {
-      "surface": "none",
-      "runner": "",
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_requirement_impact.py shared/tests/test_requirement_impact_store.py shared/tests/test_requirement_impact_git.py shared/tests/test_requirement_impact_baseline.py shared/tests/test_git_name_status.py shared/tests/test_record_requirement_impact.py shared/tests/test_section_file_list.py shared/tests/test_section_file_attribution.py shared/tests/test_design_round_declarations.py shared/tests/test_requirement_writeback_integration.py -q",
       "exit_code": 0,
-      "tests_run": 0,
-      "evidence_path": "",
-      "timestamp": "2026-07-27T15:49:23.924Z",
-      "attempts": 0,
-      "justification": "Documentation only: the change edits two prose passages in docs/guide.md and touches no executable code, so there is no behaviour surface to drive. The behaviour being documented (the F11 delivery watch) was verified end-to-end against the live GitHub API in iterate-2026-07-27-name-the-blocker, which shipped it. The internal anchor added here was resolved against the document's own headings."
+      "tests_run": 204,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\requirement-writeback-loop\\.shipwright\\runs\\iterate-2026-07-27-requirement-writeback-loop\\surface_verification.log",
+      "timestamp": "2026-07-27T00:00:00.000Z",
+      "attempts": 1
     },
     "test_completeness": {
-      "status": "n/a",
-      "justification": "Trivial complexity, documentation only: the change edits two prose passages in docs/guide.md and introduces no executable behaviour to enumerate. The behaviour it describes was enumerated and tested in iterate-2026-07-27-name-the-blocker, which shipped it."
-    },
-    "degraded": [
-      "Complexity OVERRIDDEN from the classifier's 'medium' to 'trivial'. The estimate came solely from the history fall-through (prior_source=history, median of the last 20 runs); the classifier's own scope-keyword estimate and safety floor both said trivial, and it reported zero risk flags. The diff is two prose passages in docs/guide.md with no code touched, so the medium ceremony (mini-plan, approval gate, external review, confidence calibration) would have been process applied to nothing."
-    ]
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "declaration vocabulary is closed (impact/phase/scope/run_id)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "impact none requires a valid one-line reason",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "behaviour-affecting requires >=1 well-formed FR id",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "a requirements file is .shipwright/planning/<split>/spec.md, not iterate scratch",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "behaviour-affecting without a spec touch is rejected",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "unobtainable evidence skips the touch check; empty evidence does not",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "attributed extras are structured, reasoned, deduped, root-confined",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "identity (run_id, phase, scope) is path-safe, run-scoped, collision-resistant",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "damage is named, never silently skipped (bad JSON, conflict markers, non-UTF-8)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "a rejected declaration writes no declaration at all",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "the three git outcome classes stay distinct (git / skipped / error)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "record round-trips; same identity overwrites; different runs coexist",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "section '## Files to Create/Modify' parses across messy LLM formatting",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "undeclared shared touch fails; a recorded extra passes",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "only an explicit trailing slash makes a declared entry cover a directory",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "rename destinations must be accounted for; sources are informational",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "a stale run's extra does not excuse this run's touch",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "part (2)'s mandated spec correction is not punished by part (3)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "an --impact none section editing requirements is still flagged",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "framework bookkeeping is excluded; ordinary files are not",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "the whole loop composes: design round -> spec correction -> build section",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "design Option B declares and writes back substance (prompt rule)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "design Option A blocks on a missing or foreign-run declaration",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "build states the contradiction STOP rule and its expected resolution",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "the shared-touch carve-out exists at every scope-rule site",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "the autonomous priority ladder no longer settles contradictions silently",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "a degenerate range (base == head) cannot pass a declaration",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "resolved base/head SHAs are recorded, so the range is auditable",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "a greenfield design phase works before the first commit (unborn HEAD)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "bad vocabulary exits 1 with structured JSON, not argparse's exit 2",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "free-text fields stay one line",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "spec auto-attribution requires the declaration to cover THIS range",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "an embedded '..' segment is refused, not only a leading one",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "design finalization refuses while a round is silent",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "a design round is judged against its own baseline, not 'everything uncommitted'",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "a behaviour declaration with no baseline is refused (fail-closed)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "the round registry is the tracked baselines, not gitignored scratch",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "a deletion outside the section's scope fails; a declared one does not",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "a section with no declaration at all fails",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "'Label: path' bullets still yield the path",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "the --name-status -z parser handles A/M/D/R/C, spaces, quotes, truncation",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "repo-root paths rebase onto a nested project root",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "emphasis stripping does not mangle _utils.py / __init__.py",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "a back-ticked word in the description does not hijack the path",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "several paths on one bullet are all declared",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "a reason containing '=======' is not mistaken for a merge conflict",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "PermissionError and dubious-ownership fail closed, not 'skipped'",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "the contradiction decision is recorded on the declaration",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "a build declaration does not satisfy a design round",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "no rounds is a clean state, and says so rather than reading as verified",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+        },
+        {
+          "behavior": "an agent correctly judging behaviour-vs-appearance on real feedback",
+          "disposition": "untestable",
+          "reason_code": "requires-manual-visual-judgment"
+        },
+        {
+          "behavior": "an agent correctly detecting a prose-vs-markup contradiction",
+          "disposition": "untestable",
+          "reason_code": "requires-manual-visual-judgment"
+        }
+      ],
+      "counts": {
+        "testable": 50,
+        "tested": 50,
+        "untestable": 2,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 8,
+        "covered_acs": 8
+      }
+    }
   },
   "coverage": {
     "total": 80.2,
     "measured_tier": "repo",
     "source": "combined coverage.xml (all plugins + shared + integration)",
     "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-07-27-requirement-writeback-loop",
+    "commit": "c30d6ce169253104aec50fe4b822012563fd8e13",
+    "dirty": true
   }
 }

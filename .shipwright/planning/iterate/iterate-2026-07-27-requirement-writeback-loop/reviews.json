@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-27-requirement-writeback-loop",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T08:40:22.976520+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-step-7",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter:gemini+openai",
+      "completed_at": "2026-07-27T07:14:07.241922+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-step-4",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "shipwright-build:code-reviewer",
+      "completed_at": "2026-07-27T08:40:23.077610+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-step-8",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "shipwright-build:doubt-reviewer",
+      "completed_at": "2026-07-27T09:25:29.700174+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-step-6-stage-3",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter:gemini+openai",
+      "completed_at": "2026-07-27T08:40:23.188608+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-step-6c",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
