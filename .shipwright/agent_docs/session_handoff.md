@@ -1,8 +1,8 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-name-the-blocker"
+run_id: "iterate-2026-07-27-adopt-derived-catalogue"
 phase: "iterate"
-reason: "F11 refresh before arming auto-merge"
+reason: "ensure-current pre-merge refresh"
 timestamp: "2026-07-27T12:52:40.120480+00:00"
 ---
 
@@ -12,9 +12,9 @@ timestamp: "2026-07-27T12:52:40.120480+00:00"
 
 ## Session Info
 
-- **Session ID**: 9058f47a-25f4-4469-b517-e3b5c91347e0
+- **Session ID**: 98053cc9-0f7c-4be8-b1cc-8b5d8b25d84b
 - **Timestamp**: 2026-07-27 12:52:40 UTC
-- **Reason**: F11 refresh before arming auto-merge
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
@@ -29,16 +29,15 @@ timestamp: "2026-07-27T12:52:40.120480+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/name-the-blocker
-- **Run ID**: iterate-2026-07-27-name-the-blocker
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-name-the-blocker.md
+- **Branch**: iterate/adopt-derived-catalogue
+- **Run ID**: iterate-2026-07-27-adopt-derived-catalogue
+- **Spec**: .shipwright/planning/iterate/2026-07-27-adopt-derived-catalogue.md
 - **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-07-27T11:55:00))
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T11:49:21)
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/name-the-blocker
-- **Last Commit**: ece650cb Merge remote-tracking branch 'origin/main' into iterate/name-the-blocker
+- **Branch**: iterate/adopt-derived-catalogue
+- **Last Commit**: d59b5a46 Merge remote-tracking branch 'origin/main' into iterate/adopt-derived-catalogue
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -78,7 +77,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 371
+- **Total work events**: 372
 - **Last iterate**: change — iterate: the four Step-9 gates become code, closing trg-88f721be (3 of 3) (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
