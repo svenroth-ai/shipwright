@@ -1,39 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-changelog-writer-preserve-history"
+run_id: "iterate-2026-07-27-guide-delivery-watch"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T14:35:23.623868+00:00"
+reason: "unblock #462: base moved, DIRTY"
+timestamp: "2026-07-27T15:50:19.371756+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 14:35:23 UTC
+> Auto-generated 2026-07-27 15:50:19 UTC
 
 ## Session Info
 
-- **Session ID**: 
-- **Timestamp**: 2026-07-27 14:35:23 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: 9058f47a-25f4-4469-b517-e3b5c91347e0
+- **Timestamp**: 2026-07-27 15:50:19 UTC
+- **Reason**: unblock #462: base moved, DIRTY
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-adopt-inherited-baseline
-- **Date**: 2026-07-27T14:35:17.611324Z
-- **Type**: feature
-- **Complexity**: medium
-- **Branch**: iterate/adopt-inherited-baseline
-- **ADR**: iterate-2026-07-27-adopt-inherited-baseline
+- **Run ID**: iterate-2026-07-27-guide-delivery-watch
+- **Date**: 2026-07-27T15:50:13.019923Z
+- **Type**: change
+- **Complexity**: trivial
+- **Branch**: iterate/guide-delivery-watch
+- **ADR**: iterate-2026-07-27-guide-delivery-watch
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-adopt-inherited-baseline.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/changelog-writer-preserve-history
-- **Run ID**: `iterate-2026-07-27-changelog-writer-preserve-history`
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-changelog-writer-preserve-history.md
-- **Complexity**: medium (classifier: `estimate=medium`, `prior_source=history`,
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T11:28:16)
+- **Branch**: iterate/guide-delivery-watch
+- **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
@@ -51,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/changelog-writer-preserve-history
-- **Last Commit**: 386190d3 Merge remote-tracking branch 'origin/main' into iterate/changelog-writer-preserve-history
+- **Branch**: iterate/guide-delivery-watch
+- **Last Commit**: 622a2e31 Merge remote-tracking branch 'origin/main' into iterate/guide-delivery-watch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-76f1beff | grade_snapshot | — | 2026-07-27 |
+| evt-90ce4f39 | work_completed | iterate (iterate: document the delivery watch in the guide) | 2026-07-27 |
 | evt-942e3e04 | grade_snapshot | — | 2026-07-27 |
 | evt-f2747703 | work_completed | iterate (iterate: inherited failures and coverage gaps are recorded as inherited) | 2026-07-27 |
 | evt-38795ac5 | grade_snapshot | — | 2026-07-27 |
-| evt-f540a880 | work_completed | iterate (iterate: the four Step-9 gates become code, closing trg-88f721be (3 of 3)) | 2026-07-27 |
-| evt-0b2bb01b | grade_snapshot | — | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 374
-- **Last iterate**: change — iterate: inherited failures and coverage gaps are recorded as inherited (2026-07-27)
+- **Total work events**: 375
+- **Last iterate**: change — iterate: document the delivery watch in the guide (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
