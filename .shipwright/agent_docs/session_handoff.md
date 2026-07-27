@@ -1,43 +1,44 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-changelog-writer-preserve-history"
+run_id: "iterate-2026-07-27-rollback-uses-target-ref"
 phase: "iterate"
-reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T11:31:20.545287+00:00"
+reason: "auto re-refresh (round 43): origin/main moved"
+timestamp: "2026-07-27T09:08:48.846142+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 11:31:20 UTC
+> Auto-generated 2026-07-27 09:08:48 UTC
 
 ## Session Info
 
-- **Session ID**: 
-- **Timestamp**: 2026-07-27 11:31:20 UTC
-- **Reason**: ensure-current pre-merge refresh
+- **Session ID**: 13f13377-3431-4445-b501-bc754d78d6d3
+- **Timestamp**: 2026-07-27 09:08:48 UTC
+- **Reason**: auto re-refresh (round 43): origin/main moved
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-changelog-writer-preserve-history
-- **Date**: 2026-07-27T11:31:14.683921Z
-- **Type**: bug
+- **Run ID**: iterate-2026-07-27-artifact-state-stamping
+- **Date**: 2026-07-27T09:08:42.675204Z
+- **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/changelog-writer-preserve-history
-- **ADR**: iterate-2026-07-27-changelog-writer-preserve-history
+- **Branch**: iterate/artifact-state-stamping
+- **ADR**: iterate-2026-07-27-artifact-state-stamping
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-changelog-writer-preserve-history.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-artifact-state-stamping.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/changelog-writer-preserve-history
-- **Run ID**: `iterate-2026-07-27-changelog-writer-preserve-history`
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-changelog-writer-preserve-history.md
-- **Complexity**: medium (classifier: `estimate=medium`, `prior_source=history`,
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T11:28:16)
+- **Branch**: iterate/rollback-uses-target-ref
+- **Run ID**: iterate-2026-07-27-rollback-uses-target-ref
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-rollback-uses-target-ref.md
+- **Complexity**: medium
+- **External Review Marker**: stale (predates spec (2026-07-27T07:16:58))
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -51,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/changelog-writer-preserve-history
-- **Last Commit**: cf34677b Merge remote-tracking branch 'origin/main' into iterate/changelog-writer-preserve-history
+- **Branch**: iterate/rollback-uses-target-ref
+- **Last Commit**: 1711fc06 Merge remote-tracking branch 'origin/main' into iterate/rollback-uses-target-ref
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read

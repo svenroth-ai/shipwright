@@ -11,13 +11,16 @@ their *mechanics* are target-specific and live in
 validated against
 [`shared/profiles/deploy-profile.schema.json`](../../../../shared/profiles/deploy-profile.schema.json).
 
-> **Status today (Phase 0, Iterate 2).** The Deploy Profile layer is
-> declarative reference. The runtime deploy flow (`SKILL.md` Steps B-5) still
-> reads its values from hardcoded SKILL.md procedure for Jelastic — migrating
-> the runtime to consume the profile is a future iterate. The discipline doc
-> + schema + validator + reference profiles are shippable now because they
-> answer the question *"what would a non-Jelastic target need to deliver?"*
-> independently of the runtime switch.
+> **Status today (updated iterate-2026-07-27-rollback-uses-target-ref).** The
+> Deploy Profile layer is no longer purely declarative: the runtime now reads
+> `smoke_test.{timeout,poll_interval,max_wait}_seconds` for the liveness
+> deadline and `rollback.data_rollback_strategy` for the stored-data gate, via
+> the shared `deploy_profile.py`. Everything else in the flow (auth,
+> environments, migrations, the clone/pin mechanics themselves) is still
+> hardcoded SKILL.md procedure for Jelastic; migrating the rest remains a future
+> iterate. The discipline doc + schema + validator + reference profiles were
+> shippable before that switch because they answer *"what would a non-Jelastic
+> target need to deliver?"* independently of it.
 
 Three reference profiles ship today to triangulate the schema across
 mechanically different targets:

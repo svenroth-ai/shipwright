@@ -1,7 +1,7 @@
 # Test Evidence Report
 
-Generated: 2026-07-27T11:31:14.777421+00:00
-Source-State: run=iterate-2026-07-27-changelog-writer-preserve-history
+Generated: 2026-07-27T09:08:42.773123+00:00
+Source-State: run=iterate-2026-07-27-artifact-state-stamping
 
 ## Summary
 
@@ -21,7 +21,7 @@ Source-State: run=iterate-2026-07-27-changelog-writer-preserve-history
 | 4 | triage defer from the terminal + failing-check detail cap | [iterate](traceability-matrix.md#evt-2aa40a94) | — | +0 | — | — | 2026-07-27 |
 | 5 | Evidence documents and test-run records now name which version of the project they describe, not just when they were written. | [iterate](traceability-matrix.md#evt-37719eaa) | — | +0 | — | — | 2026-07-27 |
 | 6 | The F0 suite runner files its own triage entry for a unit red in parallel and green alone, never auto-closes it, and exits 3 if the observation could not be recorded. | [iterate](traceability-matrix.md#evt-0acddcf6) | — | +0 | — | — | 2026-07-27 |
-| 7 | changelog writer preserves the history it read | [iterate](traceability-matrix.md#evt-320397d2) | — | +0 | — | — | 2026-07-27 |
+| 7 | hosting rollback uses the target ref, polls liveness to the target's deadline, gates on stored-data drift, and halts loudly when the way back fails | [iterate](traceability-matrix.md#evt-a345a59f) | — | +0 | — | — | 2026-07-27 |
 | 8 | REQ-3 Phase 2 content round - all 18 requirements walked or minted | [iterate](traceability-matrix.md#evt-ea7203ec) | — | +0 | — | — | 2026-07-26 |
 | 9 | Requirement gathering now follows one shared, thorough interview method across the project, adopt and iterate steps, and a new requirement records that guarantee. | [iterate](traceability-matrix.md#evt-11304ded) | unit | +0 | 4946/4961 | PASS (15 skipped) | 2026-07-23 |
 | 10 | The automated design check no longer flags a false problem for projects that were adopted into Shipwright and never went through the design/mockup step. | [iterate](traceability-matrix.md#evt-a8a0f759) | unit | +0 | 26/26 | PASS | 2026-07-23 |
