@@ -1,0 +1,1 @@
+Test-run records now state the code version they were measured against, read from the project itself rather than asserted by whoever wrote the record — so a leftover record from an earlier commit is recognisable as one.

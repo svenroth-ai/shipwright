@@ -41,13 +41,9 @@ from .audit_disclosure import (
     load_audit_freshness,
 )
 
-_SEP = " · "
-_LEAD = "Consistency audit: "
-_NEVER = "never run — this evidence has never been cross-checked"
-_UNKNOWN = (
-    "last-run record unreadable — whether this evidence was ever cross-checked "
-    "is unknown"
-)
+_LEAD = "Consistency-audit: "
+_NEVER = "never run"
+_UNKNOWN = "last-run record unreadable (status unknown)"
 _ON_DEMAND = (
     "_On demand by design: the audit has no schedule and no CI trigger, so it "
     "never runs on its own"
@@ -86,27 +82,28 @@ def _groups(record: AuditRecord) -> str:
 
 
 def format_note(freshness: AuditFreshness, *, as_of: str) -> str:
-    """The one-line disclosure appended to a document's ``Generated:`` header.
+    """The third provenance line of every evidence document.
 
-    Always non-empty and always single-line: silence is the state this exists to
-    abolish, and a newline would break the header it rides on. A partial run
-    never displaces the last full cross-check — it is reported alongside it.
+    Terse by design — it sits beside ``Generated:`` and ``Source-State:``, and the
+    dashboard's Consistency Audit section carries the long form. Always non-empty
+    and always single-line: silence is the state this exists to abolish, and a
+    newline would break the header block it rides in. A partial run never
+    displaces the last full cross-check — it is reported alongside it.
     """
     if freshness.status != VALID or freshness.latest is None:
-        body = _NEVER if freshness.status == ABSENT else _UNKNOWN
-        return f"{_SEP}{_LEAD}{body}"
+        return f"{_LEAD}{_NEVER if freshness.status == ABSENT else _UNKNOWN}"
 
     latest, full = freshness.latest, freshness.latest_full
     if latest.is_full:
-        return f"{_SEP}{_LEAD}last run {_when(latest, as_of)} — {_verdict(latest)}"
+        return f"{_LEAD}last run {_when(latest, as_of)} — {_verdict(latest)}"
     if full is None:
         return (
-            f"{_SEP}{_LEAD}never fully run — latest was a partial check "
-            f"{_when(latest, as_of)}, {_groups(latest)}"
+            f"{_LEAD}never fully run; latest {_when(latest, as_of)} "
+            f"partial ({_groups(latest)})"
         )
     return (
-        f"{_SEP}{_LEAD}last full run {_when(full, as_of)} — {_verdict(full)}; "
-        f"latest run {latest.ran_at[:10]} partial ({_groups(latest)})"
+        f"{_LEAD}last full run {_when(full, as_of)} — {_verdict(full)}; "
+        f"latest {latest.ran_at[:10]} partial ({_groups(latest)})"
     )
 
 

@@ -1,6 +1,7 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-27T08:30:49.617405+00:00 · Consistency audit: never run — this evidence has never been cross-checked
+Generated: 2026-07-27T09:08:42.773123+00:00
+Source-State: run=iterate-2026-07-27-artifact-state-stamping
 
 ## Requirements Coverage
 
@@ -31,8 +32,8 @@ Generated: 2026-07-27T08:30:49.617405+00:00 · Consistency audit: never run — 
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-37719eaa"></a>Evidence documents and test-run records now name which version of the project they describe, not just when they were written. | iterate | change | [FR-01.10](#rtm-fr-0110) | — | — | 2026-07-27 |
 | <a id="evt-2aa40a94"></a>triage defer from the terminal + failing-check detail cap | iterate | change | [FR-01.14](#rtm-fr-0114) | — | — | 2026-07-27 |
-| <a id="evt-1c7c2446"></a>compliance evidence discloses when the cross-check last ran | iterate | change | [FR-01.10](#rtm-fr-0110) | — | — | 2026-07-27 |
 | <a id="evt-9ad5050b"></a>requirement granularity guidance + advisory I6 check + the Basis-assumed template contradiction | iterate | change |  | — | — | 2026-07-27 |
 | <a id="evt-4794dcc1"></a>Overriding a phase gate now runs the check anyway and records what it found plus the reason given, and the session handoff states which phases are finished and which one was interrupted. | iterate | change | [FR-01.01](#rtm-fr-0101) | — | — | 2026-07-27 |
 | <a id="evt-78684181"></a>the review gate stops being bypassable (fail-closed + fork review) | iterate | change |  | — | — | 2026-07-27 |
@@ -425,7 +426,7 @@ Generated: 2026-07-27T08:30:49.617405+00:00 · Consistency audit: never run — 
 - [FR-01.07](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
 - [FR-01.08](../../.shipwright/planning/01-adopted/spec.md) (Should): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
 - [FR-01.09](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
-- [FR-01.10](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-1c7c2446` (2026-07-27)
+- [FR-01.10](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-37719eaa` (2026-07-27)
 - [FR-01.11](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
 - [FR-01.12](../../.shipwright/planning/01-adopted/spec.md) (May): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
 - [FR-01.13](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)

@@ -297,4 +297,7 @@ class ComplianceData:
     known_failures: list[KnownFailure] = field(default_factory=list)  # + baseline
     baseline_failure_count: int = 0
     timestamp: str = ""
-    audit_freshness_note: str = ""  # header disclosure — see lib/audit_disclosure
+    #: Run id off the SAME event as ``timestamp`` — see ``lib/_provenance.py``.
+    run_id: str | None = None
+    #: "When did the cross-check last run?" — see ``lib/audit_disclosure.py``.
+    audit_freshness_note: str = ""

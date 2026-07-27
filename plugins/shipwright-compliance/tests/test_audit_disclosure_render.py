@@ -60,7 +60,7 @@ class TestFormatNote:
 
     def test_never_run_says_so_explicitly(self):
         note = format_note(AuditFreshness(ABSENT), as_of=_AS_OF)
-        assert "Consistency audit" in note
+        assert note.startswith("Consistency-audit: ")
         assert "never run" in note
 
     def test_unreadable_record_is_unknown_not_never(self):

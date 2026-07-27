@@ -5,49 +5,63 @@ verifies that on-disk compliance MDs match the version committed in the
 LAST iterate-finalize commit (identified by a ``Run-ID:`` trailer in the
 commit body AND a tree modification under ``.shipwright/compliance/``).
 
-Rationale: the previous design treated tracked Markdown as both live
-derived state AND committed historical artifact — those semantics
-conflict (any non-iterate commit can shift live state without touching
-the tracked file, producing a perpetual stream of E1-E5 false positives
-in the triage inbox). The new design is purely **snapshot integrity**:
+Rationale: the previous design treated tracked Markdown as both live derived
+state AND committed historical artifact — semantics that conflict (any
+non-iterate commit shifts live state without touching the tracked file, so
+E1-E5 false positives streamed into the triage inbox forever). The new design
+is purely **snapshot integrity**:
 
   * On-disk == last iterate snapshot → green.
-  * On-disk != last iterate snapshot → ``stale`` (someone hand-edited
-    or partially-regenerated a tracked MD outside iterate finalize).
-  * No iterate-finalize commit exists yet → ``snapshot_unavailable``
-    on the report, ``any_stale=False`` (greenfield-safe).
+  * On-disk != last iterate snapshot → ``stale`` (hand-edited or partially
+    regenerated outside iterate finalize).
+  * No iterate-finalize commit yet → ``snapshot_unavailable`` on the report,
+    ``any_stale=False`` (greenfield-safe).
 
-Iterate finalize remains the sole producer of these tracked MDs; live
-state can be inspected on demand via ``update_compliance.py`` (which
-writes a fresh, uncommitted regen) but it is no longer required for
-the audit to be accurate.
-
-Semantic shift documented in
-``iterate-2026-05-23-compliance-md-single-producer``.
+Iterate finalize remains the sole producer of these tracked MDs; live state can
+be inspected on demand via ``update_compliance.py`` (a fresh, uncommitted regen)
+but is no longer required for the audit to be accurate. Semantic shift documented
+in ``iterate-2026-05-23-compliance-md-single-producer``.
 """
 
 from __future__ import annotations
 
 import re
 import subprocess
+import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
 
+# The banner's shape is owned by shared/scripts/source_state.py. Reached by an
+# absolute path bootstrap, NOT `from scripts.lib._provenance import …`: this module is
+# also loaded BY FILE PATH from other plugins' pytest sessions (security's
+# test_finalize_security_compliance, shared's test_integrate_main), where `scripts`
+# resolves to a DIFFERENT plugin's namespace and a `scripts.lib` import raises
+# ModuleNotFoundError — green locally, red in CI (the ADR-045 lib-collision landmine;
+# caught by the doubt reviewer after it was introduced).
+_SHARED_SCRIPTS = Path(__file__).resolve().parents[4] / "shared" / "scripts"
+if str(_SHARED_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SHARED_SCRIPTS))
+from source_state import strip_banner  # noqa: E402
 
-
-
-# Strip every ``Generated: ...`` line so the snapshot byte-compare ignores
-# the volatile timestamp banner. Same regex as the legacy fresh-render
-# audit — both sides of the comparison still need normalisation.
+# Strip every ``Generated: ...`` line so the byte-compare ignores the volatile
+# timestamp banner. Same regex as the legacy fresh-render audit.
 HEADER_STRIP_RE = re.compile(r"(?m)^Generated:.*\n?")
 
 _GIT_TIMEOUT_SECONDS = 10
 
 
 def normalize(text: str) -> str:
-    """Strip timestamp/header noise so byte-compare ignores mtime-driven churn."""
-    return HEADER_STRIP_RE.sub("", text)
+    """Strip timestamp/provenance header noise so byte-compare ignores churn.
+
+    ``Source-State:`` (card trg-4d5b6a56) is stripped for the same reason as
+    ``Generated:``: an on-demand regen is UNCOMMITTED, so keeping a per-run line in
+    the compare would report every document as hand-edited — the false-positive
+    stream the 2026-05-23 redesign removed. It is DISCLOSURE; refusing a document
+    that names the wrong state belongs to trg-a1fd8125. ``strip_banner`` is imported,
+    never re-declared, so it cannot drift from the renderers.
+    """
+    return strip_banner(HEADER_STRIP_RE.sub("", text))
 
 
 @dataclass

@@ -40,6 +40,7 @@ from scripts.lib._rtm_reconciliation_render import (
 from scripts.lib._rtm_layer_columns import layer_cells, load_layer_index
 from scripts.lib._rtm_links import commit_cell, fr_anchor_id, last_tested_cell, link_frs, resolve_repo_url, timeline_order, utc_date  # noqa: E501
 from scripts.lib.event_display import event_display_name
+from scripts.lib._provenance import provenance_lines
 
 # Cross-cutting markdown helper lives at shared/scripts/markdown_table.py
 # (outside the `lib/` namespace per ADR-045 so it can be imported here
@@ -131,7 +132,7 @@ def generate(data: ComplianceData) -> str:
     lines = [
         "# Requirements Traceability Matrix",
         "",
-        f"Generated: {data.timestamp}{data.audit_freshness_note}",
+        *provenance_lines(data),
         "",
     ]
 

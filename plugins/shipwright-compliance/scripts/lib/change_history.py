@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from scripts.lib.mermaid import commit_type_pie
+from scripts.lib._provenance import provenance_lines
 
 # Cross-cutting markdown helper lives at shared/scripts/markdown_table.py
 # (outside the `lib/` namespace per ADR-045 so it can be imported here
@@ -46,7 +47,7 @@ def generate(data: ComplianceData) -> str:
     lines = [
         "# Commit Change Log",
         "",
-        f"Generated: {data.timestamp}{data.audit_freshness_note}",
+        *provenance_lines(data),
         f"Total commits: {len(commits)}",
         "",
     ]

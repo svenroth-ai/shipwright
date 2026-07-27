@@ -1,5 +1,5 @@
 # Project Activity Dashboard
-> Updated: 2026-07-27 08:30 UTC | Session: 184abbf4-c486-4d5b-b89a-1dc21aebc3e1 | Run: iterate-2026-07-27-disclose-audit-last-run
+> Updated: 2026-07-27 09:08 UTC | Session: 821e1007-5fc9-403d-9122-21e7ce9dc8e5 | Run: iterate-2026-07-27-artifact-state-stamping
 
 ## Recent Changes (364 iterations)
 
@@ -9,7 +9,7 @@
 | change | iterate: phase-gate override leaves evidence; handoff renders phase status | 0/0 |  | FR-01.01 | 2026-07-27 |
 | change | iterate: requirement granularity guidance + advisory I6 check + the Basis-assumed template contradiction | 0/0 |  | compliance | 2026-07-27 |
 | change | iterate: triage defer from the terminal + failing-check detail cap | 0/0 |  | FR-01.14 | 2026-07-27 |
-| change | iterate: compliance evidence discloses when the cross-check last ran | 0/0 |  | FR-01.10 | 2026-07-27 |
+| change | iterate: stamp produced artifacts with the state they describe (FR-01.10) | 0/0 |  | FR-01.10 | 2026-07-27 |
 | change | iterate: REQ-3 Phase 2 content round - all 18 requirements walked or minted | 0/0 |  | FR-01.01, FR-01.02, FR-01.03 | 2026-07-26 |
 | feature | REQ-3 Phase 1: shared requirement-elicitation method (grilling + domain-modeling) + CONTEXT.md format + FR-01.16 mint | 4946/4961 |  |  | 2026-07-23 |
 | bug | design verifier C1 skips projects that never ran the design phase | 26/26 |  | compliance | 2026-07-23 |
@@ -371,7 +371,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-27 | Unit: 8963/8963 | Integration: 418/418 | Smoke: not_run | (iterate)
+Last run: 2026-07-27 | Unit: 9641/9641 | Integration: 418/418 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

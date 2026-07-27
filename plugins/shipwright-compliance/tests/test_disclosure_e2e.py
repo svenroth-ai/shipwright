@@ -56,11 +56,12 @@ def _regenerate(project_root: Path) -> None:
 
 
 def _header(project_root: Path, doc: str) -> str:
+    """The document's ``Consistency-audit:`` provenance line, read off disk."""
     text = (project_root / COMPLIANCE_DIR / doc).read_text(encoding="utf-8")
     for line in text.splitlines():
-        if line.startswith("Generated:"):
+        if line.startswith("Consistency-audit:"):
             return line
-    raise AssertionError(f"{doc} has no 'Generated:' header line")
+    raise AssertionError(f"{doc} has no 'Consistency-audit:' provenance line")
 
 
 def test_documents_disclose_never_run_before_any_audit(project: Path):

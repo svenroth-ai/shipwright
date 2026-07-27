@@ -34,20 +34,27 @@ _HEADER_RENDERERS = {
 }
 
 
-def _header(text: str) -> str:
-    """The document's ``Generated:`` line, where provenance is disclosed."""
+def _line(text: str, prefix: str) -> str:
     for line in text.splitlines():
-        if line.startswith("Generated:"):
+        if line.startswith(prefix):
             return line
-    raise AssertionError("document has no 'Generated:' header line")
+    raise AssertionError(f"document has no {prefix!r} line")
+
+
+def _header(text: str) -> str:
+    """The document's ``Generated:`` line."""
+    return _line(text, "Generated:")
+
+
+def _disclosure(text: str) -> str:
+    """The third provenance line — when the cross-check last ran."""
+    return _line(text, "Consistency-audit:")
 
 
 @pytest.mark.parametrize("doc", sorted(_HEADER_RENDERERS))
 def test_never_run_is_disclosed_in_every_document(doc: str, project_root: Path):
     text = _HEADER_RENDERERS[doc](collect_all(project_root))
-    header = _header(text)
-    assert "Consistency audit" in header
-    assert "never run" in header
+    assert "never run" in _disclosure(text)
 
 
 @pytest.mark.parametrize("doc", sorted(_HEADER_RENDERERS))
@@ -56,9 +63,19 @@ def test_recorded_run_is_disclosed_in_every_document(doc: str, project_root: Pat
         project_root, statuses=["pass", "skip"], any_fail=False,
         ran_at="2026-07-15T00:00:00+00:00",
     )
-    header = _header(_HEADER_RENDERERS[doc](collect_all(project_root)))
-    assert "2026-07-15" in header
-    assert "PASS" in header
+    line = _disclosure(_HEADER_RENDERERS[doc](collect_all(project_root)))
+    assert "2026-07-15" in line
+    assert "PASS" in line
+
+
+@pytest.mark.parametrize("doc", sorted(_HEADER_RENDERERS))
+def test_the_disclosure_sits_in_the_provenance_block(doc: str, project_root: Path):
+    """Third line of the block — beside what was generated and from which state."""
+    text = _HEADER_RENDERERS[doc](collect_all(project_root))
+    lines = text.splitlines()
+    i = lines.index(_header(text))
+    assert lines[i + 1].startswith("Source-State:")
+    assert lines[i + 2].startswith("Consistency-audit:")
 
 
 @pytest.mark.parametrize("doc", sorted(_HEADER_RENDERERS))
@@ -75,16 +92,20 @@ def test_sbom_keeps_its_own_header_qualifier(project_root: Path):
     """SBOM's lock-resolution note must survive alongside the disclosure."""
     data = collect_all(project_root)
     data.dependencies_lock_resolved = True
-    header = _header(render_sbom(data))
-    assert "resolved from uv.lock" in header
-    assert "Consistency audit" in header
+    text = render_sbom(data)
+    assert "resolved from uv.lock" in _header(text)
+    assert "never run" in _disclosure(text)
 
 
-def test_dashboard_carries_the_section_not_the_header_suffix(project_root: Path):
+def test_dashboard_carries_both_the_line_and_the_section(project_root: Path):
+    """The dashboard is an evidence document too, and it expands the answer.
+
+    The terse provenance line is uniform across all five documents; the section
+    below it is where the dashboard states the full form.
+    """
     text = render_dashboard(collect_all(project_root))
+    assert "never run" in _disclosure(text)
     assert "## 🔎 Consistency Audit" in text
-    # No double-disclosure: the dashboard states it once, in full.
-    assert "Consistency audit:" not in _header(text)
 
 
 def test_dashboard_section_reflects_a_recorded_run(project_root: Path):
@@ -123,12 +144,16 @@ def test_the_audit_record_is_an_explicit_render_input(doc: str, project_root: Pa
     )
     after = render(collect_all(project_root))
     assert before != after
-    assert "never run" in _header(before)
-    assert "2026-07-15" in _header(after)
+    assert "never run" in _disclosure(before)
+    assert "2026-07-15" in _disclosure(after)
 
 
-def test_directly_constructed_data_renders_without_the_note(project_root: Path):
-    """Backwards compatibility: the field defaults to empty, not to a lie."""
+def test_directly_constructed_data_omits_the_line_rather_than_guessing(
+    project_root: Path,
+):
+    """Backwards compatibility: an unset field drops the line, never invents one."""
     data = collect_all(project_root)
     data.audit_freshness_note = ""
-    assert _header(render_rtm(data)) == f"Generated: {data.timestamp}"
+    text = render_rtm(data)
+    assert "Consistency-audit:" not in text
+    assert _header(text).startswith("Generated:")

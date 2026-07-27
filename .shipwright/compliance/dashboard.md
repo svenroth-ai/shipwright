@@ -1,6 +1,7 @@
 # Compliance Dashboard
 
-Generated: 2026-07-27T08:30:49.617405+00:00
+Generated: 2026-07-27T09:08:42.773123+00:00
+Source-State: run=iterate-2026-07-27-artifact-state-stamping
 Profile: python-plugin-monorepo
 Scope: library
 

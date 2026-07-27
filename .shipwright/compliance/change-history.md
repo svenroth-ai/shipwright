@@ -1,7 +1,8 @@
 # Commit Change Log
 
-Generated: 2026-07-27T08:30:49.617405+00:00 · Consistency audit: never run — this evidence has never been cross-checked
-Total commits: 1216
+Generated: 2026-07-27T09:08:42.773123+00:00
+Source-State: run=iterate-2026-07-27-artifact-state-stamping
+Total commits: 1213
 
 ## Commit Distribution
 
@@ -9,7 +10,7 @@ Total commits: 1216
 pie title Commit Types
     "fix" : 349
     "feat" : 336
-    "chore" : 258
+    "chore" : 255
     "docs" : 147
     "refactor" : 75
     "test" : 30
@@ -378,9 +379,9 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | compliance | produced artifacts name the state they describe (FR-01.10) | 66714199af06 |
 | 2026-07-27 | triage | defer from the terminal; cap the failing-check detail (#444) | 631e08055ebc |
 | 2026-07-27 | project | give requirements a size rule, and stop the templates contradicting the basis rule (#442) | af72103d0e7a |
-| 2026-07-27 | compliance | evidence documents disclose when the cross-check last ran | c5aa2e611a6e |
 | 2026-07-27 | spec | REQ-3 Phase 2 — every requirement now states what it guarantees (#436) | 28491e1c9631 |
 | 2026-07-23 | shared | shared requirement-elicitation method + FR-01.16 (REQ-3 Phase 1) (#431) | 601fafe55276 |
 | 2026-07-23 | compliance | track skipped tests as a first-class field; key D4 on genuine failures (FR-01.10) (#430) | 355681bdcd4e |
@@ -715,14 +716,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 258 commits
+### Chores (chore) — 255 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | 9a1c085a0aec |
-| 2026-07-27 | iterate | refresh the F0.5 evidence to the delivered runner | 7ee0d916c105 |
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | 773af1c70ed2 |
-| 2026-07-27 | triage | sweep 60 outbox append(s) into branch | abe22bfcb8b0 |
+| 2026-07-27 | triage | sweep 60 outbox append(s) into branch | 9c8b62747190 |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -1285,7 +1283,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1216 |
+| Total commits | 1213 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1216 |
+| Human-authored commits | 1213 |
 
