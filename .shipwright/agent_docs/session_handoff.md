@@ -1,36 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-merge-state-vocabulary"
+run_id: "iterate-2026-07-27-triage-defer-review-followup"
 phase: "iterate"
-reason: "PR #473 BEHIND: refresh before merge"
-timestamp: "2026-07-27T18:26:39.126718+00:00"
+reason: "iterate: post-merge review follow-up for the triage defer surface"
+timestamp: "2026-07-27T20:12:58.249412+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 18:26:39 UTC
+> Auto-generated 2026-07-27 20:12:58 UTC
 
 ## Session Info
 
-- **Session ID**: 9058f47a-25f4-4469-b517-e3b5c91347e0
-- **Timestamp**: 2026-07-27 18:26:39 UTC
-- **Reason**: PR #473 BEHIND: refresh before merge
+- **Session ID**: 8a66b2f1-81e9-4505-8591-b94928ca02f6
+- **Timestamp**: 2026-07-27 20:12:58 UTC
+- **Reason**: iterate: post-merge review follow-up for the triage defer surface
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-run-unit-parallel-race
-- **Date**: 2026-07-27T17:38:43.705219Z
-- **Type**: bug
-- **Complexity**: medium
-- **Branch**: iterate/run-unit-parallel-race
-- **ADR**: iterate-2026-07-27-run-unit-parallel-race
+- **Run ID**: iterate-2026-07-27-triage-defer-review-followup
+- **Date**: 2026-07-27T20:12:50.735006Z
+- **Type**: change
+- **Complexity**: small
+- **Branch**: iterate/triage-defer-review-followup
+- **ADR**: iterate-2026-07-27-triage-defer-review-followup
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-run-unit-parallel-race.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-triage-defer-review-followup.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/merge-state-vocabulary
-- **External Review Marker**: skipped_config_disabled (external_review_state.json @ 2026-07-27T16:41:37)
+- **Branch**: iterate/triage-defer-review-followup
+- **Run ID**: iterate-2026-07-27-triage-defer-review-followup
+- **Spec**: .shipwright/planning/iterate/2026-07-27-triage-defer-review-followup.md
+- **Complexity**: small
+- **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
@@ -48,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/merge-state-vocabulary
-- **Last Commit**: 30e070ba Merge remote-tracking branch 'origin/main' into iterate/merge-state-vocabulary
+- **Branch**: iterate/triage-defer-review-followup
+- **Last Commit**: 156f9235 chore(triage): sweep 6 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-f78c9bcb | grade_snapshot | — | 2026-07-27 |
+| evt-d36b91d1 | grade_snapshot | — | 2026-07-27 |
+| evt-76142a43 | work_completed | iterate (iterate: post-merge review follow-up for the triage defer surface) | 2026-07-27 |
 | evt-950798de | grade_snapshot | — | 2026-07-27 |
 | evt-36d0f887 | work_completed | iterate (iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed) | 2026-07-27 |
 | evt-ad7b51e0 | grade_snapshot | — | 2026-07-27 |
-| evt-e3d8f519 | work_completed | iterate (iterate: an audit that checked nothing is not recorded) | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 382
-- **Last iterate**: change — iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed (2026-07-27)
+- **Total work events**: 383
+- **Last iterate**: change — iterate: post-merge review follow-up for the triage defer surface (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

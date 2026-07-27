@@ -52,8 +52,14 @@ the rest out of a capped view. Give it the same cap.
       terminal, exactly as the open section already guarantees.
 - [ ] **AC-6** Given deferred items exist, when `triage_cli.py list --json`
       runs, then the emitted array is unchanged — open items only, each with
-      `pendingDelivery`. (Cross-repo contract: the Command Center pins this
-      byte-for-byte against `triage-union-cli-list.json`.)
+      `pendingDelivery`. (Cross-repo contract: the Command Center compares this
+      **field-by-field** against `triage-union-cli-list.json`, in its own
+      repository, and only after a manual marketplace sync.
+      **Corrected 2026-07-27** — this document and PR #444 both said
+      "byte-for-byte"; the Stage-3 review disproved it. Nothing in THIS repo
+      pins the bytes, so `indent=2 → indent=4` would pass every test in both
+      repositories. The behaviour claim held; the guarantee named for it did
+      not.)
 - [ ] **AC-7** Given a failing-check action-unit whose workflow name, branch or
       run URL is pathologically long, when the entry is built, then its detail
       line is capped at the same 1024 characters as the security and
@@ -106,7 +112,11 @@ ADR and the changelog drop.
 - **`producer.py`'s `_ARTIFACT_DETAIL_MAX_LEN`** — a file this card does not
   own. The two caps stay numerically equal but separately declared.
 - **The rendered `triage_inbox.md` view** (`aggregate_triage.py`) — not an
-  owned file; it already counts `snoozed` separately in its summary line.
+  owned file. **Corrected 2026-07-27:** this said it "already counts `snoozed`
+  separately in its summary line", which reads as *that surface handles it*.
+  It does not: it renders only open items, so a deferred entry survives there
+  as one integer with no id and no reason — while this run edited the glossary
+  to promise the opposite. Carried by `trg-51f8e2a1`.
 - **The campaign ledger** `2026-07-23-req3-ac-evidence-ledger-mono.md` — see
   "Where delivery is recorded" above.
 

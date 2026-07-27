@@ -1,19 +1,29 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-merge-state-vocabulary",
+    "run_id": "iterate-2026-07-27-triage-defer-review-followup",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 5560,
-      "total": 5576,
-      "skipped": 16
+      "passed": 5873,
+      "total": 5885,
+      "skipped": 12
     },
     "integration": {
+      "status": "passed",
+      "passed": 422,
+      "total": 422
+    },
+    "pgtap": {
       "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "e2e": {
+      "status": "passed",
+      "passed": 122,
+      "total": 122
+    },
+    "design_fidelity": {
       "status": "not_run",
       "passed": 0,
       "total": 0
@@ -21,109 +31,129 @@
     "smoke": {
       "status": "not_run"
     },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
+    "degraded": [
+      {
+        "condition": "external LLM review not run",
+        "detail": "'skip' at small complexity per the Phase Matrix. Scope came from the two subagent passes instead, which produced 22 findings including two highs; both rows are recorded `completed` with the full disposition table in .shipwright/planning/iterate/iterate-2026-07-27-triage-defer-review-followup/subagent_reviews.md."
+      },
+      {
+        "condition": "shared/scripts/tools/triage_promote.py registered over the 300-line limit",
+        "detail": "304 lines, state grandfathered, per the 2026-07-19 convention that a file drifting just past the limit on coherent content is registered rather than trimmed. It was first trimmed to 299; the Stage-3 pass showed that removed load-bearing detail (a runnable uv-run prefix, the 200-vs-500 rationale, the newline enumeration), so the trim was reverted and the crossing registered honestly."
+      }
+    ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest shared/tests/test_pr_blockers.py shared/tests/test_pr_blockers_merge_state.py shared/tests/test_watch_pr_delivery.py -v",
+      "runner": "uv run pytest shared/tests/test_triage_render_rows.py shared/tests/test_triage_defer.py shared/tests/test_triage_docs_consistency.py shared/tests/test_triage_wp9_sanitize_outbox.py shared/tests/test_triage_cli.py shared/tests/test_triage_cli_json.py shared/tests/test_triage_promote.py -v",
       "exit_code": 0,
-      "tests_run": 55,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\merge-state-vocabulary\\.shipwright\\runs\\iterate-2026-07-27-merge-state-vocabulary\\surface_verification.log",
-      "timestamp": "2026-07-27T16:31:47.006Z",
-      "attempts": 1
+      "tests_run": 122,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-27-triage-defer-review-followup/surface_verification.json",
+      "timestamp": "2026-07-27T20:40:00.000Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "a conflicted branch (DIRTY) is named as a cause and asserted blocking",
+          "behavior": "a reason that renders blank (spaces, tab, newline, zero-width) reads (no reason recorded)",
           "disposition": "tested",
-          "evidence": "test_pr_blockers_merge_state.py::test_a_conflicted_branch_is_named PASSED"
+          "evidence": "test_triage_render_rows.py::test_a_reason_that_renders_to_nothing_says_so[6 cases] PASSED"
         },
         {
-          "behavior": "an out-of-date branch (BEHIND) is named without claiming it blocks",
+          "behavior": "a real reason is still printed verbatim",
           "disposition": "tested",
-          "evidence": "test_pr_blockers_merge_state.py::test_an_out_of_date_branch_is_named_but_not_asserted_blocking PASSED"
+          "evidence": "test_triage_render_rows.py::test_a_real_reason_is_still_printed PASSED"
         },
         {
-          "behavior": "a draft is named and blocking; BLOCKED keeps naming itself",
+          "behavior": "a deferred row is marked deferred at a fixed position",
           "disposition": "tested",
-          "evidence": "test_pr_blockers_merge_state.py::test_a_draft_is_named_and_blocking PASSED; test_pr_blockers_merge_state.py::test_blocked_keeps_naming_itself_and_blocking PASSED"
+          "evidence": "test_triage_render_rows.py::test_a_deferred_row_is_marked_as_deferred PASSED"
         },
         {
-          "behavior": "UNSTABLE is named without claiming it blocks",
+          "behavior": "an open row is marked open at a fixed position",
           "disposition": "tested",
-          "evidence": "test_pr_blockers_merge_state.py::test_unstable_is_named_without_claiming_it_blocks PASSED"
+          "evidence": "test_triage_render_rows.py::test_an_open_row_is_marked_open PASSED"
         },
         {
-          "behavior": "a mergeable state (CLEAN / HAS_HOOKS) names nothing and reports nothing unknown",
+          "behavior": "the token cannot be forged by an untrusted source or dedupKey",
           "disposition": "tested",
-          "evidence": "test_pr_blockers_merge_state.py::test_a_mergeable_state_names_nothing PASSED"
+          "evidence": "test_triage_render_rows.py::test_a_forged_marker_in_an_untrusted_field_cannot_reclassify_a_row PASSED"
         },
         {
-          "behavior": "a merge state not in the closed vocabulary is unknown, never fine",
+          "behavior": "every entry row in the real listing declares which kind it is, by prefix",
           "disposition": "tested",
-          "evidence": "test_pr_blockers_merge_state.py::test_an_unrecognised_state_is_unknown_not_clean PASSED"
+          "evidence": "test_triage_render_rows.py::test_the_listing_never_repeats_a_row_shape_across_the_two_meanings PASSED"
         },
         {
-          "behavior": "an absent or UNKNOWN state stays unknown",
+          "behavior": "a deferred field cannot grow without limit (title / reason / source)",
           "disposition": "tested",
-          "evidence": "test_pr_blockers_merge_state.py::test_unknown_and_absent_states_stay_unknown PASSED"
+          "evidence": "test_triage_render_rows.py::test_a_deferred_field_cannot_grow_without_limit[3 cases] PASSED"
         },
         {
-          "behavior": "the merge-state cause composes with thread and required-check causes",
+          "behavior": "only what exceeds the cap is clipped (119 / 120 / 121)",
           "disposition": "tested",
-          "evidence": "test_pr_blockers_merge_state.py::test_the_merge_state_cause_composes_with_the_others PASSED"
+          "evidence": "test_triage_render_rows.py::test_only_what_exceeds_the_cap_is_clipped[3 cases] PASSED"
         },
         {
-          "behavior": "the operator line names the observed state, not a fixed BLOCKED phrase",
+          "behavior": "a dedupKey of only control characters is still emitted",
           "disposition": "tested",
-          "evidence": "test_pr_blockers_merge_state.py::test_the_observed_state_is_rendered_not_a_fixed_phrase PASSED"
+          "evidence": "test_triage_render_rows.py::test_a_dedup_key_of_only_control_characters_is_still_emitted PASSED"
         },
         {
-          "behavior": "a conflicted PR is not described as 'still queued'",
+          "behavior": "an absent dedupKey is still omitted",
           "disposition": "tested",
-          "evidence": "test_pr_blockers_merge_state.py::test_the_rendered_line_names_a_conflict_instead_of_a_queue PASSED"
+          "evidence": "test_triage_render_rows.py::test_an_absent_dedup_key_is_still_omitted PASSED"
         },
         {
-          "behavior": "a real unresolved-thread cause still renders as a count, not a raw path list",
+          "behavior": "--help mentions the deferred section",
           "disposition": "tested",
-          "evidence": "test_pr_blockers_merge_state.py::test_a_real_thread_cause_still_renders_as_a_count PASSED — reproduced red against the pre-fix branch order"
+          "evidence": "test_triage_render_rows.py::test_the_list_help_mentions_the_deferred_section PASSED"
         },
         {
-          "behavior": "control characters from host-supplied strings never reach the operator line or the JSON",
+          "behavior": "refusing a decision on an already-decided item leaves the stored bytes unchanged (library)",
           "disposition": "tested",
-          "evidence": "test_pr_blockers_merge_state.py::test_control_characters_from_the_host_never_reach_the_line PASSED"
+          "evidence": "test_triage_defer.py::test_defer_refuses_an_already_decided_item[3 cases] PASSED"
         },
         {
-          "behavior": "the gh shells stay wired: the GraphQL query is complete and the branch is URL-encoded",
+          "behavior": "refusing a decision on an already-decided item leaves the stored bytes unchanged (CLI)",
           "disposition": "tested",
-          "evidence": "test_pr_blockers.py::test_fetch_review_threads_builds_a_complete_query PASSED; ::test_fetch_branch_rules_url_encodes_the_branch PASSED"
+          "evidence": "test_triage_defer.py::test_cli_defer_refuses_an_already_decided_item PASSED"
+        },
+        {
+          "behavior": "an outbox-only item is deferrable, as it is promotable and dismissable",
+          "disposition": "tested",
+          "evidence": "test_triage_wp9_sanitize_outbox.py::test_defer_outbox_only_item PASSED"
+        },
+        {
+          "behavior": "defer raises FileNotFoundError when neither store exists",
+          "disposition": "tested",
+          "evidence": "test_triage_wp9_sanitize_outbox.py::test_defer_still_raises_filenotfound_when_neither_store_exists PASSED"
+        },
+        {
+          "behavior": "the three documents document the defer command without denying it",
+          "disposition": "tested",
+          "evidence": "test_triage_docs_consistency.py::test_the_documents_describe_the_defer_subcommand PASSED"
+        },
+        {
+          "behavior": "list --json is unchanged by all of the above",
+          "disposition": "tested",
+          "evidence": "test_triage_cli_json.py (8 tests) + test_triage_defer.py::test_list_json_stays_open_only_when_an_item_is_deferred PASSED"
+        },
+        {
+          "behavior": "dismiss and promote are unaffected by the render and docstring changes",
+          "disposition": "tested",
+          "evidence": "test_triage_promote.py (38) + test_triage_defer.py::test_dismiss_is_unchanged_by_the_shared_extraction PASSED"
         }
       ],
       "counts": {
-        "testable": 13,
-        "tested": 13,
+        "testable": 18,
+        "tested": 18,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 5,
-        "covered_acs": 5
+        "acs": 10,
+        "covered_acs": 10
       }
-    },
-    "degraded": [
-      "Review passes 'code' and 'doubt' recorded not_run: subagent review is disabled for this session by operator configuration. A full external code review ran instead and found a real regression (both legs independently), which was fixed and pinned by a test proven red against the pre-fix code.",
-      "'plan' recorded not_run: external plan review is a medium+ phase and this run is small. The design came from a reproduced failure on PR #462 plus GitHub's documented MergeStateStatus enum, not from speculation."
-    ]
+    }
   },
   "coverage": {
     "total": 80.2,
