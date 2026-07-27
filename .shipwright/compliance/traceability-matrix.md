@@ -1,7 +1,7 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-27T17:38:43.791837+00:00
-Source-State: run=iterate-2026-07-27-run-unit-parallel-race
+Generated: 2026-07-27T19:36:56.452047+00:00
+Source-State: run=iterate-2026-07-27-checks-that-gate-nothing
 Consistency-audit: never run
 
 ## Requirements Coverage
@@ -24,7 +24,7 @@ Consistency-audit: never run
 | [FR-01.14](../../.shipwright/planning/01-adopted/spec.md#fr-0114)<a id="rtm-fr-0114"></a> | Collect findings from local checks and from the code host's automated scans into one per-project Triage Inbox the operator works through — each finding recorded once, and each one taken into work, deferred or dismissed — so the actual task list stays curated instead of flooded. | Must | [evt-3f488ddc](#evt-3f488ddc), [evt-32f2f1f4](#evt-32f2f1f4), [evt-84dbdf5e](#evt-84dbdf5e), [evt-e14e5f26](#evt-e14e5f26) +9 | 1642/1649 → 3629/3641 | 2026-07-03 ([iter](#evt-5755f932)) | ⚠️ needs re-verification | COVERED | MISSING | — | — |
 | [FR-01.15](../../.shipwright/planning/01-adopted/spec.md#fr-0115)<a id="rtm-fr-0115"></a> | Every payload this repository hands to a different repository is a versioned output contract: its shape is published alongside it, the capability producing it states that it has an outside consumer, and a gate compares what is emitted against the shape last published — read from a state the proposed change cannot rewrite — and fails until the version has been raised to match the kind of change. So a shape change can never reach a consumer silently. | Must | [evt-6a61ac10](#evt-6a61ac10), [evt-ea7203ec](#evt-ea7203ec) | 6452/6452 | 2026-07-21 ([iter](#evt-6a61ac10)) | ⚠️ needs re-verification | FAIL → [trg-c7e5835b](../agent_docs/triage_inbox.md#trg-c7e5835b) | — | — | MISSING |
 | [FR-01.16](../../.shipwright/planning/01-adopted/spec.md#fr-0116)<a id="rtm-fr-0116"></a> | Elicit requirements through one shared, rigorous method wherever they are gathered — a new project, an adopted codebase, or an ongoing change: ask one question at a time, each with a recommended answer, look facts up in the code instead of asking, challenge wording against the project's own glossary, and stress-test with concrete edge cases. Capture the project's domain vocabulary and the reason behind each hard-to-reverse choice as they surface. No requirement is treated as settled until every dimension of its context is either answered or explicitly marked as an unconfirmed assumption. | Must | [evt-ea7203ec](#evt-ea7203ec) | — | — | ⚠️ needs re-verification | FAIL → [trg-e9fa7c49](../agent_docs/triage_inbox.md#trg-e9fa7c49) | MISSING | — | — |
-| [FR-01.17](../../.shipwright/planning/01-adopted/spec.md#fr-0117)<a id="rtm-fr-0117"></a> | Re-check every proposed change on the code host before it can merge — the project's tests, its lint, its security scans and the host's own code analysis — independently of whatever already ran on the author's machine, and have the change reviewed there automatically rather than on request. A local pass is never accepted in place of the host's. | Must | [evt-36d0f887](#evt-36d0f887) | — | — | ⚠️ needs re-verification | NO TESTS | MISSING | — | — |
+| [FR-01.17](../../.shipwright/planning/01-adopted/spec.md#fr-0117)<a id="rtm-fr-0117"></a> | Re-check every proposed change on the code host before it can merge — the project's tests, its lint, its security scans and the host's own code analysis — independently of whatever already ran on the author's machine, and have the change reviewed there automatically rather than on request. A local pass is never accepted in place of the host's. | Must | [evt-bccbd6ce](#evt-bccbd6ce), [evt-36d0f887](#evt-36d0f887) | — | — | ⚠️ needs re-verification | NO TESTS | MISSING | — | — |
 | [FR-01.18](../../.shipwright/planning/01-adopted/spec.md#fr-0118)<a id="rtm-fr-0118"></a> | Give any git repository a control grade from A to F without changing anything in it: derive what can honestly be derived from its history, its tests and its configuration, and score it on the same rubric the framework's own dashboard uses. A dimension that cannot be determined is marked as exactly that and left out of the calculation rather than filled in, and the report says for each judgement whether it was read from the project's own records or estimated from the outside. Nothing about a repository that is not public leaves the machine without two separate consents. | Should | — | — | — | ⚠️ needs re-verification | NOT VERIFIED | MISSING | — | — |
 
 > **Legend** — *Tests*: `passed/total` of the latest event that ran tests; `first → latest` shows progression across tested runs. *Last tested*: date of that event (`iter` / `build` source); age is informational, **not a penalty**. *Reconciled?*: ✅ behavior-affected FR re-verified since its last change · ⚠️ needs re-verification (behavior changed, not yet re-tested) · — not behavior-touched. *Unit / Integration / E2E* (traceability manifest): `ok` an executed-passing tagged test covers the FR at that layer · `MISSING` the layer is required but has no executed-passing test · `?` ambiguous — the display id is shared across namespaces so the fanned tag is not credited (D-layer defers this to TT5) · `n/a` layer not required · — no manifest entry.
@@ -33,6 +33,7 @@ Consistency-audit: never run
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-bccbd6ce"></a>checks that run, report, and gate nothing (trg-c7e5835b items 3-5) | iterate | change | [FR-01.17](#rtm-fr-0117) | — | — | 2026-07-27 |
 | <a id="evt-92094b2e"></a>bounded sharing-violation retry on both sides of the atomic-write boundary | iterate | change | [FR-01.01](#rtm-fr-0101), [FR-01.09](#rtm-fr-0109) | — | — | 2026-07-27 |
 | <a id="evt-aea234e3"></a>refuse a multi-root pytest session instead of failing 21 unrelated tests | iterate | change |  | — | — | 2026-07-27 |
 | <a id="evt-36d0f887"></a>raise the PR-review diff cap, cut at a file boundary, name what went unreviewed | iterate | change | [FR-01.17](#rtm-fr-0117) | — | — | 2026-07-27 |
@@ -425,7 +426,7 @@ Consistency-audit: never run
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 385 |
+| Iterate changes | 386 |
 | Requirements total | 18 |
 | Requirements verified | 17/18 |
 | Must-have verified | 14/14 |
@@ -452,7 +453,7 @@ Consistency-audit: never run
 - [FR-01.14](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-2aa40a94` (2026-07-27)
 - [FR-01.15](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
 - [FR-01.16](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
-- [FR-01.17](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-36d0f887` (2026-07-27)
+- [FR-01.17](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-bccbd6ce` (2026-07-27)
 - [FR-01.18](../../.shipwright/planning/01-adopted/spec.md) (Should): behavior changed without a later test run
 
 ### FRs with open triage items
