@@ -145,13 +145,11 @@ def _validate_events(project_root: Path) -> list[str]:
 #: the step that writes the file, so an older adopted repo re-validating is
 #: told what to run rather than merely that something is missing.
 #:
-#: One entry per artifact THIS change also writes. The inherited-baseline
-#: register (`shipwright_known_failures.json`) is deliberately absent: nothing
-#: writes it yet, and a validator demanding a file no step produces would break
-#: every adopt run. It arrives together with the step that writes it.
 _HONESTY_ARTIFACTS = (
     (".shipwright/adopt/derived-catalogue.json",
      "Step E (generate_adoption_artifacts.py)"),
+    ("shipwright_known_failures.json",
+     "Step E.18 (record_inherited_baseline.py)"),
 )
 
 

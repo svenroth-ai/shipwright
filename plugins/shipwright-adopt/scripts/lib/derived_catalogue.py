@@ -54,6 +54,11 @@ from typing import Any
 #: the banner and the follow-up card point a reader at it.
 SUMMARY_REL = ".shipwright/adopt/derived-catalogue.json"
 
+#: Stable across runs and independent of the count, so a re-adopt that detects
+#: one more route updates nothing and duplicates nothing. The count lives in the
+#: card's text and, authoritatively, in ``SUMMARY_REL``.
+CONFIRMATION_DEDUP_KEY = "adopt-derived-catalogue-confirmation"
+
 #: The shared grilling method the follow-up asks for. Binding for every plugin
 #: that elicits a requirement from a human.
 ELICITATION_DOC = "shared/requirement-elicitation.md"
@@ -231,7 +236,8 @@ def render_provenance_banner(catalogue: DerivedCatalogue) -> str:
     )
     next_step = (
         "> - **Next step:** work through the unconfirmed ones with someone who "
-        f"knows the product, following `{ELICITATION_DOC}`."
+        f"knows the product, following `{ELICITATION_DOC}`. Onboarding filed the "
+        f"follow-up in the Triage Inbox as `{CONFIRMATION_DEDUP_KEY}`."
     )
     return "\n".join([
         headline,
@@ -247,6 +253,7 @@ def render_provenance_banner(catalogue: DerivedCatalogue) -> str:
 
 
 __all__ = [
+    "CONFIRMATION_DEDUP_KEY",
     "CONFIRMED_BASES",
     "ELICITATION_DOC",
     "SUMMARY_REL",

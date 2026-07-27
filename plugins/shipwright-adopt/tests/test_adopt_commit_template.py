@@ -153,8 +153,20 @@ def test_the_body_reports_how_many_requirements_are_unconfirmed():
         inferred_fr_count=12, unconfirmed_fr_count=11,
     )
     assert "11 of them are DERIVED AND UNCONFIRMED" in msg
-    assert "requirement-elicitation.md" in msg
+    assert "adopt-derived-catalogue-confirmation" in msg
     assert ".shipwright/adopt/derived-catalogue.json" in msg
+
+
+def test_the_body_names_the_inherited_baseline_register():
+    """The other half of the same honesty: what arrived broken or untested is
+    recorded as inherited, and the commit says where."""
+    from lib.adopt_commit_template import build_adopt_commit_message
+
+    msg = build_adopt_commit_message(
+        project_root=Path("/tmp/repo"), profile="python-cli", scope="full_app",
+        inferred_fr_count=1, unconfirmed_fr_count=1,
+    )
+    assert "shipwright_known_failures.json" in msg
 
 
 def test_the_count_cannot_be_omitted():

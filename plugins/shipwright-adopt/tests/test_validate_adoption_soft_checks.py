@@ -11,6 +11,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from checks.validate_adoption import validate
 from lib.derived_catalogue import summarize
 from lib.derived_catalogue_doc import to_document, write_summary
@@ -47,6 +49,9 @@ def _make_minimum_valid(root: Path, *, decision_log_body: str | None = None) -> 
     write_summary(root, summarize(
         [{"fr_id": "FR-01.01", "label": "Sign in", "source_file": "src/auth.ts"}],
         split_name="01-adopted"))
+    (root / "shipwright_known_failures.json").write_text(
+        json.dumps({"known_failures": [], "baseline_failure_count": 0}), encoding="utf-8",
+    )
     (root / ".claude").mkdir(exist_ok=True)
     (root / ".claude" / "settings.json").write_text(
         json.dumps({"hooks": {"UserPromptSubmit": [{"command": "uv run suggest_iterate.py"}]}}),
@@ -114,7 +119,11 @@ def test_no_snapshot_does_not_crash(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_a_missing_honesty_artifact_blocks_the_handover(tmp_path: Path) -> None:
+@pytest.mark.parametrize("rel", [
+    ".shipwright/adopt/derived-catalogue.json",
+    "shipwright_known_failures.json",
+])
+def test_a_missing_honesty_artifact_blocks_the_handover(tmp_path: Path, rel: str) -> None:
     """Errors, not warnings, and Step H hard-stops on errors.
 
     Without them the handover presents a derived catalogue as if someone had
@@ -122,7 +131,6 @@ def test_a_missing_honesty_artifact_blocks_the_handover(tmp_path: Path) -> None:
     A warning would be surfaced and then walked past — which is how both gaps
     survived to be found years later.
     """
-    rel = ".shipwright/adopt/derived-catalogue.json"
     _make_minimum_valid(tmp_path)
     (tmp_path / rel).unlink()
     result = validate(tmp_path)
@@ -134,9 +142,9 @@ def test_the_error_names_the_step_that_writes_the_missing_file(tmp_path: Path) -
     correct — it genuinely lacks the artifacts — so the message must say what to
     run rather than only that something is absent."""
     _make_minimum_valid(tmp_path)
-    (tmp_path / ".shipwright" / "adopt" / "derived-catalogue.json").unlink()
-    (errmsg,) = [e for e in validate(tmp_path)["errors"] if "derived-catalogue" in e]
-    assert "generate_adoption_artifacts.py" in errmsg
+    (tmp_path / "shipwright_known_failures.json").unlink()
+    (errmsg,) = [e for e in validate(tmp_path)["errors"] if "known_failures" in e]
+    assert "record_inherited_baseline.py" in errmsg
 
 
 def test_a_catalogue_that_contradicts_itself_blocks_the_handover(tmp_path: Path) -> None:

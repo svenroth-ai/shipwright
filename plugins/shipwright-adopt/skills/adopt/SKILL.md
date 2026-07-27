@@ -193,7 +193,7 @@ uv run "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/tools/scaffold_triage_inbox.p
 Idempotent — writes `.shipwright/triage.jsonl` (the **tracked** SSoT backlog,
 re-included by the E.6 canonical block so it ships in the Step H commit),
 `.shipwright/agent_docs/triage_inbox.md`, and ignores only the `.lock` + GC
-`.bak`. Result in `results["triage_inbox"]`. Step E.17 files into it.
+`.bak`. Result in `results["triage_inbox"]`. Steps E.17/E.18 file into it.
 
 Full procedure → [references/step-e16-triage-inbox.md](references/step-e16-triage-inbox.md).
 
@@ -214,6 +214,24 @@ clean. An ambiguous FR is asked via `AskUserQuestion`, or resolved from `--decis
 unattended (the tool never stalls).
 
 Full procedure → [references/step-e17-traceability-baseline.md](references/step-e17-traceability-baseline.md).
+
+### Step E.18 — Inherited Baseline + Confirmation Follow-up (before Step F)
+
+```bash
+uv run "${CLAUDE_PLUGIN_ROOT}/scripts/tools/record_inherited_baseline.py"   --project-root <cwd> [--failures-json <path>] [--dry-run]
+```
+
+Writes `shipwright_known_failures.json` in the shape the shared reader
+`shared/scripts/known_failures.py` parses — inherited failures, plus
+`inherited_coverage_gaps` **beside** them (a missing test never feeds
+`baseline_failure_count`, which buys forgiveness for a red run). Files the
+follow-up to question the derived catalogue with a person
+(`shared/requirement-elicitation.md`) and one per non-empty gap class — the
+destination a brownfield journey-coverage gap routes to instead of blocking.
+Sole owner of triage filing here; runs after E.16 scaffolds the Inbox. No
+`--failures-json` ⇒ `baseline_observed: false`, never a confident zero.
+
+Full procedure → [references/step-e18-inherited-baseline.md](references/step-e18-inherited-baseline.md).
 
 ### Step F — Compliance Seeding
 
@@ -237,7 +255,7 @@ Full procedure → [references/step-g-layer3-review.md](references/step-g-layer3
 ### Step H — Validate, Commit, Handoff
 
 Validate via `validate_adoption.py` — hard-stop on `errors[]` (which now
-include the derived-catalogue artifact), surface `warnings[]`. Build the commit
+include the two honesty artifacts), surface `warnings[]`. Build the commit
 message via `lib.adopt_commit_template.build_adopt_commit_message`;
 `unconfirmed_fr_count` is **required** and read from
 `.shipwright/adopt/derived-catalogue.json`. The handoff banner reports how
@@ -264,6 +282,7 @@ See [references/backfill-iterate-config.md](references/backfill-iterate-config.m
 - `references/step-e5-env-scaffold.md` — Step E.5 .env.local scaffold
 - `references/step-e16-triage-inbox.md` — Step E.16 triage inbox
 - `references/step-e17-traceability-baseline.md` — Step E.17 traceability baseline (backfill + tag convention + skip inventory)
+- `references/step-e18-inherited-baseline.md` — Step E.18 inherited baseline + catalogue-confirmation follow-up
 - `references/step-f-compliance-seeding.md` — Step F compliance
 - `references/step-g-layer3-review.md` — Step G Layer-3 review
 - `references/step-h-validate-commit-handoff.md` — Step H validate / commit / handoff

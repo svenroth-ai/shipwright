@@ -1,0 +1,1 @@
+/shipwright-adopt now records what your codebase arrived with — tests that were already failing, requirements with no test, and tests that are switched off — as **inherited** in `shipwright_known_failures.json`, so they are never counted as the onboarded project's own failures. Coverage gaps are kept separate from the baseline failure count, which excuses a red run.

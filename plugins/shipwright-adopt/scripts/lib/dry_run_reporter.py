@@ -76,6 +76,7 @@ def plan_standard_writes(
         ProposedWrite(".shipwright/agent_docs/build_dashboard.md", "create", "adoption snapshot"),
         ProposedWrite(f".shipwright/planning/{split_name}/spec.md", "create", "IREB spec from inferred features (+ derived/unconfirmed provenance block)"),
         ProposedWrite(".shipwright/adopt/derived-catalogue.json", "create", "how many requirements were derived, and how many nobody has confirmed"),
+        ProposedWrite("shipwright_known_failures.json", "create", "inherited failures + coverage gaps — recorded as inherited, not as this project's"),
         ProposedWrite(".shipwright/compliance/sbom.md", "create", "via shipwright-compliance"),
         ProposedWrite(".shipwright/compliance/change-history.md", "create", "via shipwright-compliance"),
         ProposedWrite(".shipwright/compliance/traceability-matrix.md", "create", "RTM skeleton"),
