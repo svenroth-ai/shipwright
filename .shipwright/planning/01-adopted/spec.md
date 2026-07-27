@@ -493,6 +493,15 @@ _Where the work detail lives_ at the end of this document.
 - (E) Given an evidence document, when it no longer matches the state it was
   produced from — hand-edited, or only partly regenerated — then it is reported
   as no longer valid instead of continuing to count as evidence.
+- (E) Given an evidence document or a recorded test run, when it is produced, then it
+  names the change it was built from — not merely when it was written — so a reader
+  can tell evidence built from a known point in the project's history apart from
+  evidence whose origin is unstated. For an evidence document that is the most recent
+  completed change recorded in the project's own history at the time it was rendered;
+  for a recorded test run it is the code version the tests were measured against,
+  read from the project rather than asserted by whoever wrote the record. Where it
+  cannot be established, the artifact says so instead of showing a plausible-looking
+  value.
 - (E) Given a completed change that says it affects behaviour but names no
   requirement and gives no reason for naming none, when the cross-check audit
   runs, then it is reported together with a suggested command to fix it, without
@@ -719,6 +728,15 @@ _Where the work detail lives_ at the end of this document.
   is produced, then it states how many it is not showing rather than presenting
   its excerpt as the whole, and lower-severity entries are set aside rather than
   dropped.
+- (E) Given the pre-commit test gate finds a test unit that fails when the units
+  run side by side but passes when run on its own, when it lets the run continue —
+  because the on-its-own result is the trustworthy one and stopping would block the
+  work for no reason — then the gate records that unit in the Triage Inbox itself,
+  so the observation survives the session that made it instead of scrolling past in
+  a message; the entry says the cause is undetermined rather than guessing between a
+  clash between simultaneous runs and an unreliable test, it is not closed by the
+  next run that happens to look clean, and if it cannot be recorded at all the run
+  is stopped rather than reported as passing.
 - (E) Given the Triage Inbox is taken as a plan, when it is read, then it is
   explicitly not one: it collects findings and records decisions, it does not
   schedule work, set priorities by itself, or fix anything — the work list it

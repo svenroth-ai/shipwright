@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-27-project-granularity-basis",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T07:54:40.736230+00:00",
+      "disposition": "7-point checklist run inline by the orchestrator. Spec compliance: all five planned deliverables present; §5.4's 'existing callers unaffected' claim was found FALSE and corrected in the spec (§9a). Error handling: unreadable spec reports missing rather than raising. Security: no new external input; regex built from re.escape; reads confined to project_root. Test quality: round-trips against the real producers, plus a vacuity probe confirming every drift assertion fails against HEAD (4 bare assumed rows, 0 hits for either new rule). Naming: consistent with the group_i_* siblings. YAGNI: one piece of speculative tolerance (inline <a> anchor) was REMOVED rather than kept, since no producer emits it. Boundaries: producer/consumer round-trip covered. Self-review also widened scope by three files after grepping for the stale gloss - fr_basis.py, path-a-feature.md, path-b-change.md still contradicted the corrected rulebooks.",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter: gpt-5.6-terra + gemini-3.1-pro-preview",
+      "completed_at": "2026-07-27T07:53:44.115240+00:00",
+      "disposition": "external_review.py --mode iterate on the mini-plan; 9 findings accepted, 1 declined with reason (separate legacy-label branch unnecessary: the general block rule covers it, pinned by test_legacy_bold_acceptance_label_still_counts)",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T07:54:52.015906+00:00",
+      "disposition": "Internal code review performed inline by the orchestrator rather than via the code-reviewer subagent: this session carries an explicit standing instruction not to invoke the Agent tool unless the user asks for it, so the subagent delegation named in ADR-029 was not available. Substituted with (a) the full external code review recorded under external_code, which is the stronger independent pass, and (b) an inline diff review against the iterate spec. Findings fixed: registry pointer for the moved _scan_one_spec; false-green heading anchor; brownfield row inconsistency; three stale copies of the Basis gloss. Recorded as completed-by-substitution, not as a subagent pass.",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T07:55:05.486151+00:00",
+      "disposition": "Adversarial pass run inline (Agent tool unavailable per session instruction), biased to disprove. Executed as probes, not assertions: bold anchor vs a discussion label; heading anchor vs '### About FR-01.01 and friends'; own-line HTML anchor; _CHECKS positional indices 0-3 unchanged after appending I6; skip path returns before frs_without_criteria is called; block-termination cannot donate criteria to a later FR (an unanchored FR is reported missing, the safe direction); iterate specs are never scanned since spec_path comes only from planning/<split>/spec.md; no import cycle from group_i_rows. All held. Residual risk accepted and stated: I6 counts BULLET criteria only, so a spec stating criteria as bare prose would be reported - advisory, and no producer emits that shape.",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter: gpt-5.6-terra + gemini-3.1-pro-preview",
+      "completed_at": "2026-07-27T07:53:54.533035+00:00",
+      "disposition": "external_review.py --mode code on the full diff. GPT returned 3 findings, ALL accepted and fixed: (1) corpus registry resolved the moved _scan_one_spec by module+attr - registry repointed; (2) heading anchor matched any heading CONTAINING an FR id, a false-green - anchor now requires the id to begin the heading, regression test added; (3) brownfield situation row disagreed with the rule above it - harmonised plus a per-row assertion. Gemini's reply degraded into unterminated reasoning and yielded no usable findings; recorded as degraded rather than counted as a clean pass.",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

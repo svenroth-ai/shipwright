@@ -1,0 +1,239 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-27-f0-race-triage",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T07:52:52.293467+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-step-7",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 15,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "Approach / Reducibility",
+          "file": null,
+          "line": null,
+          "finding": "The \"read-back\" verification mechanism (AC8) is over-engineered and introduces unrelated failure modes. Reading the entire `triage.jsonl` store via `read_all_items()` immediately after writing to it just to verify the write implies the append function is untrustworthy. Furthermore, if a developer manually introduced a JSON syntax error elsewhere in the triage file, the read-back will fail, causing the test runner to exit Code 3 for a syntax error entirely unrelated to the current test suite's race condition.",
+          "suggestion": "Drop the read-back loop entirely. Rely on the success/failure of `triage.append_triage_item_idempotent()`. Wrap the append call in a standard `try/except` block catching I/O or permission errors, and return Exit 3 only if the exception is caught.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "Edge Case",
+          "file": null,
+          "line": null,
+          "finding": "The spec dictates deduplication via `dedupKey` and states an entry is \"never auto-closed\". However, it does not specify what happens if an operator has already manually closed a previous entry for this exact unit, and the race occurs again months later. If `append_triage_item_idempotent` sees the historical deduplication key, it might silently skip appending under the assumption the item already exists, failing to notify the operator of the regression.",
+          "suggestion": "Ensure the logic explicitly checks for open entries when applying `dedupKey`. If the only matching entries are marked as resolved/closed, the producer must either reopen the existing entry or generate a new one, rather than silently dropping the observation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "Risk",
+          "file": null,
+          "line": null,
+          "finding": "Moving the triage/rendering logic into a new module (`suite_race_triage.py`) is a good way to respect the 300-LOC limit. However, AC4 requires the entry to state whether the unit is \"xdist-allowlisted\". The xdist allowlist is typically loaded by the runner file. Moving the payload generation to a separate file implies either passing this allowlist data as a new argument or duplicating the file read.",
+          "suggestion": "Ensure `run_test_suite.py` passes the xdist-allowlist boolean status down into `emit_race_followups()` and `render()` so the new module doesn't need to re-parse repository configuration files.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "Risk",
+          "file": null,
+          "line": null,
+          "finding": "Appending to a tracked, version-controlled `.shipwright/triage.jsonl` file concurrently across multiple branches will frequently result in Git merge conflicts, especially because JSONL files often append to the exact same bottom line.",
+          "suggestion": "No code change required for this specific iterate, but verify if the existing `triage.jsonl` workflow already relies on a custom Git merge driver (e.g., `gitattributes` union merge). If not, be prepared for increased operational friction during PR merges.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed `RETRY_SERIAL_KIND` “drift-pinned copy” in `suite_race_triage.py` duplicates the classification contract that the plan says should remain owned by `run_test_suite.py`. A duplicated constant can silently diverge from `run_test_suite.RETRY_SERIAL`, and the producer does not need it if `main()` passes only already-classified race results.",
+          "suggestion": "Keep the retry-kind predicate exclusively in `run_test_suite.py`. Pass a typed/list collection of confirmed `parallel-test-failure → serial-pass` results to `emit_race_followups()`. The producer should render and persist those facts, not reclassify them.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "res.race and res.retry_kind == RETRY_SERIAL` is only safe if those fields strictly mean “parallel pytest test failure, then authoritative alone pass.” The acceptance criteria explicitly exclude infra failures and require a genuine pytest test failure, but the mini-plan does not state that the predicate verifies the relevant parallel and serial exit codes/classification. A future or existing broad `race` flag could cause entries for collection errors, `pytest` usage errors, no-tests exit codes, or other non-test-failure retry outcomes.",
+          "suggestion": "Define and test a single explicit predicate against the result model: parallel outcome is the recognized pytest test-failure class (normally exit code 1), retry kind is serial-test retry, and authoritative alone outcome is pass (normally exit code 0). Add negative tests for `RETRY_INFRA`, collection/usage errors, no-tests, and serial retry failures.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan is ambiguous about report/emission ordering. `_report(result, report=None)` and a moved retry warning could print the original “triage it” warning before persistence runs, then later print a tracking result. That fails AC7’s intent: the per-unit warning must contain either the durable `trg-…` handle or an explicit recording failure, and must not imply an entry exists before it has been read back.",
+          "suggestion": "In `main()`, collect all results, identify races, emit/read back triage entries, then render each race warning from the resulting `RaceFollowupReport`. Ensure the warning is printed exactly once per raced unit and includes either `tracked as <id>` or `FAILED TO RECORD` with the reason.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not define exit-code precedence when a run has both an ordinary blocking suite failure and one or more race observations that cannot be recorded. The requirement says an unrecorded observed race exits `3`, but a naïve early return for ordinary failures could skip recording, while returning the ordinary test failure code can violate AC8.",
+          "suggestion": "Make recording occur after all retry outcomes are known and before any final return, even if other units remain red. Explicitly document and test precedence: if any observed race cannot be resolved to an open triage item, return `3`; otherwise preserve the existing suite verdict/exit-code behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan relies on `triage.append_triage_item_idempotent` and `read_all_items` for the “one open entry per unit” and read-back guarantees, but it does not verify their actual deduplication, path-routing, status-resolution, and concurrent-writer semantics. If idempotency is only a scan-then-append without a shared lock, two F0 processes in the same worktree can create duplicate entries; if `read_all_items` defaults to the outbox or another root, the read-back can validate the wrong store.",
+          "suggestion": "Confirm the triage API contract before implementation: `to_outbox=False` must target `<project_root>/.shipwright/triage.jsonl`; dedup must use `dedupKey` with `match_commit=False` and no window; and open/closed status must be resolved from that same file. If the helper does not serialize concurrent writers, extend the existing triage writer’s locking/atomicity rather than adding a separate mechanism in this producer. Add a test for an existing open matching item and, where supported by the existing writer contract, concurrent/idempotent appends.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "“Read the store back and resolves an open id per dedup key” needs a defined behavior for malformed or partially written JSONL, duplicate historical records, and a matching item that is closed. These are realistic conditions for a long-lived tracked JSONL file. Treating a malformed line as a successful read, or choosing a closed matching item, would falsely satisfy AC8; crashing without converting it into a per-unit recording failure would produce an uncontrolled traceback rather than the required explicit exit-3 diagnostic.",
+          "suggestion": "Treat any inability to reliably read/resolve the tracked store as a recording failure for every race being validated, catch and report it as such, and require the resolved item to be open and to match the expected producer/dedup key. Use the triage reader’s established malformed-record policy if it has one; otherwise make the failure behavior explicit and test it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The launch payload embeds unit identifiers into commands, but the plan does not require shell-safe quoting or validation. Unit IDs and test selectors can contain spaces, shell metacharacters, or user-controlled content in some runner configurations. A payload later copied from the inbox/WebUI could execute unintended shell syntax. The same identifiers also enter markdown-rendered title/detail fields.",
+          "suggestion": "Build reproduce commands using a shell-safe quoting routine appropriate to the documented shell (for example, `shlex.quote` for POSIX shell), or represent commands as argument arrays if the launch-payload consumer supports them. Escape/sanitize markdown rendering as required by the triage UI, and test identifiers containing spaces, quotes, backticks, and shell metacharacters.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "AC5 requires a ≤160-character title and length-capped detail, but the mini-plan lists the desired fields without saying where limits are enforced. Unit IDs, command strings, and possibly an error string rendered in the console can be unexpectedly long. More importantly, relying on callers to avoid output leakage is fragile: a future addition of `res` formatting can accidentally include captured pytest output in the tracked detail.",
+          "suggestion": "Enforce title/detail limits inside the producer immediately before calling the triage writer, with deterministic truncation that preserves valid Unicode. Construct detail from an explicit allowlist of scalar fields (`unit_id`, two numeric exit codes, allowlist boolean, fixed explanatory text, safely quoted commands), never from a result object repr, exception repr, or captured-output field. Add a test with oversized identifiers/output-bearing result objects proving no output text reaches JSONL.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The reproduction commands are underspecified. “The unit alone” and “the full parallel suite” must reflect the actual runner invocation, project root, environment, xdist settings, configured unit command, and any selection arguments. A generic command that differs from F0’s execution path will produce an attractive but unreliable Fix-now CTA.",
+          "suggestion": "Derive both commands from the existing command construction used by `run_test_suite.py`, rather than rebuilding command strings in the new module. Pass already-resolved command arguments or a small immutable reproduction context into the producer. Test that the payload contains the actual parallel invocation and the actual serial invocation for a representative configured unit.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The new module is reasonable for keeping `run_test_suite.py` within its size constraint, but the proposed split is more elaborate than necessary if it exports retry constants, classification knowledge, note rendering, entry formatting, persistence, resolution, and report rendering. In particular, producer-owned classification and a separate “drift-pinned” constant add abstraction without reducing coupling.",
+          "suggestion": "Keep the new module narrowly focused on triage record construction, persistence/read-back, and rendering from a passed-in confirmed-race data structure. Leave retry classification and existing result-model interpretation in `run_test_suite.py`; this preserves the useful extraction while avoiding a second policy owner.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Best-effort commit resolution is correct, but the plan does not state that it will run with `cwd=project_root` and without invoking a shell. Running from the caller’s current directory can associate an entry with the wrong repository/worktree or fail unexpectedly in nested invocations.",
+          "suggestion": "Resolve `git rev-parse HEAD` via a non-shell subprocess with `cwd=project_root`, a bounded timeout, and broad non-fatal error handling. Test the missing-`.git`/non-git-root case produces an entry without `commit` rather than an exit-3 failure.  Overall, the core design is sound: persist only confirmed parallel-red/alone-green races through the existing tracked triage store, read back the result, and fail closed only on lost bookkeeping. The implementation should tighten result classification, persistence/read-back semantics, command safety, and final-exit ordering before proceeding.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-27T07:19:42.020418+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-step-3.5",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] Here is a review of the implementation approach for the `f0-race-triage` feature.\n\n### Findings\n\n- **Category:** Approach / Reducibility\n- **Severity:** Medium\n- **Finding:** The \"read-back\" verification mechanism (AC8) is over-engineered and introduces unrelated failure modes. Reading the entire `triage.jsonl` store via `read_all_items()` immediately after writing to it just to verify the write implies the append function is untrustworthy. Furthermore, if a developer manually introduced a JSON syntax error elsewhere in the triage file, the read-back will fail, causing the test runner to exit Code 3 for a syntax error entirely unrelated to the current test suite's race condition.\n- **Suggestion:** Drop the read-back loop entirely. Rely on the success/failure of `triage.append_triage_item_idempotent()`. Wrap the append call in a standard `try/except` block catching I/O or permission errors, and return Exit 3 *only* if the exception is caught.\n\n- **Category:** Edge Case\n- **Severity:** Medium\n- **Finding:** The spec dictates deduplication via `dedupKey` and states an entry is \"never auto-closed\". However, it does not specify what happens if an operator has *already manually closed* a previous entry for this exact unit, and the race occurs again months later. If `append_triage_item_idempotent` sees the historical deduplication key, it might silently skip appending under the assumption the item already exists, failing to notify the operator of the regression.\n- **Suggestion:** Ensure the logic explicitly checks for *open* entries when applying `dedupKey`. If the only matching entries are marked as resolved/closed, the producer must either reopen the existing entry or generate a new one, rather than silently dropping the observation.\n\n- **Category:** Risk\n- **Severity:** Low\n- **Finding:** Moving the triage/rendering logic into a new module (`suite_race_triage.py`) is a good way to respect the 300-LOC limit. However, AC4 requires the entry to state whether t […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The proposed `RETRY_SERIAL_KIND` “drift-pinned copy” in `suite_race_triage.py` duplicates the classification contract that the plan says should remain owned by `run_test_suite.py`. A duplicated constant can silently diverge from `run_test_suite.RETRY_SERIAL`, and the producer does not need it if `main()` passes only already-classified race results.  \n   **Suggestion:** Keep the retry-kind predicate exclusively in `run_test_suite.py`. Pass a typed/list collection of confirmed `parallel-test-failure → serial-pass` results to `emit_race_followups()`. The producer should render and persist those facts, not reclassify them.\n\n2. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** `res.race and res.retry_kind == RETRY_SERIAL` is only safe if those fields strictly mean “parallel pytest test failure, then authoritative alone pass.” The acceptance criteria explicitly exclude infra failures and require a genuine pytest test failure, but the mini-plan does not state that the predicate verifies the relevant parallel and serial exit codes/classification. A future or existing broad `race` flag could cause entries for collection errors, `pytest` usage errors, no-tests exit codes, or other non-test-failure retry outcomes.  \n   **Suggestion:** Define and test a single explicit predicate against the result model: parallel outcome is the recognized pytest test-failure class (normally exit code 1), retry kind is serial-test retry, and authoritative alone outcome is pass (normally exit code 0). Add negative tests for `RETRY_INFRA`, collection/usage errors, no-tests, and serial retry failures.\n\n3. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The plan is ambiguous about report/emission ordering. `_report(result, report=None)` and a moved retry warning could print the original “triage it” warning before persistence runs, then later print a tracking result. That fails AC7’s inte […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T07:53:21.283216+00:00",
+      "disposition": "Session directive in force for this run: 'Do not call the AgentTool unless the user requested it'. The internal code-reviewer subagent was therefore not spawned. Substituted, not skipped: the external code review ran on the SAME diff with two independent providers (external_code, recorded, 4 findings, all dispositioned and fixed), plus the mandatory Step-7 self-review.",
+      "recorded_by": "iterate-step-8",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T07:53:21.426216+00:00",
+      "disposition": "Same session directive (no AgentTool). Stage-3 doubt-reviewer is ADVISORY and conditional per references/iteration-reviews.md; its adversarial role was covered empirically instead by six negative-control probes that reverted each new guard and confirmed a named test goes red, plus a live end-to-end run against a genuinely flaky unit.",
+      "recorded_by": "iterate-step-8",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/suite_report.py",
+          "line": 43,
+          "finding": "The parallel reproduction command is a hard-coded `uv run shared/scripts/tools/run_test_suite.py --project-root .`, rather than the runner invocation that produced the observation. In particular, a caller such as `run_test_suite.py --project-root /work/iterate/foo` executed from another directory will record a CTA that runs against `.` instead of `/work/iterate/foo`; it also drops the actual CLI’s optional `--run-id`. This fails AC6’s requirement that the whole-suite command be the runner’s own CLI rather than a plausible-looking substitute.",
+          "suggestion": "Capture or construct the parallel command in `main()` from the actual parsed invocation/project root and pass it into the report facts/producer. Shell-quote the supplied project-root path and include `--run-id` when it was supplied.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/suite_report.py:45,88-89",
+          "line": null,
+          "finding": "The authoritative alone-run command is capped to 400 characters before it is persisted in both `detail` and `launchPayload`. A valid sufficiently long project/unit path or pytest argv will therefore be truncated, potentially in the middle of a shell quote, making the Fix-now command invalid and no longer the argv F0 actually executed. AC6 requires the actual authoritative re-run command in the launch payload; AC14 only requires title/detail caps, not truncation of the reproduction command itself.",
+          "suggestion": "Preserve the complete `shlex.join` command in `launchPayload` (and arrange detail truncation around it if necessary), rather than applying `MAX_COMMAND` to the command before payload construction.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/suite_report.py:88-102",
+          "line": null,
+          "finding": "facts()` converts the unit ID to an 80-character sanitized display value before `dedup_key()` and `suite_id` use it. Distinct discovered units whose identifiers share the first 80 printable characters (or differ only by stripped control characters) get the same `f0-race:` key and suppress one another, violating the required one-open-entry-per-unit behavior. The stored entry also no longer identifies the full unit that F0 ran.",
+          "suggestion": "Retain a canonical unit identity for `dedupKey` and `suiteId`, while using the separately sanitized/capped value only in title/detail/console rendering. If the canonical ID must be constrained for storage, use a stable collision-resistant suffix rather than simple truncation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/scripts/tools/tests/test_suite_race_triage.py:151-158",
+          "line": null,
+          "finding": "test_only_a_confirmed_race_is_filed` never passes its parameterized `res` to `_emit`; it calls `_emit(tmp_path)` with no results. Consequently, it proves only that `unrecorded_races()` currently returns an empty list, not that the CLI wiring does not file a `RETRY_INFRA` retry. A regression where `main()` passed all `result.race` items to the producer would create infra triage entries while this test still passes.",
+          "suggestion": "Add an end-to-end `main()` test with a `RETRY_INFRA` result and assert no triage file/item is created; alternatively, pass the result through the exact `unrecorded_races()` → producer path used by `main()`.  Overall assessment: ship-with-fixes. The durable-record and fail-closed flow are largely implemented, but the recorded reproduction commands can be materially incorrect for non-default invocation paths and long commands, undermining a core acceptance criterion.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-27T07:53:04.577524+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-step-8",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini]  in `suite_race_triage.py` where we call `triage.append_triage_item_idempotent`?\n```python\n                run_id=run_id, commit=commit,\n                match_commit=False,      # the unit races, not the commit\n                window_seconds=None,     # one open entry until an operator closes it\n                launch_payload=launch_payload(f),\n                suite_id=f.unit_id,\n                to_outbox=False,         # tracked: F6 stages it, it ships in the PR\n```\nLet's verify arguments for `append_triage_item_idempotent`.\nThe schema allows `suite_id`?\n\n[openai] - Category: spec  \n  Severity: medium  \n  File: `shared/scripts/tools/suite_report.py:43`  \n  Finding: The parallel reproduction command is a hard-coded `uv run shared/scripts/tools/run_test_suite.py --project-root .`, rather than the runner invocation that produced the observation. In particular, a caller such as `run_test_suite.py --project-root /work/iterate/foo` executed from another directory will record a CTA that runs against `.` instead of `/work/iterate/foo`; it also drops the actual CLI’s optional `--run-id`. This fails AC6’s requirement that the whole-suite command be the runner’s own CLI rather than a plausible-looking substitute.  \n  Suggestion: Capture or construct the parallel command in `main()` from the actual parsed invocation/project root and pass it into the report facts/producer. Shell-quote the supplied project-root path and include `--run-id` when it was supplied.\n\n- Category: edge-case  \n  Severity: medium  \n  File: `shared/scripts/tools/suite_report.py:45,88-89`  \n  Finding: The authoritative alone-run command is capped to 400 characters before it is persisted in both `detail` and `launchPayload`. A valid sufficiently long project/unit path or pytest argv will therefore be truncated, potentially in the middle of a shell quote, making the Fix-now command invalid and no longer the argv F0 actually executed. AC6 requires the actual authoritative re-run command in the launch payload; AC14 only requires title/detail caps, not truncation of the reproduction command itself.  \n  Suggestion: Preserve the complete `shlex.join` command in `launchPayload` (and arrange detail truncation around it if necessary), rather than applying `MAX_COMMAND` to the command before payload construction.\n\n- Category: edge-case  \n  Severity: medium  \n  File: `shared/scripts/tools/suite_report.py:88-102`  \n  Finding: `facts()` converts the unit ID to an 80-character sanitized display value before `dedup_key()` and `suite_id` use it. Distinct discovered units  […truncated]"
+    }
+  }
+}

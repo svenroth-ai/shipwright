@@ -1,18 +1,19 @@
 # Commit Change Log
 
-Generated: 2026-07-27T11:31:14.777421+00:00
-Total commits: 1208
+Generated: 2026-07-27T09:08:42.773123+00:00
+Source-State: run=iterate-2026-07-27-artifact-state-stamping
+Total commits: 1215
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 347
-    "feat" : 333
-    "chore" : 255
+    "fix" : 349
+    "feat" : 337
+    "chore" : 254
     "docs" : 147
-    "refactor" : 75
-    "test" : 30
+    "refactor" : 76
+    "test" : 31
     "ci" : 11
     "other" : 9
     "build" : 1
@@ -20,10 +21,12 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 347 commits
+### Fixes (fix) — 349 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | run | an override overrides the verdict, never the check (#438) | f6179f6e1ed5 |
+| 2026-07-27 | ci | the PR review gate stops being bypassable (#437) | ec0c7055046f |
 | 2026-07-23 | deps | bump pyasn1 0.6.3 -> 0.6.4 (CVE-2026-59885, CVE-2026-59886) (#432) | 9ffbae764acd |
 | 2026-07-23 | compliance | design verifier C1 skips projects that never ran the design phase (#429) | c841751a7a8e |
 | 2026-07-22 | compliance | count a tested mint as coverage and delivery (D1/D3) + tighten bloat ratchet (H2) (#427) | 4a93b8a7c023 |
@@ -372,10 +375,14 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 333 commits
+### Features (feat) — 337 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | compliance | produced artifacts name the state they describe (FR-01.10) (#448) | e869a02b60fb |
+| 2026-07-27 | iterate | the F0 race warning becomes a tracked follow-up that outlives the run | a52775f9fd8d |
+| 2026-07-27 | triage | defer from the terminal; cap the failing-check detail (#444) | 631e08055ebc |
+| 2026-07-27 | project | give requirements a size rule, and stop the templates contradicting the basis rule (#442) | af72103d0e7a |
 | 2026-07-27 | spec | REQ-3 Phase 2 — every requirement now states what it guarantees (#436) | 28491e1c9631 |
 | 2026-07-23 | shared | shared requirement-elicitation method + FR-01.16 (REQ-3 Phase 1) (#431) | 601fafe55276 |
 | 2026-07-23 | compliance | track skipped tests as a first-class field; key D4 on genuine failures (FR-01.10) (#430) | 355681bdcd4e |
@@ -710,11 +717,10 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 255 commits
+### Chores (chore) — 254 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | triage | sweep 60 outbox append(s) into branch | f47d2fd8b38c |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -1122,10 +1128,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 75 commits
+### Refactoring (refactor) — 76 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | shared | split git resolution out of source_state (300-LOC compliance) (#451) | 3cdca5cfc884 |
 | 2026-07-21 | adopt | route the eight scaffolders through one guarded shared/ loader (FR-01.13) (#423) | 736fc8d1712c |
 | 2026-07-20 | requirements | one catalog, stated once in plain language (campaign S6) (#414) | be2561caccd3 |
 | 2026-07-20 | requirements | one FR-table shape from both generators (campaign S5) (#413) | 5eef5076242c |
@@ -1202,10 +1209,11 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 30 commits
+### Tests (test) — 31 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | shared | split the source-state suite along its three seams (#449) | ecade7e6225e |
 | 2026-07-22 | traceability | normalize an inline dynamic import to clear a benign prompt-scan finding (#426) | 4a0b6d025cb7 |
 | 2026-07-19 | requirements | golden corpus freezing discovery + parser behaviour, bugs included (#403) | 76d97ec06fe6 |
 | 2026-07-08 | run | single-session E2E integration + cross-surface capstone (SS7) (#352) | aa385b3dcd02 |
@@ -1277,7 +1285,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1208 |
+| Total commits | 1215 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1208 |
+| Human-authored commits | 1215 |
 

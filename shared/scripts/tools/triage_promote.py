@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
-"""Manual promote CLI for the triage inbox.
+"""The three triage decisions as library helpers, plus a promote-only CLI.
 
-AC-7 of iterate-2026-05-11-triage-inbox-1a. For non-webui repos (or
-operators who prefer the CLI), wraps `triage.mark_status` with input
-validation:
-
-- Item must exist (resolved by `read_all_items`).
-- Item's current status must be `triage`. Promoting from
-  `dismissed`/`snoozed` is rejected with exit code 2 — those
-  transitions require explicit operator intervention out of scope
-  for Iterate 1a (LOW-12 from external review).
-- `--task-ref` is sanitized: no newlines, tabs, or ASCII control
-  characters; max 200 chars (MED-12 from external review).
+``promote`` / ``dismiss`` / ``defer`` wrap `triage.mark_status` with the
+validation both operator surfaces share — ``triage_cli.py`` and the Command
+Center's Triage tab dispatch through these, so an audit trail cannot depend on
+which surface made the call. All three require the item to exist and to still
+be undecided (`triage`); moving out of a decided state is deliberately not
+offered here (use ``mark_status``). Operator strings are sanitized: no control
+characters, `--task-ref` ≤200 chars, `--reason` ≤500.
 
 Usage:
     uv run shared/scripts/tools/triage_promote.py \\
@@ -38,14 +34,16 @@ from triage import (  # noqa: E402
 _TASK_REF_MAX_LEN = 200
 _REASON_MAX_LEN = 500
 
+# Adjective per decided state, so the rejection message reads naturally for
+# whichever transition was refused.
+_DECIDABLE = {"dismissed": "dismissable", "snoozed": "deferrable"}
+
 
 def _sanitize_single_line(raw: str, *, label: str, max_len: int) -> str:
-    """Shared sanitizer: strip whitespace, reject control chars, cap length.
+    """Strip whitespace, reject empty, reject control chars, cap length.
 
-    Used by both ``sanitize_task_ref`` (label='--task-ref', max=200) and
-    ``sanitize_reason`` (label='--reason', max=500). Reasons can be more
-    prose-y than task refs, hence the wider cap.
-
+    Shared by ``sanitize_task_ref`` (200) and ``sanitize_reason`` (500) —
+    reasons can be more prose-y than task refs, hence the wider cap.
     Raises ValueError on invalid input.
     """
     if not isinstance(raw, str):
@@ -80,6 +78,23 @@ def sanitize_reason(raw: str) -> str:
     )
 
 
+def _require_store(project_root: Path) -> None:
+    """Both stores absent → the inbox was never initialised.
+
+    Distinct from an unknown id, which gets its own exit code at the CLI
+    layer. F29: the gitignored outbox counts, mirroring triage.mark_status's
+    union model — an idle-main background producer can append there before the
+    tracked store exists, and such an item must still be decidable.
+    """
+    tracked_path = _triage_path(project_root)
+    outbox_path = _outbox_path(project_root)
+    if not tracked_path.exists() and not outbox_path.exists():
+        raise FileNotFoundError(
+            f"triage store not initialised at {tracked_path} "
+            f"(nor outbox at {outbox_path})"
+        )
+
+
 def _find_item(project_root: Path, item_id: str) -> dict | None:
     for it in read_all_items(project_root):
         if it.get("id") == item_id:
@@ -105,29 +120,15 @@ def promote(
             invalid task_ref.
     """
     task_ref_clean = sanitize_task_ref(task_ref)
-    # Symmetric with dismiss(): sanitize the optional reason too — code
-    # review MED #3 of iterate-2026-05-20-triage-launch-surface. The
-    # "manualPromote" default is treated as a known-clean literal and
-    # bypasses sanitization. Empty / whitespace-only reasons fall back to
-    # the default so an operator-supplied "   " doesn't store as "   ".
+    # The optional reason is sanitized too. The "manualPromote" default is a
+    # known-clean literal and bypasses it; empty / whitespace-only reasons
+    # fall back to that default so an operator's "   " doesn't store as "   ".
     if reason is not None and reason.strip():
         reason_clean = sanitize_reason(reason)
     else:
         reason_clean = "manualPromote"
 
-    # Distinguish "store missing" from "id missing" — different exit codes
-    # at the CLI layer. F29: accept the TRACKED store OR the gitignored outbox
-    # (D1 union model — mirrors triage.mark_status). An idle-main background
-    # producer can append an item to the outbox only (tracked store not yet
-    # created); read_all_items unions both, so such an item is listable and must
-    # be promotable/dismissable too.
-    tracked_path = _triage_path(project_root)
-    outbox_path = _outbox_path(project_root)
-    if not tracked_path.exists() and not outbox_path.exists():
-        raise FileNotFoundError(
-            f"triage store not initialised at {tracked_path} "
-            f"(nor outbox at {outbox_path})"
-        )
+    _require_store(project_root)
 
     item = _find_item(project_root, item_id)
     if item is None:
@@ -157,39 +158,23 @@ def promote(
     }
 
 
-def dismiss(
+def _decide_from_triage(
     project_root: Path,
     *,
     item_id: str,
+    new_status: str,
     reason: str,
-    by: str = "manualDismiss",
+    by: str,
 ) -> dict:
-    """Dismiss a triage item.
+    """Move a still-open item into a decided state — the body ``dismiss`` and
+    ``defer`` share so their guards cannot drift apart.
 
-    Returns ``{"id", "previousStatus", "newStatus", "reason"}``.
-    Symmetric with ``promote`` — only `triage` items are dismissable from
-    this CLI (use ``mark_status`` for other transitions). Added in
-    iterate-2026-05-20-triage-launch-surface so the new ``triage_cli.py``
-    can dispatch ``dismiss`` through the same parity-tested helper as
-    ``promote``.
-
-    Raises:
-        FileNotFoundError: triage store missing.
-        KeyError: item_id not found.
-        ValueError: invalid state (only `triage` is dismissable) or
-            invalid ``reason``.
+    Deliberately NOT used by ``promote``: that one also writes
+    ``promotedTaskId``, and widening this helper with a parameter one caller
+    never sets is how a shared helper starts lying about what it does.
     """
     reason_clean = sanitize_reason(reason)
-
-    # F29: accept the TRACKED store OR the gitignored outbox (D1 union model —
-    # mirrors triage.mark_status). See promote() for the rationale.
-    tracked_path = _triage_path(project_root)
-    outbox_path = _outbox_path(project_root)
-    if not tracked_path.exists() and not outbox_path.exists():
-        raise FileNotFoundError(
-            f"triage store not initialised at {tracked_path} "
-            f"(nor outbox at {outbox_path})"
-        )
+    _require_store(project_root)
 
     item = _find_item(project_root, item_id)
     if item is None:
@@ -198,24 +183,62 @@ def dismiss(
     if current != "triage":
         raise ValueError(
             f"item {item_id} has status={current!r}; only `triage` is "
-            f"dismissable from this CLI (use mark_status for other "
-            f"transitions)"
+            f"{_DECIDABLE[new_status]} from this CLI (use mark_status for "
+            f"other transitions)"
         )
 
-    mark_status(
-        project_root,
-        item_id,
-        new_status="dismissed",
-        by=by,
-        reason=reason_clean,
-    )
+    mark_status(project_root, item_id, new_status=new_status, by=by,
+                reason=reason_clean)
 
     return {
         "id": item_id,
         "previousStatus": "triage",
-        "newStatus": "dismissed",
+        "newStatus": new_status,
         "reason": reason_clean,
     }
+
+
+def dismiss(
+    project_root: Path,
+    *,
+    item_id: str,
+    reason: str,
+    by: str = "manualDismiss",
+) -> dict:
+    """Dismiss a triage item (false-positive / won't-fix).
+
+    Returns ``{"id", "previousStatus", "newStatus", "reason"}``.
+
+    Raises:
+        FileNotFoundError: triage store missing.
+        KeyError: item_id not found.
+        ValueError: invalid state (only `triage` is dismissable) or
+            invalid ``reason``.
+    """
+    return _decide_from_triage(
+        project_root, item_id=item_id, new_status="dismissed",
+        reason=reason, by=by,
+    )
+
+
+def defer(
+    project_root: Path,
+    *,
+    item_id: str,
+    reason: str,
+    by: str = "manualDefer",
+) -> dict:
+    """Defer a triage item — decided, but deliberately not now.
+
+    The third decision beside promote and dismiss (FR-01.14), stored as
+    `snoozed`. Same contract as ``dismiss``: reason required, only `triage`
+    items are deferrable, same three exceptions. Neither surface can un-defer
+    — the Command Center's status-flip route also accepts `triage` alone.
+    """
+    return _decide_from_triage(
+        project_root, item_id=item_id, new_status="snoozed",
+        reason=reason, by=by,
+    )
 
 
 # ---------------------------------------------------------------------------

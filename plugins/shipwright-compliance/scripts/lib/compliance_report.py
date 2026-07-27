@@ -26,6 +26,7 @@ except ImportError:  # pragma: no cover - triage helper always available in prac
 from ._bloat_dashboard_rows import bloat_rows_events_mode, bloat_rows_legacy_mode  # B3
 from ._control_block import latest_tests_row, render_consistency_audit, render_control_block  # AR-01/02/03
 from ._dashboard_sections import external_review_evidence, project_velocity, render_date
+from ._provenance import provenance_lines
 from ._traceability import iterate_test_coverage, render_traced_row  # BP-1: informational FR-tag row + test-coverage credit
 from .ci_security import render_ci_security  # AR-10: CI security ingest
 if TYPE_CHECKING:
@@ -90,7 +91,7 @@ def generate(data: ComplianceData) -> str:
     lines = [
         "# Compliance Dashboard",
         "",
-        f"Generated: {data.timestamp}",
+        *provenance_lines(data),
         f"Profile: {profile}",
         f"Scope: {scope}",
         "",
