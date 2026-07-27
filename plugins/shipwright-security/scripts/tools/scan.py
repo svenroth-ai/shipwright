@@ -97,10 +97,10 @@ except ImportError as _e:
         raise RuntimeError(f"sarif_writer unavailable: {_SARIF_IMPORT_ERROR}")
 
 
-# Coverage manifest — what this run actually looked at. Derived from the
-# backend's capabilities rather than populated by it, so no backend (or test
-# mock) can forget to report it. See scan_coverage for the status vocabulary.
+# Coverage manifest — what this run looked at. DERIVED from the backend's
+# capabilities, so no backend (or mock) can forget it; see scan_coverage.
 from gitleaks_config import class_notes as gitleaks_class_notes  # noqa: E402
+from coverage_sanitize import sanitize_coverage  # noqa: E402
 from scan_coverage import build_coverage  # noqa: E402
 
 
@@ -301,10 +301,10 @@ def main() -> int:
         if isinstance(cached, dict):
             cached_errors = cached.get("scan_errors")
             scan_errors = list(cached_errors) if isinstance(cached_errors, list) else []
-            # Same round-trip for the coverage manifest: a re-read must not
-            # silently forget which classes the cached scan actually covered.
-            cached_coverage = cached.get("coverage")
-            coverage = list(cached_coverage) if isinstance(cached_coverage, list) else []
+            # Same round-trip for the manifest, SANITIZED: the cache file is
+            # caller-supplied, so re-emitting its rows verbatim would launder
+            # untrusted labels into a fresh artifact.
+            coverage = sanitize_coverage(cached.get("coverage"))
     else:
         try:
             backend = get_backend(args.backend)

@@ -35,6 +35,10 @@ from __future__ import annotations
 
 from typing import Any, Iterable
 
+# A manifest read back from a caller-supplied artifact is UNTRUSTED — see
+# coverage_sanitize for why, and for the boundary where it is normalized.
+from coverage_sanitize import safe_text, sanitize_coverage  # noqa: F401
+
 # Weakness class -> the local CLI tool that provides it. Classes a backend
 # offers that are not in this map (Aikido's ``iac``) still get a row, with
 # ``tool: None`` — an unmapped class must never be silently dropped.
@@ -90,9 +94,17 @@ _SOURCE_TO_CLASS: dict[str, str] = {
 _TOOL_TO_CLASS: dict[str, str] = {v: k for k, v in SCAN_CLASS_TOOLS.items()}
 
 
-def class_label(cls: str) -> str:
-    """Human-readable label for a coverage class (falls back to the raw id)."""
-    return CLASS_LABELS.get(cls, cls)
+def class_label(cls: Any) -> str:
+    """Human-readable label for a coverage class.
+
+    A known class maps to its curated label; an UNKNOWN one falls back to the raw
+    id, which may have arrived in a caller-supplied manifest — so the fallback is
+    flattened by ``coverage_sanitize.safe_text``. This is the single chokepoint
+    feeding the report banner, the coverage table, the one-line summary and the
+    triage card, so hardening it covers all four.
+    """
+    known = CLASS_LABELS.get(cls) if isinstance(cls, str) else None
+    return known if known is not None else safe_text(cls)
 
 
 def _degraded_by_class(
@@ -196,10 +208,13 @@ def with_prompt_injection_row(
     classes nobody measured. A ``covered`` row is different: the prompt scan
     genuinely ran, so recording it adds knowledge rather than manufacturing it.
     """
-    rows = list(coverage)
+    # Drop non-dict entries first: a `{"coverage": ["bad-row"]}` sidecar reaching
+    # `.get` used to crash report generation outright, which defeated the very
+    # tolerance for malformed / pre-feature artifacts this feature promises.
+    rows = [r for r in coverage if isinstance(r, dict)] if isinstance(coverage, list) else []
     if not rows and not ran:
         return rows
-    if any(r.get("class") == PROMPT_INJECTION_CLASS for r in rows if isinstance(r, dict)):
+    if any(r.get("class") == PROMPT_INJECTION_CLASS for r in rows):
         return rows
     rows.append({
         "class": PROMPT_INJECTION_CLASS,

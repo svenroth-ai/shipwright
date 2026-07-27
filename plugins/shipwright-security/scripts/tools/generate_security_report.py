@@ -56,6 +56,7 @@ from markdown_table import escape_cell  # noqa: E402
 # Plugin-local libs (coverage manifest + rendering + triage emission).
 sys.path.insert(0, str(PLUGIN_ROOT / "scripts" / "lib"))
 from coverage_report import coverage_banner, coverage_table  # noqa: E402
+from coverage_sanitize import sanitize_coverage  # noqa: E402
 from scan_coverage import with_prompt_injection_row  # noqa: E402
 
 # ---------------------------------------------------------------------------
@@ -173,8 +174,12 @@ def load_coverage_from_file(path: Path) -> list[dict[str, Any]]:
 
     [] means the producer did not report coverage (a pre-manifest scan), which
     the report renders as "Coverage not reported" rather than a clean sweep.
+
+    SANITIZED at this boundary: with ``--input`` the manifest is caller-supplied,
+    and its labels reach both a markdown report and the launch payload an agent
+    executes. See ``coverage_sanitize``.
     """
-    return _load_list_key(path, "coverage")
+    return sanitize_coverage(_load_list_key(path, "coverage"))
 
 
 def load_findings_from_stdin() -> list[dict[str, Any]]:

@@ -4,8 +4,8 @@
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 9705,
-      "total": 9705
+      "passed": 9720,
+      "total": 9720
     },
     "integration": {
       "status": "passed",
@@ -228,11 +228,31 @@
           "behavior": "A caller-overridden class_tools map also attributes degraded legs",
           "disposition": "tested",
           "evidence": "scan_coverage._degraded_by_class now inverts the effective map; test_scan_coverage.py::test_degraded_leg_beats_every_other_status + ::test_every_status_is_in_the_closed_vocabulary PASSED"
+        },
+        {
+          "behavior": "A file-sourced coverage manifest is sanitized at the boundary (non-dict rows dropped, control chars flattened, values capped)",
+          "disposition": "tested",
+          "evidence": "test_coverage_untrusted_manifest.py::TestSanitizeCoverage (7) PASSED"
+        },
+        {
+          "behavior": "class_label is the single chokepoint and flattens an unknown, possibly-hostile class id",
+          "disposition": "tested",
+          "evidence": "test_coverage_untrusted_manifest.py::TestClassLabelChokepoint (3) PASSED"
+        },
+        {
+          "behavior": "A hostile manifest cannot add an instruction line to the report banner or the agent-executed card payload",
+          "disposition": "tested",
+          "evidence": "test_coverage_untrusted_manifest.py::TestHostileManifestCannotReachTheOperator (3) PASSED"
+        },
+        {
+          "behavior": "with_prompt_injection_row tolerates non-dict rows instead of raising AttributeError",
+          "disposition": "tested",
+          "evidence": "test_coverage_untrusted_manifest.py::TestWithPromptInjectionRowTolerance (2) PASSED"
         }
       ],
       "counts": {
-        "testable": 36,
-        "tested": 36,
+        "testable": 40,
+        "tested": 40,
         "untestable": 1,
         "untested_testable": 0
       },

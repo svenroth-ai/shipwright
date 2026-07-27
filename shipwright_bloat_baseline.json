@@ -417,7 +417,7 @@
     {
       "path": "plugins/shipwright-security/scripts/tools/generate_security_report.py",
       "limit": 300,
-      "current": 649,
+      "current": 654,
       "state": "grandfathered",
       "adr": null
     },
