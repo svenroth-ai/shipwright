@@ -1,174 +1,254 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-review-gate-failclosed-fork",
+    "run_id": "iterate-2026-07-27-phase-gate-override-evidence",
     "date": "2026-07-27",
     "unit": {
-      "status": "pass",
-      "passed": 6352,
-      "failed": 0,
-      "detail": "shared 4994 + integration 418 + shipwright-security 476 + shipwright-adopt 464"
+      "status": "passed",
+      "passed": 5450,
+      "total": 5450
     },
     "integration": {
-      "status": "pass",
-      "passed": 418,
-      "failed": 0
+      "status": "passed",
+      "passed": 421,
+      "total": 421
     },
     "pgtap": {
-      "status": "n/a",
-      "reason": "no database in this repo"
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "e2e": {
-      "status": "n/a",
-      "reason": "no runnable application surface; CI workflow configuration only"
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "design_fidelity": {
-      "status": "n/a",
-      "reason": "no UI"
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "smoke": {
-      "status": "n/a",
-      "reason": "no server"
+      "status": "not_run"
     },
-    "degraded": [],
+    "degraded": [
+      {
+        "condition": "classifier_risk_flag_false_positive",
+        "detail": "classify_complexity.py reported touches_auth from a keyword match on the prose word 'authoritative'. Recomputed from the diff with risk_detectors.py over all 27 changed files: no path contains 'auth'; cross_component, touches_io_boundary, touches_ci_supplychain and touches_build are all False. Flag overridden to none; complexity stays medium (history prior, n=20)."
+      },
+      {
+        "condition": "external_code_review_leg_degraded",
+        "detail": "external_review.py --mode code: the gemini leg returned a degenerate, unterminated generation with no findings and no verdict. Recorded as degraded, not as a pass. The gpt leg succeeded with 2 findings, both disposed in .shipwright/planning/iterate/iterate-2026-07-27-phase-gate-override-evidence/external-code-review.md."
+      },
+      {
+        "condition": "subagent_review_passes_not_run",
+        "detail": "review types 'code' and 'doubt' closed not_run via record_review_pass.py with dispositions naming the session operating rule that bars spawning subagents unless requested. Substituted: external_code (gpt, 2 findings) + a recorded 7-point self-review + an empirical red-check showing 14 of 23 item-1 tests fail against pre-change code."
+      }
+    ],
     "surface_verification": {
-      "surface": "none",
-      "tests_run": 0,
+      "surface": "cli",
+      "runner": "C:/01_Development/shipwright/.worktrees/phase-gate-override-evidence/.venv/Scripts/python.exe -m pytest plugins/shipwright-run/tests/test_update_step_force_reason_cli.py integration-tests/test_handoff_reads_real_loop_state.py -q",
       "exit_code": 0,
-      "justification": "This change is GitHub Actions workflow configuration and the scaffolder that ships it. There is no runnable application surface: the executable surface is GitHub's workflow_run engine, which cannot be driven locally. Verification is the 38-assertion parsed-YAML invariant suite plus the 3-profile scaffold->deploy->derive composition test. The residual gap is recorded as behaviour 22 of the completeness ledger and fails CLOSED in production."
+      "tests_run": 8,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\phase-gate-override-evidence\\.shipwright\\runs\\iterate-2026-07-27-phase-gate-override-evidence\\surface_verification.log",
+      "timestamp": "2026-07-27T07:55:51.281Z",
+      "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "oversize diff fails the job instead of skipping the review",
+          "behavior": "the phase gate runs even when the completion is forced",
           "disposition": "tested",
-          "evidence": "test_oversize_diff_fails_instead_of_skipping[monorepo,shipped-template] PASSED"
+          "evidence": "test_validation_override_record.py::test_force_still_runs_the_phase_gate PASSED"
         },
         {
-          "behavior": "a reviewer that exits non-zero fails the gate (`|| true` gone)",
+          "behavior": "a forced completion records the step, time, reason and the ask-level findings verbatim",
           "disposition": "tested",
-          "evidence": "test_reviewer_exit_code_is_never_discarded x4 PASSED"
+          "evidence": "test_validation_override_record.py::test_a_waved_through_completion_is_recorded_with_what_and_why PASSED"
         },
         {
-          "behavior": "review output that will not parse fails closed",
+          "behavior": "a clean unforced completion records no override, so the presence of a record is itself the signal",
           "disposition": "tested",
-          "evidence": "test_unparseable_review_output_fails_closed x2 PASSED"
+          "evidence": "test_validation_override_record.py::test_a_clean_completion_records_no_override PASSED"
         },
         {
-          "behavior": "stage 1 holds no secret",
+          "behavior": "force over a clean gate records waived=false / gate_result=pass, not a waiver",
           "disposition": "tested",
-          "evidence": "test_stage1_holds_no_secret x2 + TestStage1::test_holds_no_secret PASSED"
+          "evidence": "test_validation_override_record.py::test_force_over_a_clean_gate_records_a_pass_not_a_waiver PASSED"
         },
         {
-          "behavior": "stage 1 is not fork-guarded",
+          "behavior": "the override record survives the real config writer to on-disk JSON and a later unrelated write",
           "disposition": "tested",
-          "evidence": "test_stage1_is_not_fork_guarded, TestStage1::test_fork_guard_absent PASSED"
+          "evidence": "test_validation_override_record.py::test_the_record_survives_the_real_config_writer PASSED"
         },
         {
-          "behavior": "stage 1 records the change for audit",
+          "behavior": "ask-level issues without force still pause the run into needs_validation",
           "disposition": "tested",
-          "evidence": "test_stage1_records_the_change_for_audit x2 PASSED"
+          "evidence": "test_validation_override_record.py::test_ask_issues_without_force_still_pause_the_run PASSED"
         },
         {
-          "behavior": "stage 1 emits no `PR Review` check-run context",
+          "behavior": "a forced retry after a pause clears the stale validation_issues",
           "disposition": "tested",
-          "evidence": "test_stage1_owns_no_pr_review_context x2 PASSED"
+          "evidence": "test_validation_override_record.py::test_a_forced_retry_clears_the_stale_pause_issues PASSED"
         },
         {
-          "behavior": "stage 1 carries no policy a contributor could edit",
+          "behavior": "a blank or absent reason is refused before the gate runs or anything is written",
           "disposition": "tested",
-          "evidence": "test_stage1_carries_no_policy x2, TestStage1::test_carries_no_policy PASSED"
+          "evidence": "test_validation_override_record.py::test_force_without_a_reason_is_refused_before_anything_is_written (4 params: None, empty, spaces, tab+newline) PASSED"
         },
         {
-          "behavior": "stage 2 is triggered by stage 1 completing",
+          "behavior": "the CLI refuses --force without a non-blank --force-reason",
           "disposition": "tested",
-          "evidence": "test_stage2_is_triggered_by_workflow_run x2, test_stage2_is_chained_to_stage1 PASSED"
+          "evidence": "test_update_step_force_reason_cli.py::test_force_without_a_reason_is_refused and ::test_a_whitespace_only_reason_is_refused_too PASSED"
         },
         {
-          "behavior": "stage 2 never checks out the contributor's code",
+          "behavior": "a reason given on the command line reaches the durable record unchanged",
           "disposition": "tested",
-          "evidence": "test_stage2_never_checks_out_contributor_code x2, TestStage2::test_never_checks_out_the_pr_head PASSED"
+          "evidence": "test_update_step_force_reason_cli.py::test_a_reason_given_on_the_command_line_reaches_the_record PASSED"
         },
         {
-          "behavior": "stage 2 takes identity from the trusted workflow_run event",
+          "behavior": "--force-reason is advertised in update-step --help",
           "disposition": "tested",
-          "evidence": "test_stage2_takes_identity_from_the_trusted_event x2 PASSED"
+          "evidence": "test_update_step_force_reason_cli.py::test_the_flag_is_advertised_in_help PASSED"
         },
         {
-          "behavior": "stage 2 never reviews the artifact (contributor-controlled)",
+          "behavior": "a standalone invocation skips the gate and records nothing, and needs no reason",
           "disposition": "tested",
-          "evidence": "test_stage2_never_reviews_the_artifact x2, TestStage2::test_does_not_review_the_artifact PASSED"
+          "evidence": "test_validation_override_record.py::test_standalone_skips_the_gate_and_records_nothing PASSED"
         },
         {
-          "behavior": "stage 2 derives the tier from API data in default-branch code",
+          "behavior": "a validator that raises does not wedge the forced path; the crash is recorded as overridden",
           "disposition": "tested",
-          "evidence": "TestStage2::test_tier_is_decided_here_from_api_data PASSED"
+          "evidence": "test_validation_override_record.py::test_a_crashing_validator_does_not_wedge_the_force_path PASSED"
         },
         {
-          "behavior": "stage 2 refuses an ambiguous PR (one SHA, several open PRs)",
+          "behavior": "a validator that raises pauses the unforced path fail-closed with a readable reason",
           "disposition": "tested",
-          "evidence": "test_stage2_refuses_an_ambiguous_pull_request x2 PASSED"
+          "evidence": "test_validation_override_record.py::test_a_crashing_validator_pauses_the_unforced_path PASSED"
         },
         {
-          "behavior": "stage 2 re-checks the head SHA before blessing it (force-push race)",
+          "behavior": "inform-level notes are recorded on the forced path too (they used to be dropped)",
           "disposition": "tested",
-          "evidence": "test_stage2_rechecks_the_head_before_blessing_it x2 PASSED"
+          "evidence": "test_validation_override_record.py::test_inform_notes_are_recorded_on_the_forced_path_too PASSED"
         },
         {
-          "behavior": "stage 2 posts the verdict onto the PR and the required status",
+          "behavior": "the opt-in Phase-Quality critical gate keeps its semantics and is overridable + recorded",
           "disposition": "tested",
-          "evidence": "test_stage2_posts_the_verdict_onto_the_change x2, TestStage2::test_posts_the_required_context_as_a_status PASSED"
+          "evidence": "test_validation_override_record.py::test_critical_gate_failures_are_overridable_and_recorded PASSED"
         },
         {
-          "behavior": "least-privilege tokens: stage 1 no write, stage 2 posting job only",
+          "behavior": "override retention is capped and every eviction is counted, never silent",
           "disposition": "tested",
-          "evidence": "test_pr_review_stage1_holds_no_write_scope, test_pr_review_run_only_posting_job_widens, test_stage2_top_level_token_is_read_only x2 PASSED"
+          "evidence": "test_validation_override_record.py::test_override_retention_is_capped_and_the_drop_is_counted PASSED"
         },
         {
-          "behavior": "the waiver cannot cover a change to the checks themselves",
+          "behavior": "the lazy validate_phase import keeps the phase_validators.validate_phase patch target intercepting",
           "disposition": "tested",
-          "evidence": "test_waiver_cannot_cover_a_change_to_the_checks, TestStage2::test_waiver_cannot_cover_a_change_to_the_checks PASSED"
+          "evidence": "test_validation_override_record.py::test_the_validate_phase_patch_target_still_intercepts PASSED"
         },
         {
-          "behavior": "tier logic preserved across the move (labels/sensitive/external)",
+          "behavior": "the handoff names and tallies the finished phases (done + skipped only)",
           "disposition": "tested",
-          "evidence": "TestStage2::test_tier_is_decided_here_from_api_data, TestStage1 suite PASSED"
+          "evidence": "test_handoff_pipeline_phases.py::test_finished_phases_are_named_and_tallied PASSED"
         },
         {
-          "behavior": "adopt scaffolds BOTH review stages",
+          "behavior": "the handoff names the interrupted phase",
           "disposition": "tested",
-          "evidence": "test_stage2_lands_too, test_stage2_existing_file_preserved PASSED"
+          "evidence": "test_handoff_pipeline_phases.py::test_the_interrupted_phase_is_named_as_interrupted PASSED"
         },
         {
-          "behavior": "required-check derivation names the posted status, not a job name",
+          "behavior": "a phase that merely started is not counted as finished, and the document says so in words",
           "disposition": "tested",
-          "evidence": "test_required_check_names_match_deployed_workflows[3 profiles], test_posted_status_contexts_name_known_workflows PASSED"
+          "evidence": "test_handoff_pipeline_phases.py::test_a_phase_that_merely_started_does_not_count_as_finished PASSED"
         },
         {
-          "behavior": "stage 2 executes correctly against live GitHub on a real fork PR",
+          "behavior": "a run with nothing mid-flight says so rather than rendering an empty slot",
+          "disposition": "tested",
+          "evidence": "test_handoff_pipeline_phases.py::test_a_run_with_nothing_mid_flight_says_so PASSED"
+        },
+        {
+          "behavior": "a failed phase is terminal but not counted as finished",
+          "disposition": "tested",
+          "evidence": "test_handoff_pipeline_phases.py::test_a_failed_phase_is_not_counted_as_finished_either PASSED"
+        },
+        {
+          "behavior": "the loop's dispatch pointer, attempt and loop status are rendered",
+          "disposition": "tested",
+          "evidence": "test_handoff_pipeline_phases.py::test_the_dispatch_pointer_is_rendered PASSED"
+        },
+        {
+          "behavior": "a pointer naming no known phase task renders as stale instead of asserting a phase",
+          "disposition": "tested",
+          "evidence": "test_handoff_pipeline_phases.py::test_a_pointer_naming_no_known_task_is_labelled_stale PASSED"
+        },
+        {
+          "behavior": "a non-numeric attempt is omitted rather than printed",
+          "disposition": "tested",
+          "evidence": "test_handoff_pipeline_phases.py::test_a_non_numeric_attempt_is_omitted_rather_than_printed PASSED"
+        },
+        {
+          "behavior": "absent, corrupt or non-object loop state degrades to the table alone without raising",
+          "disposition": "tested",
+          "evidence": "test_handoff_pipeline_phases.py::test_no_loop_state_still_renders_the_phase_table, ::test_corrupt_loop_state_degrades_without_crashing, ::test_a_loop_state_that_is_not_an_object_is_ignored PASSED"
+        },
+        {
+          "behavior": "multiple in_progress tasks are all named",
+          "disposition": "tested",
+          "evidence": "test_handoff_pipeline_phases.py::test_multiple_in_progress_tasks_are_all_named PASSED"
+        },
+        {
+          "behavior": "pipe characters and newlines in producer data cannot break the markdown table",
+          "disposition": "tested",
+          "evidence": "test_handoff_pipeline_phases.py::test_markdown_delimiters_in_producer_data_cannot_break_the_table PASSED"
+        },
+        {
+          "behavior": "non-mapping phase_tasks rows are skipped rather than crashing the render",
+          "disposition": "tested",
+          "evidence": "test_handoff_pipeline_phases.py::test_non_mapping_rows_are_skipped PASSED"
+        },
+        {
+          "behavior": "a config without phase_tasks renders no block at all, with no placeholder rows",
+          "disposition": "tested",
+          "evidence": "test_handoff_pipeline_phases.py::test_a_config_without_phase_tasks_renders_nothing and ::test_a_legacy_project_handoff_gains_no_pipeline_block PASSED"
+        },
+        {
+          "behavior": "the block renders above the legacy checkpoint in the real generated handoff",
+          "disposition": "tested",
+          "evidence": "test_handoff_pipeline_phases.py::test_generate_handoff_renders_the_block_above_the_legacy_checkpoint PASSED"
+        },
+        {
+          "behavior": "the shared consumer and the run plugin agree on the loop-state path (drift guard)",
+          "disposition": "tested",
+          "evidence": "test_handoff_reads_real_loop_state.py::test_the_consumer_and_the_producer_agree_on_the_loop_state_path PASSED"
+        },
+        {
+          "behavior": "FINISHED_STATUSES is a subset of the schema's declared PhaseTaskStatus enum (drift guard)",
+          "disposition": "tested",
+          "evidence": "test_handoff_pipeline_phases.py::test_finished_statuses_match_the_run_config_schema PASSED"
+        },
+        {
+          "behavior": "the renderer reads loop state the real orchestrator wrote, not a hand-written fixture",
+          "disposition": "tested",
+          "evidence": "test_handoff_reads_real_loop_state.py::test_the_renderer_reads_the_loop_state_the_orchestrator_wrote PASSED"
+        },
+        {
+          "behavior": "a phase completed through the real lifecycle flips from interrupted to finished",
+          "disposition": "tested",
+          "evidence": "test_handoff_reads_real_loop_state.py::test_a_phase_the_orchestrator_completed_is_reported_as_finished PASSED"
+        },
+        {
+          "behavior": "docs (hooks-and-pipeline.md, guide.md, constitution.md) describe the new override contract",
           "disposition": "untestable",
-          "reason_code": "requires-external-nondeterministic-service",
-          "reason": "needs a real fork PR against GitHub with live secrets; no local harness can synthesise a workflow_run event. The first live fork PR is the proof. Until then the gate fails closed, which is the safe direction."
+          "evidence": "prose accuracy: reviewed by hand against the diff; no executable assertion can judge whether the wording is right",
+          "reason_code": "requires-manual-visual-judgment"
         }
       ],
       "counts": {
-        "total": 22,
-        "tested": 21,
+        "testable": 36,
+        "tested": 36,
         "untestable": 1,
         "untested_testable": 0
       }
-    },
-    "ci_supplychain_ack": {
-      "run_id": "iterate-2026-07-27-review-gate-failclosed-fork",
-      "paths_fingerprint": "ef6cf514447be7b15d961fa14b737e0d9cd692124f92107dc14534d45b8fabd8",
-      "consistent_with": "iterate-2026-06-30-workflow-token-permissions",
-      "statement": "Splits the Tier-3 PR review into two workflows. Stage 1 (pull_request, runs on forks) holds NO secret and no write scope; stage 2 (workflow_run, default-branch code) is the only credentialed half and widens solely to statuses:write + pull-requests:write + contents:read, preserving read-only top-level tokens with per-job widening. Adds .github/workflows/pr-review-run.yml. Action-pinning posture unchanged: GitHub-owned actions (checkout@v4, upload-artifact@v4, github-script@v7) stay on mutable tags per the recorded do-not-SHA-pin decision; the only third-party action (astral-sh/setup-uv) remains pinned to a full commit SHA. Net effect on the trust boundary is a REDUCTION: credentials move out of any run whose workflow file the contributor controls, and stage 2 derives tier and diff from the API rather than from contributor-supplied artifact data.",
-      "ci_paths": [
-        ".github/workflows/pr-review-run.yml",
-        ".github/workflows/pr-review.yml",
-        "shared/templates/github-actions/claude-review-run.yml.template",
-        "shared/templates/github-actions/claude-review.yml.template"
-      ]
     }
   },
   "coverage": {

@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-27-phase-gate-override-evidence",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T07:52:41.632667+00:00",
+      "disposition": null,
+      "recorded_by": "iterate Step 7 (7-point checklist, inline)",
+      "parse_status": "unstructured",
+      "raw_excerpt": "# Self-review — iterate-2026-07-27-phase-gate-override-evidence\n\nThe 7-point checklist (`references/iteration-reviews.md`).\n\n## 1. Does it do what the spec said?\n\nBoth items close acceptance criteria that already existed on FR-01.01. Mapped:\n\n| AC | Where it is satisfied | Where it is pinned |\n|---|---|---|\n| AC1 gate runs under force | `step_planning.py` — `if not is_standalone:` (was `if not force and not is_standalone:`) | `test_force_still_runs_the_phase_gate` |\n| AC2 override recorded with what + why | `validation_record.record_validation_override` | `test_a_waved_through_completion_is_recorded_with_what_and_why` |\n| AC3 passed ≠ waved through | no record on a clean unforced completion; `waived`/`gate_result` split | `test_a_clean_completion_records_no_override`, `test_force_over_a_clean_gate_records_a_pass_not_a_waiver` |\n| AC4 reason mandatory | `normalise_override_reason` (library) + `parser.error` (CLI) | 4 parametrised lib cases + 2 CLI cases |\n| AC5 pause rule unchanged | the `ask_issues and not force` branch is the old branch | `test_ask_issues_without_force_still_pause_the_run` |\n| AC6 standalone unchanged | `if not is_standalone` still guards the whole gate | `test_standalone_skips_the_gate_and_records_nothing` |\n| AC7 finished phases rendered | `render_pipeline_phases` tally + table | `test_finished_phases_are_named_and_tallied` |\n| AC8 interrupted ≠ finished | `_finished_verdict` + the prose line | `test_a_phase_that_merely_started_does_not_count_as_finished` |\n| AC9 dispatch pointer rendered | `_dispatch_lines` | `test_the_dispatch_pointer_is_rendered` |\n| AC10 no phase_tasks → nothing | early `return []` | `test_a_config_without_phase_tasks_renders_nothing` |\n\n## 2. Anything beyond the spec? (YAGNI)\n\nThree additions beyond the literal brief, each traceable to a review finding, none\nspeculative:\n\n- `[gate-error]` crash handling — plan-review **G1**. Not gold-plating: making the gate\n  run under force *removed* the escape hatch a broken validator used to have.\n- `validation_overrides_dropped` counter — plan-review **O6**.\n- The path drift-guard integration test — plan-review **G3**.\n\nNothing else. No new CLI subcommands, no config knobs, no changes to\n`single-session-apply` (out of scope by the brief and by the fact that the v2 path has\nno `--force`).\n\n## 3. Tests: do they falsify?\n\nVerified empirically, not assumed. Reverting `step_planning.py` to the pre-change\nbehaviour turns **14 of 23** item-1 tests red; unwiring `render_pipeline_phases` turns\nthe item-2 end-to-end test red. The 9 item-1 tests that stay green are the ones pinning\n*unchanged* behaviour (the pause rule, standalone, the CLI arg refusal, the retention\nunit) — which is correct, they are regression guards, not new-behaviour proofs.\n\n## 4. Error handling\n\n- Broken validator → caught, surfaced as an ask-level issue, fail-closed unforced.\n- Blank/whitespace reason → `ValueError` **before** the gate runs or anything is\n  written; a malformed call cannot half-complete a phase.\n- Missing / partial / non-object loop state → pointer lines omitted, table still\n  renders. Never raises.\n- Non-mapping `phase_tasks` rows, `phase_tasks` not a list, `run_config` `None` →\n  all handled, all tested.\n\n## 5. Concurrency / locking\n\nThe gate stays **outside** `run_config_lock` (it is read-only and slow — the audit\nWP2/F11 property). Only `record_validation_override` runs inside, against the\nreload-fresh config in the existing critical section. No new lock, no new lock-hold,\nno lock held across the compliance subprocess. `test_update_step_complete_does_not_clobber_concurrent_write` still passes.\n\n## 6. Backwards compatibility\n\n- **Breaking, deliberately:** `--force` now requires `--force-reason`. Every in-repo\n  caller updated (3 unit test files, 1 integration test file — 22 call sites). The\n  CLI refusal is an actionable `parser.error`, not a traceback.\n- **Not breaking:** `update-step` remains inert in a driven `single_session` run, so\n  no driven pipe […truncated]"
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "wrap `run_phase_gate()` in `try/except Exception`; record the exception as a synthetic ask-level issue so the operator can still override and the failure is logged.  G2 — medium — edge-case. Reading `.shipwright/run_loop_state.json` from a second process can hit a partial write → `JSONDecodeError`. Catch it alongside `FileNotFoundError` as part of the intended corrupt-degradation path.  G3 — medium — risk. Hardcoding the cross-plugin loop-state path inside `shared/` is silent coupling: because missing/corrupt state degrades silently, a rename in the orchestrator would silently stop the handoff rendering loop status with no test failing. Suggestion: an explicit cross-boundary test guaranteeing `handoff_progress.py` and the orchestrator agree on the path and schema.  G4 — low — approach. Allowing `force_reason=None` for library callers leaves a loophole for headless scripts to override without an audit trail.  Overall: grounded and pragmatic; address the validator-crash escape hatch and the file-read concurrency and it is ready to implement.",
+          "suggestion": null,
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter: gemini + gpt",
+      "completed_at": "2026-07-27T07:13:19.485135+00:00",
+      "disposition": null,
+      "recorded_by": "iterate Step 4",
+      "parse_status": "structured",
+      "raw_excerpt": "# External plan review — iterate-2026-07-27-phase-gate-override-evidence\n\nMode: `iterate` · Provider: openrouter · Reviewers: **gemini** + **openai (gpt)** ·\nBoth succeeded, `degraded: false`.\n\nReviewed: `…-MINIPLAN.md` against `…-phase-gate-override-evidence.md`.\n\n---\n\n## gemini\n\n**G1 — high — edge-case.** Removing the execution bypass from `--force` eliminates\nthe escape hatch for a fundamentally broken validator. If `validate_phase` throws,\n`update_step` will crash and the operator cannot force completion at all.\n*Suggestion:* wrap `run_phase_gate()` in `try/except Exception`; record the\nexception as a synthetic ask-level issue so the operator can still override and the\nfailure is logged.\n\n**G2 — medium — edge-case.** Reading `.shipwright/run_loop_state.json` from a second\nprocess can hit a partial write → `JSONDecodeError`. Catch it alongside\n`FileNotFoundError` as part of the intended corrupt-degradation path.\n\n**G3 — medium — risk.** Hardcoding the cross-plugin loop-state path inside `shared/`\nis silent coupling: because missing/corrupt state degrades silently, a rename in the\norchestrator would silently stop the handoff rendering loop status with no test\nfailing. *Suggestion:* an explicit cross-boundary test guaranteeing\n`handoff_progress.py` and the orchestrator agree on the path and schema.\n\n**G4 — low — approach.** Allowing `force_reason=None` for library callers leaves a\nloophole for headless scripts to override without an audit trail.\n\n**Overall:** grounded and pragmatic; address the validator-crash escape hatch and the\nfile-read concurrency and it is ready to implement.\n\n---\n\n## openai (gpt)\n\n**O1 — medium — approach.** CLI-only validation of `--force-reason` is insufficient;\nrequire a non-blank reason in `update_step` itself for a non-standalone forced\ncompletion, and strip whitespace so `\"   \"` is rejected.\n\n**O2 — medium — risk.** Extracting the gate risks changing validator semantics\n(critical-gate promotion, inform-note handling). Extract with minimal semantic edits,\nmake `record_inform_notes` explicit in the flow, and test the matrix:\ninform-only/no-force, inform-only/force, ask+inform/no-force, ask+inform/force,\ncritical-gate on/off.\n\n**O3 — medium — dependency.** `validation_overrides` is a new persistent run-config\ncontract. Audit whether any schema or reserialization path drops unknown keys, declare\nthe field where a schema exists, and round-trip through the **real** config writer, not\nan in-memory dict.\n\n**O4 — medium — risk.** Re-exports do not control the symbol a lazy import resolves.\nInventory the actual patch targets before extracting; do not add shim exports unless\nthey really intercept.\n\n**O5 — medium — edge-case.** A prior unforced attempt leaves `validation_issues` in\nthe config; a later forced completion over a now-clean gate could record\n`gate_result: \"pass\"` while stale issues still imply failure. Define retry behaviour\nand test pause → clean → forced completion.\n\n**O6 — medium — risk.** A 50-entry cap silently discards the only durable record\ndistinguishing \"passed\" from \"waved through\". Prefer no small global cap; if one is\nrequired, document it and do not discard silently.\n\n**O7 — medium — edge-case.** The dispatch pointer may name a task absent from\n`phase_tasks`, a terminal task, or carry a missing/non-numeric attempt. Resolve\n`currentPhaseTaskId` against `phase_tasks` before naming a phase; label an\nunresolvable pointer as stale rather than asserting a current phase. Test stale IDs,\nterminal pointed-to tasks, multiple `in_progress`, missing attempts.\n\n**O8 — low — dependency.** The status vocabulary is owned by `phase_task_lifecycle`.\nConfirm the real enum, render unknown statuses visibly as unknown, and validate that\n`phase_tasks` is a list of mappings.\n\n**O9 — low — security.** JSON-derived phase/split names go straight into markdown\ntables; embedded `|` or newlines corrupt the table. Normalize to single-line and\nescape delimiters.\n\n**O10 — low — approach.** `validation_ […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T07:53:01.388500+00:00",
+      "disposition": "Session operating rule: 'Do not call the AgentTool unless the user requested it' — the shipwright-build:code-reviewer pass runs as a subagent and was not requested. Substituted: external_code (openrouter/gpt, 2 findings, both disposed) + a 7-point self-review recorded under review-type self.",
+      "recorded_by": "iterate Step 8",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T07:53:01.506498+00:00",
+      "disposition": "Session operating rule: 'Do not call the AgentTool unless the user requested it' — shipwright-build:doubt-reviewer is a subagent and was not requested. Doubt is also Advisory (Stage-3, non-gating) per references/iteration-reviews.md. Adversarial coverage came from the external plan review's 14 findings (all disposed) and the empirical red-check that 14/23 item-1 tests fail against pre-change code.",
+      "recorded_by": "iterate Step 8",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "add `_current_iterate_progress = render_iterate_progress` plus a compatibility test.  C2 — low — spec. `validation_record.py:57`. `MAX_VALIDATION_OVERRIDES = 200`, while the mini-plan states a cap of 50 matching `append_iterate_entry.py`.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "set it to 50 and adjust the retention test.  Verdict: ship-with-fixes. \"The core acceptance criteria for always-running forced validation, evidence recording, and pipeline handoff rendering appear implemented and substantively tested.\"",
+          "suggestion": null,
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter: gpt (gemini leg DEGRADED)",
+      "completed_at": "2026-07-27T07:52:48.810887+00:00",
+      "disposition": null,
+      "recorded_by": "iterate Step 8",
+      "parse_status": "structured",
+      "raw_excerpt": "# External code review — iterate-2026-07-27-phase-gate-override-evidence\n\nMode: `code` · Provider: openrouter · `success: true`, `reviews_succeeded: 2`.\nDiff reviewed: the staged diff excluding `.shipwright/planning/iterate/` (2120 lines).\n\n**Leg status: 1 usable, 1 DEGRADED.** The gemini leg returned a degenerate\ngeneration — an unterminated fragment of its own reasoning\n(`` ` where is `config[\"status\"]` updated when moving to the next step? … ``) with no\nfindings and no verdict. It is recorded as degraded rather than as a clean pass;\nthe substantive review below is gpt's alone.\n\n---\n\n## openai (gpt)\n\n**C1 — medium — regression.** `shared/scripts/tools/generate_session_handoff.py:28`.\nThe diff removes `_current_iterate_progress` without the compatibility re-export the\nmini-plan specified. Updating this repo's own test imports does not protect an\nexternal caller importing `tools.generate_session_handoff._current_iterate_progress`.\n*Suggestion:* add `_current_iterate_progress = render_iterate_progress` plus a\ncompatibility test.\n\n**C2 — low — spec.** `validation_record.py:57`. `MAX_VALIDATION_OVERRIDES = 200`,\nwhile the mini-plan states a cap of 50 matching `append_iterate_entry.py`.\n*Suggestion:* set it to 50 and adjust the retention test.\n\n**Verdict:** ship-with-fixes. \"The core acceptance criteria for always-running forced\nvalidation, evidence recording, and pipeline handoff rendering appear implemented and\nsubstantively tested.\"\n\n---\n\n## Disposition\n\nBoth findings have the same root cause, and it is a real one: **the mini-plan was not\nupdated after the plan-review dispositions were applied**, so the reviewer was\ncomparing the diff against a stale plan. Fixed by correcting the plan, not the code —\nin both cases the code is what the *reviewed and disposed* design called for.\n\n| # | Verdict | Reasoning |\n|---|---|---|\n| C2 | **plan corrected, code unchanged** | 200 is not a drift from 50 — it is the disposition of plan-review finding **O6**, which objected that a small silent cap discards the only durable evidence distinguishing \"passed\" from \"waved through\". The eviction counter (`validation_overrides_dropped`) was added in the same disposition so truncation is never silent. The mini-plan still said 50; it now records the revision and the reason. |\n| C1 | **rejected, plan corrected** | The alias was in the first draft and was dropped deliberately during build. `_current_iterate_progress` is a **private** symbol (leading underscore) in a `tools/` script, not a public contract; `grep -rn` across the repo returns only the defining module and one in-repo test file. A permanent alias for a private helper with no callers is precisely the dead compatibility surface plan-review finding **O10** objected to, and adding a test asserting the alias exists would make the dead surface load-bearing. The plan now records the reversal and the grep that justifies it. |\n\nNo code change resulted from this review. The mini-plan changed so that plan and diff\nagree — which is the defect the review actually found.\n"
+    }
+  }
+}
