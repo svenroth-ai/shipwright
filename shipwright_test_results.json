@@ -4,13 +4,13 @@
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 569,
-      "total": 569
+      "passed": 570,
+      "total": 570
     },
     "integration": {
       "status": "passed",
-      "passed": 418,
-      "total": 418
+      "passed": 419,
+      "total": 419
     },
     "pgtap": {
       "status": "skipped",
@@ -46,6 +46,10 @@
       {
         "condition": "f0_flake_observed_once",
         "reason": "first full F0 re-run was RED on shipwright-run::test_three_process_writers_no_truncation_no_lost_update; passes in isolation and this diff touches neither shipwright-run nor run-config locking — a three-process writer test flaking under 18-unit parallel load. Re-run GREEN 18/18."
+      },
+      {
+        "condition": "cross_plugin_regression_introduced_and_fixed_in_run",
+        "reason": "the lazy spec_table import was name-based, so it broke inside shipwright-compliance's test session where `lib` is bound to that plugin's package (ADR-045). Caught by the post-merge F0 run, not by adopt's own suite. Resolved by path-loading spec_table under a sentinel with BOTH scripts/ and scripts/lib on sys.path, and pinned by a hostile-binding regression test."
       }
     ],
     "surface_verification": {
@@ -271,11 +275,17 @@
           "behavior": "no banner variant emits a table row",
           "disposition": "tested",
           "evidence": "test_derived_catalogue.py::test_no_banner_variant_emits_a_table_row PASSED (3 variants)"
+        },
+        {
+          "behavior": "summarize still resolves spec_table when `lib` is bound to ANOTHER plugin's package (ADR-045)",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "test_derived_catalogue.py::test_summarize_works_when_lib_belongs_to_another_plugin PASSED (subprocess with a hostile `lib` binding); the defect it pins was caught by the cross-plugin F0 run via shipwright-compliance::test_adopt_emission_round_trips, now green"
         }
       ],
       "counts": {
-        "testable": 41,
-        "tested": 41,
+        "testable": 42,
+        "tested": 42,
         "untestable": 1,
         "untested_testable": 0
       },

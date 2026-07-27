@@ -21,6 +21,7 @@ Two rules carry the weight here:
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -235,3 +236,43 @@ def test_an_all_derived_catalogue_still_says_nobody() -> None:
 def test_no_banner_variant_emits_a_table_row(features) -> None:
     banner = render_provenance_banner(summarize(features, split_name="01-adopted"))
     assert not [ln for ln in banner.splitlines() if ln.strip().startswith("|")]
+
+
+# --------------------------------------------------------------------------- #
+# `summarize` survives a foreign `lib` binding (ADR-045)
+# --------------------------------------------------------------------------- #
+
+_FOREIGN_LIB_PROBE = """
+import sys, types, json
+from pathlib import Path
+# Bind `lib` to a package that is NOT adopt's — exactly what happens when
+# another plugin's test session imports its own `scripts.lib` first.
+foreign = types.ModuleType("lib"); foreign.__path__ = []
+sys.modules["lib"] = foreign
+sys.path.insert(0, sys.argv[1])                     # adopt's scripts/lib
+import derived_catalogue as dc
+cat = dc.summarize([{"fr_id": "FR-01.01", "label": "x", "source_file": "a.ts"}],
+                   split_name="01-adopted")
+print(json.dumps({"total": cat.total, "basis": cat.requirements[0].basis}))
+"""
+
+
+def test_summarize_works_when_lib_belongs_to_another_plugin() -> None:
+    """Regression. `summarize` reaches `spec_table` lazily, and a name-based
+    import would resolve `lib` to whatever the PROCESS bound — shipwright-
+    compliance's Group-I round-trip test imports adopt's `_render_spec_md` after
+    binding its own `lib`, and the whole chain vanished. Caught only by the
+    cross-plugin F0 run, never by adopt's own suite, so it is pinned here
+    against a deliberately hostile binding.
+    """
+    import subprocess
+
+    lib_dir = Path(__file__).resolve().parent.parent / "scripts" / "lib"
+    proc = subprocess.run(
+        [sys.executable, "-c", _FOREIGN_LIB_PROBE, str(lib_dir)],
+        capture_output=True, text=True, check=False,
+    )
+    assert proc.returncode == 0, (
+        f"summarize broke under a foreign `lib` binding:\n{proc.stderr}"
+    )
+    assert json.loads(proc.stdout) == {"total": 1, "basis": "code"}

@@ -170,6 +170,14 @@ Boundary Probe + round-trip tests are therefore **mandatory**, not advisory.
   12. *Did the `write_spec` return-type change break an unshown caller?* Repo-wide
       grep → only `generate_adoption_artifacts` and two test modules, all updated
       → **finding declined on evidence.**
+  13. *Does the lazy `spec_table` import survive another plugin's session?*
+      **No** — after merging `origin/main` the cross-plugin F0 went RED on
+      `shipwright-compliance::test_adopt_emission_round_trips`, which imports
+      adopt's `_render_spec_md` after binding its own `lib`. A name-based import
+      resolves whatever the *process* bound, so the whole chain vanished.
+      **Fixed** by path-loading `spec_table` under a sentinel with both
+      `scripts/` and `scripts/lib` on `sys.path`, and pinned by a hostile-binding
+      regression test. Adopt's own suite could never have caught this.
 
 - **Test Completeness Ledger** — 0 untested-testable.
 
@@ -216,7 +224,8 @@ Boundary Probe + round-trip tests are therefore **mandatory**, not advisory.
   | 39 | a row without a basis is rejected; an interview-backed document still round-trips | tested | `test_derived_catalogue_doc::test_a_row_without_a_basis_is_rejected`, `::test_an_interview_backed_document_round_trips` PASSED |
   | 40 | the provenance block states what is true of THIS catalogue (all-derived / partly confirmed / fully confirmed) | tested | `test_derived_catalogue::test_a_partly_confirmed_catalogue_does_not_claim_nobody_confirmed_it`, `::test_a_fully_confirmed_catalogue_says_so_and_asks_for_nothing`, `::test_an_all_derived_catalogue_still_says_nobody` PASSED |
   | 41 | no banner variant emits a table row | tested | `test_derived_catalogue::test_no_banner_variant_emits_a_table_row` PASSED (3 variants) |
-  | 42 | the Step H handoff *banner* renders these counts | untestable | `covered-by-existing-test` — the banner is prompt-rendered text, not code; what IS mechanical (the required kwarg, the doc naming the source) is rows 12 and 35. Stated as a limitation, not hidden. |
+  | 42 | `summarize` still resolves `spec_table` when `lib` belongs to ANOTHER plugin (ADR-045) | tested | `test_derived_catalogue::test_summarize_works_when_lib_belongs_to_another_plugin` PASSED (subprocess, hostile binding); the defect it pins was caught by the cross-plugin F0 via `shipwright-compliance::test_adopt_emission_round_trips`, now green |
+  | 43 | the Step H handoff *banner* renders these counts | untestable | `covered-by-existing-test` — the banner is prompt-rendered text, not code; what IS mechanical (the required kwarg, the doc naming the source) is rows 12 and 35. Stated as a limitation, not hidden. |
 
 - **Confidence-pattern check.**
   *Asymptote (depth):* yes — **four times**, and the last one is the instructive
@@ -228,7 +237,7 @@ Boundary Probe + round-trip tests are therefore **mandatory**, not advisory.
   count-consistent `{"basis": "code", "confirmed": true}` still passed. The
   pattern to take seriously is that each "surely now" was wrong, including after
   a clean two-model review.
-  *Coverage (breadth):* 42 behaviors enumerated, 41 `tested`, 1 `untestable`
+  *Coverage (breadth):* 43 behaviors enumerated, 42 `tested`, 1 `untestable`
   with a closed-vocabulary reason, **0 untested-testable**. 8 acceptance
   criteria, all covered.
   *Integration composition:* `cross_component` does **not** fire — the diff

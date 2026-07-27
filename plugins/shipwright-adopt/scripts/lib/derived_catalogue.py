@@ -42,7 +42,10 @@ must leave ``lib`` free for the shared ``triage``'s own ``lib.file_lock``.
 
 from __future__ import annotations
 
+import importlib.util
+import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 #: Where the machine-readable copy lands, relative to the adopted repo root.
@@ -98,19 +101,51 @@ class DerivedCatalogue:
         return dict(sorted(tally.items()))
 
 
-def _row_helpers():
-    """``spec_table.basis_for`` / ``effective_features``, imported late.
+#: Sentinel under which ``spec_table`` is memoized when loaded BY PATH.
+_SPEC_TABLE_SENTINEL = "_shipwright_adopt_spec_table"
 
-    Dual-mode for the two ways adopt's modules are loaded — bare when a tool put
-    ``scripts/lib`` on the path, package-qualified when ``scripts`` is there
-    (tests, ``artifact_writer``). Same shape as ``baseline_generator``'s
-    ``shared_loader`` import, and for the same reason.
+
+def _row_helpers():
+    """``spec_table.basis_for`` / ``effective_features``, resolved late and BY PATH.
+
+    Deliberately not ``from lib.spec_table import …``. Which package the name
+    ``lib`` resolves to is a property of the *process*, not of this file, and
+    another plugin's test session can rebind it after adopt's modules loaded —
+    ``shipwright-compliance``'s Group-I round-trip test imports adopt's
+    ``_render_spec_md`` and runs after tests that bind ``lib`` to compliance's
+    own package, at which point ``lib.spec_table`` stops existing. That is the
+    ADR-045 collision, and a name-based import cannot be made immune to it.
+
+    A path-based load under a sentinel is (`validate_adoption._discovery`,
+    `baseline_generator`, `spec_table._load_shared` all use it). ``scripts`` is
+    put on ``sys.path`` first so ``spec_table``'s own ``lib.render_helpers``
+    import resolves against ADOPT's tree; the module is registered BEFORE
+    ``exec_module`` for the dataclass reason documented in ``_load_shared``.
     """
-    try:  # tool context: lib/ is on sys.path
-        from spec_table import basis_for, effective_features  # noqa: PLC0415
-    except ImportError:  # test / package context: scripts/ on sys.path
-        from lib.spec_table import basis_for, effective_features  # noqa: PLC0415
-    return basis_for, effective_features
+    module = sys.modules.get(_SPEC_TABLE_SENTINEL)
+    if module is None:
+        lib_dir = Path(__file__).resolve().parent
+        scripts_dir = lib_dir.parent
+        # BOTH, because `spec_table` reaches `render_helpers` two ways: the
+        # normal `lib.render_helpers` (needs `scripts`) and the bare fallback it
+        # takes when `lib` belongs to another plugin (needs `lib`). Under a
+        # foreign `lib` only the second can work, so only adding `scripts` would
+        # move the failure one import down instead of fixing it.
+        for entry in (str(scripts_dir), str(lib_dir)):
+            if entry not in sys.path:
+                sys.path.insert(0, entry)
+        spec = importlib.util.spec_from_file_location(
+            _SPEC_TABLE_SENTINEL, lib_dir / "spec_table.py")
+        if spec is None or spec.loader is None:  # pragma: no cover - defensive
+            raise ImportError("could not load adopt's spec_table by path")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[_SPEC_TABLE_SENTINEL] = module
+        try:
+            spec.loader.exec_module(module)
+        except Exception:
+            sys.modules.pop(_SPEC_TABLE_SENTINEL, None)
+            raise
+    return module.basis_for, module.effective_features
 
 
 def summarize(features: list[dict[str, Any]], *, split_name: str) -> DerivedCatalogue:

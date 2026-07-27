@@ -27,7 +27,10 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any
 
-from lib.render_helpers import infer_required_layers
+try:  # normal: adopt's `scripts` is on sys.path and `lib` is adopt's
+    from lib.render_helpers import infer_required_layers
+except ImportError:  # `lib` is bound to ANOTHER plugin's package (ADR-045)
+    from render_helpers import infer_required_layers
 
 _PLACEHOLDER_DESCRIPTION = "TBD — refine via /shipwright-iterate"
 
