@@ -185,7 +185,7 @@ Where `{shared_root}` = `{plugin_root}/../../shared`.
    uv run "{shared_root}/scripts/tools/record_requirement_impact.py" \
      --project-root "$(pwd)" --run-id "{SHIPWRIGHT_SESSION_ID}" \
      --phase design --scope "round-{N}" \
-     --impact modify --fr FR-XX.YY --worktree
+     --impact modify --fr <FR-XX.YY> --worktree
 
    # appearance only → one line saying so
    uv run "{shared_root}/scripts/tools/record_requirement_impact.py" \

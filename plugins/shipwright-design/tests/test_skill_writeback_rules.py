@@ -105,10 +105,17 @@ def test_option_b_snapshots_a_baseline_before_revising():
 
 
 def test_option_b_records_the_declaration():
+    """Both branches, not just the cheap one.
+
+    `--impact none` is the common answer, but the behaviour branch is what the
+    whole mechanism protects — pinning only the appearance-only example would
+    let the branch that matters disappear from the prompt unnoticed.
+    """
     body = _section(_read(REVIEW_LOOP), "Option B — Process Feedback")
     assert RECORDER in body
     assert "--phase design" in body
     assert "--impact none" in body and "--reason" in body
+    assert "--impact modify" in body and "--fr" in body
 
 
 @pytest.mark.parametrize("flag", ["--run-id", "--scope", "--worktree"])
