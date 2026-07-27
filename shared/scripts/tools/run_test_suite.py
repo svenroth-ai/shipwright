@@ -12,7 +12,10 @@ The safety net (why concurrency does not weaken the gate):
   prose is unsound (pytest pluralises "error" -> "errors", so a fixture-level race reads
   nothing like a normal failure).
 - **A test failure is re-run SERIALLY, without xdist** - the way F0 used to run it; that
-  verdict is authoritative, so a race can never cause a false STOP.
+  verdict is authoritative, so a race can never cause a false STOP. It also never
+  EVAPORATES: `suite_race_triage` writes the unit into the tracked Triage Inbox, and a
+  race that could not be recorded stops an otherwise-green run with rc 3 - a warning
+  that dies with the session is how a race comes back when it is expensive.
 - **An infra fault is re-run once with the IDENTICAL shape** (xdist still on): a
   deterministic fault (rc 5, usage error, unprovisionable xdist) still fails, but a
   transient one (uv-cache races that 18 concurrent processes *create*) recovers.
@@ -42,7 +45,16 @@ from pathlib import Path
 # top-level `tools`/`lib` package here would re-create the ADR-045 collision class.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
+from scripts.tools.suite_race_triage import (  # noqa: E402
+    emit_race_followups, resolve_commit,
+)
+from scripts.tools.suite_report import (  # noqa: E402
+    render_retry_block, render_run_report, reproduce_command, suite_command,
+)
 from scripts.tools.suite_units import (  # noqa: E402  (re-export: one import site)
+    INFRA,
+    PASS,
+    TEST_FAILURE,
     SuiteConfig,
     SuiteConfigError,
     Unit,
@@ -53,10 +65,7 @@ from scripts.tools.suite_units import (  # noqa: E402  (re-export: one import si
 
 _RC_TIMEOUT = 124        # conventional timeout rc; INFRA like any other fault
 _RC_SPAWN_FAILED = 126
-
-PASS = "pass"
-TEST_FAILURE = "test_failure"
-INFRA = "infra"
+_RC_UNRECORDED_RACE = 3  # a race was observed but could NOT be written down
 
 #: how a unit recovered on its retry - purely for an honest operator message
 RETRY_SERIAL = "serial"   # a test failure that passed when run alone, without xdist
@@ -73,6 +82,7 @@ class UnitResult:
     race: bool = False           # passed only on a retry
     retry_kind: str | None = None
     serial_rc: int | None = None
+    retry_cmd: str | None = None  # the argv the retry ACTUALLY ran (reproduce-me)
 
 
 @dataclass
@@ -233,6 +243,9 @@ def run_suite(project_root: Path, config: SuiteConfig | None = None) -> SuiteRes
             unit = by_id[res.unit_id]
             keep_xdist = res.outcome == INFRA
             workers = config.xdist.get(res.unit_id) if keep_xdist else None
+            # Capture the REAL retry argv: a follow-up card that guesses the command
+            # is an attractive but unreliable "reproduce me".
+            res.retry_cmd = reproduce_command(unit.cwd, build_command(unit, workers))
             rc, out, _, ran = _exec(unit, project_root, workers,
                                     tmp_root / "s" / f"u{idx}", config.timeout_seconds)
             res.serial_rc = rc
@@ -248,51 +261,38 @@ def run_suite(project_root: Path, config: SuiteConfig | None = None) -> SuiteRes
                        tuple(config.xdist))
 
 
-# --- reporting (ASCII only - see module docstring) ---
-def _retry_note(res: UnitResult, xdist_ids: tuple[str, ...]) -> str:
-    """Say only what was MEASURED. A green retry proves the unit passes when run again;
-    it does NOT prove the cause - a flaky test looks identical from here."""
-    if res.retry_kind == RETRY_INFRA:
-        return (f"  {res.unit_id}: infrastructure fault (rc {res.rc}) that did NOT "
-                "reproduce - most likely contention between concurrent units.")
-    if res.unit_id in xdist_ids:
-        return (f"  {res.unit_id}: red in parallel, GREEN alone. Fix it, or drop it from "
-                "suite.xdist.")
-    return (f"  {res.unit_id}: red in parallel, GREEN alone. It is NOT xdist-allowlisted, "
-            "so this is inter-unit pollution or a flaky test - triage it.")
+def unrecorded_races(result: SuiteResult) -> list[UnitResult]:
+    """Units red in parallel and GREEN on the authoritative ALONE re-run.
 
-
-def _report(result: SuiteResult) -> None:
-    for res in sorted(result.results, key=lambda r: -r.seconds):
-        tag = {PASS: "PASS", TEST_FAILURE: "FAIL", INFRA: "FAULT"}[res.outcome]
-        note = "  [passed on a retry - gate not stopped]" if res.race else ""
-        print(f"  {tag:5} {res.seconds:7.1f}s  {res.unit_id}{note}")
-    for res in result.results:  # output for what failed AND for a retry (its evidence)
-        if res.outcome != PASS or res.race:
-            serial = f", retry rc={res.serial_rc}" if res.serial_rc is not None else ""
-            print(f"\n{'=' * 70}\n{res.unit_id} "
-                  f"({'RETRY-GREEN' if res.race else res.outcome}, rc={res.rc}{serial})"
-                  f"\n{'=' * 70}\n{res.output}")
-    retried = [r for r in result.results if r.race]
-    if retried:
-        print("\nWARNING: unit(s) passed only on a retry, so the gate is GREEN but they "
-              "are not sound:")
-        for res in retried:
-            print(_retry_note(res, result.xdist_ids))
-    print(f"\nF0 suite: {len(result.results)} units in {result.seconds / 60:.1f} min "
-          f"-> {'GREEN' if result.exit_code == 0 else 'RED'}")
+    The ONE owner of this rule (the producer holds no copy): `RETRY_SERIAL` is set
+    only when the parallel outcome was a genuine pytest TEST failure - every other
+    class (rc 2/3/4/5, timeout, spawn failure, rc 1 with no report) is INFRA.
+    """
+    return [r for r in result.results if r.race and r.retry_kind == RETRY_SERIAL]
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Run the F0 test suite (parallel units).")
     ap.add_argument("--project-root", default=".", type=Path)
+    ap.add_argument("--run-id", default=None, help="stamped onto any follow-up filed")
     args = ap.parse_args()
+    root = args.project_root.resolve()
     try:
-        result = run_suite(args.project_root.resolve())
+        result = run_suite(root)
     except SuiteConfigError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
-    _report(result)
+    # Record BEFORE reporting and before ANY return: a red sibling must never skip it.
+    races = unrecorded_races(result)
+    report = emit_race_followups(root, races, result.xdist_ids, run_id=args.run_id,
+                                 commit=resolve_commit(root),
+                                 suite_command=suite_command(root, args.run_id))
+    for line in render_run_report(result) + render_retry_block(result, races, report):
+        print(line)
+    # A race that could not be written down must not pass as GREEN. A run that is
+    # already RED keeps rc 1: it STOPs either way, and rc 3 would misdescribe it.
+    if report.failed and result.exit_code == 0:
+        return _RC_UNRECORDED_RACE
     return result.exit_code
 
 

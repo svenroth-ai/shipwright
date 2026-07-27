@@ -1,8 +1,8 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-rollback-uses-target-ref"
+run_id: "iterate-2026-07-27-f0-race-triage"
 phase: "iterate"
-reason: "F11 re-refresh: origin/main moved again (round 4)"
+reason: "ensure-current pre-merge refresh"
 timestamp: "2026-07-27T09:08:48.846142+00:00"
 ---
 
@@ -12,9 +12,9 @@ timestamp: "2026-07-27T09:08:48.846142+00:00"
 
 ## Session Info
 
-- **Session ID**: 13f13377-3431-4445-b501-bc754d78d6d3
+- **Session ID**: b2c673e3-1511-4b06-ac01-92f336846fb0
 - **Timestamp**: 2026-07-27 09:08:48 UTC
-- **Reason**: F11 re-refresh: origin/main moved again (round 4)
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
@@ -29,11 +29,11 @@ timestamp: "2026-07-27T09:08:48.846142+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/rollback-uses-target-ref
-- **Run ID**: iterate-2026-07-27-rollback-uses-target-ref
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-rollback-uses-target-ref.md
+- **Branch**: iterate/f0-race-triage
+- **Run ID**: iterate-2026-07-27-f0-race-triage
+- **Spec**: .shipwright/planning/iterate/2026-07-27-f0-race-triage.md
 - **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-07-27T07:16:58))
+- **External Review Marker**: stale (predates spec (2026-07-27T07:19:42))
 
 ### Mandatory replay on Resume
 
@@ -52,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/rollback-uses-target-ref
-- **Last Commit**: f5ea24a5 Merge remote-tracking branch 'origin/main' into iterate/rollback-uses-target-ref
+- **Branch**: iterate/f0-race-triage
+- **Last Commit**: 50dc1a54 Merge remote-tracking branch 'origin/main' into iterate/f0-race-triage
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
