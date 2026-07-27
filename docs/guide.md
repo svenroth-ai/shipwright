@@ -1881,6 +1881,53 @@ A worktree carries tracked files only: neither `.env*` nor
 from the main repo and run the project's install command (`npm install`,
 `uv sync`). This per-run overhead is accepted by design.
 
+#### Why parallel iterates no longer collide at merge time
+
+Isolation solves the *working tree*. It does not, by itself, solve the
+*merge*. Several artifacts are **derived views** — the compliance reports,
+the build dashboard, the triage inbox, the session handoff, the test
+results. They are computed from the event log, the triage log and git
+history. If every iterate committed its own copy of them, then N iterates
+open at once would collide N(N−1)/2 times on files that say nothing about
+any of the changes.
+
+So an iterate does **not** commit them. It still regenerates them locally —
+everything that reads them during the run keeps working — but they stay out
+of the pull request, and the tree is restored before the branch merges
+`main`. What ships instead is the *truth* they derive from: the event log
+and the triage log, both append-only and reconciled automatically.
+
+This is also a correctness fix, not only a convenience one. A derived view
+computed inside a worktree sees the *branch's* git history — including
+commits that get squashed away on merge — and an event log missing every
+branch merging alongside it. It is wrong for `main` by construction, and
+which wrong version landed used to depend on merge order.
+
+The consequence to know about: those views are refreshed from `main` after
+merge, not by the branch. Until that refresh runs, they show the last state
+`main` computed. A staleness audit reporting them as out of date is telling
+the truth, not misfiring.
+
+#### Merge queues
+
+Removing the collisions removes the *conflicts*. It does not remove the
+*re-runs*: if your repository requires branches to be up to date before
+merging, every merge into `main` still invalidates every other open pull
+request, and each one re-runs its full check suite. With a handful of
+iterates open that is the dominant cost.
+
+The standard remedy is a **merge queue** — the host merges approved pull
+requests one at a time, testing each against `main` plus everything already
+queued ahead of it, so the branch itself never has to be up to date. On
+GitHub this needs two things: the merge-queue rule enabled on the protected
+branch, and every required check's workflow extended to trigger on
+`merge_group` as well as `pull_request`. A required check that does not fire
+for the queue will never report, and the queue waits forever.
+
+Order matters: a merge queue cannot rescue a pull request that is already
+conflicted, because it merges server-side and hits the same conflict. Get
+the derived views out of the branch first; enable the queue second.
+
 ### Resuming an interrupted iterate
 
 If a previous run's worktree still exists, B1 detects it and offers

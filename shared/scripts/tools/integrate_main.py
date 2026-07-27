@@ -9,11 +9,22 @@ Flow (see iterate-2026-05-31-churn-merge-resolver, AC-6/AC-7):
   3. on conflict → ``resolve_churn_conflicts.complete_merge`` (allowlist-gated;
      aborts via ``git merge --abort`` if any non-churn conflict exists)
   4. commit the merge
-  5. regenerate the derived MD snapshots from the merged tree
-  6. commit them as a **separate, non-merge follow-up commit** carrying a
-     ``Run-ID:`` trailer — because ``audit_staleness.find_snapshot_commit`` uses
-     ``git log --diff-filter=AM`` which skips merge commits, so the trailer MUST
-     sit on a regular commit for the snapshot-provenance audit to find it.
+  5. re-project the campaign ``status.json`` boards this merge touched, and
+     restore every derived snapshot to HEAD so the worktree stays clean
+  6. commit any re-projection as a **separate, non-merge follow-up commit**
+     carrying a ``Run-ID:`` trailer — because
+     ``audit_staleness.find_snapshot_commit`` uses ``git log --diff-filter=AM``
+     which skips merge commits, so the trailer MUST sit on a regular commit for
+     the snapshot-provenance audit to find it.
+
+Since iterate-2026-07-27-derived-snapshots-off-branch step 5 no longer REGENERATES
+the derived snapshots: an iterate branch does not carry them (see
+``lib/derived_snapshots.py``), so re-deriving here would re-create the very diff
+that made parallel iterates collide. Consequence to keep in view:
+``find_snapshot_commit`` will no longer find an iterate-authored snapshot commit,
+so the Group-E staleness audit reports main's snapshots as increasingly stale —
+which is TRUE while they are frozen, and is resolved by the post-merge refresh
+producer, not by silencing the audit.
 
 Devs should run THIS, never a bare ``git merge origin/main``, so the resolver is
 never skipped (folds external-review O14).
@@ -37,6 +48,7 @@ from lib.churn_merge import (  # noqa: E402
     TEST_TRACEABILITY,
     is_campaign_status,
 )
+from lib.derived_snapshots import restore_derived_to_head  # noqa: E402
 from tools import resolve_churn_conflicts as rcc  # noqa: E402
 
 
@@ -108,6 +120,15 @@ def integrate(
     if _git(project_root, "rev-parse", "--verify", "--quiet", ref, check=False).returncode != 0:
         return {"status": "bad_ref", "ref": ref, "steps": steps}
 
+    # BEFORE the merge, not after. F5a/F5b regenerate the derived snapshots for the
+    # run's own readers and F6 no longer commits them, so they sit tracked-and-dirty
+    # — and `git merge` REFUSES outright ("local changes would be overwritten") the
+    # moment mainline touches the same path, which is the normal case since every
+    # other iterate rewrites them too. Verified: with the restore placed after the
+    # merge, integrate returned `merge_failed` and the branch could not advance.
+    if restore_derived_to_head(project_root):
+        steps.append("restored-derived")
+
     # --no-ff + --no-commit:
     #   --no-ff  → always create a real merge commit (never fast-forward), so the
     #     reachability of Run-ID-trailer commits is preserved (2026-05-27 AC-6
@@ -170,10 +191,21 @@ def integrate(
         # Scope campaign-status regen (S3) to the campaign(s) this merge actually
         # CONFLICTED on — re-deriving an untouched campaign would be destructive.
         camp_rels = [r for r in result.resolved if is_campaign_status(r)]
+        # derived=False: an iterate branch no longer carries the derived snapshots
+        # (iterate-2026-07-27-derived-snapshots-off-branch), so re-deriving them
+        # here would re-create the very diff that made parallel iterates collide.
+        # The merge itself still resolves them (mainline side) — they simply match
+        # `main` afterwards and stay out of the PR. Campaign statuses still ship.
         outcomes = rcc.regenerate_tracked_snapshots(
             project_root, run_id, session_id=session_id, reason=reason,
-            campaign_status_rels=camp_rels,
+            campaign_status_rels=camp_rels, only=set(),
         )
+        # The merge's conflict resolution may have left the derived paths modified
+        # but unstaged (resolver picks a side, nothing commits it now). Restore them
+        # to the merge commit so the worktree is CLEAN: a tracked-but-dirty path
+        # makes a later `git merge` refuse when it overlaps an incoming change, and
+        # invites a stray `git add -A` to smuggle the snapshot back into the PR.
+        restore_derived_to_head(project_root)
         failed = [k for k, v in outcomes.items() if v == "error"]
         if failed:
             # Transactional rollback: restore every derived snapshot (the .md set

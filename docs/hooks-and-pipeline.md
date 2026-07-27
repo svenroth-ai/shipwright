@@ -140,6 +140,27 @@ artifact has exactly one documented resolution strategy:
 | `.shipwright/agent_docs/triage_inbox.md` | **regenerate** |
 | `shipwright_test_results.json` | **ours** (PR-owned snapshot) |
 
+> **Since iterate-2026-07-27-derived-snapshots-off-branch these eleven rows
+> describe a path an iterate no longer takes.** The strategies above remain the
+> documented behaviour of `resolve_churn_conflicts` — a legacy branch, a
+> non-worktree flow, or the post-merge refresh producer still uses them — but an
+> iterate branch **no longer carries any of them**, so on that path they cannot
+> conflict and there is nothing to resolve. `integrate_main` calls
+> `regenerate_tracked_snapshots(only=set())` (campaign `status.json` only) and
+> `restore_derived_to_head()` **before** the merge — before, because F5a/F5b write
+> them mid-run and F6 no longer commits them, so they sit tracked-and-dirty and
+> `git merge` refuses outright once mainline touches the same path. Registry:
+> `shared/scripts/lib/derived_snapshots.py`. Gate:
+> `verifiers/derived_snapshot_gate.check_no_derived_snapshots_committed`.
+>
+> **Write matrix consequence.** These eleven are now written on `main` by a
+> post-merge refresh producer, not by any phase. Until that producer exists they
+> are **frozen** at whatever `main` last computed — deliberately, because a
+> branch-local derivation was not merely conflict-prone but wrong: it reads the
+> branch's git history (pre-squash SHAs) and an event log missing every
+> concurrently-merging branch. The Group-E staleness audit reporting them as stale
+> is therefore a TRUE signal for that window, not a regression to silence.
+
 **`.shipwright/triage.outbox.jsonl` is deliberately NOT a churn artifact** —
 it is GITIGNORED and per-tree, so it is never merged and never appears in
 `CHURN_ALLOWLIST`. The per-tree transient buffer holds idle-main background

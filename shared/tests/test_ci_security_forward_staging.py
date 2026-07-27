@@ -119,14 +119,27 @@ def test_ci_security_fresh_scan_reaches_followup_commit(git_origin_repo, make_wo
         (Path(project_root) / _CI_SEC).write_text(fresh, encoding="utf-8")
         return [_CI_SEC]
 
-    monkeypatch.setattr(finalize_iterate, "_update_compliance", fresh_scan)
+    ran = {"scan": False}
+
+    def tracking_scan(project_root):
+        ran["scan"] = True
+        return fresh_scan(project_root)
+
+    monkeypatch.setattr(finalize_iterate, "_update_compliance", tracking_scan)
 
     result = integrate_main.integrate(wt, "iterate-fwd", do_fetch=True)
 
     assert result["status"] == "ok", result
-    assert "regenerated-followup" in result["steps"], result
-    # The fresh scan reached the follow-up commit (HEAD), NOT left modified-but-unstaged.
-    assert '"critical": 9' in _git(wt, "show", "HEAD:" + _CI_SEC).stdout
-    assert _CI_SEC in _git(wt, "show", "--name-only", "--format=", "HEAD").stdout
-    # Working tree is clean — the pre-fix bug left ci-security.json dirty here.
+    # Since iterate-2026-07-27-derived-snapshots-off-branch an iterate branch does
+    # not carry the derived snapshots, so integrate re-derives NOTHING: the
+    # compliance producer is never invoked and there is no follow-up commit. The
+    # CR-1 forward-staging guarantee still exists, but it now belongs to the
+    # producer that regenerates on main — pinned by the unit test above, which
+    # calls `regenerate_tracked_snapshots` with the full derived set.
+    assert ran["scan"] is False, "no re-derivation may run on an iterate branch"
+    assert "regenerate-noop" in result["steps"], result
+    # What must NOT regress: a half-applied scan left dirty in the tree. The
+    # pre-fix bug of #375 left ci-security.json modified-but-unstaged; the tree
+    # has to come out of integrate clean either way.
     assert _git(wt, "status", "--porcelain", "--", _CI_SEC).stdout.strip() == ""
+    assert "<<<<<<<" not in _git(wt, "show", "HEAD:" + _CI_SEC).stdout

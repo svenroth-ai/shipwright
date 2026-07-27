@@ -260,13 +260,13 @@ def regenerate_tracked_snapshots(
     """Regenerate derived MDs from the merged tree via the canonical
     single-producer generators (the SAME ones ``finalize_iterate`` uses) and
     stage them. Returns ``{relpath: outcome}``. ``only`` restricts the derived-MD
-    set (defaults to the full set). ``campaign_status_rels`` (campaign S3) names
-    the campaign ``status.json`` files this merge TOUCHED — re-projected scoped
-    (NEVER glob-all: re-deriving an untouched campaign would be destructive)."""
+    set: ``None`` = all, EMPTY = none (see ``lib/derived_snapshots.py``).
+    ``campaign_status_rels`` (S3) names the campaign ``status.json`` files this
+    merge TOUCHED — scoped, NEVER glob-all (destructive on untouched)."""
     from tools import finalize_iterate  # canonical producers; zero-drift reuse
 
     session_id = session_id or os.environ.get("SHIPWRIGHT_SESSION_ID", "")
-    targets = only or set(DERIVED_MDS)
+    targets = set(DERIVED_MDS) if only is None else set(only)
     stems = {Path(t).stem for t in targets}
     out: dict[str, str] = {}
 

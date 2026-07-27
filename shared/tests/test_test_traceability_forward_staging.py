@@ -116,12 +116,24 @@ def test_test_traceability_fresh_scan_reaches_followup_commit(git_origin_repo, m
         (Path(project_root) / _TT).write_text(fresh, encoding="utf-8")
         return [_TT]
 
-    monkeypatch.setattr(finalize_iterate, "_update_compliance", fresh_scan)
+    ran = {"scan": False}
+
+    def tracking_scan(project_root):
+        ran["scan"] = True
+        return fresh_scan(project_root)
+
+    monkeypatch.setattr(finalize_iterate, "_update_compliance", tracking_scan)
 
     result = integrate_main.integrate(wt, "iterate-fwd", do_fetch=True)
 
     assert result["status"] == "ok", result
-    assert "regenerated-followup" in result["steps"], result
-    assert '"links": [9]' in _git(wt, "show", "HEAD:" + _TT).stdout
-    assert _TT in _git(wt, "show", "--name-only", "--format=", "HEAD").stdout
+    # Mirror of the ci-security twin: since
+    # iterate-2026-07-27-derived-snapshots-off-branch an iterate branch carries no
+    # derived snapshot, so integrate re-derives nothing and the compliance producer
+    # never runs. Forward-staging now belongs to the producer that regenerates on
+    # main — pinned by the unit test above via the full derived set.
+    assert ran["scan"] is False, "no re-derivation may run on an iterate branch"
+    assert "regenerate-noop" in result["steps"], result
+    # The non-negotiable: integrate leaves no half-applied snapshot in the tree.
     assert _git(wt, "status", "--porcelain", "--", _TT).stdout.strip() == ""
+    assert "<<<<<<<" not in _git(wt, "show", "HEAD:" + _TT).stdout
