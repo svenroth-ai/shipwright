@@ -1,17 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-disclose-audit-last-run",
+    "run_id": "iterate-2026-07-27-plan-step9-gates",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 8963,
-      "total": 8963,
-      "note": "14 plugin suites (4011) + shared/tests -m 'not slow and not cross_plugin' (4952); 16 skipped"
+      "passed": 5443,
+      "total": 5443
     },
     "integration": {
       "status": "passed",
-      "passed": 418,
-      "total": 418
+      "passed": 422,
+      "total": 422
     },
     "pgtap": {
       "status": "not_run",
@@ -19,9 +18,9 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 16,
+      "total": 16
     },
     "design_fidelity": {
       "status": "not_run",
@@ -34,152 +33,115 @@
     "degraded": [],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --directory plugins/shipwright-compliance pytest tests/test_disclosure_e2e.py -q",
+      "runner": "uv run --extra dev pytest plugins/shipwright-plan/tests/test_check_plan_gates.py -v",
       "exit_code": 0,
-      "tests_run": 5,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\disclose-audit-last-run\\.shipwright\\runs\\iterate-2026-07-27-disclose-audit-last-run\\surface_verification.log",
-      "timestamp": "2026-07-27T08:36:51.328Z",
-      "attempts": 1
+      "tests_run": 16,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\plan-step9-gates\\.shipwright\\runs\\iterate-2026-07-27-plan-step9-gates\\surface_verification.log",
+      "timestamp": "2026-07-27T12:35:28.407Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "every evidence document (RTM, test-evidence, change-history, SBOM) discloses the last cross-check as the third line of its provenance header",
+          "behavior": "section shape parsed: purpose, >=2 steps, test strategy, incl. heading synonyms",
           "disposition": "tested",
-          "evidence": "test_evidence_docs_disclose_audit.py::test_never_run_is_disclosed_in_every_document + ::test_recorded_run_is_disclosed_in_every_document + ::test_the_disclosure_sits_in_the_provenance_block (parametrized x4) PASSED"
+          "evidence": "shared/tests/test_plan_section_quality.py \u2014 10 tests (purpose/steps/tests synonyms, bullet+numbered steps, empty-body-is-not-a-purpose) PASSED"
         },
         {
-          "behavior": "the dashboard carries both the provenance line and the full Consistency Audit section",
+          "behavior": "linkage read only from the Requirements: field, never from prose",
           "disposition": "tested",
-          "evidence": "test_evidence_docs_disclose_audit.py::test_dashboard_carries_both_the_line_and_the_section + ::test_dashboard_section_reflects_a_recorded_run PASSED"
+          "evidence": "::test_prose_mentioning_an_fr_is_not_a_declaration PASSED"
         },
         {
-          "behavior": "the disclosure is additive: the generated timestamp, the source-state line and the SBOM lock qualifier all survive",
+          "behavior": "the Requirements: field tolerates ordinary markdown",
           "disposition": "tested",
-          "evidence": "test_evidence_docs_disclose_audit.py::test_disclosure_does_not_displace_the_generated_timestamp + ::test_sbom_keeps_its_own_header_qualifier PASSED"
+          "evidence": "::test_requirements_field_tolerates_markdown PASSED (3 forms)"
         },
         {
-          "behavior": "never-run is stated explicitly in both renderings",
+          "behavior": "a token that merely CONTAINS an FR id is malformed, not coverage",
           "disposition": "tested",
-          "evidence": "test_audit_disclosure_render.py::test_never_run_says_so_explicitly + ::test_never_run_is_stated_plainly PASSED"
+          "evidence": "::test_a_token_that_merely_contains_an_fr_id_is_malformed_not_coverage, ::test_malformed_tokens_are_reported_as_linkage_errors PASSED"
         },
         {
-          "behavior": "the age is relative to the document's own reference: same day / 1 day / N days",
+          "behavior": "an empty Requirements: field adopts the format and fails it",
           "disposition": "tested",
-          "evidence": "test_audit_disclosure_render.py::test_records_the_date_and_the_age, ::test_same_day_reads_as_same_day, ::test_one_day_is_singular PASSED"
+          "evidence": "::test_an_empty_requirements_field_counts_as_adopting_but_names_nothing, ::test_an_empty_field_beside_an_absent_one_still_adopts_the_split PASSED"
         },
         {
-          "behavior": "a reference that trails the audit clamps instead of rendering a negative age",
+          "behavior": "every requirement lands in a section (AC1)",
           "disposition": "tested",
-          "evidence": "test_audit_disclosure_render.py::test_audit_newer_than_the_render_reference_clamps PASSED"
+          "evidence": "::test_full_coverage_both_ways, ::test_a_requirement_no_section_claims_is_uncovered + test_verifiers_plan_gates.py::test_an_uncovered_requirement_fails PASSED"
         },
         {
-          "behavior": "a completed audit records itself durably with counts, verdict, scope and timestamp",
+          "behavior": "every section traces back to a requirement (AC2)",
           "disposition": "tested",
-          "evidence": "test_audit_disclosure.py::test_records_run_with_counts_and_verdict + test_run_audit_records_run.py::test_a_full_run_is_recorded_in_tracked_state PASSED"
+          "evidence": "::test_a_section_claiming_nothing_is_untraced, ::test_a_section_claiming_only_non_live_ids_is_untraced + test_verifiers_plan_gates.py::test_a_section_nobody_asked_for_fails, ::test_a_section_naming_only_a_dead_id_fails_and_says_which PASSED"
         },
         {
-          "behavior": "a failing audit is still recorded, and disclosed as failing",
+          "behavior": "a section missing its test strategy fails, and the failure names the heading",
           "disposition": "tested",
-          "evidence": "test_audit_disclosure.py::test_failing_audit_is_still_recorded + test_audit_disclosure_render.py::test_failing_run_names_the_drift PASSED"
+          "evidence": "test_verifiers_plan_gates.py::test_a_section_missing_its_test_strategy_fails, test_plan_section_quality.py::test_missing_purpose_is_named, ::test_one_step_is_not_enough, ::test_missing_test_strategy_is_named PASSED"
         },
         {
-          "behavior": "recording preserves every unrelated config key (read-modify-write)",
+          "behavior": "a split that never adopted a format warns strict-exempt and names the migration",
           "disposition": "tested",
-          "evidence": "test_audit_disclosure.py::test_preserves_unrelated_config_keys + test_run_audit_records_run.py::test_recording_does_not_disturb_an_existing_config PASSED"
+          "evidence": "test_verifiers_plan_gates.py::test_a_split_that_never_adopted_the_field_warns (2 checks), ::test_a_split_using_no_recognised_heading_only_warns PASSED"
         },
         {
-          "behavior": "the write is atomic and leaves no temp file behind",
+          "behavior": "one adopting section holds the whole split \u2014 for linkage and for headings",
           "disposition": "tested",
-          "evidence": "test_audit_disclosure_state.py::test_no_temp_file_is_left_behind PASSED"
+          "evidence": "::test_one_adopting_section_holds_the_whole_split_to_the_format, ::test_heading_adoption_is_decided_per_split_not_per_section PASSED"
         },
         {
-          "behavior": "producer-to-consumer round-trip: what is written is what is read (touches_io_boundary probe)",
+          "behavior": "a legacy split whose sections are actually complete passes outright",
           "disposition": "tested",
-          "evidence": "test_audit_disclosure.py::test_round_trips_through_the_file PASSED"
+          "evidence": "::test_a_legacy_split_is_not_warned_when_it_is_actually_complete PASSED"
         },
         {
-          "behavior": "a partial --only run is recorded and disclosed as partial",
+          "behavior": "all four gates are registered and EACH blocks phase completion on its own",
           "disposition": "tested",
-          "evidence": "test_run_audit_records_run.py::test_a_partial_run_is_recorded_as_partial + test_audit_disclosure_render.py::test_partial_run_does_not_displace_the_last_full_check PASSED"
+          "evidence": "test_verifiers_plan_gates_wiring.py::test_run_plan_checks_includes_all_four_gates, ::test_each_gate_blocks_phase_completion_on_its_own PASSED (4 cases), ::test_a_clean_plan_trips_none_of_the_four PASSED"
         },
         {
-          "behavior": "a partial run never erases the last full cross-check, including from a pre-upgrade config",
+          "behavior": "the in-session review gate blocks a missing, malformed, undecided or verdict-less marker",
           "disposition": "tested",
-          "evidence": "test_audit_disclosure_state.py::test_a_partial_run_never_erases_the_last_full_check, ::test_a_partial_run_promotes_a_pre_upgrade_full_record, ::test_a_partial_run_does_not_promote_a_prior_partial_record PASSED"
+          "evidence": "plugins/shipwright-plan/tests/test_check_plan_gates.py::test_no_marker_blocks_section_splitting, ::test_an_undecided_reviewer_disagreement_blocks, ::test_a_malformed_marker_blocks_rather_than_crashing, ::test_a_completed_review_that_recorded_no_verdicts_blocks, ::test_a_marker_whose_stored_block_disagrees_with_its_verdicts_blocks PASSED"
         },
         {
-          "behavior": "a project with only partial runs reads 'never fully run'",
+          "behavior": "a recorded decision and a recorded opt-out both unblock the review gate",
           "disposition": "tested",
-          "evidence": "test_audit_disclosure_render.py::test_partial_only_project_says_never_fully_run (header note + dashboard) PASSED"
+          "evidence": "::test_recording_the_decision_unblocks_it, ::test_a_recorded_opt_out_still_passes PASSED"
         },
         {
-          "behavior": "the gitignored audit-report transient cannot change the tracked render",
+          "behavior": "the in-session section gate blocks order, coverage, trace, quality and missing files",
           "disposition": "tested",
-          "evidence": "test_audit_disclosure_render.py::test_gitignored_transient_does_not_change_the_render PASSED"
+          "evidence": "::test_a_prerequisite_after_its_user_fails, ::test_an_uncovered_requirement_fails, ::test_a_section_serving_no_requirement_fails, ::test_a_declared_but_unwritten_section_fails, ::test_an_unparseable_manifest_reports_the_parse_errors PASSED"
         },
         {
-          "behavior": "rendering is deterministic; the audit record is an explicit render input, the wall clock is not",
+          "behavior": "the in-session gate is strict where the verifier is lenient",
           "disposition": "tested",
-          "evidence": "test_audit_disclosure_render.py::test_render_is_deterministic + test_evidence_docs_disclose_audit.py::test_render_stays_byte_stable_across_regens + ::test_the_audit_record_is_an_explicit_render_input PASSED"
+          "evidence": "::test_an_ill_formed_section_fails_even_in_a_new_plan PASSED"
         },
         {
-          "behavior": "a damaged record reads as unknown, never as 'never run'",
+          "behavior": "--gate runs only what was asked for, and a clean plan passes every gate",
           "disposition": "tested",
-          "evidence": "test_audit_disclosure_state.py::test_damaged_records_are_invalid_not_absent (6 shapes) + test_audit_disclosure_render.py::test_unreadable_record_is_unknown_not_never, ::test_damaged_record_renders_as_unknown PASSED"
+          "evidence": "::test_gate_selection_runs_only_what_was_asked_for, ::test_a_clean_plan_passes_every_gate, ::test_a_missing_planning_dir_is_a_usage_error PASSED"
         },
         {
-          "behavior": "an unparseable or non-object config never aborts a compliance regen",
+          "behavior": "the section-writer prompt and the section template emit what the gates require",
           "disposition": "tested",
-          "evidence": "test_audit_disclosure_state.py::test_unparseable_config_is_invalid + ::test_non_object_config_root_is_invalid PASSED"
+          "evidence": "plugins/shipwright-plan/tests/test_prompts.py + test_skill_references_link.py PASSED"
         },
         {
-          "behavior": "an unwritable or corrupt config is reported, never clobbered, never raised",
+          "behavior": "a missing or unreadable section file degrades instead of raising",
           "disposition": "tested",
-          "evidence": "test_audit_disclosure.py::test_never_raises_on_an_unwritable_config + ::test_corrupt_config_is_not_clobbered_silently PASSED"
-        },
-        {
-          "behavior": "hostile scope values and non-integer check counts never reach a rendered document",
-          "disposition": "tested",
-          "evidence": "test_audit_disclosure_state.py::test_a_hostile_scope_value_is_stripped_before_it_is_stored, ::test_a_hostile_scope_value_is_stripped_on_read, ::test_non_integer_check_counts_are_dropped PASSED"
-        },
-        {
-          "behavior": "the header note is always single-line and never empty, in all four states",
-          "disposition": "tested",
-          "evidence": "test_audit_disclosure_render.py::test_note_is_a_single_line PASSED"
-        },
-        {
-          "behavior": "a directly constructed ComplianceData omits the line rather than inventing one (backwards compatible)",
-          "disposition": "tested",
-          "evidence": "test_evidence_docs_disclose_audit.py::test_directly_constructed_data_omits_the_line_rather_than_guessing PASSED"
-        },
-        {
-          "behavior": "the compliance phase regenerates all five documents, so an audit's answer is visible immediately instead of a regen cycle later",
-          "disposition": "tested",
-          "evidence": "test_disclosure_e2e.py::test_the_compliance_phase_refreshes_every_documents_disclosure PASSED"
-        },
-        {
-          "behavior": "end-to-end through the real CLIs: cross-check -> durable record -> regenerated documents on disk",
-          "disposition": "tested",
-          "evidence": "test_disclosure_e2e.py (5 tests) PASSED - also the F0.5 surface runner (exit_code 0, tests_run 5)"
-        },
-        {
-          "behavior": "the disclosure modules import under both the scripts.lib.* and the bare lib.* package root (ADR-045)",
-          "disposition": "tested",
-          "evidence": "test_audit_disclosure.py::TestImportDiscipline::test_collectors_import_under_the_bare_lib_package_root PASSED"
-        },
-        {
-          "behavior": "run_audit warns on stderr when a completed run could not be recorded",
-          "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "reason": "the failure branch is pinned by test_never_raises_on_an_unwritable_config, which asserts the recorded:False payload the warning keys off. The added print(..., file=sys.stderr) is a one-line diagnostic on that already-covered branch; asserting console text would pin wording, not behaviour."
+          "evidence": "test_plan_section_quality.py::test_a_missing_file_yields_an_empty_section PASSED"
         }
       ],
       "counts": {
-        "testable": 25,
-        "tested": 25,
-        "untestable": 1,
+        "testable": 19,
+        "tested": 19,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
@@ -193,10 +155,5 @@
     "measured_tier": "repo",
     "source": "combined coverage.xml (all plugins + shared + integration)",
     "measured_at": "2026-07-04T00:00:00Z"
-  },
-  "source_state": {
-    "run_id": "iterate-2026-07-27-disclose-audit-last-run",
-    "commit": "cb19a3953fb685f2e6b69d0b4b74b3ce5361a76c",
-    "dirty": true
   }
 }

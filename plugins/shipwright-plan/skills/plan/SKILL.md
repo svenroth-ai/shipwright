@@ -80,9 +80,8 @@ technologies.
 
 See [interview-protocol.md](references/interview-protocol.md) for detailed guidance.
 
-**Goal:** Surface design decisions, constraints, and preferences.
-Adaptive questions on architecture / data model / UX; clarify
-ambiguities; identify risks.
+**Goal:** Surface design decisions, constraints and preferences — adaptive
+questions on architecture / data model / UX; clarify ambiguities; find risks.
 
 **Checkpoint:** Write `{planning_dir}/shipwright_plan_interview.md`
 with full transcript.
@@ -123,14 +122,10 @@ See [plan-writing.md](references/plan-writing.md) and
 
 **Goal:** Write the implementation plan as prose with TDD approach.
 
-**Plan structure:**
-- Overview of approach
-- Section breakdown with SECTION_MANIFEST
-- For each section: goals, implementation steps, test strategy
-- Cross-cutting concerns
-
-See [section-index.md](references/section-index.md) for the
-SECTION_MANIFEST format.
+**Plan structure:** overview of approach; section breakdown with
+SECTION_MANIFEST; per section goals, implementation steps and test strategy;
+cross-cutting concerns. Manifest format — including how a section declares
+what it presupposes — in [section-index.md](references/section-index.md).
 
 **Checkpoint:** Write `{planning_dir}/plan.md` with SECTION_MANIFEST block.
 
@@ -181,15 +176,22 @@ compliance `W5` ask, through one shared evaluator.
 
 ## Step 6: Section Splitting
 
-**Gate:** Read `{planning_dir}/external_review_state.json`. If it is missing, or
-records a state not clear to proceed past (see Step 5b), STOP — return to Step 5,
-pick the appropriate branch or record the decision, then re-enter here.
+**Gate — run it, don't eyeball it:**
+
+```bash
+uv run --project {plugin_root} {plugin_root}/scripts/checks/check-plan-gates.py \n  --planning-dir "{planning_dir}" --gate review
+```
+
+Non-zero exit = STOP. It fails when Step 5 left no marker, or the marker
+records a reviewer disagreement nobody decided. Return to Step 5, pick the
+branch or record the decision, then re-run. The resume gate and compliance
+`W5` apply the same rule through the same function.
 
 See [section-splitting.md](references/section-splitting.md) for protocol.
 
-**Goal:** Split plan into self-contained section files for /shipwright-build.
-Parse SECTION_MANIFEST from plan.md, generate section tasks, then for each
-section spawn the section-writer subagent or write it directly.
+**Goal:** Split plan into self-contained section files for /shipwright-build:
+parse SECTION_MANIFEST, generate section tasks, then per section spawn the
+section-writer subagent or write it directly.
 
 **Batch approach (recommended for 3+ sections):**
 ```bash
@@ -198,11 +200,11 @@ uv run --project {plugin_root} {plugin_root}/scripts/checks/generate-batch-tasks
 ```
 
 Each section file is written **by the `shipwright-plan:section-writer` subagent
-itself** — it has a Write tool and persists `{planning_dir}/sections/{NN-name}.md`
-directly (SS4). The `write-section-on-stop.py` SubagentStop hook is a
-**non-blocking fallback** only (no-op when the file exists; best-effort salvage
-from the transcript otherwise; never blocks). Step 7 (`check-sections.py`) is the
-gate. See [section-splitting.md](references/section-splitting.md) for details.
+itself** (it has a Write tool); `write-section-on-stop.py` is a non-blocking
+salvage fallback, and Step 7 is the gate. Every section needs a
+`Requirements:` line, `## Overview`, ≥2 `## Implementation Steps` and
+`## Tests First` — Step 9 fails without them.
+Details: [section-splitting.md](references/section-splitting.md).
 
 **Checkpoint:** All section files exist in `{planning_dir}/sections/`.
 
@@ -227,14 +229,12 @@ that needs it lands in `order_errors` and exits non-zero. Format:
 
 See [e2e-test-plan.md](references/e2e-test-plan.md) for guidance.
 
-**Runs if** `e2e_test_plan.enabled` is true in config, OR if no config
-exists and the project has a UI (`.shipwright/designs/screens/`
-contains HTML mockups, or `component_library` is set in profile —
-default enabled for UI projects).
+**Runs if** `e2e_test_plan.enabled` is true, OR no config exists and the
+project has a UI (HTML mockups under `.shipwright/designs/screens/`, or
+`component_library` set in the profile — default on for UI projects).
 
-**Goal:** Generate a Playwright E2E test plan — user-facing flows
-(login, CRUD, navigation), test scenarios with expected outcomes, POM
-suggestions.
+**Goal:** Generate a Playwright E2E test plan — user-facing flows (login,
+CRUD, navigation), scenarios with expected outcomes, POM suggestions.
 
 **Checkpoint:** Write `{planning_dir}/claude-plan-e2e.md`.
 
@@ -242,42 +242,42 @@ suggestions.
 
 ## Step 9: Completion
 
-See [step-9-completion.md](references/step-9-completion.md) for the
-full verification checklist and the C1+C2+C3+C4 + `phase_history`
-canon block (Iterate 12.2 — C5 skipped by policy: plan is internal
-decomposition, not user-facing).
+See [step-9-completion.md](references/step-9-completion.md) for the full
+checklist and the C1+C2+C3+C4 + `phase_history` canon block (C5 skipped by
+policy: plan is internal decomposition, not user-facing).
 
-**Verification gates (all must pass):**
+**Verification gates (all must pass).** Gates 5–8 are one command — run it:
+
+```bash
+uv run --project {plugin_root} {plugin_root}/scripts/checks/check-plan-gates.py \n  --planning-dir "{planning_dir}" --gate sections
+```
 
 1. plan.md exists with SECTION_MANIFEST
 2. All declared sections have files
 3. Interview transcript exists
 4. E2E test plan exists (if enabled)
-5. Section Quality Gate (description + ≥2 implementation steps + test strategy)
-6. FR Coverage Check (every FR assigned to ≥1 section)
-7. Dependency Order (every declared dependency numbered before the section naming it)
+5. Section Quality (`## Overview` + ≥2 `## Implementation Steps` + `## Tests First`)
+6. FR Coverage (every live FR named by ≥1 section's `Requirements:` line)
+7. Section Trace (every section names ≥1 live FR — no work nobody asked for)
+8. Dependency Order (every declared dependency numbered before its user)
 
-**Phase complete:** set `SHIPWRIGHT_RUN_ID`, run
-`write-plan-config.py --status complete`, fire `record_event.py`,
+Non-zero exit = STOP. `_validate_plan` re-runs 5–8, so skipping defers it.
+
+**Phase complete:** set `SHIPWRIGHT_RUN_ID`, then run
+`write-plan-config.py --status complete`, `record_event.py`,
 `update_build_dashboard.py`, `generate_session_handoff.py --canon-marker`,
-`append_phase_history.py`, then
-`orchestrator.py update-step --step plan --status complete`. See
-[step-9-completion.md](references/step-9-completion.md) for the exact
-commands.
+`append_phase_history.py`, `orchestrator.py update-step --step plan --status
+complete` — exact commands in
+[step-9-completion.md](references/step-9-completion.md).
 
 ---
 
 ## Error Handling
 
-See [error-handling.md](references/error-handling.md) for the full
-recovery procedures:
-
-- **Missing API Keys:** handled interactively in Step 5 Branch B
-  (Option 1 add+retry / Option 2 self-review). Never silently skipped.
-- **Section Writer Failure:** log → retry directly without subagent →
-  mark incomplete and continue.
-- **Context Window Pressure:** save → suggest `/clear` → resume from
-  any step.
+See [error-handling.md](references/error-handling.md) for the full recovery
+procedures: missing API keys (Step 5 Branch B — never silently skipped),
+section-writer failure (retry without the subagent, then mark incomplete),
+and context-window pressure (save, `/clear`, resume from any step).
 
 ---
 
