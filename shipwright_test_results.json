@@ -1,318 +1,228 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-requirement-writeback-loop",
+    "run_id": "iterate-2026-07-27-c3-phase-content-key",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 5300,
-      "total": 5300
+      "passed": 7462,
+      "total": 7462
     },
     "integration": {
       "status": "passed",
-      "passed": 418,
-      "total": 418
+      "passed": 422,
+      "total": 422
     },
     "pgtap": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 58,
+      "total": 58
     },
     "design_fidelity": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "smoke": {
-      "status": "not_run"
+      "status": "skipped"
     },
-    "degraded": [],
+    "degraded": [
+      {
+        "condition": "risk_flag_touches_auth_overridden_as_prose_false_positive",
+        "reason": "classify_complexity matched 'session_handoff' prose in the message, not the diff. risk_detectors recomputed from the real diff: touches_auth absent, cross_component True. Integration coverage delivered for the flag that is actually present."
+      },
+      {
+        "condition": "interview_and_approval_gate_skipped",
+        "reason": "--autonomous against a complete, self-contained brief (follow-up of trg-bd4e75a9)."
+      },
+      {
+        "condition": "internal_code_reviewer_and_doubt_reviewer_subagents_not_dispatched",
+        "reason": "standing session rule forbids invoking the Agent tool unless requested. Covered instead by 3 external CODE rounds on this diff (2 real defects found and fixed: ANSI/control-char leakage into operator output, and is_file() collapsing unreadable into missing), plus the orchestrator Self-Review. Both types closed explicitly in reviews.json with dispositions."
+      },
+      {
+        "condition": "external_review_gemini_leg_degraded_in_3_of_4_rounds",
+        "reason": "gemini returned truncated scratchpad (finish_reason=length) in the plan round and 2 of 3 code rounds, so those are one-model passes. It answered 'approve' in the round it completed. Recorded rather than presented as a clean two-model pass."
+      }
+    ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest shared/tests/test_requirement_impact.py shared/tests/test_requirement_impact_store.py shared/tests/test_requirement_impact_git.py shared/tests/test_requirement_impact_baseline.py shared/tests/test_git_name_status.py shared/tests/test_record_requirement_impact.py shared/tests/test_section_file_list.py shared/tests/test_section_file_attribution.py shared/tests/test_design_round_declarations.py shared/tests/test_requirement_writeback_integration.py -q",
+      "runner": "uv run pytest shared/tests/test_c3_handoff_freshness.py shared/tests/test_c3_applicability.py shared/tests/test_handoff_freshness_composition.py shared/tests/test_handoff_freshness.py -q",
       "exit_code": 0,
-      "tests_run": 204,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\requirement-writeback-loop\\.shipwright\\runs\\iterate-2026-07-27-requirement-writeback-loop\\surface_verification.log",
-      "timestamp": "2026-07-27T00:00:00.000Z",
-      "attempts": 1
+      "tests_run": 58,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-27-c3-phase-content-key/surface_verification.json"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "declaration vocabulary is closed (impact/phase/scope/run_id)",
+          "behavior": "an old handoff naming this run passes — elapsed time is not staleness",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_c3_handoff_freshness.py::test_an_old_handoff_naming_this_run_passes PASSED"
         },
         {
-          "behavior": "impact none requires a valid one-line reason",
+          "behavior": "a brand-new handoff naming another run fails — recency never rescues it",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_c3_handoff_freshness.py::test_a_brand_new_handoff_naming_another_run_fails PASSED"
         },
         {
-          "behavior": "behaviour-affecting requires >=1 well-formed FR id",
+          "behavior": "identical content with different mtime yields an identical verdict",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_c3_handoff_freshness.py::test_the_check_never_consults_mtime PASSED"
         },
         {
-          "behavior": "a requirements file is .shipwright/planning/<split>/spec.md, not iterate scratch",
+          "behavior": "no mtime / max_age_seconds call survives in the check's source",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_c3_handoff_freshness.py::test_the_source_carries_no_mtime_call PASSED"
         },
         {
-          "behavior": "behaviour-affecting without a spec touch is rejected",
+          "behavior": "a phase with no canon-marker producer is skipped by name, not warned",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_c3_applicability.py::test_a_phase_with_no_canon_producer_is_skipped_not_warned PASSED (3 cases)"
         },
         {
-          "behavior": "unobtainable evidence skips the touch check; empty evidence does not",
+          "behavior": "every canon phase is actually evaluated rather than skipped",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_c3_applicability.py::test_every_canon_phase_is_actually_evaluated PASSED (8 cases)"
         },
         {
-          "behavior": "attributed extras are structured, reasoned, deduped, root-confined",
+          "behavior": "C3_CANON_PHASES stays aligned with PLUGIN_TO_PHASE in both directions",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_c3_applicability.py::test_c3_canon_phases_align_with_plugin_to_phase PASSED"
         },
         {
-          "behavior": "identity (run_id, phase, scope) is path-safe, run-scoped, collision-resistant",
+          "behavior": "a passing result names the phase that wrote the handoff",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_c3_handoff_freshness.py::test_a_passing_result_names_the_writing_phase PASSED"
         },
         {
-          "behavior": "damage is named, never silently skipped (bad JSON, conflict markers, non-UTF-8)",
+          "behavior": "the known bound: another phase of the same run passes, and the detail says so",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_c3_handoff_freshness.py::test_a_handoff_written_by_another_phase_of_this_run_passes_and_says_so PASSED"
         },
         {
-          "behavior": "a rejected declaration writes no declaration at all",
+          "behavior": "a marker carrying no phase renders a placeholder, not an empty string",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_c3_handoff_freshness.py::test_a_marker_without_a_phase_renders_a_placeholder PASSED"
         },
         {
-          "behavior": "the three git outcome classes stay distinct (git / skipped / error)",
+          "behavior": "a missing handoff is not a pass",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_c3_handoff_freshness.py::test_a_missing_handoff_is_not_a_pass PASSED"
         },
         {
-          "behavior": "record round-trips; same identity overwrites; different runs coexist",
+          "behavior": "a handoff with no canon marker is not a pass",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_c3_handoff_freshness.py::test_a_handoff_without_a_canon_marker_is_not_a_pass PASSED"
         },
         {
-          "behavior": "section '## Files to Create/Modify' parses across messy LLM formatting",
+          "behavior": "non-canon frontmatter is not a marker (canon_generated is what makes it one)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_c3_handoff_freshness.py::test_a_non_canon_frontmatter_block_is_not_a_marker PASSED"
         },
         {
-          "behavior": "undeclared shared touch fails; a recorded extra passes",
+          "behavior": "a marker carrying no run id is not a pass",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_c3_handoff_freshness.py::test_a_marker_without_a_run_id_is_not_a_pass PASSED"
         },
         {
-          "behavior": "only an explicit trailing slash makes a declared entry cover a directory",
+          "behavior": "a degenerate run id reports 'cannot evaluate' rather than a stale-handoff warn",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_c3_handoff_freshness.py::test_a_degenerate_run_id_cannot_evaluate_rather_than_warn PASSED (4 cases)"
         },
         {
-          "behavior": "rename destinations must be accounted for; sources are informational",
+          "behavior": "an unreadable handoff is not a pass",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_c3_handoff_freshness.py::test_an_unreadable_handoff_is_not_a_pass PASSED"
         },
         {
-          "behavior": "a stale run's extra does not excuse this run's touch",
+          "behavior": "an inaccessible handoff reads as unreadable, not as missing",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_c3_handoff_freshness.py::test_an_inaccessible_handoff_reads_as_unreadable_not_missing PASSED"
         },
         {
-          "behavior": "part (2)'s mandated spec correction is not punished by part (3)",
+          "behavior": "run_id is keyword-only with no default, so a missed caller is a TypeError",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_c3_handoff_freshness.py::test_run_id_is_keyword_only_and_has_no_default PASSED"
         },
         {
-          "behavior": "an --impact none section editing requirements is still flagged",
+          "behavior": "a malformed marker cannot dump its contents into an operator-facing finding",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_c3_handoff_freshness.py::test_a_malformed_marker_does_not_dump_its_contents_into_the_detail PASSED"
         },
         {
-          "behavior": "framework bookkeeping is excluded; ordinary files are not",
+          "behavior": "terminal escape sequences never reach a result detail",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_c3_handoff_freshness.py::test_terminal_escapes_in_a_marker_never_reach_the_detail PASSED"
         },
         {
-          "behavior": "the whole loop composes: design round -> spec correction -> build section",
+          "behavior": "a whole-run audit answers uniformly across every canon phase",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_c3_applicability.py::test_auditing_a_whole_run_gives_every_canon_phase_the_same_answer PASSED"
         },
         {
-          "behavior": "design Option B declares and writes back substance (prompt rule)",
+          "behavior": "a whole-run audit still skips non-producer phases",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_c3_applicability.py::test_auditing_a_whole_run_still_skips_non_producer_phases PASSED"
         },
         {
-          "behavior": "design Option A blocks on a missing or foreign-run declaration",
+          "behavior": "a whole-run audit of a stale handoff warns for every canon phase",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_c3_applicability.py::test_a_whole_run_audit_of_a_stale_handoff_warns_for_every_canon_phase PASSED"
         },
         {
-          "behavior": "build states the contradiction STOP rule and its expected resolution",
+          "behavior": "[integration] real writer output on disk passes C3 through the Stop-hook canon runner",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_handoff_freshness_composition.py::test_the_canon_runner_passes_c3_on_the_real_writers_marker PASSED",
+          "category": "integration"
         },
         {
-          "behavior": "the shared-touch carve-out exists at every scope-rule site",
+          "behavior": "[integration] the canon runner warns when the handoff belongs to another run",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_handoff_freshness_composition.py::test_the_canon_runner_warns_when_the_handoff_belongs_to_another_run PASSED",
+          "category": "integration"
         },
         {
-          "behavior": "the autonomous priority ladder no longer settles contradictions silently",
+          "behavior": "[integration] the canon runner skips C3 for a phase with no producer",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_handoff_freshness_composition.py::test_the_canon_runner_skips_c3_for_a_phase_with_no_producer PASSED",
+          "category": "integration"
         },
         {
-          "behavior": "a degenerate range (base == head) cannot pass a declaration",
+          "behavior": "[integration] a degenerate run id reaches C3 as itself through the runner",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_handoff_freshness_composition.py::test_a_degenerate_run_id_reaches_c3_as_itself PASSED",
+          "category": "integration"
         },
         {
-          "behavior": "resolved base/head SHAs are recorded, so the range is auditable",
+          "behavior": "the Stop-hook call site supplies the run id (drift guard on the join)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_handoff_freshness_composition.py::test_the_stop_hook_call_site_supplies_the_run_id PASSED"
         },
         {
-          "behavior": "a greenfield design phase works before the first commit (unborn HEAD)",
+          "behavior": "the F11 twin is unaffected by the shared-reader refactor",
           "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
+          "evidence": "test_handoff_freshness.py PASSED (13 tests, unchanged)"
         },
         {
-          "behavior": "bad vocabulary exits 1 with structured JSON, not argparse's exit 2",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
-        },
-        {
-          "behavior": "free-text fields stay one line",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
-        },
-        {
-          "behavior": "spec auto-attribution requires the declaration to cover THIS range",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
-        },
-        {
-          "behavior": "an embedded '..' segment is refused, not only a leading one",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
-        },
-        {
-          "behavior": "design finalization refuses while a round is silent",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
-        },
-        {
-          "behavior": "a design round is judged against its own baseline, not 'everything uncommitted'",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
-        },
-        {
-          "behavior": "a behaviour declaration with no baseline is refused (fail-closed)",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
-        },
-        {
-          "behavior": "the round registry is the tracked baselines, not gitignored scratch",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
-        },
-        {
-          "behavior": "a deletion outside the section's scope fails; a declared one does not",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
-        },
-        {
-          "behavior": "a section with no declaration at all fails",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
-        },
-        {
-          "behavior": "'Label: path' bullets still yield the path",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
-        },
-        {
-          "behavior": "the --name-status -z parser handles A/M/D/R/C, spaces, quotes, truncation",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
-        },
-        {
-          "behavior": "repo-root paths rebase onto a nested project root",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
-        },
-        {
-          "behavior": "emphasis stripping does not mangle _utils.py / __init__.py",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
-        },
-        {
-          "behavior": "a back-ticked word in the description does not hijack the path",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
-        },
-        {
-          "behavior": "several paths on one bullet are all declared",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
-        },
-        {
-          "behavior": "a reason containing '=======' is not mistaken for a merge conflict",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
-        },
-        {
-          "behavior": "PermissionError and dubious-ownership fail closed, not 'skipped'",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
-        },
-        {
-          "behavior": "the contradiction decision is recorded on the declaration",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
-        },
-        {
-          "behavior": "a build declaration does not satisfy a design round",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
-        },
-        {
-          "behavior": "no rounds is a clean state, and says so rather than reading as verified",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_requirement_impact*.py, test_section_file*.py, test_git_name_status.py, test_design_round_declarations.py, test_requirement_writeback_integration.py + the two plugin drift suites \u2014 243 tests, all PASSED"
-        },
-        {
-          "behavior": "an agent correctly judging behaviour-vs-appearance on real feedback",
+          "behavior": "docs/guide.md and docs/hooks-and-pipeline.md describe the contract the code now meets",
           "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment"
-        },
-        {
-          "behavior": "an agent correctly detecting a prose-vs-markup contradiction",
-          "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment"
+          "reason_code": "requires-manual-visual-judgment",
+          "evidence": "docs/guide.md C3 row + docs/hooks-and-pipeline.md 'C3 Freshness — a Content Key, Not mtime'"
         }
       ],
       "counts": {
-        "testable": 50,
-        "tested": 50,
-        "untestable": 2,
+        "testable": 29,
+        "tested": 29,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 8,
-        "covered_acs": 8
+        "acs": 6,
+        "covered_acs": 6
       }
     }
   },
@@ -321,10 +231,5 @@
     "measured_tier": "repo",
     "source": "combined coverage.xml (all plugins + shared + integration)",
     "measured_at": "2026-07-04T00:00:00Z"
-  },
-  "source_state": {
-    "run_id": "iterate-2026-07-27-requirement-writeback-loop",
-    "commit": "c30d6ce169253104aec50fe4b822012563fd8e13",
-    "dirty": true
   }
 }
