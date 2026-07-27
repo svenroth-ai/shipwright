@@ -1,192 +1,68 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-project-granularity-basis",
+    "run_id": "iterate-2026-07-27-triage-defer-ci-cap",
     "date": "2026-07-27",
-    "unit": {
-      "status": "passed",
-      "passed": 7349,
-      "total": 7349
-    },
-    "integration": {
-      "status": "passed",
-      "passed": 418,
-      "total": 418
-    },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "smoke": {
-      "status": "not_run"
-    },
+    "unit": { "status": "passed", "passed": 4991, "total": 4991 },
+    "integration": { "status": "passed", "passed": 418, "total": 418 },
+    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
+    "e2e": { "status": "passed", "passed": 87, "total": 87 },
+    "design_fidelity": { "status": "not_run", "passed": 0, "total": 0 },
+    "smoke": { "status": "not_run" },
     "degraded": [
       {
-        "condition": "external code review - one provider returned no usable findings",
-        "detail": "Gemini 3.1 Pro's --mode code reply degraded into unterminated reasoning and produced no findings. GPT-5.6 returned 3, all accepted and fixed. Recorded rather than counted as a clean second pass."
+        "condition": "code-reviewer / doubt-reviewer subagents not spawned",
+        "detail": "This session carries a standing instruction not to invoke the Agent tool unless the user asks for it. The Stage-2 quality read was performed inline (recorded as the `self` pass, 8/8) and the independent adversarial pass by the external cascade (external_review.py --mode code, GPT+Gemini, two rounds on the real diff), which found and drove the fix of a terminal output-spoofing defect. Both rows are closed `not_run` in reviews.json with that disposition rather than left pending."
       },
       {
-        "condition": "internal code-reviewer / doubt-reviewer subagents not invoked",
-        "detail": "This session carries a standing instruction not to use the Agent tool unless the user asks for it. Both passes were performed inline by the orchestrator and recorded in reviews.json with dispositions naming the substitution; the independent pass is the external code review."
+        "condition": "one external code-review reply came back truncated",
+        "detail": "Round 2 Gemini returned 523 chars, cut off just after quoting format_item's field block and saying 'there is a BUG here' without naming it. Recorded as truncated rather than as a pass; the quoted block was hand-inspected and one real issue (a display-sanitized value deciding a control-flow branch) was found and fixed."
+      },
+      {
+        "condition": "shared/tests and integration-tests do not compose in ONE pytest session",
+        "detail": "Running both roots in a single invocation fails 21 integration tests (test_shared_contracts_consumers_behavior.py and neighbours). Reproduced on a CLEAN base with this run's changes stashed, so it is pre-existing and unrelated: CI and CLAUDE.md both invoke the two roots separately, and each is green on its own (4991 and 418). Recorded rather than silently worked around."
       }
     ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --with pytest pytest plugins/shipwright-compliance/tests/test_audit_group_i_criteria.py plugins/shipwright-compliance/tests/test_group_i_criteria_roundtrip.py -q",
+      "runner": "uv run pytest shared/tests/test_triage_defer.py shared/tests/test_github_triage_detail_cap.py shared/tests/test_triage_cli.py shared/tests/test_triage_cli_json.py shared/tests/test_github_triage_pr_ci.py -v",
       "exit_code": 0,
-      "tests_run": 15,
-      "evidence_path": ".shipwright/runs/iterate-2026-07-27-project-granularity-basis/surface_verification.json"
+      "tests_run": 87,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-27-triage-defer-ci-cap/surface_verification.json",
+      "timestamp": "2026-07-27T09:59:00.000Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        {
-          "behavior": "a heading-form FR block with bullets reads as having criteria",
-          "disposition": "tested",
-          "evidence": "test_group_i_criteria.py::test_heading_form_counts PASSED"
-        },
-        {
-          "behavior": "a bold-label FR block with checkboxes reads as having criteria",
-          "disposition": "tested",
-          "evidence": "test_group_i_criteria.py::test_bold_label_form_counts PASSED"
-        },
-        {
-          "behavior": "a block whose only content is a TBD-class placeholder counts as zero criteria",
-          "disposition": "tested",
-          "evidence": "test_group_i_criteria.py::test_tbd_placeholder_is_no_criteria, ::test_bold_label_placeholder_is_no_criteria, ::test_placeholder_variants_are_not_criteria PASSED"
-        },
-        {
-          "behavior": "an FR with no criteria block anywhere is reported",
-          "disposition": "tested",
-          "evidence": "test_group_i_criteria.py::test_missing_block_reported PASSED"
-        },
-        {
-          "behavior": "an FR table row is never mistaken for a criteria anchor",
-          "disposition": "tested",
-          "evidence": "test_group_i_criteria.py::test_table_row_is_not_an_anchor PASSED"
-        },
-        {
-          "behavior": "a heading that merely MENTIONS an FR id does not supply its criteria (false-green guard)",
-          "disposition": "tested",
-          "evidence": "test_group_i_criteria.py::test_heading_merely_mentioning_the_id_is_not_an_anchor PASSED - reproduced the defect found by external code review, then fixed"
-        },
-        {
-          "behavior": "the tightened anchor still admits every heading form the producers emit",
-          "disposition": "tested",
-          "evidence": "test_group_i_criteria.py::test_anchor_accepts_the_shapes_producers_emit PASSED"
-        },
-        {
-          "behavior": "a block terminates at EOF, at a same-or-higher heading, but not at a deeper subheading",
-          "disposition": "tested",
-          "evidence": "test_group_i_criteria.py::test_block_ends_at_eof, ::test_sibling_heading_does_not_donate_criteria, ::test_deeper_subheading_stays_inside_the_block PASSED"
-        },
-        {
-          "behavior": "id matching is boundary-anchored so FR-01.02 is not satisfied by FR-01.029",
-          "disposition": "tested",
-          "evidence": "test_group_i_criteria.py::test_id_match_is_boundary_anchored PASSED"
-        },
-        {
-          "behavior": "the same FR id in two specs is judged per file, so one cannot mask the other",
-          "disposition": "tested",
-          "evidence": "test_group_i_criteria_roundtrip.py::test_same_id_in_two_specs_is_judged_per_file PASSED"
-        },
-        {
-          "behavior": "an unreadable spec reports its rows as missing rather than raising",
-          "disposition": "tested",
-          "evidence": "test_group_i_criteria_roundtrip.py::test_unreadable_spec_reports_missing_not_crash PASSED"
-        },
-        {
-          "behavior": "the literal /shipwright-project template block parses as criteria",
-          "disposition": "tested",
-          "evidence": "test_group_i_criteria_roundtrip.py::test_project_template_round_trips PASSED"
-        },
-        {
-          "behavior": "adopt's real emitted spec parses - mined criteria yes, TBD fallback no",
-          "disposition": "tested",
-          "evidence": "test_group_i_criteria_roundtrip.py::test_adopt_emission_round_trips PASSED"
-        },
-        {
-          "behavior": "this repo's own 18 requirements all read as elaborated",
-          "disposition": "tested",
-          "evidence": "test_group_i_criteria_roundtrip.py::test_this_repos_own_catalogue_is_fully_elaborated PASSED; confirmed end-to-end by running group_i.run() live against the repo -> I6 pass"
-        },
-        {
-          "behavior": "I6 is registered, reports the gap, and is advisory - never flips any_fail",
-          "disposition": "tested",
-          "evidence": "test_audit_group_i_criteria.py::test_i6_is_registered, ::test_i6_reports_the_requirement_without_criteria, ::test_i6_never_fails, ::test_i6_does_not_change_the_group_verdict PASSED"
-        },
-        {
-          "behavior": "I6 skips when the scan found no rows, rather than claiming a pass over an empty set",
-          "disposition": "tested",
-          "evidence": "test_audit_group_i_criteria.py::test_i6_skips_without_rows PASSED; integration-tests/test_requirements_corpus_false_verdicts.py::test_fv2_group_i_skips_every_check_on_empty PASSED"
-        },
-        {
-          "behavior": "retired requirements are not reported as missing criteria",
-          "disposition": "tested",
-          "evidence": "test_audit_group_i_criteria.py::test_retired_rows_excluded PASSED"
-        },
-        {
-          "behavior": "the pure move keeps FrRow / scan_specs / scan_fr_rows reachable from group_i",
-          "disposition": "tested",
-          "evidence": "test_audit_group_i_criteria.py::test_moved_row_scanner_still_reachable_from_group_i PASSED; the three pre-existing test_audit_group_i*.py files pass unchanged"
-        },
-        {
-          "behavior": "the moved _scan_one_spec still resolves for the requirements-corpus registry",
-          "disposition": "tested",
-          "evidence": "integration-tests/ 418 passed after repointing the registry module+source"
-        },
-        {
-          "behavior": "all six surfaces that instruct on Basis state the same qualified rule",
-          "disposition": "tested",
-          "evidence": "test_requirement_granularity_and_basis.py::test_every_surface_qualifies_assumed PASSED (6 params); vacuity probe: 0 occurrences at HEAD in every file"
-        },
-        {
-          "behavior": "each situation row in the elicitation table names the settlement, not only the prose above it",
-          "disposition": "tested",
-          "evidence": "test_requirement_granularity_and_basis.py::test_every_situation_row_names_the_settlement PASSED (2 params)"
-        },
-        {
-          "behavior": "the generation template seeds no bare `assumed` row",
-          "disposition": "tested",
-          "evidence": "test_requirement_granularity_and_basis.py::test_generation_template_seeds_no_bare_assumed_row PASSED; vacuity probe: 4 such rows existed at HEAD"
-        },
-        {
-          "behavior": "fr-authoring.md 3a exists, states the granularity test, and keeps the judgement human",
-          "disposition": "tested",
-          "evidence": "test_requirement_granularity_and_basis.py::test_fr_authoring_carries_the_granularity_section, ::test_granularity_section_keeps_the_judgement_human PASSED"
-        },
-        {
-          "behavior": "the granularity rule is cited from every doc an author reads, and the two granularities are distinguished",
-          "disposition": "tested",
-          "evidence": "test_requirement_granularity_and_basis.py::test_granularity_rule_is_cited (3 params), ::test_split_heuristics_distinguishes_the_two_granularities PASSED"
-        },
-        {
-          "behavior": "whether a requirement is TOO BROAD, as opposed to merely having no criteria",
-          "disposition": "untestable",
-          "evidence": "Deciding that a capability names several capabilities at once is reading comprehension against no oracle. This is why I6 is advisory and why fr-authoring.md 3a states the judgement stays human; the check reports only the observable signal (zero criteria).",
-          "reason_code": "requires-manual-visual-judgment"
-        }
+        { "behavior": "defer() records snoozed, the reason and the actor", "disposition": "tested", "evidence": "test_triage_defer.py::test_defer_records_the_decision_and_its_reason PASSED" },
+        { "behavior": "defer() refuses an empty / whitespace / tab reason and writes nothing", "disposition": "tested", "evidence": "test_triage_defer.py::test_defer_refuses_a_reason_that_says_nothing[3 cases] PASSED" },
+        { "behavior": "defer() refuses control characters in the reason", "disposition": "tested", "evidence": "test_triage_defer.py::test_defer_refuses_control_characters_in_the_reason PASSED" },
+        { "behavior": "defer() refuses an already-decided item (dismissed / snoozed / promoted)", "disposition": "tested", "evidence": "test_triage_defer.py::test_defer_refuses_an_already_decided_item[3 cases] PASSED" },
+        { "behavior": "defer() raises KeyError on an unknown id", "disposition": "tested", "evidence": "test_triage_defer.py::test_defer_unknown_id_raises_key_error PASSED" },
+        { "behavior": "defer() raises FileNotFoundError when no store exists", "disposition": "tested", "evidence": "test_triage_defer.py::test_defer_without_a_store_raises_file_not_found PASSED" },
+        { "behavior": "dismiss() is unchanged by the shared _decide_from_triage extraction", "disposition": "tested", "evidence": "test_triage_defer.py::test_dismiss_is_unchanged_by_the_shared_extraction PASSED" },
+        { "behavior": "promote() is unchanged by the _require_store extraction", "disposition": "untestable", "reason_code": "covered-by-existing-test", "reason": "shared/tests/test_triage_promote.py (38 tests) already covers promote's store-missing, unknown-id, state and sanitization paths; it was not modified and passes against the refactor." },
+        { "behavior": "CLI defer happy path records the actor as cli", "disposition": "tested", "evidence": "test_triage_defer.py::test_cli_defer_records_the_operator_as_the_actor PASSED" },
+        { "behavior": "CLI defer refuses without a real reason and writes nothing", "disposition": "tested", "evidence": "test_triage_defer.py::test_cli_defer_refuses_and_writes_nothing_without_a_real_reason[2 cases] PASSED" },
+        { "behavior": "CLI defer and dismiss both exit 2 on an unknown id and leave the store byte-unchanged", "disposition": "tested", "evidence": "test_triage_defer.py::test_cli_leaves_the_store_untouched_when_it_refuses[2 cases] PASSED" },
+        { "behavior": "CLI defer exits 2 on an already-decided item", "disposition": "tested", "evidence": "test_triage_defer.py::test_cli_defer_refuses_an_already_decided_item PASSED" },
+        { "behavior": "the listing shows deferred entries in their own section, with the reason, after the open ones", "disposition": "tested", "evidence": "test_triage_defer.py::test_list_shows_deferred_in_its_own_section_with_the_reason PASSED" },
+        { "behavior": "no deferred header when nothing is deferred", "disposition": "tested", "evidence": "test_triage_defer.py::test_list_says_nothing_about_deferral_when_there_is_none PASSED" },
+        { "behavior": "deferred-only still reports 'No open triage items'", "disposition": "tested", "evidence": "test_triage_defer.py::test_list_with_only_deferred_items_still_reports_no_open_work PASSED" },
+        { "behavior": "a Command-Center deferral with no reason renders '(no reason recorded)', never None", "disposition": "tested", "evidence": "test_triage_defer.py::test_list_renders_a_deferral_the_command_center_left_reasonless PASSED" },
+        { "behavior": "ESC / BEL in a deferred entry's fields never reach the terminal", "disposition": "tested", "evidence": "test_triage_defer.py::test_list_keeps_control_characters_out_of_the_deferred_section PASSED" },
+        { "behavior": "a stored newline cannot forge a listing row, open or deferred", "disposition": "tested", "evidence": "test_triage_defer.py::test_a_stored_newline_cannot_forge_a_listing_row[2 cases] PASSED" },
+        { "behavior": "list --json stays open-only, with pendingDelivery, while an item is deferred", "disposition": "tested", "evidence": "test_triage_defer.py::test_list_json_stays_open_only_when_an_item_is_deferred PASSED" },
+        { "behavior": "the failing-check detail is capped whichever untrusted field grows", "disposition": "tested", "evidence": "test_github_triage_detail_cap.py::test_failing_check_detail_is_capped_whatever_grows[3 cases] PASSED" },
+        { "behavior": "the failing-check detail is capped at the same length as its proposed-change sibling", "disposition": "tested", "evidence": "test_github_triage_detail_cap.py::test_failing_check_cap_matches_the_proposed_change_cap PASSED" },
+        { "behavior": "capping the detail leaves the existing 160-char title cap alone", "disposition": "tested", "evidence": "test_github_triage_detail_cap.py::test_capping_the_detail_leaves_the_title_cap_alone PASSED" },
+        { "behavior": "failing-check cap boundary: 1023 and 1024 pass through, 1025 truncates", "disposition": "tested", "evidence": "test_github_triage_detail_cap.py::test_failing_check_detail_boundary[3 cases] PASSED" },
+        { "behavior": "proposed-change cap boundary: the same three lengths", "disposition": "tested", "evidence": "test_github_triage_detail_cap.py::test_proposed_change_detail_boundary[3 cases] PASSED" },
+        { "behavior": "an ordinary failing-check detail is byte-unchanged", "disposition": "tested", "evidence": "test_github_triage_detail_cap.py::test_an_ordinary_failing_check_detail_is_untouched PASSED" },
+        { "behavior": "an ordinary proposed-change detail is byte-unchanged", "disposition": "tested", "evidence": "test_github_triage_detail_cap.py::test_an_ordinary_proposed_change_detail_is_untouched PASSED" },
+        { "behavior": "the three documents no longer say the terminal cannot defer", "disposition": "tested", "evidence": "test_triage_defer.py::test_the_documents_no_longer_say_the_terminal_cannot_defer PASSED" }
       ],
-      "counts": {
-        "testable": 24,
-        "tested": 24,
-        "untestable": 1,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 2,
-        "covered_acs": 2
-      }
+      "counts": { "testable": 27, "tested": 26, "untestable": 1, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 10, "covered_acs": 10 }
     }
   },
   "coverage": {

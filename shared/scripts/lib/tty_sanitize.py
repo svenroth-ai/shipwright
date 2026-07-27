@@ -26,3 +26,16 @@ def strip_control_chars(text: str) -> str:
         ch for ch in text
         if ch in ("\n", "\t") or (0x20 <= ord(ch) < 0x7F) or ord(ch) >= 0xA0
     )
+
+
+def strip_control_chars_inline(text: str) -> str:
+    """Same policy, for a field that must stay on ONE line.
+
+    ``strip_control_chars`` keeps ``\\n`` and ``\\t`` because a launch payload
+    is multi-line by design. A title, a source or a decision reason is not:
+    a stored newline there lets whoever wrote it forge extra rows in a
+    line-oriented listing — output spoofing rather than escape execution, and
+    the sanitizer above cannot catch it without breaking payload rendering.
+    Interior whitespace collapses to single spaces so nothing runs together.
+    """
+    return " ".join(strip_control_chars(text).split())
