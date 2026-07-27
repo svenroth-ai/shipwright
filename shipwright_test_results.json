@@ -35,9 +35,9 @@
       "surface": "cli",
       "runner": "uv run --directory plugins/shipwright-security --extra dev pytest tests/ -v",
       "exit_code": 0,
-      "tests_run": 615,
+      "tests_run": 666,
       "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\security-coverage-manifest\\.shipwright\\runs\\iterate-2026-07-27-security-coverage-manifest\\surface_verification.log",
-      "timestamp": "2026-07-27T08:24:41.209Z",
+      "timestamp": "2026-07-27T09:28:21.187Z",
       "attempts": 1
     },
     "test_completeness": {
