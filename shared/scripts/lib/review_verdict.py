@@ -80,9 +80,21 @@ _RANK = {"approve": 0, "revise": 1, "reject": 2}
 # a genuine `reject` was thrown away. A quoted mention inside prose is not a
 # line, so it no longer interferes — while a reviewer that genuinely wrote two
 # verdicts on two lines is still ambiguous and still reads UNKNOWN.
+# Exactly the decoration AC1 licenses: emphasis, code ticks, a list marker, a
+# blockquote, and whitespace. A heading marker is NOT included — a verdict is
+# not a section — and neither is arbitrary punctuation.
+_LINE_PREFIX = r"^[\s>*_`+\-]*"
+_LINE_SUFFIX = r"[\s*_`.]*$"
+
+# A line that PURPORTS to be the sentinel: the token opens the line, whatever
+# follows. Counted first, so a malformed attempt still makes the reply
+# ambiguous instead of being skipped over in favour of a later valid one.
+_SENTINEL_LINE_RE = re.compile(rf"{_LINE_PREFIX}{re.escape(SENTINEL)}\b", re.IGNORECASE)
+
+# A line that IS the sentinel: token, colon, one recognised word, nothing else.
 _VERDICT_LINE_RE = re.compile(
-    rf"^[\s>*_`#\-]*{re.escape(SENTINEL)}[\s*_`]*:[\s*_`]*"
-    rf"({'|'.join(VERDICTS)})[\s*_`.!]*$",
+    rf"{_LINE_PREFIX}{re.escape(SENTINEL)}[\s*_`]*:[\s*_`]*"
+    rf"({'|'.join(VERDICTS)}){_LINE_SUFFIX}",
     re.IGNORECASE,
 )
 
@@ -90,21 +102,25 @@ _VERDICT_LINE_RE = re.compile(
 def parse_verdict(feedback: str | None) -> str:
     """Return the reviewer's verdict, or :data:`UNKNOWN`.
 
-    Two conditions, both required: exactly one line of the reply is a sentinel
-    line, and it is the reply's last non-empty line. A missing sentinel, an
-    unrecognised word, trailing prose after it, a truncated reply, or a
-    reviewer that gave two different verdicts on two lines all yield
-    ``UNKNOWN`` — which blocks. Ambiguity is reported, never resolved by
-    guessing, and a verdict is never inferred from prose, headings, or finding
-    severities.
+    Three conditions, all required: exactly one line of the reply *purports* to
+    be a sentinel line, that line is the reply's last non-empty line, and it is
+    well-formed. A missing sentinel, an unrecognised word, trailing prose after
+    it, a truncated reply, or a reviewer that wrote two sentinel lines all
+    yield ``UNKNOWN`` — which blocks.
+
+    Counting *purported* sentinel lines before validating is what stops
+    ``SHIPWRIGHT_VERDICT: nonsense`` followed by ``SHIPWRIGHT_VERDICT: approve``
+    from reading as ``approve``: a reviewer that tried twice is ambiguous, and
+    a malformed attempt must not be silently skipped in favour of a later one.
+    Ambiguity is reported, never resolved by guessing, and a verdict is never
+    inferred from prose, headings, or finding severities.
     """
     if not feedback:
         return UNKNOWN
     lines = [line for line in feedback.splitlines() if line.strip()]
     if not lines:
         return UNKNOWN
-    matches = [m for m in (_VERDICT_LINE_RE.match(line) for line in lines) if m]
-    if len(matches) != 1:
+    if sum(1 for line in lines if _SENTINEL_LINE_RE.match(line)) != 1:
         return UNKNOWN
     last = _VERDICT_LINE_RE.match(lines[-1])
     return last.group(1).lower() if last else UNKNOWN

@@ -162,12 +162,22 @@ def test_one_silent_reviewer_blocks_until_decided():
     assert evaluate_review_state(marker)[0] == STATE_OK
 
 
-def test_neither_reviewer_answering_is_left_to_the_degraded_gate():
-    state, _ = evaluate_review_state({
+def test_a_completed_review_where_neither_reviewer_answered_blocks():
+    """It needs no operator resolution — the degraded-review gate owns that —
+    but it must not read as reviewed either, or two `unavailable` verdicts
+    would clear every gate with nobody having reviewed anything."""
+    state, reason = evaluate_review_state({
         "status": "completed",
         "verdicts": {"gemini": "unavailable", "openai": "unavailable"},
     })
-    assert state == STATE_OK
+    assert state == STATE_BLOCK
+    assert "neither reviewer answered" in reason
+
+
+def test_neither_answering_still_asks_for_no_resolution():
+    # The remedy is re-run or record a skip, not "say which side you took".
+    from lib.review_verdict import contradiction_block
+    assert contradiction_block({"gemini": "unavailable", "openai": "unavailable"})["requires_resolution"] is False
 
 
 def test_a_completed_review_with_no_verdicts_is_legacy_not_ok():

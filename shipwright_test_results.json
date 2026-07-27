@@ -4,13 +4,13 @@
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 5197,
-      "total": 5197
+      "passed": 5209,
+      "total": 5209
     },
     "integration": {
       "status": "passed",
-      "passed": 418,
-      "total": 418
+      "passed": 421,
+      "total": 421
     },
     "pgtap": {
       "status": "not_run",
@@ -232,11 +232,36 @@
           "disposition": "untestable",
           "reason_code": "requires-external-nondeterministic-service",
           "reason": "Needs a real LLM call. Probed twice anyway against live OpenRouter responses during this run; the parser itself is pinned deterministically by the rows above."
+        },
+        {
+          "behavior": "a malformed sentinel line before a valid one is unknown",
+          "disposition": "tested",
+          "evidence": "test_review_verdict.py::test_a_malformed_sentinel_before_a_valid_one_is_unknown PASSED"
+        },
+        {
+          "behavior": "decoration outside the documented set is unknown",
+          "disposition": "tested",
+          "evidence": "test_review_verdict.py::test_decoration_outside_the_documented_set_is_unknown PASSED (3 cases)"
+        },
+        {
+          "behavior": "a completed review where neither reviewer answered blocks",
+          "disposition": "tested",
+          "evidence": "test_review_state_gate.py::test_a_completed_review_where_neither_reviewer_answered_blocks PASSED"
+        },
+        {
+          "behavior": "a Requirements token that merely CONTAINS an FR id is malformed, not coverage",
+          "disposition": "tested",
+          "evidence": "test_plan_section_quality.py::test_a_token_that_merely_contains_an_fr_id_is_malformed_not_coverage, ::test_malformed_tokens_are_reported_as_linkage_errors PASSED"
+        },
+        {
+          "behavior": "each of the four gates blocks phase completion on its own",
+          "disposition": "tested",
+          "evidence": "test_verifiers_plan_gates_wiring.py::test_each_gate_blocks_phase_completion_on_its_own PASSED (4 cases) + ::test_a_clean_plan_trips_none_of_the_four PASSED"
         }
       ],
       "counts": {
-        "testable": 34,
-        "tested": 34,
+        "testable": 39,
+        "tested": 39,
         "untestable": 2,
         "untested_testable": 0
       },

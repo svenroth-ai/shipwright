@@ -170,6 +170,17 @@ def evaluate_review_state(marker: dict[str, Any] | None) -> tuple[str, str]:
             "disagreement between the two could not have been noticed"
         )
 
+    # A `completed` marker where NO leg answered is not a review. It needs no
+    # operator resolution — the degraded-review gate owns that condition and
+    # fails loudly — but it must not read as reviewed either, or
+    # `--verdict gemini=unavailable --verdict openai=unavailable` would clear
+    # every gate with nobody having reviewed anything.
+    if all(str(v) == "unavailable" for v in verdicts.values()):
+        return STATE_BLOCK, (
+            "review recorded completed but neither reviewer answered — re-run "
+            "the review, or record the appropriate skipped_* status with a reason"
+        )
+
     requires, detail = _disagreement(verdicts)
     if requires and not str(marker.get("contradiction_resolution") or "").strip():
         return STATE_BLOCK, f"unresolved reviewer disagreement: {detail}"

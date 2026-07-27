@@ -53,7 +53,14 @@ _REQUIREMENTS_RE = re.compile(
     r"^[\s>*_\-]*requirements[\s*_`]*:(?P<ids>.*)$",
     re.IGNORECASE | re.MULTILINE,
 )
-_FR_ID_RE = re.compile(r"FR-\d{1,3}\.\d{1,3}")
+# ANCHORED, and applied to a whole comma-separated token — never searched for
+# inside a longer string. An unanchored search credits `FR-01.01x` and
+# `not-FR-01.01-example` as the live `FR-01.01`, which would let malformed text
+# in the explicit field satisfy both coverage directions. The repo has been
+# bitten by this exact shape before (`@FR-01.03x` exposing a valid prefix).
+_FR_ID_RE = re.compile(r"^FR-\d{1,3}\.\d{1,3}$")
+# Decoration the field value may carry around a token.
+_TOKEN_STRIP = " \t`*_[]()"
 
 
 @dataclass(frozen=True)
@@ -65,6 +72,10 @@ class SectionQuality:
     step_count: int = 0
     has_tests: bool = False
     requirements: tuple[str, ...] = ()
+    #: Tokens in the field that are not canonical FR ids. Reported rather than
+    #: mined for an id inside them, so a typo surfaces instead of silently
+    #: counting as coverage.
+    malformed_requirements: tuple[str, ...] = ()
     #: The ``Requirements:`` field is present — even if it names nothing. This
     #: is what decides whether a split has adopted the format, deliberately
     #: separate from whether the field is *usable*: a section that writes the
@@ -144,7 +155,9 @@ def parse_section_file(path: Path | str) -> SectionQuality:
         step_count = sum(1 for line in steps_body.splitlines() if _LIST_ITEM_RE.match(line))
 
     match = _REQUIREMENTS_RE.search(content)
-    requirements = tuple(dict.fromkeys(_FR_ID_RE.findall(match.group("ids")))) if match else ()
+    requirements, malformed = _parse_requirement_tokens(
+        match.group("ids") if match else ""
+    )
 
     return SectionQuality(
         name=p.stem,
@@ -152,8 +165,31 @@ def parse_section_file(path: Path | str) -> SectionQuality:
         step_count=step_count,
         has_tests=bool(tests_body and tests_body.strip()),
         requirements=requirements,
+        malformed_requirements=malformed,
         declares_requirements=match is not None,
     )
+
+
+def _parse_requirement_tokens(value: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Split a ``Requirements:`` value into ``(ids, malformed)``.
+
+    Each comma-separated token must match the canonical FR-ID grammar in full.
+    Anything else is reported as malformed rather than mined for an id that
+    happens to sit inside it — the field is machine-readable or it is an error,
+    with no middle ground that quietly counts as coverage.
+    """
+    ids: list[str] = []
+    malformed: list[str] = []
+    for raw in value.split(","):
+        token = raw.strip().strip(_TOKEN_STRIP).strip()
+        if not token:
+            continue
+        if _FR_ID_RE.match(token):
+            if token not in ids:
+                ids.append(token)
+        elif token not in malformed:
+            malformed.append(token)
+    return tuple(ids), tuple(malformed)
 
 
 def collect_sections(split_dir: Path) -> list[SectionQuality]:
@@ -211,6 +247,7 @@ def coverage_report(
     for section in sections:
         live = [fr for fr in section.requirements if fr in live_fr_ids]
         stale = [fr for fr in section.requirements if fr not in live_fr_ids]
+        stale += [f"{tok} (not an FR id)" for tok in section.malformed_requirements]
         if stale:
             unknown[section.name] = sorted(stale)
         if live:

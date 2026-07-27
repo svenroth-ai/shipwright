@@ -45,12 +45,23 @@ a guarantee that nothing can check.**
 **AC1 — reviewer verdicts are read, not summarised.** Each external reviewer
 ends with a single constrained sentinel line, `SHIPWRIGHT_VERDICT: approve |
 revise | reject`. The parser accepts it only when **exactly one line** of the
-reply is a sentinel line **and it is the reply's last non-empty line**. Zero
-such lines, two or more, an unrecognised word, trailing prose after it, or a
-truncated reply all yield `unknown`. A sentinel quoted *inside* prose is not a
-line and is ignored. A verdict is never inferred from prose, headings, or
-finding severities. The review output carries both verdicts and both provider
-statuses alongside the existing full texts.
+reply *purports* to be a sentinel line (the token opens the line, whatever
+follows) **and** that line is the reply's last non-empty line **and** it is
+well-formed. Zero such lines, two or more, an unrecognised word, trailing prose
+after it, or a truncated reply all yield `unknown`. A sentinel quoted *inside*
+prose is not a line and is ignored. A verdict is never inferred from prose,
+headings, or finding severities.
+
+**Tolerated on that line:** surrounding markdown emphasis or code ticks
+(`**SHIPWRIGHT_VERDICT:** approve`), a leading list marker or blockquote, case
+variation, and padding around the colon. This is deliberate, not laxity: models
+bold and quote their closing lines routinely, and rejecting those forms would
+manufacture the same false `unknown` that the first two versions of this rule
+produced. The line must still contain nothing but the sentinel and one
+recognised word — decoration cannot smuggle in prose.
+
+The review output carries both verdicts and both provider statuses alongside
+the existing full texts.
 
 **AC2 — contradiction is its own outcome.** When one reviewer approves and the
 other rejects, that is recorded as a contradiction — a distinct outcome, not a
@@ -68,9 +79,11 @@ has no recorded resolution:
   that single review is a decision, not a default;
 - the recorded pair is **not the two reviewers that run**, or is incomplete.
 
-All are cleared the same way, with one flag naming the decision. The single
-exception is *neither* reviewer answering: nothing ran, which the degraded
-review gate already fails loudly, and reporting it twice would only add noise.
+All are cleared the same way, with one flag naming the decision. *Neither*
+reviewer answering is the one case that asks for no decision — there are no
+sides to take — but it still **blocks**: a `completed` marker where no leg
+answered is not a review, and the remedy is to re-run it or record the
+appropriate `skipped_*` status with a reason.
 
 **The reader derives this from the verdicts rather than trusting the stored
 contradiction block** — a marker whose summary disagrees with its own verdicts
@@ -272,6 +285,20 @@ degraded condition, not a passing review.
 | 3 | `check-sections.py` never checks `is_valid`, so a duplicate id passes | **declined — not reproducible.** The script does check it; run against `01-a\n01-a` it prints `"success": false` with `line 2: duplicate section id` and exits 1 |
 | 4 | adoption keys off parsed ids, so an empty `Requirements:` field reads as legacy | **accepted** → `declares_requirements` now tracks field *presence* |
 | 5 | any reviewer name is accepted, so `foo`/`bar` verdicts satisfy the gate | **accepted** → names validated against `REVIEWERS`, and a repeated reviewer is rejected rather than overwritten |
+
+**Round 3 — fresh review on the pushed head**, after CI's Tier-3 gate failed
+closed on a truncated diff (~5,000 lines; the documented condition). The diff
+was split into source / tests / docs so nothing truncated, and each chunk
+reviewed against the current head.
+
+| # | Finding | Disposition |
+|---|---|---|
+| 1 | a `completed` marker with BOTH reviewers `unavailable` returns `ok` — `--verdict gemini=unavailable --verdict openai=unavailable` clears every gate with nobody having reviewed | **accepted, and the sharpest finding of the three rounds.** The "neither answered needs no resolution" exception was right about the *prompt* and wrong about the *state*. `evaluate_review_state` now blocks it outright, pointing at re-run or a justified `skipped_*`; `requires_resolution` stays false, because there are no sides to take |
+| 2 | a malformed sentinel line before a valid one still reads the valid one | **accepted** → *purported* sentinel lines are counted before any is validated, so a reviewer that tried twice is ambiguous |
+| 3 | the parser tolerates markdown-decorated sentinels, which AC1's literal grammar does not license | **declined on the behaviour, accepted on the mismatch.** Models bold and quote closing lines routinely; rejecting those forms manufactures exactly the false `unknown` the first two rule versions produced. AC1 now states the tolerated decoration explicitly, so spec and code agree |
+| 4 | the wiring tests prove only that dependency-order failure propagates — the other three gates could be miswired or silently green | **accepted.** One seeded failure per gate now runs through the real `run_plan_checks`, plus a clean-plan complement so a gate that fails unconditionally cannot satisfy them all |
+| 5 | `check-sections.py` never checks `is_valid`, so a duplicate id passes | **declined again — not reproducible, second time raised.** Both scenarios were run: duplicate `01-a` with its file present, and an invalid dependency token. Each prints `"success": false` with the line-numbered parse error and exits 1. The guard sits above the hunk the finding cites |
+| 6 | the tests chunk contains no production implementation, so it cannot implement AC1–AC12 | **declined — an artifact of the chunking.** The production code was in the source chunk, reviewed separately (it produced findings 1–2 above). Worth recording as a real limitation of the split-diff workaround: each reviewer sees less than the whole change, so a cross-chunk claim from one of them is not evidence |
 
 ## Confidence Calibration
 

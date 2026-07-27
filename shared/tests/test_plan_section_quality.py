@@ -107,6 +107,23 @@ def test_an_empty_requirements_field_counts_as_adopting_but_names_nothing(tmp_pa
     assert s.requirements == ()
 
 
+def test_a_token_that_merely_contains_an_fr_id_is_malformed_not_coverage(tmp_path):
+    """An unanchored search credits FR-01.01x and not-FR-02.02-example as live
+    ids, letting a typo in the explicit field satisfy both coverage
+    directions. The repo has been bitten by this exact shape before."""
+    body = "# S\n\nRequirements: FR-01.01x, not-FR-02.02-example, FR-01.03\n"
+    s = parse_section_file(_write(tmp_path, "01-a", body))
+    assert s.requirements == ("FR-01.03",)
+    assert s.malformed_requirements == ("FR-01.01x", "not-FR-02.02-example")
+
+
+def test_malformed_tokens_are_reported_as_linkage_errors(tmp_path):
+    s = parse_section_file(_write(tmp_path, "01-a", "# S\n\nRequirements: FR-9.9.9\n"))
+    rep = coverage_report([s], {"FR-01.01"})
+    assert rep.untraced_sections == ["01-a"]
+    assert any("not an FR id" in r for r in rep.unknown_refs["01-a"])
+
+
 def test_a_missing_file_yields_an_empty_section(tmp_path):
     s = parse_section_file(tmp_path / "nope.md")
     assert s.step_count == 0 and not s.has_purpose

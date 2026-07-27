@@ -44,6 +44,20 @@ def test_sentinel_survives_ordinary_markdown(line):
     assert parse_verdict(f"Review body.\n\n{line}\n") == "approve"
 
 
+@pytest.mark.parametrize(
+    "line",
+    [
+        "# SHIPWRIGHT_VERDICT: approve",      # a verdict is not a heading
+        "SHIPWRIGHT_VERDICT: approve!",       # not one of the licensed decorations
+        "~~SHIPWRIGHT_VERDICT: approve~~",
+    ],
+)
+def test_decoration_outside_the_documented_set_is_unknown(line):
+    """The tolerated forms are a closed set (AC1). Widening the grammar past
+    it would let arbitrary punctuation carry an authoritative verdict."""
+    assert parse_verdict(f"Review body.\n\n{line}\n") == UNKNOWN
+
+
 def test_absent_sentinel_is_unknown():
     assert parse_verdict("Looks good to me, ship it.") == UNKNOWN
 
@@ -55,6 +69,18 @@ def test_empty_and_none_are_unknown():
 
 def test_unrecognised_word_is_unknown():
     assert parse_verdict("SHIPWRIGHT_VERDICT: looks-fine") == UNKNOWN
+
+
+def test_a_malformed_sentinel_before_a_valid_one_is_unknown():
+    """A reviewer that tried twice is ambiguous. Counting only WELL-FORMED
+    sentinel lines would silently skip the bad attempt and take the good one,
+    which AC1 forbids: an unrecognised word yields unknown."""
+    assert parse_verdict("SHIPWRIGHT_VERDICT: nonsense\nSHIPWRIGHT_VERDICT: approve") == UNKNOWN
+
+
+def test_a_sentinel_line_with_trailing_prose_before_a_valid_one_is_unknown():
+    text = "SHIPWRIGHT_VERDICT: approve, mostly\nSHIPWRIGHT_VERDICT: reject"
+    assert parse_verdict(text) == UNKNOWN
 
 
 def test_two_sentinel_lines_are_unknown():
