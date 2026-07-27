@@ -869,6 +869,15 @@ this: tests are written for the paths that work.
    replaces** that version's section instead of appending a duplicate. Cheap to
    check: one version appears once. Both on `trg-6690d175`.
 
+**Addendum 2026-07-27 — fixed in `iterate-2026-07-27-changelog-writer-preserve-history`.**
+Criterion 6 is now `enforced, tested`; `trg-6690d175` is closed. One premise above
+was **wrong**: "Two preserve the file" — only *one* does. Branch 2 (marker
+present, no released section yet) keeps `content[:idx]` and discards `rest`, so
+it erases every pending `[Unreleased]` bullet; it read as safe because the test
+that covers it uses an *empty* `[Unreleased]`, where there is nothing to lose.
+`update_changelog` now splices into the text it read and never rebuilds, so the
+losing branches no longer exist as a class.
+
 **Glossary:** `Drop file`, `Version bump` — both cross-checked against the
 existing `Section` entry, which already carries the release-note overload and is
 now referenced rather than duplicated.

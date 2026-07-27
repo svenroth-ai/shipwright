@@ -43,6 +43,68 @@ class TestIsGeneratedPath:
         assert L.is_generated_path("shipwright_events.jsonl")
         assert L.is_generated_path(".shipwright/triage.jsonl")
 
+
+class TestReviewEvidenceExcluded:
+    """A reviewer must not be fed the transcripts of prior reviews.
+
+    `reviews.json` (record_review_pass) and the `*-external-*review*.json`
+    replies (external_review) are tool-written records OF a review. Reviewing
+    them is circular, and they are bulky: 45,596 chars — 19% of the reviewed
+    diff — on PR #446, which was the difference between fitting the size cap
+    and failing closed on truncation.
+    """
+
+    RUN = ".shipwright/planning/iterate/iterate-2026-07-27-a-run"
+
+    def test_review_record_is_excluded(self):
+        assert L.is_generated_path(f"{self.RUN}/reviews.json")
+
+    def test_raw_external_review_replies_are_excluded(self):
+        for name in (
+            "iterate-2026-07-27-a-run-external-review.json",
+            "iterate-2026-07-27-a-run-external-code-review.json",
+            "iterate-2026-07-27-a-run-external-code-review-head.json",
+            "iterate-2026-07-27-a-run-external-code-review-final.json",
+        ):
+            assert L.is_generated_path(
+                f".shipwright/planning/iterate/{name}"), name
+
+    def test_the_iterate_spec_and_miniplan_stay_reviewable(self):
+        """The narrow half of the rule, and the point of it.
+
+        These are AUTHORED, they state the acceptance criteria, and they are
+        the intent a reviewer should read the diff against. Excluding them
+        would trade a size win for review quality.
+        """
+        assert not L.is_generated_path(
+            ".shipwright/planning/iterate/iterate-2026-07-27-a-run.md")
+        assert not L.is_generated_path(
+            ".shipwright/planning/iterate/iterate-2026-07-27-a-run-MINIPLAN.md")
+
+    def test_a_json_elsewhere_under_planning_is_not_excluded(self):
+        # The rule is scoped to the iterate run directory, not all planning.
+        assert not L.is_generated_path(
+            ".shipwright/planning/01-adopted/reviews.json")
+        assert not L.is_generated_path("src/reviews.json")
+
+    def test_an_unrelated_json_in_the_run_dir_is_not_excluded(self):
+        assert not L.is_generated_path(f"{self.RUN}/result.json")
+
+    def test_the_sections_are_dropped_from_a_real_diff(self):
+        diff = (
+            _section("plugins/shipwright-test/scripts/lib/thing.py")
+            + _section(f"{self.RUN}/reviews.json")
+            + _section(".shipwright/planning/iterate/run-external-review.json")
+            + _section(".shipwright/planning/iterate/run.md")
+        )
+        filtered, excluded = L.filter_generated_paths(diff)
+
+        assert "thing.py" in filtered
+        assert "run.md" in filtered            # authored intent survives
+        assert "reviews.json" not in filtered
+        assert "external-review.json" not in filtered
+        assert len(excluded) == 2
+
     def test_real_source_not_generated(self):
         assert not L.is_generated_path("shared/scripts/tools/measure_diff_coverage.py")
         assert not L.is_generated_path("plugins/shipwright-security/scripts/lib/pr_review_lib.py")

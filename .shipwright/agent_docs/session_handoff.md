@@ -1,44 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-c3-phase-content-key"
+run_id: "iterate-2026-07-27-guide-delivery-watch"
 phase: "iterate"
-reason: "iterate: the phase canon asks whether the handoff belongs to this run"
-timestamp: "2026-07-27T16:36:23.078641+00:00"
+reason: "unblock #462: base moved, DIRTY"
+timestamp: "2026-07-27T15:50:19.371756+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 16:36:23 UTC
+> Auto-generated 2026-07-27 15:50:19 UTC
 
 ## Session Info
 
-- **Session ID**: 537acd2e-45f2-4a62-8eba-dc5e3fa65db8
-- **Timestamp**: 2026-07-27 16:36:23 UTC
-- **Reason**: iterate: the phase canon asks whether the handoff belongs to this run
+- **Session ID**: 9058f47a-25f4-4469-b517-e3b5c91347e0
+- **Timestamp**: 2026-07-27 15:50:19 UTC
+- **Reason**: unblock #462: base moved, DIRTY
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-c3-phase-content-key
-- **Date**: 2026-07-27T16:36:15.112994Z
+- **Run ID**: iterate-2026-07-27-guide-delivery-watch
+- **Date**: 2026-07-27T15:50:13.019923Z
 - **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/c3-phase-content-key
-- **ADR**: iterate-2026-07-27-c3-phase-content-key
+- **Complexity**: trivial
+- **Branch**: iterate/guide-delivery-watch
+- **ADR**: iterate-2026-07-27-guide-delivery-watch
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-c3-phase-content-key.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/c3-phase-content-key
-- **Run ID**: iterate-2026-07-27-c3-phase-content-key
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-c3-phase-content-key.md
-- **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-07-27T16:16:32))
+- **Branch**: iterate/guide-delivery-watch
+- **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/c3-phase-content-key
-- **Last Commit**: 2523dfcc chore(triage): sweep 3 outbox append(s) into branch
+- **Branch**: iterate/guide-delivery-watch
+- **Last Commit**: 622a2e31 Merge remote-tracking branch 'origin/main' into iterate/guide-delivery-watch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,8 +64,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-a5ff7d12 | grade_snapshot | — | 2026-07-27 |
-| evt-e0b8fd18 | work_completed | iterate (iterate: the phase canon asks whether the handoff belongs to this run) | 2026-07-27 |
+| evt-76f1beff | grade_snapshot | — | 2026-07-27 |
+| evt-90ce4f39 | work_completed | iterate (iterate: document the delivery watch in the guide) | 2026-07-27 |
 | evt-942e3e04 | grade_snapshot | — | 2026-07-27 |
 | evt-f2747703 | work_completed | iterate (iterate: inherited failures and coverage gaps are recorded as inherited) | 2026-07-27 |
 | evt-38795ac5 | grade_snapshot | — | 2026-07-27 |
@@ -78,8 +73,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 374
-- **Last iterate**: change — iterate: the phase canon asks whether the handoff belongs to this run (2026-07-27)
+- **Total work events**: 375
+- **Last iterate**: change — iterate: document the delivery watch in the guide (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
