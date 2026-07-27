@@ -1,43 +1,44 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-disclose-audit-last-run"
+run_id: "iterate-2026-07-27-triage-defer-ci-cap"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T08:29:48.705481+00:00"
+timestamp: "2026-07-27T08:30:58.021874+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 08:29:48 UTC
+> Auto-generated 2026-07-27 08:30:58 UTC
 
 ## Session Info
 
-- **Session ID**: 184abbf4-c486-4d5b-b89a-1dc21aebc3e1
-- **Timestamp**: 2026-07-27 08:29:48 UTC
+- **Session ID**: 8a66b2f1-81e9-4505-8591-b94928ca02f6
+- **Timestamp**: 2026-07-27 08:30:58 UTC
 - **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-disclose-audit-last-run
-- **Date**: 2026-07-27T08:29:42.533033Z
-- **Type**: change
+- **Run ID**: iterate-2026-07-27-triage-defer-ci-cap
+- **Date**: 2026-07-27T08:30:49.435429Z
+- **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/disclose-audit-last-run
-- **ADR**: iterate-2026-07-27-disclose-audit-last-run
+- **Branch**: iterate/triage-defer-ci-cap
+- **ADR**: iterate-2026-07-27-triage-defer-ci-cap
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-disclose-audit-last-run.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-triage-defer-ci-cap.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/disclose-audit-last-run
-- **Run ID**: iterate-2026-07-27-disclose-audit-last-run
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-disclose-audit-last-run.md
-- **Complexity**: medium · **change_type:** change · **spec_impact:** modify (fr-01.10 gains one (e) ac)
-- **External Review Marker**: stale (predates spec (2026-07-27T07:51:33))
+- **Branch**: iterate/triage-defer-ci-cap
+- **Run ID**: iterate-2026-07-27-triage-defer-ci-cap
+- **Spec**: .shipwright/planning/iterate/2026-07-27-triage-defer-ci-cap.md
+- **Complexity**: medium
+- **External Review Marker**: stale (predates spec (2026-07-27T07:19:14))
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -51,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/disclose-audit-last-run
-- **Last Commit**: 947894f4 Merge remote-tracking branch 'origin/main' into iterate/disclose-audit-last-run
+- **Branch**: iterate/triage-defer-ci-cap
+- **Last Commit**: 5a48e306 Merge remote-tracking branch 'origin/main' into iterate/triage-defer-ci-cap
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read

@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-27-triage-defer-ci-cap",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T07:47:05.142599+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Unhandled `None` or non-string values in `_cap_detail(text)`. The mappers for `ci_action_unit` and `pr_ci_action_unit` rely on external/upstream data sources (such as GitHub event payloads) where a missing or malformed detail payload might pass `None` to the mapper. Passing `None` into Python's `len()` or string slicing `[: cap - 1]` will throw a `TypeError` and crash the CLI.",
+          "suggestion": "Add an explicit guard clause in the new `_cap_detail` helper: `if not text or not isinstance",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan assumes the resolved triage-item shape exposes the Command Center’s deferral reason under the same field and with the same presence guarantees that `defer()` will write. This is important because `snoozed` is pre-existing data written by another surface; historical Command Center deferrals may use a differently named event field, may resolve it differently, or may lack a reason entirely. `_format_deferred()` could otherwise display the wrong value or fail on an older valid record.",
+          "suggestion": "Before implementing the formatter, verify the persisted `mark_status` event schema and `read_all_items`/resolution output for existing `snoozed` events. Add a fixture representing a Command Center-created deferred record and assert that CLI output uses its resolved status/reason fields. Make rendering tolerant of an absent legacy reason (for example, a safe explicit fallback) unless the existing reader contract guarantees it is always present.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The plan explicitly sanitizes deferred titles and reasons, but the new compact output also prints `id`, `severity`, `kind`, and `source`. At least `source` and potentially other resolved fields can originate from producers or manually edited JSONL, so sanitizing only the two named fields leaves a new terminal-control-character injection path in the deferred section.",
+          "suggestion": "Apply the same terminal-safe string rendering used by the open listing to every string interpolated into `_format_deferred()`, not only title and reason. Preserve the open block unchanged, but use a single safe-display operation for every field in the new block.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Extracting `_status_flip()` changes the existing `dismiss` CLI path as well as adding `defer`. The plan says it will own the three exception arms and stderr output, but does not explicitly pin that `dismiss` retains its current exit codes, error wording, and “writes nothing on rejection” behavior. A shared wrapper can easily alter exception mapping or invoke validation in a different order.",
+          "suggestion": "Add or retain subprocess-level regression cases for `dismiss` covering nonexistent IDs, already-decided IDs, invalid reasons where applicable, successful writes, exit status, and stderr. Keep the helper thin: it should only invoke the supplied operation and translate the exact existing exception set, with argument parsing/validation remaining in the command-specific function where that preserves current behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "AC-2 requires exit 2 for empty or whitespace-only `--reason`, but this depends on the exception emitted by `sanitize_reason` being translated by the new `_status_flip()` exception handler. If it raises a validation exception not currently handled by the dismiss path, the CLI could emit a traceback and exit 1 instead.",
+          "suggestion": "Confirm the precise exception type from `sanitize_reason` and include it in the CLI’s intentional validation-error mapping to exit 2. Test omitted, empty-string, and whitespace-only values through the actual subprocess CLI, including an assertion that the JSONL file is byte-for-byte unchanged.  Overall, the approach is sound and appropriately avoids duplicating status-transition logic while preserving the frozen JSON contract. The main implementation care points are compatibility with already-existing Command Center `snoozed` records and ensuring the new human-output path is fully terminal-safe.",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-27T07:19:14.409932+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] Here is the review of the implementation approach. \n\n### Findings\n\n- **Category:** edge-case\n- **Severity:** medium\n- **Finding:** Unhandled `None` or non-string values in `_cap_detail(text)`. The mappers for `ci_action_unit` and `pr_ci_action_unit` rely on external/upstream data sources (such as GitHub event payloads) where a missing or malformed detail payload might pass `None` to the mapper. Passing `None` into Python's `len()` or string slicing `[: cap - 1]` will throw a `TypeError` and crash the CLI.\n- **Suggestion:** Add an explicit guard clause in the new `_cap_detail` helper: `if not text or not isinstance\n\n[openai] 1. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The plan assumes the resolved triage-item shape exposes the Command Center’s deferral reason under the same field and with the same presence guarantees that `defer()` will write. This is important because `snoozed` is pre-existing data written by another surface; historical Command Center deferrals may use a differently named event field, may resolve it differently, or may lack a reason entirely. `_format_deferred()` could otherwise display the wrong value or fail on an older valid record.  \n   **Suggestion:** Before implementing the formatter, verify the persisted `mark_status` event schema and `read_all_items`/resolution output for existing `snoozed` events. Add a fixture representing a Command Center-created deferred record and assert that CLI output uses its resolved status/reason fields. Make rendering tolerant of an absent legacy reason (for example, a safe explicit fallback) unless the existing reader contract guarantees it is always present.\n\n2. **Category:** security  \n   **Severity:** medium  \n   **Finding:** The plan explicitly sanitizes deferred titles and reasons, but the new compact output also prints `id`, `severity`, `kind`, and `source`. At least `source` and potentially other resolved fields can originate from producers or manually edited JSONL, so sanitizing only the two named fields leaves a new terminal-control-character injection path in the deferred section.  \n   **Suggestion:** Apply the same terminal-safe string rendering used by the open listing to every string interpolated into `_format_deferred()`, not only title and reason. Preserve the open block unchanged, but use a single safe-display operation for every field in the new block.\n\n3. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** Extracting `_status_flip()` changes the existing `dismiss` CLI path as well as adding `defer`. The plan says it will own the three exception arms and stderr out […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T07:47:29.021666+00:00",
+      "disposition": "Subagent reviewers not spawned: this session carries a standing instruction not to invoke the Agent tool unless the user asks for it, and the invocation did not. The Stage-2 quality read was performed inline and recorded as the 'self' pass (8/8), and the independent code-quality pass was covered by the external cascade (external_review.py --mode code, GPT+Gemini, two rounds on the real diff) recorded as 'external_code'.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T07:47:29.167434+00:00",
+      "disposition": "Same standing no-subagent instruction. The adversarial function the doubt-reviewer serves was performed by the external cascade, which was genuinely adversarial in effect: round 1 found a real terminal output-spoofing defect (scalar fields reused the newline-preserving payload sanitizer) that the first test pass had missed, and it was fixed and pinned before this record was written.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_github_triage_detail_cap.py:58-113",
+          "line": null,
+          "finding": "AC-8 explicitly requires the cap boundary behavior for both failing-check and proposed-change entries, including that an exactly-1024-character detail is unchanged. The boundary test exercises only `ci_action_unit`; the proposed-change test covers only an ordinary short detail and a grossly oversized detail. A regression changing `pr_ci_action_unit` to truncate at `>= _DETAIL_MAX_LEN` would still pass all added tests.",
+          "suggestion": "Add proposed-change boundary cases for detail lengths 1023, 1024, and 1025, asserting that only the 1025 case is ellipsized/truncated.  Overall assessment: ship-with-fixes. The implementation appears to satisfy the functional acceptance criteria, including shared CLI dispatch, reason validation, deferred human listing, JSON open-only behavior, terminal sanitization, and detail capping; the remaining issue is a concrete missing boundary test for one explicitly required mapper.",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-07-27T07:45:45.717652+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini]  spaces so nothing runs together.\" - from docstring of `strip_control_chars_inline`.\n\nWait! Look at `format_item(item: dict) -> str:`\nIt formats the fields. But wait! There is a BUG here:\nIn `triage_render.py`:\n```python\n    item_id = safe_display(item.get(\"id\", \"\"))\n    severity = safe_display(item.get(\"severity\", \"\"))\n    kind = safe_display(item.get(\"kind\", \"\"))\n    title = safe_display(item.get(\"title\", \"\"))\n    source = safe_display(item.get(\"source\", \"\"))\n    dedup_key = safe_display(item.get(\"dedupKey\") or \"\")\n\n\n[openai] - Category: test  \n- Severity: low  \n- File: `shared/tests/test_github_triage_detail_cap.py:58-113`  \n- Finding: AC-8 explicitly requires the cap boundary behavior for both failing-check and proposed-change entries, including that an exactly-1024-character detail is unchanged. The boundary test exercises only `ci_action_unit`; the proposed-change test covers only an ordinary short detail and a grossly oversized detail. A regression changing `pr_ci_action_unit` to truncate at `>= _DETAIL_MAX_LEN` would still pass all added tests.  \n- Suggestion: Add proposed-change boundary cases for detail lengths 1023, 1024, and 1025, asserting that only the 1025 case is ellipsized/truncated.\n\nOverall assessment: ship-with-fixes. The implementation appears to satisfy the functional acceptance criteria, including shared CLI dispatch, reason validation, deferred human listing, JSON open-only behavior, terminal sanitization, and detail capping; the remaining issue is a concrete missing boundary test for one explicitly required mapper."
+    }
+  }
+}

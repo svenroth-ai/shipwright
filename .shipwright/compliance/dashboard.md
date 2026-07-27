@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-07-27T08:29:42.653170+00:00
+Generated: 2026-07-27T08:30:49.617405+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -28,7 +28,7 @@ _Grade = importance-weighted average over the measurable dimensions (n/a exclude
 
 ## 🛡️ CI Security (fail-closed gate)
 
-Latest scan: **2026-07-27** · source `security.yml#30249832894` · critical-gate **✅ PASS**
+Latest scan: **2026-07-27** · source `security.yml#30250691809` · critical-gate **✅ PASS**
 
 | Severity | Count |
 |----------|-------|
@@ -61,7 +61,7 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Iterate tests passing | 53/70 testable changes tested | WARN | 17 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 11 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 25 open | WARN | 25 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Triage open | 24 open | WARN | 24 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit (grandfathered) | 126 | INFO |  |
 | Bloat in allowlist | 159 entries | INFO |  |
 | Bloat ratchet delta | +0 lines | PASS |  |
@@ -81,9 +81,7 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 
 ## 🔎 Consistency Audit
 
-**Never run — nothing has cross-checked this evidence against the project's actual state.**
-
-_On demand by design: the audit has no schedule and no CI trigger, so it never runs on its own — invoke `/shipwright-compliance` to establish a first reading._
+_Detective cross-artifact audit not run this session — run `/shipwright-compliance` to refresh._
 
 ## Compliance Artifacts
 
