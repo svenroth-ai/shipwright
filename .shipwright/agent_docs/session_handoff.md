@@ -1,39 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-run-unit-parallel-race"
+run_id: "iterate-2026-07-27-pr-review-diff-cap"
 phase: "iterate"
-reason: "iterate: bounded sharing-violation retry on both sides of the atomic-write boundary"
-timestamp: "2026-07-27T17:38:49.456380+00:00"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-07-27T17:16:26.682171+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 17:38:49 UTC
+> Auto-generated 2026-07-27 17:16:26 UTC
 
 ## Session Info
 
-- **Session ID**: 9eda9cad-b9b8-45ff-acd4-2ab5efe17ff6
-- **Timestamp**: 2026-07-27 17:38:49 UTC
-- **Reason**: iterate: bounded sharing-violation retry on both sides of the atomic-write boundary
+- **Session ID**: 1ea85a9d-f698-4336-8e01-ea2f4e2ae714
+- **Timestamp**: 2026-07-27 17:16:26 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-run-unit-parallel-race
-- **Date**: 2026-07-27T17:38:43.705219Z
-- **Type**: bug
+- **Run ID**: iterate-2026-07-27-pr-review-diff-cap
+- **Date**: 2026-07-27T17:16:20.650164Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/run-unit-parallel-race
-- **ADR**: iterate-2026-07-27-run-unit-parallel-race
+- **Branch**: iterate/pr-review-diff-cap
+- **ADR**: iterate-2026-07-27-pr-review-diff-cap
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-run-unit-parallel-race.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-pr-review-diff-cap.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/run-unit-parallel-race
-- **Run ID**: `iterate-2026-07-27-run-unit-parallel-race`
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-run-unit-parallel-race.md
-- **Complexity**: medium (`prior_source: history`, n=20)
-- **External Review Marker**: missing
+- **Branch**: iterate/pr-review-diff-cap
+- **Run ID**: `iterate-2026-07-27-pr-review-diff-cap`
+- **Spec**: .shipwright/planning/iterate/2026-07-27-pr-review-diff-cap.md
+- **Complexity**: medium (`prior_source: history`, n=20; scope keyword said `trivial`)
+- **External Review Marker**: stale (predates spec (2026-07-27T16:40:17))
 
 ### Mandatory replay on Resume
 
@@ -51,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/run-unit-parallel-race
-- **Last Commit**: cc18dbea chore(triage): sweep 7 outbox append(s) into branch
+- **Branch**: iterate/pr-review-diff-cap
+- **Last Commit**: 7a6f37b7 Merge remote-tracking branch 'origin/main' into iterate/pr-review-diff-cap
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-5dfe0a14 | grade_snapshot | — | 2026-07-27 |
-| evt-92094b2e | work_completed | iterate (iterate: bounded sharing-violation retry on both sides of the atomic-write boundary) | 2026-07-27 |
-| evt-942e3e04 | grade_snapshot | — | 2026-07-27 |
-| evt-f2747703 | work_completed | iterate (iterate: inherited failures and coverage gaps are recorded as inherited) | 2026-07-27 |
-| evt-38795ac5 | grade_snapshot | — | 2026-07-27 |
+| evt-950798de | grade_snapshot | — | 2026-07-27 |
+| evt-36d0f887 | work_completed | iterate (iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed) | 2026-07-27 |
+| evt-76f1beff | grade_snapshot | — | 2026-07-27 |
+| evt-90ce4f39 | work_completed | iterate (iterate: document the delivery watch in the guide) | 2026-07-27 |
+| evt-cf1bab8b | work_completed | iterate (iterate: requirement write-back loop — design rounds and build sections declare their requirement impact) | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 375
-- **Last iterate**: change — iterate: bounded sharing-violation retry on both sides of the atomic-write boundary (2026-07-27)
+- **Total work events**: 378
+- **Last iterate**: change — iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

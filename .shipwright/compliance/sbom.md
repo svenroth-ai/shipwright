@@ -1,7 +1,7 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-07-27T17:38:43.791837+00:00 (dependency versions resolved from uv.lock)
-Source-State: run=iterate-2026-07-27-run-unit-parallel-race
+Generated: 2026-07-27T17:16:20.738164+00:00 (dependency versions resolved from uv.lock)
+Source-State: run=iterate-2026-07-27-pr-review-diff-cap
 Consistency-audit: never run
 
 ## Summary
@@ -11,26 +11,25 @@ Consistency-audit: never run
 | Runtime dependencies | 6 (deduplicated) |
 | Dev dependencies | 5 |
 | Total packages | 11 |
-| Licenses resolved | 6 / 11 |
-| Unique licenses | 3 (Apache-2.0, MIT, PSFL) |
+| Licenses resolved | 9 / 11 |
+| Unique licenses | 2 (Apache-2.0, MIT) |
 | Copyleft licenses | 0 |
 
 ## License Distribution
 
 ```mermaid
 pie title License Distribution (all 11 packages)
+    "MIT" : 6
     "Apache-2.0" : 3
-    "MIT" : 2
-    "PSFL" : 1
-    "unknown" : 5
+    "unknown" : 2
 ```
 
 ## Runtime Dependencies
 
 | Package | Version | License |
 |---------|---------|---------|
-| defusedxml | 0.7.1 | PSFL |
-| google-genai | 1.68.0 | Apache-2.0 |
+| defusedxml | 0.7.1 | - |
+| google-genai | 1.68.0 | - |
 | jsonschema | 4.26.0 | MIT |
 | openai | 2.30.0 | Apache-2.0 |
 | pyyaml | 6.0.3 | MIT |
@@ -40,13 +39,13 @@ pie title License Distribution (all 11 packages)
 
 | Package | Version | License |
 |---------|---------|---------|
-| diff-cover | 10.3.0 | - |
-| pytest | 9.0.3 | - |
-| pytest | 9.1.1 | - |
-| pytest-cov | 7.1.0 | - |
-| pytest-mock | 3.15.1 | - |
+| diff-cover | 10.3.0 | Apache-2.0 |
+| pytest | 9.0.3 | MIT |
+| pytest | 9.1.1 | MIT |
+| pytest-cov | 7.1.0 | MIT |
+| pytest-mock | 3.15.1 | MIT |
 
 ## License Compliance
 
-**5 dependency(ies) could not be resolved in this scan** - license unverified; verify before distribution.
+**2 dependency(ies) could not be resolved in this scan** - license unverified; verify before distribution.
 

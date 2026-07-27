@@ -62,7 +62,7 @@ from pr_review_lib import (  # noqa: E402
     filter_generated_paths,
     load_prompts,
     parse_review_response,
-    render_comment,
+    render_comment, safe_path,
     truncate_diff,
 )
 
@@ -222,8 +222,11 @@ def main(argv: list[str] | None = None) -> int:
     # medium+ iterates. The excluded list is surfaced to the model (pr_meta) +
     # humans (comment) — transparent, never silent. See triage trg-e1c554d9.
     diff, excluded = filter_generated_paths(diff)
-    diff, truncated = truncate_diff(diff)
-    pr_meta = build_pr_meta(args.pr_number, args.repo, truncated, excluded)
+    reviewed = truncate_diff(diff)
+    diff, truncated = reviewed.text, reviewed.incomplete
+    missing = {"omitted": reviewed.omitted, "partial": reviewed.partial,
+               "unidentified": reviewed.unidentified}
+    pr_meta = build_pr_meta(args.pr_number, args.repo, truncated, excluded, **missing)
     messages = build_messages(system_prompt, user_prompt, diff, pr_meta)
 
     est_tokens = (len(system_prompt) + len(user_prompt) + len(diff)) // 4
@@ -261,7 +264,7 @@ def main(argv: list[str] | None = None) -> int:
     # failclosed this returned EXIT_OK — a silent size-bypass of the gate.)
     effective_decision = "block" if truncated else decision
     body = render_comment(
-        review, model=model, truncated=truncated, excluded_generated=excluded)
+        review, model=model, truncated=truncated, excluded_generated=excluded, **missing)
 
     # Comment + review state are best-effort: a posting failure must not flip the
     # gate, which reflects the review outcome (the exit code) not the side-effect.
@@ -276,11 +279,14 @@ def main(argv: list[str] | None = None) -> int:
 
     if truncated:
         # Partial review fails closed — needs human (see comment above).
+        # Sanitised like every sink: a raw Git path can carry terminal escapes.
+        unseen = ", ".join(safe_path(p) for p in reviewed.omitted + reviewed.partial)
+        extra = f" (+{reviewed.unidentified} unnamed)" if reviewed.unidentified else ""
         print(
-            "[pr_review] diff was truncated — failing closed (needs human review). "
-            "Apply the `skip-pr-review` label after a manual review to override.",
-            file=sys.stderr,
-        )
+            "[pr_review] diff exceeded the review limit — failing closed (needs human "
+            f"review). Not reviewed in full: {unseen or 'unidentifiable'}{extra}. Apply "
+            "the `skip-pr-review` label after a manual review to override.",
+            file=sys.stderr)
         return EXIT_BLOCK
 
     exit_code = decision_to_exit(decision)

@@ -1,11 +1,14 @@
 # Project Activity Dashboard
-> Updated: 2026-07-27 17:38 UTC | Session: 9eda9cad-b9b8-45ff-acd4-2ab5efe17ff6 | Run: iterate-2026-07-27-run-unit-parallel-race
+> Updated: 2026-07-27 17:16 UTC | Session: 1ea85a9d-f698-4336-8e01-ea2f4e2ae714 | Run: iterate-2026-07-27-pr-review-diff-cap
 
-## Recent Changes (375 iterations)
+## Recent Changes (378 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| change | iterate: bounded sharing-violation retry on both sides of the atomic-write boundary | 0/0 |  | FR-01.01, FR-01.09 | 2026-07-27 |
+| change | iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed | 0/0 |  | FR-01.17 | 2026-07-27 |
+| change | iterate: document the delivery watch in the guide | 0/0 |  | docs | 2026-07-27 |
+| change | iterate: requirement write-back loop — design rounds and build sections declare their requirement impact | 0/0 |  | FR-01.04, FR-01.05 | 2026-07-27 |
+| change | iterate: the phase canon asks whether the handoff belongs to this run | 0/0 |  | FR-01.01 | 2026-07-27 |
 | change | iterate: inherited failures and coverage gaps are recorded as inherited | 0/0 |  | FR-01.13 | 2026-07-27 |
 | change | iterate: the four Step-9 gates become code, closing trg-88f721be (3 of 3) | 0/0 |  | tooling | 2026-07-27 |
 | change | iterate: reviewer verdicts recorded, disagreement is its own outcome (1 of 3) | 0/0 |  | FR-01.03 | 2026-07-27 |
@@ -382,7 +385,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-27 | Unit: 6007/6007 | Integration: 1/1 | E2E: 6/6 | Smoke: skipped | (iterate)
+Last run: 2026-07-27 | Unit: 6261/6261 | Integration: 422/422 | E2E: 41/41 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
