@@ -16,7 +16,11 @@ from typing import Any
 _LIB_DIR = Path(__file__).resolve().parent
 if str(_LIB_DIR) not in sys.path:
     sys.path.insert(0, str(_LIB_DIR))
+# The SSoT markdown-cell escaper lives in shared/scripts (same import the report
+# generator uses for its finding cells).
+sys.path.insert(0, str(_LIB_DIR.parents[2].parent / "shared" / "scripts"))
 
+from markdown_table import escape_cell  # noqa: E402
 from scan_coverage import (  # noqa: E402
     class_label,
     is_complete,
@@ -76,11 +80,20 @@ def coverage_table(coverage: list[dict[str, Any]] | None) -> list[str]:
         "|-------|------|---------|---------|",
     ]
     for row in rows:
-        cls = class_label(str(row.get("class", "?")))
-        tool = str(row.get("tool") or "—")
-        status = _STATUS_ICON.get(str(row.get("status")), str(row.get("status")))
-        detail = str(row.get("detail") or "—").replace("\n", " ").replace("|", "\\|")
-        lines.append(f"| {cls} | {tool} | {status} | {detail[:120]} |")
+        # EVERY cell is escaped, not just `detail`. The manifest is read back
+        # from findings.json, which a scanner or a prior run wrote — untrusted
+        # input. An unescaped `|` or newline in `class`/`tool`/`status` would
+        # break the table or inject markdown into a report an operator (or an
+        # agent) reads.
+        cls = escape_cell(class_label(str(row.get("class", "?"))))
+        tool = escape_cell(str(row.get("tool") or "—"))
+        raw_status = str(row.get("status"))
+        # Unknown statuses render verbatim (escaped) rather than being coerced:
+        # a value outside the closed vocabulary is a producer bug the operator
+        # should see, and is_complete() already refuses to call it covered.
+        status = _STATUS_ICON.get(raw_status, escape_cell(raw_status))
+        detail = escape_cell(str(row.get("detail") or "—"))
+        lines.append(f"| {cls} | {tool} | {status} | {detail[:160]} |")
     lines.append("")
     return lines
 

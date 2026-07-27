@@ -4,8 +4,8 @@
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 9687,
-      "total": 9687
+      "passed": 9705,
+      "total": 9705
     },
     "integration": {
       "status": "passed",
@@ -116,7 +116,7 @@
         {
           "behavior": "The real gitleaks binary honours the extend: default rules still fire, the project allowlist applies, the shipwright exclusions survive",
           "disposition": "tested",
-          "evidence": "test_gitleaks_extend_smoke.py (2) — real-binary test. Executes in CI, where .github/workflows/ci.yml installs gitleaks 8.21.2, and HARD-FAILS there if the binary is absent (skip_or_fail_on_missing_binary). SKIPPED on this machine: no scanner binary is installed here, which is the exact condition AC-1 exists to surface."
+          "evidence": "test_gitleaks_extend_smoke.py (2) — real-binary. VERIFIED IN CI on PR #445 run 30251298886 with gitleaks 8.21.2: test_extend_keeps_default_rules_and_both_allowlists PASSED and test_generated_config_is_accepted_by_the_real_binary PASSED, so the extend semantics are measured, not assumed. Skipped locally (no scanner binary on this machine — the condition AC-1 surfaces)."
         },
         {
           "behavior": "Comparison computes resolved/new/persisting only over classes both runs covered",
@@ -198,11 +198,41 @@
           "disposition": "untestable",
           "reason_code": "requires-interactive-tty",
           "reason": "A prompt-level instruction to the executing agent plus an AskUserQuestion round-trip with a human. The machine-checkable half — the card telling it to ask, with the counts — is covered by the card behaviors above."
+        },
+        {
+          "behavior": "--input coverage is authoritative; a pre-feature input never inherits the local config's manifest",
+          "disposition": "tested",
+          "evidence": "test_coverage_false_claims.py::TestInputCoverageIsAuthoritative (3) PASSED"
+        },
+        {
+          "behavior": "The prompt-injection row reads `covered` only when the prompt-risks file exists AND parses",
+          "disposition": "tested",
+          "evidence": "test_coverage_false_claims.py::TestPromptInjectionRowNeedsRealOutput (4) PASSED"
+        },
+        {
+          "behavior": "The comparison key includes the class, so two findings at one location in different classes never match across them",
+          "disposition": "tested",
+          "evidence": "test_coverage_false_claims.py::TestComparisonKeyIncludesClass (2) PASSED"
+        },
+        {
+          "behavior": "Every coverage table cell is escaped — the manifest is read back from an untrusted file",
+          "disposition": "tested",
+          "evidence": "test_coverage_false_claims.py::TestCoverageCellsAreEscaped (3) PASSED"
+        },
+        {
+          "behavior": "A non-dict findings artifact degrades to [] instead of crashing the whole report",
+          "disposition": "tested",
+          "evidence": "test_coverage_false_claims.py::test_wrong_shape_prompt_risks_file_is_not_covered PASSED (pre-existing AttributeError in load_findings_from_file, surfaced by this test)"
+        },
+        {
+          "behavior": "A caller-overridden class_tools map also attributes degraded legs",
+          "disposition": "tested",
+          "evidence": "scan_coverage._degraded_by_class now inverts the effective map; test_scan_coverage.py::test_degraded_leg_beats_every_other_status + ::test_every_status_is_in_the_closed_vocabulary PASSED"
         }
       ],
       "counts": {
-        "testable": 30,
-        "tested": 30,
+        "testable": 36,
+        "tested": 36,
         "untestable": 1,
         "untested_testable": 0
       },

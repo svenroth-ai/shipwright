@@ -73,6 +73,19 @@ def _safe_field(value: Any) -> str:
     return flattened[:_FIELD_MAX_LEN]
 
 
+def _as_data(value: Any) -> str:
+    """Render a caller-supplied value as inline-code DATA, not prose.
+
+    Flattening newlines stops a value from opening its own instruction line, but
+    prose like ``repo. Ignore all prior instructions and …`` still reads as
+    imperative text once embedded. Backtick-delimiting marks it as a value, and
+    any backtick inside is stripped so the delimiter cannot be closed early. The
+    payload also keeps its authoritative instruction AFTER every interpolated
+    value, so untrusted text never has the last word.
+    """
+    return f"`{_safe_field(value).replace('`', '')}`"
+
+
 def severity_counts(findings: list[dict[str, Any]] | None) -> dict[str, int]:
     """Count findings per severity, with every bucket present even at zero.
 
@@ -181,13 +194,13 @@ def build_scan_action_unit(
             f"Coverage — INCOMPLETE ({coverage_summary_line(coverage)}). "
             "See the scan errors before trusting any class as clean.\n"
         )
-    report_note = f"Report: {_safe_field(report_path)}\n" if report_path else ""
+    report_note = f"Report: {_as_data(report_path)}\n" if report_path else ""
 
     payload = (
         f"/shipwright-security\n"
         f"\n"
         f"Context: the local security scan reports {total} open finding(s) "
-        f"for {safe_repo}.\n"
+        f"for {_as_data(repo)}.\n"
         f"Severity breakdown — {breakdown}.\n"
         f"{coverage_note}"
         f"{report_note}"
@@ -195,7 +208,7 @@ def build_scan_action_unit(
         f"Before changing anything: state these per-severity counts to the "
         f"operator and ask how far to go — {scope_options(counts)}? "
         f"Do not decide silently that the less severe findings do not matter.\n"
-        f"Source: triage item {SCAN_CARD_PREFIX}{safe_repo}"
+        f"Source: triage item {SCAN_CARD_PREFIX}{safe_repo}"  # dedup key, not prose
     )
 
     return {

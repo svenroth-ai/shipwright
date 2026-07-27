@@ -145,7 +145,11 @@ def compare_scans(previous: Any, current: Any) -> dict[str, Any]:
                 continue
             if cls not in comparable_set:
                 continue
-            bucket[fingerprint(f)] = f
+            # Key by (class, fingerprint): two findings sharing source/rule/
+            # location but normalized to DIFFERENT classes are different
+            # findings, and matching them across classes would report a
+            # cross-class pair as persisting on ground only one class covered.
+            bucket[f"{cls}::{fingerprint(f)}"] = f
 
     resolved = [_summarize(f) for fp, f in prev_by_fp.items() if fp not in curr_by_fp]
     new = [_summarize(f) for fp, f in curr_by_fp.items() if fp not in prev_by_fp]

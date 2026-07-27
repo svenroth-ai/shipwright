@@ -95,13 +95,23 @@ def class_label(cls: str) -> str:
     return CLASS_LABELS.get(cls, cls)
 
 
-def _degraded_by_class(scan_errors: Iterable[dict[str, Any]] | None) -> dict[str, str]:
-    """Map ``class -> "reason: detail"`` for every recorded degraded leg."""
+def _degraded_by_class(
+    scan_errors: Iterable[dict[str, Any]] | None,
+    tool_to_class: dict[str, str] | None = None,
+) -> dict[str, str]:
+    """Map ``class -> "reason: detail"`` for every recorded degraded leg.
+
+    ``tool_to_class`` is inverted from the EFFECTIVE class->tool map, so a caller
+    that overrides ``class_tools`` gets its degraded legs attributed with the
+    same map the rest of the manifest uses — otherwise a custom map would render
+    a leg's class as ``not_available`` while its error sat unmapped.
+    """
+    mapping = _TOOL_TO_CLASS if tool_to_class is None else tool_to_class
     out: dict[str, str] = {}
     for err in scan_errors or []:
         if not isinstance(err, dict):
             continue
-        cls = _TOOL_TO_CLASS.get(str(err.get("scanner", "")).strip().lower())
+        cls = mapping.get(str(err.get("scanner", "")).strip().lower())
         if cls is None:
             continue
         reason = str(err.get("reason", "unknown"))
@@ -139,7 +149,8 @@ def build_coverage(
     tools = SCAN_CLASS_TOOLS if class_tools is None else class_tools
     available_set = {str(c) for c in available}
     requested_set = None if requested is None else {str(c) for c in requested}
-    degraded = _degraded_by_class(scan_errors)
+    degraded = _degraded_by_class(
+        scan_errors, {v: k for k, v in tools.items()})
 
     # The three local classes first, then any extra capability a backend offers.
     classes = list(CLASS_ORDER) + sorted(available_set - set(CLASS_ORDER))

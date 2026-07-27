@@ -108,13 +108,25 @@ RISK_EMOJI = {
 # ---------------------------------------------------------------------------
 
 def load_findings_from_file(path: Path) -> list[dict[str, Any]]:
+    """Findings from a scan artifact, or [] when it cannot be read.
+
+    The non-dict guard matters: a JSON array (a hand-written or
+    wrong-tool ``--prompt-risks`` / ``--input`` file) used to reach
+    ``data.get`` and crash the whole report with an AttributeError. Every other
+    loader here degrades to [] instead of taking the report down with it, and a
+    file we could not read must not be mistaken for a scanned-clean one either —
+    ``_prompt_risks_readable`` is what decides the coverage claim.
+    """
     if not path.exists():
         return []
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
         return []
-    return data.get("findings", data.get("data", []))
+    if not isinstance(data, dict):
+        return []
+    findings = data.get("findings", data.get("data", []))
+    return findings if isinstance(findings, list) else []
 
 
 def _load_list_key(path: Path, key: str) -> list[dict[str, Any]]:
@@ -137,11 +149,30 @@ def load_scan_errors_from_file(path: Path) -> list[dict[str, Any]]:
     return _load_list_key(path, "scan_errors")
 
 
+def _prompt_risks_readable(path: Path) -> bool:
+    """True only when a prompt-risks file exists AND parses to the expected shape.
+
+    A missing or malformed file must NOT let the prompt-injection coverage row
+    claim `covered` — that is the same false-clean signal the manifest exists to
+    remove, just one level up.
+    """
+    if not path.exists():
+        return False
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return False
+    if not isinstance(payload, dict):
+        return False
+    return isinstance(payload.get("findings"), list) or isinstance(
+        payload.get("data"), list)
+
+
 def load_coverage_from_file(path: Path) -> list[dict[str, Any]]:
     """Coverage manifest (``coverage``) — what the scan actually looked at.
 
     [] means the producer did not report coverage (a pre-manifest scan), which
-    the report renders as "coverage unknown" rather than as a clean sweep.
+    the report renders as "Coverage not reported" rather than a clean sweep.
     """
     return _load_list_key(path, "coverage")
 
@@ -521,20 +552,29 @@ def main() -> int:
     if not scan_errors:
         scan_errors = load_scan_errors_from_file(config_path)
 
-    # Coverage manifest — what the scan looked at, from the same source as the
-    # findings. Read BEFORE the prompt-injection merge so the merge can add its
-    # own row.
-    coverage = load_coverage_from_file(Path(args.input)) if args.input else []
-    if not coverage:
-        coverage = load_coverage_from_file(config_path)
+    # Coverage manifest — what the scan looked at. When --input is supplied its
+    # manifest is AUTHORITATIVE, absence included: falling back to the local
+    # config would attach another scan's coverage to these findings, and a
+    # pre-feature input must render "coverage not reported" rather than inherit
+    # a stale claim. Read before the prompt-injection merge so the merge can add
+    # its own row.
+    coverage = (
+        load_coverage_from_file(Path(args.input)) if args.input
+        else load_coverage_from_file(config_path)
+    )
 
-    # Merge prompt-injection findings if provided
+    # Merge prompt-injection findings if provided. `ran` must mean "output was
+    # read", not "a flag was passed": load_findings_from_file returns [] for a
+    # missing/unparseable file, so keying the row off the flag alone would claim
+    # the class was checked when nothing was.
+    prompt_scan_read = False
     if args.prompt_risks:
-        prompt_findings = load_findings_from_file(Path(args.prompt_risks))
-        findings = list(findings) + list(prompt_findings)
+        prompt_scan_read = _prompt_risks_readable(Path(args.prompt_risks))
+        findings = list(findings) + list(
+            load_findings_from_file(Path(args.prompt_risks)))
     # The prompt-injection scan is a class of its own. Omitting it entirely
     # reads as clean, so it gets a row either way.
-    coverage = with_prompt_injection_row(coverage, ran=bool(args.prompt_risks))
+    coverage = with_prompt_injection_row(coverage, ran=prompt_scan_read)
 
     # Iterate-2 AC-1: mirror findings into .shipwright/triage.jsonl before
     # report rendering, plus the collapsed scan card carrying the severity
