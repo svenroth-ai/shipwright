@@ -1,44 +1,43 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-f0-race-triage"
+run_id: "iterate-2026-07-27-changelog-writer-preserve-history"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T09:08:48.846142+00:00"
+timestamp: "2026-07-27T11:31:20.545287+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 09:08:48 UTC
+> Auto-generated 2026-07-27 11:31:20 UTC
 
 ## Session Info
 
-- **Session ID**: b2c673e3-1511-4b06-ac01-92f336846fb0
-- **Timestamp**: 2026-07-27 09:08:48 UTC
+- **Session ID**: 
+- **Timestamp**: 2026-07-27 11:31:20 UTC
 - **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-artifact-state-stamping
-- **Date**: 2026-07-27T09:08:42.675204Z
-- **Type**: feature
+- **Run ID**: iterate-2026-07-27-changelog-writer-preserve-history
+- **Date**: 2026-07-27T11:31:14.683921Z
+- **Type**: bug
 - **Complexity**: medium
-- **Branch**: iterate/artifact-state-stamping
-- **ADR**: iterate-2026-07-27-artifact-state-stamping
+- **Branch**: iterate/changelog-writer-preserve-history
+- **ADR**: iterate-2026-07-27-changelog-writer-preserve-history
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-artifact-state-stamping.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-changelog-writer-preserve-history.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/f0-race-triage
-- **Run ID**: iterate-2026-07-27-f0-race-triage
-- **Spec**: .shipwright/planning/iterate/2026-07-27-f0-race-triage.md
-- **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-07-27T07:19:42))
+- **Branch**: iterate/changelog-writer-preserve-history
+- **Run ID**: `iterate-2026-07-27-changelog-writer-preserve-history`
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-changelog-writer-preserve-history.md
+- **Complexity**: medium (classifier: `estimate=medium`, `prior_source=history`,
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T11:28:16)
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/f0-race-triage
-- **Last Commit**: 50dc1a54 Merge remote-tracking branch 'origin/main' into iterate/f0-race-triage
+- **Branch**: iterate/changelog-writer-preserve-history
+- **Last Commit**: cf34677b Merge remote-tracking branch 'origin/main' into iterate/changelog-writer-preserve-history
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -78,7 +77,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 365
+- **Total work events**: 366
 - **Last iterate**: change — iterate: the review gate stops being bypassable (fail-closed + fork review) (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

@@ -1,7 +1,7 @@
 # Project Activity Dashboard
-> Updated: 2026-07-27 09:08 UTC | Session: b2c673e3-1511-4b06-ac01-92f336846fb0 | Run: iterate-2026-07-27-f0-race-triage
+> Updated: 2026-07-27 11:31 UTC | Session: unknown | Run: iterate-2026-07-27-changelog-writer-preserve-history
 
-## Recent Changes (365 iterations)
+## Recent Changes (366 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
@@ -11,6 +11,7 @@
 | change | iterate: triage defer from the terminal + failing-check detail cap | 0/0 |  | FR-01.14 | 2026-07-27 |
 | change | iterate: stamp produced artifacts with the state they describe (FR-01.10) | 0/0 |  | FR-01.10 | 2026-07-27 |
 | change | The F0 suite runner files its own triage entry for a unit red in parallel and green alone, never auto-closes it, and exits 3 if the observation could not be recorded. | 0/0 |  | FR-01.14 | 2026-07-27 |
+| bug | iterate: changelog writer preserves the history it read | 0/0 |  | FR-01.09 | 2026-07-27 |
 | change | iterate: REQ-3 Phase 2 content round - all 18 requirements walked or minted | 0/0 |  | FR-01.01, FR-01.02, FR-01.03 | 2026-07-26 |
 | feature | REQ-3 Phase 1: shared requirement-elicitation method (grilling + domain-modeling) + CONTEXT.md format + FR-01.16 mint | 4946/4961 |  |  | 2026-07-23 |
 | bug | design verifier C1 skips projects that never ran the design phase | 26/26 |  | compliance | 2026-07-23 |
@@ -372,7 +373,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-27 | Unit: 9512/9534 | Integration: 419/419 | Smoke: not_run | (iterate)
+Last run: 2026-07-27 | Unit: 76/76 | Integration: 418/418 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
