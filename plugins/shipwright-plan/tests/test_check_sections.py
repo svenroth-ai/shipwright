@@ -40,3 +40,44 @@ def test_check_partial_sections(planning_with_plan):
     assert output["success"] is False
     assert output["missing"] == ["02-api", "03-frontend"]
     assert output["written"] == ["01-auth"]
+
+
+# ---------------------------------------------------------------------------
+# Dependency order — the promise "the numbering is the build order", checked
+# ---------------------------------------------------------------------------
+
+
+def _planning_with(tmp_path, manifest_body: str, names: list[str]):
+    planning = tmp_path / "01-split"
+    (planning / "sections").mkdir(parents=True)
+    (planning / "plan.md").write_text(
+        f"<!-- SECTION_MANIFEST\n{manifest_body}\nEND_MANIFEST -->\n", encoding="utf-8"
+    )
+    for name in names:
+        (planning / "sections" / f"{name}.md").write_text("# Section\n", encoding="utf-8")
+    return planning
+
+
+def test_dependencies_are_reported(tmp_path):
+    planning = _planning_with(tmp_path, "01-auth\n02-api: 01-auth", ["01-auth", "02-api"])
+    output = run_check(["--planning-dir", str(planning)])
+    assert output["success"] is True
+    assert output["dependencies"] == {"01-auth": [], "02-api": ["01-auth"]}
+    assert output["order_errors"] == []
+
+
+def test_prerequisite_after_its_user_fails_the_gate(tmp_path):
+    planning = _planning_with(tmp_path, "01-api: 02-db\n02-db", ["01-api", "02-db"])
+    output = run_check(["--planning-dir", str(planning)])
+    assert output["success"] is False
+    assert output["missing"] == []          # every file exists …
+    assert output["order_errors"]           # … the ORDER is what fails
+    assert "numbered after it" in output["order_errors"][0]
+
+
+def test_bare_manifest_declares_nothing_and_passes(tmp_path):
+    """A plan written before dependencies were expressible is not stranded."""
+    planning = _planning_with(tmp_path, "03-api\n01-auth\n02-db", ["01-auth", "02-db", "03-api"])
+    output = run_check(["--planning-dir", str(planning)])
+    assert output["success"] is True
+    assert output["order_errors"] == []

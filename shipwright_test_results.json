@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-23-req3-phase2-content-mono",
+    "run_id": "iterate-2026-07-27-plan-phase-gates",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 9891,
-      "total": 9891
+      "passed": 5197,
+      "total": 5197
     },
     "integration": {
       "status": "passed",
-      "passed": 417,
-      "total": 417
+      "passed": 418,
+      "total": 418
     },
     "pgtap": {
       "status": "not_run",
@@ -18,9 +18,9 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 22,
+      "total": 22
     },
     "design_fidelity": {
       "status": "not_run",
@@ -30,70 +30,219 @@
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [],
+    "degraded": [
+      {
+        "condition": "risk_flag_false_positive",
+        "detail": "classify_complexity flagged touches_auth from message prose; risk_detectors.py is diff-authoritative and no auth path is touched. Override recorded."
+      },
+      {
+        "condition": "external_code_review_leg_truncated",
+        "detail": "Both code-review rounds lost the Gemini leg to the 4096-token output cap on a ~4,900-line diff. Recorded as verdict=unknown, not as a passing review. The OpenAI leg completed both rounds (reject, then revise) and drove the fixes."
+      }
+    ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest integration-tests/test_requirements_catalog_contract.py integration-tests/test_requirements_catalog_parsers.py integration-tests/test_fr_table_shape_convergence.py -q",
+      "runner": "uv run --extra dev pytest plugins/shipwright-plan/tests/test_check_plan_gates.py plugins/shipwright-plan/tests/test_check_sections.py -v",
       "exit_code": 0,
-      "tests_run": 23,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\req3-phase2-content-mono\\.shipwright\\runs\\iterate-2026-07-23-req3-phase2-content-mono\\surface_verification.log",
-      "timestamp": "2026-07-26T23:23:54.302Z",
-      "attempts": 1
+      "tests_run": 22,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\plan-phase-gates\\.shipwright\\runs\\iterate-2026-07-27-plan-phase-gates\\surface_verification.log",
+      "timestamp": "2026-07-27T08:37:25.570Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "the catalog carries 18 requirements, each with its own id, anchor, priority, basis and layers cell",
+          "behavior": "a bare NN-slug manifest parses exactly as before",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_contract.py::test_all_requirements_survive_with_unchanged_ids and ::test_every_requirement_has_an_explicit_anchor PASSED"
+          "evidence": "shared/tests/test_plan_manifest.py::test_bare_manifest_still_parses PASSED"
         },
         {
-          "behavior": "both production parsers read the changed catalog and agree on the same id set",
+          "behavior": "'NN-slug: dep, dep' declares dependencies",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_parsers.py::test_the_fr_table_reader_still_sees_every_requirement and ::test_the_heading_parser_sees_the_same_set PASSED"
+          "evidence": "test_plan_manifest.py::test_dependencies_are_parsed PASSED"
         },
         {
-          "behavior": "every requirement keeps a resolving deep link from the traceability matrix",
+          "behavior": "whitespace variants and a trailing comma are tolerated",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_contract.py::test_every_rtm_deep_link_resolves_end_to_end PASSED after regenerating the matrix"
+          "evidence": "test_plan_manifest.py::test_whitespace_and_trailing_comma_tolerated PASSED (3 cases)"
         },
         {
-          "behavior": "no criterion sentence carries a run id, a decision-record number, a path or a source filename",
+          "behavior": "interior-empty / duplicate / self / undeclared / non-grammar dependency all fail",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_contract.py forbidden-token scan over every (E) line PASSED"
+          "evidence": "test_plan_manifest.py 5 tests incl. ::test_dependency_must_match_the_section_grammar PASSED"
         },
         {
-          "behavior": "the newly minted requirement carries its decided basis and layers, pinned per requirement rather than in aggregate",
+          "behavior": "a duplicate section id fails",
           "disposition": "tested",
-          "evidence": "test_fr_table_shape_convergence.py::test_every_live_requirement_carries_its_decided_basis and ::test_the_migration_did_not_change_any_required_layers PASSED"
+          "evidence": "test_plan_manifest.py::test_duplicate_section_id_rejected PASSED"
         },
         {
-          "behavior": "the elicitation module keeps every section and load-bearing sentence the catalog cites",
+          "behavior": "a prerequisite numbered after its user fails",
           "disposition": "tested",
-          "evidence": "test_requirement_elicitation_refs.py + test_requirement_elicitation_rigor.py PASSED (28 cases)"
+          "evidence": "test_plan_manifest.py::test_prerequisite_after_its_user_fails + test_check_sections.py::test_prerequisite_after_its_user_fails_the_gate + test_verifiers_plan_gates.py::test_prerequisite_after_its_user_fails PASSED"
         },
         {
-          "behavior": "the glossary stays within its size ceiling and carries no legacy artifact path",
+          "behavior": "a dependency cycle cannot satisfy the order rule",
           "disposition": "tested",
-          "evidence": "test_bloat_defense_artifacts.py::test_glossary_under_loc_limit and test_artifact_path_canon.py PASSED"
+          "evidence": "test_plan_manifest.py::test_a_cycle_cannot_satisfy_the_order_rule PASSED"
         },
         {
-          "behavior": "the acceptance criteria say what is true of the product",
+          "behavior": "diagnostics name the manifest line number",
+          "disposition": "tested",
+          "evidence": "test_plan_manifest.py::test_errors_name_the_manifest_line, ::test_order_errors_name_their_line PASSED"
+        },
+        {
+          "behavior": "check-sections.py reports dependencies and order errors",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-plan/tests/test_check_sections.py 3 new tests PASSED"
+        },
+        {
+          "behavior": "the verdict is read from one sentinel line, exactly once, and it must be last",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_review_verdict.py 11 tests PASSED"
+        },
+        {
+          "behavior": "a verdict is never inferred from prose; an injected mention cannot outrank the real one",
+          "disposition": "tested",
+          "evidence": "test_review_verdict.py::test_verdict_is_never_inferred_from_prose, ::test_an_injected_verdict_cannot_outrank_the_real_one PASSED"
+        },
+        {
+          "behavior": "a truncated reply yields unknown",
+          "disposition": "tested",
+          "evidence": "test_review_verdict.py::test_a_truncated_reply_is_unknown PASSED (case taken from the real truncated review this run received)"
+        },
+        {
+          "behavior": "a provider that errored is unavailable, not unknown",
+          "disposition": "tested",
+          "evidence": "test_review_verdict.py::test_non_success_is_unavailable_not_unknown PASSED"
+        },
+        {
+          "behavior": "approve-vs-reject is a contradiction; differences of degree are not",
+          "disposition": "tested",
+          "evidence": "test_review_verdict.py::test_approve_versus_reject_is_a_contradiction, ::test_differences_of_degree_are_not_contradictions PASSED (5 cases)"
+        },
+        {
+          "behavior": "the comparison is symmetric",
+          "disposition": "tested",
+          "evidence": "test_review_verdict.py::test_comparison_is_symmetric PASSED (25 pairs)"
+        },
+        {
+          "behavior": "one silent reviewer requires a decision; neither answering does not",
+          "disposition": "tested",
+          "evidence": "test_review_verdict.py::test_only_one_reviewer_answering_must_be_decided_not_defaulted, ::test_neither_reviewer_answering_is_left_to_the_degraded_gate PASSED"
+        },
+        {
+          "behavior": "the empty-diff short-circuit stays inert and keeps the block's shape",
+          "disposition": "tested",
+          "evidence": "test_review_verdict.py::test_the_empty_diff_short_circuit_is_inert PASSED"
+        },
+        {
+          "behavior": "the marker carries verdicts, the derived contradiction and a schema version",
+          "disposition": "tested",
+          "evidence": "test_review_state_gate.py::test_verdicts_round_trip_through_the_marker PASSED"
+        },
+        {
+          "behavior": "the contradiction is recomputed on read, never trusted from the stored block",
+          "disposition": "tested",
+          "evidence": "test_review_state_gate.py::test_the_disagreement_is_recomputed_not_trusted, ::test_a_stored_contradiction_cannot_invent_one_either PASSED"
+        },
+        {
+          "behavior": "unknown / duplicate / malformed / non-reviewer verdict args are rejected",
+          "disposition": "tested",
+          "evidence": "test_review_state_gate.py 4 tests incl. ::test_an_unknown_reviewer_name_is_rejected PASSED"
+        },
+        {
+          "behavior": "a completed review with no verdicts is legacy, not ok",
+          "disposition": "tested",
+          "evidence": "test_review_state_gate.py::test_a_completed_review_with_no_verdicts_is_legacy_not_ok PASSED"
+        },
+        {
+          "behavior": "W5 warns on that legacy state while the in-session gate blocks on it",
+          "disposition": "tested",
+          "evidence": "test_verifiers_plan_w5.py::test_a_marker_predating_verdicts_warns_rather_than_failing + test_workflow_checks.py::test_w5_warns_when_a_completed_review_recorded_no_verdicts + test_check_plan_gates.py::test_a_completed_review_that_recorded_no_verdicts_blocks PASSED"
+        },
+        {
+          "behavior": "the skip branches are unchanged and need no verdicts",
+          "disposition": "tested",
+          "evidence": "test_verifiers_plan_w5.py::test_skip_handling_is_unchanged PASSED (4 cases) + test_review_state_gate.py::test_a_skip_needs_no_verdicts PASSED"
+        },
+        {
+          "behavior": "a recorded resolution clears the block; whitespace does not",
+          "disposition": "tested",
+          "evidence": "test_review_state_gate.py::test_recorded_resolution_clears_the_block, ::test_whitespace_is_not_a_resolution PASSED"
+        },
+        {
+          "behavior": "section shape is parsed (purpose, >=2 steps, tests) incl. heading synonyms",
+          "disposition": "tested",
+          "evidence": "test_plan_section_quality.py 10 tests PASSED"
+        },
+        {
+          "behavior": "linkage is read only from the Requirements: field, never from prose",
+          "disposition": "tested",
+          "evidence": "test_plan_section_quality.py::test_prose_mentioning_an_fr_is_not_a_declaration PASSED"
+        },
+        {
+          "behavior": "an empty Requirements: field adopts the format and fails it",
+          "disposition": "tested",
+          "evidence": "test_plan_section_quality.py::test_an_empty_requirements_field_counts_as_adopting_but_names_nothing, ::test_an_empty_field_beside_an_absent_one_still_adopts_the_split PASSED"
+        },
+        {
+          "behavior": "both coverage directions (every requirement lands; every section traces back)",
+          "disposition": "tested",
+          "evidence": "test_plan_section_quality.py 8 tests + test_verifiers_plan_gates.py 4 tests PASSED"
+        },
+        {
+          "behavior": "a legacy split warns, is strict_exempt, and names the migration",
+          "disposition": "tested",
+          "evidence": "test_verifiers_plan_gates.py::test_a_split_that_never_adopted_the_field_warns PASSED (2 checks)"
+        },
+        {
+          "behavior": "one adopting section holds the whole split, for linkage and for headings",
+          "disposition": "tested",
+          "evidence": "test_verifiers_plan_gates.py::test_one_adopting_section_holds_the_whole_split_to_the_format, ::test_heading_adoption_is_decided_per_split_not_per_section PASSED"
+        },
+        {
+          "behavior": "all four gates are registered in run_plan_checks and block phase completion",
+          "disposition": "tested",
+          "evidence": "test_verifiers_plan_gates_wiring.py 2 tests PASSED"
+        },
+        {
+          "behavior": "the in-session gate is strict where the phase verifier is lenient",
+          "disposition": "tested",
+          "evidence": "test_check_plan_gates.py::test_an_ill_formed_section_fails_even_in_a_new_plan PASSED"
+        },
+        {
+          "behavior": "--gate runs only what was asked for",
+          "disposition": "tested",
+          "evidence": "test_check_plan_gates.py::test_gate_selection_runs_only_what_was_asked_for PASSED"
+        },
+        {
+          "behavior": "the reviewer prompts carry the sentinel instruction",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-plan/tests/test_prompts.py PASSED; both live review runs this iterate received the instruction and the completing leg emitted it"
+        },
+        {
+          "behavior": "the inline fallback prompt carries the same verdict instruction",
           "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "whether a sentence in business language faithfully describes a mechanism is a reading judgement, not an oracle. This is the round's own finding, recorded as FR-01.16 criterion 9 and as campaign decision D7: an LLM may adjudicate a mechanically raised flag, never raise one. Each criterion instead carries an enforcement classification in the AC evidence ledger, and the criteria that CAN be pinned are enumerated above."
+          "reason_code": "covered-by-existing-test",
+          "reason": "default_review_prompts is exercised through test_external_review_cli.py's prompt-absent path; the instruction is a constant appended to it with no branch of its own, so a dedicated test would assert a literal."
+        },
+        {
+          "behavior": "a live provider emits a parseable sentinel",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "Needs a real LLM call. Probed twice anyway against live OpenRouter responses during this run; the parser itself is pinned deterministically by the rows above."
         }
       ],
       "counts": {
-        "testable": 7,
-        "tested": 7,
-        "untestable": 1,
+        "testable": 34,
+        "tested": 34,
+        "untestable": 2,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 8,
-        "covered_acs": 8
+        "acs": 12,
+        "covered_acs": 12
       }
     }
   },

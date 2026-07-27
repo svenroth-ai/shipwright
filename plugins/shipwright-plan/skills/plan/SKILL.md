@@ -68,12 +68,9 @@ with Step 1.
 See [research-protocol.md](references/research-protocol.md) for detailed guidance.
 
 **Goal:** Understand the codebase, existing patterns, and technical landscape.
-
-**Actions:**
-1. Read the spec file thoroughly
-2. If existing codebase: explore structure, read key files, understand patterns
-3. If new project: review similar codebases, best practices
-4. Use web search for unfamiliar technologies or patterns
+Read the spec thoroughly; explore an existing codebase's structure and
+patterns, or review comparable ones for a new project; web-search unfamiliar
+technologies.
 
 **Checkpoint:** Mental model formed. No file written — research informs all subsequent steps.
 
@@ -88,19 +85,11 @@ Adaptive questions on architecture / data model / UX; clarify
 ambiguities; identify risks.
 
 **Checkpoint:** Write `{planning_dir}/shipwright_plan_interview.md`
-with full transcript.
-
-**Write interview decisions to decision_log.md** for every
-architecture/design decision that goes beyond what the profile or
-project interview already decided (e.g. ORM vs raw SQL, component
-library variants, caching, API patterns):
-
-```bash
-uv run "{plugin_root}/../../shared/scripts/tools/write_decision_log.py" \
-  --section "Plan Interview — {split_name}" --commit "n/a" \
-  --context "{why}" --decision "{what}" \
-  --consequences "{impact}" --rejected "{alternatives}"
-```
+with full transcript, and log every architecture/design decision that goes
+beyond what the profile or project interview already settled to
+`decision_log.md` via `write_decision_log.py` — exact invocation in
+[interview-protocol.md](references/interview-protocol.md). This is the plan
+phase's half of canon C4.
 
 ---
 
@@ -126,14 +115,11 @@ See [plan-writing.md](references/plan-writing.md) and
 
 **Goal:** Write the implementation plan as prose with TDD approach.
 
-**Plan structure:**
-- Overview of approach
-- Section breakdown with SECTION_MANIFEST
-- For each section: goals, implementation steps, test strategy
-- Cross-cutting concerns
-
-See [section-index.md](references/section-index.md) for the
-SECTION_MANIFEST format.
+**Plan structure:** overview of approach; section breakdown with
+SECTION_MANIFEST; per section goals, implementation steps and test strategy;
+cross-cutting concerns. The manifest format — including how a section
+declares the sections it presupposes — is in
+[section-index.md](references/section-index.md).
 
 **Checkpoint:** Write `{planning_dir}/plan.md` with SECTION_MANIFEST block.
 
@@ -141,9 +127,8 @@ SECTION_MANIFEST format.
 
 ## Step 5: External LLM Review (Default + Fallback)
 
-See [step-5-external-review.md](references/step-5-external-review.md)
-for the full branch logic, and [external-review.md](references/external-review.md)
-for the underlying protocol.
+Full branch logic: [step-5-external-review.md](references/step-5-external-review.md);
+underlying protocol: [external-review.md](references/external-review.md).
 
 **This step is NOT optional.** One of three branches must run to
 completion, and the marker file
@@ -156,25 +141,25 @@ Read `external_review_status` from the session report (First Actions
 - **Branch A — `available`:** run
   `shared/scripts/tools/external_review.py --mode plan ...` (Gemini +
   OpenAI in parallel), integrate findings, log every finding to
-  `decision_log.md`, then go to Step 5b.
-- **Branch B — `missing_keys`:** STOP. Ask user verbatim (Option 1:
-  add key + retry → Branch A; Option 2: skip → Self-Review Fallback).
-  Do NOT proceed until the user chooses.
-- **Branch C — `user_disabled`:** print the disabled notice, run
-  the Self-Review Fallback sub-block ("2x denken" — 5-item checklist:
-  architectural soundness / section boundaries / TDD coverage / risk
-  hotspots / assumptions).
+  `decision_log.md`, then go to Step 5b. **Read the `contradiction` block
+  first:** `requires_resolution: true` means the two reviewers contradict
+  each other (one approves, one rejects), or a verdict could not be read.
+  That is its own outcome, not a finding count — put it to the user, take
+  their decision, and carry it into Step 5b. Never proceed on the approving
+  review alone.
+- **Branch B — `missing_keys`:** STOP and ask the user verbatim (add a key and
+  retry → Branch A, or skip → Self-Review Fallback). Do NOT proceed until they
+  choose.
+- **Branch C — `user_disabled`:** print the disabled notice, run the
+  Self-Review Fallback ("2x denken" 5-item checklist).
 
-After exactly one branch completes, **Step 5b** writes the marker:
-
-```bash
-uv run --project {plugin_root} {shared_root}/scripts/checks/mark-review-state.py \
-  --planning-dir "{planning_dir}" \
-  --status "{completed | skipped_user_opt_out | skipped_config_disabled}" \
-  --provider "{openrouter | gemini | openai | null}" \
-  --findings-count {N} \
-  --reason "{optional reason for skip}"
-```
+After exactly one branch completes, **Step 5b** writes the marker with
+`{shared_root}/scripts/checks/mark-review-state.py` — `--status`, `--provider`,
+`--findings-count`, `--reason`, one `--verdict {reviewer}={verdict}` per
+reviewer, and `--contradiction-resolution` when they disagreed. The
+contradiction is **derived** from the two verdicts; there is no flag to assert
+agreement they do not support. Exact invocation:
+[step-5-external-review.md](references/step-5-external-review.md).
 
 **Checkpoint:** `{planning_dir}/external_review_state.json` exists.
 
@@ -182,9 +167,18 @@ uv run --project {plugin_root} {shared_root}/scripts/checks/mark-review-state.py
 
 ## Step 6: Section Splitting
 
-**Gate:** Read `{planning_dir}/external_review_state.json`. If missing,
-STOP — Step 5 was not completed. Return to Step 5 and pick the
-appropriate branch. If present, proceed.
+**Gate — run it, don't eyeball it:**
+
+```bash
+uv run --project {plugin_root} {plugin_root}/scripts/checks/check-plan-gates.py \
+  --planning-dir "{planning_dir}" --gate review
+```
+
+Non-zero exit = STOP. It fails when Step 5 left no marker, or when the marker
+records a reviewer disagreement nobody decided. Return to Step 5, pick the
+appropriate branch or record the decision, then re-run. Resuming an
+interrupted session and the `W5` compliance check apply the same rule — one
+function, three callers, so they cannot drift.
 
 See [section-splitting.md](references/section-splitting.md) for protocol.
 
@@ -202,11 +196,11 @@ uv run --project {plugin_root} {plugin_root}/scripts/checks/generate-batch-tasks
 ```
 
 Each section file is written **by the `shipwright-plan:section-writer` subagent
-itself** — it has a Write tool and persists `{planning_dir}/sections/{NN-name}.md`
-directly (SS4). The `write-section-on-stop.py` SubagentStop hook is a
-**non-blocking fallback** only (no-op when the file exists; best-effort salvage
-from the transcript otherwise; never blocks). Step 7 (`check-sections.py`) is the
-gate. See [section-splitting.md](references/section-splitting.md) for details.
+itself** (it has a Write tool); the `write-section-on-stop.py` SubagentStop hook
+is a non-blocking salvage fallback, and Step 7 is the gate. Every section needs
+a `Requirements:` line, `## Overview`, ≥2 `## Implementation Steps`, and
+`## Tests First` — Step 9 fails without them. Details:
+[section-splitting.md](references/section-splitting.md).
 
 **Checkpoint:** All section files exist in `{planning_dir}/sections/`.
 
@@ -219,7 +213,11 @@ uv run --project {plugin_root} {plugin_root}/scripts/checks/check-sections.py \
   --planning-dir "{planning_dir}"
 ```
 
-Verify all sections declared in SECTION_MANIFEST have corresponding files.
+Verifies two things: every section declared in SECTION_MANIFEST has a file,
+and the numbering agrees with the dependencies each section declares
+(`03-api: 01-auth, 02-database`). A prerequisite numbered after the section
+that needs it lands in `order_errors` and exits non-zero. Format:
+[section-index.md](references/section-index.md).
 
 ---
 
@@ -227,10 +225,9 @@ Verify all sections declared in SECTION_MANIFEST have corresponding files.
 
 See [e2e-test-plan.md](references/e2e-test-plan.md) for guidance.
 
-**Runs if** `e2e_test_plan.enabled` is true in config, OR if no config
-exists and the project has a UI (`.shipwright/designs/screens/`
-contains HTML mockups, or `component_library` is set in profile —
-default enabled for UI projects).
+**Runs if** `e2e_test_plan.enabled` is true, OR no config exists and the
+project has a UI (HTML mockups under `.shipwright/designs/screens/`, or
+`component_library` set in the profile — default on for UI projects).
 
 **Goal:** Generate a Playwright E2E test plan — user-facing flows
 (login, CRUD, navigation), test scenarios with expected outcomes, POM
@@ -242,20 +239,28 @@ suggestions.
 
 ## Step 9: Completion
 
-See [step-9-completion.md](references/step-9-completion.md) for the
-full verification checklist and the C1+C2+C3+C4 + `phase_history`
-canon block (Iterate 12.2 — C5 skipped by policy: plan is internal
-decomposition, not user-facing).
+See [step-9-completion.md](references/step-9-completion.md) for the full
+checklist and the C1+C2+C3+C4 + `phase_history` canon block (C5 skipped by
+policy: plan is internal decomposition, not user-facing).
 
-**Verification gates (all must pass):**
+**Verification gates (all must pass).** Gates 5–8 are one command — run it:
+
+```bash
+uv run --project {plugin_root} {plugin_root}/scripts/checks/check-plan-gates.py \
+  --planning-dir "{planning_dir}" --gate sections
+```
 
 1. plan.md exists with SECTION_MANIFEST
 2. All declared sections have files
 3. Interview transcript exists
 4. E2E test plan exists (if enabled)
-5. Section Quality Gate (description + ≥2 implementation steps + test strategy)
-6. FR Coverage Check (every FR assigned to ≥1 section)
-7. Dependency Order (sections after their dependencies in SECTION_MANIFEST)
+5. Section Quality Gate (`## Overview` + ≥2 `## Implementation Steps` + `## Tests First`)
+6. FR Coverage Check (every live FR named by ≥1 section's `Requirements:` line)
+7. Section Trace Check (every section names ≥1 live FR — no work nobody asked for)
+8. Dependency Order (every declared dependency numbered before the section naming it)
+
+Non-zero exit = STOP. `_validate_plan` re-runs 5–8 below, so skipping this
+only defers the failure.
 
 **Phase complete:** set `SHIPWRIGHT_RUN_ID`, run
 `write-plan-config.py --status complete`, fire `record_event.py`,
@@ -269,15 +274,10 @@ commands.
 
 ## Error Handling
 
-See [error-handling.md](references/error-handling.md) for the full
-recovery procedures:
-
-- **Missing API Keys:** handled interactively in Step 5 Branch B
-  (Option 1 add+retry / Option 2 self-review). Never silently skipped.
-- **Section Writer Failure:** log → retry directly without subagent →
-  mark incomplete and continue.
-- **Context Window Pressure:** save → suggest `/clear` → resume from
-  any step.
+See [error-handling.md](references/error-handling.md) for the full recovery
+procedures: missing API keys (Step 5 Branch B — never silently skipped),
+section-writer failure (retry without the subagent, then mark incomplete), and
+context-window pressure (save, `/clear`, resume from any step).
 
 ---
 

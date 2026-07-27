@@ -1,0 +1,1 @@
+External LLM review now records each reviewer's overall verdict, so a disagreement between the two is its own outcome instead of an indistinguishable finding count. One reviewer approving while the other rejects — or a verdict that could not be read, or only one reviewer answering — is put to you and blocks section splitting until your decision is recorded.

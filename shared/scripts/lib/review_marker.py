@@ -25,20 +25,36 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .atomic_write import durable_atomic_write
+try:  # imported as ``lib.review_marker`` (shared/scripts on sys.path)
+    from .atomic_write import durable_atomic_write
+except ImportError:  # imported as top-level ``review_marker``
+    # Plugin call sites put ``shared/scripts/lib`` itself on sys.path — they
+    # cannot use the ``lib.`` spelling because their own ``scripts/lib``
+    # package shadows it (ADR-045). Both spellings must work: this module is
+    # the single authority on review state, and a second copy of that rule is
+    # exactly what the gate exists to prevent.
+    from atomic_write import durable_atomic_write  # type: ignore[no-redef]
 
 __all__ = [
     "ALLOWED_REVIEW_TYPES",
     "ALLOWED_STATUSES",
     "CODE_REVIEW_STATE_FILE",
+    "MARKER_SCHEMA",
     "REVIEW_STATE_FILE",
     "build_marker",
+    "evaluate_review_state",
     "marker_filename",
     "write_marker",
 ]
 
 REVIEW_STATE_FILE = "external_review_state.json"
 CODE_REVIEW_STATE_FILE = "external_code_review_state.json"
+
+#: Bumped to 2 when the marker gained per-reviewer ``verdicts`` and the derived
+#: ``contradiction``. A marker without the field pre-dates them and is read
+#: leniently — it cannot be expected to carry what did not exist when it was
+#: written (see :func:`evaluate_review_state`).
+MARKER_SCHEMA = 2
 
 ALLOWED_STATUSES = frozenset({
     "completed",
@@ -65,10 +81,19 @@ def build_marker(
     findings_count: int = 0,
     self_review_fallback_ran: bool = False,
     timestamp: str | None = None,
+    verdicts: dict[str, str] | None = None,
+    contradiction: dict[str, Any] | None = None,
+    contradiction_resolution: str | None = None,
 ) -> dict[str, Any]:
     """The marker payload. ``self_review_fallback_ran`` is implied by any
     skipped status — the self-review is mandatory, so a skipped external pass
-    always fell back to it."""
+    always fell back to it.
+
+    ``verdicts`` / ``contradiction`` carry what the finding count cannot: which
+    way each reviewer came down, and whether the two contradict each other.
+    ``contradiction_resolution`` is the operator's decision, and is what clears
+    the block in :func:`evaluate_review_state`.
+    """
     return {
         "status": status,
         "timestamp": timestamp or datetime.now(timezone.utc).isoformat(),
@@ -80,7 +105,91 @@ def build_marker(
         ),
         "reason": reason,
         "review_mode": review_type,
+        "marker_schema": MARKER_SCHEMA,
+        "verdicts": verdicts,
+        "contradiction": contradiction,
+        "contradiction_resolution": contradiction_resolution,
     }
+
+
+#: Outcomes of :func:`evaluate_review_state`.
+STATE_OK = "ok"
+STATE_BLOCK = "block"
+#: A ``completed`` external review that recorded no verdicts. Either the
+#: marker predates the field, or this run forgot to pass ``--verdict``. The
+#: two are indistinguishable from the marker alone, so the caller decides:
+#: ``W5`` warns (it may be auditing a plan from before the field existed), the
+#: in-session gate blocks (a plan being written now has no excuse, and
+#: silently omitting the flag would bypass the disagreement check entirely).
+STATE_LEGACY = "legacy"
+
+
+def evaluate_review_state(marker: dict[str, Any] | None) -> tuple[str, str]:
+    """Decide whether a review state is clear to proceed past.
+
+    Returns ``(state, reason)`` where state is :data:`STATE_OK`,
+    :data:`STATE_BLOCK` or :data:`STATE_LEGACY`.
+
+    The single authority for that question. The in-session Step 6 gate, the
+    ``setup-planning-session`` resume gate and the ``W5`` compliance check all
+    call in here, so the three cannot drift into three different definitions
+    of "reviewed".
+
+    Blocks on:
+
+    * no marker at all — the review step never ran to completion;
+    * a status outside the closed vocabulary;
+    * a ``skipped_*`` status with no justification;
+    * a disagreement nobody decided — the two reviewers contradict each other,
+      or both answered and their verdicts could not be compared. An unreadable
+      verdict is not agreement.
+
+    **The disagreement is recomputed from ``verdicts``, not read from the
+    stored ``contradiction`` block.** The stored block is a convenience for
+    readers; trusting it would let a hand-edited or half-written marker
+    (``verdicts`` saying approve/reject, ``contradiction: null``) walk straight
+    through every gate. Derived at write time and derived again at read time.
+    """
+    if not isinstance(marker, dict):
+        return STATE_BLOCK, "no review marker — the review step did not run to completion"
+
+    status = str(marker.get("status") or "")
+    if status not in ALLOWED_STATUSES:
+        return STATE_BLOCK, f"unknown review status {status!r}"
+
+    if status.startswith("skipped_"):
+        if not str(marker.get("reason") or "").strip():
+            return STATE_BLOCK, f"status={status} but reason is empty (justification required)"
+        # A skipped review has no reviewers and therefore no verdicts to weigh.
+        return STATE_OK, f"status={status}"
+
+    verdicts = marker.get("verdicts")
+    if not isinstance(verdicts, dict) or not verdicts:
+        return STATE_LEGACY, (
+            "review completed but recorded no reviewer verdicts — a "
+            "disagreement between the two could not have been noticed"
+        )
+
+    requires, detail = _disagreement(verdicts)
+    if requires and not str(marker.get("contradiction_resolution") or "").strip():
+        return STATE_BLOCK, f"unresolved reviewer disagreement: {detail}"
+
+    return STATE_OK, f"status={status}"
+
+
+def _disagreement(verdicts: dict[str, Any]) -> tuple[bool, str]:
+    """``(requires_resolution, reason)`` recomputed from the verdicts alone.
+
+    Imported lazily: this module is imported both as ``lib.review_marker`` and
+    as top-level ``review_marker``, and a module-level sibling import would
+    have to be spelled two ways (see the atomic_write import above).
+    """
+    try:
+        from .review_verdict import summarize_verdict_pair
+    except ImportError:
+        from review_verdict import summarize_verdict_pair  # type: ignore[no-redef]
+
+    return summarize_verdict_pair({k: str(v) for k, v in verdicts.items()})
 
 
 def write_marker(

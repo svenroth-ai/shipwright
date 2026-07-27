@@ -1,0 +1,1 @@
+/shipwright-plan: the four gates Step 9 listed as verification gates now run as code — every requirement lands in at least one section, every section names a requirement it serves, every section states purpose plus two steps plus how it is tested, and dependency order holds. One new command `check-plan-gates.py` runs them in session; the same four also block phase completion.

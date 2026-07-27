@@ -38,3 +38,19 @@ Write `{planning_dir}/shipwright_plan_interview.md` with:
 - Questions asked and answers received
 - Key decisions captured
 - Open questions flagged for later
+
+## Write interview decisions to decision_log.md
+
+For every architecture/design decision that goes beyond what the profile or
+the project interview already decided (ORM vs raw SQL, component library
+variants, caching, API patterns):
+
+```bash
+uv run "{plugin_root}/../../shared/scripts/tools/write_decision_log.py" \
+  --section "Plan Interview — {split_name}" --commit "n/a" \
+  --context "{why}" --decision "{what}" \
+  --consequences "{impact}" --rejected "{alternatives}"
+```
+
+This is the plan phase's half of canon C4 — `plan_checks` fails phase
+completion when the decision log carries no plan ADR.

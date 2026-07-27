@@ -56,10 +56,18 @@ def seed_canon_plan(
     sections_dir = split_dir / "sections"
     sections_dir.mkdir()
     for idx, name in enumerate(sections):
-        # First section mentions all FRs so coverage is trivially satisfied
-        body_frs = ", ".join(frs) if idx == 0 else ""
+        # Every section declares at least one requirement (nothing may be here
+        # that no requirement asked for); the first declares all of them so
+        # coverage is trivially satisfied. What "minimally-valid" means grew
+        # when the Step-9 gates became code — a section now also has to say
+        # what it is for, list two steps, and state how it is tested.
+        body_frs = ", ".join(frs) if idx == 0 else frs[0]
         (sections_dir / f"{name}.md").write_text(
-            f"# Section: {name}\n\n## Overview\nImplements: {body_frs}\n"
+            f"# Section: {name}\n\n"
+            f"Requirements: {body_frs}\n\n"
+            f"## Overview\nImplements {body_frs}.\n\n"
+            f"## Implementation Steps\n1. Write the failing test.\n2. Implement it.\n\n"
+            f"## Tests First\n- unit: {name} behaves as specified\n"
         )
 
     # plan_config.status=complete

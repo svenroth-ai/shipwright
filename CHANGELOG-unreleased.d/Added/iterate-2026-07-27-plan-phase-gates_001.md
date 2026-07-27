@@ -1,0 +1,1 @@
+/shipwright-plan: a SECTION_MANIFEST line can name the sections it presupposes (`03-api: 01-auth, 02-db`), and the numbering is checked against those declarations — a prerequisite placed after the section that needs it now fails instead of being an unverifiable promise.
