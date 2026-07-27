@@ -1,6 +1,6 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-27T09:08:48.846142Z. Items waiting for triage decision.
+> Auto-generated 2026-07-27T09:29:09.040930Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary

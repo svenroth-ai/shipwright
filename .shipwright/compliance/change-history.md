@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-07-27T09:08:42.773123+00:00
-Source-State: run=iterate-2026-07-27-artifact-state-stamping
-Total commits: 1213
+Generated: 2026-07-27T09:29:03.334261+00:00
+Source-State: run=iterate-2026-07-27-requirement-writeback-loop
+Total commits: 1214
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 349
-    "feat" : 336
+    "feat" : 337
     "chore" : 255
     "docs" : 147
     "refactor" : 75
@@ -375,11 +375,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 336 commits
+### Features (feat) — 337 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | compliance | produced artifacts name the state they describe (FR-01.10) | 66714199af06 |
+| 2026-07-27 | design,build | declare requirement impact per design round and build section | fdf1b91b9ac0 |
+| 2026-07-27 | compliance | produced artifacts name the state they describe (FR-01.10) (#448) | e869a02b60fb |
 | 2026-07-27 | triage | defer from the terminal; cap the failing-check detail (#444) | 631e08055ebc |
 | 2026-07-27 | project | give requirements a size rule, and stop the templates contradicting the basis rule (#442) | af72103d0e7a |
 | 2026-07-27 | spec | REQ-3 Phase 2 — every requirement now states what it guarantees (#436) | 28491e1c9631 |
@@ -720,7 +721,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | triage | sweep 60 outbox append(s) into branch | 9c8b62747190 |
+| 2026-07-27 | triage | sweep 60 outbox append(s) into branch | d40eb13dace4 |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -1283,7 +1284,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1213 |
+| Total commits | 1214 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1213 |
+| Human-authored commits | 1214 |
 
