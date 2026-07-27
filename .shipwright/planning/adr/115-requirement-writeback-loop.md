@@ -1,4 +1,9 @@
-# ADR-113 — The requirement write-back loop: one declaration, two call sites
+# ADR-115 — The requirement write-back loop: one declaration, two call sites
+
+> Renumbered from 113 after merge: #438 took that number first and other
+> decision records already cite ADR-113 meaning
+> `113-override-the-verdict-not-the-check.md`. Two parallel iterates each
+> read the highest number before the other landed.
 
 - **Run ID:** iterate-2026-07-27-requirement-writeback-loop
 - **Date:** 2026-07-27
