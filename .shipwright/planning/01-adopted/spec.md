@@ -328,6 +328,28 @@ _Where the work detail lives_ at the end of this document.
 - (E) Given a project with no browser tests yet and a plan describing user
   journeys, when the test phase runs, then runnable tests are written from those
   journeys instead of the whole browser layer being skipped for want of them.
+- (E) Given a plan describing several user journeys and browser tests that
+  already exist for some of them, when the test phase runs, then each journey is
+  reported individually as covered or not — a journey added to the plan later is
+  never passed over because some other journey has a test. On a project built
+  from scratch an uncovered journey stops the phase; on a project onboarded from
+  an existing codebase it is recorded as a follow-up for onboarding instead.
+  Whether a test genuinely exercises its journey is offered as an indication,
+  never as proof.
+- (E) Given a check that reports a failure without stopping the run, when the
+  session ends, then a tracked follow-up remains — so a suite that has been
+  failing for weeks is distinguishable from one that started failing today.
+- (E) Given a project that declared which failures predate its onboarding, when
+  the test phase reports, then those are reported as known and accepted,
+  separately from genuine failures, and the run is not called failing on their
+  account — the same list the audit phase reads, so the two never describe one
+  run differently. A declared list that cannot be read excuses nothing, and says
+  so.
+- (E) Given a test that failed and then passed when tried again, when results
+  are recorded, then it counts as a pass and stops nothing, and is reported
+  separately as having needed a retry — so a test that has needed one for weeks
+  becomes visible before it fails for good. Each test counts once however many
+  attempts it took.
 - (E) Given a project whose screens were designed as mockups first, when the test
   phase runs, then each screen is compared back to its mockup and every
   divergence is named — and a screen that matched before and diverges now is
@@ -374,6 +396,12 @@ _Where the work detail lives_ at the end of this document.
   are reported, then that check is reported as having failed and the run does
   not report success — a check that did not run is never counted as a clean
   result.
+- (E) Given a machine that has only some of the checks available, when results
+  are reported, then the report names the kinds of weakness that were not
+  looked for at all, and says they are unexamined rather than clean — so a
+  scan run with one check available never reads as a clean result for every
+  kind. A report that cannot say what it examined states that too, rather than
+  implying everything was.
 - (E) Given no scanner is available at all, when the phase starts, then it stops
   with setup instructions rather than reporting that nothing was found.
 - (E) Given a finding that exposes a leaked secret, when the report is written,

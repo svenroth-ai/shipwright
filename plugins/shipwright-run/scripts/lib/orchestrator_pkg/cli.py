@@ -218,17 +218,6 @@ def main() -> int:
         print(json.dumps(result, indent=2))
 
     elif args.command == "update-step":
-        # Argument validation before anything else: an override with no recorded
-        # reason is the gap FR-01.01 exists to close, so refuse it here with a
-        # readable message rather than letting update_step raise ValueError.
-        # (update_step enforces the same rule for library callers.)
-        if args.force and not (args.force_reason or "").strip():
-            parser.error(
-                '--force requires --force-reason "<why>": the validator still runs '
-                "under --force and what it found is recorded, but the person's "
-                "reason for going ahead has to be recorded with it."
-            )
-
         # Drivability guard (iterate-2026-07-14-phase-invocation-mode). `update-step` is the
         # v1 completion path; in a driven single_session run `single-session-apply` owns
         # phase completion — run/SKILL.md is explicit: "Do NOT ... call `orchestrator
@@ -257,6 +246,30 @@ def main() -> int:
                 ),
             }, indent=2))
             return 0
+
+        # An override with no recorded reason is the gap FR-01.01 exists to close,
+        # so refuse it here with a readable message rather than letting update_step
+        # raise ValueError. Placed AFTER the drivability guard so an inert command
+        # stays inert, and gated on `complete` because `--force` on any other
+        # status overrides nothing.
+        #
+        # This is DELIBERATELY stricter than the library on one arm: `update_step`
+        # skips the demand for a standalone (bare-phase) run, because there the
+        # gate never runs and nothing is recorded. The CLI still demands it —
+        # a person typing `--force` at a terminal is making an interactive
+        # override whether or not we have somewhere to file it. Do not "unify"
+        # these by loosening the CLI.
+        if (
+            args.status == "complete"
+            and args.force
+            and not (args.force_reason or "").strip()
+        ):
+            parser.error(
+                '--force requires --force-reason "<why>": the validator still runs '
+                "under --force and what it found is recorded, but the person's "
+                "reason for going ahead has to be recorded with it."
+            )
+
         config = update_step(
             project_root, args.step, args.status,
             force=args.force, force_reason=args.force_reason,

@@ -1,24 +1,70 @@
 # Step 5: Report Results
 
+**Step 5.0 — File follow-ups for the warning-only layers (before printing).**
+
+Three of the four non-blocking layers used to leave nothing behind once the
+session ended; only the performance budget filed anything. Run the emitter over
+the finished record so a suite that has been failing for weeks is
+distinguishable from one that just started:
+
+```bash
+uv run "{plugin_root}/scripts/lib/warning_followups.py" \
+  --project-root "{project_root}" --run-id "{run_id}" --commit "{commit}" --json
+```
+
+It reads `shipwright_test_results.json` (so it must run **after** every layer
+result is written), and emits one durable item per failing spec file, per
+inconsistent category, per diverging screen, and per test that only passed on
+retry. Items are deduplicated on the finding — **not** on the commit — so a
+persistent failure stays one open item instead of re-firing every commit.
+Emission never changes an exit code: a warning layer must not become blocking
+through its own bookkeeping.
+
+Its `summary` block also gives you the known-vs-genuine split for the printed
+summary below. Failures declared in `shipwright_known_failures.json` are
+reported as known-and-accepted and file nothing — they are not new work.
+
 **Print Summary:**
 ```
 ================================================================================
 SHIPWRIGHT-TEST RESULTS
 ================================================================================
 Unit tests:    {passed}/{total} passed ({duration}s)
+               {n} known-and-accepted (shipwright_known_failures.json), {m} genuine
 Integration:   {passed}/{total} passed ({duration}s) | SKIP: {reason}
 pgTAP:         {passed}/{total} passed ({duration}s) | SKIP: {reason}
 Smoke test:    {PASS | FAIL | SKIP} ({url}, {response_time}ms)
-E2E tests:     {passed}/{total} passed | SKIP
+E2E tests:     {passed}/{total} passed, {flaky} passed only on retry | SKIP
+               {n} known-and-accepted, {m} genuine
+Journeys:      {covered}/{planned} planned journeys covered | {gaps listed}
 Consistency:   {passed}/{total} categories consistent | SKIP
 Design fidelity: {passed}/{total} checked | SKIP
 Performance:   LH {score}/100 (budget {budget}), bundle {size}KB (budget {budget}KB), gate {warn|block} | SKIP: {reason}
 Security:      {via /shipwright-security | not run}
 
+Follow-ups filed: {n} (see .shipwright/triage.jsonl)
+
 Overall:       {PASS | FAIL}
-{Failed tests: list if any}
+{Failed tests: list if any, genuine failures FIRST}
 ================================================================================
 ```
+
+**Reporting rules for the honesty lines:**
+
+- **Known-and-accepted is reported separately from genuine, never merged into
+  one red number.** The audit phase already excuses baseline failures; if this
+  phase reports them as fresh, the two components hold different truths about
+  the same run — and the operator learns to ignore red, which is worse than any
+  single failure.
+- Omit the known/genuine line entirely when `shipwright_known_failures.json` is
+  absent. Say so explicitly when it is present but unreadable — an unreadable
+  list excuses nothing.
+- **A flaky test is a pass.** It does not block and does not enter
+  `Failed tests`. It is counted on its own so a test that has needed a retry
+  for weeks becomes visible before it fails for good.
+- The baseline is an **aggregate allowance** wherever only counts are
+  available. Do not name particular failures as accepted unless they were
+  matched by identity.
 
 **If profile has UI** (component_library set, or client-side framework detected):
 ```
