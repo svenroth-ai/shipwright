@@ -5,8 +5,8 @@
 
 ## Status summary
 
-- Total: 416
-- Triage: 23 | Promoted: 1 | Dismissed: 391 | Snoozed: 1
+- Total: 415
+- Triage: 23 | Promoted: 1 | Dismissed: 390 | Snoozed: 1
 
 ## Top 23 items (severity-sorted)
 
@@ -19,18 +19,18 @@
 
 ### Source: compliance (1 item)
 
-<a id="trg-554786d0"></a>
-- **Compliance: 4 open finding(s)** `id=trg-554786d0 | severity=high | kind=compliance → P1/compliance`
-  - 4 open compliance finding(s): D/D1, D/D3, H/H1, H/H2  - D/D1: Spec FR coverage in events — uncovered FRs — Must: FR-01.…
+<a id="trg-62316d55"></a>
+- **Compliance: 3 open finding(s)** `id=trg-62316d55 | severity=high | kind=compliance → P1/compliance`
+  - 3 open compliance finding(s): D/D1, D/D3, H/H1  - D/D1: Spec FR coverage in events — uncovered FRs — Must: FR-01.17; Sh…
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-compliance
     
-    Context: 4 open compliance finding(s): D/D1, D/D3, H/H1, H/H2.
+    Context: 3 open compliance finding(s): D/D1, D/D3, H/H1.
     Dashboard: .shipwright/compliance/dashboard.md
     Each finding + hint is listed in this item's detail.
     ```
-  - Promote: `triage_promote.py --id trg-554786d0 --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-62316d55 --task-ref EXT:<ref>`
 
 ### Source: github (1 item)
 
