@@ -21,6 +21,8 @@ yaml = pytest.importorskip("yaml")
 
 from lib import automerge_readiness as ar  # noqa: E402
 from lib.ci_workflow import (  # noqa: E402
+    CLAUDE_REVIEW_RUN_TEMPLATE_PATH,
+    CLAUDE_REVIEW_RUN_WORKFLOW_PATH,
     CLAUDE_REVIEW_TEMPLATE_PATH,
     CLAUDE_REVIEW_WORKFLOW_PATH,
     TEMPLATE_BY_PROFILE,
@@ -54,8 +56,20 @@ def test_known_workflows_match_convention_modules() -> None:
         Path(SECURITY_WORKFLOW_PATH).name,
         Path(CODEQL_WORKFLOW_PATH).name,
         Path(CLAUDE_REVIEW_WORKFLOW_PATH).name,
+        Path(CLAUDE_REVIEW_RUN_WORKFLOW_PATH).name,
     }
     assert set(ar.KNOWN_WORKFLOWS) == expected
+
+
+def test_posted_status_contexts_name_known_workflows() -> None:
+    """A posted-status entry for a file the doc never inspects is dead config.
+
+    Reverse drift guard: every key in POSTED_STATUS_CONTEXTS must be a workflow
+    KNOWN_WORKFLOWS actually visits, else its context silently never appears in
+    the table and adopters require a check nothing posts.
+    """
+    unknown = set(ar.POSTED_STATUS_CONTEXTS) - set(ar.KNOWN_WORKFLOWS)
+    assert not unknown, f"posted-status entries for uninspected workflows: {unknown}"
 
 
 # ---------------------------------------------------------------------------
@@ -78,6 +92,9 @@ def _build_sample_repo(root: Path, profile: str) -> None:
     _copy(TEMPLATE_BY_PROFILE[profile], CI_WORKFLOW_PATH)
     _copy(SECURITY_TEMPLATE_PATH, SECURITY_WORKFLOW_PATH)
     _copy(CLAUDE_REVIEW_TEMPLATE_PATH, CLAUDE_REVIEW_WORKFLOW_PATH)
+    # Both review stages, as adopt scaffolds them — stage 2 is where the
+    # required status context actually comes from.
+    _copy(CLAUDE_REVIEW_RUN_TEMPLATE_PATH, CLAUDE_REVIEW_RUN_WORKFLOW_PATH)
 
     codeql_src = (REPO_ROOT / CODEQL_TEMPLATE_PATH).read_text(encoding="utf-8")
     langs = CODEQL_LANGUAGES_BY_PROFILE[profile]
@@ -94,6 +111,13 @@ def _expected_requireable_names(root: Path) -> list[str]:
     names: list[str] = []
     for wf in ar.KNOWN_WORKFLOWS:
         path = root / ".github" / "workflows" / wf
+        # A workflow that POSTS its verdict as a commit status contributes that
+        # context, not its job names — reconstructed here independently so this
+        # stays a genuine cross-check rather than an echo of the production code.
+        posted = ar.POSTED_STATUS_CONTEXTS.get(wf)
+        if posted is not None:
+            names.append(posted)
+            continue
         parsed = yaml.safe_load(path.read_text(encoding="utf-8"))
         for job_id, job in (parsed.get("jobs") or {}).items():
             if not isinstance(job, dict):
@@ -119,11 +143,14 @@ def test_required_check_names_match_deployed_workflows(
         f"workflows declare {expected!r} — a mismatch means branch protection "
         f"silently never matches."
     )
-    # The codeql + security + advisory checks must concretely appear.
+    # The codeql + security + review checks must concretely appear.
     for lang in CODEQL_LANGUAGES_BY_PROFILE[profile]:
         assert f"Analyze ({lang})" in derived
     assert "Shipwright Security Scan" in derived
-    assert "claude-review" in derived
+    # The review gate is the status stage 2 POSTS, not a job name. Requiring a
+    # stage-1 job name instead would gate on the artifact being prepared while
+    # the review itself could still never run — the hole FR-01.17 closes.
+    assert "Claude Code Review" in derived
     # CI is matrix-expanded over both OSes.
     assert any("ubuntu-latest" in n for n in derived)
     assert any("windows-latest" in n for n in derived)
