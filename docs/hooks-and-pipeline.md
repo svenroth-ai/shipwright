@@ -2359,7 +2359,7 @@ not a canon target.
 |---|---|---|---|
 | **C1** | `phase_completed` event recorded in `shipwright_events.jsonl` | `shared/scripts/tools/record_event.py --type phase_completed --source <phase>` | **ERROR** |
 | **C2** | `.shipwright/agent_docs/build_dashboard.md` reflects the phase | `shared/scripts/tools/update_build_dashboard.py --phase <phase>` | **WARNING** |
-| **C3** | `.shipwright/agent_docs/session_handoff.md` regenerated with phase-specific reason | `shared/scripts/tools/generate_session_handoff.py --reason "<phase>: …"` | **WARNING** |
+| **C3** | `.shipwright/agent_docs/session_handoff.md` carries a canon marker naming the run being verified | `shared/scripts/tools/generate_session_handoff.py --canon-marker --phase <phase> --reason "<phase>: …"` | **WARNING** |
 | **C4** | `.shipwright/agent_docs/decision_log.md` has a new ADR referencing the phase | `shared/scripts/tools/write_decision_log.py --title …` | **ERROR** (only for decision-taking phases) |
 | **C5** | `CHANGELOG.md [Unreleased]` has a bullet under the right Keep-a-Changelog category | `shared/scripts/tools/append_changelog_entry.py --category <Added\|Changed\|Fixed\|…> --entry "…"` | **ERROR** (only for user-facing phases) |
 
@@ -2387,6 +2387,47 @@ accepts their conventions before failing:
   today.) The fallback is reachable even when `shipwright_events.jsonl`
   is empty or absent — the normal state of a freshly-adopted project
   that has run no iterates yet.
+
+### C3 Freshness — a Content Key, Not mtime
+
+Until iterate-2026-07-27-c3-phase-content-key, C3 compared the handoff's
+filesystem mtime against a 600-second budget. That fired on any run that
+waited more than ten minutes on CI — on the schedule, not on a defect —
+and filesystem mtime is not a content-staleness signal in a git repo
+anyway (checkout, branch-switch and worktree creation all reset it; see
+the standing comment at `shared/scripts/hooks/check_drift.py:10-16`).
+
+C3 now asks whether the handoff's **canon-marker frontmatter names the
+run being verified**. The check lives in
+`shared/scripts/tools/verifiers/handoff_freshness.py`, beside the F11
+check that asks the same question at iterate finalization — one module,
+one marker, one meaning of "fresh".
+
+**It keys on the run, not the phase.** `verify_phase.py --phase all`
+hands one `run_id` to eight phase dispatchers that all read the *same*
+`session_handoff.md`; the handoff is overwritten, never appended. Keying
+on the marker's `phase` would pass whichever phase wrote last and warn on
+the other seven. C1/C2/C4/C5 can ask per-phase questions because events,
+the dashboard, the decision log and the changelog all accumulate — C3
+reads a single mutable file. The marker's `phase` is *reported* in the
+result so the operator sees which phase wrote it.
+
+**Known bound:** if a phase skips its C3 step but a later phase of the
+same run writes the marker, C3 passes for both. Per-phase attribution
+would need a per-phase artifact.
+
+**Applicability.** `security`, `compliance` and `adopt` write no canon
+marker, so C3 reports an explicit SKIP for them rather than a permanent
+warning — the Stop-hook canon runner invokes C3 for every phase in
+`PLUGIN_TO_PHASE`. The producing set is `C3_CANON_PHASES`, kept aligned
+with `PLUGIN_TO_PHASE` by a two-direction drift test.
+
+**Run-id provenance.** The writer stamps `SHIPWRIGHT_RUN_ID`;
+`phase_validators._run_canon_checks` and
+`hooks/audit_phase_quality_on_stop.py` resolve the same id and pass it
+through verbatim. A degenerate run id (`""` / `"unknown"`) reaches the
+check as itself and is reported as "cannot evaluate" — never synthesized,
+which would make an unanswerable check look answered.
 
 ### C4 Skip Criteria — Who Gets an ADR
 
@@ -2540,7 +2581,9 @@ shared/scripts/tools/
   append_phase_history.py          # phase_history write path
   verifiers/
     __init__.py
-    common.py                      # CheckResult, readers, generic C1–C5, ADR F1/F2/F3
+    common.py                      # CheckResult, readers, generic C1/C2/C4/C5, ADR F1/F2/F3
+    handoff_freshness.py           # session_handoff freshness by CONTENT — the F11 check
+                                   #   and canon C3, both keyed on the canon marker's run_id
     iterate_checks.py              # iterate finalization checks (5 @12.0 + F0.5 surface + spec-impact + no-direct-decision_log gates)
     runtime_checks.py              # Zombie-task replay check                     — 12.0b
     project_checks.py              # Project phase-own + canon + phase_history   — 12.1

@@ -1,43 +1,44 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-adopt-inherited-baseline"
+run_id: "iterate-2026-07-27-c3-phase-content-key"
 phase: "iterate"
-reason: "iterate: inherited failures and coverage gaps are recorded as inherited"
-timestamp: "2026-07-27T14:35:23.623868+00:00"
+reason: "iterate: the phase canon asks whether the handoff belongs to this run"
+timestamp: "2026-07-27T16:36:23.078641+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 14:35:23 UTC
+> Auto-generated 2026-07-27 16:36:23 UTC
 
 ## Session Info
 
-- **Session ID**: 98053cc9-0f7c-4be8-b1cc-8b5d8b25d84b
-- **Timestamp**: 2026-07-27 14:35:23 UTC
-- **Reason**: iterate: inherited failures and coverage gaps are recorded as inherited
+- **Session ID**: 537acd2e-45f2-4a62-8eba-dc5e3fa65db8
+- **Timestamp**: 2026-07-27 16:36:23 UTC
+- **Reason**: iterate: the phase canon asks whether the handoff belongs to this run
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-adopt-inherited-baseline
-- **Date**: 2026-07-27T14:35:17.611324Z
-- **Type**: feature
+- **Run ID**: iterate-2026-07-27-c3-phase-content-key
+- **Date**: 2026-07-27T16:36:15.112994Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/adopt-inherited-baseline
-- **ADR**: iterate-2026-07-27-adopt-inherited-baseline
+- **Branch**: iterate/c3-phase-content-key
+- **ADR**: iterate-2026-07-27-c3-phase-content-key
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-adopt-inherited-baseline.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-c3-phase-content-key.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/adopt-inherited-baseline
-- **Run ID**: iterate-2026-07-27-adopt-inherited-baseline
-- **Spec**: .shipwright/planning/iterate/2026-07-27-adopt-inherited-baseline.md
+- **Branch**: iterate/c3-phase-content-key
+- **Run ID**: iterate-2026-07-27-c3-phase-content-key
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-c3-phase-content-key.md
 - **Complexity**: medium
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T14:33:44)
+- **External Review Marker**: stale (predates spec (2026-07-27T16:16:32))
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -51,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/adopt-inherited-baseline
-- **Last Commit**: 8396a0f8 chore(triage): sweep 1 outbox append(s) into branch
+- **Branch**: iterate/c3-phase-content-key
+- **Last Commit**: 2523dfcc chore(triage): sweep 3 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +69,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-a5ff7d12 | grade_snapshot | — | 2026-07-27 |
+| evt-e0b8fd18 | work_completed | iterate (iterate: the phase canon asks whether the handoff belongs to this run) | 2026-07-27 |
 | evt-942e3e04 | grade_snapshot | — | 2026-07-27 |
 | evt-f2747703 | work_completed | iterate (iterate: inherited failures and coverage gaps are recorded as inherited) | 2026-07-27 |
 | evt-38795ac5 | grade_snapshot | — | 2026-07-27 |
-| evt-f540a880 | work_completed | iterate (iterate: the four Step-9 gates become code, closing trg-88f721be (3 of 3)) | 2026-07-27 |
-| evt-0b2bb01b | grade_snapshot | — | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 373
-- **Last iterate**: change — iterate: inherited failures and coverage gaps are recorded as inherited (2026-07-27)
+- **Total work events**: 374
+- **Last iterate**: change — iterate: the phase canon asks whether the handoff belongs to this run (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

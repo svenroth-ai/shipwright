@@ -55,7 +55,7 @@ def _project(tmp_path: Path) -> Path:
     return root
 
 
-def _write_real_handoff(root: Path, run_id: str) -> Path:
+def _write_real_handoff(root: Path, run_id: str, phase: str = "iterate") -> Path:
     """Generate the handoff through the REAL writer, with a real canon marker."""
     content = writer.generate_handoff(
         root,
@@ -63,7 +63,7 @@ def _write_real_handoff(root: Path, run_id: str) -> Path:
         reason="finalize",
         canon_frontmatter={
             "run_id": run_id,
-            "phase": "iterate",
+            "phase": phase,
             "reason": "finalize",
             "timestamp": "2026-07-27T09:00:00+00:00",
         },
@@ -119,6 +119,84 @@ def test_both_readers_use_the_same_parser_object(tmp_path):
     from lib.canon_frontmatter import parse_canon_frontmatter
 
     assert stop_hook._parse_canon_frontmatter is parse_canon_frontmatter
+
+
+# --- C3, through its real production path -------------------------------------
+#
+# iterate-2026-07-27-c3-phase-content-key. C3 has a THIRD consumer of the same
+# marker: the Stop-hook phase-quality canon runner. The unit suite proves the
+# check; these prove the runner reaches it with a real run id and a real
+# writer's file — the join openai R1 of the plan review asked for, rather than
+# a direct call with hand-aligned values.
+
+
+def _c3(findings: list[dict]) -> dict:
+    return next(f for f in findings if f["id"] == "C3")
+
+
+def test_the_canon_runner_passes_c3_on_the_real_writers_marker(tmp_path):
+    """Writer → disk → the runner the Stop hook actually calls."""
+    from lib.phase_quality import run_canon_checks
+
+    root = _project(tmp_path)
+    _write_real_handoff(root, RUN, phase="build")
+
+    finding = _c3(run_canon_checks("build", root, RUN))
+
+    assert finding["status"] == "PASS", finding["evidence"]
+    assert RUN in finding["evidence"]
+
+
+def test_the_canon_runner_warns_when_the_handoff_belongs_to_another_run(tmp_path):
+    from lib.phase_quality import run_canon_checks
+
+    root = _project(tmp_path)
+    _write_real_handoff(root, OTHER_RUN, phase="build")
+
+    finding = _c3(run_canon_checks("build", root, RUN))
+
+    assert finding["status"] == "WARN"
+    assert OTHER_RUN in finding["evidence"]
+
+
+def test_the_canon_runner_skips_c3_for_a_phase_with_no_producer(tmp_path):
+    """`security` is audited by the Stop hook but writes no canon marker. Without
+    the applicability set this is where a content key would warn forever."""
+    from lib.phase_quality import run_canon_checks
+
+    root = _project(tmp_path)
+    _write_real_handoff(root, RUN, phase="build")
+
+    finding = _c3(run_canon_checks("security", root, RUN))
+
+    assert finding["status"] == "SKIP"
+
+
+def test_a_degenerate_run_id_reaches_c3_as_itself(tmp_path):
+    """The runner must not synthesize a run id to fill the gap — an audit with no
+    resolvable run has to read as unanswerable, not as a stale handoff."""
+    from lib.phase_quality import run_canon_checks
+
+    root = _project(tmp_path)
+    _write_real_handoff(root, RUN, phase="build")
+
+    finding = _c3(run_canon_checks("build", root, "unknown"))
+
+    assert finding["status"] == "WARN"
+    assert "cannot evaluate" in finding["evidence"]
+
+
+def test_the_stop_hook_call_site_supplies_the_run_id():
+    """Drift guard on the join itself: `run_canon_checks` defaults `run_id` to ""
+    so the Stop hook keeps working if this argument is ever dropped — which would
+    silently turn every C3 into "cannot evaluate". Pin the production call."""
+    import inspect
+
+    import audit_phase_quality_on_stop as audit
+
+    src = inspect.getsource(audit)
+
+    assert "run_canon_checks(phase, project_root, run_id)" in src
 
 
 def test_hook_runs_from_an_unrelated_working_directory(tmp_path):
