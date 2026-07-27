@@ -906,8 +906,9 @@ If a session start finds a legacy top-level `planning/` directory, the drift det
 - Integration test results (real DB CRUD + RLS verification, pass/fail counts)
 - pgTAP test results (schema-level RLS/constraint verification)
 - Smoke test result (HTTP status against your dev URL)
-- E2E test results (pass/fail/skip counts)
+- E2E test results (pass/fail/skip counts, plus how many passed only after a retry)
 - Auto-generated E2E specs in `e2e/flows/` and `e2e/pages/` if test plans exist but specs do not
+- A per-journey coverage report: every user journey your plan describes is reported as covered or not, so a journey added to the plan later cannot slip through because some other journey already has a test
 - `playwright-report/index.html` -- interactive HTML report with screenshots, linked from compliance reports
 - Design fidelity verification results (code-level comparison of implementation vs mockup HTML)
 - Design fidelity triage results in `shipwright_test_results.json` (regressions, persistent failures, resolved screens)
@@ -922,27 +923,31 @@ If a session start finds a legacy top-level `planning/` directory, the drift det
 3. Runs integration tests against a real (localhost) Supabase instance (`npx vitest run --config vitest.integration.config.ts`). These verify CRUD operations, RLS policies, and complex queries with no mocks. Uses cascade-delete cleanup via test users. Fast-fails on infrastructure errors (ECONNREFUSED). Skipped if profile has no `testing.integration` config or `tests/integration/` directory does not exist.
 4. Runs pgTAP database tests (`supabase test db`) if `supabase/tests/database/` exists. These verify RLS policies and constraints at the schema level.
 5. Runs a smoke test against your dev URL (checking for HTTP 200 on `/api/health`). If the server is not running, it attempts to diagnose and fix the issue before skipping.
-6. If E2E test plans exist from `/shipwright-plan` but no `.spec.ts` files have been written yet, it generates Playwright specs from the plans using the Page Object Model pattern.
+6. Checks browser-test coverage **for each planned user journey**, and generates Playwright specs from the plans (Page Object Model pattern) when none have been written yet. On a project built from scratch, a journey with no test stops the phase; on a project onboarded from an existing codebase it becomes a tracked follow-up for `/shipwright-adopt` instead. Whether a test really exercises its journey is offered as an indication (the names line up), never as proof.
 7. Runs Playwright E2E tests (starts and stops the dev server automatically). Failed tests can be debugged with a browser-fixer subagent that reads screenshots and error messages.
 8. Runs design fidelity verification as a **regressions-only safety net**. Reads `design-fidelity-report.json` (what the build phase already verified) and triages each screen: regressions (was passing in build, now failing), persistent failures (build gave up), and unchecked screens (never verified). Only fixes regressions and persistent failures -- resolved screens are skipped. Uses code-level structural comparison (no screenshots) with agent deep analysis for flagged screens.
 9. Runs a performance budget check when the stack profile or `shipwright_test_config.json` opts in: a Lighthouse score + LCP measurement (through the project's existing Playwright Chromium -- no extra browser install) and a gzipped bundle-size budget. The `warn` gate (default) logs missed budgets without blocking; the opt-in `block` gate fails the phase.
-10. Runs an E2E results verification step: compares `shipwright_test_results.json` against Playwright's authoritative `e2e-results.json` to catch count discrepancies (e.g., setup project tests being counted as E2E tests). If numbers diverge, the pipeline corrects `shipwright_test_results.json` and documents the reason.
-11. Produces a structured results summary with explicit status for every layer.
+10. Runs an E2E results verification step: compares `shipwright_test_results.json` against Playwright's authoritative `e2e-results.json` to catch count discrepancies (e.g., setup project tests being counted as E2E tests). If numbers diverge, the pipeline corrects `shipwright_test_results.json` and documents the reason. Each test counts once no matter how many attempts it took, and a test that failed and then passed on a retry is counted separately -- it is still a pass and stops nothing, but you can see it before it fails for good.
+11. Files a tracked follow-up for anything a non-blocking layer found, so it outlives the session (see below), and produces a structured results summary with explicit status for every layer.
 
 **The eight test layers and enforcement rules** are central to how the pipeline decides whether to continue:
 
-| Layer | On Failure | Rationale |
-|-------|-----------|-----------|
-| Unit tests | Pipeline stops (blocking) | Unit tests are deterministic -- failure means a real bug |
-| Integration tests | Autofix (3 retries, fast-fail for infra errors), then blocking | Deterministic against real DB -- failure means a real schema/RLS bug |
-| pgTAP DB tests | Autofix (3 retries), then blocking | Schema-level RLS/constraint verification |
-| Smoke test | Pipeline stops (blocking) | If the app is not running, deployment is pointless |
-| E2E tests | Warning only (non-blocking) | E2E tests can be flaky; failures are logged but do not block |
-| Cross-page consistency | Warning only (advisory) | Cross-page UI inconsistencies are logged but do not block deployment |
-| Design fidelity | Warning only (advisory) | Fidelity mismatches are logged but do not block deployment |
-| Performance budget | Warning only by default; blocking under the opt-in `block` gate | Lighthouse score / LCP + gzipped bundle budget; `warn` ships an honest signal without breaking flow, `block` once budgets are calibrated |
+| Layer | On Failure | Leaves behind | Rationale |
+|-------|-----------|---------------|-----------|
+| Unit tests | Pipeline stops (blocking) | -- (the run stops) | Unit tests are deterministic -- failure means a real bug |
+| Integration tests | Autofix (3 retries, fast-fail for infra errors), then blocking | -- (the run stops) | Deterministic against real DB -- failure means a real schema/RLS bug |
+| pgTAP DB tests | Autofix (3 retries), then blocking | -- (the run stops) | Schema-level RLS/constraint verification |
+| Smoke test | Pipeline stops (blocking) | -- (the run stops) | If the app is not running, deployment is pointless |
+| E2E tests | Warning only (non-blocking) | a follow-up per failing spec file | E2E tests can be flaky; failures are logged but do not block |
+| Cross-page consistency | Warning only (advisory) | a follow-up per inconsistent category | Cross-page UI inconsistencies are logged but do not block deployment |
+| Design fidelity | Warning only (advisory) | a follow-up per diverging screen | Fidelity mismatches are logged but do not block deployment |
+| Performance budget | Warning only by default; blocking under the opt-in `block` gate | a follow-up per missed budget | Lighthouse score / LCP + gzipped bundle budget; `warn` ships an honest signal without breaking flow, `block` once budgets are calibrated |
 
 Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason}`) before the phase is considered complete. If any layer has no result, the phase stays in `incomplete` status.
+
+**A failure that does not stop the run still leaves a follow-up.** A warning printed to your terminal is gone when the session ends -- and then a suite that has been failing for six weeks looks exactly like one that broke this morning. Every non-blocking layer files a tracked item you can see in the Triage Inbox, deduplicated on the finding itself, so a long-standing failure stays one item rather than multiplying with every commit.
+
+**Failures you already accepted are reported separately.** If your project has a `shipwright_known_failures.json` listing failures that predate onboarding, the test phase reads that same list the audit phase reads, and reports those failures as known-and-accepted rather than as fresh breakage. Without this, an onboarded project reports a permanently red run while the audit calls the same run fine -- and the real cost is not the disagreement, it is that you learn to ignore red.
 
 **Standalone usage:** Yes. You can run `/shipwright-test` at any time against any project with a recognized profile. It works independently of the pipeline. The `--fix` flag and `--e2e-only` flag give you targeted control outside the pipeline.
 

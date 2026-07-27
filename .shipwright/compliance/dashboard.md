@@ -15,9 +15,9 @@ Scope: library
 | | Dimension | Signal | Anchor |
 |---|-----------|--------|--------|
 | ✅ | Requirement traceability | 17/18 FRs covered; 383/383 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
-| ✅ | Test health | latest full suite 4946/4961 (2026-07-23) | automated tests pass (OpenSSF Scorecard) |
+| ✅ | Test health | latest full suite 6978/6978 (2026-07-27) | automated tests pass (OpenSSF Scorecard) |
 | ✅ | Change traceability | 383/383 changes linked to a commit, ADR or test run | change provenance (SLSA) |
-| ⚠️ | Change reconciliation | 18/18 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
+| ⚠️ | Change reconciliation | 17/18 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
 | ⚠️ | Security | 3 open high/critical | no open high/critical vulns (NIST SSDF) |
 | ✅ | Size / maintainability discipline | ratchet delta -88 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
 | ✅ | Dependency hygiene | 0 unresolved / 11 licenses; 0 copyleft | dependency license & risk (OWASP) |
@@ -58,12 +58,12 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Pipeline phases completed | n/a (adopted) | INFO |  |
 | Work events (iterate) | 383 changes | INFO |  |
 | Recent changes traced to an FR | 20/30 (67%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
-| All unit tests passing | 4946/4961 | WARN | 15/4961 not green in last full suite — see test-evidence.md; +25 change(s) since last full suite |
+| All unit tests passing | 6978/6978 | PASS | +16 change(s) since last full suite |
 | Architecture decisions | 328 ADRs | INFO |  |
-| Iterate tests passing | 53/85 testable changes tested | WARN | 32 testable change(s) without tests — see test-evidence.md |
+| Iterate tests passing | 54/85 testable changes tested | WARN | 31 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 11 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 21 open | WARN | 21 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Triage open | 20 open | WARN | 20 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit (grandfathered) | 125 | INFO |  |
 | Bloat in allowlist | 159 entries | INFO |  |
 | Bloat ratchet delta | -88 lines | PASS |  |

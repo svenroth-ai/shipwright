@@ -9,8 +9,8 @@ Consistency-audit: never run
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 383 |
-| Total unit tests (latest full suite) | 4946/4961 (2026-07-23) |
-| New tests from iterations | +220 |
+| Total unit tests (latest full suite) | 6978/6978 (2026-07-27) |
+| New tests from iterations | +299 |
 
 ## Test Progression
 
@@ -24,22 +24,22 @@ Consistency-audit: never run
 | 6 | the phase canon asks whether the handoff belongs to this run | [iterate](traceability-matrix.md#evt-e0b8fd18) | — | +0 | — | — | 2026-07-27 |
 | 7 | bounded sharing-violation retry on both sides of the atomic-write boundary | [iterate](traceability-matrix.md#evt-92094b2e) | — | +0 | — | — | 2026-07-27 |
 | 8 | the merge state is a vocabulary, not a BLOCKED flag | [iterate](traceability-matrix.md#evt-d256a84e) | — | +0 | — | — | 2026-07-27 |
-| 9 | The handoff's progress tally stops overstating, the dispatch pointer stops claiming phases are in flight when they are not, and the override record stops asserting a gate passed where no gate exists. | [iterate](traceability-matrix.md#evt-67df62f3) | — | +0 | — | — | 2026-07-27 |
-| 10 | inherited failures and coverage gaps are recorded as inherited | [iterate](traceability-matrix.md#evt-f2747703) | — | +0 | — | — | 2026-07-27 |
-| 11 | the four Step-9 gates become code, closing trg-88f721be (3 of 3) | [iterate](traceability-matrix.md#evt-f540a880) | — | +0 | — | — | 2026-07-27 |
-| 12 | reviewer verdicts recorded, disagreement is its own outcome (1 of 3) | [iterate](traceability-matrix.md#evt-5ecd7d7e) | — | +0 | — | — | 2026-07-27 |
-| 13 | section dependencies are declarable, so the numbering is checkable (2 of 3) | [iterate](traceability-matrix.md#evt-8cab1d1d) | — | +0 | — | — | 2026-07-27 |
-| 14 | name the blocker instead of reporting a weaker signal | [iterate](traceability-matrix.md#evt-368b0d6c) | — | +0 | — | — | 2026-07-27 |
-| 15 | the derived requirements catalogue announces itself | [iterate](traceability-matrix.md#evt-cdd626e1) | — | +0 | — | — | 2026-07-27 |
-| 16 | the review gate stops being bypassable (fail-closed + fork review) | [iterate](traceability-matrix.md#evt-78684181) | — | +0 | — | — | 2026-07-27 |
-| 17 | Overriding a phase gate now runs the check anyway and records what it found plus the reason given, and the session handoff states which phases are finished and which one was interrupted. | [iterate](traceability-matrix.md#evt-4794dcc1) | — | +0 | — | — | 2026-07-27 |
-| 18 | requirement granularity guidance + advisory I6 check + the Basis-assumed template contradiction | [iterate](traceability-matrix.md#evt-9ad5050b) | — | +0 | — | — | 2026-07-27 |
-| 19 | triage defer from the terminal + failing-check detail cap | [iterate](traceability-matrix.md#evt-2aa40a94) | — | +0 | — | — | 2026-07-27 |
-| 20 | Evidence documents and test-run records now name which version of the project they describe, not just when they were written. | [iterate](traceability-matrix.md#evt-37719eaa) | — | +0 | — | — | 2026-07-27 |
-| 21 | The F0 suite runner files its own triage entry for a unit red in parallel and green alone, never auto-closes it, and exits 3 if the observation could not be recorded. | [iterate](traceability-matrix.md#evt-0acddcf6) | — | +0 | — | — | 2026-07-27 |
-| 22 | hosting rollback uses the target ref, polls liveness to the target's deadline, gates on stored-data drift, and halts loudly when the way back fails | [iterate](traceability-matrix.md#evt-a345a59f) | — | +0 | — | — | 2026-07-27 |
-| 23 | compliance evidence discloses when the cross-check last ran | [iterate](traceability-matrix.md#evt-1c7c2446) | — | +0 | — | — | 2026-07-27 |
-| 24 | changelog writer preserves the history it read | [iterate](traceability-matrix.md#evt-320397d2) | — | +0 | — | — | 2026-07-27 |
+| 9 | inherited failures and coverage gaps are recorded as inherited | [iterate](traceability-matrix.md#evt-f2747703) | — | +0 | — | — | 2026-07-27 |
+| 10 | the four Step-9 gates become code, closing trg-88f721be (3 of 3) | [iterate](traceability-matrix.md#evt-f540a880) | — | +0 | — | — | 2026-07-27 |
+| 11 | reviewer verdicts recorded, disagreement is its own outcome (1 of 3) | [iterate](traceability-matrix.md#evt-5ecd7d7e) | — | +0 | — | — | 2026-07-27 |
+| 12 | section dependencies are declarable, so the numbering is checkable (2 of 3) | [iterate](traceability-matrix.md#evt-8cab1d1d) | — | +0 | — | — | 2026-07-27 |
+| 13 | name the blocker instead of reporting a weaker signal | [iterate](traceability-matrix.md#evt-368b0d6c) | — | +0 | — | — | 2026-07-27 |
+| 14 | the derived requirements catalogue announces itself | [iterate](traceability-matrix.md#evt-cdd626e1) | — | +0 | — | — | 2026-07-27 |
+| 15 | the review gate stops being bypassable (fail-closed + fork review) | [iterate](traceability-matrix.md#evt-78684181) | — | +0 | — | — | 2026-07-27 |
+| 16 | Overriding a phase gate now runs the check anyway and records what it found plus the reason given, and the session handoff states which phases are finished and which one was interrupted. | [iterate](traceability-matrix.md#evt-4794dcc1) | — | +0 | — | — | 2026-07-27 |
+| 17 | requirement granularity guidance + advisory I6 check + the Basis-assumed template contradiction | [iterate](traceability-matrix.md#evt-9ad5050b) | — | +0 | — | — | 2026-07-27 |
+| 18 | triage defer from the terminal + failing-check detail cap | [iterate](traceability-matrix.md#evt-2aa40a94) | — | +0 | — | — | 2026-07-27 |
+| 19 | Evidence documents and test-run records now name which version of the project they describe, not just when they were written. | [iterate](traceability-matrix.md#evt-37719eaa) | — | +0 | — | — | 2026-07-27 |
+| 20 | The F0 suite runner files its own triage entry for a unit red in parallel and green alone, never auto-closes it, and exits 3 if the observation could not be recorded. | [iterate](traceability-matrix.md#evt-0acddcf6) | — | +0 | — | — | 2026-07-27 |
+| 21 | hosting rollback uses the target ref, polls liveness to the target's deadline, gates on stored-data drift, and halts loudly when the way back fails | [iterate](traceability-matrix.md#evt-a345a59f) | — | +0 | — | — | 2026-07-27 |
+| 22 | compliance evidence discloses when the cross-check last ran | [iterate](traceability-matrix.md#evt-1c7c2446) | — | +0 | — | — | 2026-07-27 |
+| 23 | changelog writer preserves the history it read | [iterate](traceability-matrix.md#evt-320397d2) | — | +0 | — | — | 2026-07-27 |
+| 24 | the test phase's record tells the truth about the run (trg-12b4cf3f) | [iterate](traceability-matrix.md#evt-0c2d2662) | unit | +79, 5 mod | 6978/6978 | PASS | 2026-07-27 |
 | 25 | REQ-3 Phase 2 content round - all 18 requirements walked or minted | [iterate](traceability-matrix.md#evt-ea7203ec) | — | +0 | — | — | 2026-07-26 |
 | 26 | Requirement gathering now follows one shared, thorough interview method across the project, adopt and iterate steps, and a new requirement records that guarantee. | [iterate](traceability-matrix.md#evt-11304ded) | unit | +0 | 4946/4961 | PASS (15 skipped) | 2026-07-23 |
 | 27 | The automated design check no longer flags a false problem for projects that were adopted into Shipwright and never went through the design/mockup step. | [iterate](traceability-matrix.md#evt-a8a0f759) | unit | +0 | 26/26 | PASS | 2026-07-23 |
@@ -406,36 +406,36 @@ _Synthesized from per-iterate **unit** results — Integration / pgTAP / E2E / S
 
 | Run | Trigger | Unit | Integration | pgTAP | E2E | Smoke | Date |
 |-----|---------|------|-------------|-------|-----|-------|------|
-| 1 | iterate | 28/28 | — | — | — | — | 2026-07-11 |
-| 2 | iterate | 22/22 | — | — | — | — | 2026-07-11 |
-| 3 | iterate | 37/37 | — | — | — | — | 2026-07-12 |
-| 4 | iterate | 4889/4889 | — | — | — | — | 2026-07-14 |
-| 5 | iterate | 33/33 | — | — | — | — | 2026-07-14 |
-| 6 | iterate | 54/54 | — | — | — | — | 2026-07-14 |
-| 7 | iterate | 42/42 | — | — | — | — | 2026-07-15 |
-| 8 | iterate | 143/143 | — | — | — | — | 2026-07-15 |
-| 9 | iterate | 41/41 | — | — | — | — | 2026-07-15 |
-| 10 | iterate | 1009/1009 | — | — | — | — | 2026-07-15 |
-| 11 | iterate | 1047/1047 | — | — | — | — | 2026-07-15 |
-| 12 | iterate | 1060/1060 | — | — | — | — | 2026-07-16 |
-| 13 | iterate | 1090/1090 | — | — | — | — | 2026-07-16 |
-| 14 | iterate | 4572/4572 | — | — | — | — | 2026-07-16 |
-| 15 | iterate | 4164/4164 | — | — | — | — | 2026-07-16 |
-| 16 | iterate | 4597/4597 | — | — | — | — | 2026-07-16 |
-| 17 | iterate | 5697/5697 | — | — | — | — | 2026-07-16 |
-| 18 | iterate | 5936/5936 | — | — | — | — | 2026-07-16 |
-| 19 | iterate | 1119/1119 | — | — | — | — | 2026-07-16 |
-| 20 | iterate | 17/17 | — | — | — | — | 2026-07-17 |
-| 21 | iterate | 9458/9486 | — | — | — | — | 2026-07-20 |
-| 22 | iterate | 4712/4723 | — | — | — | — | 2026-07-20 |
-| 23 | iterate | 5207/5207 | — | — | — | — | 2026-07-20 |
-| 24 | iterate | 6/6 | — | — | — | — | 2026-07-20 |
-| 25 | iterate | 5/5 | — | — | — | — | 2026-07-20 |
-| 26 | iterate | 4708/4708 | — | — | — | — | 2026-07-20 |
-| 27 | iterate | 6452/6452 | — | — | — | — | 2026-07-21 |
-| 28 | iterate | 6230/6242 | — | — | — | — | 2026-07-23 |
-| 29 | iterate | 26/26 | — | — | — | — | 2026-07-23 |
-| 30 | iterate | 4946/4961 | — | — | — | — | 2026-07-23 |
+| 1 | iterate | 22/22 | — | — | — | — | 2026-07-11 |
+| 2 | iterate | 37/37 | — | — | — | — | 2026-07-12 |
+| 3 | iterate | 4889/4889 | — | — | — | — | 2026-07-14 |
+| 4 | iterate | 33/33 | — | — | — | — | 2026-07-14 |
+| 5 | iterate | 54/54 | — | — | — | — | 2026-07-14 |
+| 6 | iterate | 42/42 | — | — | — | — | 2026-07-15 |
+| 7 | iterate | 143/143 | — | — | — | — | 2026-07-15 |
+| 8 | iterate | 41/41 | — | — | — | — | 2026-07-15 |
+| 9 | iterate | 1009/1009 | — | — | — | — | 2026-07-15 |
+| 10 | iterate | 1047/1047 | — | — | — | — | 2026-07-15 |
+| 11 | iterate | 1060/1060 | — | — | — | — | 2026-07-16 |
+| 12 | iterate | 1090/1090 | — | — | — | — | 2026-07-16 |
+| 13 | iterate | 4572/4572 | — | — | — | — | 2026-07-16 |
+| 14 | iterate | 4164/4164 | — | — | — | — | 2026-07-16 |
+| 15 | iterate | 4597/4597 | — | — | — | — | 2026-07-16 |
+| 16 | iterate | 5697/5697 | — | — | — | — | 2026-07-16 |
+| 17 | iterate | 5936/5936 | — | — | — | — | 2026-07-16 |
+| 18 | iterate | 1119/1119 | — | — | — | — | 2026-07-16 |
+| 19 | iterate | 17/17 | — | — | — | — | 2026-07-17 |
+| 20 | iterate | 9458/9486 | — | — | — | — | 2026-07-20 |
+| 21 | iterate | 4712/4723 | — | — | — | — | 2026-07-20 |
+| 22 | iterate | 5207/5207 | — | — | — | — | 2026-07-20 |
+| 23 | iterate | 6/6 | — | — | — | — | 2026-07-20 |
+| 24 | iterate | 5/5 | — | — | — | — | 2026-07-20 |
+| 25 | iterate | 4708/4708 | — | — | — | — | 2026-07-20 |
+| 26 | iterate | 6452/6452 | — | — | — | — | 2026-07-21 |
+| 27 | iterate | 6230/6242 | — | — | — | — | 2026-07-23 |
+| 28 | iterate | 26/26 | — | — | — | — | 2026-07-23 |
+| 29 | iterate | 4946/4961 | — | — | — | — | 2026-07-23 |
+| 30 | iterate | 6978/6978 | — | — | — | — | 2026-07-27 |
 
 ## Code Review Evidence
 
