@@ -1,7 +1,7 @@
 # Compliance Dashboard
 
-Generated: 2026-07-27T11:57:25.139011+00:00
-Source-State: run=iterate-2026-07-27-plan-verdict-record
+Generated: 2026-07-27T12:14:28.287189+00:00
+Source-State: run=iterate-2026-07-27-plan-section-deps
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -18,7 +18,7 @@ Scope: library
 | ✅ | Change traceability | 368/368 changes linked to a commit, ADR or test run | change provenance (SLSA) |
 | ⚠️ | Change reconciliation | 18/18 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
 | ⚠️ | Security | 3 open high/critical | no open high/critical vulns (NIST SSDF) |
-| ✅ | Size / maintainability discipline | ratchet delta -22 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
+| ✅ | Size / maintainability discipline | ratchet delta -52 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
 | ✅ | Dependency hygiene | 0 unresolved / 11 licenses; 0 copyleft | dependency license & risk (OWASP) |
 
 > 📊 **Test-Health · diff-coverage (Control-Grade input · target ≥80%):** not measured this session — per-PR signal; see the CI "Diff coverage" artifact.
@@ -56,16 +56,16 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
 | Work events (iterate) | 368 changes | INFO |  |
-| Recent changes traced to an FR | 17/30 (57%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
+| Recent changes traced to an FR | 16/30 (53%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
 | All unit tests passing | 4946/4961 | WARN | 15/4961 not green in last full suite — see test-evidence.md; +10 change(s) since last full suite |
 | Architecture decisions | 328 ADRs | INFO |  |
-| Iterate tests passing | 53/75 testable changes tested | WARN | 22 testable change(s) without tests — see test-evidence.md |
+| Iterate tests passing | 53/74 testable changes tested | WARN | 21 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 11 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 21 open | WARN | 21 actionable item(s) — see ../agent_docs/triage_inbox.md |
-| Bloat over-limit (grandfathered) | 126 | INFO |  |
+| Triage open | 20 open | WARN | 20 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Bloat over-limit (grandfathered) | 125 | INFO |  |
 | Bloat in allowlist | 159 entries | INFO |  |
-| Bloat ratchet delta | -22 lines | PASS |  |
+| Bloat ratchet delta | -52 lines | PASS |  |
 
 ## Project Velocity
 

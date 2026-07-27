@@ -1,0 +1,221 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-27-plan-section-deps",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T12:04:57.592511+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 15,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "Approach / Risk",
+          "file": null,
+          "line": null,
+          "finding": "The gates for section quality (AC8) and verdicts (AC1) rely on parsing LLM text output. If `plan_section_quality.py` looks for unstructured prose to verify \"purpose, ≥2 steps, and how it is tested\", or if `review_verdict.py` relies on regex scanning for \"approve/reject\", false-positive gate failures will block the user constantly.",
+          "suggestion": "Mandate structural markers in the prompts. Reviewers must output `<verdict>approve/revise/reject</verdict>`. The `section-writer` must be prompted to use exact markdown headers (e.g., `### Purpose`, `### Steps`, `### Test Strategy`) so the python parsers can strictly enforce structure without guessing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "Edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The design states that if a verdict is `unknown`, it is recorded as `comparable: false`. However, AC3 states the gate only blocks on a \"detected contradiction.\" If parsing fails or an LLM goes off-script resulting in an `unknown` verdict, the gate might silently pass because it isn't technically a \"contradiction\".",
+          "suggestion": "Update AC3 to also block (FAIL) if the state is `comparable: false`. An unparsable/unknown review should force operator resolution just like a contradiction does.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "Edge-case",
+          "file": null,
+          "line": null,
+          "finding": "AC5 dictates that a dependency on a section not declared in the same manifest fails the gate. LLMs will commonly hallucinate existing system components or previously completed sections as prerequisites. This will cause the AC5 gate to fail unexpectedly on legitimate plans.",
+          "suggestion": "The `shipwright-plan` prompt must explicitly instruct the LLM: \"Only list dependencies on other sections being created in this specific plan. Do not list dependencies on components that already exist.\"",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "Dependency",
+          "file": null,
+          "line": null,
+          "finding": "The new shared `plan_manifest.py` replaces two private parsers used by upstream files (`sections.py`, `check-sections.py`, `plan_checks.py`, `setup-planning-session.py`). If the existing functions returned a simple list of slugs, and the new one returns a dictionary or object (to include the dependencies), the dependent files will break if not properly adapted.",
+          "suggestion": "Ensure `plan_manifest.py` provides a backward-compatible adapter (e.g., `get_section_slugs() -> list[str]`) or ensure all call sites in those dependent files are explicitly updated in the mini-plan.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "Edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The `NN-slug: dep-a, dep-b` syntax is clean, but LLMs often vary spacing. Strings like `NN-slug:dep-a,dep-b` or standard trailing spaces could cause strict string-matching parsers to fail.",
+          "suggestion": "Ensure `plan_manifest.py` splits by `:` and `,` followed by a `.strip()` on keys and values, and strictly validates that slugs conform to `[a-z0-9-]` to prevent directory traversal payloads.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan makes `SECTION_MANIFEST` parsing backward-compatible, but the new completion gates are not backward-compatible for existing target projects. Historical section files may lack explicit FR references, purpose/steps/test headings, or dependency declarations. Those plans would suddenly be unable to complete even though they were valid when created. The fact that this repository has no `plan.md` does not reduce the rollout risk for projects already using `/shipwright-plan`.",
+          "suggestion": "Define a migration policy before enabling the gates: either migrate existing section files with a scripted, reviewable transformation; version plan/section formats and apply the stricter gates only to newly created plans; or require an explicit operator-approved legacy-plan upgrade. Add fixtures representing real pre-change manifests and section files.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The in-session `--gate review` CLI risks implementing a second, narrower interpretation of review completion. AC9 only says it fails for an absent marker or unresolved contradiction, while the existing W5/resume logic likely also distinguishes completed review, declined review, configuration-disabled review, and any required self-review record. A marker can therefore be present and contradiction-free while still not represent a valid review route.",
+          "suggestion": "Make `check-plan-gates.py --gate review`, `check_w5_external_review_marker`, and the resume gate call one authoritative review-state validation function. That function should validate the complete state machine, including accepted routes, required rationale/self-review evidence, per-provider results, and contradiction resolution—not just marker presence.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "unknown` verdicts are made visible but are not stated to block review completion. A provider response that cannot be parsed could therefore leave a plan marked reviewed as long as it is not the specific `approve`/`reject` contradiction. This undermines AC1’s purpose: an unreadable verdict must not be silently treated as agreement or a successful independent review.",
+          "suggestion": "Decide and encode a policy for unknown verdicts. The safer default is to require a rerun or an explicit operator resolution stating why that provider’s verdict is unavailable before review can complete. Persist the raw response, parser outcome, and resolution separately so an unknown cannot be overwritten into a normal approval state.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Adding verdicts to both `external_review.py` stdout JSON and `external_review_state.json` is a schema change with several readers, test doubles, saved run states, and resume paths. The plan identifies consumers but does not describe versioning, migration, or behavior when an old state file has no per-reviewer verdicts. A resume of an in-flight pre-change review is especially likely to fail ambiguously.",
+          "suggestion": "Document the state/output schema and add a schema version or explicit backward-compatibility branch. Treat old markers as “requires review-state refresh/review rerun,” rather than inferring verdicts from counts or allowing them to pass. Update all fixtures and any scripts that consume `external_review.py` JSON in the same change.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The dependency syntax is under-specified. Section identifiers are described as `NN-slug`, but examples of dependencies are `dep-a, dep-b`, which could be interpreted as slugs rather than complete identifiers. This invites ambiguity when slugs repeat, are renamed, or resemble prefixes. Duplicate dependencies, whitespace-only entries, repeated section IDs, and dependencies on the current section also need deterministic diagnostics.",
+          "suggestion": "Require dependencies to use the complete canonical section ID (for example, `02-api: 01-schema, 01-auth`), validate every identifier against the same grammar, reject duplicate declarations/dependencies, trim and reject empty tokens, and report source line numbers. Do not resolve dependencies by partial slug or filename matching.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "“A section references an FR” is too loose as the basis for bidirectional coverage gates unless the exact linkage syntax is defined. A generic Markdown search can falsely count an FR mentioned in explanatory prose, examples, retired-history text, or a code block; conversely, it may miss valid links written with an anchor or alternate notation. This would make AC6/AC7 noisy and encourage authors to add meaningless IDs merely to satisfy the gate.",
+          "suggestion": "Establish one explicit, machine-readable section metadata field or heading for requirement links (for example, `Requirements: FR-01.03, FR-01.16`). Parse only that field, validate IDs against the scoped live requirements catalog, and make the section writer/template emit it. Use the same parsed linkage for build consumption and coverage checks rather than independently scanning Markdown at multiple call sites.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The new “section quality” gate has no specified canonical document structure, yet it will block phase completion. Existing section-writer output and manually authored plans may express purpose, steps, or testing under different headings and still be perfectly usable. A heuristic parser will be brittle; a strict parser without template changes will create avoidable failures.",
+          "suggestion": "Define the required headings/metadata and minimum step syntax, update the plan template and section-writer prompt before enabling enforcement, and provide actionable failures that name the missing field and expected form. Test both canonical new documents and intentionally unsupported legacy variants so the migration behavior is explicit.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "External reviewer text is untrusted input, and `parse_verdict(text)` is vulnerable to accidental or prompt-injected verdict extraction if it searches ordinary prose for words such as “approve” or “reject.” A model could quote an instruction or include conflicting verdict language in its analysis, causing the parser to select the wrong state. This matters because the result controls a completion gate.",
+          "suggestion": "Require a single constrained final sentinel/structured field in the reviewer prompt (for example, `SHIPWRIGHT_VERDICT: approve`) and parse only that exact final field after validating that it occurs exactly once. Preserve malformed responses as `unknown`; never infer a verdict from findings, headings, or free-form prose. Ensure rendering stored review text into CLI/Markdown output escapes or isolates it so reviewer-controlled content cannot alter the surrounding display.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not address atomicity and run identity for the expanded review state. Gemini and OpenAI run in parallel, and a resumed or repeated review can otherwise combine a verdict from one run with a response from another, or leave a partially written JSON state that looks like one missing reviewer.",
+          "suggestion": "Include a review/run identifier and provider-specific timestamps in the state, write the assembled state atomically, and reject mixed-run or incomplete pairs as unresolved. Add tests for interruption after one provider returns, rerun after a partial state, and malformed/truncated state files.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan names shared parsers and new check wrappers but does not explicitly include the required test coverage, despite changing a phase-completion gate and two persisted artifacts. Synthetic fixtures are mentioned only as a rollout observation, not as planned deliverables.",
+          "suggestion": "Add focused tests for: all verdict-pair combinations; malformed/multiple/missing verdict sentinels; old and new review states; bare and dependency-bearing manifests; unknown/self/forward dependencies; duplicate IDs; full FR coverage and extra-section failures; retired/non-scoped FR references; section quality failures; and integration through `_validate_plan` and `check-plan-gates.py`. Include regression fixtures for existing manifests/section formats to prove the chosen migration behavior.  Overall, the core direction is sound: centralizing artifact parsing and making contradiction, dependency order, and coverage mechanically enforceable addresses the stated gaps directly. The main work needed is to make the new gate formats and persisted-state migration explicit, so stricter enforcement does not strand existing plans or accidentally accept malformed review results.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-27T12:04:57.375478+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] Here is a review of the implementation approach for the `/shipwright-plan` gates change.\n\n### Findings\n\n- **Category:** Approach / Risk\n  **Severity:** High\n  **Finding:** The gates for section quality (AC8) and verdicts (AC1) rely on parsing LLM text output. If `plan_section_quality.py` looks for unstructured prose to verify \"purpose, ≥2 steps, and how it is tested\", or if `review_verdict.py` relies on regex scanning for \"approve/reject\", false-positive gate failures will block the user constantly.\n  **Suggestion:** Mandate structural markers in the prompts. Reviewers must output `<verdict>approve/revise/reject</verdict>`. The `section-writer` must be prompted to use exact markdown headers (e.g., `### Purpose`, `### Steps`, `### Test Strategy`) so the python parsers can strictly enforce structure without guessing.\n\n- **Category:** Edge-case\n  **Severity:** Medium\n  **Finding:** The design states that if a verdict is `unknown`, it is recorded as `comparable: false`. However, AC3 states the gate only blocks on a \"detected contradiction.\" If parsing fails or an LLM goes off-script resulting in an `unknown` verdict, the gate might silently pass because it isn't technically a \"contradiction\".\n  **Suggestion:** Update AC3 to also block (FAIL) if the state is `comparable: false`. An unparsable/unknown review should force operator resolution just like a contradiction does.\n\n- **Category:** Edge-case\n  **Severity:** Medium\n  **Finding:** AC5 dictates that a dependency on a section not declared in the same manifest fails the gate. LLMs will commonly hallucinate existing system components or previously completed sections as prerequisites. This will cause the AC5 gate to fail unexpectedly on legitimate plans.\n  **Suggestion:** The `shipwright-plan` prompt must explicitly instruct the LLM: *\"Only list dependencies on other sections being created in this specific plan. Do not list dependencies on components that already exist.\"*\n\n- **Category:** Dependency\n  **Sever […truncated]\n\n[openai] 1. **Category:** risk  \n   **Severity:** high  \n   **Finding:** The plan makes `SECTION_MANIFEST` parsing backward-compatible, but the new completion gates are not backward-compatible for existing target projects. Historical section files may lack explicit FR references, purpose/steps/test headings, or dependency declarations. Those plans would suddenly be unable to complete even though they were valid when created. The fact that this repository has no `plan.md` does not reduce the rollout risk for projects already using `/shipwright-plan`.  \n   **Suggestion:** Define a migration policy before enabling the gates: either migrate existing section files with a scripted, reviewable transformation; version plan/section formats and apply the stricter gates only to newly created plans; or require an explicit operator-approved legacy-plan upgrade. Add fixtures representing real pre-change manifests and section files.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The in-session `--gate review` CLI risks implementing a second, narrower interpretation of review completion. AC9 only says it fails for an absent marker or unresolved contradiction, while the existing W5/resume logic likely also distinguishes completed review, declined review, configuration-disabled review, and any required self-review record. A marker can therefore be present and contradiction-free while still not represent a valid review route.  \n   **Suggestion:** Make `check-plan-gates.py --gate review`, `check_w5_external_review_marker`, and the resume gate call one authoritative review-state validation function. That function should validate the complete state machine, including accepted routes, required rationale/self-review evidence, per-provider results, and contradiction resolution—not just marker presence.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** `unknown` verdicts are made visible but are not stated to block review completion. A provid […truncated]"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T12:04:57.704133+00:00",
+      "disposition": "The internal code-reviewer subagent needs the Agent tool, which this session is instructed not to invoke unless the user requests it. Substituted, not skipped: four rounds of the external code-review cascade ran against the combined branch this PR is sliced from; the manifest-parser findings it raised are fixed here, including the five CLI cases pinning malformed-manifest rejection. Dispositions in 2026-07-27-plan-phase-gates.md.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T12:04:57.806061+00:00",
+      "disposition": "The doubt-reviewer subagent needs the Agent tool, which this session is instructed not to invoke unless the user requests it. The disprove-biased role was served by enumerating the parser's failure modes from the negative space rather than the happy path — which is where the interior-empty-token and path-traversal dependency cases came from — and by running the malformed-manifest claim to ground three times after a reviewer raised it three times.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-plan/scripts/checks/check-sections.py",
+          "line": 58,
+          "finding": "check-sections.py` never checks `result.is_valid` or emits `result.errors`. A malformed manifest can therefore exit successfully when its retained valid entries have files and no order errors. For example, `01-a\\n01-a` parses with an error but retains one `01-a` entry; with `sections/01-a.md` present, `missing` and `order_errors` are empty and the command returns success. This violates AC5’s requirement that duplicate IDs and other malformed declarations fail.",
+          "suggestion": "Return failure immediately when `not result.is_valid`, including `result.errors` in the JSON output. Add CLI-level tests for duplicate section IDs, invalid dependency tokens, and interior empty dependency tokens.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/review_verdict.py",
+          "line": 88,
+          "finding": "_LINE_SUFFIX` permits a literal period, so `SHIPWRIGHT_VERDICT: approve.` is accepted as `approve`. AC1 permits only the sentinel, one recognized word, whitespace, and specified Markdown decoration; trailing prose or punctuation must yield `unknown`. Accepting punctuation broadens the authoritative input grammar and can incorrectly clear a review gate.",
+          "suggestion": "Remove `.` from `_LINE_SUFFIX` and add a parser test asserting that `SHIPWRIGHT_VERDICT: approve.` returns `unknown`.  Overall assessment: ship-with-fixes. The shared-parser and review-state design largely implements the requested gates, but the public section-check command currently permits malformed manifests and the verdict parser is more permissive than AC1 allows. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-27T12:04:57.485533+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[gemini] <no review returned: success>\n\n[openai] - Category: bug  \n  Severity: medium  \n  File: `plugins/shipwright-plan/scripts/checks/check-sections.py:58`  \n  Finding: `check-sections.py` never checks `result.is_valid` or emits `result.errors`. A malformed manifest can therefore exit successfully when its retained valid entries have files and no order errors. For example, `01-a\\n01-a` parses with an error but retains one `01-a` entry; with `sections/01-a.md` present, `missing` and `order_errors` are empty and the command returns success. This violates AC5’s requirement that duplicate IDs and other malformed declarations fail.  \n  Suggestion: Return failure immediately when `not result.is_valid`, including `result.errors` in the JSON output. Add CLI-level tests for duplicate section IDs, invalid dependency tokens, and interior empty dependency tokens.\n\n- Category: spec  \n  Severity: medium  \n  File: `shared/scripts/lib/review_verdict.py:88`  \n  Finding: `_LINE_SUFFIX` permits a literal period, so `SHIPWRIGHT_VERDICT: approve.` is accepted as `approve`. AC1 permits only the sentinel, one recognized word, whitespace, and specified Markdown decoration; trailing prose or punctuation must yield `unknown`. Accepting punctuation broadens the authoritative input grammar and can incorrectly clear a review gate.  \n  Suggestion: Remove `.` from `_LINE_SUFFIX` and add a parser test asserting that `SHIPWRIGHT_VERDICT: approve.` returns `unknown`.\n\nOverall assessment: ship-with-fixes. The shared-parser and review-state design largely implements the requested gates, but the public section-check command currently permits malformed manifests and the verdict parser is more permissive than AC1 allows.  \nSHIPWRIGHT_VERDICT: revise"
+    }
+  }
+}

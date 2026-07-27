@@ -181,18 +181,15 @@ compliance `W5` ask, through one shared evaluator.
 
 ## Step 6: Section Splitting
 
-**Gate:** Read `{planning_dir}/external_review_state.json`. If missing,
-STOP — Step 5 was not completed. Return to Step 5 and pick the
-appropriate branch. If present, proceed.
+**Gate:** Read `{planning_dir}/external_review_state.json`. If it is missing, or
+records a state not clear to proceed past (see Step 5b), STOP — return to Step 5,
+pick the appropriate branch or record the decision, then re-enter here.
 
 See [section-splitting.md](references/section-splitting.md) for protocol.
 
 **Goal:** Split plan into self-contained section files for /shipwright-build.
-
-**Actions:**
-1. Parse SECTION_MANIFEST from plan.md
-2. Generate section tasks
-3. For each section: spawn section-writer subagent OR write directly
+Parse SECTION_MANIFEST from plan.md, generate section tasks, then for each
+section spawn the section-writer subagent or write it directly.
 
 **Batch approach (recommended for 3+ sections):**
 ```bash
@@ -218,7 +215,11 @@ uv run --project {plugin_root} {plugin_root}/scripts/checks/check-sections.py \
   --planning-dir "{planning_dir}"
 ```
 
-Verify all sections declared in SECTION_MANIFEST have corresponding files.
+Verifies two things: every section declared in SECTION_MANIFEST has a file,
+and the numbering agrees with the dependencies each section declares
+(`03-api: 01-auth, 02-database`). A prerequisite numbered after the section
+that needs it lands in `order_errors` and exits non-zero. Format:
+[section-index.md](references/section-index.md).
 
 ---
 
@@ -254,7 +255,7 @@ decomposition, not user-facing).
 4. E2E test plan exists (if enabled)
 5. Section Quality Gate (description + ≥2 implementation steps + test strategy)
 6. FR Coverage Check (every FR assigned to ≥1 section)
-7. Dependency Order (sections after their dependencies in SECTION_MANIFEST)
+7. Dependency Order (every declared dependency numbered before the section naming it)
 
 **Phase complete:** set `SHIPWRIGHT_RUN_ID`, run
 `write-plan-config.py --status complete`, fire `record_event.py`,

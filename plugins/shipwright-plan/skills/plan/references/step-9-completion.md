@@ -14,8 +14,12 @@
 6. **FR Coverage Check** — read the spec's Functional Requirements,
    verify every FR is assigned to at least one section. If uncovered
    FRs found → add them to appropriate section or create new section.
-7. **Dependency Order** — sections with dependencies must come after
-   their dependencies in SECTION_MANIFEST.
+7. **Dependency Order** — every dependency a section declares in
+   `SECTION_MANIFEST` must appear **earlier** in the manifest than the section
+   naming it. Declaration format: [section-index.md](section-index.md). This
+   one is enforced: `check-sections.py` (Step 7) and the plan phase verifier
+   both fail a numbering that places a prerequisite after its user. A manifest
+   declaring no dependencies promises nothing and passes.
 
 ---
 

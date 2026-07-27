@@ -1,39 +1,38 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-changelog-writer-preserve-history"
+run_id: "iterate-2026-07-27-plan-section-deps"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T11:57:30.959539+00:00"
+timestamp: "2026-07-27T12:14:34.040370+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 11:57:30 UTC
+> Auto-generated 2026-07-27 12:14:34 UTC
 
 ## Session Info
 
-- **Session ID**: 
-- **Timestamp**: 2026-07-27 11:57:30 UTC
+- **Session ID**: 1ea85a9d-f698-4336-8e01-ea2f4e2ae714
+- **Timestamp**: 2026-07-27 12:14:34 UTC
 - **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-plan-verdict-record
-- **Date**: 2026-07-27T11:57:25.035012Z
+- **Run ID**: iterate-2026-07-27-plan-section-deps
+- **Date**: 2026-07-27T12:14:28.199191Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/plan-verdict-record
-- **ADR**: iterate-2026-07-27-plan-verdict-record
+- **Branch**: iterate/plan-section-deps
+- **ADR**: iterate-2026-07-27-plan-section-deps
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-plan-verdict-record.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-plan-section-deps.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/changelog-writer-preserve-history
-- **Run ID**: `iterate-2026-07-27-changelog-writer-preserve-history`
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-changelog-writer-preserve-history.md
-- **Complexity**: medium (classifier: `estimate=medium`, `prior_source=history`,
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T11:28:16)
+- **Branch**: iterate/plan-section-deps
+- **Run ID**: `iterate-2026-07-27-plan-section-deps`
+- **Spec**: .shipwright/planning/iterate/2026-07-27-plan-section-deps.md
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T12:04:57)
 
 ### Mandatory replay on Resume
 
@@ -51,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/changelog-writer-preserve-history
-- **Last Commit**: 92410c32 Merge remote-tracking branch 'origin/main' into iterate/changelog-writer-preserve-history
+- **Branch**: iterate/plan-section-deps
+- **Last Commit**: 811ba2fa Merge remote-tracking branch 'origin/main' into iterate/plan-section-deps
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -70,9 +69,9 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 |-------|------|--------|------|
 | evt-0b2bb01b | grade_snapshot | — | 2026-07-27 |
 | evt-5ecd7d7e | work_completed | iterate (iterate: reviewer verdicts recorded, disagreement is its own outcome (1 of 3)) | 2026-07-27 |
+| evt-8039a18b | grade_snapshot | — | 2026-07-27 |
+| evt-8cab1d1d | work_completed | iterate (iterate: section dependencies are declarable, so the numbering is checkable (2 of 3)) | 2026-07-27 |
 | evt-64bc7af0 | grade_snapshot | — | 2026-07-27 |
-| evt-19f53577 | grade_snapshot | — | 2026-07-27 |
-| evt-78684181 | work_completed | iterate (iterate: the review gate stops being bypassable (fail-closed + fork review)) | 2026-07-27 |
 
 ## Recovery
 
