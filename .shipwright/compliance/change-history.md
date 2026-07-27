@@ -2,15 +2,15 @@
 
 Generated: 2026-07-27T09:08:42.773123+00:00
 Source-State: run=iterate-2026-07-27-artifact-state-stamping
-Total commits: 1213
+Total commits: 1218
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 349
-    "feat" : 336
-    "chore" : 255
+    "fix" : 351
+    "feat" : 337
+    "chore" : 257
     "docs" : 147
     "refactor" : 75
     "test" : 30
@@ -21,10 +21,12 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 349 commits
+### Fixes (fix) — 351 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | plan | anchor requirement ids; settle the manifest claim with tests | 207497130845 |
+| 2026-07-27 | plan | close three bypasses the fresh review found | d4e38a18a52b |
 | 2026-07-27 | run | an override overrides the verdict, never the check (#438) | f6179f6e1ed5 |
 | 2026-07-27 | ci | the PR review gate stops being bypassable (#437) | ec0c7055046f |
 | 2026-07-23 | deps | bump pyasn1 0.6.3 -> 0.6.4 (CVE-2026-59885, CVE-2026-59886) (#432) | 9ffbae764acd |
@@ -375,12 +377,13 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 336 commits
+### Features (feat) — 337 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | compliance | produced artifacts name the state they describe (FR-01.10) | 66714199af06 |
+| 2026-07-27 | compliance | produced artifacts name the state they describe (FR-01.10) (#448) | e869a02b60fb |
 | 2026-07-27 | triage | defer from the terminal; cap the failing-check detail (#444) | 631e08055ebc |
+| 2026-07-27 | plan | record reviewer disagreement, make section order checkable | e8bbc15a55a2 |
 | 2026-07-27 | project | give requirements a size rule, and stop the templates contradicting the basis rule (#442) | af72103d0e7a |
 | 2026-07-27 | spec | REQ-3 Phase 2 — every requirement now states what it guarantees (#436) | 28491e1c9631 |
 | 2026-07-23 | shared | shared requirement-elicitation method + FR-01.16 (REQ-3 Phase 1) (#431) | 601fafe55276 |
@@ -716,11 +719,13 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 255 commits
+### Chores (chore) — 257 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | triage | sweep 60 outbox append(s) into branch | 9c8b62747190 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | c552b3f04d4a |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | f262eb17acb9 |
+| 2026-07-27 | triage | sweep 60 outbox append(s) into branch | ab9936fd0613 |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -1283,7 +1288,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1213 |
+| Total commits | 1218 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1213 |
+| Human-authored commits | 1218 |
 
