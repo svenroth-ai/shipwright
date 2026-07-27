@@ -11,7 +11,7 @@ Consistency-audit: never run
 | Runtime dependencies | 6 (deduplicated) |
 | Dev dependencies | 5 |
 | Total packages | 11 |
-| Licenses resolved | 4 / 11 |
+| Licenses resolved | 8 / 11 |
 | Unique licenses | 2 (Apache-2.0, MIT) |
 | Copyleft licenses | 0 |
 
@@ -19,9 +19,9 @@ Consistency-audit: never run
 
 ```mermaid
 pie title License Distribution (all 11 packages)
+    "MIT" : 6
     "Apache-2.0" : 2
-    "MIT" : 2
-    "unknown" : 7
+    "unknown" : 3
 ```
 
 ## Runtime Dependencies
@@ -33,19 +33,19 @@ pie title License Distribution (all 11 packages)
 | jsonschema | 4.26.0 | MIT |
 | openai | 2.30.0 | Apache-2.0 |
 | pyyaml | 6.0.3 | MIT |
-| requests | 2.33.0 | Apache-2.0 |
+| requests | 2.33.0 | - |
 
 ## Dev Dependencies
 
 | Package | Version | License |
 |---------|---------|---------|
-| diff-cover | 10.3.0 | - |
-| pytest | 9.0.3 | - |
-| pytest | 9.1.1 | - |
-| pytest-cov | 7.1.0 | - |
-| pytest-mock | 3.15.1 | - |
+| diff-cover | 10.3.0 | Apache-2.0 |
+| pytest | 9.0.3 | MIT |
+| pytest | 9.1.1 | MIT |
+| pytest-cov | 7.1.0 | MIT |
+| pytest-mock | 3.15.1 | MIT |
 
 ## License Compliance
 
-**7 dependency(ies) could not be resolved in this scan** - license unverified; verify before distribution.
+**3 dependency(ies) could not be resolved in this scan** - license unverified; verify before distribution.
 

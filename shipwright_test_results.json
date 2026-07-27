@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-test-phase-record-honesty",
+    "run_id": "iterate-2026-07-27-handoff-tally-and-gate-honesty",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 7338,
-      "total": 7338
+      "passed": 5977,
+      "total": 5977
     },
     "integration": {
       "status": "passed",
@@ -30,175 +30,245 @@
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [],
+    "degraded": [
+      {
+        "condition": "external_code_review_leg_degraded",
+        "detail": "external_review.py --mode code: the gemini leg was cut off by the provider (finish_reason=length) with one finding broken off mid-sentence; on inspection the wording it was questioning reads correctly. Recorded as degraded, not as a pass. Second consecutive run where this leg failed. The gpt leg succeeded (verdict: revise, 2 findings, both accepted)."
+      },
+      {
+        "condition": "public_predicate_reverted_for_bloat_baseline",
+        "detail": "Stage-2 code review asked for a public `has_validator()` on phase_validators.py instead of importing the private _VALIDATORS. Correct in principle, but that file is grandfathered at 495 LOC and the 13-line addition ratcheted its bloat baseline; cutting unrelated lines to make room would game the metric. Reverted to the private import with the reason recorded in code. The coupling is covered by test_run_phase_gate_reports_whether_a_validator_existed."
+      }
+    ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --with pytest pytest plugins/shipwright-test/tests/test_record_honesty_wiring.py plugins/shipwright-test/tests/test_journey_coverage.py plugins/shipwright-test/tests/test_warning_followups.py plugins/shipwright-test/tests/test_playwright_runner_flaky.py -q -p no:cacheprovider",
+      "runner": "C:/01_Development/shipwright/.worktrees/handoff-tally-and-gate-honesty/.venv/Scripts/python.exe -m pytest plugins/shipwright-run/tests/test_validation_record_honesty.py integration-tests/test_handoff_reads_real_loop_state.py -q",
       "exit_code": 0,
-      "tests_run": 61,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\test-phase-record-honesty\\.shipwright\\runs\\iterate-2026-07-27-test-phase-record-honesty\\surface_verification.log",
-      "timestamp": "2026-07-27T08:34:54.777Z",
+      "tests_run": 20,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\handoff-tally-and-gate-honesty\\.shipwright\\runs\\iterate-2026-07-27-handoff-tally-and-gate-honesty\\surface_verification.log",
+      "timestamp": "2026-07-27T16:48:42.899Z",
       "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "Journeys are parsed per journey from the plan's User Flows section",
+          "behavior": "the finished tally denominates against the pipeline, not against tasks planned so far",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-test/tests/test_journey_plan.py \u2014 10 tests PASSED"
+          "evidence": "test_handoff_pipeline_tally.py::test_the_tally_counts_against_the_pipeline_not_against_planned_tasks PASSED"
         },
         {
-          "behavior": "Each planned journey is reported covered or uncovered individually",
+          "behavior": "the block states that phase tasks are planned incrementally",
           "disposition": "tested",
-          "evidence": "test_journey_coverage.py::test_a_journey_with_no_spec_is_reported_even_though_other_specs_exist PASSED"
+          "evidence": "test_handoff_pipeline_tally.py::test_the_block_says_phase_tasks_are_planned_incrementally PASSED"
         },
         {
-          "behavior": "Greenfield gaps block the phase; brownfield gaps do not",
+          "behavior": "a config with no pipeline key falls back to the task count",
           "disposition": "tested",
-          "evidence": "test_journey_coverage.py::test_greenfield_gaps_block and ::test_brownfield_gaps_do_not_block_and_leave_a_follow_up PASSED"
+          "evidence": "test_handoff_pipeline_tally.py::test_a_missing_pipeline_key_falls_back_to_the_task_count PASSED"
         },
         {
-          "behavior": "Brownfield journey gaps route to onboarding via the launchPayload field",
+          "behavior": "split expansion is counted: plan+build repeat once per frozen split",
           "disposition": "tested",
-          "evidence": "test_journey_coverage.py::test_the_brownfield_follow_up_routes_to_the_onboarding_phase PASSED"
+          "evidence": "test_handoff_pipeline_tally.py::test_a_multi_split_run_counts_every_planned_task PASSED"
         },
         {
-          "behavior": "Journey coverage is three-state; no plan / no journeys / no specs never read as covered",
+          "behavior": "a 3-split run with every split built does not read as 100 percent complete",
           "disposition": "tested",
-          "evidence": "test_journey_coverage.py \u2014 3 undetermined/no_specs tests PASSED"
+          "evidence": "test_handoff_pipeline_tally.py::test_a_split_run_with_every_split_built_is_not_reported_complete PASSED"
         },
         {
-          "behavior": "E2E, consistency and fidelity failures each leave a durable follow-up",
+          "behavior": "a legacy phase present as a task but absent from pipeline (security) is counted",
           "disposition": "tested",
-          "evidence": "test_warning_followups.py \u2014 one test per layer + ::test_all_three_layers_emit_in_one_pass PASSED"
+          "evidence": "test_handoff_pipeline_tally.py::test_a_legacy_off_pipeline_phase_is_counted PASSED"
         },
         {
-          "behavior": "A persistent failure stays one follow-up across differing commits",
+          "behavior": "a malformed splits_frozen value falls back instead of crashing",
           "disposition": "tested",
-          "evidence": "test_warning_followups.py::test_the_same_failure_across_two_commits_stays_one_follow_up PASSED"
+          "evidence": "test_handoff_pipeline_tally.py::test_a_bad_splits_frozen_value_falls_back_instead_of_crashing PASSED"
         },
         {
-          "behavior": "A green or skipped warning layer files nothing",
+          "behavior": "the finished list carries the split, so a phase is never finished and interrupted at once",
           "disposition": "tested",
-          "evidence": "test_warning_followups.py::test_a_green_run_files_nothing and ::test_a_skipped_layer_files_nothing PASSED"
+          "evidence": "test_handoff_pipeline_tally.py::test_the_finished_list_carries_the_split PASSED"
         },
         {
-          "behavior": "Follow-up emission never raises into the phase or changes an exit code",
+          "behavior": "a failed phase is named in its own bullet instead of appearing in none",
           "disposition": "tested",
-          "evidence": "test_warning_followups.py::test_a_broken_triage_writer_does_not_raise_into_the_phase PASSED"
+          "evidence": "test_handoff_pipeline_tally.py::test_a_failed_phase_is_named_in_its_own_bullet PASSED"
         },
         {
-          "behavior": "shipwright_known_failures.json has exactly one reader across test phase and audit",
+          "behavior": "failed and interrupted are reported separately",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-compliance/tests/test_known_failures_delegation.py \u2014 7 tests PASSED"
+          "evidence": "test_handoff_pipeline_tally.py::test_failed_and_interrupted_are_reported_separately PASSED"
         },
         {
-          "behavior": "Accepted failures are split from genuine by identity, not by arithmetic",
+          "behavior": "a pointer parked on a successor with attempt 0 renders as next up, not dispatched",
           "disposition": "tested",
-          "evidence": "shared/tests/test_known_failures.py::test_a_declared_failure_that_did_not_fire_does_not_excuse_a_different_one + 5 siblings PASSED"
+          "evidence": "test_handoff_pipeline_pointer.py::test_attempt_zero_is_next_up_not_currently_dispatched PASSED"
         },
         {
-          "behavior": "A gap within the declared baseline does not fail the validator",
+          "behavior": "a real dispatch is still called dispatched",
           "disposition": "tested",
-          "evidence": "shared/tests/test_test_checks_accepted_baseline.py::test_an_unbroken_gap_within_the_declared_baseline_does_not_fail_the_check PASSED"
+          "evidence": "test_handoff_pipeline_pointer.py::test_a_real_dispatch_is_still_called_dispatched PASSED"
         },
         {
-          "behavior": "An exactly-counted failure is not waived by the baseline (audit parity)",
+          "behavior": "an in_progress task is dispatched whatever the attempt counter says",
           "disposition": "tested",
-          "evidence": "shared/tests/test_known_failures_audit_parity.py \u2014 21 tests PASSED, incl. ::test_they_agree_that_an_exact_residual_is_not_waived_by_the_baseline"
+          "evidence": "test_handoff_pipeline_pointer.py::test_an_in_progress_task_is_dispatched_whatever_the_counter_says PASSED"
         },
         {
-          "behavior": "Skipped tests do not consume accepted-failure allowance",
+          "behavior": "a terminal task under the pointer is not called dispatched",
           "disposition": "tested",
-          "evidence": "shared/tests/test_test_checks_accepted_baseline.py \u2014 4 skip tests PASSED"
+          "evidence": "test_handoff_pipeline_pointer.py::test_a_terminal_task_under_the_pointer_is_not_called_dispatched PASSED"
         },
         {
-          "behavior": "An unreadable accepted list excuses nothing and says so",
+          "behavior": "a failed task under the pointer is not called dispatched",
           "disposition": "tested",
-          "evidence": "test_test_checks_accepted_baseline.py::test_an_unreadable_baseline_file_never_widens_what_is_excused PASSED"
+          "evidence": "test_handoff_pipeline_pointer.py::test_a_failed_task_under_the_pointer_is_not_called_dispatched PASSED"
         },
         {
-          "behavior": "Playwright per-test classification follows the normative decision table",
+          "behavior": "a recovered task keeps its attempt counter but is not called dispatched",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::TestClassifyDecisionTable \u2014 11 rows + 5 edge cases PASSED"
+          "evidence": "test_handoff_pipeline_pointer.py::test_a_recovered_task_is_not_called_dispatched_despite_its_attempt PASSED"
         },
         {
-          "behavior": "A retry-pass counts as a pass, is counted separately, and does not block",
+          "behavior": "a backlog task with attempts is not called dispatched",
           "disposition": "tested",
-          "evidence": "test_playwright_runner_flaky.py::test_a_retried_and_passed_test_is_a_pass_and_is_counted_as_flaky and ::test_a_flaky_test_does_not_make_the_run_fail PASSED"
+          "evidence": "test_handoff_pipeline_pointer.py::test_a_backlog_task_with_attempts_is_not_called_dispatched PASSED"
         },
         {
-          "behavior": "Retries no longer inflate the total nor mark a retried-and-passed test failed",
+          "behavior": "a missing attempt is treated as not dispatched",
           "disposition": "tested",
-          "evidence": "test_playwright_runner_flaky.py::test_retries_no_longer_inflate_the_total PASSED"
+          "evidence": "test_handoff_pipeline_pointer.py::test_a_missing_attempt_is_treated_as_not_dispatched PASSED"
         },
         {
-          "behavior": "An empty or unrecognised Playwright result is never promoted to a pass",
+          "behavior": "an unhashable status does not raise, and the Stop hook does not silently skip the handoff",
           "disposition": "tested",
-          "evidence": "test_playwright_runner_flaky.py::test_no_results_at_all_is_a_failure_not_a_pass and ::test_an_unrecognised_status_is_a_failure_not_a_pass PASSED"
+          "evidence": "test_handoff_pipeline_pointer.py::test_an_unhashable_status_does_not_raise PASSED"
         },
         {
-          "behavior": "The greenfield/brownfield adoption signal has one definition",
+          "behavior": "an unreadable status renders unknown in BOTH the status and the finished cell",
           "disposition": "tested",
-          "evidence": "shared/tests/test_known_failures.py \u2014 4 adoption tests PASSED; compliance suite 1325 passed unchanged"
+          "evidence": "test_handoff_pipeline_pointer.py::test_a_none_status_renders_as_unknown PASSED"
         },
         {
-          "behavior": "Control characters are stripped before the record and the dedup key",
+          "behavior": "the drift guard fails when the schema declares a status the renderer does not classify",
           "disposition": "tested",
-          "evidence": "test_journey_plan.py::test_control_characters_in_a_title_are_stripped, test_warning_followups.py::test_long_titles_are_bounded PASSED"
+          "evidence": "test_handoff_pipeline_pointer.py::test_the_drift_guard_fails_on_an_unclassified_new_status PASSED"
         },
         {
-          "behavior": "Both new CLIs are reachable exactly as the phase prose invokes them",
+          "behavior": "a forced retry clears the needs_validation status it caused",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-test/tests/test_record_honesty_wiring.py \u2014 5 subprocess tests + 2 prose-drift meta-tests PASSED"
+          "evidence": "test_validation_record_honesty.py::test_a_forced_retry_clears_the_needs_validation_status PASSED"
         },
         {
-          "behavior": "triage.py can append in-process from a plugin's own test session (ADR-045)",
+          "behavior": "the terminal pipeline-complete status still wins over the pause reset",
           "disposition": "tested",
-          "evidence": "the 13 previously-failing tests in test_warning_followups.py / test_journey_coverage.py now PASS; that suite is the regression pin"
+          "evidence": "test_validation_record_honesty.py::test_the_pipeline_complete_status_still_wins PASSED"
         },
         {
-          "behavior": "A warning layer that reports a failure it cannot itemize still leaves a follow-up",
+          "behavior": "an unpaused completion does not invent a status change",
           "disposition": "tested",
-          "evidence": "test_warning_followups.py \u2014 6 tests incl. the per-layer parametrized fallback and the count-only cross-commit dedup"
+          "evidence": "test_validation_record_honesty.py::test_an_unpaused_completion_does_not_invent_a_status_change PASSED"
         },
         {
-          "behavior": "The aggregate follow-up does not claim any failure was matched against the accepted list",
+          "behavior": "a pause set by phase_task_lifecycle (not by this step) is not lifted",
           "disposition": "tested",
-          "evidence": "test_warning_followups.py::test_the_aggregate_item_does_not_claim_anything_was_matched PASSED"
+          "evidence": "test_validation_record_honesty.py::test_a_lifecycle_set_pause_is_not_lifted PASSED"
         },
         {
-          "behavior": "A legacy multi-attempt pass is reported as a retry-pass, not a first-time pass",
+          "behavior": "another step's pause is neither lifted nor stripped of its findings",
           "disposition": "tested",
-          "evidence": "test_playwright_runner_flaky.py::test_a_legacy_multi_attempt_pass_is_not_silently_a_first_time_pass PASSED"
+          "evidence": "test_validation_record_honesty.py::test_another_steps_pause_is_neither_lifted_nor_erased PASSED"
         },
         {
-          "behavior": "A fully-skipped count-bearing layer is not a failure and files nothing",
+          "behavior": "a step with no validator records gate_result not_checked, never pass",
           "disposition": "tested",
-          "evidence": "test_warning_followups.py \u2014 3 parametrized layers + ::test_an_explicit_zero_failed_beats_a_bare_gap PASSED"
+          "evidence": "test_validation_record_honesty.py::test_a_step_with_no_validator_records_not_checked PASSED"
         },
         {
-          "behavior": "An integer skip COUNT is not read as the boolean layer-skipped flag",
+          "behavior": "a step with a validator still records pass",
           "disposition": "tested",
-          "evidence": "test_warning_followups.py::test_a_truthy_skip_COUNT_does_not_read_as_a_skipped_layer and ::test_skips_plus_a_real_failure_still_emits PASSED"
+          "evidence": "test_validation_record_honesty.py::test_a_step_with_a_validator_still_records_pass PASSED"
         },
         {
-          "behavior": "The printed summary reports known-and-accepted, genuine and retry-passes on separate lines",
+          "behavior": "run_phase_gate reports whether a validator existed at all",
+          "disposition": "tested",
+          "evidence": "test_validation_record_honesty.py::test_run_phase_gate_reports_whether_a_validator_existed PASSED"
+        },
+        {
+          "behavior": "a critical-gate crash appends to the real findings instead of replacing them",
+          "disposition": "tested",
+          "evidence": "test_validation_record_honesty.py::test_a_critical_gate_crash_keeps_the_real_findings PASSED"
+        },
+        {
+          "behavior": "a validate_phase crash still yields exactly one gate-error issue",
+          "disposition": "tested",
+          "evidence": "test_validation_record_honesty.py::test_a_validate_phase_crash_still_yields_a_single_gate_error PASSED"
+        },
+        {
+          "behavior": "a gate crash writes its traceback to stderr while the record stays compact",
+          "disposition": "tested",
+          "evidence": "test_validation_record_honesty.py::test_a_gate_crash_writes_its_traceback_to_stderr PASSED"
+        },
+        {
+          "behavior": "inform notes do not duplicate across a forced retry",
+          "disposition": "tested",
+          "evidence": "test_validation_record_honesty.py::test_inform_notes_do_not_duplicate_across_a_forced_retry PASSED"
+        },
+        {
+          "behavior": "a distinct finding from the same step (another split) survives dedup",
+          "disposition": "tested",
+          "evidence": "test_validation_record_honesty.py::test_a_distinct_finding_from_the_same_step_survives PASSED"
+        },
+        {
+          "behavior": "notes for other steps survive",
+          "disposition": "tested",
+          "evidence": "test_validation_record_honesty.py::test_notes_for_other_steps_survive PASSED"
+        },
+        {
+          "behavior": "--force with a non-complete status is not refused",
+          "disposition": "tested",
+          "evidence": "test_validation_record_honesty.py::test_force_with_a_non_complete_status_is_not_refused PASSED"
+        },
+        {
+          "behavior": "a driven single_session run stays inert instead of erroring",
+          "disposition": "tested",
+          "evidence": "test_validation_record_honesty.py::test_a_driven_run_stays_inert_instead_of_erroring PASSED"
+        },
+        {
+          "behavior": "a reasonless forced completion is still refused",
+          "disposition": "tested",
+          "evidence": "test_validation_record_honesty.py::test_a_reasonless_forced_completion_is_still_refused PASSED"
+        },
+        {
+          "behavior": "the renderer still reads loop state the real orchestrator wrote",
+          "disposition": "tested",
+          "evidence": "test_handoff_reads_real_loop_state.py::test_the_renderer_reads_the_loop_state_the_orchestrator_wrote PASSED"
+        },
+        {
+          "behavior": "after a real apply the pointer reads as next up, not as a live dispatch",
+          "disposition": "tested",
+          "evidence": "test_handoff_reads_real_loop_state.py::test_a_phase_the_orchestrator_completed_is_reported_as_finished PASSED"
+        },
+        {
+          "behavior": "the shared consumer and the run plugin still agree on the loop-state path",
+          "disposition": "tested",
+          "evidence": "test_handoff_reads_real_loop_state.py::test_the_consumer_and_the_producer_agree_on_the_loop_state_path PASSED"
+        },
+        {
+          "behavior": "docs (hooks-and-pipeline.md) describe the corrected force-reason and tally rules",
           "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "The summary banner is agent-rendered prose in step-5-report-results.md, not code. Every input it must render is tested (identity split, flaky count, accepted-vs-genuine); the wording itself is not mechanisable."
+          "evidence": "prose accuracy \u2014 reviewed by hand against the diff; no executable assertion can judge whether the wording is right",
+          "reason_code": "requires-manual-visual-judgment"
         }
       ],
       "counts": {
-        "testable": 28,
-        "tested": 28,
+        "testable": 41,
+        "tested": 41,
         "untestable": 1,
         "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 8,
-        "covered_acs": 8
       }
     }
   },
