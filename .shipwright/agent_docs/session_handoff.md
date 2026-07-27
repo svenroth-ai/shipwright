@@ -2,7 +2,7 @@
 canon_generated: true
 run_id: "iterate-2026-07-27-no-silent-revert"
 phase: "iterate"
-reason: "PR #477 DIRTY: refresh"
+reason: "PR #477 BEHIND: refresh"
 timestamp: "2026-07-27T19:47:53.112213+00:00"
 ---
 
@@ -14,7 +14,7 @@ timestamp: "2026-07-27T19:47:53.112213+00:00"
 
 - **Session ID**: 9058f47a-25f4-4469-b517-e3b5c91347e0
 - **Timestamp**: 2026-07-27 19:47:53 UTC
-- **Reason**: PR #477 DIRTY: refresh
+- **Reason**: PR #477 BEHIND: refresh
 
 ## Last Iterate
 
@@ -32,11 +32,6 @@ timestamp: "2026-07-27T19:47:53.112213+00:00"
 - **Branch**: iterate/no-silent-revert
 - **External Review Marker**: skipped_config_disabled (external_review_state.json @ 2026-07-27T19:43:50)
 
-### Mandatory replay on Resume
-
-Before dispatching to the handoff's Remaining phase, run these if missing:
-- Finalization (F0–F11) after all mandatory phases pass
-
 ## Legacy build state
 
 - **Phase**: design
@@ -49,8 +44,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Git State
 
 - **Branch**: iterate/no-silent-revert
-- **Last Commit**: 6890762b Merge remote-tracking branch 'origin/main' into iterate/no-silent-revert
-- **Uncommitted Changes**: Yes
+- **Last Commit**: 5d5fca61 Merge remote-tracking branch 'origin/main' into iterate/no-silent-revert
+- **Uncommitted Changes**: None
 
 ## Config Files to Read
 

@@ -3,7 +3,7 @@
 Generated: 2026-07-27T19:47:47.363461+00:00
 Source-State: run=iterate-2026-07-27-review-floor-not-chained
 Consistency-audit: never run
-Total commits: 1245
+Total commits: 1247
 
 ## Commit Distribution
 
@@ -11,9 +11,9 @@ Total commits: 1245
 pie title Commit Types
     "fix" : 362
     "feat" : 349
-    "chore" : 258
+    "chore" : 259
     "docs" : 148
-    "refactor" : 76
+    "refactor" : 77
     "test" : 31
     "ci" : 11
     "other" : 9
@@ -743,10 +743,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 258 commits
+### Chores (chore) — 259 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | 735bf2085cbb |
 | 2026-07-27 | churn | regenerate derived snapshots after main merge | a9378c116c78 |
 | 2026-07-27 | churn | regenerate derived snapshots after main merge | b68bbf21c3f3 |
 | 2026-07-27 | triage | sweep 5 outbox append(s) into branch | aa539d682089 |
@@ -1159,10 +1160,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 76 commits
+### Refactoring (refactor) — 77 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | test | split the close-missing floor cases out of the CLI test file (#478) | cf6d326b5011 |
 | 2026-07-27 | shared | split git resolution out of source_state (300-LOC compliance) (#451) | 3cdca5cfc884 |
 | 2026-07-21 | adopt | route the eight scaffolders through one guarded shared/ loader (FR-01.13) (#423) | 736fc8d1712c |
 | 2026-07-20 | requirements | one catalog, stated once in plain language (campaign S6) (#414) | be2561caccd3 |
@@ -1316,7 +1318,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1245 |
+| Total commits | 1247 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1245 |
+| Human-authored commits | 1247 |
 
