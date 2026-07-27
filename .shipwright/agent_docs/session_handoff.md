@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-merge-state-vocabulary"
+run_id: "iterate-2026-07-27-test-phase-record-honesty"
 phase: "iterate"
-reason: "PR #473 BEHIND: refresh before merge"
-timestamp: "2026-07-27T18:26:39.126718+00:00"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-07-27T17:38:49.456380+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 18:26:39 UTC
+> Auto-generated 2026-07-27 17:38:49 UTC
 
 ## Session Info
 
-- **Session ID**: 9058f47a-25f4-4469-b517-e3b5c91347e0
-- **Timestamp**: 2026-07-27 18:26:39 UTC
-- **Reason**: PR #473 BEHIND: refresh before merge
+- **Session ID**: f899aafb-12bc-48fa-910c-d14e804584c4
+- **Timestamp**: 2026-07-27 17:38:49 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
@@ -29,8 +29,11 @@ timestamp: "2026-07-27T18:26:39.126718+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/merge-state-vocabulary
-- **External Review Marker**: skipped_config_disabled (external_review_state.json @ 2026-07-27T16:41:37)
+- **Branch**: iterate/test-phase-record-honesty
+- **Run ID**: iterate-2026-07-27-test-phase-record-honesty
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-test-phase-record-honesty.md
+- **Complexity**: medium
+- **External Review Marker**: unknown (iterate-2026-07-27-test-phase-record-honesty-external-review.json)
 
 ### Mandatory replay on Resume
 
@@ -48,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/merge-state-vocabulary
-- **Last Commit**: 30e070ba Merge remote-tracking branch 'origin/main' into iterate/merge-state-vocabulary
+- **Branch**: iterate/test-phase-record-honesty
+- **Last Commit**: 5ab77d2e Merge remote-tracking branch 'origin/main' into iterate/test-phase-record-honesty
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,16 +68,16 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-f78c9bcb | grade_snapshot | — | 2026-07-27 |
 | evt-950798de | grade_snapshot | — | 2026-07-27 |
 | evt-36d0f887 | work_completed | iterate (iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed) | 2026-07-27 |
 | evt-ad7b51e0 | grade_snapshot | — | 2026-07-27 |
 | evt-e3d8f519 | work_completed | iterate (iterate: an audit that checked nothing is not recorded) | 2026-07-27 |
+| evt-024abc36 | grade_snapshot | — | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 382
+- **Total work events**: 383
 - **Last iterate**: change — iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

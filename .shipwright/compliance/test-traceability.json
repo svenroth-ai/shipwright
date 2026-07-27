@@ -2,8 +2,8 @@
   "schema_version": 3,
   "collector_version": "test_links/1.0.0",
   "generated_at": "2026-07-27T17:38:43.791837+00:00",
-  "source_commit": "30e070ba6d94f15c683bd3389e11656614cc1a21",
-  "spec_hash": "sha256:ee127bd7ccf33e31432a08eef853870ee2daf68ed068e9a57b1247808cec61ca",
+  "source_commit": "5ab77d2e787484b400d5a4cf2c616d1e390d703b",
+  "spec_hash": "sha256:0336fdf95f038e1c001006c62e7b4e6e5f86fe3f8c6f4186f06b8d6a7987193a",
   "requirements": {
     "01::FR-01.01": {
       "id": "FR-01.01",
@@ -373,11 +373,579 @@
             "tag_source": "pytest_marker"
           },
           {
+            "id": "plugins/shipwright-test/tests/test_journey_coverage.py::test_a_journey_with_no_spec_is_reported_even_though_other_specs_exist",
+            "path": "plugins/shipwright-test/tests/test_journey_coverage.py::test_a_journey_with_no_spec_is_reported_even_though_other_specs_exist",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_journey_coverage.py::test_every_journey_covered_is_a_clean_report",
+            "path": "plugins/shipwright-test/tests/test_journey_coverage.py::test_every_journey_covered_is_a_clean_report",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_journey_coverage.py::test_a_journey_named_only_inside_a_spec_body_counts_as_covered",
+            "path": "plugins/shipwright-test/tests/test_journey_coverage.py::test_a_journey_named_only_inside_a_spec_body_counts_as_covered",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_journey_coverage.py::test_specs_are_found_anywhere_under_the_e2e_tree",
+            "path": "plugins/shipwright-test/tests/test_journey_coverage.py::test_specs_are_found_anywhere_under_the_e2e_tree",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_journey_coverage.py::test_no_plan_file_is_undetermined_with_a_diagnostic",
+            "path": "plugins/shipwright-test/tests/test_journey_coverage.py::test_no_plan_file_is_undetermined_with_a_diagnostic",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_journey_coverage.py::test_a_plan_with_no_parseable_journeys_is_undetermined_not_covered",
+            "path": "plugins/shipwright-test/tests/test_journey_coverage.py::test_a_plan_with_no_parseable_journeys_is_undetermined_not_covered",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_journey_coverage.py::test_no_e2e_directory_leaves_generation_to_the_existing_step",
+            "path": "plugins/shipwright-test/tests/test_journey_coverage.py::test_no_e2e_directory_leaves_generation_to_the_existing_step",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_journey_coverage.py::test_greenfield_gaps_block",
+            "path": "plugins/shipwright-test/tests/test_journey_coverage.py::test_greenfield_gaps_block",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_journey_coverage.py::test_brownfield_gaps_do_not_block_and_leave_a_follow_up",
+            "path": "plugins/shipwright-test/tests/test_journey_coverage.py::test_brownfield_gaps_do_not_block_and_leave_a_follow_up",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_journey_coverage.py::test_the_brownfield_follow_up_routes_to_the_onboarding_phase",
+            "path": "plugins/shipwright-test/tests/test_journey_coverage.py::test_the_brownfield_follow_up_routes_to_the_onboarding_phase",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_journey_coverage.py::test_greenfield_gaps_do_not_flood_triage",
+            "path": "plugins/shipwright-test/tests/test_journey_coverage.py::test_greenfield_gaps_do_not_flood_triage",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_journey_coverage.py::test_a_persistent_gap_stays_one_follow_up_across_runs",
+            "path": "plugins/shipwright-test/tests/test_journey_coverage.py::test_a_persistent_gap_stays_one_follow_up_across_runs",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_journey_coverage.py::test_two_journeys_with_the_same_title_stay_two_follow_ups",
+            "path": "plugins/shipwright-test/tests/test_journey_coverage.py::test_two_journeys_with_the_same_title_stay_two_follow_ups",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_journey_plan.py::test_flows_are_read_from_the_plan_in_order",
+            "path": "plugins/shipwright-test/tests/test_journey_plan.py::test_flows_are_read_from_the_plan_in_order",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_journey_plan.py::test_page_object_headings_are_not_mistaken_for_journeys",
+            "path": "plugins/shipwright-test/tests/test_journey_plan.py::test_page_object_headings_are_not_mistaken_for_journeys",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_journey_plan.py::test_journey_identity_carries_its_position_so_duplicates_stay_distinct",
+            "path": "plugins/shipwright-test/tests/test_journey_plan.py::test_journey_identity_carries_its_position_so_duplicates_stay_distinct",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_journey_plan.py::test_a_plan_with_no_flows_yields_nothing",
+            "path": "plugins/shipwright-test/tests/test_journey_plan.py::test_a_plan_with_no_flows_yields_nothing",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_journey_plan.py::test_a_plainly_headed_journey_is_read_too",
+            "path": "plugins/shipwright-test/tests/test_journey_plan.py::test_a_plainly_headed_journey_is_read_too",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_journey_plan.py::test_both_spellings_of_the_same_journey_give_the_same_slug",
+            "path": "plugins/shipwright-test/tests/test_journey_plan.py::test_both_spellings_of_the_same_journey_give_the_same_slug",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_journey_plan.py::test_numbered_steps_are_not_mistaken_for_journeys",
+            "path": "plugins/shipwright-test/tests/test_journey_plan.py::test_numbered_steps_are_not_mistaken_for_journeys",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_journey_plan.py::test_control_characters_in_a_title_are_stripped",
+            "path": "plugins/shipwright-test/tests/test_journey_plan.py::test_control_characters_in_a_title_are_stripped",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_journey_plan.py::test_sanitize_keeps_ordinary_text_and_collapses_whitespace",
+            "path": "plugins/shipwright-test/tests/test_journey_plan.py::test_sanitize_keeps_ordinary_text_and_collapses_whitespace",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_journey_plan.py::test_slugify_is_derived_from_the_cleaned_string",
+            "path": "plugins/shipwright-test/tests/test_journey_plan.py::test_slugify_is_derived_from_the_cleaned_string",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_a_legacy_multi_attempt_pass_is_not_silently_a_first_time_pass",
+            "path": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_a_legacy_multi_attempt_pass_is_not_silently_a_first_time_pass",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_each_row_of_the_table",
+            "path": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_each_row_of_the_table",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_no_results_at_all_is_a_failure_not_a_pass",
+            "path": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_no_results_at_all_is_a_failure_not_a_pass",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_an_unrecognised_status_is_a_failure_not_a_pass",
+            "path": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_an_unrecognised_status_is_a_failure_not_a_pass",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_an_unrecognised_test_level_verdict_falls_back_to_the_attempts",
+            "path": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_an_unrecognised_test_level_verdict_falls_back_to_the_attempts",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_a_skip_after_a_failure_is_not_reported_as_skipped",
+            "path": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_a_skip_after_a_failure_is_not_reported_as_skipped",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_a_garbage_test_object_does_not_crash_the_reader",
+            "path": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_a_garbage_test_object_does_not_crash_the_reader",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_a_retried_and_passed_test_is_a_pass_and_is_counted_as_flaky",
+            "path": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_a_retried_and_passed_test_is_a_pass_and_is_counted_as_flaky",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_the_flaky_test_is_named_with_its_retry_count",
+            "path": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_the_flaky_test_is_named_with_its_retry_count",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_a_flaky_test_does_not_make_the_run_fail",
+            "path": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_a_flaky_test_does_not_make_the_run_fail",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_retries_no_longer_inflate_the_total",
+            "path": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_retries_no_longer_inflate_the_total",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_a_genuine_failure_carries_its_retry_count_and_last_error",
+            "path": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_a_genuine_failure_carries_its_retry_count_and_last_error",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_a_run_with_no_retries_reports_zero_flaky",
+            "path": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_a_run_with_no_retries_reports_zero_flaky",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_skipped_tests_are_counted_once_and_do_not_fail_the_run",
+            "path": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_skipped_tests_are_counted_once_and_do_not_fail_the_run",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_nested_suites_are_walked",
+            "path": "plugins/shipwright-test/tests/test_playwright_runner_flaky.py::test_nested_suites_are_walked",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_record_honesty_wiring.py::test_the_journey_check_runs_as_the_skill_invokes_it",
+            "path": "plugins/shipwright-test/tests/test_record_honesty_wiring.py::test_the_journey_check_runs_as_the_skill_invokes_it",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_record_honesty_wiring.py::test_a_greenfield_journey_gap_makes_the_check_exit_non_zero",
+            "path": "plugins/shipwright-test/tests/test_record_honesty_wiring.py::test_a_greenfield_journey_gap_makes_the_check_exit_non_zero",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_record_honesty_wiring.py::test_the_warning_emitter_runs_over_the_record_the_phase_writes",
+            "path": "plugins/shipwright-test/tests/test_record_honesty_wiring.py::test_the_warning_emitter_runs_over_the_record_the_phase_writes",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_record_honesty_wiring.py::test_both_checks_together_leave_one_coherent_backlog",
+            "path": "plugins/shipwright-test/tests/test_record_honesty_wiring.py::test_both_checks_together_leave_one_coherent_backlog",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_record_honesty_wiring.py::test_the_summary_only_mode_reports_without_filing",
+            "path": "plugins/shipwright-test/tests/test_record_honesty_wiring.py::test_the_summary_only_mode_reports_without_filing",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_record_honesty_wiring.py::test_the_step_that_owns_a_check_still_invokes_it",
+            "path": "plugins/shipwright-test/tests/test_record_honesty_wiring.py::test_the_step_that_owns_a_check_still_invokes_it",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_record_honesty_wiring.py::test_every_script_the_prose_invokes_exists_on_disk",
+            "path": "plugins/shipwright-test/tests/test_record_honesty_wiring.py::test_every_script_the_prose_invokes_exists_on_disk",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_failing_browser_test_leaves_a_follow_up_per_spec_file",
+            "path": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_failing_browser_test_leaves_a_follow_up_per_spec_file",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_failing_consistency_category_leaves_a_follow_up",
+            "path": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_failing_consistency_category_leaves_a_follow_up",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_diverging_screen_leaves_a_follow_up",
+            "path": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_diverging_screen_leaves_a_follow_up",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_warning_followups.py::test_all_three_layers_emit_in_one_pass",
+            "path": "plugins/shipwright-test/tests/test_warning_followups.py::test_all_three_layers_emit_in_one_pass",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_green_run_files_nothing",
+            "path": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_green_run_files_nothing",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_skipped_layer_files_nothing",
+            "path": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_skipped_layer_files_nothing",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_truthy_skip_COUNT_does_not_read_as_a_skipped_layer",
+            "path": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_truthy_skip_COUNT_does_not_read_as_a_skipped_layer",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_missing_results_file_is_a_no_op_not_a_crash",
+            "path": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_missing_results_file_is_a_no_op_not_a_crash",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_malformed_results_file_is_a_no_op_not_a_crash",
+            "path": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_malformed_results_file_is_a_no_op_not_a_crash",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_failure_reported_only_as_counts_still_leaves_a_follow_up",
+            "path": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_failure_reported_only_as_counts_still_leaves_a_follow_up",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_warning_followups.py::test_an_explicit_failed_count_with_no_detail_also_emits",
+            "path": "plugins/shipwright-test/tests/test_warning_followups.py::test_an_explicit_failed_count_with_no_detail_also_emits",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_warning_followups.py::test_the_aggregate_item_does_not_claim_anything_was_matched",
+            "path": "plugins/shipwright-test/tests/test_warning_followups.py::test_the_aggregate_item_does_not_claim_anything_was_matched",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_warning_followups.py::test_the_fallback_does_not_fire_when_the_layer_was_itemized",
+            "path": "plugins/shipwright-test/tests/test_warning_followups.py::test_the_fallback_does_not_fire_when_the_layer_was_itemized",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_warning_followups.py::test_the_fallback_does_not_fire_on_a_green_or_skipped_layer",
+            "path": "plugins/shipwright-test/tests/test_warning_followups.py::test_the_fallback_does_not_fire_on_a_green_or_skipped_layer",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_fully_skipped_count_bearing_layer_is_not_a_failure",
+            "path": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_fully_skipped_count_bearing_layer_is_not_a_failure",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_warning_followups.py::test_skips_plus_a_real_failure_still_emits",
+            "path": "plugins/shipwright-test/tests/test_warning_followups.py::test_skips_plus_a_real_failure_still_emits",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_warning_followups.py::test_an_explicit_zero_failed_beats_a_bare_gap",
+            "path": "plugins/shipwright-test/tests/test_warning_followups.py::test_an_explicit_zero_failed_beats_a_bare_gap",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_count_only_failure_stays_one_item_across_commits",
+            "path": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_count_only_failure_stays_one_item_across_commits",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_warning_followups.py::test_the_same_failure_across_two_commits_stays_one_follow_up",
+            "path": "plugins/shipwright-test/tests/test_warning_followups.py::test_the_same_failure_across_two_commits_stays_one_follow_up",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_second_broken_spec_still_gets_its_own_follow_up",
+            "path": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_second_broken_spec_still_gets_its_own_follow_up",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_test_that_only_passes_on_retry_leaves_a_low_severity_follow_up",
+            "path": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_test_that_only_passes_on_retry_leaves_a_low_severity_follow_up",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_warning_followups.py::test_an_accepted_baseline_failure_does_not_become_a_follow_up",
+            "path": "plugins/shipwright-test/tests/test_warning_followups.py::test_an_accepted_baseline_failure_does_not_become_a_follow_up",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_warning_followups.py::test_the_returned_summary_names_accepted_and_genuine_separately",
+            "path": "plugins/shipwright-test/tests/test_warning_followups.py::test_the_returned_summary_names_accepted_and_genuine_separately",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_warning_followups.py::test_the_summary_says_when_the_accepted_list_could_not_be_read",
+            "path": "plugins/shipwright-test/tests/test_warning_followups.py::test_the_summary_says_when_the_accepted_list_could_not_be_read",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_broken_triage_writer_does_not_raise_into_the_phase",
+            "path": "plugins/shipwright-test/tests/test_warning_followups.py::test_a_broken_triage_writer_does_not_raise_into_the_phase",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "plugins/shipwright-test/tests/test_warning_followups.py::test_long_titles_are_bounded",
+            "path": "plugins/shipwright-test/tests/test_warning_followups.py::test_long_titles_are_bounded",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker"
+          },
+          {
             "id": "shared/tests/test_known_failures.py::test_absent_file_is_an_empty_baseline_not_an_error",
             "path": "shared/tests/test_known_failures.py::test_absent_file_is_an_empty_baseline_not_an_error",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -385,7 +953,7 @@
             "path": "shared/tests/test_known_failures.py::test_declared_entries_are_read_with_their_metadata",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -393,7 +961,7 @@
             "path": "shared/tests/test_known_failures.py::test_explicit_baseline_count_wins_over_the_derived_sum",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -401,7 +969,7 @@
             "path": "shared/tests/test_known_failures.py::test_malformed_file_is_flagged_but_yields_a_zero_baseline",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -409,7 +977,7 @@
             "path": "shared/tests/test_known_failures.py::test_a_non_object_payload_is_malformed_not_a_crash",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -417,7 +985,7 @@
             "path": "shared/tests/test_known_failures.py::test_non_list_known_failures_key_is_malformed",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -425,7 +993,7 @@
             "path": "shared/tests/test_known_failures.py::test_garbage_entries_are_skipped_without_losing_the_good_ones",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -433,7 +1001,7 @@
             "path": "shared/tests/test_known_failures.py::test_a_non_integer_count_falls_back_to_one",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -441,7 +1009,7 @@
             "path": "shared/tests/test_known_failures.py::test_within_baseline_mirrors_the_audit_rule",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -449,7 +1017,7 @@
             "path": "shared/tests/test_known_failures.py::test_genuine_failure_count_prefers_an_explicit_failed_number",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -457,7 +1025,7 @@
             "path": "shared/tests/test_known_failures.py::test_genuine_failure_count_subtracts_skips_when_failed_is_absent",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -465,7 +1033,7 @@
             "path": "shared/tests/test_known_failures.py::test_genuine_failure_count_falls_back_to_the_bare_gap",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -473,7 +1041,7 @@
             "path": "shared/tests/test_known_failures.py::test_genuine_failure_count_never_goes_negative",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -481,7 +1049,7 @@
             "path": "shared/tests/test_known_failures.py::test_split_accepted_separates_declared_failures_from_genuine_ones",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -489,7 +1057,7 @@
             "path": "shared/tests/test_known_failures.py::test_split_accepted_matches_a_declared_substring_of_the_reported_name",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -497,7 +1065,7 @@
             "path": "shared/tests/test_known_failures.py::test_split_accepted_does_not_match_on_a_partial_word",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -505,7 +1073,7 @@
             "path": "shared/tests/test_known_failures.py::test_a_declared_failure_that_did_not_fire_does_not_excuse_a_different_one",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -513,7 +1081,7 @@
             "path": "shared/tests/test_known_failures.py::test_split_accepted_with_no_baseline_calls_everything_genuine",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -521,7 +1089,7 @@
             "path": "shared/tests/test_known_failures.py::test_split_accepted_tolerates_non_string_failure_names",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -529,7 +1097,7 @@
             "path": "shared/tests/test_known_failures.py::test_a_project_with_an_adoption_block_is_brownfield",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -537,7 +1105,7 @@
             "path": "shared/tests/test_known_failures.py::test_an_empty_adoption_block_is_not_adoption",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -545,7 +1113,7 @@
             "path": "shared/tests/test_known_failures.py::test_scope_is_not_the_adoption_signal",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -553,7 +1121,7 @@
             "path": "shared/tests/test_known_failures.py::test_a_missing_or_broken_run_config_reads_as_greenfield",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -561,7 +1129,7 @@
             "path": "shared/tests/test_known_failures_audit_parity.py::test_the_audit_and_the_test_phase_agree_on_failing",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -569,7 +1137,7 @@
             "path": "shared/tests/test_known_failures_audit_parity.py::test_a_gap_the_declared_baseline_covers_is_failing_to_neither",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -577,7 +1145,7 @@
             "path": "shared/tests/test_known_failures_audit_parity.py::test_a_gap_beyond_the_baseline_is_where_the_two_deliberately_differ",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -585,7 +1153,7 @@
             "path": "shared/tests/test_known_failures_audit_parity.py::test_they_agree_that_an_exact_residual_is_not_waived_by_the_baseline",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -593,7 +1161,7 @@
             "path": "shared/tests/test_known_failures_audit_parity.py::test_an_explicit_failed_count_matches_the_audits_derived_one",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -601,7 +1169,7 @@
             "path": "shared/tests/test_known_failures_audit_parity.py::test_within_baseline_still_mirrors_the_audits_no_skip_field_branch",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -609,7 +1177,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_a_gap_with_no_declared_baseline_still_warns",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -617,7 +1185,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_a_green_run_still_passes",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -625,7 +1193,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_an_empty_run_is_still_never_a_pass",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -633,7 +1201,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_an_unbroken_gap_within_the_declared_baseline_does_not_fail_the_check",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -641,7 +1209,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_an_exactly_counted_failure_is_not_waived_by_the_baseline",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -649,7 +1217,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_a_gap_beyond_the_baseline_still_warns_and_names_both_numbers",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -657,7 +1225,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_an_unreadable_baseline_file_never_widens_what_is_excused",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -665,7 +1233,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_an_explicit_failed_count_is_preferred_over_the_bare_gap",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -673,7 +1241,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_skips_are_subtracted_when_no_failed_count_is_recorded",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -681,7 +1249,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_skips_plus_a_real_failure_still_warns",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -689,7 +1257,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_a_skip_only_gap_does_not_consume_accepted_failure_allowance",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -697,7 +1265,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_an_explicit_skip_count_also_makes_the_residual_exact",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -705,7 +1273,7 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_a_malformed_results_file_is_still_an_error",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           },
           {
@@ -713,13 +1281,13 @@
             "path": "shared/tests/test_test_checks_accepted_baseline.py::test_a_non_integer_failed_field_falls_back_rather_than_crashing",
             "layer": "unit",
             "status": "enabled",
-            "executed": "not_run",
+            "executed": "pass",
             "tag_source": "pytest_marker"
           }
         ]
       },
       "coverage": {
-        "unit": "MISSING"
+        "unit": "ok"
       }
     },
     "01::FR-01.07": {

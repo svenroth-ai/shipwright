@@ -1,7 +1,7 @@
 # Project Activity Dashboard
-> Updated: 2026-07-27 18:26 UTC | Session: 9058f47a-25f4-4469-b517-e3b5c91347e0 | Run: iterate-2026-07-27-merge-state-vocabulary
+> Updated: 2026-07-27 17:38 UTC | Session: f899aafb-12bc-48fa-910c-d14e804584c4 | Run: iterate-2026-07-27-test-phase-record-honesty
 
-## Recent Changes (382 iterations)
+## Recent Changes (383 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
@@ -28,6 +28,7 @@
 | change | iterate: hosting rollback uses the target ref, polls liveness to the target's deadline, gates on stored-data drift, and halts loudly when the way back fails | 0/0 |  | FR-01.08 | 2026-07-27 |
 | change | iterate: compliance evidence discloses when the cross-check last ran | 0/0 |  | FR-01.10 | 2026-07-27 |
 | bug | iterate: changelog writer preserves the history it read | 0/0 |  | FR-01.09 | 2026-07-27 |
+| change | iterate: the test phase's record tells the truth about the run (trg-12b4cf3f) | +79 new, 6978/6978 |  | FR-01.06 | 2026-07-27 |
 | change | iterate: REQ-3 Phase 2 content round - all 18 requirements walked or minted | 0/0 |  | FR-01.01, FR-01.02, FR-01.03 | 2026-07-26 |
 | feature | REQ-3 Phase 1: shared requirement-elicitation method (grilling + domain-modeling) + CONTEXT.md format + FR-01.16 mint | 4946/4961 |  |  | 2026-07-23 |
 | bug | design verifier C1 skips projects that never ran the design phase | 26/26 |  | compliance | 2026-07-23 |
@@ -389,7 +390,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-27 | Unit: 5560/5576 | Smoke: not_run | (iterate)
+Last run: 2026-07-27 | Unit: 7338/7338 | Integration: 422/422 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
