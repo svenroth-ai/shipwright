@@ -993,6 +993,7 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 **What it produces:**
 
 - A table of findings with severity, type, rule, file, and line number
+- A **coverage manifest** naming every class of weakness and whether it was actually checked
 - A classification summary (auto-fixable / agent-fixable / needs-review / informational)
 - A Markdown security report written to the project root
 - `shipwright_security_config.json` with scan results (consumed by `/shipwright-compliance`)
@@ -1001,7 +1002,8 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 
 1. Detects and selects the scanner backend (OSS or Aikido). If neither is configured, prints setup instructions and stops.
 2. Runs the scan -- locally via CLI tools (OSS) or via API call (Aikido).
-3. In pipeline mode, classifies each finding into four categories: auto-fixable (e.g., dependency updates with known patches), agent-fixable (e.g., hardcoded credentials), needs-review (architecture issues), and informational (low-severity best practices).
+3. Records what it could not check. A tool that crashes already fails the run; a tool that was never installed used to be invisible, so a machine with one scanner produced a report that read clean for every class. Each class is now marked checked, failed, not requested, or not available -- and the report says the unchecked ones are unexamined, not clean.
+4. In pipeline mode, classifies each finding into four categories: auto-fixable (e.g., dependency updates with known patches), agent-fixable (e.g., hardcoded credentials), needs-review (architecture issues), and informational (low-severity best practices).
 4. Auto-fixable issues are patched directly, then tests are re-run to verify the fix.
 5. Agent-fixable issues are handed to a `security-fixer` subagent with full context (file, line, CWE, remediation hint). Each finding gets up to 3 fix attempts.
 6. Needs-review findings are presented to you with options to fix, decline, or defer.

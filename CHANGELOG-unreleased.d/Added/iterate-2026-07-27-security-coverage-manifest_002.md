@@ -1,0 +1,1 @@
+A security report that cannot say what it examined now says exactly that. An older scan record with no coverage information renders "Coverage not reported" instead of an implied clean sweep, and that state is kept distinct from a scan that did report and found a gap.

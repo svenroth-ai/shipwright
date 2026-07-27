@@ -26,4 +26,6 @@ pythonpath = [".", "scripts"]
 markers = [
     "integration: marks tests as integration tests",
     "smoke: real-binary scanner smoke tests (opt-in; skipped when binary missing)",
+    "covers: binds a test to one or more FRs for requirement->test traceability (@FR tags, Spec D1)",
+    "slow: marks tests that spawn subprocesses or perform long I/O",
 ]
