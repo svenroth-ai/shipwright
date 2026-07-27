@@ -1,6 +1,6 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-triage-defer-ci-cap"
+run_id: "iterate-2026-07-27-adopt-derived-catalogue-honesty"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
 timestamp: "2026-07-27T08:30:58.021874+00:00"
@@ -12,7 +12,7 @@ timestamp: "2026-07-27T08:30:58.021874+00:00"
 
 ## Session Info
 
-- **Session ID**: 8a66b2f1-81e9-4505-8591-b94928ca02f6
+- **Session ID**: 98053cc9-0f7c-4be8-b1cc-8b5d8b25d84b
 - **Timestamp**: 2026-07-27 08:30:58 UTC
 - **Reason**: ensure-current pre-merge refresh
 
@@ -29,11 +29,11 @@ timestamp: "2026-07-27T08:30:58.021874+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/triage-defer-ci-cap
-- **Run ID**: iterate-2026-07-27-triage-defer-ci-cap
-- **Spec**: .shipwright/planning/iterate/2026-07-27-triage-defer-ci-cap.md
+- **Branch**: iterate/adopt-derived-catalogue-honesty
+- **Run ID**: iterate-2026-07-27-adopt-derived-catalogue-honesty
+- **Spec**: .shipwright/planning/iterate/2026-07-27-adopt-derived-catalogue-honesty.md
 - **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-07-27T07:19:14))
+- **External Review Marker**: stale (predates spec (2026-07-27T07:13:55))
 
 ### Mandatory replay on Resume
 
@@ -52,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/triage-defer-ci-cap
-- **Last Commit**: 5a48e306 Merge remote-tracking branch 'origin/main' into iterate/triage-defer-ci-cap
+- **Branch**: iterate/adopt-derived-catalogue-honesty
+- **Last Commit**: 2ae138c4 Merge remote-tracking branch 'origin/main' into iterate/adopt-derived-catalogue-honesty
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -78,7 +78,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 363
+- **Total work events**: 364
 - **Last iterate**: change — iterate: the review gate stops being bypassable (fail-closed + fork review) (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

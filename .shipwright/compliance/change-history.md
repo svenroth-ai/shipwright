@@ -1,15 +1,15 @@
 # Commit Change Log
 
 Generated: 2026-07-27T08:30:49.617405+00:00
-Total commits: 1213
+Total commits: 1219
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 349
-    "feat" : 335
-    "chore" : 256
+    "fix" : 351
+    "feat" : 336
+    "chore" : 259
     "docs" : 147
     "refactor" : 75
     "test" : 30
@@ -20,10 +20,12 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 349 commits
+### Fixes (fix) — 351 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | adopt | resolve spec_table by path so summarize survives a foreign `lib` binding | a9ec98ab5ecd |
+| 2026-07-27 | adopt | confirmation must be derivable from Basis, and the block must say what is true | 808631ca1f6b |
 | 2026-07-27 | run | an override overrides the verdict, never the check (#438) | f6179f6e1ed5 |
 | 2026-07-27 | ci | the PR review gate stops being bypassable (#437) | ec0c7055046f |
 | 2026-07-23 | deps | bump pyasn1 0.6.3 -> 0.6.4 (CVE-2026-59885, CVE-2026-59886) (#432) | 9ffbae764acd |
@@ -374,12 +376,13 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 335 commits
+### Features (feat) — 336 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | triage | defer from the terminal; cap the failing-check detail (#444) | 631e08055ebc |
 | 2026-07-27 | project | give requirements a size rule, and stop the templates contradicting the basis rule (#442) | af72103d0e7a |
-| 2026-07-27 | triage | defer from the terminal; cap the failing-check detail | 172cc2da2cc6 |
+| 2026-07-27 | adopt | a derived catalogue announces itself, and inherited breakage is recorded as inherited | aaa5b265748e |
 | 2026-07-27 | spec | REQ-3 Phase 2 — every requirement now states what it guarantees (#436) | 28491e1c9631 |
 | 2026-07-23 | shared | shared requirement-elicitation method + FR-01.16 (REQ-3 Phase 1) (#431) | 601fafe55276 |
 | 2026-07-23 | compliance | track skipped tests as a first-class field; key D4 on genuine failures (FR-01.10) (#430) | 355681bdcd4e |
@@ -714,12 +717,15 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 256 commits
+### Chores (chore) — 259 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | churn | regenerate derived snapshots after main merge | feebefac394d |
-| 2026-07-27 | triage | sweep 60 outbox append(s) into branch | 9b6ecb237f1c |
+| 2026-07-27 | iterate | refresh handoff + compliance snapshots | 188e78d71029 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | ba62421997e0 |
+| 2026-07-27 | iterate | refresh handoff + compliance snapshots after the review-fix commit | 0a3a4ff56c92 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | 26dbefaf4718 |
+| 2026-07-27 | triage | sweep 60 outbox append(s) into branch | 5ecc38b377b6 |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -1282,7 +1288,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1213 |
+| Total commits | 1219 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1213 |
+| Human-authored commits | 1219 |
 
