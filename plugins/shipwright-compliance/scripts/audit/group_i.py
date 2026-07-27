@@ -8,6 +8,8 @@ own requirement, and duplicate FR IDs.
 - I2 — FR description carries implementation detail
 - I3 — FR only describes a change to another FR (fold candidate)
 - I4 — the same FR ID used twice anywhere in the catalog
+- I5 — a ``Basis`` value outside the closed vocabulary
+- I6 — an FR with no acceptance criteria at all (`fr-authoring.md` §3a)
 
 **Advisory by construction, not by luck.** The three prose checks (I1/I2/I3)
 never emit ``status="fail"``, because a failing finding feeds
@@ -31,7 +33,6 @@ because nothing downstream consumes this group.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -40,6 +41,7 @@ from scripts.audit.audit_adapters import (
     Finding,
     load_shared_lib,
 )
+from scripts.audit.group_i_criteria import frs_without_criteria
 
 # Detectors live in the pure sibling module; re-exported here so callers and
 # tests keep a single entry point (`group_i.name_violations`, …).
@@ -48,107 +50,11 @@ from scripts.audit.group_i_detectors import (
     is_fold_candidate,
     name_violations,
 )
-from scripts.audit.group_i_scan import STATE_ROWS, SpecScan, basis_tally
-
-
-# ---------------------------------------------------------------------------
-# Row scanner — one shared header-driven reader (campaign S4)
-# ---------------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class FrRow:
-    """One FR row. ``name`` is empty when the table has no Name column.
-
-    ``retired`` marks a row under ``### Removed Requirements``. Retired rows are
-    never linted (they are history), but they DO participate in the I4 duplicate
-    check: `fr-authoring.md` §4 requires a retired number never be reused.
-    """
-
-    id: str
-    name: str
-    description: str
-    split: str
-    spec_path: str
-    retired: bool = False
-    #: Raw ``Basis`` cell (campaign S5), and whether a column literally headed
-    #: ``Basis`` supplied it. A spec predating the column has neither, and I5
-    #: skips it rather than scoring a legacy ``Source`` path as a typo.
-    basis: str = ""
-    basis_declared: bool = False
-
-
-def _scan_one_spec(
-    path: Path, split: str, spec_path: str, rejects: list | None = None,
-) -> list[FrRow]:
-    """Project ``fr_table_reader`` rows onto the Name/Description pair I1–I3 lint.
-
-    Hygiene is the one consumer that needs the Name and Description cells kept
-    APART (the §5 name fence applies to names only), which is why ``FrRow``
-    survives while the scan behind it does not. The scan it replaces carried two
-    defects the shared reader does not: it required the id column to be headed
-    literally ``ID``, so the whole traceability-fixture shape audited as zero
-    rows (FV-4), and it reset its column mapping at EVERY heading, silently
-    dropping every FR row under a later heading (FV-5).
-    """
-    try:
-        content = path.read_text(encoding="utf-8", errors="ignore")
-    except OSError:
-        return []
-
-    return [
-        FrRow(
-            id=row.id,
-            name=row.name,
-            description=row.text,
-            split=split,
-            spec_path=spec_path,
-            retired=row.removed,
-            basis=row.basis_cell,
-            basis_declared=row.basis_from_named_col,
-        )
-        for row in load_shared_lib("fr_table_reader").read_fr_rows(
-            content, rejects=rejects,
-        )
-    ]
-
-
-def scan_specs(project_root: Path, *, include_retired: bool = False) -> SpecScan:
-    """Rows under ``.shipwright/planning/<split>/spec.md``, plus why there are none.
-
-    Live rows only by default — that is what the prose checks lint. Pass
-    ``include_retired=True`` for the I4 number-reuse check, which must see
-    ``### Removed Requirements`` rows too.
-
-    The declined rows ride along in ``SpecScan.rejects`` so an empty result can
-    say WHICH of the six no-rows states it is (see ``group_i_scan``). They come
-    from the shared reader's own accumulator — the same data published on the
-    traceability manifest as ``invalid_ids`` — rather than being re-derived here.
-    """
-    planning = project_root / ".shipwright" / "planning"
-    rows: list[FrRow] = []
-    rejects: list = []
-    any_spec = False
-    # require="is_file" is this call site's divergence from the majority's
-    # "exists": a *directory* named spec.md is not scanned. Sorting before vs
-    # after the is_dir filter is equivalent (one shared parent), so the shared
-    # helper's sort-first order matches the previous filter-first one.
-    iter_spec_files = load_shared_lib("planning_discovery").iter_spec_files
-    for spec in iter_spec_files(planning, require="is_file"):
-        any_spec = True
-        split_name = spec.parent.name
-        rel = f".shipwright/planning/{split_name}/spec.md"
-        rows.extend(_scan_one_spec(spec, split_name, rel, rejects))
-    retired_count = sum(1 for r in rows if r.retired)
-    if not include_retired:
-        rows = [r for r in rows if not r.retired]
-    return SpecScan(rows=rows, rejects=rejects, any_spec=any_spec,
-                    retired_count=retired_count)
-
-
-def scan_fr_rows(project_root: Path, *, include_retired: bool = False) -> list[FrRow]:
-    """``scan_specs`` projected to just the rows (the pre-S5 signature)."""
-    return scan_specs(project_root, include_retired=include_retired).rows
+# The row scanner moved to its own sibling when I6 arrived and this module hit
+# its size limit. Re-exported for the same reason as the detectors: callers and
+# tests keep addressing `group_i.scan_specs` / `.scan_fr_rows` / `.FrRow`.
+from scripts.audit.group_i_rows import FrRow, scan_fr_rows, scan_specs
+from scripts.audit.group_i_scan import STATE_ROWS, basis_tally
 
 
 # ---------------------------------------------------------------------------
@@ -163,12 +69,14 @@ _CHECKS: tuple[tuple[str, str, str], ...] = (
     ("I3", "FR is a change-delta, not a capability", "LOW"),
     ("I4", "Duplicate FR ID in the catalog", "MEDIUM"),
     ("I5", "Malformed Basis value", "MEDIUM"),
+    ("I6", "FR without acceptance criteria", "LOW"),
 )
 
-#: I5's display name, bound by NAME rather than by `_CHECKS[4][1]`. The
-#: positional form silently relabels the check if anyone reorders `_CHECKS`, and
-#: every other check already passes its name literally.
+#: I5's and I6's display names, bound by NAME rather than by `_CHECKS[n][1]`.
+#: The positional form silently relabels the check if anyone reorders `_CHECKS`,
+#: and both are referenced away from their tuple.
 _I5_NAME = next(name for cid, name, _sev in _CHECKS if cid == "I5")
+_I6_NAME = next(name for cid, name, _sev in _CHECKS if cid == "I6")
 
 #: I1/I2/I3 are prose heuristics over legacy specs, so they report WITHOUT
 #: ``status="fail"``: a failing finding feeds ``AuditReport.any_fail``, which
@@ -181,7 +89,15 @@ _I5_NAME = next(name for cid, name, _sev in _CHECKS if cid == "I5")
 #: claiming one identity) and a Basis value outside the closed vocabulary is a
 #: typo, never legacy style noise, so both fail for real. `other` is NOT a
 #: failure — see `_basis_finding`.
-_ADVISORY_CHECKS = frozenset({"I1", "I2", "I3"})
+#:
+#: I6 is advisory for a different reason than I1–I3. It is not a heuristic over
+#: legacy prose: "this row has no criteria" is objective. It stays advisory
+#: because the RULE it serves (`fr-authoring.md` §3a — a capability that cannot
+#: be given criteria a single delivery would satisfy is too broad and gets
+#: divided) is a judgement a human makes. Zero criteria is the observable
+#: SIGNAL that the judgement is owed, not the verdict itself, and a signal that
+#: reddens CI would be read as the verdict.
+_ADVISORY_CHECKS = frozenset({"I1", "I2", "I3", "I6"})
 
 
 def _finding(check_id: str, name: str, severity: str, status: str, detail: str) -> Finding:
@@ -295,4 +211,7 @@ def run(
         _report("I3", _CHECKS[2][1], "LOW", folds, "fold candidate(s)"),
         _report("I4", _CHECKS[3][1], "MEDIUM", dupes, "duplicate FR ID(s)"),
         _basis_finding(rows),
+        _report("I6", _I6_NAME, "LOW",
+                frs_without_criteria(project_root, rows),
+                "FR(s) with no acceptance criteria"),
     ]

@@ -19,6 +19,11 @@ from orchestrator import (  # noqa: E402
     update_step,
 )
 
+# update_step REQUIRES a reason whenever force completes a non-standalone step
+# (FR-01.01 — an override has to record why). This fixture forces to skip
+# artifact validation it does not set up, so that is what it records.
+_FORCE_REASON = "test fixture: no phase artifacts to validate"
+
 
 def test_update_step_complete_does_not_clobber_concurrent_write(tmp_path, mocker):
     """Simulate another writer mutating the on-disk config during the
@@ -36,7 +41,7 @@ def test_update_step_complete_does_not_clobber_concurrent_write(tmp_path, mocker
 
     mocker.patch("orchestrator.run_compliance_update", side_effect=_concurrent_writer)
 
-    config = update_step(tmp_path, "project", "complete", force=True)
+    config = update_step(tmp_path, "project", "complete", force=True, force_reason=_FORCE_REASON)
 
     # update_step's own field landed ...
     assert "project" in config["completed_steps"]

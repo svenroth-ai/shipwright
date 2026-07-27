@@ -7,11 +7,10 @@ Tests the orchestrator's ability to:
 4. Resume from any point
 5. Handle all three scope flows
 
-Note: These tests use --force on update-step calls because integration
-tests don't produce the full set of canon artifacts (events, dashboard,
-handoff, etc.) that the phase validators check since iterate 12.1.
-The canon compliance is tested separately in shared/tests/.
-"""
+Note: These tests --force update-step because they don't produce the canon
+artifacts the phase validators check since iterate 12.1 (canon compliance is
+tested in shared/tests/). --force overrides the VERDICT, not the check, and
+needs a reason — recorded in validation_overrides[] (FR-01.01)."""
 
 import json
 import os
@@ -22,6 +21,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RUN_PLUGIN = REPO_ROOT / "plugins" / "shipwright-run"
+_WHY = "e2e: pipeline routing only, no canon artifacts"  # force needs a reason
 PROJECT_PLUGIN = REPO_ROOT / "plugins" / "shipwright-project"
 PLAN_PLUGIN = REPO_ROOT / "plugins" / "shipwright-plan"
 BUILD_PLUGIN = REPO_ROOT / "plugins" / "shipwright-build"
@@ -111,14 +111,14 @@ class TestFullPipelineE2E:
         run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
             ["update-step", "--project-root", str(project),
-             "--step", "project", "--status", "complete", "--force"],
+             "--step", "project", "--status", "complete", "--force", "--force-reason", _WHY],
         )
 
         # === Phase 2.5: shipwright-design (skip in test, mark complete) ===
         run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
             ["update-step", "--project-root", str(project),
-             "--step", "design", "--status", "complete", "--force"],
+             "--step", "design", "--status", "complete", "--force", "--force-reason", _WHY],
         )
 
         # === Phase 3: shipwright-plan ===
@@ -141,7 +141,7 @@ class TestFullPipelineE2E:
         run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
             ["update-step", "--project-root", str(project),
-             "--step", "plan", "--status", "complete", "--force"],
+             "--step", "plan", "--status", "complete", "--force", "--force-reason", _WHY],
         )
 
         # === Phase 4: shipwright-build ===
@@ -170,14 +170,14 @@ class TestFullPipelineE2E:
         run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
             ["update-step", "--project-root", str(project),
-             "--step", "build", "--status", "complete", "--force"],
+             "--step", "build", "--status", "complete", "--force", "--force-reason", _WHY],
         )
 
         # Skip test (no real infra)
         run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
             ["update-step", "--project-root", str(project),
-             "--step", "test", "--status", "complete", "--force"],
+             "--step", "test", "--status", "complete", "--force", "--force-reason", _WHY],
         )
 
         # === Phase 5: shipwright-changelog ===
@@ -196,7 +196,7 @@ class TestFullPipelineE2E:
         run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
             ["update-step", "--project-root", str(project),
-             "--step", "changelog", "--status", "complete", "--force"],
+             "--step", "changelog", "--status", "complete", "--force", "--force-reason", _WHY],
         )
 
         # Skip deploy (no real infra). Compliance is no longer a pipeline
@@ -204,7 +204,7 @@ class TestFullPipelineE2E:
         run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
             ["update-step", "--project-root", str(project),
-             "--step", "deploy", "--status", "complete", "--force"],
+             "--step", "deploy", "--status", "complete", "--force", "--force-reason", _WHY],
         )
 
         # === Verify final state ===
@@ -249,11 +249,11 @@ class TestResumeFromAnyPoint:
         }
 
         for step, expected in expected_next.items():
-            # --force skips canon validation (no artifacts in this test)
+            # --force overrides the canon-validation verdict (no artifacts here)
             run_script(
                 str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
                 ["update-step", "--project-root", str(project),
-                 "--step", step, "--status", "complete", "--force"],
+                 "--step", step, "--status", "complete", "--force", "--force-reason", _WHY],
             )
             result = run_script(
                 str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
@@ -265,7 +265,7 @@ class TestResumeFromAnyPoint:
         run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
             ["update-step", "--project-root", str(project),
-             "--step", "deploy", "--status", "complete", "--force"],
+             "--step", "deploy", "--status", "complete", "--force", "--force-reason", _WHY],
         )
         result = run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),

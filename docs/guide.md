@@ -1183,9 +1183,10 @@ Pre-backlog buffer for findings emitted by hooks, scans, and audits. Triage and 
 - **Producers:** `audit_phase_quality_on_stop` (Tier-1 FAILs, 24h dedup), `audit_detector.mirror_findings_to_triage` (compliance findings + auto-dismiss when resolved), `generate_security_report._emit_findings_to_triage` (security-report runs), `performance_check._emit_failures_to_triage` (perf-gate runs), `check_drift._emit_drift_to_triage` and `artifact_sync._emit_drift_to_triage` (drift hooks), and the throttled SessionStart hook `import_github_findings.py` (GitHub action-units, see § 4.11.1 below).
 - **Consumer:** the Stop hook `aggregate_triage_on_stop` regenerates `.shipwright/agent_docs/triage_inbox.md` after every iterate finalize. Every open item carries an optional `launchPayload` field; when present, the aggregator renders it inside a fenced markdown code block under the item header, and operators copy that fence into a new Claude session to start the matching run (§ 4.11.1). Rendered output is capped at 50 items per source, sorted by `(severity, originalTs DESC)`.
 - **Operate from CLI** (first-class, parallel to the WebUI Triage tab):
-  - `uv run shared/scripts/tools/triage_cli.py list`: list open items + their `launchPayload`.
+  - `uv run shared/scripts/tools/triage_cli.py list`: list open items + their `launchPayload`, followed by any **deferred** items in their own section (id, severity, reason, title — no payload fence, since a parked item is explicitly not the one to launch). `--json` stays **open-only**: it is the machine contract the Command Center live-view is pinned against.
   - `uv run shared/scripts/tools/triage_cli.py promote trg-XXXXXXXX --task-ref "EXT:linear-ENG-7"`: promote to backlog.
   - `uv run shared/scripts/tools/triage_cli.py dismiss trg-XXXXXXXX --reason notRelevant`: dismiss as false-positive / won't-fix.
+  - `uv run shared/scripts/tools/triage_cli.py defer trg-XXXXXXXX --reason "waiting on upstream"`: defer — decided, but deliberately not now (`snoozed`). A reason is required, as it is for dismiss. Only still-open items can be deferred, and neither surface can un-defer.
   - The pre-existing `triage_promote.py --id …` tool is unchanged for back-compat; the new `triage_cli.py promote` subcommand delegates to the same library helper (`triage_promote.promote`), so audit-trail shape is byte-identical (only the `by` field differs: `"cli"` vs `"manualPromote"`).
 
 Mapping is mechanical: `critical→P0 / high→P1 / medium→P2 / low→P3 / info→P3` for severity; `compliance→compliance / else→engineering` for source domain. Both values are recorded on the triage record as `suggestedPriority` + `suggestedDomain` so the promote step doesn't have to recompute them; the mapping matches the `leadwright` ExternalTask extension (see [`leadwright/docs/specs/phase-1-external-task-extension.md`](https://github.com/svenroth-ai/leadwright)). The full table lives in `shared/scripts/triage.py` (`PRIORITY_FROM_SEVERITY`, `DOMAIN_FROM_SOURCE`) and is exported as the SSoT; tests assert against the imports, not duplicated literals.
@@ -1213,11 +1214,12 @@ Both paths produce the SAME dedup key and `launchPayload` contract; `by_source["
 
 Each action-unit carries a `launchPayload`: a ready-to-paste block containing the slash command + context + the relevant GitHub URL. The payload is **frozen at first append** (subsequent imports with the same key are deduplicated and the persisted payload is unchanged); live counts in `detail` are best-effort, so operators click through the GitHub URL for current state.
 
-Operator flow has three verbs:
+Operator flow has four verbs:
 
 - **Fix now:** open `.shipwright/agent_docs/triage_inbox.md` (or run `triage_cli.py list`), copy the `launchPayload` fence into a new Claude session. The matching slash command auto-fires and the run resolves the item via the existing lifecycle hooks.
-- **Promote:** `triage_cli.py promote <id> --task-ref EXT:<ref>` creates a backlog task for deferred work; the item flips to `promoted`.
+- **Promote:** `triage_cli.py promote <id> --task-ref EXT:<ref>` names a backlog task that already exists; the item flips to `promoted`. (Creating the task is the Command Center's job — from the terminal the operator references work that exists.)
 - **Dismiss:** `triage_cli.py dismiss <id> --reason <reason>` for false-positives / won't-fix. (Per-finding false-positives are dismissed on GitHub at SARIF level, not in the triage inbox.)
+- **Defer:** `triage_cli.py defer <id> --reason <reason>` for work that is real but not now; the item flips to `snoozed` and moves into the listing's deferred section instead of disappearing.
 
 Legacy producers (phase-quality, drift, compliance, security, performance, F0.5) stay finding-granular; they MAY emit `launch_payload=None` and the renderer falls back to the historical bullet layout. Only the GitHub action-unit emitter populates `launchPayload` today; the WebUI Triage-tab in `shipwright-webui` is a thin wrapper over the same library helpers so the CLI is the single source of truth.
 
@@ -1580,7 +1582,7 @@ The **constitution** (`shared/constitution.md`) defines behavioral boundaries fo
 - Destructive database operations (`DROP TABLE`, `DROP COLUMN`, `TRUNCATE`).
 - Production deployments (always confirm + backup).
 - Skipping test layers (must provide a valid reason).
-- Overriding phase validation gates (`--force`).
+- Overriding phase validation gates (`--force`, which requires `--force-reason "<why>"`; the check still runs and its findings plus your reason are recorded in `validation_overrides[]`, so an overridden phase stays distinguishable from one that passed).
 - Continuing after 3 failed fix attempts.
 - Phrase questions to the user in plain, functional language a non-senior developer understands -- no unexplained jargon.
 

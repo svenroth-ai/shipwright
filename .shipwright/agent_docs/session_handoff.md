@@ -1,39 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-artifact-state-stamping"
+run_id: "iterate-2026-07-27-triage-defer-ci-cap"
 phase: "iterate"
-reason: "iterate: stamp produced artifacts with the state they describe (FR-01.10)"
-timestamp: "2026-07-27T09:08:48.846142+00:00"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-07-27T08:30:58.021874+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 09:08:48 UTC
+> Auto-generated 2026-07-27 08:30:58 UTC
 
 ## Session Info
 
-- **Session ID**: 821e1007-5fc9-403d-9122-21e7ce9dc8e5
-- **Timestamp**: 2026-07-27 09:08:48 UTC
-- **Reason**: iterate: stamp produced artifacts with the state they describe (FR-01.10)
+- **Session ID**: 8a66b2f1-81e9-4505-8591-b94928ca02f6
+- **Timestamp**: 2026-07-27 08:30:58 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-artifact-state-stamping
-- **Date**: 2026-07-27T09:08:42.675204Z
+- **Run ID**: iterate-2026-07-27-triage-defer-ci-cap
+- **Date**: 2026-07-27T08:30:49.435429Z
 - **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/artifact-state-stamping
-- **ADR**: iterate-2026-07-27-artifact-state-stamping
+- **Branch**: iterate/triage-defer-ci-cap
+- **ADR**: iterate-2026-07-27-triage-defer-ci-cap
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-artifact-state-stamping.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-triage-defer-ci-cap.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/artifact-state-stamping
-- **Run ID**: iterate-2026-07-27-artifact-state-stamping
-- **Spec**: .shipwright/planning/iterate/2026-07-27-artifact-state-stamping.md
+- **Branch**: iterate/triage-defer-ci-cap
+- **Run ID**: iterate-2026-07-27-triage-defer-ci-cap
+- **Spec**: .shipwright/planning/iterate/2026-07-27-triage-defer-ci-cap.md
 - **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-07-27T07:17:44))
+- **External Review Marker**: stale (predates spec (2026-07-27T07:19:14))
 
 ### Mandatory replay on Resume
 
@@ -52,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/artifact-state-stamping
-- **Last Commit**: 9c8b6274 chore(triage): sweep 60 outbox append(s) into branch
+- **Branch**: iterate/triage-defer-ci-cap
+- **Last Commit**: 5a48e306 Merge remote-tracking branch 'origin/main' into iterate/triage-defer-ci-cap
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,17 +69,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-a89512cf | grade_snapshot | — | 2026-07-27 |
-| evt-37719eaa | work_completed | iterate (iterate: stamp produced artifacts with the state they describe (FR-01.10)) | 2026-07-27 |
-| evt-2055af94 | grade_snapshot | — | 2026-07-26 |
-| evt-ea7203ec | work_completed | iterate (iterate: REQ-3 Phase 2 content round - all 18 requirements walked or minted) | 2026-07-26 |
-| evt-6ff6084f | grade_snapshot | — | 2026-07-26 |
+| evt-64bc7af0 | grade_snapshot | — | 2026-07-27 |
+| evt-19f53577 | grade_snapshot | — | 2026-07-27 |
+| evt-78684181 | work_completed | iterate (iterate: the review gate stops being bypassable (fail-closed + fork review)) | 2026-07-27 |
+| evt-c880344a | grade_snapshot | — | 2026-07-27 |
+| evt-4794dcc1 | work_completed | iterate (iterate: phase-gate override leaves evidence; handoff renders phase status) | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 360
-- **Last iterate**: change — iterate: stamp produced artifacts with the state they describe (FR-01.10) (2026-07-27)
+- **Total work events**: 363
+- **Last iterate**: change — iterate: the review gate stops being bypassable (fail-closed + fork review) (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
