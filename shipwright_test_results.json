@@ -1,93 +1,253 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-23-req3-phase2-content-mono",
+    "run_id": "iterate-2026-07-27-adopt-derived-catalogue-honesty",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 9891,
-      "total": 9891
+      "passed": 556,
+      "total": 556
     },
     "integration": {
       "status": "passed",
-      "passed": 417,
-      "total": 417
+      "passed": 418,
+      "total": 418
     },
     "pgtap": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 24,
+      "total": 24
     },
     "design_fidelity": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "smoke": {
-      "status": "not_run"
+      "status": "skipped"
     },
-    "degraded": [],
+    "degraded": [
+      {
+        "condition": "interview_and_approval_gate_skipped",
+        "reason": "invoked with --autonomous against a complete, self-contained brief (trg-1aa5a8ab). Medium normally runs 2-3 scoping questions plus a user-approval gate before build; the operator asked for an unattended run."
+      },
+      {
+        "condition": "internal_code_reviewer_and_doubt_reviewer_subagents_not_dispatched",
+        "reason": "session rule forbids spawning subagents unless the user requests it. Covered by the external CODE review over the staged diff (2 models, 4 findings: 3 fixed, 1 declined on verified evidence) plus 9 empirical probes; both review types closed explicitly in reviews.json with a disposition, never left pending."
+      }
+    ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest integration-tests/test_requirements_catalog_contract.py integration-tests/test_requirements_catalog_parsers.py integration-tests/test_fr_table_shape_convergence.py -q",
+      "runner": "uv run --directory plugins/shipwright-adopt --extra dev pytest tests/test_record_inherited_baseline.py tests/test_spec_document.py tests/test_adopt_pipeline_subprocess.py -q",
       "exit_code": 0,
-      "tests_run": 23,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\req3-phase2-content-mono\\.shipwright\\runs\\iterate-2026-07-23-req3-phase2-content-mono\\surface_verification.log",
-      "timestamp": "2026-07-26T23:23:54.302Z",
-      "attempts": 1
+      "tests_run": 24,
+      "evidence_path": ".shipwright/runs/iterate-2026-07-27-adopt-derived-catalogue-honesty/surface_verification.json",
+      "timestamp": "2026-07-27T08:07:48.856Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "the catalog carries 18 requirements, each with its own id, anchor, priority, basis and layers cell",
+          "behavior": "spec.md carries a derived-and-unconfirmed provenance block naming the count",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_contract.py::test_all_requirements_survive_with_unchanged_ids and ::test_every_requirement_has_an_explicit_anchor PASSED"
+          "evidence": "test_spec_document.py::test_the_spec_says_the_catalogue_is_derived_and_unconfirmed PASSED"
         },
         {
-          "behavior": "both production parsers read the changed catalog and agree on the same id set",
+          "behavior": "the block changes no FR-table reader view of the rows",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_parsers.py::test_the_fr_table_reader_still_sees_every_requirement and ::test_the_heading_parser_sees_the_same_set PASSED"
+          "evidence": "test_derived_catalogue.py::test_the_reader_sees_the_same_rows_with_and_without_the_banner PASSED"
         },
         {
-          "behavior": "every requirement keeps a resolving deep link from the traceability matrix",
+          "behavior": "the block interpolates no free text, so a pipe cannot reach it",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_contract.py::test_every_rtm_deep_link_resolves_end_to_end PASSED after regenerating the matrix"
+          "evidence": "test_derived_catalogue.py::test_banner_interpolates_no_free_text PASSED"
         },
         {
-          "behavior": "no criterion sentence carries a run id, a decision-record number, a path or a source filename",
+          "behavior": "derived-catalogue.json is schema-versioned and lists every derived row",
           "disposition": "tested",
-          "evidence": "test_requirements_catalog_contract.py forbidden-token scan over every (E) line PASSED"
+          "evidence": "test_derived_catalogue_doc.py::test_document_is_schema_versioned_and_carries_every_row PASSED"
         },
         {
-          "behavior": "the newly minted requirement carries its decided basis and layers, pinned per requirement rather than in aggregate",
+          "behavior": "the JSON describes the table actually rendered (anti-drift)",
           "disposition": "tested",
-          "evidence": "test_fr_table_shape_convergence.py::test_every_live_requirement_carries_its_decided_basis and ::test_the_migration_did_not_change_any_required_layers PASSED"
+          "evidence": "test_derived_catalogue.py::test_json_summary_matches_the_table_the_reader_actually_parses PASSED"
         },
         {
-          "behavior": "the elicitation module keeps every section and load-bearing sentence the catalog cites",
+          "behavior": "a zero-detection repo placeholder row is counted, not reported as 0",
           "disposition": "tested",
-          "evidence": "test_requirement_elicitation_refs.py + test_requirement_elicitation_rigor.py PASSED (28 cases)"
+          "evidence": "test_spec_document.py::test_a_zero_detection_repo_still_agrees PASSED"
         },
         {
-          "behavior": "the glossary stays within its size ceiling and carries no legacy artifact path",
+          "behavior": "nothing adopt derives today counts as confirmed; an interview basis does",
           "disposition": "tested",
-          "evidence": "test_bloat_defense_artifacts.py::test_glossary_under_loc_limit and test_artifact_path_canon.py PASSED"
+          "evidence": "test_derived_catalogue.py::test_nothing_adopt_derives_today_counts_as_confirmed PASSED"
         },
         {
-          "behavior": "the acceptance criteria say what is true of the product",
+          "behavior": "an explicitly declared vocabulary Basis survives re-rendering",
+          "disposition": "tested",
+          "evidence": "test_spec_table.py::test_an_explicitly_declared_basis_survives_re_rendering PASSED"
+        },
+        {
+          "behavior": "a declared Basis outside the vocabulary is ignored, never emitted",
+          "disposition": "tested",
+          "evidence": "test_spec_table.py::test_a_declared_basis_outside_the_vocabulary_is_ignored_not_passed_through PASSED"
+        },
+        {
+          "behavior": "every emitted Basis passes the audit vocabulary",
+          "disposition": "tested",
+          "evidence": "test_derived_catalogue.py::test_every_emitted_basis_passes_the_audit_vocabulary PASSED"
+        },
+        {
+          "behavior": "the commit body reports the unconfirmed count and names the follow-up",
+          "disposition": "tested",
+          "evidence": "test_adopt_commit_template.py::test_the_body_reports_how_many_requirements_are_unconfirmed PASSED"
+        },
+        {
+          "behavior": "the count cannot be silently omitted from the handover",
+          "disposition": "tested",
+          "evidence": "test_adopt_commit_template.py::test_the_count_cannot_be_omitted PASSED"
+        },
+        {
+          "behavior": "onboarding files exactly one confirmation follow-up",
+          "disposition": "tested",
+          "evidence": "test_record_inherited_baseline.py::test_onboarding_leaves_exactly_one_confirmation_follow_up PASSED"
+        },
+        {
+          "behavior": "a re-adopt duplicates no card",
+          "disposition": "tested",
+          "evidence": "test_record_inherited_baseline.py::test_a_re_adopt_duplicates_nothing PASSED"
+        },
+        {
+          "behavior": "the card dedup key does not vary with the count; figures are stated as-of onboarding",
+          "disposition": "tested",
+          "evidence": "test_derived_catalogue_doc.py::test_the_card_states_its_count_as_of_onboarding PASSED"
+        },
+        {
+          "behavior": "no card when every requirement was confirmed",
+          "disposition": "tested",
+          "evidence": "test_derived_catalogue_doc.py::test_no_card_when_every_requirement_was_confirmed_by_a_person PASSED"
+        },
+        {
+          "behavior": "the register carries the two keys the audit phase reads",
+          "disposition": "tested",
+          "evidence": "test_inherited_baseline.py::test_register_carries_the_two_keys_the_audit_phase_reads PASSED"
+        },
+        {
+          "behavior": "the REAL compliance collector reads back what adopt wrote (producer/consumer boundary)",
+          "disposition": "tested",
+          "evidence": "test_inherited_baseline_input.py::test_the_compliance_collector_reads_back_what_adopt_wrote PASSED (subprocess, real consumer)",
+          "category": "integration"
+        },
+        {
+          "behavior": "an unobserved baseline says so and never reads as forgiveness",
+          "disposition": "tested",
+          "evidence": "test_inherited_baseline_input.py::test_an_unobserved_register_reads_as_zero_baseline_not_as_forgiveness PASSED"
+        },
+        {
+          "behavior": "coverage gaps never feed baseline_failure_count",
+          "disposition": "tested",
+          "evidence": "test_inherited_baseline.py::test_gaps_never_feed_the_number_that_excuses_failures PASSED"
+        },
+        {
+          "behavior": "requirements with no tagged test are inherited gaps; both tag origins count as coverage",
+          "disposition": "tested",
+          "evidence": "test_inherited_baseline.py::test_a_requirement_with_no_tagged_test_is_an_inherited_gap PASSED"
+        },
+        {
+          "behavior": "a tag naming an unknown FR is not coverage",
+          "disposition": "tested",
+          "evidence": "test_inherited_baseline.py::test_a_tag_pointing_at_an_unknown_requirement_is_not_coverage PASSED"
+        },
+        {
+          "behavior": "an observed red baseline lands as inherited failures",
+          "disposition": "tested",
+          "evidence": "test_record_inherited_baseline.py::test_an_observed_red_baseline_lands_as_inherited_failures PASSED"
+        },
+        {
+          "behavior": "an observed green baseline is distinguishable from no run at all",
+          "disposition": "tested",
+          "evidence": "test_inherited_baseline.py::test_an_observed_green_baseline_is_observed_and_empty PASSED"
+        },
+        {
+          "behavior": "a failure list without provenance, malformed, or self-inconsistent is rejected",
+          "disposition": "tested",
+          "evidence": "test_inherited_baseline_input.py::test_a_malformed_payload_is_rejected_rather_than_read_as_empty PASSED (5 cases)"
+        },
+        {
+          "behavior": "only the five fields the collector reads are copied (no secret carry-over)",
+          "disposition": "tested",
+          "evidence": "test_inherited_baseline_input.py::test_only_the_fields_the_audit_phase_reads_are_copied PASSED"
+        },
+        {
+          "behavior": "each non-empty gap class leaves a follow-up; an empty class leaves none",
+          "disposition": "tested",
+          "evidence": "test_inherited_baseline.py::test_each_non_empty_gap_class_leaves_a_follow_up PASSED"
+        },
+        {
+          "behavior": "gap cards read as inherited absence, not as breakage",
+          "disposition": "tested",
+          "evidence": "test_inherited_baseline.py::test_gap_cards_describe_the_gap_without_pointing_at_a_failure PASSED"
+        },
+        {
+          "behavior": "a clean repo records a register and crashes on nothing",
+          "disposition": "tested",
+          "evidence": "test_record_inherited_baseline.py::test_a_clean_repo_records_a_register_and_no_gap_cards PASSED"
+        },
+        {
+          "behavior": "a missing catalogue stops the step and names the step that writes it",
+          "disposition": "tested",
+          "evidence": "test_record_inherited_baseline.py::test_a_missing_catalogue_stops_the_step_and_names_the_step_that_writes_it PASSED"
+        },
+        {
+          "behavior": "a corrupt upstream artifact stops rather than inventing gaps",
+          "disposition": "tested",
+          "evidence": "test_record_inherited_baseline.py::test_a_corrupt_upstream_artifact_stops_rather_than_inventing_gaps PASSED"
+        },
+        {
+          "behavior": "a catalogue that lies about confirmation cannot suppress the follow-up",
+          "disposition": "tested",
+          "evidence": "test_derived_catalogue_doc.py::test_a_truthy_string_is_not_confirmation PASSED (+7 rejection cases)"
+        },
+        {
+          "behavior": "--dry-run touches nothing",
+          "disposition": "tested",
+          "evidence": "test_record_inherited_baseline.py::test_dry_run_touches_nothing PASSED"
+        },
+        {
+          "behavior": "a missing honesty artifact hard-blocks the handover, naming its step",
+          "disposition": "tested",
+          "evidence": "test_validate_adoption_soft_checks.py::test_a_missing_honesty_artifact_blocks_the_handover PASSED (2 cases)"
+        },
+        {
+          "behavior": "Step H reference doc names the artifact, the kwarg and the follow-up",
+          "disposition": "tested",
+          "evidence": "test_skill_references_link.py::test_step_h_reference_tells_the_agent_where_the_count_comes_from PASSED"
+        },
+        {
+          "behavior": "the wired-up generator writes both artifacts and they agree",
+          "disposition": "tested",
+          "evidence": "test_adopt_pipeline_subprocess.py::test_full_pipeline_e2e_via_subprocess PASSED; F0.5 cli exit_code 0, tests_run 24",
+          "category": "integration"
+        },
+        {
+          "behavior": "effective_features is the one answer to which rows exist, and does not alias its input",
+          "disposition": "tested",
+          "evidence": "test_spec_table.py::test_effective_features_synthesizes_the_placeholder_for_a_zero_detection_repo PASSED (3 cases)"
+        },
+        {
+          "behavior": "the Step H handoff BANNER renders these counts on screen",
           "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "whether a sentence in business language faithfully describes a mechanism is a reading judgement, not an oracle. This is the round's own finding, recorded as FR-01.16 criterion 9 and as campaign decision D7: an LLM may adjudicate a mechanically raised flag, never raise one. Each criterion instead carries an enforcement classification in the AC evidence ledger, and the criteria that CAN be pinned are enumerated above."
+          "reason_code": "covered-by-existing-test",
+          "reason": "the banner is prompt-rendered text, not code. What IS mechanical is tested: the commit builder required unconfirmed_fr_count kwarg, and the drift test pinning that the Step H reference doc names the artifact to read and the follow-up to cite."
         }
       ],
       "counts": {
-        "testable": 7,
-        "tested": 7,
+        "testable": 37,
+        "tested": 37,
         "untestable": 1,
         "untested_testable": 0
       },

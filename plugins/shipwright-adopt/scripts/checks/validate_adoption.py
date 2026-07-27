@@ -139,6 +139,29 @@ def _validate_events(project_root: Path) -> list[str]:
 # only drift.
 
 
+#: Artifacts that make the handed-over repository honest about itself
+#: (FR-01.13, trg-1aa5a8ab): what onboarding DERIVED and nobody confirmed, and
+#: what it INHERITED broken or untested. Hard errors, not warnings — without
+#: them Step H hands over a catalogue that reads as confirmed and a red suite
+#: that reads as this project's own fault. Each message names the step that
+#: writes the file, so an older adopted repo re-validating is told what to run
+#: rather than merely that something is missing.
+_HONESTY_ARTIFACTS = (
+    (".shipwright/adopt/derived-catalogue.json",
+     "Step E (generate_adoption_artifacts.py)"),
+    ("shipwright_known_failures.json",
+     "Step E.18 (record_inherited_baseline.py)"),
+)
+
+
+def _validate_honesty_artifacts(project_root: Path) -> list[str]:
+    return [
+        f"missing: {rel} — written by {step}; re-run it"
+        for rel, step in _HONESTY_ARTIFACTS
+        if not (project_root / rel).exists()
+    ]
+
+
 def _validate_review(project_root: Path) -> list[str]:
     review = project_root / ".shipwright" / "adopt" / "review.md"
     if not review.exists():
@@ -199,6 +222,7 @@ def validate(project_root: Path) -> dict:
     errors.extend(_validate_spec(project_root))
     errors.extend(_validate_events(project_root))
     errors.extend(_validate_review(project_root))
+    errors.extend(_validate_honesty_artifacts(project_root))
 
     warnings: list[str] = []
     warnings.extend(_soft_check_decision_log_density(project_root))

@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-07-27-adopt-derived-catalogue-honesty",
+  "date": "2026-07-27T08:15:28.167766Z",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/adopt-derived-catalogue-honesty",
+  "spec": ".shipwright/planning/iterate/2026-07-27-adopt-derived-catalogue-honesty.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-07-27-adopt-derived-catalogue-honesty"
+}

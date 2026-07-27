@@ -11,6 +11,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from checks.validate_adoption import validate
 
 
@@ -36,6 +38,16 @@ def _make_minimum_valid(root: Path, *, decision_log_body: str | None = None) -> 
     )
     (root / "shipwright_events.jsonl").write_text(
         json.dumps({"type": "adopted"}) + "\n", encoding="utf-8"
+    )
+    # The two honesty artifacts (trg-1aa5a8ab): what onboarding derived and
+    # nobody confirmed, and what it inherited broken or untested. Hard-required,
+    # so a fixture without them is not a valid adoption.
+    (root / ".shipwright" / "adopt").mkdir(parents=True, exist_ok=True)
+    (root / ".shipwright" / "adopt" / "derived-catalogue.json").write_text(
+        json.dumps({"schema_version": 1, "total": 1, "unconfirmed": 1}), encoding="utf-8",
+    )
+    (root / "shipwright_known_failures.json").write_text(
+        json.dumps({"known_failures": [], "baseline_failure_count": 0}), encoding="utf-8",
     )
     (root / ".claude").mkdir(exist_ok=True)
     (root / ".claude" / "settings.json").write_text(
@@ -97,3 +109,36 @@ def test_no_snapshot_does_not_crash(tmp_path: Path) -> None:
     assert result["errors"] == []
     # No "historical" warning since we have no commit count to compare against
     assert not any("historical" in w for w in result["warnings"])
+
+
+# ---------------------------------------------------------------------------
+# The honesty artifacts are HARD requirements (trg-1aa5a8ab)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("rel", [
+    ".shipwright/adopt/derived-catalogue.json",
+    "shipwright_known_failures.json",
+])
+def test_a_missing_honesty_artifact_blocks_the_handover(tmp_path: Path, rel: str) -> None:
+    """Errors, not warnings, and Step H hard-stops on errors.
+
+    Without them the handover presents a derived catalogue as if someone had
+    confirmed it, and an inherited red suite as this project's own failure.
+    A warning would be surfaced and then walked past — which is how both gaps
+    survived to be found years later.
+    """
+    _make_minimum_valid(tmp_path)
+    (tmp_path / rel).unlink()
+    result = validate(tmp_path)
+    assert any(rel in e for e in result["errors"]), result
+
+
+def test_the_error_names_the_step_that_writes_the_missing_file(tmp_path: Path) -> None:
+    """A repo adopted before this rule existed will fail re-validation. That is
+    correct — it genuinely lacks the artifacts — so the message must say what to
+    run rather than only that something is absent."""
+    _make_minimum_valid(tmp_path)
+    (tmp_path / "shipwright_known_failures.json").unlink()
+    (errmsg,) = [e for e in validate(tmp_path)["errors"] if "known_failures" in e]
+    assert "record_inherited_baseline.py" in errmsg

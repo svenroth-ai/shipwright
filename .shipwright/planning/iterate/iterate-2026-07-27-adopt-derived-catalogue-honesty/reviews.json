@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-27-adopt-derived-catalogue-honesty",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T08:09:03.143953+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator self-review (7-point): spec-compliance AC1-AC8 mapped to ledger rows; every new read fails closed with an actionable message; --failures-json field whitelist keeps raw test output out of a committed artifact; both boundary probes drive the REAL consumers (fr_table_reader, compliance collector) rather than asserting shapes; diff confined to plugins/shipwright-adopt + the two docs CLAUDE.md mandates",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-07-27T07:13:55.181822+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py --mode iterate (gemini-3.1-pro-preview + gpt-5.6-terra)",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T08:09:15.535641+00:00",
+      "disposition": "Session rule: this session forbids spawning subagents unless the user requests it, so the internal code-reviewer subagent was not dispatched. Its function was served by the external CODE review (external_review.py --mode code, gemini-3.1-pro + gpt-5.6-terra over the staged plugins/ diff), recorded under external_code: 4 findings, 3 accepted and fixed with tests, 1 declined on verified evidence.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T08:09:15.685826+00:00",
+      "disposition": "Same session rule (no subagents unless requested). The adversarial function was covered empirically instead: 9 probes, 4 of which overturned a decision or found a blocker (dataclass loader, bloat ratchet, Basis-qualifier rejection, and the strict reader catching a fixture in this run). Migrations/concurrency/irreversible-op triggers do not apply — this diff writes two idempotent JSON artifacts and appends idempotent triage.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-07-27T07:58:11.429986+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py --mode code (gemini-3.1-pro-preview + gpt-5.6-terra); 3 findings accepted + fixed, 1 verified-false",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

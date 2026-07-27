@@ -1,0 +1,1 @@
+/shipwright-adopt Step E.18 writes `shipwright_known_failures.json`: tests that were already failing, requirements with no test, and tests that are switched off are recorded as **inherited** rather than counted as the onboarded project's own failures. Coverage gaps are kept separate from the baseline failure count, which excuses a red run.
