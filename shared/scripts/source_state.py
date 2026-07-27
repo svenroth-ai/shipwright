@@ -16,7 +16,8 @@ SHA-primary alternative, and the total resolution contract:
 ``.shipwright/planning/iterate/2026-07-27-artifact-state-stamping.md``.
 
 **Owns the shape, not the policy.** :class:`SourceState`, the banner form, the JSON
-block form, git resolution. Event-log resolution stays with the compliance
+block form. Git resolution — the half that reads the real code version — lives in the
+sibling leaf ``source_state_git.py`` so neither module carries two subjects. Event-log resolution stays with the compliance
 collector, which reads the run id off the *same* work event that produces a
 document's ``Generated:`` timestamp — a second "latest run" implementation here
 would drift and break that guarantee. Nothing here enforces anything; refusing a
@@ -38,11 +39,9 @@ detected; that would need a gate, which is the sibling cards' scope.
 from __future__ import annotations
 
 import re
-import subprocess
 import unicodedata
 from dataclasses import dataclass, replace
-from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 #: Markdown banner prefix. Sits directly under ``Generated:`` in every compliance
 #: evidence document.
@@ -64,8 +63,6 @@ UNKNOWN_RUN = "(unknown)"
 #: Commits are abbreviated in operator-facing markdown; the JSON block keeps the
 #: full 40-hex value because that is the side a gate compares.
 SHORT_SHA_LEN = 12
-
-_GIT_TIMEOUT_SECONDS = 10
 
 #: Unicode categories refused in a run id: control, format, line/paragraph
 #: separator. Covers C0/DEL *and* what an ASCII-only check misses (U+0085, U+2028,
@@ -253,107 +250,6 @@ def from_block(block: Any) -> SourceState:
     )
 
 
-# --- git resolution --------------------------------------------------------
-
-
-def _git(args: list[str], cwd: Path) -> str | None:
-    """Run git with an argument array (never a shell), bounded timeout.
-
-    stdout, or ``None`` on any failure (missing binary, not a repo, timeout,
-    non-zero exit). Callers degrade; they never propagate.
-    """
-    try:
-        proc = subprocess.run(
-            ["git", "-C", str(cwd), *args],
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            timeout=_GIT_TIMEOUT_SECONDS,
-            check=False,
-            shell=False,
-        )
-    except (FileNotFoundError, OSError, subprocess.SubprocessError):
-        return None
-    if proc.returncode != 0:
-        return None
-    return proc.stdout
-
-
-def _porcelain_paths(line: str) -> Iterable[str]:
-    """Path(s) named by one ``git status --porcelain`` line (``R  old -> new``
-    counts both sides as touched)."""
-    body = line[3:] if len(line) > 3 else ""
-    if " -> " in body:
-        for half in body.split(" -> ", 1):
-            yield half.strip().strip('"')
-    elif body:
-        yield body.strip().strip('"')
-
-
-def _repo_relative(root: Path, paths: Iterable[str]) -> set[str]:
-    """Re-express ``paths`` relative to the repo root, the way git prints them."""
-    top = _git(["rev-parse", "--show-toplevel"], root)
-    base = Path(top.strip()) if top and top.strip() else root
-    out: set[str] = set()
-    for raw in paths:
-        candidate = Path(raw)
-        if not candidate.is_absolute():
-            candidate = root / candidate
-        try:
-            out.add(candidate.resolve().relative_to(base.resolve()).as_posix())
-        except (ValueError, OSError):
-            # Outside the repo: cannot be one of git's paths, so nothing to exclude.
-            continue
-    return out
-
-
-def resolve_git_state(
-    project_root: Path | str,
-    *,
-    run_id: str | None = None,
-    exclude_paths: Iterable[str] = (),
-) -> SourceState:
-    """Resolve the state of the code at production time.
-
-    ``commit`` is HEAD (full 40-hex), or ``None`` in a non-repo, an empty repo, or
-    when git is unavailable. ``dirty`` means **tracked files modified relative to
-    HEAD** (``--untracked-files=no``), ``None`` when git could not answer, with two
-    deliberate narrowings: untracked files are ignored (a scratch file does not
-    change which code ran), and ``exclude_paths`` drops named artifacts — callers
-    pass the artifact they are about to stamp, since the stamp runs *after* it is
-    written and without the exclusion ``dirty`` would be ``True`` every run.
-
-    ``exclude_paths`` may be absolute or relative to ``project_root``; both are
-    re-expressed relative to the **repository root** before matching, because that
-    is what ``git status --porcelain`` prints. Without that step an exclusion
-    silently fails to match whenever ``project_root`` is a subdirectory of the repo,
-    and ``dirty`` degenerates to always-``True`` — the very failure the exclusion
-    exists to prevent (external review, correctness/low).
-    """
-    root = Path(project_root)
-    resolved_run = safe_run_id(run_id)
-
-    head = _git(["rev-parse", "HEAD"], root)
-    commit = head.strip() if head and head.strip() else None
-
-    status = _git(["status", "--porcelain", "--untracked-files=no"], root)
-    if status is None:
-        dirty: bool | None = None
-    else:
-        excluded = _repo_relative(root, exclude_paths)
-        dirty = False
-        for line in status.splitlines():
-            if not line.strip():
-                continue
-            paths = {p.replace("\\", "/") for p in _porcelain_paths(line)}
-            if paths and paths <= excluded:
-                continue
-            dirty = True
-            break
-
-    return SourceState(run_id=resolved_run, commit=commit, dirty=dirty)
-
-
 __all__ = [
     "BANNER_PREFIX",
     "BANNER_STRIP_RE",
@@ -364,7 +260,6 @@ __all__ = [
     "banner_line",
     "from_block",
     "parse_banner_line",
-    "resolve_git_state",
     "safe_commit",
     "safe_run_id",
     "strip_banner",
