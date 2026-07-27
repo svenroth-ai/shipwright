@@ -1,11 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-07-27 06:59 UTC | Session: 13d5330b-459e-4dde-bd59-76ab801c34ec | Run: iterate-2026-07-27-review-gate-failclosed-fork
+> Updated: 2026-07-27 08:00 UTC | Session: a7fa3da4-74bf-406f-b92b-f309691d90f9 | Run: iterate-2026-07-27-phase-gate-override-evidence
 
-## Recent Changes (360 iterations)
+## Recent Changes (361 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
 | change | iterate: the review gate stops being bypassable (fail-closed + fork review) | 0/0 |  | infra | 2026-07-27 |
+| change | iterate: phase-gate override leaves evidence; handoff renders phase status | 0/0 |  | FR-01.01 | 2026-07-27 |
 | change | iterate: REQ-3 Phase 2 content round - all 18 requirements walked or minted | 0/0 |  | FR-01.01, FR-01.02, FR-01.03 | 2026-07-26 |
 | feature | REQ-3 Phase 1: shared requirement-elicitation method (grilling + domain-modeling) + CONTEXT.md format + FR-01.16 mint | 4946/4961 |  |  | 2026-07-23 |
 | bug | design verifier C1 skips projects that never ran the design phase | 26/26 |  | compliance | 2026-07-23 |
@@ -367,7 +368,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-27 | Smoke: n/a | (iterate)
+Last run: 2026-07-27 | Unit: 5450/5450 | Integration: 421/421 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
