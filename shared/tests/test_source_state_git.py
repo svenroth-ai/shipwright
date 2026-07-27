@@ -6,7 +6,7 @@ whether tracked files were modified. Exercised against a REAL git repo, not a mo
 including every way git can be unavailable — because "degrades honestly" is a claim
 about real subprocess failures.
 
-Split from ``test_source_state.py`` (bloat gate).
+Covers ``source_state_git.py``, split from ``source_state.py`` along the same seam.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 import subprocess  # noqa: E402
 
-from source_state import resolve_git_state  # noqa: E402
+from source_state_git import resolve_git_state  # noqa: E402
 
 RUN = "iterate-2026-07-27-artifact-state-stamping"
 
