@@ -1,7 +1,7 @@
 # Project Activity Dashboard
-> Updated: 2026-07-27 17:38 UTC | Session: f899aafb-12bc-48fa-910c-d14e804584c4 | Run: iterate-2026-07-27-test-phase-record-honesty
+> Updated: 2026-07-27 18:46 UTC | Session: a7fa3da4-74bf-406f-b92b-f309691d90f9 | Run: iterate-2026-07-27-handoff-tally-and-gate-honesty
 
-## Recent Changes (383 iterations)
+## Recent Changes (384 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
@@ -13,6 +13,7 @@
 | change | iterate: the phase canon asks whether the handoff belongs to this run | 0/0 |  | FR-01.01 | 2026-07-27 |
 | change | iterate: bounded sharing-violation retry on both sides of the atomic-write boundary | 0/0 |  | FR-01.01, FR-01.09 | 2026-07-27 |
 | change | iterate: the merge state is a vocabulary, not a BLOCKED flag | 0/0 |  | FR-01.11 | 2026-07-27 |
+| change | iterate: handoff tally and gate honesty | 0/0 |  | FR-01.01 | 2026-07-27 |
 | change | iterate: inherited failures and coverage gaps are recorded as inherited | 0/0 |  | FR-01.13 | 2026-07-27 |
 | change | iterate: the four Step-9 gates become code, closing trg-88f721be (3 of 3) | 0/0 |  | tooling | 2026-07-27 |
 | change | iterate: reviewer verdicts recorded, disagreement is its own outcome (1 of 3) | 0/0 |  | FR-01.03 | 2026-07-27 |
@@ -390,7 +391,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-27 | Unit: 7338/7338 | Integration: 422/422 | Smoke: not_run | (iterate)
+Last run: 2026-07-27 | Unit: 5977/5977 | Integration: 422/422 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
