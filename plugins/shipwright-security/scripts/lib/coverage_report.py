@@ -104,9 +104,10 @@ def coverage_table(coverage: list[dict[str, Any]] | None) -> list[str]:
         cls = escape_cell(class_label(str(row.get("class", "?"))))
         tool = escape_cell(str(row.get("tool") or "—"))
         raw_status = str(row.get("status"))
-        # Unknown statuses render verbatim (escaped) rather than being coerced:
-        # a value outside the closed vocabulary is a producer bug the operator
-        # should see, and is_complete() already refuses to call it covered.
+        # A file-sourced manifest has already been coerced into the closed
+        # vocabulary by coverage_sanitize (the original survives in `detail`),
+        # so an unrecognized value here means an in-process producer bug —
+        # render it escaped rather than hiding it behind a plausible icon.
         status = _STATUS_ICON.get(raw_status, escape_cell(raw_status))
         detail = escape_cell(str(row.get("detail") or "—"))
         lines.append(f"| {cls} | {tool} | {status} | {detail[:160]} |")

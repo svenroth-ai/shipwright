@@ -31,6 +31,12 @@ _CONTROL_CHARS = re.compile(r"[\x00-\x1f\x7f]+")
 TEXT_CAP = 160
 DETAIL_CAP = 400
 
+# Mirrors scan_coverage.COVERAGE_STATUSES. Duplicated rather than imported to
+# keep this leaf module import-free (scan_coverage imports IT); the pair is
+# pinned by test_the_vocabulary_matches_scan_coverage.
+VALID_STATUSES: frozenset[str] = frozenset(
+    {"covered", "degraded", "not_requested", "not_available"})
+
 
 def safe_text(value: Any, cap: int = TEXT_CAP) -> str:
     """Flatten control characters to a single space and cap the length."""
@@ -47,23 +53,35 @@ def sanitize_coverage(rows: Any) -> list[dict[str, Any]]:
     - Every field becomes a capped, control-character-free string. ``tool`` and
       ``detail`` stay ``None`` when absent, so a caller can still tell "no tool"
       from "empty string".
-    - An out-of-vocabulary ``status`` is preserved verbatim rather than coerced
-      to something plausible: it is a producer bug the operator should SEE, and
-      ``scan_coverage.is_complete`` already refuses to call it covered.
+    - An out-of-vocabulary ``status`` is COERCED to ``degraded`` and the original
+      is preserved in ``detail``. AC-1 makes the closed vocabulary a schema
+      guarantee, and these rows get re-emitted — ``scan.py --input-from-cache``
+      writes a fresh ``findings.json`` from them — so passing an invalid status
+      through would launder it into a new artifact that downstream readers (a CI
+      jq gate, the WebUI) are entitled to assume is well-formed. ``degraded`` is
+      the honest coercion: a row we cannot interpret is a row we cannot trust,
+      and the operator still sees what the producer actually wrote.
     """
     out: list[dict[str, Any]] = []
     for row in rows if isinstance(rows, list) else []:
         if not isinstance(row, dict):
             continue
         tool = row.get("tool")
-        detail = row.get("detail")
-        status = row.get("status")
+        detail = safe_text(row["detail"], DETAIL_CAP) if row.get("detail") else None
+        raw_status = safe_text(row["status"]) if row.get("status") else ""
+        if raw_status in VALID_STATUSES:
+            status = raw_status
+        else:
+            status = "degraded"
+            note = (f"status {raw_status!r} is not in the closed vocabulary"
+                    if raw_status else "the producer recorded no status")
+            # Re-cap AFTER composing: prepending the note to an already-capped
+            # detail would otherwise push the field over DETAIL_CAP.
+            detail = safe_text(f"{note}; {detail}" if detail else note, DETAIL_CAP)
         out.append({
             "class": safe_text(row.get("class", "?")),
             "tool": safe_text(tool) if tool else None,
-            # An ABSENT status becomes "", never the string "None" — rendering
-            # "None" would read like a status value the vocabulary defines.
-            "status": safe_text(status) if status else "",
-            "detail": safe_text(detail, DETAIL_CAP) if detail else None,
+            "status": status,
+            "detail": detail,
         })
     return out

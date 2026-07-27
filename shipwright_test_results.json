@@ -4,8 +4,8 @@
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 9736,
-      "total": 9736
+      "passed": 9739,
+      "total": 9739
     },
     "integration": {
       "status": "passed",
@@ -283,11 +283,31 @@
           "behavior": "The wrapper mirrors the REDACTED findings, so raw secret evidence never reaches triage",
           "disposition": "tested",
           "evidence": "shared/tests/test_security_scan_card.py::test_the_wrapper_mirrors_the_redacted_findings PASSED"
+        },
+        {
+          "behavior": "Manifest-derived class labels are rendered as DATA in the instruction-bearing launch payload, not as prose",
+          "disposition": "tested",
+          "evidence": "test_coverage_untrusted_manifest.py::TestHostileManifestCannotReachTheOperator::test_card_payload_carries_no_injected_line PASSED"
+        },
+        {
+          "behavior": "Every sanitized status is inside the closed vocabulary; an unrecognized one coerces to degraded with the original in detail",
+          "disposition": "tested",
+          "evidence": "test_coverage_untrusted_manifest.py::test_out_of_vocabulary_status_is_coerced_but_still_visible, ::test_every_sanitized_status_is_in_the_closed_vocabulary PASSED"
+        },
+        {
+          "behavior": "coverage_sanitize's duplicated vocabulary cannot drift from scan_coverage.COVERAGE_STATUSES",
+          "disposition": "tested",
+          "evidence": "test_coverage_untrusted_manifest.py::test_the_vocabulary_matches_scan_coverage PASSED"
+        },
+        {
+          "behavior": "The coercion note is capped after composition, so detail cannot overflow DETAIL_CAP",
+          "disposition": "tested",
+          "evidence": "test_coverage_untrusted_manifest.py::test_detail_is_capped_after_the_coercion_note_is_prepended PASSED"
         }
       ],
       "counts": {
-        "testable": 47,
-        "tested": 47,
+        "testable": 51,
+        "tested": 51,
         "untestable": 1,
         "untested_testable": 0
       },

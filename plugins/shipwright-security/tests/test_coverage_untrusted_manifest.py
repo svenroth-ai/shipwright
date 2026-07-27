@@ -29,7 +29,11 @@ sys.path.insert(0, str(PLUGIN_ROOT / "scripts" / "tools"))
 
 import generate_security_report as gsr  # noqa: E402
 import scan as scan_cli  # noqa: E402
-from coverage_sanitize import safe_text, sanitize_coverage  # noqa: E402
+from coverage_sanitize import (  # noqa: E402
+    VALID_STATUSES,
+    safe_text,
+    sanitize_coverage,
+)
 from scan_coverage import class_label, with_prompt_injection_row  # noqa: E402
 from security_card import build_scan_action_unit  # noqa: E402
 
@@ -48,9 +52,12 @@ _FINDING = {"id": "f1", "severity": "high", "type": "sast", "rule": "r1",
 class TestSanitizeCoverage:
     def test_non_dict_rows_are_dropped(self) -> None:
         """`{"coverage": ["bad-row"]}` used to crash report generation."""
-        assert sanitize_coverage(["bad-row", 7, None, {"class": "sast"}]) == [
-            {"class": "sast", "tool": None, "status": "", "detail": None}
-        ]
+        [row] = sanitize_coverage(["bad-row", 7, None, {"class": "sast"}])
+        assert row["class"] == "sast"
+        assert row["tool"] is None
+        # no status at all is not interpretable, so it cannot be `covered`
+        assert row["status"] == "degraded"
+        assert "recorded no status" in row["detail"]
 
     def test_non_list_input_yields_empty(self) -> None:
         assert sanitize_coverage("nope") == []
@@ -66,15 +73,40 @@ class TestSanitizeCoverage:
         assert row["tool"] is None
         assert row["detail"] is None
 
-    def test_out_of_vocabulary_status_is_preserved_not_coerced(self) -> None:
-        """A producer bug the operator should SEE; is_complete already fails
-        closed on it."""
+    def test_out_of_vocabulary_status_is_coerced_but_still_visible(self) -> None:
+        """The closed vocabulary is a SCHEMA guarantee (AC-1), and these rows get
+        re-emitted into a fresh findings.json — so an invalid status must not be
+        laundered through. It coerces to `degraded` (a row we cannot interpret is
+        one we cannot trust) while the original stays visible in `detail`."""
         [row] = sanitize_coverage([{"class": "sast", "status": "probably-fine"}])
-        assert row["status"] == "probably-fine"
+        assert row["status"] == "degraded"
+        assert "probably-fine" in row["detail"]
+
+    def test_every_sanitized_status_is_in_the_closed_vocabulary(self) -> None:
+        rows = sanitize_coverage([
+            {"class": "a", "status": "covered"},
+            {"class": "b", "status": "nonsense"},
+            {"class": "c"},
+        ])
+        assert {r["status"] for r in rows} <= VALID_STATUSES
+
+    def test_the_vocabulary_matches_scan_coverage(self) -> None:
+        """coverage_sanitize duplicates the enum to stay an import-free leaf, so
+        the pair is pinned here rather than left to drift."""
+        from scan_coverage import COVERAGE_STATUSES  # noqa: PLC0415
+
+        assert VALID_STATUSES == frozenset(COVERAGE_STATUSES)
 
     def test_values_are_capped(self) -> None:
-        [row] = sanitize_coverage([{"class": "x" * 5000, "detail": "y" * 5000}])
+        [row] = sanitize_coverage([
+            {"class": "x" * 5000, "status": "covered", "detail": "y" * 5000},
+        ])
         assert len(row["class"]) <= 160
+        assert len(row["detail"]) <= 400
+
+    def test_detail_is_capped_after_the_coercion_note_is_prepended(self) -> None:
+        """Prepending the note to an already-capped detail would overflow it."""
+        [row] = sanitize_coverage([{"class": "x", "detail": "y" * 5000}])
         assert len(row["detail"]) <= 400
 
     def test_safe_text_flattens_and_caps(self) -> None:

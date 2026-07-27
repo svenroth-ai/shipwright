@@ -228,6 +228,7 @@ def run(*, project_root: Path, repo: str = "unknown", full_evidence: bool = Fals
     coverage = build_coverage(
         available=raw_caps if isinstance(raw_caps, (set, frozenset, list, tuple)) else (),
         scan_errors=scan_errors,
+        # Unconditional is safe: run() returns early for non-OSS backends.
         class_degradations=gitleaks_degradations(target),
     )
 
@@ -259,14 +260,13 @@ def run(*, project_root: Path, repo: str = "unknown", full_evidence: bool = Fals
 
     gitignore_status = _ensure_gitignore_entry(project_root)
 
-    # Triage: the per-finding enumeration AND the collapsed card with the
-    # severity split + scope question — alongside each other, never one instead
-    # of the other. Findings are the REDACTED set; both emitters are best-effort.
-    # POSIX separator: the payload is pasted into a shell.
+    # Triage: the per-finding enumeration AND the collapsed card with the severity
+    # split + scope question — alongside, never one instead of the other.
+    # REDACTED findings; both emitters best-effort.
     emit_findings_to_triage(project_root, findings)
     emit_scan_card(
         project_root, findings, coverage=coverage, repo=repo,
-        report_path=f"{REPORTS_DIR}/{LATEST_MD}",
+        report_path=f"{REPORTS_DIR}/{LATEST_MD}",  # POSIX: pasted into a shell
     )
 
     summary = structured_success(data={

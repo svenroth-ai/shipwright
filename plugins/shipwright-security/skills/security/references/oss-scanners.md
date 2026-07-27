@@ -125,6 +125,13 @@ Every scan now writes a `coverage` array into `findings.json` and the
 | `not_requested` | the caller excluded the class via `--scan-types` |
 | `not_available` | the check could not run here — locally, the tool is not on PATH |
 
+The vocabulary is CLOSED, and a manifest read back from a file is coerced into
+it: a row whose status is absent or unrecognized becomes `degraded` with the
+original recorded in `detail`. These rows get re-emitted (`scan.py
+--input-from-cache` writes a fresh `findings.json` from them), so an invalid
+status must never be laundered into a new artifact that a CI `jq` gate or the
+WebUI is entitled to treat as well-formed.
+
 An **empty or absent** manifest means "coverage was not reported", never
 "everything was covered": the report renders *Coverage not reported* rather
 than a clean pass, and a comparison refuses to call anything fixed. That state
