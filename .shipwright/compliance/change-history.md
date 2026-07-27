@@ -3,14 +3,14 @@
 Generated: 2026-07-27T16:41:08.768595+00:00
 Source-State: run=iterate-2026-07-27-audit-empty-run-not-recorded
 Consistency-audit: never run
-Total commits: 1227
+Total commits: 1230
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 351
-    "feat" : 345
+    "fix" : 353
+    "feat" : 346
     "chore" : 255
     "docs" : 148
     "refactor" : 76
@@ -22,10 +22,12 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 351 commits
+### Fixes (fix) — 353 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | compliance | an audit that checked nothing is not recorded | 8bd47a21b2b0 |
+| 2026-07-27 | security | the PR reviewer stops reviewing its own prior reviews (#461) | 273e3ef7ab56 |
 | 2026-07-27 | changelog | the release-note writer preserves the history it read (#452) | 97392eeacfa2 |
 | 2026-07-27 | deploy | rollback uses the version it was given, and stops overclaiming the rest (#441) | ce149b07dd04 |
 | 2026-07-27 | run | an override overrides the verdict, never the check (#438) | f6179f6e1ed5 |
@@ -378,10 +380,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 345 commits
+### Features (feat) — 346 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | shared | the requirement-impact declaration, one mechanism for two phases (#463) | 26dfefa7286e |
 | 2026-07-27 | adopt | what the codebase arrived with is recorded as inherited (2/2) (#460) | 97b9878ed5b2 |
 | 2026-07-27 | adopt | the derived requirements catalogue announces itself (1/2) (#454) | d02f97141669 |
 | 2026-07-27 | iterate | name the blocker instead of reporting a weaker signal (#459) | 0e7e2b74a6ac |
@@ -1298,7 +1301,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1227 |
+| Total commits | 1230 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1227 |
+| Human-authored commits | 1230 |
 

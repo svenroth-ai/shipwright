@@ -1,12 +1,13 @@
 # Project Activity Dashboard
 > Updated: 2026-07-27 16:41 UTC | Session: 184abbf4-c486-4d5b-b89a-1dc21aebc3e1 | Run: iterate-2026-07-27-audit-empty-run-not-recorded
 
-## Recent Changes (376 iterations)
+## Recent Changes (377 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
 | change | iterate: an audit that checked nothing is not recorded | 0/0 |  | compliance | 2026-07-27 |
 | change | iterate: document the delivery watch in the guide | 0/0 |  | docs | 2026-07-27 |
+| change | iterate: requirement write-back loop — design rounds and build sections declare their requirement impact | 0/0 |  | FR-01.04, FR-01.05 | 2026-07-27 |
 | change | iterate: inherited failures and coverage gaps are recorded as inherited | 0/0 |  | FR-01.13 | 2026-07-27 |
 | change | iterate: the four Step-9 gates become code, closing trg-88f721be (3 of 3) | 0/0 |  | tooling | 2026-07-27 |
 | change | iterate: reviewer verdicts recorded, disagreement is its own outcome (1 of 3) | 0/0 |  | FR-01.03 | 2026-07-27 |
