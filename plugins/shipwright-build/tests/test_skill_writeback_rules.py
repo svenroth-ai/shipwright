@@ -35,9 +35,46 @@ WRITEBACK = BUILD / "skills" / "build" / "references" / "requirement-writeback.m
 SCOPE_RULE_FILES = (SELF_REVIEW, SPEC_REVIEWER, SECTION_BUILDER, WRITEBACK)
 
 
+#: Every script the prompts tell the phase to invoke, and where it must live.
+#: Asserting only that the NAME appears in the markdown would pass just as
+#: happily against a script that does not exist — the prompt reads fine and
+#: fails at runtime with a non-zero exit and no useful error. Both directions
+#: are pinned: the name is in the prompt AND the file is on disk.
+REFERENCED_SCRIPTS = (
+    Path("shared") / "scripts" / "tools" / "record_requirement_impact.py",
+    Path("shared") / "scripts" / "tools" / "check_section_file_attribution.py",
+)
+
+
 def _read(path: Path) -> str:
-    assert path.is_file(), f"missing runtime prompt: {path}"
+    if not path.is_file():
+        pytest.fail(f"missing runtime prompt: {path}")
     return path.read_text(encoding="utf-8")
+
+
+def _locate(text: str, needle: str, path: Path) -> int:
+    """``text.index`` with a described failure instead of a bare ValueError.
+
+    An unguarded ``.index()`` on a renamed heading raises with no message, so a
+    drift test that should say "this anchor moved" instead errors out opaquely.
+    """
+    if needle not in text:
+        pytest.fail(
+            f"{path.name} no longer contains {needle!r} — the anchor moved or was "
+            "renamed, so the rule pinned to it is now unchecked"
+        )
+    return text.index(needle)
+
+
+@pytest.mark.parametrize("script", REFERENCED_SCRIPTS, ids=lambda p: p.name)
+def test_every_script_the_prompt_names_actually_exists(script):
+    """A prompt naming a script that does not exist reads fine and does nothing."""
+    if not (REPO_ROOT / script).is_file():
+        pytest.fail(
+            f"{script.as_posix()} is referenced by the build prompts but is not on "
+            "disk. Merge the shared-mechanism PR first — these prompts call tools "
+            "that land there."
+        )
 
 
 def _flat(path: Path) -> str:
@@ -68,7 +105,8 @@ def test_contradiction_rule_says_stop_and_asks_a_person(path):
     assert "STOP" in _read(path)
     flat = _flat(path)
     assert "stop building" in flat
-    assert "put it to a person" in flat or "put the contradiction to a person" in flat
+    # One canonical phrase in both files, so a file cannot drop it and still pass.
+    assert "put it to a person" in flat
 
 
 @pytest.mark.parametrize("path", [SKILL_MD, WRITEBACK], ids=lambda p: p.name)
@@ -100,7 +138,7 @@ def test_autonomous_priority_ladder_does_not_silently_settle_contradictions():
     """The ladder says Spec > Mockup; unqualified, it IS the silent resolution."""
     text = _read(SECTION_BUILDER)
     assert "Source-of-truth priority" in text
-    ladder_at = text.index("Source-of-truth priority")
+    ladder_at = _locate(text, "Source-of-truth priority", SECTION_BUILDER)
     window = text[ladder_at: ladder_at + 2000].lower()
     assert "stop" in window, (
         "the priority ladder must carve out the behavioural contradiction — "
@@ -159,8 +197,8 @@ def test_declaration_is_recorded_after_the_section_commit():
     mention — Step 10b is also named in the Phase Index table at the top.
     """
     text = _read(SKILL_MD)
-    step_10b = text.index("### Step 10b:")
-    step_8 = text.index("## Step 8: Commit")
+    step_10b = _locate(text, "### Step 10b", SKILL_MD)
+    step_8 = _locate(text, "## Step 8: Commit", SKILL_MD)
     assert step_8 < step_10b
     window = text[step_10b: step_10b + 500].lower()
     assert "after" in window

@@ -882,7 +882,12 @@ If a session start finds a legacy top-level `planning/` directory, the drift det
 
 **When the mockup and the section description disagree, building stops.** A section is held to two rules — implement exactly what it specified, and never ignore the mockup — and when the two contradict each other, neither can be satisfied, so whichever one the builder happened to follow would win silently. Instead the phase stops and puts the contradiction to you, quoting both sides. The expected resolution is that **the requirement is corrected to match the mockup**, because the mockup is the thing a person looked at and judged against real use; you can decide otherwise, and either way the decision is recorded. Spotting the contradiction is a human read — comparing prose against rendered markup has no automatic check — but the record of who decided, and the correction actually reaching the spec, are both verified.
 
-**A section may touch shared code when it genuinely needs to.** "Nothing outside the section's scope" is aimed at unrequested extra work; read literally it would make a section that cannot function without a shared helper unbuildable. So such a change is allowed, provided it is the smallest one the section needs and it is recorded as belonging to that section. After the section commit, `/shipwright-build` records a requirement-impact declaration and then checks that every file the section changed — including files it deleted or moved — is either listed in its own `## Files to Create/Modify` block or recorded as an attributed extra with a reason. A section that records no declaration at all fails the same check.
+**A section may touch shared code when it genuinely needs to.** "Nothing outside the section's scope" is aimed at unrequested extra work; read literally it would make a section that cannot function without a shared helper unbuildable. So:
+
+- the change is allowed, provided it is the **smallest** one the section needs;
+- it must be **recorded as belonging to that section**, with a reason;
+- after the section commit, `/shipwright-build` checks that every file the section changed, created **or deleted** is either in its own file list or recorded as an attributed extra;
+- a section that records no declaration at all fails the same check.
 
 **Standalone usage.** Yes. Run `/shipwright-build @sections/01-auth.md` for any section file. When used standalone, you manage the section order yourself. When used within the pipeline, the orchestrator feeds sections in dependency order and handles split transitions automatically.
 ### 4.6 Testing -- /shipwright-test

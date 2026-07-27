@@ -27,7 +27,7 @@ Enhanced fork of deep-implement with decision logging, session handoff, and migr
 | Step 7 Apply review fixes | [apply-interview-fixes](references/apply-interview-fixes.md) |
 | Step 8 Commit (Conventional Commits) | [git-operations](references/git-operations.md) · [pre-commit-handling](references/pre-commit-handling.md) |
 | Step 9 Decision log | [section-doc-update](references/section-doc-update.md) |
-| Step 10 Section state, record_event, split-done canon · Step 1 mockup-contradiction STOP · Step 10b requirement declaration + shared-touch carve-out | [section-state](references/section-state.md) · [requirement-writeback](references/requirement-writeback.md) |
+| Step 10 Section state, record_event, split-done canon · requirement write-back (Step 1 *detects* the mockup contradiction, Step 10b *records* it + the shared-touch carve-out) | [section-state](references/section-state.md) · [requirement-writeback](references/requirement-writeback.md) |
 | Step 10a Reflection | [reflection](references/reflection.md) |
 | Autonomous Section Loop | [autonomous-loop](references/autonomous-loop.md) |
 | Error handling (tests / hooks / context) | [error-handling](references/error-handling.md) |
@@ -140,7 +140,7 @@ Read the section file. Identify prerequisites, test strategy, implementation ste
 
 **Design Reference (mandatory for UI sections):** If the section contains a `## Design Reference` block, you **MUST read the referenced mockup HTML file** before writing any implementation code. The mockup is the visual truth — match layout, component hierarchy, colors/spacing/typography from `.shipwright/designs/visual-guidelines.md`, and responsive behavior. If no `## Design Reference` exists but `.shipwright/designs/screens/` contains relevant mockups, read them anyway. When in doubt, the mockup wins over your assumptions.
 
-**Mockup-vs-Section Contradiction — STOP and put it to a person.** When the approved mockup and the section's own description **contradict** each other, *implement exactly what the section specified* and *never ignore the mockup* cannot both be satisfied — and whichever one you happen to follow wins **silently**, discarding the reason mockups exist. **Stop building**, quote both sides to a person, and let them decide. The expected resolution is that **the requirement is corrected to match the mockup**, because the mockup is the thing someone looked at and judged against real use. Record the outcome at Step 10b via `--contradiction`. Detecting the contradiction is a human read with **no deterministic check**; full rule in [requirement-writeback](references/requirement-writeback.md).
+**Mockup-vs-Section Contradiction — STOP and put it to a person.** When the approved mockup and the section's own description **contradict** each other, *implement exactly what the section specified* and *never ignore the mockup* cannot both be satisfied — and whichever one you happen to follow wins **silently**, discarding the reason mockups exist. **Stop building**, and **put it to a person**, quoting both sides. The expected resolution is that **the requirement is corrected to match the mockup**, because the mockup is the thing someone looked at and judged against real use. Record the outcome at Step 10b via `--contradiction`. Detecting the contradiction is a human read with **no deterministic check**; full rule in [requirement-writeback](references/requirement-writeback.md).
 
 If prerequisites reference other sections, verify those are complete (commits on the branch or main).
 

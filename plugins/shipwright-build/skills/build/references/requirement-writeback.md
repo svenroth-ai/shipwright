@@ -41,7 +41,10 @@ REJECT with `kind: "contradiction"` regardless of which side the code took.
 
 ---
 
-## Step 10b: Declare the section's requirement impact (REQUIRED)
+## Step 10b (build SKILL.md) / Step 15a (section-builder): declare the impact
+
+Both entry points run the SAME two commands; they live here only, so the
+guided and autonomous paths cannot drift apart.
 
 Runs **after** the Step 8 commit, so `HEAD` *is* this section's commit and
 `HEAD^..HEAD` is exactly its own range. Do **not** pass the branch base: with one
