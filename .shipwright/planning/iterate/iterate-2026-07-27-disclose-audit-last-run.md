@@ -80,9 +80,13 @@ the documents look unchanged and trustworthy the whole time. This iterate turns
    and four of those renderers are grandfathered at their anti-ratchet ceiling with zero headroom
    (a new import line in each would be four ratchet blocks). Directly-constructed
    `ComplianceData` (tests, fixtures) defaults to `""` and renders exactly as before.
-4. **Renderers** — one-for-one line edits appending `{data.audit_freshness_note}` to the
-   `Generated:` line in `rtm_generator`, `test_evidence`, `sbom_generator`, `change_history`.
-   The dashboard does not carry the suffix: it has the full section.
+4. **Renderers** — no per-renderer edit at all. The sibling card `trg-4d5b6a56` (PR #448) landed
+   first with a shared provenance block (`lib/_provenance.py` → `[Generated:, Source-State:]`,
+   splatted by all five renderers) and explicitly reserved a third line for this card. So the
+   disclosure is emitted from there as `Consistency-audit: …` — one owner, five documents, zero
+   lines added to any grandfathered renderer. The line is terse because the dashboard's section
+   carries the long form; it is omitted (never guessed) when the field is unset, which keeps
+   directly-constructed `ComplianceData` rendering exactly as before.
 5. **`run_audit.py`** — records the run after the report is written, on **every** invocation
    including a failing audit and a `--only` partial run. Fail-soft: a recording failure never
    changes the audit's exit code.
@@ -110,7 +114,8 @@ the documents look unchanged and trustworthy the whole time. This iterate turns
 ## Acceptance criteria
 
 - **AC-1** Given any compliance evidence document (dashboard, RTM, test evidence, change history,
-  SBOM), when it is generated, then it discloses when the consistency audit last ran.
+  SBOM), when it is generated, then it discloses when the consistency audit last ran, as a line of
+  its provenance header.
 - **AC-2** Given no audit run has ever been recorded, when a document is generated, then it says
   the check has never run, explicitly — silence is not an option.
 - **AC-3** Given a recorded run, when a document is generated, then the disclosure carries how

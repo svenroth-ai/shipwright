@@ -45,17 +45,17 @@
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "every evidence document (RTM, test-evidence, change-history, SBOM) discloses the last cross-check on its Generated: line",
+          "behavior": "every evidence document (RTM, test-evidence, change-history, SBOM) discloses the last cross-check as the third line of its provenance header",
           "disposition": "tested",
-          "evidence": "test_evidence_docs_disclose_audit.py::test_never_run_is_disclosed_in_every_document + ::test_recorded_run_is_disclosed_in_every_document (parametrized x4) PASSED"
+          "evidence": "test_evidence_docs_disclose_audit.py::test_never_run_is_disclosed_in_every_document + ::test_recorded_run_is_disclosed_in_every_document + ::test_the_disclosure_sits_in_the_provenance_block (parametrized x4) PASSED"
         },
         {
-          "behavior": "the dashboard carries the full Consistency Audit section instead of the header suffix (no double disclosure)",
+          "behavior": "the dashboard carries both the provenance line and the full Consistency Audit section",
           "disposition": "tested",
-          "evidence": "test_evidence_docs_disclose_audit.py::test_dashboard_carries_the_section_not_the_header_suffix + ::test_dashboard_section_reflects_a_recorded_run PASSED"
+          "evidence": "test_evidence_docs_disclose_audit.py::test_dashboard_carries_both_the_line_and_the_section + ::test_dashboard_section_reflects_a_recorded_run PASSED"
         },
         {
-          "behavior": "the disclosure is additive: the generation timestamp and the SBOM lock qualifier both survive",
+          "behavior": "the disclosure is additive: the generated timestamp, the source-state line and the SBOM lock qualifier all survive",
           "disposition": "tested",
           "evidence": "test_evidence_docs_disclose_audit.py::test_disclosure_does_not_displace_the_generated_timestamp + ::test_sbom_keeps_its_own_header_qualifier PASSED"
         },
@@ -150,9 +150,9 @@
           "evidence": "test_audit_disclosure_render.py::test_note_is_a_single_line PASSED"
         },
         {
-          "behavior": "a directly constructed ComplianceData renders exactly as before (backwards compatible)",
+          "behavior": "a directly constructed ComplianceData omits the line rather than inventing one (backwards compatible)",
           "disposition": "tested",
-          "evidence": "test_evidence_docs_disclose_audit.py::test_directly_constructed_data_renders_without_the_note PASSED"
+          "evidence": "test_evidence_docs_disclose_audit.py::test_directly_constructed_data_omits_the_line_rather_than_guessing PASSED"
         },
         {
           "behavior": "the compliance phase regenerates all five documents, so an audit's answer is visible immediately instead of a regen cycle later",
@@ -193,5 +193,10 @@
     "measured_tier": "repo",
     "source": "combined coverage.xml (all plugins + shared + integration)",
     "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-07-27-disclose-audit-last-run",
+    "commit": "cb19a3953fb685f2e6b69d0b4b74b3ce5361a76c",
+    "dirty": true
   }
 }

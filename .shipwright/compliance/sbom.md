@@ -2,6 +2,7 @@
 
 Generated: 2026-07-27T09:08:42.773123+00:00 (dependency versions resolved from uv.lock)
 Source-State: run=iterate-2026-07-27-artifact-state-stamping
+Consistency-audit: never run
 
 ## Summary
 
