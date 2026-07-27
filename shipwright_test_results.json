@@ -116,7 +116,8 @@
         {
           "behavior": "writer, Stop hook and verifier agree on one canon marker on disk, incl. the hook's production entry point from an unrelated cwd",
           "disposition": "tested",
-          "evidence": "test_handoff_freshness_composition.py (5 tests) PASSED"
+          "evidence": "test_handoff_freshness_composition.py (5 tests) PASSED",
+          "category": "integration"
         },
         {
           "behavior": "a folded acceptance criterion resolves to its named requirement, including alongside a row change",
@@ -133,7 +134,17 @@
           "disposition": "tested",
           "evidence": "test_layer_coverage_verdict.py::test_an_unreadable_spec_blocks_a_medium_iterate_rather_than_reading_as_unchanged PASSED (+1)"
         }
-      ]
+      ],
+      "counts": {
+        "testable": 18,
+        "tested": 18,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 6,
+        "covered_acs": 6
+      }
     },
     "degraded": [
       "classify_complexity risk flag touches_auth: OVERRIDDEN as a prose false positive. The literal 'session' in 'session_handoff' matched an auth path pattern; no auth, RLS, middleware or credential code is in the diff. The diff-driven risk_detectors predicates are authoritative and flag none. Over-flagging is the fail-safe direction, so the run proceeded at the enforced floor anyway (medium, mandatory review).",
