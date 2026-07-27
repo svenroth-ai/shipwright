@@ -465,6 +465,12 @@ _Where the work detail lives_ at the end of this document.
 - (E) Given release notes are added to the existing history, when the file is
   written, then the new release-note section goes above the most recent released one and
   the document's title and older entries are left intact.
+- (E) Given a version already present in the history — an earlier attempt
+  having stopped before that version was marked — when its release note is
+  written again, then that version's section is replaced rather than added a
+  second time, so one version appears exactly once; and where the existing
+  history cannot be extended safely, writing stops and says why rather than
+  overwriting what it could not interpret.
 - (E) Given entries written the older way, straight into the pending release-note section,
   when a release is assembled, then each one is named back to the operator
   rather than being folded in silently.
