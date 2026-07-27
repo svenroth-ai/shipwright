@@ -1,17 +1,17 @@
 # Commit Change Log
 
-Generated: 2026-07-27T15:50:13.106639+00:00
-Source-State: run=iterate-2026-07-27-guide-delivery-watch
+Generated: 2026-07-27T17:38:43.791837+00:00
+Source-State: run=iterate-2026-07-27-run-unit-parallel-race
 Consistency-audit: never run
-Total commits: 1227
+Total commits: 1237
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 351
-    "feat" : 345
-    "chore" : 255
+    "fix" : 358
+    "feat" : 346
+    "chore" : 257
     "docs" : 148
     "refactor" : 76
     "test" : 31
@@ -22,10 +22,17 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 351 commits
+### Fixes (fix) — 358 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | shared | a multi-root pytest session names its own cause (#469) | bd7121b79d53 |
+| 2026-07-27 | compliance | an audit that checked nothing is not recorded (#466) | 968578b9de35 |
+| 2026-07-27 | shared | a reader and a writer stop defeating each other on Windows (#471) | 0b4c9b8b4ae6 |
+| 2026-07-27 | security | the PR reviewer stops being defeated by the size of the change (#470) | 17ca76d7f413 |
+| 2026-07-27 | iterate | the phase canon asks whether the handoff belongs to this run (#467) | 3c82d6332678 |
+| 2026-07-27 | iterate | the merge state is a vocabulary, not a BLOCKED flag | a1736527b030 |
+| 2026-07-27 | security | the PR reviewer stops reviewing its own prior reviews (#461) | 273e3ef7ab56 |
 | 2026-07-27 | changelog | the release-note writer preserves the history it read (#452) | 97392eeacfa2 |
 | 2026-07-27 | deploy | rollback uses the version it was given, and stops overclaiming the rest (#441) | ce149b07dd04 |
 | 2026-07-27 | run | an override overrides the verdict, never the check (#438) | f6179f6e1ed5 |
@@ -378,10 +385,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 345 commits
+### Features (feat) — 346 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | shared | the requirement-impact declaration, one mechanism for two phases (#463) | 26dfefa7286e |
 | 2026-07-27 | adopt | what the codebase arrived with is recorded as inherited (2/2) (#460) | 97b9878ed5b2 |
 | 2026-07-27 | adopt | the derived requirements catalogue announces itself (1/2) (#454) | d02f97141669 |
 | 2026-07-27 | iterate | name the blocker instead of reporting a weaker signal (#459) | 0e7e2b74a6ac |
@@ -728,11 +736,13 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 255 commits
+### Chores (chore) — 257 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | triage | sweep 3 outbox append(s) into branch | 54319a446fec |
+| 2026-07-27 | triage | follow-up card for requiring the checks that gate nothing | 7387b2796960 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | 4e1d706601e2 |
+| 2026-07-27 | triage | sweep 7 outbox append(s) into branch | 64bf98157f68 |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -992,7 +1002,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | guide | the finalization walkthrough ends at delivery, not at arming | bd85c4efb740 |
+| 2026-07-27 | guide | the finalization walkthrough ends at delivery, not at arming (#462) | eea6e1643388 |
 | 2026-07-27 | campaign | correct the revert attribution in the REQ-3 ledger | ff8825879571 |
 | 2026-07-21 | security | document operator-run converge for adopted repos (#420) | d9aa64b32f99 |
 | 2026-07-09 | constitution | require plain-language questions to the user (#354) | f879a73a4903 |
@@ -1298,7 +1308,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1227 |
+| Total commits | 1237 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1227 |
+| Human-authored commits | 1237 |
 

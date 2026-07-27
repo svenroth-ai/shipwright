@@ -22,7 +22,6 @@ from __future__ import annotations
 
 import json
 import re
-import time
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -229,7 +228,9 @@ def get_latest_phase_completed_event(
 #
 # C1: record_event phase_completed
 # C2: update_build_dashboard for the phase
-# C3: session_handoff regenerated with reason
+# C3: session_handoff names the run being verified — lives in
+#     ``handoff_freshness.py`` beside its F11 twin, since both read one
+#     canon marker (iterate-2026-07-27-c3-phase-content-key)
 # C4: decision_log has a new ADR tied to this run (phase-dependent)
 # C5: CHANGELOG [Unreleased] has a new bullet (phase-dependent)
 #
@@ -377,38 +378,6 @@ def check_c2_dashboard_reflects_phase(project_root: Path, phase: str) -> CheckRe
             severity=Severity.WARNING.value,
         )
     return CheckResult(name, True, f"'{phase}' found in build_dashboard.md")
-
-
-def check_c3_session_handoff_fresh_after_phase(
-    project_root: Path,
-    phase: str,
-    max_age_seconds: int = 600,
-) -> CheckResult:
-    """C3 — session_handoff.md was regenerated recently.
-
-    ``phase`` is accepted for API uniformity with C1/C2/C4/C5 but is not
-    used for matching: session_handoff is a single file without per-phase
-    markers. Iterate 12.1+ callers that want stronger checks can use
-    ``read_run_config(...).get("phase_history", {}).get(phase, [])`` to
-    compare against the canonical ``phase_completed`` timestamp.
-    """
-    del phase  # not used today; kept for API symmetry
-    name = "C3 session_handoff.md fresh"
-    handoff = project_root / _AGENT_DOCS_DIRNAME / "session_handoff.md"
-    if not handoff.exists():
-        return CheckResult(
-            name, False, "session_handoff.md missing",
-            severity=Severity.WARNING.value,
-        )
-    age = time.time() - handoff.stat().st_mtime
-    if age <= max_age_seconds:
-        return CheckResult(name, True, f"mtime age {int(age)}s")
-    return CheckResult(
-        name,
-        False,
-        f"stale: mtime age {int(age)}s > {max_age_seconds}s",
-        severity=Severity.WARNING.value,
-    )
 
 
 def check_c4_decision_log_has_phase_adr(
