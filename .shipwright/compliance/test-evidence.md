@@ -19,11 +19,11 @@ Consistency-audit: never run
 | 1 | raise the PR-review diff cap, cut at a file boundary, name what went unreviewed | [iterate](traceability-matrix.md#evt-36d0f887) | — | +0 | — | — | 2026-07-27 |
 | 2 | an audit that checked nothing is not recorded | [iterate](traceability-matrix.md#evt-e3d8f519) | — | +0 | — | — | 2026-07-27 |
 | 3 | refuse a multi-root pytest session instead of failing 21 unrelated tests | [iterate](traceability-matrix.md#evt-aea234e3) | — | +0 | — | — | 2026-07-27 |
-| 4 | bounded sharing-violation retry on both sides of the atomic-write boundary | [iterate](traceability-matrix.md#evt-92094b2e) | — | +0 | — | — | 2026-07-27 |
-| 5 | the phase canon asks whether the handoff belongs to this run | [iterate](traceability-matrix.md#evt-e0b8fd18) | — | +0 | — | — | 2026-07-27 |
-| 6 | document the delivery watch in the guide | [iterate](traceability-matrix.md#evt-90ce4f39) | — | +0 | — | — | 2026-07-27 |
-| 7 | requirement write-back loop — design rounds and build sections declare their requirement impact | [iterate](traceability-matrix.md#evt-cf1bab8b) | — | +0 | — | — | 2026-07-27 |
-| 8 | The handoff's progress tally stops overstating, the dispatch pointer stops claiming phases are in flight when they are not, and the override record stops asserting a gate passed where no gate exists. | [iterate](traceability-matrix.md#evt-67df62f3) | — | +0 | — | — | 2026-07-27 |
+| 4 | document the delivery watch in the guide | [iterate](traceability-matrix.md#evt-90ce4f39) | — | +0 | — | — | 2026-07-27 |
+| 5 | requirement write-back loop — design rounds and build sections declare their requirement impact | [iterate](traceability-matrix.md#evt-cf1bab8b) | — | +0 | — | — | 2026-07-27 |
+| 6 | the phase canon asks whether the handoff belongs to this run | [iterate](traceability-matrix.md#evt-e0b8fd18) | — | +0 | — | — | 2026-07-27 |
+| 7 | bounded sharing-violation retry on both sides of the atomic-write boundary | [iterate](traceability-matrix.md#evt-92094b2e) | — | +0 | — | — | 2026-07-27 |
+| 8 | the merge state is a vocabulary, not a BLOCKED flag | [iterate](traceability-matrix.md#evt-d256a84e) | — | +0 | — | — | 2026-07-27 |
 | 9 | inherited failures and coverage gaps are recorded as inherited | [iterate](traceability-matrix.md#evt-f2747703) | — | +0 | — | — | 2026-07-27 |
 | 10 | the four Step-9 gates become code, closing trg-88f721be (3 of 3) | [iterate](traceability-matrix.md#evt-f540a880) | — | +0 | — | — | 2026-07-27 |
 | 11 | reviewer verdicts recorded, disagreement is its own outcome (1 of 3) | [iterate](traceability-matrix.md#evt-5ecd7d7e) | — | +0 | — | — | 2026-07-27 |

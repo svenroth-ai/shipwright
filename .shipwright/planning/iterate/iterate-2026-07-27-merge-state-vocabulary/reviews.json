@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-07-27-merge-state-vocabulary",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T16:41:37.261302+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T16:41:37.377307+00:00",
+      "disposition": "External plan review is a medium+ phase per the iterate phase matrix; this run is small. The design was not speculative — it was derived from a reproduced failure on PR #462 and the documented GitHub MergeStateStatus enum.",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T16:41:37.502045+00:00",
+      "disposition": "Subagent review is disabled for this session by operator configuration. A full external code review ran instead (external_code, 2/2 legs, 3 findings) and every finding was fixed.",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-07-27T16:41:37.619108+00:00",
+      "disposition": "Same rule as the code pass. The adversarial function was carried by the external code review, which found a real regression both legs agreed on, plus a reproduction test proving the fix.",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "regression",
+          "file": "shared/scripts/tools/watch_pr_delivery.py",
+          "line": 198,
+          "finding": "The new `if \"detail\" in cause:` condition in `_render_blocker` unintentionally intercepts `unresolved_review_threads` causes, because they also contain a `detail` key (whose value is a list of dicts). This means review threads will now render as a raw stringified Python list with a placeholder state (e.g., `unresolved_review_threads (?): [{'path': '...', 'line': ...}]`) and lose their previous count-based rendering.",
+          "suggestion": "Qualify the merge-state check by targeting something unique to it, such as `if cause.get(\"kind\") == \"merge_state\":` or `if \"state\" in cause:`.  Overall, this change nicely solves the problem of GitHub's nuanced merge states and implements the spec strictly, but introduces a rendering regression for review threads that needs fixing.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/tools/watch_pr_delivery.py",
+          "line": 199,
+          "finding": "The new generic `\"detail\"` rendering branch runs before the existing `\"count\"` branch. Review-thread causes contain both fields, so untrusted GitHub file paths from `cause[\"detail\"]` are now printed verbatim in the operator line rather than rendering only the count. Git paths can contain terminal control characters; this newly permits malicious PR content to inject terminal escape sequences into watcher output, and also regresses thread output into a Python list representation.",
+          "suggestion": "Handle counted causes before detail causes, or restrict the detail rendering branch to `kind == \"merge_state\"`. If thread paths must be displayed, escape/control-character-sanitize them before terminal output.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_pr_blockers_merge_state.py:120-123",
+          "line": null,
+          "finding": "The end-to-end rendering test verifies that a DIRTY PR is not called queued and mentions conflicts, but it does not verify acceptance criterion D: that the observed state itself is rendered. A broken renderer that still emitted a fixed `BLOCKED` phrase plus the conflict detail would pass this test.",
+          "suggestion": "Assert the rendered line contains `merge state DIRTY` (and, ideally, does not contain a fixed `merge state BLOCKED` phrase for this input).  The merge-state vocabulary, unknown-state handling, and structural-blocking distinctions otherwise implement the stated acceptance criteria. Ship with the rendering fix, which also avoids exposing untrusted review-thread paths. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-07-27T16:41:37.145755+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
+      "parse_status": "structured",
+      "raw_excerpt": "[gemini] - Category: regression\n- Severity: medium\n- File:line: `shared/scripts/tools/watch_pr_delivery.py:198`\n- Finding: The new `if \"detail\" in cause:` condition in `_render_blocker` unintentionally intercepts `unresolved_review_threads` causes, because they also contain a `detail` key (whose value is a list of dicts). This means review threads will now render as a raw stringified Python list with a placeholder state (e.g., `unresolved_review_threads (?): [{'path': '...', 'line': ...}]`) and lose their previous count-based rendering.\n- Suggestion: Qualify the merge-state check by targeting something unique to it, such as `if cause.get(\"kind\") == \"merge_state\":` or `if \"state\" in cause:`.\n\nOverall, this change nicely solves the problem of GitHub's nuanced merge states and implements the spec strictly, but introduces a rendering regression for review threads that needs fixing.\n\nSHIPWRIGHT_VERDICT: revise\n\n[openai] - Category: security\n- Severity: medium\n- File: `shared/scripts/tools/watch_pr_delivery.py:199`\n- Finding: The new generic `\"detail\"` rendering branch runs before the existing `\"count\"` branch. Review-thread causes contain both fields, so untrusted GitHub file paths from `cause[\"detail\"]` are now printed verbatim in the operator line rather than rendering only the count. Git paths can contain terminal control characters; this newly permits malicious PR content to inject terminal escape sequences into watcher output, and also regresses thread output into a Python list representation.\n- Suggestion: Handle counted causes before detail causes, or restrict the detail rendering branch to `kind == \"merge_state\"`. If thread paths must be displayed, escape/control-character-sanitize them before terminal output.\n\n- Category: test\n- Severity: low\n- File: `shared/tests/test_pr_blockers_merge_state.py:120-123`\n- Finding: The end-to-end rendering test verifies that a DIRTY PR is not called queued and mentions conflicts, but it does not verify acceptance criterion D: that the observed state itself is rendered. A broken renderer that still emitted a fixed `BLOCKED` phrase plus the conflict detail would pass this test.\n- Suggestion: Assert the rendered line contains `merge state DIRTY` (and, ideally, does not contain a fixed `merge state BLOCKED` phrase for this input).\n\nThe merge-state vocabulary, unknown-state handling, and structural-blocking distinctions otherwise implement the stated acceptance criteria. Ship with the rendering fix, which also avoids exposing untrusted review-thread paths.  \nSHIPWRIGHT_VERDICT: revise"
+    }
+  }
+}
