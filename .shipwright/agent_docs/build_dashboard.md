@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-27 14:35 UTC | Session: 98053cc9-0f7c-4be8-b1cc-8b5d8b25d84b | Run: iterate-2026-07-27-adopt-inherited-baseline
+> Updated: 2026-07-27 15:50 UTC | Session: 9058f47a-25f4-4469-b517-e3b5c91347e0 | Run: iterate-2026-07-27-guide-delivery-watch
 
-## Recent Changes (373 iterations)
+## Recent Changes (374 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | iterate: document the delivery watch in the guide | 0/0 |  | docs | 2026-07-27 |
 | change | iterate: inherited failures and coverage gaps are recorded as inherited | 0/0 |  | FR-01.13 | 2026-07-27 |
 | change | iterate: the four Step-9 gates become code, closing trg-88f721be (3 of 3) | 0/0 |  | tooling | 2026-07-27 |
 | change | iterate: reviewer verdicts recorded, disagreement is its own outcome (1 of 3) | 0/0 |  | FR-01.03 | 2026-07-27 |
@@ -380,7 +381,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-27 | Unit: 591/591 | Integration: 418/418 | E2E: 62/62 | Smoke: skipped | (iterate)
+Last run: 2026-07-27 | Unit: 5545/5561 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
