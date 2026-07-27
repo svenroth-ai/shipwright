@@ -1,6 +1,6 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-run-unit-parallel-race"
+run_id: "iterate-2026-07-27-audit-empty-run-not-recorded"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
 timestamp: "2026-07-27T17:38:49.456380+00:00"
@@ -12,7 +12,7 @@ timestamp: "2026-07-27T17:38:49.456380+00:00"
 
 ## Session Info
 
-- **Session ID**: 9eda9cad-b9b8-45ff-acd4-2ab5efe17ff6
+- **Session ID**: 184abbf4-c486-4d5b-b89a-1dc21aebc3e1
 - **Timestamp**: 2026-07-27 17:38:49 UTC
 - **Reason**: ensure-current pre-merge refresh
 
@@ -29,10 +29,7 @@ timestamp: "2026-07-27T17:38:49.456380+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/run-unit-parallel-race
-- **Run ID**: `iterate-2026-07-27-run-unit-parallel-race`
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-run-unit-parallel-race.md
-- **Complexity**: medium (`prior_source: history`, n=20)
+- **Branch**: iterate/audit-empty-run-not-recorded
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -51,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/run-unit-parallel-race
-- **Last Commit**: ba02f7b9 Merge remote-tracking branch 'origin/main' into iterate/run-unit-parallel-race
+- **Branch**: iterate/audit-empty-run-not-recorded
+- **Last Commit**: 10cdd353 Merge remote-tracking branch 'origin/main' into iterate/audit-empty-run-not-recorded
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -70,14 +67,14 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 |-------|------|--------|------|
 | evt-950798de | grade_snapshot | — | 2026-07-27 |
 | evt-36d0f887 | work_completed | iterate (iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed) | 2026-07-27 |
+| evt-ad7b51e0 | grade_snapshot | — | 2026-07-27 |
+| evt-e3d8f519 | work_completed | iterate (iterate: an audit that checked nothing is not recorded) | 2026-07-27 |
 | evt-76f1beff | grade_snapshot | — | 2026-07-27 |
-| evt-90ce4f39 | work_completed | iterate (iterate: document the delivery watch in the guide) | 2026-07-27 |
-| evt-cf1bab8b | work_completed | iterate (iterate: requirement write-back loop — design rounds and build sections declare their requirement impact) | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 379
+- **Total work events**: 380
 - **Last iterate**: change — iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

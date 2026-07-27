@@ -2,7 +2,7 @@
   "schema_version": 3,
   "collector_version": "test_links/1.0.0",
   "generated_at": "2026-07-27T17:38:43.791837+00:00",
-  "source_commit": "ba02f7b96a69d0dafdc9fef0768253624721e451",
+  "source_commit": "10cdd35325357481c72d1a0bed8adc3cdff52d84",
   "spec_hash": "sha256:1bee91409b3da7b46cf060dcdd86a5ef4d79173c369b1f1b6959ac19d78b741a",
   "requirements": {
     "01::FR-01.01": {
@@ -4274,8 +4274,14 @@
     "plugins/shipwright-compliance/tests/test_rtm_reconciled_column.py::test_reconciled_fr_not_listed",
     "plugins/shipwright-compliance/tests/test_rtm_reconciled_column.py::test_safe_wrapper_returns_usable_object",
     "plugins/shipwright-compliance/tests/test_rtm_reconciled_column.py::test_unreconciled_fr_listed",
+    "plugins/shipwright-compliance/tests/test_run_audit_records_run.py::test_a_failed_recording_warns_without_changing_the_verdict",
     "plugins/shipwright-compliance/tests/test_run_audit_records_run.py::test_a_full_run_is_recorded_in_tracked_state",
     "plugins/shipwright-compliance/tests/test_run_audit_records_run.py::test_a_partial_run_is_recorded_as_partial",
+    "plugins/shipwright-compliance/tests/test_run_audit_records_run.py::test_a_real_run_takes_the_recording_arm",
+    "plugins/shipwright-compliance/tests/test_run_audit_records_run.py::test_a_run_that_executed_no_group_is_not_recorded",
+    "plugins/shipwright-compliance/tests/test_run_audit_records_run.py::test_an_empty_run_does_not_displace_an_earlier_real_one",
+    "plugins/shipwright-compliance/tests/test_run_audit_records_run.py::test_an_empty_run_records_nothing_and_says_so",
+    "plugins/shipwright-compliance/tests/test_run_audit_records_run.py::test_an_exploding_recorder_never_changes_the_verdict",
     "plugins/shipwright-compliance/tests/test_run_audit_records_run.py::test_recording_does_not_disturb_an_existing_config",
     "plugins/shipwright-compliance/tests/test_sbom_generator.py::test_auto_resolve_when_workspace_clean",
     "plugins/shipwright-compliance/tests/test_sbom_generator.py::test_cluster_auto_resolves_when_all_members_clean",
