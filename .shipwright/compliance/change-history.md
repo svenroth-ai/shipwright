@@ -3,16 +3,16 @@
 Generated: 2026-07-27T19:47:47.363461+00:00
 Source-State: run=iterate-2026-07-27-review-floor-not-chained
 Consistency-audit: never run
-Total commits: 1251
+Total commits: 1256
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "fix" : 364
-    "feat" : 349
-    "chore" : 260
-    "docs" : 148
+    "feat" : 351
+    "chore" : 262
+    "docs" : 149
     "refactor" : 78
     "test" : 31
     "ci" : 11
@@ -391,10 +391,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 349 commits
+### Features (feat) — 351 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | build | stop on a mockup-vs-section contradiction; allow a recorded shared touch (3/3) (#465) | ea2ad4bfab15 |
+| 2026-07-27 | design | a feedback round declares what it changed about the requirements (2/3) (#464) | 4da3f66526b5 |
 | 2026-07-27 | iterate | a branch may not quietly revert work that merged while it was open (#477) | 5b351ed4491d |
 | 2026-07-27 | security | a scan records what it did not check (part 1/2) (#455) | 8154e1bcaf2b |
 | 2026-07-27 | test | per-journey coverage, durable warning follow-ups, retry-passes (FR-01.06) (#446) | fbf93d01b55b |
@@ -745,10 +747,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 260 commits
+### Chores (chore) — 262 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | iterate | declare four check_no_silent_revert false positives with proof | 45ef0d1a7137 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | 11835f35eaea |
 | 2026-07-27 | churn | regenerate derived snapshots after main merge | 86b4c2482556 |
 | 2026-07-27 | churn | regenerate derived snapshots after main merge | 8085f1bd9dbb |
 | 2026-07-27 | churn | regenerate derived snapshots after main merge | 5e6b46e2c140 |
@@ -1010,10 +1014,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 148 commits
+### Documentation (docs) — 149 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | iterate | restore the post-merge plugin-cache sync follow-up | 40b1c41889b8 |
 | 2026-07-27 | guide | the finalization walkthrough ends at delivery, not at arming (#462) | eea6e1643388 |
 | 2026-07-27 | campaign | correct the revert attribution in the REQ-3 ledger | ff8825879571 |
 | 2026-07-21 | security | document operator-run converge for adopted repos (#420) | d9aa64b32f99 |
@@ -1322,7 +1327,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1251 |
+| Total commits | 1256 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1251 |
+| Human-authored commits | 1256 |
 

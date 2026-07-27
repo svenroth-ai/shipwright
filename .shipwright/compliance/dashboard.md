@@ -19,7 +19,7 @@ Scope: library
 | ✅ | Change traceability | 388/388 changes linked to a commit, ADR or test run | change provenance (SLSA) |
 | ⚠️ | Change reconciliation | 16/18 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
 | ⚠️ | Security | 3 open high/critical | no open high/critical vulns (NIST SSDF) |
-| ✅ | Size / maintainability discipline | ratchet delta -88 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
+| ✅ | Size / maintainability discipline | ratchet delta -89 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
 | ✅ | Dependency hygiene | 0 unresolved / 11 licenses; 0 copyleft | dependency license & risk (OWASP) |
 
 > 📊 **Test-Health · diff-coverage (Control-Grade input · target ≥80%):** not measured this session — per-PR signal; see the CI "Diff coverage" artifact.
@@ -30,7 +30,7 @@ _Grade = importance-weighted average over the measurable dimensions (n/a exclude
 
 ## 🛡️ CI Security (fail-closed gate)
 
-Latest scan: **2026-07-27** · source `security.yml#30303833302` · critical-gate **✅ PASS**
+Latest scan: **2026-07-27** · source `security.yml#30308105370` · critical-gate **✅ PASS**
 
 | Severity | Count |
 |----------|-------|
@@ -63,10 +63,10 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Iterate tests passing | 55/89 testable changes tested | WARN | 34 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 11 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 23 open | WARN | 23 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Triage open | 22 open | WARN | 22 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit (grandfathered) | 124 | INFO |  |
 | Bloat in allowlist | 159 entries | INFO |  |
-| Bloat ratchet delta | -88 lines | PASS |  |
+| Bloat ratchet delta | -89 lines | PASS |  |
 
 ## Project Velocity
 
