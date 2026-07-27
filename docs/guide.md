@@ -1581,7 +1581,7 @@ The **constitution** (`shared/constitution.md`) defines behavioral boundaries fo
 - Destructive database operations (`DROP TABLE`, `DROP COLUMN`, `TRUNCATE`).
 - Production deployments (always confirm + backup).
 - Skipping test layers (must provide a valid reason).
-- Overriding phase validation gates (`--force`).
+- Overriding phase validation gates (`--force`, which requires `--force-reason "<why>"`; the check still runs and its findings plus your reason are recorded in `validation_overrides[]`, so an overridden phase stays distinguishable from one that passed).
 - Continuing after 3 failed fix attempts.
 - Phrase questions to the user in plain, functional language a non-senior developer understands -- no unexplained jargon.
 

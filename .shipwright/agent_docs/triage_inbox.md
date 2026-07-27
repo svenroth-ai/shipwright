@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-27T08:43:16.422767Z. Items waiting for triage decision.
+> Auto-generated 2026-07-27T08:17:34.267156Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 413
-- Triage: 24 | Promoted: 1 | Dismissed: 387 | Snoozed: 1
+- Total: 415
+- Triage: 25 | Promoted: 1 | Dismissed: 388 | Snoozed: 1
 
-## Top 24 items (severity-sorted)
+## Top 25 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -19,18 +19,18 @@
 
 ### Source: compliance (1 item)
 
-<a id="trg-b14f96d9"></a>
-- **Compliance: 10 open finding(s)** `id=trg-b14f96d9 | severity=high | kind=compliance → P1/compliance`
-  - 10 open compliance finding(s): D/D1, D/D3, E/E1, E/E2, E/E3, E/E5, E/E?, E/E?, E/E?, H/H1  - D/D1: Spec FR coverage in…
+<a id="trg-62316d55"></a>
+- **Compliance: 3 open finding(s)** `id=trg-62316d55 | severity=high | kind=compliance → P1/compliance`
+  - 3 open compliance finding(s): D/D1, D/D3, H/H1  - D/D1: Spec FR coverage in events — uncovered FRs — Must: FR-01.17; Sh…
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-compliance
     
-    Context: 10 open compliance finding(s): D/D1, D/D3, E/E1, E/E2, E/E3, E/E5, E/E?, E/E?, E/E?, H/H1.
+    Context: 3 open compliance finding(s): D/D1, D/D3, H/H1.
     Dashboard: .shipwright/compliance/dashboard.md
     Each finding + hint is listed in this item's detail.
     ```
-  - Promote: `triage_promote.py --id trg-b14f96d9 --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-62316d55 --task-ref EXT:<ref>`
 
 ### Source: github (1 item)
 
@@ -78,6 +78,14 @@
 - **REQ3.04 [CAMPAIGN AUTONOM] Mechanik - Monorepo** `id=trg-7085d783 | severity=medium | kind=improvement → P2/engineering`
   - Phase 3, AUTONOME Kampagne. Sub-Iterates: Evidenzkette (CI regeneriert Manifest, muss matchen), AC-Identitaet, Manifest…
   - Promote: `triage_promote.py --id trg-7085d783 --task-ref EXT:<ref>`
+
+### Source: req3-granularity-round (1 item)
+
+<a id="trg-1d7d91d0"></a>
+- **Spec-coherence check S5 is blind to the converged acceptance-criteria shape** `id=trg-1d7d91d0 | severity=medium | kind=bug → P2/engineering`
+  - check_s5_fr_coherence reports every requirement in this repo's own catalogue as missing both description and acceptance…
+  - Evidence: `.shipwright/planning/iterate/2026-07-27-project-granularity-basis.md`
+  - Promote: `triage_promote.py --id trg-1d7d91d0 --task-ref EXT:<ref>`
 
 ### Source: req3-phase2-walk (16 items)
 

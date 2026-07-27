@@ -12,6 +12,13 @@ Before analyzing splits:
 
 The goal of a split is to create a unit of work ideal for deeper planning via /shipwright-plan. Not too broad (plan becomes too much context), not too small (overkill). Find the ideal split with natural boundaries.
 
+> **This file sizes the planning unit, not the requirement.** How big a single
+> FR row should be is a separate judgement, answered by `shared/fr-authoring.md`
+> §3a: a capability that cannot be given acceptance criteria a single delivery
+> would satisfy is too broad and gets divided. A split holds many requirements,
+> so getting the split boundaries right says nothing about whether any one row
+> inside it is correctly scoped — and the reverse. Apply both.
+
 ## Good Split Characteristics
 
 **Cohesive purpose** - A clear goal or outcome
