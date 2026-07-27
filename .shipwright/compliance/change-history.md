@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-07-27T16:36:15.546432+00:00
-Source-State: run=iterate-2026-07-27-c3-phase-content-key
+Generated: 2026-07-27T17:19:50.821876+00:00
+Source-State: run=iterate-2026-07-27-pytest-root-composition
 Consistency-audit: never run
-Total commits: 1230
+Total commits: 1231
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 353
+    "fix" : 354
     "feat" : 346
     "chore" : 255
     "docs" : 148
@@ -22,11 +22,12 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 353 commits
+### Fixes (fix) — 354 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | iterate | the phase canon asks whether the handoff belongs to this run | e615a849e546 |
+| 2026-07-27 | shared | a multi-root pytest session names its own cause | 23c0e4283413 |
+| 2026-07-27 | iterate | the phase canon asks whether the handoff belongs to this run (#467) | 3c82d6332678 |
 | 2026-07-27 | security | the PR reviewer stops reviewing its own prior reviews (#461) | 273e3ef7ab56 |
 | 2026-07-27 | changelog | the release-note writer preserves the history it read (#452) | 97392eeacfa2 |
 | 2026-07-27 | deploy | rollback uses the version it was given, and stops overclaiming the rest (#441) | ce149b07dd04 |
@@ -735,7 +736,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | triage | sweep 3 outbox append(s) into branch | 2523dfccc5e3 |
+| 2026-07-27 | triage | sweep 4 outbox append(s) into branch | d8009de13ccc |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -1301,7 +1302,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1230 |
+| Total commits | 1231 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1230 |
+| Human-authored commits | 1231 |
 

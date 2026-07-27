@@ -1,12 +1,12 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-27T16:36:23.078641Z. Items waiting for triage decision.
+> Auto-generated 2026-07-27T17:19:57.990788Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 423
-- Triage: 19 | Promoted: 1 | Dismissed: 402 | Snoozed: 1
+- Total: 424
+- Triage: 19 | Promoted: 1 | Dismissed: 403 | Snoozed: 1
 
 ## Top 19 items (severity-sorted)
 
@@ -19,18 +19,18 @@
 
 ### Source: compliance (1 item)
 
-<a id="trg-554786d0"></a>
-- **Compliance: 4 open finding(s)** `id=trg-554786d0 | severity=high | kind=compliance → P1/compliance`
-  - 4 open compliance finding(s): D/D1, D/D3, H/H1, H/H2  - D/D1: Spec FR coverage in events — uncovered FRs — Must: FR-01.…
+<a id="trg-a5b167f4"></a>
+- **Compliance: 5 open finding(s)** `id=trg-a5b167f4 | severity=high | kind=compliance → P1/compliance`
+  - 5 open compliance finding(s): D/D1, D/D3, F/F6, H/H1, H/H2  - D/D1: Spec FR coverage in events — uncovered FRs — Must:…
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-compliance
     
-    Context: 4 open compliance finding(s): D/D1, D/D3, H/H1, H/H2.
+    Context: 5 open compliance finding(s): D/D1, D/D3, F/F6, H/H1, H/H2.
     Dashboard: .shipwright/compliance/dashboard.md
     Each finding + hint is listed in this item's detail.
     ```
-  - Promote: `triage_promote.py --id trg-554786d0 --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-a5b167f4 --task-ref EXT:<ref>`
 
 ### Source: f0-suite (1 item)
 
