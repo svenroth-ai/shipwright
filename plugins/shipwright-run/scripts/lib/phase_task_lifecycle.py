@@ -37,7 +37,7 @@ from phase_state_machine import (  # noqa: E402
     NextPhaseSpec,
     next_phase_task,
 )
-from run_config_store import atomic_write_json  # noqa: E402
+from run_config_store import atomic_write_json, durable_read_text  # noqa: E402
 
 CONFIG_NAME = "shipwright_run_config.json"
 LOCK_NAME = "shipwright_run_config.json.lock"
@@ -111,7 +111,7 @@ def _read_config(project_root: Path) -> dict[str, Any]:
     path = project_root / CONFIG_NAME
     if not path.exists():
         raise FileNotFoundError(f"{CONFIG_NAME} not found at {project_root}")
-    return json.loads(path.read_text(encoding="utf-8"))
+    return json.loads(durable_read_text(path))  # delete-pending safe (WP2/F12)
 
 
 def _write_config(project_root: Path, config: dict[str, Any]) -> None:

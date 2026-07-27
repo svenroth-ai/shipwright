@@ -1,26 +1,26 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-07-27-changelog-writer-preserve-history",
+    "run_id": "iterate-2026-07-27-run-unit-parallel-race",
     "date": "2026-07-27",
     "unit": {
       "status": "passed",
-      "passed": 76,
-      "total": 76
+      "passed": 6007,
+      "total": 6007
     },
     "integration": {
       "status": "passed",
-      "passed": 418,
-      "total": 418
+      "passed": 1,
+      "total": 1
     },
     "pgtap": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 6,
+      "total": 6
     },
     "design_fidelity": {
       "status": "skipped",
@@ -28,127 +28,99 @@
       "total": 0
     },
     "smoke": {
-      "status": "not_run"
+      "status": "skipped"
     },
-    "degraded": [],
+    "degraded": [
+      "external code review single-sourced: gemini returned an empty reply (status=degraded); only openai answered (verdict=revise). Its two findings were both accepted and fixed.",
+      "the real-OS Windows fidelity test (test_real_windows_reader_does_not_lose_the_write) is skipped on Linux CI by platform gate; the injected-failure tests cover the same logic on every platform."
+    ],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --extra dev pytest plugins/shipwright-changelog/tests/test_integration.py -q",
+      "runner": "uv run --with pytest --with pytest-mock pytest plugins/shipwright-changelog/tests/test_integration.py -q -p no:cacheprovider",
       "exit_code": 0,
-      "tests_run": 5,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\changelog-writer-preserve-history\\.shipwright\\runs\\iterate-2026-07-27-changelog-writer-preserve-history\\surface_verification.log",
-      "timestamp": "2026-07-27T11:28:44.488Z",
+      "tests_run": 6,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\run-unit-parallel-race\\.shipwright\\runs\\iterate-2026-07-27-run-unit-parallel-race\\surface_verification.log",
+      "timestamp": "2026-07-27T17:30:22.911Z",
       "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 no-marker history preserved (title + all entries)",
+          "behavior": "AC1 a write retries past a transient holder and lands",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog.py::test_update_changelog_preserves_file_without_unreleased_marker PASSED"
+          "evidence": "shared/tests/test_atomic_write_windows_retry.py::test_replace_retries_while_a_reader_holds_the_destination PASSED; real-OS: test_real_windows_reader_does_not_lose_the_write PASSED"
         },
         {
-          "behavior": "AC2 marker-only file keeps pending [Unreleased] bullets",
+          "behavior": "AC2 a write held past the budget raises, never silently drops",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog.py::test_update_changelog_preserves_pending_unreleased_bullets PASSED"
+          "evidence": "test_replace_gives_up_loudly_when_the_handle_never_closes PASSED"
         },
         {
-          "behavior": "AC3 marker+version ordering unchanged",
+          "behavior": "AC3 no .tmp debris on the failure path (best-effort on Windows)",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog.py::test_update_changelog_existing PASSED"
+          "evidence": "test_replace_gives_up_loudly_when_the_handle_never_closes PASSED (asserts no *.tmp and prior content intact)"
         },
         {
-          "behavior": "AC4 absent file created with header + [Unreleased] + entry",
+          "behavior": "AC4 POSIX behaviour unchanged - PermissionError propagates at once",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog.py::test_update_changelog_new_file PASSED"
+          "evidence": "test_posix_never_retries PASSED"
         },
         {
-          "behavior": "AC5 re-run is a fixed point; version appears exactly once",
+          "behavior": "AC5 winerror 5 is ambiguous, so a genuine denial is retried too",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog_preservation.py::test_rerun_never_loses_existing_content (12 shapes) PASSED"
+          "evidence": "test_a_genuine_denial_is_retried_too_because_winerror_5_is_ambiguous PASSED; probed: read-only + directory destinations both winerror 5"
         },
         {
-          "behavior": "AC6 revised entry replaces the same version, neighbours intact",
+          "behavior": "AC6 shipwright-run stays green under 12-way self-contention",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog.py::test_update_changelog_replaces_same_version_section PASSED"
+          "evidence": "12-copy contention harness, 96 samples, 0 failures (pre-fix 1/48); F0 suite GREEN, 18/18 units"
         },
         {
-          "behavior": "AC7 entry without a released-version heading refused, file untouched",
+          "behavior": "AC7 the retry never outlives the configured budget",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog.py::test_update_changelog_rejects_entry_without_released_version[no-version-heading,unreleased-heading] PASSED"
+          "evidence": "test_retry_never_outlives_the_configured_budget PASSED"
         },
         {
-          "behavior": "AC7 multi-section entry refused, file untouched",
+          "behavior": "AC8 neither fix nor tests depend on patching os.name",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog_preservation.py::test_rejects_entry_with_more_than_one_section PASSED"
+          "evidence": "test_no_test_here_forces_the_platform_by_patching_os_name PASSED (source drift guard over all three atomic-write test modules)"
         },
         {
-          "behavior": "AC8 pre-existing duplicate sections refused, file untouched",
+          "behavior": "AC9 a read survives a writer's in-flight replace (delete-pending)",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog.py::test_update_changelog_refuses_ambiguous_duplicate_sections PASSED"
+          "evidence": "test_read_retries_while_a_writer_is_mid_replace PASSED"
         },
         {
-          "behavior": "AC10 whitespace-variant heading bounds a replaced section",
+          "behavior": "AC9 an unreadable file raises rather than degrading to ''",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog.py::test_update_changelog_replacement_stops_at_whitespace_variant_heading PASSED"
+          "evidence": "test_read_gives_up_loudly_rather_than_inventing_an_empty_config PASSED"
         },
         {
-          "behavior": "AC11 trailing link-reference footer survives a re-run",
+          "behavior": "the read budget stays longer than the write budget",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog_preservation.py::test_replace_preserves_trailing_link_reference_footer PASSED"
+          "evidence": "test_the_read_budget_is_longer_than_the_write_budget PASSED"
         },
         {
-          "behavior": "AC11 trailing prose survives a re-run",
+          "behavior": "an unlisted winerror is re-raised on the first attempt",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog_preservation.py::test_replace_preserves_trailing_prose PASSED"
+          "evidence": "test_a_winerror_outside_the_transient_set_is_not_retried PASSED"
         },
         {
-          "behavior": "AC12 UTF-8 BOM preserved and not parser-blinding",
+          "behavior": "a changelog refusal message survives a non-ASCII project path",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog_preservation.py::test_preserves_utf8_bom PASSED"
-        },
-        {
-          "behavior": "AC12 LF and CRLF files keep their own line endings",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog_preservation.py::test_preserves_lf_line_endings + ::test_preserves_crlf_line_endings PASSED"
-        },
-        {
-          "behavior": "AC12 a failed write leaves the original intact, no orphan temp file",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog_preservation.py::test_failed_write_leaves_the_original_intact PASSED"
-        },
-        {
-          "behavior": "No byte loss across 12 file shapes on insert, re-run and revised re-run",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_changelog_preservation.py::test_insert/test_rerun/test_revised_rerun_never_loses_existing_content (36 cases) PASSED"
-        },
-        {
-          "behavior": "CLI `generate` preserves a hand-written history (script-mode import path)",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_integration.py::test_generate_preserves_existing_history PASSED"
-        },
-        {
-          "behavior": "CLI refusal arm: exit 1, error JSON on stdout, file unchanged",
-          "disposition": "tested",
-          "evidence": "plugins/shipwright-changelog/tests/test_integration.py::test_generate_refuses_ambiguous_file_and_leaves_it_untouched PASSED"
-        },
-        {
-          "behavior": "AC9 FR-01.09 gains the re-run (E) criterion in 01-adopted/spec.md",
-          "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "reason": "No gate reads .shipwright/planning/01-adopted/spec.md; the criterion is asserted by inspection at spec.md:468-473 and by F1 artifact sync. The behaviour it describes is covered by the AC5/AC7/AC8 rows above."
+          "evidence": "plugins/shipwright-changelog/tests/test_integration.py::test_refusal_message_survives_a_non_ascii_project_path PASSED (F0.5 cli surface, tests_run=6)"
         }
       ],
       "counts": {
-        "testable": 18,
-        "tested": 18,
-        "untestable": 1,
+        "testable": 13,
+        "tested": 13,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 12,
-        "covered_acs": 12
+        "acs": 9,
+        "covered_acs": 9
       }
     }
   },
@@ -157,5 +129,10 @@
     "measured_tier": "repo",
     "source": "combined coverage.xml (all plugins + shared + integration)",
     "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-07-27-run-unit-parallel-race",
+    "commit": "cc18dbeaa8db7af1dc28ab49abe5ec2420fc7306",
+    "dirty": true
   }
 }

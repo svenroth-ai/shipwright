@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-07-27 14:35 UTC | Session: unknown | Run: iterate-2026-07-27-changelog-writer-preserve-history
+> Updated: 2026-07-27 17:38 UTC | Session: 9eda9cad-b9b8-45ff-acd4-2ab5efe17ff6 | Run: iterate-2026-07-27-run-unit-parallel-race
 
-## Recent Changes (374 iterations)
+## Recent Changes (375 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | iterate: bounded sharing-violation retry on both sides of the atomic-write boundary | 0/0 |  | FR-01.01, FR-01.09 | 2026-07-27 |
 | change | iterate: inherited failures and coverage gaps are recorded as inherited | 0/0 |  | FR-01.13 | 2026-07-27 |
 | change | iterate: the four Step-9 gates become code, closing trg-88f721be (3 of 3) | 0/0 |  | tooling | 2026-07-27 |
 | change | iterate: reviewer verdicts recorded, disagreement is its own outcome (1 of 3) | 0/0 |  | FR-01.03 | 2026-07-27 |
@@ -381,7 +382,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-07-27 | Unit: 76/76 | Integration: 418/418 | Smoke: not_run | (iterate)
+Last run: 2026-07-27 | Unit: 6007/6007 | Integration: 1/1 | E2E: 6/6 | Smoke: skipped | (iterate)
 
 ## Pipeline
 

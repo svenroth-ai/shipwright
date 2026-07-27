@@ -5,10 +5,10 @@
 
 ## Status summary
 
-- Total: 421
-- Triage: 22 | Promoted: 1 | Dismissed: 397 | Snoozed: 1
+- Total: 424
+- Triage: 20 | Promoted: 1 | Dismissed: 402 | Snoozed: 1
 
-## Top 22 items (severity-sorted)
+## Top 20 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -48,7 +48,7 @@
     ```
   - Promote: `triage_promote.py --id trg-7a4c0da7 --task-ref EXT:<ref>`
 
-### Source: github (1 item)
+### Source: github (2 items)
 
 <a id="trg-2b5ca5f5"></a>
 - **GitHub security: 1 code-scanning + 0 Dependabot (high)** `id=trg-2b5ca5f5 | severity=high | kind=bug → P1/engineering`
@@ -64,12 +64,22 @@
     ```
   - Promote: `triage_promote.py --id trg-2b5ca5f5 --task-ref EXT:<ref>`
 
-### Source: iterate (3 items)
+<a id="trg-8481c271"></a>
+- **GitHub prompt-injection: 1 finding(s) (medium)** `id=trg-8481c271 | severity=medium | kind=improvement → P2/engineering`
+  - Repo svenroth-ai/shipwright \| prompt-injection (prompt_risks.json): 1 medium \| run: https://github.com/svenroth-ai/sh…
+  - Launch payload (copy into a new Claude session):
+    ```text
+    /shipwright-security
+    
+    Context: the shipwright-security prompt-injection scan reports 1 open finding(s) for svenroth-ai/shipwright.
+    Severity breakdown — prompt-injection: 1 medium.
+    Workflow run: https://github.com/svenroth-ai/shipwright/actions/runs/30276486297
+    Re-scan locally: see docs/security-ci-setup.md
+    Source: triage item gh-prompt:svenroth-ai/shipwright
+    ```
+  - Promote: `triage_promote.py --id trg-8481c271 --task-ref EXT:<ref>`
 
-<a id="trg-a6616bbe"></a>
-- **Three finalization/delivery checks report a weaker signal than they can compute** `id=trg-a6616bbe | severity=medium | kind=improvement → P2/engineering`
-  - Three checks in the finalization / delivery path each already hold the information needed to name a cause, but report a…
-  - Promote: `triage_promote.py --id trg-a6616bbe --task-ref EXT:<ref>`
+### Source: iterate (2 items)
 
 <a id="trg-bd4e75a9"></a>
 - **Phase-canon C3 handoff freshness still keys on mtime** `id=trg-bd4e75a9 | severity=low | kind=improvement → P3/engineering`
@@ -89,12 +99,23 @@
   - The tail of campaign step S2, not a new campaign - file it now so it is not lost between "S2 merged" and "somebody noti…
   - Promote: `triage_promote.py --id trg-8bf97fd4 --task-ref EXT:<ref>`
 
-### Source: manual (1 item)
+### Source: manual (3 items)
+
+<a id="trg-2ca796f3"></a>
+- **Release aggregator can write the same version twice on a re-run** `id=trg-2ca796f3 | severity=high | kind=bug → P1/engineering`
+  - aggregate_changelog.py is the writer the release path actually invokes (changelog SKILL.md Step 4). _insert_section alw…
+  - Evidence: `.shipwright/planning/iterate/iterate-2026-07-27-changelog-writer-preserve-history.md`
+  - Promote: `triage_promote.py --id trg-2ca796f3 --task-ref EXT:<ref>`
 
 <a id="trg-efca9de7"></a>
 - **shared/tests and integration-tests fail 21 tests when run in one pytest session** `id=trg-efca9de7 | severity=medium | kind=bug → P2/engineering`
   - Running 'uv run pytest shared/tests integration-tests -m "not slow and not cross_plugin"' as a SINGLE invocation fails…
   - Promote: `triage_promote.py --id trg-efca9de7 --task-ref EXT:<ref>`
+
+<a id="trg-c6e75011"></a>
+- **shipwright-security tests write an untracked .shipwright/ dir into the repo tree** `id=trg-c6e75011 | severity=low | kind=bug → P3/engineering`
+  - Running the F0 suite leaves an untracked directory in the working tree: plugins/shipwright-security/.shipwright/ contai…
+  - Promote: `triage_promote.py --id trg-c6e75011 --task-ref EXT:<ref>`
 
 ### Source: req3-campaign (3 items)
 
@@ -121,13 +142,7 @@
   - Evidence: `.shipwright/planning/iterate/2026-07-27-project-granularity-basis.md`
   - Promote: `triage_promote.py --id trg-1d7d91d0 --task-ref EXT:<ref>`
 
-### Source: req3-phase2-walk (9 items)
-
-<a id="trg-6690d175"></a>
-- **CRITICAL - release-note writer destroys an existing history file it does not recognise** `id=trg-6690d175 | severity=critical | kind=bug → P0/engineering`
-  - OWNS: the changelog plugin. Independently executable. Supersedes trg-7ad0849b (title only, so the severity is visible w…
-  - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
-  - Promote: `triage_promote.py --id trg-6690d175 --task-ref EXT:<ref>`
+### Source: req3-phase2-walk (5 items)
 
 <a id="trg-b95ab887"></a>
 - **REQ3.06 [CAMPAIGN AUTONOM] Enforcement-Liste abarbeiten: Checks bauen fuer prompt-only (mechanisable) - Monorepo** `id=trg-b95ab887 | severity=high | kind=improvement → P1/engineering`
@@ -141,29 +156,11 @@
   - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
   - Promote: `triage_promote.py --id trg-c7e5835b --task-ref EXT:<ref>`
 
-<a id="trg-1aa5a8ab"></a>
-- **onboarding: a derived catalogue must announce itself as derived, and ask to be questioned** `id=trg-1aa5a8ab | severity=high | kind=improvement → P1/engineering`
-  - OWNS: the onboarding plugin's artifact writers and its handover step. Independently executable; touches no other plugin…
-  - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
-  - Promote: `triage_promote.py --id trg-1aa5a8ab --task-ref EXT:<ref>`
-
-<a id="trg-15a43b6b"></a>
-- **security phase: coverage, one register, comparable runs, ask the scope (supersedes trg-9305ff98)** `id=trg-15a43b6b | severity=high | kind=improvement → P1/engineering`
-  - OWNS: the security plugin's scanner wiring, its report generator and the presentation of security findings to the opera…
-  - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
-  - Promote: `triage_promote.py --id trg-15a43b6b --task-ref EXT:<ref>`
-
 <a id="trg-12b4cf3f"></a>
 - **test phase: make the run record tell the truth (supersedes trg-0516e85e, stamping moved out)** `id=trg-12b4cf3f | severity=high | kind=improvement → P1/engineering`
   - OWNS: the test plugin, the test-phase validator branch, and the browser-test result reader. Does NOT own artifact stamp…
   - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
   - Promote: `triage_promote.py --id trg-12b4cf3f --task-ref EXT:<ref>`
-
-<a id="trg-88f721be"></a>
-- **plan phase: disagreement between reviewers is averaged away, and section order cannot be checked** `id=trg-88f721be | severity=high | kind=improvement → P1/engineering`
-  - Per-plugin work unit from the FR-01.03 scenario pass, plus the gaps the earlier walk had already recorded. (1) Two inde…
-  - Evidence: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md`
-  - Promote: `triage_promote.py --id trg-88f721be --task-ref EXT:<ref>`
 
 <a id="trg-e9e5188e"></a>
 - **requirement write-back loop: design and build both need the same missing mechanism (supersedes trg-35785118, trg-ed419f…** `id=trg-e9e5188e | severity=high | kind=improvement → P1/engineering`
