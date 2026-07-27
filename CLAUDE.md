@@ -141,6 +141,28 @@ cd plugins/shipwright-build && uv run pytest tests/ -v
 uv run pytest integration-tests/ -v
 ```
 
+**One test root per pytest process — a hard rule, enforced by the repo-root
+`conftest.py` (exit 4).** Roots: `integration-tests`, `shared/tests`,
+`shared/scripts/tests`, `shared/scripts/tools/tests`, each `plugins/*/tests`.
+Each needs `scripts`/`lib`/`tools` to mean a *different* directory; those are
+regular packages, so Python caches whichever loads first and never
+re-resolves — `sys.path` order cannot fix it (ADR-044). Combining roots used
+to fail 21 tests inside another root's suite, naming innocent files.
+Not covered by the guard: plugin-rooted sessions (never load this conftest —
+the capture check in `shared/contracts/compliance.py` is the net) and
+`shared/tests` + `shared/scripts/tests` (collide at conftest import). Both
+still fail loudly. Detail:
+`.shipwright/planning/iterate/iterate-2026-07-27-pytest-root-composition.md`.
+
+```bash
+uv run pytest shared/tests      --junitxml=.shipwright/runs/<id>/junit-shared.xml
+uv run pytest integration-tests --junitxml=.shipwright/runs/<id>/junit-integration.xml
+```
+
+No one process can emit a junit.xml spanning roots; merge afterwards (same
+shape as `combine_coverage.py`). No junit merger exists yet — out of scope,
+not impossible.
+
 ## Context
 - **Guide**: docs/guide.md (primary user-facing documentation)
 - **Hooks & Pipeline**: docs/hooks-and-pipeline.md (context loading, hooks registry, between-phase actions)

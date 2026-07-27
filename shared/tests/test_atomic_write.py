@@ -112,7 +112,7 @@ def test_fsync_parent_dir_swallows_oserror(tmp_path, monkeypatch):
     Forces the POSIX branch so this exercises the swallow on every host."""
     import lib.atomic_write as aw
 
-    monkeypatch.setattr(aw.os, "name", "posix")
+    monkeypatch.setattr(aw, "_is_windows", lambda: False)
 
     def boom(*a, **k):
         raise OSError("no directory fsync here")
@@ -147,7 +147,7 @@ def test_windows_skips_directory_fsync(tmp_path, monkeypatch):
     and must not attempt ``os.open`` (meaningless on a directory handle)."""
     import lib.atomic_write as aw
 
-    monkeypatch.setattr(aw.os, "name", "nt")
+    monkeypatch.setattr(aw, "_is_windows", lambda: True)
 
     def fail_if_called(*a, **k):
         raise AssertionError("os.open must not be called on Windows dir-fsync")
@@ -170,3 +170,4 @@ def test_replace_failure_cleans_tmp_and_raises(tmp_path, monkeypatch):
 
     # No temp cruft left behind, and the target was never created.
     assert list(tmp_path.iterdir()) == []
+
