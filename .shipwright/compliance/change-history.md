@@ -3,15 +3,15 @@
 Generated: 2026-07-27T17:16:20.738164+00:00
 Source-State: run=iterate-2026-07-27-pr-review-diff-cap
 Consistency-audit: never run
-Total commits: 1231
+Total commits: 1234
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 354
+    "fix" : 355
     "feat" : 346
-    "chore" : 255
+    "chore" : 257
     "docs" : 148
     "refactor" : 76
     "test" : 31
@@ -22,12 +22,13 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 354 commits
+### Fixes (fix) — 355 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | security | the PR reviewer stops being defeated by the size of the change | b74d21e3c3ea |
+| 2026-07-27 | security | the PR reviewer stops being defeated by the size of the change (#470) | 17ca76d7f413 |
 | 2026-07-27 | iterate | the phase canon asks whether the handoff belongs to this run (#467) | 3c82d6332678 |
+| 2026-07-27 | run | report against what will exist, and assert only what you can prove | d762b1fd48e2 |
 | 2026-07-27 | security | the PR reviewer stops reviewing its own prior reviews (#461) | 273e3ef7ab56 |
 | 2026-07-27 | changelog | the release-note writer preserves the history it read (#452) | 97392eeacfa2 |
 | 2026-07-27 | deploy | rollback uses the version it was given, and stops overclaiming the rest (#441) | ce149b07dd04 |
@@ -732,11 +733,13 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 255 commits
+### Chores (chore) — 257 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | triage | sweep 4 outbox append(s) into branch | 9407e8f077e2 |
+| 2026-07-27 | churn | background grade_snapshot append after main merge | 9b79a6cef5f8 |
+| 2026-07-27 | churn | regenerate derived snapshots after main merge | a8cd07b651b8 |
+| 2026-07-27 | triage | sweep 3 outbox append(s) into branch | c896f8f2500e |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
 | 2026-07-23 | compliance | refresh after security scan (#433) | 2b644805fb7d |
@@ -1302,7 +1305,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1231 |
+| Total commits | 1234 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1231 |
+| Human-authored commits | 1234 |
 

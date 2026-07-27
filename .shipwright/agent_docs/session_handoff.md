@@ -1,6 +1,6 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-pr-review-diff-cap"
+run_id: "iterate-2026-07-27-handoff-tally-and-gate-honesty"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
 timestamp: "2026-07-27T17:16:26.682171+00:00"
@@ -12,7 +12,7 @@ timestamp: "2026-07-27T17:16:26.682171+00:00"
 
 ## Session Info
 
-- **Session ID**: 1ea85a9d-f698-4336-8e01-ea2f4e2ae714
+- **Session ID**: a7fa3da4-74bf-406f-b92b-f309691d90f9
 - **Timestamp**: 2026-07-27 17:16:26 UTC
 - **Reason**: ensure-current pre-merge refresh
 
@@ -29,11 +29,11 @@ timestamp: "2026-07-27T17:16:26.682171+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/pr-review-diff-cap
-- **Run ID**: `iterate-2026-07-27-pr-review-diff-cap`
-- **Spec**: .shipwright/planning/iterate/2026-07-27-pr-review-diff-cap.md
-- **Complexity**: medium (`prior_source: history`, n=20; scope keyword said `trivial`)
-- **External Review Marker**: stale (predates spec (2026-07-27T16:40:17))
+- **Branch**: iterate/handoff-tally-and-gate-honesty
+- **Run ID**: iterate-2026-07-27-handoff-tally-and-gate-honesty
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-handoff-tally-and-gate-honesty.md
+- **Complexity**: medium
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T16:51:42)
 
 ### Mandatory replay on Resume
 
@@ -51,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/pr-review-diff-cap
-- **Last Commit**: 7a6f37b7 Merge remote-tracking branch 'origin/main' into iterate/pr-review-diff-cap
+- **Branch**: iterate/handoff-tally-and-gate-honesty
+- **Last Commit**: bb13c2f5 Merge remote-tracking branch 'origin/main' into iterate/handoff-tally-and-gate-honesty
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -70,14 +70,14 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 |-------|------|--------|------|
 | evt-950798de | grade_snapshot | — | 2026-07-27 |
 | evt-36d0f887 | work_completed | iterate (iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed) | 2026-07-27 |
-| evt-76f1beff | grade_snapshot | — | 2026-07-27 |
-| evt-90ce4f39 | work_completed | iterate (iterate: document the delivery watch in the guide) | 2026-07-27 |
-| evt-cf1bab8b | work_completed | iterate (iterate: requirement write-back loop — design rounds and build sections declare their requirement impact) | 2026-07-27 |
+| evt-a5ff7d12 | grade_snapshot | — | 2026-07-27 |
+| evt-e0b8fd18 | work_completed | iterate (iterate: the phase canon asks whether the handoff belongs to this run) | 2026-07-27 |
+| evt-68bfe147 | grade_snapshot | — | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 378
+- **Total work events**: 379
 - **Last iterate**: change — iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
