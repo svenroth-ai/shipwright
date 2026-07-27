@@ -1,36 +1,37 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-security-coverage-manifest"
+run_id: "iterate-2026-07-27-review-floor-not-chained"
 phase: "iterate"
-reason: "F11 refresh before merge"
-timestamp: "2026-07-27T18:46:12.605534+00:00"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-07-27T19:47:53.112213+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 18:46:12 UTC
+> Auto-generated 2026-07-27 19:47:53 UTC
 
 ## Session Info
 
-- **Session ID**: 871b1865-c6ae-4724-a105-dc987ddca125
-- **Timestamp**: 2026-07-27 18:46:12 UTC
-- **Reason**: F11 refresh before merge
+- **Session ID**: d25b0a7e-0ae6-43cf-9f0d-0888374ebaee
+- **Timestamp**: 2026-07-27 19:47:53 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-run-unit-parallel-race
-- **Date**: 2026-07-27T17:38:43.705219Z
-- **Type**: bug
+- **Run ID**: iterate-2026-07-27-review-floor-not-chained
+- **Date**: 2026-07-27T19:47:47.266963Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/run-unit-parallel-race
-- **ADR**: iterate-2026-07-27-run-unit-parallel-race
+- **Branch**: iterate/review-floor-not-chained
+- **ADR**: iterate-2026-07-27-review-floor-not-chained
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-run-unit-parallel-race.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-review-floor-not-chained.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/security-coverage-manifest-part1
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T11:47:40)
+- **Branch**: iterate/review-floor-not-chained
+- **Spec**: .shipwright/planning/iterate/2026-07-27-review-floor-not-chained.md
+- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T19:36:06)
 
 ### Mandatory replay on Resume
 
@@ -48,8 +49,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/security-coverage-manifest-part1
-- **Last Commit**: ac664b35 Merge remote-tracking branch 'origin/main' into iterate/security-coverage-manifest-part1
+- **Branch**: iterate/review-floor-not-chained
+- **Last Commit**: 1f74845e Merge remote-tracking branch 'origin/main' into iterate/review-floor-not-chained
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,13 +70,13 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 | evt-301cc5e3 | grade_snapshot | — | 2026-07-27 |
 | evt-d33730ea | grade_snapshot | — | 2026-07-27 |
 | evt-2acd6fdb | grade_snapshot | — | 2026-07-27 |
-| evt-950798de | grade_snapshot | — | 2026-07-27 |
+| evt-43b5a915 | grade_snapshot | — | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 385
-- **Last iterate**: change — iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed (2026-07-27)
+- **Total work events**: 386
+- **Last iterate**: change — iterate: the code review becomes a floor, not a chain (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
