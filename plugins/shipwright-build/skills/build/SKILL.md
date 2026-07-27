@@ -27,7 +27,7 @@ Enhanced fork of deep-implement with decision logging, session handoff, and migr
 | Step 7 Apply review fixes | [apply-interview-fixes](references/apply-interview-fixes.md) |
 | Step 8 Commit (Conventional Commits) | [git-operations](references/git-operations.md) · [pre-commit-handling](references/pre-commit-handling.md) |
 | Step 9 Decision log | [section-doc-update](references/section-doc-update.md) |
-| Step 10 Section state, record_event, split-done canon | [section-state](references/section-state.md) |
+| Step 10 Section state, record_event, split-done canon · requirement write-back (Step 1 *detects* the mockup contradiction, Step 10b *records* it + the shared-touch carve-out) | [section-state](references/section-state.md) · [requirement-writeback](references/requirement-writeback.md) |
 | Step 10a Reflection | [reflection](references/reflection.md) |
 | Autonomous Section Loop | [autonomous-loop](references/autonomous-loop.md) |
 | Error handling (tests / hooks / context) | [error-handling](references/error-handling.md) |
@@ -139,6 +139,8 @@ continue with Step 1.
 Read the section file. Identify prerequisites, test strategy, implementation steps, files to create/modify.
 
 **Design Reference (mandatory for UI sections):** If the section contains a `## Design Reference` block, you **MUST read the referenced mockup HTML file** before writing any implementation code. The mockup is the visual truth — match layout, component hierarchy, colors/spacing/typography from `.shipwright/designs/visual-guidelines.md`, and responsive behavior. If no `## Design Reference` exists but `.shipwright/designs/screens/` contains relevant mockups, read them anyway. When in doubt, the mockup wins over your assumptions.
+
+**Mockup-vs-Section Contradiction — STOP and put it to a person.** When the approved mockup and the section's own description **contradict** each other, *implement exactly what the section specified* and *never ignore the mockup* cannot both be satisfied — and whichever one you happen to follow wins **silently**, discarding the reason mockups exist. **Stop building**, and **put it to a person**, quoting both sides. The expected resolution is that **the requirement is corrected to match the mockup**, because the mockup is the thing someone looked at and judged against real use. Record the outcome at Step 10b via `--contradiction`. Detecting the contradiction is a human read with **no deterministic check**; full rule in [requirement-writeback](references/requirement-writeback.md).
 
 If prerequisites reference other sections, verify those are complete (commits on the branch or main).
 
@@ -254,6 +256,10 @@ Log architecture choices, accepted/declined review findings, deviations from the
 ## Step 10: Update Section State
 
 See [section-state](references/section-state.md) for the full procedure: `update_section_state.py`, `record_event.py` (per section — do NOT batch), dashboard update, phase-complete trigger, and the **canon-hybrid split-done finalization** (C3 handoff + C5 changelog entries + phase_history once per split — both `all_done == true` and `all_done == false` branches).
+
+### Step 10b: Declare the section's requirement impact (REQUIRED)
+
+Commands + carve-out: [requirement-writeback](references/requirement-writeback.md). Runs **after** the Step 8 commit, so `HEAD^..HEAD` is exactly this section's own range — never pass the branch base, which would sweep in every earlier section. `record_requirement_impact.py --phase build --scope "{section_name}"` records one declaration per section (`--impact none` needs a one-line `--reason`; `--impact modify --fr FR-XX.YY` is refused unless a `.shipwright/planning/**/spec.md` was actually edited; add `--contradiction` when Step 1's rule fired). Then `check_section_file_attribution.py` verifies every changed file is either in the section's `## Files to Create/Modify` block or a recorded `--extra "PATH=why"`. **Shared-touch carve-out:** a section that cannot be built without touching something shared **may** make the smallest such change, provided it is recorded as belonging to that section — "nothing outside the section" forbids *unrequested extra work*, not the work the section needs to function.
 
 ---
 
