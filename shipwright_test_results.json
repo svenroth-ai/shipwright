@@ -148,11 +148,16 @@
           "behavior": "No baselined file exceeds its recorded bloat `current`",
           "disposition": "tested",
           "evidence": "anti_ratchet_check.py --worktree exits 0; the four shrunk files' baselines re-synced to their measured sizes, guarded against the ORIGINAL values"
+        },
+        {
+          "behavior": "No test writes .shipwright/ into the plugin source tree; a test that does fails loudly instead of leaving an untracked file",
+          "disposition": "tested",
+          "evidence": "conftest.py::_no_source_tree_pollution (autouse). Verified by a throwaway probe that deliberately writes into the plugin root: pytest exits 1 with the actionable message and the tree is restored. Full suite then runs clean."
         }
       ],
       "counts": {
-        "testable": 23,
-        "tested": 23,
+        "testable": 24,
+        "tested": 24,
         "untestable": 0,
         "untested_testable": 0
       },
