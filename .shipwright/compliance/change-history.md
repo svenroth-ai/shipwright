@@ -1,19 +1,19 @@
 # Commit Change Log
 
-Generated: 2026-07-27T19:47:47.363461+00:00
-Source-State: run=iterate-2026-07-27-review-floor-not-chained
+Generated: 2026-07-27T20:12:50.912171+00:00
+Source-State: run=iterate-2026-07-27-triage-defer-review-followup
 Consistency-audit: never run
-Total commits: 1241
+Total commits: 1243
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 361
+    "fix" : 362
     "feat" : 348
     "chore" : 256
     "docs" : 148
-    "refactor" : 76
+    "refactor" : 77
     "test" : 31
     "ci" : 11
     "other" : 9
@@ -22,11 +22,12 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 361 commits
+### Fixes (fix) — 362 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | iterate | the code review becomes a floor, not a chain | 6c897be7cd34 |
+| 2026-07-27 | triage | anchor the listing row token; retract three false claims | 9eba1cffa6fe |
+| 2026-07-27 | iterate | the code review becomes a floor, not a chain (#476) | 7c116c035480 |
 | 2026-07-27 | security | the test suite stops leaking a triage store into the plugin dir (#474) | 6ba177083769 |
 | 2026-07-27 | run | report against what will exist, and assert only what you can prove (#468) | 3c13001aafeb |
 | 2026-07-27 | iterate | the merge state is a vocabulary, not a BLOCKED flag (#473) | 159953eec378 |
@@ -745,7 +746,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-07-27 | triage | sweep 4 outbox append(s) into branch | 425b637b9a73 |
+| 2026-07-27 | triage | sweep 6 outbox append(s) into branch | 156f923515a6 |
 | 2026-07-27 | triage | follow-up card for requiring the checks that gate nothing | 7387b2796960 |
 | 2026-07-26 | review | default external-review GPT model to gpt-5.6-terra (#435) | 8d750a5fc7af |
 | 2026-07-24 | security | stage full compliance write-set in Step 7.5 finalizer (#434) | 5da96ebe8561 |
@@ -1155,10 +1156,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 76 commits
+### Refactoring (refactor) — 77 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-07-27 | test | split the close-missing floor cases out of the CLI test file (#478) | cf6d326b5011 |
 | 2026-07-27 | shared | split git resolution out of source_state (300-LOC compliance) (#451) | 3cdca5cfc884 |
 | 2026-07-21 | adopt | route the eight scaffolders through one guarded shared/ loader (FR-01.13) (#423) | 736fc8d1712c |
 | 2026-07-20 | requirements | one catalog, stated once in plain language (campaign S6) (#414) | be2561caccd3 |
@@ -1312,7 +1314,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1241 |
+| Total commits | 1243 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1241 |
+| Human-authored commits | 1243 |
 

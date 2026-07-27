@@ -1,7 +1,7 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-07-27T19:47:47.363461+00:00
-Source-State: run=iterate-2026-07-27-review-floor-not-chained
+Generated: 2026-07-27T20:12:50.912171+00:00
+Source-State: run=iterate-2026-07-27-triage-defer-review-followup
 Consistency-audit: never run
 
 ## Requirements Coverage
@@ -21,7 +21,7 @@ Consistency-audit: never run
 | [FR-01.11](../../.shipwright/planning/01-adopted/spec.md#fr-0111)<a id="rtm-fr-0111"></a> | Handle an ongoing change at the depth it deserves: detect what kind of change it is and how big, then scale from a quick fix to a fully specified feature with plans, reviews and tests. Every feature or change records whether it adds, modifies, removes or leaves the requirements untouched, and that record is enforced before the change can be finished. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-6c637864](#evt-6c637864), [evt-baaf4b0e](#evt-baaf4b0e), [evt-ca7b7d64](#evt-ca7b7d64) +22 | 225/225 → 54/54 | 2026-07-14 ([iter](#evt-5dc16a45)) | ⚠️ needs re-verification | COVERED | MISSING | MISSING | — |
 | [FR-01.12](../../.shipwright/planning/01-adopted/spec.md#fr-0112)<a id="rtm-fr-0112"></a> | Start the project locally and hand back the address to open in a browser. | May | [evt-e3d2949e](#evt-e3d2949e), [evt-ca7b7d64](#evt-ca7b7d64), [evt-ddb23fe7](#evt-ddb23fe7), [evt-ea7203ec](#evt-ea7203ec) | 225/225 → 13/13 | 2026-05-03 ([iter](#evt-ca7b7d64)) | ⚠️ needs re-verification | COVERED | — | — | MISSING |
 | [FR-01.13](../../.shipwright/planning/01-adopted/spec.md#fr-0113)<a id="rtm-fr-0113"></a> | Bring an existing codebase under Shipwright: read what is already there, write the starting guidance, derive an initial requirements catalog and compliance evidence, and lay down a baseline end-to-end test. | Must | [evt-e3d2949e](#evt-e3d2949e), [evt-273bbb54](#evt-273bbb54), [evt-b0b9c422](#evt-b0b9c422), [evt-aab7ddbd](#evt-aab7ddbd) +12 | 225/225 → 5/5 | 2026-07-20 ([iter](#evt-e9bfacd4)) | ⚠️ needs re-verification | COVERED | MISSING | — | — |
-| [FR-01.14](../../.shipwright/planning/01-adopted/spec.md#fr-0114)<a id="rtm-fr-0114"></a> | Collect findings from local checks and from the code host's automated scans into one per-project Triage Inbox the operator works through — each finding recorded once, and each one taken into work, deferred or dismissed — so the actual task list stays curated instead of flooded. | Must | [evt-3f488ddc](#evt-3f488ddc), [evt-32f2f1f4](#evt-32f2f1f4), [evt-84dbdf5e](#evt-84dbdf5e), [evt-e14e5f26](#evt-e14e5f26) +9 | 1642/1649 → 3629/3641 | 2026-07-03 ([iter](#evt-5755f932)) | ⚠️ needs re-verification | COVERED | MISSING | — | — |
+| [FR-01.14](../../.shipwright/planning/01-adopted/spec.md#fr-0114)<a id="rtm-fr-0114"></a> | Collect findings from local checks and from the code host's automated scans into one per-project Triage Inbox the operator works through — each finding recorded once, and each one taken into work, deferred or dismissed — so the actual task list stays curated instead of flooded. | Must | [evt-3f488ddc](#evt-3f488ddc), [evt-32f2f1f4](#evt-32f2f1f4), [evt-84dbdf5e](#evt-84dbdf5e), [evt-e14e5f26](#evt-e14e5f26) +10 | 1642/1649 → 3629/3641 | 2026-07-03 ([iter](#evt-5755f932)) | ⚠️ needs re-verification | FAIL → [trg-51f8e2a1](../agent_docs/triage_inbox.md#trg-51f8e2a1), FAIL → [trg-93ceb2b0](../agent_docs/triage_inbox.md#trg-93ceb2b0) | MISSING | — | — |
 | [FR-01.15](../../.shipwright/planning/01-adopted/spec.md#fr-0115)<a id="rtm-fr-0115"></a> | Every payload this repository hands to a different repository is a versioned output contract: its shape is published alongside it, the capability producing it states that it has an outside consumer, and a gate compares what is emitted against the shape last published — read from a state the proposed change cannot rewrite — and fails until the version has been raised to match the kind of change. So a shape change can never reach a consumer silently. | Must | [evt-6a61ac10](#evt-6a61ac10), [evt-ea7203ec](#evt-ea7203ec) | 6452/6452 | 2026-07-21 ([iter](#evt-6a61ac10)) | ⚠️ needs re-verification | FAIL → [trg-c7e5835b](../agent_docs/triage_inbox.md#trg-c7e5835b) | — | — | MISSING |
 | [FR-01.16](../../.shipwright/planning/01-adopted/spec.md#fr-0116)<a id="rtm-fr-0116"></a> | Elicit requirements through one shared, rigorous method wherever they are gathered — a new project, an adopted codebase, or an ongoing change: ask one question at a time, each with a recommended answer, look facts up in the code instead of asking, challenge wording against the project's own glossary, and stress-test with concrete edge cases. Capture the project's domain vocabulary and the reason behind each hard-to-reverse choice as they surface. No requirement is treated as settled until every dimension of its context is either answered or explicitly marked as an unconfirmed assumption. | Must | [evt-ea7203ec](#evt-ea7203ec) | — | — | ⚠️ needs re-verification | FAIL → [trg-e9fa7c49](../agent_docs/triage_inbox.md#trg-e9fa7c49) | MISSING | — | — |
 | [FR-01.17](../../.shipwright/planning/01-adopted/spec.md#fr-0117)<a id="rtm-fr-0117"></a> | Re-check every proposed change on the code host before it can merge — the project's tests, its lint, its security scans and the host's own code analysis — independently of whatever already ran on the author's machine, and have the change reviewed there automatically rather than on request. A local pass is never accepted in place of the host's. | Must | [evt-36d0f887](#evt-36d0f887) | — | — | ⚠️ needs re-verification | NO TESTS | MISSING | — | — |
@@ -33,6 +33,7 @@ Consistency-audit: never run
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-76142a43"></a>post-merge review follow-up for the triage defer surface | iterate | change | [FR-01.14](#rtm-fr-0114) | — | — | 2026-07-27 |
 | <a id="evt-53ba0065"></a>the code review becomes a floor, not a chain | iterate | change |  | — | — | 2026-07-27 |
 | <a id="evt-92094b2e"></a>bounded sharing-violation retry on both sides of the atomic-write boundary | iterate | change | [FR-01.01](#rtm-fr-0101), [FR-01.09](#rtm-fr-0109) | — | — | 2026-07-27 |
 | <a id="evt-aea234e3"></a>refuse a multi-root pytest session instead of failing 21 unrelated tests | iterate | change |  | — | — | 2026-07-27 |
@@ -426,7 +427,7 @@ Consistency-audit: never run
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 386 |
+| Iterate changes | 387 |
 | Requirements total | 18 |
 | Requirements verified | 17/18 |
 | Must-have verified | 14/14 |
@@ -450,7 +451,7 @@ Consistency-audit: never run
 - [FR-01.11](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-d256a84e` (2026-07-27)
 - [FR-01.12](../../.shipwright/planning/01-adopted/spec.md) (May): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
 - [FR-01.13](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-f2747703` (2026-07-27)
-- [FR-01.14](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-2aa40a94` (2026-07-27)
+- [FR-01.14](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-76142a43` (2026-07-27)
 - [FR-01.15](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
 - [FR-01.16](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-ea7203ec` (2026-07-26)
 - [FR-01.17](../../.shipwright/planning/01-adopted/spec.md) (Must): behavior changed without a later test run — behavior last touched by `evt-36d0f887` (2026-07-27)
@@ -462,6 +463,7 @@ Consistency-audit: never run
 - [FR-01.04](../../.shipwright/planning/01-adopted/spec.md): FAIL → [trg-e9e5188e](../agent_docs/triage_inbox.md#trg-e9e5188e)
 - [FR-01.09](../../.shipwright/planning/01-adopted/spec.md): FAIL → [trg-2ca796f3](../agent_docs/triage_inbox.md#trg-2ca796f3)
 - [FR-01.10](../../.shipwright/planning/01-adopted/spec.md): FAIL → [trg-8bf97fd4](../agent_docs/triage_inbox.md#trg-8bf97fd4)
+- [FR-01.14](../../.shipwright/planning/01-adopted/spec.md): FAIL → [trg-51f8e2a1](../agent_docs/triage_inbox.md#trg-51f8e2a1), FAIL → [trg-93ceb2b0](../agent_docs/triage_inbox.md#trg-93ceb2b0)
 - [FR-01.15](../../.shipwright/planning/01-adopted/spec.md): FAIL → [trg-c7e5835b](../agent_docs/triage_inbox.md#trg-c7e5835b)
 - [FR-01.16](../../.shipwright/planning/01-adopted/spec.md): FAIL → [trg-e9fa7c49](../agent_docs/triage_inbox.md#trg-e9fa7c49)
 
