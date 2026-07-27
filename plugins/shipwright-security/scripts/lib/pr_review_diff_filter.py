@@ -37,6 +37,23 @@ _GENERATED_BASENAMES = frozenset({
     "package-lock.json", "pnpm-lock.yaml",
 })
 
+# A run's REVIEW EVIDENCE, under `.shipwright/planning/iterate/`: the review
+# record `record_review_pass.py` maintains, and the raw reviewer replies
+# `external_review.py` emits. Both are tool-written transcripts OF a review —
+# feeding them to the reviewer is circular, and they are bulky: measured 45,596
+# chars (19% of the reviewed diff) on PR #446, which was the difference between
+# fitting the size cap and failing closed on truncation.
+#
+# Deliberately NARROW. The `.md` siblings in the same directory — the iterate
+# spec and its mini-plan — are AUTHORED, state the acceptance criteria, and are
+# exactly the intent a reviewer should read the diff against. They stay in.
+# The rule is "a reviewer does not review prior reviews", not "planning docs
+# are uninteresting".
+_REVIEW_EVIDENCE_PREFIX = ".shipwright/planning/iterate/"
+_REVIEW_EVIDENCE_RE = re.compile(
+    r"(^|/)(reviews\.json|[^/]*-external-[^/]*review[^/]*\.json)$"
+)
+
 # Split boundary — a unified diff starts each file section with `diff --git `.
 _DIFF_GIT_RE = re.compile(r"^diff --git a/(.+?) b/(.+?)\s*$")
 
@@ -45,6 +62,8 @@ def is_generated_path(path: str) -> bool:
     """True iff ``path`` is a producer-generated artifact (not reviewable code)."""
     p = (path or "").strip()
     if any(p.startswith(pre) for pre in _GENERATED_PREFIXES):
+        return True
+    if p.startswith(_REVIEW_EVIDENCE_PREFIX) and _REVIEW_EVIDENCE_RE.search(p):
         return True
     return p.rsplit("/", 1)[-1] in _GENERATED_BASENAMES
 
