@@ -2,7 +2,7 @@
 canon_generated: true
 run_id: "iterate-2026-07-27-plan-verdict-record"
 phase: "iterate"
-reason: "iterate: reviewer verdicts recorded, disagreement is its own outcome (1 of 3)"
+reason: "ensure-current pre-merge refresh"
 timestamp: "2026-07-27T11:57:30.959539+00:00"
 ---
 
@@ -14,7 +14,7 @@ timestamp: "2026-07-27T11:57:30.959539+00:00"
 
 - **Session ID**: 1ea85a9d-f698-4336-8e01-ea2f4e2ae714
 - **Timestamp**: 2026-07-27 11:57:30 UTC
-- **Reason**: iterate: reviewer verdicts recorded, disagreement is its own outcome (1 of 3)
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
@@ -34,11 +34,6 @@ timestamp: "2026-07-27T11:57:30.959539+00:00"
 - **Spec**: .shipwright/planning/iterate/2026-07-27-plan-verdict-record.md
 - **External Review Marker**: completed (external_review_state.json @ 2026-07-27T11:45:04)
 
-### Mandatory replay on Resume
-
-Before dispatching to the handoff's Remaining phase, run these if missing:
-- Finalization (F0–F11) after all mandatory phases pass
-
 ## Legacy build state
 
 - **Phase**: design
@@ -51,8 +46,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Git State
 
 - **Branch**: iterate/plan-verdict-record
-- **Last Commit**: b13ae9a3 feat(plan): record which way each reviewer came down, and notice disagreement
-- **Uncommitted Changes**: Yes
+- **Last Commit**: ac44b9a4 Merge remote-tracking branch 'origin/main' into iterate/plan-verdict-record
+- **Uncommitted Changes**: None
 
 ## Config Files to Read
 
