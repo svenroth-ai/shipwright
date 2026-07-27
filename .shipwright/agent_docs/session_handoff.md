@@ -1,40 +1,44 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-project-granularity-basis"
+run_id: "iterate-2026-07-27-phase-gate-override-evidence"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T08:12:49.739868+00:00"
+timestamp: "2026-07-27T08:00:38.431567+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 08:12:49 UTC
+> Auto-generated 2026-07-27 08:00:38 UTC
 
 ## Session Info
 
-- **Session ID**: d25b0a7e-0ae6-43cf-9f0d-0888374ebaee
-- **Timestamp**: 2026-07-27 08:12:49 UTC
+- **Session ID**: a7fa3da4-74bf-406f-b92b-f309691d90f9
+- **Timestamp**: 2026-07-27 08:00:38 UTC
 - **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-project-granularity-basis
-- **Date**: 2026-07-27T08:12:42.596562Z
+- **Run ID**: iterate-2026-07-27-phase-gate-override-evidence
+- **Date**: 2026-07-27T08:00:31.564002Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/req3-project-granularity-basis
-- **ADR**: iterate-2026-07-27-project-granularity-basis
+- **Branch**: iterate/phase-gate-override-evidence
+- **ADR**: iterate-2026-07-27-phase-gate-override-evidence
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-project-granularity-basis.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-phase-gate-override-evidence.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/req3-project-granularity-basis
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T07:53:44)
+- **Branch**: iterate/phase-gate-override-evidence
+- **Run ID**: iterate-2026-07-27-phase-gate-override-evidence
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-phase-gate-override-evidence.md
+- **Complexity**: medium
+- **External Review Marker**: stale (predates spec (2026-07-27T07:13:19))
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -48,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/req3-project-granularity-basis
-- **Last Commit**: 4519c9dd Merge remote-tracking branch 'origin/main' into iterate/req3-project-granularity-basis
+- **Branch**: iterate/phase-gate-override-evidence
+- **Last Commit**: 9750f08e Merge remote-tracking branch 'origin/main' into iterate/phase-gate-override-evidence
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -67,8 +71,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 |-------|------|--------|------|
 | evt-19f53577 | grade_snapshot | — | 2026-07-27 |
 | evt-78684181 | work_completed | iterate (iterate: the review gate stops being bypassable (fail-closed + fork review)) | 2026-07-27 |
-| evt-d6b0444f | grade_snapshot | — | 2026-07-27 |
-| evt-9ad5050b | work_completed | iterate (iterate: requirement granularity guidance + advisory I6 check + the Basis-assumed template contradiction) | 2026-07-27 |
+| evt-c880344a | grade_snapshot | — | 2026-07-27 |
+| evt-4794dcc1 | work_completed | iterate (iterate: phase-gate override leaves evidence; handoff renders phase status) | 2026-07-27 |
 | evt-2055af94 | grade_snapshot | — | 2026-07-26 |
 
 ## Recovery

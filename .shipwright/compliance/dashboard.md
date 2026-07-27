@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-07-27T08:12:42.718426+00:00
+Generated: 2026-07-27T08:00:31.677480+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -55,13 +55,13 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
 | Work events (iterate) | 361 changes | INFO |  |
-| Recent changes traced to an FR | 10/30 (33%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
+| Recent changes traced to an FR | 11/30 (37%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
 | All unit tests passing | 4946/4961 | WARN | 15/4961 not green in last full suite — see test-evidence.md; +3 change(s) since last full suite |
 | Architecture decisions | 328 ADRs | INFO |  |
-| Iterate tests passing | 53/68 testable changes tested | WARN | 15 testable change(s) without tests — see test-evidence.md |
+| Iterate tests passing | 53/69 testable changes tested | WARN | 16 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 11 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 25 open | WARN | 25 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Triage open | 24 open | WARN | 24 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit (grandfathered) | 126 | INFO |  |
 | Bloat in allowlist | 159 entries | INFO |  |
 | Bloat ratchet delta | +0 lines | PASS |  |
