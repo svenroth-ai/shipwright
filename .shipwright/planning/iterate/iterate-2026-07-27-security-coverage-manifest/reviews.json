@@ -144,60 +144,14 @@
     "external_code": {
       "review_type": "external_code",
       "status": "completed",
-      "findings_count": 5,
-      "findings": [
-        {
-          "severity": "medium",
-          "category": "spec",
-          "file": "plugins/shipwright-security/scripts/lib/coverage_report.py:44-50",
-          "line": null,
-          "finding": "An absent or empty manifest renders “Coverage unknown,” but AC-2 explicitly requires the report to render “coverage not reported.” Worse, the report CLI then appends a `prompt_injection` `not_requested` row to an absent manifest, so pre-feature artifacts render as incomplete coverage rather than as coverage not reported. The included test explicitly accepts this divergence (`test_coverage_consumer_tolerance.py:75-89`).",
-          "suggestion": "Preserve an explicit “manifest was absent/empty” state through report generation and render a banner containing “coverage not reported” before adding any synthetic rows. Update the CLI-path test to require that wording.",
-          "source": "external-review"
-        },
-        {
-          "severity": "medium",
-          "category": "spec",
-          "file": "plugins/shipwright-security/scripts/tools/generate_security_report.py:313-331",
-          "line": null,
-          "finding": "The PR Markdown report renders only `coverage_banner()` and omits `coverage_table()`. Consequently it does not render the full manifest—for example, it cannot show covered/degraded rows, tool names, or row details—despite AC-1 requiring the manifest to be rendered in the Markdown report. The tests only assert that the incomplete-coverage banner appears in PR mode, so this omission is not detected.",
-          "suggestion": "Include the coverage table in `generate_pr_report`, or provide an equivalent compact per-row rendering that includes every manifest row and its status.",
-          "source": "external-review"
-        },
-        {
-          "severity": "medium",
-          "category": "bug",
-          "file": "plugins/shipwright-security/scripts/lib/security_card.py:150-156",
-          "line": null,
-          "finding": "A card with coverage containing only `degraded` failures falls through to `Coverage — every class was checked.` `unchecked_classes()` deliberately excludes degraded rows, but a degraded leg produced no parseable output and therefore did not successfully check that class. This contradicts `coverage_summary_line()`, which correctly says a check failed to run, and gives the operator an overly reassuring payload at the point of work.",
-          "suggestion": "Use `is_complete(coverage)` for the “every class was checked” branch. Add a separate payload message naming degraded classes and directing the operator to scan errors.",
-          "source": "external-review"
-        },
-        {
-          "severity": "medium",
-          "category": "security",
-          "file": "plugins/shipwright-security/scripts/lib/security_card.py:137-161",
-          "line": null,
-          "finding": "repo` and `report_path` are interpolated verbatim into the triage card’s `launch_payload`, which is subsequently used as instructions for an executing agent. `--repo` is not constrained here, so a value containing newlines or imperative text can inject instructions after `/shipwright-security`; the same applies to a caller-provided report path. This also violates the module’s stated inbox-hygiene contract that the launch payload contains only stable, safe values.",
-          "suggestion": "Validate repository identifiers against the expected repository-name grammar and reject/control-character-strip invalid values. Do not place arbitrary paths in the instruction-bearing payload, or escape/encode them as non-instructional data.",
-          "source": "external-review"
-        },
-        {
-          "severity": "medium",
-          "category": "spec",
-          "file": "plugins/shipwright-security/scripts/lib/gitleaks_config.py:68-69",
-          "line": null,
-          "finding": "resolve_project_config()` promises and AC-3 requires an absolute `[extend] path`, but it returns `os.path.join(target, ...)",
-          "suggestion": null,
-          "source": "external-review"
-        }
-      ],
+      "findings_count": 0,
+      "findings": [],
       "provider": "openrouter",
-      "completed_at": "2026-07-27T08:20:04.185373+00:00",
+      "completed_at": "2026-07-27T09:24:24.356688+00:00",
       "disposition": null,
       "recorded_by": "external-review-json",
-      "parse_status": "partial",
-      "raw_excerpt": "[gemini]  Regex escape for TOML literal strings `'''...'''` or `'...'`.\nIn the output: `f\"paths = [{', '.join(patterns)}]\\n\"`\nIf `name` contains backslashes or single quotes?\n`excludes` are folder names, already validated by `_SIMPLE_NAME_RE`. So `name` is only alphanumeric and `._-`. Safe.\n\nWait! In `gitleaks_config.py`:\n```python\n        extend_block = (\n            \"[extend]\\n\"\n            f\"path = {_toml_basic_string(project_config_path)}\\n\"\n        )\n```\nWait, `path` property in `[extend]` is used. Gitleaks documentation says: `[extend] path\n\n[openai] - Category: spec  \n  Severity: medium  \n  File: plugins/shipwright-security/scripts/lib/coverage_report.py:44-50  \n  Finding: An absent or empty manifest renders “Coverage unknown,” but AC-2 explicitly requires the report to render “coverage not reported.” Worse, the report CLI then appends a `prompt_injection` `not_requested` row to an absent manifest, so pre-feature artifacts render as incomplete coverage rather than as coverage not reported. The included test explicitly accepts this divergence (`test_coverage_consumer_tolerance.py:75-89`).  \n  Suggestion: Preserve an explicit “manifest was absent/empty” state through report generation and render a banner containing “coverage not reported” before adding any synthetic rows. Update the CLI-path test to require that wording.\n\n- Category: spec  \n  Severity: medium  \n  File: plugins/shipwright-security/scripts/tools/generate_security_report.py:313-331  \n  Finding: The PR Markdown report renders only `coverage_banner()` and omits `coverage_table()`. Consequently it does not render the full manifest—for example, it cannot show covered/degraded rows, tool names, or row details—despite AC-1 requiring the manifest to be rendered in the Markdown report. The tests only assert that the incomplete-coverage banner appears in PR mode, so this omission is not detected.  \n  Suggestion: Include the coverage table in `generate_pr_report`, or provide an equivalent compact per-row rendering that includes every manifest row and its status.\n\n- Category: bug  \n  Severity: medium  \n  File: plugins/shipwright-security/scripts/lib/security_card.py:150-156  \n  Finding: A card with coverage containing only `degraded` failures falls through to `Coverage — every class was checked.` `unchecked_classes()` deliberately excludes degraded rows, but a degraded leg produced no parseable output and therefore did not successfully check that class. This contradicts `coverage_summary_line()`, which correctly says a check failed to run, and giv […truncated]"
+      "parse_status": "unstructured",
+      "raw_excerpt": "[gemini] . `cumulative==total` (2==2) -> continue.\n        - medium: count=0, cumulative=2. `count==0` -> continue.\n        - low: count=0. continue.\n        - info: count=0. continue.\n        Result: `options=[\"everything (2)\"]`. Correct.\n\n        Counts: `{\"high\": 1, \"low\": 1}` -> total=2\n        - critical: count=0 -> continue\n        - high: count=1, cumulative=1. `1 != 0` and `1 != 2`. `options.append(\"high and above (1)\")`.\n        - medium: count=0 -> continue\n        - low: count=1, cum\n\n[openai] No concrete defects found in the provided diff.\n\nThe implementation appears to satisfy the stated acceptance criteria: it derives and persists coverage manifests, renders incomplete/unknown coverage safely, extends project gitleaks configuration without combining `useDefault` and `path`, gates comparisons on mutually covered classes, and emits the severity/scope triage card alongside existing per-finding triage items. The tests include meaningful producer-to-consumer round trips, malformed-artifact handling, real-binary gitleaks coverage, comparison regressions, and card emission verification.\n\nOverall assessment: ship-as-is."
     }
   }
 }
