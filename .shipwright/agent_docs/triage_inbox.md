@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-07-27T16:41:15.217949Z. Items waiting for triage decision.
+> Auto-generated 2026-07-27T17:38:49.456380Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 423
-- Triage: 19 | Promoted: 1 | Dismissed: 402 | Snoozed: 1
+- Total: 424
+- Triage: 20 | Promoted: 1 | Dismissed: 402 | Snoozed: 1
 
-## Top 19 items (severity-sorted)
+## Top 20 items (severity-sorted)
 
 ### Source: analysis (1 item)
 
@@ -99,7 +99,7 @@
   - The tail of campaign step S2, not a new campaign - file it now so it is not lost between "S2 merged" and "somebody noti…
   - Promote: `triage_promote.py --id trg-8bf97fd4 --task-ref EXT:<ref>`
 
-### Source: manual (2 items)
+### Source: manual (3 items)
 
 <a id="trg-2ca796f3"></a>
 - **Release aggregator can write the same version twice on a re-run** `id=trg-2ca796f3 | severity=high | kind=bug → P1/engineering`
@@ -111,6 +111,11 @@
 - **shared/tests and integration-tests fail 21 tests when run in one pytest session** `id=trg-efca9de7 | severity=medium | kind=bug → P2/engineering`
   - Running 'uv run pytest shared/tests integration-tests -m "not slow and not cross_plugin"' as a SINGLE invocation fails…
   - Promote: `triage_promote.py --id trg-efca9de7 --task-ref EXT:<ref>`
+
+<a id="trg-c6e75011"></a>
+- **shipwright-security tests write an untracked .shipwright/ dir into the repo tree** `id=trg-c6e75011 | severity=low | kind=bug → P3/engineering`
+  - Running the F0 suite leaves an untracked directory in the working tree: plugins/shipwright-security/.shipwright/ contai…
+  - Promote: `triage_promote.py --id trg-c6e75011 --task-ref EXT:<ref>`
 
 ### Source: req3-campaign (3 items)
 

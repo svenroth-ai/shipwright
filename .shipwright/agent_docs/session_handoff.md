@@ -1,35 +1,38 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-audit-empty-run-not-recorded"
+run_id: "iterate-2026-07-27-run-unit-parallel-race"
 phase: "iterate"
 reason: "ensure-current pre-merge refresh"
-timestamp: "2026-07-27T16:41:15.217949+00:00"
+timestamp: "2026-07-27T17:38:49.456380+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 16:41:15 UTC
+> Auto-generated 2026-07-27 17:38:49 UTC
 
 ## Session Info
 
-- **Session ID**: 184abbf4-c486-4d5b-b89a-1dc21aebc3e1
-- **Timestamp**: 2026-07-27 16:41:15 UTC
+- **Session ID**: 9eda9cad-b9b8-45ff-acd4-2ab5efe17ff6
+- **Timestamp**: 2026-07-27 17:38:49 UTC
 - **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-audit-empty-run-not-recorded
-- **Date**: 2026-07-27T16:41:08.661081Z
-- **Type**: change
-- **Complexity**: small
-- **Branch**: iterate/audit-empty-run-not-recorded
-- **ADR**: iterate-2026-07-27-audit-empty-run-not-recorded
+- **Run ID**: iterate-2026-07-27-run-unit-parallel-race
+- **Date**: 2026-07-27T17:38:43.705219Z
+- **Type**: bug
+- **Complexity**: medium
+- **Branch**: iterate/run-unit-parallel-race
+- **ADR**: iterate-2026-07-27-run-unit-parallel-race
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-disclose-audit-last-run.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-run-unit-parallel-race.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/audit-empty-run-not-recorded
+- **Branch**: iterate/run-unit-parallel-race
+- **Run ID**: `iterate-2026-07-27-run-unit-parallel-race`
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-run-unit-parallel-race.md
+- **Complexity**: medium (`prior_source: history`, n=20)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/audit-empty-run-not-recorded
-- **Last Commit**: 9149f30d Merge remote-tracking branch 'origin/main' into iterate/audit-empty-run-not-recorded
+- **Branch**: iterate/run-unit-parallel-race
+- **Last Commit**: ba02f7b9 Merge remote-tracking branch 'origin/main' into iterate/run-unit-parallel-race
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,8 +68,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-ad7b51e0 | grade_snapshot | — | 2026-07-27 |
-| evt-e3d8f519 | work_completed | iterate (iterate: an audit that checked nothing is not recorded) | 2026-07-27 |
+| evt-950798de | grade_snapshot | — | 2026-07-27 |
+| evt-36d0f887 | work_completed | iterate (iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed) | 2026-07-27 |
 | evt-76f1beff | grade_snapshot | — | 2026-07-27 |
 | evt-90ce4f39 | work_completed | iterate (iterate: document the delivery watch in the guide) | 2026-07-27 |
 | evt-cf1bab8b | work_completed | iterate (iterate: requirement write-back loop — design rounds and build sections declare their requirement impact) | 2026-07-27 |
@@ -74,8 +77,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 377
-- **Last iterate**: change — iterate: an audit that checked nothing is not recorded (2026-07-27)
+- **Total work events**: 379
+- **Last iterate**: change — iterate: raise the PR-review diff cap, cut at a file boundary, name what went unreviewed (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
