@@ -1,14 +1,16 @@
-"""Public dataclass surface for the compliance collectors package.
+"""Leaf value types for the compliance collectors package.
 
-Single owner of the dataclass definitions imported by every collector module
-and re-exported by ``collectors/__init__.py``; ``_common.py`` carries the
-shared runtime helpers (config-file readers).
+One dataclass per artifact shape, imported by every collector module and
+re-exported by ``collectors/__init__.py``; ``_common.py`` carries the shared
+runtime helpers (config-file readers). The ``ComplianceData`` aggregate that
+composes these lives in ``_compliance_data.py`` — it changes whenever a new
+*fact* has to reach the renderers, which is a different rhythm from a leaf type
+changing because one artifact's shape changed.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from pathlib import Path
 
 
 @dataclass
@@ -271,32 +273,3 @@ class ExternalReviewState:
     reason: str | None = None
     timestamp: str = ""
 
-
-@dataclass
-class ComplianceData:
-    project_root: Path
-    # Event-sourced (primary)
-    work_events: list[WorkEvent] = field(default_factory=list)
-    test_runs: list[TestRunEvent] = field(default_factory=list)
-    phase_events: list[dict] = field(default_factory=list)
-    # Legacy (still populated for backward compat during migration)
-    configs: dict[str, dict] = field(default_factory=dict)
-    splits: list[SplitInfo] = field(default_factory=list)
-    sections: list[SectionInfo] = field(default_factory=list)
-    test_results: TestResults | None = None
-    # Shared (unchanged sources)
-    decisions: list[DecisionEntry] = field(default_factory=list)
-    commits: list[CommitEntry] = field(default_factory=list)
-    dependencies: list[DependencyInfo] = field(default_factory=list)
-    # SBOM render metadata (AR-04); legacy ctors keep 0/False.
-    dependencies_deduped: int = 0
-    dependencies_lock_resolved: bool = False
-    requirements: list[RequirementInfo] = field(default_factory=list)
-    test_file_map: dict[str, list[str]] = field(default_factory=dict)
-    external_review_states: list[ExternalReviewState] = field(default_factory=list)
-    # Known / baseline failures
-    known_failures: list[KnownFailure] = field(default_factory=list)
-    baseline_failure_count: int = 0
-    timestamp: str = ""
-    #: Run id off the SAME event as ``timestamp`` — see ``lib/_provenance.py``.
-    run_id: str | None = None

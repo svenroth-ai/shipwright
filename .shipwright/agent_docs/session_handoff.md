@@ -1,38 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-07-27-plan-step9-gates"
+run_id: "iterate-2026-07-27-disclose-audit-last-run"
 phase: "iterate"
-reason: "iterate: the four Step-9 gates become code, closing trg-88f721be (3 of 3)"
-timestamp: "2026-07-27T12:43:55.872393+00:00"
+reason: "ensure-current pre-merge refresh"
+timestamp: "2026-07-27T12:14:34.040370+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-07-27 12:43:55 UTC
+> Auto-generated 2026-07-27 12:14:34 UTC
 
 ## Session Info
 
-- **Session ID**: 1ea85a9d-f698-4336-8e01-ea2f4e2ae714
-- **Timestamp**: 2026-07-27 12:43:55 UTC
-- **Reason**: iterate: the four Step-9 gates become code, closing trg-88f721be (3 of 3)
+- **Session ID**: 184abbf4-c486-4d5b-b89a-1dc21aebc3e1
+- **Timestamp**: 2026-07-27 12:14:34 UTC
+- **Reason**: ensure-current pre-merge refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-07-27-plan-step9-gates
-- **Date**: 2026-07-27T12:43:49.872175Z
+- **Run ID**: iterate-2026-07-27-plan-section-deps
+- **Date**: 2026-07-27T12:14:28.199191Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/plan-step9-gates
-- **ADR**: iterate-2026-07-27-plan-step9-gates
+- **Branch**: iterate/plan-section-deps
+- **ADR**: iterate-2026-07-27-plan-section-deps
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-07-27-plan-step9-gates.md
+- **Spec**: .shipwright/planning/iterate/2026-07-27-plan-section-deps.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/plan-step9-gates
-- **Run ID**: `iterate-2026-07-27-plan-step9-gates`
-- **Spec**: .shipwright/planning/iterate/2026-07-27-plan-step9-gates.md
-- **External Review Marker**: completed (external_review_state.json @ 2026-07-27T12:35:15)
+- **Branch**: iterate/disclose-audit-last-run
+- **Run ID**: iterate-2026-07-27-disclose-audit-last-run
+- **Spec**: .shipwright/planning/iterate/iterate-2026-07-27-disclose-audit-last-run.md
+- **Complexity**: medium · **change_type:** change · **spec_impact:** modify (fr-01.10 gains one (e) ac)
+- **External Review Marker**: stale (predates spec (2026-07-27T07:51:33))
 
 ### Mandatory replay on Resume
 
@@ -50,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/plan-step9-gates
-- **Last Commit**: 43877e25 chore(triage): sweep 1 outbox append(s) into branch
+- **Branch**: iterate/disclose-audit-last-run
+- **Last Commit**: 3a56ec2e Merge remote-tracking branch 'origin/main' into iterate/disclose-audit-last-run
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -67,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-38795ac5 | grade_snapshot | — | 2026-07-27 |
-| evt-f540a880 | work_completed | iterate (iterate: the four Step-9 gates become code, closing trg-88f721be (3 of 3)) | 2026-07-27 |
 | evt-0b2bb01b | grade_snapshot | — | 2026-07-27 |
 | evt-5ecd7d7e | work_completed | iterate (iterate: reviewer verdicts recorded, disagreement is its own outcome (1 of 3)) | 2026-07-27 |
 | evt-8039a18b | grade_snapshot | — | 2026-07-27 |
+| evt-8cab1d1d | work_completed | iterate (iterate: section dependencies are declarable, so the numbering is checkable (2 of 3)) | 2026-07-27 |
+| evt-7afaf357 | grade_snapshot | — | 2026-07-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 369
-- **Last iterate**: change — iterate: the four Step-9 gates become code, closing trg-88f721be (3 of 3) (2026-07-27)
+- **Last iterate**: change — iterate: reviewer verdicts recorded, disagreement is its own outcome (1 of 3) (2026-07-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

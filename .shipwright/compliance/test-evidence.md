@@ -1,7 +1,8 @@
 # Test Evidence Report
 
-Generated: 2026-07-27T12:43:49.972175+00:00
-Source-State: run=iterate-2026-07-27-plan-step9-gates
+Generated: 2026-07-27T12:14:28.287189+00:00
+Source-State: run=iterate-2026-07-27-plan-section-deps
+Consistency-audit: never run
 
 ## Summary
 
@@ -15,16 +16,16 @@ Source-State: run=iterate-2026-07-27-plan-step9-gates
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | the four Step-9 gates become code, closing trg-88f721be (3 of 3) | [iterate](traceability-matrix.md#evt-f540a880) | — | +0 | — | — | 2026-07-27 |
-| 2 | reviewer verdicts recorded, disagreement is its own outcome (1 of 3) | [iterate](traceability-matrix.md#evt-5ecd7d7e) | — | +0 | — | — | 2026-07-27 |
-| 3 | section dependencies are declarable, so the numbering is checkable (2 of 3) | [iterate](traceability-matrix.md#evt-8cab1d1d) | — | +0 | — | — | 2026-07-27 |
-| 4 | the review gate stops being bypassable (fail-closed + fork review) | [iterate](traceability-matrix.md#evt-78684181) | — | +0 | — | — | 2026-07-27 |
-| 5 | Overriding a phase gate now runs the check anyway and records what it found plus the reason given, and the session handoff states which phases are finished and which one was interrupted. | [iterate](traceability-matrix.md#evt-4794dcc1) | — | +0 | — | — | 2026-07-27 |
-| 6 | requirement granularity guidance + advisory I6 check + the Basis-assumed template contradiction | [iterate](traceability-matrix.md#evt-9ad5050b) | — | +0 | — | — | 2026-07-27 |
-| 7 | triage defer from the terminal + failing-check detail cap | [iterate](traceability-matrix.md#evt-2aa40a94) | — | +0 | — | — | 2026-07-27 |
-| 8 | Evidence documents and test-run records now name which version of the project they describe, not just when they were written. | [iterate](traceability-matrix.md#evt-37719eaa) | — | +0 | — | — | 2026-07-27 |
-| 9 | The F0 suite runner files its own triage entry for a unit red in parallel and green alone, never auto-closes it, and exits 3 if the observation could not be recorded. | [iterate](traceability-matrix.md#evt-0acddcf6) | — | +0 | — | — | 2026-07-27 |
-| 10 | hosting rollback uses the target ref, polls liveness to the target's deadline, gates on stored-data drift, and halts loudly when the way back fails | [iterate](traceability-matrix.md#evt-a345a59f) | — | +0 | — | — | 2026-07-27 |
+| 1 | reviewer verdicts recorded, disagreement is its own outcome (1 of 3) | [iterate](traceability-matrix.md#evt-5ecd7d7e) | — | +0 | — | — | 2026-07-27 |
+| 2 | section dependencies are declarable, so the numbering is checkable (2 of 3) | [iterate](traceability-matrix.md#evt-8cab1d1d) | — | +0 | — | — | 2026-07-27 |
+| 3 | the review gate stops being bypassable (fail-closed + fork review) | [iterate](traceability-matrix.md#evt-78684181) | — | +0 | — | — | 2026-07-27 |
+| 4 | Overriding a phase gate now runs the check anyway and records what it found plus the reason given, and the session handoff states which phases are finished and which one was interrupted. | [iterate](traceability-matrix.md#evt-4794dcc1) | — | +0 | — | — | 2026-07-27 |
+| 5 | requirement granularity guidance + advisory I6 check + the Basis-assumed template contradiction | [iterate](traceability-matrix.md#evt-9ad5050b) | — | +0 | — | — | 2026-07-27 |
+| 6 | triage defer from the terminal + failing-check detail cap | [iterate](traceability-matrix.md#evt-2aa40a94) | — | +0 | — | — | 2026-07-27 |
+| 7 | Evidence documents and test-run records now name which version of the project they describe, not just when they were written. | [iterate](traceability-matrix.md#evt-37719eaa) | — | +0 | — | — | 2026-07-27 |
+| 8 | The F0 suite runner files its own triage entry for a unit red in parallel and green alone, never auto-closes it, and exits 3 if the observation could not be recorded. | [iterate](traceability-matrix.md#evt-0acddcf6) | — | +0 | — | — | 2026-07-27 |
+| 9 | hosting rollback uses the target ref, polls liveness to the target's deadline, gates on stored-data drift, and halts loudly when the way back fails | [iterate](traceability-matrix.md#evt-a345a59f) | — | +0 | — | — | 2026-07-27 |
+| 10 | compliance evidence discloses when the cross-check last ran | [iterate](traceability-matrix.md#evt-1c7c2446) | — | +0 | — | — | 2026-07-27 |
 | 11 | REQ-3 Phase 2 content round - all 18 requirements walked or minted | [iterate](traceability-matrix.md#evt-ea7203ec) | — | +0 | — | — | 2026-07-26 |
 | 12 | Requirement gathering now follows one shared, thorough interview method across the project, adopt and iterate steps, and a new requirement records that guarantee. | [iterate](traceability-matrix.md#evt-11304ded) | unit | +0 | 4946/4961 | PASS (15 skipped) | 2026-07-23 |
 | 13 | The automated design check no longer flags a false problem for projects that were adopted into Shipwright and never went through the design/mockup step. | [iterate](traceability-matrix.md#evt-a8a0f759) | unit | +0 | 26/26 | PASS | 2026-07-23 |
